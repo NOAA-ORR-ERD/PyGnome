@@ -1,0 +1,988 @@
+
+#ifndef __CLASSES__
+#define __CLASSES__
+#include <map>
+#include <string>
+
+
+using std::map;
+using std::string;
+
+#include "TypeDefs.h"
+#include "CMyList.h"
+#include "RectUtils.h"
+#include "ObjectUtils.h"
+#include "Uncertainty.h"
+#include "GridVel.h"
+#include "MemUtils/MemUtils.h"
+
+Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2);
+UNIQUEID ZeroID(void);
+
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+//////////////////////////////     Classes     ////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+extern class TMover dummyMover;
+extern class TOSSMTimeValue dummyTimeValue;
+extern class ADCPTimeValue dummyADCPTimeValue;
+
+///////////////////////////////////////////////////////////////////////////
+
+class TModelMessage
+{
+	public:
+		// constructors
+		TModelMessage(long messageCode,char* targetName,char *dataStr);
+		TModelMessage(long messageCode,char* targetName,CHARH dataHdl);
+		TModelMessage(long messageCode,UNIQUEID targetUniqueID,char *dataStr);
+		TModelMessage(long messageCode,UNIQUEID targetUniqueID,CHARH dataHdl);
+		// destructor
+		~TModelMessage(); // does this need to be virtual?
+		
+		// Message utilities
+		Boolean IsMessage(long messageCode);
+		Boolean IsMessage(char* targetName);
+		Boolean IsMessage(long messageCode,char* targetName);
+		Boolean IsMessage(long messageCode,UNIQUEID targetUniqueID);
+		long GetMessageCode(void) {return fMessageCode;}
+		void GetParameterString(char * key,char * answerStr,long maxNumChars);
+		OSErr GetParameterAsDouble(char * key,double * val);
+		OSErr GetParameterAsLong(char * key,long * val);
+		OSErr GetParameterAsBoolean(char * key,Boolean * val);
+		OSErr GetParameterAsWorldPoint(char * key,WorldPoint * val,Boolean checkForLLInputWithoutDirection);
+		OSErr GetParameterAsSeconds(char * key,Seconds * val);
+		
+
+	private:
+		Boolean StringsMatch(char* str1,char* str2);
+		// instance variables
+		long fMessageCode;
+		UNIQUEID fTargetUniqueID;
+		char* fTargetName;
+		char *fDataStr;
+		CHARH fDataHdl;
+};
+
+
+//++ TClassID
+
+#include "ClassID/ClassID_b.h"
+#include "ClassID/ClassID_c.h"
+
+#include "ClassID/TClassID.h"
+
+// --
+
+///////////////////////////////////////////////////////////////////////////
+
+class TWeatherer : public TClassID
+{
+	public:
+							TWeatherer (char *name);
+		virtual			   ~TWeatherer () { Dispose (); }
+		virtual OSErr		InitWeatherer () { return noErr; }
+		virtual ClassID 	GetClassID () { return TYPE_WEATHERER; }
+		virtual void		Dispose () { return; }
+
+//		void				SetWeathererName (char *newName)    { SetClassName (newName); }
+//		void				GetWeathererName (char *returnName) { GetClassName (returnName); }
+
+		virtual void		WeatherLE (LERec *theLE) {}
+
+		// I/O methods
+		virtual OSErr 		Read  (BFPB *bfpb);  			// read from current position
+		virtual OSErr 		Write (BFPB *bfpb); 			// write to  current position
+
+		// list display methods
+		virtual long 		GetListLength ();
+		virtual Boolean 	ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
+		virtual OSErr 		AddItem (ListItem item);
+};
+
+///////////////////////////////////////////////////////////////////////////
+
+class TOSSMWeatherer : public TWeatherer
+{
+ 	public:
+		CMyList				*componentsList;
+
+ 	public:
+							TOSSMWeatherer (char *name);
+		virtual				~TOSSMWeatherer ();
+		virtual OSErr		InitWeatherer ();
+		virtual ClassID		GetClassID () { return TYPE_OSSMWEATHERER; }
+		virtual void		Dispose ();
+
+		virtual void		WeatherLE (LERec *theLE);
+
+		// I/O methods
+		virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
+		virtual OSErr 		Write (BFPB *bfpb); // write to  current position
+
+		// list display methods
+		virtual Boolean		FunctionEnabled (ListItem item, short buttonID);
+		virtual OSErr		DeleteItem (ListItem item);
+		virtual OSErr		SettingsItem (ListItem item);
+		virtual Boolean		ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
+		virtual ListItem	GetNthListItem (long n, short indent, short *style, char *text);
+};
+
+///////////////////////////////////////////////////////////////////////////
+
+// JLM 9/4/98 
+// Note: the types determined by bit operations
+// so are powers of 2
+
+
+class TLEList : public TClassID
+{
+	public:
+		long			numOfLEs;
+		//short			massUnits;
+		LERecH			LEHandle; 	// handle to LE array
+		LETYPE 			fLeType;
+		UNIQUEID		fOwnersUniqueID; // set if owned by another LE set, i.e this is a mirrored set
+		
+	public:
+						TLEList ();
+		virtual		   ~TLEList () { Dispose (); }
+					   
+		//virtual OSErr	Initialize (long numElements, LERec *representativeLE, short massUnits,
+		//							WorldPoint startRelPos, WorldPoint endRelPos,
+		//							Seconds startRelTime, Seconds endRelTime,
+		//							Boolean bWantEndRelTime, Boolean bWantEndRelPosition) { return noErr; }
+		//virtual OSErr	Initialize (long numElements, LERecH array, short massUnits, Seconds fileTime) { return noErr; }
+		virtual OSErr	Reset (Boolean newKeys) { return noErr; }
+
+		virtual LETYPE 	GetLEType () { return fLeType; }
+		long			GetNumOfLEs(){return numOfLEs;}
+		void			SetLEStatus (long leNum, OilStatus status);
+		OilStatus		GetLEStatus (long leNum);
+		void			ReFloatLE (long leNum);
+		void			GetLE (long leNum, LERecP theLE);
+		void			SetLE (long leNum, LERecP theLE);
+		WorldPoint		GetLEPosition (long leNum);
+		void			SetLEPosition (long leNum, WorldPoint p);
+		Seconds			GetLEReleaseTime (long leNum);
+		void			ReleaseLE (long leNum);
+		void			AgeLE (long leNum);
+		virtual void	BeachLE (long leNum, WorldPoint beachPosition);
+		WorldRect		GetLEBounds ();
+		void 			GetLEStatistics(long* numReleased,long* numEvaporated,long* numBeached, long* numOffMap, long* numFloating);
+		void 			RecalculateLEStatistics(long* numEvaporated,long* numFloating, long* numRemoved, long* numOffMaps); // 	to account for dispersion
+		virtual void 	GetLEAmountStatistics(short desiredMassVolUnits, double *amtTotal,double *amtReleased,double *amtEvaporated,
+																double *amtDispersed,double *amtBeached,double *amtOffmap, double *amtFloating, double *amtRemoved){};
+		
+		void			SetFileDirty (Boolean bFileDirty) { bDirty = bFileDirty; }
+		Boolean			IsFileDirty () { return !bDirty; }
+		
+		virtual long	GetLECount () { return numOfLEs; }  
+		
+		virtual long	GetMassUnits () { return -1; } // they must override
+		virtual short	GetMassUnitType () { return -1; } // they must override
+		virtual double	GetTotalMass () { return -1; } ; // they must override
+
+		virtual ClassID GetClassID () { return TYPE_LELIST; }
+		virtual Boolean	IAm(ClassID id) { if(id==TYPE_LELIST) return TRUE; return TClassID::IAm(id); }
+
+		virtual	void	Dispose ();
+
+		virtual OSErr UpItem (ListItem item);	// code goes here, decide if this is okay - brought from GNOME_beta
+		virtual OSErr DownItem (ListItem item);
+
+		// I/O methods
+		virtual OSErr 	Read  (BFPB *bfpb); // read from the current position
+		virtual OSErr 	Write (BFPB *bfpb) ; // write to    the current position
+		virtual	OSErr	WriteLE (BFPB *bfpb, LERec *theLE);
+		virtual	OSErr	ReadLE  (BFPB *bfpb, LERec *theLE, long version);
+
+		// list display methods: base class functionality
+		virtual void	Draw (Rect r, WorldRect view) { return; }
+		
+
+};
+double GetLEMass(LERec theLE);
+
+
+class TOLEList : public TLEList
+{
+	public:
+		LESetSummary		fSetSummary; // summary of LE's in this list
+		Boolean 			bMassBalanceOpen;
+		Boolean 			bReleasePositionOpen;
+		CMyList	   		   *initialLEs;
+		Boolean				binitialLEsVisible;
+		Boolean				bShowDispersantArea;
+		DispersionRec		fDispersantData;
+		AdiosInfoRecH		fAdiosDataH;	// time after spill, amount dispersed, amount evaporated
+		BudgetTableDataH	fBudgetTableH;
+		char				fOilTypeName[kMaxNameLen];
+		WindageRec			fWindageData;
+	public:
+							TOLEList ();
+		virtual			   ~TOLEList () { Dispose (); }
+		//virtual OSErr		Initialize (long numElements, LERec *representativeLE, short massUnits,
+		//								WorldPoint startRelPos, WorldPoint endRelPos,
+		//								Seconds startRelTime, Seconds endRelTime,
+		//								Boolean bWantEndRelTime, Boolean bWantEndRelPosition);
+		virtual OSErr 		Initialize(LESetSummary * summary,Boolean deleteLERecH);
+		virtual OSErr		Initialize (long numElements, LERecH array, short massUnits, Seconds fileTime);
+		virtual OSErr		Reset (Boolean newKeys);
+
+		//void				ReleaseLE (long i);
+		//void				AgeLE (long i);
+		//virtual void		BeachLE (long i, WorldPoint beachPosition);
+	
+		long				GetLECount () { return fSetSummary.numOfLEs; }
+
+		virtual ClassID 	GetClassID () { return TYPE_OSSMLELIST; }
+		virtual Boolean		IAm(ClassID id) { if(id==TYPE_OSSMLELIST) return TRUE; return TLEList::IAm(id); }
+		virtual	void		Dispose ();
+		
+		virtual long		GetMassUnits () { return fSetSummary.massUnits; } 
+		virtual short		GetMassUnitType();
+		virtual double		GetTotalMass () { return fSetSummary.totalMass; } 
+		virtual OilType		GetOilType(){return fSetSummary.pollutantType;}
+		virtual Seconds		GetSpillStartTime() { return fSetSummary.startRelTime; }
+		virtual Seconds		GetSpillEndTime() { return fSetSummary.endRelTime; }
+		virtual void 		GetLEAmountStatistics(short desiredMassVolUnits, double *amtTotal,double *amtReleased,double *amtEvaporated,
+															double *amtDispersed,double *amtBeached,double *amtOffmap, double *amtFloating, double *amtRemoved);
+		virtual void 		GetMassBalanceLines(Boolean includePercentage, char* line1,char*line2,char* line3,char* line4,char* line5,char* line6,char* line7);
+		virtual OSErr 		CalculateAverageIntrusionDepth(double *avDepth, double *stdDev);
+
+		virtual DispersionRec 		GetDispersionInfo ();
+		virtual void 				SetDispersionInfo (DispersionRec info);
+
+		virtual AdiosInfoRecH 		GetAdiosInfo () {return fAdiosDataH;}
+		virtual void 				SetAdiosInfo (AdiosInfoRecH adiosInfoH){if (fAdiosDataH && fAdiosDataH != adiosInfoH) {DisposeHandle((Handle)fAdiosDataH);} fAdiosDataH = adiosInfoH;}
+		long 				GetNumAdiosBudgetTableItems(void);
+		void 				AddToBudgetTableHdl(BudgetTableData *budgetTable);
+		OSErr 				ExportBudgetTableHdl(char* path, BFPB *bfpb);
+		BudgetTableDataH	GetBudgetTable(){return fBudgetTableH;}
+
+		virtual WindageRec 	GetWindageInfo ();
+		virtual void 		SetWindageInfo (WindageRec info);
+
+		// I/O methods
+		virtual OSErr 		Read  (BFPB *bfpb); // read from the current position
+		virtual OSErr 		Write (BFPB *bfpb); // write to    the current position
+
+		// list display methods: base class functionality
+		virtual void		Draw (Rect r, WorldRect view);
+		virtual long		GetListLength ();
+		virtual ListItem 	GetNthListItem (long n, short indent, short *style, char *text);
+		virtual Boolean 	ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
+		virtual Boolean 	FunctionEnabled (ListItem item, short buttonID);
+//		virtual OSErr 		AddItem (ListItem item);
+		virtual OSErr 		SettingsItem (ListItem item);
+		virtual OSErr 		DeleteItem (ListItem item);
+
+		virtual OSErr 		CheckAndPassOnMessage(TModelMessage *message);
+};
+
+OSErr DispersionDialog(DispersionRec *info, Seconds startRelTime, WindowPtr parentWindow);
+OSErr WindageSettingsDialog(WindageRec *info, WindowPtr parentWindow);
+Boolean IsAdiosBudgetTable(char* path);
+OSErr ReadAdiosBudgetTable(char *path,AdiosInfoRecH *adiosData,char *oilType,float *apiNum);
+OSErr GetAdiosFileName(char *path);
+short BudgetTable(short massVolUnits, double amtSpilled, BudgetTableData **budgetTableHdl);		
+
+/////////////////////////////////////////////////
+
+typedef struct
+{
+	long 		numOfLEs;			// number of L.E.'s in this set
+	OilType		pollutantType;		// type of pollutant
+	double		totalMass; 			// total mass of all le's in list (in massUnits)
+	short		massUnits; 			// units for mass quantity
+	double		density;		// added for dispersed oil
+	Seconds		overflightTime;		// start release time
+	long		ageHours;
+	short		whenAmountIsSpecified;
+	Seconds		spillTime;
+	
+	char		spillName[kMaxNameLen];
+	
+} SprayDialogInfo;
+
+OSErr CreateSprayLESet(void);
+Boolean IsEditTool(long tool);
+void SprayCanSettingsDialog(void);
+OSErr DoCJFile(char *path);
+
+OSErr  LoadOSSMFile(char* path, Seconds * fileTimeP);  // JLM 2/13/01  
+OSErr  LoadOSSMFile(char* path, Seconds * fileTimeP, char *className); // JLm 7/13/10
+
+
+class TSprayLEList : public TOLEList
+{
+	public:
+		WORLDPOINTH			fSprayedH;
+		long				fNumSprayedPts;
+		/////
+	private:
+		Handle				fPixelBitsH;
+		WorldRect			fPixelWorldRect;
+		Rect				fPixelScreenRect;
+		Boolean				fInPixelEditMode;
+		short				fWhenAmountIsSpecified;
+		Seconds				fSpillTime;
+		long				fAgeAtOverflightTimeInHoursEnteredByUser;
+		double				fAmountEnteredByUser;
+		////////
+		
+	public:
+							TSprayLEList ();
+		virtual			   ~TSprayLEList () { Dispose (); }
+		virtual OSErr		Initialize (LESetSummary *summary,Boolean deleteLERecH);
+		virtual OSErr		Reset (Boolean newKeys);
+
+		virtual double 		AgeInHrsAtOverflightTime();
+		virtual double 		AmountAtOverflightTime();
+
+		virtual ClassID 	GetClassID () { return TYPE_SPRAYLELIST; }
+		virtual Boolean		IAm(ClassID id) { if(id==TYPE_SPRAYLELIST) return TRUE; return TOLEList::IAm(id); }
+		virtual	void		Dispose ();
+		
+		void 				DisposeSprayedPoints(void);
+		void 				DisposePixelBits(void);
+		long			 	PixelToIndex(Point pixel);
+		Boolean 			CanSprayPixel(Point pixel);
+		Boolean				OilAtPixel(Point pixel);
+		Boolean				OilAtPixel(WorldPoint wp);
+		void 				SetPixel(Point pixel);
+		void 				ClearPixel(Point pixel);
+		Point 				PixelToSpray(void);
+		void	 			SprayCanMouseDown(void);
+		void	 			EraserMouseDown(void);
+		OSErr 				AddSprayPoint(Point pixel);
+		OSErr 				AddSprayPoint(WorldPoint wp);
+		OSErr 				VerifyPixelBitmap(void);
+		void 				EraseWorldRect(Rect r);
+		long 				LEIndexToSprayedIndex(long leIndex);
+
+		SprayDialogInfo 	GetSprayDialogInfo ();
+		OSErr 				SetSprayDialogInfo (SprayDialogInfo info);
+		virtual Boolean 	IAmEditableInMapDrawingRect(void);
+		virtual Boolean 	IAmCurrentlyEditableInMapDrawingRect(void);
+		virtual Boolean 	UserIsEditingMeInMapDrawingRect(void);
+		virtual void	 	StartEditingInMapDrawingRect(void);
+		virtual OSErr 		StopEditingInMapDrawingRect(Boolean *deleteMe);
+
+		// I/O methods
+		virtual OSErr 		Read  (BFPB *bfpb); // read from the current position
+		virtual OSErr 		Write (BFPB *bfpb); // write to    the current position
+
+		// list display methods: base class functionality
+		virtual void		Draw (Rect r, WorldRect view);
+		virtual long		GetListLength ();
+		virtual ListItem 	GetNthListItem (long n, short indent, short *style, char *text);
+		virtual Boolean 	ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
+		virtual Boolean 	FunctionEnabled (ListItem item, short buttonID);
+//		virtual OSErr 		AddItem (ListItem item);
+		virtual OSErr 		SettingsItem (ListItem item);
+		virtual OSErr 		DeleteItem (ListItem item);
+
+		virtual OSErr 		CheckAndPassOnMessage(TModelMessage *model);
+
+};
+
+/////////////////////////////////////////////////
+typedef struct
+{
+	long		equilibriumCurves;		// 1=CH4 in seawater, 2=NG in seawater
+	double	bubbleRadius;	// m
+	double	molecularWt;	// CH4=.016, NG=.019 kg/mol
+	double	hydrateDensity;	// CH4 = 900, NG=900-940 kg/m^3
+	long		separationFlag;	// 0 no separation, 1 separation possible
+	long		hydrateProcess; // 0 suppress, 1 do not suppress
+	long		dropSize;	// 0 use CDOG default, 1 set by hand
+//	
+	Seconds	duration;
+	Boolean	isContinuousRelease;
+} CDOGParameters;
+
+typedef struct
+{
+	double 		oilDischargeRate;			// m^3/s
+	double 		gasDischargeRate;			// m^3/s
+
+} CDOGSpillParameters;
+
+typedef struct
+{
+	char	 	hydrodynamicFilesFolderPath[kMaxNameLen];	 // location of currents
+	double	timeInterval;		// hrs
+	double	period; 			// hrs
+	short		methodOfDeterminingCurrents;	// 1 select a folder, 2 export Gnome with profile, 3 already in CDOG folder
+	
+} CDOGHydrodynamicInfo;
+
+typedef struct
+{
+	double		timeStep; 			// hrs
+	double		horizDiff; 			// m^2/s
+	double		vertDiff;		// m^2/s
+	
+} CDOGDiffusivityInfo;
+
+typedef struct
+{
+	char	 	temperatureFieldFilePath[kMaxNameLen];	 // location of temp file
+	char		salinityFieldFilePath[kMaxNameLen];		// location of salinity file
+	short		methodOfDeterminingTempSal;		// 1 files already in CDOG folder, 2 select temp/sal files
+	
+} CDOGTempSalInfo;
+
+typedef struct
+{
+	short	 	temperatureUnits;	 // deg C, deg F
+	short		densityUnits;		// kg/m3, API
+	short		diameterUnits;		// m, cm, in
+	short		dischargeType;		// oil, gas
+	short		gorUnits;			// gas to oil ratio, SI units, industry units
+	short		dischargeUnits;			// m3/s, BOPD (oil) or MCFS (gas)
+	short 	molWtUnits;			// g/mol, kg/mol
+	
+} CDOGUserUnits;
+
+enum {	kDegreesC = 1, kDegreesF };
+enum {	kKgM3 = 1, kAPI };
+enum {	kMeters = 1, kCentimeters, kInches };
+
+class CDOGLEList : public TOLEList
+{
+	public:
+		//WORLDPOINTH			fSprayedH;
+		//long				fNumSprayedPts;
+		/////
+	private:
+		CDOGParameters		fCDOGParameters;
+		CDOGHydrodynamicInfo	fCDOGHydrodynamicInfo;
+		CDOGDiffusivityInfo	fCDOGDiffusivityInfo;
+		CDOGTempSalInfo		fCDOGTempSalInfo;
+		Boolean				fOutputSubsurfaceFiles;
+		Boolean				fOutputGasFiles;
+		DepthValuesSetH		fDepthValuesH;
+		DischargeDataH		fDischargeDataH;	// new variable discharge option 5/12/05
+		float				fLengthOfGridCellInMeters;	// dx = dy
+		long				fNumGridCells;	// will use 1 giant grid cell 
+		Boolean			bIsHydrogenSulfide;
+		CDOGUserUnits	fCDOGUserUnits;
+		short				fMethodOfDeterminingHydrodynamics;	//
+		short				fDepthUnits;
+		////////
+		
+	public:
+							CDOGLEList ();
+		virtual			   ~CDOGLEList () { Dispose (); }
+		//virtual OSErr		Initialize (LESetSummary *summary);
+		virtual OSErr		Reset (Boolean newKeys);
+
+		virtual ClassID 	GetClassID () { return TYPE_CDOGLELIST; }
+		virtual Boolean		IAm(ClassID id) { if(id==TYPE_CDOGLELIST) return TRUE; return TOLEList::IAm(id); }
+		virtual	void		Dispose ();
+		
+		// I/O methods
+		virtual OSErr 		Read  (BFPB *bfpb); // read from the current position
+		virtual OSErr 		Write (BFPB *bfpb); // write to    the current position
+
+		// list display methods: base class functionality
+		virtual void		Draw (Rect r, WorldRect view);
+		virtual long		GetListLength ();
+		virtual ListItem 	GetNthListItem (long n, short indent, short *style, char *text);
+		virtual Boolean 	ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
+		virtual Boolean 	FunctionEnabled (ListItem item, short buttonID);
+//		virtual OSErr 		AddItem (ListItem item);
+		virtual OSErr 		SettingsItem (ListItem item);
+		virtual OSErr 		DeleteItem (ListItem item);
+
+		//virtual OSErr 		CheckAndPassOnMessage(TModelMessage *model);
+		CDOGHydrodynamicInfo 	GetCDOGHydrodynamicInfo ();
+		void 			SetCDOGHydrodynamicInfo (CDOGHydrodynamicInfo info);
+		CDOGDiffusivityInfo 	GetCDOGDiffusivityInfo ();
+		void 			SetCDOGDiffusivityInfo (CDOGDiffusivityInfo info);
+		CDOGParameters 	GetCDOGParameters ();
+		void 			SetCDOGParameters (CDOGParameters params);
+		CDOGTempSalInfo GetCDOGTempSalInfo();
+		void 			SetCDOGTempSalInfo(CDOGTempSalInfo info);
+		Seconds		GetSpillDuration();
+		Boolean		GetOutputSubsurfaceFiles(){return fOutputSubsurfaceFiles;}
+		Boolean		GetOutputGasFiles(){return fOutputGasFiles;}
+		void			SetOutputSubsurfaceFiles(Boolean outputSubsurfaceFiles){fOutputSubsurfaceFiles=outputSubsurfaceFiles;}
+		void			SetOutputGasFiles(Boolean outputGasFiles){fOutputGasFiles=outputGasFiles;}
+		short 		GetMethodOfDeterminingCurrents (){return fCDOGHydrodynamicInfo.methodOfDeterminingCurrents;}
+		short 		GetMethodOfDeterminingHydrodynamics (){return fMethodOfDeterminingHydrodynamics;}
+		void 			SetMethodOfDeterminingHydrodynamics (short methodOfDeterminingHydrodynamics){fMethodOfDeterminingHydrodynamics = methodOfDeterminingHydrodynamics;}
+		short 		GetMethodOfDeterminingTempSal (){return fCDOGTempSalInfo.methodOfDeterminingTempSal;}
+		Boolean		TemperatureProfilePathSet();
+		Boolean		SalinityProfilePathSet();
+		long 			GetNumProfiles();
+		DepthValuesSetH	GetDepthValuesHandle () { return fDepthValuesH; }
+		void			SetDepthValuesHandle (DepthValuesSetH dvals) ;
+		long 			GetNumDischarges();
+		DischargeDataH	GetDischargeDataHandle () { return fDischargeDataH; }
+		void 			SetDischargeDataHandle(DischargeDataH dischargevals);
+		Boolean 		GetHydrogenSulfideInfo(){return bIsHydrogenSulfide;}
+		void 			SetHydrogenSulfideInfo(Boolean hydrogenSulfide) {bIsHydrogenSulfide = hydrogenSulfide;}
+		CDOGUserUnits			GetCDOGUserUnits();
+		void			SetCDOGUserUnits(CDOGUserUnits userUnits);
+		short			GetDepthUnits() {return fDepthUnits;}
+		void			SetDepthUnits(short depthUnits) {fDepthUnits = depthUnits;}
+			
+		OSErr			ReadCDOGOutputFiles();
+		OSErr 		ExportCDOGGeninf();	// consolidated for CDOGG2.1
+		OSErr 		ExportCDOGZeroWind();	// consolidated for CDOGG2.1
+		OSErr 		ExportProfilesAsNetCDF(TCurrentMover *hydrodynamicData);
+		OSErr 		ExportProfilesToCDOGInputFolder(TCurrentMover *hydrodynamicData);
+		OSErr 		ExportProfilesToCDOGInputFolder();
+		OSErr 		ExportGNOMECurrentsForCDOG();
+		OSErr 		CopyHydrodynamicsFilesToCDOGInputFolder();	
+		OSErr 		CopyTemperatureFilesToCDOGInputFolder();	
+		OSErr 		CopySalinityFilesToCDOGInputFolder();	
+
+};
+CDOGLEList* GetCDOGSpill();
+OSErr CreateCDOGLESet();
+OSErr CDOGSpillSettingsDialog (CDOGLEList 	*thisLEList);
+Boolean CDOGAvailable();
+
+//++ TMap
+
+#include "Map/Map_b.h"
+#include "Map/Map_c.h"
+
+#include "Map/TMap.h"
+
+//--
+
+OSErr TMapSettingsDialog(TMap* theMap);
+///////////////////////////////////////////////////////////////////////////
+
+class TOSSMMap : public TMap
+{
+	private:
+		CHARH			fGridHdl;
+		FLOATH			fRefloatTimesHdl;
+	protected:
+		long 			fNumRows;
+		long 			fNumCols;
+ 	public:
+ 						TOSSMMap (char* name, WorldRect bounds);
+ 		virtual		   ~TOSSMMap () { Dispose (); }
+
+		virtual OSErr	InitMap();
+		virtual OSErr	InitMap (char *path);
+		virtual OSErr 	ReplaceMap();
+		virtual ClassID GetClassID () { return TYPE_OSSMMAP; }
+		virtual Boolean	IAm(ClassID id) { if(id==TYPE_OSSMMAP) return TRUE; return TMap::IAm(id); }
+		virtual void	Dispose ();
+
+		virtual void	Draw (Rect r, WorldRect view);
+		virtual Boolean DrawingDependsOnTime(void){return TMap::DrawingDependsOnTime();}
+		virtual Boolean OnLand (WorldPoint p);
+		virtual float	RefloatHalfLifeInHrs(WorldPoint p);
+		virtual LongPoint	GetGridRowCol(WorldPoint p);
+		virtual long 	GetLandType (WorldPoint p);
+		virtual	short 	ConvertToLandType(char *code);
+		virtual void 	SetDefaultRefloatTimes();
+		virtual	OSErr 	OverrideRefloatTimes(char *s);
+//		virtual Boolean	CanReFloat (Seconds time, LERec *theLE) { return true; }
+
+		// I/O methods
+		virtual OSErr 	Read  (BFPB *bfpb); // read from the current position
+		virtual OSErr 	Write (BFPB *bfpb); // write to the current position
+
+		virtual long 	NumPtsInGridHdl(void);
+
+	private:
+		virtual void 	DrawCell (Rect *cellRect, long mode, Boolean bColor, long cellCol, long cellRow);
+};
+
+Boolean IsGridMap (char *path);
+///////////////////////////////////////////////////////////////////////////
+
+enum {	NODIAGNOSTICSTRING=0, TRIANGLEAREA, NUMLESINTRIANGLE, CONCENTRATIONLEVEL, DEPTHATCENTERS, SUBSURFACEPARTICLES, SHORELINEPTNUMS };
+
+
+typedef struct ConcTriNumPair
+{
+	double conc;
+	long triNum;
+} ConcTriNumPair, *ConcTriNumPairP, **ConcTriNumPairH;
+
+int ConcentrationCompare(void const *x1, void const *x2);
+
+//++ PtCurMap
+
+#include "PtCurMap/PtCurMap_c.h"
+#include "PtCurMap/PtCurMap.h"
+
+//-- 
+
+
+
+OSErr AddPtCurMap(char *path, WorldRect bounds);
+PtCurMap* CreateAndInitPtCurMap(char *path, WorldRect bounds);
+void DrawFilledWaterTriangles(void * object,WorldRect wRect,Rect r);
+void DrawWideLandSegments(void * object,WorldRect wRect,Rect r);
+//PtCurMap* GetPtCurMap(void);	// defined in Netcdfmover.h maybe should be part of model class?
+OSErr OutputOptionsDialog(short outputType);
+OSErr SmoothingParametersDialog(float *percentile,Boolean *useSmoothing,float *minDist,Boolean *useLineCrossAlgorithm);
+Boolean AppendToWORLDPOINTH(WORLDPOINTH *wh, WorldPoint *wp);
+Boolean AppendToLONGH(LONGH *h, long val);
+Boolean PlotDialog(outputData** concHdl, float* depthSlice, float contourDepth1, float contourDepth2, float bottomRange, Boolean triSelected, Boolean showDepthPlot);
+OSErr AnalysisDialog(Boolean *selectedPtToTrack);
+OSErr AnalysisDialog2();
+short OiledShorelineTable(OiledShorelineData **oiledShorelineHdl);	
+Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl);	
+
+//++ TCompoundMap
+
+#include "CompoundMap/CompoundMap_c.h"
+#include "CompoundMap/TCompoundMap.h"
+
+//--
+
+#ifndef IBM
+//#pragma options align=reset
+#endif
+
+OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr);
+OSErr GetHeaderLineInfo (char *StrLine, char *Str1, char *Str2, long *NumOfPtsPtr);
+Boolean GetStrExtension (char *labelStr, char *extStr);
+
+extern Boolean gDrawBitmapInBlackAndWhite;
+
+class TVectorMap : public TMap
+{
+	public:
+		CMapLayer			*thisMapLayer;
+		CMapLayer			*allowableSpillLayer;
+		CMapLayer			*mapBoundsLayer;
+		CMapLayer			*esiMapLayer;
+		CMap				*map;
+#ifdef IBM
+		HDIB				fLandWaterBitmap;
+		HDIB				fAllowableSpillBitmap;
+		HDIB				fMapBoundsBitmap;
+		HDIB				fESIBitmap;
+#else
+		BitMap				fLandWaterBitmap; 
+		BitMap				fAllowableSpillBitmap; 
+		BitMap				fMapBoundsBitmap; 
+		BitMap				fESIBitmap; 
+		//CGrafPtr 			fESIBitmap;		// ESI segments bitmap (color)
+#endif
+		Boolean				bDrawLandBitMap;
+		Boolean				bDrawAllowableSpillBitMap;
+		Boolean				bSpillableAreaOpen;
+		Boolean				bSpillableAreaActive;
+
+		WorldRect			fExtendedMapBounds;
+		Boolean				fUseExtendedBounds;
+		
+		Rect				fLegendRect;
+		Boolean				bShowLegend;
+		Boolean				bDrawESIBitMap;
+			
+		//long				fBitMapResMultiple;
+		
+ 	public:
+ 							TVectorMap (char* name, WorldRect bounds);
+ 		virtual			   ~TVectorMap () { Dispose (); }
+		
+		virtual OSErr		InitMap ();
+		virtual OSErr		InitMap (char *path);
+		void		 		SetExtendedBounds (WorldRect newBounds) {fExtendedMapBounds = newBounds;}
+		virtual WorldRect	GetMapBounds () { if (fUseExtendedBounds) return fExtendedMapBounds; else return fMapBounds; }
+		virtual ClassID 	GetClassID () { return TYPE_VECTORMAP; }
+		virtual Boolean		IAm(ClassID id) { if(id==TYPE_VECTORMAP) return TRUE; return TMap::IAm(id); }
+		virtual void		Dispose ();
+		
+		virtual void		Draw (Rect r, WorldRect view);
+		virtual Boolean 	DrawingDependsOnTime(void){return TMap::DrawingDependsOnTime();}
+		virtual	void 		DrawESILegend(Rect r, WorldRect view);
+		virtual	Boolean 	InMap (WorldPoint p);
+		virtual Boolean 	OnLand (WorldPoint p);
+		virtual float		RefloatHalfLifeInHrs(WorldPoint p);
+		virtual WorldPoint3D	MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);
+		virtual long 		GetLandType (WorldPoint p);
+		virtual Boolean 	HaveAllowableSpillLayer(void);
+		virtual Boolean 	HaveMapBoundsLayer(void);
+		virtual	Boolean 	HaveLandWaterLayer(void);
+		virtual	Boolean 	HaveESIMapLayer(void);
+		//virtual	Boolean 	IsIceMap(void);
+		virtual Boolean 	IsAllowableSpillPoint(WorldPoint p);
+		
+		TMover* 			GetMover(ClassID desiredClassID);
+		TTriGridVel*		GetGrid();
+		virtual	double 				DepthAtPoint(WorldPoint wp);
+
+		virtual long		GetListLength();
+		virtual ListItem 	GetNthListItem(long n, short indent, short *style, char *text);
+		virtual Boolean 	ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
+		virtual Boolean 	FunctionEnabled (ListItem item, short buttonID);
+
+		virtual OSErr 		CheckAndPassOnMessage(TModelMessage * model);
+
+		// I/O methods
+		virtual OSErr 		Read  (BFPB *bfpb); // read from the current position
+		virtual OSErr 		Write (BFPB *bfpb); // write to the current position
+		OSErr 				ExportAsBNAFileForGnomeAnalyst(char* path);
+		virtual void		GetSuggestedFileName(char* suggestedFileName,char* extension);
+		virtual OSErr 		ReplaceMap();
+		OSErr 				ImportESIData (char *path);
+		OSErr 				ChangeMapBox(WorldPoint p, WorldPoint p2);
+
+	private:
+		OSErr 				ImportMap (char *path); 
+		OSErr 				SelectMapBox (WorldRect bounds);
+};
+
+/////////////////////////////////////////////////
+// Files for CDOG
+OSErr CreateMapBox();
+OSErr MapBoxDialog(WorldRect *mapBoxBounds);
+OSErr CDOGHydrodynamicsDialog(CDOGHydrodynamicInfo *hydrodynamicInfo,DialogPtr parentWindow);
+OSErr CDOGDiffusivityDialog(CDOGDiffusivityInfo *diffusivityInfo,DialogPtr parentWindow);
+OSErr TempSalDialog(CDOGTempSalInfo *tempSalInfo);
+OSErr CDOGTimeStepDialog(Seconds *timeStep,DialogPtr parentWindow);
+//OSErr CDOGSettingsDialog(CDOGParameters *spillParameters,DialogPtr dialog);
+OSErr CDOGOutputOptionsDialog(Boolean *outputSubsurfaceFiles,Boolean *outputGasFiles,DialogPtr parentWindow);
+OSErr CircInfoDialog(short *methodOfDeterminingHydrodynamics);
+/////////////////////////////////////////////////
+extern RGBColor esicolors[];
+TVectorMap* GetNthVectorMap(long desiredNum0Relative);
+Boolean IsVectorMap (char *path, Boolean *isESI);
+#ifdef MAC
+Boolean IsBlackPixel(WorldPoint p,WorldRect mapBounds,BitMap bm);
+#else
+Boolean IsBlackPixel(WorldPoint p,WorldRect mapBounds,HDIB bm);
+#endif
+void 	LandBitMapWidthHeight(WorldRect wRect, long *width, long* height);
+OSErr	AddMapsDialog ();
+
+///////////////////////////////////////////////////////////////////////////
+
+//++ TMover
+
+#include "Mover/Mover_c.h"
+#include "Mover/TMover.h"
+
+//--
+
+//++ TCurrentMover
+
+#include "CurrentMover/CurrentMover_c.h"
+#include "CurrentMover/TCurrentMover.h"
+
+//--
+
+
+//++ TRandom
+
+
+#include "Random/Random_c.h"
+#include "Random/TRandom.h"
+
+
+//--
+
+
+//++ TRandom3D
+
+#include "Random3D/Random3D_c.h"
+#include "Random3D/TRandom3D.h"
+
+//--
+
+
+///////////////////////////////////////////////////////////////////////////
+class TGridVel;
+///////////////////////////////////////////////////////////////////////////
+
+#define		kUCode			0					// supplied to UorV routine
+#define		kVCode			1
+
+//++ TCATSMover
+
+#include "CATSMover/CATSMover_c.h"
+#include "CATSMover/TCATSMover.h"
+
+//--
+
+//++ TCATSMover3D
+
+#include "CATSMover3D/CATSMover3D_c.h"
+#include "CATSMover3D/TCATSMover3D.h"
+
+//--
+
+Boolean IsCATS3DFile (char *path);
+void SetShowGrid(Boolean set);
+void SetShowSelectedTriangles(Boolean set);
+void SetDosageCheckMarks(Boolean set);
+void SetDepthContoursCheckMark(Boolean set);
+void SetDepthLegendCheckMark(Boolean set);
+
+//++ ADCPMover 
+
+#include "ADCPMover/ADCPMover_c.h"
+#include "ADCPMover/ADCPMover.h"
+
+//--
+
+Boolean IsADCPFile (char *path);
+
+//++ TWindMover
+
+#include "WindMover/WindMover_c.h"
+#include "WindMover/TWindMover.h"
+
+//--
+
+
+enum {	kLinkToNone = 1, kLinkToTimeFile, kLinkToWindMover };
+
+enum { NONE = 0, WINDSPEED, WINDSTRESS };	// for scaling
+
+//++ TComponentMover
+
+#include "ComponentMover/ComponentMover_c.h"
+#include "ComponentMover/TComponentMover.h"
+
+//--
+
+//++ TCompoundMover
+
+#include "CompoundMover/CompoundMover_c.h"
+#include "CompoundMover/TCompoundMover.h"
+
+//--
+
+#include "Wizard.h" //JLM
+#include "Overlays.h"
+
+//++ TModel
+
+#include "Model/Model_c.h"
+#include "Model/TModel.h"
+
+//--
+
+
+
+TModelDialogVariables DefaultTModelDialogVariables(Seconds start);
+Boolean EqualTModelDialogVariables(TModelDialogVariables* var1,TModelDialogVariables *var2);
+void TellPlayersAboutNewDirt(void);
+#define DIRTY_EVERYTHING -1
+#define DIRTY_RUNBAR 1
+#define DIRTY_LIST 2
+#define DIRTY_MAPDRAWINGRECT  4
+#define DIRTY_TOOLBAR  8
+#define DIRTY_ENTIREWINDOW  16
+// powers of 2 so we can do bit checks
+
+//++ TTimeValue
+
+#include "TimeValue/TimeValue_c.h"
+#include "TimeValue/TTimeValue.h"
+
+//--
+
+//++ TOSSMTimeValue
+
+#include "OSSMTimeValue/OSSMTimeValue_c.h"
+#include "OSSMTimeValue/TOSSMTimeValue.h"
+
+
+//--
+
+
+TOSSMTimeValue* LoadTOSSMTimeValue(TMover *theOwner,short unitsIfKnownInAdvance);
+TOSSMTimeValue* CreateTOSSMTimeValue(TMover *theOwner,char* path, char* shortFileName, short unitsIfKnownInAdvance); //JLM
+OSErr GetScaleFactorFromUser(char *msg, double *scaleFactor);
+
+//++ ADCPTimeValue
+
+#include "ADCPTimeValue/ADCPTimeValue_c.h"
+#include "ADCPTimeValue/ADCPTimeValue.h"
+
+//--
+
+//++ TriCurMover
+
+#include "TriCurMover/TriCurMover_c.h"
+#include "TriCurMover/TriCurMover.h"
+
+//--
+
+//++ PtCurMover
+
+#include "PtCurMover/PtCurMover_c.h"
+#include "PtCurMover/PtCurMover.h"
+
+//--
+
+ADCPTimeValue* LoadADCPTimeValue(TMover *theOwner,short unitsIfKnownInAdvance);
+ADCPTimeValue* CreateADCPTimeValue(TMover *theOwner,char* path, char* shortFileName, short unitsIfKnownInAdvance); //JLM
+
+void StartReadWriteSequence(char *procName);
+OSErr WriteValue(BFPB *bfpb, char *data, short length, Boolean swap);
+OSErr ReadValue(BFPB *bfpb, char *data, short length, Boolean swap);
+BFPB* SetReadValueBFPBFTrick(CHARH h); 
+void ClearReadValueBFPBFTrick(void);
+
+OSErr 	ReadMacValue(BFPB *bfpb, Seconds* val);
+OSErr 	ReadMacValue(BFPB *bfpb, char* val);
+OSErr 	ReadMacValue(BFPB *bfpb, long* val);
+OSErr 	ReadMacValue(BFPB *bfpb, short* val);
+OSErr 	ReadMacValue(BFPB *bfpb, float* val);
+OSErr 	ReadMacValue(BFPB *bfpb, double* val);
+OSErr 	ReadMacValue(BFPB *bfpb, Boolean* val);
+OSErr 	ReadMacValue(BFPB *bfpb, UNIQUEID* val);
+OSErr	ReadMacValue(BFPB *bfpb, LongPoint *lp);
+OSErr 	ReadMacValue(BFPB *bfpb, WorldRect *wRect);
+OSErr 	ReadMacValue(BFPB *bfpb, Rect *theRect);
+OSErr 	ReadMacValue(BFPB *bfpb, WorldPoint *wp);
+OSErr 	ReadMacValue(BFPB *bfpb, char* str, long len);
+
+OSErr 	WriteMacValue(BFPB *bfpb, Seconds val);
+OSErr 	WriteMacValue(BFPB *bfpb, char val);
+OSErr 	WriteMacValue(BFPB *bfpb, long val);
+OSErr 	WriteMacValue(BFPB *bfpb, short val);
+OSErr 	WriteMacValue(BFPB *bfpb, float val);
+OSErr 	WriteMacValue(BFPB *bfpb, double val);
+OSErr 	WriteMacValue(BFPB *bfpb, Boolean val);
+OSErr 	WriteMacValue(BFPB *bfpb, UNIQUEID val);
+OSErr 	WriteMacValue(BFPB *bfpb, LongPoint lp);
+OSErr 	WriteMacValue(BFPB *bfpb, WorldRect wRect);
+OSErr 	WriteMacValue(BFPB *bfpb, Rect theRect);
+OSErr 	WriteMacValue(BFPB *bfpb, WorldPoint wp);
+OSErr 	WriteMacValue(BFPB *bfpb, char* str, long len);
+
+
+void OutOffMemoryAlert(void);
+
+#include "NetCDFMover/NetCDFMover.h"
+#include "NetCDFMoverCurv/NetCDFMoverCurv.h"
+#include "NetCDFWindMover/NetCDFWindMover.h"
+#include "NetCDFMoverTri/NetCDFMoverTri.h"
+#include "NetCDFWindMoverCurv/NetCDFWindMoverCurv.h"
+
+
+
+
+#ifdef MAC
+#ifdef MPW
+void MyDebugSysBeep(short x);
+#define SysBeep(x)  MyDebugSysBeep(x) // magic macro
+#endif
+#endif
+
+#endif
