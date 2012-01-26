@@ -13,7 +13,6 @@ _LEREC = numpy.dtype([('leUnits', numpy.int), ('leKey', numpy.int), ('leCustomDa
 			('riseVelocity', numpy.double), ('statusCode', numpy.short), ('lastWaterPt', _WORLDPOINT), ('beachTime', numpy.uint)], align=True)
 
 class LEList:
-class LEList:
 	LEs = numpy.ndarray((1000), _LEREC) 	# numpy array of Python objects (pointers).
 
 class Map:
@@ -35,7 +34,7 @@ class Map:
 	def allowableSpillPoint(self, x, y):
 		return map_base.allowableSpillPoint(x, y)
 
-class ModelBase:
+class Model:
 
 	LEListCollection = LEList()
 
@@ -52,9 +51,6 @@ class ModelBase:
 			self.LEListCollection.LEs[y]['p']['pLat'] = random.random()*90
 			self.LEListCollection.LEs[y]['z'] = 0	
 			self.LEListCollection.LEs[y]['leKey'] = y
-
-class Model(ModelBase):
-
 
 	def __init__(self):
 		self.initLEs()
