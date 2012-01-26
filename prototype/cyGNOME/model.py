@@ -5,16 +5,14 @@ import numpy
 import random				# really basic, for now.
 
 _WORLDPOINT = numpy.dtype([('pLong', numpy.int), ('pLat', numpy.int)])
-_LEREC = numpy.dtype({'leUnits': (numpy.int, 0), 'leKey': (numpy.int, 4), \
-		'leCustomData': (numpy.int, 8), 'p': (_WORLDPOINT, 12), \
-		'z': (numpy.double, 20), 'releaseTime': (numpy.uint, 28), \
-		'ageInHrsWhenReleased': (numpy.double, 32), 'clockRef': (numpy.uint, 40), \
-		'pollutantType': (numpy.short, 44), 'mass': (numpy.double, 48), \
-		'density': (numpy.double, 56), 'windage': (numpy.double, 64), \
-		'dropletSize': (numpy.int, 72), 'dispersionStatus': (numpy.short, 76), \
-		'riseVelocity': (numpy.double, 80), 'statusCode': (numpy.short, 88), \
-		'lastWaterPt': (_WORLDPOINT, 92), 'beachTime': (numpy.uint, 100) })
+_LEREC = numpy.dtype([('leUnits', numpy.int), ('leKey', numpy.int), ('leCustomData', numpy.int), \
+			('p', _WORLDPOINT), ('z', numpy.double), ('releaseTime', numpy.uint), \
+			('ageInHrsWhenReleased', numpy.double), ('clockRef', numpy.uint), \
+			('pollutantType', numpy.short), ('mass', numpy.double), ('density', numpy.double), \
+			('windage', numpy.double), ('dropletSize', numpy.int), ('dispersionStatus', numpy.short), \
+			('riseVelocity', numpy.double), ('statusCode', numpy.short), ('lastWaterPt', _WORLDPOINT), ('beachTime', numpy.uint)], align=True)
 
+class LEList:
 class LEList:
 	LEs = numpy.ndarray((1000), _LEREC) 	# numpy array of Python objects (pointers).
 
