@@ -5,10 +5,10 @@
 #include "OUtils.h"
 #include "DagTreeIO.h"
 #include "netcdf.h"
-#include "NetCDFMover/NetCDFMover.h"
+#include "NetCDFMover.h"
 #include "TShioTimeValue.h"
 #include "GridVel.h"
-#include "PtCurMover/PtCurMover.h"
+#include "PtCurMover.h"
 #include "CROSS.H"
 #include "TShioTimeValue.h"
 #include "DagTreeIO.h"
@@ -37,7 +37,7 @@ enum {
 };
 
 
-TideCurCycleMover::TideCurCycleMover (TMap *owner, char *name) : TCATSMover(owner, name), TCurrentMover(owner, name), TMover(owner, name)
+TideCurCycleMover::TideCurCycleMover (TMap *owner, char *name) : TCATSMover(owner, name)
 {
 	fTimeHdl = 0;
 

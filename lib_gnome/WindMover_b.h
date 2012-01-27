@@ -12,6 +12,10 @@
 
 #include "Mover_b.h"
 
+#ifdef pyGNOME
+#define TOSSMTimeValue OSSMTimeValue_c
+#endif
+
 class TOSSMTimeValue;
 
 class WindMover_b : virtual public Mover_b {
@@ -42,4 +46,5 @@ public:
 	
 };
 
+#undef TOSSMTimeValue
 #endif

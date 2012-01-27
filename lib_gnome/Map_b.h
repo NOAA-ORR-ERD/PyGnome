@@ -12,8 +12,8 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "ClassID/ClassID_b.h"
-#include "CMyList/CMYLIST.H"
+#include "ClassID_b.h"
+#include "CMYLIST.H"
 
 class Map_b : virtual public ClassID_b {
 

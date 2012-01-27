@@ -14,9 +14,9 @@
 #include "TypeDefs.h"
 #include "NetCDFWindMoverCurv_c.h"
 
-#include "NetCDFWindMover/NetCDFWindMover.h"
+#include "NetCDFWindMover.h"
 
-class NetCDFWindMoverCurv : virtual public NetCDFWindMoverCurv_c, virtual public NetCDFWindMover
+class NetCDFWindMoverCurv : virtual public NetCDFWindMoverCurv_c,  public NetCDFWindMover
 {
 	
 public:

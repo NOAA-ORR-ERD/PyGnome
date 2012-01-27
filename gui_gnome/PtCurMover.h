@@ -2,7 +2,7 @@
 #ifndef __PTCURMOVER__
 #define __PTCURMOVER__
 
-#include "CurrentMover/TCurrentMover.h"
+#include "TCurrentMover.h"
 #include "DagTree.h"
 #include "my_build_list.h"
 #include "GridVel.h"
@@ -15,7 +15,7 @@ OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
 void CheckYear(short *year);
 
 
-class PtCurMover : virtual public PtCurMover_c, virtual public TCurrentMover
+class PtCurMover : virtual public PtCurMover_c,  public TCurrentMover
 {
 	public:
 							PtCurMover (TMap *owner, char *name);

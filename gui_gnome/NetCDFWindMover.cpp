@@ -3,14 +3,14 @@
 
 
 #include "Cross.h"
-#include "NetCDFMover/NetCDFMover.h"
+#include "NetCDFMover.h"
 #include "netcdf.h"
-#include "WindMover/TWindMover.h"
-#include "GridCurMover/GridCurMover.h"
-#include "GridWindMover/GridWindMover.h"
+#include "TWindMover.h"
+#include "GridCurMover.h"
+#include "GridWindMover.h"
 #include "Outils.h"
 #include "DagTreeIO.h"
-#include "PtCurMover/PtCurMover.h"
+#include "PtCurMover.h"
 
 #ifdef MAC
 #ifdef MPW
@@ -19,7 +19,7 @@
 #endif
 #endif
 
-NetCDFWindMover::NetCDFWindMover(TMap *owner,char* name) : TWindMover(owner, name), TMover(owner, name)
+NetCDFWindMover::NetCDFWindMover(TMap *owner,char* name) : TWindMover(owner, name)
 {
 	if(!name || !name[0]) this->SetClassName("NetCDF Wind");
 	else 	SetClassName (name); // short file name

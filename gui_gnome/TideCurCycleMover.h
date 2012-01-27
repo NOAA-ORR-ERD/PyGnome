@@ -4,12 +4,12 @@
 
 #include "TideCurCycleMover_c.h"
 
-#include "CATSMover/TCATSMover.h"
+#include "TCATSMover.h"
 
 Boolean IsTideCurCycleFile (char *path, short *gridType);
 
 
-class TideCurCycleMover : virtual public TideCurCycleMover_c, virtual public TCATSMover
+class TideCurCycleMover : virtual public TideCurCycleMover_c,  public TCATSMover
 {
 
 	public:

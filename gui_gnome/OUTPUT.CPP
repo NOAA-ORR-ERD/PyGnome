@@ -1,12 +1,12 @@
 
 #include "CROSS.h"
 #include "TextRect.h"
-#include "WindMover/EditWindsDialog.h"
+#include "EditWindsDialog.h"
 #include "MakeMovie.h"
-#include "NetCDFMover/NetCDFMover.h"
-#include "NetCDFStore/NetCDFStore.h"
-#include "NetCDFWindMover/NetCDFWindMover.h"
-#include "NetCDFWindMoverCurv/NetCDFWindMoverCurv.h"
+#include "NetCDFMover.h"
+#include "NetCDFStore.h"
+#include "NetCDFWindMover.h"
+#include "NetCDFWindMoverCurv.h"
 //#include <Navigation.h>
 //#include <MacTextEditor.h>
 //#include <Scrap.h>
@@ -3148,7 +3148,7 @@ TVectorMap* GetNthVectorMap(long desiredNum0Relative)
 		if (map->IAm(TYPE_VECTORMAP)) 
 		{
 			if(desiredNum0Relative == numVectorMaps)
-				return (TVectorMap*)map;
+				return dynamic_cast<TVectorMap*>(map);
 			numVectorMaps++;
 		}
 	}
@@ -3610,7 +3610,7 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 				if (map->IAm(TYPE_VECTORMAP)) 
 				{
 					numVectorMaps++;
-					vMap = (TVectorMap*)map;
+					vMap = dynamic_cast<TVectorMap*>(map);
 				}
 			}
 

@@ -3,7 +3,7 @@
 #include "TimUtils.h"
 #include "EditCDOGProfilesDialog.h"
 #include "Contdlg.h"
-#include "NetCDFMover/NetCDFMover.h"
+#include "NetCDFMover.h"
 #include "netcdf.h"
 
 #define kMaxNumCDOGInputFiles 500

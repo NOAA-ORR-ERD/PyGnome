@@ -10,7 +10,7 @@
 #ifndef __CurrentMover_b__
 #define __CurrentMover_b__
 
-#include "Mover/Mover_b.h"
+#include "Mover_b.h"
 
 class CurrentMover_b : virtual public Mover_b {
 

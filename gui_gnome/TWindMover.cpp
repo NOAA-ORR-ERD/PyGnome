@@ -93,7 +93,7 @@ ListItem TWindMover::GetNthListItem(long n, short indent, short *style, char *te
 	char str[128];
 	DateTimeRec time;
 	TimeValuePair pair;
-	ListItem item = { dynamic_cast<TWindMover *>(this), n, indent, 0 };
+	ListItem item = { this, n, indent, 0 };
 	long mode = model->GetModelMode();
 	
 	if (n == 0) {

@@ -14,10 +14,11 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "Random3D_c.h"
-#include "Random/TRandom.h"
+#include "TRandom.h"
 #include "TRandom3D.h"
 
-class TRandom3D : virtual public Random3D_c, virtual public TRandom {
+class TRandom3D : virtual public Random3D_c,  public TRandom 
+{
 
 public:
 	TRandom3D (TMap *owner, char *name);

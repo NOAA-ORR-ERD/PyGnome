@@ -13,10 +13,10 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "ADCPMover_c.h"
-#include "CurrentMover/TCurrentMover.h"
+#include "TCurrentMover.h"
 #include "Uncertainty.h"
 
-class ADCPMover : virtual public ADCPMover_c, virtual public TCurrentMover
+class ADCPMover : virtual public ADCPMover_c,  public TCurrentMover
 {	// code goes here, keep a list of time files or have umbrella move that keeps list of ADCPMovers?
 
 public:

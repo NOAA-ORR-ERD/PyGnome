@@ -13,7 +13,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "Map/Map_c.h"
+#include "Map_c.h"
 #include "RectUtils.h"
 
 #ifdef pyGNOME

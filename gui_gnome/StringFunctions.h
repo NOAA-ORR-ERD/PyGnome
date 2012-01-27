@@ -11,7 +11,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "MemUtils/MemUtils.h"
+#include "MemUtils.h"
 
 char* lfFix(char* str);
 OSErr StringToDouble(char* str,double* val);

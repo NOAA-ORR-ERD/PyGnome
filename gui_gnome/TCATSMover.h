@@ -13,10 +13,10 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "CATSMover_c.h"
-#include "CurrentMover/TCurrentMover.h"
+#include "TCurrentMover.h"
 #include "Uncertainty.h"
 
-class TCATSMover : virtual public CATSMover_c, virtual public TCurrentMover
+class TCATSMover : virtual public CATSMover_c,  public TCurrentMover
 {
 
 public:

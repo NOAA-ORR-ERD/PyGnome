@@ -6,14 +6,14 @@
 #include "TypeDefs.h"
 #include "GridCurMover_c.h"
 
-#include "CATSMover/TCATSMover.h"
+#include "TCATSMover.h"
 #include "GridVel.h"
-#include "PtCurMover/PtCurMover.h"
-#include "WindMover/TWindMover.h"
+#include "PtCurMover.h"
+#include "TWindMover.h"
 
 Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
 
-class GridCurMover : virtual public GridCurMover_c, virtual public TCATSMover
+class GridCurMover : virtual public GridCurMover_c,  public TCATSMover
 {
 	
 	public:

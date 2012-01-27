@@ -12,7 +12,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "TimeValue/TimeValue_b.h"
+#include "TimeValue_b.h"
 
 class OSSMTimeValue_b : virtual public TimeValue_b {
 	

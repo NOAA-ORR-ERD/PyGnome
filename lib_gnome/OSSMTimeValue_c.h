@@ -16,10 +16,17 @@
 #include "OSSMTimeValue_b.h"
 #include "TimeValue_c.h"
 
+#ifdef pyGNOME
+#define TMover Mover_c
+#endif
+
 class OSSMTimeValue_c : virtual public OSSMTimeValue_b, virtual public TimeValue_c {
 
 public:
-	
+	OSSMTimeValue_c (TMover *theOwner);
+	OSSMTimeValue_c (TMover *theOwner,TimeValuePairH tvals,short userUnits);
+	OSSMTimeValue_c () {}
+	virtual void			Dispose ();
 	virtual OSErr			GetTimeValue (Seconds time, VelocityRec *value);
 	virtual OSErr			CheckStartTime (Seconds time);
 	virtual void			RescaleTimeValues (double oldScaleFactor, double newScaleFactor);
@@ -37,5 +44,5 @@ protected:
 
 };
 
-
+#undef TMover
 #endif

@@ -8,7 +8,7 @@
  */
 
 #include "NetCDFWindMoverCurv.h"
-#include "MemUtils/MemUtils.h"
+#include "MemUtils.h"
 #include "netcdf.h"
 #include "CROSS.H"
 #include "DagTreeIO.h"
@@ -19,7 +19,7 @@
 // need to read in lat/lon since won't be evenly spaced
 // probably all wind grids will be rectangular?
 
-NetCDFWindMoverCurv::NetCDFWindMoverCurv (TMap *owner, char *name) : NetCDFWindMover(owner, name), TWindMover(owner, name), TMover(owner, name)
+NetCDFWindMoverCurv::NetCDFWindMoverCurv (TMap *owner, char *name) : NetCDFWindMover(owner, name)
 {
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;

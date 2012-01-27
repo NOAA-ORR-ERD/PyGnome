@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual C++ Express 2005
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual C++ Express 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClassOSSM", "ClassOSSM.vcproj", "{097CF16D-1D04-4D07-9ED2-F882E1BBBC45}"
 EndProject
 Global

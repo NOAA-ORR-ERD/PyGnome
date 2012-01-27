@@ -1,5 +1,5 @@
 #include "CROSS.H"
-#include "NetCDFStore/NetCDFStore.h"
+#include "NetCDFStore.h"
 #include "MYRANDOM.H"
 #include "TimUtils.h"
 #include "MakeMovie.h"
@@ -416,6 +416,7 @@ void TModel::CleanUp()
 OSErr TModel::AddLEList(TLEList *theLEList, short where)
 {
 	OSErr err = 0;
+
 	if (err = LESetsList->AppendItem((Ptr)&theLEList))
 		{ TechError("TModel::AddLEList()", "AppendItem()", err); return err; }
 	bLEsDirty = true;

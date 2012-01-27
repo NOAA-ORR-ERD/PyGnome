@@ -16,6 +16,40 @@
 #include "WindMover_c.h"
 #include "CROSS.H"
 
+#ifdef pyGNOME
+#define TOSSMTimeValue OSSMTimeValue_c
+#define TMap Map_c
+#endif
+
+WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
+{
+	if(!name || !name[0]) this->SetClassName("Variable Wind"); // JLM , a default useful in the wizard
+	timeDep = nil;
+	
+	fUncertainStartTime = 0;
+	fDuration = 3*3600; // 3 hours
+	
+	fWindUncertaintyList = 0;
+	fLESetSizes = 0;
+	
+	fSpeedScale = 2;
+	fAngleScale = .4;
+	fMaxSpeed = 30; //mps
+	fMaxAngle = 60; //degrees
+	fSigma2 =0;
+	fSigmaTheta =  0; 
+	//conversion = 1.0;// JLM , I think this field should be removed
+	bTimeFileOpen = FALSE;
+	bUncertaintyPointOpen=false;
+	bSubsurfaceActive = false;
+	fGamma = 1.;
+	
+	fIsConstantWind = false;
+	fConstantValue.u = fConstantValue.v = 0.0;
+	
+	memset(&fWindBarbRect,0,sizeof(fWindBarbRect)); 
+	bShowWindBarb = true;
+}
 void rndv(float *rndv1,float *rndv2)
 {
 	float cosArg = 2 * PI * GetRandomFloat(0.0,1.0);
@@ -38,6 +72,8 @@ static Boolean TermsLessThanMax(float cosTerm,float sinTerm,
 	// JLM 9/16/98  x and sqs were not being used
 	return abs(sigmaTheta * sinTerm) <= angleMax;// && (x <= sqrt(3*speedMax));
 }
+
+
 
 void WindMover_c::DisposeUncertainty()
 {
@@ -395,3 +431,5 @@ WorldPoint3D WindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 	return deltaPoint;
 }
 
+#undef TMap
+#undef TOSSMTimeValue

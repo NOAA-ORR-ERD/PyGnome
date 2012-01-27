@@ -13,9 +13,9 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "Mover_b.h"
-#include "ClassID/ClassID_c.h"
+#include "ClassID_c.h"
 #include "RectUtils.h"
-#include "Map/Map_c.h"
+#include "Map_c.h"
 
 #ifdef pyGNOME
 #define TMap Map_c

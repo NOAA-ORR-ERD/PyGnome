@@ -14,10 +14,10 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "PtCurMap_c.h"
-#include "Map/TMap.h"
+#include "TMap.h"
 
 
-class PtCurMap : virtual public PtCurMap_c, virtual public TMap
+class PtCurMap : virtual public PtCurMap_c,  public TMap
 {
 
 public:

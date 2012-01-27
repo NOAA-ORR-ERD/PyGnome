@@ -8,7 +8,7 @@
  */
 
 #include "TOSSMTimeValue.h"
-#include "MemUtils/MemUtils.h"
+#include "MemUtils.h"
 #include "CROSS.H"
 
 Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP);

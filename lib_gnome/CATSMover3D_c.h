@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "CATSMover3D_b.h"
-#include "CATSMover/CATSMover_c.h"
+#include "CATSMover_c.h"
 
 class CATSMover3D_c : virtual public CATSMover3D_b, virtual public CATSMover_c {
 

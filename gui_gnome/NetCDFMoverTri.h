@@ -16,9 +16,9 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "NetCDFMoverTri_c.h"
-#include "NetCDFMoverCurv/NetCDFMoverCurv.h"
+#include "NetCDFMoverCurv.h"
 
-class NetCDFMoverTri : virtual public NetCDFMoverTri_c, virtual public NetCDFMoverCurv
+class NetCDFMoverTri : virtual public NetCDFMoverTri_c,  public NetCDFMoverCurv
 {
 	
 public:

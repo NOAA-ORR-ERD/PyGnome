@@ -20,9 +20,9 @@
 #define __NetCDFMoverCurv__
 
 #include "NetCDFMoverCurv_c.h"
-#include "NetCDFMover/NetCDFMover.h"
+#include "NetCDFMover.h"
 
-class NetCDFMoverCurv : virtual public NetCDFMoverCurv_c, virtual public NetCDFMover
+class NetCDFMoverCurv : virtual public NetCDFMoverCurv_c,  public NetCDFMover
 {
 	
 public:

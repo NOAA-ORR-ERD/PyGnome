@@ -1,5 +1,5 @@
 #include "GridCurMover.h"
-#include "MemUtils/MemUtils.h"
+#include "MemUtils.h"
 #include "CROSS.H"
 
 
@@ -11,7 +11,7 @@
 
 extern TModel *model;
 
-GridCurMover::GridCurMover (TMap *owner, char *name) : TCATSMover(owner, name), TCurrentMover(owner, name), TMover(owner, name)
+GridCurMover::GridCurMover (TMap *owner, char *name) : TCATSMover(owner, name)
 {
 	fTimeDataHdl = 0;
 	fOverLap = false;		// for multiple files case

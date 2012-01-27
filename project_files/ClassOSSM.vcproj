@@ -149,7 +149,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;..\third_party_lib\qt libraries\CIncludes&quot;;..\third_party_lib\;&quot;..\third_party_lib\qt libraries\Libraries&quot;;..\lib_gnome;..\gui_gnome;..\..\winresources;&quot;..\..\QT Libraries\CIncludes&quot;;&quot;..\..\QT Libraries\Libraries&quot;"
+				AdditionalIncludeDirectories="..\gui_gnome;..\lib_gnome;WinResources;&quot;..\third_party_lib\qt libraries\CIncludes&quot;;..\third_party_lib\;&quot;..\third_party_lib\qt libraries\Libraries&quot;;..\project_files\WinResources"
 				PreprocessorDefinitions="_DEBUG;OSSM;WIN32;_WINDOWS;IBM;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
@@ -223,6 +223,10 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;hpj;bat;for;f90"
 			>
+			<File
+				RelativePath=".\WinResources\OSSM.rc"
+				>
+			</File>
 			<Filter
 				Name="lib_gnome"
 				>
@@ -608,6 +612,10 @@
 				</File>
 				<File
 					RelativePath="..\gui_gnome\CMYLIST.H"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\CMYLIST2.H"
 					>
 				</File>
 				<File

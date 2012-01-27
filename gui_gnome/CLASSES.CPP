@@ -3,13 +3,13 @@
 #include "MyRandom.h"
 #include "GridVel.h"
 #include "MapUtils.h"
-#include "WindMover/EditWindsDialog.h"
+#include "EditWindsDialog.h"
 #include "OUtils.h"				
 #include "Wizard.h"	
 #include "Contdlg.h"
-#include "GridCurMover/GridCurMover.h"
-#include "NetCDFMover/NetCDFMover.h"
-#include "TideCurCycleMover/TideCurCycleMover.h"
+#include "GridCurMover.h"
+#include "NetCDFMover.h"
+#include "TideCurCycleMover.h"
 
 
 #ifdef MAC
@@ -153,7 +153,7 @@ OSErr M25Init(DialogPtr dialog, VOIDPTR data)
 #pragma unused(data)
 	char name[256];
 	WorldPoint wp;
-	TVectorMap *dialogTVectorMap = (TVectorMap *)gDialogTMap;
+	TVectorMap *dialogTVectorMap = dynamic_cast<TVectorMap *>(gDialogTMap);
 	
 	SetDialogItemHandle(dialog, M25HILITEDEFAULT, (Handle)FrameDefault);
 	SetDialogItemHandle(dialog, M25FROST1, (Handle) FrameEmbossed);
@@ -202,7 +202,7 @@ short M25Click(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 	WorldPoint p, p2;
 	WorldRect origBounds;
 	float tempRefloat;
-	TVectorMap *dialogTVectorMap = (TVectorMap *)gDialogTMap;
+	TVectorMap *dialogTVectorMap = dynamic_cast<TVectorMap *>(gDialogTMap);
 	OSErr err = 0;
 
 

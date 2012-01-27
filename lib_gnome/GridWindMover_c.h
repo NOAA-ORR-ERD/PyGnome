@@ -12,7 +12,7 @@
 
 #include "Earl.h"
 #include "GridWindMover_b.h"
-#include "WindMover/WindMover_c.h"
+#include "WindMover_c.h"
 
 class GridWindMover_c : virtual public GridWindMover_b, virtual public WindMover_c {
 

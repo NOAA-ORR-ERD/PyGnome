@@ -2,7 +2,7 @@
 #include "CROSS.h"
 #include "MakeMovie.h"
 #include "myRandom.h"
-#include "NetCDFMover/NetCDFMover.h"
+#include "NetCDFMover.h"
 
 #if MACB4CARBON
 	#include <Balloons.h>

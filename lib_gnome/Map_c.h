@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "Map_b.h"
-#include "ClassID/ClassID_c.h"
+#include "ClassID_c.h"
 
 #ifdef pyGNOME
 #define TMover Mover_c

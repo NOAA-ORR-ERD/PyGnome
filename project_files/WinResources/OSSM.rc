@@ -1614,7 +1614,7 @@ END
 M20 DIALOGEX 0, 0, 272, 286
 STYLE DS_MODALFRAME | WS_VISIBLE | WS_CAPTION
 CAPTION "Component Mover Settings"
-FONT 8, "MS Sans Serif"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",1,26,267,35,14
     PUSHBUTTON      "Cancel",3,74,267,35,14
@@ -2021,9 +2021,9 @@ BEGIN
                     38,18,191,188,10
     CHECKBOX        "Extrapolate Currents Vertically Using Surface Data",39,
                     18,207,173,10
-    EDITTEXT        40,128,224,25,12,ES_AUTOHSCROLL
-    LTEXT           "Extrapolate To:",41,76,224,48,8
-    LTEXT           "m",42,156,224,8,8
+    EDITTEXT        41,128,224,25,12,ES_AUTOHSCROLL
+    LTEXT           "Extrapolate To:",40,76,226,48,8
+    LTEXT           "m",42,156,226,8,8
     PUSHBUTTON      "Replace Current",43,155,25,58,11
     CHECKBOX        "Bottom",44,179,57,37,10
 END

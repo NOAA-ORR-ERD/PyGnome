@@ -12,7 +12,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "Random/Random_b.h"
+#include "Random_b.h"
 
 class Random3D_b : virtual public Random_b {
 

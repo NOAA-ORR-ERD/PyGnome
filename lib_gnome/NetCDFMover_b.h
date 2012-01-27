@@ -12,8 +12,8 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "CurrentMover/CurrentMover_b.h"
-#include "PtCurMover/PtCurMover.h"
+#include "CurrentMover_b.h"
+#include "PtCurMover.h"
 
 typedef struct {
 	char		pathName[kMaxNameLen];

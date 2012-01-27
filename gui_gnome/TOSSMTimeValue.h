@@ -13,10 +13,10 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "OSSMTimeValue_c.h"
-#include "TimeValue/TTimeValue.h"
+#include "TTimeValue.h"
 #include "OUTILS.H"
 
-class TOSSMTimeValue : virtual public OSSMTimeValue_c, virtual public TTimeValue
+class TOSSMTimeValue : virtual public OSSMTimeValue_c,  public TTimeValue
 {
 
 public:

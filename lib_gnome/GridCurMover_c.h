@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "GridCurMover_b.h"
-#include "CATSMover/CATSMover_c.h"
+#include "CATSMover_c.h"
 
 class GridCurMover_c : virtual public GridCurMover_b, virtual public CATSMover_c {
 

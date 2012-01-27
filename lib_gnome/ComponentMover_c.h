@@ -12,8 +12,8 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "ComponentMover/ComponentMover_b.h"
-#include "CurrentMover/CurrentMover_c.h"
+#include "ComponentMover_b.h"
+#include "CurrentMover_c.h"
 
 class ComponentMover_c : virtual public ComponentMover_b, virtual public CurrentMover_c {
 

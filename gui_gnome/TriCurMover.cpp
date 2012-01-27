@@ -27,7 +27,7 @@ enum {
 };
 
 
-TriCurMover::TriCurMover (TMap *owner, char *name) : TCurrentMover(owner, name), TMover(owner, name)
+TriCurMover::TriCurMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 {
 	memset(&fVar,0,sizeof(fVar));
 	fVar.arrowScale = 5;

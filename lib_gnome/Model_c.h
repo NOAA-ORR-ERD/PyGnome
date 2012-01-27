@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "CMYLIST.H"
-#include "ClassID/ClassID_c.h"
+#include "ClassID_c.h"
 #include <string>
 #include <map>
 

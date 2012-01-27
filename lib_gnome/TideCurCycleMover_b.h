@@ -12,8 +12,8 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "CATSMover/CATSMover_b.h"
-#include "PtCurMover/PtCurMover.h"
+#include "CATSMover_b.h"
+#include "PtCurMover.h"
 
 class TideCurCycleMover_b : virtual public CATSMover_b {
 

@@ -12,7 +12,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "CurrentMover/CurrentMover_c.h"
+#include "CurrentMover_c.h"
 #include "GridVel.h"
 #include "DagTree.h"
 

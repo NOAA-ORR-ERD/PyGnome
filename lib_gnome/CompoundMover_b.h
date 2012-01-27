@@ -12,7 +12,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "CurrentMover/CurrentMover_b.h"
+#include "CurrentMover_b.h"
 #include "Uncertainty.h"
 
 class CMyList;

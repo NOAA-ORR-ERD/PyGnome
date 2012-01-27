@@ -12,7 +12,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "NetCDFMoverCurv/NetCDFMoverCurv_b.h"
+#include "NetCDFMoverCurv_b.h"
 
 class NetCDFMoverTri_b : virtual public NetCDFMoverCurv_b {
 

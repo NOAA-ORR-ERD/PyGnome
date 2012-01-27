@@ -1,6 +1,6 @@
 
 #include "CROSS.h"
-#include "WindMover/EditWindsDialog.h"
+#include "EditWindsDialog.h"
 
 #ifdef MAC
 

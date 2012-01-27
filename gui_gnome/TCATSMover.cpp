@@ -1,7 +1,7 @@
 #include "TCATSMover.h"
-#include "GridCurMover/GridCurMover.h"
-#include "TideCurCycleMover/TideCurCycleMover.h"
-#include "WindMover/TWindMover.h"
+#include "GridCurMover.h"
+#include "TideCurCycleMover.h"
+#include "TWindMover.h"
 #include "TShioTimeValue.h"
 #include "DagTreeIO.h"
 
@@ -34,7 +34,7 @@ static CurrentUncertainyInfo sSharedCATSUncertainyInfo; // used to hold the unce
 
 static CATSDialogNonPtrFields sharedCatsDialogNonPtrFields;
 
-TCATSMover::TCATSMover (TMap *owner, char *name) : TCurrentMover(owner, name), TMover(owner, name)
+TCATSMover::TCATSMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 {
 	fDuration=48*3600; //48 hrs as seconds 
 	fTimeUncertaintyWasSet =0;

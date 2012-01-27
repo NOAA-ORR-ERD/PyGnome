@@ -8,12 +8,12 @@
  */
 
 #include "NetCDFMoverCurv.h"
-#include "MemUtils/MemUtils.h"
+#include "MemUtils.h"
 #include "netcdf.h"
 #include "DagTreeIO.h"
 #include "CROSS.H"
 
-NetCDFMoverCurv::NetCDFMoverCurv (TMap *owner, char *name) : NetCDFMover(owner, name), TCurrentMover(owner, name), TMover(owner, name)
+NetCDFMoverCurv::NetCDFMoverCurv (TMap *owner, char *name) : NetCDFMover(owner, name)
 {
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;

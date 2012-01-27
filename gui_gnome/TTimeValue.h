@@ -11,10 +11,10 @@
 #define __TTimeValue__
 
 #include "TimeValue_c.h"
-#include "ClassID/TClassID.h"
+#include "TClassID.h"
 
 class TMover;
-class TTimeValue : virtual public TimeValue_c, virtual public TClassID
+class TTimeValue : virtual public TimeValue_c,  public TClassID
 {
 	
 public:

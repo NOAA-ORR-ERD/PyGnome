@@ -1,7 +1,7 @@
 #include "Cross.h"
 #include "MapUtils.h"
 #include "OUtils.h"
-#include "WindMover/EditWindsDialog.h"
+#include "EditWindsDialog.h"
 #include "Uncertainty.h"
 
 
@@ -12,7 +12,7 @@ static TCATSMover		*sSharedOriginalPattern2 = 0;
 static CurrentUncertainyInfo sSharedComponentUncertainyInfo; // used to hold the uncertainty dialog box info in case of a user cancel
 
 
-TComponentMover::TComponentMover (TMap *owner, char *name) : TCurrentMover (owner, name), TMover(owner, name)
+TComponentMover::TComponentMover (TMap *owner, char *name) : TCurrentMover (owner, name)
 {
 	pattern1 = nil;
 	pattern2 = nil;

@@ -8,10 +8,10 @@
  */
 
 #include "PtCurMap_c.h"
-#include "TideCurCycleMover/TideCurCycleMover.h"
+#include "TideCurCycleMover.h"
 #include "CONTDLG.H"
-#include "Mover/TMover.h"
-#include "CurrentMover/CurrentMover_c.h"
+#include "TMover.h"
+#include "CurrentMover_c.h"
 
 #ifdef pyGNOME
 #define TMover Mover_c

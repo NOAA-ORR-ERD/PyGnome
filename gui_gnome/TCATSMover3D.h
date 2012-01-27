@@ -14,9 +14,9 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "CATSMover3D_c.h"
-#include "CATSMover/TCATSMover.h"
+#include "TCATSMover.h"
 
-class TCATSMover3D : virtual public CATSMover3D_c, virtual public TCATSMover
+class TCATSMover3D : virtual public CATSMover3D_c,  public TCATSMover
 {
 
 public:

@@ -58,13 +58,13 @@ void TShioTimeValue::InitInstanceVariables(void)
 
 }
 
-TShioTimeValue::TShioTimeValue(TMover *theOwner,TimeValuePairH tvals) : TOSSMTimeValue(theOwner), TTimeValue(theOwner)
+TShioTimeValue::TShioTimeValue(TMover *theOwner,TimeValuePairH tvals) : TOSSMTimeValue(theOwner)
 { 	// having this this function is inherited but meaningless
 	this->ProgrammerError("TShioTimeValue constructor");
 	this->InitInstanceVariables();
 }
 
-TShioTimeValue::TShioTimeValue(TMover *theOwner) : TOSSMTimeValue(theOwner), TTimeValue(theOwner) 
+TShioTimeValue::TShioTimeValue(TMover *theOwner) : TOSSMTimeValue(theOwner)
 { 
 	this->InitInstanceVariables();
 }

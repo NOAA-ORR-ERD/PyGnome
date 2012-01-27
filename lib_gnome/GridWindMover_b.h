@@ -12,8 +12,8 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "WindMover/WindMover_b.h"
-#include "PtCurMover/PtCurMover.h"
+#include "WindMover_b.h"
+#include "PtCurMover.h"
 
 class GridWindMover_b : virtual public WindMover_b {
 

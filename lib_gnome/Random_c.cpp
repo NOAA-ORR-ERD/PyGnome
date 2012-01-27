@@ -2,7 +2,7 @@
  *  Random_c.cpp
  *  gnome
  *
- *  Created by Alex Hadjilambris on 10/18/11.
+ *  Created by Generic Programmer on 10/18/11.
  *  Copyright 2011 __MyCompanyName__. All rights reserved.
  *
  */
@@ -16,7 +16,22 @@
 #endif
 #endif
 
+#ifndef pyGNOME
 extern TModel *model;
+#else
+#define TMap Map_c
+extern Model_c *model;
+#endif
+
+Random_c::Random_c (TMap *owner, char *name) : Mover_c (owner, name)
+{
+	fDiffusionCoefficient = 100000; //  cm**2/sec 
+	memset(&fOptimize,0,sizeof(fOptimize));
+	SetClassName (name);
+	fUncertaintyFactor = 2;		// default uncertainty mult-factor
+	bUseDepthDependent = false;
+}
+
 
 OSErr Random_c::PrepareForModelStep()
 {
@@ -108,3 +123,5 @@ WorldPoint3D Random_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LERe
 	
 	return deltaPoint;
 }
+
+#undef TMap

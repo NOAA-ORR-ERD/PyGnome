@@ -5,9 +5,9 @@
 #include "TypeDefs.h"
 #include "WindSettings.h"
 #include "WindMover_c.h"
-#include "Mover/TMover.h"
+#include "TMover.h"
 
-class TWindMover : virtual public WindMover_c, virtual public TMover
+class TWindMover : virtual public WindMover_c,  public TMover
 {
 
 public:

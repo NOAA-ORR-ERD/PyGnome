@@ -11,9 +11,9 @@
 #define __TRandom__
 
 #include "Random_c.h"
-#include "Mover/TMover.h"
+#include "TMover.h"
 
-class TRandom : virtual public Random_c, virtual public TMover
+class TRandom : virtual public Random_c, public TMover
 {
 	
 public:

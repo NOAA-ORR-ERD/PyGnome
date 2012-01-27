@@ -9,7 +9,7 @@
 
 #include "NetCDFMoverTri_c.h"
 #include "NetCDFMoverTri.h"
-#include "NetCDFMoverCurv/NetCDFMoverCurv.h"
+#include "NetCDFMoverCurv.h"
 #include "netcdf.h"
 #include "CROSS.H"
 

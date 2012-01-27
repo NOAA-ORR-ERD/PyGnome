@@ -13,11 +13,11 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "NetCDFWindMover_c.h"
-#include "WindMover/TWindMover.h"
+#include "TWindMover.h"
 
 // build off TWindMover or off TMover with a lot of WindMover carried along ??
 // for now new mover type but brought in under variable windmover
-class NetCDFWindMover : virtual public NetCDFWindMover_c, virtual public TWindMover
+class NetCDFWindMover : virtual public NetCDFWindMover_c,  public TWindMover
 {
 	
 public:

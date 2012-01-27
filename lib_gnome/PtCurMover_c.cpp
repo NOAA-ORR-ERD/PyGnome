@@ -8,7 +8,7 @@
  */
 
 #include "PtCurMover_c.h"
-#include "MemUtils/MemUtils.h"
+#include "MemUtils.h"
 
 #ifdef pyGNOME
 	#define TMap Map_c

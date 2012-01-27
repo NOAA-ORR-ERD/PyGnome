@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "CompoundMover_b.h"
-#include "CurrentMover/CurrentMover_c.h"
+#include "CurrentMover_c.h"
 
 #ifdef pyGNOME
 #define TMap Map_c
@@ -44,6 +44,7 @@ public:
 	TTriGridVel3D*		GetGrid3DFromMoverIndex(long moverIndex);
 	TCurrentMover*		Get3DCurrentMoverFromIndex(long moverIndex);
 	virtual Boolean		IAmA3DMover();
+	virtual OSErr		AddMover (TMover *theMover, short where);
 
 };
 

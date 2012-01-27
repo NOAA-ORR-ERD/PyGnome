@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "TriCurMover_b.h"
-#include "CurrentMover/CurrentMover_c.h"
+#include "CurrentMover_c.h"
 
 #ifdef pyGNOME
 #define TMap Map_c

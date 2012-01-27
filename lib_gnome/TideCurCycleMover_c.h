@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "TideCurCycleMover_b.h"
-#include "CATSMover/CATSMover_c.h"
+#include "CATSMover_c.h"
 
 class TideCurCycleMover_c : virtual public TideCurCycleMover_b, virtual public CATSMover_c {
 

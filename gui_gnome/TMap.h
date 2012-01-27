@@ -13,11 +13,11 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "Map_c.h"
-#include "ClassID/TClassID.h"
+#include "TClassID.h"
 
 class TMover;
 
-class TMap : virtual public Map_c, virtual public TClassID
+class TMap : virtual public Map_c,  public TClassID
 {
 	
 public:

@@ -14,7 +14,7 @@ using std::string;
 #include "ObjectUtils.h"
 #include "Uncertainty.h"
 #include "GridVel.h"
-#include "MemUtils/MemUtils.h"
+#include "MemUtils.h"
 
 Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2);
 UNIQUEID ZeroID(void);
@@ -70,10 +70,10 @@ class TModelMessage
 
 //++ TClassID
 
-#include "ClassID/ClassID_b.h"
-#include "ClassID/ClassID_c.h"
+#include "ClassID_b.h"
+#include "ClassID_c.h"
 
-#include "ClassID/TClassID.h"
+#include "TClassID.h"
 
 // --
 
@@ -553,10 +553,10 @@ Boolean CDOGAvailable();
 
 //++ TMap
 
-#include "Map/Map_b.h"
-#include "Map/Map_c.h"
+#include "Map_b.h"
+#include "Map_c.h"
 
-#include "Map/TMap.h"
+#include "TMap.h"
 
 //--
 
@@ -619,8 +619,8 @@ int ConcentrationCompare(void const *x1, void const *x2);
 
 //++ PtCurMap
 
-#include "PtCurMap/PtCurMap_c.h"
-#include "PtCurMap/PtCurMap.h"
+#include "PtCurMap_c.h"
+#include "PtCurMap.h"
 
 //-- 
 
@@ -643,8 +643,8 @@ Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl);
 
 //++ TCompoundMap
 
-#include "CompoundMap/CompoundMap_c.h"
-#include "CompoundMap/TCompoundMap.h"
+#include "CompoundMap_c.h"
+#include "TCompoundMap.h"
 
 //--
 
@@ -658,7 +658,7 @@ Boolean GetStrExtension (char *labelStr, char *extStr);
 
 extern Boolean gDrawBitmapInBlackAndWhite;
 
-class TVectorMap : public TMap
+class TVectorMap :  public TMap
 {
 	public:
 		CMapLayer			*thisMapLayer;
@@ -771,15 +771,15 @@ OSErr	AddMapsDialog ();
 
 //++ TMover
 
-#include "Mover/Mover_c.h"
-#include "Mover/TMover.h"
+#include "Mover_c.h"
+#include "TMover.h"
 
 //--
 
 //++ TCurrentMover
 
-#include "CurrentMover/CurrentMover_c.h"
-#include "CurrentMover/TCurrentMover.h"
+#include "CurrentMover_c.h"
+#include "TCurrentMover.h"
 
 //--
 
@@ -787,8 +787,8 @@ OSErr	AddMapsDialog ();
 //++ TRandom
 
 
-#include "Random/Random_c.h"
-#include "Random/TRandom.h"
+#include "Random_c.h"
+#include "TRandom.h"
 
 
 //--
@@ -796,8 +796,8 @@ OSErr	AddMapsDialog ();
 
 //++ TRandom3D
 
-#include "Random3D/Random3D_c.h"
-#include "Random3D/TRandom3D.h"
+#include "Random3D_c.h"
+#include "TRandom3D.h"
 
 //--
 
@@ -811,15 +811,15 @@ class TGridVel;
 
 //++ TCATSMover
 
-#include "CATSMover/CATSMover_c.h"
-#include "CATSMover/TCATSMover.h"
+#include "CATSMover_c.h"
+#include "TCATSMover.h"
 
 //--
 
 //++ TCATSMover3D
 
-#include "CATSMover3D/CATSMover3D_c.h"
-#include "CATSMover3D/TCATSMover3D.h"
+#include "CATSMover3D_c.h"
+#include "TCATSMover3D.h"
 
 //--
 
@@ -832,8 +832,8 @@ void SetDepthLegendCheckMark(Boolean set);
 
 //++ ADCPMover 
 
-#include "ADCPMover/ADCPMover_c.h"
-#include "ADCPMover/ADCPMover.h"
+#include "ADCPMover_c.h"
+#include "ADCPMover.h"
 
 //--
 
@@ -841,8 +841,8 @@ Boolean IsADCPFile (char *path);
 
 //++ TWindMover
 
-#include "WindMover/WindMover_c.h"
-#include "WindMover/TWindMover.h"
+#include "WindMover_c.h"
+#include "TWindMover.h"
 
 //--
 
@@ -853,15 +853,15 @@ enum { NONE = 0, WINDSPEED, WINDSTRESS };	// for scaling
 
 //++ TComponentMover
 
-#include "ComponentMover/ComponentMover_c.h"
-#include "ComponentMover/TComponentMover.h"
+#include "ComponentMover_c.h"
+#include "TComponentMover.h"
 
 //--
 
 //++ TCompoundMover
 
-#include "CompoundMover/CompoundMover_c.h"
-#include "CompoundMover/TCompoundMover.h"
+#include "CompoundMover_c.h"
+#include "TCompoundMover.h"
 
 //--
 
@@ -870,8 +870,8 @@ enum { NONE = 0, WINDSPEED, WINDSTRESS };	// for scaling
 
 //++ TModel
 
-#include "Model/Model_c.h"
-#include "Model/TModel.h"
+#include "Model_c.h"
+#include "TModel.h"
 
 //--
 
@@ -890,15 +890,15 @@ void TellPlayersAboutNewDirt(void);
 
 //++ TTimeValue
 
-#include "TimeValue/TimeValue_c.h"
-#include "TimeValue/TTimeValue.h"
+#include "TimeValue_c.h"
+#include "TTimeValue.h"
 
 //--
 
 //++ TOSSMTimeValue
 
-#include "OSSMTimeValue/OSSMTimeValue_c.h"
-#include "OSSMTimeValue/TOSSMTimeValue.h"
+#include "OSSMTimeValue_c.h"
+#include "TOSSMTimeValue.h"
 
 
 //--
@@ -910,22 +910,22 @@ OSErr GetScaleFactorFromUser(char *msg, double *scaleFactor);
 
 //++ ADCPTimeValue
 
-#include "ADCPTimeValue/ADCPTimeValue_c.h"
-#include "ADCPTimeValue/ADCPTimeValue.h"
+#include "ADCPTimeValue_c.h"
+#include "ADCPTimeValue.h"
 
 //--
 
 //++ TriCurMover
 
-#include "TriCurMover/TriCurMover_c.h"
-#include "TriCurMover/TriCurMover.h"
+#include "TriCurMover_c.h"
+#include "TriCurMover.h"
 
 //--
 
 //++ PtCurMover
 
-#include "PtCurMover/PtCurMover_c.h"
-#include "PtCurMover/PtCurMover.h"
+#include "PtCurMover_c.h"
+#include "PtCurMover.h"
 
 //--
 
@@ -969,11 +969,11 @@ OSErr 	WriteMacValue(BFPB *bfpb, char* str, long len);
 
 void OutOffMemoryAlert(void);
 
-#include "NetCDFMover/NetCDFMover.h"
-#include "NetCDFMoverCurv/NetCDFMoverCurv.h"
-#include "NetCDFWindMover/NetCDFWindMover.h"
-#include "NetCDFMoverTri/NetCDFMoverTri.h"
-#include "NetCDFWindMoverCurv/NetCDFWindMoverCurv.h"
+#include "NetCDFMover.h"
+#include "NetCDFMoverCurv.h"
+#include "NetCDFWindMover.h"
+#include "NetCDFMoverTri.h"
+#include "NetCDFWindMoverCurv.h"
 
 
 

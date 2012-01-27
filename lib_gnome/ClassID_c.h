@@ -16,7 +16,19 @@
 
 class ClassID_c : virtual public ClassID_b {
 
-
+public:
+	virtual ClassID 	GetClassID 	() { return TYPE_UNDENTIFIED; }
+	virtual Boolean		IAm(ClassID id) { return FALSE; }
+	void				GetClassName (char* theName) { strcpy (theName, className); }	// sohail
+	void				SetClassName (char* name);
+	virtual void		Dispose 	() { return; }
+	virtual Boolean		IsDirty  	() { return bDirty;  }
+	virtual Boolean		IsOpen   	() { return bOpen;   }
+	virtual Boolean		IsActive 	() { return bActive; }
+	virtual void		SetDirty  (Boolean bNewDirty)  { bDirty  = bNewDirty; }
+	virtual void		SetOpen   (Boolean bNewOpen)   { bOpen   = bNewOpen;  }
+	virtual void		SetActive (Boolean bNewActive) { bActive = bNewActive;}
+	
 };
 
 

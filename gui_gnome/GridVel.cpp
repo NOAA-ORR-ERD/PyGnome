@@ -5,9 +5,9 @@
 #include "MapUtils.h"
 #include "DagTreeIO.h"
 //#include "RectUtils.h"
-#include "PtCurMover/PtCurMover.h"
+#include "PtCurMover.h"
 #include "Contdlg.h"
-#include "NetCDFMover/NetCDFMover.h"
+#include "NetCDFMover.h"
 #include "netcdf.h"
 #include "Outils.h"
 

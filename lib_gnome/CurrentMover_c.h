@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "CurrentMover_b.h"
-#include "Mover/Mover_c.h"
+#include "Mover_c.h"
 #include "GEOMETRY.H"
 
 #ifdef pyGNOME

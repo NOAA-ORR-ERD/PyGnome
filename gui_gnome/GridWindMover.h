@@ -13,12 +13,12 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "GridWindMover_c.h"
-#include "WindMover/TWindMover.h"
+#include "TWindMover.h"
 
 // build off TWindMover or off TMover with a lot of WindMover carried along ??
 // for now new mover type but brought in under variable windmover
 // what about constant wind case? parallel to gridcur?
-class GridWindMover : virtual public GridWindMover_c, virtual public TWindMover
+class GridWindMover : virtual public GridWindMover_c,  public TWindMover
 {
 
 public:

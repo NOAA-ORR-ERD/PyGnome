@@ -1,11 +1,11 @@
 #include "Cross.h"
 #include "MapUtils.h"
 #include "OUtils.h"
-#include "WindMover/EditWindsDialog.h"
+#include "EditWindsDialog.h"
 #include "Uncertainty.h"
-#include "GridCurMover/GridCurMover.h"
-#include "TideCurCycleMover/TideCurCycleMover.h"
-#include "NetCDFMover/NetCDFMover.h"
+#include "GridCurMover.h"
+#include "TideCurCycleMover.h"
+#include "NetCDFMover.h"
 
 #define REPLACE true
 
@@ -24,7 +24,7 @@ TCompoundMap	*sSharedDialogCompoundMap = 0;
 
 TCompoundMap* CreateAndInitCompoundMap(char *path, WorldRect bounds);
 
-TCompoundMover::TCompoundMover (TMap *owner, char *name) : TCurrentMover (owner, name), TMover(owner, name)
+TCompoundMover::TCompoundMover (TMap *owner, char *name) : TCurrentMover (owner, name)
 {
 	moverList = 0;
 		
@@ -1188,22 +1188,6 @@ OSErr CompoundMoverSettingsDialog(TCompoundMover *theMover, TMap *ownerMap, TMap
 	
 	if(COMPOUNDDLGOK == item)	model->NewDirtNotification();// tell model about dirt
 	return COMPOUNDDLGOK == item ? 0 : -1;
-}
-
-OSErr TCompoundMover::AddMover(TMover *theMover, short where)
-{
-	OSErr err = 0;
-	if (!moverList) return -1;
-	
-	if (err = moverList->AppendItem((Ptr)&theMover))
-	{ TechError("TCompoundMover::AddMover()", "AppendItem()", err); return err; }
-	
-	SetDirty (true);
-	
-	SelectListItemOfOwner(theMover);
-	//SelectListItemOfOwner(this);
-	
-	return 0;
 }
 
 OSErr TCompoundMover::DropMover(TMover *theMover)

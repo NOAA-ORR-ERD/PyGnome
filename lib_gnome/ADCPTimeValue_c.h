@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "ADCPTimeValue_b.h"
-#include "TimeValue/TimeValue_c.h"
+#include "TimeValue_c.h"
 
 class ADCPTimeValue_c : virtual public ADCPTimeValue_b, virtual public TimeValue_c {
 

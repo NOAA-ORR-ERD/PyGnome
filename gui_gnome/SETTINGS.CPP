@@ -2,7 +2,7 @@
 #include "CROSS.h"
 #include "OUtils.h"
 #include "GridVel.h"
-#include "NetCDFMover/NetCDFMover.h"
+#include "NetCDFMover.h"
 
 void	GetOWeatherValues (DialogPtr dialog, long item);
 void 	SetOWeatherValues (DialogPtr dialog, long item);
@@ -566,7 +566,6 @@ short ChooseOtherGridDialog(TCATSMover	*connectingCMover,char* classNameOfSelect
 			map->moverList->GetListItem((Ptr)&mover, i);
 			if (mover->GetClassID() != TYPE_CATSMOVER) continue;
 			if (!strcmp(mover->className, connectingCMover->className)) continue;// i.e. don't let it chooose one with the same name 
-			
 			if (err = sharedMoverList->AppendItem((Ptr)&mover))
 				{ TechError("ChooseOtherGridDialog()", "AppendItem()", err); return -1; }
 		}

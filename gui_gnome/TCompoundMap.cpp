@@ -1,6 +1,6 @@
 #include "Cross.h"
 #include "Contdlg.h"
-#include "NetCDFMoverCurv/NetCDFMoverCurv.h"
+#include "NetCDFMoverCurv.h"
 //#include "MapUtils.h"
 //#include "OUtils.h"
 //#include "EditWindsDialog.h"
@@ -46,7 +46,7 @@ TCompoundMap* CreateAndInitCompoundMap(char *path, WorldRect bounds)
 }
 
 //TCompoundMap::TCompoundMap (char *name, WorldRect bounds) : TMap (name, bounds)
-TCompoundMap::TCompoundMap (char *name, WorldRect bounds) : PtCurMap (name, bounds), TMap (name,bounds)
+TCompoundMap::TCompoundMap (char *name, WorldRect bounds) : PtCurMap (name, bounds)
 {
 	mapList = 0;
 	

@@ -10,7 +10,7 @@
 #include "GridWindMover.h"
 #include "CROSS.H"
 
-GridWindMover::GridWindMover(TMap *owner,char* name) : TWindMover(owner, name), TMover(owner, name)
+GridWindMover::GridWindMover(TMap *owner,char* name) : TWindMover(owner, name)
 {
 	if(!name || !name[0]) this->SetClassName("Grid Wind");
 	else 	SetClassName (name); // short file name

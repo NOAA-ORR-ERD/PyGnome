@@ -10,7 +10,7 @@
 
 extern TRandom3D *sharedRMover3D;
 
-TRandom3D::TRandom3D (TMap *owner, char *name) : TMover(owner, name), TRandom (owner, name)
+TRandom3D::TRandom3D (TMap *owner, char *name) : TRandom (owner, name)
 {
 	//fDiffusionCoefficient = 100000; //  cm**2/sec 
 	//memset(&fOptimize,0,sizeof(fOptimize));

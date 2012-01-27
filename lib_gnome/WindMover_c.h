@@ -15,12 +15,18 @@
 #include "WindMover_b.h"
 #include "Mover_c.h"
 
-class TOSSMTimeValue;
+#ifdef pyGNOME
+#define TOSSMTimeValue OSSMTimeValue_c
+#define TMap Map_c
+#endif
 
+class TOSSMTimeValue;
+class TMap;
 class WindMover_c : virtual public WindMover_b, virtual public Mover_c {
 
 public:
-	
+	WindMover_c (TMap *owner, char* name);
+	WindMover_c () {}
 	virtual OSErr		AllocateUncertainty ();
 	virtual void		DisposeUncertainty ();
 	virtual OSErr		AddUncertainty(long setIndex,long leIndex,VelocityRec *v);
@@ -40,4 +46,6 @@ public:
 	
 };
 
+#undef TOSSMTimeValue
+#undef TMap
 #endif

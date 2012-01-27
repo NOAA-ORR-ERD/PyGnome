@@ -8,7 +8,7 @@
 #endif
 
 
-TCATSMover3D::TCATSMover3D (TMap *owner, char *name) : TCATSMover(owner, name), TCurrentMover(owner, name), TMover(owner, name)
+TCATSMover3D::TCATSMover3D (TMap *owner, char *name) : TCATSMover(owner, name)
 {
 	fDuration=48*3600; //48 hrs as seconds 
 	fTimeUncertaintyWasSet =0;

@@ -13,12 +13,12 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "Mover_c.h"
-#include "ClassID/TClassID.h"
+#include "TClassID.h"
 
 class TMap;
 class TModelMessage;
 
-class TMover : virtual public Mover_c, virtual public TClassID
+class TMover : virtual public Mover_c,  public TClassID
 {
 	
 public:

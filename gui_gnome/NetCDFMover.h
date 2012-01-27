@@ -5,14 +5,14 @@
 #include "NetCDFMover_c.h"
 
 #include "GridVel.h"
-#include "PtCurMover/PtCurMover.h"
-#include "PtCurMap/PtCurMap.h"
+#include "PtCurMover.h"
+#include "PtCurMap.h"
 
 Seconds RoundDateSeconds(Seconds timeInSeconds);
 PtCurMap* GetPtCurMap(void);
 
 
-class NetCDFMover : virtual public NetCDFMover_c, virtual public TCurrentMover
+class NetCDFMover : virtual public NetCDFMover_c,  public TCurrentMover
 {
 	public:
 							NetCDFMover (TMap *owner, char *name);

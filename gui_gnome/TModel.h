@@ -10,13 +10,13 @@
 #ifndef __TModel__
 #define __TModel__
 
-#include "Model/Model_c.h"
-#include "ClassID/TClassID.h"
+#include "Model_c.h"
+#include "TClassID.h"
 
 class TOverlay;
 class TWeatherer;
 
-class TModel : virtual public Model_c, virtual public TClassID
+class TModel : virtual public Model_c,  public TClassID
 {
 	
 public:

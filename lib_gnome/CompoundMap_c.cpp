@@ -8,14 +8,14 @@
  */
 
 #include "CompoundMap_c.h"
-#include "Mover/TMover.h"
-#include "CurrentMover/TCurrentMover.h"
-#include "WindMover/TWindMover.h"
-#include "NetCDFMover/NetCDFMover.h"
-#include "NetCDFMoverCurv/NetCDFMoverCurv.h"
-#include "NetCDFMoverTri/NetCDFMoverTri.h"
-#include "TriCurMover/TriCurMover.h"
-#include "PtCurMover/PtCurMover.h"
+#include "TMover.h"
+#include "TCurrentMover.h"
+#include "TWindMover.h"
+#include "NetCDFMover.h"
+#include "NetCDFMoverCurv.h"
+#include "NetCDFMoverTri.h"
+#include "TriCurMover.h"
+#include "PtCurMover.h"
 
 #ifdef pyGNOME
 #define TModel Model_c

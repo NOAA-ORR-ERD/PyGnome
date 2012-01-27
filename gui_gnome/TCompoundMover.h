@@ -13,9 +13,9 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "CompoundMover_c.h"
-#include "CurrentMover/TCurrentMover.h"
+#include "TCurrentMover.h"
 
-class TCompoundMover : virtual public CompoundMover_c, virtual public TCurrentMover	// maybe just TMover
+class TCompoundMover : virtual public CompoundMover_c,  public TCurrentMover	// maybe just TMover
 {
 public:
 	
@@ -36,7 +36,6 @@ public:
 	// mover methods
 	CMyList				*GetMoverList () { return moverList; }
 	//virtual OSErr		AddMover (TMover *theMover, short where);
-	virtual OSErr		AddMover (TMover *theMover, short where);
 	virtual OSErr		DropMover (TMover *theMover);
 	
 	// I/O methods

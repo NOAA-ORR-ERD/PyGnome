@@ -15,9 +15,9 @@
 #include "DagTree.h"
 #include "my_build_list.h"
 #include "GridVel.h"
-#include "PtCurMover/PtCurMover.h"
+#include "PtCurMover.h"
 #include "DagTree.h"
-#include "CurrentMover/CurrentMover_b.h"
+#include "CurrentMover_b.h"
 
 Boolean IsTriCurFile (char *path);
 Boolean IsTriCurVerticesHeaderLine(char *s, long* numPts);

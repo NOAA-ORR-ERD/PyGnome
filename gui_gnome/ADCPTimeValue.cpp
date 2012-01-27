@@ -10,7 +10,7 @@
 #include "ADCPTimeValue.h"
 #include "CROSS.H"
 #include "TShioTimeValue.h"
-#include "WindMover/EditWindsDialog.h"
+#include "EditWindsDialog.h"
 
 Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP);
 Boolean IsOSSMTideFile(char* path,short *selectedUnitsP);

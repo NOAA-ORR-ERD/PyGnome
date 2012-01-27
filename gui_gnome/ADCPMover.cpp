@@ -24,7 +24,7 @@ static CurrentUncertainyInfo sSharedADCPUncertainyInfo; // used to hold the unce
 static ADCPDialogNonPtrFields sharedADCPDialogNonPtrFields;
 
 
-ADCPMover::ADCPMover (TMap *owner, char *name) : TCurrentMover(owner, name), TMover(owner, name)
+ADCPMover::ADCPMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 {
 	fDuration=48*3600; //48 hrs as seconds 
 	fTimeUncertaintyWasSet =0;

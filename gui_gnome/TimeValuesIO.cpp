@@ -5,7 +5,7 @@
 #include "OSSM.h"
 
 #include "TShioTimeValue.h"
-#include "WindMover/EditWindsDialog.h"
+#include "EditWindsDialog.h"
 
 #ifdef MAC
 	#pragma segment TTimeValues

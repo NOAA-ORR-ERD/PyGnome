@@ -12,7 +12,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "PtCurMap/PtCurMap_c.h"
+#include "PtCurMap_c.h"
 
 #ifdef pyGNOME
 #define TMover Mover_c

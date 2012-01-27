@@ -11,9 +11,9 @@
 #define __TCurrentMover__
 
 #include "CurrentMover_c.h"
-#include "Mover/TMover.h"
+#include "TMover.h"
 
-class TCurrentMover : virtual public CurrentMover_c, virtual public TMover
+class TCurrentMover : virtual public CurrentMover_c,  public TMover
 {
 	
 public:

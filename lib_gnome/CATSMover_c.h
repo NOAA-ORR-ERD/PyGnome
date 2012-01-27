@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "CATSMover_b.h"
-#include "CurrentMover/CurrentMover_c.h"
+#include "CurrentMover_c.h"
 
 class CATSMover_c : virtual public CATSMover_b, virtual public CurrentMover_c {
 

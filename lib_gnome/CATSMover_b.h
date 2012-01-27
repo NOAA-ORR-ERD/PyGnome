@@ -12,9 +12,9 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "CurrentMover/CurrentMover_b.h"
+#include "CurrentMover_b.h"
 #include "GridVel.h"
-#include "OSSMTimeValue/TOSSMTimeValue.h"
+#include "TOSSMTimeValue.h"
 
 class CATSMover_b : virtual public CurrentMover_b {
 

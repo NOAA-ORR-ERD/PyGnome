@@ -16,7 +16,7 @@
 
 ///////////////////////////////////////////////////////////////////////////
 //class TCompoundMap : public TMap	// maybe PtCurMap ?
-class TCompoundMap : virtual public CompoundMap_c, virtual public PtCurMap	// maybe PtCurMap ?
+class TCompoundMap : virtual public CompoundMap_c,  public PtCurMap	// maybe PtCurMap ?
 {
 public:
 	

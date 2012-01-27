@@ -25,7 +25,7 @@ static NetCDFMover *sNetCDFDialogMover;
 static Boolean sDialogUncertaintyChanged;
 
 
-NetCDFMover::NetCDFMover (TMap *owner, char *name) : TCurrentMover(owner, name), TMover(owner, name)
+NetCDFMover::NetCDFMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 {
 	memset(&fVar,0,sizeof(fVar));
 	fVar.arrowScale = 1.;

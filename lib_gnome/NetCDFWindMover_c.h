@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "NetCDFWindMover_b.h"
-#include "WindMover/WindMover_c.h"
+#include "WindMover_c.h"
 
 class NetCDFWindMover_c : virtual public NetCDFWindMover_b, virtual public WindMover_c {
 

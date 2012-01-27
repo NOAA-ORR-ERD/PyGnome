@@ -12,9 +12,9 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "CurrentMover/CurrentMover_b.h"
+#include "CurrentMover_b.h"
 #include "GridVel.h"
-#include "CMyList/CMYLIST.H"
+#include "CMYLIST.H"
 
 class ADCPMover_b : virtual public CurrentMover_b {
 

@@ -6,9 +6,9 @@
 #include "TypeDefs.h"
 #include "TriCurMover_c.h"
 
-#include "CurrentMover/TCurrentMover.h"
+#include "TCurrentMover.h"
 
-class TriCurMover : virtual public TriCurMover_c, virtual public TCurrentMover
+class TriCurMover : virtual public TriCurMover_c,  public TCurrentMover
 {
 	public:
 			TriCurMover (TMap *owner, char *name);

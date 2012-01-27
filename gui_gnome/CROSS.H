@@ -580,7 +580,7 @@ void strcpyNthFile(char *szFile,long n);// JLM 6/4/10
 /////////// MACUTIL: MEMORY
 
 
-#include "MemUtils/MemUtils.h"
+#include "MemUtils.h"
 
 
 /////////// MACUTIL: DIALOGS

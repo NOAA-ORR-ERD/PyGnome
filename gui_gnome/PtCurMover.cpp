@@ -203,7 +203,7 @@ OSErr PtCurMover::SettingsDialog()
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 
-PtCurMover::PtCurMover (TMap *owner, char *name) : TCurrentMover(owner, name), TMover(owner, name)
+PtCurMover::PtCurMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 {
 	memset(&fVar,0,sizeof(fVar));
 	fVar.arrowScale = 5;

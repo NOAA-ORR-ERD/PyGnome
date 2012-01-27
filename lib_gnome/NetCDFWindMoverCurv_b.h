@@ -12,7 +12,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "NetCDFWindMover/NetCDFWindMover_b.h"
+#include "NetCDFWindMover_b.h"
 
 class NetCDFWindMoverCurv_b : virtual public NetCDFWindMover_b {
 

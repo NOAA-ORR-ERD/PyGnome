@@ -12,6 +12,10 @@
 
 #include "ClassID_b.h"
 
+#ifdef pyGNOME
+#define TMover Mover_c
+#endif
+
 class TMover;
 
 class TimeValue_b : virtual public ClassID_b {
@@ -21,5 +25,5 @@ public:
 	
 };
 
-
+#undef TMover
 #endif

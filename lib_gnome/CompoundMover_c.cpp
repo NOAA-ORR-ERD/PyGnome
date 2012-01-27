@@ -140,6 +140,22 @@ done:
 	return err;
 }
 
+OSErr CompoundMover_c::AddMover(TMover *theMover, short where)
+{
+	OSErr err = 0;
+	if (!moverList) return -1;
+	if (err = moverList->AppendItem((Ptr)&theMover))
+	{ TechError("TCompoundMover::AddMover()", "AppendItem()", err); return err; }
+#ifndef pyGNOME	
+	SetDirty (true);
+	
+	SelectListItemOfOwner(theMover);
+	//SelectListItemOfOwner(this);
+#endif
+	return 0;
+}
+
+
 WorldPoint3D CompoundMover_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 		dLat, dLong;

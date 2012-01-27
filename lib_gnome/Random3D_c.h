@@ -13,7 +13,7 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "Random3D_b.h"
-#include "Random/Random_c.h"
+#include "Random_c.h"
 
 #ifdef pyGNOME
 #define TMap Map_c

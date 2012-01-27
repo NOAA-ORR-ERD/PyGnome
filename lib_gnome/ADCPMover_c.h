@@ -13,8 +13,8 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "ADCPMover_b.h"
-#include "CurrentMover/CurrentMover_c.h"
-#include "ADCPTimeValue/ADCPTimeValue.h"
+#include "CurrentMover_c.h"
+#include "ADCPTimeValue.h"
 
 class ADCPMover_c : virtual public ADCPMover_b, virtual public CurrentMover_c {
 

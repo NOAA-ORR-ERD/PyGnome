@@ -18,7 +18,7 @@
 #include "DagTreeIO.h"
 
 //NetCDFMoverTri::NetCDFMoverTri (TMap *owner, char *name) : NetCDFMover(owner, name)
-NetCDFMoverTri::NetCDFMoverTri (TMap *owner, char *name) : NetCDFMoverCurv(owner, name), NetCDFMover(owner, name), TCurrentMover(owner, name), TMover(owner, name)
+NetCDFMoverTri::NetCDFMoverTri (TMap *owner, char *name) : NetCDFMoverCurv(owner, name)
 {
 	//fVerdatToNetCDFH = 0;	
 	//fVertexPtsH = 0;
@@ -171,7 +171,7 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 	Point where;
 	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
 	MySFReply reply;
-	Boolean bTopFile = false;
+	Boolean bTopFile = false, bTopInfoInFile = false;
 	
 	if (!path || !path[0]) return 0;
 	strcpy(fVar.pathName,path);
@@ -439,9 +439,9 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		{
 			status = nc_inq_varid(ncid, "nbe", &nbe_varid); //Navy
 			if (status != NC_NOERR) {/*err = -1; goto done;*/}
-			else bTopFile = true;
+			else bTopInfoInFile = true;
 		}
-		if (bTopFile)
+		if (bTopInfoInFile)
 		{
 			status = nc_inq_dimid(ncid, "nele", &neleid);	
 			if (status != NC_NOERR) {err = -1; goto done;}	
@@ -476,10 +476,10 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 			
 			// fill topology handle with data, makedagtree, boundaries
 			//err = ReorderPoints2(/*newMap,*/top_verts,top_neighbors,neleLength/*bndry_indices,bndry_nums,bndry_type,nbndLength*/);	 
-			err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+			/*err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
 			//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 			if (err) goto done;
-			goto depths;
+			goto depths;*/
 		}
 	}
 	
@@ -524,9 +524,17 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		//if (!reply.good) return USERCANCEL;
 		if (!reply.good) /*return 0;*/
 		{
+			if (bVelocitiesOnTriangles)
+			{err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+			//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+			if (err) goto done;
+			goto depths;}
+			else
+			{
 			err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
-	 		goto depths;
+			if (err) goto done;
+	 		goto depths;}
 		}
 		else
 			strcpy(topPath, reply.fullPath);
@@ -546,9 +554,17 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 				   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
 		if (!reply.good) 
 		{
+			if (bVelocitiesOnTriangles)
+			{err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+			//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+			if (err) goto done;
+			goto depths;}
+			else
+			{
 			err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
-			//goto done;	
-			goto depths;	
+			//goto done;
+			if (err) goto done;	
+			goto depths;}	
 			//return 0;
 		}
 		
@@ -562,12 +578,16 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 #endif		
 		strcpy (s, topPath);
 		err = ReadTopology(topPath,newMap);	// newMap here
+		if (err) goto done;
 		goto depths;
 		//goto done;
 		//SplitPathFile (s, fileName);
 	}
 	
-	err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+	if (bVelocitiesOnTriangles)
+		err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+	else
+		err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 	
 depths:
 	if (err) goto done;
@@ -1221,7 +1241,7 @@ OSErr NetCDFMoverTri::ReadTopology(char* path, TMap **newMap)
 	TDagTree *dagTree = 0;
 	
 	long numWaterBoundaries, numBoundaryPts, numBoundarySegs;
-	LONGH boundarySegs=0, waterBoundaries=0;
+	LONGH boundarySegs=0, waterBoundaries=0, boundaryPts=0;
 	
 	errmsg[0]=0;
 	
@@ -1243,8 +1263,24 @@ OSErr NetCDFMoverTri::ReadTopology(char* path, TMap **newMap)
 		if (err = ReadTransposeArray(f,&line,&fVerdatToNetCDFH,numPts,errmsg)) 
 		{strcpy(errmsg,"Error in ReadTransposeArray"); goto done;}
 	}
-	else {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
-	
+	else 
+	//{err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
+	{
+		if (!bVelocitiesOnTriangles) {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
+		else line--;
+		/*if (!bVelocitiesOnTriangles)
+		{
+			sprintf(hdrStr,"TransposeArray\t%ld\n",n);	
+			strcpy(buffer,hdrStr);
+			if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+			for(i=0;i<n;i++)
+			{	
+				sprintf(topoStr,"%ld\n",(*fVerdatToNetCDFH)[i]);
+				strcpy(buffer,topoStr);
+				if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+			}
+		}*/
+	}
 	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
 	
 	if(pts) 
@@ -1301,6 +1337,23 @@ OSErr NetCDFMoverTri::ReadTopology(char* path, TMap **newMap)
 	MySpinCursor(); // JLM 8/4/99
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	
+	if(IsBoundaryPointsHeaderLine(s,&numBoundaryPts)) // Boundary data from CATs
+	{
+		MySpinCursor();
+		if (numBoundaryPts>0)
+			err = ReadBoundaryPts(f,&line,&boundaryPts,numBoundaryPts,errmsg);
+		if(err) goto done;
+		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	}
+	else
+	{
+		//err = -1;
+		//strcpy(errmsg,"Error in Boundary segment header line");
+		//goto done;
+		// not always needed ? probably always needed for curvilinear
+	}
+	MySpinCursor(); // JLM 8/4/99
+	
 	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
 	{
 		MySpinCursor();
@@ -1336,6 +1389,7 @@ OSErr NetCDFMoverTri::ReadTopology(char* path, TMap **newMap)
 	/////////////////////////////////////////////////
 	// if the boundary information is in the file we'll need to create a bathymetry map (required for 3D)
 	
+	// check if bVelocitiesOnTriangles and boundaryPts
 	if (waterBoundaries && boundarySegs && (this -> moverMap == model -> uMap))
 	{
 		//PtCurMap *map = CreateAndInitPtCurMap(fVar.userName,bounds); // the map bounds are the same as the grid bounds
@@ -1344,6 +1398,7 @@ OSErr NetCDFMoverTri::ReadTopology(char* path, TMap **newMap)
 		// maybe move up and have the map read in the boundary information
 		map->SetBoundarySegs(boundarySegs);	
 		map->SetWaterBoundaries(waterBoundaries);
+		if (bVelocitiesOnTriangles && boundaryPts) map->SetBoundaryPoints(boundaryPts);	
 		
 		*newMap = map;
 	}
@@ -1353,6 +1408,7 @@ OSErr NetCDFMoverTri::ReadTopology(char* path, TMap **newMap)
 	{
 		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
 		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
+		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts = 0;}
 	}
 	
 	/////////////////////////////////////////////////
@@ -1420,6 +1476,7 @@ done:
 		}
 		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
 		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
+		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts = 0;}
 	}
 	return err;
 }
@@ -1453,8 +1510,8 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 	// export NetCDF triangle info so don't have to regenerate each time
 	// same as curvilinear so may want to combine at some point
 	OSErr err = 0;
-	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0;
-	long i, n, v1,v2,v3,n1,n2,n3;
+	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts;
+	long i, n=0, v1,v2,v3,n1,n2,n3;
 	double x,y;
 	char buffer[512],hdrStr[64],topoStr[128];
 	TopologyHdl topH=0;
@@ -1462,7 +1519,7 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 	TDagTree* dagTree = 0;
 	LongPointHdl ptsH=0;
 	DAGHdl treeH = 0;
-	LONGH	boundarySegmentsH = 0, boundaryTypeH = 0;
+	LONGH	boundarySegmentsH = 0, boundaryTypeH = 0, boundaryPointsH = 0;
 	BFPB bfpb;
 	PtCurMap *map = GetPtCurMap();
 	
@@ -1494,6 +1551,11 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 		boundaryTypeH = map->GetWaterBoundaries();
 		boundarySegmentsH = map->GetBoundarySegs();
 		if (!boundaryTypeH || !boundarySegmentsH) {printError("No map info to export"); err=-1; goto done;}
+		if (bVelocitiesOnTriangles) 
+		{
+			boundaryPointsH = /*CHECK*/(dynamic_cast<PtCurMap *>(moverMap))->GetBoundaryPoints();
+			if (!boundaryPointsH) {printError("No map info to export"); err=-1; goto done;}
+		}
 	}
 	
 	(void)hdelete(0, 0, path);
@@ -1505,17 +1567,21 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 	
 	// Write out values
 	if (fVerdatToNetCDFH) n = _GetHandleSize((Handle)fVerdatToNetCDFH)/sizeof(long);
-	else {printError("There is no transpose array"); err = -1; goto done;}
-	sprintf(hdrStr,"TransposeArray\t%ld\n",n);	
-	strcpy(buffer,hdrStr);
-	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-	for(i=0;i<n;i++)
-	{	
-		sprintf(topoStr,"%ld\n",(*fVerdatToNetCDFH)[i]);
-		strcpy(buffer,topoStr);
+	//else {printError("There is no transpose array"); err = -1; goto done;}
+	else 
+		{if (!bVelocitiesOnTriangles) {printError("There is no transpose array"); err = -1; goto done;}}
+	if (!bVelocitiesOnTriangles)
+	{
+		sprintf(hdrStr,"TransposeArray\t%ld\n",n);	
+		strcpy(buffer,hdrStr);
 		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		for(i=0;i<n;i++)
+		{	
+			sprintf(topoStr,"%ld\n",(*fVerdatToNetCDFH)[i]);
+			strcpy(buffer,topoStr);
+			if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		}
 	}
-	
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
 	//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points
 	sprintf(hdrStr,"Vertices\t%ld\n",nver);	// total vertices
@@ -1570,6 +1636,20 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 				strcpy(buffer,topoStr);
 				if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 			}
+		}
+	}
+	nBoundaryPts = 0;
+	if (boundaryPointsH) 
+	{
+		nBoundaryPts = _GetHandleSize((Handle)boundaryPointsH)/sizeof(long);	// should be same size as previous handle
+		sprintf(hdrStr,"BoundaryPoints\t%ld\n",nBoundaryPts);	// total boundary points
+		strcpy(buffer,hdrStr);
+		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		for(i=0;i<nBoundaryPts;i++)
+		{	
+			sprintf(topoStr,"%ld\n",(*boundaryPointsH)[i]);	// when reading in subtracts 1
+			strcpy(buffer,topoStr);
+			if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		}
 	}
 	numTriangles = _GetHandleSize((Handle)topH)/sizeof(**topH);

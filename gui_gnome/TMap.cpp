@@ -8,16 +8,16 @@
  */
 
 #include "TMap.h"
-#include "Mover/TMover.h"
+#include "TMover.h"
 #include "CROSS.H"
-#include "GridCurMover/GridCurMover.h"
-#include "GridWindMover/GridWindMover.h"
-#include "TideCurCycleMover/TideCurCycleMover.h"
-#include "WindMover/EditWindsDialog.h"
-#include "NetCDFMoverCurv/NetCDFMoverCurv.h"
-#include "NetCDFWindMover/NetCDFWindMover.h"
-#include "NetCDFWindMoverCurv/NetCDFWindMoverCurv.h"
-#include "NetCDFMoverTri/NetCDFMoverTri.h"
+#include "GridCurMover.h"
+#include "GridWindMover.h"
+#include "TideCurCycleMover.h"
+#include "EditWindsDialog.h"
+#include "NetCDFMoverCurv.h"
+#include "NetCDFWindMover.h"
+#include "NetCDFWindMoverCurv.h"
+#include "NetCDFMoverTri.h"
 
 OSErr M21Init(DialogPtr dialog, VOIDPTR data);
 short M21Click(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data);

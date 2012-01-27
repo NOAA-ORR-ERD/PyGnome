@@ -1,7 +1,7 @@
 #include "cross.h"
 #include "OUtils.h"
 #include "Wizard.h"
-#include "WindMover/EditWindsDialog.h"
+#include "EditWindsDialog.h"
 //#include "HtmlHelp.h"
 #ifdef MAC
 #pragma segment WIZARD

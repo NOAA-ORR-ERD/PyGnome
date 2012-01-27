@@ -13,9 +13,9 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "ADCPTimeValue_c.h"
-#include "TimeValue/TTimeValue.h"
+#include "TTimeValue.h"
 
-class ADCPTimeValue : virtual public ADCPTimeValue_c, virtual public TTimeValue
+class ADCPTimeValue : virtual public ADCPTimeValue_c,  public TTimeValue
 {
 	
 public:

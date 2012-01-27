@@ -12,7 +12,7 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "ClassID/ClassID_b.h"
+#include "ClassID_b.h"
 
 #ifdef pyGNOME
 #define TMap Map_c
