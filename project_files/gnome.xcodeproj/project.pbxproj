@@ -128,6 +128,7 @@
 		0D1650E714D21ED50052734A /* DLOG.r in Rez */ = {isa = PBXBuildFile; fileRef = 0D1650E414D21ED50052734A /* DLOG.r */; };
 		0D1650E814D21ED50052734A /* Dialogs.r in Rez */ = {isa = PBXBuildFile; fileRef = 0D1650E514D21ED50052734A /* Dialogs.r */; };
 		0D1650E914D21ED50052734A /* OSSM.r in Rez */ = {isa = PBXBuildFile; fileRef = 0D1650E614D21ED50052734A /* OSSM.r */; };
+		0D22577E14D348B20015C7BF /* CMYLIST.CPP in Sources */ = {isa = PBXBuildFile; fileRef = 0D22577D14D348B20015C7BF /* CMYLIST.CPP */; };
 		0D2317EF14D215400043CD84 /* macdef.prefix in Resources */ = {isa = PBXBuildFile; fileRef = 0D2317E914D215400043CD84 /* macdef.prefix */; };
 		0D2317F014D215400043CD84 /* gnome-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0D2317EA14D215400043CD84 /* gnome-Info.plist */; };
 		0D2317F114D215400043CD84 /* StartScreens.r in Rez */ = {isa = PBXBuildFile; fileRef = 0D2317EB14D215400043CD84 /* StartScreens.r */; };
@@ -382,6 +383,7 @@
 		0D1650E414D21ED50052734A /* DLOG.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; name = DLOG.r; path = MacResources/DLOG.r; sourceTree = SOURCE_ROOT; };
 		0D1650E514D21ED50052734A /* Dialogs.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; name = Dialogs.r; path = MacResources/Dialogs.r; sourceTree = SOURCE_ROOT; };
 		0D1650E614D21ED50052734A /* OSSM.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; name = OSSM.r; path = MacResources/OSSM.r; sourceTree = SOURCE_ROOT; };
+		0D22577D14D348B20015C7BF /* CMYLIST.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMYLIST.CPP; path = ../gui_gnome/CMYLIST.CPP; sourceTree = SOURCE_ROOT; };
 		0D2317E914D215400043CD84 /* macdef.prefix */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = macdef.prefix; path = MacResources/macdef.prefix; sourceTree = SOURCE_ROOT; };
 		0D2317EA14D215400043CD84 /* gnome-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "gnome-Info.plist"; path = "MacResources/gnome-Info.plist"; sourceTree = SOURCE_ROOT; };
 		0D2317EB14D215400043CD84 /* StartScreens.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; name = StartScreens.r; path = MacResources/StartScreens.r; sourceTree = SOURCE_ROOT; };
@@ -493,6 +495,7 @@
 		0D02693F14D203B00015720E /* gui_gnome */ = {
 			isa = PBXGroup;
 			children = (
+				0D22577D14D348B20015C7BF /* CMYLIST.CPP */,
 				0D026B5914D20E0F0015720E /* TModel.cpp */,
 				0D026B5A14D20E0F0015720E /* TideCurCycleMover.cpp */,
 				0D026B5B14D20E0F0015720E /* TCompoundMover.cpp */,
@@ -892,6 +895,7 @@
 				0D026C5914D20E0F0015720E /* TRandom.cpp in Sources */,
 				0D026C5A14D20E0F0015720E /* MemUtils.cpp in Sources */,
 				0D026C5B14D20E0F0015720E /* TCurrentMover.cpp in Sources */,
+				0D22577E14D348B20015C7BF /* CMYLIST.CPP in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -7504,7 +7504,7 @@
 		ignoreCount = 0;
 		lineNumber = 1578;
 		location = gnome;
-		modificationTime = 349314630.8691291;
+		modificationTime = 349314630.8691292;
 		state = 2;
 	};
 	0D28265E14AD2970002AA048 /* TVectMap.cpp:1584 */ = {
@@ -8163,7 +8163,7 @@
 				PBXFileTableDataSourceColumnWidthsKey = (
 					20,
 					441,
-					257.20849609375,
+					257,
 				);
 				PBXFileTableDataSourceColumnsKey = (
 					PBXErrorsWarningsDataSource_TypeID,
@@ -8281,8 +8281,8 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 349385713;
-			PBXWorkspaceStateSaveDate = 349385713;
+			PBXPerProjectTemplateStateSaveDate = 349387896;
+			PBXWorkspaceStateSaveDate = 349387896;
 		};
 		perUserProjectItems = {
 			0D02649C14B781800015720E = 0D02649C14B781800015720E /* PBXTextBookmark */;
