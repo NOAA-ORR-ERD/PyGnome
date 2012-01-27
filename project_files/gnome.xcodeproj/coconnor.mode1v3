@@ -299,7 +299,7 @@
 								</array>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateVisibleRectKey</key>
-							<string>{{0, 2401}, {343, 659}}</string>
+							<string>{{0, 0}, {343, 659}}</string>
 						</dict>
 						<key>PBXTopSmartGroupGIDs</key>
 						<array/>
@@ -441,9 +441,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>0D1650D414D21DFF0052734A</string>
+				<string>0D22577214D33C7F0015C7BF</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>0D1650D514D21DFF0052734A</string>
+				<string>0D22577314D33C7F0015C7BF</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -560,7 +560,7 @@
 	<key>StatusbarIsVisible</key>
 	<true/>
 	<key>TimeStamp</key>
-	<real>349314638.74872899</real>
+	<real>349387896.98791498</real>
 	<key>ToolbarDisplayMode</key>
 	<integer>1</integer>
 	<key>ToolbarIsVisible</key>
@@ -575,13 +575,8 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>0D1650E014D21E4E0052734A</string>
-		<string>0D1650E114D21E4E0052734A</string>
-		<string>0D1650E214D21E4E0052734A</string>
-		<string>1C78EAAD065D492600B07095</string>
 		<string>1CD10A99069EF8BA00B06720</string>
-		<string>0D4B6F151485A6D100581ABF</string>
-		<string>/Users/coconnor/Projects/git/gnome/project_files/gnome.xcodeproj</string>
+		<string>/Users/coconnor/git/gnome/project_files/gnome.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
 	<string>69 213 1112 718 0 0 1280 938 </string>
@@ -785,13 +780,13 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1CD10A99069EF8BA00B06720</string>
-				<string>0D1650D614D21DFF0052734A</string>
+				<string>0D22577414D33C7F0015C7BF</string>
 				<string>1C162984064C10D400B95A72</string>
-				<string>0D1650D714D21DFF0052734A</string>
-				<string>0D1650D814D21DFF0052734A</string>
-				<string>0D1650D914D21DFF0052734A</string>
-				<string>0D1650DA14D21DFF0052734A</string>
-				<string>0D1650DB14D21DFF0052734A</string>
+				<string>0D22577514D33C7F0015C7BF</string>
+				<string>0D22577614D33C7F0015C7BF</string>
+				<string>0D22577714D33C7F0015C7BF</string>
+				<string>0D22577814D33C7F0015C7BF</string>
+				<string>0D22577914D33C7F0015C7BF</string>
 			</array>
 			<key>ToolbarConfiguration</key>
 			<string>xcode.toolbar.config.debugV3</string>
