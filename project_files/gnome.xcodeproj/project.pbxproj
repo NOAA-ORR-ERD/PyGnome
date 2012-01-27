@@ -50,7 +50,6 @@
 		0D026C0B14D20E0F0015720E /* MakeMovie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0D026B6514D20E0F0015720E /* MakeMovie.cpp */; };
 		0D026C0C14D20E0F0015720E /* GridCurMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0D026B6614D20E0F0015720E /* GridCurMover.cpp */; };
 		0D026C0D14D20E0F0015720E /* CLASSES.CPP in Sources */ = {isa = PBXBuildFile; fileRef = 0D026B6714D20E0F0015720E /* CLASSES.CPP */; };
-		0D026C0E14D20E0F0015720E /* CMYLIST2.CPP in Sources */ = {isa = PBXBuildFile; fileRef = 0D026B8414D20E0F0015720E /* CMYLIST2.CPP */; };
 		0D026C0F14D20E0F0015720E /* TShioTimeValue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0D026B8614D20E0F0015720E /* TShioTimeValue.cpp */; };
 		0D026C1014D20E0F0015720E /* PtCurMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0D026B8714D20E0F0015720E /* PtCurMover.cpp */; };
 		0D026C1114D20E0F0015720E /* NetCDFMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0D026B8814D20E0F0015720E /* NetCDFMover.cpp */; };
@@ -261,7 +260,6 @@
 		0D026B8114D20E0F0015720E /* ADCPTimeValue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ADCPTimeValue.h; path = ../gui_gnome/ADCPTimeValue.h; sourceTree = SOURCE_ROOT; };
 		0D026B8214D20E0F0015720E /* TOSSMTimeValue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TOSSMTimeValue.h; path = ../gui_gnome/TOSSMTimeValue.h; sourceTree = SOURCE_ROOT; };
 		0D026B8314D20E0F0015720E /* CMap2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CMap2.h; path = ../gui_gnome/CMap2.h; sourceTree = SOURCE_ROOT; };
-		0D026B8414D20E0F0015720E /* CMYLIST2.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CMYLIST2.CPP; path = ../gui_gnome/CMYLIST2.CPP; sourceTree = SOURCE_ROOT; };
 		0D026B8514D20E0F0015720E /* TCompoundMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TCompoundMap.h; path = ../gui_gnome/TCompoundMap.h; sourceTree = SOURCE_ROOT; };
 		0D026B8614D20E0F0015720E /* TShioTimeValue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TShioTimeValue.cpp; path = ../gui_gnome/TShioTimeValue.cpp; sourceTree = SOURCE_ROOT; };
 		0D026B8714D20E0F0015720E /* PtCurMover.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PtCurMover.cpp; path = ../gui_gnome/PtCurMover.cpp; sourceTree = SOURCE_ROOT; };
@@ -347,7 +345,6 @@
 		0D026BD814D20E0F0015720E /* CONTDLG.H */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CONTDLG.H; path = ../gui_gnome/CONTDLG.H; sourceTree = SOURCE_ROOT; };
 		0D026BD914D20E0F0015720E /* CONTDLG.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CONTDLG.cpp; path = ../gui_gnome/CONTDLG.cpp; sourceTree = SOURCE_ROOT; };
 		0D026BDA14D20E0F0015720E /* CompFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CompFunctions.h; path = ../gui_gnome/CompFunctions.h; sourceTree = SOURCE_ROOT; };
-		0D026BDB14D20E0F0015720E /* CMYLIST2.H */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = CMYLIST2.H; path = ../gui_gnome/CMYLIST2.H; sourceTree = SOURCE_ROOT; };
 		0D026BDC14D20E0F0015720E /* Wizard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Wizard.h; path = ../gui_gnome/Wizard.h; sourceTree = SOURCE_ROOT; };
 		0D026BDD14D20E0F0015720E /* WindUncertainty.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WindUncertainty.h; path = ../gui_gnome/WindUncertainty.h; sourceTree = SOURCE_ROOT; };
 		0D026BDE14D20E0F0015720E /* WindUncertainty.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = WindUncertainty.cpp; path = ../gui_gnome/WindUncertainty.cpp; sourceTree = SOURCE_ROOT; };
@@ -539,7 +536,6 @@
 				0D026B8114D20E0F0015720E /* ADCPTimeValue.h */,
 				0D026B8214D20E0F0015720E /* TOSSMTimeValue.h */,
 				0D026B8314D20E0F0015720E /* CMap2.h */,
-				0D026B8414D20E0F0015720E /* CMYLIST2.CPP */,
 				0D026B8514D20E0F0015720E /* TCompoundMap.h */,
 				0D026B8614D20E0F0015720E /* TShioTimeValue.cpp */,
 				0D026B8714D20E0F0015720E /* PtCurMover.cpp */,
@@ -625,7 +621,6 @@
 				0D026BD814D20E0F0015720E /* CONTDLG.H */,
 				0D026BD914D20E0F0015720E /* CONTDLG.cpp */,
 				0D026BDA14D20E0F0015720E /* CompFunctions.h */,
-				0D026BDB14D20E0F0015720E /* CMYLIST2.H */,
 				0D026BDC14D20E0F0015720E /* Wizard.h */,
 				0D026BDD14D20E0F0015720E /* WindUncertainty.h */,
 				0D026BDE14D20E0F0015720E /* WindUncertainty.cpp */,
@@ -822,7 +817,6 @@
 				0D026C0B14D20E0F0015720E /* MakeMovie.cpp in Sources */,
 				0D026C0C14D20E0F0015720E /* GridCurMover.cpp in Sources */,
 				0D026C0D14D20E0F0015720E /* CLASSES.CPP in Sources */,
-				0D026C0E14D20E0F0015720E /* CMYLIST2.CPP in Sources */,
 				0D026C0F14D20E0F0015720E /* TShioTimeValue.cpp in Sources */,
 				0D026C1014D20E0F0015720E /* PtCurMover.cpp in Sources */,
 				0D026C1114D20E0F0015720E /* NetCDFMover.cpp in Sources */,
