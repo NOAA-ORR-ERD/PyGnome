@@ -1,1 +1,1 @@
-old stuff
+Previously used components that are not part of the current development version
