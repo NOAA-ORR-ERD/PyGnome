@@ -1,14 +1,15 @@
-#!/usr/bin/env python
-
-# I don't have documentation strings
-
-# if __name__ == __???___:
-#
-#
-
+ #!/usr/bin/env python
+ 
+ # I don't have documentation strings
+ 
+ # if __name__ == __???___:
+ #
+ #
+ 
 import sys
 import os
 import numpy as np
+import random
 from PIL import Image, ImageDraw
 
 sys.path[len(sys.path):] = [os.environ['HOME']+'/Workspace/GNOME']
@@ -64,10 +65,12 @@ class map(map_canvas.MapCanvas):
             return 1
         else:
             return 0
-    
-    def set_spill(self, coord, num_particles):
+ 
+ 	def agitate_particles(self, time_step, spill):
+ 		pass
+    	
+    def set_spill(self, coord, num_particles, release_time):
         if not self.allowable_spill_position(coord):
             return -1
-        spills += [(coord, num_particles)]
-        
+        self.spills += [(coord, num_particles, release_time)]
         

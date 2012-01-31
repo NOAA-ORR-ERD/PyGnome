@@ -48,6 +48,13 @@ cdef extern from "TypeDefs.h":
     ctypedef struct LEWindUncertainRec:
         float downStream
         float crossStream
+        
+    ctypedef enum:
+        OILSTAT_NOTRELEASED = 0
+        OILSTAT_INWATER = 2
+        OILSTAT_ONLAND
+        OILSTAT_OFFMAPS = 7
+        OILSTAT_EVAPORATED = 10     
 
 cdef extern from "CROSS.H":
     pass

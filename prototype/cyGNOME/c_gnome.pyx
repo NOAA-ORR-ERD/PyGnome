@@ -9,7 +9,10 @@ include "c_gnome_defs.pxi"
 cimport numpy as np
 import numpy as np
 
-
+status_in_water = OILSTAT_INWATER
+status_on_land  = OILSTAT_ONLAND
+status_not_released = OILSTAT_NOTRELEASED
+    
 cdef class random_mover:
 
     cdef Random_c *mover
@@ -32,6 +35,8 @@ cdef class random_mover:
         cdef WorldPoint3D wp3d
         
         for i in xrange(0, len(LEs)):
+            if LEs[i].status_code != OILSTAT_INWATER:
+                continue
             wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)          
             LEs[i].p = wp3d.p
             LEs[i].z = wp3d.z
@@ -68,6 +73,8 @@ cdef class wind_mover:
         cdef WorldPoint3D wp3d
         
         for i in xrange(0, len(LEs)):
+            if LEs[i].status_code != OILSTAT_INWATER:
+                continue
             wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)
             LEs[i].p = wp3d.p
             LEs[i].z = wp3d.z        
