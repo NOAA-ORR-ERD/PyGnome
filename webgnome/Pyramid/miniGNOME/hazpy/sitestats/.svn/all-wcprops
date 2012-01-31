@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/Hazpy/!svn/ver/201/trunk/lib/hazpy/sitestats
+END
+migrate.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/Hazpy/!svn/ver/198/trunk/lib/hazpy/sitestats/migrate.py
+END
+resolve_uscg_domains.py
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/Hazpy/!svn/ver/109/trunk/lib/hazpy/sitestats/resolve_uscg_domains.py
+END
+constants.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/Hazpy/!svn/ver/110/trunk/lib/hazpy/sitestats/constants.py
+END
+tool.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/Hazpy/!svn/ver/190/trunk/lib/hazpy/sitestats/tool.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/Hazpy/!svn/ver/77/trunk/lib/hazpy/sitestats/__init__.py
+END
+logger.py
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/Hazpy/!svn/ver/201/trunk/lib/hazpy/sitestats/logger.py
+END
+model.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/Hazpy/!svn/ver/200/trunk/lib/hazpy/sitestats/model.py
+END
+summarize_month.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/Hazpy/!svn/ver/110/trunk/lib/hazpy/sitestats/summarize_month.py
+END
+maintenance.py
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/Hazpy/!svn/ver/198/trunk/lib/hazpy/sitestats/maintenance.py
+END
+make_raw_referers.py
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/Hazpy/!svn/ver/112/trunk/lib/hazpy/sitestats/make_raw_referers.py
+END
