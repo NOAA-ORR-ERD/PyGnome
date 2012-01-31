@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/Hazpy/!svn/ver/143/trunk/lib/hazpy/pylons
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/Hazpy/!svn/ver/16/trunk/lib/hazpy/pylons/__init__.py
+END
+configparser.py
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/Hazpy/!svn/ver/143/trunk/lib/hazpy/pylons/configparser.py
+END
+accesslog.py
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/Hazpy/!svn/ver/77/trunk/lib/hazpy/pylons/accesslog.py
+END
+logging_util.py
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/Hazpy/!svn/ver/75/trunk/lib/hazpy/pylons/logging_util.py
+END
