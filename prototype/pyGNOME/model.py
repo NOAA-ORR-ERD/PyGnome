@@ -19,6 +19,10 @@ le_rec = numpy.dtype([('le_units', numpy.int), ('le_key', numpy.int), ('le_custo
             ('windage', numpy.double), ('droplet_size', numpy.int), ('dispersion_status', numpy.short), \
             ('rise_velocity', numpy.double), ('status_code', numpy.short), ('last_water_pt', world_point), ('beach_time', numpy.uint)], align=True)
 
+status_in_water = c_gnome.status_in_water
+status_on_land = c_gnome.status_on_land
+status_not_released = c_gnome.status_not_released
+
 class Model:
     
     """ Documentation goes here. """
@@ -72,7 +76,7 @@ class Model:
 			for i in xrange(0, tmp_list.size):
 				tmp_list[i]['p']['p_long'] = spill[0][0]
 				tmp_list[i]['p']['p_lat'] =  spill[0][1]
-				tmp_list[i]['status_code'] = c_gnome.status_not_released
+				tmp_list[i]['status_code'] = status_not_released
 			self.particles += [(tmp_list, release_time)]
 	
 	def get_num_timesteps(self):
@@ -80,17 +84,17 @@ class Model:
 	
 	def release_particles(self, time_step):
 		to_be_kept = range(0, len(self.particles))
+		remove = to_be_kept.remove
 		for j in xrange(0, len[self.particles]):
 			if self.particles[j][1] <= self.start_time + self.interval_seconds*time_step:
-				to_be_kept.remove(j)
+				remove(j)
 				tmp_list = self.particles[j][0]
 				for i in xrange(0, tmp_list.size):
-					tmp_list[i]['status_code'] = c_gnome.status_in_water
+					tmp_list[i]['status_code'] = status_in_water
 				self.live_particles += [self.particles[j]]
 		self.particles = [self.particles[k] for k in to_be_kept]
 				
 	def refloat_particles(self, time_step):
-		return	
 		spills = zip(*self.live_particles)[0]
 		map(self.map.agitate_particles, [time_step]*len(spills), spills)
 		
