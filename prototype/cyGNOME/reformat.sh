@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for FILE in `ls *.py && ls *.pyx && ls *.pxi` ; 
+for FILE in `ls *.py && ls *.pyx && ls *.pxi && ls *.pxd` ; 
 do 
 	cp ${FILE} ${FILE}+~_!;
 

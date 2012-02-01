@@ -4,15 +4,10 @@ import math
 
 from libcpp.vector cimport vector
 from cython.operator import preincrement as preinc
-include "c_gnome_defs.pxi"
 
 cimport numpy as np
 import numpy as np
 
-status_in_water = OILSTAT_INWATER
-status_on_land  = OILSTAT_ONLAND
-status_not_released = OILSTAT_NOTRELEASED
-    
 cdef class random_mover:
 
     cdef Random_c *mover
