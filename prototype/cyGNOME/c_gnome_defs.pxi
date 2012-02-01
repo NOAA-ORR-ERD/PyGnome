@@ -54,7 +54,18 @@ cdef extern from "TypeDefs.h":
         OILSTAT_INWATER = 2
         OILSTAT_ONLAND
         OILSTAT_OFFMAPS = 7
-        OILSTAT_EVAPORATED = 10     
+        OILSTAT_EVAPORATED = 10 
+    
+    ctypedef enum:
+        DONT_DISPERSE 
+        DISPERSE
+        HAVE_DISPERSED
+        DISPERSE_NAT
+        HAVE_DISPERSED_NAT
+        EVAPORATE
+        HAVE_EVAPORATED
+        REMOVE
+        HAVE_REMOVED
 
 cdef extern from "CROSS.H":
     pass
