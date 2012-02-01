@@ -58,6 +58,7 @@ class Model:
 	
 	def create_environment(self):
 		append = self.particles.append
+		status_dont_disperse = basic_types.disp_status_dont_disperse
 		for spill in self.map.spills:
 			tmp_list = numpy.ndarray(spill[1], le_rec)
 			release_time = spill[2]
@@ -65,7 +66,7 @@ class Model:
 				tmp_list[i]['p']['p_long'] = spill[0][0]
 				tmp_list[i]['p']['p_lat'] =  spill[0][1]
 				tmp_list[i]['status_code'] = status_not_released
-				tmp_list[i]['dispersion_status'] = basic_types.disp_status_dont_disperse
+				tmp_list[i]['dispersion_status'] = status_dont_disperse
 			append((tmp_list, release_time))
 	
 	def get_num_timesteps(self):
@@ -79,12 +80,14 @@ class Model:
 		release = self.live_particles.append
 		keep = temp_queue.append
 		pop = self.particles.popleft
+		current_time = self.start_Time + self.interval_seconds*time_step
+		status_in_water = basic_types.status_in_water
 		while len(self.particles):
 			spill = pop()
-			if spill[1] <= self.start_time + self.interval_seconds*time_step:
+			if spill[1] <= current_time:
 				tmp_list = spill[0]
 				for i in xrange(0, tmp_list.size):
-					tmp_list[i]['status_code'] = basic_types.status_in_water
+					tmp_list[i]['status_code'] = status_in_water
 				release(spill)
 			else:
 				keep(spill)
