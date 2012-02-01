@@ -5,19 +5,21 @@ import map
 import os
 import sys
 from math import floor
+import collections
 sys.path[len(sys.path):] = [os.environ['HOME']+'/Workspace/GNOME/prototype']	# ...
 from cyGNOME import c_gnome
 import basic_types
 
+	
 class Model:
     
     """ Documentation goes here. """
 
     def __init__(self):
-        self.movers = []
+        self.movers = collections.deque()
         self.map = None
-        self.particles = []
-        self.live_particles = []
+        self.particles = collections.deque()
+        self.live_particles = collections.deque()
         self.start_time = None
         self.stop_time = None
         self.duration = None
@@ -31,10 +33,10 @@ class Model:
         self.map = map(image_size, bna_filename)
     
     def add_wind_mover(self, constant_wind_value):
-        self.movers += [c_gnome.wind_mover(constant_wind_value)]
+        self.movers.append(c_gnome.wind_mover(constant_wind_value))
         
     def add_random_mover(self, diffusion_coefficient):
-        self.movers += [c_gnome.random_mover(diffusion_coefficient)]
+        self.movers.append(c_gnome.random_mover(diffusion_coefficient))
         
     def set_run_duration(self, start_time, stop_time):
     	if not start_time < stop_time:
@@ -55,16 +57,16 @@ class Model:
 		map(self.map.set_spill, coords, num_particles_array, release_time_array)
 	
 	def create_environment(self):
+		append = self.particles.append
 		for spill in self.map.spills:
 			tmp_list = numpy.ndarray(spill[1], le_rec)
 			release_time = spill[2]
-			num_particles
 			for i in xrange(0, tmp_list.size):
 				tmp_list[i]['p']['p_long'] = spill[0][0]
 				tmp_list[i]['p']['p_lat'] =  spill[0][1]
 				tmp_list[i]['status_code'] = status_not_released
 				tmp_list[i]['dispersion_status'] = basic_types.disp_status_dont_disperse
-			self.particles += [(tmp_list, release_time)]
+			append((tmp_list, release_time))
 	
 	def get_num_timesteps(self):
 		return self.num_timesteps
@@ -73,16 +75,19 @@ class Model:
 		pass
 	
 	def release_particles(self, time_step):
-		to_be_kept = range(0, len(self.particles))
-		remove = to_be_kept.remove
-		for j in xrange(0, len[self.particles]):
+		temp_queue = collections.deque()
+		release = self.live_particles.append
+		keep = temp_queue.append
+		pop = self.particles.popleft
+		while len(self.particles):
 			if self.particles[j][1] <= self.start_time + self.interval_seconds*time_step:
-				remove(j)
 				tmp_list = self.particles[j][0]
 				for i in xrange(0, tmp_list.size):
 					tmp_list[i]['status_code'] = basic_types.status_in_water
-				self.live_particles += [self.particles[j]]
-		self.particles = [self.particles[k] for k in to_be_kept]
+				release(pop())
+			else:
+				keep(pop())
+		self.particles = temp_queue
 				
 	def refloat_particles(self, time_step):
 		spills = zip(*self.live_particles)[0]
