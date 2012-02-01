@@ -7,7 +7,7 @@ import sys
 from math import floor
 sys.path[len(sys.path):] = [os.environ['HOME']+'/Workspace/GNOME/prototype']	# ...
 from cyGNOME import c_gnome
-from basic_types import *
+import basic_types
 
 class Model:
     
@@ -63,7 +63,7 @@ class Model:
 				tmp_list[i]['p']['p_long'] = spill[0][0]
 				tmp_list[i]['p']['p_lat'] =  spill[0][1]
 				tmp_list[i]['status_code'] = status_not_released
-				tmp_list[i]['dispersion_status'] = disp_status_dont_disperse
+				tmp_list[i]['dispersion_status'] = basic_types.disp_status_dont_disperse
 			self.particles += [(tmp_list, release_time)]
 	
 	def get_num_timesteps(self):
@@ -80,7 +80,7 @@ class Model:
 				remove(j)
 				tmp_list = self.particles[j][0]
 				for i in xrange(0, tmp_list.size):
-					tmp_list[i]['status_code'] = status_in_water
+					tmp_list[i]['status_code'] = basic_types.status_in_water
 				self.live_particles += [self.particles[j]]
 		self.particles = [self.particles[k] for k in to_be_kept]
 				
