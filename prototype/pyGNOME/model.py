@@ -80,13 +80,14 @@ class Model:
 		keep = temp_queue.append
 		pop = self.particles.popleft
 		while len(self.particles):
-			if self.particles[j][1] <= self.start_time + self.interval_seconds*time_step:
-				tmp_list = self.particles[j][0]
+			spill = pop()
+			if spill[1] <= self.start_time + self.interval_seconds*time_step:
+				tmp_list = spill[0]
 				for i in xrange(0, tmp_list.size):
 					tmp_list[i]['status_code'] = basic_types.status_in_water
-				release(pop())
+				release(spill)
 			else:
-				keep(pop())
+				keep(spill)
 		self.particles = temp_queue
 				
 	def refloat_particles(self, time_step):
