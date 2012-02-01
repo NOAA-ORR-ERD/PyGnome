@@ -63,10 +63,14 @@ class Model:
 				tmp_list[i]['p']['p_long'] = spill[0][0]
 				tmp_list[i]['p']['p_lat'] =  spill[0][1]
 				tmp_list[i]['status_code'] = status_not_released
+				tmp_list[i]['dispersion_status'] = disp_status_dont_disperse
 			self.particles += [(tmp_list, release_time)]
 	
 	def get_num_timesteps(self):
 		return self.num_timesteps
+	
+	def disperse_particles(self):
+		pass
 	
 	def release_particles(self, time_step):
 		to_be_kept = range(0, len(self.particles))
