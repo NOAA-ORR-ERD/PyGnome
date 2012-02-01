@@ -8,6 +8,8 @@ from cython.operator import preincrement as preinc
 cimport numpy as np
 import numpy as np
 
+include "c_gnome_defs.pxi"
+
 cdef class random_mover:
 
     cdef Random_c *mover
@@ -30,7 +32,7 @@ cdef class random_mover:
         cdef WorldPoint3D wp3d
         
         for i in xrange(0, len(LEs)):
-            if LEs[i].status_code != OILSTAT_INWATER:
+            if LEs[i].status_code != status_in_water:
                 continue
             wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)          
             LEs[i].p = wp3d.p
@@ -68,7 +70,7 @@ cdef class wind_mover:
         cdef WorldPoint3D wp3d
         
         for i in xrange(0, len(LEs)):
-            if LEs[i].status_code != OILSTAT_INWATER:
+            if LEs[i].status_code != status_in_water:
                 continue
             wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)
             LEs[i].p = wp3d.p
