@@ -2,7 +2,7 @@ from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
 import os, fnmatch
- 
+import sysconfig
 import numpy as np
  
 #for root, dirs, _files in os.walk("codeFiles/"):
@@ -21,22 +21,25 @@ for file in files:
     tempList += ["codeFiles/"+file]
 files = tempList
 
+compile_args=["-I.", "-fpascal-strings", "-fasm-blocks"]
+
+if sysconfig.get_config_var('UNIVERSALSDK') != None:
+	pass
+else:
+	compile_args += ['-isysroot /Developer/SDKs/MacOSX10.4u.sdk']
+
 setup(
     cmdclass = {'build_ext': build_ext},
     ext_modules = [Extension("c_gnome",
                              files,
                              language="c++",
-                             extra_compile_args=["-I.",
-                                                 #"-idirafter /Users/alex.hadjilambris/Desktop/tCython/tLEs",
-                                                 "-fpascal-strings", "-fasm-blocks"],
+                             extra_compile_args = compile_args,
                              include_dirs=["codeFiles",
                                            np.get_include(),
                                            ".",
                                            "/Developer/SDKs/MacOSX10.4u.sdk/Developer/Headers/FlatCarbon",
-                                           #"/Users/alex.hadjilambris/Desktop/class\ separation/GNOMEUniversal",
                                            ],
                              )
                    ]
-#    "/usr/local/include/", "/Developer/Headers/FlatCarbon/"])]
     )
 
