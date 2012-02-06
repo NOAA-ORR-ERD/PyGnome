@@ -23,12 +23,9 @@ class Model:
         self.duration = None
         self.interval_seconds = None
         self.num_timesteps = None
-
-    def test(self):
-        print status_in_water
         
     def add_map(self, image_size, bna_filename):
-        self.map = map(image_size, bna_filename)
+    	self.map = map.map(image_size, bna_filename)
     
     def add_wind_mover(self, constant_wind_value):
         self.movers.append(c_gnome.wind_mover(constant_wind_value))
@@ -66,9 +63,6 @@ class Model:
                 tmp_list[i]['status_code'] = status_not_released
                 tmp_list[i]['dispersion_status'] = status_dont_disperse
             append((tmp_list, release_time))
-    
-    def get_num_timesteps(self):
-        return self.num_timesteps
     
     def disperse_particles(self):
         pass
@@ -112,5 +106,3 @@ class Model:
         move_particles(self.time_step)
         self.time_step += 1
         
-    def get_particles(self):
-        return self.particles
