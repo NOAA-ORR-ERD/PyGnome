@@ -16,9 +16,6 @@ cdef class random_mover:
 
     def __cinit__(self):
         self.mover = new Random_c()
-
-    def test(self):
-        print DONT_DISPERSE
         
     def __dealloc__(self):
         del self.mover
@@ -35,7 +32,7 @@ cdef class random_mover:
         cdef WorldPoint3D wp3d
         
         for i in xrange(0, len(LEs)):
-            if LEs[i].status_code != status_in_water:
+            if LEs[i].statusCode != status_in_water:
                 continue
             wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)          
             LEs[i].p = wp3d.p
@@ -73,7 +70,7 @@ cdef class wind_mover:
         cdef WorldPoint3D wp3d
         
         for i in xrange(0, len(LEs)):
-            if LEs[i].status_code != status_in_water:
+            if LEs[i].statusCode != status_in_water:
                 continue
             wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)
             LEs[i].p = wp3d.p

@@ -40,7 +40,7 @@ class gnome_map(map_canvas.MapCanvas):
         pass        
 
     def to_pixel(self, coord):
-        return self.projection.to_pixel((coord,))[0]
+        return tuple(self.projection.to_pixel(coord))
 
     def get_bounds(self):
         return self.polygons.bounding_box
@@ -53,17 +53,19 @@ class gnome_map(map_canvas.MapCanvas):
         return (self.on_map(coord) and not self.in_water(coord))
 
     def allowable_spill_position(self, coord):
-        coord = self.to_pixel(coord)
         return self.in_water(coord)
         
     def in_water(self, coord):
         if not self.on_map(coord):
             return False
         coord = self.to_pixel(coord)
-        chrom = self.image.getpixel(coord)
-        if not chrom:
-            return True
-        else:
+        try:
+            chrom = self.image.getpixel(coord)
+            if not chrom:
+                return True
+            else:
+                return False
+        except:
             return False
 
     def agitate_particles(self, time_step, spill):
@@ -71,6 +73,7 @@ class gnome_map(map_canvas.MapCanvas):
 
     def set_spill(self, coord, num_particles, release_time):
         if not self.allowable_spill_position(coord):
-            return False
-        self.spills += [(coord, num_particles, release_time)]
-        
+            print  "spill " + str(dict((('position', coord), ('num_particles', num_particles), ('release_time', release_time)))) + " ignored."
+        else:
+            self.spills += [(coord, num_particles, release_time)]
+

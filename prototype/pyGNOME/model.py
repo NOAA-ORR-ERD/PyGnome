@@ -23,9 +23,10 @@ class Model:
         self.duration = None
         self.interval_seconds = None
         self.num_timesteps = None
+        self.time_step = 0
         
     def add_map(self, image_size, bna_filename):
-    	self.minimap = gnome_map(image_size, bna_filename)
+        self.minimap = gnome_map(image_size, bna_filename)
     
     def add_wind_mover(self, constant_wind_value):
         self.movers.append(c_gnome.wind_mover(constant_wind_value))
@@ -53,7 +54,6 @@ class Model:
     
     def create_environment(self):
         append = self.particles.append
-        status_dont_disperse = basic_types.disp_status_dont_disperse
         for spill in self.minimap.spills:
             tmp_list = numpy.ndarray(spill[1], le_rec)
             release_time = spill[2]
@@ -61,19 +61,21 @@ class Model:
                 tmp_list[i]['p']['p_long'] = spill[0][0]
                 tmp_list[i]['p']['p_lat'] =  spill[0][1]
                 tmp_list[i]['status_code'] = status_not_released
-                tmp_list[i]['dispersion_status'] = status_dont_disperse
+                tmp_list[i]['dispersion_status'] = disp_status_dont_disperse
             append((tmp_list, release_time))
     
     def disperse_particles(self):
         pass
     
+    def reset_steps(self):
+    	self.time_step = 0
+    	
     def release_particles(self, time_step):
         temp_queue = collections.deque()
         release = self.live_particles.append
         keep = temp_queue.append
         pop = self.particles.popleft
-        current_time = self.start_Time + self.interval_seconds*time_step
-        status_in_water = basic_types.status_in_water
+        current_time = self.start_time + self.interval_seconds*self.time_step
         while len(self.particles):
             spill = pop()
             if spill[1] <= current_time:
@@ -86,23 +88,29 @@ class Model:
         self.particles = temp_queue
                 
     def refloat_particles(self, time_step):
+    	if not len(self.live_particles):
+    		return
         spills = zip(*self.live_particles)[0]
         map(self.minimap.agitate_particles, [time_step]*len(spills), spills)
         
     def move_particles(self, time_step):
+    	if not len(self.live_particles):
+    		return
         spills = zip(*self.live_particles)[0]
         for mover in self.movers:
             map(mover.get_move, [time_step]*len(spills), spills)
                 
     def step(self):
         if(self.duration == None):
-            return
+            return False
         if(self.interval_seconds == None):
-            return
-        if not len(movers) > 0:
-            return
-        release_particles(self.time_step)
-        refloat_particles(self.time_step)
-        move_particles(self.time_step)
+            return False
+        if not len(self.movers) > 0:
+            return False
+        if self.time_step >= self.num_timesteps:
+        	return False
+        self.release_particles(self.time_step)
+        self.refloat_particles(self.time_step)
+        self.move_particles(self.time_step)
         self.time_step += 1
         
