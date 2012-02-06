@@ -1,7 +1,7 @@
  
 import numpy
 import random                
-import map
+from map import gnome_map
 import os
 import sys
 from math import floor
@@ -15,7 +15,7 @@ class Model:
 
     def __init__(self):
         self.movers = collections.deque()
-        self.map = None
+        self.minimap = None
         self.particles = collections.deque()
         self.live_particles = collections.deque()
         self.start_time = None
@@ -25,7 +25,7 @@ class Model:
         self.num_timesteps = None
         
     def add_map(self, image_size, bna_filename):
-    	self.map = map.map(image_size, bna_filename)
+    	self.minimap = gnome_map(image_size, bna_filename)
     
     def add_wind_mover(self, constant_wind_value):
         self.movers.append(c_gnome.wind_mover(constant_wind_value))
@@ -47,14 +47,14 @@ class Model:
         self.num_timesteps = floor(self.duration / self.interval_seconds)
 
     def set_spills(self, coords, num_particles_array, release_time_array):
-        if self.map == None:
+        if self.minimap == None:
             return
-        map(self.map.set_spill, coords, num_particles_array, release_time_array)
+        map(self.minimap.set_spill, coords, num_particles_array, release_time_array)
     
     def create_environment(self):
         append = self.particles.append
         status_dont_disperse = basic_types.disp_status_dont_disperse
-        for spill in self.map.spills:
+        for spill in self.minimap.spills:
             tmp_list = numpy.ndarray(spill[1], le_rec)
             release_time = spill[2]
             for i in xrange(0, tmp_list.size):
@@ -87,7 +87,7 @@ class Model:
                 
     def refloat_particles(self, time_step):
         spills = zip(*self.live_particles)[0]
-        map(self.map.agitate_particles, [time_step]*len(spills), spills)
+        map(self.minimap.agitate_particles, [time_step]*len(spills), spills)
         
     def move_particles(self, time_step):
         spills = zip(*self.live_particles)[0]

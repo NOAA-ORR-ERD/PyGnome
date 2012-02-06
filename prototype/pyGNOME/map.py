@@ -18,7 +18,7 @@ from utilities import map_canvas
 from hazpy.file_tools import haz_files
 from hazpy.geometry import polygons
 
-class map(map_canvas.MapCanvas):
+class gnome_map(map_canvas.MapCanvas):
     
     """
     Inherits MapCanvas.
