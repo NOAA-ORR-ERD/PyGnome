@@ -6,8 +6,8 @@ import os
 import sys
 from math import floor
 import collections
-import basic_types
 from cyGNOME import c_gnome
+from basic_types import *
     
 class Model:
     
@@ -24,6 +24,8 @@ class Model:
         self.interval_seconds = None
         self.num_timesteps = None
 
+    def test(self):
+        print status_in_water
         
     def add_map(self, image_size, bna_filename):
         self.map = map(image_size, bna_filename)
@@ -39,7 +41,7 @@ class Model:
             return
         self.start_time = start_time
         self.stop_time = stop_time
-        self.duration = start_time - stop_time
+        self.duration = stop_time - start_time
     
     def set_timestep(self, interval_seconds):
         if self.duration == None:
