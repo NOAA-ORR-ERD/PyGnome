@@ -34,9 +34,10 @@ cdef class random_mover:
         for i in xrange(0, len(LEs)):
             if LEs[i].statusCode != status_in_water:
                 continue
-            wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)          
-            LEs[i].p = wp3d.p
-            LEs[i].z = wp3d.z
+            wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)
+            LEs[i].p.pLat += wp3d.p.pLat
+            LEs[i].p.pLong += wp3d.p.pLong
+            LEs[i].z += wp3d.z    
 
 cdef class wind_mover:
 
@@ -73,5 +74,6 @@ cdef class wind_mover:
             if LEs[i].statusCode != status_in_water:
                 continue
             wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)
-            LEs[i].p = wp3d.p
-            LEs[i].z = wp3d.z        
+            LEs[i].p.pLat += wp3d.p.pLat
+            LEs[i].p.pLong += wp3d.p.pLong
+            LEs[i].z += wp3d.z        
