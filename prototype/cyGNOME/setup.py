@@ -24,9 +24,9 @@ files = tempList
 compile_args=["-I.", "-fpascal-strings", "-fasm-blocks"]
 
 if sysconfig.get_config_var('UNIVERSALSDK') != None:
-	pass
+    pass
 else:
-	compile_args += ['-isysroot /Developer/SDKs/MacOSX10.4u.sdk']
+    compile_args += ['-isysroot /Developer/SDKs/MacOSX10.4u.sdk']
 
 setup(
     cmdclass = {'build_ext': build_ext},

@@ -9,13 +9,16 @@ cimport numpy as np
 import numpy as np
 
 include "c_gnome_defs.pxi"
-
+    
 cdef class random_mover:
 
     cdef Random_c *mover
 
     def __cinit__(self):
         self.mover = new Random_c()
+
+    def test(self):
+        print DONT_DISPERSE
         
     def __dealloc__(self):
         del self.mover

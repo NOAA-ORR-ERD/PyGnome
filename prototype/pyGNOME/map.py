@@ -12,11 +12,11 @@ import numpy as np
 import random
 from PIL import Image, ImageDraw
 
-sys.path[len(sys.path):] = [os.environ['HOME']+'/Workspace/GNOME']
+sys.path[len(sys.path):] = [os.environ['HOME']+'/Workspace/GNOME2']
 
 from utilities import map_canvas
-from utilities.hazpy.file_tools import haz_files
-from utilities.hazpy.geometry import polygons
+from hazpy.file_tools import haz_files
+from hazpy.geometry import polygons
 
 class map(map_canvas.MapCanvas):
     
@@ -38,15 +38,15 @@ class map(map_canvas.MapCanvas):
     
     def __del__(self):
         pass        
-    
+
     def to_pixel(self, coord):
         return self.projection.to_pixel((coord,))[0]
-        
+
     def get_bounds(self):
         return self.polygons.bounding_box
     
     def on_map(self, coord):
-        return 1
+        return True
 
     def on_land(self, coord):
         coord = self.to_pixel(coord)
@@ -58,19 +58,19 @@ class map(map_canvas.MapCanvas):
         
     def in_water(self, coord):
         if not self.on_map(coord):
-            return 0
+            return False
         coord = self.to_pixel(coord)
         chrom = self.image.getpixel(coord)
         if not chrom:
-            return 1
+            return True
         else:
-            return 0
- 
- 	def agitate_particles(self, time_step, spill):
- 		pass
-    	
+            return False
+
+    def agitate_particles(self, time_step, spill):
+         pass
+
     def set_spill(self, coord, num_particles, release_time):
         if not self.allowable_spill_position(coord):
-            return -1
+            return False
         self.spills += [(coord, num_particles, release_time)]
         
