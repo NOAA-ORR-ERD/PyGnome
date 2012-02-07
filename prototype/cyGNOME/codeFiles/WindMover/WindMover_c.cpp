@@ -15,6 +15,8 @@
 #endif
 #include "WindMover_c.h"
 #include "CROSS.H"
+#include <iostream>
+
 
 #define _NewHandle NewHandle
 #define _GetHandleSize GetHandleSize
@@ -365,6 +367,7 @@ WorldPoint3D WindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 	// separate algorithm for dispersed oil
 	if ((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT)
 	{
+		std::cout << "iff.";
 		//return deltaPoint;
 		//code goes here, check if depth at point is less than mixed layer depth or breaking wave depth
 		// shouldn't happen if other checks are done...
@@ -410,6 +413,7 @@ WorldPoint3D WindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 		
 		timeValue.u *=  (*theLE).windage;
 		timeValue.v *=  (*theLE).windage;
+
 	}
 	
 	dLong = ((timeValue.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPoint.pLat);
@@ -417,7 +421,7 @@ WorldPoint3D WindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 	
 	deltaPoint.p.pLong = dLong * 1000000;
 	deltaPoint.p.pLat  = dLat  * 1000000;
-	
+
 	return deltaPoint;
 }
 

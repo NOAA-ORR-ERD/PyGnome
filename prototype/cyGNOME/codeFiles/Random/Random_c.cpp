@@ -9,6 +9,7 @@
 
 #include "Random_c.h"
 #include "CROSS.H"
+#include <iostream>
 
 #ifdef MAC
 #ifdef MPW

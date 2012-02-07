@@ -62,6 +62,7 @@ class Model:
                 tmp_list[i]['p']['p_lat'] =  spill[0][1]
                 tmp_list[i]['status_code'] = status_not_released
                 tmp_list[i]['dispersion_status'] = disp_status_dont_disperse
+                tmp_list[i]['windage'] = .15
             append((tmp_list, release_time))
     
     def disperse_particles(self):
@@ -109,8 +110,8 @@ class Model:
             return False
         if self.time_step >= self.num_timesteps:
         	return False
-        self.release_particles(self.time_step)
-        self.refloat_particles(self.time_step)
-        self.move_particles(self.time_step)
+        self.release_particles(self.interval_seconds)
+        self.refloat_particles(self.interval_seconds)
+        self.move_particles(self.interval_seconds)
         self.time_step += 1
         
