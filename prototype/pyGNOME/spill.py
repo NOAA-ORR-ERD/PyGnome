@@ -25,18 +25,20 @@ class spill:
 			sra[j] = status_not_released
 			dra[j] = disp_status
 			
-	
-	def do_nothing(self):
-		pass
-		
 	def release_particles(self, model_time):
 		if(self.released_index >= self.num_particles):
-			self.released_particles = self.do_nothing
-		fraction_duration = ((model_time - self.start_time) / self.stop_minus_start_time)
+			self.release_particles = lambda null: None
+			return
+		if(self.start_time > model_time):
+			pass
+		if(self.stop_minus_start_time == 0):
+			fraction_duration = 1
+		else:
+			fraction_duration = ((model_time - self.start_time) / self.stop_minus_start_time)
 		displacement = fraction_duration * self.stop_minus_start_pos
 		point_of_release = self.start_position + displacement
 		ra = self.npra['status_code']
-		for self.released_index in xrange(self.released_index, ceil(fraction_duration*self.num_particles)):
+		for self.released_index in xrange(self.released_index, int(ceil(fraction_duration*self.num_particles))):
 			ra[self.released_index]=status_in_water
 		self.released_index += 1
 		
