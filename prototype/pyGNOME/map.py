@@ -29,11 +29,12 @@ class gnome_map(map_canvas.MapCanvas):
     lake_color = 0
     land_color = 1
     
-    def __init__(self, image_size, bna_filename):
+    def __init__(self, image_size, bna_filename, refloat_halflife):
         map_canvas.MapCanvas.__init__(self, image_size, projection=map_canvas.FlatEarthProjection, mode='1')
         self.polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
         self.filename = bna_filename
         self.draw_land(self.polygons)
+        self.refloat_halflife = refloat_halflife
         self.spills = []
     
     def __del__(self):

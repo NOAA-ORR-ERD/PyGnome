@@ -51,20 +51,7 @@ class Model:
         if self.minimap == None:
             return
         map(self.minimap.set_spill, coords, num_particles_array, release_time_array)
-    
-    def create_environment(self):
-        append = self.particles.append
-        for spill in self.minimap.spills:
-            tmp_list = numpy.ndarray(spill[1], le_rec)
-            release_time = spill[2]
-            for i in xrange(0, tmp_list.size):
-                tmp_list[i]['p']['p_long'] = spill[0][0]
-                tmp_list[i]['p']['p_lat'] =  spill[0][1]
-                tmp_list[i]['status_code'] = status_not_released
-                tmp_list[i]['dispersion_status'] = disp_status_dont_disperse
-                tmp_list[i]['windage'] = .15
-            append((tmp_list, release_time))
-    
+
     def disperse_particles(self):
         pass
     
