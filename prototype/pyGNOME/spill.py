@@ -62,7 +62,9 @@ class spill:
 			if (random() < refloat_likelihood):
 				sra[idx] = status_in_water
 				pra[idx] = lwpra[idx]
-		del self.chromogph
+				
+	def disperse_particles(self):
+		pass
 		
 	def movement_check(self):
 		chromogph = map(gnome_map.in_water, self.npra['p'])
@@ -71,3 +73,4 @@ class spill:
 			if chromogph[i]:
 				sra[i] = status_on_land
 		self.chromogph = chromogph
+		return [int(chromogph[x] and not self.chromogph[x]) for x in xrange(0, len(chromogph))]
