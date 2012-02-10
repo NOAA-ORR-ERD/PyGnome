@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw
 
 sys.path[len(sys.path):] = [os.environ['HOME']+'/Workspace/GNOME2']
 
-from utilities import map_canvas
+from gnome.utilities import map_canvas
 from hazpy.file_tools import haz_files
 from hazpy.geometry import polygons
 

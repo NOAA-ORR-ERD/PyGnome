@@ -1,6 +1,6 @@
 # Package wide type definitions
 import numpy
-from cyGNOME import c_gnome
+from gnome import c_gnome
 
 world_point = numpy.dtype([('p_long', numpy.int), ('p_lat', numpy.int)], align=True)
 world_point3d = numpy.dtype([('p', world_point), ('z', numpy.double)], align=True)

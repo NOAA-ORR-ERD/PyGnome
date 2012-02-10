@@ -6,7 +6,7 @@ import os
 import sys
 from math import floor
 import collections
-from cyGNOME import c_gnome
+from gnome import c_gnome
 from basic_types import *
 import spill
     
