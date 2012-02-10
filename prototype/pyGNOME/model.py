@@ -1,6 +1,6 @@
  
 import numpy
-import random                
+import random
 from map import gnome_map
 import os
 import sys
@@ -9,6 +9,7 @@ import collections
 from cyGNOME import c_gnome
 from basic_types import *
 import spill
+
     
 class Model:
     
@@ -50,8 +51,8 @@ class Model:
         self.interval_seconds = interval_seconds
         self.num_timesteps = floor(self.duration / self.interval_seconds)
 
-    def set_spill(self, num_particles, disp_status, windage, \
-                    (start_time, stop_time), (start_position, stop_position)):
+    def set_spill(self, num_particles, windage, (start_time, stop_time), (start_position, stop_position), \
+                    disp_status=disp_status_dont_disperse):
         allowable_spill = self.gnome_map.allowable_spill_position
         if not (allowable_spill(start_position) and allowable_spill(stop_position)):
             return
@@ -85,9 +86,9 @@ class Model:
         spills = self.spills
         for mover in self.movers:
             for j in xrange(0, len(spills)):
-                spill = spill[j]
+                spill = spills[j]
                 temp_position_ra = numpy.copy(spill.npra['p'])
-                map(mover.get_move, [interval_seconds]*len(spill.npra), spill.npra)
+                mover.get_move(self.interval_seconds, spill.npra)
                 chromogph = spill.movement_check()
                 for i in xrange(0, len(chromogph)):
                     if(chromogph[i]):
