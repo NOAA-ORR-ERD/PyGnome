@@ -310,8 +310,8 @@ typedef struct {
 
 
 typedef struct {
-	long pLong;
-	long pLat;
+	float pLong;
+	float pLat;
 } WorldPoint, *WORLDPOINTP, **WORLDPOINTH;
 
 typedef struct {

@@ -106,8 +106,7 @@ WorldPoint3D Random_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LERe
 	// code goes here
 	// note: could add code to make it a circle the first step
 	
-	deltaPoint.p.pLong = dLong * 1000000;
-	deltaPoint.p.pLat  = dLat  * 1000000;
-	
+	deltaPoint.p.pLong = dLong;
+	deltaPoint.p.pLat  = dLat;
 	return deltaPoint;
 }

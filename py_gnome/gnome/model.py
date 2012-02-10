@@ -10,7 +10,6 @@ from gnome import c_gnome
 from basic_types import *
 import spill
 
-
     
 class Model:
     
@@ -56,6 +55,7 @@ class Model:
                     disp_status=disp_status_dont_disperse):
         allowable_spill = self.gnome_map.allowable_spill_position
         if not (allowable_spill(start_position) and allowable_spill(stop_position)):
+            print 'spill ignored: (' + str(start_position) + ', ' + str(stop_position) + ').'
             return
         self.spills += [spill.spill(self.gnome_map, num_particles, disp_status, windage, \
                                         (start_time, stop_time), (start_position, stop_position))]
@@ -77,24 +77,33 @@ class Model:
     
     def beach_element(p, lwp):
         in_water = self.gnome_map.in_water
-        while not in_water((p['p_lat'], p['p_long'])):
-            displacement = (p['p_lat'] - lwp['p_lat'], p['p_long'] - lwp['p_long'])
+        while not in_water((p['p_long'], p['p_lat'])):
+            displacement = (p['p_long'] - lwp['p_long'], p['p_lat'] - lwp['p_lat'])
             displacement /= 2
-            p['p_lat'] = lwp['p_lat'] + displacement[0]
-            p['p_long'] = lwp['p_long'] + displacement[1]
+            p['p_long'] = lwp['p_long'] + displacement[0]
+            p['p_lat'] = lwp['p_lat'] + displacement[1]
         
     def move_particles(self):
+        def set_self_chromgph(obj,chromgph):
+            obj.chromgph = chromgph
+            set_self_chromgph = do_nothing
+        def do_nothing(null,nil): 
+            pass
         spills = self.spills
         for mover in self.movers:
             for j in xrange(0, len(spills)):
                 spill = spills[j]
+                print spill.npra[0]['status_code']
                 temp_position_ra = numpy.copy(spill.npra['p'])
                 mover.get_move(self.interval_seconds, spill.npra)
-                chromogph = spill.movement_check()
-                for i in xrange(0, len(chromogph)):
-                    if(chromogph[i]):
-                        self.lwp_arrays[j][i] = temp_position_ra[i]
-                        self.beach_element(spill.npra['p'][i], temp_position_ra[i])
+                
+        for j in xrange(0, len(spills)):
+            spill = spills[j]
+            chromgph = spill.movement_check(set_self_chromgph)
+            for i in xrange(0, len(chromgph)):
+                if(chromgph[i]):
+                    self.lwp_arrays[j][i] = temp_position_ra[i]
+                    self.beach_element(spill.npra['p'][i], temp_position_ra[i])
                     
     def step(self):
         if(self.duration == None):
@@ -105,7 +114,6 @@ class Model:
             return False
         if self.time_step >= self.num_timesteps:
             return False
-
         self.release_particles()
         self.refloat_particles()
         self.move_particles()

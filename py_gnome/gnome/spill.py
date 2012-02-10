@@ -1,9 +1,8 @@
-
 """ Documentation string goes here. """
 
 from basic_types import le_rec, status_not_released, status_in_water, status_on_land, disp_status_have_dispersed
 from math import ceil, pow
-import random
+from random import random
 import numpy
 
 class spill:
@@ -15,31 +14,31 @@ class spill:
         self.start_time = start_time
         self.stop_minus_start_time = stop_time - start_time
         self.start_position = start_position
-        self.stop_minus_start_pos = (stop_position[0] - start_position[0], stop_position[1] - start_position[0])
+        self.stop_minus_start_pos = (stop_position[0] - start_position[0], stop_position[1] - start_position[1])
         self.gnome_map = gnome_map
         self.released_index = 0
         self.windage = windage
         self.initialize_spill(disp_status)
-        self.chromogph = None
+        self.chromgph = None
         
     def initialize_spill(self, disp_status):
         sra = self.npra['status_code']
         dra = self.npra['dispersion_status']
         pra = self.npra['p']
         wra = self.npra['windage']
+        zra = self.npra['z']
         for j in xrange(0, self.num_particles):
             sra[j] = status_not_released
             dra[j] = disp_status
             wra[j] = self.windage
-            pra[j]['p_lat'] = self.start_position[0]
-            pra[j]['p_long'] = self.start_position[1]
+            pra[j]['p_long'] = self.start_position[0]
+            pra[j]['p_lat'] = self.start_position[1]
+            zra[j] = 0
     
     def release_particles(self, model_time):
         if(self.released_index >= self.num_particles):
             self.release_particles = lambda null: None
             return
-        if(self.start_time > model_time):
-            pass
         if(self.stop_minus_start_time == 0):
             fraction_duration = 1
         else:
@@ -53,12 +52,12 @@ class spill:
         
     def refloat_particles(self, length_time_step, lwpra):
         dra = self.npra['dispersion_status']
-        chromogph = self.chromogph
-        if chromogph == None:
+        chromgph = self.chromgph
+        if chromgph == None:
             return
         considered_indices = []
         for j in xrange(0, self.num_particles):
-            if chromogph[j] and not dra[j] == disp_status_have_dispersed: 
+            if chromgph[j] and not dra[j] == disp_status_have_dispersed: 
                 considered_indices += [j]
         refloat_likelihood = len(considered_indices)*(1-pow(.5, length_time_step/(self.gnome_map.refloat_halflife)))
         pra = self.npra['p']
@@ -71,12 +70,13 @@ class spill:
     def disperse_particles(self):
         pass
         
-    def movement_check(self):
-        chromogph = map(self.gnome_map.in_water, self.npra['p'])
+    def movement_check(self, noneTypePrevention):
+        chromgph = map(self.gnome_map.on_land, self.npra['p'])
         sra = self.npra['status_code']
         for i in xrange(0, self.num_particles):
-            if chromogph[i]:
+            if chromgph[i]:
                 sra[i] = status_on_land
-        merg = [int(chromogph[x] and not self.chromogph[x]) for x in xrange(0, len(chromogph))]
-        self.chromogph = chromogph
+        noneTypePrevention(self,chromgph)
+        merg = [int(chromgph[x] and not self.chromgph[x]) for x in xrange(0, len(chromgph))]
+        self.chromgph = chromgph
         return merg

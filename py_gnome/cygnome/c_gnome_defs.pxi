@@ -10,8 +10,8 @@ cdef extern from "TypeDefs.h":
 
 cdef extern from "GEOMETRY.H":
     ctypedef struct WorldPoint:
-        long pLong
-        long pLat
+        float pLong
+        float pLat
     ctypedef struct WorldPoint3D:
         WorldPoint p
         double z

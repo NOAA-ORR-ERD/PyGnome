@@ -30,14 +30,15 @@ cdef class random_mover:
     def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs):
         cdef int i    
         cdef WorldPoint3D wp3d
-        
-        for i in xrange(0, len(LEs)):
-            if LEs[i].statusCode != status_in_water:
+        cdef np.ndarray[LERec] ra = np.copy(LEs)
+        ra['p']['p_long']*=10**6
+        ra['p']['p_lat']*=10**6
+        for i in xrange(0, len(ra)):
+            if ra[i].statusCode != status_in_water:
                 continue
-            wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)
-            LEs[i].p.pLat += wp3d.p.pLat
+            wp3d = self.mover.GetMove(t, 0, 0, &ra[i], 0)
+            LEs[i].p.pLat += (wp3d.p.pLat)
             LEs[i].p.pLong += wp3d.p.pLong
-            LEs[i].z += wp3d.z    
 
 cdef class wind_mover:
 
@@ -69,11 +70,12 @@ cdef class wind_mover:
         
         cdef int i
         cdef WorldPoint3D wp3d
-        
-        for i in xrange(0, len(LEs)):
-            if LEs[i].statusCode != status_in_water:
+        cdef np.ndarray[LERec] ra = np.copy(LEs)
+        ra['p']['p_long']*=10**6
+        ra['p']['p_lat']*=10**6
+        for i in xrange(0, len(ra)):
+            if ra[i].statusCode != status_in_water:
                 continue
-            wp3d = self.mover.GetMove(t, 0, 0, &LEs[i], 0)
+            wp3d = self.mover.GetMove(t, 0, 0, &ra[i], 0)
             LEs[i].p.pLat += wp3d.p.pLat
             LEs[i].p.pLong += wp3d.p.pLong
-            LEs[i].z += wp3d.z        

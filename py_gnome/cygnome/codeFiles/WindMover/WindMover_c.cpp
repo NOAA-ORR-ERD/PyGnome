@@ -363,11 +363,9 @@ WorldPoint3D WindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 	timeValue = this->fConstantValue;
 #endif
 	if(err)  return deltaPoint;
-	
 	// separate algorithm for dispersed oil
 	if ((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT)
 	{
-		std::cout << "iff.";
 		//return deltaPoint;
 		//code goes here, check if depth at point is less than mixed layer depth or breaking wave depth
 		// shouldn't happen if other checks are done...
@@ -419,9 +417,8 @@ WorldPoint3D WindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 	dLong = ((timeValue.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPoint.pLat);
 	dLat =   (timeValue.v / METERSPERDEGREELAT) * timeStep;
 	
-	deltaPoint.p.pLong = dLong * 1000000;
-	deltaPoint.p.pLat  = dLat  * 1000000;
-
+	deltaPoint.p.pLong = dLong;
+	deltaPoint.p.pLat  = dLat;
 	return deltaPoint;
 }
 

@@ -1,11 +1,11 @@
  #!/usr/bin/env python
-
+ 
  # I don't have documentation strings
-
+ 
  # if __name__ == __???___:
  #
  #
-
+ 
 import sys
 import os
 import numpy as np
@@ -17,7 +17,6 @@ sys.path[len(sys.path):] = [os.environ['HOME']+'/Workspace/GNOME2']
 from gnome.utilities import map_canvas
 from hazpy.file_tools import haz_files
 from hazpy.geometry import polygons
-
 
 class gnome_map(map_canvas.MapCanvas):
     
@@ -51,7 +50,6 @@ class gnome_map(map_canvas.MapCanvas):
         return True
 
     def on_land(self, coord):
-        coord = self.to_pixel(coord)
         return (self.on_map(coord) and not self.in_water(coord))
 
     def allowable_spill_position(self, coord):
