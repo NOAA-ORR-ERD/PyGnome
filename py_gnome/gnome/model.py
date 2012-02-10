@@ -1,5 +1,5 @@
  
-mport numpy
+import numpy
 import random
 from map import gnome_map
 import os

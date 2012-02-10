@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from pyGNOME import model
+from gnome import model
 
 dimensions_bmp = (1000,1000)
 spill = {'num_particles': 1000,
