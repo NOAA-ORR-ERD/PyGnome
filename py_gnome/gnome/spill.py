@@ -1,3 +1,4 @@
+
 """ Documentation string goes here. """
 
 from basic_types import le_rec, status_not_released, status_in_water, status_on_land, disp_status_have_dispersed
@@ -53,7 +54,10 @@ class spill:
     def refloat_particles(self, length_time_step, lwpra):
         dra = self.npra['dispersion_status']
         chromogph = self.chromogph
-        for j in xrange(0, num_particles):
+        if chromogph == None:
+            return
+        considered_indices = []
+        for j in xrange(0, self.num_particles):
             if chromogph[j] and not dra[j] == disp_status_have_dispersed: 
                 considered_indices += [j]
         refloat_likelihood = len(considered_indices)*(1-pow(.5, length_time_step/(self.gnome_map.refloat_halflife)))
@@ -68,7 +72,7 @@ class spill:
         pass
         
     def movement_check(self):
-        chromogph = map(gnome_map.in_water, self.npra['p'])
+        chromogph = map(self.gnome_map.in_water, self.npra['p'])
         sra = self.npra['status_code']
         for i in xrange(0, self.num_particles):
             if chromogph[i]:

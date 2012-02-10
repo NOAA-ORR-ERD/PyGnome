@@ -1,11 +1,11 @@
  #!/usr/bin/env python
- 
+
  # I don't have documentation strings
- 
+
  # if __name__ == __???___:
  #
  #
- 
+
 import sys
 import os
 import numpy as np
@@ -17,6 +17,7 @@ sys.path[len(sys.path):] = [os.environ['HOME']+'/Workspace/GNOME2']
 from gnome.utilities import map_canvas
 from hazpy.file_tools import haz_files
 from hazpy.geometry import polygons
+
 
 class gnome_map(map_canvas.MapCanvas):
     
@@ -41,11 +42,11 @@ class gnome_map(map_canvas.MapCanvas):
         pass        
 
     def to_pixel(self, coord):
-        return tuple(self.projection.to_pixel(coord))
+        return tuple(self.projection.to_pixel(np.array((coord[0], coord[1]))))
 
     def get_bounds(self):
         return self.polygons.bounding_box
-    
+
     def on_map(self, coord):
         return True
 
