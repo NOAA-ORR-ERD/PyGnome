@@ -1,6 +1,7 @@
 CPP_CODE_DIR = "cygnome/codeFiles/"
 import numpy as np
-import os 
+import os
+import sys
 from sysconfig import get_config_var
 
 from setuptools import setup
@@ -21,11 +22,13 @@ files = temp_list
 
 compile_args=["-I.", "-fpascal-strings", "-fasm-blocks"]
 
-if get_config_var('UNIVERSALSDK') != None:
-    pass
-else:
-    print 'UNIVERSALSDK not set. aborting.'
-    exit(-1)
+extra_includes=""
+if sys.platform == "darwin":
+    if get_config_var('UNIVERSALSDK') != None:
+        extra_includes=get_config_var('UNIVERSALSDK')+'/Developer/Headers/FlatCarbon'
+    else:
+        print 'UNIVERSALSDK not set. aborting.'
+        exit(-1)
 
 setup(name='python gnome',
       version='beta', 
@@ -38,7 +41,7 @@ setup(name='python gnome',
                              include_dirs=[CPP_CODE_DIR ,
                                            np.get_include(),
                                            'cyGNOME',
-                                           get_config_var('UNIVERSALSDK')+'/Developer/Headers/FlatCarbon',
+                                           extra_includes,
                                            ],
                              )
                    ]
