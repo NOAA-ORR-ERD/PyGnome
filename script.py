@@ -12,7 +12,7 @@ spill = {'num_particles': 1000,
 	}
 
 mini_gnome = model.Model()
-mini_gnome.add_map(dimensions_bmp, "../utilities/LongIslandSoundMap.bna", 300)
+mini_gnome.add_map(dimensions_bmp, "LongIslandSoundMap.bna", 300)
 mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']))
 mini_gnome.add_wind_mover((50000.00, 70000.00))
 mini_gnome.add_random_mover(15.00)
