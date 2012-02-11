@@ -33,17 +33,26 @@ class Model:
         self.gnome_map = gnome_map(image_size, bna_filename, refloat_halflife)
     
     def add_wind_mover(self, constant_wind_value):
-        self.movers.append(c_gnome.wind_mover(constant_wind_value))
+        m = c_gnome.wind_mover(constant_wind_value)
+        self.movers.append(m)
+        return m
         
     def add_random_mover(self, diffusion_coefficient):
         """
         adds a simple diffusion mover
         
-        diffusion_coefficient in units of cm^2/sec ?
+        diffusion_coefficient in units of cm^2/sec
         """
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
         
     def set_run_duration(self, start_time, stop_time):
+        ## fixme: maybe use datetime objects instead of seconds here?
+        """
+        set the run duration from the start and stop times
+        
+        times are in seconds since???
+        
+        """
         if not start_time < stop_time:
             return
         self.start_time = start_time
@@ -92,7 +101,7 @@ class Model:
         def set_self_chromgph(obj,chromgph):
             obj.chromgph = chromgph
             set_self_chromgph = do_nothing
-        def do_nothing(null,nil): 
+        def do_nothing(null, nil): 
             pass
         lwpras = []
         spills = self.spills
