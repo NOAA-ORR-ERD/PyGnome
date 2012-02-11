@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+This is a sample script, showing a basic usage of the gnome package
+"""
+
 from gnome import model
 
 dimensions_bmp = (1000,1000)
@@ -21,4 +25,4 @@ mini_gnome.set_timestep(10)
 
 while mini_gnome.step() != False:
     for spill in mini_gnome.spills:
-	print spill.npra['p']
+        print spill.npra['p']

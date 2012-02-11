@@ -36,6 +36,11 @@ class Model:
         self.movers.append(c_gnome.wind_mover(constant_wind_value))
         
     def add_random_mover(self, diffusion_coefficient):
+        """
+        adds a simple diffusion mover
+        
+        diffusion_coefficient in units of cm^2/sec ?
+        """
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
         
     def set_run_duration(self, start_time, stop_time):
