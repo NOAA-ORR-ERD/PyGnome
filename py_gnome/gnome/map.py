@@ -58,7 +58,8 @@ class gnome_map(map_canvas.MapCanvas):
     def in_water(self, coord):
         if not self.on_map(coord):
             return False
-        coord = self.to_pixel(coord)
+        coord = tuple(self.to_pixel(coord))
+        coord = (int(coord[0]), int(coord[1]))
         try:
             chrom = self.image.getpixel(coord)
             if not chrom:
@@ -66,11 +67,12 @@ class gnome_map(map_canvas.MapCanvas):
             else:
                 return False
         except:
+            print 'exception!',  sys.exc_info()[0]
             return False
 
     def agitate_particles(self, time_step, spill):
          pass
-
+            
     def set_spill(self, coord, num_particles, release_time):
         if not self.allowable_spill_position(coord):
             print  "spill " + str(dict((('position', coord), ('num_particles', num_particles), ('release_time', release_time)))) + " ignored."

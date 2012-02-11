@@ -98,7 +98,7 @@ class Projection:
         coords *= self.scale
         # shift to pixel coords
         coords += self.offset
-        return coords
+       	return np.round(coords).astype(np.int)
     
     def to_lat_long(self, coords):
         ## note: untested!
@@ -136,7 +136,7 @@ class FlatEarthProjection(Projection):
         
         lon_scale = np.cos(np.deg2rad(self.center[1]))
         # compute BB to fit image
-        h = bounding_box[1,1] - bounding_box[0,1]
+        h = bounding_box[1,1] -	 bounding_box[0,1]
         # width scaled to longitude
         w = lon_scale * (bounding_box[1,0] - bounding_box[0,0])
         if w/h > image_size[0] / image_size[1]:
@@ -203,6 +203,15 @@ class MapCanvas:
                 pass
         print 'done drawing'
         return None
+    
+    def draw_particles(self, spills, filename):
+        img = self.image.copy()
+        for spill in spills:
+            pra = spill.npra['p']
+            for i in xrange(0, len(pra)):
+            	xy = self.to_pixel((pra[i]['p_long'], pra[i]['p_lat']))
+            	img.putpixel(xy, 1)
+        img.save(filename)
     
     def save(self, filename, type="PNG"):
         self.image.save(filename, type)

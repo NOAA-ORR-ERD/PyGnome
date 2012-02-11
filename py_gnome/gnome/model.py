@@ -75,7 +75,7 @@ class Model:
         for i in xrange(0, len(spills)):
             spills[i].refloat_particles(self.interval_seconds, lwp_arrays[i])
     
-    def beach_element(p, lwp):
+    def beach_element(self, p, lwp):
         in_water = self.gnome_map.in_water
         while not in_water((p['p_long'], p['p_lat'])):
             displacement = (p['p_long'] - lwp['p_long'], p['p_lat'] - lwp['p_lat'])
@@ -92,15 +92,15 @@ class Model:
         lwpras = []
         spills = self.spills
         for spill in spills:
-        	lwpras += [numpy.copy(spill.npra['p'])]
+            lwpras += [numpy.copy(spill.npra['p'])]
         for mover in self.movers:
             for j in xrange(0, len(spills)):
-            	mover.get_move(self.interval_seconds, spills[j].npra)
+                mover.get_move(self.interval_seconds, spills[j].npra)
         for j in xrange(0, len(spills)):
             spill = spills[j]
             chromgph = spill.movement_check(set_self_chromgph)
             for i in xrange(0, len(chromgph)):
-                if(chromgph[i]):
+                if chromgph[i]:
                     self.lwp_arrays[j][i] = lwpras[j][i]
                     self.beach_element(spill.npra['p'][i], lwpras[j][i])
                     
@@ -116,5 +116,6 @@ class Model:
         self.release_particles()
         self.refloat_particles()
         self.move_particles()
+        self.gnome_map.draw_particles(self.spills, '_map'+str(self.time_step)+'.png')
         self.time_step += 1
         
