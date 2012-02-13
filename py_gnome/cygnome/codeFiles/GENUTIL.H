@@ -40,7 +40,9 @@ enum { ON = 1, OFF = 0 };
 #endif
 
 #define round(n) floor((n) + 0.5)
+#ifndef pyGNOME
 #define abs(n) ((n) >= 0 ? (n) : -(n))
+#endif
 #define RectWidth(r) ((r).right - (r).left)
 #define RectHeight(r) ((r).bottom - (r).top)
 #define TOPLEFT(r) (POINTPTR)(&(r).top)

@@ -256,7 +256,7 @@ void my_c2pstr(void *string);
 /////////////////////////////////////////////////
 void TextFontSize(long font,long size); 
 void TextFontSizeFace(long font,long size,long style) ; 
-
+#ifndef pyGNOME
 Boolean SigToProcessInfo(char *sig, ProcessInfoRec *pInfo, char *name, FSSpec *spec);
 Boolean AppIsRunning(char *sig);
 Boolean CurrentProcessInBackground();
@@ -287,6 +287,7 @@ Rect GetWindowPortRect(WindowRef w);
 
 Rect SafeWindowBounds(WindowPtr w);
 UniversalProcPtr MakeUPP(ProcPtr p, ProcInfoType pInfo);
+#endif
 
 ///// FILES ///////////////////////////////////////////////////////////////////////////
 #ifndef pyGNOME
@@ -396,6 +397,7 @@ pascal_ifMac void FrameGray(DialogPtr theDialog, short itemNum);
 short GetHelp(CHARPTR title, Boolean bParent);
 short GetHelpTopics(char *prevTopic, Boolean bParent);
 
+#ifndef pyGNOME
 ///// APPLICATION HOOKS //////////////////////////////////////////////////////////////
 
 // It is assumed that the app provides these functions.
@@ -582,7 +584,7 @@ void sfpgetfile(POINTPTR where, CHARPTR defaultName, FileFilterProcPtr fileFilte
 
 long NumFilesSelected(void); // JLM 6/4/10
 void strcpyNthFile(char *szFile,long n);// JLM 6/4/10
-
+#endif
 #endif
 
 /////////// MACUTIL: MEMORY
@@ -624,7 +626,7 @@ OSErr MemError(void);
 //#define DisposHandle(p) _DisposeHandleReally(p)
 void DisposeHandleReally(Handle p);
 // #define INDEXH(h, i) ((h)[i])
-
+#define DisposeHandle DisposeHandleReally
 #include "MemUtils.h"
 
 
@@ -764,7 +766,7 @@ long NumFilesSelected(void); // JLM 6/4/10
 void strcpyNthFile(char *szFile,long n);// JLM 6/4/10
 
 ///////////////////////////////////////////// off-screen bitmap utilities
-
+#ifndef pyGNOME
 typedef struct {
 #ifdef MAC
 		WindowPtr w;
@@ -888,7 +890,7 @@ void mysfpgetfile(POINTPTR where, CHARPTR defaultName,
              MyDlgHookUPP hook, MySFReplyPtr reply, short dialogID,
             ModalFilterUPP filter);
 extern OSType gMySignature ;
-
+#endif
 ////////////////////////// INCLUDE OTHER HEADERS //////////////////////////
 
 #include "GENUTIL.h"

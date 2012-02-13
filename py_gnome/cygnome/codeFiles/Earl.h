@@ -299,7 +299,7 @@ typedef CInfoPBRec *CINFOPBRECPTR;
 typedef MySFReply *MySFReplyPtr;
 
 
-#ifdef pyGNOME
+#ifndef pyGNOME
 typedef long MyDlgHookUPP;
 typedef long DLGPROC;
 typedef long HDC;
@@ -312,13 +312,16 @@ typedef long MyDlgHookProcPtr;
 #endif
 
 #ifdef IBM
+typedef CHARPTR Ptr;
+typedef CHARH Handle;
+typedef Handle HDIB;
+
+#ifndef pyGNOME
+typedef HANDLE HDIB;
 typedef SFReply *SFREPLYPTR;	// should get rid of this altogether
 typedef SFTypeList SFTYPELISTPTR;
-typedef VOIDPTR Ptr;
-typedef VOIDH Handle;
 typedef PICTUREH PicHandle;
-typedef HANDLE HDIB;
-typedef Handle HDIB
+#endif
 typedef HDIB PixMapHandle;
 typedef long SysEnvRec;
 typedef short Pattern;
@@ -329,8 +332,10 @@ typedef long Size;
 #define false FALSE
 #define DIRDELIMITER '\\'
 #define OPPOSITEDIRDELIMITER ':'
+#ifndef pyGNOME
 typedef Boolean (pascal_ifMac *ModalFilterProcPtr)(DialogPtr, EVENTRECORDPTR, SHORTPTR);
 typedef Boolean (pascal_ifMac *FileFilterProcPtr)(PARMBLKPTR);
+#endif
 #define _min(a,b) ((a) < (b) ? (a) : (b))  //AH
 #define _max(a,b) ((a) > (b) ? (a) : (b)) ///AH
 
@@ -390,12 +395,12 @@ typedef long ProcInfoType;
 #endif
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
-
+#ifndef pyGNOME
 ModalFilterUPP MakeModalFilterUPP(ModalFilterProcPtr p);
 UserItemUPP MakeUserItemUPP(UserItemProcPtr p);
 
 MyDlgHookUPP MakeDlgHookUPP(MyDlgHookProcPtr p);
-
+#endif
 #ifndef VERSIONPPC
 #ifndef SYMANTEC
 #ifdef MPW

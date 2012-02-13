@@ -258,7 +258,7 @@ class TOLEList : public TLEList
 		virtual void 				SetDispersionInfo (DispersionRec info);
 
 		virtual AdiosInfoRecH 		GetAdiosInfo () {return fAdiosDataH;}
-		virtual void 				SetAdiosInfo (AdiosInfoRecH adiosInfoH){if (fAdiosDataH && fAdiosDataH != adiosInfoH) {DisposeHandle((Handle)fAdiosDataH);} fAdiosDataH = adiosInfoH;}
+		virtual void 				SetAdiosInfo (AdiosInfoRecH adiosInfoH){if (fAdiosDataH && fAdiosDataH != adiosInfoH) {DisposeHandleReally((Handle)fAdiosDataH);} fAdiosDataH = adiosInfoH;}
 		long 				GetNumAdiosBudgetTableItems(void);
 		void 				AddToBudgetTableHdl(BudgetTableData *budgetTable);
 		OSErr 				ExportBudgetTableHdl(char* path, BFPB *bfpb);

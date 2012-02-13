@@ -53,11 +53,13 @@ extern Rect mapImageRect;	 // STH, holds rect map-image was made with
 Boolean RestoreScreenImage();
 
 #ifdef MAC
+#ifndef pyGNOME
 	Boolean SaveScreenImage(MyGWorldRec frameGWRec);
 	Boolean SaveScreenImageFromGWorld (CGrafPtr mapGWorld);
 	
 	Boolean MakeScreenImageFromGWorld(CGrafPtr sourceGWorld);
 	Boolean CopyScreenImageToGWorld(CGrafPtr destGWorld);
+#endif
 #endif
 
 #ifdef MAC
@@ -1958,9 +1960,9 @@ short			GetStatusCode(char *text);
 void			GetStatusText(short code, char *text);
 
 void 			GetStdCaveatLine(char* str , long i);
-
+#ifndef pyGNOME
 PicHandle		GetPICTFromFile(short vRefNum, long dirID, char *fileName);
-
+#endif
 OSErr 			MyWriteResource (OSType thisResType, long thisResID, Handle thisResHdl, short resFRefNum);
 
 void			GetPollutantName(OilType num, char *name);
@@ -2145,9 +2147,9 @@ OSErr			Random3DSettingsDialog(TRandom3D *mover, TMap *owner);
 OSErr			ReadOSSMLEFile(char *path, LERecH *array, long *numLEs, short *massUnits, Seconds *fileTime);
 
 void 			SwitchLLFormatHelper(DialogPtr dialog, short base, short btnOne, Boolean show);
-
+#ifndef pyGNOME
 PicHandle		ReadPNTG(short vRefNum, long dirID, char *fileName);
-
+#endif
 short			RectLeft(Rect r);
 
 void			RescaleTwoPoints(WorldPoint p1, WorldPoint p2);
