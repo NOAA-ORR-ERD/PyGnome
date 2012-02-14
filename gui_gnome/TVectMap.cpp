@@ -117,12 +117,17 @@ void DrawCMapLayer(CMap *theMap,CMapLayer* mapLayer)
 	// you must call this once with nil, don't ask me who coded it this way
 	mapLayer -> GetDrawSettings (&drawSettings, nil, kScreenMode);
 	
-	for (ObjectIndex = ObjectCount - 1; ObjectIndex >= 0; --ObjectIndex)
+	// to have lakes show up as water on bitmap, draw on top and use kNoFillCode (set in GetDrawSettings)
+	//for (ObjectIndex = ObjectCount - 1; ObjectIndex >= 0; --ObjectIndex)
+	for (ObjectIndex = 0; ObjectIndex < ObjectCount; ObjectIndex++)
 	{
 		thisObjectList -> GetListItem ((Ptr) &thisObjectHdl, ObjectIndex);
 		mapLayer -> GetDrawSettings (&drawSettings, (ObjectRecHdl)thisObjectHdl, kScreenMode);
 
-		DrawMapPoly (theMap, thisObjectHdl,  &drawSettings);
+		if (drawSettings.fillCode == kNoFillCode)	
+			DrawMapBoundsPoly (theMap, thisObjectHdl,  &drawSettings, true);
+		else
+			DrawMapPoly (theMap, thisObjectHdl,  &drawSettings);
 	}
 }
 

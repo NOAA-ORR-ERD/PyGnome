@@ -526,7 +526,10 @@ void CMapLayer::GetDrawSettings (DrawSpecRecPtr drawSettings, ObjectRecHdl theOb
 		else if (drawSettings -> mode == kScreenMode || drawSettings -> mode == kPictMode)
 		{
 			/* OPAQUE object being drawn in COLOR to SCREEN or PICT */
-			drawSettings -> fillCode = kPaintFillCode;
+			if (drawSettings -> backColorInd == kWaterColorInd) 
+				drawSettings -> fillCode = kNoFillCode;	// here set no fill for lakes so can set spill
+			else 	
+				drawSettings -> fillCode = kPaintFillCode;
 			GetObjectFillPat (theObjectHdl, &(drawSettings -> backPattern));
 		}
 		else if (drawSettings -> mode == kPrintMode)
