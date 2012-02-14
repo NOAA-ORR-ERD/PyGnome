@@ -64,6 +64,7 @@ class spill:
         sra = self.npra['status_code']
         for idx in considered_indices:
             if (random() < refloat_likelihood):
+            	chromgph[idx] = 0
                 sra[idx] = status_in_water
                 pra[idx] = lwpra[idx]
                 
