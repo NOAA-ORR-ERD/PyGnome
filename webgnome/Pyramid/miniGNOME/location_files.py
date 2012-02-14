@@ -7,10 +7,12 @@ These should hold all the information about how GNOME is set up for a given loca
 
 """
 
+import os
 import math
 
 import gnome
 import gnome.model
+import gnome.c_gnome
 import datetime
 
 class LocationFile:
@@ -22,7 +24,7 @@ class LocationFile:
     ## set of defaults -- thes can/should be overridden in subclasses
 
     run_duration = (0, 24*3600) # in seconds 
-    time_step = 10*60 # 10 minutes in seconds 
+    time_step = 15*60 # 15 minutes in seconds 
 
     map_image_size = (800, 500)
     map_file_name = "LongIslandSoundMap.bna"
@@ -46,7 +48,7 @@ class LocationFile:
                            self.map_file_name,
                            self.map_refloat_halflife)
                 
-        self.set_movers()
+        self.set_default_movers()
                                   
     def set_default_movers(self):
         """
@@ -61,38 +63,95 @@ class LocationFile:
     def get_map_image(self):
         return self.model.get_map_image()
     
-    def run_and_draw(self, path_to_pngs):
-        # do a full run of GNOME
-        images = self.model.full_run(path_to_pngs)
+    def run(self, output_dir):
+        """
+        runs the model formthestart to the end
         
-        # rest the model so it's ready for the next run.
-        self.model.reset_steps()
-
+        output_dir is the path you want the png files written to
+        
+        returns a list of png files -- one for each time step
+        """
+        print "About to run:"
+        out_files = []
  
+        while True:
+            print "running another step:", self.model.time_step
+            filename = self.model.step(output_dir)
+            if filename is False:
+                break
+            out_files.append(filename)
+        return out_files
+ 
+    def reset(self):
+        """
+        resets the model to start_time,and removes all spills
+        
+        """
+        self.model.reset()
+        self.model.spills = []
+
+    def replace_constant_wind_mover(self, speed, direction):
+        """
+        Replace the wind mover with a new one
+        
+        Only the constant wind mover for now
+        
+        Speed is the wind speed in m/s
+        
+        Direction is the direction the wind is blowing from (degrees true)
+
+        """
+        u = speed * -math.sin(direction/180. * math.pi)
+        v = speed * -math.cos(direction/180. * math.pi)
+        
+        new_mover = gnome.c_gnome.wind_mover( (u,v) )
+        self.wind_mover = self.model.replace_mover(self.wind_mover, new_mover)
+
+    def set_spill(self, start_time, location):
+        start_time = 0.0 ##fixme: only good 'till we get times right!
+        self.model.set_spill(self.num_particles,
+                             self.windage,
+                             (start_time, start_time),
+                             (location, location),
+                             )
     
 class LongIslandSound( LocationFile ):
+
     run_duration = (0, 24*3600) # in seconds 
     time_step = 10*60 # 10 minutes in seconds 
 
     map_image_size = (800, 500)
     map_file_name = "LongIslandSoundMap.bna"
-    
+
+    # some spill defaults
+    windage = 0.03
+    num_particles = 1000
+
     def __init__(self):
         LocationFile.__init__(self)
     
-        self.wind_mover = self.model.add_wind_mover(self, (0.0, 0.0)) # setting a zero constant wind.
+        self.wind_mover = self.model.add_wind_mover((0.0, 0.0)) # setting a zero constant wind.
         
     
-    def replace_constant_wind_mover(self, speed, direction):
+    def reset_constant_wind_mover(self, speed, direction):
+        ## this should be here -- but can't do this now
         """
-        replace the wind mover with a new one
+        reset the values of the wind mover with a new one
         
         only constant mover for now
+        
+        speed is the wind speed in m/s
+        direction is the direction the wind is blowing from (degrees true)
         """
-        u = speed * cos(direction/180. * math.pi)
-        v = speed * sin(direction/ 180. * math.pi)
-        self.wind_mover..mover.fConstantValue.u = u
-        self.wind_mover..mover.fConstantValue.v = v
+        u = speed * -math.sin(direction/180. * math.pi)
+        v = speed * -math.cos(direction/180. * math.pi)
+        
+        ## is this right??
+        self.wind_mover.mover.fConstantValue.u = u
+        self.wind_mover.mover.fConstantValue.v = v
+
+
+    
 
 if __name__ == "__main__":
     """
@@ -100,5 +159,24 @@ if __name__ == "__main__":
     """
 
     location = LongIslandSound()
+    location.reset()
+    location.replace_constant_wind_mover(speed = 5.0, direction=45.0)
+    location.set_spill(start_time=datetime.datetime(2012, 2, 14, 14),
+                       location = (-72.719832,
+                                   41.112120))
+    png_files = location.run(os.path.join('.', 'temp1'))
+    
+    ## run a new version
+    location.reset()
+    location.set_spill(start_time=datetime.datetime(2012, 2, 14, 14),
+                       location = (-72.719832,
+                                   41.112120))
+    location.replace_constant_wind_mover(speed = 5.0, direction=270.0)
+    png_files = location.run(os.path.join('.', 'temp2'))
+    print png_files
+    
+    
+    
+    
     
     

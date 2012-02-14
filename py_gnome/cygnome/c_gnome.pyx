@@ -51,6 +51,11 @@ cdef class wind_mover:
         del self.mover
     
     def __init__(self, constant_wind_value):
+        """
+        initialize a constant wind mover
+        
+        constant_wind_value is a tuple of values: (u, v)
+        """
         self.mover.fUncertainStartTime = 0
         self.mover.fDuration = 3*3600                                
         self.mover.fSpeedScale = 2

@@ -3,6 +3,7 @@
 from gnome import model
 
 dimensions_bmp = (1200,1200)
+
 spill = {'num_particles': 1000,
          'windage': .2,
          'start_time': 0,

@@ -16,10 +16,8 @@ class Model:
     """ Documentation goes here. """
 
     def __init__(self):
-        self.movers = collections.deque()
+        self.movers = []
         self.gnome_map = None
-        self.particles = collections.deque()
-        self.live_particles = collections.deque()
         self.start_time = None
         self.stop_time = None
         self.duration = None
@@ -31,6 +29,26 @@ class Model:
         
     def add_map(self, image_size, bna_filename, refloat_halflife):
         self.gnome_map = gnome_map(image_size, bna_filename, refloat_halflife)
+    
+    def add_mover(self, mover):
+        """
+        add a new mover to the model -- at the end of the stack
+        """
+        self.movers.append(mover)
+
+    def remove_mover(self, mover):
+        """
+        remove the passed-in mover from the mover list
+        """
+        self.movers.remove(mover)
+
+    def replace_mover(self, old_mover, new_mover):
+        """
+        replace a given mover with a new one
+        """
+        i = self.movers.index(old_mover)
+        self.movers[i] = new_mover
+        return new_mover 
     
     def add_wind_mover(self, constant_wind_value):
         m = c_gnome.wind_mover(constant_wind_value)
@@ -44,7 +62,7 @@ class Model:
         diffusion_coefficient in units of cm^2/sec
         """
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
-        
+    
     def set_run_duration(self, start_time, stop_time):
         ## fixme: maybe use datetime objects instead of seconds here?
         """
@@ -75,7 +93,7 @@ class Model:
                                         (start_time, stop_time), (start_position, stop_position))]
         self.lwp_arrays += [numpy.copy(self.spills[len(self.spills)-1].npra['p'])]
     
-    def reset_steps(self):
+    def reset(self):
         self.time_step = 0
 
     def release_particles(self):
@@ -118,7 +136,8 @@ class Model:
                     self.lwp_arrays[j][i] = lwpras[j][i]
                     self.beach_element(spill.npra['p'][i], lwpras[j][i])
                     
-    def step(self):
+    def step(self, output_dir="."):
+        "step called: time step:", self.time_step
         if(self.duration == None):
             return False
         if(self.interval_seconds == None):
@@ -130,6 +149,10 @@ class Model:
         self.release_particles()
         self.refloat_particles()
         self.move_particles()
-        self.gnome_map.draw_particles(self.spills, '_map'+str(self.time_step)+'.png')
+        filename = os.path.join(output_dir, 'map%05i.png'%self.time_step)
+        print "filename:", filename
+        self.gnome_map.draw_particles(self.spills, filename)
         self.time_step += 1
+        
+        return filename
         
