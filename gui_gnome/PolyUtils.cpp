@@ -177,6 +177,41 @@ void DrawMapBoundsPoly (CMap* theMap, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr d
 	DisposeHandle((Handle)pointsH);
 	if(pointsPtr) {_DisposePtr((Ptr)pointsPtr); pointsPtr = 0;}
 }
+#else
+void DrawMapBoundsPoly (CMap* theMap, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr drawSettings, Boolean erasePolygon)
+{
+	long numPts = (**MapPolyHdl).pointCount;
+	PolyHandle poly;
+
+	LongPoint** thisPointsHdl=nil;
+	Point pt,startPt;
+	LongPoint wPt;
+	long i;
+	Boolean offQuickDrawPlane = false;
+	RGBColor saveColor; // JLM ?? wouldn't compile without this
+
+	GetForeColor (&saveColor);		/* save original forecolor */
+	
+	thisPointsHdl = (LongPoint**) (**MapPolyHdl).objectDataHdl;
+	poly = OpenPoly();
+	wPt = INDEXH(thisPointsHdl,0);
+	startPt = GetQuickDrawPt(wPt.h,wPt.v,&gRect,&offQuickDrawPlane);
+	MyMoveTo(startPt.h,startPt.v);
+	for(i = 1; i< numPts;i++)
+	{
+		wPt = INDEXH(thisPointsHdl,i);
+		pt = GetQuickDrawPt(wPt.h,wPt.v,&gRect,&offQuickDrawPlane);
+		MyLineTo(pt.h,pt.v);
+	}
+	MyLineTo(startPt.h,startPt.v);
+	ClosePoly();
+	if (erasePolygon) ErasePoly(poly);
+	FramePoly(poly);
+	ErasePoly(poly);
+	KillPoly(poly);
+
+	RGBForeColor (&saveColor);
+}
 #endif
 
 /**************************************************************************************************/
@@ -819,7 +854,11 @@ void DrawNoSectPolyRecursive (CMap *theMap, PolyObjectHdl MapPolyHdl, DrawSpecRe
 		if (drawSettings -> fillCode != kNoFillCode)
 			PolyHdl = OpenPoly ();
 		else
-			Our_PmForeColor (gDrawBitmapInBlackAndWhite ? kBlackColorInd : drawSettings -> foreColorInd);
+		{
+			PolyHdl = OpenPoly ();
+			//Our_PmForeColor (gDrawBitmapInBlackAndWhite ? kBlackColorInd : drawSettings -> foreColorInd);
+			Our_PmForeColor (drawSettings -> foreColorInd);
+		}
 
 		GetObjectESICode ((ObjectRecHdl) MapPolyHdl,&esiCode); 
 		if (esiCode>0) 	// -500 is the default
@@ -933,7 +972,7 @@ void DrawNoSectPolyRecursive (CMap *theMap, PolyObjectHdl MapPolyHdl, DrawSpecRe
 			{
 				if (PlotCount > 2)			/* polygon must contain more than 2 line-to points */
 				{
-					if (drawSettings -> bErase)
+					if (drawSettings -> bErase || drawSettings -> fillCode == kNoFillCode)
 						ErasePoly (PolyHdl);
 	
 					if (drawSettings -> fillCode == kPaintFillCode)

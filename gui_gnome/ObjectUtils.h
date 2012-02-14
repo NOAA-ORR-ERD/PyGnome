@@ -496,9 +496,9 @@ Boolean			IsWaterPoly (PolyObjectHdl thePolyHdl);
 
 				/* polygon drawing routines */
 void			DrawMapPoly (CMap *Map, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr drawSettings);
-#ifdef IBM
+//#ifdef IBM
 void			DrawMapBoundsPoly (CMap *Map, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr drawSettings, Boolean erasePolygon);
-#endif
+//#endif
 void			DrawNoSectPoly (CMap *Map, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr drawSettings);
 OSErr			DrawSectPoly (CMap *Map, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr drawSettings);
 void 			DrawBeachLEs (CMap *theMap, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr drawSettings);
