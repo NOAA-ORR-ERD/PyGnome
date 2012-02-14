@@ -9,7 +9,7 @@ class spill:
 
     def __init__(self, gnome_map, num_particles, disp_status, windage, \
                     (start_time, stop_time), (start_position, stop_position),):
-        self.npra = numpy.ndarray(num_particles, le_rec)
+        self.npra = numpy.ndarray(num_particles, dtype=le_rec)
         self.num_particles = num_particles
         self.start_time = start_time
         self.stop_minus_start_time = stop_time - start_time
