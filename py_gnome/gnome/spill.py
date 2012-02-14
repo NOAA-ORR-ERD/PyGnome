@@ -69,14 +69,18 @@ class spill:
                 
     def disperse_particles(self):
         pass
+    
+    def noneTypePrevention(self, chromgph):
+        self.chromgph = chromgph
+        self.noneTypePrevention = lambda null: None
         
-    def movement_check(self, noneTypePrevention):
+    def movement_check(self):
         chromgph = map(self.gnome_map.on_land, self.npra['p'])
         sra = self.npra['status_code']
         for i in xrange(0, self.num_particles):
             if chromgph[i]:
                 sra[i] = status_on_land
-        noneTypePrevention(self,chromgph)
+        self.noneTypePrevention(chromgph)
         merg = [int(chromgph[x] and not self.chromgph[x]) for x in xrange(0, len(chromgph))]
         self.chromgph = chromgph
         return merg

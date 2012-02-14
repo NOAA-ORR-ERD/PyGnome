@@ -1,23 +1,25 @@
- 
 import numpy
 import random
-from map import gnome_map
 import os
 import sys
 from math import floor
 import collections
 from gnome import c_gnome
-from basic_types import *
+from map import gnome_map, lw_map
+from basic_types import disp_status_dont_disperse
 import spill
 
     
 class Model:
     
     """ Documentation goes here. """
+    
+    lw_bmp_dimensions = (1000, 1000)
 
     def __init__(self):
         self.movers = []
-        self.gnome_map = None
+        self.c_map = None
+        self.lw_map = None
         self.start_time = None
         self.stop_time = None
         self.duration = None
@@ -28,7 +30,9 @@ class Model:
         self.lwp_arrays = []
         
     def add_map(self, image_size, bna_filename, refloat_halflife):
-        self.gnome_map = gnome_map(image_size, bna_filename, refloat_halflife)
+        self.c_map = gnome_map(image_size, bna_filename)
+        self.lw_map = lw_map(self.lw_bmp_dimensions, bna_filename, refloat_halflife, '1')
+
     
     def add_mover(self, mover):
         """
@@ -85,11 +89,11 @@ class Model:
 
     def set_spill(self, num_particles, windage, (start_time, stop_time), (start_position, stop_position), \
                     disp_status=disp_status_dont_disperse):
-        allowable_spill = self.gnome_map.allowable_spill_position
+        allowable_spill = self.lw_map.allowable_spill_position
         if not (allowable_spill(start_position) and allowable_spill(stop_position)):
             print 'spill ignored: (' + str(start_position) + ', ' + str(stop_position) + ').'
             return
-        self.spills += [spill.spill(self.gnome_map, num_particles, disp_status, windage, \
+        self.spills += [spill.spill(self.lw_map, num_particles, disp_status, windage, \
                                         (start_time, stop_time), (start_position, stop_position))]
         self.lwp_arrays += [numpy.copy(self.spills[len(self.spills)-1].npra['p'])]
     
@@ -108,19 +112,15 @@ class Model:
             spills[i].refloat_particles(self.interval_seconds, lwp_arrays[i])
     
     def beach_element(self, p, lwp):
-        in_water = self.gnome_map.in_water
+        in_water = self.lw_map.in_water
+        displacement = ((p['p_long'] - lwp['p_long']), (p['p_lat'] - lwp['p_lat']))
         while not in_water((p['p_long'], p['p_lat'])):
-            displacement = (p['p_long'] - lwp['p_long'], p['p_lat'] - lwp['p_lat'])
-            displacement /= 2
+            displacement = (displacement[0]/2, displacement[1]/2)
             p['p_long'] = lwp['p_long'] + displacement[0]
             p['p_lat'] = lwp['p_lat'] + displacement[1]
+
         
     def move_particles(self):
-        def set_self_chromgph(obj,chromgph):
-            obj.chromgph = chromgph
-            set_self_chromgph = do_nothing
-        def do_nothing(null, nil): 
-            pass
         lwpras = []
         spills = self.spills
         for spill in spills:
@@ -130,7 +130,7 @@ class Model:
                 mover.get_move(self.interval_seconds, spills[j].npra)
         for j in xrange(0, len(spills)):
             spill = spills[j]
-            chromgph = spill.movement_check(set_self_chromgph)
+            chromgph = spill.movement_check()
             for i in xrange(0, len(chromgph)):
                 if chromgph[i]:
                     self.lwp_arrays[j][i] = lwpras[j][i]
@@ -151,7 +151,7 @@ class Model:
         self.move_particles()
         filename = os.path.join(output_dir, 'map%05i.png'%self.time_step)
         print "filename:", filename
-        self.gnome_map.draw_particles(self.spills, filename)
+        self.c_map.draw_particles(self.spills, filename)
         self.time_step += 1
         
         return filename
