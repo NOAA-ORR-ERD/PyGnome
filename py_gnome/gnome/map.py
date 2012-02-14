@@ -54,7 +54,12 @@ class lw_map(gnome_map):
         return self.polygons.bounding_box
 
     def on_map(self, coord):
-        return True
+        coord = self.to_pixel(coord)
+        bounding_box = self.polygons.bounding_box
+        if coord[0] >= bounding_box[0][0] and coord[0] <= bounding_box[1][0]:
+        	if coord[1] >= bounding_box[0][1] and coord[1] <= bounding_box[1][1]:
+        		return True
+        return False
 
     def on_land(self, coord):
         return (self.on_map(coord) and not self.in_water(coord))
