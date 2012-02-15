@@ -69,7 +69,8 @@ OSErr _InitAllHandles()
 
 void _DeleteAllHandles()
 {
-	delete[] masterPointers;
+	//delete[] masterPointers;
+	_DisposePtr((Ptr)masterPointers);
 }
 
 Ptr _NewPtr(long size)
