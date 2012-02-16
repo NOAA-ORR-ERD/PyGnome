@@ -32,7 +32,6 @@ class Model:
     def add_map(self, image_size, bna_filename, refloat_halflife):
         self.c_map = gnome_map(image_size, bna_filename)
         self.lw_map = lw_map(self.lw_bmp_dimensions, bna_filename, refloat_halflife, '1')
-
     
     def add_mover(self, mover):
         """
@@ -119,7 +118,6 @@ class Model:
             p['p_long'] = lwp['p_long'] + displacement[0]
             p['p_lat'] = lwp['p_lat'] + displacement[1]
 
-        
     def move_particles(self):
         lwpras = []
         spills = self.spills
