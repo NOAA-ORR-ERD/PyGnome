@@ -12,9 +12,10 @@ import numpy as np
 def reckon_GNOMEstyle(lat,lon,distance,bearing):
     """
     Given a start point, initial bearing, and distance, calculate the
-    destination point along a (shortest distance) great circle arc.  lat and
-    lon are in decimal degrees. bearing, also in decimal degrees, is measured
-    clockwise from north.  distance is in meters.
+    destination point along a (shortest distance) great circle arc -- using the
+    same formula as GNOME.  lat and lon are in decimal degrees. bearing, also
+    in decimal degrees, is measured clockwise from north.  distance is in
+    meters.
     """
     EarthRadius=6371.*1000. #Earth's mean radius, in m.
     
