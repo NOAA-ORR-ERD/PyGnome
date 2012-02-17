@@ -2,7 +2,10 @@
 import numpy
 from gnome import c_gnome
 
-world_point = numpy.dtype([('p_long', numpy.float32), ('p_lat', numpy.float32)], align=True)
+world_point_type = numpy.float32
+world_point = numpy.dtype([('p_long', world_point_type),
+                           ('p_lat', world_point_type )],
+                           align=True)
 world_point3d = numpy.dtype([('p', world_point), ('z', numpy.double)], align=True)
 world_rect = numpy.dtype([('lo_long', numpy.long), ('lo_lat', numpy.long), \
                             ('hi_long', numpy.long), ('hi_lat', numpy.long)], align=True)
