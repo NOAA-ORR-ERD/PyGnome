@@ -98,6 +98,7 @@ class Projection:
         coords *= self.scale
         # shift to pixel coords
         coords += self.offset
+        
        	return np.round(coords).astype(np.int)
     
     def to_lat_long(self, coords):

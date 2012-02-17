@@ -33,6 +33,16 @@ class gnome_map(map_canvas.MapCanvas):
         coord = tuple(self.projection.to_pixel(np.array((coord[0], coord[1]))))
         coord = (int(coord[0]), int(coord[1]))
         return coord
+        
+    def to_pixel_array(self, coords):
+        coords['p_long'] -= self.projection.center[0]
+        coords['p_lat'] -= self.projection.center[1]
+        coords['p_long'] *= self.projection.scale[0]
+        coords['p_lat'] *= self.projection.scale[1]
+        coords['p_long'] += self.projection.offset[0]
+        coords['p_lat'] += self.projection.offset[1]
+        coords['p_long'] = np.round(coords['p_long']).astype(np.int)
+        coords['p_lat'] = np.round(coords['p_lat']).astype(np.int)
 
 class lw_map(gnome_map):
 
@@ -41,10 +51,12 @@ class lw_map(gnome_map):
     background_color = 0
     lake_color = 0
     land_color = 1
+    bounding_box = None
     
     def __init__(self, image_size, bna_filename, refloat_halflife, color_mode='1'):
         gnome_map.__init__(self, image_size, bna_filename, color_mode)
         self.refloat_halflife = refloat_halflife
+        self.bounding_box = self.polygons.bounding_box
         self.spills = []
     
     def __del__(self):
@@ -53,22 +65,36 @@ class lw_map(gnome_map):
     def get_bounds(self):
         return self.polygons.bounding_box
 
-    def on_map(self, coord):
-        coord = self.to_pixel(coord)
-        bounding_box = self.polygons.bounding_box
-        if coord[0] >= bounding_box[0][0] and coord[0] <= bounding_box[1][0]:
-        	if coord[1] >= bounding_box[0][1] and coord[1] <= bounding_box[1][1]:
-        		return True
+    def on_map(self, pixel_coord):
+        bounding_box = self.bounding_box
+        if pixel_coord[0] >= bounding_box[0][0] and pixel_coord[0] <= bounding_box[1][0] and pixel_coord[1] >= bounding_box[0][1] and pixel_coord[1] <= bounding_box[1][1]:
+            return True
         return False
 
     def on_land(self, coord):
-        return (self.on_map(coord) and not self.in_water(coord))
+        return not self.in_water(coord)
 
-
+    def on_land_pixel(self, coord):
+        return not self.in_water_pixel(coord)
+        
     def in_water(self, coord):
+        coord = self.to_pixel(coord)
         if not self.on_map(coord):
             return False
-        coord = self.to_pixel(coord)
+        try:
+            chrom = self.image.getpixel(coord)
+            if not chrom:
+                return True
+            else:
+                return False
+        except:
+            print 'exception!',  sys.exc_info()[0]
+            return False
+            
+    def in_water_pixel(self, coord):
+        coord = coord.tolist()
+        if not self.on_map(coord):
+            return False
         try:
             chrom = self.image.getpixel(coord)
             if not chrom:

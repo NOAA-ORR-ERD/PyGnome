@@ -76,7 +76,9 @@ class spill:
         self.noneTypePrevention = lambda null: None
         
     def movement_check(self):
-        chromgph = map(self.gnome_map.on_land, self.npra['p'])
+    	coords = numpy.copy(self.npra['p'])
+    	self.gnome_map.to_pixel_array(coords)
+        chromgph = map(self.gnome_map.on_land_pixel, coords)
         sra = self.npra['status_code']
         for i in xrange(0, self.num_particles):
             if chromgph[i]:
