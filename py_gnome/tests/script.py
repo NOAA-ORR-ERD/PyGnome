@@ -31,7 +31,8 @@ spill = {'num_particles': 1000,
 
 cats_scale_type = 1
 cats_ref_position = (-72.705, 41.2275)
-cats_topology_file = "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/tests/tidesWAC.CUR"
+# cats_topology_file = "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/tests/tidesWAC.CUR"
+cats_topology_file = "./tidesWAC.CUR"
 
 mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']))
 
