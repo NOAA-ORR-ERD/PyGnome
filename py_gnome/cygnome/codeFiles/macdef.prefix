@@ -1,7 +1,7 @@
 #define AGNOSTIC
 #define pyGNOME 1
 #define NO_GUI
-#include "MemUtils.h"
+#include "MemUtils/MemUtils.h"
 
 //#define IBM
 //#define MAC

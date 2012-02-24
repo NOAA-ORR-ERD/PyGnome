@@ -937,12 +937,12 @@ void SetSegment(Segment *s, long fromLong, long fromLat, long toLong, long toLat
 	s->toLong = toLong;
 	s->toLat = toLat;
 }
-
+#endif
 void SetWorldRect(WorldRect *w, long loLat, long loLong, long hiLat, long hiLong)
 {
 	w->loLat = loLat; w->loLong = loLong; w->hiLat = hiLat; w->hiLong = hiLong;
 }
-
+#ifndef pyGNOME
 void MakeWorldPointValid(long *pLong, long *pLat)
 {
 	if ((*pLong) > theWorld.hiLong) (*pLong) = theWorld.hiLong;
@@ -1033,7 +1033,7 @@ WorldRect AddWRectBorders(WorldRect w, short fraction)
 	
 	return w;
 }
-
+#endif
 WorldRect *AddWPointToWRect(long pLat, long pLong, WorldRect *w)
 {
 	SetWorldRect(w, _min(w->loLat, pLat),
@@ -1043,7 +1043,7 @@ WorldRect *AddWPointToWRect(long pLat, long pLong, WorldRect *w)
 	
 	return w;
 }
-
+#ifndef pyGNOME
 WorldPoint Midpoint(Segment s)
 {
 	WorldPoint w;

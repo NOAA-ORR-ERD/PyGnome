@@ -17,6 +17,7 @@
 #endif
 #endif
 
+
 extern TModel *model;
 
 OSErr Random_c::PrepareForModelStep()

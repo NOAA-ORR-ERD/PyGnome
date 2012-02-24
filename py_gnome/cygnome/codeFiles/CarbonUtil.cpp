@@ -107,6 +107,7 @@ void MyLUpdateVisRgn(DialogRef theDialog, ListHandle listHdl)
 		LUpdate(theDialog->visRgn,listHdl);
 	#endif
 }
+
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
@@ -114,13 +115,12 @@ void MyLUpdateVisRgn(DialogRef theDialog, ListHandle listHdl)
 /////////////////////////////////////////////////
 /////// my version of old MAC functions
 /////////////////////////////////////////////////
+
 #if TARGET_API_MAC_CARBON
 void UpperText(char* textPtr, short len)
 {
 	UppercaseText(textPtr,len,smSystemScript);
 }
-
-
 #endif
 
 

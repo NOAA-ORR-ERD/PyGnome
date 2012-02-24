@@ -21,3 +21,8 @@ OSErr TimeValue_c::CheckStartTime(Seconds forTime)
 {	
 	return 0;
 }
+
+OSErr TimeValue_c::InitTimeFunc()
+{
+	return 0;
+}

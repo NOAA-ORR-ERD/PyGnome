@@ -13,15 +13,54 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "ClassID_c.h"
-#include "ClassID_g.h"
+#include "Message/TModelMessage.h"
 
-class TClassID : virtual public ClassID_c, virtual public ClassID_g 
+class TClassID : virtual public ClassID_c
 {
 	
 public:
 	TClassID ();
 	virtual			   ~TClassID () { Dispose (); }
-	virtual void		Dispose 	() { return; }
+
+	
+	void				GetClassName (char* theName) { strcpy (theName, className); }	// sohail
+	void				SetClassName (char* name);
+	
+	UNIQUEID			GetUniqueID () { return fUniqueID; }
+	Boolean 			MatchesUniqueID(UNIQUEID uid);
+	
+	Boolean 			GetSelectedListItem(ListItem *item);
+	Boolean 			SelectedListItemIsMine(void);
+	virtual Boolean 	IAmEditableInMapDrawingRect(void);
+	virtual Boolean 	IAmCurrentlyEditableInMapDrawingRect(void);
+	virtual Boolean 	UserIsEditingMeInMapDrawingRect(void);
+	virtual void	 	StartEditingInMapDrawingRect(void);
+	virtual OSErr 		StopEditingInMapDrawingRect(Boolean *deleteMe);
+	
+	virtual OSErr 		MakeClone(TClassID **clonePtrPtr);
+	virtual OSErr 		BecomeClone(TClassID *clone);
+	
+	virtual Boolean		IsDirty  	() { return bDirty;  }
+	virtual Boolean		IsOpen   	() { return bOpen;   }
+	virtual Boolean		IsActive 	() { return bActive; }
+	virtual void		SetDirty  (Boolean bNewDirty)  { bDirty  = bNewDirty; }
+	virtual void		SetOpen   (Boolean bNewOpen)   { bOpen   = bNewOpen;  }
+	virtual void		SetActive (Boolean bNewActive) { bActive = bNewActive;}
+	
+	virtual OSErr 		Read  (BFPB *bfpb);  			
+	virtual OSErr 		Write (BFPB *bfpb); 			
+	
+	virtual long 		GetListLength 	();				 
+	virtual Boolean 	ListClick 	  	(ListItem item, Boolean inBullet, Boolean doubleClick);
+	virtual Boolean 	FunctionEnabled (ListItem item, short buttonID) { return FALSE; }
+	virtual ListItem 	GetNthListItem 	(long n, short indent, short *style, char *text);
+	virtual OSErr 		UpItem 			(ListItem item) { return 0; }
+	virtual OSErr 		DownItem 		(ListItem item) { return 0; }
+	virtual OSErr 		AddItem 		(ListItem item) { return 0; }
+	virtual OSErr 		SettingsItem 	(ListItem item) { return 0; }
+	virtual OSErr 		DeleteItem 		(ListItem item) { return 0; }
+	
+	virtual OSErr 		CheckAndPassOnMessage(TModelMessage * model);
 	
 	
 };

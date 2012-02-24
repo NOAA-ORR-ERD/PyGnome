@@ -66,6 +66,18 @@ class Model:
         """
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
     
+    def add_shio_time_value(self, path):
+    	shio = c_gnome.shio_time_value()
+    	shio.read_time_values(path, 0, 0)
+    	
+    def add_cats_mover(self, path, scale_type, ref_position, scale_value=1, diffusion_coefficient=1):
+        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient)
+        mover.set_ref_position(ref_position, 0)
+        mover.read_topology(path)
+        mover.compute_velocity_scale()
+        self.movers.append(mover)
+        
+        
     def set_run_duration(self, start_time, stop_time):
         ## fixme: maybe use datetime objects instead of seconds here?
         """

@@ -12,19 +12,48 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "WindMover_b.h"
 #include "Mover/Mover_c.h"
 
 #ifdef pyGNOME
+#define TMap Map_c
 #define TOSSMTimeValue OSSMTimeValue_c
 #endif
 
 class TOSSMTimeValue;
 
-class WindMover_c : virtual public WindMover_b, virtual public Mover_c {
+class WindMover_c : virtual public Mover_c {
 
-public:
+protected:
+	LONGH				fLESetSizes;		// cumulative total num le's in each set
+	LEWindUncertainRecH	fWindUncertaintyList;
 	
+public:
+	double fSpeedScale;
+	double fAngleScale;
+	double fMaxSpeed;
+	double fMaxAngle;
+	double fSigma2;				// time dependent std for speed
+	double fSigmaTheta; 		// time dependent std for angle
+	
+	Boolean fIsConstantWind;
+	VelocityRec fConstantValue;
+	
+	Boolean bTimeFileOpen;
+	Boolean bUncertaintyPointOpen;
+	Boolean bSubsurfaceActive;
+	double	fGamma;	// fudge factor for subsurface windage
+	TOSSMTimeValue *timeDep;
+	
+	
+	
+	Rect fWindBarbRect;
+	Boolean bShowWindBarb;
+	
+public:
+	WindMover_c () {}
+	WindMover_c (TMap *owner, char* name);
+	virtual ClassID 	GetClassID () { return TYPE_WINDMOVER; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_WINDMOVER) return TRUE; return Mover_c::IAm(id); }
 	virtual OSErr		AllocateUncertainty ();
 	virtual void		DisposeUncertainty ();
 	virtual OSErr		AddUncertainty(long setIndex,long leIndex,VelocityRec *v);
@@ -44,7 +73,6 @@ public:
 	
 };
 
-#ifdef pyGNOME
 #undef TOSSMTimeValue
-#endif
+#undef TMap
 #endif

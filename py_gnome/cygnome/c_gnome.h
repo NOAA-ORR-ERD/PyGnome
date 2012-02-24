@@ -2,8 +2,8 @@
 #define __PYX_HAVE__gnome__c_gnome
 
 
-/* "/Users/alex.hadjilambris/Workspace/GNOME3/py_gnome/cyGNOME/c_gnome_defs.pxi":111
- *         WorldPoint3D GetMove (Seconds timeStep, long setIndex, long leIndex, LERec *theLE, LETYPE leType)
+/* "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/cyGNOME/c_gnome_defs.pxi":164
+ *         OSErr            ComputeVelocityScale()
  * 
  * cdef public enum type_defs:             # <<<<<<<<<<<<<<
  *     status_not_released = OILSTAT_NOTRELEASED
@@ -11,7 +11,7 @@
  */
 enum type_defs {
 
-  /* "/Users/alex.hadjilambris/Workspace/GNOME3/py_gnome/cyGNOME/c_gnome_defs.pxi":125
+  /* "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/cyGNOME/c_gnome_defs.pxi":178
  *     disp_status_have_evaporated = HAVE_EVAPORATED
  *     disp_status_remove = REMOVE
  *     disp_status_have_removed = HAVE_REMOVED             # <<<<<<<<<<<<<<

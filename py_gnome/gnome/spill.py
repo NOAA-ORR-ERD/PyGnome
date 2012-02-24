@@ -64,7 +64,7 @@ class spill:
         sra = self.npra['status_code']
         for idx in considered_indices:
             if (random() < refloat_likelihood):
-            	chromgph[idx] = 0
+                chromgph[idx] = 0
                 sra[idx] = status_in_water
                 pra[idx] = lwpra[idx]
                 
@@ -76,8 +76,8 @@ class spill:
         self.noneTypePrevention = lambda null: None
         
     def movement_check(self):
-    	coords = numpy.copy(self.npra['p'])
-    	self.gnome_map.to_pixel_array(coords)
+        coords = numpy.copy(self.npra['p'])
+        self.gnome_map.to_pixel_array(coords)
         chromgph = map(self.gnome_map.on_land_pixel, coords)
         sra = self.npra['status_code']
         for i in xrange(0, self.num_particles):

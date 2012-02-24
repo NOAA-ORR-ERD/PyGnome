@@ -11,19 +11,24 @@
 #define __TTimeValue__
 
 #include "TimeValue_c.h"
-#include "TimeValue_g.h"
 #include "ClassID/TClassID.h"
 
 class TMover;
-class TTimeValue : virtual public TimeValue_c, virtual public TimeValue_g, virtual public TClassID
+class TTimeValue : virtual public TimeValue_c,  public TClassID
 {
 	
 public:
+	using TimeValue_c::Dispose;
 	TTimeValue() {}
 	TTimeValue (TMover *theOwner) { owner = theOwner; }
 	virtual		   ~TTimeValue () { Dispose (); }
-	virtual void	Dispose () {}
+	virtual OSErr 	MakeClone(TClassID **clonePtrPtr);
+	virtual OSErr 	BecomeClone(TClassID *clone);
 	
+	// I/O methods
+	virtual OSErr 	Read  (BFPB *bfpb); // read from current position
+	virtual OSErr 	Write (BFPB *bfpb); // write to  current position
+		
 };
 
 #endif

@@ -16,6 +16,10 @@
 #endif
 
 
+#ifdef pyGNOME
+#define printError(msg) printf(msg)
+#endif
+
 /*---------------------------------------------*/
 short GetFloodEbbSpans(double t,
 					  EXTFLAGPTR TArrayPtr,
@@ -717,9 +721,9 @@ Retry:
 //		theTime = ( theTime + (timestep/60.0) );
 		theTime = beginHour + ( ( ((double)(i+1)) * timestep ) / 60.0 );
 	}
-
+#ifndef pyGNOME
 	SetWatchCursor();
-
+#endif
 	// we are not going to check for a max ebb or flood that hits the 
 	// zero axis exactly ... never happen right?
 	
@@ -787,13 +791,13 @@ done:
 Error:
 	/////DisposeProgressBox();
 	if(errorFlag){
-		if(CHdl)		DisposeHandle((Handle)CHdl);
-		if(THdl)		DisposeHandle((Handle)THdl);
-		if(MaxMinHdl)	DisposeHandle((Handle)MaxMinHdl);
-		if(MaxMinTHdl)	DisposeHandle((Handle)MaxMinTHdl);
-		if(uVelHdl)		DisposeHandle((Handle)uVelHdl);
-		if(vVelHdl)		DisposeHandle((Handle)vVelHdl);
-		if(tHdl)		DisposeHandle((Handle)tHdl);
+		if(CHdl)		_DisposeHandle((Handle)CHdl);
+		if(THdl)		_DisposeHandle((Handle)THdl);
+		if(MaxMinHdl)	_DisposeHandle((Handle)MaxMinHdl);
+		if(MaxMinTHdl)	_DisposeHandle((Handle)MaxMinTHdl);
+		if(uVelHdl)		_DisposeHandle((Handle)uVelHdl);
+		if(vVelHdl)		_DisposeHandle((Handle)vVelHdl);
+		if(tHdl)		_DisposeHandle((Handle)tHdl);
 	}
 	//if(AMPAPtr)		_DisposePtr((Ptr)AMPAPtr);
 	//if(epochPtr)	_DisposePtr((Ptr)epochPtr);
@@ -1635,19 +1639,19 @@ short OffsetUV ( COMPCURRENTSPTR answers,		// Current-time struc with answers
 	
 	if(rotKey==-1 ){
 		if(uHdl!=0){
-			DisposeHandle( (Handle)answers->uHdl);
+			_DisposeHandle( (Handle)answers->uHdl);
 			answers->uHdl=0;
 		}
 		if(vHdl!=0){
-			DisposeHandle( (Handle)answers->vHdl);
+			_DisposeHandle( (Handle)answers->vHdl);
 			answers->vHdl=0;
 		}
 		if(uMinorHdl!=0){
-			DisposeHandle( (Handle)answers->uMinorHdl);
+			_DisposeHandle( (Handle)answers->uMinorHdl);
 			answers->uMinorHdl=0;
 		}
 		if(vMajorHdl!=0){
-			DisposeHandle( (Handle)answers->vMajorHdl);
+			_DisposeHandle( (Handle)answers->vMajorHdl);
 			answers->vMajorHdl=0;
 		}
 
@@ -1671,11 +1675,11 @@ short OffsetUV ( COMPCURRENTSPTR answers,		// Current-time struc with answers
 	// we don't do this for the offset stations
 
 	if(uMinorHdl!=0){
-		DisposeHandle( (Handle)answers->uMinorHdl);
+		_DisposeHandle( (Handle)answers->uMinorHdl);
 		answers->uMinorHdl=0;
 	}
 	if(vMajorHdl!=0){
-		DisposeHandle( (Handle) answers->vMajorHdl);
+		_DisposeHandle( (Handle) answers->vMajorHdl);
 		answers->vMajorHdl=0;
 	}
 	
@@ -1938,8 +1942,8 @@ short RotToMajorMinor(CONSTITUENTPTR constituent,
 	if( (minorHdl!=nil)||(majorHdl=nil) ){
 		_HUnlock((Handle)answers->uMinorHdl);
 		_HUnlock((Handle)answers->vMajorHdl);
-		DisposeHandle((Handle)answers->uMinorHdl);
-		DisposeHandle((Handle)answers->vMajorHdl);
+		_DisposeHandle((Handle)answers->uMinorHdl);
+		_DisposeHandle((Handle)answers->vMajorHdl);
 		minorHdl = answers->uMinorHdl =  0;
 		majorHdl = answers->vMajorHdl = 0;
 	}
@@ -1955,8 +1959,8 @@ short RotToMajorMinor(CONSTITUENTPTR constituent,
 	
 	// clean up and return if error
 	if( (minorHdl==nil) || (majorHdl==nil) ){
-		DisposeHandle((Handle)minorHdl);
-		DisposeHandle((Handle)majorHdl);
+		_DisposeHandle((Handle)minorHdl);
+		_DisposeHandle((Handle)majorHdl);
 		minorHdl = nil;
 		majorHdl = nil;
 		return 35;

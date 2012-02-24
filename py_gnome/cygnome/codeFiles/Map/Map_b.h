@@ -18,11 +18,6 @@
 class Map_b : virtual public ClassID_b {
 
 public:
-	WorldRect			fMapBounds; 				// bounding rectangle of map
-	CMyList				*moverList;					// list of this map's movers
-	Boolean				bMoversOpen;				// movers list open (display)	
-	float				fRefloatHalfLifeInHrs;	
-	Boolean				bIAmPartOfACompoundMap;
 
 };
 

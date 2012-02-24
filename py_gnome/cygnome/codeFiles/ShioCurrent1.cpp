@@ -15,6 +15,9 @@
 #endif
 #endif
 
+#ifdef pyGNOME
+#define printError(msg) printf(msg)
+#endif
 
 /***************************************************************************************/
 
@@ -49,8 +52,9 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 	/* Check to see that offset data is valid */
 	errorFlag=CheckCurrentOffsets(offset);
 	if(errorFlag){ goto Error; }
-
+#ifndef pyGNOME
 	SetWatchCursor();
+#endif
 	
 	/* Find beginning hour and ending hour */
 	beginDay	= BeginDate->day;
@@ -174,9 +178,10 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 								endHour,			// End hour from start of year
 								timestep,			// Comp Time step in minutes
 								answers);		// Current-time struc with answers
-
+#ifndef pyGNOME
 	SetWatchCursor();
-
+#endif
+	
 	if(errorFlag!=0){ goto Error; }
 
 	/* Do the offset correction for the station */
@@ -224,10 +229,11 @@ Error:
 
 
 	CompCErrors(errorFlag,str1);
+#ifndef pyGNOME
 	if(errorFlag!=0){ 
 		settings.doNotPrintError = false;//JLM 6/19/98, allows dialogs to come up more than once
 		printError(str1); }
-
+#endif
 	return( errorFlag );
 }
 
@@ -391,11 +397,11 @@ void CleanUpCompCurrents (COMPCURRENTSPTR CPtr)
 	HLTHdl	= CPtr->EbbFloodTimesHdl;
 	HLHdl	= CPtr->EbbFloodHdl;
 	
-	if(tHdl) DisposeHandle((Handle)tHdl);
-	if(hHdl) DisposeHandle((Handle)hHdl);
-	if(HLHHdl) DisposeHandle((Handle)HLHHdl);
-	if(HLTHdl) DisposeHandle((Handle)HLTHdl);
-	if(HLHdl) DisposeHandle((Handle)HLHdl);
+	if(tHdl) _DisposeHandle((Handle)tHdl);
+	if(hHdl) _DisposeHandle((Handle)hHdl);
+	if(HLHHdl) _DisposeHandle((Handle)HLHHdl);
+	if(HLTHdl) _DisposeHandle((Handle)HLTHdl);
+	if(HLHdl) _DisposeHandle((Handle)HLHdl);
 	
 	CPtr->timeHdl			= nil;
 	CPtr->speedHdl			= nil;

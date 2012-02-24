@@ -627,7 +627,7 @@ OSErr MemError(void);
 void DisposeHandleReally(Handle p);
 // #define INDEXH(h, i) ((h)[i])
 #define DisposeHandle DisposeHandleReally
-#include "MemUtils.h"
+#include "MemUtils/MemUtils.h"
 
 
 /////////// MACUTIL: DIALOGS

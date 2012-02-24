@@ -15,6 +15,9 @@
 #endif
 #endif
 
+#ifdef pyGNOME
+#define printError(msg) printf(msg)
+#endif
 
 
 //#include "Global.h"
@@ -63,9 +66,10 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 	errorFlag=CheckHeightOffsets(htOffset);
 	if(errorFlag)goto Error;
 
+#ifndef pyGNOME
 	/////SetCursor(*GetCursor(watchCursor));
 	SetWatchCursor();
-
+#endif
 
 	/* Find beginning hour and ending hour */
 	beginDay	= BeginDate->day;
@@ -186,9 +190,9 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 									answers);		// Height-time struc with answers
 
 	/////SetCursor(*GetCursor(watchCursor));
-
+#ifndef pyGNOME
 	SetWatchCursor();
-
+#endif
 	/* If an error was encountered, go to the errorCode function */
 	if(errorFlag!=0){ goto Error; }
 
@@ -286,8 +290,8 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 	*************************************************************/
 
 
-	if( reftimeHdl ){ DisposeHandle((Handle)reftimeHdl); reftimeHdl=nil; }
-	if( refheightHdl ){ DisposeHandle((Handle)refheightHdl); refheightHdl=nil; }
+	if( reftimeHdl ){ _DisposeHandle((Handle)reftimeHdl); reftimeHdl=nil; }
+	if( refheightHdl ){ _DisposeHandle((Handle)refheightHdl); refheightHdl=nil; }
 
 	_HUnlock((Handle)answers->timeHdl); _HUnlock((Handle)answers->heightHdl);
 
@@ -380,11 +384,11 @@ void CleanUpCompHeights (COMPHEIGHTSPTR cPtr)
 	HLTHdl	= cPtr->HighLowTimesHdl;
 	HLHdl	= cPtr->HighLowHdl;
 	
-	if(tHdl) DisposeHandle((Handle)tHdl);
-	if(hHdl) DisposeHandle((Handle)hHdl);
-	if(HLHHdl) DisposeHandle((Handle)HLHHdl);
-	if(HLTHdl) DisposeHandle((Handle)HLTHdl);
-	if(HLHdl) DisposeHandle((Handle)HLHdl);
+	if(tHdl) _DisposeHandle((Handle)tHdl);
+	if(hHdl) _DisposeHandle((Handle)hHdl);
+	if(HLHHdl) _DisposeHandle((Handle)HLHHdl);
+	if(HLTHdl) _DisposeHandle((Handle)HLTHdl);
+	if(HLHdl) _DisposeHandle((Handle)HLHdl);
 	
 	cPtr->timeHdl			= 0;
 	cPtr->heightHdl			= 0;
@@ -1264,9 +1268,9 @@ short GetReferenceCurve(CONSTITUENTPTR constituent,	// Amplitude-phase array str
 	}
 
 	/////SetCursor(*GetCursor(watchCursor));
-
+#ifndef pyGNOME
 	SetWatchCursor();
-	
+#endif	
 	// ******* OK ALL DONE
 	// set the answers into the solution structure and return
 	
@@ -1293,11 +1297,11 @@ short GetReferenceCurve(CONSTITUENTPTR constituent,	// Amplitude-phase array str
 Error:
 	/////DisposeProgressBox();
 	if(errorFlag){
-		if(HHdl){ DisposeHandle((Handle)HHdl); }
-		if(THdl){ DisposeHandle((Handle)THdl); }
-		if(HLHHdl){ DisposeHandle((Handle)HLHHdl); }
-		if(HLTHdl){ DisposeHandle((Handle)HLTHdl); }
-		if(tHdl){ DisposeHandle((Handle)tHdl); }
+		if(HHdl){ _DisposeHandle((Handle)HHdl); }
+		if(THdl){ _DisposeHandle((Handle)THdl); }
+		if(HLHHdl){ _DisposeHandle((Handle)HLHHdl); }
+		if(HLTHdl){ _DisposeHandle((Handle)HLTHdl); }
+		if(tHdl){ _DisposeHandle((Handle)tHdl); }
 	}
 	//if(AMPAPtr){ _DisposePtr((Ptr)AMPAPtr); }
 	//if(epochPtr){ _DisposePtr((Ptr)epochPtr); }

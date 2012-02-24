@@ -2,7 +2,7 @@
 #ifndef __TRICURMOVER__
 #define __TRICURMOVER__
 
-#include "DagTree.h"
+#include "DagTree/DagTree.h"
 #include "my_build_list.h"
 #include "GridVel.h"
 

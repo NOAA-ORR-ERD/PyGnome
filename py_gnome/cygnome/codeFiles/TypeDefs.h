@@ -493,4 +493,13 @@ typedef struct
 	short counter;
 } UNIQUEID;
 
+struct InterpolationVal {	
+	long ptIndex1;
+	long ptIndex2;
+	long ptIndex3;
+	double alpha1;
+	double alpha2;
+	double alpha3;
+};
+
 #endif

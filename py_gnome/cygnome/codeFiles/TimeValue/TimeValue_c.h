@@ -12,15 +12,29 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "TimeValue_b.h"
 #include "ClassID/ClassID_c.h"
 
-class TimeValue_c : virtual public TimeValue_b, virtual public ClassID_c {
+#ifdef pyGNOME
+#define TMover Mover_c
+#endif
+
+class TMover;
+
+class TimeValue_c : virtual public ClassID_c {
 	
 public:
+	TMover *owner;
+	
+	TimeValue_c() {}
+	TimeValue_c (TMover *theOwner) { owner = theOwner; }
 	virtual OSErr	GetTimeValue (Seconds time, VelocityRec *value);
 	virtual OSErr	CheckStartTime (Seconds time);
-	
+	virtual void	Dispose () {}
+	virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEVALUES) return TRUE; return ClassID_c::IAm(id); }	
+	virtual OSErr	InitTimeFunc ();
+
 };
 
+#undef TMover
 #endif

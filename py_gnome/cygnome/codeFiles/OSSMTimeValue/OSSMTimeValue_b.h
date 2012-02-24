@@ -17,17 +17,7 @@
 class OSSMTimeValue_b : virtual public TimeValue_b {
 	
 public:
-	TimeValuePairH			timeValues;
-	char 					fileName [kMaxNameLen];
-	short					fFileType; //JLM
-	short					fUserUnits; //JLM
-	double					fScaleFactor; // user input for scaling height derivatives or hydrology files
-	char 					fStationName [kMaxNameLen];
-	WorldPoint				fStationPosition;
-	Boolean					bOSSMStyle;
-	double					fTransport;
-	double					fVelAtRefPt;
-	
+
 };
 
 #endif

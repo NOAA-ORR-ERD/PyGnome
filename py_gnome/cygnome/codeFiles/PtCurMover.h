@@ -2,9 +2,16 @@
 #ifndef __PTCURMOVER__
 #define __PTCURMOVER__
 
-#include "DagTree.h"
+#include "DagTree/DagTree.h"
 #include "my_build_list.h"
 #include "GridVel.h"
+#include "CurrentMover/TCurrentMover.h"
+
+#ifdef pyGNOME
+#define TMap Map_c
+#endif
+
+#include "Map/TMap.h"
 
 Boolean IsPtCurFile (char *path);
 Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts);

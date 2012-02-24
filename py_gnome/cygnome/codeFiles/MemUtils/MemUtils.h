@@ -7,6 +7,9 @@
  *
  */
 
+#ifndef __MemUtils__
+#define __MemUtils__
+
 #define _InitAllHandles InitAllHandles
 #define _DeleteAllHandles DeleteAllHandles
 #define _NewPtr NewPtr
@@ -28,9 +31,10 @@
 #define _MaxBlock MaxBlock
 #define _MemError MemError
 #define _DisposeHandleReally DisposeHandleReally
-#define _DisposeHandle DisposeHandle
+#define _DisposeHandle DisposeHandleReally
 #define _MyHLock MyHLock
 #define _MySetHandleSize MySetHandleSize
 #define _RecoverHandle RecoverHandle
 #define _ZeroHandleError ZeroHandleError
 
+#endif

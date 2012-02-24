@@ -11,6 +11,49 @@
 #include "CROSS.H"
 #include "OSSM.H"
 
+#ifdef pyGNOME
+#define TMover Mover_c
+#define printError(msg) printf(msg)
+#endif
+
+OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner,TimeValuePairH tvals,short userUnits) : TimeValue_c(theOwner) 
+{ 
+	fileName[0]=0;
+	timeValues = tvals;
+	fUserUnits = userUnits;
+	fFileType = OSSMTIMEFILE;
+	fScaleFactor = 0.;
+	fStationName[0] = 0;
+	fStationPosition.pLat = 0;
+	fStationPosition.pLong = 0;
+	bOSSMStyle = true;
+	fTransport = 0;
+	fVelAtRefPt = 0;
+}
+
+
+OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner) 
+{ 
+	fileName[0]=0;
+	timeValues = 0;
+	fUserUnits = kUndefined; 
+	fFileType = OSSMTIMEFILE;
+	fScaleFactor = 0.;
+	fStationName[0] = 0;
+	fStationPosition.pLat = 0;
+	fStationPosition.pLong = 0;
+	bOSSMStyle = true;
+	fTransport = 0;
+	fVelAtRefPt = 0;
+}
+
+OSErr OSSMTimeValue_c::InitTimeFunc ()
+{
+	
+	return  TimeValue_c::InitTimeFunc();
+	
+}
+
 OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
 {
 	// NOTE: Must be called with a < b, else bogus value may be returned.
@@ -271,4 +314,14 @@ double OSSMTimeValue_c::GetMaxValue()
 		if(val > maxval)maxval = val;
 	}
 	return maxval; // JLM
+}
+
+void OSSMTimeValue_c::Dispose()
+{
+	if (timeValues)
+	{
+		DisposeHandle((Handle)timeValues);
+		timeValues = 0;
+	}
+	
 }

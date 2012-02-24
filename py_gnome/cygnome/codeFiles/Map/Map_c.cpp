@@ -10,6 +10,23 @@
 #include "Map_c.h"
 #include "GEOMETRY.H"
 
+Map_c::Map_c(char *name, WorldRect bounds) 
+{
+//	SetMapName(name);
+	fMapBounds = bounds;
+	
+	moverList = 0;
+	
+//	SetDirty(FALSE);
+	
+	bOpen = TRUE;
+	bMoversOpen = TRUE;
+	
+	fRefloatHalfLifeInHrs = 1.0;
+	
+	bIAmPartOfACompoundMap = false;
+}
+
 Boolean Map_c::InMap(WorldPoint p)
 {
 	WorldRect ourBounds = this -> GetMapBounds(); 

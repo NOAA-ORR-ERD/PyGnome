@@ -2,7 +2,7 @@
 #define __BUILDLIST__
 //#include "DagTri.h"
 //#include "DagStruct.h"
-#include "DagTree.h"
+#include "DagTree/DagTree.h"
 					
 typedef struct {
 			double pLong;

@@ -6,13 +6,29 @@
  *  Copyright 2011 __MyCompanyName__. All rights reserved.
  *
  */
-#include "Earl.h"
-#include "TypeDefs.h"
+
+#include "CROSS.h"
 #include <iostream>
-#include "macdef.prefix"
 #include "MemUtils.h"
 
 
+#ifdef AGNOSTIC
+
+///// SYSTEM  STUFF /////////////////////////
+
+OSErr DeleteHandleItem(CHARH h, long i, long size)
+{
+	long total = _GetHandleSize((Handle)h),
+	elements = total / size;
+	
+	_BlockMove(&INDEXH(h, (i + 1) * size),
+			   &INDEXH(h, i * size),
+			   (elements - (i + 1)) * size);
+	
+	_SetHandleSize((Handle)h, total - size);
+	
+	return _MemError();
+}
 
 /////////// UNIVERSAL MEMORY UTILS
 
@@ -24,12 +40,39 @@ static Handle freeMasterPointers[10];
 
 
 
-void  DeleteAllHandles()
+void _MyHLock(Handle h)
+{
+	_HLock(h);
+}
+
+Handle _MySetHandleSize(Handle h, long newSize)
+{
+	_SetHandleSize(h, newSize);
+	
+	return h;
+}
+
+
+OSErr _InitAllHandles()
+{
+	long kNumToAllocate = 6000; // was 1000 , JLM 6/8/10
+	long i;
+	
+	if (!(masterPointers = (Ptr *)_NewPtr(kNumToAllocate * sizeof(Ptr)))) return -1;
+	
+	for (i = 0 ; i < kNumToAllocate ; i++) masterPointers[i] = 0;
+	for (i = 0 ; i < 10 ; i++) freeMasterPointers[i] = &masterPointers[i];
+	masterPointerCount = kNumToAllocate;
+	
+	return 0;
+}
+
+void _DeleteAllHandles()
 {
 	delete[] masterPointers;
 }
 
-Ptr  NewPtr(long size)
+Ptr _NewPtr(long size)
 {
 	memoryError = 0;
 	
@@ -53,31 +96,17 @@ Ptr  NewPtr(long size)
 	
 }
 
-OSErr  InitAllHandles()
+Ptr _NewPtrClear(long size)
 {
-	long kNumToAllocate = 6000; // was 1000 , JLM 6/8/10
-	long i;
-	
-	if (!(masterPointers = (Ptr *) NewPtr(kNumToAllocate * sizeof(Ptr)))) return -1;
-	
-	for (i = 0 ; i < kNumToAllocate ; i++) masterPointers[i] = 0;
-	for (i = 0 ; i < 10 ; i++) freeMasterPointers[i] = &masterPointers[i];
-	masterPointerCount = kNumToAllocate;
-	
-	return 0;
+	return _NewPtr(size);
 }
 
-Ptr  NewPtrClear(long size)
-{
-	return  NewPtr(size);
-}
-
-long  GetPtrSize(Ptr p)
+long _GetPtrSize(Ptr p)
 {
 	return *((long *)(p - 4));
 }
 
-void  SetPtrSize(Ptr p, Size newSize)
+void _SetPtrSize(Ptr p, long newSize)
 {
 	Ptr p2 = 0;
 	memoryError = 0;
@@ -98,23 +127,22 @@ void  SetPtrSize(Ptr p, Size newSize)
 	
 	*((long *)p2) = newSize;
 	
-	p = p2+4;
-	
+	p2+=4;
 }
 
-
-void  DisposePtr(Ptr p)
+void _DisposePtr(Ptr p)
 {
+	p+=-4;
 	delete[] p;
 	_handleCount--;
 }
 
-void  DisposPtr(Ptr p)
+void _DisposPtr(Ptr p)
 {
-	 DisposePtr(p);
+	_DisposePtr(p);
 }
 
-Handle  NewHandle(long size)
+Handle _NewHandle(long size)
 {
 	long i, j;
 	Ptr p;
@@ -141,7 +169,7 @@ Handle  NewHandle(long size)
 		if (!h) {
 			// JLM 6/8/10, the InitWindowsHandles below will loose track of hte previously allocated "Handles".
 			// as a work around to help avoid this, I've increase the number allocated in InitWindowsHandles 
-			 InitAllHandles();
+			_InitAllHandles();
 			h = &masterPointers[0];
 			// code goes here, JLM 3/30/99, why was this code was commented out ?
 			// Note: This code is still in TAT
@@ -157,7 +185,7 @@ Handle  NewHandle(long size)
 	}
 	
 	// we have found all ten
-	if (!(p =  NewPtr(size))) return 0;// unable to allocate
+	if (!(p = _NewPtr(size))) return 0;// unable to allocate
 	
 	(*h) = p;// record the pointer in the MAC-like "Handle"
 	
@@ -171,22 +199,21 @@ Handle  NewHandle(long size)
 	return h;
 }
 
-
-Handle  NewHandleClear(long size)
+Handle _NewHandleClear(long size)
 {
-	return  NewHandle(size);
+	return _NewHandle(size);
 }
 
-Handle  TempNewHandle(long size, LONGPTR err)
+Handle _TempNewHandle(long size, LONGPTR err)
 {
-	Handle h =  NewHandle(size);
+	Handle h = _NewHandle(size);
 	
 	(*err) = memoryError;
 	
 	return h;
 }
 
-Handle  RecoverHandle(Ptr p)
+Handle _RecoverHandle(Ptr p)
 {
 	long i;
 	
@@ -201,45 +228,12 @@ Handle  RecoverHandle(Ptr p)
 	return 0;
 }
 
-
-void  HLock(Handle h)
+OSErr _HandToHand(HANDLEPTR hp)
 {
-	return; // all handles are always locked in Windows
-}
-
-void  MyHLock(Handle h)
-{
-	 HLock(h);
-}
-void  HUnlock(Handle h)
-{
-	return; // all handles are always locked in Windows
-}
-
-void  SetHandleSize(Handle h, long newSize)
-{
-	 SetPtrSize(*h, newSize);
-}
-
-
-Handle  MySetHandleSize(Handle h, long newSize)
-{
-	 SetHandleSize(h, newSize);
-	
-	return h;
-}
-
-
-long  GetHandleSize(Handle h)
-{
-	return  GetPtrSize(*h);
-}
-OSErr  HandToHand(HANDLEPTR hp)
-{
-	long size =  GetHandleSize(*hp);
+	long size = _GetHandleSize(*hp);
 	Handle h2;
 	
-	h2 =  NewHandle(size);
+	h2 = _NewHandle(size);
 	if (!h2) return -1;
 	
 	memcpy(*h2, **hp, size);
@@ -250,12 +244,31 @@ OSErr  HandToHand(HANDLEPTR hp)
 	return 0;
 }
 
+void _HLock(Handle h)
+{
+	return; // all handles are always locked in Windows
+}
 
-void  DisposeHandleReally(Handle h)
+void _HUnlock(Handle h)
+{
+	return; // all handles are always locked in Windows
+}
+
+void _SetHandleSize(Handle h, long newSize)
+{
+	_SetPtrSize(*h, newSize);
+}
+
+long _GetHandleSize(Handle h)
+{
+	return _GetPtrSize(*h);
+}
+
+void _DisposeHandleReally(Handle h)
 {
 	short i;
 	
-	 DisposePtr(*h);
+	_DisposePtr(*h);
 	
 	*h = 0;
 	
@@ -264,17 +277,13 @@ void  DisposeHandleReally(Handle h)
 		{ freeMasterPointers[i] = h; break; }
 }
 
-void  DisposeHandle2(HANDLEPTR hp)
+void _DisposeHandle2(HANDLEPTR hp)
 {
-	 DisposeHandleReally(*hp);
+	_DisposeHandleReally(*hp);
 	*hp = 0;
 }
 
-void  DisposeHandle(Handle h) {
-	DisposeHandle(h);
-}
-
-short  ZeroHandleError(Handle h)
+short _ZeroHandleError(Handle h)
 {
 	if (h == 0)
 #ifdef IBM
@@ -288,19 +297,19 @@ short  ZeroHandleError(Handle h)
 	return 0;
 }
 
-void  BlockMove(VOIDPTR sourcePtr, VOIDPTR destPtr, long count)
+void _BlockMove(VOIDPTR sourcePtr, VOIDPTR destPtr, long count)
 {
 	memmove(destPtr, sourcePtr, count);
 }
 
-void  MyBlockMove(VOIDPTR sourcePtr, VOIDPTR destPtr, long count)
+void _MyBlockMove(VOIDPTR sourcePtr, VOIDPTR destPtr, long count)
 {
 	memmove(destPtr, sourcePtr, count);
 }
 
 #define THE_UPPER_BOUND 2147483647L
 
-long  MaxBlock (void)
+long _MaxBlock (void)
 // We'll do this until we find a better way,
 {
 	static long N = THE_UPPER_BOUND/2;
@@ -316,42 +325,25 @@ long  MaxBlock (void)
 	
 	catch(...) {
 		N /= 2;
-		return MaxBlock();
+		return _MaxBlock();
 	}
 	
 }
 
-
-OSErr  MemError (void)
+OSErr _MemError (void)
 {
 	return memoryError;
 }
 
-///// SYSTEM  STUFF /////////////////////////
-
-OSErr DeleteHandleItem(CHARH h, long i, long size)
-{
-	long total =  GetHandleSize((Handle)h),
-	elements = total / size;
-	
-	 BlockMove(&INDEXH(h, (i + 1) * size),
-			   &INDEXH(h, i * size),
-			   (elements - (i + 1)) * size);
-	
-	 SetHandleSize((Handle)h, total - size);
-	
-	return  MemError();
-}
-
-
+#endif
 
 long MyTempMaxMem() {
-	return  MaxBlock();
+	return _MaxBlock();
 }
 
 Handle MyNewHandleTemp(long size)
 {
-	return  NewHandle(size);
+	return _NewHandle(size);
 	
 }
 

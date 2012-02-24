@@ -11,15 +11,28 @@
 #define __TRandom__
 
 #include "Random_c.h"
-#include "Random_g.h"
 #include "Mover/TMover.h"
 
-class TRandom : virtual public Random_c, virtual public Random_g, virtual public TMover
+class TRandom : virtual public Random_c, public TMover
 {
 	
 public:
 	TRandom (TMap *owner, char *name);
+	// I/O methods
+	virtual OSErr 		Read (BFPB *bfpb);  // read from current position
+	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
 	
+	// list display methods
+	virtual OSErr 		CheckAndPassOnMessage(TModelMessage *message);
+	virtual void		Draw(Rect r, WorldRect view) { }
+	virtual long		GetListLength();
+	virtual ListItem 	GetNthListItem(long n, short indent, short *style, char *text);
+	virtual Boolean 	ListClick(ListItem item, Boolean inBullet, Boolean doubleClick);
+	virtual Boolean 	FunctionEnabled(ListItem item, short buttonID);
+	//		virtual OSErr 		AddItem(ListItem item);
+	virtual OSErr 		SettingsItem(ListItem item);
+	virtual OSErr 		DeleteItem(ListItem item);
+		
 };
 
 #endif

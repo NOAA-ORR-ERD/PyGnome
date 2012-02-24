@@ -14,7 +14,7 @@ using std::string;
 #include "ObjectUtils.h"
 #include "Uncertainty.h"
 #include "GridVel.h"
-#include "MemUtils.h"
+#include "MemUtils/MemUtils.h"
 
 Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2);
 UNIQUEID ZeroID(void);
@@ -32,47 +32,11 @@ extern class ADCPTimeValue dummyADCPTimeValue;
 
 ///////////////////////////////////////////////////////////////////////////
 
-class TModelMessage
-{
-	public:
-		// constructors
-		TModelMessage(long messageCode,char* targetName,char *dataStr);
-		TModelMessage(long messageCode,char* targetName,CHARH dataHdl);
-		TModelMessage(long messageCode,UNIQUEID targetUniqueID,char *dataStr);
-		TModelMessage(long messageCode,UNIQUEID targetUniqueID,CHARH dataHdl);
-		// destructor
-		~TModelMessage(); // does this need to be virtual?
-		
-		// Message utilities
-		Boolean IsMessage(long messageCode);
-		Boolean IsMessage(char* targetName);
-		Boolean IsMessage(long messageCode,char* targetName);
-		Boolean IsMessage(long messageCode,UNIQUEID targetUniqueID);
-		long GetMessageCode(void) {return fMessageCode;}
-		void GetParameterString(char * key,char * answerStr,long maxNumChars);
-		OSErr GetParameterAsDouble(char * key,double * val);
-		OSErr GetParameterAsLong(char * key,long * val);
-		OSErr GetParameterAsBoolean(char * key,Boolean * val);
-		OSErr GetParameterAsWorldPoint(char * key,WorldPoint * val,Boolean checkForLLInputWithoutDirection);
-		OSErr GetParameterAsSeconds(char * key,Seconds * val);
-		
-
-	private:
-		Boolean StringsMatch(char* str1,char* str2);
-		// instance variables
-		long fMessageCode;
-		UNIQUEID fTargetUniqueID;
-		char* fTargetName;
-		char *fDataStr;
-		CHARH fDataHdl;
-};
-
+#include "Message/TModelMessage.h"
 
 //++ TClassID
 
-#include "ClassID/ClassID_b.h"
 #include "ClassID/ClassID_c.h"
-#include "ClassID/ClassID_g.h"
 #include "ClassID/TClassID.h"
 
 // --
@@ -553,9 +517,6 @@ Boolean CDOGAvailable();
 
 //++ TMap
 
-#include "Map/Map_b.h"
-#include "Map/Map_c.h"
-#include "Map/Map_g.h"
 #include "Map/TMap.h"
 
 //--
@@ -628,11 +589,12 @@ int ConcentrationCompare(void const *x1, void const *x2);
 
 //++ PtCurMap
 
-#include "PtCurMap/PtCurMap_b.h"
 #include "PtCurMap/PtCurMap.h"
 
 //-- 
 
+
+#include "GridVel.h"
 
 float DistFromWPointToSegment(long pLong, long pLat, long long1, long lat1, 
 														long long2, long lat2, long dLong, long dLat);
@@ -991,74 +953,22 @@ OSErr	AddMapsDialog ();
 
 //++ TMover
 
-#include "Mover/Mover_b.h"
 #include "Mover/Mover_c.h"
-#include "Mover/Mover_g.h"
 #include "Mover/TMover.h"
 
 //--
 
 
-/////////////////////////////////////////////////
+//++ TCurrentMover
 
+#include "CurrentMover/TCurrentMover.h"
 
-class TCurrentMover : public TMover
-{
-	protected:
-		LONGH			fLESetSizesH;			// cumulative total num le's in each set
-		LEUncertainRecH	fUncertaintyListH;		// list of uncertain factors list elements of type LEUncertainRec
-
-	public:
-		double			fDownCurUncertainty;	
-		double			fUpCurUncertainty;	
-		double			fRightCurUncertainty;	
-		double			fLeftCurUncertainty;	
-		
-		Boolean			bIAmPartOfACompoundMover;
-		Boolean			bIAmA3DMover;
-		
-	public:
-							TCurrentMover (TMap *owner, char *name);
-		virtual			   ~TCurrentMover () { Dispose (); }
-
-		virtual ClassID 	GetClassID () { return TYPE_CURRENTMOVER; }
-		virtual Boolean		IAm(ClassID id) { if(id==TYPE_CURRENTMOVER) return TRUE; return TMover::IAm(id); }
-		virtual Boolean		IAmA3DMover(){return false;}
-		virtual void		Dispose ();
-
-		virtual OSErr 		UpItem (ListItem item);
-		virtual OSErr 		DownItem (ListItem item);
-		virtual Boolean 	FunctionEnabled (ListItem item, short buttonID);
-
-		virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
-		virtual OSErr		UpdateUncertainty(void);
-		virtual OSErr		AllocateUncertainty ();
-		virtual void		DisposeUncertainty ();
-
-		virtual OSErr 		PrepareForModelStep();
-
-		virtual WorldRect GetGridBounds(){return theWorld;}	
-		virtual float		GetArrowDepth(){return 0.;}
-
-		// I/O methods
-		virtual OSErr 		Read (BFPB *bfpb);  // read from current position
-		virtual OSErr 		Write (BFPB *bfpb); // write to  current position
-
-		virtual OSErr 		ReadTopology(char* path, TMap **newMap)	{return 2;}
-		virtual OSErr 		ExportTopology(char* path) {return 2;}	
-
-		virtual OSErr 		CheckAndPassOnMessage(TModelMessage * model);
-
-		virtual OSErr 		SettingsDialog() {return 0;}
-};
-
+//--
 
 //++ TRandom
 
 
-#include "Random/Random_b.h"
 #include "Random/Random_c.h"
-#include "Random/Random_g.h"
 #include "Random/TRandom.h"
 
 
@@ -1109,88 +1019,7 @@ class TGridVel;
 #define		kUCode			0					// supplied to UorV routine
 #define		kVCode			1
 
-typedef struct {
-	Boolean isOptimizedForStep;
-	Boolean isFirstStep;
-	double 	value;
-} TCM_OPTIMZE;
-
-class TCATSMover : public TCurrentMover
-{
-	public:
-		WorldPoint 		refP; 					// location of tide station or map-join pin
-		TGridVel		*fGrid;					//VelocityH		grid; 
-		long 			refZ; 					// meters, positive up
-		short 			scaleType; 				// none, constant, or file
-		double 			scaleValue; 			// constant value to match at refP
-		char 			scaleOtherFile[32]; 	// file to match at refP
-		double 			refScale; 				// multiply current-grid value at refP by refScale to match value
-		Boolean 		bRefPointOpen;
-		Boolean			bUncertaintyPointOpen;
-		Boolean 		bTimeFileOpen;
-		Boolean			bTimeFileActive;		// active / inactive flag
-		Boolean 		bShowGrid;
-		Boolean 		bShowArrows;
-		double 			arrowScale;
-		TOSSMTimeValue *timeDep;
-		double			fEddyDiffusion;			// cm**2/s minimum eddy velocity for uncertainty
-		double			fEddyV0;			//  in m/s, used for cutoff of minimum eddy for uncertainty
-	public:
-		TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file
-
-	public:
-							TCATSMover (TMap *owner, char *name);
-		virtual			   ~TCATSMover () { Dispose (); }
-		virtual OSErr		InitMover (TGridVel *grid, WorldPoint p);
-		virtual ClassID 	GetClassID () { return TYPE_CATSMOVER; }
-		virtual Boolean		IAm(ClassID id) { if(id==TYPE_CATSMOVER) return TRUE; return TCurrentMover::IAm(id); }
-		virtual void		Dispose ();
-		virtual Boolean 	OkToAddToUniversalMap();
-		virtual	OSErr 		ReplaceMover();
-		
-		virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
-		
-		virtual CurrentUncertainyInfo GetCurrentUncertaintyInfo ();
-	
-		virtual void		SetCurrentUncertaintyInfo (CurrentUncertainyInfo info);
-		virtual Boolean 	CurrentUncertaintySame (CurrentUncertainyInfo info);
-
-		void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
-		void				GetRefPosition (WorldPoint *p, long *z) { (*p) = refP; (*z) = refZ; }
-
-		virtual WorldRect GetGridBounds(){return fGrid->GetBounds();}	
-
-		void				SetTimeDep (TOSSMTimeValue *newTimeDep) { timeDep = newTimeDep; }
-		TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
-		void				DeleteTimeDep ();
-		VelocityRec			GetPatValue (WorldPoint p);
-		VelocityRec 		GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
-		VelocityRec			GetSmoothVelocity (WorldPoint p);
-		//OSErr				ComputeVelocityScale ();
-		virtual OSErr		ComputeVelocityScale ();
-		virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
-		virtual OSErr 		PrepareForModelStep();
-		virtual void 		ModelStepIsDone();
-
-		// I/O methods
-		virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
-		virtual OSErr 		Write (BFPB *bfpb); // write to  current position
-
-		// list display methods
-		virtual OSErr 		CheckAndPassOnMessage(TModelMessage *message);
-		virtual void		Draw (Rect r, WorldRect view);
-		virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr);
-		virtual long		GetListLength ();
-		virtual ListItem 	GetNthListItem (long n, short indent, short *style, char *text);
-		virtual Boolean 	ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
-		virtual Boolean 	FunctionEnabled (ListItem item, short buttonID);
-//		virtual OSErr 		AddItem (ListItem item);
-		virtual OSErr 		SettingsItem (ListItem item);
-		virtual OSErr 		DeleteItem (ListItem item);
-
-		virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
-		virtual	OSErr 	ExportTopology(char* path);
-};
+#include "CATSMover/TCATSMover.h"
 
 ///////////////////////////////////////////////////////////////////////////
 class TCATSMover3D : public TCATSMover
@@ -1371,9 +1200,7 @@ Boolean IsADCPFile (char *path);
 
 //++ TWindMover
 
-#include "WindMover/WindMover_b.h"
 #include "WindMover/WindMover_c.h"
-#include "WindMover/WindMover_g.h"
 #include "WindMover/TWindMover.h"
 
 //--
@@ -1879,18 +1706,14 @@ void TellPlayersAboutNewDirt(void);
 
 //++ TTimeValue
 
-#include "TimeValue/TimeValue_b.h"
 #include "TimeValue/TimeValue_c.h"
-#include "TimeValue/TimeValue_g.h"
 #include "TimeValue/TTimeValue.h"
 
 //--
 
 //++ TOSSMTimeValue
 
-#include "OSSMTimeValue/OSSMTimeValue_b.h"
 #include "OSSMTimeValue/OSSMTimeValue_c.h"
-#include "OSSMTimeValue/OSSMTimeValue_g.h"
 #include "OSSMTimeValue/TOSSMTimeValue.h"
 
 

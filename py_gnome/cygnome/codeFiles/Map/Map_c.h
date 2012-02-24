@@ -12,12 +12,23 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "Map_b.h"
 #include "ClassID/ClassID_c.h"
+#include "CMyList.h"
 
-class Map_c : virtual public Map_b, virtual public ClassID_c {
+class Map_c : virtual public ClassID_c {
 
 public:
+	WorldRect			fMapBounds; 				// bounding rectangle of map
+	CMyList				*moverList;					// list of this map's movers
+	Boolean				bMoversOpen;				// movers list open (display)	
+	float				fRefloatHalfLifeInHrs;	
+	Boolean				bIAmPartOfACompoundMap;
+
+public:
+	Map_c() {}
+	Map_c(char *name, WorldRect bounds);
+	virtual ClassID	GetClassID () { return TYPE_MAP; }
+	virtual Boolean	IAm(ClassID id) {if(id==TYPE_MAP) return TRUE; return ClassID_c::IAm(id); }
 	virtual	WorldRect	GetMapBounds () { return fMapBounds; }
 	void				SetMapBounds (WorldRect newBounds) { fMapBounds = newBounds; }
 	virtual	Boolean 	InMap (WorldPoint p);

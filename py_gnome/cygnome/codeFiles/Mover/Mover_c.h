@@ -12,14 +12,31 @@
 
 #include "Earl.h"
 #include "TypeDefs.h"
-#include "Mover_b.h"
 #include "ClassID/ClassID_c.h"
 #include "RectUtils.h"
 
-class Mover_c : virtual public Mover_b, virtual public ClassID_c {
+#ifdef pyGNOME
+#define TMap Map_c
+#endif
+
+class TMap;
+
+class Mover_c : virtual public ClassID_c {
 
 public:
+	TMap				*moverMap;			// mover's owner
+	Seconds				fUncertainStartTime;
+	double				fDuration; 				// duration time for uncertainty;
+	RGBColor			fColor;
 	
+protected:
+	double				fTimeUncertaintyWasSet;	// time to measure next uncertainty update
+
+public:
+			Mover_c() {}
+			Mover_c (TMap *owner, char *name);
+	virtual ClassID 	GetClassID () { return TYPE_MOVER; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_MOVER) return TRUE; return ClassID_c::IAm(id); }
 	virtual OSErr		AddUncertainty (long setIndex, long leIndex, VelocityRec *v) { return 0; }
 	//virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType) {WorldPoint3D theLE3D = {(*theLE).p.pLat,(*theLE).p.pLong,(*theLE).z}; return theLE3D;}
 	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType); 
@@ -36,5 +53,5 @@ public:
 
 
 
-
+#undef TMap
 #endif
