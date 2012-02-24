@@ -52,7 +52,7 @@ class Projection:
         (or a BoundingBox Object)
         
         image_size: the size of the map image -- (width, height)
-       """
+        """
         self.set_scale(bounding_box, image_size)
         
         return None
@@ -92,6 +92,7 @@ class Projection:
         and returns the pixel coords as a similar Nx2 array of x,y coordinates
         (using the y = 0 at the top, and y increasing down)
         """
+        # b = a.view(shape=(10,2),dtype='<f4')
         # shift to center:
         coords = coords - self.center
         # scale to pixels:
@@ -99,7 +100,7 @@ class Projection:
         # shift to pixel coords
         coords += self.offset
         
-       	return np.round(coords).astype(np.int)
+        return np.round(coords).astype(np.int)
     
     def to_lat_long(self, coords):
         ## note: untested!
