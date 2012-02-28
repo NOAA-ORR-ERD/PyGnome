@@ -2602,8 +2602,8 @@ OSErr NetCDFMover::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg)
 	VelocityFH velH = 0;
 	long latlength = fNumRows;
 	long lonlength = fNumCols;
-	//long depthlength = fNumDepthLevels;	// code goes here, do we want all depths? maybe if movermap is a ptcur map??
-	long depthlength = 1;	// code goes here, do we want all depths?
+	long depthlength = fNumDepthLevels;	// code goes here, do we want all depths? maybe if movermap is a ptcur map??
+	//long depthlength = 1;	// code goes here, do we want all depths?
 	//float scale_factor = 1.;
 	double scale_factor = 1./*, scale_factor_v = 1.*/;
 	//double add_offset = 0., add_offset_v = 0.;
