@@ -10,21 +10,23 @@ import numpy as np
 
 include "c_gnome_defs.pxi"
 
-cdef class shio_time_value:
-
-    cdef ShioTimeValue_c *time_value
-    
-    def __cinit__(self):
-        self.time_value = new ShioTimeValue_c()
-        
-    def __dealloc__(self):
-        del self.time_value
-        
-    def __init__(self):
-        pass
-    
-    def read_time_values(self, path, format, units):
-        self.time_value.ReadTimeValues(path, format, units)
+#==============================================================================
+# cdef class shio_time_value:
+# 
+#     cdef ShioTimeValue_c *time_value
+#     
+#     def __cinit__(self):
+#         self.time_value = new ShioTimeValue_c()
+#         
+#     def __dealloc__(self):
+#         del self.time_value
+#         
+#     def __init__(self):
+#         pass
+#     
+#     def read_time_values(self, path, format, units):
+#         self.time_value.ReadTimeValues(path, format, units)
+#==============================================================================
         
 cdef class cats_mover:
 

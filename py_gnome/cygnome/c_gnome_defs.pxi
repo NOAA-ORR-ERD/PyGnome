@@ -128,9 +128,11 @@ cdef extern from "CurrentMover/CurrentMover_c.h":
     cdef cppclass CurrentMover_c(Mover_c):
         pass
     
-cdef extern from "ShioTimeValue/ShioTimeValue_c.h":
-    cdef cppclass ShioTimeValue_c:
-        OSErr    ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance)
+#==============================================================================
+# cdef extern from "ShioTimeValue/ShioTimeValue_c.h":
+#     cdef cppclass ShioTimeValue_c:
+#         OSErr    ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance)
+#==============================================================================
 
 cdef extern from "CATSMover/CATSMover_c.h":
     ctypedef struct TCM_OPTIMZE:
