@@ -483,7 +483,7 @@ dataspace = {};
 <script>			
 //Gather and validate model data
 function getgnomedata(){
-	var speed = $("#speed").val();
+	var velocity = $("#speed").val();
 	var direction = $("#direction").val();
 	var latitude = $("#lat").val();
 	var longitude = $("#long").val();
@@ -491,26 +491,26 @@ function getgnomedata(){
 	var time = $("#timepicker").val();
 	
 	//GNOME JSON object
-	gnomedata = [
-	[{"speed": speed},
-	{"direction": direction},],
-	[{"latitude": latitude},
-	{"longitude": longitude},
-	{"date": date},
-	{"time": time},]
-	];
+	//gnomedata = [
+	//[{"speed": speed},
+	//{"direction": direction},],
+	//[{"latitude": latitude},
+	//{"longitude": longitude},
+	//{"date": date},
+	//{"time": time},]
+	//];
 	
 	
 	//GNOME DATA STRUCTURE
-	gnomestruct = 
-	[
-	[{"movers" : "movers"},  {"type" : "constant_wind"}, {"velocity" : 2.3}, {"direction" : 275}], 
-	[{"params" : "params"},  {"type" : "none"},	{"p1" : "1"}, {"p2" : "2"}, {"p3" : 3}], 
-	[{"spills" : "spills"},  {"type" : "point source"}, {"latitude" : latitude}, {"longitude" : longitude}, {"date" : date}, {"start time" : time}]
-	];
+	//gnomestruct = 
+	//[
+	//[{"movers" : "movers"},  {"type" : "constant_wind"}, {"velocity" : velocity}, {"direction" : direction}], 
+	//[{"params" : "params"},  {"type" : "none"},	{"p1" : "1"}, {"p2" : "2"}, {"p3" : 3}], 
+	//[{"spills" : "spills"},  {"type" : "point source"}, {"latitude" : latitude}, {"longitude" : longitude}, {"date" : date}, {"start time" : time}]
+	//];
 	
 	//GNOME MODEL DATA
-	var movers = {'type' : 'constant_wind', 'velocity': 2.3, 'direction': 275};
+	var movers = {'type' : 'constant_wind', 'velocity': velocity, 'direction': direction};
 	var params = {'type' : 'none'}; 
 	var spills = {'type' : 'point_source', 'latitude' : latitude, 'longitude': longitude, 'date' : date, 'start_time' : time};
 	var modeldata = {'movers' : movers, 'params' : params, 'spills' : spills}; 

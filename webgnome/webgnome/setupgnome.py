@@ -1,4 +1,4 @@
-import c_gnome
+from gnome import c_gnome
 import md5
 import os
 import datetime
@@ -34,7 +34,7 @@ def run_gnome(pyson):
         print 'OS Error: Directory exists'
 
     location.reset()
-    location.replace_constant_wind_mover(speed = movers['velocity'], direction=movers['direction'])
+    location.replace_constant_wind_mover(speed = float(movers['velocity']), direction=float(movers['direction']))
     location.set_spill(start_time=datetime.datetime(2012, 2, 14, 14),
                        location = (float(spills['longitude']),float(spills['latitude'])),
                        )
