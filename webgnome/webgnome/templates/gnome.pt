@@ -1,0 +1,716 @@
+<!--
+2011 NOAA OR&R ERD Daniel Smith - Mathews
+GNOME2: webGNOME Prototype ERDware ver 0.1
+-->
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>GNOME</title>
+		<style>
+			<link rel="sytlesheet" href="css/GNOME.css">
+
+			header, nav, article, footer, address, canvas, section {
+			display: block;
+			}
+
+			#surface {
+			height:505px;
+			width: 660px;
+			background-color: #777777;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			padding: 5px 0px 0px 5px;
+			margin: 0 auto 0 auto;
+			text-align: center;
+			}
+
+			#leftpane{
+			height:495px;
+			width: 165px;
+			background-color: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			padding: 5px 5px 5px 5px;
+			text-align: left;
+			margin: auto auto 25px 25px;
+			position: absolute;
+			left: 0px;
+			down: 0px;
+			border-style:solid;
+			border-width:2px;
+			border-color:#777777;
+			}
+
+			#rightpane{
+			height:495px;
+			width: 165px;
+			background-color: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			padding: 5px 5px 5px 5px;
+			text-align: center;
+			margin: auto auto auto auto;
+			position: absolute;
+			right: 0px;
+			down: 0px; 
+			border-style:solid;
+			border-width:2px;
+			border-color:#777777;
+			}
+
+			#console {
+			width:660px;
+			height:145px;
+			margin:0px;
+			text-align: left;
+			background-color: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			position:relative;
+			margin: 0 auto 0 auto;
+			top: 25px;
+			border-style:solid;
+			border-width:2px;
+			border-color:#777777;
+			}
+
+			#navi{
+			width:140px;
+			height: 490px;
+			margin:0px;
+			background-color: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			padding: 5px 5px 5px 5px;
+			}
+
+			#mapcanvas{
+			height:500px;
+			width:500px;
+			background: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			margin: 0 auto 0 auto;
+			position: relative;
+			left: 75px;
+			bottom: 500px;
+			}
+			
+			#slider { margin: 10px; }
+
+			.curved-box-css3
+			{
+			width: 120px;
+			margin: 10px;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			background-color: #EEEEEE;
+			}
+
+			.curved-box-control
+			{
+			width: 75px;
+			margin: 10px;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			background-color: #EEEEEE;
+			}
+
+			.curved-box-css3 h2
+			{
+			margin: 0px;
+			text-align: center;
+
+			}
+
+			.curved-box-css3 p
+			{
+			margin: 0px;
+			text-align: center;
+
+			}
+
+			body{
+			background: #EEEEEE;
+			margin: 0;
+			padding: 0;
+			text-align: center;
+			}
+
+			div#parent {
+			width: 100%;
+			height: 10px;
+			background-color: #0E2D88;
+			}
+			div#parent2 {
+			width: 100%;
+			height: 10px;
+			background-color: #028AB4;
+			top: auto
+			}
+			div#child {
+			width: 100%;
+			height: 10px;
+			background-color: #0E2D88;
+			}
+
+			div#child2 {
+			width: 100%;
+			height: 20px;
+			background-color: #EEEEEE;
+			}
+
+			div#child3 {
+			width: 100%;
+			height: 30px;
+			background-color: white;
+			text-align: left;
+			}
+			
+			div#gnomemenu{
+			font-size:62.5%;
+			}
+			
+			.input {
+   			 border: 1px solid #006;
+    		 background: #ffc;
+			 }
+			 
+			 textarea{
+			 width: 100px; 
+			 height: 20px;
+			 }
+			 
+			 input{
+			 width: 100px;
+			 height: 20px;
+			 }
+			 
+			 promptfont{
+			 font-size: 20px;
+			 }
+
+		</style>
+		<!--Validation Style-->
+		<style type="text/css">
+			* {
+				font-family: Verdana;
+				font-size: 96%;
+			}
+			label {
+				width: 10em;
+				float: left;
+			}
+			label.error {
+				float: none;
+				color: red;
+				padding-left: .5em;
+				vertical-align: top;
+			}
+			p {
+				clear: both;
+			}
+			.submit {
+				margin-left: 12em;
+			}
+			em {
+				font-weight: bold;
+				padding-right: 1em;
+				vertical-align: top;
+			}
+		</style>
+		<!--Validation Style-->
+		<!-- jQuery-->
+		<script src="js/jquery-1.6.4.js" type="text/javascript"></script>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6/jquery.min.js"></script>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.min.js"></script>
+		<script type="text/javascript" src="js/jquery-ui-1.8.16.custom/js/jquery-1.6.2.min.js"></script>
+		<script type="text/javascript" src="js/jquery-ui-1.8.16.custom/js/jquery-ui-1.8.16.custom.min.js"></script>
+		<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+		<script src="http://view.jqueryui.com/menu/ui/jquery.ui.menu.js"></script>
+		<link href="http://view.jqueryui.com/menu/themes/base/jquery.ui.menu.css" rel="stylesheet" type="text/css"/>
+		<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+		<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+  		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+ 		 <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+		
+		<!--jQuery-->
+		<!--jQuery Testing--> 
+		
+		<!--jQuery Testing--> 
+		<!--Dialog-->
+		<script type="text/javascript">
+		
+			$(function() {
+				var doOk = function() {
+					$("#myDialog").dialog("close");
+
+				}
+				var dialogOpts = {
+					modal : true,
+					buttons : {
+						"Ok" : doOk,
+						"Cancel" : doOk,
+					},
+					height : "auto",
+					width : "auto",
+					autoOpen : false
+				};
+				$("#myDialog").dialog(dialogOpts);
+				$("#openDialog").click(function() {
+					$("#myDialog").dialog("open");
+				});
+			});
+
+		</script>
+		<!--Dialog-->
+		<!--Dialog-->
+		<script type="text/javascript">
+			$(function() {
+				var doOk = function() {
+					$("#myDialog2").dialog("close");
+
+				}
+				var dialogOpts = {
+					modal : true,
+					buttons : {
+						"Ok" : doOk,
+						"Cancel" : doOk,
+					},
+					height : "auto",
+					width : "auto",
+					autoOpen : false
+				};
+				$("#myDialog2").dialog(dialogOpts);
+				$("#openDialog2").click(function() {
+					$("#myDialog2").dialog("open");
+				});
+			});
+
+		</script>
+		<!--Dialog-->
+		<!--Button-->
+		<script>
+			$(function() {
+				$("input:submit, a, button", ".demo").button();
+				$("a", ".demo").click(function() {
+					return false;
+				});
+			});
+
+		</script>
+		<!--Button-->
+		<!--Datepicker-->
+		<script>
+			$(function() {
+				$("#datepicker").datepicker();
+			});
+
+		</script>
+		<!--Datepicker-->
+		<!--Timepicker-->
+		<!--Timepicker-->
+		<!--Effect-->
+		<script>
+			$(function() {
+				$("#consolebutton").function() {
+					$("#effect").animate({
+						backgroundColor : "#aa0000",
+						color : "#fff",
+						width : 500
+					}, 1000);
+				}, function() {
+					$("#effect").animate({
+						backgroundColor : "#fff",
+						color : "#000",
+						width : 240
+					}, 1000);
+				});
+			});
+
+		</script>
+		<!--Effect-->
+		<!--Validation
+		<script>
+			$(document).ready(function() {
+				$("#speed").validate({
+					errorPlacement : function(error, element) {
+						error.appendTo(element.parent("td").next("td"));
+					},
+					debug : true
+				})
+			});
+		</script>
+		<!--Validation-->
+		<!--GNOME MENU-->
+		<script>
+  	    $(document).ready(function() {
+        $("gnomemenu").menu();
+        $("gnomemenu").click(function() {
+        $("gnomemenu").slideUp(300).delay(300).fadeIn(300);
+        });
+		});
+        </script>
+		<!--GNOME MENU-->
+		<!--slider-->
+		<script>
+  		$(document).ready(function() {
+    	$("#slider").slider();
+  		});
+  </script>
+		<!--slider-->
+		<!--HTML5 DOC STRUCTURE-->
+		<script>document.createElement("header")</script>
+		<script>document.createElement("footer")</script>
+		<!--HTML5 DOC STRUCTURE-->
+	</head>
+	<body>
+		<div id="parent2"></div>
+		<div id="child3">
+			<a href="http://www.noaa.gov"> <img src="static/noaa.jpeg" height="20" width ="20" alt="National Oceanic and Atmospheric Administration"/></a>
+			<!--Search <input id="search" type="text" name="search" value="Search GNOME"> --> 
+			<a href="http://www.noaa.gov"> <img src="static/gnome.jpg" height="20" width ="20" alt="National Oceanic and Atmospheric Administration"/></a>
+		</div>
+		<div id="parent"></div>
+
+		<div id="child2"></div>	
+		<div id="leftregion"></div>	
+
+		<div id="surface">
+			<div id="navi">
+				<div class="demo">
+					<p>
+						<button id="openDialog">
+							Set Wind
+						</button>
+					</p>
+					<p>
+						<button id="openDialog2">
+							Set Spill
+						</button>
+					</p>
+					<p>
+						<button id="openDialog3" onclick="runspill();">
+							Run Spill
+						</button>
+					</p>
+					<p><button id="replay" onclick="movie()">Replay Movie</button></p>
+					<div id="myDialog" title= "Wind Parameters" class="curved-box-control">
+						<p>
+							&nbsp&nbsp&nbsp&nbspSpeed:
+							<input id="speed">
+							knots </input>
+						</p>
+						<p>
+							Direction:
+							<input id="direction">
+							&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+							</input>
+						</p>
+					</div>
+					<div id="myDialog2" title= "Spill Parameters" class="curved-box-control">
+						<p>
+							&nbsp&nbsp&nbspLatitude:
+							<input id="lat" title="lat">
+							&deg
+							</input>
+						</p>
+						<p>
+							Longitude:
+							<input id="long" title="long">
+							&deg
+							</input>
+						</p>
+						<p>
+							&nbsp&nbsp&nbsp&nbsp&nbspDate:
+							<input id="datepicker" type="text">
+							</input>
+						</p>
+						<p>
+							&nbsp&nbsp&nbsp&nbsp&nbspTime:
+							<input id="timepicker" type="text">
+							</input>
+						</p>
+					</div>
+				</div><!--demo-->
+		
+			</div><!--navi-->
+			<div id="mapcanvas">
+				<img id="mappng" src="static/LongIslandSoundMap.png" height="500" width ="500"/>
+				<script>
+					//Initialize input boxes to show user valid input
+					document.getElementById('speed').value = 0;
+					document.getElementById('direction').value = 0;
+					document.getElementById('lat').value = 0;
+					document.getElementById('long').value = 0;
+					document.getElementById('datepicker').value = '01/01/2012';
+					document.getElementById('timepicker').value = '00:00:00';
+				</script>
+
+<!--Intial Settings for GNOME></-->
+<script>
+/*
+//this is set in the UI by the user on the client in later versions 
+var location = {}; 
+
+//Client Initializaition Request
+function initgnome(){
+jQuery.ajax({
+type: 'POST',
+url: '/gnome',
+data: JSON.stringify({'location': longislandsound}),
+contentType: 'application/json; charset=utf-8'});
+};
+
+function init(){
+initgnome();
+}
+
+//secure data namespace will go here 
+dataspace = {};
+*/
+</script>
+
+
+<script>			
+//Gather and validate model data
+function getgnomedata(){
+	var speed = $("#speed").val();
+	var direction = $("#direction").val();
+	var latitude = $("#lat").val();
+	var longitude = $("#long").val();
+	var date = $("#datepicker").val(); 
+	var time = $("#timepicker").val();
+	
+	//GNOME JSON object
+	gnomedata = [
+	[{"speed": speed},
+	{"direction": direction},],
+	[{"latitude": latitude},
+	{"longitude": longitude},
+	{"date": date},
+	{"time": time},]
+	];
+	
+	
+	//GNOME DATA STRUCTURE
+	gnomestruct = 
+	[
+	[{"movers" : "movers"},  {"type" : "constant_wind"}, {"velocity" : 2.3}, {"direction" : 275}], 
+	[{"params" : "params"},  {"type" : "none"},	{"p1" : "1"}, {"p2" : "2"}, {"p3" : 3}], 
+	[{"spills" : "spills"},  {"type" : "point source"}, {"latitude" : latitude}, {"longitude" : longitude}, {"date" : date}, {"start time" : time}]
+	];
+	
+	//GNOME MODEL DATA
+	var movers = {'type' : 'constant_wind', 'velocity': 2.3, 'direction': 275};
+	var params = {'type' : 'none'}; 
+	var spills = {'type' : 'point_source', 'latitude' : latitude, 'longitude': longitude, 'date' : date, 'start_time' : time};
+	var modeldata = {'movers' : movers, 'params' : params, 'spills' : spills}; 
+
+	
+	//GNOME JSON to be sent
+	gnomedatajson = JSON.stringify(modeldata);
+}
+
+function callback_json(response){
+       movie(response); 
+    }
+
+//Client request in JSON
+function sendgnomedata(){
+
+	//alert('data being sent:'+ gnomedatajson);
+  
+    jQuery.ajax({
+        type: "POST",
+		url:  "/run",
+		data: gnomedatajson,
+		success: callback_json,
+		dataType: 'json',
+		crossDomain: true
+		});
+}
+
+//function send_post_json() {
+//    jQuery.ajax( {
+//           type: "POST",
+//           url: "/test_json",
+//           data: JSON.stringify(wind_mover),
+//           success: callback_json,
+//           dataType: 'json',
+//          }
+//         )   
+//}
+
+
+function getgnomehash(){
+   
+    jQuery.ajax({
+        type: 'POST',
+		url:  '/test_string',
+		data: gnomedatajson,
+		
+		});
+}
+
+function sendgnometest(){
+jQuery.ajax({
+type: 'POST', 
+url: '/data', 
+data: gnomedatajson,
+contentType: 'application/json; charset=utf-8'});
+}
+
+//Adds map button in jquery
+function addmap()
+{
+var n = 0;
+if(n!=1){
+$('#navi').append('<button id="showspillbutton" onclick="addspillmap();">Show Spill</button>');
+}
+n=1;
+}
+
+//set padding on function
+function zeroFill( number, width )
+{
+  width -= number.toString().length;
+  if ( width > 0 )
+  {
+    return new Array( width + (/\./.test( number ) ? 2 : 1) ).join( '0' ) + number;
+  }
+  return number;
+}
+
+//Add the static spill map
+function addspillmap()
+{
+$("#mappng").attr("src","static/hash"+hashfolder+zeroFill(5,5)+"png.png");
+$('#navi').append('<button id="showmoviebutton" onclick="movie()">Simulate</button>');
+simulate();
+}
+
+//Add the dynamic spill map---Cacher-----
+function simulate()
+{
+//load the simulation
+for (i=0;i<50;i++){
+$.get("static/hashes/286be7ec4e69db4e23ec8a90e152f0f1/" + zeroFill(framenumber,5) + ".png"); 
+//$('#mappng').attr("src","static/ppng/ppng"+i+".png");
+}
+}
+
+var framenumber = 0;
+
+
+var a; 
+var b;
+
+function movie(response){
+//Get the data
+//Display the simulation images
+framenumber = 0;
+directory = response.hash;
+maxframe = response.numframes;
+var fps = setInterval(function (){
+//$('#mappng').attr("src","static/hashes/" + "cab5694094bf5f620ab3ec6f4b9da517/map" + zeroFill(framenumber,5) +".png");
+$('#mappng').attr("src","static/hashes/" + directory + "/map" + zeroFill(framenumber,5) +".png");
+framenumber++;
+if (framenumber === 100){
+clearInterval(fps);
+framenumber = 0;
+}
+}, 100)
+}
+
+//Console info
+function displays(){
+var console =  'GNOME CONSOLE'
+$('#leftregion').append('<div id=leftpane></div>').slideDown(); 
+$('#leftpane').append(gnomedatajson);
+$('body').append('<div class=curvedbox-control id=console></div>');
+$('#console').append(console); 
+$('#console').append('>>');
+$('#console').append('Spill Complete').fadeIn();
+}
+
+function moviemenu(){
+$("#slider").children("div").css("background","red");
+}
+
+var directoryhash = '';
+/*
+function gnomejson(){
+$.getJSON('/test_json',{},function(text){directoryhash = text;});			 		
+
+directory = directoryhash['hash'];
+numberofframes = directoryhash['frames'];
+return({'directory': directory,'numberofframes':numberofframes}); 
+}
+*/
+
+//Gathers and sends data for spill
+function runspill(){
+//$('#mappng').attr("src","static/hashes/286be7ec4e69db4e23ec8a90e152f0f1/map00109.png");
+getgnomedata();
+//getgnomehash();
+sendgnomedata();
+//$.getJSON('/test_json',{},function(text){response = text; window.a = response.hash; window.b = response.frames; movie(window.a, window.b);});		 		
+//$.getJSON('/test_json',{},function(text){response = text;  alert(window.a); alert(window.b); a = response.hash; b = response.frames; alert(window.a); alert(window.b);});		 		
+//movie();
+//gnomejson(a);
+//alert(a);
+//var directory = a['directory'];
+//framenumber = 9;
+//$('#mappng').attr("src","static/hashes/" + directory + "/map" + zeroFill(framenumber,5) +".png");
+}
+
+				</script>
+			</div>
+			
+<script>
+function logout ()
+{    $("#surface").click(function () {
+      $('#mapcanvas').fadeOut(300);
+	  $('#navi').fadeOut(300);
+      $(this).effect("scale", { percent: 55, direction: 'both' }, 500);
+      $(this).append('<p>User Name: <input type="text" size="25"></input>');
+	  $(this).append('<p>Password:&nbsp&nbsp&nbsp<input type="password" size="25" name="password" id="password" /></p>')
+      $(this).css({opacity: 0.20}); 
+	  });
+	  logout();
+}
+</script>
+		<!-->
+		<div id="rightregion"></div>	
+			</div>
+			<!--
+			<form class="cmxform" id="console" method="get" action="">
+				<fieldset>
+					<legend>
+						CODE REVIEW: (GNOME FEEDBACK FORM) THANK YOU!
+					</legend>
+					<p>
+						<label for="cemail">EMAIL</label>
+						<input id="cemail" name="email" size="25"  class="required email" />
+					</p>
+					<p>
+						<label for="ccomment">COMMENTS</label>
+						<textarea id="ccomment" name="comment" cols="26"  class="required"></textarea>
+					</p>
+					<p>
+						<input class="submit" type="submit" value="Submit"/>
+					</p>
+				</fieldset>
+			</form>
+			<-->
+	</body>
+</html>
