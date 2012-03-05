@@ -49,8 +49,13 @@ public:
 	Boolean fEbbFloodValuesOpen; // for the list
 	EbbFloodDataH fEbbFloodDataHdl;	// values to show on list for tidal currents
 	HighLowDataH fHighLowDataHdl;	// values to show on list for tidal heights
-	
-	ShioTimeValue_c() {}
+
+	ShioTimeValue_c(Seconds start_time, Seconds stop_time) { 
+		fEbbFloodDataHdl = 0;
+		fHighLowDataHdl = 0;
+		this->start_time = start_time;
+		this->stop_time = stop_time;
+	}
 	
 	virtual ClassID 		GetClassID () { return TYPE_SHIOTIMEVALUES; }
 	virtual Boolean			IAm(ClassID id) { if(id==TYPE_SHIOTIMEVALUES) return TRUE; return OSSMTimeValue_c::IAm(id); }

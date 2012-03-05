@@ -144,7 +144,7 @@ OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, char*key, long lineNum, char* strL
 done:
 	if(numVals < 10) err = -5;// probably a bad line
 	if(err && h) {_DisposeHandle((Handle)h); h = 0;}
-	else _SetHandleSize((Handle)h,numVals*sizeof(***val));
+	else { _SetHandleSize((Handle)h,numVals*sizeof(***val)); }
 	*val = h;
 	return err;
 }
@@ -270,7 +270,6 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	}
 	
 #endif
-	cout << "okay.\n";
 	lineNum = 0;
 	// first line
 	if(!(p = GetKeyedLine(f,"[StationInfo]",lineNum++,strLine)))  goto readError;
@@ -333,7 +332,6 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	// 3nd line
 
 	if(!(p = GetKeyedLine(f,"Name=",lineNum++,strLine)))  goto readError;
-	cout << "okay.\n";
 
 	strncpy(this->fStationName,p,MAXSTATIONNAMELEN);
 	this->fStationName[MAXSTATIONNAMELEN-1] = 0;
@@ -361,14 +359,11 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	if(err = this->GetKeyedValue(f,"DatumControls.L2Flag=",lineNum++,strLine,&this->fConstituent.DatumControls.L2Flag))  goto readError;
 	if(err = this->GetKeyedValue(f,"DatumControls.HFlag=",lineNum++,strLine,&this->fConstituent.DatumControls.HFlag))  goto readError;
 	if(err = this->GetKeyedValue(f,"DatumControls.RotFlag=",lineNum++,strLine,&this->fConstituent.DatumControls.RotFlag))  goto readError;
-	cout << "okay.\n";
 	
 skipDatumControls:
 	if(err = this->GetKeyedValue(f,"H=",lineNum++,strLine,&this->fConstituent.H))  goto readError;
 	if(err = this->GetKeyedValue(f,"kPrime=",lineNum++,strLine,&this->fConstituent.kPrime))  goto readError;
-	
 	if(!(p = GetKeyedLine(f,"[Offset]",lineNum++,strLine)))  goto readError;
-	cout << "okay.\n";
 	
 	switch(this->fStationType)
 	{
@@ -413,7 +408,6 @@ skipDatumControls:
 	return 0;
 	
 readError:
-	cout << "err!!\n";
 	if(f) _DisposeHandle((Handle)f); f = nil;
 	sprintf(strLine,"Error reading SHIO time file %s on line %ld",this->fileName,lineNum);
 		printError(strLine);
@@ -442,15 +436,19 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 {
 	OSErr err = 0;
 	Boolean needToCompute = true;
+#ifndef pyGNOME
 	Seconds modelStartTime = model->GetStartTime();
 	Seconds modelEndTime = model->GetEndTime();
+#else
+	Seconds modelStartTime = this->start_time;
+	Seconds modelEndTime = this->stop_time;
+#endif
 	DateTimeRec beginDate, endDate;
 	Seconds beginSeconds;
 	Boolean daylightSavings;
 	YEARDATAHDL		YHdl = 0; 
 	
 	long numValues = this->GetNumValues();
-	
 	// check that to see if the value is in our already computed range
 	if(numValues > 0)
 	{
@@ -466,7 +464,6 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 		}
 		//this->fScaleFactor = 0;	//if we want to ask for a scale factor for each computed range...
 	}
-	
 	// else we need to re-compute the values
 	this->SetTimeValueHandle(nil);
 	
@@ -485,13 +482,12 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 	
 	daylightSavings = DaylightSavingTimeInEffect(&beginDate);// code goes here, set the daylight flag
 #ifndef pyGNOME
-	YHdl = GetYearData(beginDate.year); 
-#else
-	YHdl = 0;
-#endif
-	
+	YHdl = GetYearData(beginDate.year);
 	if(!YHdl)  { TechError("TShioTimeValue::GetTimeValue()", "GetYearData()", 0); return -1; }
-	
+#else
+	YHdl = (yeardatstruct**)NewHandle(1);	
+#endif
+
 	if(this->fStationType == 'C')
 	{
 		// get the currents
@@ -507,7 +503,9 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 		//model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
 		if(!err)
 		{
+#ifndef pyGNOME
 			model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
+#endif
 			long i,num10MinValues = answers.nPts,numCopied = 0;
 			if(num10MinValues > 0 && answers.timeHdl && answers.speedHdl)
 			{
@@ -593,7 +591,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 					// (we show the user if the plot flag is set)
 					numToShowUser = 0;
 					if(EbbFloodSpeedsHdl && EbbFloodTimesHdl && EbbFloodHdl)
-					{
+					{	
 						for(i = 0; i < numEbbFloods; i++)
 						{
 							EbbFloodTime = INDEXH(EbbFloodTimesHdl,i);
@@ -612,14 +610,15 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 					if(numToShowUser > 0)
 					{
 						short j;
+
 						fEbbFloodDataHdl = (EbbFloodDataH)_NewHandleClear(sizeof(EbbFloodData)*numToShowUser);
 						if(!fEbbFloodDataHdl) {TechError("TShioTimeValue::GetTimeValue()", "_NewHandleClear()", 0); err = memFullErr; if(tvals)DisposeHandle((Handle)tvals); goto done_currents;}
 						for(i = 0, j=0; i < numEbbFloods; i++)
 						{
+
 							EbbFloodTime = INDEXH(EbbFloodTimesHdl,i);
 							EbbFloodSpeed = INDEXH(EbbFloodSpeedsHdl,i);
 							EbbFlood = INDEXH(EbbFloodHdl,i);
-							
 							if(EbbFloodTime.flag == 0)
 							{
 								EbbFloodData ebbFloodData;
@@ -632,8 +631,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 								INDEXH(fEbbFloodDataHdl,j++) = ebbFloodData;
 							}
 						}
-					}
-					
+					}					
 				}
 				/////////////////////////////////////////////////
 				
@@ -644,7 +642,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 		
 		// dispose of GetTideCurrent allocated handles
 		CleanUpCompCurrents(&answers);
-		if(err) return err;
+		if(err) {return err; }
 	}
 	
 	else if (this->fStationType == 'H')
@@ -667,7 +665,9 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 		
 		if (!err)
 		{
+#ifndef pyGNOME
 			model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
+#endif
 			long i,num10MinValues = answers.nPts,numCopied = 0;
 			if(num10MinValues > 0 && answers.timeHdl && answers.heightHdl)
 			{
@@ -820,6 +820,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 			}		
 			/////////////////////////////////////////////////
 			// ask for a scale factor if not known from wizard
+#ifndef pyGNOME
 			sprintf(msg,lfFix("The largest calculated derivative was %.4lf"),largestDeriv);
 			strcat(msg, ".  Enter scale factor for heights coefficients file : ");
 			if (fScaleFactor==0)
@@ -828,6 +829,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 				if (err) goto done_heights;
 				fScaleFactor = scaleFactor;
 			}
+#endif
 			(*value).u = (*value).u * fScaleFactor;
 		}
 		
@@ -859,7 +861,9 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 		
 		if (!err)
 		{
+#ifndef pyGNOME
 			model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
+#endif
 			long i,num10MinValues = answers.nPts,numCopied = 0;
 			if(num10MinValues > 0 && answers.timeHdl && answers.heightHdl)
 			{
@@ -967,6 +971,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 			//strcat(msg, ".  Enter scale factor for heights coefficients file : ");
 			char msg[256];
 			double scaleFactor;
+#ifndef pyGNOME
 			strcpy(msg, "Enter scale factor for progressive wave coefficients file : ");
 			if (fScaleFactor==0)
 			{
@@ -974,6 +979,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 				if (err) goto done_heights2;
 				fScaleFactor = scaleFactor;
 			}
+#endif
 			(*value).u = (*value).u * fScaleFactor;
 		}
 		

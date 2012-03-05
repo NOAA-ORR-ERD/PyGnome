@@ -88,7 +88,7 @@ OSErr CATSMover_c::ComputeVelocityScale()
 						//velocity.u *= mover -> refScale;
 						//velocity.v *= mover -> refScale;
 						// so use GetScaledPatValue() instead
-						theirVelocity = mover -> GetScaledPatValue(refP,nil);
+						theirVelocity = mover -> GetScaledPatValue(refP,nil, 0);
 						
 						theirLengthSq = (theirVelocity.u * theirVelocity.u + theirVelocity.v * theirVelocity.v);
 						// JLM, we need to adjust the movers pattern 
@@ -128,13 +128,13 @@ OSErr CATSMover_c::ComputeVelocityScale()
 	return -1;
 }
 
-WorldPoint3D CATSMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D CATSMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType, Seconds time)
 {
 	Boolean useEddyUncertainty = false;	
 	double 		dLong, dLat;
 	WorldPoint3D	deltaPoint={0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	
-	VelocityRec scaledPatVelocity = this->GetScaledPatValue(refPoint,&useEddyUncertainty);
+	VelocityRec scaledPatVelocity = this->GetScaledPatValue(refPoint,&useEddyUncertainty, time);
 	if(leType == UNCERTAINTY_LE)
 #ifndef pyGNOME
 	{ 
@@ -151,7 +151,7 @@ WorldPoint3D CATSMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 	return deltaPoint;
 }
 
-VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty, Seconds time)
 {
 	/// 5/12/99 JLM, we only add the eddy uncertainty when the vectors are big enough when the timeValue is 1 
 	// This is in response to the Prince William sound problem where 5 patterns are being added together
@@ -162,14 +162,15 @@ VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncerta
 	{	// we need to update refScale
 		this -> ComputeVelocityScale();
 	}
-	
+	if(timeDep)
+	if(bTimeFileActive)
 	// get and apply our time file scale factor
 	if (timeDep && bTimeFileActive)
 	{
 		// VelocityRec errVelocity={1,1};
 		// JLM 11/22/99, if there are no time file values, use zero not 1
 		VelocityRec errVelocity={0,1}; 
-		err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); 
+		err = timeDep -> GetTimeValue (time, &timeValue); 
 		if(err) timeValue = errVelocity;
 	}
 	
@@ -185,7 +186,6 @@ VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncerta
 		if(lengthSquaredBeforeTimeFactor < (this -> fEddyV0 * this -> fEddyV0)) *useEddyUncertainty = false; 
 		else *useEddyUncertainty = true;
 	}
-	
 	patVelocity.u *= timeValue.u; // magnitude contained in u field only
 	patVelocity.v *= timeValue.u; // magnitude contained in u field only
 	

@@ -51,8 +51,11 @@ public:
 	double			fEddyV0;			//  in m/s, used for cutoff of minimum eddy for uncertainty
 	TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file
 
-						CATSMover_c (TMap *owner, char *name);
-						CATSMover_c () {}
+	CATSMover_c (TMap *owner, char *name);
+	CATSMover_c () { 
+		fGrid = 0; 
+		timeDep = 0;
+	}
 	virtual ClassID 	GetClassID () { return TYPE_CATSMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_CATSMOVER) return TRUE; return CurrentMover_c::IAm(id); }	
 	void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
@@ -64,11 +67,11 @@ public:
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	void				DeleteTimeDep ();
 	VelocityRec			GetPatValue (WorldPoint p);
-	VelocityRec 		GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
+	VelocityRec 		GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty, Seconds time);//JLM 5/12/99
 	VelocityRec			GetSmoothVelocity (WorldPoint p);
 	//OSErr				ComputeVelocityScale ();
 	virtual OSErr		ComputeVelocityScale ();
-	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);	
+	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType, Seconds time);	
 	virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
 	
 	

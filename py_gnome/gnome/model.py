@@ -4,7 +4,7 @@ import os
 import sys
 from math import floor
 import collections
-from gnome import c_gnome
+from gnome import c_gnome, greenwich
 from map import gnome_map, lw_map
 from basic_types import disp_status_dont_disperse
 import spill
@@ -28,6 +28,7 @@ class Model:
         self.time_step = 0
         self.spills = []
         self.lwp_arrays = []
+        self.shio = None
         
     def add_map(self, image_size, bna_filename, refloat_halflife):
         self.c_map = gnome_map(image_size, bna_filename)
@@ -66,28 +67,35 @@ class Model:
         """
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
     
-    def add_shio_time_value(self, path):
-    	shio = c_gnome.shio_time_value()
-    	shio.read_time_values(path, 0, 0)
-    	
-    def add_cats_mover(self, path, scale_type, ref_position, scale_value=1, diffusion_coefficient=1):
-        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient)
+    def add_cats_mover(self, path, scale_type, ref_position, shio_path, scale_value=1, diffusion_coefficient=1):
+        if(self.start_time == self.stop_time):
+            print 'Please set the model run times before continuing.'
+            exit(0)
+        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient, shio_path, self.start_time, self.stop_time)
         mover.set_ref_position(ref_position, 0)
         mover.read_topology(path)
         mover.compute_velocity_scale()
+        mover.set_time_dep(self.shio)
         self.movers.append(mover)
         
-        
     def set_run_duration(self, start_time, stop_time):
-        ## fixme: maybe use datetime objects instead of seconds here?
+    
         """
-        set the run duration from the start and stop times
-        
-        times are in seconds since???
+        Now using date-time strings, 'yyyy-mm-dd hh:mm:ss' (Greenwich Mean Time)
         
         """
+        
+        try:
+            start_time = greenwich.gwtm(start_time).time_seconds
+            stop_time = greenwich.gwtm(stop_time).time_seconds
+        except:
+            print 'Please check the format of your date time strings.'
+            exit(-1)
+            
         if not start_time < stop_time:
-            return
+            print 'Please check your start and stop times.'
+            exit(-1)
+            
         self.start_time = start_time
         self.stop_time = stop_time
         self.duration = stop_time - start_time
@@ -137,7 +145,7 @@ class Model:
             lwpras += [numpy.copy(spill.npra['p'])]
         for mover in self.movers:
             for j in xrange(0, len(spills)):
-                mover.get_move(self.interval_seconds, spills[j].npra)
+                mover.get_move(self.interval_seconds, spills[j].npra, self.time_step*self.interval_seconds + self.start_time)
         for j in xrange(0, len(spills)):
             spill = spills[j]
             chromgph = spill.movement_check()

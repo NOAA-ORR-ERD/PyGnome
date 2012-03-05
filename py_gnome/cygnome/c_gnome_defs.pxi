@@ -129,7 +129,8 @@ cdef extern from "CurrentMover/CurrentMover_c.h":
         pass
     
 cdef extern from "ShioTimeValue/ShioTimeValue_c.h":
-    cdef cppclass ShioTimeValue_c:
+    cdef cppclass ShioTimeValue_c(OSSMTimeValue_c):
+        ShioTimeValue_c(Seconds start_time, Seconds stop_time)
         OSErr    ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance)
 
 cdef extern from "CATSMover/CATSMover_c.h":
@@ -156,9 +157,10 @@ cdef extern from "CATSMover/CATSMover_c.h":
         double            fEddyDiffusion    
         double            fEddyV0
         TCM_OPTIMZE     fOptimize
-        WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+        WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType, Seconds time)
         int             ReadTopology(char* path, Map_c **newMap)
         void            SetRefPosition (WorldPoint p, long z)
+        void            SetTimeDep (OSSMTimeValue_c *newTimeDep)
         OSErr            ComputeVelocityScale()
         
 cdef public enum type_defs:

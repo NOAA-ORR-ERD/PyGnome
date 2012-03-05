@@ -10,7 +10,8 @@
 #include "CROSS.h"
 #include <iostream>
 #include "MemUtils.h"
-
+#include <iostream>
+using std::cout;
 
 #ifdef AGNOSTIC
 
@@ -89,7 +90,6 @@ Ptr _NewPtr(long size)
 	
 	p += 4;
 	memset(p, 0, size);
-	
 	_handleCount++;
 	
 	return(p);
@@ -106,7 +106,7 @@ long _GetPtrSize(Ptr p)
 	return *((long *)(p - 4));
 }
 
-void _SetPtrSize(Ptr p, long newSize)
+Ptr _SetPtrSize(Ptr p, long newSize)
 {
 	Ptr p2 = 0;
 	memoryError = 0;
@@ -114,20 +114,21 @@ void _SetPtrSize(Ptr p, long newSize)
 	try {
 		long oldSize = *((long*)(p - 4));
 		p2 = new char[newSize+4];
-		if(oldSize < newSize)
-			memmove(p2+4, p, oldSize);
-		else
-			memmove(p2+4, p, newSize);
-		delete[] p;
+		if(*p) {
+			if(oldSize < newSize)
+				memmove(p2+4, p, oldSize);
+			else
+				memmove(p2+4, p, newSize);
+			delete[] (p-4);
+		}
 	}
 	catch(...) {
 		memoryError = -1;
-		return;
+		return NULL;
 	}
-	
 	*((long *)p2) = newSize;
+	return p2 + 4;
 	
-	p2+=4;
 }
 
 void _DisposePtr(Ptr p)
@@ -256,7 +257,7 @@ void _HUnlock(Handle h)
 
 void _SetHandleSize(Handle h, long newSize)
 {
-	_SetPtrSize(*h, newSize);
+	*h = _SetPtrSize(*h, newSize);
 }
 
 long _GetHandleSize(Handle h)

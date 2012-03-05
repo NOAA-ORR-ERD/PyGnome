@@ -10,10 +10,10 @@ from distutils.core import setup
 from distutils.extension import Extension
 
 files = ['MemUtils/MemUtils.cpp', 'Mover/Mover_c.cpp', 'ShioCurrent1.cpp', 'ShioCurrent2.cpp', 'ShioHeight.cpp',]
+files += ['OSSMTimeValue/OSSMTimeValue_c.cpp', 'TimeValue/TimeValue_c.cpp']
 files += ['DagTreeIO/DagTreeIO.cpp', 'GENUTIL.cpp', 'ShioTimeValue/ShioTimeValue_c.cpp']
 files += ['Random/Random_c.cpp', 'WindMover/WindMover_c.cpp', 'CurrentMover/CurrentMover_c.cpp']
 files += ['CompFunctions.cpp', 'CMyList/CMYLIST.cpp']
-files += ['OSSMTimeValue/OSSMTimeValue_c.cpp', 'TimeValue/TimeValue_c.cpp']
 files += ['Map/Map_c.cpp', 'CATSMover/CATSMover_c.cpp', 'GEOMETRY.cpp']
 files += ['TriGridVel/TriGridVel_c.cpp', 'DagTree/DagTree.cpp', 'StringFunctions.cpp']
 

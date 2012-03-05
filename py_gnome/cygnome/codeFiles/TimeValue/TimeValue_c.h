@@ -25,7 +25,7 @@ class TimeValue_c : virtual public ClassID_c {
 public:
 	TMover *owner;
 	
-	TimeValue_c() {}
+	TimeValue_c() { owner = 0; }
 	TimeValue_c (TMover *theOwner) { owner = theOwner; }
 	virtual OSErr	GetTimeValue (Seconds time, VelocityRec *value);
 	virtual OSErr	CheckStartTime (Seconds time);

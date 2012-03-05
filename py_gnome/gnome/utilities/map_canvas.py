@@ -203,7 +203,8 @@ class MapCanvas:
                 
             except ValueError: # not a regular polygon
                 pass
-        print 'done drawing'
+                
+        print 'done drawing' + self._type()
         return None
     
     def draw_particles(self, spills, filename):
@@ -212,7 +213,10 @@ class MapCanvas:
             pra = spill.npra['p']
             for i in xrange(0, len(pra)):
             	xy = self.to_pixel((pra[i]['p_long'], pra[i]['p_lat']))
-            	img.putpixel(xy, 1)
+                try:
+            	    img.putpixel(xy, 1)
+            	except:
+				    pass
         img.save(filename)
     
     def save(self, filename, type="PNG"):

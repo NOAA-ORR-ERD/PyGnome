@@ -15,7 +15,6 @@
 #define _NewPtr NewPtr
 #define _NewPtrClear NewPtrClear
 #define _GetPtrSize GetPtrSize
-#define _SetPtrSize SetPtrSize
 #define _DisposePtr DisposePtr
 #define _DisposPtr DisposPtr
 #define _NewHandle NewHandle
