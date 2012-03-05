@@ -31,8 +31,13 @@ spill = {'num_particles': 1000,
 
 cats_scale_type = 1
 cats_ref_position = (-72.705, 41.2275)
+<<<<<<< HEAD
 cats_topology_file = "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/tests/tidesWAC.CUR"
 shio_file = "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/tests/CLISShio.txt"
+=======
+# cats_topology_file = "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/tests/tidesWAC.CUR"
+cats_topology_file = "./tidesWAC.CUR"
+>>>>>>> 848f70866cc7c503792d0e34a786fdffcb0b52dc
 
 
 mini_gnome.set_run_duration(1000000,2000000)

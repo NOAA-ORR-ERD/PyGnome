@@ -219,48 +219,48 @@ typedef struct textliststruct
 
 
 /*---------------------------------------------*/
-typedef struct stationinfostruct
+/*typedef struct stationinfostruct
 {
 
-	/* graph window information */
+	// graph window information //
 	//WindowPeek			wpk;					// plot window handle
 	PicHandle			pichdl;					// plot picture handle
 	Rect				contrect;				// modified content rectangle of window
 
 
-	/* Region File Information */
+	// Region File Information //
 	char				filename[128];			// name of region file.					
 	short				refnum;					// refNum for region file.
 
-	/* units for height and speed */
+	// units for height and speed //
 	short				hghtunits;				// units for height
 	short				spdunits;				// units for speed
 	short				DayLightSavingsFlag;	// 0 = automatic.
 												// 1 = force on.
 												// 2 = force off.
 
-	/* calendar info */
+	// calendar info //
 	DateTimeRec			BeginDate;				// Start date
 	DateTimeRec			EndDate;				// End date
 
 	long				windmode;				// show text or plot
 
-	/* using custom reference curve data */
+	// using custom reference curve data //
 	short				usingcustomrefdata;		// using custom reference data instead of constituent values
 	short				nminmax;				// number of min max values entered
 	double				**minmaxvalhdl;			// array of min max values
 	double				**minmaxtimehdl;		// array of min max values
 	CONTROLVAR			cntrlvars;				// control variables for reference stations
 	short				xtra;					// pad for PPC (take this out in new release (redo CONTROLVAR struct)
-	/* start/end usingcustomrefdata dates */
+	// start/end usingcustomrefdata dates //
 	short				s_month,s_day,s_year;	// starting date of reference file data
 	short				e_month,e_day,e_year;	// ending date of reference file data
 
-	/* text list information */
+	// text list information //
 	VList				vlistinfo;				// VLIST information
 	TextList			**txthdl;				// handle to the text
 
-	/* Graphing Information */
+	// Graphing Information //
 	short				showLabels;				// Toggle labels on the plot.
 	short				showGrids;				// Toggle grids on the plot.
 	short				showsunrisesunset;		// Toggle sunrise and sunset shading on plot.
@@ -284,7 +284,7 @@ typedef struct stationinfostruct
 	double				xmin;					// Minimum x axis value.
 	double				xmax;					// Maximum x axis value.
 
-	/* Current station specific info */
+	// Current station specific info //
 	CURRENTSTATION		coffsetdata;			// current offset data.
 	CONSTITUENT			**CKInfoHdl;			// Hdl to current constituent data.
 	CURRENTOFFSET		**CurrentDataHdl;		// Hdl to converted offset data (used in the computations).
@@ -296,7 +296,7 @@ typedef struct stationinfostruct
 	HEIGHTOFFSET		**TideDataHdl;			// Hdl to converted offset data (used in the computations).
 	COMPHEIGHTS			**TideGraphHdl;			// Hdl to tide graph data.
 
-}STATION, *STATIONPTR, **STATIONHDL;
+}STATION, *STATIONPTR, **STATIONHDL;*/
 
 
 

@@ -9,9 +9,16 @@ from Cython.Distutils import build_ext
 from distutils.core import setup
 from distutils.extension import Extension
 
+<<<<<<< HEAD
 files = ['MemUtils/MemUtils.cpp', 'Mover/Mover_c.cpp', 'ShioCurrent1.cpp', 'ShioCurrent2.cpp', 'ShioHeight.cpp',]
 files += ['OSSMTimeValue/OSSMTimeValue_c.cpp', 'TimeValue/TimeValue_c.cpp']
 files += ['DagTreeIO/DagTreeIO.cpp', 'GENUTIL.cpp', 'ShioTimeValue/ShioTimeValue_c.cpp']
+=======
+files = ['MemUtils/MemUtils.cpp', 'Mover/Mover_c.cpp']
+#files = ['MemUtils/MemUtils.cpp', 'Mover/Mover_c.cpp', 'ShioCurrent1.cpp', 'ShioCurrent2.cpp', 'ShioHeight.cpp',]
+files += ['DagTreeIO/DagTreeIO.cpp', 'GENUTIL.cpp']
+#files += ['DagTreeIO/DagTreeIO.cpp', 'GENUTIL.cpp', 'ShioTimeValue/ShioTimeValue_c.cpp']
+>>>>>>> 848f70866cc7c503792d0e34a786fdffcb0b52dc
 files += ['Random/Random_c.cpp', 'WindMover/WindMover_c.cpp', 'CurrentMover/CurrentMover_c.cpp']
 files += ['CompFunctions.cpp', 'CMyList/CMYLIST.cpp']
 files += ['Map/Map_c.cpp', 'CATSMover/CATSMover_c.cpp', 'GEOMETRY.cpp']
@@ -22,7 +29,7 @@ for file in files:
     temp_list.append(os.path.join(CPP_CODE_DIR ,file))
 files = temp_list
 
-extra_includes=None
+extra_includes="."
 compile_args=None
 if sys.platform == "darwin":
     macros = [('MAC', 1), ('TARGET_CARBON', 1),]
