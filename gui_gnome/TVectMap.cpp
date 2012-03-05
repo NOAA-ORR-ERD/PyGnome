@@ -124,7 +124,7 @@ void DrawCMapLayer(CMap *theMap,CMapLayer* mapLayer)
 		thisObjectList -> GetListItem ((Ptr) &thisObjectHdl, ObjectIndex);
 		mapLayer -> GetDrawSettings (&drawSettings, (ObjectRecHdl)thisObjectHdl, kScreenMode);
 
-		if (drawSettings.fillCode == kNoFillCode)	
+		if (drawSettings.fillCode == kNoFillCode && drawSettings.backColorInd == kWaterColorInd)	
 			DrawMapBoundsPoly (theMap, thisObjectHdl,  &drawSettings, true);
 		else
 			DrawMapPoly (theMap, thisObjectHdl,  &drawSettings);

@@ -1021,6 +1021,11 @@ Boolean PtCurMover::ListClick(ListItem item, Boolean inBullet, Boolean doubleCli
 			return TRUE;
 		}
 
+	if (ShiftKeyDown() && item.index == I_PTCURNAME) {
+		fColor = MyPickColor(fColor,mapWindow);
+		model->NewDirtNotification(DIRTY_LIST|DIRTY_MAPDRAWINGRECT);
+	}
+	
 	if (doubleClick && !inBullet)
 	{
 		Boolean userCanceledOrErr ;
@@ -1104,9 +1109,10 @@ void PtCurMover::Draw(Rect r, WorldRect view)
 	if(fGrid && (fVar.bShowArrows || fVar.bShowGrid))
 	{
 		Boolean overrideDrawArrows = FALSE;
-		fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,overrideDrawArrows,fVar.bShowGrid);
+		fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,overrideDrawArrows,fVar.bShowGrid,fColor);
 		if(fVar.bShowArrows)
 		{ // we have to draw the arrows
+			RGBForeColor(&fColor);
 			long numVertices,i;
 			LongPointHdl ptsHdl = 0;
 			long timeDataInterval;
@@ -1215,6 +1221,7 @@ void PtCurMover::Draw(Rect r, WorldRect view)
 				}
 			}
 		}
+		RGBForeColor(&colors[BLACK]);
 	}
 }
 

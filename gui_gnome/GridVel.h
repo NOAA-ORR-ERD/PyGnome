@@ -44,7 +44,7 @@ class TGridVel
 		virtual  VelocityRec GetPatValue(WorldPoint p)=0;
 		virtual VelocityRec GetSmoothVelocity(WorldPoint p)=0;
 		virtual void Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
-						  double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid)=0;
+						  double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)=0;
 		virtual void SetBounds(WorldRect bounds){fGridBounds = bounds;}	
 		virtual WorldRect GetBounds(){return fGridBounds;}	
 		virtual InterpolationVal GetInterpolationValues(WorldPoint ref){InterpolationVal ival; memset(&ival,0,sizeof(ival)); return ival;}
@@ -79,7 +79,7 @@ class TRectGridVel : public TGridVel
 		VelocityRec 	GetSmoothVelocity(WorldPoint p);
 		
 		void 			Draw (Rect r, WorldRect view,WorldPoint refP,double refScale,
-		 					double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid);
+		 					double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
 };
 
 
@@ -115,7 +115,7 @@ class TTriGridVel : public TGridVel
 		virtual LongPoint GetRectIndicesFromTriIndex(WorldPoint refPoint,LONGH ptrVerdatToNetCDFH,long numCols_ext);
 		OSErr	GetRectCornersFromTriIndexOrPoint(long *index1, long *index2, long *index3, long *index4, WorldPoint refPoint,long triNum, Boolean useTriNum, LONGH ptrVerdatToNetCDFH,long numCols_ext);
 		virtual void Draw (Rect r, WorldRect view,WorldPoint refP,double refScale,
-				   double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid);
+				   double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
 		void DrawBitMapTriangles (Rect r);
 		void DrawCurvGridPts(Rect r, WorldRect view);
 		
@@ -216,7 +216,7 @@ class TTriGridVel3D : public TTriGridVel
 		long FindTriNearClick(Point where);
 		//virtual InterpolationVal GetInterpolationValues(WorldPoint refPoint);
 		virtual void Draw (Rect r, WorldRect view,WorldPoint refP,double refScale,
-				   double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid);
+				   double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
 		void 	DrawPointAt(Rect *r,long verIndex,short selectMode );
 		void DrawTriangleStr(Rect *r,long triNum,double value);
 		//void DrawBitMapTriangles (Rect r);

@@ -595,12 +595,12 @@ void TCATSMover3D::Draw(Rect r, WorldRect view)
 	if(fRefinedGrid)
 	{
 		if (bShowArrows)
-			fGrid->Draw(r,view,refP,refScale,arrowScale,bShowArrows,false);
+			fGrid->Draw(r,view,refP,refScale,arrowScale,bShowArrows,false,fColor);
 		else
-			fRefinedGrid->Draw(r,view,refP,refScale,arrowScale,false,bShowGrid);
+			fRefinedGrid->Draw(r,view,refP,refScale,arrowScale,false,bShowGrid,fColor);
 	}
 	else if(fGrid)
-		fGrid->Draw(r,view,refP,refScale,arrowScale,bShowArrows,bShowGrid);
+		fGrid->Draw(r,view,refP,refScale,arrowScale,bShowArrows,bShowGrid,fColor);
 	if (bShowDepthContours) ((TTriGridVel3D*)fGrid)->DrawDepthContours(r,view,bShowDepthContourLabels);
 }
 

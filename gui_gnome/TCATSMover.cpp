@@ -710,6 +710,11 @@ Boolean TCATSMover::ListClick(ListItem item, Boolean inBullet, Boolean doubleCli
 				return TRUE;
 		}
 	
+	if (ShiftKeyDown() && item.index == I_CATSNAME) {
+		fColor = MyPickColor(fColor,mapWindow);
+		model->NewDirtNotification(DIRTY_LIST|DIRTY_MAPDRAWINGRECT);
+	}
+	
 	if (doubleClick && !inBullet)
 	{
 		switch(item.index)
@@ -2215,7 +2220,7 @@ Error: // JLM 	 10/27/98
 void TCATSMover::Draw(Rect r, WorldRect view)
 {
 	if(fGrid && (bShowArrows || bShowGrid))
-		fGrid->Draw(r,view,refP,refScale,arrowScale,bShowArrows,bShowGrid);
+		fGrid->Draw(r,view,refP,refScale,arrowScale,bShowArrows,bShowGrid,fColor);
 }
 
 /**************************************************************************************************/

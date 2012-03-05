@@ -911,7 +911,7 @@ done:
 }
 
 void TRectGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
-						double arrowScale, Boolean bDrawArrows, Boolean bDrawGrid) 
+						double arrowScale, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor) 
 {
 	short row, col, pixX, pixY;
 	long dLong, dLat;
@@ -957,6 +957,7 @@ void TRectGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 				
 			if (bDrawArrows && (velocity.u != 0 || velocity.v != 0))
 			{
+				RGBForeColor(&arrowColor);
 				inchesX = (velocity.u * refScale) / arrowScale;
 				inchesY = (velocity.v * refScale) / arrowScale;
 				pixX = inchesX * PixelsPerInchCurrent();
@@ -968,6 +969,7 @@ void TRectGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 				MyDrawArrow(p.h,p.v,p2.h,p2.v);
 				//DrawArrowHead (p, p2, velocity);
 				//DrawArrowHead(p2, velocity);
+				RGBForeColor(&colors[PURPLE]);
 			}
 		}
 		
@@ -1577,7 +1579,7 @@ VelocityRec TTriGridVel::GetPatValue(WorldPoint p)
 }
 
 void TTriGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,double arrowScale,
-					   Boolean bDrawArrows, Boolean bDrawGrid)
+					   Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)
 {
 	short row, col, pixX, pixY;
 	float inchesX, inchesY;
@@ -1618,6 +1620,7 @@ void TTriGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,do
 	{
 		if (bDrawArrows)
 		{
+			RGBForeColor(&arrowColor);
 			wp1 = (*ptsH)[(*topH)[i].vertex1];
 			wp2 = (*ptsH)[(*topH)[i].vertex2];
 			wp3 = (*ptsH)[(*topH)[i].vertex3];
@@ -1648,7 +1651,11 @@ void TTriGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,do
 			}
 		}
 		
-		if (bDrawGrid) DrawTriangle(&r,i,FALSE);	// don't fill triangles
+		if (bDrawGrid) 
+		{
+			RGBForeColor(&colors[PURPLE]);
+			DrawTriangle(&r,i,FALSE);	// don't fill triangles
+		}
 	}
 	RGBForeColor(&colors[BLACK]);
 
@@ -3451,7 +3458,7 @@ void TTriGridVel3D::DrawTriangleStr(Rect *r,long triNum, double value)
 
 ////////////////////////////////////////////////////////////////////////////////////
 void TTriGridVel3D::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,double arrowScale,
-					   Boolean bDrawArrows, Boolean bDrawGrid)
+					   Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)
 {
 	short row, col, pixX, pixY;
 	float inchesX, inchesY;
@@ -3494,6 +3501,7 @@ void TTriGridVel3D::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 	{
 		if (bDrawArrows) 
 		{
+			RGBForeColor(&arrowColor);
 			wp1 = (*ptsH)[(*topH)[i].vertex1];
 			wp2 = (*ptsH)[(*topH)[i].vertex2];
 			wp3 = (*ptsH)[(*topH)[i].vertex3];
@@ -3522,6 +3530,7 @@ void TTriGridVel3D::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 				//DrawArrowHead (p, p2, velocity);
 				MyDrawArrow(p.h,p.v,p2.h,p2.v);
 			}
+			RGBForeColor(&colors[PURPLE]);
 		}
 		
 		//if (bDrawGrid) DrawTriangle3D(&r,i,FALSE,FALSE);	// don't fill triangles

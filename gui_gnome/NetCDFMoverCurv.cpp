@@ -1484,7 +1484,7 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 			}
 		}
 	}
-	if (fVar.bShowGrid) fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,false,true);
+	if (fVar.bShowGrid) fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,false,true,fColor);
 	if (bShowDepthContours && fVar.gridType!=TWO_D) ((TTriGridVel3D*)fGrid)->DrawDepthContours(r,view,bShowDepthContourLabels);// careful with 3D grid
 	
 	RGBForeColor(&colors[BLACK]);

@@ -998,7 +998,7 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 		numTri = triGrid->GetNumTriangles();
 		
 		err = this -> SetInterval(errmsg);
-		if (err) {fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,overrideDrawArrows,bShowGrid); return;}
+		if (err) {fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,overrideDrawArrows,bShowGrid,fColor); return;}
 		//if(err) return;
 		
 		/*if (bShowGrid)
@@ -1021,7 +1021,7 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 		 }
 		 RGBForeColor(&colors[BLACK]);
 		 }*/
-		if (bShowGrid && !bShowArrows) fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,overrideDrawArrows,bShowGrid);
+		if (bShowGrid && !bShowArrows) fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,overrideDrawArrows,bShowGrid,fColor);
 		//fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,overrideDrawArrows,bShowGrid);
 		
 		if(bShowArrows)
@@ -1086,6 +1086,7 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 			
 			for(i = 0; i < numVertices; i++)
 			{
+				RGBForeColor(&fColor);
 			 	// get the value at each vertex and draw an arrow
 				LongPoint pt = INDEXH(ptsHdl,i);
 				long ptIndex = INDEXH(fVerdatToNetCDFH,i);
@@ -1120,7 +1121,7 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 					//{
 					//velocity.u = INDEXH(fStartData.dataHdl,ptIndex).u;
 					//velocity.v = INDEXH(fStartData.dataHdl,ptIndex).v;
-					velocity = /*OK*/dynamic_cast<TideCurCycleMover *>(this)->GetStartVelocity(ptIndex,&isDryPt1);
+					velocity = GetStartVelocity(ptIndex,&isDryPt1);
 					isDryPt2 = true;
 					//}
 					/*else 	// below surface velocity
@@ -1135,8 +1136,8 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 					//{
 					//velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,ptIndex).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex).u;
 					//velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,ptIndex).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex).v;
-					startVelocity = /*OK*/dynamic_cast<TideCurCycleMover *>(this)->GetStartVelocity(ptIndex,&isDryPt1);
-					endVelocity = /*OK*/dynamic_cast<TideCurCycleMover *>(this)->GetEndVelocity(ptIndex,&isDryPt2);
+					startVelocity = GetStartVelocity(ptIndex,&isDryPt1);
+					endVelocity = GetEndVelocity(ptIndex,&isDryPt2);
 					//if (timeAlpha==1) isDryPt1 = true;
 					//if (timeAlpha==0) isDryPt2 = true;
 					if (timeAlpha==1) isDryPt2 = true;
@@ -1174,6 +1175,7 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 					RGBForeColor(&colors[BLACK]);
 				}
 			}
+			RGBForeColor(&colors[BLACK]);
 		}
 	}
 }

@@ -1181,9 +1181,10 @@ void TriCurMover::Draw(Rect r, WorldRect view)
 	if(fGrid && (fVar.bShowArrows || fVar.bShowGrid))
 	{
 		Boolean overrideDrawArrows = FALSE;
-		fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,overrideDrawArrows,fVar.bShowGrid);
+		fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,overrideDrawArrows,fVar.bShowGrid,fColor);
 		if(fVar.bShowArrows)
 		{ // we have to draw the arrows
+			RGBForeColor(&fColor);
 			LongPointHdl ptsHdl = 0;
 			long timeDataInterval;
 			Boolean loaded;
@@ -1276,6 +1277,7 @@ void TriCurMover::Draw(Rect r, WorldRect view)
 				}
 			}
 		}
+		RGBForeColor(&colors[BLACK]);
 	}
 	if (bShowDepthContours) ((TTriGridVel3D*)fGrid)->DrawDepthContours(r,view,bShowDepthContourLabels);
 	

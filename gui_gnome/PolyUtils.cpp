@@ -84,9 +84,10 @@ void DrawMapPoly (CMap* theMap, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr drawSet
 	//Our_PmForeColor (bDrawBlackAndWhite ? kBlackColorInd : drawSettings -> foreColorInd);//JLM
 	// make sure the blackandwhite bitmaps come out right
 	Our_PmForeColor (bDrawBlackAndWhite || gDrawBitmapInBlackAndWhite ? kBlackColorInd : drawSettings -> foreColorInd);//JLM
-	if (drawSettings -> fillCode == kNoFillCode) 
+	if (drawSettings -> fillCode == kNoFillCode && drawSettings->backColorInd == kWaterColorInd) 
 		Our_PmForeColor (drawSettings -> foreColorInd);
 	else
+	{
 		if(bDrawBlackAndWhite) 
 		{
 			//SetPenPat(UPSTRIPES);
@@ -94,7 +95,8 @@ void DrawMapPoly (CMap* theMap, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr drawSet
 			FillPat(UPSTRIPES);
 			PenStyle(BLACK,1);
 		}
-	
+	}
+
 	//if(numPts > 2) Polygon(currentHDC,*pointsH,numPts);
 	// 6/11/03 PC wasn't recognizing the flag for not filling a land polygon
 	if (drawSettings -> bClosed)
