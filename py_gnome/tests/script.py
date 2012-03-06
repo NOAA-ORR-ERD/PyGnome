@@ -9,8 +9,8 @@ spill = {'num_particles': 1000,
          'windage': .2,
          'start_time': '2011-11-12 09:55:00',
          'stop_time': '2011-11-12 09:55:00',
-         'start_position': (-72.719882,41.112120),
-         'stop_position': (-72.719882,41.222120),
+         'start_position': (-72.419882,41.152120),
+         'stop_position': (-72.389882,41.172120),
          }
 
 mini_gnome = model.Model()
