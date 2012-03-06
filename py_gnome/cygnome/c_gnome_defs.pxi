@@ -128,11 +128,10 @@ cdef extern from "CurrentMover/CurrentMover_c.h":
     cdef cppclass CurrentMover_c(Mover_c):
         pass
     
-#==============================================================================
-# cdef extern from "ShioTimeValue/ShioTimeValue_c.h":
-#     cdef cppclass ShioTimeValue_c:
-#         OSErr    ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance)
-#==============================================================================
+cdef extern from "ShioTimeValue/ShioTimeValue_c.h":
+    cdef cppclass ShioTimeValue_c(OSSMTimeValue_c):
+        ShioTimeValue_c(Seconds start_time, Seconds stop_time)
+        OSErr    ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance)
 
 cdef extern from "CATSMover/CATSMover_c.h":
     ctypedef struct TCM_OPTIMZE:
@@ -158,11 +157,12 @@ cdef extern from "CATSMover/CATSMover_c.h":
         double            fEddyDiffusion    
         double            fEddyV0
         TCM_OPTIMZE     fOptimize
-        WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+        WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType, Seconds model_time)
         int             ReadTopology(char* path, Map_c **newMap)
         void            SetRefPosition (WorldPoint p, long z)
         OSErr            ComputeVelocityScale()
-        
+        void        SetTimeDep(OSSMTimeValue_c *time_dep)
+
 cdef public enum type_defs:
     status_not_released = OILSTAT_NOTRELEASED
     status_in_water = OILSTAT_INWATER

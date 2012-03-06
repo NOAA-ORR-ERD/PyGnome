@@ -75,7 +75,6 @@ class Model:
         mover.set_ref_position(ref_position, 0)
         mover.read_topology(path)
         mover.compute_velocity_scale()
-        mover.set_time_dep(self.shio)
         self.movers.append(mover)
         
     def set_run_duration(self, start_time, stop_time):
@@ -113,7 +112,7 @@ class Model:
             print 'spill ignored: (' + str(start_position) + ', ' + str(stop_position) + ').'
             return
         self.spills += [spill.spill(self.lw_map, num_particles, disp_status, windage, \
-                                        (start_time, stop_time), (start_position, stop_position))]
+                                        (greenwich.gwtm(start_time).time_seconds, greenwich.gwtm(stop_time).time_seconds), (start_position, stop_position))]
         self.lwp_arrays += [numpy.copy(self.spills[len(self.spills)-1].npra['p'])]
     
     def reset(self):
