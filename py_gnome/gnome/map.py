@@ -19,13 +19,15 @@ from hazpy.geometry import polygons
 class gnome_map(map_canvas.MapCanvas):
     
     """basic color bitmap."""
-    
+
+        
     def __init__(self, image_size, bna_filename, color_mode='RGB'):
         map_canvas.MapCanvas.__init__(self, image_size, projection=map_canvas.FlatEarthProjection, mode=color_mode)
         self.polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
         self.filename = bna_filename
         self.draw_land(self.polygons)
-    
+
+
     def __del__(self):
         pass        
 
@@ -43,7 +45,11 @@ class gnome_map(map_canvas.MapCanvas):
         coords['p_lat'] += self.projection.offset[1]
         coords['p_long'] = np.round(coords['p_long']).astype(np.int)
         coords['p_lat'] = np.round(coords['p_lat']).astype(np.int)
-
+    
+    
+    def _type(self):
+        return ' color bitmap'
+        
 class lw_map(gnome_map):
 
     """land-water bitmap."""
@@ -51,23 +57,22 @@ class lw_map(gnome_map):
     background_color = 0
     lake_color = 0
     land_color = 1
-    bounding_box = None
     
     def __init__(self, image_size, bna_filename, refloat_halflife, color_mode='1'):
         gnome_map.__init__(self, image_size, bna_filename, color_mode)
-        self.refloat_halflife = refloat_halflife
         self.bounding_box = self.polygons.bounding_box
+        self.refloat_halflife = refloat_halflife
         self.spills = []
     
     def __del__(self):
         pass
-        
-    def get_bounds(self):
-        return self.polygons.bounding_box
 
+    def _type(self):
+        return ' land-water bitmap'
+        
     def on_map(self, pixel_coord):
         bounding_box = self.bounding_box
-        if pixel_coord[0] >= bounding_box[0][0] and pixel_coord[0] <= bounding_box[1][0] and pixel_coord[1] >= bounding_box[0][1] and pixel_coord[1] <= bounding_box[1][1]:
+        if pixel_coord[0] > bounding_box[0][0] and pixel_coord[0] < bounding_box[1][0] and pixel_coord[1] > bounding_box[0][1] and pixel_coord[1] < bounding_box[1][1]:
             return True
         return False
 

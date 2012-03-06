@@ -33,7 +33,9 @@ public:
 	Boolean					bOSSMStyle;
 	double					fTransport;
 	double					fVelAtRefPt;
-		
+	Seconds					start_time;
+	Seconds					stop_time;
+	
 	virtual OSErr			GetTimeValue (Seconds time, VelocityRec *value);
 	virtual OSErr			CheckStartTime (Seconds time);
 	virtual void			RescaleTimeValues (double oldScaleFactor, double newScaleFactor);
@@ -46,7 +48,9 @@ public:
 	virtual double			GetMaxValue();
 
 public:
-	OSSMTimeValue_c () {}
+	OSSMTimeValue_c () {
+		timeValues = 0;
+	}
 	OSSMTimeValue_c (TMover *theOwner);
 	OSSMTimeValue_c (TMover *theOwner,TimeValuePairH tvals,short userUnits);
 	virtual ClassID 		GetClassID () { return TYPE_OSSMTIMEVALUES; }

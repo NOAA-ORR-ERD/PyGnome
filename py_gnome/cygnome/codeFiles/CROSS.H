@@ -596,7 +596,7 @@ void DeleteAllHandles();
 Ptr NewPtr(long size);
 Ptr NewPtrClear(long size);
 long GetPtrSize(Ptr p);
-void SetPtrSize(Ptr p, long newSize);
+Ptr _SetPtrSize(Ptr p, long newSize);
 //void DisposPtr(Ptr p);
 void DisposePtr(Ptr p);
 

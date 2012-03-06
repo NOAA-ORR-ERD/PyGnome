@@ -10,11 +10,14 @@
 #include "OSSMTimeValue_c.h"
 #include "CROSS.H"
 #include "OSSM.H"
+#include <iostream>
 
 #ifdef pyGNOME
 #define TMover Mover_c
 #define printError(msg) printf(msg)
 #endif
+
+using namespace std;
 
 OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner,TimeValuePairH tvals,short userUnits) : TimeValue_c(theOwner) 
 { 
@@ -217,7 +220,7 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 
 void OSSMTimeValue_c::SetTimeValueHandle(TimeValuePairH t)
 {
-	if(timeValues && t != timeValues)DisposeHandle((Handle)timeValues);
+	if(timeValues && t != timeValues) _DisposeHandle((Handle)timeValues);
 	timeValues=t;
 }
 
@@ -283,7 +286,7 @@ void OSSMTimeValue_c::RescaleTimeValues (double oldScaleFactor, double newScaleF
 {
 	long i,numValues = GetNumValues();
 	TimeValuePair tv;
-	
+
 	for (i=0;i<numValues;i++)
 	{
 		tv = INDEXH(timeValues,i);

@@ -31,17 +31,23 @@ spill = {'num_particles': 1000,
 
 cats_scale_type = 1
 cats_ref_position = (-72.705, 41.2275)
+<<<<<<< HEAD
+cats_topology_file = "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/tests/tidesWAC.CUR"
+shio_file = "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/tests/CLISShio.txt"
+=======
 # cats_topology_file = "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/tests/tidesWAC.CUR"
 cats_topology_file = "./tidesWAC.CUR"
+>>>>>>> 848f70866cc7c503792d0e34a786fdffcb0b52dc
 
+
+mini_gnome.set_run_duration(1000000,2000000)
+mini_gnome.set_timestep(10)
 mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']))
 
-mini_gnome.add_wind_mover((-100, 150))
+#mini_gnome.add_wind_mover((-100, 150))
 mini_gnome.add_random_mover(10000000)
-#mini_gnome.add_shio_time_value("/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/tests/CLISShio.txt")
-mini_gnome.add_cats_mover(cats_topology_file, cats_scale_type, cats_ref_position, 10)
-mini_gnome.set_run_duration(0,1000)
-mini_gnome.set_timestep(10)
+mini_gnome.add_cats_mover(cats_topology_file, cats_scale_type, cats_ref_position, shio_file, 1000)
+
 # create an images dir:
 try:
     os.mkdir("./images")
