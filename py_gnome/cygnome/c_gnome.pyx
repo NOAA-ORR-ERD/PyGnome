@@ -10,23 +10,6 @@ import numpy as np
 
 include "c_gnome_defs.pxi"
 
-<<<<<<< HEAD
-cdef class shio_time_value:
-
-    cdef ShioTimeValue_c *time_value
-    
-    def __cinit__(self):
-        self.time_value = new ShioTimeValue_c(None, None)
-        
-    def __dealloc__(self):
-        del self.time_value
-        
-    def __init__(self):
-        pass
-    
-    def read_time_values(self, path, format, units):
-        self.time_value.ReadTimeValues(path, format, units)
-=======
 #==============================================================================
 # cdef class shio_time_value:
 # 
@@ -44,7 +27,6 @@ cdef class shio_time_value:
 #     def read_time_values(self, path, format, units):
 #         self.time_value.ReadTimeValues(path, format, units)
 #==============================================================================
->>>>>>> 848f70866cc7c503792d0e34a786fdffcb0b52dc
         
 cdef class cats_mover:
 
@@ -56,25 +38,20 @@ cdef class cats_mover:
     def __dealloc__(self):
         del self.mover
     
-    def __init__(self, scale_type, scale_value, diffusion_coefficient, path, model_start_time, model_stop_time):
-        cdef ShioTimeValue_c *shio_time_value
+    def __init__(self, scale_type, scale_value=1, diffusion_coefficient=1):
         self.mover.scaleType = scale_type
         self.mover.scaleValue = scale_value
         self.mover.fEddyDiffusion = diffusion_coefficient
         ## should not have to do this manually.
         ## make-shifting for now.
         self.mover.fOptimize.isOptimizedForStep = 0
-        self.mover.fOptimize.isFirstStep = 1 
-        shio_time_value = new ShioTimeValue_c(model_start_time, model_stop_time)
-        shio_time_value.ReadTimeValues(path, 0, 0)
-        self.mover.SetTimeDep(shio_time_value)
-        self.mover.bTimeFileActive = 1
+        self.mover.fOptimize.isFirstStep = 1  
     
     def read_topology(self, path):
         cdef Map_c **naught
         self.mover.ReadTopology(path, naught)
         
-    def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs, time = 0):
+    def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs):
         cdef int i    
         cdef WorldPoint3D wp3d
         cdef np.ndarray[LERec] ra = np.copy(LEs)
@@ -83,10 +60,10 @@ cdef class cats_mover:
         for i in xrange(0, len(ra)):
             if ra[i].statusCode != status_in_water:
                 continue
-            wp3d = self.mover.GetMove(t, 0, 0, &ra[i], 0, time)
+            wp3d = self.mover.GetMove(t, 0, 0, &ra[i], 0)
             LEs[i].p.pLat += (wp3d.p.pLat)
             LEs[i].p.pLong += wp3d.p.pLong
-
+            
     def set_ref_position(self, wp, z):
         cdef WorldPoint p
         p.pLong = wp[0]*10**6
@@ -95,9 +72,6 @@ cdef class cats_mover:
     
     def compute_velocity_scale(self):
         self.mover.ComputeVelocityScale()
-        
-    def set_time_dep(self, time_dep):
-        pass
         
 cdef class random_mover:
 
@@ -116,7 +90,7 @@ cdef class random_mover:
         self.mover.fUncertaintyFactor = 2
         self.mover.fDiffusionCoefficient = diffusion_coefficient
 
-    def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs, time = 0):
+    def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs):
         cdef int i    
         cdef WorldPoint3D wp3d
         cdef np.ndarray[LERec] ra = np.copy(LEs)
@@ -160,7 +134,7 @@ cdef class wind_mover:
         self.mover.fConstantValue.u = constant_wind_value[0]
         self.mover.fConstantValue.v = constant_wind_value[1]
 
-    def get_move(self, t, np.ndarray[LERec, ndim=1] LEs, time = 0):
+    def get_move(self, t, np.ndarray[LERec, ndim=1] LEs):
         
         cdef int i
         cdef WorldPoint3D wp3d

@@ -2,11 +2,7 @@
 #define __PYX_HAVE__gnome__c_gnome
 
 
-<<<<<<< HEAD
-/* "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/cyGNOME/c_gnome_defs.pxi":166
-=======
 /* "C:\Users\brian.zelenke\Documents\GNOME\GIT\GNOME\py_gnome\cyGNOME\c_gnome_defs.pxi":166
->>>>>>> 848f70866cc7c503792d0e34a786fdffcb0b52dc
  *         OSErr            ComputeVelocityScale()
  * 
  * cdef public enum type_defs:             # <<<<<<<<<<<<<<
@@ -15,11 +11,7 @@
  */
 enum type_defs {
 
-<<<<<<< HEAD
-  /* "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/cyGNOME/c_gnome_defs.pxi":180
-=======
   /* "C:\Users\brian.zelenke\Documents\GNOME\GIT\GNOME\py_gnome\cyGNOME\c_gnome_defs.pxi":180
->>>>>>> 848f70866cc7c503792d0e34a786fdffcb0b52dc
  *     disp_status_have_evaporated = HAVE_EVAPORATED
  *     disp_status_remove = REMOVE
  *     disp_status_have_removed = HAVE_REMOVED             # <<<<<<<<<<<<<<
