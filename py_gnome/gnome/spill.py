@@ -43,10 +43,12 @@ class spill:
             fraction_duration = 1
         else:
             fraction_duration = ((float(model_time) - self.start_time) / self.stop_minus_start_time)
+            if fraction_duration < 0:
+                return
         displacement = (fraction_duration * self.stop_minus_start_pos[0], fraction_duration *self.stop_minus_start_pos[1])
         point_of_release = self.start_position + displacement
         ra = self.npra['status_code']
-        for self.released_index in xrange(self.released_index, int(ceil(fraction_duration*self.num_particles))):
+        for self.released_index in xrange(self.released_index, min(1, int(ceil(fraction_duration*self.num_particles)))):
             ra[self.released_index]=status_in_water
         self.released_index += 1
         
