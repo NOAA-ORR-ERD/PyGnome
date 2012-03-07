@@ -34,11 +34,11 @@ cats_ref_position = (-72.705, 41.2275)
 shio_file = "./CLISShio.txt"
 cats_topology_file = "./tidesWAC.CUR"
 
-model_start_time = '2011-11-12 10:55:00'
-model_stop_time = '2011-11-12 10:59:00'
+model_start_time = '2011-11-12 06:55:00'
+model_stop_time = '2011-11-12 20:59:00'
 
 mini_gnome.set_run_duration(model_start_time, model_stop_time)
-mini_gnome.set_timestep(10)
+mini_gnome.set_timestep(3600)
 mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']))
 
 #mini_gnome.add_wind_mover((-10, 15))
