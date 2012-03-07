@@ -31,6 +31,9 @@ class Model:
         self.shio = None
         
     def add_map(self, image_size, bna_filename, refloat_halflife):
+        if not refloat_halflife:
+            print 'Refloat halflife must be nonzero.'
+            exit(-1)
         self.c_map = gnome_map(image_size, bna_filename)
         self.lw_map = lw_map(self.lw_bmp_dimensions, bna_filename, refloat_halflife, '1')
     
@@ -164,7 +167,7 @@ class Model:
         if self.time_step >= self.num_timesteps:
             return False
         self.release_particles()
-        #self.refloat_particles()
+        self.refloat_particles()
         self.move_particles()
         filename = os.path.join(output_dir, 'map%05i.png'%self.time_step)
         print "filename:", filename

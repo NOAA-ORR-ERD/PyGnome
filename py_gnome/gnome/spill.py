@@ -59,7 +59,7 @@ class spill:
         for j in xrange(0, self.num_particles):
             if chromgph[j] and not dra[j] == disp_status_have_dispersed: 
                 considered_indices += [j]
-        refloat_likelihood = len(considered_indices)*(1-pow(.5, length_time_step/(self.gnome_map.refloat_halflife)))
+        refloat_likelihood = 1 - pow(.5, length_time_step/(self.gnome_map.refloat_halflife))
         pra = self.npra['p']
         sra = self.npra['status_code']
         for idx in considered_indices:

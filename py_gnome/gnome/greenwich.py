@@ -23,10 +23,10 @@ class gwtm:
     def __set_epoch(self, epoch):
         self.epoch_date_time = epoch
         if(epoch != self.reference_time):
-        	self.epoch_seconds = gwtm(epoch).time_seconds
-    	else:
-    		self.epoch_seconds = 0
-    		
+            self.epoch_seconds = gwtm(epoch).time_seconds
+        else:
+            self.epoch_seconds = 0
+            
     def __to_seconds(self):
         dt = self.date_time
         time_str = dt['year'] + ' ' + dt['month'] + ' ' + dt['day'] + ' ' + dt['hour'] + ' ' + dt['minute'] + ' ' + dt['second']
