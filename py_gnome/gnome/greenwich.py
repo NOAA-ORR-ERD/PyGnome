@@ -21,20 +21,19 @@ class gwtm:
         pass
     
     def __set_epoch(self, epoch):
-        tokens = self.parse_datetime(epoch)
-        self.epoch_date_time = {'year': tokens.group(1), 'month': tokens.group(2), \
-                                        'day': tokens.group(3), 'hour': tokens.group(4), \
-                                            'minute': tokens.group(5), 'second': tokens.group(6) }
-                                            
+        self.epoch_date_time = epoch
+        if(epoch != self.reference_time):
+        	self.epoch_seconds = gwtm(epoch).time_seconds
+    	else:
+    		self.epoch_seconds = 0
+    		
     def __to_seconds(self):
         dt = self.date_time
         time_str = dt['year'] + ' ' + dt['month'] + ' ' + dt['day'] + ' ' + dt['hour'] + ' ' + dt['minute'] + ' ' + dt['second']
         self.struct_time = time.strptime(time_str, "%Y %m %d %H %M %S")
         self.time_seconds = calendar.timegm(self.struct_time)
-
-    def __alter_epoch(self, alter_epoch_datetime):
-        pass
-
+        self.time_seconds += -self.epoch_seconds
+        
     def parse_datetime(self, datetime_string):
         mtch = self.pattern.match(datetime_string)
         if not mtch:

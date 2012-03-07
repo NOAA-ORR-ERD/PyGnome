@@ -2,7 +2,7 @@
  *  ShioTimeValue_c.cpp
  *  c_gnome
  *
- *  Created by Alex Hadjilambris on 2/24/12.
+ *  Created by Generic Programmer on 2/24/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */

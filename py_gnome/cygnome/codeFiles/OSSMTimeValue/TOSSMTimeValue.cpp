@@ -2,7 +2,7 @@
  *  TOSSMTimeValue.cpp
  *  gnome
  *
- *  Created by Alex Hadjilambris on 10/20/11.
+ *  Created by Generic Programmer on 10/20/11.
  *  Copyright 2011 __MyCompanyName__. All rights reserved.
  *
  */

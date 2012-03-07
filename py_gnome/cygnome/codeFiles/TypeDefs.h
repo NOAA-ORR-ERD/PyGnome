@@ -2,7 +2,7 @@
  *  TypeDefs.h
  *  gnome
  *
- *  Created by Alex Hadjilambris on 10/18/11.
+ *  Created by Generic Programmer on 10/18/11.
  *  Copyright 2011 __MyCompanyName__. All rights reserved.
  *
  */

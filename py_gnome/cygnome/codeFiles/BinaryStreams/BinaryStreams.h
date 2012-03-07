@@ -2,7 +2,7 @@
  *  BinaryStreams.h
  *  gnome
  *
- *  Created by Alex Hadjilambris on 10/6/11.
+ *  Created by Generic Programmer on 10/6/11.
  *  Copyright 2011 __MyCompanyName__. All rights reserved.
  *
  */
