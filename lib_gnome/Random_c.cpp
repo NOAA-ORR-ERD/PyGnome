@@ -61,7 +61,7 @@ WorldPoint3D Random_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LERe
 	{
 		float depth;
 		double localDiffusionCoefficient, factor;
-		TVectorMap* vMap = GetNthVectorMap(0);	// get first vector map
+		VectorMap_c* vMap = GetNthVectorMap(0);	// get first vector map
 		if (vMap) depth = vMap->DepthAtPoint(refPoint);
 		// logD = 1+exp(1-1/.1H) 
 		if (depth==0)	// couldn't find the point in dagtree, maybe a different default?

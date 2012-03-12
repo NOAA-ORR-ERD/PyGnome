@@ -58,7 +58,6 @@
 		ED208EA8150D637F0047AC02 /* ShioCurrent1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED208DDF150D637F0047AC02 /* ShioCurrent1.cpp */; };
 		ED208EA9150D637F0047AC02 /* ShioCurrent2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED208DE0150D637F0047AC02 /* ShioCurrent2.cpp */; };
 		ED208EAA150D637F0047AC02 /* ShioHeight.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED208DE1150D637F0047AC02 /* ShioHeight.cpp */; };
-		ED208EAB150D637F0047AC02 /* StringFunctions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED208DE2150D637F0047AC02 /* StringFunctions.cpp */; };
 		ED208EAC150D637F0047AC02 /* SYSTEM.CPP in Sources */ = {isa = PBXBuildFile; fileRef = ED208DE4150D637F0047AC02 /* SYSTEM.CPP */; };
 		ED208EAD150D637F0047AC02 /* TCATSMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED208DE5150D637F0047AC02 /* TCATSMover.cpp */; };
 		ED208EAE150D637F0047AC02 /* TCATSMover3D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED208DE7150D637F0047AC02 /* TCATSMover3D.cpp */; };
@@ -128,6 +127,16 @@
 		ED209063150D7DD30047AC02 /* MemUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED209061150D7DD30047AC02 /* MemUtils.cpp */; };
 		ED3F62F5150D92A000612E48 /* VectMap_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED3F62F3150D92A000612E48 /* VectMap_c.cpp */; };
 		ED3F6323150D953200612E48 /* CompFunctions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED3F6321150D953200612E48 /* CompFunctions.cpp */; };
+		EDDAD8C9150EA2C400EFF92A /* StringFunctions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDDAD8C7150EA2C400EFF92A /* StringFunctions.cpp */; };
+		EDDAD8D8150EA2EE00EFF92A /* Dialogs.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8CF150EA2EE00EFF92A /* Dialogs.r */; };
+		EDDAD8D9150EA2EE00EFF92A /* dlgx.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8D0150EA2EE00EFF92A /* dlgx.r */; };
+		EDDAD8DA150EA2EE00EFF92A /* DLOG.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8D1150EA2EE00EFF92A /* DLOG.r */; };
+		EDDAD8DB150EA2EE00EFF92A /* gnome-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = EDDAD8D2150EA2EE00EFF92A /* gnome-Info.plist */; };
+		EDDAD8DC150EA2EE00EFF92A /* Gnome.icns in Resources */ = {isa = PBXBuildFile; fileRef = EDDAD8D3150EA2EE00EFF92A /* Gnome.icns */; };
+		EDDAD8DD150EA2EE00EFF92A /* macdef.prefix in Resources */ = {isa = PBXBuildFile; fileRef = EDDAD8D4150EA2EE00EFF92A /* macdef.prefix */; };
+		EDDAD8DE150EA2EE00EFF92A /* MULTDLOG.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8D5150EA2EE00EFF92A /* MULTDLOG.r */; };
+		EDDAD8DF150EA2EE00EFF92A /* OSSM.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8D6150EA2EE00EFF92A /* OSSM.r */; };
+		EDDAD8E0150EA2EE00EFF92A /* StartScreens.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8D7150EA2EE00EFF92A /* StartScreens.r */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -218,8 +227,6 @@
 		ED208DDF150D637F0047AC02 /* ShioCurrent1.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ShioCurrent1.cpp; sourceTree = "<group>"; };
 		ED208DE0150D637F0047AC02 /* ShioCurrent2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ShioCurrent2.cpp; sourceTree = "<group>"; };
 		ED208DE1150D637F0047AC02 /* ShioHeight.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ShioHeight.cpp; sourceTree = "<group>"; };
-		ED208DE2150D637F0047AC02 /* StringFunctions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StringFunctions.cpp; sourceTree = "<group>"; };
-		ED208DE3150D637F0047AC02 /* StringFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StringFunctions.h; sourceTree = "<group>"; };
 		ED208DE4150D637F0047AC02 /* SYSTEM.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SYSTEM.CPP; sourceTree = "<group>"; };
 		ED208DE5150D637F0047AC02 /* TCATSMover.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TCATSMover.cpp; sourceTree = "<group>"; };
 		ED208DE6150D637F0047AC02 /* TCATSMover.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TCATSMover.h; sourceTree = "<group>"; };
@@ -382,6 +389,17 @@
 		ED3F62F4150D92A000612E48 /* VectMap_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VectMap_c.h; sourceTree = "<group>"; };
 		ED3F6321150D953200612E48 /* CompFunctions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CompFunctions.cpp; sourceTree = "<group>"; };
 		ED3F6322150D953200612E48 /* CompFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CompFunctions.h; sourceTree = "<group>"; };
+		EDDAD8C7150EA2C400EFF92A /* StringFunctions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StringFunctions.cpp; sourceTree = "<group>"; };
+		EDDAD8C8150EA2C400EFF92A /* StringFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StringFunctions.h; sourceTree = "<group>"; };
+		EDDAD8CF150EA2EE00EFF92A /* Dialogs.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = Dialogs.r; sourceTree = "<group>"; };
+		EDDAD8D0150EA2EE00EFF92A /* dlgx.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = dlgx.r; sourceTree = "<group>"; };
+		EDDAD8D1150EA2EE00EFF92A /* DLOG.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = DLOG.r; sourceTree = "<group>"; };
+		EDDAD8D2150EA2EE00EFF92A /* gnome-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "gnome-Info.plist"; sourceTree = "<group>"; };
+		EDDAD8D3150EA2EE00EFF92A /* Gnome.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = Gnome.icns; sourceTree = "<group>"; };
+		EDDAD8D4150EA2EE00EFF92A /* macdef.prefix */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = macdef.prefix; sourceTree = "<group>"; };
+		EDDAD8D5150EA2EE00EFF92A /* MULTDLOG.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = MULTDLOG.r; sourceTree = "<group>"; };
+		EDDAD8D6150EA2EE00EFF92A /* OSSM.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = OSSM.r; sourceTree = "<group>"; };
+		EDDAD8D7150EA2EE00EFF92A /* StartScreens.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = StartScreens.r; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -398,6 +416,7 @@
 		0D4816C00E1D4CBA00EA36C9 = {
 			isa = PBXGroup;
 			children = (
+				EDDAD8CE150EA2EE00EFF92A /* MacResources */,
 				ED208D7B150D637F0047AC02 /* gui_gnome */,
 				ED208E1F150D637F0047AC02 /* lib_gnome */,
 				0D4817570E1D4EA800EA36C9 /* Products */,
@@ -498,8 +517,6 @@
 				ED208DDF150D637F0047AC02 /* ShioCurrent1.cpp */,
 				ED208DE0150D637F0047AC02 /* ShioCurrent2.cpp */,
 				ED208DE1150D637F0047AC02 /* ShioHeight.cpp */,
-				ED208DE2150D637F0047AC02 /* StringFunctions.cpp */,
-				ED208DE3150D637F0047AC02 /* StringFunctions.h */,
 				ED208DE4150D637F0047AC02 /* SYSTEM.CPP */,
 				ED208DE5150D637F0047AC02 /* TCATSMover.cpp */,
 				ED208DE6150D637F0047AC02 /* TCATSMover.h */,
@@ -570,6 +587,8 @@
 		ED208E1F150D637F0047AC02 /* lib_gnome */ = {
 			isa = PBXGroup;
 			children = (
+				EDDAD8C7150EA2C400EFF92A /* StringFunctions.cpp */,
+				EDDAD8C8150EA2C400EFF92A /* StringFunctions.h */,
 				ED3F6321150D953200612E48 /* CompFunctions.cpp */,
 				ED3F6322150D953200612E48 /* CompFunctions.h */,
 				ED3F62F3150D92A000612E48 /* VectMap_c.cpp */,
@@ -678,6 +697,22 @@
 			path = ../lib_gnome;
 			sourceTree = SOURCE_ROOT;
 		};
+		EDDAD8CE150EA2EE00EFF92A /* MacResources */ = {
+			isa = PBXGroup;
+			children = (
+				EDDAD8CF150EA2EE00EFF92A /* Dialogs.r */,
+				EDDAD8D0150EA2EE00EFF92A /* dlgx.r */,
+				EDDAD8D1150EA2EE00EFF92A /* DLOG.r */,
+				EDDAD8D2150EA2EE00EFF92A /* gnome-Info.plist */,
+				EDDAD8D3150EA2EE00EFF92A /* Gnome.icns */,
+				EDDAD8D4150EA2EE00EFF92A /* macdef.prefix */,
+				EDDAD8D5150EA2EE00EFF92A /* MULTDLOG.r */,
+				EDDAD8D6150EA2EE00EFF92A /* OSSM.r */,
+				EDDAD8D7150EA2EE00EFF92A /* StartScreens.r */,
+			);
+			path = MacResources;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -729,6 +764,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EDDAD8DB150EA2EE00EFF92A /* gnome-Info.plist in Resources */,
+				EDDAD8DC150EA2EE00EFF92A /* Gnome.icns in Resources */,
+				EDDAD8DD150EA2EE00EFF92A /* macdef.prefix in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -739,6 +777,12 @@
 			isa = PBXRezBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EDDAD8D8150EA2EE00EFF92A /* Dialogs.r in Rez */,
+				EDDAD8D9150EA2EE00EFF92A /* dlgx.r in Rez */,
+				EDDAD8DA150EA2EE00EFF92A /* DLOG.r in Rez */,
+				EDDAD8DE150EA2EE00EFF92A /* MULTDLOG.r in Rez */,
+				EDDAD8DF150EA2EE00EFF92A /* OSSM.r in Rez */,
+				EDDAD8E0150EA2EE00EFF92A /* StartScreens.r in Rez */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -800,7 +844,6 @@
 				ED208EA8150D637F0047AC02 /* ShioCurrent1.cpp in Sources */,
 				ED208EA9150D637F0047AC02 /* ShioCurrent2.cpp in Sources */,
 				ED208EAA150D637F0047AC02 /* ShioHeight.cpp in Sources */,
-				ED208EAB150D637F0047AC02 /* StringFunctions.cpp in Sources */,
 				ED208EAC150D637F0047AC02 /* SYSTEM.CPP in Sources */,
 				ED208EAD150D637F0047AC02 /* TCATSMover.cpp in Sources */,
 				ED208EAE150D637F0047AC02 /* TCATSMover3D.cpp in Sources */,
@@ -870,6 +913,7 @@
 				ED209063150D7DD30047AC02 /* MemUtils.cpp in Sources */,
 				ED3F62F5150D92A000612E48 /* VectMap_c.cpp in Sources */,
 				ED3F6323150D953200612E48 /* CompFunctions.cpp in Sources */,
+				EDDAD8C9150EA2C400EFF92A /* StringFunctions.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
