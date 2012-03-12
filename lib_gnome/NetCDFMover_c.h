@@ -10,7 +10,7 @@
 #ifndef __NetCDFMover_c__
 #define __NetCDFMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "NetCDFMover_b.h"
 #include "CurrentMover_c.h"

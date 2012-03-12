@@ -10,7 +10,7 @@
 #ifndef __CurrentMover_c__
 #define __CurrentMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "CurrentMover_b.h"
 #include "Mover_c.h"

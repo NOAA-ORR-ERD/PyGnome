@@ -10,7 +10,7 @@
 #ifndef __NetCDFMoverCurv_c__
 #define __NetCDFMoverCurv_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "NetCDFMoverCurv_b.h"
 #include "NetCDFMover_c.h"

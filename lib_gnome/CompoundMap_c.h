@@ -10,7 +10,7 @@
 #ifndef __CompoundMap_c__
 #define __CompoundMap_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "PtCurMap_c.h"
 

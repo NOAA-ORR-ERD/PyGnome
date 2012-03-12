@@ -10,7 +10,7 @@
 #ifndef __Model_c__
 #define __Model_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "CMYLIST.H"
 #include "ClassID_c.h"

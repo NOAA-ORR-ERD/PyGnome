@@ -10,7 +10,7 @@
 #ifndef __TideCurCycleMover_c__
 #define __TideCurCycleMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "TideCurCycleMover_b.h"
 #include "CATSMover_c.h"

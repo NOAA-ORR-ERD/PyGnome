@@ -10,7 +10,7 @@
 #ifndef __ClassID_c__
 #define __ClassID_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "ClassID_b.h"
 

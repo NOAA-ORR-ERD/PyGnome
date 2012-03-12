@@ -10,7 +10,7 @@
 #ifndef __PtCurMover_c__
 #define __PtCurMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "CurrentMover_c.h"
 #include "GridVel.h"

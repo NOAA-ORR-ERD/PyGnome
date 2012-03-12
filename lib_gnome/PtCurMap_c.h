@@ -11,7 +11,7 @@
 #ifndef __PtCurMap_c__
 #define __PtCurMap_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "Map_c.h"
 #include "RectUtils.h"

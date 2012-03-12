@@ -11,7 +11,7 @@
 #define __NetCDFMoverCurv_b__
 
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "NetCDFMover_b.h"
 

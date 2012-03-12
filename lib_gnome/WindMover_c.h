@@ -10,7 +10,7 @@
 #ifndef __WindMover_c__
 #define __WindMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "WindMover_b.h"
 #include "Mover_c.h"

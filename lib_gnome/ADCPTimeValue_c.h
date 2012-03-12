@@ -10,7 +10,7 @@
 #ifndef __ADCPTimeValue_c__
 #define __ADCPTimeValue_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "ADCPTimeValue_b.h"
 #include "TimeValue_c.h"

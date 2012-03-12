@@ -10,7 +10,7 @@
 #ifndef __CompoundMover_c__
 #define __CompoundMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "CompoundMover_b.h"
 #include "CurrentMover_c.h"

@@ -10,7 +10,7 @@
 #ifndef __Random3D_c__
 #define __Random3D_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "Random3D_b.h"
 #include "Random_c.h"

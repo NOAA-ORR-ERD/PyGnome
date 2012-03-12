@@ -10,7 +10,7 @@
 #ifndef __NetCDFMover_b__
 #define __NetCDFMover_b__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "CurrentMover_b.h"
 #include "PtCurMover.h"

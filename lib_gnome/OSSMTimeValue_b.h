@@ -10,7 +10,7 @@
 #ifndef __OSSMTimeValue_b__
 #define __OSSMTimeValue_b__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "TimeValue_b.h"
 

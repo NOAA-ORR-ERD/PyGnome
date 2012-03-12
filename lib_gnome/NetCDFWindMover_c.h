@@ -10,7 +10,7 @@
 #ifndef __NetCDFWindMover_c__
 #define __NetCDFWindMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "NetCDFWindMover_b.h"
 #include "WindMover_c.h"

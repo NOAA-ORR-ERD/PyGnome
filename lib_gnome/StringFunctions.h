@@ -9,7 +9,7 @@
 #ifndef __StringFunctions__
 #define __StringFunctions__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "MemUtils.h"
 

@@ -10,7 +10,7 @@
 #ifndef __TimeValue_c__
 #define __TimeValue_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "TimeValue_b.h"
 #include "ClassID_c.h"
