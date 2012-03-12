@@ -2,6 +2,45 @@
 #include "CROSS.h"
 //#include "HtmlHelp.h"
 
+
+short PixelsPerCentimeter()
+{
+	return PixelsPerInchScreen() / CENTPERINCH;
+}
+
+double PixelsPerMilDeg()
+{
+	// how many millionths of a degree latitude in a pixel?
+	
+	return 1000000 / (double)(MilesPerDegreeLat() * INPERMILE * PixelsPerInchScreen());
+}
+
+
+long PixelDiscrepancy(WorldRect wr)
+{
+	long topPixels, bottomPixels;
+	WorldPoint center;
+	
+	center.pLong = wr.loLong;
+	center.pLat = wr.hiLat;
+	topPixels = LongToPixels(wr.hiLong - wr.loLong, center);
+	center.pLat = wr.loLat;
+	bottomPixels = LongToPixels(wr.hiLong - wr.loLong, center);
+	
+	return abs(topPixels - bottomPixels);
+}
+
+long LongToPixels(long dLong, WorldPoint center)
+{
+	float baseLat = center.pLat / 1000000.0, degreesLat;
+	long pixels;
+	
+	degreesLat = ((dLong / 1000000.0) * LongToLatRatio(baseLat)) * 1000000.0;
+	pixels = (degreesLat / PixelsPerMilDeg()) / CurrentScaleDenominator();
+	
+	return pixels;
+}
+
 /////////////////////////////////////////////////
 
 void TextFontSize(long font,long size)  

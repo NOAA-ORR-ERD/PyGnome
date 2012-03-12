@@ -4,6 +4,7 @@
 #define __CROSSH__
 
 #include "Earl.h"
+#include "TypeDefs.h"
 
 //#ifdef MAC
 //extern THPrint gPrRecHdl;
@@ -94,10 +95,16 @@ OSErr catmove(short vRefNum, long dirID, CHARPTR oldName, long newDirID, CHARPTR
 #define GetBValue(c) (c.blue / 256)
 #endif
 
+
+Boolean DragRectInRect (WindowPtr theWindow, Point clickPoint, Rect *startRect, Rect *limitRect, Rect *endRect);
 RGBColor MyPickColor(RGBColor color, WindowPtr w);
 Rect GetScreenBounds();
 short PixelsPerInchCurrent();
 short PixelsPerInchScreen();
+short PixelsPerCentimeter();
+double PixelsPerMilDeg();
+long PixelDiscrepancy(WorldRect wr);
+long LongToPixels(long dLong, WorldPoint center);
 Boolean MyPtInRect(Point p, RECTPTR r);
 void MyMoveTo(short x, short y);
 void MyLineTo(short x, short y);

@@ -2,7 +2,7 @@
  *  TCompoundMap.h
  *  gnome
  *
- *  Created by Alex Hadjilambris on 1/23/12.
+ *  Created by Generic Programmer on 1/23/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */

@@ -658,91 +658,11 @@ Boolean GetStrExtension (char *labelStr, char *extStr);
 
 extern Boolean gDrawBitmapInBlackAndWhite;
 
-class TVectorMap :  public TMap
-{
-	public:
-		CMapLayer			*thisMapLayer;
-		CMapLayer			*allowableSpillLayer;
-		CMapLayer			*mapBoundsLayer;
-		CMapLayer			*esiMapLayer;
-		CMap				*map;
-#ifdef IBM
-		HDIB				fLandWaterBitmap;
-		HDIB				fAllowableSpillBitmap;
-		HDIB				fMapBoundsBitmap;
-		HDIB				fESIBitmap;
-#else
-		BitMap				fLandWaterBitmap; 
-		BitMap				fAllowableSpillBitmap; 
-		BitMap				fMapBoundsBitmap; 
-		BitMap				fESIBitmap; 
-		//CGrafPtr 			fESIBitmap;		// ESI segments bitmap (color)
-#endif
-		Boolean				bDrawLandBitMap;
-		Boolean				bDrawAllowableSpillBitMap;
-		Boolean				bSpillableAreaOpen;
-		Boolean				bSpillableAreaActive;
+//++
 
-		WorldRect			fExtendedMapBounds;
-		Boolean				fUseExtendedBounds;
-		
-		Rect				fLegendRect;
-		Boolean				bShowLegend;
-		Boolean				bDrawESIBitMap;
-			
-		//long				fBitMapResMultiple;
-		
- 	public:
- 							TVectorMap (char* name, WorldRect bounds);
- 		virtual			   ~TVectorMap () { Dispose (); }
-		
-		virtual OSErr		InitMap ();
-		virtual OSErr		InitMap (char *path);
-		void		 		SetExtendedBounds (WorldRect newBounds) {fExtendedMapBounds = newBounds;}
-		virtual WorldRect	GetMapBounds () { if (fUseExtendedBounds) return fExtendedMapBounds; else return fMapBounds; }
-		virtual ClassID 	GetClassID () { return TYPE_VECTORMAP; }
-		virtual Boolean		IAm(ClassID id) { if(id==TYPE_VECTORMAP) return TRUE; return TMap::IAm(id); }
-		virtual void		Dispose ();
-		
-		virtual void		Draw (Rect r, WorldRect view);
-		virtual Boolean 	DrawingDependsOnTime(void){return TMap::DrawingDependsOnTime();}
-		virtual	void 		DrawESILegend(Rect r, WorldRect view);
-		virtual	Boolean 	InMap (WorldPoint p);
-		virtual Boolean 	OnLand (WorldPoint p);
-		virtual float		RefloatHalfLifeInHrs(WorldPoint p);
-		virtual WorldPoint3D	MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);
-		virtual long 		GetLandType (WorldPoint p);
-		virtual Boolean 	HaveAllowableSpillLayer(void);
-		virtual Boolean 	HaveMapBoundsLayer(void);
-		virtual	Boolean 	HaveLandWaterLayer(void);
-		virtual	Boolean 	HaveESIMapLayer(void);
-		//virtual	Boolean 	IsIceMap(void);
-		virtual Boolean 	IsAllowableSpillPoint(WorldPoint p);
-		
-		TMover* 			GetMover(ClassID desiredClassID);
-		TTriGridVel*		GetGrid();
-		virtual	double 				DepthAtPoint(WorldPoint wp);
+#include "TVectMap.h"
 
-		virtual long		GetListLength();
-		virtual ListItem 	GetNthListItem(long n, short indent, short *style, char *text);
-		virtual Boolean 	ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
-		virtual Boolean 	FunctionEnabled (ListItem item, short buttonID);
-
-		virtual OSErr 		CheckAndPassOnMessage(TModelMessage * model);
-
-		// I/O methods
-		virtual OSErr 		Read  (BFPB *bfpb); // read from the current position
-		virtual OSErr 		Write (BFPB *bfpb); // write to the current position
-		OSErr 				ExportAsBNAFileForGnomeAnalyst(char* path);
-		virtual void		GetSuggestedFileName(char* suggestedFileName,char* extension);
-		virtual OSErr 		ReplaceMap();
-		OSErr 				ImportESIData (char *path);
-		OSErr 				ChangeMapBox(WorldPoint p, WorldPoint p2);
-
-	private:
-		OSErr 				ImportMap (char *path); 
-		OSErr 				SelectMapBox (WorldRect bounds);
-};
+//--
 
 /////////////////////////////////////////////////
 // Files for CDOG
@@ -757,7 +677,6 @@ OSErr CDOGOutputOptionsDialog(Boolean *outputSubsurfaceFiles,Boolean *outputGasF
 OSErr CircInfoDialog(short *methodOfDeterminingHydrodynamics);
 /////////////////////////////////////////////////
 extern RGBColor esicolors[];
-TVectorMap* GetNthVectorMap(long desiredNum0Relative);
 Boolean IsVectorMap (char *path, Boolean *isESI);
 #ifdef MAC
 Boolean IsBlackPixel(WorldPoint p,WorldRect mapBounds,BitMap bm);

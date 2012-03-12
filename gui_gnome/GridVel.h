@@ -5,6 +5,8 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "DagTree.h"
+#include "GridVel_c.h"
+#include "TriGridVel_c.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,23 +17,9 @@ int WorldPoint3DCompare(void const *x1, void const *x2);
 }
 #endif
 
-
-struct InterpolationVal {	
-	long ptIndex1;
-	long ptIndex2;
-	long ptIndex3;
-	double alpha1;
-	double alpha2;
-	double alpha3;
-};
-
-class TGridVel 
+class TGridVel : virtual public GridVel_c
 {
-	protected:
-		WorldRect fGridBounds;
-
 	public:
-		virtual ClassID 	GetClassID 	() { return TYPE_GRIDVEL; }
 
 		TGridVel();
 		virtual	~TGridVel() { Dispose (); }
@@ -41,13 +29,8 @@ class TGridVel
 		virtual OSErr TextRead (char *path){return noErr;}
 		virtual OSErr Write(BFPB *bfpb)=0;
 		virtual OSErr Read (BFPB *bfpb)=0;
-		virtual  VelocityRec GetPatValue(WorldPoint p)=0;
-		virtual VelocityRec GetSmoothVelocity(WorldPoint p)=0;
 		virtual void Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 						  double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)=0;
-		virtual void SetBounds(WorldRect bounds){fGridBounds = bounds;}	
-		virtual WorldRect GetBounds(){return fGridBounds;}	
-		virtual InterpolationVal GetInterpolationValues(WorldPoint ref){InterpolationVal ival; memset(&ival,0,sizeof(ival)); return ival;}
 };
 
 class TRectGridVel : public TGridVel
@@ -83,37 +66,16 @@ class TRectGridVel : public TGridVel
 };
 
 
-class TTriGridVel : public TGridVel
+class TTriGridVel : virtual public TriGridVel_c, public TGridVel
 {
-	protected:
-		FLOATH fBathymetryH;
-		TDagTree *fDagTree;
-		
-	public:
-		virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL; }
-		
+	public:		
 		TTriGridVel(){fDagTree = 0; fBathymetryH=0;}
 		virtual	~TTriGridVel() { Dispose (); }
 		virtual void 		Dispose ();
 
-		void SetDagTree(TDagTree *dagTree){fDagTree=dagTree;}
-		TDagTree*  GetDagTree(){return fDagTree;}
-		LongPointHdl GetPointsHdl(void);
-		TopologyHdl GetTopologyHdl(void);
-		//DAGHdl GetDagTreeHdl(void);
-		virtual long GetNumTriangles(void);
-		void SetBathymetry(FLOATH depthsH){fBathymetryH=depthsH;}
-		FLOATH  GetBathymetry(){return fBathymetryH;}
 		OSErr TextRead(char *path);
 		OSErr Read(BFPB *bfpb);
 		OSErr Write(BFPB *bfpb);
-		VelocityRec GetPatValue(WorldPoint p);
-		VelocityRec GetSmoothVelocity(WorldPoint p);
-		virtual InterpolationVal GetInterpolationValues(WorldPoint refPoint);
-		virtual	long GetRectIndexFromTriIndex(WorldPoint refPoint, LONGH ptrVerdatToNetCDFH, long numCols_ext);
-		virtual	long GetRectIndexFromTriIndex2(long triIndex, LONGH ptrVerdatToNetCDFH, long numCols_ext);
-		virtual LongPoint GetRectIndicesFromTriIndex(WorldPoint refPoint,LONGH ptrVerdatToNetCDFH,long numCols_ext);
-		OSErr	GetRectCornersFromTriIndexOrPoint(long *index1, long *index2, long *index3, long *index4, WorldPoint refPoint,long triNum, Boolean useTriNum, LONGH ptrVerdatToNetCDFH,long numCols_ext);
 		virtual void Draw (Rect r, WorldRect view,WorldPoint refP,double refScale,
 				   double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
 		void DrawBitMapTriangles (Rect r);
