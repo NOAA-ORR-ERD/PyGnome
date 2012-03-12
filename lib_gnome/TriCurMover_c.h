@@ -10,7 +10,7 @@
 #ifndef __TriCurMover_c__
 #define __TriCurMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "TriCurMover_b.h"
 #include "CurrentMover_c.h"

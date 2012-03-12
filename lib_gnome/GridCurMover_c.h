@@ -10,7 +10,7 @@
 #ifndef __GridCurMover_c__
 #define __GridCurMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "GridCurMover_b.h"
 #include "CATSMover_c.h"

@@ -10,7 +10,7 @@
 #ifndef __TriCurMover_b__
 #define __TriCurMover_b__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "DagTree.h"
 #include "my_build_list.h"

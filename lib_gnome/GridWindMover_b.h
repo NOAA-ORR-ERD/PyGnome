@@ -10,7 +10,7 @@
 #ifndef __GridWindMover_b__
 #define __GridWindMover_b__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "WindMover_b.h"
 #include "PtCurMover.h"
