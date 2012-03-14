@@ -8,13 +8,20 @@
  */
 
 #include "CurrentMover_c.h"
-#include "Cross.h"
-#include "GridVel.h"
-#include "OUtils.h"
-#include "Uncertainty.h"
+#include "CompFunctions.h"
+#include "MemUtils.h"
 
 #ifdef pyGNOME
-#define TMap Map_c
+#include "LEList_c.h"
+#include "OLEList_c.h"
+#include "Model_c.h"
+#include "Replacements.h"
+#else
+#include "CROSS.H"
+#include "TLEList.h"
+#include "TOLEList.h"
+#include "TModel.h"
+extern TModel *model;
 #endif
 
 CurrentMover_c::CurrentMover_c (TMap *owner, char *name) : Mover_c(owner, name)

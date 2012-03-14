@@ -34,13 +34,7 @@ public:
 	LONGH			fSegSelectedH;
 	LONGH			fSelectedBeachHdl;	//not sure if both are needed
 	LONGH			fSelectedBeachFlagHdl;	//not sure if both are needed
-#ifdef IBM
-	HDIB			fWaterBitmap;
-	HDIB			fLandBitmap;
-#else
-	BitMap			fWaterBitmap; 
-	BitMap			fLandBitmap; 
-#endif
+
 	Boolean			bDrawLandBitMap;
 	Boolean			bDrawWaterBitMap;
 	Boolean			bShowSurfaceLEs;
@@ -92,11 +86,7 @@ public:
 	void			SetMinDistOffshore(WorldRect wBounds);
 	long 	WhichSelectedSegAmIIn(long index);
 	
-	virtual	Boolean InMap (WorldPoint p);
-	virtual Boolean OnLand (WorldPoint p);
-	Boolean InWater (WorldPoint p);
-	virtual WorldPoint3D	MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);
-	virtual WorldPoint3D	MovementCheck2 (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);
+
 	virtual	Boolean	HaveMapBoundsLayer (void) { return true; }
 	virtual long	PointOnWhichSeg(long p);
 	virtual	long 	PointOnWhichSeg(long longVal, long latVal, long *startver, long *endver, float *dist);
@@ -111,7 +101,7 @@ public:
 	LongPointHdl 	GetPointsHdl(Boolean useRefinedGrid);	
 	virtual Boolean		CanReFloat (Seconds time, LERec *theLE);
 	//		virtual Boolean	CanReFloat (Seconds time, LERec *theLE) { return true; }
-	virtual long 	GetLandType (WorldPoint p);
+
 	//Boolean			LEInMap(WorldPoint p);	// not used
 	Boolean			InVerticalMap(WorldPoint3D wp);
 	//float 			GetMaxDepth(void);

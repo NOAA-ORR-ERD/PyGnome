@@ -11,9 +11,9 @@
 class TriCurMover : virtual public TriCurMover_c,  public TCurrentMover
 {
 	public:
-			TriCurMover (TMap *owner, char *name);
-			~TriCurMover () { Dispose (); }
-			virtual void		Dispose ();
+						TriCurMover (TMap *owner, char *name);
+						~TriCurMover () { Dispose (); }
+	virtual void		Dispose ();
 	virtual OSErr		InitMover ();
 	virtual ClassID 	GetClassID () { return TYPE_TRICURMOVER; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TRICURMOVER) return TRUE; return TCurrentMover::IAm(id); }

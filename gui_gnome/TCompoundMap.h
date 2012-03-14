@@ -67,6 +67,10 @@ public:
 	
 	//virtual void 	DrawBoundaries(Rect r);
 	//virtual void 	DrawBoundaries2(Rect r);
+	virtual	Boolean InMap (WorldPoint p);	//  check all maps
+	virtual Boolean OnLand (WorldPoint p);	// check all maps
+	virtual WorldPoint3D	MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);	// have to do something here
+	virtual long 	GetLandType (WorldPoint p);
 	void			DrawContoursFromMapIndex(Rect r, WorldRect view, long mapIndex);
 	virtual	void 	DrawContours(Rect r, WorldRect view);	// total over all LELists
 	virtual void  	DrawContourScale(Rect r, WorldRect view);

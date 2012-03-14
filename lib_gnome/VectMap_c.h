@@ -2,7 +2,7 @@
  *  VectMap_c.h
  *  gnome
  *
- *  Created by Alex Hadjilambris on 3/11/12.
+ *  Created by Generic Programmer on 3/11/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
@@ -15,6 +15,16 @@
 #include "Map_c.h"
 #include "ObjectUtils.h"
 
+#ifdef pyGNOME
+#define TMover Mover_c
+#define TTriGridVel GridVel_c
+#include "Mover_c.h"
+#include "GridVel_c.h"
+#else
+#include "TMover.h"
+#include "GridVel.h"
+#endif
+
 class VectorMap_c : virtual public Map_c  {
 
 public:
@@ -23,18 +33,7 @@ public:
 	CMapLayer			*mapBoundsLayer;
 	CMapLayer			*esiMapLayer;
 	CMap				*map;
-#ifdef IBM
-	HDIB				fLandWaterBitmap;
-	HDIB				fAllowableSpillBitmap;
-	HDIB				fMapBoundsBitmap;
-	HDIB				fESIBitmap;
-#else
-	BitMap				fLandWaterBitmap; 
-	BitMap				fAllowableSpillBitmap; 
-	BitMap				fMapBoundsBitmap; 
-	BitMap				fESIBitmap; 
-	//CGrafPtr 			fESIBitmap;		// ESI segments bitmap (color)
-#endif
+
 	Boolean				bDrawLandBitMap;
 	Boolean				bDrawAllowableSpillBitMap;
 	Boolean				bSpillableAreaOpen;

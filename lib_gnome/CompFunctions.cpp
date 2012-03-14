@@ -1,5 +1,5 @@
 /*
- *  TimeFunctions.cpp
+ *  CompFunctions.cpp
  *  gnome
  *
  *  Created by Generic Programmer on 10/20/11.
@@ -7,8 +7,15 @@
  *
  */
 
+#include "Basics.h"
+#include "TypeDefs.h"
+#include "CompFunctions.h"
 
+#ifndef pyGNOME
 #include "CROSS.H"
+#else
+#include "Replacements.h"
+#endif
 
 double UorV(VelocityRec vector, short index)
 {
@@ -252,3 +259,232 @@ Boolean LaterThan(Seconds time1, Seconds time2)
 {
 	return ((unsigned long)time1) > ((unsigned long)time2);
 }
+
+// Densities in gm/cm^3
+double GetPollutantDensity(OilType num)
+{
+	double density=1;
+	switch(num)
+	{
+		case OIL_GAS:density=.75; break;
+		case OIL_JETFUELS: density = .81; break;
+		case OIL_DIESEL: density=.87; break;
+		case OIL_4: density=.90; break;
+		case OIL_CRUDE: density = .90;break;
+		case OIL_6: density = .99; break;
+		case OIL_CONSERVATIVE: density=1;break;
+		case CHEMICAL: 	density=1; break;	// will need to override calls with input value, or calculated value
+		default:printError("Pollutant type not found");
+	}
+	return density;
+}
+
+
+
+static void AssertionCheckMassUnits(short massUnits)
+{
+	Boolean b = (massUnits == KILOGRAMS || massUnits == METRICTONS ||massUnits == SHORTTONS );
+	char str[256];
+	if(!b) 
+	{
+		sprintf(str,"AssertionCheckMassUnits failed: massUnits = %d",massUnits);
+		printError(str);
+	}
+}
+
+static void AssertionCheckVolUnits(short volUnits)
+{
+	Boolean b = (volUnits == GALLONS || volUnits == BARRELS ||volUnits == CUBICMETERS );
+	char str[256];
+	if(!b) 
+	{
+		sprintf(str,"AssertionCheckVolUnits failed: volUnits = %d",volUnits);
+		printError(str);
+	}
+}
+
+static void AssertionCheckMassVolUnits(short massVolUnits)
+{
+	Boolean b = (massVolUnits == GALLONS || massVolUnits == BARRELS ||massVolUnits == CUBICMETERS
+				 || massVolUnits == KILOGRAMS||massVolUnits == METRICTONS||massVolUnits == SHORTTONS);
+	char str[256];
+	if(!b) 
+	{
+		sprintf(str,"AssertionCheckMassVolUnits failed: massVolUnits = %d",massVolUnits);
+		printError(str);
+	}
+}
+
+double CM3ToVolumeMass(double val, double density,short massVolUnits)
+{
+	double retval = -1;
+	
+	AssertionCheckMassVolUnits(massVolUnits);
+	
+	switch(massVolUnits)
+	{
+		case KILOGRAMS:
+		case METRICTONS:
+		case SHORTTONS:
+			retval = ConvertGramsToMass(ConvertCM3ToGrams(val,density),massVolUnits);
+			break;
+		case GALLONS:
+		case BARRELS:
+		case CUBICMETERS:
+			retval = ConvertCM3ToVol(val,massVolUnits);
+	}
+	return retval;
+}
+
+double VolumeMassToCM3(double val, double density , short massVolUnits)
+{
+	double retval = -1;
+	
+	AssertionCheckMassVolUnits(massVolUnits);
+	
+	switch(massVolUnits)
+	{
+		case KILOGRAMS:
+		case METRICTONS:
+		case SHORTTONS:
+			retval = ConvertGramsToCM3(ConvertMassToGrams(val,massVolUnits),density);
+			break;
+		case GALLONS:
+		case BARRELS:
+		case CUBICMETERS:
+			retval = ConvertVolToCM3(val,massVolUnits);
+			break;
+	}
+	return retval;
+}
+
+double VolumeMassToKilograms(double val, double density , short massVolUnits)
+{
+	double retval = -1;
+	
+	AssertionCheckMassVolUnits(massVolUnits);
+	
+	switch(massVolUnits)
+	{
+		case KILOGRAMS:
+		case METRICTONS:
+		case SHORTTONS:
+			retval = ConvertMassToGrams(val,massVolUnits)/1000.0;
+			break;
+		case GALLONS:
+		case BARRELS:
+		case CUBICMETERS:
+			retval = ConvertCM3ToGrams(ConvertVolToCM3(val,massVolUnits),density)/1000.0;
+			break;
+	}
+	return retval;
+}
+
+double VolumeMassToGrams(double val, double density , short massVolUnits)
+{
+	double retval = -1;
+	
+	AssertionCheckMassVolUnits(massVolUnits);
+	
+	switch(massVolUnits)
+	{
+		case KILOGRAMS:
+		case METRICTONS:
+		case SHORTTONS:
+			retval = ConvertMassToGrams(val,massVolUnits);
+			break;
+		case GALLONS:
+		case BARRELS:
+		case CUBICMETERS:
+			retval = ConvertCM3ToGrams(ConvertVolToCM3(val,massVolUnits),density);
+			break;
+	}
+	return retval;
+}
+
+double VolumeMassToVolumeMass(double val, double density , short massVolUnits, short desiredMassVolUnits)
+{
+	double retval = -1;
+	
+	AssertionCheckMassVolUnits(massVolUnits);
+	AssertionCheckMassVolUnits(desiredMassVolUnits);
+	
+	if(massVolUnits == desiredMassVolUnits) return val;
+	
+	retval = CM3ToVolumeMass(VolumeMassToCM3(val,density,massVolUnits),density,desiredMassVolUnits);
+	return retval;
+}
+
+
+double ConvertMassToGrams(double val, short massUnits)
+{
+	double retval=-1;
+	
+	AssertionCheckMassUnits(massUnits);
+	
+	switch(massUnits)
+	{
+		case KILOGRAMS:retval = val * 1000;break;
+		case METRICTONS:retval = val * 1000000;break;
+		case SHORTTONS:retval = val * 907185;break;
+	}
+	return retval;
+}
+
+
+double ConvertGramsToMass(double val, short massUnits)
+{
+	double retval=-1;
+	
+	AssertionCheckMassUnits(massUnits);
+	
+	switch(massUnits)
+	{
+		case KILOGRAMS:retval = val /1000;break;
+		case METRICTONS:retval = val / 1000000;break;
+		case SHORTTONS:retval = val / 907185;break;
+	}
+	return retval;
+}
+
+double ConvertVolToCM3(double val, short VolUnits)
+{
+	double retval=-1;
+	
+	AssertionCheckVolUnits(VolUnits);
+	
+	switch(VolUnits)
+	{
+		case GALLONS:retval = val * 3785.41;break;
+		case BARRELS:retval = val * 158987;break;
+		case CUBICMETERS:retval = val* 1000000;break;
+	}
+	return retval;
+}
+
+double ConvertCM3ToVol(double val,short VolUnits)
+{
+	double retval=-1;
+	
+	AssertionCheckVolUnits(VolUnits);
+	
+	switch(VolUnits)
+	{
+		case GALLONS:retval = val / 3785.41;break;
+		case BARRELS:retval = val / 158987;break;
+		case CUBICMETERS:retval = val/ 1000000;break;
+	}
+	return retval;
+}
+
+//density is assumed to be in grams/cm^3
+double ConvertGramsToCM3(double val,double density)
+{
+	return val /density;
+}
+
+double ConvertCM3ToGrams(double val,double density)
+{
+	return val*density;
+}
+

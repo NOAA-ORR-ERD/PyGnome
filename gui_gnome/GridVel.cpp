@@ -3,6 +3,7 @@
 //#include "Classes.h"
 #include "GridVel.h"
 #include "MapUtils.h"
+#include "DagTreePD.h"
 #include "DagTreeIO.h"
 //#include "RectUtils.h"
 #include "PtCurMover.h"
@@ -385,7 +386,6 @@ TGridVel::TGridVel()
 {
 	fGridBounds = emptyWorldRect;
 }
-		
 		
 void TGridVel::Dispose()
 { 

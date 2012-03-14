@@ -43,5 +43,21 @@ void SwitchStrings(CHARPTR a, CHARPTR b);
 short NumDecimals(CHARPTR str);
 Boolean EarlierThan(Seconds time1, Seconds time2);
 Boolean LaterThan(Seconds time1, Seconds time2);
+double 			GetPollutantDensity(OilType num);
+double VolumeMassToVolumeMass(double val, double density , short massVolUnits, short desiredMassVolUnits);
+
+double ConvertCM3ToVol(double val,short VolUnits);
+double ConvertVolToCM3(double val, short volUnits);
+double ConvertGramsToMass(double val, short massUnits);
+double ConvertMassToGrams(double val, short massUnits);
+double ConvertGramsToCM3(double val,double density);
+double ConvertCM3ToGrams(double val,double density);
+double VolumeMassToCM3(double val, double density , short massVolUnits);
+double VolumeMassToKilograms(double val, double density , short massVolUnits);
+double VolumeMassToGrams(double val, double density , short massVolUnits);
+double CM3ToVolumeMass(double val, double density,short massVolUnits);
+
+
+
 
 #endif

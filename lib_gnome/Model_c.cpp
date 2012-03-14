@@ -28,7 +28,6 @@
 	Model_c *model;
 #endif
 
-Seconds gTapWindOffsetInSeconds = 0;
 Boolean gNoaaVersion = FALSE;
 Boolean gMearnsVersion = FALSE;
 Boolean gDispersedOilVersion = FALSE;
@@ -48,7 +47,6 @@ Model_c::Model_c(Seconds start)
 	uMap = nil;
 	weatherList = nil;
 	LEFramesList = nil;
-	mapImage = nil;
 	frameMapList = nil;
 	movieFrameIndex = 0;
 	modelMode = ADVANCEDMODE;

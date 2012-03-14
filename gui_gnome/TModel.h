@@ -20,6 +20,14 @@ class TModel : virtual public Model_c,  public TClassID
 {
 	
 public:
+	
+	// bitmap version of map at current view and window size without LEs or movement grid
+#ifdef MAC
+	CGrafPtr mapImage;		
+#else 		
+	HDIB	mapImage;		
+#endif
+	
 	TModel(Seconds start);
 	virtual		   ~TModel () { Dispose (); }
 	virtual OSErr	InitModel ();

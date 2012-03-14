@@ -2,7 +2,7 @@
  *  TVectMap.h
  *  gnome
  *
- *  Created by Alex Hadjilambris on 3/11/12.
+ *  Created by Generic Programmer on 3/11/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
@@ -19,6 +19,20 @@ class TVectorMap : virtual public VectorMap_c, public TMap
 {
 
 public:
+	
+#ifdef IBM
+	HDIB				fLandWaterBitmap;
+	HDIB				fAllowableSpillBitmap;
+	HDIB				fMapBoundsBitmap;
+	HDIB				fESIBitmap;
+#else
+	BitMap				fLandWaterBitmap; 
+	BitMap				fAllowableSpillBitmap; 
+	BitMap				fMapBoundsBitmap; 
+	BitMap				fESIBitmap; 
+	//CGrafPtr 			fESIBitmap;		// ESI segments bitmap (color)
+#endif
+	
 	TVectorMap (char* name, WorldRect bounds);
 	virtual			   ~TVectorMap () { Dispose (); }
 	

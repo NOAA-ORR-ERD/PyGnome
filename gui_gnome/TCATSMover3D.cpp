@@ -1,5 +1,7 @@
 #include "TCATSMover3D.h"
 #include "DagTreeIO.h"
+#include "DagTreePD.h"
+#include "CROSS.H"
 
 #ifdef MAC
 #ifdef MPW

@@ -75,7 +75,7 @@ void _DisposeHandleReally(Handle p);
 #define _HUnlock HUnlock
 #define _GetHandleSize GetHandleSize
 #define _SetHandleSize SetHandleSize
-#define _MyBlockMove MyBlockMove
+#define _MyBlockMove BlockMove
 #define _BlockMove BlockMove
 #define _MaxBlock MaxBlock
 #define _MemError MemError

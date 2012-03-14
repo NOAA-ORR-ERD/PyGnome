@@ -193,5 +193,6 @@ SEGMENTH UnionPolygons(SEGMENTH *P, SEGMENTH *Q, Boolean *appended);
 SEGMENTH DifferencePolygons(SEGMENTH *P, SEGMENTH *Q);
 
 SEGMENTH ComputeEnvelope(SEGMENTH segments, float radius);
+void SetPt(POINTPTR p, short h, short v);
 
 #endif

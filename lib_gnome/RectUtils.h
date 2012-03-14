@@ -2,6 +2,9 @@
 #ifndef __MYRECTUTILS__
 #define __MYRECTUTILS__
 
+#include "Basics.h"
+#include "TypeDefs.h"
+
 typedef struct ExPoint
 					{
     						double	 				h;
@@ -55,7 +58,6 @@ Boolean EmptyLRect (LongRect *TestLRectPtr);
 Boolean MyPtInRect (Point checkPt, Rect *checkRect);
 Boolean RectInRect (Rect *InsideRectPtr, Rect *OutsideRectPtr);
 Boolean RectInRect2 (Rect *InsideRectPtr, Rect *OutsideRectPtr);
-void AlignRect (Rect *rectToAlign, Rect *frameRect, short justCode);
 void GetSmallestRect (Rect *SmallRectPtr, double XToYRatio, Rect *SmallestRectPtr);
 void GetSmallestLRect (LongRect *SmallRectPtr, double XToYRatio, LongRect *SmallestRectPtr);
 void SetLRect (LongRectPtr LRectPtr, long left, long top, long right, long bottom);
@@ -92,6 +94,9 @@ void GetScaledLRect (LongRect *CurrRectPtr, double XToYRatio, LongRect *LimitRec
 
 short ForceOntoQuickDrawPlane(long n);
 Boolean IntersectToQuickDrawPlane(LongRect r,Rect* qdr);
+
+void MySetRect(RECTPTR r, short left, short top, short right, short bottom);
+Point RectCenter(Rect r);
 
 #endif
 

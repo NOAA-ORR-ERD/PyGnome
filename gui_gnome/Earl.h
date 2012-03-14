@@ -274,8 +274,6 @@ typedef SFReply MySFReply;
 
 typedef Boolean *BOOLEANPTR;
 typedef Byte *BYTEPTR;
-typedef Point *POINTPTR, **POINTH;
-typedef Rect *RECTPTR, **RECTH;
 typedef Picture *PICTUREPTR, **PICTUREH;
 typedef PICTUREH *PICTUREHP;
 typedef EventRecord *EVENTRECORDPTR;
@@ -299,8 +297,7 @@ typedef long Size;
 #define HiWord HIWORD
 #define true TRUE
 #define false FALSE
-#define DIRDELIMITER '\\'
-#define OPPOSITEDIRDELIMITER ':'
+
 typedef Boolean (pascal_ifMac *ModalFilterProcPtr)(DialogPtr, EVENTRECORDPTR, SHORTPTR);
 typedef Boolean (pascal_ifMac *FileFilterProcPtr)(PARMBLKPTR);
 #define _min(a,b) ((a) < (b) ? (a) : (b))  //AH
@@ -311,10 +308,6 @@ typedef Boolean (pascal_ifMac *FileFilterProcPtr)(PARMBLKPTR);
 #define _MAX_DIR 128
 #endif
 
-#define _min(a,b) ((a) < (b) ? (a) : (b))
-#define _max(a,b) ((a) > (b) ? (a) : (b))
-#define DIRDELIMITER ':'
-#define OPPOSITEDIRDELIMITER '\\'
 #define LW_DATA 'DATA'
 #define LW_INDX 'INDX'
 #define LW_MCTR 'MCTR'

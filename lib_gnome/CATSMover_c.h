@@ -12,13 +12,38 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "CATSMover_b.h"
 #include "CurrentMover_c.h"
 
-class CATSMover_c : virtual public CATSMover_b, virtual public CurrentMover_c {
+#ifndef pyGNOME
+#include "TOSSMTimeValue.h"
+#include "TMap.h"
+#include "GridVel.h"
+#else
+#include "Replacements.h"
+#endif
 
-	public:
+class CATSMover_c : virtual public CurrentMover_c {
 
+public:
+	WorldPoint 		refP; 					// location of tide station or map-join pin
+	TGridVel		*fGrid;					//VelocityH		grid; 
+	long 			refZ; 					// meters, positive up
+	short 			scaleType; 				// none, constant, or file
+	double 			scaleValue; 			// constant value to match at refP
+	char 			scaleOtherFile[32]; 	// file to match at refP
+	double 			refScale; 				// multiply current-grid value at refP by refScale to match value
+	Boolean 		bRefPointOpen;
+	Boolean			bUncertaintyPointOpen;
+	Boolean 		bTimeFileOpen;
+	Boolean			bTimeFileActive;		// active / inactive flag
+	Boolean 		bShowGrid;
+	Boolean 		bShowArrows;
+	double 			arrowScale;
+	TOSSMTimeValue *timeDep;
+	double			fEddyDiffusion;			// cm**2/s minimum eddy velocity for uncertainty
+	double			fEddyV0;			//  in m/s, used for cutoff of minimum eddy for uncertainty
+	TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file
+	
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
 	void				GetRefPosition (WorldPoint *p, long *z) { (*p) = refP; (*z) = refZ; }
@@ -35,6 +60,7 @@ class CATSMover_c : virtual public CATSMover_b, virtual public CurrentMover_c {
 	virtual OSErr 		PrepareForModelStep();
 	virtual void 		ModelStepIsDone();
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr);
+	virtual	OSErr		ReadTopology(char* path, TMap **newMap);
 
 };
 

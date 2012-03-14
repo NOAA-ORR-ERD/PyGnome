@@ -12,10 +12,9 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "CATSMover_b.h"
 #include "PtCurMover.h"
 
-class GridCurMover_b : virtual public CATSMover_b { 
+class GridCurMover_b { 
 
 public:
 	long fNumRows;

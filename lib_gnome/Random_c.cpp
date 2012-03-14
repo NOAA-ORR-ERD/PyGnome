@@ -8,7 +8,9 @@
  */
 
 #include "Random_c.h"
-#include "CROSS.H"
+#include "CompFunctions.h"
+#include "GEOMETRY.H"
+#include "Units.h"
 
 #ifdef MAC
 #ifdef MPW
@@ -17,8 +19,13 @@
 #endif
 
 #ifndef pyGNOME
+#include "TModel.h"
+#include "TVectMap.h"
 extern TModel *model;
 #else
+#include "Map_c.h"
+#include "Model_c.h"
+#include "VectMap_c.h"
 #define TMap Map_c
 extern Model_c *model;
 #endif

@@ -1171,6 +1171,10 @@ Boolean PointInPolygon(WorldPoint p, SEGMENTH segments, long numSegs, Boolean ho
 	
 	return (crosses & 1) == 1;
 }
-
-////////// SEGMENT TOUCHES SEGMENT
+	
+void SetPt(POINTPTR p, short h, short v)
+{
+	p->h = h;
+	p->v = v;
+}
 

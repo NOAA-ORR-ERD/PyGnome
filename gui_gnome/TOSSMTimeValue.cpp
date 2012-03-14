@@ -46,13 +46,6 @@ TOSSMTimeValue::TOSSMTimeValue(TMover *theOwner) : TTimeValue(theOwner)
 	fVelAtRefPt = 0;
 }
 
-OSErr TOSSMTimeValue::InitTimeFunc ()
-{
-	
-	return  TTimeValue::InitTimeFunc();
-	
-}
-
 #define TOSSMMAXNUMDATALINESINLIST 201
 
 long TOSSMTimeValue::GetListLength() 

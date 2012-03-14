@@ -2,7 +2,7 @@
  *  VectMap_c.cpp
  *  gnome
  *
- *  Created by Alex Hadjilambris on 3/11/12.
+ *  Created by Generic Programmer on 3/11/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
@@ -34,18 +34,6 @@ VectorMap_c::VectorMap_c (char* name, WorldRect bounds): Map_c(name, bounds)
 	mapBoundsLayer = nil;
 	esiMapLayer = nil;
 	map = nil;
-#ifdef MAC
-	memset(&fLandWaterBitmap,0,sizeof(fLandWaterBitmap)); //JLM
-	memset(&fAllowableSpillBitmap,0,sizeof(fAllowableSpillBitmap)); //JLM
-	memset(&fMapBoundsBitmap,0,sizeof(fMapBoundsBitmap)); //JLM
-	memset(&fESIBitmap,0,sizeof(fESIBitmap)); //JLM
-	//fESIBitmap = 0;	// memset the bitmap part
-#else
-	fLandWaterBitmap = 0;
-	fAllowableSpillBitmap = 0;
-	fMapBoundsBitmap = 0;
-	fESIBitmap = 0;
-#endif
 	bDrawLandBitMap = false;
 	bDrawAllowableSpillBitMap = false;
 	bSpillableAreaActive = true;

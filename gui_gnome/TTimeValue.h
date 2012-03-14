@@ -20,11 +20,9 @@ class TTimeValue : virtual public TimeValue_c,  public TClassID
 public:
 	TTimeValue (TMover *theOwner) { owner = theOwner; }
 	virtual		   ~TTimeValue () { Dispose (); }
-	virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEVALUES) return TRUE; return TClassID::IAm(id); }
+
 	virtual OSErr 	MakeClone(TTimeValue **clonePtrPtr);
 	virtual OSErr 	BecomeClone(TTimeValue *clone);
-	virtual OSErr	InitTimeFunc ();
 	
 	// I/O methods
 	virtual OSErr 	Read  (BFPB *bfpb); // read from current position

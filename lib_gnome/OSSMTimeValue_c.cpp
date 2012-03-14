@@ -8,12 +8,20 @@
  */
 
 #include "OSSMTimeValue_c.h"
+#include "CompFunctions.h"
+#include "StringFunctions.h"
+#include "OUTILS.H"
+
+#ifndef pyGNOME
 #include "CROSS.H"
-#include "OSSM.H"
+#else
+#include "Replacements.h"
+#endif
 
 #ifdef pyGNOME
 #define TMover Mover_c
 #endif
+
 
 OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner,TimeValuePairH tvals,short userUnits) : TimeValue_c(theOwner) 
 { 
@@ -314,4 +322,10 @@ double OSSMTimeValue_c::GetMaxValue()
 	return maxval; // JLM
 }
 
-#undef TMover
+
+OSErr OSSMTimeValue_c::InitTimeFunc ()
+{
+	
+	return  TimeValue_c::InitTimeFunc();
+	
+}

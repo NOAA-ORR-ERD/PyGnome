@@ -2,7 +2,7 @@
 #define __PYX_HAVE__gnome__c_gnome
 
 
-/* "/Users/alex.hadjilambris/Workspace/CLEAN/GNOME/py_gnome/cyGNOME/c_gnome_defs.pxi":165
+/* "/Users/alex.hadjilambris/Workspace/CLEAN/GNOME/py_gnome/cyGNOME/c_gnome_defs.pxi":164
  * #==============================================================================================#
  * 
  * cdef public enum type_defs:             # <<<<<<<<<<<<<<
@@ -11,7 +11,7 @@
  */
 enum type_defs {
 
-  /* "/Users/alex.hadjilambris/Workspace/CLEAN/GNOME/py_gnome/cyGNOME/c_gnome_defs.pxi":179
+  /* "/Users/alex.hadjilambris/Workspace/CLEAN/GNOME/py_gnome/cyGNOME/c_gnome_defs.pxi":178
  *     disp_status_have_evaporated = HAVE_EVAPORATED
  *     disp_status_remove = REMOVE
  *     disp_status_have_removed = HAVE_REMOVED             # <<<<<<<<<<<<<<

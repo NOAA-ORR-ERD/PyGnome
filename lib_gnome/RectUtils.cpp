@@ -1,4 +1,5 @@
 //#include	"CROSS.H"
+
 #include	"RectUtils.h"
 #include	"GenDefs.h"
 
@@ -852,38 +853,7 @@ Boolean MyPtInRect (Point p, Rect *r)
 	else
 		return (false);
 }*/
-/**************************************************************************************************/
-void AlignRect (Rect *rectToAlign, Rect *frameRect, short justCode)
-/* this subroutine modifies the coordinates of rect-To-Align to justify it horizontally around the
-	frame rect. The just-Code parameter can contain teJustCenter, teJustLeft, or teJustRight. */
-{
-	short	DeltaX, RectWidth;
-	
-	if (justCode == teJustCenter)
-	{
-		RectWidth = rectToAlign -> right - rectToAlign -> left;
-		DeltaX = rectToAlign -> left  - frameRect -> left +
-				 frameRect -> right - rectToAlign -> right;
-		rectToAlign -> left  = frameRect -> left + (DeltaX / 2);
-		rectToAlign -> right = rectToAlign -> left + RectWidth;
-	}
-	else if (justCode == teJustLeft)
-	{
-		DeltaX = rectToAlign -> left - frameRect -> left;
-		rectToAlign -> left -= DeltaX;
-		rectToAlign -> right -= DeltaX;
-	}
-	else if (justCode == teJustRight)
-	{
-		DeltaX = frameRect -> right - rectToAlign -> right;
-		rectToAlign -> left += DeltaX;
-		rectToAlign -> right += DeltaX;
-	}
-//	else
-//		Debug ("justCode = %hd\n", justCode);
 
-	return;
-}
 /**************************************************************************************************/
 void InsetExRect (ExRect *exRectPtr, double reductionDX, double reductionDY)
 // Note: a normal rect is expected
@@ -997,4 +967,20 @@ Boolean IntersectToQuickDrawPlane(LongRect r,Rect* qdr)
 	return onQuickDrawPlane;
 }
 
-/////////////////////////////////////////////////
+void MySetRect(RECTPTR r, short left, short top, short right, short bottom)
+{
+	r->left = left;
+	r->top = top;
+	r->right = right;
+	r->bottom = bottom;
+}
+
+Point RectCenter(Rect r)
+{
+	Point p;
+	
+	p.h = (r.left + r.right) / 2;
+	p.v = (r.top + r.bottom) / 2;
+	
+	return p;
+}

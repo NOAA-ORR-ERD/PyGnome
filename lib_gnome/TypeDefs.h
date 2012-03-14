@@ -10,8 +10,14 @@
 #ifndef __TypeDefs__
 #define __TypeDefs__
 
-
 //++ Carry-over from basic definitions.
+
+#define DIRTY_EVERYTHING -1
+#define DIRTY_RUNBAR 1
+#define DIRTY_LIST 2
+#define DIRTY_MAPDRAWINGRECT  4
+#define DIRTY_TOOLBAR  8
+#define DIRTY_ENTIREWINDOW  16
 
 #define DEREFH(h) (*(h))
 #define INDEXH(h, i) (*(h))[i]
@@ -22,38 +28,6 @@ typedef CHARH Handle;
 typedef Handle *HANDLEPTR;
 #endif
 
-#ifdef pyGNOME
-typedef unsigned char Boolean;
-struct Point {
-	short               v;
-	short               h;
-};
-typedef struct Point                    Point;
-typedef Point *                         PointPtr;
-struct Rect {
-	short               top;
-	short               left;
-	short               bottom;
-	short               right;
-};
-typedef struct Rect						Rect;
-typedef Rect *                          RectPtr;
-typedef short							OSErr;
-
-#define TRUE 1
-#define FALSE 0
-
-struct RGBColor {
-	unsigned short      red;                    /*magnitude of red component*/
-	unsigned short      green;                  /*magnitude of green component*/
-	unsigned short      blue;                   /*magnitude of blue component*/
-};
-
-typedef struct RGBColor                 RGBColor;
-typedef RGBColor *                      RGBColorPtr;
-typedef RGBColorPtr *                   RGBColorHdl;
-
-#endif
 
 extern RGBColor colors[];
 
@@ -376,8 +350,6 @@ enum { ON = 1, OFF = 0 };
 
 #define round(n) floor((n) + 0.5)
 #define abs(n) ((n) >= 0 ? (n) : -(n))
-#define RectWidth(r) ((r).right - (r).left)
-#define RectHeight(r) ((r).bottom - (r).top)
 #define TOPLEFT(r) (POINTPTR)(&(r).top)
 #define BOTRIGHT(r) (POINTPTR)(&(r).bottom)
 
@@ -733,8 +705,84 @@ typedef struct {
 	Seconds startTime; 
 	Seconds endTime;
 }  PtCurFileInfo,*PtCurFileInfoP,**PtCurFileInfoH;
+typedef struct {
+	
+	// these fields are permanent (saved and restored)
+	long platform; //'WIN ' or 'MAC '
+	float settingsVersion;
+	
+	WorldRect currentView;
+	long listWidth;
+	//			long textMode; // SCREENMODE or PRINTMODE
+	long screenMode; // COLORMODE, GRAYSCALEMODE, or BANDWMODE
+	long printMode; // COLORMODE, GRAYSCALEMODE, or BANDWMODE
+	long pictureSize; // WINDOWSIZE or PAGESIZE
+	long massUnits;
+	long areaUnits;
+	long distanceUnits;
+	long backgroundColor;
+	long showLatLongLines;
+	long llPosition;
+	long latLongFormat;
+	long showIntermediateLines;
+	long customGrid;
+	long longLineSpace;
+	long longLineUnits;
+	long longLabelSpace;
+	long longLabelUnits;
+	long latLineSpace;
+	long latLineUnits;
+	long latLabelSpace;
+	long latLabelUnits;
+	long preferencesScreen;
+	//			long settingsScreen;
+	char headerSPILLID[128];
+	char headerFROM[128];
+	char headerCONTACT[128];
+	char caveat[5][128];
+	long daylightSavingsTimeFlag;	// use one of the reserved spots for dst flag 3/21/06
+	long omitFooter;
+	//long reserved[20];
+	//long reserved[19];
+	long reserved[18];
+	
+	// the remaining fields are temporary (saved but reset on startup)
+	long currentTool;
+	long inBackground;
+	long colorQDAvailable;
+	long undoCode;
+	long doNotPrintError; // to allow only one error message per user action
+	long quitting;
+	long modelStartMode;
+	long sprayCanSize;
+	
+} Settings;
+
+
+typedef struct {
+	short		color;
+	char		code[2];
+	WorldRect	bounds;
+	long		numPoints;
+	long		firstPoint;
+} PolygonType, *PolygonP, **PolygonH;
+
+// According to the manual this directive should be embedded 
+// inside the structure definition, so may not do anything here (here pasted from OSSM.H):
+
+#ifdef MAC
+#pragma options align=mac68k
+#endif
 
 enum { KILOGRAMS = 1, METRICTONS, SHORTTONS,
 	GALLONS, BARRELS, CUBICMETERS, LES }; // mass/volume units
+
+enum {VOLUMETYPE,MASSTYPE};
+
+
+enum { DIR_N = 1, DIR_NNE, DIR_NE, DIR_ENE, DIR_E, DIR_ESE, DIR_SE, DIR_SSE, DIR_S,
+	DIR_SSW, DIR_SW, DIR_WSW, DIR_W, DIR_WNW, DIR_NW, DIR_NNW };
+
+enum {DAYLIGHTSAVINGSON = 0, DAYLIGHTSAVINGSOFF = 1};	// allow users to turn off daylight savings time for shio tides
 
 #endif

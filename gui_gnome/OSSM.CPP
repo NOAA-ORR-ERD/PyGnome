@@ -1231,25 +1231,7 @@ OilType GetPollutantNumber(char *name)
 
 //JLE
 
-// Densities in gm/cm^3
-double GetPollutantDensity(OilType num)
-{
-	double density=1;
-	switch(num)
-	{
-		case OIL_GAS:density=.75; break;
-		case OIL_JETFUELS: density = .81; break;
-		case OIL_DIESEL: density=.87; break;
-		case OIL_4: density=.90; break;
-		case OIL_CRUDE: density = .90;break;
-		case OIL_6: density = .99; break;
-		case OIL_CONSERVATIVE: density=1;break;
-		case CHEMICAL: 	density=1; break;	// will need to override calls with input value, or calculated value
-		default:printError("Pollutant type not found");
-	}
-	return density;
-}
-	   
+
 void GetPollutantName(OilType num, char *name)
 {
 	switch (num) {

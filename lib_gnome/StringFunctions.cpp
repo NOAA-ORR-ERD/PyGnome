@@ -7,10 +7,16 @@
  *
  */
 
+#include "Basics.h"
+#include "TypeDefs.h"
+#include "MemUtils.h"
 #include "StringFunctions.h"
-#include "CROSS.H"
 
-///// STRINGS ///////////////////////////////////////////////////////////////////////////
+#ifdef pyGNOME
+#include "Replacements.h"
+#endif
+
+Boolean gUseColonIn24HrTime = true; // JLM likes the colon
 
 char* lfFix(char* str)
 {
@@ -350,7 +356,7 @@ CHARPTR strtrimcpy(CHARPTR to, CHARPTR from)
 
 char mytoupper(char c)
 {
-#ifdef IBM
+#ifndef MAC
 	static char table[][2] = { { -118, -128 }, { -116, -127 }, { -115, -126 },
 		{ -114, -125 }, { -106, -124 }, { -102, -123 },
 		{  -97, -122 }, { -120,  -53 }, { -117,  -52 },
@@ -387,7 +393,7 @@ CHARPTR StrToUpper(CHARPTR s)
 
 char mytolower(char c)
 {
-#ifdef IBM
+#ifndef MAC
 	static char table[][2] = { { -118, -128 }, { -116, -127 }, { -115, -126 },
 		{ -114, -125 }, { -106, -124 }, { -102, -123 },
 		{  -97, -122 }, { -120,  -53 }, { -117,  -52 },
@@ -848,3 +854,387 @@ Boolean DecForceStringDirection(CHARPTR s)
 	Boolean allowDirectionChars = true;
 	return ForceStringNumberHelper(s,allowNegativeFlag,allowDecimalFlag,allowDirectionChars);
 }
+
+void Secs2DateStrings(unsigned long seconds,
+					  CHARPTR dateLong, CHARPTR dateShort,
+					  CHARPTR time24, CHARPTR time12)
+#ifdef MAC
+{
+	Intl0Hndl iZero;
+	Intl1Hndl iOne;
+	Intl0Rec saveZero;
+	Intl1Rec saveOne;
+	
+	iZero = (Intl0Hndl) GetIntlResource(0);
+	iOne  = (Intl1Hndl) GetIntlResource(1);
+	
+	if (!iZero || !iOne) { SysBeep(1); return; }
+	
+	saveZero = (**iZero);
+	saveOne = (**iOne);
+	
+	(**iOne).suppressDay = 255; // suppress day
+	//if (dateLong) IUDatePString(seconds, longDate, (StringPtr)dateLong, (Handle)iOne);
+	if (dateLong) DateString(seconds, longDate, (StringPtr)dateLong, (Handle)iOne);
+	
+	(**iZero).shrtDateFmt |= dayLdingZ; // use leading zeros
+	(**iZero).shrtDateFmt &= ~century; // suppress century
+	//if (dateShort) IUDatePString(seconds, shortDate, (StringPtr)dateShort, (Handle)iZero);
+	if (dateShort) DateString(seconds, shortDate, (StringPtr)dateShort, (Handle)iZero);
+	
+	//if (time12) IUTimeString(seconds, FALSE, (StringPtr)time12);
+	if (time12) TimeString(seconds, FALSE, (StringPtr)time12, (Handle)iZero);
+	
+	(**iZero).timeCycle = 0; // 24 hour
+	(**iZero).timeFmt |= hrLeadingZ | minLeadingZ; // use leading zeros
+	
+	if(gUseColonIn24HrTime) (**iZero).timeSep = ':';
+	else  (**iZero).timeSep = 0; // no ':'
+	
+	
+	//if (time24) IUTimePString(seconds, FALSE, (StringPtr)time24, (Handle)iZero);
+	if (time24) TimeString(seconds, FALSE, (StringPtr)time24, (Handle)iZero);
+	
+	(**iZero) = saveZero;
+	(**iOne) = saveOne;
+	
+	if (dateLong) my_p2cstr((StringPtr)dateLong);
+	if (dateShort) my_p2cstr((StringPtr)dateShort);
+	if (time24) my_p2cstr((StringPtr)time24);
+	if (time12) my_p2cstr((StringPtr)time12);
+}
+#else
+{
+	struct tm *time;
+	
+	seconds -= 2082816000L; // convert from seconds since 1904 to seconds since 1970
+	time = localtime((long *)&seconds); // gmtime(&seconds);
+	if (!time) { SysBeep(1); return; }
+	
+	if (time->tm_isdst == 1)
+	{ 	// we want to show standard time so we need to fake out the daylight savings time
+		if(time->tm_hour > 0)
+			time->tm_hour--;
+		else
+		{	
+			seconds -= 3600;
+			time = localtime((long *)&seconds);
+			if(time->tm_isdst == 1) {
+				// life is good, both times were daylight savings time
+			}
+			else
+				printError("Programmer error in Secs2DateStrings");
+				}
+	}
+	
+	if (dateLong) strftime(dateLong, 32, "%B %d, %Y", time);
+		if (dateShort) strftime(dateShort, 32, "%m/%d/%y", time);
+			if (time24) 
+			{
+				if(gUseColonIn24HrTime) strftime(time24, 32, "%H:%M", time);
+					else strftime(time24, 32, "%H%M", time);
+						}
+	if (time12) strftime(time12, 32, "%#I:%M %p", time);
+		}
+#endif
+
+void Secs2DateString(unsigned long seconds, CHARPTR s)
+#ifdef MAC
+{
+	DateTimeRec DTR;
+	
+	SecondsToDate (seconds, &DTR);
+	DTR.year = DTR.year %100;// year 2000 fix , JLM 1/25/99
+	sprintf(s, "%02hd/%02hd/%02hd", DTR.month, DTR.day, DTR.year);
+}
+#else
+{
+	struct tm *newTime;
+	
+	seconds -= 2082816000L; // convert from seconds since 1904 to seconds since 1970
+	newTime = localtime((long *)&seconds); // gmtime(&seconds)
+	newTime->tm_year = newTime->tm_year %100;// year 2000 fix , JLM 1/25/99
+	if (newTime)
+	{
+		if (newTime->tm_isdst == 1)
+		{ 	// we want to show standard time so we need to fake out the daylight savings time
+			if(newTime->tm_hour > 0)
+				newTime->tm_hour--;
+			else
+			{	
+				seconds -= 3600;
+				newTime = localtime((long *)&seconds);
+				if(newTime->tm_isdst == 1) {
+					newTime->tm_year = newTime->tm_year %100;// year 2000 fix , JLM 1/25/99
+					// life is good, both times were daylight savings time
+				}
+				else
+					printError("Programmer error in Secs2DateString");
+					}
+		}
+		sprintf(s, "%02ld/%02ld/%02ld", (long)newTime->tm_mon + 1, (long)newTime->tm_mday, (long)newTime->tm_year);
+	}
+	else
+	{ strcpy(s, "???"); SysBeep(1); }
+}
+#endif
+
+void Secs2DateString2(unsigned long seconds, CHARPTR s)
+{ // returns in format: January 2, 1998 
+	short day ; //1-31
+	short month; // 1-12
+	short year4; // 4 digit year
+	short hour; // 0-23
+	short minute;// 0-59 //
+	char str[255];
+#ifdef MAC
+	DateTimeRec DTR;
+	SecondsToDate (seconds, &DTR);
+	month = DTR.month;
+	day = DTR.day;
+	year4 = DTR.year;
+	hour = DTR.hour;
+	minute = DTR.minute;
+#else
+	// IBM
+	struct tm *newTime;
+	seconds -= 2082816000L; // convert from seconds since 1904 to seconds since 1970
+	newTime = localtime((long *)&seconds); // gmtime(&seconds)
+	if (newTime)
+	{
+		if (newTime->tm_isdst == 1)
+		{	// we want to show standard time so we need to fake out the daylight savings time
+			if(newTime->tm_hour > 0)
+				newTime->tm_hour--;
+			else
+			{	
+				seconds -= 3600;
+				newTime = localtime((long *)&seconds);
+				if(newTime->tm_isdst == 1) {
+					// life is good, both times were daylight savings time
+				}
+				else
+					printError("Programmer error in Secs2DateStrings2");
+			}
+		}
+		
+		month = newTime->tm_mon + 1;
+		day = newTime->tm_mday;
+		year4 = newTime->tm_year+1900; // year 2000 OK
+		hour = newTime->tm_hour;
+		minute = newTime->tm_min;
+	}
+	else
+	{ strcpy(s, "???"); return; }
+	
+#endif
+	switch (month)
+	{
+		case  1: strcpy (s, "January "); break;
+		case  2: strcpy (s, "February "); break;
+		case  3: strcpy (s, "March "); break;
+		case  4: strcpy (s, "April "); break;
+		case  5: strcpy (s, "May "); break;
+		case  6: strcpy (s, "June "); break;
+		case  7: strcpy (s, "July "); break;
+		case  8: strcpy (s, "August "); break;
+		case  9: strcpy (s, "September "); break;
+		case 10: strcpy (s, "October "); break;
+		case 11: strcpy (s, "November "); break;
+		case 12: strcpy (s, "December "); break;
+	}
+	
+	sprintf(str, "%02hd, %hd ", day, year4);
+	strcat (s, str);
+	sprintf (str, "%2.2d:%2.2d", hour, minute);
+	strcat (s, str);
+}
+
+unsigned long DateString2Secs(CHARPTR s)
+#ifdef MAC
+{
+	DateTimeRec DTR;
+	unsigned long seconds;
+	
+	sscanf(s, "%hd/%hd/%hd", &DTR.month, &DTR.day, &DTR.year);
+	if(DTR.year < 40) DTR.year += 2000;// year 2000 solution, JLM 1/25/99
+	if (DTR.year < 200) DTR.year += 1900;
+	DTR.hour = DTR.minute = DTR.second = 0;
+	
+	DateToSeconds (&DTR, &seconds);
+	
+	return seconds;
+}
+#else
+{
+	short month, day, year;
+	unsigned long seconds;
+	long long_secs;
+	struct tm newTime;
+	
+	sscanf(s, "%hd/%hd/%hd", &month, &day, &year);
+	newTime.tm_sec = newTime.tm_min = newTime.tm_hour = 0;
+	newTime.tm_mday = day;
+	newTime.tm_mon = month - 1;
+	if(year < 40) year+= 100;// year 2000 solution, JLM 1/25/99
+		newTime.tm_year = (year < 200) ? year : year - 1900;
+		//newTime.tm_isdst = -1; // let mktime() determine if it's daylight savings time
+		newTime.tm_isdst = 0; // use standard time to avoid duplicates at changeover 4/12/01
+		
+		long_secs = mktime(&newTime);
+		//seconds = mktime(&newTime);
+		//if (seconds == -1) SysBeep(1);
+		if (long_secs==-1) 
+		{
+			long_secs=0; 
+			printNote("The Windows function localtime() does not accept dates earlier than January 1,  00:00 GMT");
+			SysBeep(1);
+		}	// here check if year < 1970 and convert
+	seconds = long_secs;
+	seconds += 2082816000L; // convert from seconds since 1970 to seconds since 1904
+	
+	return seconds;
+}
+#endif
+
+char *Date2String(DateTimeRec *time, char *s)
+{
+	sprintf(s, "%02hd/%02hd/%02hd %02hd:%02hd:%02hd",
+			time->month, time->day, time->year,
+			time->hour, time->minute, time->second);
+	
+	return s;
+}
+
+void SplitPathFile(CHARPTR fullPath, CHARPTR fileName)
+{
+	char *p;
+	
+	fileName[0] = 0;
+	
+	if (p = strrchr(fullPath, DIRDELIMITER)) {
+		if (p[1] == 0) { // treat final directory as file name to be retrieved
+			*p = 0;
+			SplitPathFile(fullPath, fileName);
+			return;
+		}
+		p++;
+		strcpy(fileName, p);
+		*p = 0;
+	}
+	else {
+		strcpy(fileName, fullPath);
+		fullPath[0] = 0;
+	}
+}
+
+
+
+void my_p2cstr(void *string)
+{
+	short i, len;
+	char *s = (char*) string;
+	
+	if(!s) return;
+	
+	len = (unsigned char)s[0];
+	for (i = 0 ; i < len ; i++)
+		s[i] = s[i + 1];
+	s[len] = 0;
+	
+}
+
+void my_c2pstr(void *string)
+{
+	short i, len;
+	char *s = (char*) string;
+	
+	if(!s) return;
+	
+	len = strlen(s);
+	if (len > 255) len = 255;
+	for (i = len ; i > 0 ; i--)
+		s[i] = s[i - 1];
+	s[0] = (unsigned char)len;
+}
+
+
+
+#ifdef IBM
+
+void GetDateTime(unsigned long *seconds)
+{
+	unsigned long secs;
+	
+	time((long *)&secs); // time() wants a near pointer; returns secs since 1/1/70
+	secs += 2082816000L; // convert to seconds since 1904
+	// would be secs += 126230400 if time returned time since 1900, as it says in the book
+	*seconds = secs;
+}
+
+void SecondsToDate (unsigned long seconds, DateTimeRec *date)
+{
+	struct tm *newTime;
+	
+	seconds -= 2082816000L; // convert from seconds since 1904 to seconds since 1970
+	// note time_t is now 64 bit by default on Windows, preprocessor definition for 32 bit (good til 2038)
+	newTime = localtime((long *)&seconds); // gmtime(&seconds)
+	if (newTime) {
+		if (newTime->tm_isdst == 1)
+		{	// we want to show standard time so we need to fake out the daylight savings time
+			if(newTime->tm_hour > 0)
+				newTime->tm_hour--;
+			else
+			{	
+				seconds -= 3600;
+				newTime = localtime((long *)&seconds);
+				if(newTime->tm_isdst == 1) {
+					newTime->tm_year = newTime->tm_year %100;// year 2000 fix , JLM 1/25/99
+					// life is good, both times were daylight savings time
+				}
+				else
+					printError("Programmer error in Secs2DateStrings");
+			}
+		}
+		
+		date->year = newTime->tm_year;
+		// this mimics the mac function which has a 4 digit value in the time field
+		if(date->year<40)date->year += 2000;
+		else if(date->year<200) date->year += 1900;
+		// code ges here JLM , does localtime have a year 2000 issue ?
+		date->month = newTime->tm_mon + 1;
+		date->day = newTime->tm_mday;
+		date->hour = newTime->tm_hour;
+		date->minute = newTime->tm_min;
+		date->second = newTime->tm_sec;
+		date->dayOfWeek = newTime->tm_wday + 1;
+	}
+	else {
+		SysBeep(1);
+		date->year = 0;
+		date->month = 0;
+		date->day = 0;
+		date->hour = 0;
+		date->minute = 0;
+		date->second = 0;
+		date->dayOfWeek = 0;
+	}
+}
+
+
+
+void DateToSeconds (DateTimeRec *date, unsigned long *seconds)
+{
+	char s[100];
+	unsigned long secs;
+	
+	sprintf(s, "%02hd/%02hd/%02hd", date->month, date->day, date->year);
+	
+	secs = DateString2Secs(s);
+	
+	secs += date->hour * 3600 + date->minute * 60 + date->second;
+	
+	(*seconds) = secs;
+}
+#endif
+

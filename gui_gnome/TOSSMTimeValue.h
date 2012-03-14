@@ -23,15 +23,12 @@ public:
 	TOSSMTimeValue (TMover *theOwner);
 	TOSSMTimeValue (TMover *theOwner,TimeValuePairH tvals,short userUnits);
 	virtual				   ~TOSSMTimeValue () { Dispose (); }
-	virtual OSErr			InitTimeFunc ();
 	virtual OSErr 			MakeClone(TOSSMTimeValue **clonePtrPtr);
 	virtual OSErr			BecomeClone(TOSSMTimeValue *clone);
 	
 	virtual OSErr			ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance);
 	OSErr 			ReadHydrologyHeader (char *path);
-	virtual ClassID 		GetClassID () { return TYPE_OSSMTIMEVALUES; }
-	virtual Boolean			IAm(ClassID id) { if(id==TYPE_OSSMTIMEVALUES) return TRUE; return TTimeValue::IAm(id); }
-	
+
 	// I/O methods
 	virtual OSErr 			Read  (BFPB *bfpb);  // read from current position
 	virtual OSErr 			Write (BFPB *bfpb);  // write to  current position

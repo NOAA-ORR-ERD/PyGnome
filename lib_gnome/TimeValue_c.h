@@ -24,9 +24,12 @@ class TimeValue_c : virtual public TimeValue_b, virtual public ClassID_c {
 public:
 	TimeValue_c (TMover *theOwner) { owner = theOwner; }
 	TimeValue_c () {}
+	virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEVALUES) return TRUE; return ClassID_c::IAm(id); }
 	virtual OSErr	GetTimeValue (Seconds time, VelocityRec *value);
 	virtual OSErr	CheckStartTime (Seconds time);
 	virtual void	Dispose () {}
+	virtual OSErr	InitTimeFunc ();
 
 };
 

@@ -2,7 +2,7 @@
  *  CompoundMap_c.h
  *  gnome
  *
- *  Created by Alex Hadjilambris on 1/23/12.
+ *  Created by Generic Programmer on 1/23/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
@@ -91,9 +91,7 @@ public:
 	//Boolean 	MoreSegments(LONGH segh,long *startIndex, long *endIndex,long *curIndex);
 	//void			SetMinDistOffshore(WorldRect wBounds);
 	//long 	WhichSelectedSegAmIIn(long index);
-	virtual	Boolean InMap (WorldPoint p);	//  check all maps
-	virtual Boolean OnLand (WorldPoint p);	// check all maps
-	virtual WorldPoint3D	MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);	// have to do something here
+
 	virtual long	PointOnWhichSeg(long p);
 	virtual	long 	PointOnWhichSeg(long longVal, long latVal, long *startver, long *endver, float *dist);
 	Boolean 	ContiguousPoints(long p1, long p2);
@@ -107,7 +105,7 @@ public:
 	LongPointHdl 	GetPointsHdl(Boolean useRefinedGrid);	
 	//virtual Boolean		CanReFloat (Seconds time, LERec *theLE);
 	//		virtual Boolean	CanReFloat (Seconds time, LERec *theLE) { return true; }
-	virtual long 	GetLandType (WorldPoint p);
+
 	//Boolean			LEInMap(WorldPoint p);	// not used
 	Boolean			InVerticalMap(WorldPoint3D wp);	// check by priority
 	//float 			GetMaxDepth(void);

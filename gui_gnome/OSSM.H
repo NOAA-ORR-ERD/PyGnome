@@ -85,71 +85,15 @@ Boolean RestoreScreenImage();
 	#define SETTINGS_VERSION  ((float)1.0)
 	#define GNOME_VERSION_STR  "1.3.4"
 	
-typedef struct {
 
-			// these fields are permanent (saved and restored)
-			long platform; //'WIN ' or 'MAC '
-			float settingsVersion;
-
-			WorldRect currentView;
-			long listWidth;
-//			long textMode; // SCREENMODE or PRINTMODE
-			long screenMode; // COLORMODE, GRAYSCALEMODE, or BANDWMODE
-			long printMode; // COLORMODE, GRAYSCALEMODE, or BANDWMODE
-			long pictureSize; // WINDOWSIZE or PAGESIZE
-			long massUnits;
-			long areaUnits;
-			long distanceUnits;
-			long backgroundColor;
-			long showLatLongLines;
-			long llPosition;
-			long latLongFormat;
-			long showIntermediateLines;
-			long customGrid;
-			long longLineSpace;
-			long longLineUnits;
-			long longLabelSpace;
-			long longLabelUnits;
-			long latLineSpace;
-			long latLineUnits;
-			long latLabelSpace;
-			long latLabelUnits;
-			long preferencesScreen;
-//			long settingsScreen;
-			char headerSPILLID[128];
-			char headerFROM[128];
-			char headerCONTACT[128];
-			char caveat[5][128];
-			long daylightSavingsTimeFlag;	// use one of the reserved spots for dst flag 3/21/06
-			long omitFooter;
-			//long reserved[20];
-			//long reserved[19];
-			long reserved[18];
-
-			// the remaining fields are temporary (saved but reset on startup)
-			long currentTool;
-			long inBackground;
-			long colorQDAvailable;
-			long undoCode;
-			long doNotPrintError; // to allow only one error message per user action
-			long quitting;
-			long modelStartMode;
-			long sprayCanSize;
-
-		} Settings;
-
-
-typedef struct {
-		short		color;
-		char		code[2];
-		WorldRect	bounds;
-		long		numPoints;
-		long		firstPoint;
-	} PolygonType, *PolygonP, **PolygonH;
+// According to the manual this directive should be embedded 
+// inside the structure definition, so may not do anything here:
 
 #ifdef MAC
 #pragma options align=mac68k
 #endif
+
+//--
 
 // JLM 1/25/99
 // Bushy says the LE times are based off of hours since 
@@ -543,7 +487,6 @@ enum { SPRAY_SIZE_SMALL, SPRAY_SIZE_MEDIUM, SPRAY_SIZE_LARGE };	 // spray-can se
 
 enum { MASSONLY = 1, AREAONLY, MASSPERAREA }; 	// unit formats
 
-enum {VOLUMETYPE,MASSTYPE};
 
 enum { ATTIMEOFSPILL = 1, ATOVERFLIGHTTIME };  
 
@@ -567,8 +510,6 @@ enum { ATTIMEOFSPILL = 1, ATOVERFLIGHTTIME };
 #define WNW 	"WNW"
 #define WSW 	"WSW"
 
-enum { DIR_N = 1, DIR_NNE, DIR_NE, DIR_ENE, DIR_E, DIR_ESE, DIR_SE, DIR_SSE, DIR_S,
-	   DIR_SSW, DIR_SW, DIR_WSW, DIR_W, DIR_WNW, DIR_NW, DIR_NNW };
 
 enum { SQUAREMILES = 1, SQUARENAUTICALMILES,
 
@@ -643,7 +584,6 @@ enum { HORIZONTAL = 0, VERTICAL }; // orientations
 
 enum { UNDO_NOTHING = 0, UNDO_DELETE, UNDO_DRAG, UNDO_STRETCH, UNDO_NEW }; // undo codes
 
-enum {DAYLIGHTSAVINGSON = 0, DAYLIGHTSAVINGSOFF = 1};	// allow users to turn off daylight savings time for shio tides
 
 
 //#define MOST_ZOOMED_IN_SCALE 500
@@ -1760,7 +1700,7 @@ extern char sharedTTime[20], sharedTDate[20], sharedPTime[20], sharedPDate[20] ;
 
 ////////////////////////////////////////////////////////////////// FUNCTIONS
 
-
+void			AbbreviateString(CHARPTR s, short maxWidth);
 
 void			AbbreviateDString(DialogPtr dialog, short leftBar, short rightBar, CHARPTR text);
 
@@ -1944,11 +1884,9 @@ void			GetEquality(long scale, char *sLabel, char *sValue, char *sUnits);
 
 OSErr 			GetFilePath(char *path);
 
-void 			GetLeUnitsStr(char* str,short massUnits);
-
 char *			GetMassString(double mass, short units, char *s);
 
-double 			GetPollutantDensity(OilType num);
+void 			GetLeUnitsStr(char* str,short massUnits);
 
 short			GetOldPollutantNumber(char *name);
 
@@ -2315,18 +2253,7 @@ Boolean operator != (Point p1, Point p2);
 #endif
 
 
-double ConvertCM3ToVol(double val,short VolUnits);
-double ConvertVolToCM3(double val, short volUnits);
-double ConvertGramsToMass(double val, short massUnits);
-double ConvertMassToGrams(double val, short massUnits);
-double ConvertGramsToCM3(double val,double density);
-double ConvertCM3ToGrams(double val,double density);
-double VolumeMassToCM3(double val, double density , short massVolUnits);
-double VolumeMassToKilograms(double val, double density , short massVolUnits);
-double VolumeMassToGrams(double val, double density , short massVolUnits);
-double CM3ToVolumeMass(double val, double density,short massVolUnits);
-double VolumeMassToVolumeMass(double val, double density , short massVolUnits, short desiredMassVolUnits);
-
+#include "CompFunctions.h"
 
 // wizard messages are in the 1's
 // model messages are in the 1000's

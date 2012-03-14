@@ -86,12 +86,7 @@ public:
 	map<string, int> ncVarIDs, ncDimIDs, ncVarIDs_C, ncDimIDs_C;
 	char ncPath[256], ncPathConfidence[256];
 	
-	// bitmap version of map at current view and window size without LEs or movement grid
-#ifdef MAC
-	CGrafPtr mapImage;		
-#else 		
-	HDIB	mapImage;		
-#endif
+
 	
 	CMyList	*fSquirreledLastComputeTimeLEList;
 	CMyList	*LESetsList;
@@ -166,7 +161,8 @@ public:
 	OSErr 				GetTotalAmountSpilled(short desiredMassvolUnits,double *amtTotal);
 	Boolean				ThereIsAnEarlierSpill(Seconds timeOfInterest, TLEList *someLEListToIgnore);
 	Boolean				ThereIsALaterSpill(Seconds timeOfInterest, TLEList *someLEListToIgnore);
-	
+	void				NewDirtNotification(void) { return; }
+	void				NewDirtNotification (long flags) { return; }
 };
 
 

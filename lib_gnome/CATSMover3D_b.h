@@ -12,9 +12,8 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "CATSMover_b.h"
 
-class CATSMover3D_b : virtual public CATSMover_b {
+class CATSMover3D_b {
 
 public:
 	TTriGridVel3D	*fRefinedGrid;			// store a second grid for contouring

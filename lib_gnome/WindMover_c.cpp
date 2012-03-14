@@ -14,12 +14,24 @@
 #endif
 #endif
 #include "WindMover_c.h"
-#include "CROSS.H"
+#include "MemUtils.h"
+#include "GEOMETRY.H"
+#include "CompFunctions.h"
 
 #ifdef pyGNOME
-#define TOSSMTimeValue OSSMTimeValue_c
-#define TMap Map_c
+#include "OSSMTimeValue_c.h"
+#include "Map_c.h"
+#include "LEList_c.h"
+#include "Model_c.h"
+#include "PtCurMap_c.h"
+#include "Replacements.h"
+#else
+#include "CROSS.H"
+#include "TOSSMTimeValue.h"
+#include "TMap.h"
 #endif
+
+Seconds gTapWindOffsetInSeconds = 0;
 
 WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 {
@@ -401,7 +413,7 @@ WorldPoint3D WindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 			f = 0.; // for depth dependent diffusion, z could get below mixed layer depth
 		
 		//angle = atan2(timeValue.v,timeValue.u);
-		angle = atan2(timeValue.u,timeValue.v); // measured from north
+		angle = atan2(	timeValue.u,timeValue.v); // measured from north
 		
 		//timeValue.u *= .03 * sin(angle) * f;
 		//timeValue.v *= .03 * cos(angle) * f;

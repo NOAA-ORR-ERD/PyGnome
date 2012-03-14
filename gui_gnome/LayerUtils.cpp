@@ -341,6 +341,70 @@ void DrawObjectsInList (CMyList *thisObjectList, CMap *theMap, LongRect *UpdateL
 	return;
 }
 /**************************************************************************************************/
+void CalcSetOLabelRect (CMap *Map, ObjectRecHdl theObjectHdl, Rect *newLabelRect)
+// Note: current port is assumed to be the one being drawn onto
+{
+	char		objectLabel [kObjectNameLen];
+	Rect		labelRect;
+	LongPoint	LabelLPoint;
+	Point		ScrPoint;
+	short		CurrFontNum, CurrSize, CurrStyle;
+	long		labelJustCode;
+	//WindowPtr	WPtr;
+	GrafPtr		WPtr;
+	
+	GetPortGrafPtr (&WPtr);
+	
+	GetObjectLabel (theObjectHdl, objectLabel);
+	if (strlen (objectLabel) > 0)
+	{
+#ifdef MAC 
+#if TARGET_API_MAC_CARBON
+		CurrFontNum = GetPortTextFont(WPtr);		// save current font and size
+		CurrSize = GetPortTextSize(WPtr);
+		CurrStyle = GetPortTextFace(WPtr);
+#else
+		CurrFontNum = WPtr -> txFont;		// save current font and size
+		CurrSize = WPtr -> txSize;
+		CurrStyle = WPtr -> txFace;
+#endif
+#endif // maybe code goes here
+		
+		TextFontSizeFace (kFontIDGeneva,9,normal);
+		
+		GetOLabelLPoint (theObjectHdl, &LabelLPoint);
+		labelJustCode = GetOLabelJust (theObjectHdl);
+		Map -> GetScrPoint (&LabelLPoint, &ScrPoint);
+		
+		// compute and set the object's label rect
+		labelRect.top    = ScrPoint.v - 6;
+		labelRect.bottom = ScrPoint.v + 9;
+		
+		if (labelJustCode == teJustCenter)
+		{
+			labelRect.left   = ScrPoint.h - stringwidth (objectLabel) / 2;
+			labelRect.right  = labelRect.left + stringwidth (objectLabel) + 2;
+		}
+		else if (labelJustCode == teJustLeft)
+		{
+			labelRect.left   = ScrPoint.h + 7;
+			labelRect.right  = labelRect.left + stringwidth (objectLabel) + 2;
+		}
+		
+		SetObjectLabelRect (theObjectHdl, &labelRect);
+		if (newLabelRect != nil)
+			*newLabelRect = labelRect;		// new rect to be sent back
+		
+		// restore old font and size
+#ifdef MAC 
+		TextFontSizeFace (CurrFontNum,CurrSize,CurrStyle);
+	#endif // maybe code goes here
+	}
+	
+	return;
+}
+
+/**************************************************************************************************/
 void OffsetObjectsInList (CMyList *thisObjectList, CMap *theMap, Boolean bInvalidate,
 						  long LDx, long LDy)
 {
