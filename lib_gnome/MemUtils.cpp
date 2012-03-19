@@ -344,3 +344,13 @@ Handle MyNewHandleTemp(long size)
 	
 }
 
+
+long GetNumHandleItems(Handle h, long itemSize)
+{
+	return h ? _GetHandleSize(h)/itemSize : 0;
+}
+
+long GetNumDoubleHdlItems(DOUBLEH h)
+{
+	return GetNumHandleItems((Handle)h,sizeof(double));
+}

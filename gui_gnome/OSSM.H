@@ -480,7 +480,6 @@ typedef struct {
 ////////////////////////////////////////////////////////////////// CONSTANTS
 
 
-enum { NOVICEMODE = 1, INTERMEDIATEMODE, ADVANCEDMODE };  // model modes
 
 enum { SPRAY_SIZE_SMALL, SPRAY_SIZE_MEDIUM, SPRAY_SIZE_LARGE };	 // spray-can setting
 
@@ -490,8 +489,6 @@ enum { MASSONLY = 1, AREAONLY, MASSPERAREA }; 	// unit formats
 
 enum { ATTIMEOFSPILL = 1, ATOVERFLIGHTTIME };  
 
-#define kDefSaveFileName "Untitled.sav"		// STH
-#define	kDefLEFileName "LEFile"				// STH
 
 #define EAST 	"E"
 #define ENE 	"ENE"

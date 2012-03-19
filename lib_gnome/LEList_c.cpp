@@ -11,10 +11,10 @@
 #include "GEOMETRY.H"
 #include "CompFunctions.h"
 
-#ifdef pyGNOME
-#define printNote(msg) printf(msg)
-#else
+#ifndef pyGNOME
 #include "CROSS.H"
+#else
+#include "Replacements.h"
 #endif
 
 LEList_c::LEList_c()

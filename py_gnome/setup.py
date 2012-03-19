@@ -10,12 +10,16 @@ from distutils.core import setup
 from distutils.extension import Extension
 
 files = ['MemUtils.cpp', 'Mover_c.cpp', 'Replacements.cpp']
+files += ['NetCDFMover_c.cpp', 'RectGridVel_c.cpp', 'Model_c.cpp',]
+files += ['CompoundMover_c.cpp', 'TriCurMover_c.cpp', ]
+files += ['PtCurMap_c.cpp', 'LEList_c.cpp', 'OLEList_c.cpp',]
+files += ['OSSMWeatherer_c.cpp', 'Weatherer_c.cpp', 'MYRANDOM.cpp',]
 files += ['Map_c.cpp', 'CATSMover_c.cpp', 'GEOMETRY.cpp']
 files += ['ShioCurrent1.cpp', 'ShioCurrent2.cpp', 'ShioHeight.cpp',]
-files += ['OSSMTimeValue_c.cpp', 'TimeValue_c.cpp']
+files += ['OSSMTimeValue_c.cpp', 'TimeValue_c.cpp', 'VectMap_c.cpp']
 files += ['DagTreeIO.cpp', 'RectUtils.cpp', 'ShioTimeValue_c.cpp']
 files += ['Random_c.cpp', 'WindMover_c.cpp', 'CurrentMover_c.cpp']
-files += ['CompFunctions.cpp', 'CMYLIST.cpp']
+files += ['CompFunctions.cpp', 'CMYLIST.cpp', 'GEOMETR2.cpp']
 files += ['TriGridVel_c.cpp', 'DagTree.cpp', 'StringFunctions.cpp']
 
 temp_list = ['cyGNOME/c_gnome.pyx']

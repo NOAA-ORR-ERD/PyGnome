@@ -28,6 +28,8 @@ using std::string;
 #define TRandom Random_c
 #define TRandom3D Random3D_c
 #define TCurrentMover CurrentMover_c
+#define TLEList LEList_c
+#define TOLEList OLEList_c
 #endif
 
 class TModel;
@@ -161,8 +163,14 @@ public:
 	OSErr 				GetTotalAmountSpilled(short desiredMassvolUnits,double *amtTotal);
 	Boolean				ThereIsAnEarlierSpill(Seconds timeOfInterest, TLEList *someLEListToIgnore);
 	Boolean				ThereIsALaterSpill(Seconds timeOfInterest, TLEList *someLEListToIgnore);
+	
+	CMyList	*GetWeatherList () { return weatherList; }
+	
+	//++ Replacements:
+	
 	void				NewDirtNotification(void) { return; }
 	void				NewDirtNotification (long flags) { return; }
+	
 };
 
 
@@ -173,4 +181,6 @@ public:
 #undef TRandom 
 #undef TRandom3D
 #undef TCurrentMover
+#undef TLEList
+#undef TOLEList
 #endif

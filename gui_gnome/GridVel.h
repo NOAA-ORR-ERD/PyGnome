@@ -7,6 +7,7 @@
 #include "DagTree.h"
 #include "GridVel_c.h"
 #include "TriGridVel_c.h"
+#include "TriGridVel3D_c.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,21 +34,18 @@ class TGridVel : virtual public GridVel_c
 						  double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)=0;
 };
 
-class TRectGridVel : public TGridVel
+#include "RectGridVeL_c.h"
+
+class TRectGridVel : virtual public RectGridVel_c, public TGridVel
 {
-	protected:
-		VelocityH 	fGridHdl;
-		long 		fNumRows;
-		long 		fNumCols;
+
 		
 	public:
-		virtual ClassID GetClassID 	() { return TYPE_RECTGRIDVEL; }
 
 		TRectGridVel();
 		virtual	~TRectGridVel() { Dispose (); }
 		virtual void 	Dispose ();
 		 
-		virtual void 	SetBounds(WorldRect bounds);	
 
 		OSErr 			TextRead(char *path);
 		OSErr 			ReadOssmCurFile(char *path);
@@ -56,10 +54,6 @@ class TRectGridVel : public TGridVel
 		 
 		OSErr 			Write(BFPB *bfpb);
 		OSErr 			Read(BFPB *bfpb);
-		
-		long 			NumVelsInGridHdl(void);
-		VelocityRec 	GetPatValue(WorldPoint p);
-		VelocityRec 	GetSmoothVelocity(WorldPoint p);
 		
 		void 			Draw (Rect r, WorldRect view,WorldPoint refP,double refScale,
 		 					double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
@@ -85,83 +79,28 @@ class TTriGridVel : virtual public TriGridVel_c, public TGridVel
 		void DrawTriangle(Rect *r,long triNum,Boolean fillTriangle);
 };
 
-typedef struct {
-	double avOilConcOverSelectedTri;
-	double maxOilConcOverSelectedTri;
-	Seconds time;
-} outputData,*outputDataP,**outputDataHdl;
 
-
-typedef struct {
-	long maxLayer;
-	long maxTri;
-	Seconds time;
-} maxLayerData,*maxLayerDataP,**maxLayerDataHdl;
-
-class TTriGridVel3D : public TTriGridVel
+class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 {
-	protected:
-		FLOATH fDepthsH;
-		DOUBLEH fDepthContoursH;
-		Boolean	**fTriSelected;
-		Boolean	**fPtsSelected;
-		// maybe define a new class to handle all the output...
-		outputDataHdl fOilConcHdl; 
-		maxLayerDataHdl fMaxLayerDataHdl;
-		double **fTriAreaHdl;
-		DOUBLEH fDosageHdl;
-		//WORLDPOINTDH gCoord;	// is this used??, maybe will need later if do refining on the fly
+
 	public:
-		Rect	fLegendRect;
-		Boolean	bShowSelectedTriangles;
-		float	fPercentileForMaxConcentration;
-		Boolean bCalculateDosage;
-		Boolean bShowDosage;
-		float fDosageThreshold;	// this may need to be an array
-		long fMaxTri;	// or selected tri
-		Boolean bShowMaxTri;
-	public:
-		virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL3D; }
 		
 		TTriGridVel3D();
 		virtual	~TTriGridVel3D() { Dispose (); }
 		virtual void 		Dispose ();
 
-		void SetDepths(FLOATH depthsH){fDepthsH=depthsH;}
-		FLOATH  GetDepths(){return fDepthsH;}
-		void 	ScaleDepths(double scaleFactor);
-		//void SetDepthContours(DOUBLEH depthContoursH){if(fDepthContoursH!=depthContoursH) (fDepthContoursH=depthContoursH;}
-		DOUBLEH  GetDepthContours(){return fDepthContoursH;}
+
 		OSErr DepthContourDialog();
 		//WORLDPOINTDH  GetCoords(){return gCoord;}
-		long 	GetNumDepths(void);
-		//long	GetNumTriangles(void);
-		long GetNumPoints(void);
-		long 	GetNumDepthContours(void);
-		long 	GetNumOutputDataValues(void);
-		Boolean **GetTriSelection(Boolean initHdl);
+
 		Boolean **GetPtsSelection(Boolean initHdl);
 		Boolean ThereAreTrianglesSelected() {if (fTriSelected) return true; else return false;}
 		Boolean ThereAreTrianglesSelected2(void);
 		Boolean SelectTriInPolygon(WORLDPOINTH wh, Boolean *needToRefresh);
-		void 	GetTriangleVerticesWP(long i, WorldPoint *w);
-		OSErr 	GetTriangleVerticesWP3D(long i, WorldPoint3D *w);
-		OSErr 	GetTriangleVertices3D(long i, long *x, long *y, long *z);
-		outputDataHdl GetOilConcHdl(){return fOilConcHdl;}
-		double **GetTriAreaHdl(){return fTriAreaHdl;}
-		double **GetDosageHdl(Boolean initHdl);
+
 		void 	ClearTriSelection();
 		void 	ClearPtsSelection();
-		OSErr 	GetTriangleVertices(long i, long *x, long *y);
-		OSErr 	GetTriangleDepths(long i, float *z);
-		OSErr 	GetMaxDepthForTriangle(long triNum, double *maxDepth);
-		OSErr 	GetTriangleCentroidWC(long trinum, WorldPoint *p);
-		double	GetTriArea(long triNum);
-		OSErr 	CalculateDepthSliceVolume(double *triVol, long triNum,float upperDepth, float lowerDepth);
-		double	GetMaxAtPreviousTimeStep(Seconds time);
-		void	AddToOutputHdl(double avConcOverSelectedTriangles,double maxConcOverSelectedTriangles,Seconds time);
-		void 	AddToTriAreaHdl(double *triAreaArray, long numValues);
-		void	ClearOutputHandles();
+
 		OSErr 	ExportOilConcHdl(char* path);
 		OSErr 	ExportTriAreaHdl(char* path,long numLevels);
 		OSErr 	ExportAllDataAtSetTimes(char* path);	//maybe move to TModel since also handles budget table
@@ -173,8 +112,7 @@ class TTriGridVel3D : public TTriGridVel
 		void ToggleTriSelection(long i);
 		void TogglePointSelection(long i);
 		Boolean 	PointsSelected();
-		Boolean FloatPointInTriangle(double x1, double y1,double x2, double y2,
-			double x3, double y3,double xp, double yp);
+
 		long FindTriNearClick(Point where);
 		//virtual InterpolationVal GetInterpolationValues(WorldPoint refPoint);
 		virtual void Draw (Rect r, WorldRect view,WorldPoint refP,double refScale,

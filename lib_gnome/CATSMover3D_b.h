@@ -13,6 +13,11 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 
+#ifdef pyGNOME
+#include "TriGridVel3D_c.h"
+#define TTriGridVel3D TriGridVel3D_c
+#endif
+
 class CATSMover3D_b {
 
 public:

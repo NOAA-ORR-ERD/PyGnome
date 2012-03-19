@@ -24,6 +24,9 @@ class NetCDFMover_c : virtual public NetCDFMover_b, virtual public CurrentMover_
 public:
 	NetCDFMover_c (TMap *owner, char *name);
 	NetCDFMover_c () {}
+	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVER; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVER) return TRUE; return CurrentMover_c::IAm(id); }
+
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	virtual long 		GetVelocityIndex(WorldPoint p);
 	virtual LongPoint 	GetVelocityIndices(WorldPoint wp);
@@ -50,7 +53,24 @@ public:
 	virtual OSErr 		PrepareForModelStep();
 	virtual void 		ModelStepIsDone();
 	
+	long 					GetNumTimesInFile();
+	long 					GetNumFiles();
+	virtual OSErr 		CheckAndScanFile(char *errmsg);
+	virtual OSErr	 	SetInterval(char *errmsg);
+	OSErr 				ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime);
 	
+	virtual Boolean 	CheckInterval(long &timeDataInterval);
+	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
+	void 				DisposeLoadedData(LoadedData * dataPtr);	
+	void 				ClearLoadedData(LoadedData * dataPtr);
+	void 				DisposeAllLoadedData();
+	
+	virtual long 		GetNumDepthLevelsInFile();	// eventually get rid of this
+	//virtual DepthValuesSetH 	GetDepthProfileAtPoint(WorldPoint refPoint) {return nil;}
+	virtual OSErr 	GetDepthProfileAtPoint(WorldPoint refPoint, long timeIndex, DepthValuesSetH *profilesH) {*profilesH=nil; return 0;}
+	
+
+
 };
 
 #undef TMap

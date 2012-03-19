@@ -8,10 +8,14 @@
  */
 
 #include "TriCurMover_c.h"
-#include "CROSS.H"
+#include "MemUtils.h"
+#include "CompFunctions.h"
+#include "StringFunctions.h"
 
-#ifdef pyGNOME
-#define TMap Map_c
+#ifndef pyGNOME
+#include "CROSS.H"
+#else
+#include "Replacements.h"
 #endif
 
 TriCurMover_c::TriCurMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name), Mover_c(owner, name)

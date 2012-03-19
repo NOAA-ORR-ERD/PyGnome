@@ -316,7 +316,6 @@ typedef Boolean (pascal_ifMac *FileFilterProcPtr)(PARMBLKPTR);
 #endif
 
 #ifdef MAC
-#define _HLock(h) MyHLock(h)
 #define WITHOUTERRORS(c) c
 #else
 #define WITHOUTERRORS(c) { UINT e; e = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX); c SetErrorMode(e); }

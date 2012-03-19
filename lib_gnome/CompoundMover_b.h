@@ -13,9 +13,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "CurrentMover_b.h"
-#include "Uncertainty.h"
-
-class CMyList;
+#include "CMYLIST.H"
 
 class CompoundMover_b : virtual public CurrentMover_b {
 

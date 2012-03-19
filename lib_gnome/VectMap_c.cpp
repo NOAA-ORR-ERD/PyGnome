@@ -10,22 +10,15 @@
 #include "VectMap_c.h"
 #include "MemUtils.h"
 
-
-#ifdef pyGNOME
-#define TModel Model_c
-#define TMover Mover_c
-#define TMap Map_c
-#define TCATSMover CATSMover_c
-#define TVectorMap VectorMap_c
-#define printError(msg) printf(msg)
-#define TechError(a, b, c) printf(a)
-#endif
-
+#ifndef pyGNOME
 #include "TModel.h"
 #include "TMover.h"
 #include "TCATSMover.h"
 #include "TMap.h"
 extern TModel *model;
+#else
+#include "Replacements.h"
+#endif
 
 VectorMap_c::VectorMap_c (char* name, WorldRect bounds): Map_c(name, bounds)
 {
@@ -116,8 +109,11 @@ long CheckShoreline (long longVal, long latVal,CMapLayer *mapLayer)
 	for (ObjectIndex = 0; ObjectIndex < ObjectCount; ObjectIndex++)
 	{
 		thisObjectList -> GetListItem ((Ptr) &thisObjectHdl, ObjectIndex);
-		PointCount = GetPolyPointCount ((PolyObjectHdl) thisObjectHdl);
-		RgnPtsHdl = GetPolyPointsHdl ((PolyObjectHdl) thisObjectHdl);
+		//PointCount = GetPolyPointCount ((PolyObjectHdl) thisObjectHdl); AH 03/16/2012
+		//RgnPtsHdl = GetPolyPointsHdl ((PolyObjectHdl) thisObjectHdl); AH 03/16/2012
+		
+		PointCount = (**((PolyObjectHdl)thisObjectHdl)).pointCount;	// AH 03/16/2012
+		RgnPtsHdl = (LongPoint **) ((**thisObjectHdl).objectDataHdl); // AH 03/16/2012
 		
 		if (RgnPtsHdl != nil)
 		{
@@ -155,7 +151,8 @@ long CheckShoreline (long longVal, long latVal,CMapLayer *mapLayer)
 	if (objectNum>=0)
 	{	
 		thisObjectList -> GetListItem ((Ptr) &thisObjectHdl, objectNum);
-		GetObjectESICode (thisObjectHdl, &theESICode);
+		//GetObjectESICode (thisObjectHdl, &theESICode); AH 03/16/2012
+		theESICode = (**thisObjectHdl).objectESICode;	// AH 03/16/2012
 	}
 	return theESICode; // need an error code?
 }
@@ -277,7 +274,7 @@ TTriGridVel* VectorMap_c::GetGrid()
 	mover = this->GetMover(TYPE_CATSMOVER);	// get first one, assume all grids are the same
 	if (mover)
 	{
-		triGrid = (TTriGridVel*)/*OK*/((dynamic_cast<TCATSMover *>(mover)) -> fGrid);
+		triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<TCATSMover *>(mover)) -> fGrid));
 	}
 	return triGrid;
 }

@@ -13,7 +13,12 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "CurrentMover_b.h"
-#include "PtCurMover.h"
+#ifndef pyGNOME
+#include "GridVel.h"
+#else
+#include "GridVel_c.h"
+#define TGridVel GridVel_c
+#endif
 
 typedef struct {
 	char		pathName[kMaxNameLen];

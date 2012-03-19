@@ -17,12 +17,17 @@
 
 #ifdef pyGNOME
 #define TMap Map_c
+#define TMover Mover_c
 #define TCurrentMover CurrentMover_c
+#define TTriGridVel TriGridVel_c
+#define TTriGridVel3D TriGridVel3D_c
 #endif
 
 class TCurrentMover;
 class TTriGridVel;
+class TTriGridVel3D;
 class TCompoundMap;
+class TMover;
 
 class CompoundMover_c : virtual public CompoundMover_b, virtual public CurrentMover_c {
 

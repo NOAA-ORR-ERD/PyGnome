@@ -1042,38 +1042,7 @@ OSErr GetAdiosFileName(char *path)
 	return noErr;
 }
 
-/////////////////////////////////////////////////
-double GetLEMass(LERec theLE)
-{
-	long i;
-	double tHours, fracLeft = 0.;
-	TWeatherer	*thisWeatherer;
-	OilComponent	component;
-	CMyList	*weatherList = model->GetWeatherList();
-			
-	if (theLE.pollutantType == CHEMICAL)
-	{
-		weatherList->GetListItem((Ptr)&thisWeatherer, 0);	// assume there is only one
-		((TOSSMWeatherer*)thisWeatherer)->componentsList -> GetListItem ((Ptr) &component, theLE.pollutantType - 1);
-		tHours = (double) ( model -> GetModelTime () - theLE.releaseTime)/ 3600.0  + theLE.ageInHrsWhenReleased;
-		// if LE has not been released yet return 0?
-		//if (theLE.releaseTime > model->GetModelTime()) return theLE.mass;
-		if (theLE.releaseTime > model->GetModelTime()) return 0;
-		
-		for(i = 0;i<3;i++)	// at this point only using 1 half life component
-		{
-			if(component.percent[i] > 0.0)
-			{
-				fracLeft +=  (component.percent[i])*pow(0.5,tHours/(component.halfLife[i]));
-			}
-		}
-		fracLeft = _max (0.0,fracLeft);
-		fracLeft = _min (1.0,fracLeft);
-		return fracLeft*theLE.mass;
-	}
-	else
-		return theLE.mass;
-}
+
 /////////////////////////////////////////////////
 void GetLeUnitsStr(char* str,short massUnits)
 {

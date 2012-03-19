@@ -22,6 +22,9 @@
 #define DEREFH(h) (*(h))
 #define INDEXH(h, i) (*(h))[i]
 
+#define kDefSaveFileName "Untitled.sav"		// STH
+#define	kDefLEFileName "LEFile"				// STH
+
 #ifndef MAC
 typedef CHARPTR Ptr;
 typedef CHARH Handle;
@@ -758,6 +761,13 @@ typedef struct {
 	
 } Settings;
 
+typedef struct ScaleRec
+{
+	double					XScale;	/* Y = mX + b type linear scale and offsets */
+	double					YScale;
+	double					XOffset;
+	double					YOffset;
+} ScaleRec, *ScaleRecPtr;
 
 typedef struct {
 	short		color;
@@ -766,6 +776,21 @@ typedef struct {
 	long		numPoints;
 	long		firstPoint;
 } PolygonType, *PolygonP, **PolygonH;
+
+typedef struct
+{
+	Boolean			setEddyValues;
+	Seconds			fUncertainStartTime;
+	double			fDuration; 				// duration time for uncertainty;
+	double			fEddyDiffusion;		
+	double			fEddyV0;			
+	double			fDownCurUncertainty;	
+	double			fUpCurUncertainty;	
+	double			fRightCurUncertainty;	
+	double			fLeftCurUncertainty;	
+} CurrentUncertainyInfo;
+
+
 
 // According to the manual this directive should be embedded 
 // inside the structure definition, so may not do anything here (here pasted from OSSM.H):
@@ -784,5 +809,7 @@ enum { DIR_N = 1, DIR_NNE, DIR_NE, DIR_ENE, DIR_E, DIR_ESE, DIR_SE, DIR_SSE, DIR
 	DIR_SSW, DIR_SW, DIR_WSW, DIR_W, DIR_WNW, DIR_NW, DIR_NNW };
 
 enum {DAYLIGHTSAVINGSON = 0, DAYLIGHTSAVINGSOFF = 1};	// allow users to turn off daylight savings time for shio tides
+
+enum { NOVICEMODE = 1, INTERMEDIATEMODE, ADVANCEDMODE };  // model modes
 
 #endif

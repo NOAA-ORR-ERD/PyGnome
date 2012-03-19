@@ -16,7 +16,6 @@ using std::string;
 #include "GridVel.h"
 #include "MemUtils.h"
 
-Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2);
 UNIQUEID ZeroID(void);
 
 
@@ -77,21 +76,15 @@ class TModelMessage
 
 // --
 
-///////////////////////////////////////////////////////////////////////////
+#include "Weatherer_c.h"
 
-class TWeatherer : public TClassID
+class TWeatherer : virtual public Weatherer_c, public TClassID
 {
 	public:
 							TWeatherer (char *name);
 		virtual			   ~TWeatherer () { Dispose (); }
 		virtual OSErr		InitWeatherer () { return noErr; }
-		virtual ClassID 	GetClassID () { return TYPE_WEATHERER; }
 		virtual void		Dispose () { return; }
-
-//		void				SetWeathererName (char *newName)    { SetClassName (newName); }
-//		void				GetWeathererName (char *returnName) { GetClassName (returnName); }
-
-		virtual void		WeatherLE (LERec *theLE) {}
 
 		// I/O methods
 		virtual OSErr 		Read  (BFPB *bfpb);  			// read from current position
@@ -103,22 +96,16 @@ class TWeatherer : public TClassID
 		virtual OSErr 		AddItem (ListItem item);
 };
 
-///////////////////////////////////////////////////////////////////////////
+#include "OSSMWeatherer_c.h"
 
-class TOSSMWeatherer : public TWeatherer
+class TOSSMWeatherer : virtual public OSSMWeatherer_c, public TWeatherer
 {
- 	public:
-		CMyList				*componentsList;
 
  	public:
 							TOSSMWeatherer (char *name);
 		virtual				~TOSSMWeatherer ();
 		virtual OSErr		InitWeatherer ();
-		virtual ClassID		GetClassID () { return TYPE_OSSMWEATHERER; }
 		virtual void		Dispose ();
-
-		virtual void		WeatherLE (LERec *theLE);
-
 		// I/O methods
 		virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 		virtual OSErr 		Write (BFPB *bfpb); // write to  current position
@@ -138,8 +125,6 @@ class TOSSMWeatherer : public TWeatherer
 // so are powers of 2
 
 #include "TLEList.h"
-
-double GetLEMass(LERec theLE);
 
 #include "TOLEList.h"
 

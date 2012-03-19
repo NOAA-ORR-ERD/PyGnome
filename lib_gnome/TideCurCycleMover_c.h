@@ -15,6 +15,13 @@
 #include "TideCurCycleMover_b.h"
 #include "CATSMover_c.h"
 
+#ifndef pyGNOME
+#include "TMap.h"
+#else
+#include "Map_c.h"
+#define TMap Map_c
+#endif
+
 class TideCurCycleMover_c : virtual public TideCurCycleMover_b, virtual public CATSMover_c {
 
 public:

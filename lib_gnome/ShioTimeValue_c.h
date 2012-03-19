@@ -2,7 +2,7 @@
  *  ShioTimeValue_c.h
  *  gnome
  *
- *  Created by Alex Hadjilambris on 3/13/12.
+ *  Created by Generic Programmer on 3/13/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
@@ -11,15 +11,17 @@
 #define __ShioTimeValue_c__
 
 #include "Shio.h"
+#include "OSSMTimeValue_c.h"
 
 #define MAXNUMSHIOYEARS  20
 #define MAXSTATIONNAMELEN  128
 #define kMaxKeyedLineLength	1024
 
 #ifndef pyGNOME
-#include "TOSSMTimeValue.h"
+#include "TMover.h"
 #else
-#include "Replacements.h"
+#include "Mover_c.h"
+#define TMover Mover_c
 #endif
 
 //enum { WIZ_POPUP = 1, WIZ_UNITS , WIZ_EDIT, WIZ_BMP, WIZ_HELPBUTTON };
@@ -101,5 +103,5 @@ public:
 };
 
 
-
+#undef TMover
 #endif

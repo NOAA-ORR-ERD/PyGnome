@@ -9,6 +9,7 @@
 
 #include "ClassID_c.h"
 #include "StringFunctions.h"
+#include "CompFunctions.h"
 
 void ClassID_c::SetClassName (char *newName)
 {
@@ -16,4 +17,10 @@ void ClassID_c::SetClassName (char *newName)
 		newName [kMaxNameLen - 1] = 0;
 	
 	strnzcpy (className, newName, kMaxNameLen - 1);
+}
+
+
+Boolean ClassID_c::MatchesUniqueID(UNIQUEID uid)
+{
+	return EqualUniqueIDs(uid,this->fUniqueID);
 }

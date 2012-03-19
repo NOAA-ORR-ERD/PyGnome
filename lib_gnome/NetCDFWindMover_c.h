@@ -18,6 +18,8 @@
 class NetCDFWindMover_c : virtual public NetCDFWindMover_b, virtual public WindMover_c {
 
 public:
+	NetCDFWindMover_c (TMap *owner, char* name);
+	NetCDFWindMover_c () {}
 	virtual OSErr 		PrepareForModelStep();
 	virtual void 		ModelStepIsDone();
 	virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
@@ -34,6 +36,8 @@ public:
 	virtual double 	GetEndVVelocity(long index);
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	virtual WorldRect GetGridBounds(){return fGrid->GetBounds();}	
+	virtual ClassID 	GetClassID () { return TYPE_NETCDFWINDMOVER; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_NETCDFWINDMOVER) return TRUE; return WindMover_c::IAm(id); }
 
 };
 

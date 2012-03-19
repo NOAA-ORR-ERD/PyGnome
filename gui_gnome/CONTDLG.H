@@ -29,14 +29,12 @@ void GetStringRect(char text[],short h, short v, Rect *r);
 void GetTextOffsets(/*short dir,*/char s[], short *h, short *v);
 
 OSErr ContourDialog(DOUBLEH *contourLevels,short contourType);	// concentration 0, depth 1
-OSErr SetDefaultContours(DOUBLEH contourLevels, short contourType);
 //OSErr SetDefaultDepthContours(DOUBLEH contourLevels);
 Boolean AutoContour(DOUBLEH contourValues, DOUBLEH *contourLevels);
 //Boolean AutoContour(FLOATH contourValues, DOUBLEH *contourLevels);
 RGBColor GetRGBColor(double val);
 void  SetRGBColor(RGBColor *rgb,long red, long green, long blue);
-long GetNumDoubleHdlItems(DOUBLEH h);
-long GetNumHandleItems(Handle h, long itemSize);
+
 void MyDisposeHandle(Handle *g);
 char *MyNumToStr(double x, char *s);
 

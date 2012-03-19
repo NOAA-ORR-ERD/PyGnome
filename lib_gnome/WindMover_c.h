@@ -27,6 +27,8 @@ class WindMover_c : virtual public WindMover_b, virtual public Mover_c {
 public:
 	WindMover_c (TMap *owner, char* name);
 	WindMover_c () {}
+	virtual ClassID 	GetClassID () { return TYPE_WINDMOVER; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_WINDMOVER) return TRUE; return Mover_c::IAm(id); }
 	virtual OSErr		AllocateUncertainty ();
 	virtual void		DisposeUncertainty ();
 	virtual OSErr		AddUncertainty(long setIndex,long leIndex,VelocityRec *v);

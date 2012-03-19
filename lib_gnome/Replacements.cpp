@@ -12,10 +12,12 @@
 Model_c *model = 0;
 Settings settings;
 
-inline PtCurMap_c *GetPtCurMap(void) {
+PtCurMap_c *GetPtCurMap(void) {
 	return NULL;
 }
 
-inline void MySpinCursor(void) { return; }
+void MySpinCursor(void) { return; }
 
-inline void SysBeep(short x) { return; }
+void SysBeep(short x) { return; }
+
+Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl) { return 0; }

@@ -8,30 +8,13 @@
  */
 
 #include "CompoundMap_c.h"
-#include "TMover.h"
-#include "TCurrentMover.h"
-#include "TWindMover.h"
-#include "NetCDFMover.h"
-#include "NetCDFMoverCurv.h"
-#include "NetCDFMoverTri.h"
-#include "TriCurMover.h"
-#include "PtCurMover.h"
+#include "CompFunctions.h"
+#include "MemUtils.h"
 
-#ifdef pyGNOME
-#define TModel Model_c
-#define TMap Map_c
-#define TMover Mover_c
-#define TWindMover WindMover_c
-#define TRandom Random_c
-#define TRandom3D Random3D_c
-#define TOSSMTimeValue OSSMTimeValue_c
-#define NetCDFMover NetCDFMover_c
-#define TriCurMover TriCurMover_c
-#define TCompoundMover CompoundMover_c
-#define TCurrentMover CurrentMover_c
-#define PtCurMover PtCurMover_c
+#ifndef pyGNOME
+#include "CROSS.H"
 #else
-#include "CONTDLG.H"
+#include "Replacements.h"
 #endif
 
 static long theSegno,theSegStart,theSegEnd,theIndex,theBndryStart,theBndryEnd;

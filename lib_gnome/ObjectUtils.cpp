@@ -1,7 +1,9 @@
 
-#include "Cross.h"
+#include	"Cross.h"
 #include	"ObjectUtils.h"
 #include	"GenDefs.h"
+#include	"MemUtils.h"
+
 /**************************************************************************************************/
 
 #ifdef IBM

@@ -15,14 +15,14 @@
 #include "Map_c.h"
 #include "ObjectUtils.h"
 
-#ifdef pyGNOME
-#define TMover Mover_c
-#define TTriGridVel GridVel_c
-#include "Mover_c.h"
-#include "GridVel_c.h"
-#else
+#ifndef pyGNOME
 #include "TMover.h"
 #include "GridVel.h"
+#else
+#include "TriGridVel_c.h"
+#include "Mover_c.h"
+#define TTriGridVel TriGridVel_c
+#define TMover Mover_c
 #endif
 
 class VectorMap_c : virtual public Map_c  {
@@ -74,4 +74,6 @@ public:
 
 VectorMap_c* GetNthVectorMap(long desiredNum0Relative);
 
+#undef TTriGridVel
+#undef TMover
 #endif

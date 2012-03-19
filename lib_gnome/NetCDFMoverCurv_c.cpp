@@ -16,6 +16,12 @@
 	#define NetCDFMoverCurv NetCDFMoverCurv_c
 #endif
 
+NetCDFMoverCurv_c::NetCDFMoverCurv_c (TMap *owner, char *name) : NetCDFMover_c(owner, name)
+{
+	fVerdatToNetCDFH = 0;	
+	fVertexPtsH = 0;
+}	
+
 LongPointHdl NetCDFMoverCurv_c::GetPointsHdl()
 {
 	return ((TTriGridVel*)fGrid) -> GetPointsHdl();

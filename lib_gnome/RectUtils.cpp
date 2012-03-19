@@ -984,3 +984,30 @@ Point RectCenter(Rect r)
 	
 	return p;
 }
+
+
+/**************************************************************************************************/
+OSErr GetLScaleAndOffsets (LongRectPtr SourceRectPtr, LongRectPtr DestRectPtr, ScaleRecPtr ScaleInfoPtr)
+/* given a source rectangle* and destination rectangle*, this subroutine calculates and stores the
+ horizontal and vertical scale and offsets needed to map the sourceRect into the destRect	  */
+{
+	long	SrcRectDX, SrcRectDY, DestRectDX, DestRectDY;
+	
+	/* calculate the height and width of both source and destination rectangles */
+	SrcRectDX  =  (SourceRectPtr -> right  - SourceRectPtr -> left);
+	SrcRectDY  =  (SourceRectPtr -> bottom - SourceRectPtr -> top);
+	DestRectDX =  (DestRectPtr   -> right  - DestRectPtr   -> left);
+	DestRectDY =  (DestRectPtr   -> bottom - DestRectPtr   -> top);
+	
+	if ((SrcRectDX == 0) || (SrcRectDY == 0))	/* zoom area too small ? */
+		return (-1);
+	
+	ScaleInfoPtr -> XScale = ((double) DestRectDX / (double) SrcRectDX);
+	ScaleInfoPtr -> YScale = ((double) DestRectDY / (double) SrcRectDY);
+	
+	ScaleInfoPtr -> XOffset = DestRectPtr -> left - SourceRectPtr -> left * ScaleInfoPtr -> XScale;
+	ScaleInfoPtr -> YOffset = DestRectPtr -> top  - SourceRectPtr -> top  * ScaleInfoPtr -> YScale;
+	
+	return (0);
+}
+/**************************************************************************************************/

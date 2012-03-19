@@ -56,6 +56,8 @@ double VolumeMassToCM3(double val, double density , short massVolUnits);
 double VolumeMassToKilograms(double val, double density , short massVolUnits);
 double VolumeMassToGrams(double val, double density , short massVolUnits);
 double CM3ToVolumeMass(double val, double density,short massVolUnits);
+double GetLEMass(LERec theLE);
+Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2);
 
 
 

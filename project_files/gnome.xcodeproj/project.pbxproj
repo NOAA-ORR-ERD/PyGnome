@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EDA59D94151713D600F0EE69 /* RectGridVeL_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDA59D93151713D600F0EE69 /* RectGridVeL_c.cpp */; };
+		EDB99A731516EFBF00B08B8B /* TriGridVel3D_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDB99A721516EFBF00B08B8B /* TriGridVel3D_c.cpp */; };
+		EDB99B491516FB8D00B08B8B /* Weatherer_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDB99B481516FB8D00B08B8B /* Weatherer_c.cpp */; };
+		EDB99B4F1516FC6300B08B8B /* OSSMWeatherer_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDB99B4E1516FC6300B08B8B /* OSSMWeatherer_c.cpp */; };
+		EDB99B751516FDD300B08B8B /* MYRANDOM.CPP in Sources */ = {isa = PBXBuildFile; fileRef = EDB99B731516FDD300B08B8B /* MYRANDOM.CPP */; };
 		EDCB4074150FFA6700199C36 /* ADCPMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F6B150FFA6600199C36 /* ADCPMover.cpp */; };
 		EDCB4075150FFA6700199C36 /* ADCPTimeValue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F6D150FFA6600199C36 /* ADCPTimeValue.cpp */; };
 		EDCB4076150FFA6700199C36 /* CarbonUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F6F150FFA6600199C36 /* CarbonUtil.cpp */; };
@@ -35,7 +40,6 @@
 		EDCB408D150FFA6700199C36 /* MakeMovie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F93150FFA6600199C36 /* MakeMovie.cpp */; };
 		EDCB408E150FFA6700199C36 /* MakeTriangles.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F95150FFA6600199C36 /* MakeTriangles.cpp */; };
 		EDCB408F150FFA6700199C36 /* MYFILES.CPP in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F97150FFA6600199C36 /* MYFILES.CPP */; };
-		EDCB4090150FFA6700199C36 /* MYRANDOM.CPP in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F98150FFA6600199C36 /* MYRANDOM.CPP */; };
 		EDCB4091150FFA6700199C36 /* NetCDFMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F9B150FFA6600199C36 /* NetCDFMover.cpp */; };
 		EDCB4092150FFA6700199C36 /* NetCDFMoverCurv.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F9D150FFA6600199C36 /* NetCDFMoverCurv.cpp */; };
 		EDCB4093150FFA6700199C36 /* NetCDFMoverTri.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F9F150FFA6600199C36 /* NetCDFMoverTri.cpp */; };
@@ -146,6 +150,17 @@
 
 /* Begin PBXFileReference section */
 		0D9D32EF0E226E6E0083E689 /* gnome.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = gnome.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EDA59D2815170C7000F0EE69 /* netcdf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = netcdf.h; sourceTree = "<group>"; };
+		EDA59D92151713D600F0EE69 /* RectGridVeL_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RectGridVeL_c.h; sourceTree = "<group>"; };
+		EDA59D93151713D600F0EE69 /* RectGridVeL_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RectGridVeL_c.cpp; sourceTree = "<group>"; };
+		EDB99A711516EFBF00B08B8B /* TriGridVel3D_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TriGridVel3D_c.h; sourceTree = "<group>"; };
+		EDB99A721516EFBF00B08B8B /* TriGridVel3D_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TriGridVel3D_c.cpp; sourceTree = "<group>"; };
+		EDB99B471516FB8D00B08B8B /* Weatherer_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Weatherer_c.h; sourceTree = "<group>"; };
+		EDB99B481516FB8D00B08B8B /* Weatherer_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Weatherer_c.cpp; sourceTree = "<group>"; };
+		EDB99B4D1516FC6300B08B8B /* OSSMWeatherer_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OSSMWeatherer_c.h; sourceTree = "<group>"; };
+		EDB99B4E1516FC6300B08B8B /* OSSMWeatherer_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OSSMWeatherer_c.cpp; sourceTree = "<group>"; };
+		EDB99B731516FDD300B08B8B /* MYRANDOM.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MYRANDOM.CPP; sourceTree = "<group>"; };
+		EDB99B741516FDD300B08B8B /* MYRANDOM.H */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MYRANDOM.H; sourceTree = "<group>"; };
 		EDCB3F6B150FFA6600199C36 /* ADCPMover.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ADCPMover.cpp; sourceTree = "<group>"; };
 		EDCB3F6C150FFA6600199C36 /* ADCPMover.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ADCPMover.h; sourceTree = "<group>"; };
 		EDCB3F6D150FFA6600199C36 /* ADCPTimeValue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ADCPTimeValue.cpp; sourceTree = "<group>"; };
@@ -191,9 +206,6 @@
 		EDCB3F95150FFA6600199C36 /* MakeTriangles.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MakeTriangles.cpp; sourceTree = "<group>"; };
 		EDCB3F96150FFA6600199C36 /* my_build_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = my_build_list.h; sourceTree = "<group>"; };
 		EDCB3F97150FFA6600199C36 /* MYFILES.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MYFILES.CPP; sourceTree = "<group>"; };
-		EDCB3F98150FFA6600199C36 /* MYRANDOM.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MYRANDOM.CPP; sourceTree = "<group>"; };
-		EDCB3F99150FFA6600199C36 /* MYRANDOM.H */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MYRANDOM.H; sourceTree = "<group>"; };
-		EDCB3F9A150FFA6600199C36 /* netcdf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = netcdf.h; sourceTree = "<group>"; };
 		EDCB3F9B150FFA6600199C36 /* NetCDFMover.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NetCDFMover.cpp; sourceTree = "<group>"; };
 		EDCB3F9C150FFA6600199C36 /* NetCDFMover.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFMover.h; sourceTree = "<group>"; };
 		EDCB3F9D150FFA6600199C36 /* NetCDFMoverCurv.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NetCDFMoverCurv.cpp; sourceTree = "<group>"; };
@@ -459,7 +471,6 @@
 				EDCB3F71150FFA6600199C36 /* CDOGDialogs.cpp */,
 				EDCB3F72150FFA6600199C36 /* CDOGVarDischargeDialog.cpp */,
 				EDCB3F73150FFA6600199C36 /* CLASSES.CPP */,
-				EDCB3F74150FFA6600199C36 /* CLASSES.H */,
 				EDCB3F75150FFA6600199C36 /* CONTDLG.cpp */,
 				EDCB3F76150FFA6600199C36 /* CONTDLG.H */,
 				EDCB3F77150FFA6600199C36 /* CROSS.CPP */,
@@ -483,8 +494,6 @@
 				EDCB3F89150FFA6600199C36 /* GraphingDlog2.cpp */,
 				EDCB3F8A150FFA6600199C36 /* GridCurMover.cpp */,
 				EDCB3F8B150FFA6600199C36 /* GridCurMover.h */,
-				EDCB3F8C150FFA6600199C36 /* GridVel.cpp */,
-				EDCB3F8D150FFA6600199C36 /* GridVel.h */,
 				EDCB3F8E150FFA6600199C36 /* GridWindMover.cpp */,
 				EDCB3F8F150FFA6600199C36 /* GridWindMover.h */,
 				EDCB3F90150FFA6600199C36 /* LayerUtils.cpp */,
@@ -495,21 +504,6 @@
 				EDCB3F95150FFA6600199C36 /* MakeTriangles.cpp */,
 				EDCB3F96150FFA6600199C36 /* my_build_list.h */,
 				EDCB3F97150FFA6600199C36 /* MYFILES.CPP */,
-				EDCB3F98150FFA6600199C36 /* MYRANDOM.CPP */,
-				EDCB3F99150FFA6600199C36 /* MYRANDOM.H */,
-				EDCB3F9A150FFA6600199C36 /* netcdf.h */,
-				EDCB3F9B150FFA6600199C36 /* NetCDFMover.cpp */,
-				EDCB3F9C150FFA6600199C36 /* NetCDFMover.h */,
-				EDCB3F9D150FFA6600199C36 /* NetCDFMoverCurv.cpp */,
-				EDCB3F9E150FFA6600199C36 /* NetCDFMoverCurv.h */,
-				EDCB3F9F150FFA6600199C36 /* NetCDFMoverTri.cpp */,
-				EDCB3FA0150FFA6600199C36 /* NetCDFMoverTri.h */,
-				EDCB3FA1150FFA6600199C36 /* NetCDFStore.cpp */,
-				EDCB3FA2150FFA6600199C36 /* NetCDFStore.h */,
-				EDCB3FA3150FFA6600199C36 /* NetCDFWindMover.cpp */,
-				EDCB3FA4150FFA6600199C36 /* NetCDFWindMover.h */,
-				EDCB3FA5150FFA6600199C36 /* NetCDFWindMoverCurv.cpp */,
-				EDCB3FA6150FFA6600199C36 /* NetCDFWindMoverCurv.h */,
 				EDCB3FA7150FFA6600199C36 /* OSSM.CPP */,
 				EDCB3FA8150FFA6600199C36 /* OSSM.H */,
 				EDCB3FA9150FFA6600199C36 /* OUTPUT.CPP */,
@@ -545,12 +539,12 @@
 				EDCB3FC7150FFA6600199C36 /* TextRect.h */,
 				EDCB3FC8150FFA6600199C36 /* TideCurCycleMover.cpp */,
 				EDCB3FC9150FFA6600199C36 /* TideCurCycleMover.h */,
-				EDCB3FCA150FFA6600199C36 /* TimeValuesIO.cpp */,
 				EDCB3FCB150FFA6600199C36 /* TimUtils.cpp */,
 				EDCB3FCC150FFA6600199C36 /* TimUtils.h */,
 				EDCB3FCD150FFA6600199C36 /* TLEList.h */,
 				EDCB3FCE150FFA6600199C36 /* TMap.cpp */,
 				EDCB3FCF150FFA6600199C36 /* TMap.h */,
+				EDCB3FCA150FFA6600199C36 /* TimeValuesIO.cpp */,
 				EDCB3FD0150FFA6600199C36 /* TModel.cpp */,
 				EDCB3FD1150FFA6600199C36 /* TModel.h */,
 				EDCB3FD2150FFA6600199C36 /* TMover.cpp */,
@@ -573,7 +567,6 @@
 				EDCB3FE3150FFA6600199C36 /* TTimeValue.h */,
 				EDCB3FE4150FFA6600199C36 /* TVectMap.cpp */,
 				EDCB3FE5150FFA6600199C36 /* TVectMap.h */,
-				EDCB3FE6150FFA6600199C36 /* TWeather.cpp */,
 				EDCB3FE7150FFA6600199C36 /* TWindMover.cpp */,
 				EDCB3FE8150FFA6600199C36 /* TWindMover.h */,
 				EDCB3FE9150FFA6600199C36 /* Uncertainty.cpp */,
@@ -586,6 +579,22 @@
 				EDCB3FF0150FFA6600199C36 /* WindUncertainty.h */,
 				EDCB3FF1150FFA6600199C36 /* Wizard.cpp */,
 				EDCB3FF2150FFA6600199C36 /* Wizard.h */,
+				EDCB3F74150FFA6600199C36 /* CLASSES.H */,
+				EDCB3FE6150FFA6600199C36 /* TWeather.cpp */,
+				EDCB3F9B150FFA6600199C36 /* NetCDFMover.cpp */,
+				EDCB3F9C150FFA6600199C36 /* NetCDFMover.h */,
+				EDCB3F9D150FFA6600199C36 /* NetCDFMoverCurv.cpp */,
+				EDCB3F9E150FFA6600199C36 /* NetCDFMoverCurv.h */,
+				EDCB3F9F150FFA6600199C36 /* NetCDFMoverTri.cpp */,
+				EDCB3FA0150FFA6600199C36 /* NetCDFMoverTri.h */,
+				EDCB3FA1150FFA6600199C36 /* NetCDFStore.cpp */,
+				EDCB3FA2150FFA6600199C36 /* NetCDFStore.h */,
+				EDCB3FA3150FFA6600199C36 /* NetCDFWindMover.cpp */,
+				EDCB3FA4150FFA6600199C36 /* NetCDFWindMover.h */,
+				EDCB3FA5150FFA6600199C36 /* NetCDFWindMoverCurv.cpp */,
+				EDCB3FA6150FFA6600199C36 /* NetCDFWindMoverCurv.h */,
+				EDCB3F8C150FFA6600199C36 /* GridVel.cpp */,
+				EDCB3F8D150FFA6600199C36 /* GridVel.h */,
 			);
 			name = gui_gnome;
 			path = ../gui_gnome;
@@ -594,6 +603,30 @@
 		EDCB3FF3150FFA6600199C36 /* lib_gnome */ = {
 			isa = PBXGroup;
 			children = (
+				EDA59D92151713D600F0EE69 /* RectGridVeL_c.h */,
+				EDA59D93151713D600F0EE69 /* RectGridVeL_c.cpp */,
+				EDA59D2815170C7000F0EE69 /* netcdf.h */,
+				EDCB4034150FFA6700199C36 /* NetCDFMover_b.h */,
+				EDCB4035150FFA6700199C36 /* NetCDFMover_c.cpp */,
+				EDCB4036150FFA6700199C36 /* NetCDFMover_c.h */,
+				EDCB4037150FFA6700199C36 /* NetCDFMoverCurv_b.h */,
+				EDCB4038150FFA6700199C36 /* NetCDFMoverCurv_c.cpp */,
+				EDCB4039150FFA6700199C36 /* NetCDFMoverCurv_c.h */,
+				EDCB403A150FFA6700199C36 /* NetCDFMoverTri_b.h */,
+				EDCB403B150FFA6700199C36 /* NetCDFMoverTri_c.cpp */,
+				EDCB403C150FFA6700199C36 /* NetCDFMoverTri_c.h */,
+				EDCB403D150FFA6700199C36 /* NetCDFWindMover_b.h */,
+				EDCB403E150FFA6700199C36 /* NetCDFWindMover_c.cpp */,
+				EDCB403F150FFA6700199C36 /* NetCDFWindMover_c.h */,
+				EDCB4040150FFA6700199C36 /* NetCDFWindMoverCurv_b.h */,
+				EDCB4041150FFA6700199C36 /* NetCDFWindMoverCurv_c.cpp */,
+				EDCB4042150FFA6700199C36 /* NetCDFWindMoverCurv_c.h */,
+				EDB99B471516FB8D00B08B8B /* Weatherer_c.h */,
+				EDB99B481516FB8D00B08B8B /* Weatherer_c.cpp */,
+				EDB99B4D1516FC6300B08B8B /* OSSMWeatherer_c.h */,
+				EDB99B4E1516FC6300B08B8B /* OSSMWeatherer_c.cpp */,
+				EDB99A711516EFBF00B08B8B /* TriGridVel3D_c.h */,
+				EDB99A721516EFBF00B08B8B /* TriGridVel3D_c.cpp */,
 				EDCB3FF4150FFA6600199C36 /* ADCPMover_b.h */,
 				EDCB3FF5150FFA6600199C36 /* ADCPMover_c.cpp */,
 				EDCB3FF6150FFA6600199C36 /* ADCPMover_c.h */,
@@ -653,23 +686,10 @@
 				EDCB402F150FFA6700199C36 /* Model_c.cpp */,
 				EDCB4030150FFA6700199C36 /* Model_c.h */,
 				EDCB4031150FFA6700199C36 /* Mover_b.h */,
-				EDCB4032150FFA6700199C36 /* Mover_c.cpp */,
 				EDCB4033150FFA6700199C36 /* Mover_c.h */,
-				EDCB4034150FFA6700199C36 /* NetCDFMover_b.h */,
-				EDCB4035150FFA6700199C36 /* NetCDFMover_c.cpp */,
-				EDCB4036150FFA6700199C36 /* NetCDFMover_c.h */,
-				EDCB4037150FFA6700199C36 /* NetCDFMoverCurv_b.h */,
-				EDCB4038150FFA6700199C36 /* NetCDFMoverCurv_c.cpp */,
-				EDCB4039150FFA6700199C36 /* NetCDFMoverCurv_c.h */,
-				EDCB403A150FFA6700199C36 /* NetCDFMoverTri_b.h */,
-				EDCB403B150FFA6700199C36 /* NetCDFMoverTri_c.cpp */,
-				EDCB403C150FFA6700199C36 /* NetCDFMoverTri_c.h */,
-				EDCB403D150FFA6700199C36 /* NetCDFWindMover_b.h */,
-				EDCB403E150FFA6700199C36 /* NetCDFWindMover_c.cpp */,
-				EDCB403F150FFA6700199C36 /* NetCDFWindMover_c.h */,
-				EDCB4040150FFA6700199C36 /* NetCDFWindMoverCurv_b.h */,
-				EDCB4041150FFA6700199C36 /* NetCDFWindMoverCurv_c.cpp */,
-				EDCB4042150FFA6700199C36 /* NetCDFWindMoverCurv_c.h */,
+				EDCB4032150FFA6700199C36 /* Mover_c.cpp */,
+				EDB99B731516FDD300B08B8B /* MYRANDOM.CPP */,
+				EDB99B741516FDD300B08B8B /* MYRANDOM.H */,
 				EDCB4043150FFA6700199C36 /* ObjectUtils.cpp */,
 				EDCB4044150FFA6700199C36 /* ObjectUtils.h */,
 				EDCB4045150FFA6700199C36 /* OLEList_c.cpp */,
@@ -677,8 +697,8 @@
 				EDCB4047150FFA6700199C36 /* OSSMTimeValue_b.h */,
 				EDCB4048150FFA6700199C36 /* OSSMTimeValue_c.cpp */,
 				EDCB4049150FFA6700199C36 /* OSSMTimeValue_c.h */,
-				EDCB404A150FFA6700199C36 /* OUTILS.CPP */,
 				EDCB404B150FFA6700199C36 /* OUTILS.H */,
+				EDCB404A150FFA6700199C36 /* OUTILS.CPP */,
 				EDCB404C150FFA6700199C36 /* PtCurMap_c.cpp */,
 				EDCB404D150FFA6700199C36 /* PtCurMap_c.h */,
 				EDCB404E150FFA6700199C36 /* PtCurMover_c.cpp */,
@@ -708,8 +728,8 @@
 				EDCB4066150FFA6700199C36 /* TimeValue_c.cpp */,
 				EDCB4067150FFA6700199C36 /* TimeValue_c.h */,
 				EDCB4068150FFA6700199C36 /* TriCurMover_b.h */,
-				EDCB4069150FFA6700199C36 /* TriCurMover_c.cpp */,
 				EDCB406A150FFA6700199C36 /* TriCurMover_c.h */,
+				EDCB4069150FFA6700199C36 /* TriCurMover_c.cpp */,
 				EDCB406B150FFA6700199C36 /* TriGridVel_c.cpp */,
 				EDCB406C150FFA6700199C36 /* TriGridVel_c.h */,
 				EDCB406D150FFA6700199C36 /* TypeDefs.h */,
@@ -848,7 +868,6 @@
 				EDCB408D150FFA6700199C36 /* MakeMovie.cpp in Sources */,
 				EDCB408E150FFA6700199C36 /* MakeTriangles.cpp in Sources */,
 				EDCB408F150FFA6700199C36 /* MYFILES.CPP in Sources */,
-				EDCB4090150FFA6700199C36 /* MYRANDOM.CPP in Sources */,
 				EDCB4091150FFA6700199C36 /* NetCDFMover.cpp in Sources */,
 				EDCB4092150FFA6700199C36 /* NetCDFMoverCurv.cpp in Sources */,
 				EDCB4093150FFA6700199C36 /* NetCDFMoverTri.cpp in Sources */,
@@ -946,6 +965,11 @@
 				EDCB40F0150FFA6700199C36 /* TriGridVel_c.cpp in Sources */,
 				EDCB40F1150FFA6700199C36 /* VectMap_c.cpp in Sources */,
 				EDCB40F2150FFA6700199C36 /* WindMover_c.cpp in Sources */,
+				EDB99A731516EFBF00B08B8B /* TriGridVel3D_c.cpp in Sources */,
+				EDB99B491516FB8D00B08B8B /* Weatherer_c.cpp in Sources */,
+				EDB99B4F1516FC6300B08B8B /* OSSMWeatherer_c.cpp in Sources */,
+				EDB99B751516FDD300B08B8B /* MYRANDOM.CPP in Sources */,
+				EDA59D94151713D600F0EE69 /* RectGridVeL_c.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

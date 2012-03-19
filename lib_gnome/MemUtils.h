@@ -7,6 +7,12 @@
  *
  */
 
+#include "Basics.h"
+#include "TypeDefs.h"
+
+#ifndef __MemUtils__
+#define __MemUtils__
+
 #ifndef IBM
 #ifndef pyGNOME
 #define hubris
@@ -16,9 +22,6 @@
 // If either pyGNOME or IBM is defined:
 
 #ifndef hubris
-
-#include "Basics.h"
-#include "TypeDefs.h"
 
 OSErr _InitAllHandles();
 void _DeleteAllHandles();
@@ -85,4 +88,9 @@ void _DisposeHandleReally(Handle p);
 #define _MySetHandleSize MySetHandleSize
 #define _RecoverHandle RecoverHandle
 #define _ZeroHandleError ZeroHandleError
+#endif
+
+long GetNumDoubleHdlItems(DOUBLEH h);
+long GetNumHandleItems(Handle h, long itemSize);
+
 #endif

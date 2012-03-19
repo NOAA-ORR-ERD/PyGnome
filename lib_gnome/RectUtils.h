@@ -94,6 +94,7 @@ void GetScaledLRect (LongRect *CurrRectPtr, double XToYRatio, LongRect *LimitRec
 
 short ForceOntoQuickDrawPlane(long n);
 Boolean IntersectToQuickDrawPlane(LongRect r,Rect* qdr);
+OSErr	GetLScaleAndOffsets (LongRectPtr SourceRectPtr, LongRectPtr DestRectPtr, ScaleRecPtr ScaleInfoPtr);
 
 void MySetRect(RECTPTR r, short left, short top, short right, short bottom);
 Point RectCenter(Rect r);

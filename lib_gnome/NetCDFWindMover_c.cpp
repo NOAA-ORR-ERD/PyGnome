@@ -10,6 +10,42 @@
 #include "NetCDFWindMover_c.h"
 #include "CROSS.H"
 
+NetCDFWindMover_c::NetCDFWindMover_c(TMap *owner,char* name) : WindMover_c(owner, name)
+{
+	if(!name || !name[0]) this->SetClassName("NetCDF Wind");
+	else 	SetClassName (name); // short file name
+	
+	// use wind defaults for uncertainty
+	bShowGrid = false;
+	bShowArrows = false;
+	
+	fGrid = 0;
+	fTimeHdl = 0;
+	fIsOptimizedForStep = false;
+	
+	fUserUnits = kMetersPerSec;	
+	fWindScale = 1.;
+	//fArrowScale = 1.;
+	fArrowScale = 10.;
+	fFillValue = -1e+34;
+	
+	fTimeShift = 0; // assume file is in local time
+	
+	memset(&fStartData,0,sizeof(fStartData));
+	fStartData.timeIndex = UNASSIGNEDINDEX; 
+	fStartData.dataHdl = 0; 
+	memset(&fEndData,0,sizeof(fEndData));
+	fEndData.timeIndex = UNASSIGNEDINDEX;
+	fEndData.dataHdl = 0;
+	
+	fAllowExtrapolationOfWinds = false;
+	
+	fOverLap = false;
+	fOverLapStartTime = 0;
+	fInputFilesHdl = 0; 
+}
+
+
 long NetCDFWindMover_c::GetVelocityIndex(WorldPoint p) 
 {
 	long rowNum, colNum;

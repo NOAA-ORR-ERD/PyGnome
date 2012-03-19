@@ -8,14 +8,14 @@
  */
 
 #include "CompoundMover_c.h"
-#include "CROSS.H"
-#include "Uncertainty.h"
+#include "MemUtils.h"
+#include "CompFunctions.h"
+#include "StringFunctions.h"
 
-#ifdef pyGNOME
-#define TMover Mover_c
-#define TMap Map_c
-#define TCurrentMover CurrentMover_c
-#define NetCDFMover NetCDFMover_c
+#ifndef pyGNOME
+#include "CROSS.H"
+#else
+#include "Replacements.h"
 
 #endif
 
@@ -260,7 +260,7 @@ TTriGridVel* CompoundMover_c::GetGrid(Boolean wantRefinedGrid)
 		moverList->GetListItem((Ptr)&mover, i);
 		if (mover)
 		{
-			/*OK*/triGrid = (TTriGridVel*)((dynamic_cast<NetCDFMover *>(mover)) -> fGrid);
+			/*OK*/triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
 			if (triGrid) return triGrid;
 		}
 		//return mover->GetPointsHdl();
@@ -277,7 +277,7 @@ TTriGridVel3D* CompoundMover_c::GetGrid3D(Boolean wantRefinedGrid)
 		moverList->GetListItem((Ptr)&mover, i);
 		if (mover)
 		{
-			/*OK*/triGrid = (TTriGridVel3D*)((dynamic_cast<NetCDFMover *>(mover)) -> fGrid);
+			/*OK*/triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
 			if (triGrid) return triGrid;
 		}
 		//return mover->GetPointsHdl();
@@ -298,7 +298,7 @@ TTriGridVel3D* CompoundMover_c::GetGrid3DFromMoverIndex(long moverIndex)
 	moverList->GetListItem((Ptr)&mover, moverIndex);
 	if (mover)
 	{	// could be TCATS or PtCUr?
-		/*OK*/triGrid = (TTriGridVel3D*)((dynamic_cast<NetCDFMover *>(mover)) -> fGrid);
+		/*OK*/triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
 		if (triGrid) return triGrid;
 	}
 	//return mover->GetPointsHdl();

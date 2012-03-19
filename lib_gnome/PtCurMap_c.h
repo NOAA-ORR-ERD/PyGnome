@@ -17,12 +17,15 @@
 #include "RectUtils.h"
 
 #ifdef pyGNOME
+#include "Mover_c.h"
+#include "CurrentMover_c.h"
+#include "TriGridVel_c.h"
+#include "TriGridVel3D_c.h"
 #define TMover Mover_c
 #define TCurrentMover CurrentMover_c
+#define TTriGridVel TriGridVel_c
+#define TTriGridVel3D TriGridVel3D_c
 #endif
-
-class TMover;
-class TCurrentMover;
 
 class PtCurMap_c : virtual public Map_c
 {
@@ -135,6 +138,10 @@ public:
 	DropletInfoRecH	GetDropletSizesH(void) {return fDropletSizesH;}		
 };
 
+OSErr SetDefaultContours(DOUBLEH contourLevels, short contourType);
+
 #undef TMover
 #undef TCurrentMover
+#undef TTriGridVel
+#undef TTriGridVel3D
 #endif

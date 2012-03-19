@@ -8,20 +8,22 @@
  */
 
 #include "PtCurMap_c.h"
-#include "TideCurCycleMover.h"
-#include "CONTDLG.H"
-#include "TMover.h"
 #include "CurrentMover_c.h"
+#include "MemUtils.h"
+#include "StringFunctions.h"
+#include "CompFunctions.h"
 
-#ifdef pyGNOME
-#define TMover Mover_c
-#define TCurrentMover CurrentMover_c
-#define TRandom3D Random3D_c
-#define TWindMover WindMover_c
+#ifndef pyGNOME
+#include "CROSS.H"
+#include "TideCurCycleMover.h"
+#else
+#include "Replacements.h"
 #endif
 
 static long theSegno,theSegStart,theSegEnd,theIndex,theBndryStart,theBndryEnd;
 static Boolean IsClockWise;
+
+
 
 PtCurMap_c::PtCurMap_c(char* name, WorldRect bounds) : Map_c(name, bounds)
 {
@@ -65,6 +67,39 @@ PtCurMap_c::PtCurMap_c(char* name, WorldRect bounds) : Map_c(name, bounds)
 	fWaveHtInput = 0;	// default compute from wind speed
 	
 	bTrackAllLayers = false;
+}
+
+
+OSErr SetDefaultContours(DOUBLEH contourLevels,short contourType)
+{
+	// default values selected by Alan
+	if (contourType==0)
+	{
+		_SetHandleSize((Handle)contourLevels,6*sizeof(double));
+		//_SetHandleSize((Handle)contourLevels,7*sizeof(double));
+		if (_MemError()) { TechError("SetDefaultContours()", "_SetHandleSize()", 0); return -1; }
+		//(*contourLevels)[0] = 0;
+		(*contourLevels)[0] = 0.01;
+		(*contourLevels)[1] = .5;
+		(*contourLevels)[2] = 1;
+		//(*contourLevels)[2] = 2;
+		(*contourLevels)[3] = 5;
+		(*contourLevels)[4] = 10;
+		(*contourLevels)[5] = 50;	
+	}
+	else if (contourType==1)
+	{
+		// default values selected by Alan
+		_SetHandleSize((Handle)contourLevels,6*sizeof(double));
+		if (_MemError()) { TechError("SetDefaultContours()", "_SetHandleSize()", 0); return -1; }
+		(*contourLevels)[0] = 5.;
+		(*contourLevels)[1] = 10.;
+		(*contourLevels)[2] = 30.;
+		(*contourLevels)[3] = 60;
+		(*contourLevels)[4] = 100;
+		(*contourLevels)[5] = 200;	
+	}
+	return noErr;
 }
 
 OSErr PtCurMap_c::InitContourLevels()
@@ -253,10 +288,10 @@ Boolean PtCurMap_c::ThereIsADispersedSpill()
 		model->LESetsList->GetListItem((Ptr)&thisLEList, i);
 		leType = thisLEList -> GetLEType();
 		if(leType == UNCERTAINTY_LE /*&& !this->IsUncertain()*/) continue;
-		if ((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil || (*(TOLEList*)thisLEList).fAdiosDataH)
+		if ((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil || (*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH)
 			return true;
 		// will need to consider spill set below the surface
-		if ((*(TOLEList*)thisLEList).fSetSummary.z > 0)
+		if ((*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0)
 			return true;
 	}
 	return false;
@@ -284,8 +319,8 @@ double PtCurMap_c::GetSpillStartDepth()
 		//if ((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil || (*(TOLEList*)thisLEList).fAdiosDataH)
 		//return true;
 		// will need to consider spill set below the surface
-		if ((*(TOLEList*)thisLEList).fSetSummary.z > 0)
-			return (*(TOLEList*)thisLEList).fSetSummary.z;
+		if ((*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0)
+			return (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z;
 	}
 	return spillStartDepth;
 	/*	TMover *mover = this->GetMover(TYPE_RANDOMMOVER3D);
@@ -316,7 +351,7 @@ TTriGridVel* PtCurMap_c::GetGrid(Boolean wantRefinedGrid)
 	mover = this->GetMover(TYPE_PTCURMOVER);
 	if (mover)
 	{
-		/*OK*/ triGrid = (TTriGridVel*)((dynamic_cast<PtCurMover *>(mover)) -> fGrid);
+		/*OK*/ triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<PtCurMover *>(mover)) -> fGrid));
 	}
 	else	
 	{
@@ -326,35 +361,35 @@ TTriGridVel* PtCurMap_c::GetGrid(Boolean wantRefinedGrid)
 			/*OK*/	if (wantRefinedGrid && (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
 			/*OK*/		triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
 			else
-			/*OK*/ triGrid = (TTriGridVel3D*)((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid);
+			/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid));
 		}
 		else
 		{
 			mover = this->GetMover(TYPE_NETCDFMOVERCURV);
 			if (mover)
 			{
-				/*OK*/ triGrid = (TTriGridVel*)((dynamic_cast<NetCDFMoverCurv *>(mover)) -> fGrid);
+				/*OK*/ triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMoverCurv *>(mover)) -> fGrid));
 			}
 			else
 			{
 				mover = this->GetMover(TYPE_NETCDFMOVERTRI);
 				if (mover)
 				{
-					/*OK*/ triGrid = (TTriGridVel*)((dynamic_cast<NetCDFMoverTri *>(mover)) -> fGrid);
+					/*OK*/ triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMoverTri *>(mover)) -> fGrid));
 				}
 				else
 				{
 					mover = this->GetMover(TYPE_TIDECURCYCLEMOVER);
 					if (mover)
 					{
-						/*OK*/	triGrid = (TTriGridVel3D*)((dynamic_cast<TideCurCycleMover *>(mover)) -> fGrid);
+						/*OK*/	triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TideCurCycleMover *>(mover)) -> fGrid));
 					}
 					else
 					{
 						mover = this->GetMover(TYPE_TRICURMOVER);
 						if (mover)
 						{
-							/*OK*/	triGrid = (TTriGridVel3D*)((dynamic_cast<TriCurMover *>(mover)) -> fGrid);
+							/*OK*/	triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TriCurMover *>(mover)) -> fGrid));
 						}
 					}
 				}
@@ -376,7 +411,7 @@ TTriGridVel3D* PtCurMap_c::GetGrid3D(Boolean wantRefinedGrid)
 	if (mover)
 	{
 		/*OK*/ if (((dynamic_cast<PtCurMover *>(mover)) -> fGrid)->GetClassID()==TYPE_TRIGRIDVEL3D)	
-		/*OK*/ triGrid = (TTriGridVel3D*)((dynamic_cast<PtCurMover *>(mover)) -> fGrid);
+		/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<PtCurMover *>(mover)) -> fGrid));
 	}
 	else	
 	{
@@ -386,7 +421,7 @@ TTriGridVel3D* PtCurMap_c::GetGrid3D(Boolean wantRefinedGrid)
 			/*OK*/ if (wantRefinedGrid && (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
 			/*OK*/	triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
 			else
-			/*OK*/	triGrid = (TTriGridVel3D*)((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid);
+			/*OK*/	triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid));
 		}
 		else
 		{
@@ -394,14 +429,14 @@ TTriGridVel3D* PtCurMap_c::GetGrid3D(Boolean wantRefinedGrid)
 			if (mover)
 			{
 				/*OK*/ if (((dynamic_cast<NetCDFMover *>(mover)) -> fGrid)->GetClassID()==TYPE_TRIGRIDVEL3D)	
-				/*OK*/ triGrid = (TTriGridVel3D*)((dynamic_cast<NetCDFMover *>(mover)) -> fGrid);
+				/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
 			}
 			else
 			{
 				mover = this->GetMover(TYPE_TRICURMOVER);	// always was 3D
 				if (mover)
 				{
-					/*OK*/ triGrid = (TTriGridVel3D*)((dynamic_cast<TriCurMover *>(mover)) -> fGrid);
+					/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TriCurMover *>(mover)) -> fGrid));
 				}
 			}
 		}
@@ -1049,13 +1084,13 @@ OSErr PtCurMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)
 		model -> LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		if (thisLEList->fLeType == UNCERTAINTY_LE)	
 			continue;	
-		if (!((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil && ((model->GetModelTime() - model->GetStartTime()) >= (*(TOLEList*)thisLEList).fDispersantData.timeToDisperse ) )
-			&& !(*(TOLEList*)thisLEList).fAdiosDataH && !((*(TOLEList*)thisLEList).fSetSummary.z > 0)) 
+		if (!((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil && ((model->GetModelTime() - model->GetStartTime()) >= (*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.timeToDisperse ) )
+			&& !(*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH && !((*dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0)
 			continue;
 		numOfLEs = thisLEList->numOfLEs;
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
-		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 		massunits = thisLEList->GetMassUnits();
 		
 		for (j = 0 ; j < numOfLEs ; j++) 
@@ -1230,15 +1265,15 @@ OSErr PtCurMap_c::CreateDepthSlice(long triNum, float **depthSlice)
 			model -> LESetsList -> GetListItem ((Ptr) &thisLEList, k);
 			if (thisLEList->fLeType == UNCERTAINTY_LE)	
 				continue;	// don't draw uncertainty for now...
-			if (! ((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil && model->GetModelTime() - model->GetStartTime() >= (*(TOLEList*)thisLEList).fDispersantData.timeToDisperse
-				   || (*(TOLEList*)thisLEList).fAdiosDataH
-				   || (*(TOLEList*)thisLEList).fSetSummary.z > 0	))// for bottom spill
+			if (! ((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil && model->GetModelTime() - model->GetStartTime() >= (*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.timeToDisperse
+				   || (*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH
+				   || (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0	))// for bottom spill
 				continue;	// this list has no subsurface LEs
 			
 			numOfLEs = thisLEList->numOfLEs;
 			// density set from API
 			//density =  GetPollutantDensity(thisLEList->GetOilType());	
-			density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+			density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 			massunits = thisLEList->GetMassUnits();
 			for (i = 0 ; i < numOfLEs ; i++) 
 			{
@@ -1383,7 +1418,7 @@ long PtCurMap_c::CountLEsOnSelectedBeach()
 		model -> LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		leType = thisLEList -> GetLEType();
 		if(leType == UNCERTAINTY_LE && !model->IsUncertain()) continue; //JLM 9/10/98
-		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 		massunits = thisLEList->GetMassUnits();
 		massFrac = thisLEList->GetTotalMass()/thisLEList->GetNumOfLEs();
 		for (j = 0, c = thisLEList -> numOfLEs; j < c; j++)

@@ -29,8 +29,6 @@ public:
 	NetCDFMoverCurv (TMap *owner, char *name);
 	~NetCDFMoverCurv () { Dispose (); }
 	virtual void		Dispose ();
-	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERCURV; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERCURV) return TRUE; return NetCDFMover::IAm(id); }
 	virtual Boolean		IAmA3DMover();
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position

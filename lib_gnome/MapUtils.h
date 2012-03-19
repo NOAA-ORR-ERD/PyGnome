@@ -2,7 +2,9 @@
 #ifndef __MYMAPUTILS__
 #define __MYMAPUTILS__
 
-#include	"RectUtils.h"
+#include "Basics.h"
+#include "TypeDefs.h"
+#include "RectUtils.h"
 
 #define				kWorldTop				89999999
 #define				kWorldBottom 		   -89999999
@@ -29,18 +31,11 @@
 #define				kMercatorProjCode		1		/* code for mercator projection */
 #define				kLatLongProjCode		2		/* code for lat/long projection */
 
-typedef struct ScaleRec
-			{
-					double					XScale;	/* Y = mX + b type linear scale and offsets */
-					double					YScale;
-					double					XOffset;
-					double					YOffset;
-			} ScaleRec, *ScaleRecPtr;
+
 
 #define SameDifferenceX(V) (SameDifference(AX, BX, V, aX, bX) + DX)
 #define SameDifferenceY(V) (SameDifference(AY, BY, V, aY, bY) + DY)
 
-OSErr	GetLScaleAndOffsets (LongRectPtr SourceRectPtr, LongRectPtr DestRectPtr, ScaleRecPtr ScaleInfoPtr);
 OSErr	GetScaleAndOffsets (Rect *SourceRectPtr, Rect *DestRectPtr, ScaleRecPtr ScaleInfoPtr);
 void	GetScrMidPoint (Point scrPoint1, Point scrPoint2, Point *theMidPoint);
 OSErr 	ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr);

@@ -17,6 +17,17 @@
 #define NetCDFMoverTri NetCDFMoverTri_c
 #endif
 
+//NetCDFMoverTri::NetCDFMoverTri (TMap *owner, char *name) : NetCDFMover(owner, name)
+NetCDFMoverTri_c::NetCDFMoverTri_c (TMap *owner, char *name) : NetCDFMoverCurv_c(owner, name)
+{
+	//fVerdatToNetCDFH = 0;	
+	//fVertexPtsH = 0;
+	fNumNodes = 0;
+	fNumEles = 0;
+	bVelocitiesOnTriangles = false;
+}
+
+
 LongPointHdl NetCDFMoverTri_c::GetPointsHdl()
 {
 	return ((TTriGridVel*)fGrid) -> GetPointsHdl();

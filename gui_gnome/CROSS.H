@@ -576,12 +576,6 @@ void strcpyNthFile(char *szFile,long n);// JLM 6/4/10
 
 #endif
 
-/////////// MACUTIL: MEMORY
-
-
-#include "MemUtils.h"
-
-
 /////////// MACUTIL: DIALOGS
 
 #ifdef IBM
@@ -831,6 +825,9 @@ void	DrawBlackAndWhiteBitMap(BitMap *bitmap, Rect m);
 void 	DisposeBlackAndWhiteBitMap (BitMap *theBitMap);
 
 #endif
+
+OSErr CurrentUncertaintyDialog(CurrentUncertainyInfo *info, WindowPtr parentWindow, Boolean *uncertaintyChanged);
+
 
 void mysfpputfile(POINTPTR where, CHARPTR rType, CHARPTR defaultName,
             MyDlgHookUPP hook, MySFReplyPtr reply, short dialogID,

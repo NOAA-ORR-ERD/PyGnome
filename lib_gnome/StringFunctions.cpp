@@ -1160,7 +1160,7 @@ void my_c2pstr(void *string)
 
 
 
-#ifdef IBM
+#ifndef MAC
 
 void GetDateTime(unsigned long *seconds)
 {

@@ -12,7 +12,6 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "PtCurMover.h"
 
 class TideCurCycleMover_b {
 

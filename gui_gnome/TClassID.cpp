@@ -79,11 +79,6 @@ OSErr TClassID::StopEditingInMapDrawingRect(Boolean *deleteMe)
 	return 0;
 }
 
-Boolean TClassID::MatchesUniqueID(UNIQUEID uid)
-{
-	return EqualUniqueIDs(uid,this->fUniqueID);
-}
-
 OSErr TClassID::MakeClone(TClassID **clonePtrPtr)
 {
 	// clone should be the address of a  ClassID ptr

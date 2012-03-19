@@ -19,7 +19,12 @@
 #include "TMap.h"
 #include "GridVel.h"
 #else
-#include "Replacements.h"
+#include "OSSMTimeValue_c.h"
+#include "GridVel_c.h"
+#include "Map_c.h"
+#define TOSSMTimeValue OSSMTimeValue_c
+#define TGridVel GridVel_c
+#define TMap Map_c
 #endif
 
 class CATSMover_c : virtual public CurrentMover_c {
@@ -44,6 +49,8 @@ public:
 	double			fEddyV0;			//  in m/s, used for cutoff of minimum eddy for uncertainty
 	TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file
 	
+						CATSMover_c (TMap *owner, char *name);
+						CATSMover_c () {}
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
 	void				GetRefPosition (WorldPoint *p, long *z) { (*p) = refP; (*z) = refZ; }
@@ -64,4 +71,7 @@ public:
 
 };
 
+#undef TOSSMTimeValue
+#undef TGridVel
+#undef TMap
 #endif
