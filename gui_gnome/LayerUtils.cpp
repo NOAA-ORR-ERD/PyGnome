@@ -2,6 +2,7 @@
 #include "Cross.h"
 #include "Classes.h"
 #include "GenDefs.h"
+#include "ObjectUtilsPD.h"
 /**************************************************************************************************/
 CMapLayer *GetMapLayer (CMyList *theLayerList, long LayerNum)
 {

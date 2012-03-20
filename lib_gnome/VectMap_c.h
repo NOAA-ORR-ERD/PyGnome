@@ -27,6 +27,8 @@
 #define CMapLayer CMapLayer_c
 #endif
 
+class CMapLayer;
+
 class VectorMap_c : virtual public Map_c  {
 
 public:

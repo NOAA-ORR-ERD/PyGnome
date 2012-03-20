@@ -389,11 +389,17 @@ typedef struct {
 
 //++ Geometry
 
-
+#ifdef pyGNOME
+typedef struct {
+	double pLong;
+	double pLat;
+} WorldPoint, *WORLDPOINTP, **WORLDPOINTH;
+#else
 typedef struct {
 	long pLong;
 	long pLat;
 } WorldPoint, *WORLDPOINTP, **WORLDPOINTH;
+#endif
 
 typedef struct {
 	float pLong;

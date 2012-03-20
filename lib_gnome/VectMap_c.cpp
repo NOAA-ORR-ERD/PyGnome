@@ -9,12 +9,12 @@
 
 #include "VectMap_c.h"
 #include "MemUtils.h"
-
 #ifndef pyGNOME
 #include "TModel.h"
 #include "TMover.h"
 #include "TCATSMover.h"
 #include "TMap.h"
+#include "ObjectUtilsPD.h"
 extern TModel *model;
 #else
 #include "Replacements.h"

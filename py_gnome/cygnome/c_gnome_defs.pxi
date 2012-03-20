@@ -104,15 +104,13 @@ cdef extern from "GridVel_c.h":
     cdef cppclass GridVel_c:
         pass
 
-#=======================================#
-# cdef extern from "Map_c.h":
-#    cdef cppclass Map_c:
-#        pass
-#        
-# cdef extern from "OSSMTimeValue_c.h":
-#    cdef cppclass OSSMTimeValue_c:
-#        pass
-#=======================================#
+cdef extern from "Map_c.h":
+    cdef cppclass Map_c:
+        pass
+        
+cdef extern from "OSSMTimeValue_c.h":
+    cdef cppclass OSSMTimeValue_c:
+        pass
         
 cdef extern from "Mover_c.h":
     cdef cppclass Mover_c:
@@ -122,44 +120,49 @@ cdef extern from "CurrentMover_c.h":
     cdef cppclass CurrentMover_c(Mover_c):
         pass
 
-#==============================================================================================#
-# cdef extern from "ShioTimeValue_c.h":
-#    cdef cppclass ShioTimeValue_c(OSSMTimeValue_c):
-#        ShioTimeValue_c(Seconds start_time, Seconds stop_time)
-#        OSErr    ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance)
-#==============================================================================================#
+cdef extern from "ShioTimeValue_c.h":
+    cdef cppclass ShioTimeValue_c(OSSMTimeValue_c):
+        ShioTimeValue_c()
+        OSErr    ReadTimeValues (char *path)
 
-#==============================================================================================#
-# cdef extern from "CATSMover_c.h":
-#    ctypedef struct TCM_OPTIMZE:
-#        Boolean isOptimizedForStep
-#        Boolean isFirstStep
-#        double     value
-#    cdef cppclass CATSMover_c(CurrentMover_c):
-#        WorldPoint         refP                
-#        GridVel_c        *fGrid    
-#        long             refZ                     
-#        short             scaleType                 
-#        double             scaleValue             
-#        char             scaleOtherFile[32]
-#        double             refScale
-#        Boolean         bRefPointOpen
-#        Boolean            bUncertaintyPointOpen
-#        Boolean         bTimeFileOpen
-#        Boolean            bTimeFileActive
-#        Boolean         bShowGrid
-#        Boolean         bShowArrows
-#        double             arrowScale
-#        OSSMTimeValue_c *timeDep
-#        double            fEddyDiffusion    
-#        double            fEddyV0
-#        TCM_OPTIMZE     fOptimize
-#        WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType, Seconds model_time)
-#        int             ReadTopology(char* path, Map_c **newMap)
-#        void            SetRefPosition (WorldPoint p, long z)
-#        OSErr            ComputeVelocityScale()
-#        void        SetTimeDep(OSSMTimeValue_c *time_dep)
-#==============================================================================================#
+cdef extern from "Model_c.h":
+    cdef cppclass Model_c:
+        Model_c()
+        SetStartTime(Seconds)
+        SetDuration(Seconds)
+        SetModelTime(Seconds)
+        SetTimeStep(Seconds)
+    
+cdef extern from "CATSMover_c.h":
+    ctypedef struct TCM_OPTIMZE:
+        Boolean isOptimizedForStep
+        Boolean isFirstStep
+        double     value
+        
+    cdef cppclass CATSMover_c(CurrentMover_c):
+        WorldPoint         refP                
+        GridVel_c        *fGrid    
+        long             refZ                     
+        short             scaleType                 
+        double             scaleValue             
+        char             scaleOtherFile[32]
+        double             refScale
+        Boolean         bRefPointOpen
+        Boolean            bUncertaintyPointOpen
+        Boolean         bTimeFileOpen
+        Boolean            bTimeFileActive
+        Boolean         bShowGrid
+        Boolean         bShowArrows
+        double             arrowScale
+        OSSMTimeValue_c *timeDep
+        double            fEddyDiffusion    
+        double            fEddyV0
+        TCM_OPTIMZE     fOptimize
+        WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+        int             ReadTopology(char* path, Map_c **newMap)
+        void            SetRefPosition (WorldPoint p, long z)
+        OSErr            ComputeVelocityScale()
+        void        SetTimeDep(OSSMTimeValue_c *time_dep)
 
 cdef public enum type_defs:
     status_not_released = OILSTAT_NOTRELEASED

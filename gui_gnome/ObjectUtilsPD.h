@@ -12,6 +12,9 @@
 
 #include "ObjectUtils.h"
 
+#undef				kPolyType
+#define				kPolyType			'POLY'	//AH 03/20/2012
+
 class CMapLayer : virtual public CMapLayer_c
 {
 private:

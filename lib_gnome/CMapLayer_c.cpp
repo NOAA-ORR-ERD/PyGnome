@@ -6,9 +6,12 @@
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
-
-#include "ObjectUtils.h"
 #include "MemUtils.h"
+#ifndef pyGNOME
+#include "ObjectUtilsPD.h"
+#else
+#include "ObjectUtils.h"
+#endif
 
 /**************************************************************************************************/
 void GetObjectType (ObjectRecHdl ObjectHdl, OSType *ObjectTypePtr)

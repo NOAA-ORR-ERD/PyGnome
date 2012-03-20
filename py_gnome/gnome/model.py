@@ -71,10 +71,7 @@ class Model:
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
     
     def add_cats_mover(self, path, scale_type, ref_position, shio_path, scale_value=1, diffusion_coefficient=1):
-        if(self.start_time == self.stop_time):
-            print 'Please set the model run times before continuing.'
-            exit(0)
-        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient, shio_path, self.start_time, self.stop_time)
+        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient, shio_path)
         mover.set_ref_position(ref_position, 0)
         mover.read_topology(path)
         mover.compute_velocity_scale()
@@ -147,7 +144,7 @@ class Model:
             lwpras += [numpy.copy(spill.npra['p'])]
         for mover in self.movers:
             for j in xrange(0, len(spills)):
-                mover.get_move(self.interval_seconds, spills[j].npra, self.time_step*self.interval_seconds + self.start_time)
+                mover.get_move(self.interval_seconds, spills[j].npra)
         for j in xrange(0, len(spills)):
             spill = spills[j]
             chromgph = spill.movement_check()
