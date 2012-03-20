@@ -70,14 +70,17 @@ cdef class cats_mover:
         cdef int i    
         cdef WorldPoint3D wp3d
         cdef np.ndarray[LERec] ra = np.copy(LEs)
+        cdef float dpLat, dpLong
         ra['p']['p_long']*=10**6
         ra['p']['p_lat']*=10**6
         for i in xrange(0, len(ra)):
             if ra[i].statusCode != status_in_water:
                 continue
             wp3d = self.mover.GetMove(t, 0, 0, &ra[i], 0)
-            LEs[i].p.pLat += (wp3d.p.pLat)
-            LEs[i].p.pLong += wp3d.p.pLong
+            dpLat = wp3d.p.pLat
+            dpLong = wp3d.p.pLong
+            LEs[i].p.pLat += (dpLat/1000000)
+            LEs[i].p.pLong += (dpLong/1000000)
             
     def set_ref_position(self, wp, z):
         cdef WorldPoint p
@@ -110,14 +113,17 @@ cdef class random_mover:
         cdef int i    
         cdef WorldPoint3D wp3d
         cdef np.ndarray[LERec] ra = np.copy(LEs)
+        cdef float dpLat, dpLong
         ra['p']['p_long']*=10**6
         ra['p']['p_lat']*=10**6
         for i in xrange(0, len(ra)):
             if ra[i].statusCode != status_in_water:
                 continue
             wp3d = self.mover.GetMove(t, 0, 0, &ra[i], 0)
-            LEs[i].p.pLat += (wp3d.p.pLat)
-            LEs[i].p.pLong += wp3d.p.pLong
+            dpLat = wp3d.p.pLat
+            dpLong = wp3d.p.pLong
+            LEs[i].p.pLat += (dpLat/1000000)
+            LEs[i].p.pLong += (dpLong/1000000)
 
 cdef class wind_mover:
 
@@ -154,6 +160,7 @@ cdef class wind_mover:
         
         cdef int i
         cdef WorldPoint3D wp3d
+        cdef float dpLat, dpLong
         cdef np.ndarray[LERec] ra = np.copy(LEs)
         ra['p']['p_long']*=10**6
         ra['p']['p_lat']*=10**6
@@ -161,5 +168,7 @@ cdef class wind_mover:
             if ra[i].statusCode != status_in_water:
                 continue
             wp3d = self.mover.GetMove(t, 0, 0, &ra[i], 0)
-            LEs[i].p.pLat += wp3d.p.pLat
-            LEs[i].p.pLong += wp3d.p.pLong
+            dpLat = wp3d.p.pLat
+            dpLong = wp3d.p.pLong
+            LEs[i].p.pLat += (dpLat/1000000)
+            LEs[i].p.pLong += (dpLong/1000000)
