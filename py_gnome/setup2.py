@@ -1,4 +1,4 @@
-CPP_CODE_DIR = "cygnome/codeFiles/"
+CPP_CODE_DIR = "cyGNOME/codeFiles"
 import numpy as np
 import os
 import sys

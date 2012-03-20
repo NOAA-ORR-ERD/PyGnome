@@ -38,6 +38,7 @@ public:
 	virtual	long GetRectIndexFromTriIndex2(long triIndex, LONGH ptrVerdatToNetCDFH, long numCols_ext);
 	virtual LongPoint GetRectIndicesFromTriIndex(WorldPoint refPoint,LONGH ptrVerdatToNetCDFH,long numCols_ext);
 	OSErr	GetRectCornersFromTriIndexOrPoint(long *index1, long *index2, long *index3, long *index4, WorldPoint refPoint,long triNum, Boolean useTriNum, LONGH ptrVerdatToNetCDFH,long numCols_ext);
+	virtual void 		Dispose ();
 
 
 };

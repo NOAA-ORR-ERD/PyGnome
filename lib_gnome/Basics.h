@@ -85,6 +85,24 @@ typedef char *OSType;
 typedef void *WindowPtr;
 typedef short							OSErr;
 
+enum {
+	/* Memory Manager errors*/
+	memROZWarn                    = -99,  /*soft error in ROZ*/
+	memROZError                   = -99,  /*hard error in ROZ*/
+	memROZErr                     = -99,  /*hard error in ROZ*/
+	memFullErr                    = -108, /*Not enough room in heap zone*/
+	nilHandleErr                  = -109, /*Master Pointer was NIL in HandleZone or other*/
+	memWZErr                      = -111, /*WhichZone failed (applied to free block)*/
+	memPurErr                     = -112, /*trying to purge a locked or non-purgeable block*/
+	memAdrErr                     = -110, /*address was odd; or out of range*/
+	memAZErr                      = -113, /*Address in zone check failed*/
+	memPCErr                      = -114, /*Pointer Check failed*/
+	memBCErr                      = -115, /*Block Check failed*/
+	memSCErr                      = -116, /*Size Check failed*/
+	memLockedErr                  = -117  /*trying to move a locked block (
+										   MoveHHi)*/
+};
+
 /*******************************************************/
 
 #endif

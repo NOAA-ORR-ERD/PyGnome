@@ -38,7 +38,9 @@
 #include "Random3D_c.h"
 #include "CompoundMover_c.h"
 #include "CompoundMap_c.h"
-
+#include "ShioTimeValue_c.h"
+#include "ObjectUtils.h"
+#define TShioTimeValue ShioTimeValue_c
 #define TWindMover WindMover_c
 #define TRandom Random_c
 #define TRandom3D Random3D_c
@@ -62,26 +64,30 @@
 #define TOSSMWeatherer OSSMWeatherer_c
 #define TGridVel GridVel_c
 #define TRectGridVel RectGridVel_c
+#define CMapLayer CMapLayer_c
 #define TLEList LEList_c
 #define TOLEList OLEList_c
 #define TMover Mover_c
 #define TModel Model_c
 #define TMap Map_c
-#define memFullErr -108
-
 
 #define TechError(a, b, c) printf(a)
 #define printError(msg) printf(msg)
 #define printNote(msg) printf(msg)
+#define DisplayMessage(msg) printf(msg)
 #define _isnan isnan
 
 extern Model_c *model;
 extern Settings settings;
 extern Boolean gNoaaVersion;
 
-PtCurMap_c *GetPtCurMap(void);PI
+PtCurMap_c *GetPtCurMap(void);
 void MySpinCursor(void);
 void SysBeep(short);
 Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl);
-
+OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
+						long offset, long length, VOIDPTR ptr, CHARHP handle);
+Boolean CmdPeriod(void);
+void PenNormal(void);
+long			ScreenToWorldDistance(short pixels);
 #endif

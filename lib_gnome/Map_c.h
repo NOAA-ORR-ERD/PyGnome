@@ -26,6 +26,8 @@ class Map_c : virtual public Map_b, virtual public ClassID_c {
 public:
 	Map_c (char *name, WorldRect bounds);
 	Map_c () {}
+	
+	virtual OSErr		InitMap ();
 	void	GetMapName (char* returnName) { GetClassName (returnName); }
 	void	SetMapName (char* newName) { SetClassName (newName); }
 	virtual	WorldRect	GetMapBounds () { return fMapBounds; }

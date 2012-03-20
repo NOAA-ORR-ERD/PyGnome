@@ -15,13 +15,8 @@ class TriCurMover : virtual public TriCurMover_c,  public TCurrentMover
 						~TriCurMover () { Dispose (); }
 	virtual void		Dispose ();
 	virtual OSErr		InitMover ();
-	virtual ClassID 	GetClassID () { return TYPE_TRICURMOVER; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TRICURMOVER) return TRUE; return TCurrentMover::IAm(id); }
-	virtual Boolean		IAmA3DMover(){return true;}
-	void 					DisposeLoadedData(LoadedData * dataPtr);	
-	void 					ClearLoadedData(LoadedData * dataPtr);
-	virtual Boolean 	CheckInterval(long &timeDataInterval);
-	virtual OSErr	 	SetInterval(char *errmsg);
+
+
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -33,7 +28,6 @@ class TriCurMover : virtual public TriCurMover_c,  public TCurrentMover
 	OSErr 				ReadTriCurDepths(CHARH fileBufH,long *line,LongPointHdl *pointsH,char* errmsg,long numPoints);
 	OSErr 				ReadHeaderLine(char *s);
 	OSErr 				ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesParameters *inputValues,char* errmsg,short modelType);
-	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	OSErr 				ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataHdl,Boolean setStartTime);
 	OSErr 				ReadCentroidDepths(CHARH fileBufH,long *line,long numTris,/*FLOATH *centroidDepthsH,*/char* errmsg);
 	OSErr 				ReadSigmaLevels(CHARH fileBufH,long *line,FLOATH *sigmaLevelsH,long numLevels,char* errmsg);
@@ -60,7 +54,6 @@ class TriCurMover : virtual public TriCurMover_c,  public TCurrentMover
 	virtual OSErr 		SettingsDialog();
 	OSErr 				InputValuesDialog();
 	
-	long 					GetNumTimesInFile();
 	//long 					GetNumFiles();
 	void 			SetInputValues(BaromodesParameters inputValues);
 

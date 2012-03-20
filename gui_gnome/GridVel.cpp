@@ -387,10 +387,7 @@ TGridVel::TGridVel()
 	fGridBounds = emptyWorldRect;
 }
 		
-void TGridVel::Dispose()
-{ 
-	return; 
-}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // RectGridVel 
@@ -404,15 +401,6 @@ TRectGridVel::TRectGridVel(void)
 	fNumCols = 0;
 }
 
-void TRectGridVel::Dispose ()
-{
-	if (fGridHdl)
-	{
-		DisposeHandle((Handle)fGridHdl);
-		fGridHdl = nil;
-	}
-	TGridVel::Dispose ();
-}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -893,21 +881,6 @@ void TRectGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 
 /////////////////////////////////////////////////
 
-void TTriGridVel::Dispose ()
-{
-	if (fDagTree)
-	{
-		fDagTree->Dispose();
-		delete fDagTree;
-		fDagTree = nil;
-	}
-	if (fBathymetryH)
-	{
-		DisposeHandle((Handle)fBathymetryH);
-		fBathymetryH = 0;
-	}
-	TGridVel::Dispose ();
-}
 
 OSErr TTriGridVel::TextRead(char *path)
 {
@@ -1336,21 +1309,7 @@ TTriGridVel3D::TTriGridVel3D()
 	bShowMaxTri = false;
 	memset(&fLegendRect,0,sizeof(fLegendRect)); 
 }
-		
-void TTriGridVel3D::Dispose ()
-{
-	if(fDepthsH) {DisposeHandle((Handle)fDepthsH); fDepthsH=0;}
-	if(fDepthContoursH) {DisposeHandle((Handle)fDepthContoursH); fDepthContoursH=0;}
-	if(fTriSelected) {DisposeHandle((Handle)fTriSelected); fTriSelected=0;}
-	if(fPtsSelected) {DisposeHandle((Handle)fPtsSelected); fPtsSelected=0;}
-	if(fOilConcHdl) {DisposeHandle((Handle)fOilConcHdl); fOilConcHdl=0;}
-	if(fMaxLayerDataHdl) {DisposeHandle((Handle)fMaxLayerDataHdl); fMaxLayerDataHdl=0;}
-	if(fTriAreaHdl) {DisposeHandle((Handle)fTriAreaHdl); fTriAreaHdl=0;}
-	if(fDosageHdl) {DisposeHandle((Handle)fDosageHdl); fDosageHdl=0;}
-	//if(gCoord) {DisposeHandle((Handle)gCoord); gCoord=0;}
-	
-	TTriGridVel::Dispose ();
-}
+
 
 //#define TTriGridVel3DREADWRITEVERSION 1  
 #define TTriGridVel3DREADWRITEVERSION 2  // added depth contours 7/21/03

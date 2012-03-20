@@ -101,4 +101,15 @@ Boolean Map_c::IsAllowableSpillPoint(WorldPoint p)
 	return true; // a water point
 }
 
-#undef TMover
+
+OSErr Map_c::InitMap()
+{
+	OSErr err = 0;
+	moverList = new CMyList(sizeof(TMover *));
+	if (!moverList)
+	{ TechError("TMap::InitMap()", "new CMyList()", 0); return -1; }
+	if (err = moverList->IList())
+	{ TechError("TMap::InitMap()", "IList()", 0); return -1; }
+	
+	return 0;
+}

@@ -17,11 +17,16 @@
 #ifdef pyGNOME
 #define TMover Mover_c
 #define TCurrentMover CurrentMover_c
+#define TTriGridVel TriGridVel_c
+#define TTriGridVel3D TriGridVel3D_c
+#define NetCDFMover NetCDFMover_c
 #endif
 
 class TMover;
 class TCurrentMover;
-
+class TTriGridVel;
+class TTriGridVel3D;
+class NetCDFMover;
 
 class CompoundMap_c : virtual public PtCurMap_c {
 
@@ -109,8 +114,8 @@ public:
 	//Boolean			LEInMap(WorldPoint p);	// not used
 	Boolean			InVerticalMap(WorldPoint3D wp);	// check by priority
 	//float 			GetMaxDepth(void);
-	WorldPoint3D	ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,WorldPoint3D wp);	// check by priority
-	virtual double			DepthAtPoint(WorldPoint wp);// check by priority
+	WorldPoint3D	ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,WorldPoint3D wp, NetCDFMover *mover, TTriGridVel3D *triGrid3D);	// check by priority
+	virtual double			DepthAtPoint(WorldPoint wp, NetCDFMover *mover, TTriGridVel3D *triGrid);// check by priority
 	double 			DepthAtCentroid(long triNum);// check by priority
 	WorldPoint3D 	TurnLEAlongShoreLine(WorldPoint3D waterPoint, WorldPoint3D beachedPoint, WorldPoint3D toPoint);
 	//WorldPoint3D 	TurnLEAlongShoreLine2(WorldPoint3D waterPoint, WorldPoint3D beachedPoint, WorldPoint3D toPoint);	// Gnome_beta diagnostic stuff
@@ -118,13 +123,16 @@ public:
 	//Boolean 		PointOnBoundaryLine(WorldPoint p);
 	//double 			GetBreakingWaveHeight(void);
 	//OSErr 			GetDepthAtMaxTri(TOLEList *thisLEList,long *maxTriIndex,double *depthAtPnt);	
-	OSErr 			GetDepthAtMaxTri(long *maxTriIndex, double *depthAtPnt);	
+	OSErr 			GetDepthAtMaxTri(long *maxTriIndex, double *depthAtPnt, NetCDFMover *mover, TTriGridVel3D *triGrid3D);	
 	//OSErr 			CreateDepthSlice(TLEList *thisLEList, long triNum)	;
 	OSErr 			CreateDepthSlice(long triNum, float **depthSlice);
 	//OSErr 			CreateDepthSlice(long triNum, float *depthSlice);
 	virtual	long 	GetNumBoundarySegs(void);
 	virtual  long 	GetNumPointsInBoundarySeg(long segno);
 	virtual	long 	GetNumBoundaryPts(void);
+	
+	void  FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo);
+
 	long 	CountLEsOnSelectedBeach();
 	void 	FindStartEndSeg(long ptnum,long *startPt, long *endPt);
 	long 	NextPointOnSeg(long segno, long point);
@@ -136,8 +144,7 @@ public:
 	//virtual	long 	GetNumContourLevels(void);
 	virtual	float			GetMaxDepth2(void);
 	//DropletInfoRecH	GetDropletSizesH(void) {return fDropletSizesH;}		
-	long	WhichMapIsPtIn(WorldPoint wp);
-	long	WhichMapIsPtInWater(WorldPoint wp);
+
 	TCurrentMover*	Get3DCurrentMoverFromIndex(long moverIndex);
 	TTriGridVel3D*	GetGrid3DFromMapIndex(long mapIndex);
 	

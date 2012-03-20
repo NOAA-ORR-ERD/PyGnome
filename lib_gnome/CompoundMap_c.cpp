@@ -263,48 +263,17 @@ Boolean CompoundMap_c::InVerticalMap(WorldPoint3D wp)
 		return true;
 }
 
-long CompoundMap_c::WhichMapIsPtIn(WorldPoint wp)
-{
-	long i,n;
-	TMap *map = 0;
-	
-	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
-	{
-		mapList->GetListItem((Ptr)&map, i);
-		if (map -> InMap(wp)) return i;
-	}
-	return -1;	// means off all maps	
-}
 
-long CompoundMap_c::WhichMapIsPtInWater(WorldPoint wp)
-{
-	long i,n;
-	TMap *map = 0;
-	
-	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
-	{
-		mapList->GetListItem((Ptr)&map, i);
-		/*OK*/ if ((dynamic_cast<PtCurMap *>(map)) -> InWater(wp)) return i;
-	}
-	return -1;	// means off all maps	
-}
-
-double CompoundMap_c::DepthAtPoint(WorldPoint wp)
+double CompoundMap_c::DepthAtPoint(WorldPoint wp, NetCDFMover *mover, TTriGridVel3D *triGrid)
 {	// here need to check by priority
 	float depth1,depth2,depth3;
 	double depthAtPoint;	
 	long mapIndex;
 	InterpolationVal interpolationVal;
 	FLOATH depthsHdl = 0;
-	TTriGridVel3D* triGrid = 0;	
 	//TTriGridVel3D* triGrid = GetGrid3D(false);	// don't use refined grid, depths aren't refined
 	//NetCDFMover *mover = (NetCDFMover*)(model->GetMover(TYPE_NETCDFMOVER));
 	//NetCDFMover *mover = (NetCDFMover*)(Get3DCurrentMover());
-	
-	mapIndex = WhichMapIsPtInWater(wp);
-	if (mapIndex == -1) return -1.;	// off maps
-	NetCDFMover *mover = dynamic_cast<NetCDFMover*>(Get3DCurrentMoverFromIndex(mapIndex));	// may not be netcdfmover?
-	triGrid = GetGrid3DFromMapIndex(mapIndex);
 	
 	if (mover && mover->fVar.gridType==SIGMA_ROMS)
 		return (double)/*OK*/(dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepth(wp,-1);	// expand options here
@@ -576,7 +545,7 @@ double CompoundMap_c::DepthAtCentroidFromMapIndex(long triNum,long mapIndex)
 	return depthAtPoint;
 }
 
-WorldPoint3D CompoundMap_c::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,WorldPoint3D wp)
+WorldPoint3D CompoundMap_c::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,WorldPoint3D wp, NetCDFMover *mover, TTriGridVel3D *triGrid3D)
 {
 	//WorldPoint3D movedPoint = model->TurnLEAlongShoreLine(fromWPt, wp, this);	// use length of fromWPt to beached point or to toWPt?
 	WorldPoint3D movedPoint = TurnLEAlongShoreLine(fromWPt, wp, toWPt);	// use length of fromWPt to beached point or to toWPt?
@@ -590,7 +559,7 @@ WorldPoint3D CompoundMap_c::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt
 	// code goes here, check mixedLayerDepth?
 	if (!InVerticalMap(movedPoint) || movedPoint.z == 0) // these points are supposed to be below the surface
 	{
-		double depthAtPt = DepthAtPoint(movedPoint.p);	// code goes here, a check on return value
+		double depthAtPt = DepthAtPoint(movedPoint.p, mover, triGrid3D);	// code goes here, a check on return value
 		if (depthAtPt < 0) 
 		{
 			OSErr err = 0;
@@ -771,6 +740,46 @@ Boolean CompoundMap_c::MoreBoundarySegments(long *a,long *b)
 	theIndex = j;
 	return true;
 }
+
+void  CompoundMap_c::FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo)
+{
+	long startVer = 0,i,jseg;
+	//WorldPoint wp = ScreenToWorldPoint(where, MapDrawingRect(), settings.currentView);
+	WorldPoint wp2;
+	LongPoint lp;
+	long lastVer = GetNumBoundaryPts();
+	//long nbounds = GetNumBoundaries();
+	long nSegs = GetNumBoundarySegs();	
+	float wdist = LatToDistance(ScreenToWorldDistance(4));
+	LongPointHdl ptsHdl = GetPointsHdl(false);	// will use refined grid if there is one
+	if(!ptsHdl) return;
+	*verNum= -1;
+	*segNo =-1;
+	for(i = 0; i < lastVer; i++)
+	{
+		//wp2 = (*gVertices)[i];
+		lp = (*ptsHdl)[i];
+		wp2.pLat = lp.v;
+		wp2.pLong = lp.h;
+		
+		if(WPointNearWPoint(wp,wp2 ,wdist))
+		{
+			//for(jseg = 0; jseg < nbounds; jseg++)
+			for(jseg = 0; jseg < nSegs; jseg++)
+			{
+				if(i <= (*fBoundarySegmentsH)[jseg])
+				{
+					*verNum  = i;
+					*segNo = jseg;
+					break;
+				}
+			}
+		}
+	} 
+}
+
+
+
 
 double CompoundMap_c::PathLength(Boolean selectionDirection,long segNo, long startno, long endno)
 {
@@ -1073,7 +1082,7 @@ double CompoundMap_c::PathLength(Boolean selectionDirection,long segNo, long sta
  RGBForeColor(&sc);
  }*/
 
-OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)	
+OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt, NetCDFMover *mover, TTriGridVel3D *triGrid3D)	
 {	// 
 	long i,j,n,numOfLEs=0,numLESets,numDepths=0,numTri;
 	TTriGridVel3D* triGrid = GetGrid3D(false);
@@ -1117,13 +1126,13 @@ OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)
 		model -> LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		if (thisLEList->fLeType == UNCERTAINTY_LE)	
 			continue;	
-		if (!((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil && ((model->GetModelTime() - model->GetStartTime()) >= (*(TOLEList*)thisLEList).fDispersantData.timeToDisperse ) )
-			&& !(*(TOLEList*)thisLEList).fAdiosDataH && !((*(TOLEList*)thisLEList).fSetSummary.z > 0)) 
+		if (!((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil && ((model->GetModelTime() - model->GetStartTime()) >= (*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.timeToDisperse ) )
+			&& !(*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH && !((*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0)) 
 			continue;
 		numOfLEs = thisLEList->numOfLEs;
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
-		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 		massunits = thisLEList->GetMassUnits();
 		
 		for (j = 0 ; j < numOfLEs ; j++) 
@@ -1139,7 +1148,7 @@ OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)
 			massInGrams = VolumeMassToGrams(LEmass, density, massunits);	// need to do this above too
 			if (fContourDepth1==BOTTOMINDEX)
 			{
-				double depthAtLE = DepthAtPoint(LE.p);
+				double depthAtLE = DepthAtPoint(LE.p, mover, triGrid3D);
 				if (depthAtLE <= 0) continue;
 				//if (LE.z > (depthAtLE-1.) && LE.z > 0 && LE.z <= depthAtLE) // assume it's in map, careful with 2 grids...
 				if (LE.z > (depthAtLE-fBottomRange) && LE.z > 0 && LE.z <= depthAtLE) // assume it's in map, careful with 2 grids...
@@ -1298,15 +1307,15 @@ OSErr CompoundMap_c::CreateDepthSlice(long triNum, float **depthSlice)
 			model -> LESetsList -> GetListItem ((Ptr) &thisLEList, k);
 			if (thisLEList->fLeType == UNCERTAINTY_LE)	
 				continue;	// don't draw uncertainty for now...
-			if (! ((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil && model->GetModelTime() - model->GetStartTime() >= (*(TOLEList*)thisLEList).fDispersantData.timeToDisperse
-				   || (*(TOLEList*)thisLEList).fAdiosDataH
-				   || (*(TOLEList*)thisLEList).fSetSummary.z > 0	))// for bottom spill
+			if (! ((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil && model->GetModelTime() - model->GetStartTime() >= (*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.timeToDisperse
+				   || (*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH
+				   || (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0	))// for bottom spill
 				continue;	// this list has no subsurface LEs
 			
 			numOfLEs = thisLEList->numOfLEs;
 			// density set from API
 			//density =  GetPollutantDensity(thisLEList->GetOilType());	
-			density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+			density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 			massunits = thisLEList->GetMassUnits();
 			for (i = 0 ; i < numOfLEs ; i++) 
 			{
@@ -1450,7 +1459,7 @@ long CompoundMap_c::CountLEsOnSelectedBeach()
 		model -> LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		leType = thisLEList -> GetLEType();
 		if(leType == UNCERTAINTY_LE && !model->IsUncertain()) continue; //JLM 9/10/98
-		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 		massunits = thisLEList->GetMassUnits();
 		massFrac = thisLEList->GetTotalMass()/thisLEList->GetNumOfLEs();
 		for (j = 0, c = thisLEList -> numOfLEs; j < c; j++)

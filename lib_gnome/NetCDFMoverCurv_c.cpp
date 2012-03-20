@@ -8,12 +8,16 @@
  */
 
 #include "NetCDFMoverCurv_c.h"
-#include "NetCDFMoverCurv.h"
 #include "netcdf.h"
-#include "CROSS.H"
+#include "CompFunctions.h"
+#include "StringFunctions.h"
+#include "DagTree.h"
+#include "DagTreeIO.h"
 
-#ifdef pyGNOME
-	#define NetCDFMoverCurv NetCDFMoverCurv_c
+#ifndef pyGNOME
+#include "CROSS.H"
+#else
+#include "Replacements.h"
 #endif
 
 NetCDFMoverCurv_c::NetCDFMoverCurv_c (TMap *owner, char *name) : NetCDFMover_c(owner, name)
@@ -24,7 +28,7 @@ NetCDFMoverCurv_c::NetCDFMoverCurv_c (TMap *owner, char *name) : NetCDFMover_c(o
 
 LongPointHdl NetCDFMoverCurv_c::GetPointsHdl()
 {
-	return ((TTriGridVel*)fGrid) -> GetPointsHdl();
+	return ((dynamic_cast<TTriGridVel*>(fGrid))) -> GetPointsHdl();
 }
 
 long NetCDFMoverCurv_c::GetVelocityIndex(WorldPoint wp)
@@ -33,7 +37,7 @@ long NetCDFMoverCurv_c::GetVelocityIndex(WorldPoint wp)
 	if (fGrid) 
 	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		index = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectIndexFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	}
 	return index;
 }
@@ -44,7 +48,7 @@ LongPoint NetCDFMoverCurv_c::GetVelocityIndices(WorldPoint wp)
 	if (fGrid) 
 	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		indices = ((TTriGridVel*)fGrid)->GetRectIndicesFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		indices = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectIndicesFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	}
 	return indices;
 }
@@ -76,7 +80,7 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	if (fGrid) 
 	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		index = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 		if (index < 0) return 0;
 		indices = this->GetVelocityIndices(wp.p);
 	}
@@ -220,7 +224,7 @@ WorldPoint3D NetCDFMoverCurv_c::GetMove(Seconds timeStep,long setIndex,long leIn
 	if (fGrid) 
 	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		index = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	}
 	
 	totalDepth = GetTotalDepth(refPoint,index);
@@ -347,7 +351,7 @@ float NetCDFMoverCurv_c::GetTotalDepthFromTriIndex(long triNum)
 	if (fVar.gridType == SIGMA_ROMS)	// should always be true
 	{
 		//if (triNum < 0) useTriNum = false;
-		err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
+		err = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
 		if (err) return 0;
 		if (fDepthsH)
@@ -377,7 +381,7 @@ float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 	if (fVar.gridType == SIGMA_ROMS)
 	{
 		//if (triNum < 0) useTriNum = false;
-		err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
+		err = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
 		if (err) return 0;
 		if (fDepthsH)
@@ -2095,7 +2099,7 @@ OSErr NetCDFMoverCurv_c::GetDepthProfileAtPoint(WorldPoint refPoint, long timeIn
 	if (fGrid) 
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
 		//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
-		indices = ((TTriGridVel*)fGrid)->GetRectIndicesFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		indices = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectIndicesFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	else return nil;
 	iIndex = indices.v;
 	iIndex = fNumRows-iIndex-1;

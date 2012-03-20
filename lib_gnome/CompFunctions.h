@@ -12,6 +12,12 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 
+#ifdef pyGNOME
+#define PtCurMap PtCurMap_c
+#endif
+
+class PtCurMap;
+
 double UorV(VelocityRec vector, short index);
 double UorV(VelocityRec3D vector, short index);
 double Hermite(double v1, double s1, double t1,
@@ -58,8 +64,10 @@ double VolumeMassToGrams(double val, double density , short massVolUnits);
 double CM3ToVolumeMass(double val, double density,short massVolUnits);
 double GetLEMass(LERec theLE);
 Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2);
+OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength);
+PtCurMap* CreateAndInitPtCurMap(char *path, WorldRect bounds);
 
 
 
-
+#undef PtCurMap
 #endif

@@ -21,8 +21,10 @@
 #else
 #include "TriGridVel_c.h"
 #include "Mover_c.h"
+#include "ObjectUtils.h"
 #define TTriGridVel TriGridVel_c
 #define TMover Mover_c
+#define CMapLayer CMapLayer_c
 #endif
 
 class VectorMap_c : virtual public Map_c  {

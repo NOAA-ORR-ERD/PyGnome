@@ -24,7 +24,12 @@ class TriCurMover_c : virtual public TriCurMover_b, virtual public CurrentMover_
 public:
 	TriCurMover_c (TMap *owner, char *name);
 	TriCurMover_c () {}
-		virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
+	
+	virtual ClassID 	GetClassID () { return TYPE_TRICURMOVER; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_TRICURMOVER) return TRUE; return CurrentMover_c::IAm(id); }
+	virtual Boolean		IAmA3DMover(){return true;}
+
+	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	VelocityRec			GetPatValue (WorldPoint p);
 	VelocityRec 		GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
@@ -40,10 +45,14 @@ public:
 	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep();
 	virtual void 		ModelStepIsDone();
-	OSErr 			CalculateVerticalGrid(LongPointHdl ptsH, FLOATH totalDepthH, TopologyHdl topH, long numTri,FLOATH sigmaLevels, long numSigmaLevels);
-	long			CreateDepthSlice(long triNum, float **depthSlice);
-	
-	
+	OSErr				CalculateVerticalGrid(LongPointHdl ptsH, FLOATH totalDepthH, TopologyHdl topH, long numTri,FLOATH sigmaLevels, long numSigmaLevels);
+	long				CreateDepthSlice(long triNum, float **depthSlice);
+	void 					DisposeLoadedData(LoadedData * dataPtr);	
+	void 					ClearLoadedData(LoadedData * dataPtr);
+	virtual Boolean 	CheckInterval(long &timeDataInterval);
+	virtual OSErr	 	SetInterval(char *errmsg);
+	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
+	long 				GetNumTimesInFile();
 	
 };
 

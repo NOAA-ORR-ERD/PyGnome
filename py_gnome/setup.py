@@ -10,8 +10,12 @@ from distutils.core import setup
 from distutils.extension import Extension
 
 files = ['MemUtils.cpp', 'Mover_c.cpp', 'Replacements.cpp']
+files += ['CMapLayer_c.cpp', 'ClassID_c.cpp', ]
 files += ['NetCDFMover_c.cpp', 'RectGridVel_c.cpp', 'Model_c.cpp',]
-files += ['CompoundMover_c.cpp', 'TriCurMover_c.cpp', ]
+files += ['PtCurMover_c.cpp', 'CompoundMap_c.cpp', 'NetCDFMoverCurv_c.cpp',]
+files += ['TriGridVel3D_c.cpp', 'TideCurCycleMover_c.cpp', 'MakeTriangles.cpp',]
+files += ['NetCDFMoverTri_c.cpp', 'CATSMover3D_c.cpp', 'MakeDagTree.cpp']
+files += ['CompoundMover_c.cpp', 'TriCurMover_c.cpp', 'Random3D_c.cpp',]
 files += ['PtCurMap_c.cpp', 'LEList_c.cpp', 'OLEList_c.cpp',]
 files += ['OSSMWeatherer_c.cpp', 'Weatherer_c.cpp', 'MYRANDOM.cpp',]
 files += ['Map_c.cpp', 'CATSMover_c.cpp', 'GEOMETRY.cpp']
@@ -53,6 +57,7 @@ setup(name='python gnome',
 			     define_macros = macros,
                              extra_compile_args=compile_args,
 			     #extra_link_args=['-Wl,-framework', '-Wl,Carbon',],
+			     extra_link_args=['-Wl,../third_party_lib/libnetcdf.a',],
 			     include_dirs=[CPP_CODE_DIR,
                                            np.get_include(),
                                            'cyGNOME',

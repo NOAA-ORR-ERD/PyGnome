@@ -24,7 +24,6 @@ class TGridVel : virtual public GridVel_c
 
 		TGridVel();
 		virtual	~TGridVel() { Dispose (); }
-		virtual void 	Dispose ();
 
 		virtual OSErr TextWrite(char *path){return noErr;}
 		virtual OSErr TextRead (char *path){return noErr;}
@@ -44,7 +43,6 @@ class TRectGridVel : virtual public RectGridVel_c, public TGridVel
 
 		TRectGridVel();
 		virtual	~TRectGridVel() { Dispose (); }
-		virtual void 	Dispose ();
 		 
 
 		OSErr 			TextRead(char *path);
@@ -65,7 +63,6 @@ class TTriGridVel : virtual public TriGridVel_c, public TGridVel
 	public:		
 		TTriGridVel(){fDagTree = 0; fBathymetryH=0;}
 		virtual	~TTriGridVel() { Dispose (); }
-		virtual void 		Dispose ();
 
 		OSErr TextRead(char *path);
 		OSErr Read(BFPB *bfpb);
@@ -87,7 +84,6 @@ class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 		
 		TTriGridVel3D();
 		virtual	~TTriGridVel3D() { Dispose (); }
-		virtual void 		Dispose ();
 
 
 		OSErr DepthContourDialog();

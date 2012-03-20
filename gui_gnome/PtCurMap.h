@@ -32,9 +32,7 @@ public:
 	
 	PtCurMap (char* name, WorldRect bounds);
 	virtual		   ~PtCurMap () { Dispose (); }
-	
-	virtual OSErr	InitMap();
-	virtual OSErr	InitDropletSizes();
+
 	//virtual OSErr	InitMap (char *path);
 	virtual void	Dispose ();
 	
@@ -49,8 +47,7 @@ public:
 	void 	SetBeachSegmentFlag(LONGH *beachBoundaryH, long *numBeachBoundaries);
 	
 	void 	FindNearestBoundary(Point where, long *verNum, long *segNo);
-	void  FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo);
-	
+
 	virtual long 	GetLandType (WorldPoint p);
 	virtual	Boolean InMap (WorldPoint p);
 	virtual Boolean OnLand (WorldPoint p);

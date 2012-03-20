@@ -8,13 +8,14 @@
  */
 
 #include "Random3D_c.h"
-#include "CROSS.H"
+#include "CompFunctions.h"
+#include "GEOMETRY.H"
+#include "Units.h"
 
-#ifdef pyGNOME
-	#define TRandom3D Random3D_c
-	#define TMover Mover_c
-	#define TWindMover WindMover_c
-	#define TMap Map_c
+#ifndef pyGNOME
+#include "CROSS.H"
+#else
+#include "Replacements.h"
 #endif
 
 TRandom3D *sharedRMover3D;

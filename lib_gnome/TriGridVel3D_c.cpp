@@ -702,3 +702,18 @@ Boolean **TriGridVel3D_c::GetTriSelection(Boolean initHdl)
 	return nil;
 }
 
+
+void TriGridVel3D_c::Dispose ()
+{
+	if(fDepthsH) {DisposeHandle((Handle)fDepthsH); fDepthsH=0;}
+	if(fDepthContoursH) {DisposeHandle((Handle)fDepthContoursH); fDepthContoursH=0;}
+	if(fTriSelected) {DisposeHandle((Handle)fTriSelected); fTriSelected=0;}
+	if(fPtsSelected) {DisposeHandle((Handle)fPtsSelected); fPtsSelected=0;}
+	if(fOilConcHdl) {DisposeHandle((Handle)fOilConcHdl); fOilConcHdl=0;}
+	if(fMaxLayerDataHdl) {DisposeHandle((Handle)fMaxLayerDataHdl); fMaxLayerDataHdl=0;}
+	if(fTriAreaHdl) {DisposeHandle((Handle)fTriAreaHdl); fTriAreaHdl=0;}
+	if(fDosageHdl) {DisposeHandle((Handle)fDosageHdl); fDosageHdl=0;}
+	//if(gCoord) {DisposeHandle((Handle)gCoord); gCoord=0;}
+	
+	TriGridVel_c::Dispose ();
+}

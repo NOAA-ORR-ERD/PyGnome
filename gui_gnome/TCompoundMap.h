@@ -44,7 +44,6 @@ public:
 	// list display methods
 	virtual void		Draw(Rect r, WorldRect view);
 	void 	FindNearestBoundary(Point where, long *verNum, long *segNo);
-	void  FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo);
 	
 	virtual long		GetListLength();
 	virtual ListItem 	GetNthListItem(long n, short indent, short *style, char *text);
@@ -91,8 +90,12 @@ public:
 	Rect 			DoArrowTool(long triNum);
 	void 			DoLassoTool(Point p);
 	void 			MarkRect(Point p);
-	
-	
+	long			WhichMapIsPtIn(WorldPoint wp);
+	long			WhichMapIsPtInWater(WorldPoint wp);
+	virtual double	DepthAtPoint(WorldPoint wp);// check by priority
+	OSErr 			GetDepthAtMaxTri(long *maxTriIndex, double *depthAtPnt);	
+	WorldPoint3D	ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,WorldPoint3D wp);
+
 };
 
 #endif

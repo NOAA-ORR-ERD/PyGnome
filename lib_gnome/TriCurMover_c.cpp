@@ -140,7 +140,7 @@ OSErr TriCurMover_c::PrepareForModelStep()
 		{
 			/*OK*/(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
 			/*OK*/(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
-			((TTriGridVel3D*)fGrid)->ClearOutputHandles();
+			(dynamic_cast<TTriGridVel3D*>(fGrid))->ClearOutputHandles();
 		}
 	}
 	
@@ -186,20 +186,20 @@ long TriCurMover_c::GetNumDepths(void)
 
 LongPointHdl TriCurMover_c::GetPointsHdl()
 {
-	TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	TTriGridVel* triGrid = dynamic_cast<TTriGridVel*>(fGrid);
 	return triGrid -> GetPointsHdl();
 }
 
 TopologyHdl TriCurMover_c::GetTopologyHdl()
 {
-	TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	TTriGridVel* triGrid = dynamic_cast<TTriGridVel*>(fGrid);
 	return triGrid -> GetTopologyHdl();
 }
 
 long TriCurMover_c::WhatTriAmIIn(WorldPoint wp)
 {
 	LongPoint lp;
-	TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	TTriGridVel* triGrid = dynamic_cast<TTriGridVel*>(fGrid);
 	TDagTree *dagTree = triGrid->GetDagTree();
 	lp.h = wp.pLong;
 	lp.v = wp.pLat;
@@ -438,7 +438,7 @@ Boolean TriCurMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 OSErr TriCurMover_c::GetTriangleCentroid(long trinum, LongPoint *p)
 {	
 	long x[3],y[3];
-	OSErr err = ((TTriGridVel3D*)fGrid)->GetTriangleVertices(trinum,x,y);
+	OSErr err = (dynamic_cast<TTriGridVel3D*>(fGrid))->GetTriangleVertices(trinum,x,y);
 	p->v = (y[0]+y[1]+y[2])/3;
 	p->h =(x[0]+x[1]+x[2])/3;
 	return err;
@@ -736,3 +736,325 @@ done:
 	}
 	return err;		
 }
+
+
+OSErr TriCurMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) 
+{
+	char s[256], path[256]; 
+	long i,j,line = 0;
+	long offset,lengthToRead;
+	CHARH h = 0;
+	char *sectionOfFile = 0;
+	char *strToMatch = 0;
+	long len,numScanned;
+	VelocityFH velH = 0;
+	long totalNumberOfVels = 0;
+	
+	LongPointHdl ptsHdl = 0;
+	//TopologyHdl topoH = GetTopologyHdl();
+	//TTriGridVel* triGrid = (TTriGridVel*)fGrid;
+	
+	OSErr err = 0;
+	DateTimeRec time;
+	Seconds timeSeconds;
+	//long numPoints, numDepths; 
+	long numTris;
+	errmsg[0]=0;
+	
+	strcpy(path,fVar.pathName);
+	if (!path || !path[0]) return -1;
+	
+	lengthToRead = (*fTimeDataHdl)[index].lengthOfData;
+	offset = (*fTimeDataHdl)[index].fileOffsetToStartOfData;
+	
+	if (fDepthDataInfo)
+		numTris = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
+	//if(topoH)
+	//numTris = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
+	else 
+	{err=-1; goto done;} // no data
+	
+	h = (CHARH)_NewHandle(lengthToRead+1);
+	if(!h){TechError("TriCurMover::ReadTimeData()", "_NewHandle()", 0); err = memFullErr; goto done;}
+	
+	_HLock((Handle)h);
+	sectionOfFile = *h;			
+	
+	err = ReadSectionOfFile(0,0,path,offset,lengthToRead,sectionOfFile,0);
+	if(err || !h) 
+	{
+		char firstPartOfLine[128];
+		sprintf(errmsg,"Unable to open data file:%s",NEWLINESTRING);
+		strncpy(firstPartOfLine,path,120);
+		strcpy(firstPartOfLine+120,"...");
+		strcat(errmsg,firstPartOfLine);
+		goto done;
+	}
+	sectionOfFile[lengthToRead] = 0; // make it a C string
+	
+	//numDepths = fVar.maxNumDepths;
+	// for now we will always have a full set of velocities
+	totalNumberOfVels = (*fDepthDataInfo)[numTris-1].indexToDepthData+(*fDepthDataInfo)[numTris-1].numDepths;
+	//totalNumberOfVels = numTris*numDepths;
+	if(totalNumberOfVels<numTris) {err=-1; goto done;} // must have at least full set of 2D velocity data
+	velH = (VelocityFH)_NewHandleClear(sizeof(**velH)*totalNumberOfVels);
+	if(!velH){TechError("TriCurMover::ReadTimeData()", "_NewHandle()", 0); err = memFullErr; goto done;}
+	
+	strToMatch = "[TIME]";
+	len = strlen(strToMatch);
+	NthLineInTextOptimized (sectionOfFile, line = 0, s, 256);
+	if(!strncmp(s,strToMatch,len)) 
+	{
+		numScanned=sscanf(s+len, "%hd %hd %hd %hd %hd",
+						  &time.day, &time.month, &time.year,
+						  &time.hour, &time.minute) ;
+		if (numScanned!= 5)
+		{ err = -1; TechError("TriCurMover::ReadTimeData()", "sscanf() == 5", 0); goto done; }
+		// check for constant current
+		if (time.day == -1 && time.month == -1 && time.year == -1 && time.hour == -1 && time.minute == -1)
+			//if (time.year == time.month == time.day == time.hour == time.minute == -1) 
+		{
+			timeSeconds = CONSTANTCURRENT;
+		}
+		else // time varying current
+		{
+			if (time.year < 1900)					// two digit date, so fix it
+			{
+				if (time.year >= 40 && time.year <= 99)	
+					time.year += 1900;
+				else
+					time.year += 2000;					// correct for year 2000 (00 to 40)
+			}
+			
+			time.second = 0;
+			DateToSeconds (&time, &timeSeconds);
+		}
+		
+		// check time is correct
+		if (timeSeconds!=(*fTimeDataHdl)[index].time)
+		{ err = -1;  strcpy(errmsg,"Can't read data - times in the file have changed."); goto done; }
+		line++;
+	}
+	
+	
+	for(i=0;i<numTris;i++) // interior points
+	{
+		VelocityRec vel;
+		char *startScan;
+		long scanLength,stringIndex=0;
+		long numDepths = (*fDepthDataInfo)[i].numDepths;	// allow for variable depths/velocites
+		//long numDepths = fVar.maxNumDepths;
+		
+		char *s1 = new char[numDepths*64];
+		if(!s1) {TechError("TriCurMover::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
+		
+		NthLineInTextOptimized (sectionOfFile, line, s1, numDepths*64);
+		//might want to check that the number of lines matches the number of triangles (ie there is data at every triangle)
+		startScan = &s1[stringIndex];
+		
+		for(j=0;j<numDepths;j++) 
+		{
+			err = ScanVelocity(startScan,&vel,&scanLength); 
+			// ScanVelocity is faster than scanf, but doesn't handle scientific notation. Try a scanf on error.
+			if (err)
+			{
+				if(err!=-2 || sscanf(&s1[stringIndex],lfFix("%lf%lf"),&vel.u,&vel.v) < 2)
+				{
+					char firstPartOfLine[128];
+					sprintf(errmsg,"Unable to read velocity data from line %ld:%s",line,NEWLINESTRING);
+					strncpy(firstPartOfLine,s1,120);
+					strcpy(firstPartOfLine+120,"...");
+					strcat(errmsg,firstPartOfLine);
+					delete[] s1; s1=0;
+					goto done;
+				}
+				err = 0;
+			}
+			(*velH)[(*fDepthDataInfo)[i].indexToDepthData+j].u = vel.u; 
+			(*velH)[(*fDepthDataInfo)[i].indexToDepthData+j].v = vel.v; 
+			//(*velH)[i*numDepths+j].u = vel.u; 
+			//(*velH)[i*numDepths+j].v = vel.v; 
+			stringIndex += scanLength;
+			startScan = &s1[stringIndex];
+		}
+		line++;
+		delete[] s1; s1=0;
+	}
+	*velocityH = velH;
+	
+done:
+	
+	if(h) {
+		_HUnlock((Handle)h); 
+		DisposeHandle((Handle)h); 
+		h = 0;
+	}
+	
+	
+	if(err)
+	{
+		if(!errmsg[0])
+			strcpy(errmsg,"An error occurred in TriCurMover::ReadTimeData");
+		//printError(errmsg); // This alert causes a freeze up...
+		// We don't want to put up an error message here because it can lead to an infinite loop of messages.
+		if(velH) {DisposeHandle((Handle)velH); velH = 0;}
+	}
+	return err;
+	
+}
+
+
+OSErr TriCurMover_c::SetInterval(char *errmsg)
+{
+	long timeDataInterval=0;
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);
+	long indexOfStart = timeDataInterval-1;
+	long indexOfEnd = timeDataInterval;
+	long numTimesInFile = this -> GetNumTimesInFile();
+	OSErr err = 0;
+	
+	strcpy(errmsg,"");
+	
+	if(intervalLoaded) 
+		return 0;
+	
+	// check for constant current 
+	//if(numTimesInFile==1 && !(GetNumFiles()>1))	//or if(timeDataInterval==-1) 
+	if(numTimesInFile==1)	//or if(timeDataInterval==-1) 
+	{
+		indexOfStart = 0;
+		indexOfEnd = UNASSIGNEDINDEX;	// should already be -1
+	}
+	
+	if(timeDataInterval == 0 || timeDataInterval == numTimesInFile)
+	{	// before the first step in the file
+		/*if (GetNumFiles()>1)
+		 {
+		 //if ((err = CheckAndScanFile(errmsg)) || fOverLap) goto done;	// overlap is special case
+		 intervalLoaded = this -> CheckInterval(timeDataInterval);
+		 indexOfStart = timeDataInterval-1;
+		 indexOfEnd = timeDataInterval;
+		 numTimesInFile = this -> GetNumTimesInFile();
+		 }
+		 else*/
+		{
+			err = -1;
+			strcpy(errmsg,"Time outside of interval being modeled");
+			goto done;
+		}
+	}
+	// load the two intervals
+	{
+		DisposeLoadedData(&fStartData);
+		
+		if(indexOfStart == fEndData.timeIndex) // passing into next interval
+		{
+			fStartData = fEndData;
+			ClearLoadedData(&fEndData);
+		}
+		else
+		{
+			DisposeLoadedData(&fEndData);
+		}
+		
+		//////////////////
+		
+		if(fStartData.dataHdl == 0 && indexOfStart >= 0) 
+		{ // start data is not loaded
+			err = this -> ReadTimeData(indexOfStart,&fStartData.dataHdl,errmsg);
+			if(err) goto done;
+			fStartData.timeIndex = indexOfStart;
+		}	
+		
+		if(indexOfEnd < numTimesInFile && indexOfEnd != UNASSIGNEDINDEX)  // not past the last interval and not constant current
+		{
+			err = this -> ReadTimeData(indexOfEnd,&fEndData.dataHdl,errmsg);
+			if(err) goto done;
+			fEndData.timeIndex = indexOfEnd;
+		}
+	}
+	
+done:	
+	if(err)
+	{
+		if(!errmsg[0])strcpy(errmsg,"Error in TriCurMover::SetInterval()");
+		DisposeLoadedData(&fStartData);
+		DisposeLoadedData(&fEndData);
+	}
+	return err;
+	
+}
+
+Boolean TriCurMover_c::CheckInterval(long &timeDataInterval)
+{
+	Seconds time = model->GetModelTime();
+	long i,numTimes;
+	
+	
+	numTimes = this -> GetNumTimesInFile(); 
+	
+	// check for constant current
+	if (numTimes==1 /*&& !(GetNumFiles()>1)*/) 
+	{
+		timeDataInterval = -1; // some flag here
+		if(fStartData.timeIndex==0 && fStartData.dataHdl)
+			return true;
+		else
+			return false;
+	}
+	
+	if(fStartData.timeIndex!=UNASSIGNEDINDEX && fEndData.timeIndex!=UNASSIGNEDINDEX)
+	{
+		if (time>=(*fTimeDataHdl)[fStartData.timeIndex].time && time<=(*fTimeDataHdl)[fEndData.timeIndex].time)
+		{	// we already have the right interval loaded
+			timeDataInterval = fEndData.timeIndex;
+			return true;
+		}
+	}
+	
+	/*if (GetNumFiles()>1 && fOverLap)
+	 {	
+	 if (time>=fOverLapStartTime && time<=(*fTimeDataHdl)[fEndData.timeIndex].time)
+	 return true;	// we already have the right interval loaded, time is in between two files
+	 else fOverLap = false;
+	 }*/
+	
+	for (i=0;i<numTimes;i++) 
+	{	// find the time interval
+		if (time>=(*fTimeDataHdl)[i].time && time<=(*fTimeDataHdl)[i+1].time)
+		{
+			timeDataInterval = i+1; // first interval is between 0 and 1, and so on
+			return false;
+		}
+	}	
+	// don't allow time before first or after last
+	if (time<(*fTimeDataHdl)[0].time) 
+		timeDataInterval = 0;
+	if (time>(*fTimeDataHdl)[numTimes-1].time) 
+		timeDataInterval = numTimes;
+	return false;
+	
+}
+
+long TriCurMover_c::GetNumTimesInFile()
+{
+	long numTimes = 0;
+	
+	if (fTimeDataHdl) numTimes = _GetHandleSize((Handle)fTimeDataHdl)/sizeof(**fTimeDataHdl);
+	return numTimes;     
+}
+
+
+void TriCurMover_c::DisposeLoadedData(LoadedData *dataPtr)
+{
+	if(dataPtr -> dataHdl) DisposeHandle((Handle) dataPtr -> dataHdl);
+	ClearLoadedData(dataPtr);
+}
+
+void TriCurMover_c::ClearLoadedData(LoadedData *dataPtr)
+{
+	dataPtr -> dataHdl = 0;
+	dataPtr -> timeIndex = UNASSIGNEDINDEX;
+}
+
+

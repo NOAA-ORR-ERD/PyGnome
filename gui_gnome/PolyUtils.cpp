@@ -240,14 +240,7 @@ void SetPolyPointCount (PolyObjectHdl thePolyHdl, long pointCount)
 
 	return;
 }
-/**************************************************************************************************/
-long GetPolyPointCount (PolyObjectHdl thePolyHdl)
-{
-	if (thePolyHdl != nil)
-		return ((**thePolyHdl).pointCount);
-	else
-		return (0);
-}
+
 /**************************************************************************************************/
 void CalcSetPolyLRect (PolyObjectHdl thePolyHdl)
 {

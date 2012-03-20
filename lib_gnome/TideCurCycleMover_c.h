@@ -50,8 +50,13 @@ public:
 	virtual OSErr 		PrepareForModelStep();
 	virtual void 		ModelStepIsDone();
 	OSErr 				ReorderPoints(TMap **newMap, short *bndry_indices, short *bndry_nums, short *bndry_type, long numBoundaryPts); 
+	virtual Boolean 	CheckInterval(long &timeDataInterval);
+	virtual OSErr	 	SetInterval(char *errmsg);
+	long				GetNumTimesInFile();
+	void 				DisposeLoadedData(LoadedData * dataPtr);	
+	void 				ClearLoadedData(LoadedData * dataPtr);	
+	OSErr				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 
-	
 };
 
 #endif

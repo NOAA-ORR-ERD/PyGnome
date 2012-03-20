@@ -19,6 +19,17 @@ RectGridVel_c::RectGridVel_c(void)
 	fNumCols = 0;
 }
 
+
+void RectGridVel_c::Dispose ()
+{
+	if (fGridHdl)
+	{
+		DisposeHandle((Handle)fGridHdl);
+		fGridHdl = nil;
+	}
+	GridVel_c::Dispose ();
+}
+
 long RectGridVel_c::NumVelsInGridHdl(void)
 {
 	long numInHdl = 0;

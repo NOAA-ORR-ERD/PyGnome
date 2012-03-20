@@ -74,7 +74,9 @@ public:
 public:
 	PtCurMap_c (char* name, WorldRect bounds);
 	PtCurMap_c () {}
-	
+
+	virtual OSErr	InitMap();
+	virtual OSErr	InitDropletSizes();
 	virtual ClassID GetClassID () { return TYPE_PTCURMAP; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_PTCURMAP) return TRUE; return Map_c::IAm(id); }
 	virtual OSErr	InitContourLevels();
@@ -125,6 +127,9 @@ public:
 	virtual	long 	GetNumBoundarySegs(void);
 	virtual  long 	GetNumPointsInBoundarySeg(long segno);
 	virtual	long 	GetNumBoundaryPts(void);
+	
+	void	FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo);
+
 	long 	CountLEsOnSelectedBeach();
 	void 	FindStartEndSeg(long ptnum,long *startPt, long *endPt);
 	long 	NextPointOnSeg(long segno, long point);
@@ -135,10 +140,12 @@ public:
 	Boolean 	IsBoundaryPoint(long pt);
 	virtual	long 	GetNumContourLevels(void);
 	virtual	float			GetMaxDepth2(void);
-	DropletInfoRecH	GetDropletSizesH(void) {return fDropletSizesH;}		
+	DropletInfoRecH	GetDropletSizesH(void) {return fDropletSizesH;}	
+
 };
 
 OSErr SetDefaultContours(DOUBLEH contourLevels, short contourType);
+OSErr SetDefaultDropletSizes(DropletInfoRecH dropletSizes);
 
 #undef TMover
 #undef TCurrentMover

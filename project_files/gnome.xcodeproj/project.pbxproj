@@ -7,11 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		ED07DECA1517F3DD008FA1CC /* MakeDagTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED07DEC91517F3DD008FA1CC /* MakeDagTree.cpp */; };
+		ED2971F01519181C0000481F /* CMapLayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED2971EE1519181C0000481F /* CMapLayer.cpp */; };
+		ED2971F11519181C0000481F /* ObjectUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED2971EF1519181C0000481F /* ObjectUtils.cpp */; };
+		ED2971F4151918500000481F /* CMapLayer_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED2971F3151918500000481F /* CMapLayer_c.cpp */; };
 		EDA59D94151713D600F0EE69 /* RectGridVeL_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDA59D93151713D600F0EE69 /* RectGridVeL_c.cpp */; };
 		EDB99A731516EFBF00B08B8B /* TriGridVel3D_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDB99A721516EFBF00B08B8B /* TriGridVel3D_c.cpp */; };
 		EDB99B491516FB8D00B08B8B /* Weatherer_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDB99B481516FB8D00B08B8B /* Weatherer_c.cpp */; };
 		EDB99B4F1516FC6300B08B8B /* OSSMWeatherer_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDB99B4E1516FC6300B08B8B /* OSSMWeatherer_c.cpp */; };
 		EDB99B751516FDD300B08B8B /* MYRANDOM.CPP in Sources */ = {isa = PBXBuildFile; fileRef = EDB99B731516FDD300B08B8B /* MYRANDOM.CPP */; };
+		EDBE9CA71517E4E700C5A7CC /* MakeTriangles.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDBE9CA51517E4E600C5A7CC /* MakeTriangles.cpp */; };
 		EDCB4074150FFA6700199C36 /* ADCPMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F6B150FFA6600199C36 /* ADCPMover.cpp */; };
 		EDCB4075150FFA6700199C36 /* ADCPTimeValue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F6D150FFA6600199C36 /* ADCPTimeValue.cpp */; };
 		EDCB4076150FFA6700199C36 /* CarbonUtil.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F6F150FFA6600199C36 /* CarbonUtil.cpp */; };
@@ -36,9 +41,7 @@
 		EDCB4089150FFA6700199C36 /* GridWindMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F8E150FFA6600199C36 /* GridWindMover.cpp */; };
 		EDCB408A150FFA6700199C36 /* LayerUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F90150FFA6600199C36 /* LayerUtils.cpp */; };
 		EDCB408B150FFA6700199C36 /* LELISTS.CPP in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F91150FFA6600199C36 /* LELISTS.CPP */; };
-		EDCB408C150FFA6700199C36 /* MakeDagTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F92150FFA6600199C36 /* MakeDagTree.cpp */; };
 		EDCB408D150FFA6700199C36 /* MakeMovie.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F93150FFA6600199C36 /* MakeMovie.cpp */; };
-		EDCB408E150FFA6700199C36 /* MakeTriangles.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F95150FFA6600199C36 /* MakeTriangles.cpp */; };
 		EDCB408F150FFA6700199C36 /* MYFILES.CPP in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F97150FFA6600199C36 /* MYFILES.CPP */; };
 		EDCB4091150FFA6700199C36 /* NetCDFMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F9B150FFA6600199C36 /* NetCDFMover.cpp */; };
 		EDCB4092150FFA6700199C36 /* NetCDFMoverCurv.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3F9D150FFA6600199C36 /* NetCDFMoverCurv.cpp */; };
@@ -93,7 +96,6 @@
 		EDCB40C3150FFA6700199C36 /* CATSMover_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3FFF150FFA6600199C36 /* CATSMover_c.cpp */; };
 		EDCB40C4150FFA6700199C36 /* ClassID_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB4002150FFA6600199C36 /* ClassID_c.cpp */; };
 		EDCB40C5150FFA6700199C36 /* CMap2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB4004150FFA6600199C36 /* CMap2.cpp */; };
-		EDCB40C6150FFA6700199C36 /* CMapLayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB4006150FFA6600199C36 /* CMapLayer.cpp */; };
 		EDCB40C7150FFA6700199C36 /* CMYLIST.CPP in Sources */ = {isa = PBXBuildFile; fileRef = EDCB4007150FFA6600199C36 /* CMYLIST.CPP */; };
 		EDCB40C8150FFA6700199C36 /* CompFunctions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB4009150FFA6600199C36 /* CompFunctions.cpp */; };
 		EDCB40C9150FFA6700199C36 /* ComponentMover_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB400C150FFA6600199C36 /* ComponentMover_c.cpp */; };
@@ -117,7 +119,6 @@
 		EDCB40DB150FFA6700199C36 /* NetCDFMoverTri_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB403B150FFA6700199C36 /* NetCDFMoverTri_c.cpp */; };
 		EDCB40DC150FFA6700199C36 /* NetCDFWindMover_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB403E150FFA6700199C36 /* NetCDFWindMover_c.cpp */; };
 		EDCB40DD150FFA6700199C36 /* NetCDFWindMoverCurv_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB4041150FFA6700199C36 /* NetCDFWindMoverCurv_c.cpp */; };
-		EDCB40DE150FFA6700199C36 /* ObjectUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB4043150FFA6700199C36 /* ObjectUtils.cpp */; };
 		EDCB40DF150FFA6700199C36 /* OLEList_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB4045150FFA6700199C36 /* OLEList_c.cpp */; };
 		EDCB40E0150FFA6700199C36 /* OSSMTimeValue_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB4048150FFA6700199C36 /* OSSMTimeValue_c.cpp */; };
 		EDCB40E1150FFA6700199C36 /* OUTILS.CPP in Sources */ = {isa = PBXBuildFile; fileRef = EDCB404A150FFA6700199C36 /* OUTILS.CPP */; };
@@ -146,10 +147,16 @@
 		EDDAD8DE150EA2EE00EFF92A /* MULTDLOG.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8D5150EA2EE00EFF92A /* MULTDLOG.r */; };
 		EDDAD8DF150EA2EE00EFF92A /* OSSM.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8D6150EA2EE00EFF92A /* OSSM.r */; };
 		EDDAD8E0150EA2EE00EFF92A /* StartScreens.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8D7150EA2EE00EFF92A /* StartScreens.r */; };
+		EDEBC1F21517C2B300EF2DDF /* LocaleWizard_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDEBC1F11517C2B300EF2DDF /* LocaleWizard_c.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0D9D32EF0E226E6E0083E689 /* gnome.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = gnome.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ED07DEC91517F3DD008FA1CC /* MakeDagTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MakeDagTree.cpp; sourceTree = "<group>"; };
+		ED2971D0151915650000481F /* ObjectUtilsPD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ObjectUtilsPD.h; sourceTree = "<group>"; };
+		ED2971EE1519181C0000481F /* CMapLayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CMapLayer.cpp; sourceTree = "<group>"; };
+		ED2971EF1519181C0000481F /* ObjectUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ObjectUtils.cpp; sourceTree = "<group>"; };
+		ED2971F3151918500000481F /* CMapLayer_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CMapLayer_c.cpp; sourceTree = "<group>"; };
 		EDA59D2815170C7000F0EE69 /* netcdf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = netcdf.h; sourceTree = "<group>"; };
 		EDA59D92151713D600F0EE69 /* RectGridVeL_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RectGridVeL_c.h; sourceTree = "<group>"; };
 		EDA59D93151713D600F0EE69 /* RectGridVeL_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RectGridVeL_c.cpp; sourceTree = "<group>"; };
@@ -161,6 +168,8 @@
 		EDB99B4E1516FC6300B08B8B /* OSSMWeatherer_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OSSMWeatherer_c.cpp; sourceTree = "<group>"; };
 		EDB99B731516FDD300B08B8B /* MYRANDOM.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MYRANDOM.CPP; sourceTree = "<group>"; };
 		EDB99B741516FDD300B08B8B /* MYRANDOM.H */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MYRANDOM.H; sourceTree = "<group>"; };
+		EDBE9CA51517E4E600C5A7CC /* MakeTriangles.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MakeTriangles.cpp; sourceTree = "<group>"; };
+		EDBE9CA61517E4E600C5A7CC /* my_build_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = my_build_list.h; sourceTree = "<group>"; };
 		EDCB3F6B150FFA6600199C36 /* ADCPMover.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ADCPMover.cpp; sourceTree = "<group>"; };
 		EDCB3F6C150FFA6600199C36 /* ADCPMover.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ADCPMover.h; sourceTree = "<group>"; };
 		EDCB3F6D150FFA6600199C36 /* ADCPTimeValue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ADCPTimeValue.cpp; sourceTree = "<group>"; };
@@ -200,11 +209,8 @@
 		EDCB3F8F150FFA6600199C36 /* GridWindMover.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GridWindMover.h; sourceTree = "<group>"; };
 		EDCB3F90150FFA6600199C36 /* LayerUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LayerUtils.cpp; sourceTree = "<group>"; };
 		EDCB3F91150FFA6600199C36 /* LELISTS.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LELISTS.CPP; sourceTree = "<group>"; };
-		EDCB3F92150FFA6600199C36 /* MakeDagTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MakeDagTree.cpp; sourceTree = "<group>"; };
 		EDCB3F93150FFA6600199C36 /* MakeMovie.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MakeMovie.cpp; sourceTree = "<group>"; };
 		EDCB3F94150FFA6600199C36 /* MakeMovie.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MakeMovie.h; sourceTree = "<group>"; };
-		EDCB3F95150FFA6600199C36 /* MakeTriangles.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MakeTriangles.cpp; sourceTree = "<group>"; };
-		EDCB3F96150FFA6600199C36 /* my_build_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = my_build_list.h; sourceTree = "<group>"; };
 		EDCB3F97150FFA6600199C36 /* MYFILES.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MYFILES.CPP; sourceTree = "<group>"; };
 		EDCB3F9B150FFA6600199C36 /* NetCDFMover.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NetCDFMover.cpp; sourceTree = "<group>"; };
 		EDCB3F9C150FFA6600199C36 /* NetCDFMover.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFMover.h; sourceTree = "<group>"; };
@@ -311,7 +317,6 @@
 		EDCB4003150FFA6600199C36 /* ClassID_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClassID_c.h; sourceTree = "<group>"; };
 		EDCB4004150FFA6600199C36 /* CMap2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CMap2.cpp; sourceTree = "<group>"; };
 		EDCB4005150FFA6600199C36 /* CMap2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CMap2.h; sourceTree = "<group>"; };
-		EDCB4006150FFA6600199C36 /* CMapLayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CMapLayer.cpp; sourceTree = "<group>"; };
 		EDCB4007150FFA6600199C36 /* CMYLIST.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CMYLIST.CPP; sourceTree = "<group>"; };
 		EDCB4008150FFA6600199C36 /* CMYLIST.H */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMYLIST.H; sourceTree = "<group>"; };
 		EDCB4009150FFA6600199C36 /* CompFunctions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CompFunctions.cpp; sourceTree = "<group>"; };
@@ -372,7 +377,6 @@
 		EDCB4040150FFA6700199C36 /* NetCDFWindMoverCurv_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFWindMoverCurv_b.h; sourceTree = "<group>"; };
 		EDCB4041150FFA6700199C36 /* NetCDFWindMoverCurv_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NetCDFWindMoverCurv_c.cpp; sourceTree = "<group>"; };
 		EDCB4042150FFA6700199C36 /* NetCDFWindMoverCurv_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFWindMoverCurv_c.h; sourceTree = "<group>"; };
-		EDCB4043150FFA6700199C36 /* ObjectUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ObjectUtils.cpp; sourceTree = "<group>"; };
 		EDCB4044150FFA6700199C36 /* ObjectUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ObjectUtils.h; sourceTree = "<group>"; };
 		EDCB4045150FFA6700199C36 /* OLEList_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OLEList_c.cpp; sourceTree = "<group>"; };
 		EDCB4046150FFA6700199C36 /* OLEList_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OLEList_c.h; sourceTree = "<group>"; };
@@ -428,6 +432,8 @@
 		EDDAD8D5150EA2EE00EFF92A /* MULTDLOG.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = MULTDLOG.r; sourceTree = "<group>"; };
 		EDDAD8D6150EA2EE00EFF92A /* OSSM.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = OSSM.r; sourceTree = "<group>"; };
 		EDDAD8D7150EA2EE00EFF92A /* StartScreens.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = StartScreens.r; sourceTree = "<group>"; };
+		EDEBC1F01517C2B300EF2DDF /* LocaleWizard_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LocaleWizard_c.h; sourceTree = "<group>"; };
+		EDEBC1F11517C2B300EF2DDF /* LocaleWizard_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LocaleWizard_c.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -498,11 +504,8 @@
 				EDCB3F8F150FFA6600199C36 /* GridWindMover.h */,
 				EDCB3F90150FFA6600199C36 /* LayerUtils.cpp */,
 				EDCB3F91150FFA6600199C36 /* LELISTS.CPP */,
-				EDCB3F92150FFA6600199C36 /* MakeDagTree.cpp */,
 				EDCB3F93150FFA6600199C36 /* MakeMovie.cpp */,
 				EDCB3F94150FFA6600199C36 /* MakeMovie.h */,
-				EDCB3F95150FFA6600199C36 /* MakeTriangles.cpp */,
-				EDCB3F96150FFA6600199C36 /* my_build_list.h */,
 				EDCB3F97150FFA6600199C36 /* MYFILES.CPP */,
 				EDCB3FA7150FFA6600199C36 /* OSSM.CPP */,
 				EDCB3FA8150FFA6600199C36 /* OSSM.H */,
@@ -577,8 +580,6 @@
 				EDCB3FEE150FFA6600199C36 /* WindSettings.h */,
 				EDCB3FEF150FFA6600199C36 /* WindUncertainty.cpp */,
 				EDCB3FF0150FFA6600199C36 /* WindUncertainty.h */,
-				EDCB3FF1150FFA6600199C36 /* Wizard.cpp */,
-				EDCB3FF2150FFA6600199C36 /* Wizard.h */,
 				EDCB3F74150FFA6600199C36 /* CLASSES.H */,
 				EDCB3FE6150FFA6600199C36 /* TWeather.cpp */,
 				EDCB3F9B150FFA6600199C36 /* NetCDFMover.cpp */,
@@ -595,6 +596,11 @@
 				EDCB3FA6150FFA6600199C36 /* NetCDFWindMoverCurv.h */,
 				EDCB3F8C150FFA6600199C36 /* GridVel.cpp */,
 				EDCB3F8D150FFA6600199C36 /* GridVel.h */,
+				EDCB3FF1150FFA6600199C36 /* Wizard.cpp */,
+				EDCB3FF2150FFA6600199C36 /* Wizard.h */,
+				ED2971D0151915650000481F /* ObjectUtilsPD.h */,
+				ED2971EE1519181C0000481F /* CMapLayer.cpp */,
+				ED2971EF1519181C0000481F /* ObjectUtils.cpp */,
 			);
 			name = gui_gnome;
 			path = ../gui_gnome;
@@ -603,8 +609,15 @@
 		EDCB3FF3150FFA6600199C36 /* lib_gnome */ = {
 			isa = PBXGroup;
 			children = (
+				EDCB4044150FFA6700199C36 /* ObjectUtils.h */,
+				ED2971F3151918500000481F /* CMapLayer_c.cpp */,
+				ED07DEC91517F3DD008FA1CC /* MakeDagTree.cpp */,
+				EDEBC1F01517C2B300EF2DDF /* LocaleWizard_c.h */,
+				EDEBC1F11517C2B300EF2DDF /* LocaleWizard_c.cpp */,
 				EDA59D92151713D600F0EE69 /* RectGridVeL_c.h */,
 				EDA59D93151713D600F0EE69 /* RectGridVeL_c.cpp */,
+				EDBE9CA51517E4E600C5A7CC /* MakeTriangles.cpp */,
+				EDBE9CA61517E4E600C5A7CC /* my_build_list.h */,
 				EDA59D2815170C7000F0EE69 /* netcdf.h */,
 				EDCB4034150FFA6700199C36 /* NetCDFMover_b.h */,
 				EDCB4035150FFA6700199C36 /* NetCDFMover_c.cpp */,
@@ -642,9 +655,8 @@
 				EDCB4001150FFA6600199C36 /* ClassID_b.h */,
 				EDCB4002150FFA6600199C36 /* ClassID_c.cpp */,
 				EDCB4003150FFA6600199C36 /* ClassID_c.h */,
-				EDCB4004150FFA6600199C36 /* CMap2.cpp */,
 				EDCB4005150FFA6600199C36 /* CMap2.h */,
-				EDCB4006150FFA6600199C36 /* CMapLayer.cpp */,
+				EDCB4004150FFA6600199C36 /* CMap2.cpp */,
 				EDCB4007150FFA6600199C36 /* CMYLIST.CPP */,
 				EDCB4008150FFA6600199C36 /* CMYLIST.H */,
 				EDCB4009150FFA6600199C36 /* CompFunctions.cpp */,
@@ -690,8 +702,6 @@
 				EDCB4032150FFA6700199C36 /* Mover_c.cpp */,
 				EDB99B731516FDD300B08B8B /* MYRANDOM.CPP */,
 				EDB99B741516FDD300B08B8B /* MYRANDOM.H */,
-				EDCB4043150FFA6700199C36 /* ObjectUtils.cpp */,
-				EDCB4044150FFA6700199C36 /* ObjectUtils.h */,
 				EDCB4045150FFA6700199C36 /* OLEList_c.cpp */,
 				EDCB4046150FFA6700199C36 /* OLEList_c.h */,
 				EDCB4047150FFA6700199C36 /* OSSMTimeValue_b.h */,
@@ -864,9 +874,7 @@
 				EDCB4089150FFA6700199C36 /* GridWindMover.cpp in Sources */,
 				EDCB408A150FFA6700199C36 /* LayerUtils.cpp in Sources */,
 				EDCB408B150FFA6700199C36 /* LELISTS.CPP in Sources */,
-				EDCB408C150FFA6700199C36 /* MakeDagTree.cpp in Sources */,
 				EDCB408D150FFA6700199C36 /* MakeMovie.cpp in Sources */,
-				EDCB408E150FFA6700199C36 /* MakeTriangles.cpp in Sources */,
 				EDCB408F150FFA6700199C36 /* MYFILES.CPP in Sources */,
 				EDCB4091150FFA6700199C36 /* NetCDFMover.cpp in Sources */,
 				EDCB4092150FFA6700199C36 /* NetCDFMoverCurv.cpp in Sources */,
@@ -921,7 +929,6 @@
 				EDCB40C3150FFA6700199C36 /* CATSMover_c.cpp in Sources */,
 				EDCB40C4150FFA6700199C36 /* ClassID_c.cpp in Sources */,
 				EDCB40C5150FFA6700199C36 /* CMap2.cpp in Sources */,
-				EDCB40C6150FFA6700199C36 /* CMapLayer.cpp in Sources */,
 				EDCB40C7150FFA6700199C36 /* CMYLIST.CPP in Sources */,
 				EDCB40C8150FFA6700199C36 /* CompFunctions.cpp in Sources */,
 				EDCB40C9150FFA6700199C36 /* ComponentMover_c.cpp in Sources */,
@@ -945,7 +952,6 @@
 				EDCB40DB150FFA6700199C36 /* NetCDFMoverTri_c.cpp in Sources */,
 				EDCB40DC150FFA6700199C36 /* NetCDFWindMover_c.cpp in Sources */,
 				EDCB40DD150FFA6700199C36 /* NetCDFWindMoverCurv_c.cpp in Sources */,
-				EDCB40DE150FFA6700199C36 /* ObjectUtils.cpp in Sources */,
 				EDCB40DF150FFA6700199C36 /* OLEList_c.cpp in Sources */,
 				EDCB40E0150FFA6700199C36 /* OSSMTimeValue_c.cpp in Sources */,
 				EDCB40E1150FFA6700199C36 /* OUTILS.CPP in Sources */,
@@ -970,6 +976,12 @@
 				EDB99B4F1516FC6300B08B8B /* OSSMWeatherer_c.cpp in Sources */,
 				EDB99B751516FDD300B08B8B /* MYRANDOM.CPP in Sources */,
 				EDA59D94151713D600F0EE69 /* RectGridVeL_c.cpp in Sources */,
+				EDEBC1F21517C2B300EF2DDF /* LocaleWizard_c.cpp in Sources */,
+				EDBE9CA71517E4E700C5A7CC /* MakeTriangles.cpp in Sources */,
+				ED07DECA1517F3DD008FA1CC /* MakeDagTree.cpp in Sources */,
+				ED2971F01519181C0000481F /* CMapLayer.cpp in Sources */,
+				ED2971F11519181C0000481F /* ObjectUtils.cpp in Sources */,
+				ED2971F4151918500000481F /* CMapLayer_c.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -8,13 +8,13 @@
  */
 
 #include "CATSMover3D_c.h"
-#include "CLASSES.H"
-#include "GENUTIL.H"
+#include "StringFunctions.h"
+#include "PtCurMap_c.h"
 
 #ifndef pyGNOME
-extern TModel *model;
+#include "CROSS.H"
 #else
-extern Model_c *model;
+#include "Replacements.h"
 #endif
 
 PtCurMap* GetPtCurMap(void);
@@ -192,7 +192,7 @@ OSErr CATSMover3D_c::PrepareForModelStep()
 		PtCurMap* ptCurMap = dynamic_cast<PtCurMap *>(moverMap);
 		/*OK*/(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
 		/*OK*/(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
-		((TTriGridVel3D*)fGrid)->ClearOutputHandles();
+		((dynamic_cast<TTriGridVel3D*>(fGrid)))->ClearOutputHandles();
 		if (fRefinedGrid) fRefinedGrid->ClearOutputHandles();
 	}
 	
@@ -287,7 +287,7 @@ Boolean CATSMover3D_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	PtCurMap *map = GetPtCurMap();
 	if (map==nil) return false;
 	
-	map->FindNearestBoundary(wp.p,&verNum,&segNo); 
+	((PtCurMap_c*)map)->FindNearestBoundary(wp.p,&verNum,&segNo); //AH 03/19/2012 (this needs to be fixed.)
 	
 	velocity = this->GetPatValue(wp.p);
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
@@ -329,7 +329,7 @@ LongPointHdl CATSMover3D_c::GetPointsHdl()
 	//if (fRefinedGrid && useRefinedGrid) 
 	//triGrid = fRefinedGrid;
 	//else 
-	triGrid = (TTriGridVel3D*)fGrid;
+	triGrid = dynamic_cast<TTriGridVel3D*>(fGrid);
 	return triGrid -> GetPointsHdl();
 }
 

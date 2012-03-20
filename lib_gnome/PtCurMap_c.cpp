@@ -23,6 +23,30 @@
 static long theSegno,theSegStart,theSegEnd,theIndex,theBndryStart,theBndryEnd;
 static Boolean IsClockWise;
 
+PtCurMap* CreateAndInitPtCurMap(char *path, WorldRect bounds)
+{
+	char 		nameStr[256];
+	OSErr		err = noErr;
+	PtCurMap 	*map = nil;
+	char fileName[256],s[256];
+	
+	if (path[0])
+	{
+		strcpy(s,path);
+		SplitPathFile (s, fileName);
+		strcpy (nameStr, "BathymetryMap: ");
+		strcat (nameStr, fileName);
+	}
+	else
+		strcpy(nameStr,"Bathymetry Map");
+	map = new PtCurMap(nameStr, bounds);
+	if (!map)
+	{ TechError("AddPtCurMap()", "new PtCurMap()", 0); return nil; }
+	
+	if (err = map->InitMap()) { delete map; return nil; }
+	
+	return map;
+}
 
 
 PtCurMap_c::PtCurMap_c(char* name, WorldRect bounds) : Map_c(name, bounds)
@@ -1595,3 +1619,85 @@ done:
 	return numLEs;
 }
 
+OSErr SetDefaultDropletSizes(DropletInfoRecH dropletSizes)
+{
+	// default values from Bill
+	if (!dropletSizes) {return -1;}
+	_SetHandleSize((Handle)dropletSizes,7*sizeof(DropletInfoRec));
+	if (_MemError()) { TechError("SetDefaultDropletSizes()", "_SetHandleSize()", 0); return -1; }
+	(*dropletSizes)[0].probability = .056;
+	(*dropletSizes)[1].probability = .147;
+	(*dropletSizes)[2].probability = .267;
+	(*dropletSizes)[3].probability = .414;
+	(*dropletSizes)[4].probability = .586;
+	(*dropletSizes)[5].probability = .782;	
+	(*dropletSizes)[6].probability = 1.;	
+	(*dropletSizes)[0].dropletSize = 10;
+	(*dropletSizes)[1].dropletSize = 20;
+	(*dropletSizes)[2].dropletSize = 30;
+	(*dropletSizes)[3].dropletSize = 40;
+	(*dropletSizes)[4].dropletSize = 50;
+	(*dropletSizes)[5].dropletSize = 60;	
+	(*dropletSizes)[6].dropletSize = 70;	
+	return noErr;
+}
+
+OSErr PtCurMap_c::InitMap()
+{
+	OSErr err = 0;
+	//	code goes here, only if there is a 3D mover?
+	if (err = InitContourLevels()) return err;
+	if (err = InitDropletSizes()) return err;
+	return Map_c::InitMap();
+}
+
+
+OSErr PtCurMap_c::InitDropletSizes()
+{
+	OSErr err = 0;
+	if (!fDropletSizesH) 
+	{
+		fDropletSizesH = (DropletInfoRecH)_NewHandleClear(0);
+		if(!fDropletSizesH){TechError("PtCurMap::InitDropletSizes()", "_NewHandle()", 0); err = memFullErr; return -1;}
+		err = SetDefaultDropletSizes(fDropletSizesH);
+	}
+	return err;
+}
+
+
+void  PtCurMap_c::FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo)
+{
+	long startVer = 0,i,jseg;
+	//WorldPoint wp = ScreenToWorldPoint(where, MapDrawingRect(), settings.currentView);
+	WorldPoint wp2;
+	LongPoint lp;
+	long lastVer = GetNumBoundaryPts();
+	//long nbounds = GetNumBoundaries();
+	long nSegs = GetNumBoundarySegs();	
+	float wdist = LatToDistance(ScreenToWorldDistance(4));
+	LongPointHdl ptsHdl = GetPointsHdl(false);	// will use refined grid if there is one
+	if(!ptsHdl) return;
+	*verNum= -1;
+	*segNo =-1;
+	for(i = 0; i < lastVer; i++)
+	{
+		//wp2 = (*gVertices)[i];
+		lp = (*ptsHdl)[i];
+		wp2.pLat = lp.v;
+		wp2.pLong = lp.h;
+		
+		if(WPointNearWPoint(wp,wp2 ,wdist))
+		{
+			//for(jseg = 0; jseg < nbounds; jseg++)
+			for(jseg = 0; jseg < nSegs; jseg++)
+			{
+				if(i <= (*fBoundarySegmentsH)[jseg])
+				{
+					*verNum  = i;
+					*segNo = jseg;
+					break;
+				}
+			}
+		}
+	} 
+}

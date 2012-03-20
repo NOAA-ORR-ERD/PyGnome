@@ -1677,45 +1677,6 @@ void  TCompoundMap::FindNearestBoundary(Point where, long *verNum, long *segNo)
 		}
 	} 
 }
-void  TCompoundMap::FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo)
-{
-	long startVer = 0,i,jseg;
-	//WorldPoint wp = ScreenToWorldPoint(where, MapDrawingRect(), settings.currentView);
-	WorldPoint wp2;
-	LongPoint lp;
-	long lastVer = GetNumBoundaryPts();
-	//long nbounds = GetNumBoundaries();
-	long nSegs = GetNumBoundarySegs();	
-	float wdist = LatToDistance(ScreenToWorldDistance(4));
-	LongPointHdl ptsHdl = GetPointsHdl(false);	// will use refined grid if there is one
-	if(!ptsHdl) return;
-	*verNum= -1;
-	*segNo =-1;
-	for(i = 0; i < lastVer; i++)
-	{
-		//wp2 = (*gVertices)[i];
-		lp = (*ptsHdl)[i];
-		wp2.pLat = lp.v;
-		wp2.pLong = lp.h;
-		
-		if(WPointNearWPoint(wp,wp2 ,wdist))
-		{
-			//for(jseg = 0; jseg < nbounds; jseg++)
-			for(jseg = 0; jseg < nSegs; jseg++)
-			{
-				if(i <= (*fBoundarySegmentsH)[jseg])
-				{
-					*verNum  = i;
-					*segNo = jseg;
-					break;
-				}
-			}
-		}
-	} 
-}
-
-
-
 
 /**************************************************************************************************/
 void TCompoundMap::DrawContourScale(Rect r, WorldRect view)
@@ -3286,6 +3247,70 @@ void TCompoundMap::TrackOutputDataInAllLayers(void)
  return;
  }*/
 
+double TCompoundMap::DepthAtPoint(WorldPoint wp)
+{	// here need to check by priority
+	float depth1,depth2,depth3;
+	double depthAtPoint;	
+	long mapIndex;
+	InterpolationVal interpolationVal;
+	FLOATH depthsHdl = 0;
+	TTriGridVel3D* triGrid = 0;	
+	//TTriGridVel3D* triGrid = GetGrid3D(false);	// don't use refined grid, depths aren't refined
+	//NetCDFMover *mover = (NetCDFMover*)(model->GetMover(TYPE_NETCDFMOVER));
+	//NetCDFMover *mover = (NetCDFMover*)(Get3DCurrentMover());
+	
+	mapIndex = WhichMapIsPtInWater(wp);
+	if (mapIndex == -1) return -1.;	// off maps
+	NetCDFMover *mover = dynamic_cast<NetCDFMover*>(Get3DCurrentMoverFromIndex(mapIndex));	// may not be netcdfmover?
+	triGrid = GetGrid3DFromMapIndex(mapIndex);
+	
+	if (mover && mover->fVar.gridType==SIGMA_ROMS)
+		return (double)/*OK*/(dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepth(wp,-1);	// expand options here
+	
+	if (!triGrid) return -1; // some error alert, no depth info to check
+	interpolationVal = triGrid->GetInterpolationValues(wp);
+	depthsHdl = triGrid->GetDepths();
+	if (!depthsHdl) return -1;	// some error alert, no depth info to check
+	if (interpolationVal.ptIndex1<0)	
+	{
+		//printError("Couldn't find point in dagtree"); 
+		return -1;
+	}
+	
+	depth1 = (*depthsHdl)[interpolationVal.ptIndex1];
+	depth2 = (*depthsHdl)[interpolationVal.ptIndex2];
+	depth3 = (*depthsHdl)[interpolationVal.ptIndex3];
+	depthAtPoint = interpolationVal.alpha1*depth1 + interpolationVal.alpha2*depth2 + interpolationVal.alpha3*depth3;
+	
+	return depthAtPoint;
+}
+
+
+long TCompoundMap::WhichMapIsPtIn(WorldPoint wp)
+{
+	long i,n;
+	TMap *map = 0;
+	
+	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
+	{
+		mapList->GetListItem((Ptr)&map, i);
+		if (map -> InMap(wp)) return i;
+	}
+	return -1;	// means off all maps	
+}
+
+long TCompoundMap::WhichMapIsPtInWater(WorldPoint wp)
+{
+	long i,n;
+	TMap *map = 0;
+	
+	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
+	{
+		mapList->GetListItem((Ptr)&map, i);
+		/*OK*/ if ((dynamic_cast<PtCurMap *>(map)) -> InWater(wp)) return i;
+	}
+	return -1;	// means off all maps	
+}
 
 Boolean TCompoundMap::ThereAreTrianglesSelected()
 {
@@ -3294,3 +3319,199 @@ Boolean TCompoundMap::ThereAreTrianglesSelected()
 	return triGrid->ThereAreTrianglesSelected();
 	return false;
 }
+
+OSErr TCompoundMap::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)	
+{	// 
+	long i,j,n,numOfLEs=0,numLESets,numDepths=0,numTri;
+	TTriGridVel3D* triGrid = GetGrid3D(false);
+	TDagTree *dagTree = 0;
+	LONGH numLEsInTri = 0;
+	DOUBLEH massInTriInGrams = 0;
+	TopologyHdl topH = 0;
+	LERec LE;
+	OSErr err = 0;
+	double triArea, triVol, oilDensityInWaterColumn, massInGrams, totalVol=0, depthAtPt = 0;
+	long numLEsInTriangle,numLevels,totalLEs=0,maxTriNum=-1;
+	double concInSelectedTriangles=0,maxConc=0;
+	Boolean **triSelected = triGrid -> GetTriSelection(false);	// don't init
+	short massunits;
+	double density, LEmass;
+	TLEList *thisLEList = 0;
+	//short massunits = thisLEList->GetMassUnits();
+	//double density =  thisLEList->fSetSummary.density;	// density set from API
+	//double LEmass =  thisLEList->fSetSummary.totalMass / (double)(thisLEList->fSetSummary.numOfLEs);	
+	
+	dagTree = triGrid -> GetDagTree();
+	if(!dagTree) return -1;
+	topH = dagTree->GetTopologyHdl();
+	if(!topH)	return -1;
+	numTri = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	numLEsInTri = (LONGH)_NewHandleClear(sizeof(long)*numTri);
+	if (!numLEsInTri)
+	{ TechError("TCompoundMap::DrawContour()", "_NewHandleClear()", 0); err = -1; goto done; }
+	massInTriInGrams = (DOUBLEH)_NewHandleClear(sizeof(double)*numTri);
+	if (!massInTriInGrams)
+	{ TechError("TCompoundMap::DrawContour()", "_NewHandleClear()", 0); err = -1; goto done; }
+	//numOfLEs = thisLEList->numOfLEs;
+	//massInGrams = VolumeMassToGrams(LEmass, density, massunits);
+	if (!fContourLevelsH)
+		if (!InitContourLevels()) {err = -1; goto done;}
+	numLevels = GetNumDoubleHdlItems(fContourLevelsH);
+	
+	numLESets = model->LESetsList->GetItemCount();
+	for (i = 0; i < numLESets; i++)
+	{
+		model -> LESetsList -> GetListItem ((Ptr) &thisLEList, i);
+		if (thisLEList->fLeType == UNCERTAINTY_LE)	
+			continue;	
+		if (!((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil && ((model->GetModelTime() - model->GetStartTime()) >= (*(TOLEList*)thisLEList).fDispersantData.timeToDisperse ) )
+			&& !(*(TOLEList*)thisLEList).fAdiosDataH && !((*(TOLEList*)thisLEList).fSetSummary.z > 0)) 
+			continue;
+		numOfLEs = thisLEList->numOfLEs;
+		// density set from API
+		//density =  GetPollutantDensity(thisLEList->GetOilType());	
+		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		massunits = thisLEList->GetMassUnits();
+		
+		for (j = 0 ; j < numOfLEs ; j++) 
+		{
+			LongPoint lp;
+			long triIndex;
+			thisLEList -> GetLE (j, &LE);
+			//if (LE.statusCode == OILSTAT_NOTRELEASED) continue;
+			if (!(LE.statusCode == OILSTAT_INWATER)) continue;// Windows compiler requires extra parentheses
+			lp.h = LE.p.pLong;
+			lp.v = LE.p.pLat;
+			LEmass = GetLEMass(LE);	// will only vary for chemical with different release end time
+			massInGrams = VolumeMassToGrams(LEmass, density, massunits);	// need to do this above too
+			if (fContourDepth1==BOTTOMINDEX)
+			{
+				double depthAtLE = DepthAtPoint(LE.p);
+				if (depthAtLE <= 0) continue;
+				//if (LE.z > (depthAtLE-1.) && LE.z > 0 && LE.z <= depthAtLE) // assume it's in map, careful with 2 grids...
+				if (LE.z > (depthAtLE-fBottomRange) && LE.z > 0 && LE.z <= depthAtLE) // assume it's in map, careful with 2 grids...
+				{
+					triIndex = dagTree -> WhatTriAmIIn(lp);
+					//if (triIndex>=0) (*numLEsInTri)[triIndex]++;
+					//if (triIndex>=0 && LE.pollutantType == CHEMICAL) (*massInTri)[triIndex]+=GetLEMass(LE);	// use weathering information
+					if (triIndex>=0) 
+					{
+						(*numLEsInTri)[triIndex]++;
+						(*massInTriInGrams)[triIndex]+=massInGrams;	// use weathering information
+					}
+				}
+			}
+			else if (LE.z>fContourDepth1 && LE.z<=fContourDepth2) 
+			{
+				triIndex = dagTree -> WhatTriAmIIn(lp);
+				//if (triIndex>=0) (*numLEsInTri)[triIndex]++;
+				//if (triIndex>=0 && LE.pollutantType == CHEMICAL) (*massInTri)[triIndex]+=GetLEMass(LE);	// use weathering information
+				if (triIndex>=0) 
+				{
+					(*numLEsInTri)[triIndex]++;
+					(*massInTriInGrams)[triIndex]+=massInGrams;	// use weathering information
+				}
+			}
+		}
+	}
+	
+	for (i=0;i<numTri;i++)
+	{	
+		depthAtPt=0;
+		double depthRange;
+		//WorldPoint centroid = {0,0};
+		if (triSelected && !(*triSelected)[i]) continue;	
+		//if (!triGrid->GetTriangleCentroidWC(i,&centroid))
+		{
+			//depthAtPt = DepthAtPoint(centroid);
+			depthAtPt = DepthAtCentroid(i);
+		}
+		triArea = (triGrid -> GetTriArea(i)) * 1000 * 1000;	// convert to meters
+		if (!(fContourDepth1==BOTTOMINDEX))
+		{
+			depthRange = fContourDepth2 - fContourDepth1;
+		}
+		else
+		{
+			//depthRange = 1.; // for bottom will always contour 1m 
+			//if (depthAtPt<1 && depthAtPt>0) depthRange = depthAtPt;
+			depthRange = fBottomRange; // for bottom will always contour 1m 
+			if (depthAtPt<fBottomRange && depthAtPt>0) depthRange = depthAtPt;
+		}
+		//if (depthAtPt < depthRange && depthAtPt != 0) depthRange = depthAtPt;
+		if (depthAtPt < fContourDepth2 && depthAtPt > fContourDepth1 && depthAtPt > 0) depthRange = depthAtPt - fContourDepth1;
+		triVol = triArea * depthRange; 
+		//triVol = triArea * (fContourDepth2 - fContourDepth1); // code goes here, check this depth range is ok at all vertices
+		numLEsInTriangle = (*numLEsInTri)[i];
+		if (!(fContourDepth1==BOTTOMINDEX))		// need to decide what to do for bottom contour
+			if (triGrid->CalculateDepthSliceVolume(&triVol,i,fContourDepth1,fContourDepth2)) goto done;
+		/*if (thisLEList->GetOilType() == CHEMICAL) 
+		 {
+		 massInGrams = VolumeMassToGrams((*massInTri)[i], density, massunits);
+		 oilDensityInWaterColumn = massInGrams / triVol;
+		 }
+		 else
+		 oilDensityInWaterColumn = numLEsInTriangle * massInGrams / triVol; // units? milligrams/liter ?? for now gm/m^3
+		 */
+		if (numLEsInTriangle==0)
+			continue;
+		oilDensityInWaterColumn = (*massInTriInGrams)[i] / triVol;	// units? milligrams/liter ?? for now gm/m^3
+		
+		for (j=0;j<numLevels;j++)
+		{
+			if (oilDensityInWaterColumn>(*fContourLevelsH)[j] && (j==numLevels-1 || oilDensityInWaterColumn <= (*fContourLevelsH)[j+1]))
+			{
+				//fTriAreaArray[j] = fTriAreaArray[j] + triArea/1000000;
+				//totalLEs += numLEsInTriangle;
+				//totalVol += triVol;
+				//concInSelectedTriangles += oilDensityInWaterColumn;	// sum or track each one?
+				if (oilDensityInWaterColumn > maxConc) 
+				{
+					maxConc = oilDensityInWaterColumn;
+					//numDepths = floor(depthAtPt)+1;	// split into 1m increments to track vertical slice
+					maxTriNum = i;
+				}
+			}
+		}
+	}
+	
+	*depthAtPnt = depthAtPt;
+	*maxTriIndex = maxTriNum;
+done:
+	if(numLEsInTri) {DisposeHandle((Handle)numLEsInTri); numLEsInTri=0;}
+	if(massInTriInGrams) {DisposeHandle((Handle)massInTriInGrams); massInTriInGrams=0;}
+	return err;
+}
+
+WorldPoint3D TCompoundMap::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,WorldPoint3D wp)
+{
+	//WorldPoint3D movedPoint = model->TurnLEAlongShoreLine(fromWPt, wp, this);	// use length of fromWPt to beached point or to toWPt?
+	WorldPoint3D movedPoint = TurnLEAlongShoreLine(fromWPt, wp, toWPt);	// use length of fromWPt to beached point or to toWPt?
+	/*if (!InVerticalMap(movedPoint)) 
+	 {
+	 movedPoint.z = fromWPt.z;	// try not changing depth
+	 if (!InVerticalMap(movedPoint))
+	 movedPoint.p = fromWPt.p;	// use original point
+	 }*/
+	//movedPoint.z = toWPt.z; // attempt the z move
+	// code goes here, check mixedLayerDepth?
+	if (!InVerticalMap(movedPoint) || movedPoint.z == 0) // these points are supposed to be below the surface
+	{
+		double depthAtPt = DepthAtPoint(movedPoint.p);	// code goes here, a check on return value
+		if (depthAtPt < 0) 
+		{
+			OSErr err = 0;
+			return fromWPt;
+		}
+		if (depthAtPt==0)
+			movedPoint.z = .1;
+		if (movedPoint.z > depthAtPt) movedPoint.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+		//if (movedPoint.z > depthAtPt) movedPoint.z = GetRandomFloat(.7*depthAtPt,.99*depthAtPt);
+		if (movedPoint.z <= 0) movedPoint.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
+		//movedPoint.z = fromWPt.z;	// try not changing depth
+		//if (!InVerticalMap(movedPoint))
+		//movedPoint.p = fromWPt.p;	// use original point - code goes here, need to find a z in the map
+	}
+	return movedPoint;
+}
+

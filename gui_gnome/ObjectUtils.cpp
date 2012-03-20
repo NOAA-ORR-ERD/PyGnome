@@ -6,7 +6,7 @@
 
 /**************************************************************************************************/
 
-#ifdef IBM
+#ifndef MAC	// AH 03/20/2012
 void BitClr(void *bytePtr, long bitNum)
 {
 	long byteNum = bitNum / 8;
@@ -204,13 +204,7 @@ void GetObjectLabel (ObjectRecHdl objectHdl, char *objectName)
 
 	return;
 }
-/**************************************************************************************************/
-void GetObjectType (ObjectRecHdl ObjectHdl, OSType *ObjectTypePtr)
-{
-	*ObjectTypePtr = (**ObjectHdl).objectType;
 
-	return;
-}
 /**************************************************************************************************/
 void SetObjectType (ObjectRecHdl ObjectHdl, OSType theObjectType)
 {
@@ -218,13 +212,7 @@ void SetObjectType (ObjectRecHdl ObjectHdl, OSType theObjectType)
 
 	return;
 }
-/**************************************************************************************************/
-void GetObjectLRect (ObjectRecHdl ObjectHdl, LongRect *ObjectLRectPtr)
-{
-	*ObjectLRectPtr = (**ObjectHdl).objectLRect;
 
-	return;
-}
 /**************************************************************************************************/
 void GetObjectLPoint (ObjectRecHdl ObjectHdl, LongPoint *ObjectLPointPtr)
 {

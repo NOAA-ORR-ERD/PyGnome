@@ -370,3 +370,20 @@ VelocityRec TriGridVel_c::GetPatValue(WorldPoint p)
 
 	return r;
 }
+
+void TriGridVel_c::Dispose ()
+{
+	if (fDagTree)
+	{
+		fDagTree->Dispose();
+		delete fDagTree;
+		fDagTree = nil;
+	}
+	if (fBathymetryH)
+	{
+		DisposeHandle((Handle)fBathymetryH);
+		fBathymetryH = 0;
+	}
+	GridVel_c::Dispose();
+}
+

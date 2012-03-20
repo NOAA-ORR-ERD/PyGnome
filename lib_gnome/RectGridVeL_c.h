@@ -28,7 +28,8 @@ public:
 	long 			NumVelsInGridHdl(void);
 	VelocityRec 	GetPatValue(WorldPoint p);
 	VelocityRec 	GetSmoothVelocity(WorldPoint p);
-	
+	virtual void 	Dispose ();
+
 	
 };
 

@@ -32,6 +32,8 @@ typedef struct DAGTreeStruct
 //	Side_List ** sideHdl;				// handle to the sidelist
 } DAGTreeStruct;
 
+DAGTreeStruct  MakeDagTree(TopologyHdl topoHdl, LongPoint **pointList, char *errStr);
+
 class TDagTree
 {
 	public:
