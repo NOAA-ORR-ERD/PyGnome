@@ -11,10 +11,13 @@
 #include "TypeDefs.h"
 #include "MemUtils.h"
 #include "StringFunctions.h"
+#include <iostream>
 
 #ifdef pyGNOME
 #include "Replacements.h"
 #endif
+
+using namespace std;
 
 Boolean gUseColonIn24HrTime = true; // JLM likes the colon
 
@@ -59,7 +62,11 @@ OSErr StringToDouble(char* str,double* val)
 #ifdef MAC
 	long numScanned = sscanf(localStr,"%lf",&localVal);
 #else
+#ifndef pyGNOME
 	long numScanned = sscanf(localStr,"%Lf",&localVal);
+#else	//AH 03/20/2012 (this must be temporary)
+	long numScanned = sscanf(localStr,"%lf",&localVal);
+#endif
 #endif
 	if(numScanned == 1) 
 	{
@@ -906,8 +913,9 @@ void Secs2DateStrings(unsigned long seconds,
 #else
 {
 	struct tm *time;
-	
+#ifndef pyGNOME
 	seconds -= 2082816000L; // convert from seconds since 1904 to seconds since 1970
+#endif
 	time = localtime((long *)&seconds); // gmtime(&seconds);
 	if (!time) { SysBeep(1); return; }
 	
@@ -950,8 +958,9 @@ void Secs2DateString(unsigned long seconds, CHARPTR s)
 #else
 {
 	struct tm *newTime;
-	
+#ifndef pyGNOME
 	seconds -= 2082816000L; // convert from seconds since 1904 to seconds since 1970
+#endif
 	newTime = localtime((long *)&seconds); // gmtime(&seconds)
 	newTime->tm_year = newTime->tm_year %100;// year 2000 fix , JLM 1/25/99
 	if (newTime)
@@ -998,7 +1007,9 @@ void Secs2DateString2(unsigned long seconds, CHARPTR s)
 #else
 	// IBM
 	struct tm *newTime;
+#ifndef pyGNOME
 	seconds -= 2082816000L; // convert from seconds since 1904 to seconds since 1970
+#endif
 	newTime = localtime((long *)&seconds); // gmtime(&seconds)
 	if (newTime)
 	{
@@ -1091,8 +1102,9 @@ unsigned long DateString2Secs(CHARPTR s)
 			SysBeep(1);
 		}	// here check if year < 1970 and convert
 	seconds = long_secs;
+#ifndef pyGNOME
 	seconds += 2082816000L; // convert from seconds since 1970 to seconds since 1904
-	
+#endif
 	return seconds;
 }
 #endif
@@ -1167,7 +1179,9 @@ void GetDateTime(unsigned long *seconds)
 	unsigned long secs;
 	
 	time((long *)&secs); // time() wants a near pointer; returns secs since 1/1/70
+#ifndef pyGNOME
 	secs += 2082816000L; // convert to seconds since 1904
+#endif
 	// would be secs += 126230400 if time returned time since 1900, as it says in the book
 	*seconds = secs;
 }
@@ -1175,8 +1189,9 @@ void GetDateTime(unsigned long *seconds)
 void SecondsToDate (unsigned long seconds, DateTimeRec *date)
 {
 	struct tm *newTime;
-	
+#ifndef pyGNOME
 	seconds -= 2082816000L; // convert from seconds since 1904 to seconds since 1970
+#endif
 	// note time_t is now 64 bit by default on Windows, preprocessor definition for 32 bit (good til 2038)
 	newTime = localtime((long *)&seconds); // gmtime(&seconds)
 	if (newTime) {

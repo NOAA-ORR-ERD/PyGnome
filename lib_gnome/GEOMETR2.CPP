@@ -197,7 +197,7 @@ double Compute2x2Determinant(double m[2][2])
 	return m[0][0] * m[1][1] - m[0][1] * m[1][0];
 }
 ////////////////////////////////////////////////////////////// SEGMENTS <-> WPOINTS
-
+#ifndef pyGNOME
 WORLDPOINTH SegmentsToWPoints(SEGMENTH segments, long numSegs, WorldRect *wr)
 {
 	Boolean completedLoop = FALSE;
@@ -249,7 +249,7 @@ WORLDPOINTH SegmentsToWPoints(SEGMENTH segments, long numSegs, WorldRect *wr)
 	
 	return wPoints;
 }
-
+#endif
 SEGMENTH WPointsToSegments(WORLDPOINTH wPoints, long numPoints, long *numSegs)
 {
 	long i, j;

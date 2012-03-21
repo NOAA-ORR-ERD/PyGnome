@@ -7,10 +7,10 @@ dimensions_bmp = (800, 500)
 
 spill = {'num_particles': 1000,
          'windage': .2,
-         'start_time': '2011-11-12 10:55:00',
-         'stop_time': '2011-11-12 10:59:00',
-         'start_position': (-72.419882,41.202120),
-         'stop_position': (-72.389882,41.222120),
+         'start_time': '2011-11-12 06:55:00',
+         'stop_time': '2011-11-12 06:55:00',
+         'start_position': (-72.479882,41.112120),
+         'stop_position': (-72.479882,41.112120),
          }
 
 mini_gnome = model.Model()
@@ -23,27 +23,26 @@ mini_gnome.set_spill(spill['num_particles'],
 
 spill = {'num_particles': 1000,
          'windage': .02,
-         'start_time': '2011-11-12 10:55:00',
-         'stop_time': '2011-11-12 10:59:00',
-         'start_position': (-72.509832,41.212120),
-         'stop_position': (-72.409832,41.212120),
+         'start_time': '2011-11-12 06:55:00',
+         'stop_time': '2011-11-12 06:55:00',
+         'start_position': (-72.459882,41.112120),
+         'stop_position': (-72.459882,41.112120),
          }
 
 cats_scale_type = 1
-cats_ref_position = (-72.705, 41.2275)
 shio_file = "./CLISShio.txt"
 cats_topology_file = "./tidesWAC.CUR"
 
 model_start_time = '2011-11-12 06:55:00'
-model_stop_time = '2011-11-12 20:59:00'
+model_stop_time = '2011-12-12 06:59:00'
 
 mini_gnome.set_run_duration(model_start_time, model_stop_time)
-mini_gnome.set_timestep(3600)
+mini_gnome.set_timestep(900)
 mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']))
 
 #mini_gnome.add_wind_mover((-10, 15))
-mini_gnome.add_random_mover(10000000)
-mini_gnome.add_cats_mover(cats_topology_file, cats_scale_type, cats_ref_position, shio_file, 10)
+mini_gnome.add_random_mover(10000)
+mini_gnome.add_cats_mover(cats_topology_file, cats_scale_type, shio_file, 2)
 
 # create an images dir:
 try:

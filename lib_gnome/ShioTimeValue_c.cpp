@@ -100,7 +100,7 @@ OSErr ShioTimeValue_c::GetKeyedValue(CHARH f, char*key, long lineNum, char* strL
 	
 done:
 	if(numVals < 10) err = -5;// probably a bad line
-	if(err && h) {DisposeHandle((Handle)h); h = 0;}
+	if(err && h) {_DisposeHandle((Handle)h); h = 0;}
 	else _SetHandleSize((Handle)h,numVals*sizeof(***val));
 	*val = h;
 	return err;
@@ -291,10 +291,10 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 	CONSTITUENT		*conArray = 0;
 	
 	long numValues = this->GetNumValues(), amtYearData, i;
-	
 	// check that to see if the value is in our already computed range
 	if(numValues > 0)
-	{
+	{	
+		
 		if(INDEXH(this->timeValues, 0).time <= forTime 
 		   && forTime <= INDEXH(this->timeValues, numValues-1).time)
 		{ // the value is in the computed range
@@ -323,7 +323,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 	endDate.hour = 0; // Shio expects this to be the start of the day
 	endDate.minute = 0;
 	endDate.second = 0;
-	
+	 
 	daylightSavings = DaylightSavingTimeInEffect(&beginDate);// code goes here, set the daylight flag
 #ifndef pyGNOME	
 	YHdl = GetYearData(beginDate.year);
@@ -410,8 +410,8 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 					TimeValuePair tvPair;
 					for(i = 0; i < num10MinValues; i++)
 					{
-						if(answers->time[i].flag == outOfSequenceFlag) continue;// skip this value, code goes here
-						if(answers->time[i].flag == 1) continue;// skip this value, 1 is don't plot flag - junk at beginning or end of data
+						if(answers->time[i].flag == outOfSequenceFlag) continue; // skip this value, code goes here
+						if(answers->time[i].flag == 1) continue; // skip this value, 1 is don't plot flag - junk at beginning or end of data
 						// note:timeHdl values are in hrs from start
 						tvPair.time = beginSeconds + (long) (answers->time[i].val*3600); 
 						tvPair.value.u = KNOTSTOMETERSPERSEC * answers->speed[i];// convert from knots to m/s
@@ -429,7 +429,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 					short	numEbbFloods = answers->numEbbFloods;			// Number of ebb and flood occurrences.								
 					double *EbbFloodSpeedsPtr = answers->EbbFloodSpeeds;	// double knots
 					EXTFLAG *EbbFloodTimesPtr = answers->EbbFloodTimes;		// double hours, flag=0 means plot
-					short			*EbbFloodPtr = answers->EbbFlood;			// 0 -> Min Before Flood.
+					short	*EbbFloodPtr = answers->EbbFlood;			// 0 -> Min Before Flood.
 					// 1 -> Max Flood.
 					// 2 -> Min Before Ebb.
 					// 3 -> Max Ebb.
@@ -496,14 +496,14 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 					
 					if(fEbbFloodDataHdl) 
 					{
-						DisposeHandle((Handle)fEbbFloodDataHdl); 
+						_DisposeHandle((Handle)fEbbFloodDataHdl); 
 						fEbbFloodDataHdl = 0;
 					}
 					if(numToShowUser > 0)
 					{
 						short j;
 						fEbbFloodDataHdl = (EbbFloodDataH)_NewHandleClear(sizeof(EbbFloodData)*numToShowUser);
-						if(!fEbbFloodDataHdl) {TechError("TShioTimeValue::GetTimeValue()", "_NewHandleClear()", 0); err = memFullErr; if(tvals)DisposeHandle((Handle)tvals); goto done_currents;}
+						if(!fEbbFloodDataHdl) {TechError("TShioTimeValue::GetTimeValue()", "_NewHandleClear()", 0); err = memFullErr; if(tvals)_DisposeHandle((Handle)tvals); goto done_currents;}
 						for(i = 0, j=0; i < numEbbFloods; i++)
 						{
 							EbbFloodTime = EbbFloodTimesPtr[i];
@@ -641,7 +641,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 						INDEXH(tvals,i).value.u = deriv;	// option to have standing (deriv) vs progressive wave (no deriv)
 					}
 					this->SetTimeValueHandle(tvals);
-					DisposeHandle((Handle)heightHdl);heightHdl=0;
+					_DisposeHandle((Handle)heightHdl);heightHdl=0;
 				}
 				////// JLM  , save the highs and lows for displaying on the left hand side
 				{
@@ -675,14 +675,14 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 					
 					if(fHighLowDataHdl) 
 					{
-						DisposeHandle((Handle)fHighLowDataHdl); 
+						_DisposeHandle((Handle)fHighLowDataHdl); 
 						fHighLowDataHdl = 0;
 					}
 					if(numToShowUser > 0)
 					{
 						short j;
 						fHighLowDataHdl = (HighLowDataH)_NewHandleClear(sizeof(HighLowData)*numToShowUser);
-						if(!fHighLowDataHdl) {TechError("TShioTimeValue::GetTimeValue()", "_NewHandleClear()", 0); err = memFullErr; if(tvals)DisposeHandle((Handle)tvals); goto done_heights;}
+						if(!fHighLowDataHdl) {TechError("TShioTimeValue::GetTimeValue()", "_NewHandleClear()", 0); err = memFullErr; if(tvals)_DisposeHandle((Handle)tvals); goto done_heights;}
 						for(i = 0, j=0; i < numHighLows; i++)
 						{
 							HighLowTime = HighLowTimesPtr[i];
@@ -878,14 +878,14 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 					
 					if(fHighLowDataHdl) 
 					{
-						DisposeHandle((Handle)fHighLowDataHdl); 
+						_DisposeHandle((Handle)fHighLowDataHdl); 
 						fHighLowDataHdl = 0;
 					}
 					if(numToShowUser > 0)
 					{
 						short j;
 						fHighLowDataHdl = (HighLowDataH)_NewHandleClear(sizeof(HighLowData)*numToShowUser);
-						if(!fHighLowDataHdl) {TechError("TShioTimeValue::GetTimeValue()", "_NewHandleClear()", 0); err = memFullErr; if(tvals)DisposeHandle((Handle)tvals); goto done_heights2;}
+						if(!fHighLowDataHdl) {TechError("TShioTimeValue::GetTimeValue()", "_NewHandleClear()", 0); err = memFullErr; if(tvals)_DisposeHandle((Handle)tvals); goto done_heights2;}
 						for(i = 0, j=0; i < numHighLows; i++)
 						{
 							HighLowTime = HighLowTimesPtr[i];
@@ -1352,7 +1352,7 @@ skipDatumControls:
 	}
 	
 	
-	if(f) DisposeHandle((Handle)f); f = nil;
+	if(f) _DisposeHandle((Handle)f); f = nil;
 	return 0;
 	
 readError:

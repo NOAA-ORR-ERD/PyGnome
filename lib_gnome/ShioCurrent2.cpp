@@ -21,6 +21,9 @@
 #endif
 #endif
 
+#include <iostream>
+using namespace std;
+
 
 /*---------------------------------------------*/
 short GetFloodEbbSpans(double t,
@@ -400,7 +403,7 @@ short GetRefCurrent(CONSTITUENT *constituent,	// Amplitude-phase array structs
 			j=i-actualNoOfConst;
 		}
 		
-	 	AMPAPtr[i] = constituent[i].H * XODE[j];
+	 	AMPAPtr[i] = constituent[i].H ;// AH 03/21/2012 * XODE[j];
 		epochPtr[i] = VPU[j] - constituent[i].kPrime;
 	}
 	
@@ -584,6 +587,7 @@ short GetRefCurrent(CONSTITUENT *constituent,	// Amplitude-phase array structs
 		}
   		THdl[i].val = theTime;
  		CHdl[i] = theCurrent;
+
  		if( (rotFlag==1) || (rotFlag==2) ){
  			uVelHdl[i]=uVelocity;
  			vVelHdl[i]=vVelocity;
@@ -2786,7 +2790,6 @@ void hr2TStr(double exHours, char *theStr)
 short CheckCurrentOffsets(CURRENTOFFSET *offset)
 {
 	short			err=0;
-	
 	if(!offset){
 		err=32;
 		goto Error;
@@ -2799,27 +2802,32 @@ short CheckCurrentOffsets(CURRENTOFFSET *offset)
 		err=32;
 		goto Error;
 	}
+
 	if(!offset->FloodTime.dataAvailFlag){			/* Flood time offset			*/
 		err=32;
 		goto Error;
 	}
+
 	if(!offset->MinBefEbbTime.dataAvailFlag){		/* Min Before Ebb time offset	*/
 		err=32;
 		goto Error;
 	}
+
 	if(!offset->EbbTime.dataAvailFlag){			/* Ebb time offset				*/
 		err=32;
 		goto Error;
 	}
+
 	if(!offset->FloodSpdRatio.dataAvailFlag){		/* Flood Speed Ratio			*/
 		err=32;
 		goto Error;
 	}
+
 	if(!offset->EbbSpdRatio.dataAvailFlag){		/* Ebb Speed Ratio				*/
 		err=32;
 		goto Error;
 	}
-	
+
 Error:
 	return(err);
 }

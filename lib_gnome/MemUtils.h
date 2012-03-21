@@ -56,10 +56,11 @@ OSErr _MemError(void);
 // short _ZeroHandleError(Handle h);
 
 /// ELSE...
-#define DisposeHandle(p) _DisposeHandleReally(p)
 //#define DisposHandle(p) _DisposeHandleReally(p)
 void _DisposeHandleReally(Handle p);
 // #define INDEXH(h, i) ((h)[i])
+#define DisposeHandle(p) _DisposeHandleReally(p)
+#define _DisposeHandle(p) _DisposeHandleReally(p)
 
 #else
 #define _InitAllHandles InitAllHandles

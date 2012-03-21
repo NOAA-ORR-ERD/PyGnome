@@ -7,6 +7,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "shio.h"
+#include <iostream>
 
 #ifndef pyGNOME
 #include "CROSS.H"
@@ -20,6 +21,7 @@
 #endif
 #endif
 
+using namespace std;
 
 /***************************************************************************************/
 

@@ -10,17 +10,26 @@ import numpy as np
 
 include "c_gnome_defs.pxi"
 
-global model
+cpdef extern Model_c *model
 
-cdef set_model_start_time(Seconds start_time):
-    model.SetStartTime(start_time)
-cdef set_model_duration(Seconds duration):
-    model.SetDuration(duration)
-cdef set_model_time(Seconds current_time):
-    model.SetModelTime(current_time)
-cdef set_model_timestep(Seconds timestep):
-    model.SetTimeStep(timestep)
+cpdef set_model_start_time(Seconds uh):
+    model.SetStartTime(uh)
+    
+cpdef set_model_duration(Seconds uh):
+    model.SetDuration(uh)
+    
+cpdef set_model_time(Seconds uh):
+    model.SetModelTime(uh)
+    
+cpdef set_model_timestep(Seconds uh):
+    model.SetTimeStep(uh)
 
+cpdef step_model():
+    cdef Seconds t, s
+    t = model.GetModelTime()
+    s = model.GetTimeStep()
+    model.SetModelTime(t + s)
+    
 #====================================================================#
 # cdef class shio_time_value:
 #     
@@ -51,6 +60,7 @@ cdef class cats_mover:
     
     def __init__(self, scale_type, scale_value=1, diffusion_coefficient=1, shio_file=None):
         cdef ShioTimeValue_c *shio
+        cdef WorldPoint p
         self.mover.scaleType = scale_type
         self.mover.scaleValue = scale_value
         self.mover.fEddyDiffusion = diffusion_coefficient
@@ -61,6 +71,8 @@ cdef class cats_mover:
         shio = new ShioTimeValue_c()
         shio.ReadTimeValues(shio_file)
         self.mover.SetTimeDep(shio)
+        self.mover.SetRefPosition(shio.GetRefWorldPoint(), 0)
+        self.mover.bTimeFileActive = True
 
     def read_topology(self, path):
         cdef Map_c **naught
@@ -81,12 +93,8 @@ cdef class cats_mover:
             dpLong = wp3d.p.pLong
             LEs[i].p.pLat += (dpLat/1000000)
             LEs[i].p.pLong += (dpLong/1000000)
-            
-    def set_ref_position(self, wp, z):
-        cdef WorldPoint p
-        p.pLong = wp[0]*10**6
-        p.pLat = wp[1]*10**6
-        self.mover.SetRefPosition(p, z)
+        self.mover.fOptimize.isOptimizedForStep = 1
+        self.mover.fOptimize.isFirstStep = 0
     
     def compute_velocity_scale(self):
         self.mover.ComputeVelocityScale()
@@ -157,7 +165,6 @@ cdef class wind_mover:
         self.mover.fConstantValue.v = constant_wind_value[1]
 
     def get_move(self, t, np.ndarray[LERec, ndim=1] LEs):
-        
         cdef int i
         cdef WorldPoint3D wp3d
         cdef float dpLat, dpLong

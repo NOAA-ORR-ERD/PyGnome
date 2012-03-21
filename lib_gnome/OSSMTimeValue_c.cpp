@@ -11,6 +11,7 @@
 #include "CompFunctions.h"
 #include "StringFunctions.h"
 #include "OUTILS.H"
+#include <iostream>
 
 #ifndef pyGNOME
 #include "CROSS.H"
@@ -22,6 +23,7 @@
 #define TMover Mover_c
 #endif
 
+using namespace std;
 
 OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner,TimeValuePairH tvals,short userUnits) : TimeValue_c(theOwner) 
 { 

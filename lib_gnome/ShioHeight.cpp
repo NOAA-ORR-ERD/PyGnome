@@ -7,6 +7,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "shio.h"
+#include <iostream>
 
 #ifndef pyGNOME
 #include "CROSS.H"
@@ -21,6 +22,8 @@
 #endif
 
 
+
+using namespace std;
 
 //#include "Global.h"
 //#include "TCTypedefs.h"
@@ -59,7 +62,7 @@ short GetTideHeight(	DateTimeRec *BeginDate,DateTimeRec *EndDate,
 
 
 	/* Variables to overlay reference curve */
-	//EXTFLAG		*reftimeHdl=0;
+	//EXTFLAG		*reftimeHdl=0; 
 	//double		*refheightHdl=0;
 	double		tval=0.0,ehour=0.0,julianoffset=0.0,grafBeginHour=0.0,grafEndHour=0.0;
 	long		i=0,size1=0,size2=0,numpnts=0;
@@ -1400,7 +1403,6 @@ Error:
 	//if(epochPtr) {free(epochPtr); epochPtr = NULL;}
 	if(AMPAPtr) {delete [] AMPAPtr; AMPAPtr = 0;}
 	if(epochPtr) {delete [] epochPtr; epochPtr = 0;}
-
 	return errorFlag;
 }
 

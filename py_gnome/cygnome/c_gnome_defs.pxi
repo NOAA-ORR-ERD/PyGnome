@@ -124,15 +124,19 @@ cdef extern from "ShioTimeValue_c.h":
     cdef cppclass ShioTimeValue_c(OSSMTimeValue_c):
         ShioTimeValue_c()
         OSErr    ReadTimeValues (char *path)
-
+        WorldPoint GetRefWorldPoint()
+        
 cdef extern from "Model_c.h":
     cdef cppclass Model_c:
         Model_c()
-        SetStartTime(Seconds)
-        SetDuration(Seconds)
-        SetModelTime(Seconds)
-        SetTimeStep(Seconds)
-    
+        void SetStartTime(Seconds)
+        void SetDuration(Seconds)
+        void SetModelTime(Seconds)
+        void SetTimeStep(Seconds)
+        Seconds GetStartTime()
+        Seconds GetModelTime()
+        Seconds GetTimeStep()
+
 cdef extern from "CATSMover_c.h":
     ctypedef struct TCM_OPTIMZE:
         Boolean isOptimizedForStep
@@ -163,6 +167,8 @@ cdef extern from "CATSMover_c.h":
         void            SetRefPosition (WorldPoint p, long z)
         OSErr            ComputeVelocityScale()
         void        SetTimeDep(OSSMTimeValue_c *time_dep)
+        OSErr        PrepareForModelStep()
+        void        ModelStepIsDone()
 
 cdef public enum type_defs:
     status_not_released = OILSTAT_NOTRELEASED

@@ -1,6 +1,7 @@
 import time
 import calendar
 import re
+import os
 
 class gwtm:
 
@@ -29,11 +30,14 @@ class gwtm:
             
     def __to_seconds(self):
         dt = self.date_time
+        #os.environ['TZ'] = 'US/Eastern'
+        #time.tzset()
         time_str = dt['year'] + ' ' + dt['month'] + ' ' + dt['day'] + ' ' + dt['hour'] + ' ' + dt['minute'] + ' ' + dt['second']
         self.struct_time = time.strptime(time_str, "%Y %m %d %H %M %S")
         self.time_seconds = calendar.timegm(self.struct_time)
         self.time_seconds += -self.epoch_seconds
-        
+        self.time_seconds += 28800 # temporary hack, but not really sure. seems to work. need to look into this some more. 
+
     def parse_datetime(self, datetime_string):
         mtch = self.pattern.match(datetime_string)
         if not mtch:

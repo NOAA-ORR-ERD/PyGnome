@@ -81,7 +81,7 @@ protected:
 	long 		I_SHIOEBBFLOODS(void);
 	
 public:						
-							ShioTimeValue_c() {}
+							ShioTimeValue_c() { fEbbFloodDataHdl = 0; fHighLowDataHdl = 0;}
 							ShioTimeValue_c (TMover *theOwner);
 							ShioTimeValue_c (TMover *theOwner,TimeValuePairH tvals);
 	virtual ClassID 		GetClassID () { return TYPE_SHIOTIMEVALUES; }

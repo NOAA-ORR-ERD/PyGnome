@@ -29,6 +29,8 @@ extern Model_c *model;
 using std::fstream;
 using std::ios;
 
+using namespace std;
+
 CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 {
 	fDuration=48*3600; //48 hrs as seconds 
@@ -274,11 +276,12 @@ VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncerta
 	}
 	
 	patVelocity = GetPatValue (p);
+
 	//	patVelocity = GetSmoothVelocity (p);
 	
 	patVelocity.u *= refScale; 
 	patVelocity.v *= refScale; 
-	
+
 	if(useEddyUncertainty)
 	{ // if they gave us a pointer to a boolean fill it in, otherwise don't
 		lengthSquaredBeforeTimeFactor = patVelocity.u*patVelocity.u + patVelocity.v*patVelocity.v;
@@ -288,7 +291,7 @@ VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncerta
 	
 	patVelocity.u *= timeValue.u; // magnitude contained in u field only
 	patVelocity.v *= timeValue.u; // magnitude contained in u field only
-	
+
 	return patVelocity;
 }
 
@@ -447,7 +450,7 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
 	{
 		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
+		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,true);	//AH 03/20/2012
 		if(err) goto done;
 		NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	}
@@ -512,7 +515,6 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 	fGrid = (TTriGridVel*)triGrid;
 	
 	triGrid -> SetBounds(bounds); 
-	
 	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
 	if(!dagTree)
 	{
@@ -531,11 +533,11 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 	
 done:
 	
-	if(depths) {DisposeHandle((Handle)depths); depths=0;}
+	if(depths) {_DisposeHandle((Handle)depths); depths=0;}
 	if(f) 
 	{
 		_HUnlock((Handle)f); 
-		DisposeHandle((Handle)f); 
+		_DisposeHandle((Handle)f); 
 		f = 0;
 	}
 	
