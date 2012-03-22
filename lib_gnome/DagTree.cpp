@@ -3,6 +3,8 @@
 #include "DagTree.h"
 #include "MemUtils.h"
 
+using namespace std;
+
 void TDagTree::GetVelocity(long ntri,VelocityRec *r)
 {
 	if(fVelH) {
@@ -23,10 +25,12 @@ void TDagTree::GetVelocity(LongPoint lp,VelocityRec *r)
 	{
 		r->u = (*fVelH)[ntri].u;
 		r->v = (*fVelH)[ntri].v;
+
 	}
 	else 
 	{
 		r->u = r->v = 0.0;
+
 	}
 };
 

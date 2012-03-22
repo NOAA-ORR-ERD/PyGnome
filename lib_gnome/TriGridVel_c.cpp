@@ -10,6 +10,7 @@
 #include "TriGridVel_c.h"
 #include "RectUtils.h"
 #include "MemUtils.h"
+using std::cout;
 
 LongPointHdl TriGridVel_c::GetPointsHdl(void)
 {

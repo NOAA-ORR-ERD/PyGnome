@@ -17,6 +17,7 @@
 
 void StartReadWriteSequence(char *procName);
 
+using namespace std;
 /////////////////////////////////////////////////
 
 Boolean IsTIndexedDagTreeHeaderLine(char *s, long* numRecs)
@@ -259,7 +260,6 @@ OSErr ReadTVertices(CHARH fileBufH,long *line,LongPointHdl *pointsH,FLOATH *dept
 
 	// Read in the vertices header "Vertices numRecs"
 	NthLineInTextOptimized(*fileBufH, (*line)++, s, 256); 
-	
 	if(!IsTVerticesHeaderLine(s,&numPoints))
 		return -1;
 	

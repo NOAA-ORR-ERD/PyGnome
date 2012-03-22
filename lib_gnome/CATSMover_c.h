@@ -50,7 +50,7 @@ public:
 	TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file
 	
 						CATSMover_c (TMap *owner, char *name);
-						CATSMover_c () {}
+						CATSMover_c () { timeDep = 0; }
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
 	void				GetRefPosition (WorldPoint *p, long *z) { (*p) = refP; (*z) = refZ; }

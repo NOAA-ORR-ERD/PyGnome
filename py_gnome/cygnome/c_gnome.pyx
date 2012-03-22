@@ -59,7 +59,6 @@ cdef class cats_mover:
         del self.mover
     
     def __init__(self, scale_type, scale_value=1, diffusion_coefficient=1, shio_file=None):
-        cdef ShioTimeValue_c *shio
         cdef WorldPoint p
         self.mover.scaleType = scale_type
         self.mover.scaleValue = scale_value
@@ -68,12 +67,23 @@ cdef class cats_mover:
         ## make-shifting for now.
         self.mover.fOptimize.isOptimizedForStep = 0
         self.mover.fOptimize.isFirstStep = 1  
+        if(type(shio_file)==type("")):
+            self.__set_shio__(shio_file)
+            
+    def __set_shio__(self, shio_file):
+        cdef ShioTimeValue_c *shio
         shio = new ShioTimeValue_c()
         shio.ReadTimeValues(shio_file)
         self.mover.SetTimeDep(shio)
         self.mover.SetRefPosition(shio.GetRefWorldPoint(), 0)
         self.mover.bTimeFileActive = True
-
+        
+    def set_ref_point(self, ref_point):
+        cdef WorldPoint p
+        p.pLong = ref_point[0]
+        p.pLat = ref_point[1]
+        self.mover.SetRefPosition(p, 0)
+        
     def read_topology(self, path):
         cdef Map_c **naught
         self.mover.ReadTopology(path, naught)
@@ -98,7 +108,9 @@ cdef class cats_mover:
     
     def compute_velocity_scale(self):
         self.mover.ComputeVelocityScale()
-
+        
+    def set_velocity_scale(self, scale_value):
+        self.mover.refScale = scale_value
         
 cdef class random_mover:
 

@@ -275,8 +275,8 @@ VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncerta
 		if(err) timeValue = errVelocity;
 	}
 	
+	
 	patVelocity = GetPatValue (p);
-
 	//	patVelocity = GetSmoothVelocity (p);
 	
 	patVelocity.u *= refScale; 
@@ -370,13 +370,18 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 	char c;
 	try {
 		int x = i = 0;
+		int j = 0;
 		std::string *file_contents = new std::string();
 		fstream *_ifstream = new fstream(path, ios::in);
 		for(; _ifstream->get(c); x++);
-		f = _NewHandle(x-8);
 		delete _ifstream;
 		_ifstream = new fstream(path, ios::in);
-		for(int k = 0; k < 8; k++) _ifstream->get(c); 
+		for(; j < 7; j++) _ifstream->get(c);
+		do {
+			_ifstream->get(c);
+			j++;
+		} while((int)c != LINEFEED);
+		f = _NewHandle(x-j);
 		for(; i < x && _ifstream->get(c); i++)
 			DEREFH(f)[i] = c;
 		
@@ -387,7 +392,6 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 		goto done;
 		
 	}
-	
 	_HLock((Handle)f); // JLM 8/4/99
 	
 	MySpinCursor(); // JLM 8/4/99
