@@ -1,10 +1,11 @@
  #!/usr/bin/env python
+
+"""
+ An implementation of the GNOME land-water map.
  
- # I don't have documentation strings
+ This is a port of the C++ raster map approach
  
- # if __name__ == __???___:
- #
- #
+"""
  
 import sys
 import os
@@ -19,14 +20,12 @@ from hazpy.geometry import polygons
 class gnome_map(map_canvas.MapCanvas):
     
     """basic color bitmap."""
-
         
     def __init__(self, image_size, bna_filename, color_mode='RGB'):
         map_canvas.MapCanvas.__init__(self, image_size, projection=map_canvas.FlatEarthProjection, mode=color_mode)
         self.polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
         self.filename = bna_filename
         self.draw_land(self.polygons)
-
 
     def __del__(self):
         pass        
@@ -118,3 +117,147 @@ class lw_map(gnome_map):
             print  "spill " + str(dict((('position', coord), ('num_particles', num_particles), ('release_time', release_time)))) + " ignored."
         else:
             self.spills += [(coord, num_particles, release_time)]
+
+class LandWaterMap:
+    """
+    A GNOME map class -- determines where land and water are
+    
+    This is a base class that defines the interface -- with no implementation
+    
+    See subclasses for implementation
+    """
+    def __init__(self)):
+        """
+        This __init__ will be different depending on the implemenation
+        """
+        
+        self.bounding_box = None
+        self.refloat_halflife = None
+
+    def on_map(self, coord):
+        """
+        returns a Boolean result:
+        
+        True if the point is on the map,
+        False if not
+        
+        coord is a (long, lat) location
+        
+        """
+        raise NotImplimentedError
+
+    def on_land(self, coord):
+        """
+        returns a Boolean result:
+        
+        True if the point is on land,
+        False if the point is on water
+        
+        coord is a (long, lat) location
+        
+        """
+        raise NotImplimentedError
+
+   def in_water(self, coord):
+        """
+        returns a Boolean result:
+        
+        True if the point is in the water,
+        False if the point is on land (or off map?)
+        
+        coord is a (long, lat) location
+        
+        """
+        raise NotImplimentedError
+            
+    def allowable_spill_position(self, coord):
+        """
+        returns a Boolean result:
+        
+        True if the point is an allowable spill position
+        False if the point is not an allowable spill position
+
+        (Note: it could be either off the map, or in a location that spills
+        aren't allowed)
+        
+        coord is a (long, lat) location
+        
+        """
+        raise NotImplimentedError
+
+class RasterMap(LandWaterMap):
+
+    """
+    A land water map implemented as a raster
+    """
+
+    water = 0
+    land  = 1
+    spillable_area = 2
+    # others....
+    
+        
+    def __init__(self, refloat_halflife, bitmap_array, projection, bounding_box):
+        """
+        create a new RasterMap
+        
+        refloat_halflife is the halflife for refloating
+        
+        This is assumed to be the same everywhere at this point
+        
+        bitmap_array is a numpy array that stores the land-water map
+        
+        projection is the projection object -- used to conver from lat-long to pixels in the array
+        
+        bounding box is the bounding box of the map -- may not match the array -- if the map is larger than the land.
+    
+        self.bitmap = bitmap_array
+        self.bounding_box = hazpy.geometry.BBox.BBox(bounding_box)
+        self.refloat_halflife = refloat_halflife
+
+    def pixel_on_map(self, pixel_coord):
+        """
+        returns True is the pixel location is on the map
+        
+        note: should this support no-rectangluar maps?
+        """
+        
+        if self.bounding_box.PointInside(pixel_coord):
+            return True
+        else:
+            return False
+
+    def on_land(self, coord):
+        """
+        returns True is on land
+        
+        coord is (long, lat) location
+        
+        """
+        return not self.in_water(coord)
+
+    def on_land_pixel(self, coord):
+        return not self.in_water_pixel(coord)
+        
+    def in_water(self, coord):
+        coord = self.to_pixel(coord)
+        return self.in_water_pixel(coord)
+    
+    def in_water_pixel(self, coord):
+        if not self.on_map(coord):
+            return False
+        try:
+            return self.bitmap[coord[0], coord[1]]
+        except IndexError:
+            # Note: this could be off map, which may be a different thing than on land....
+            return False
+
+    def allowable_spill_position(self, coord):
+        """
+        returns true is the spill position is in teh allowable spill area
+        
+        This may not be the same as in_water!
+        """
+        ##fixme: add check for allowable spill area -- may not be all water!
+        return self.in_water(coord)
+        

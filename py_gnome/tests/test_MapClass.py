@@ -9,14 +9,14 @@ You should  be able to `git checkout prototype; cd py_gnome; python setup.py bui
 import gnome.map
 
 
-
 def test_map_island_color():
     '''
     Test the creation of a color map with an island inset.
     '''
     m = gnome.map.gnome_map([500,500],"MapBounds_Island.bna",'RGB') #Create a 500x500 pixel map.
     m.image.save('Color_MapBounds.png') #Write the result to the present working directory as a PNG image file.
-    assert False #Force this test to fail so that NOSE will print output to the command window.
+    assert True
+    #assert False #Force this test to fail so that NOSE will print output to the command window.
 
 def test_map_island_monochrome():
     '''
@@ -24,7 +24,8 @@ def test_map_island_monochrome():
     '''
     m = gnome.map.lw_map([500,500],"MapBounds_Island.bna",2.*60.*60.,"1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
     m.image.save('B&W_MapBounds.png') #Write the result to the present working directory as a PNG image file.
-    assert False #Force this test to fail so that NOSE will print output to the command window.
+    assert True
+    #assert False #Force this test to fail so that NOSE will print output to the command window.
 
 def test_map_in_water():
     '''
@@ -42,10 +43,9 @@ def test_map_on_land():
     '''
     Test whether the location of a particle on the map -- off or on land -- is determined correctly.
     '''
-    m = gnome.map.lw_map([500,500],"MapBounds_Island.bna",2.*60.*60.,"1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
+    m = gnome.map.lw_map((500,500), "MapBounds_Island.bna", 2.*60.*60., "1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
     
     #Coordinate of a point on the island of MapBounds_Island.bna.
-    LatOnLand=47.833333
-    LonOnLand=-126.78709
+    OnLand = LatOnLand = (-126.78709, 47.833333)
     
-    assert(m.on_land((LonOnLand,LatOnLand))) #Throw an error if the know on-land location returns false.
+    assert(m.on_land( OnLand )) #Throw an error if the know on-land location returns false.
