@@ -24,7 +24,7 @@ class gnome_map(map_canvas.MapCanvas):
     def __init__(self, image_size, bna_filename, color_mode='RGB'):
         map_canvas.MapCanvas.__init__(self, image_size, projection=map_canvas.FlatEarthProjection, mode=color_mode)
         self.polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
-        self.filename = bna_filename
+        self.filename = bna_filename        
         self.draw_land(self.polygons)
 
 

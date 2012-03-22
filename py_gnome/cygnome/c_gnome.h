@@ -2,8 +2,8 @@
 #define __PYX_HAVE__gnome__c_gnome
 
 
-/* "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/cyGNOME/c_gnome_defs.pxi":166
- *         void        SetTimeDep(OSSMTimeValue_c *time_dep)
+/* "/Users/alex.hadjilambris/Workspace/CLEAN/GNOME/py_gnome/cyGNOME/c_gnome_defs.pxi":173
+ *         void        ModelStepIsDone()
  * 
  * cdef public enum type_defs:             # <<<<<<<<<<<<<<
  *     status_not_released = OILSTAT_NOTRELEASED
@@ -11,7 +11,7 @@
  */
 enum type_defs {
 
-  /* "/Users/alex.hadjilambris/Workspace/GNOME6/py_gnome/cyGNOME/c_gnome_defs.pxi":180
+  /* "/Users/alex.hadjilambris/Workspace/CLEAN/GNOME/py_gnome/cyGNOME/c_gnome_defs.pxi":187
  *     disp_status_have_evaporated = HAVE_EVAPORATED
  *     disp_status_remove = REMOVE
  *     disp_status_have_removed = HAVE_REMOVED             # <<<<<<<<<<<<<<

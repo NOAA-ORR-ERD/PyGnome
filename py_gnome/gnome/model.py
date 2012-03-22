@@ -70,14 +70,14 @@ class Model:
         """
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
     
-    def add_cats_mover(self, path, scale_type, ref_position, shio_path, scale_value=1, diffusion_coefficient=1):
-        if(self.start_time == self.stop_time):
-            print 'Please set the model run times before continuing.'
-            exit(0)
-        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient, shio_path, self.start_time, self.stop_time)
-        mover.set_ref_position(ref_position, 0)
+    def add_cats_mover(self, path, scale_type, shio_path_or_ref_position, scale_value=1, diffusion_coefficient=1):
+        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient, shio_path_or_ref_position)
         mover.read_topology(path)
-        mover.compute_velocity_scale()
+        if(type(shio_path_or_ref_position)!=type("")):
+            mover.set_ref_point(shio_path_or_ref_position)
+            mover.set_velocity_scale(scale_value)
+        else:
+            mover.compute_velocity_scale()
         self.movers.append(mover)
         
     def set_run_duration(self, start_time, stop_time):
@@ -101,12 +101,16 @@ class Model:
         self.start_time = start_time
         self.stop_time = stop_time
         self.duration = stop_time - start_time
+        c_gnome.set_model_start_time(start_time)
+        c_gnome.set_model_time(start_time)
+        c_gnome.set_model_duration(self.duration)
     
     def set_timestep(self, interval_seconds):
         if self.duration == None:
             return
         self.interval_seconds = interval_seconds
         self.num_timesteps = floor(self.duration / self.interval_seconds)
+        c_gnome.set_model_timestep(interval_seconds)
 
     def set_spill(self, num_particles, windage, (start_time, stop_time), (start_position, stop_position), \
                     disp_status=disp_status_dont_disperse):
@@ -147,7 +151,7 @@ class Model:
             lwpras += [numpy.copy(spill.npra['p'])]
         for mover in self.movers:
             for j in xrange(0, len(spills)):
-                mover.get_move(self.interval_seconds, spills[j].npra, self.time_step*self.interval_seconds + self.start_time)
+                mover.get_move(self.interval_seconds, spills[j].npra)
         for j in xrange(0, len(spills)):
             spill = spills[j]
             chromgph = spill.movement_check()
@@ -173,6 +177,6 @@ class Model:
         print "filename:", filename
         self.c_map.draw_particles(self.spills, filename)
         self.time_step += 1
-        
+        c_gnome.step_model()
         return filename
         
