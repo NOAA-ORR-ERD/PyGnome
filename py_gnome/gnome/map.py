@@ -126,7 +126,7 @@ class LandWaterMap:
     
     See subclasses for implementation
     """
-    def __init__(self)):
+    def __init__(self):
         """
         This __init__ will be different depending on the implemenation
         """
@@ -158,7 +158,7 @@ class LandWaterMap:
         """
         raise NotImplimentedError
 
-   def in_water(self, coord):
+    def in_water(self, coord):
         """
         returns a Boolean result:
         
@@ -207,10 +207,11 @@ class RasterMap(LandWaterMap):
         
         bitmap_array is a numpy array that stores the land-water map
         
-        projection is the projection object -- used to conver from lat-long to pixels in the array
+        projection is the projection object -- used to convert from lat-long to pixels in the array
         
         bounding box is the bounding box of the map -- may not match the array -- if the map is larger than the land.
-    
+        """
+        
         self.bitmap = bitmap_array
         self.bounding_box = hazpy.geometry.BBox.BBox(bounding_box)
         self.refloat_halflife = refloat_halflife
