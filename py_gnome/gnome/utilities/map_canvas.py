@@ -184,7 +184,6 @@ class MapCanvas:
            if BB is not provided, the bounding box will be determined from the land polygons
         
         """
-        
         # find the bounding box:
         BB = polygons.bounding_box
         self.projection = self.projection(BB, self.image.size)
@@ -195,14 +194,16 @@ class MapCanvas:
 
         for p in polygons:
             try:
-                int(p.metadata[1])
-                #print "drawing:", p
+                #int(p.metadata[1])
+                temp_str = p.metadata[1].strip().lower()
+                if temp_str == "map bounds" or temp_str == "spillablearea":
+                    continue
                 poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
                 drawer.polygon(poly, fill=self.land_color)
                 #print "done drawing"
                 
             except ValueError: # not a regular polygon
-                pass
+                print 'exception!'
                 
         print 'done drawing' + self._type()
         return None
