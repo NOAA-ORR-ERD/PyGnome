@@ -20,6 +20,8 @@ webgnome.egg-info/requires.txt
 webgnome.egg-info/top_level.txt
 webgnome/locationdata/LongIslandSound/CLISShio.txt
 webgnome/static/LongIslandSoundMap.png
+webgnome/static/arctic.jpg
+webgnome/static/atlantic.gif
 webgnome/static/favicon.ico
 webgnome/static/footerbg.png
 webgnome/static/gnome.jpg
@@ -27,6 +29,7 @@ webgnome/static/headerbg.png
 webgnome/static/ie6.css
 webgnome/static/lmiss.png
 webgnome/static/middlebg.png
+webgnome/static/pacific.gif
 webgnome/static/pylons.css
 webgnome/static/pyramid-small.png
 webgnome/static/pyramid.png

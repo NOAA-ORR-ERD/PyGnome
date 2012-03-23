@@ -23,7 +23,7 @@ def gnomehash(pyson):
 
 def gnomesetup(pyson):
     '''sets the model data'''
-    movers, spills, params, location = pyson["movers"], pyson["spills"], pyson["params"], pyson["locationfile"]
+    movers, spills, params, location = [pyson["movers"],], [pyson["spills"],], [pyson["params"],], pyson["locationfile"]
     return movers, spills, params, location
 
 def instantiate_location(location, params):
