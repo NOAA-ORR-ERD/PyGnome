@@ -26,7 +26,7 @@ def gnomesetup(pyson):
     movers, spills, params, location = pyson["movers"], pyson["spills"], pyson["params"], pyson["locationfile"]
     return movers, spills, params, location
 
-def instantiate_location(location):
+def instantiate_location(location, params):
     location_name = location['locationfile'].strip().lower()
     if(location_name == "longislandsound"):
         constructor = location_files.LongIslandSound
@@ -38,8 +38,8 @@ def instantiate_location(location):
     
     #model_start_time = params['model_start_date'] + " " + params['model_start_time']
     #model_stop_time = params['model_stop_date'] + " " + params['model_stop_time']
-    model_start_time = '12/11/2012 06:55:00'
-    model_stop_time = '12/12/2012 06:55:00'
+    model_start_time = '12/11/2012 07:55:00'
+    model_stop_time = '12/12/2012 11:55:00'
     
 #    try:
 #        timestep = int(params['model_time_step'])
@@ -48,30 +48,30 @@ def instantiate_location(location):
 #        exit(-1)
     
     timestep = 900 #seconds
-    
-    return constructor(model_start_time, model_stop_time, timestep)
         
-def handle_movers(movers, location, params):
-    
     try:
         for parameter in params:
             if(parameter['type'].strip().lower() == 'riverflow'):
-                location.scale_value = float(parameter['surfacecurrent'])
+                scale_value = float(parameter['surfacecurrent'])
     except:
         print 'exception!'
         exit(-1)
 
+    return constructor(model_start_time, model_stop_time, timestep, scale_value)
+        
+def handle_movers(movers, location):
+
     for mover in movers:
         try:
             type = mover['type'].strip().lower()
-            if(type == 'constant_mover'):
+            if(type == 'constant_wind'):
                 velocity = float(mover['velocity'])
                 direction = radians(float(mover['direction']))
-                location.add_wind_mover((cos(direction), sin(direction))) #refactor this.
+                location.set_wind_mover((velocity*cos(direction), velocity*sin(direction))) #refactor this.
             elif(type == 'cats_mover'):
                 pass # this should be handled by default, with the exception of the scale factor, which we're going to leave alone for now.
         except:
-            print 'exception in handle_movers!'
+            print 'exception in handle_movers!', sys.exc_info()
             exit(-1)
 
 def run_gnome(pyson):
@@ -86,26 +86,26 @@ def run_gnome(pyson):
     except OSError:
         print 'directory exists!!'
 
-    location = instantiate_location(location)
+    location = instantiate_location(location, params)
     
     for spill in spills:
         try:
             #num_particles = int(spill['num_particles'])            
             #time = spill['date'] + " " + spill['start_time']
             num_particles = 1000
-            time = '12/11/2012 06:55:00'
+            time = '12/11/2012 07:55:00'
             xy = (float(spill['longitude']), float(spill['latitude']))
             location.set_spill(num_particles, time, xy)
         except:
             print 'exception in run_gnome!'
             exit(-1)
 
-    handle_movers(movers, location, params)
+    handle_movers(movers, location)
     png_files = location.run(imgpath)
     return dirname, len(png_files)
     
 if __name__=='__main__':
     import location_files
-    run_gnome({u'movers': [{u'velocity': u'3', u'direction': u'152', u'type': u'constant_wind'}], \
-                u'spills': [{u'latitude': u'41.152120', u'date': u'', u'start_time': u'00:00:00', u'type': u'point_source', u'longitude': u'-72.419882'}], \
-                    u'params': [{u'surfacecurrent': u'2', u'type': u'riverflow'}], u'locationfile': {u'locationfile': u'longislandsound'}})
+    run_gnome({u'movers': [{u'velocity': u'1.2', u'direction': u'-172', u'type': u'constant_wind'}], \
+                u'spills': [{u'latitude': u'29.494558', u'date': u'', u'start_time': u'00:00:00', u'type': u'point_source', u'longitude': u'-89.699944'}], \
+                    u'params': [{u'surfacecurrent': u'1.0', u'type': u'riverflow'}], u'locationfile': {u'locationfile': u'lowermississippiriver'}})

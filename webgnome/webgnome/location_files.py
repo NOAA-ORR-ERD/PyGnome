@@ -60,7 +60,7 @@ class LocationFile:
     
     def set_wind_mover(self, vector):
         self.model.add_wind_mover(vector)
-        
+
     def get_map_image(self):
         return self.model.get_map_image()
     
@@ -112,7 +112,9 @@ class LowerMississippiRiver( LocationFile ):
     scale_type = 1  # constant scaling.
     scale_value = 1 # leaving alone for now.
 
-    def __init__(self, model_start_time, model_stop_time, timestep):
+    def __init__(self, model_start_time, model_stop_time, timestep, scale_value=None):
+        if scale_value:
+            self.scale_value = scale_value
         LocationFile.__init__(self, model_start_time, model_stop_time, timestep)
     
     def set_default_movers(self):
@@ -135,12 +137,14 @@ class LongIslandSound( LocationFile ):
     scale_type = 1  # constant scaling.
     scale_value = 1 # leaving alone for now.
     
-    def __init__(self, model_start_time, model_stop_time, timestep):
+    def __init__(self, model_start_time, model_stop_time, timestep, scale_value=None):
+        if scale_value:
+            self.scale_value = scale_value
         LocationFile.__init__(self, model_start_time, model_stop_time, timestep)
     
     def set_default_movers(self):
         LocationFile.set_default_movers(self)
-        self.model.add_cats_mover(self.topology_file, self.scale_type, self.shio_file, 1) # value needs to be changed here.
+        self.model.add_cats_mover(self.topology_file, self.scale_type, self.shio_file, self.scale_value) # value needs to be changed here.
 
 if __name__ == "__main__":
     """

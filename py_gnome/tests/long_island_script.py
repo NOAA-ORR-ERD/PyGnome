@@ -42,7 +42,7 @@ model_stop_time = '12/12/2012 06:59:00'
 mini_gnome.set_run_duration(model_start_time, model_stop_time)
 mini_gnome.set_timestep(900)
 
-mini_gnome.add_wind_mover((-.2, .3))
+mini_gnome.add_wind_mover((-10, 30))
 mini_gnome.add_random_mover(10000)
 mini_gnome.add_cats_mover(topology_file, scale_type, shio_file, 1) # value needs to be changed here.
 
