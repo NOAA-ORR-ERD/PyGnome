@@ -118,8 +118,12 @@ class Model:
         if not (allowable_spill(start_position) and allowable_spill(stop_position)):
             print 'spill ignored: (' + str(start_position) + ', ' + str(stop_position) + ').'
             return
-        self.spills += [spill.spill(self.lw_map, num_particles, disp_status, windage, \
-                                        (greenwich.gwtm(start_time).time_seconds, greenwich.gwtm(stop_time).time_seconds), (start_position, stop_position))]
+        try:
+            self.spills += [spill.spill(self.lw_map, num_particles, disp_status, windage, \
+                                            (greenwich.gwtm(start_time).time_seconds, greenwich.gwtm(stop_time).time_seconds), (start_position, stop_position))]
+        except:
+            print 'Please check the format of your date time strings.'
+            exit(-1)
         self.lwp_arrays += [numpy.copy(self.spills[len(self.spills)-1].npra['p'])]
     
     def reset(self):
@@ -171,7 +175,7 @@ class Model:
         if self.time_step >= self.num_timesteps:
             return False
         self.release_particles()
-        self.refloat_particles()
+        #self.refloat_particles()
         self.move_particles()
         filename = os.path.join(output_dir, 'map%05i.png'%self.time_step)
         print "filename:", filename

@@ -367,8 +367,8 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 	//		goto done;
 	//	}
 	
-	char c;
 	try {
+		char c;
 		int x = i = 0;
 		int j = 0;
 		std::string *file_contents = new std::string();
@@ -380,9 +380,10 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 		do {
 			_ifstream->get(c);
 			j++;
-		} while((int)c != LINEFEED);
-		f = _NewHandle(x-j);
-		for(; i < x && _ifstream->get(c); i++)
+		} while((int)c == LINEFEED || (int)c == RETURN);
+		f = _NewHandle(x-j+1);
+		DEREFH(f)[i] = c;
+		for(++i; i < x-j+1 && _ifstream->get(c); i++)
 			DEREFH(f)[i] = c;
 		
 	} catch(...) {
