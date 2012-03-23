@@ -20,6 +20,14 @@ def location(request):
 def gnome(request): 
     return {} 
 
+@view_config(route_name='longislandsound', renderer='templates/gnome.pt')
+def longislandsound(request): 
+    return {}
+
+@view_config(route_name='lmiss', renderer='templates/lmiss.pt')
+def lmiss(request): 
+    return {}
+
 jobs = []
 @view_config(route_name='run', renderer='json')
 def run(request):

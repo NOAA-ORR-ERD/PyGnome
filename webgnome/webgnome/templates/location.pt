@@ -144,18 +144,18 @@ a.disabled {
 
     <!-- 1-5 -->
     <div><h4>Arctic Region</h4>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
-      <a href ="/gnome"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
 
      </div>
 
@@ -172,39 +172,39 @@ a.disabled {
       	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
       	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
       	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
-      	<a href="#"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
-      	<a href="#"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
     </div>
 
     <!-- 10-15 -->
     <div><h4>Gulf of Mexico Region</h4>
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
-     	<a href="/gnome"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
     </div>
 
  <!-- 10-15 -->
     <div><h4>Pacific Region</h4>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
-     	  <a href="/gnome"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
      </div>
 
  <!-- 10-15 -->
@@ -243,7 +243,7 @@ var window.location_file = long_island_sound;
 	function select(){
 $("a").click(function () {
 window.location_file = $(this).attr('id');
-alert};
+alert()};
 )
 
 select();

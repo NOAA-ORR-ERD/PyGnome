@@ -256,7 +256,12 @@ float: left;
     background: white;
 }
 
-
+/*
+   root element for scrollable items. Must be absolutely positioned
+   and it should have a extremely large width to accomodate scrollable
+   items.  it's enough that you set the width and height for the root
+   element and not for this element.
+*/
 .scrollable .items {
     /* this cannot be too large */
     width:20000em;
@@ -908,7 +913,7 @@ a.disabled {
 		
 			</div><!--navi-->
 			<div id="mapcanvas">
-				<img id="mappng" src="static/LongIslandSoundMap.png" height="500" width ="500" style = "border-radius:10px" />
+				<img id="mappng" src="static/lmiss.png" height="500" width ="500" style = "border-radius:10px" />
 				<script>
 					//Initialize input boxes to show user valid input
 					document.getElementById('speed').value = 0;
@@ -925,6 +930,7 @@ a.disabled {
 					document.getElementById('variablewinddirection').value = '0';
 					document.getElementById('duration').value = '0';
 					document.getElementById('modeltime').value = '00:00:00';
+
 				</script>
 
 <!--Intial Settings for GNOME></-->
@@ -988,7 +994,7 @@ function getgnomedata(){
 	var movers = [{'type' : 'constant_wind', 'velocity': constantwindspeed, 'direction': constantwinddirection}];
 	var params = [{'type' : 'riverflow', 'surfacecurrent': surfacecurrent}]; 
 	var spills = [{'type' : 'point_source', 'latitude' : latitude, 'longitude': longitude, 'date' : date, 'start_time' : time}];
-	var locationfile = {'locationfile': 'longislandsound'};
+	var locationfile = {'locationfile': 'lmiss'};
 	var modeldata = {'movers' : movers, 'params' : params, 'spills' : spills, 'locationfile': locationfile}; 
 	
 
