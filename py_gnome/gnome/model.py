@@ -171,7 +171,7 @@ class Model:
         if self.time_step >= self.num_timesteps:
             return False
         self.release_particles()
-        self.refloat_particles()
+        #self.refloat_particles()
         self.move_particles()
         filename = os.path.join(output_dir, 'map%05i.png'%self.time_step)
         print "filename:", filename

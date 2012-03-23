@@ -620,7 +620,7 @@ short CurveFitOffsetCurve(COMPCURRENTS *answers,
 	
 	// Begin by declaring temp space on heap 
 	// for a copy of the maxs and mins
-	
+
 	NoOfMaxMins = answers->numEbbFloods;
 	if(NoOfMaxMins<1){
 		errorFlag=19;

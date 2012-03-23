@@ -40,8 +40,13 @@ class LocationFile:
         """
         
         self.model = gnome.model.Model()
-        self.model.startTime = datetime.datetime.now() ##fixme -- does the model need a start time at this point?
-        self.model.set_run_duration( *self.run_duration ) 
+        
+        model_start_time = '2011-11-12 06:55:00'
+        model_stop_time = '2011-12-12 06:59:00'
+
+        self.model.set_run_duration(model_start_time, model_stop_time)
+        self.model.set_timestep(900)
+
         self.model.set_timestep(self.time_step) # 10 minutes in seconds 
         
         self.model.add_map(self.map_image_size,
@@ -115,7 +120,44 @@ class LocationFile:
                              (start_time, start_time),
                              (location, location),
                              )
+
+class LowerMississippiRiver( LocationFile ):
+
+    run_duration = (0, 24*3600) # in seconds 
+    time_step = 10*60 # 10 minutes in seconds 
+
+    map_image_size = (800, 500)
+    map_file_name = "./LMiss.bna"
+    topology_file = "./LMiss.CUR"
+
+    # some spill defaults
+    windage = 0.03
+    num_particles = 1000
+
+    def __init__(self, scale_value):
+        LocationFile.__init__(self)
+        self.cats_mover = self.add_cats_mover(topology_file, cats_scale_type, (-89.699944, 29.494558), scale_value) # value needs to be changed here.
+        self.wind_mover = self.model.add_wind_mover((0.0, 0.0)) # setting a zero constant wind.
+        
     
+    def reset_constant_wind_mover(self, speed, direction):
+        ## this should be here -- but can't do this now
+        """
+        reset the values of the wind mover with a new one
+        
+        only constant mover for now
+        
+        speed is the wind speed in m/s
+        direction is the direction the wind is blowing from (degrees true)
+        """
+        u = speed * -math.sin(direction/180. * math.pi)
+        v = speed * -math.cos(direction/180. * math.pi)
+        
+        ## is this right??
+        self.wind_mover.mover.fConstantValue.u = u
+        self.wind_mover.mover.fConstantValue.v = v
+
+
 class LongIslandSound( LocationFile ):
 
     run_duration = (0, 24*3600) # in seconds 
@@ -123,7 +165,7 @@ class LongIslandSound( LocationFile ):
 
     map_image_size = (800, 500)
     map_file_name = "LongIslandSoundMap.bna"
-
+    
     # some spill defaults
     windage = 0.03
     num_particles = 1000
@@ -162,16 +204,14 @@ if __name__ == "__main__":
     location = LongIslandSound()
     location.reset()
     location.replace_constant_wind_mover(speed = 5.0, direction=45.0)
-    location.set_spill(start_time=datetime.datetime(2012, 2, 14, 14),
-                       location = (-72.719832,
-                                   41.112120))
+    location.set_spill(start_time='2011-11-12 06:55:00',
+                       location = (-89.699944, 29.494558))
     png_files = location.run(os.path.join('.', 'temp1'))
     
     ## run a new version
     location.reset()
-    location.set_spill(start_time=datetime.datetime(2012, 2, 14, 14),
-                       location = (-72.719832,
-                                   41.112120))
+    location.set_spill('2011-11-12 06:55:00',
+                       location = (-89.699944, 29.494558))
     location.replace_constant_wind_mover(speed = 5.0, direction=270.0)
     png_files = location.run(os.path.join('.', 'temp2'))
     print png_files
