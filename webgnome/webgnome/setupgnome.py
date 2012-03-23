@@ -13,8 +13,8 @@ curdir = os.getcwd()
 location_files.LongIslandSound.map_file_name = curdir+"/locationdata/LongIslandSound/LongIslandSoundMap.BNA"
 location_files.LongIslandSound.topology_file = curdir+"/locationdata/LongIslandSound/tidesWAC.CUR"
 location_files.LongIslandSound.shio_file = curdir+"/locationdata/LongIslandSound/CLISShio.txt"
-location_files.LowerMississippiRiver.map_file_name = curdir+"/locationdata/LowerMississippiRiver/LMiss.bna"
-location_files.LowerMississippiRiver.topology_file = curdir+"/locationdata/LowerMississippiRiver/LMiss.CUR"
+location_files.LowerMississippiRiver.map_file_name = curdir+"/locationdata/LowerMississippi/LMiss.bna"
+location_files.LowerMississippiRiver.topology_file = curdir+"/locationdata/LowerMississippi/LMiss.CUR"
 
 def gnomehash(pyson):
     m = md5.new() 
@@ -30,7 +30,7 @@ def instantiate_location(params):
     location_name = params['location'].strip().lower()
     if(location_name == "longislandsound"):
         constructor = location_files.LongIslandSound
-    elif(location_name == "lowermississippi"):
+    elif(location_name == "lowermississippiriver"):
         constructor = location_files.LowerMississippiRiver
     else:
         print 'Unknown location.'
@@ -91,5 +91,5 @@ def run_gnome(pyson):
 if __name__=='__main__':
     import location_files
     run_gnome({u'movers': [{u'velocity': u'2.3', u'direction': u'275', u'type': u'constant_wind'},], \
-                u'spills': [{u'longitude': u'-72.419882', u'latitude': u'41.202120', u'date': u'01/01/2012', u'start_time': u'01:02:00', u'type': u'point_source',  u'num_particles': u'1000'},], \
-                    u'params': {u'location': u'LongIslandSound', u'model_start_date': '01/01/2012', u'model_start_time': '01:00:00', u'model_stop_date': '01/01/2012', u'model_stop_time': '12:00:00', u'model_time_step': '900'}})
+                u'spills': [{u'longitude': u'-89.699944', u'latitude': u'29.494558', u'date': u'01/01/2012', u'start_time': u'01:02:00', u'type': u'point_source',  u'num_particles': u'1000'},], \
+                    u'params': {u'location': u'LowerMississippiRiver', u'model_start_date': '01/01/2012', u'model_start_time': '01:00:00', u'model_stop_date': '01/01/2012', u'model_stop_time': '12:00:00', u'model_time_step': '900'}})

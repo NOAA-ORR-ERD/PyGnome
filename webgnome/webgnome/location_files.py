@@ -117,7 +117,7 @@ class LowerMississippiRiver( LocationFile ):
     
     def set_default_movers(self):
         LocationFile.set_default_movers(self)
-        mini_gnome.add_cats_mover(self.topology_file, self.scale_type, (-89.699944, 29.494558), self.scale_value)
+        self.model.add_cats_mover(self.topology_file, self.scale_type, (-89.699944, 29.494558), self.scale_value)
 
 class LongIslandSound( LocationFile ):
 
