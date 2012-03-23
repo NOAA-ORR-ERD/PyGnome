@@ -23,11 +23,11 @@ def gnomehash(pyson):
 
 def gnomesetup(pyson):
     '''sets the model data'''
-    movers, params, spills = pyson["movers"], pyson["params"], pyson["spills"]
-    return movers, params, spills 
+    movers, spills, params, location = pyson["movers"], pyson["spills"], pyson["params"], pyson["locationfile"]
+    return movers, spills, params, location
 
-def instantiate_location(params):
-    location_name = params['location'].strip().lower()
+def instantiate_location(location):
+    location_name = location['locationfile'].strip().lower()
     if(location_name == "longislandsound"):
         constructor = location_files.LongIslandSound
     elif(location_name == "lowermississippiriver"):
@@ -36,17 +36,31 @@ def instantiate_location(params):
         print 'Unknown location.'
         exit(-1)
     
-    model_start_time = params['model_start_date'] + " " + params['model_start_time']
-    model_stop_time = params['model_stop_date'] + " " + params['model_stop_time']
+    #model_start_time = params['model_start_date'] + " " + params['model_start_time']
+    #model_stop_time = params['model_stop_date'] + " " + params['model_stop_time']
+    model_start_time = '12/11/2012 06:55:00'
+    model_stop_time = '12/12/2012 06:55:00'
+    
+#    try:
+#        timestep = int(params['model_time_step'])
+#    except:
+#        print 'exception!'
+#        exit(-1)
+    
+    timestep = 900 #seconds
+    
+    return constructor(model_start_time, model_stop_time, timestep)
+        
+def handle_movers(movers, location, params):
+    
     try:
-        timestep = int(params['model_time_step'])
+        for parameter in params:
+            if(parameter['type'].strip().lower() == 'riverflow'):
+                location.scale_value = float(parameter['surfacecurrent'])
     except:
         print 'exception!'
         exit(-1)
 
-    return constructor(model_start_time, model_stop_time, timestep)
-        
-def handle_movers(movers, location):
     for mover in movers:
         try:
             type = mover['type'].strip().lower()
@@ -64,7 +78,7 @@ def run_gnome(pyson):
     """
     computes dir name, runs gnome, and returns the dirname
     """
-    movers, params, spills = gnomesetup(pyson)
+    movers, spills, params, location = gnomesetup(pyson)
     dirname = gnomehash(pyson)
     imgpath = os.path.join(curdir+'/static/hashes/',dirname)
     try:
@@ -72,24 +86,26 @@ def run_gnome(pyson):
     except OSError:
         print 'directory exists!!'
 
-    location = instantiate_location(params)
+    location = instantiate_location(location)
     
     for spill in spills:
         try:
-            num_particles = int(spill['num_particles'])            
-            time = spill['date'] + " " + spill['start_time']
+            #num_particles = int(spill['num_particles'])            
+            #time = spill['date'] + " " + spill['start_time']
+            num_particles = 1000
+            time = '12/11/2012 06:55:00'
             xy = (float(spill['longitude']), float(spill['latitude']))
             location.set_spill(num_particles, time, xy)
         except:
             print 'exception in run_gnome!'
             exit(-1)
 
-    handle_movers(movers, location)
+    handle_movers(movers, location, params)
     png_files = location.run(imgpath)
     return dirname, len(png_files)
     
 if __name__=='__main__':
     import location_files
-    run_gnome({u'movers': [{u'velocity': u'2.3', u'direction': u'275', u'type': u'constant_wind'},], \
-                u'spills': [{u'longitude': u'-89.699944', u'latitude': u'29.494558', u'date': u'01/01/2012', u'start_time': u'01:02:00', u'type': u'point_source',  u'num_particles': u'1000'},], \
-                    u'params': {u'location': u'LowerMississippiRiver', u'model_start_date': '01/01/2012', u'model_start_time': '01:00:00', u'model_stop_date': '01/01/2012', u'model_stop_time': '12:00:00', u'model_time_step': '900'}})
+    run_gnome({u'movers': [{u'velocity': u'3', u'direction': u'152', u'type': u'constant_wind'}], \
+                u'spills': [{u'latitude': u'41.152120', u'date': u'', u'start_time': u'00:00:00', u'type': u'point_source', u'longitude': u'-72.419882'}], \
+                    u'params': [{u'surfacecurrent': u'2', u'type': u'riverflow'}], u'locationfile': {u'locationfile': u'longislandsound'}})
