@@ -985,9 +985,9 @@ function getgnomedata(){
 	//];
 	
 	//GNOME MODEL DATA
-	var movers = [{'type' : 'constant_wind', 'velocity': constantwindspeed, 'direction': constantwinddirection}];
-	var params = [{'type' : 'riverflow', 'surfacecurrent': surfacecurrent}]; 
-	var spills = [{'type' : 'point_source', 'latitude' : latitude, 'longitude': longitude, 'date' : date, 'start_time' : time}];
+	var movers = {'type' : 'constant_wind', 'velocity': constantwindspeed, 'direction': constantwinddirection};
+	var params = {'type' : 'riverflow', 'surfacecurrent': surfacecurrent}; 
+	var spills = {'type' : 'point_source', 'latitude' : latitude, 'longitude': longitude, 'date' : date, 'start_time' : time};
 	var locationfile = {'locationfile': 'longislandsound'};
 	var modeldata = {'movers' : movers, 'params' : params, 'spills' : spills, 'locationfile': locationfile}; 
 	
