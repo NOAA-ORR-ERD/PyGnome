@@ -10,8 +10,8 @@ mini_gnome.add_map(dimensions_bmp, "LongIslandSoundMap.BNA", 5)
 
 spill = {'num_particles': 1000,
          'windage': .2,
-         'start_time': '2011-11-12 06:55:00',
-         'stop_time': '2011-11-12 06:55:00',
+         'start_time': '12/11/2012 06:55:00',
+         'stop_time': '12/11/2012 06:55:00',
          'start_position': (-72.419882,41.202120),
          'stop_position': (-72.419882,41.202120),
          }
@@ -24,8 +24,8 @@ mini_gnome.set_spill(spill['num_particles'],
 
 spill = {'num_particles': 1000,
          'windage': .02,
-         'start_time': '2011-11-12 06:55:00',
-         'stop_time': '2011-11-12 06:55:00',
+         'start_time': '12/11/2012 06:55:00',
+         'stop_time': '12/11/2012 06:55:00',
          'start_position': (-72.419882,41.152120),
          'stop_position': (-72.419882,41.142120),
          }
@@ -36,8 +36,8 @@ shio_file = "./CLISShio.txt"
 topology_file = "./tidesWAC.CUR"
 
 
-model_start_time = '2011-11-12 06:55:00'
-model_stop_time = '2011-12-12 06:59:00'
+model_start_time = '12/11/2012 06:55:00'
+model_stop_time = '12/12/2012 06:59:00'
 
 mini_gnome.set_run_duration(model_start_time, model_stop_time)
 mini_gnome.set_timestep(900)

@@ -7,8 +7,8 @@ dimensions_bmp = (800, 500)
 
 spill = {'num_particles': 1000,
          'windage': .2,
-         'start_time': '2011-11-12 06:55:00',
-         'stop_time': '2011-11-12 06:55:00',
+         'start_time': '12/11/2012 06:55:00',
+         'stop_time': '12/11/2012 06:55:00',
          'start_position': (-89.699944, 29.494558),
          'stop_position': (-89.699944, 29.494558),
          }
@@ -23,8 +23,8 @@ mini_gnome.set_spill(spill['num_particles'],
 
 spill = {'num_particles': 1000,
          'windage': .02,
-         'start_time': '2011-11-12 06:55:00',
-         'stop_time': '2011-11-12 06:55:00',
+         'start_time': '12/11/2012 06:55:00',
+         'stop_time': '12/11/2012 06:55:00',
          'start_position': (-89.699944, 29.494558),
          'stop_position': (-89.699944, 29.494558),
          }
@@ -33,8 +33,8 @@ cats_scale_type = 1
 shio_file = "./CLISShio.txt"
 cats_topology_file = "./LMiss.CUR"
 
-model_start_time = '2011-11-12 06:55:00'
-model_stop_time = '2011-12-12 06:59:00'
+model_start_time = '12/11/2012 06:55:00'
+model_stop_time = '12/12/2012 06:59:00'
 
 mini_gnome.set_run_duration(model_start_time, model_stop_time)
 mini_gnome.set_timestep(900)

@@ -7,13 +7,13 @@ class gwtm:
 
     """ yyyy-mm-dd hh:mm"""
                     
-    reference_time = '1970-01-01 00:00:00'
-    pattern = re.compile('^(\d\d\d\d)\-(\d\d)\-(\d\d)\s(\d\d):(\d\d):(\d\d)$')
+    reference_time = '01/01/1970 00:00:00'
+    pattern = re.compile('^(\d\d)/(\d\d)/(\d\d\d\d)\s(\d\d):(\d\d):(\d\d)$')
 
     def __init__(self, time_string, epoch = reference_time):
         tokens = self.parse_datetime(time_string)
-        self.date_time = {'year': tokens.group(1), 'month': tokens.group(2), \
-                                    'day': tokens.group(3), 'hour': tokens.group(4), \
+        self.date_time = {'month': tokens.group(1), 'day': tokens.group(2), \
+                                    'year': tokens.group(3), 'hour': tokens.group(4), \
                                     'minute': tokens.group(5), 'second': tokens.group(6)  }
         self.__set_epoch(epoch)
         self.__to_seconds()
