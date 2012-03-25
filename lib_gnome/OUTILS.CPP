@@ -201,3 +201,17 @@ void ConvertToTransportUnits (long unitCode, char *unitStr)
 }
 
 
+double speedconversion(long speedUnits)
+{
+	switch(speedUnits)
+	{
+		case kKnots:
+			return KNOTSTOMETERSPERSEC;
+		case kMetersPerSec://JLM
+			return 1;
+		case kMilesPerHour://JLM
+			return MILESTOMETERSPERSEC;
+		default:
+			return -1;
+	}
+}

@@ -610,9 +610,7 @@ Boolean IsADCPFile (char *path);
 //--
 
 
-enum {	kLinkToNone = 1, kLinkToTimeFile, kLinkToWindMover };
 
-enum { NONE = 0, WINDSPEED, WINDSTRESS };	// for scaling
 
 //++ TComponentMover
 

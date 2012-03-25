@@ -30,7 +30,7 @@ def instantiate_location(location, params):
     location_name = location['locationfile'].strip().lower()
     if(location_name == "longislandsound"):
         constructor = location_files.LongIslandSound
-    elif(location_name == "lowermississippiriver"):
+    elif(location_name == "lmiss"):
         constructor = location_files.LowerMississippiRiver
     else:
         print 'Unknown location.'
@@ -80,7 +80,7 @@ def run_gnome(pyson):
     """
     movers, spills, params, location = gnomesetup(pyson)
     dirname = gnomehash(pyson)
-    imgpath = os.path.join(curdir+'/static/hashes/',dirname)
+    imgpath = os.path.join(curdir+'/webgnome/static/hashes/',dirname)
     try:
         os.mkdir(imgpath)
     except OSError:

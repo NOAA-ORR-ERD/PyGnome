@@ -797,7 +797,6 @@ typedef struct
 } CurrentUncertainyInfo;
 
 
-
 // According to the manual this directive should be embedded 
 // inside the structure definition, so may not do anything here (here pasted from OSSM.H):
 
@@ -817,5 +816,9 @@ enum { DIR_N = 1, DIR_NNE, DIR_NE, DIR_ENE, DIR_E, DIR_ESE, DIR_SE, DIR_SSE, DIR
 enum {DAYLIGHTSAVINGSON = 0, DAYLIGHTSAVINGSOFF = 1};	// allow users to turn off daylight savings time for shio tides
 
 enum { NOVICEMODE = 1, INTERMEDIATEMODE, ADVANCEDMODE };  // model modes
+
+enum {	kLinkToNone = 1, kLinkToTimeFile, kLinkToWindMover };
+
+enum { NONE = 0, WINDSPEED, WINDSTRESS };	// for scaling
 
 #endif

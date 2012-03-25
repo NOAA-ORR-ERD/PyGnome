@@ -125,20 +125,6 @@ long StrToSpeedUnits(char* str)
 	return kUndefined;
 }
 
-double speedconversion(long speedUnits)
-{
-	switch(speedUnits)
-	{
-		case kKnots:
-			return KNOTSTOMETERSPERSEC;
-		case kMetersPerSec://JLM
-			return 1;
-		case kMilesPerHour://JLM
-			return MILESTOMETERSPERSEC;
-		default:
-			return -1;
-	}
-}
 static PopInfoRec prefPopTable[] =
 {
 	{ EDIT_WINDS_DLGID, nil, EWSPEEDPOPUP, 0, pSPEEDUNITS, 0, 1, FALSE, nil },
