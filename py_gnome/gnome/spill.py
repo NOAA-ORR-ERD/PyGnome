@@ -8,7 +8,7 @@ import numpy
 class spill:
 
     def __init__(self, gnome_map, num_particles, disp_status, windage, \
-                    (start_time, stop_time), (start_position, stop_position),):
+                    (start_time, stop_time), (start_position, stop_position),uncertain=False):
         self.npra = numpy.ndarray(num_particles, dtype=le_rec)
         self.num_particles = num_particles
         self.start_time = start_time
@@ -18,6 +18,7 @@ class spill:
         self.gnome_map = gnome_map
         self.released_index = 0
         self.windage = windage
+        self.uncertain = uncertain
         self.initialize_spill(disp_status)
         self.chromgph = None
         

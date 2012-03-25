@@ -113,14 +113,14 @@ class Model:
         c_gnome.set_model_timestep(interval_seconds)
 
     def set_spill(self, num_particles, windage, (start_time, stop_time), (start_position, stop_position), \
-                    disp_status=disp_status_dont_disperse):
+                    disp_status=disp_status_dont_disperse, uncertain=False):
         allowable_spill = self.lw_map.allowable_spill_position
         if not (allowable_spill(start_position) and allowable_spill(stop_position)):
             print 'spill ignored: (' + str(start_position) + ', ' + str(stop_position) + ').'
             return
         try:
             self.spills += [spill.spill(self.lw_map, num_particles, disp_status, windage, \
-                                            (greenwich.gwtm(start_time).time_seconds, greenwich.gwtm(stop_time).time_seconds), (start_position, stop_position))]
+                                            (greenwich.gwtm(start_time).time_seconds, greenwich.gwtm(stop_time).time_seconds), (start_position, stop_position), uncertain)]
         except:
             print 'Please check the format of your date time strings.'
             exit(-1)
@@ -155,7 +155,7 @@ class Model:
             lwpras += [numpy.copy(spill.npra['p'])]
         for mover in self.movers:
             for j in xrange(0, len(spills)):
-                mover.get_move(self.interval_seconds, spills[j].npra)
+                mover.get_move(self.interval_seconds, spills[j].npra, spills[j].uncertain)
         for j in xrange(0, len(spills)):
             spill = spills[j]
             chromgph = spill.movement_check()
@@ -163,8 +163,13 @@ class Model:
                 if chromgph[i]:
                     self.lwp_arrays[j][i] = lwpras[j][i]
                     self.beach_element(spill.npra['p'][i], lwpras[j][i])
-                    
+   
+    def initialize_model(self, vacuous):
+        c_gnome.initialize_model(self.spills)
+        self.initialize_model = lambda null: None
+        
     def step(self, output_dir="."):
+        self.initialize_model(None)
         "step called: time step:", self.time_step
         if(self.duration == None):
             return False

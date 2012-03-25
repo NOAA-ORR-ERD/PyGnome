@@ -211,11 +211,14 @@ class MapCanvas:
     def draw_particles(self, spills, filename):
         img = self.image.copy()
         for spill in spills:
+            rgbt = (0,0,0)
+            if spill.uncertain:
+                rgbt = (255,0,0)
             pra = spill.npra['p']
             for i in xrange(0, len(pra)):
             	xy = self.to_pixel((pra[i]['p_long'], pra[i]['p_lat']))
                 try:
-            	    img.putpixel(xy, 1)
+            	    img.putpixel(xy, rgbt)
             	except:
 				    pass
         img.save(filename)

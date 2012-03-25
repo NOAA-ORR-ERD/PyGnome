@@ -6,6 +6,17 @@ cdef extern from "TypeDefs.h":
     ctypedef unsigned long Seconds
     ctypedef unsigned char    Boolean
     ctypedef short    OSErr
+    ctypedef unsigned long LETYPE
+
+cdef extern from "CMYLIST.H":
+    cdef cppclass CMyList:
+        CMyList(long)
+        OSErr AppendItem(char *)
+
+cdef extern from "LEList_c.h":
+    cdef cppclass LEList_c:
+        long numOfLEs
+        LETYPE fLeType
 
 cdef extern from "GEOMETRY.H":
     ctypedef struct WorldPoint:
@@ -136,6 +147,7 @@ cdef extern from "Model_c.h":
         Seconds GetStartTime()
         Seconds GetModelTime()
         Seconds GetTimeStep()
+        CMyList *LESetsList
 
 cdef extern from "CATSMover_c.h":
     ctypedef struct TCM_OPTIMZE:
