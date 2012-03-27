@@ -23,18 +23,12 @@ class spill:
         self.chromgph = None
         
     def initialize_spill(self, disp_status):
-        sra = self.npra['status_code']
-        dra = self.npra['dispersion_status']
-        pra = self.npra['p']
-        wra = self.npra['windage']
-        zra = self.npra['z']
-        for j in xrange(0, self.num_particles):
-            sra[j] = status_not_released
-            dra[j] = disp_status
-            wra[j] = self.windage
-            pra[j]['p_long'] = self.start_position[0]
-            pra[j]['p_lat'] = self.start_position[1]
-            zra[j] = 0
+        self.npra['status_code'] = status_not_released
+        self.npra['dispersion_status'] = disp_status
+        self.npra['p']['p_long'] = self.start_position[0]
+        self.npra['p']['p_lat'] = self.start_position[1]
+        self.npra['windage'] = self.windage
+        self.npra['z'] =  0.
     
     def release_particles(self, model_time):
         if(self.released_index >= self.num_particles):
@@ -71,10 +65,7 @@ class spill:
                 chromgph[idx] = 0
                 sra[idx] = status_in_water
                 pra[idx] = lwpra[idx]
-                
-    def disperse_particles(self):
-        pass
-    
+
     def noneTypePrevention(self, chromgph):
         self.chromgph = chromgph
         self.noneTypePrevention = lambda null: None
