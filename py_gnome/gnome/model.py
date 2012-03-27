@@ -16,8 +16,12 @@ class Model:
     PyGNOME Model Class
     
     Functionality:
-        Wind Movers (in the process of adding time dependence)
-        Diffusion Movers   
+        Wind Movers (in the process of adding variable wind)
+        Diffusion Mover
+        CATS Mover (shio tides or constant flow, scaled to ref pos.)
+        Continuous Spill
+        Refloating
+    """
     lw_bmp_dimensions = (1000, 1000)
 
     def __init__(self):
@@ -39,7 +43,11 @@ class Model:
         self.shio = None
         
     def add_map(self, image_size, bna_filename, refloat_halflife):
-        """ Adds both a color bitmap for visualization and a land-water map, for movement regulatoin and other tasks. """
+        """ 
+            Adds both a color bitmap for visualization and a land-water map, for movement regulatoin and other tasks. 
+        ++arguments:
+            refloat_halflife is in seconds.
+        """
         if not refloat_halflife:
             print 'Refloat halflife must be nonzero.'
             exit(-1)
@@ -48,41 +56,47 @@ class Model:
     
     def add_mover(self, mover):
         """
-        add a new mover to the model -- at the end of the stack
+            add a new mover to the model -- at the end of the stack
         """
         self.movers.append(mover)
 
     def remove_mover(self, mover):
         """
-        remove the passed-in mover from the mover list
+            remove the passed-in mover from the mover list
         """
         self.movers.remove(mover)
 
     def replace_mover(self, old_mover, new_mover):
         """
-        replace a given mover with a new one
+            replace a given mover with a new one
+            AH: I don't know that we'll need this?
         """
         i = self.movers.index(old_mover)
         self.movers[i] = new_mover
         return new_mover 
     
     def add_wind_mover(self, constant_wind_value):
+        """ 
+            Adds a constant wind. 
+        ++args:
+            constant_wind_value in units of m/sec
+        """
         m = c_gnome.wind_mover(constant_wind_value)
         self.movers.append(m)
         return m
         
     def add_random_mover(self, diffusion_coefficient):
         """
-        adds a simple diffusion mover
-        
-        diffusion_coefficient in units of cm^2/sec
+            adds a simple diffusion mover
+        ++args:
+            diffusion_coefficient in units of cm^2/sec
         """
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
     
     def add_cats_mover(self, path, scale_type, shio_path_or_ref_position, scale_value=1, diffusion_coefficient=1):
         """ 
             Adds a GNOME CATS Mover to the model's list of movers.
-        ++arguments:
+        ++args:
             shio_path_or_ref_position determines whether we're importing shio tides to be tied into the mover, or
             constantly scaling the river flow to a given reference position.
         """
@@ -96,12 +110,11 @@ class Model:
         self.movers.append(mover)
         
     def set_run_duration(self, start_time, stop_time):
-    
         """
-        Now using date-time strings, 'mm/dd/yyyy hh:mm:ss' (Greenwich Mean Time)
-        
+            Sets the model start time, stop time and run duration using
+            date-time strings with format: 'mm/dd/yyyy hh:mm:ss' 
+            (Greenwich Mean Time)
         """
-        
         try:
             start_time = greenwich.gwtm(start_time).time_seconds
             stop_time = greenwich.gwtm(stop_time).time_seconds
@@ -130,7 +143,11 @@ class Model:
 
     def set_spill(self, num_particles, windage, (start_time, stop_time), (start_position, stop_position), \
                     disp_status=disp_status_dont_disperse, uncertain=False):
-        """ Sets a spill location. """"
+        """ 
+            Sets a spill location.
+        ++args:
+            windage units?
+        """
         allowable_spill = self.lw_map.allowable_spill_position
         if not (allowable_spill(start_position) and allowable_spill(stop_position)):
             print 'spill ignored: (' + str(start_position) + ', ' + str(stop_position) + ').'
@@ -165,7 +182,7 @@ class Model:
         """ 
             Moves particles, checks that they've not been landed, 
             and beaches them if they have.
-           ++ locals:
+        ++ locals:
             "lwpra": last water position array
         """
         lwpras = []
