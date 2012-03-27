@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+"""
+a simple script to run GNOME
+"""
+
+
 import os
 from gnome import model
 
@@ -14,7 +19,7 @@ spill = {'num_particles': 1000,
          }
 
 mini_gnome = model.Model()
-mini_gnome.add_map(dimensions_bmp, "LongIslandSoundMap.bna", 5)
+mini_gnome.add_map(dimensions_bmp, "SampleData/LongIslandSoundMap.bna", 5) # 5 what?
 mini_gnome.set_spill(spill['num_particles'],
                      spill['windage'],
                      (spill['start_time'], spill['stop_time']),

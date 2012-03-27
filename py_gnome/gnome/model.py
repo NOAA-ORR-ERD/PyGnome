@@ -32,8 +32,7 @@ class Model:
         
     def add_map(self, image_size, bna_filename, refloat_halflife):
         if not refloat_halflife:
-            print 'Refloat halflife must be nonzero.'
-            exit(-1)
+            raise ValueError( 'Refloat halflife must be nonzero.' )
         self.c_map = gnome_map(image_size, bna_filename)
         self.lw_map = lw_map(self.lw_bmp_dimensions, bna_filename, refloat_halflife, '1')
     
@@ -133,6 +132,7 @@ class Model:
             spills[i].refloat_particles(self.interval_seconds, lwp_arrays[i])
     
     def beach_element(self, p, lwp):
+        ## fixme: should this be in the map class?
         in_water = self.lw_map.in_water
         displacement = ((p['p_long'] - lwp['p_long']), (p['p_lat'] - lwp['p_lat']))
         while not in_water((p['p_long'], p['p_lat'])):
@@ -145,9 +145,11 @@ class Model:
         spills = self.spills
         for spill in spills:
             lwpras += [numpy.copy(spill.npra['p'])]
+
         for mover in self.movers:
             for j in xrange(0, len(spills)):
                 mover.get_move(self.interval_seconds, spills[j].npra, self.time_step*self.interval_seconds + self.start_time)
+
         for j in xrange(0, len(spills)):
             spill = spills[j]
             chromgph = spill.movement_check()
@@ -155,6 +157,7 @@ class Model:
                 if chromgph[i]:
                     self.lwp_arrays[j][i] = lwpras[j][i]
                     self.beach_element(spill.npra['p'][i], lwpras[j][i])
+
                     
     def step(self, output_dir="."):
         "step called: time step:", self.time_step

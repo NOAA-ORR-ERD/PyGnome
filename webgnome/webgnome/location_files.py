@@ -116,12 +116,12 @@ class LocationFile:
                              (location, location),
                              )
     
-class LongIslandSound( LocationFile ):
+class MississippiRiver( LocationFile ):
 
     run_duration = (0, 24*3600) # in seconds 
     time_step = 10*60 # 10 minutes in seconds 
 
-    map_image_size = (800, 500)
+#    map_image_size = (800, 500)
     map_file_name = "LongIslandSoundMap.bna"
 
     # some spill defaults

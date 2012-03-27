@@ -5,6 +5,21 @@
  
  This is a port of the C++ raster map approach
  
+ 
+ NOTES:
+
+Should we just use non-projected coordinates for the raster map? --
+   it makes for a little less computation at every step.
+
+Do we want to treat lakes differently than regular water?
+
+New features:
+ - Map now handles spillable area and map bounds as polygons
+ - raster is the same aspect ratio os the land
+ - internally, raster is a numpy array
+ - land raster is only as big as the land -- if the map bounds are bigger, extra space is not in the land map
+    Question: what if map-bounds is smaller than land? wasted bitmap space? (though it should work)
+
 """
  
 import sys
@@ -15,20 +30,27 @@ from PIL import Image, ImageDraw
 
 from gnome.utilities import map_canvas
 from hazpy.file_tools import haz_files
-from hazpy.geometry import polygons
+from hazpy.geometry import BBox
+from hazpy.geometry.PinP import CrossingsTest as point_in_poly
+from hazpy.geometry.polygons import PolygonSet
+#from hazpy.geometry import polygons
 
 class gnome_map(map_canvas.MapCanvas):
     
     """basic color bitmap."""
         
     def __init__(self, image_size, bna_filename, color_mode='RGB'):
-        map_canvas.MapCanvas.__init__(self, image_size, projection=map_canvas.FlatEarthProjection, mode=color_mode)
+        map_canvas.MapCanvas.__init__(self,
+                                      image_size,
+                                      projection=map_canvas.FlatEarthProjection,
+                                      mode=color_mode)
         self.polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
+        print self.polygons
+        print len(self.polygons)
+        for p in self.polygons:
+            print p
         self.filename = bna_filename
         self.draw_land(self.polygons)
-
-    def __del__(self):
-        pass        
 
     def to_pixel(self, coord):
         coord = tuple(self.projection.to_pixel(np.array((coord[0], coord[1]))))
@@ -37,15 +59,14 @@ class gnome_map(map_canvas.MapCanvas):
         
     def to_pixel_array(self, coords):
         coords['p_long'] -= self.projection.center[0]
-        coords['p_lat'] -= self.projection.center[1]
+        coords['p_lat']  -= self.projection.center[1]
         coords['p_long'] *= self.projection.scale[0]
-        coords['p_lat'] *= self.projection.scale[1]
+        coords['p_lat']  *= self.projection.scale[1]
         coords['p_long'] += self.projection.offset[0]
-        coords['p_lat'] += self.projection.offset[1]
+        coords['p_lat']  += self.projection.offset[1]
         coords['p_long'] = np.round(coords['p_long']).astype(np.int)
-        coords['p_lat'] = np.round(coords['p_lat']).astype(np.int)
-    
-    
+        coords['p_lat']  = np.round(coords['p_lat']).astype(np.int)
+        
     def _type(self):
         return ' color bitmap'
         
@@ -71,7 +92,10 @@ class lw_map(gnome_map):
         
     def on_map(self, pixel_coord):
         bounding_box = self.bounding_box
-        if pixel_coord[0] > bounding_box[0][0] and pixel_coord[0] < bounding_box[1][0] and pixel_coord[1] > bounding_box[0][1] and pixel_coord[1] < bounding_box[1][1]:
+        if  ( pixel_coord[0] > bounding_box[0][0] and 
+              pixel_coord[0] < bounding_box[1][0] and
+              pixel_coord[1] > bounding_box[0][1] and
+              pixel_coord[1] < bounding_box[1][1] ):
             return True
         return False
 
@@ -118,34 +142,56 @@ class lw_map(gnome_map):
         else:
             self.spills += [(coord, num_particles, release_time)]
 
-class LandWaterMap:
+class GnomeMap:
     """
-    A GNOME map class -- determines where land and water are
+    The very simplest map for GNOME -- all water,
+    only a bounding box for the map bounds.
     
-    This is a base class that defines the interface -- with no implementation
-    
-    See subclasses for implementation
+    This also serves as a description of the inteface
     """
-    def __init__(self):
-        """
-        This __init__ will be different depending on the implemenation
-        """
-        
-        self.bounding_box = None
-        self.refloat_halflife = None
+    
+    refloat_halflife = None # note -- no land, so never used
 
+    def __init__(self, map_bounds = None):
+        """
+        This __init__ will be different for other implementations
+        
+        map_bounds is the bounds of the map:
+          ( (x1,y1), (x2,y2),(x3,y3),..)
+        
+        An NX2 array of points that describe a polygon
+
+        if no map bounds is provided -- the whole world is valid
+        
+        """
+        if map_bounds is not None:
+            self.map_bounds = np.asarray(map_bounds, dtype=np.float64).reshape(-1, 2)
+        else:
+            # using -360 to 360 to allow stuff to cross the dateline..
+            self.map_bounds = np.array( ( (-360, 90),
+                                          ( 360, 90),
+                                          ( 360, -90),
+                                          (-360, -90),
+                                          ), dtype=np.float64 )
+                                         
+        
     def on_map(self, coord):
         """
-        returns a Boolean result:
+        returns True is the location is on the map
+
+        coord is a (long, lat) location.
+                
+        note: should this support no-rectangular maps? -- point in polygon?
+        """
+        """
+        returns true is the spill position is in the allowable spill area
         
-        True if the point is on the map,
-        False if not
-        
-        coord is a (long, lat) location
+        This may not be the same as in_water!
         
         """
-        raise NotImplimentedError
-
+        print "checking on_map:", coord
+        return point_in_poly(self.map_bounds, coord)
+        
     def on_land(self, coord):
         """
         returns a Boolean result:
@@ -155,8 +201,12 @@ class LandWaterMap:
         
         coord is a (long, lat) location
         
+        Always returns False-- no land in this implementation
+        
+        ## note: what should this give if off map?
+        
         """
-        raise NotImplimentedError
+        return False
 
     def in_water(self, coord):
         """
@@ -168,8 +218,8 @@ class LandWaterMap:
         coord is a (long, lat) location
         
         """
-        raise NotImplimentedError
-            
+        return self.on_map(coord)
+    
     def allowable_spill_position(self, coord):
         """
         returns a Boolean result:
@@ -183,82 +233,211 @@ class LandWaterMap:
         coord is a (long, lat) location
         
         """
-        raise NotImplimentedError
+        return self.on_map(coord)
 
-class RasterMap(LandWaterMap):
-
+class RasterMap(GnomeMap):
     """
     A land water map implemented as a raster
+    
+    This one uses us a numpy array of uint8 -- so there are 8 bits to choose from...
+    
+    It requires a constant refloat half-life
+    
+    This will usually be initialized in a sub-class (froma BNA, etc)
     """
 
-    water = 0
-    land  = 1
-    spillable_area = 2
+    ## NOTE: spillable area can be both larger and smaller than land raster:
+    ##       map bounds can also be larger or smaller:
+    ##            both are done with a point in polygon check
+    ##       if map is smaller than land polygons, no need for raster to be
+    ##       larger than map -- but no impimented yet.
+    
+    ## flags for what's in the bitmap
+    ## in theory -- it could be used for other data:
+    ##  refloat, other properties?   
+
+    land_flag  = 1
+
+    # spillable_area_flag = 2
+    # something_flag = 4
     # others....
     
-        
-    def __init__(self, refloat_halflife, bitmap_array, projection, bounding_box):
+    def __init__(self,
+                 refloat_halflife,    #seconds
+                 bitmap_array,
+                 projection,
+                 map_bounds = None,   # defaults to bounding box of raster
+                 spillable_area=None, # defaults to any water
+                 ):
         """
         create a new RasterMap
         
-        refloat_halflife is the halflife for refloating
-        
-        This is assumed to be the same everywhere at this point
+        refloat_halflife is the halflife for refloating off land -- given in seconds
+                This is assumed to be the same everywhere at this point
         
         bitmap_array is a numpy array that stores the land-water map
         
-        projection is the projection object -- used to convert from lat-long to pixels in the array
+        projection is a gnome.map_canvas.Projection object -- used to convert from lat-long to pixels in the array
         
-        bounding box is the bounding box of the map -- may not match the array -- if the map is larger than the land.
+        map_bounds is the polygon boudning the map -- could be larger or smaller than the land raster
         """
         
-        self.bitmap = bitmap_array
-        self.bounding_box = hazpy.geometry.BBox.BBox(bounding_box)
         self.refloat_halflife = refloat_halflife
-
-    def pixel_on_map(self, pixel_coord):
-        """
-        returns True is the pixel location is on the map
-        
-        note: should this support no-rectangluar maps?
-        """
-        
-        if self.bounding_box.PointInside(pixel_coord):
-            return True
+        self.bitmap = bitmap_array
+        self.projection = projection
+        if map_bounds is not None:
+            # make sure map bounds in a numpy array
+            self.map_bounds = np.asarray(map_bounds, dtype=np.float64).reshape(-1, 2)
         else:
-            return False
+            self.map_bounds = None
+        if spillable_area is not None:
+            # make sure spillable_area is a numpy array
+            self.spillable_area = np.asarray(spillable_area, dtype=np.float64).reshape(-1, 2)
+        else:
+            self.spillable_area = None
 
+    def _on_land_pixel(self, coord):
+        """
+        returns 1 if the point is on land, 0 otherwise
+        
+        coord is on pixel coordinates of the bitmap
+        
+        """         
+        try:
+            return self.bitmap[coord[0], coord[1]] & self.land_flag
+        except IndexError:
+            return 0 # not on land if outside the land raster. (Might be off the map!) 
+        
     def on_land(self, coord):
         """
-        returns True is on land
+        returns 1 if point on land
+        returns 0 if not on land
         
         coord is (long, lat) location
         
         """
-        return not self.in_water(coord)
-
-    def on_land_pixel(self, coord):
-        return not self.in_water_pixel(coord)
+        return self._on_land_pixel(self.projection.to_pixel(coord))
         
-    def in_water(self, coord):
-        coord = self.to_pixel(coord)
-        return self.in_water_pixel(coord)
-    
-    def in_water_pixel(self, coord):
-        if not self.on_map(coord):
-            return False
+    def _in_water_pixel(self, coord):
         try:
-            return self.bitmap[coord[0], coord[1]]
+            return not (self.bitmap[coord[0], coord[1]] & self.land_flag)
         except IndexError:
             # Note: this could be off map, which may be a different thing than on land....
-            return False
+            #       but off the map should have been tested first
+            return True
 
+    def in_water(self, coord):
+        """
+        returns true if the point given by coord is in the water
+        
+        checks if it's on the map, first.
+        """
+        if not self.on_map(coord):
+            return False
+        else:
+            return self._in_water_pixel(self.projection.to_pixel(coord))
+    
     def allowable_spill_position(self, coord):
         """
-        returns true is the spill position is in teh allowable spill area
+        returns true is the spill position is in the allowable spill area
         
         This may not be the same as in_water!
+        
         """
-        ##fixme: add check for allowable spill area -- may not be all water!
-        return self.in_water(coord)
+        print "checking spillable:", coord
+         
+#        if self.spillable_area is None:
+#            if self.on_map(coord):
+#                return not self.on_land(coord)
+#            else:
+#                return False
+#        else:
+#            if point_in_poly(self.spillable_area, coord):
+#                return self.in_water(coord)
+#            else:
+#                return False
+        
+        if self.on_map(coord):
+            if not self.on_land(coord):
+                if self.spillable_area is None:
+                    return True
+                else:
+                    return point_in_poly(self.spillable_area, coord)
+            else:
+                 return False
+        else:
+            return False
+
+        
+class MapFromBNA(RasterMap):
+    """
+    A raster land-water map, created from a BNA file
+    """
+    def __init__(self,
+                 bna_filename,
+                 refloat_halflife, #hours
+                 raster_size = 1024*1024, # default to 1MB raster
+                 ):
+        """
+        Creates a GnomeMap (specifically a RasterMap) from a bna file
+        
+        bna_file: full path to a bna file
+        
+        refloat_halflife: the half-life (in hours) for the re-floating.
+        
+        raster_size: total number of pixels (bytes) to make the raster -- the actual size
+        will match the aspect ratio of the bounding box of the land
+        
+        It is expected that you will get the spillable area and map bounds from the BNA -- if they exist
+        """
+        polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
+
+        #find the spillable area and map bounds:
+        # and create a new polygonset with out them
+        #  fixme -- adding a "pop" method to PolygonSet might be better
+        #      or a gnome_map_data object...
+        just_land = PolygonSet()
+        spillable_area = None
+        map_bounds = None
+        for p in polygons:
+            print p.metadata
+            if p.metadata[1].lower() == "spillablearea":
+                spillable_area = p
+            elif p.metadata[1].lower() == "map bounds":
+                map_bounds = p
+            else:
+                just_land.append(p)
+
+        # now draw the raster map with a map_canvas:
+        #determine the size:
+        BB = just_land.bounding_box
+        ##fixme: should we just stick with non-projected coord for the raster map?
+        W, H = BB.Width, BB.Height
+        # stretch the bounding box, to get approximate aspect ratio in projected coords.
+        aspect_ratio = np.cos(BB.Center[1] * np.pi / 180 ) * BB.Width / BB.Height
+        w = int(np.sqrt(raster_size*aspect_ratio))
+        h = int(raster_size / w)
+        canvas = map_canvas.BW_MapCanvas( (w, h) )
+        canvas.draw_land(just_land)
+
+        #canvas.save("TestLandWaterMap.png")
+        
+        ## get the bitmap as a numpy array:
+        bitmap_array = canvas.as_array()
+        
+        print bitmap_array
+        
+        # __init__ the  RasterMap
+        RasterMap.__init__(self,
+                                 refloat_halflife, #hours
+                                 bitmap_array,
+                                 canvas.projection,
+                                 map_bounds, 
+                                 spillable_area, 
+                                 )
+        
+        return None
+    
+        
+        
         

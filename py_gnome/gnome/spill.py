@@ -7,9 +7,14 @@ import numpy
 
 class spill:
 
-    def __init__(self, gnome_map, num_particles, disp_status, windage, \
-                    (start_time, stop_time), (start_position, stop_position),):
-        self.npra = numpy.ndarray(num_particles, dtype=le_rec)
+    def __init__(self,
+                 gnome_map,
+                 num_particles,
+                 disp_status, windage,
+                 (start_time, stop_time),
+                 (start_position, stop_position),
+                 ):
+        self.npra = numpy.empty((num_particles,), dtype=le_rec)
         self.num_particles = num_particles
         self.start_time = start_time
         self.stop_minus_start_time = stop_time - start_time
@@ -27,6 +32,7 @@ class spill:
         pra = self.npra['p']
         wra = self.npra['windage']
         zra = self.npra['z']
+        #fixme: I think this can be vectorized 
         for j in xrange(0, self.num_particles):
             sra[j] = status_not_released
             dra[j] = disp_status
@@ -54,6 +60,7 @@ class spill:
         self.released_index += 1
         
     def refloat_particles(self, length_time_step, lwpra):
+        ## should this be in the model or map class?
         dra = self.npra['dispersion_status']
         chromgph = self.chromgph
         if chromgph == None:
@@ -72,13 +79,16 @@ class spill:
                 pra[idx] = lwpra[idx]
                 
     def disperse_particles(self):
+        ## fixme: what is this?
         pass
     
     def noneTypePrevention(self, chromgph):
+        ## fixme: what is this for?
         self.chromgph = chromgph
         self.noneTypePrevention = lambda null: None
         
     def movement_check(self):
+        ##fixme: should this be in the model or map class? 
         coords = numpy.copy(self.npra['p'])
         self.gnome_map.to_pixel_array(coords)
         chromgph = map(self.gnome_map.on_land_pixel, coords)
