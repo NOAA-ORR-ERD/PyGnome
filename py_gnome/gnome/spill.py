@@ -1,14 +1,25 @@
-""" Documentation string goes here. """
-
 from basic_types import le_rec, status_not_released, status_in_water, status_on_land, disp_status_have_dispersed
 from math import ceil, pow
 from random import random
 import numpy
 
 class spill:
-
+    """
+        Spill container. Currently handles continuous release, as well as refloating.
+        (I suspect that refloating needs some more attention.)
+    """
     def __init__(self, gnome_map, num_particles, disp_status, windage, \
                     (start_time, stop_time), (start_position, stop_position),uncertain=False):
+        """
+            Initializes spill attributes.
+        ++args:
+            gnome_map must be a pyGNOME land-water map, or one of a similar implementation.
+            disp_status is the spill's initial status (see gnome.basic_types for more information)
+            windage has units? I suspect not
+            (start_time, stop_time) must be in seconds
+            (start_position, stop_position) is a tuple of tuples, in lat-lon coordinates
+            uncertain's value determines whether this spill will be treated for Minimum Regret.
+        """
         self.npra = numpy.ndarray(num_particles, dtype=le_rec)
         self.num_particles = num_particles
         self.start_time = start_time
@@ -23,6 +34,7 @@ class spill:
         self.chromgph = None
         
     def initialize_spill(self, disp_status):
+        """ Initializes the spill's numpy array. See gnome.basic_types for more information. """
         self.npra['status_code'] = status_not_released
         self.npra['dispersion_status'] = disp_status
         self.npra['p']['p_long'] = self.start_position[0]
@@ -31,6 +43,11 @@ class spill:
         self.npra['z'] =  0.
     
     def release_particles(self, model_time):
+        """ 
+            Depending on the current model time, releases particles that are due to be released and that have not yet been. 
+            Simple algorithm that determines the proportion of the spill to be released per unit time, and determines
+            the proportion of displacement similarly.
+        """
         if(self.released_index >= self.num_particles):
             self.release_particles = lambda null: None
             return
@@ -49,6 +66,14 @@ class spill:
         self.released_index += 1
         
     def refloat_particles(self, length_time_step, lwpra):
+        """ 
+            Refloats particles that have been landed.
+            Takes into account the proportion of the model's
+            configured time step that is taken by the land-water
+            map's configured half-life, in order to determine
+            roughly how many half-lives have expired in a single
+            step of the model. Does not currently support hindcaasting.
+        """
         dra = self.npra['dispersion_status']
         chromgph = self.chromgph
         if chromgph == None:
@@ -67,6 +92,13 @@ class spill:
                 pra[idx] = lwpra[idx]
                 
     def movement_check(self):
+        """ 
+            After moving a spill (after superposing each of the movers' contributions),
+            we determine which of the particles have been landed, ie., that are in the
+            current time step on land but were not in the previous one. Chromgph is a list
+            of boolean values, determining which of the particles need treatment. Particles
+            that have been landed are beached.
+        """
         coords = numpy.copy(self.npra['p'])
         self.gnome_map.to_pixel_array(coords)
         chromgph = map(self.gnome_map.on_land_pixel, coords)
