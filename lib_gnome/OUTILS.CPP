@@ -215,3 +215,17 @@ double speedconversion(long speedUnits)
 			return -1;
 	}
 }
+
+long StrToSpeedUnits(char* str)
+{
+	if (!strcmpnocase(str,"knots")) return kKnots;
+	if (!strncmpnocase(str,"MetersPerSec",strlen("MetersPerSec"))) return kMetersPerSec;
+	if (!strcmpnocase(str,"MPS")) return kMetersPerSec;
+	if (!strcmpnocase(str,"MilesPerHour")) return kMilesPerHour;
+	if (!strcmpnocase(str,"MPH")) return kMilesPerHour;
+	// these we added to support OSSM's "Long Wind File" format
+	if(!strcmpnocase(str,"miles per hour")) return kMilesPerHour;
+	if(!strcmpnocase(str,"meters per second")) return kMetersPerSec;
+	
+	return kUndefined;
+}

@@ -87,6 +87,7 @@ void SysBeep(short);
 Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl);
 OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 						long offset, long length, VOIDPTR ptr, CHARHP handle);
+OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size);
 Boolean CmdPeriod(void);
 void PenNormal(void);
 long			ScreenToWorldDistance(short pixels);

@@ -11,7 +11,7 @@ from distutils.extension import Extension
 
 files = ['MemUtils.cpp', 'Mover_c.cpp', 'Replacements.cpp']
 files += ['CMapLayer_c.cpp', 'ClassID_c.cpp', 'ComponentMover_c.cpp']
-files += ['OUTILS.cpp',]
+files += ['OUTILS.cpp', 'TimeValuesIO.cpp',]
 files += ['NetCDFMover_c.cpp', 'RectGridVel_c.cpp', 'Model_c.cpp',]
 files += ['PtCurMover_c.cpp', 'CompoundMap_c.cpp', 'NetCDFMoverCurv_c.cpp',]
 files += ['TriGridVel3D_c.cpp', 'TideCurCycleMover_c.cpp', 'MakeTriangles.cpp',]

@@ -36,8 +36,9 @@ long ScreenToWorldDistance(short pixels) { return 0; } // temporary, obviously.\
 OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 						long offset, long length, VOIDPTR ptr, CHARHP handle) {
 	char c;
+	int x = 0, i = 0;
+
 	try {
-		int x = 0, i = 0;
 		fstream *_ifstream = new fstream(name, ios::in);
 		for(; _ifstream->get(c); x++);
 		delete _ifstream;
@@ -45,7 +46,7 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 		for(int k = 0; k < offset; k++) _ifstream->get(c); 
 		if(handle) {
 			*handle = _NewHandle(x-offset);
-			for(; i < x && _ifstream->get(c); i++)
+			for(; i < x-offset && _ifstream->get(c); i++)
 				DEREFH(*handle)[i] = c;
 		} 
 		else {
@@ -54,8 +55,23 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 		}
 	} 
 	catch(...) {
-		printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().");
+		printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().\n");
 		return true;
 	}
 }
-		
+
+OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size) {
+	
+	char c;
+	long x = 0;
+
+	try {
+		fstream *_ifstream = new fstream(pathName, ios::in);
+		for(; _ifstream->get(c); x++);
+		delete _ifstream;
+		*size = x;
+	}
+    catch(...) {
+        printError("We are unable to open or read from the file. \nBreaking from MyGetFileSize().\n");
+    }
+}

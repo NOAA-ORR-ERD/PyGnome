@@ -659,10 +659,7 @@ void TellPlayersAboutNewDirt(void);
 
 //--
 
-
-TOSSMTimeValue* LoadTOSSMTimeValue(TMover *theOwner,short unitsIfKnownInAdvance);
-TOSSMTimeValue* CreateTOSSMTimeValue(TMover *theOwner,char* path, char* shortFileName, short unitsIfKnownInAdvance); //JLM
-OSErr GetScaleFactorFromUser(char *msg, double *scaleFactor);
+#include "TimeValuesIOPD.h"
 
 //++ ADCPTimeValue
 

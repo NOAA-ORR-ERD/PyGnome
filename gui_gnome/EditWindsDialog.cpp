@@ -110,21 +110,6 @@ char *dirstr[]={NORTH,NNE,NE,ENE,EAST,ESE,SE,SSE,SOUTH,SSW,SW,WSW,WEST,WNW,NW,NN
 	
 static short DATE_COL,TIME_COL,SPEED_COL,DIR_COL;
 
-
-long StrToSpeedUnits(char* str)
-{
-	if (!strcmpnocase(str,"knots")) return kKnots;
-	if (!strncmpnocase(str,"MetersPerSec",strlen("MetersPerSec"))) return kMetersPerSec;
-	if (!strcmpnocase(str,"MPS")) return kMetersPerSec;
-	if (!strcmpnocase(str,"MilesPerHour")) return kMilesPerHour;
-	if (!strcmpnocase(str,"MPH")) return kMilesPerHour;
-	// these we added to support OSSM's "Long Wind File" format
-	if(!strcmpnocase(str,"miles per hour")) return kMilesPerHour;
-	if(!strcmpnocase(str,"meters per second")) return kMetersPerSec;
-	
-	return kUndefined;
-}
-
 static PopInfoRec prefPopTable[] =
 {
 	{ EDIT_WINDS_DLGID, nil, EWSPEEDPOPUP, 0, pSPEEDUNITS, 0, 1, FALSE, nil },
