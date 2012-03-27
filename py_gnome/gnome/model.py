@@ -12,11 +12,23 @@ import spill
     
 class Model:
     
-    """ Documentation goes here. """
+    """ 
+    PyGNOME Model Class
     
+    Functionality:
+        Wind Movers (in the process of adding variable wind)
+        Diffusion Mover
+        CATS Mover (shio tides or constant flow, scaled to ref pos.)
+        Continuous Spill
+        Refloating
+    """
     lw_bmp_dimensions = (1000, 1000)
 
     def __init__(self):
+        """ 
+            Initializes model attributes. Cannot yet call on the Cython module 
+            to initialize the cpp model object.
+        """
         self.movers = []
         self.c_map = None
         self.lw_map = None
@@ -31,61 +43,78 @@ class Model:
         self.shio = None
         
     def add_map(self, image_size, bna_filename, refloat_halflife):
+        """ 
+            Adds both a color bitmap for visualization and a land-water map, for movement regulatoin and other tasks. 
+        ++arguments:
+            refloat_halflife is in seconds.
+        """
         if not refloat_halflife:
-            raise ValueError( 'Refloat halflife must be nonzero.' )
+            print 'Refloat halflife must be nonzero.'
+            exit(-1)
         self.c_map = gnome_map(image_size, bna_filename)
         self.lw_map = lw_map(self.lw_bmp_dimensions, bna_filename, refloat_halflife, '1')
     
     def add_mover(self, mover):
         """
-        add a new mover to the model -- at the end of the stack
+            add a new mover to the model -- at the end of the stack
         """
         self.movers.append(mover)
 
     def remove_mover(self, mover):
         """
-        remove the passed-in mover from the mover list
+            remove the passed-in mover from the mover list
         """
         self.movers.remove(mover)
 
     def replace_mover(self, old_mover, new_mover):
         """
-        replace a given mover with a new one
+            replace a given mover with a new one
+            AH: I don't know that we'll need this?
         """
         i = self.movers.index(old_mover)
         self.movers[i] = new_mover
         return new_mover 
     
     def add_wind_mover(self, constant_wind_value):
+        """ 
+            Adds a constant wind. 
+        ++args:
+            constant_wind_value in units of m/sec
+        """
         m = c_gnome.wind_mover(constant_wind_value)
         self.movers.append(m)
         return m
         
     def add_random_mover(self, diffusion_coefficient):
         """
-        adds a simple diffusion mover
-        
-        diffusion_coefficient in units of cm^2/sec
+            adds a simple diffusion mover
+        ++args:
+            diffusion_coefficient in units of cm^2/sec
         """
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
     
-    def add_cats_mover(self, path, scale_type, ref_position, shio_path, scale_value=1, diffusion_coefficient=1):
-        if(self.start_time == self.stop_time):
-            print 'Please set the model run times before continuing.'
-            exit(0)
-        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient, shio_path, self.start_time, self.stop_time)
-        mover.set_ref_position(ref_position, 0)
+    def add_cats_mover(self, path, scale_type, shio_path_or_ref_position, scale_value=1, diffusion_coefficient=1):
+        """ 
+            Adds a GNOME CATS Mover to the model's list of movers.
+        ++args:
+            shio_path_or_ref_position determines whether we're importing shio tides to be tied into the mover, or
+            constantly scaling the river flow to a given reference position.
+        """
+        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient, shio_path_or_ref_position)
         mover.read_topology(path)
-        mover.compute_velocity_scale()
+        if(type(shio_path_or_ref_position)!=type("")):
+            mover.set_ref_point(shio_path_or_ref_position)
+            mover.set_velocity_scale(scale_value)
+        else:
+            mover.compute_velocity_scale()
         self.movers.append(mover)
         
     def set_run_duration(self, start_time, stop_time):
-    
         """
-        Now using date-time strings, 'yyyy-mm-dd hh:mm:ss' (Greenwich Mean Time)
-        
+            Sets the model start time, stop time and run duration using
+            date-time strings with format: 'mm/dd/yyyy hh:mm:ss' 
+            (Greenwich Mean Time)
         """
-        
         try:
             start_time = greenwich.gwtm(start_time).time_seconds
             stop_time = greenwich.gwtm(stop_time).time_seconds
@@ -100,66 +129,86 @@ class Model:
         self.start_time = start_time
         self.stop_time = stop_time
         self.duration = stop_time - start_time
+        c_gnome.set_model_start_time(start_time)
+        c_gnome.set_model_time(start_time)
+        c_gnome.set_model_duration(self.duration)
     
     def set_timestep(self, interval_seconds):
+        """ Sets the model time step in seconds. """
         if self.duration == None:
             return
         self.interval_seconds = interval_seconds
         self.num_timesteps = floor(self.duration / self.interval_seconds)
+        c_gnome.set_model_timestep(interval_seconds)
 
     def set_spill(self, num_particles, windage, (start_time, stop_time), (start_position, stop_position), \
-                    disp_status=disp_status_dont_disperse):
+                    disp_status=disp_status_dont_disperse, uncertain=False):
+        """ 
+            Sets a spill location.
+        ++args:
+            windage units?
+        """
         allowable_spill = self.lw_map.allowable_spill_position
         if not (allowable_spill(start_position) and allowable_spill(stop_position)):
             print 'spill ignored: (' + str(start_position) + ', ' + str(stop_position) + ').'
             return
-        self.spills += [spill.spill(self.lw_map, num_particles, disp_status, windage, \
-                                        (greenwich.gwtm(start_time).time_seconds, greenwich.gwtm(stop_time).time_seconds), (start_position, stop_position))]
+        try:
+            self.spills += [spill.spill(self.lw_map, num_particles, disp_status, windage, \
+                                            (greenwich.gwtm(start_time).time_seconds, greenwich.gwtm(stop_time).time_seconds), (start_position, stop_position), uncertain)]
+        except:
+            print 'Please check the format of your date time strings.'
+            exit(-1)
         self.lwp_arrays += [numpy.copy(self.spills[len(self.spills)-1].npra['p'])]
     
     def reset(self):
-        self.time_step = 0
+        """ Resets model attributes """
+        self.__init__()
 
     def release_particles(self):
+        """ Releases particles depending on current model time. """
         model_time = self.start_time + self.time_step*self.interval_seconds
         for spill in self.spills:
             spill.release_particles(model_time)
             
     def refloat_particles(self):
+        """ Refloats particles depending on lw_map's configured half-life."""
         spills = self.spills
         lwp_arrays = self.lwp_arrays
         for i in xrange(0, len(spills)):
             spills[i].refloat_particles(self.interval_seconds, lwp_arrays[i])
-    
-    def beach_element(self, p, lwp):
-        ## fixme: should this be in the map class?
-        in_water = self.lw_map.in_water
-        displacement = ((p['p_long'] - lwp['p_long']), (p['p_lat'] - lwp['p_lat']))
-        while not in_water((p['p_long'], p['p_lat'])):
-            displacement = (displacement[0]/2, displacement[1]/2)
-            p['p_long'] = lwp['p_long'] + displacement[0]
-            p['p_lat'] = lwp['p_lat'] + displacement[1]
+
 
     def move_particles(self):
+        """ 
+            Moves particles, checks that they've not been landed, 
+            and beaches them if they have.
+        ++ locals:
+            "lwpra": last water position array
+        """
         lwpras = []
         spills = self.spills
+        beach_element = self.lw_map.beach_element
         for spill in spills:
             lwpras += [numpy.copy(spill.npra['p'])]
-
         for mover in self.movers:
             for j in xrange(0, len(spills)):
-                mover.get_move(self.interval_seconds, spills[j].npra, self.time_step*self.interval_seconds + self.start_time)
-
+                mover.get_move(self.interval_seconds, spills[j].npra, spills[j].uncertain)
         for j in xrange(0, len(spills)):
             spill = spills[j]
             chromgph = spill.movement_check()
             for i in xrange(0, len(chromgph)):
                 if chromgph[i]:
                     self.lwp_arrays[j][i] = lwpras[j][i]
-                    self.beach_element(spill.npra['p'][i], lwpras[j][i])
-
-                    
+                    beach_element(spill.npra['p'][i], lwpras[j][i])
+   
+    def initialize_model(self, vacuous):
+        """ Calls on Cython module to intialize the cpp model object. """
+        c_gnome.initialize_model(self.spills)
+        self.initialize_model = lambda null: None
+        
     def step(self, output_dir="."):
+        """ Steps the model forward in time. Needs support for hindcasting. """
+        self.initialize_model(None)
         "step called: time step:", self.time_step
         if(self.duration == None):
             return False
@@ -170,12 +219,12 @@ class Model:
         if self.time_step >= self.num_timesteps:
             return False
         self.release_particles()
-        self.refloat_particles()
+        #self.refloat_particles()
         self.move_particles()
         filename = os.path.join(output_dir, 'map%05i.png'%self.time_step)
         print "filename:", filename
         self.c_map.draw_particles(self.spills, filename)
         self.time_step += 1
-        
+        c_gnome.step_model()
         return filename
         

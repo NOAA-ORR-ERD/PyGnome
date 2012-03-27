@@ -220,7 +220,6 @@ class MapCanvas:
            if BB is not provided, the bounding box will be determined from the land polygons
         
         """
-        
         # find the bounding box:
         BB = polygons.bounding_box
         self.projection = self.projection(BB, self.image.size)
@@ -247,6 +246,9 @@ class MapCanvas:
     def draw_particles(self, spills, filename):
         img = self.image.copy()
         for spill in spills:
+            rgbt = (0,0,0)
+            if spill.uncertain:
+                rgbt = (255,0,0)
             pra = spill.npra['p']
             for i in xrange(0, len(pra)):
                 xy = self.to_pixel((pra[i]['p_long'], pra[i]['p_lat']))
