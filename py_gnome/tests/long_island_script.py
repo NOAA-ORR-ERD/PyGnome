@@ -13,8 +13,8 @@ spill = {'num_particles': 1000,
          'windage': .2,
          'start_time': '12/11/2012 06:55:00',
          'stop_time': '12/11/2012 06:55:00',
-         'start_position': (-72.419882,41.202120),
-         'stop_position': (-72.419882,41.202120),
+         'start_position': (-72.419992,41.202120),
+         'stop_position': (-72.419992,41.202120),
          }
 
 mini_gnome.set_spill(spill['num_particles'],
@@ -24,7 +24,7 @@ mini_gnome.set_spill(spill['num_particles'],
                      )
 
 
-spill = {'num_particles': 100,
+spill = {'num_particles': 1000,
          'windage': .2,
          'start_time': '12/11/2012 06:55:00',
          'stop_time': '12/11/2012 06:55:00',
@@ -47,7 +47,7 @@ model_stop_time = '12/13/2012 06:59:00'
 mini_gnome.set_run_duration(model_start_time, model_stop_time)
 mini_gnome.set_timestep(900)
 
-mini_gnome.add_wind_mover((-.5, .7))
+mini_gnome.add_wind_mover((-.5, -.2))
 mini_gnome.add_random_mover(10000)
 mini_gnome.add_cats_mover(topology_file, scale_type, shio_file, 1) # value needs to be changed here.
 

@@ -65,11 +65,7 @@ class spill:
                 chromgph[idx] = 0
                 sra[idx] = status_in_water
                 pra[idx] = lwpra[idx]
-
-    def noneTypePrevention(self, chromgph):
-        self.chromgph = chromgph
-        self.noneTypePrevention = lambda null: None
-        
+                
     def movement_check(self):
         coords = numpy.copy(self.npra['p'])
         self.gnome_map.to_pixel_array(coords)
@@ -78,7 +74,8 @@ class spill:
         for i in xrange(0, self.num_particles):
             if chromgph[i]:
                 sra[i] = status_on_land
-        self.noneTypePrevention(chromgph)
+        if self.chromgph == None:
+            self.chromgph = chromgph
         merg = [int(chromgph[x] and not self.chromgph[x]) for x in xrange(0, len(chromgph))]
         self.chromgph = chromgph
         return merg
