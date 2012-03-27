@@ -58,6 +58,7 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 		printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().\n");
 		return true;
 	}
+	return false;
 }
 
 OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size) {
@@ -70,8 +71,10 @@ OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size) {
 		for(; _ifstream->get(c); x++);
 		delete _ifstream;
 		*size = x;
-	}
+		}
     catch(...) {
         printError("We are unable to open or read from the file. \nBreaking from MyGetFileSize().\n");
+        return true;
     }
+    return false;
 }
