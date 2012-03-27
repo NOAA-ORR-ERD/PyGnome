@@ -118,3 +118,11 @@ class lw_map(gnome_map):
             print  "spill " + str(dict((('position', coord), ('num_particles', num_particles), ('release_time', release_time)))) + " ignored."
         else:
             self.spills += [(coord, num_particles, release_time)]
+
+    def beach_element(self, p, lwp):
+        in_water = self.in_water
+        displacement = ((p['p_long'] - lwp['p_long']), (p['p_lat'] - lwp['p_lat']))
+        while not in_water((p['p_long'], p['p_lat'])):
+            displacement = (displacement[0]/2, displacement[1]/2)
+            p['p_long'] = lwp['p_long'] + displacement[0]
+            p['p_lat'] = lwp['p_lat'] + displacement[1]

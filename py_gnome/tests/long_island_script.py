@@ -24,7 +24,7 @@ mini_gnome.set_spill(spill['num_particles'],
                      )
 
 
-spill = {'num_particles': 1000,
+spill = {'num_particles': 100,
          'windage': .2,
          'start_time': '12/11/2012 06:55:00',
          'stop_time': '12/11/2012 06:55:00',
@@ -34,7 +34,7 @@ spill = {'num_particles': 1000,
 
 mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']))
 if model_has_uncertainty:
-    mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']), uncertain=True)
+    mini_gnome.set_spill(spill['num_particles']/10, spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']), uncertain=True)
 
 scale_type = 1
 shio_file = "./CLISShio.txt"
@@ -42,12 +42,12 @@ topology_file = "./tidesWAC.CUR"
 
 
 model_start_time = '12/11/2012 06:55:00'
-model_stop_time = '12/12/2012 06:59:00'
+model_stop_time = '12/13/2012 06:59:00'
 
 mini_gnome.set_run_duration(model_start_time, model_stop_time)
 mini_gnome.set_timestep(900)
 
-mini_gnome.add_wind_mover((-.2, -.3))
+mini_gnome.add_wind_mover((-.5, .7))
 mini_gnome.add_random_mover(10000)
 mini_gnome.add_cats_mover(topology_file, scale_type, shio_file, 1) # value needs to be changed here.
 
