@@ -12,11 +12,19 @@ import spill
     
 class Model:
     
-    """ Documentation goes here. """
+    """ 
+    PyGNOME Model Class
     
+    Functionality:
+        Wind Movers (in the process of adding time dependence)
+        Diffusion Movers   
     lw_bmp_dimensions = (1000, 1000)
 
     def __init__(self):
+        """ 
+            Initializes model attributes. Cannot yet call on the Cython module 
+            to initialize the cpp model object.
+        """
         self.movers = []
         self.c_map = None
         self.lw_map = None
@@ -31,6 +39,7 @@ class Model:
         self.shio = None
         
     def add_map(self, image_size, bna_filename, refloat_halflife):
+        """ Adds both a color bitmap for visualization and a land-water map, for movement regulatoin and other tasks. """
         if not refloat_halflife:
             print 'Refloat halflife must be nonzero.'
             exit(-1)
@@ -71,6 +80,12 @@ class Model:
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
     
     def add_cats_mover(self, path, scale_type, shio_path_or_ref_position, scale_value=1, diffusion_coefficient=1):
+        """ 
+            Adds a GNOME CATS Mover to the model's list of movers.
+        ++arguments:
+            shio_path_or_ref_position determines whether we're importing shio tides to be tied into the mover, or
+            constantly scaling the river flow to a given reference position.
+        """
         mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient, shio_path_or_ref_position)
         mover.read_topology(path)
         if(type(shio_path_or_ref_position)!=type("")):
@@ -83,7 +98,7 @@ class Model:
     def set_run_duration(self, start_time, stop_time):
     
         """
-        Now using date-time strings, 'yyyy-mm-dd hh:mm:ss' (Greenwich Mean Time)
+        Now using date-time strings, 'mm/dd/yyyy hh:mm:ss' (Greenwich Mean Time)
         
         """
         
@@ -106,6 +121,7 @@ class Model:
         c_gnome.set_model_duration(self.duration)
     
     def set_timestep(self, interval_seconds):
+        """ Sets the model time step in seconds. """
         if self.duration == None:
             return
         self.interval_seconds = interval_seconds
@@ -114,6 +130,7 @@ class Model:
 
     def set_spill(self, num_particles, windage, (start_time, stop_time), (start_position, stop_position), \
                     disp_status=disp_status_dont_disperse, uncertain=False):
+        """ Sets a spill location. """"
         allowable_spill = self.lw_map.allowable_spill_position
         if not (allowable_spill(start_position) and allowable_spill(stop_position)):
             print 'spill ignored: (' + str(start_position) + ', ' + str(stop_position) + ').'
@@ -127,14 +144,17 @@ class Model:
         self.lwp_arrays += [numpy.copy(self.spills[len(self.spills)-1].npra['p'])]
     
     def reset(self):
-        self.time_step = 0
+        """ Resets model attributes """
+        self.__init__()
 
     def release_particles(self):
+        """ Releases particles depending on current model time. """
         model_time = self.start_time + self.time_step*self.interval_seconds
         for spill in self.spills:
             spill.release_particles(model_time)
             
     def refloat_particles(self):
+        """ Refloats particles depending on lw_map's configured half-life."""
         spills = self.spills
         lwp_arrays = self.lwp_arrays
         for i in xrange(0, len(spills)):
@@ -142,6 +162,12 @@ class Model:
 
 
     def move_particles(self):
+        """ 
+            Moves particles, checks that they've not been landed, 
+            and beaches them if they have.
+           ++ locals:
+            "lwpra": last water position array
+        """
         lwpras = []
         spills = self.spills
         beach_element = self.lw_map.beach_element
@@ -159,10 +185,12 @@ class Model:
                     beach_element(spill.npra['p'][i], lwpras[j][i])
    
     def initialize_model(self, vacuous):
+        """ Calls on Cython module to intialize the cpp model object. """
         c_gnome.initialize_model(self.spills)
         self.initialize_model = lambda null: None
         
     def step(self, output_dir="."):
+        """ Steps the model forward in time. Needs support for hindcasting. """
         self.initialize_model(None)
         "step called: time step:", self.time_step
         if(self.duration == None):

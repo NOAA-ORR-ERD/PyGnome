@@ -192,10 +192,11 @@ cdef class wind_mover:
         self.mover.fConstantValue.v = constant_wind_value[1]
 
     def get_move(self, t, np.ndarray[LERec, ndim=1] LEs, uncertain):
-        cdef int i
-        cdef WorldPoint3D wp3d
-        cdef float dpLat, dpLong
-        cdef np.ndarray[LERec] ra = np.copy(LEs)
+        cdef:
+            int i
+            WorldPoint3D wp3d
+            float dpLat, dpLong
+            np.ndarray[LERec] ra = np.copy(LEs)
         ra['p']['p_long']*=10**6
         ra['p']['p_lat']*=10**6
         uncertain += 1
