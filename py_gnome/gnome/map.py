@@ -477,11 +477,3 @@ class MapFromBNA(RasterMap):
                                  )
         
         return None
-    
-        
-        
-        
-=======
-            self.spills += [(coord, num_particles, release_time)]
-
->>>>>>> e24ce5dbd0eabfdc926c84609ca3b6364ec5debf
