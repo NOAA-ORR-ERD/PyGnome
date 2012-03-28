@@ -42,6 +42,8 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 		fstream *_ifstream = new fstream(name, ios::in);
 		for(; _ifstream->get(c); x++);
 		delete _ifstream;
+		if(!(x > 0))
+			throw("empty file.\n");
 		_ifstream = new fstream(name, ios::in);
 		for(int k = 0; k < offset; k++) _ifstream->get(c); 
 		if(handle) {
