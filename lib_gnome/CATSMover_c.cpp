@@ -389,7 +389,8 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 
 	} catch(...) {
 	    cout << "Unable to read from the topology file. Exiting.\n";
-		exit(-1);
+		err = true;
+		goto done;
 	}
 	_HLock((Handle)f); // JLM 8/4/99
 	
