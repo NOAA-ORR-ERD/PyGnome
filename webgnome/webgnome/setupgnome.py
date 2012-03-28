@@ -10,11 +10,11 @@ from math import cos, sin, radians
 '''sets up gnome backend'''
 
 curdir = os.getcwd()
-location_files.LongIslandSound.map_file_name = curdir+"/locationdata/LongIslandSound/LongIslandSoundMap.BNA"
-location_files.LongIslandSound.topology_file = curdir+"/locationdata/LongIslandSound/tidesWAC.CUR"
-location_files.LongIslandSound.shio_file = curdir+"/locationdata/LongIslandSound/CLISShio.txt"
-location_files.LowerMississippiRiver.map_file_name = curdir+"/locationdata/LowerMississippi/LMiss.bna"
-location_files.LowerMississippiRiver.topology_file = curdir+"/locationdata/LowerMississippi/LMiss.CUR"
+location_files.LongIslandSound.map_file_name = curdir+"/webgnome/locationdata/LongIslandSound/LongIslandSoundMap.BNA"
+location_files.LongIslandSound.topology_file = curdir+"/webgnome/locationdata/LongIslandSound/tidesWAC.CUR"
+location_files.LongIslandSound.shio_file = curdir+"/webgnome/locationdata/LongIslandSound/CLISShio.txt"
+location_files.LowerMississippiRiver.map_file_name = curdir+"/webgnome/locationdata/LowerMississippi/LMiss.bna"
+location_files.LowerMississippiRiver.topology_file = curdir+"/webgnome/locationdata/LowerMississippi/LMiss.CUR"
 
 def gnomehash(pyson):
     m = md5.new() 
