@@ -15,7 +15,8 @@ print "initializing the model"
 mini_gnome = model.Model()
 
 print "adding the map"
-mini_gnome.add_map(dimensions_bmp, "SampleData/LongIslandSoundMap.BNA", 5)
+
+mini_gnome.add_map(dimensions_bmp, "./SampleData/LongIslandSoundMap.BNA", 5)
 
 
 spill = {'num_particles': 1000,
@@ -48,12 +49,12 @@ print "setting the seconds spill:"
 mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']))
 
 if model_has_uncertainty:
-    print "setting and uncertaintly spill:"
+    print "setting and uncertainty spill:"
     mini_gnome.set_spill(spill['num_particles']/10, spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']), uncertain=True)
 
 scale_type = 1
-shio_file = "./CLISShio.txt"
-topology_file = "SampleData/tidesWAC.CUR"
+shio_file = "./SampleData/CLISShio.txt"
+topology_file = "./SampleData/tidesWAC.CUR"
 
 
 model_start_time = '12/11/2012 06:55:00'

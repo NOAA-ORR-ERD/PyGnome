@@ -38,8 +38,8 @@ spill = {'num_particles': 1000,
          }
 
 cats_scale_type = 1
-shio_file = "./CLISShio.txt"
-cats_topology_file = "./LMiss.CUR"
+shio_file = "SampleData/CLISShio.txt"
+cats_topology_file = "SampleData/LMiss.CUR"
 
 model_start_time = '12/11/2012 06:55:00'
 model_stop_time = '12/12/2012 06:59:00'

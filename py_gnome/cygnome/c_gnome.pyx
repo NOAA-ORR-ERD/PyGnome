@@ -99,6 +99,7 @@ cdef class cats_mover:
         
     def read_topology(self, path):
         cdef Map_c **naught
+        #fixme: why might htis fail? 
         if(self.mover.ReadTopology(path, naught)):
             return False
         return True

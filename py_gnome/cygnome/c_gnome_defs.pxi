@@ -177,7 +177,7 @@ cdef extern from "CATSMover_c.h":
         WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
         int             ReadTopology(char* path, Map_c **newMap)
         void            SetRefPosition (WorldPoint p, long z)
-        OSErr            ComputeVelocityScale()
+        OSErr           ComputeVelocityScale()
         void        SetTimeDep(OSSMTimeValue_c *time_dep)
         OSErr        PrepareForModelStep()
         void        ModelStepIsDone()
