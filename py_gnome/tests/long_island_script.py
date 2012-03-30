@@ -53,7 +53,7 @@ if model_has_uncertainty:
 
 scale_type = 1
 shio_file = "./CLISShio.txt"
-topology_file = "./tidesWAC.CUR"
+topology_file = "SampleData/tidesWAC.CUR"
 
 
 model_start_time = '12/11/2012 06:55:00'

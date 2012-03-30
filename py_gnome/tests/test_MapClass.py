@@ -50,16 +50,25 @@ def test_map_in_water():
 def test_map_on_land():
     '''
     Test whether the location of a particle on the map -- off or on land -- is determined correctly.
-    ''' #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
+    '''
     m = gnome.map.lw_map((500,500),
                          "SampleData/MapBounds_Island.bna",
                          2.*60.*60.,
-                         color_mode = "1") 
+                         color_mode = "1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
     
-    # Coordinate of a point on the island of MapBounds_Island.bna.
-    OnLand = (-127, 47.4)
-    ## this should be failing! that's not on land == but it is on the map
-    assert(m.on_land( OnLand )) #Throw an error if the know on-land location returns false.
+    #Coordinate of a point on the island of MapBounds_Island.bna.  This point
+    #passes the test.  [Commented-out in favor of coordinate below.]
+    #OnLand = (-126.78709, 47.833333)
+    
+    #Coordinate of a point that is outside of the "Map Bounds" polygon.
+    OnLand = (-127, 47.4) #Barker:  this should be failing! that's not on land == but it is on the map.  Zelenke:  This point falls outside of the "Map Bounds" polygon.
+    
+    #Coordinate of a point in water that is within both the "Map Bounds" and
+    #"SpillableArea" polygons of of MapBounds_Island.bna.
+    #InWater = (-127, 47.7)
+    #assert(m.on_land( InWater )) #This should fail.  Commented out in lieu of line below.
+    
+    assert(m.on_land( OnLand )) #Throw an error if the known on-land location returns false.
 
 def test_in_water_resolution():
     '''
@@ -114,23 +123,7 @@ class Test_GnomeMap:
 
         # too small langitude
         assert map.on_map( (0.0, -361.0) ) is False
-        
-    def test_on_map(self):
-        map = gnome.map.GnomeMap()
-        assert map.on_map((0.0, 0.0))
-        
-        # too big latitude
-        assert map.on_map( (0.0, 91.0) ) is False
-
-        # too small latitude
-        assert map.on_map( (0.0, -91.0) ) is False
-
-        # too big longitude
-        assert map.on_map( (0.0, 361.0) ) is False
-
-        # too small longitude
-        assert map.on_map( (0.0, -361.0) ) is False
-        
+    
     def test_on_land(self):
         map = gnome.map.GnomeMap()
         assert map.on_land( (18.0, -87.0) ) is False
@@ -287,4 +280,3 @@ class Test_MapfromBNA:
     def test_map_off_map(self):
         point = (-126.097336, 47.43962)
         assert not self.bna_map.on_map( point )
-    

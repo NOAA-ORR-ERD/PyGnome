@@ -100,12 +100,15 @@ class Model:
             shio_path_or_ref_position determines whether we're importing shio tides to be tied into the mover, or
             constantly scaling the river flow to a given reference position.
         """
-        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient, shio_path_or_ref_position)
-        mover.read_topology(path)
+        mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient)
+        if not mover.read_topology(path):
+            exit(-1)
         if(type(shio_path_or_ref_position)!=type("")):
             mover.set_ref_point(shio_path_or_ref_position)
             mover.set_velocity_scale(scale_value)
         else:
+            if not mover.set_shio(shio_path_or_ref_position):
+                exit(-1)
             mover.compute_velocity_scale()
         self.movers.append(mover)
         

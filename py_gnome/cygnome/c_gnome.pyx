@@ -71,7 +71,7 @@ cdef class cats_mover:
     def __dealloc__(self):
         del self.mover
     
-    def __init__(self, scale_type, scale_value=1, diffusion_coefficient=1, shio_file=None):
+    def __init__(self, scale_type, scale_value=1, diffusion_coefficient=1):
         cdef WorldPoint p
         self.mover.scaleType = scale_type
         self.mover.scaleValue = scale_value
@@ -80,16 +80,16 @@ cdef class cats_mover:
         ## make-shifting for now.
         self.mover.fOptimize.isOptimizedForStep = 0
         self.mover.fOptimize.isFirstStep = 1  
-        if(type(shio_file)==type("")):
-            self.__set_shio__(shio_file)
             
-    def __set_shio__(self, shio_file):
+    def set_shio(self, shio_file):
         cdef ShioTimeValue_c *shio
         shio = new ShioTimeValue_c()
-        shio.ReadTimeValues(shio_file)
+        if(shio.ReadTimeValues(shio_file) == -1):
+            return False
         self.mover.SetTimeDep(shio)
         self.mover.SetRefPosition(shio.GetRefWorldPoint(), 0)
         self.mover.bTimeFileActive = True
+        return True
         
     def set_ref_point(self, ref_point):
         cdef WorldPoint p
@@ -99,8 +99,10 @@ cdef class cats_mover:
         
     def read_topology(self, path):
         cdef Map_c **naught
-        self.mover.ReadTopology(path, naught)
-        
+        if(self.mover.ReadTopology(path, naught)):
+            return False
+        return True
+            
     def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs, uncertain):
         cdef int i    
         cdef WorldPoint3D wp3d
