@@ -21,13 +21,17 @@ spill = {'num_particles': 1000,
 print "initializing model:"
 
 mini_gnome = model.Model()
+
+print "adding map"
 mini_gnome.add_map(dimensions_bmp, "LMiss.bna", 5)
 
+print "setting spill"
 mini_gnome.set_spill(spill['num_particles'],
                      spill['windage'],
                      (spill['start_time'], spill['stop_time']),
                      (spill['start_position'], spill['stop_position']),
                      )
+
 
 spill = {'num_particles': 1000,
          'windage': .02,
