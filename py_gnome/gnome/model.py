@@ -16,11 +16,11 @@ class Model:
     PyGNOME Model Class
     
     Functionality:
-        Wind Movers (in the process of adding variable wind)
-        Diffusion Mover
-        CATS Mover (shio tides or constant flow, scaled to ref pos.)
-        Continuous Spill
-        Refloating
+        - Wind Movers (in the process of adding variable wind)
+        - Diffusion Mover
+        - CATS Mover (shio tides or constant flow, scaled to ref pos.)
+        - Continuous Spill
+        - Refloating
     """
     lw_bmp_dimensions = (1000, 1000)
 
@@ -77,9 +77,9 @@ class Model:
     
     def add_wind_mover(self, constant_wind_value):
         """ 
-            Adds a constant wind. 
-        ++args:
-            constant_wind_value in units of m/sec
+        Adds a constant wind. 
+        
+        :param constant_wind_value: (u, v) wind speed in  units of m/sec
         """
         m = c_gnome.wind_mover(constant_wind_value)
         self.movers.append(m)
@@ -87,18 +87,26 @@ class Model:
         
     def add_random_mover(self, diffusion_coefficient):
         """
-            adds a simple diffusion mover
-        ++args:
-            diffusion_coefficient in units of cm^2/sec
+        adds a simple diffusion mover
+        
+        :param diffusion_coefficient:  units of cm^2/sec
         """
+        
         self.movers.append(c_gnome.random_mover(diffusion_coefficient))
     
-    def add_cats_mover(self, path, scale_type, shio_path_or_ref_position, scale_value=1, diffusion_coefficient=1):
+    def add_cats_mover(self, path, scale_type, shio_path_or_ref_position, scale_value=1.0, diffusion_coefficient=1.0):
         """ 
-            Adds a GNOME CATS Mover to the model's list of movers.
-        ++args:
-            shio_path_or_ref_position determines whether we're importing shio tides to be tied into the mover, or
+        Adds a GNOME CATS Mover to the model's list of movers.
+        
+        :param path: path to the CATS current pattern file (``*.CUR``)
+        :param scale_type: ????
+        :param shio_path_or_ref_position: shio_path_or_ref_position determines whether we're importing shio tides to be tied into the mover, or
             constantly scaling the river flow to a given reference position.
+        :param scale_value=1.0: the scale vlaue used if there is not a SHIO file
+        :param diffusion_coefficient=1.0: diffusion coefficent used for uncertaintly ?????
+
+
+        :returns: `None`
         """
         mover = c_gnome.cats_mover(scale_type, scale_value, diffusion_coefficient)
         if not mover.read_topology(path):
@@ -114,10 +122,13 @@ class Model:
         
     def set_run_duration(self, start_time, stop_time):
         """
-            Sets the model start time, stop time and run duration using
-            date-time strings with format: 'mm/dd/yyyy hh:mm:ss' 
-            (Greenwich Mean Time)
+        Sets the model start time, stop time and run duration using
+        date-time strings with format: 'mm/dd/yyyy hh:mm:ss' 
+        (Greenwich Mean Time)
         """
+        # fixme: time zone?
+        # fixme: use python datetimes???
+        
         try:
             start_time = greenwich.gwtm(start_time).time_seconds
             stop_time = greenwich.gwtm(stop_time).time_seconds
@@ -137,7 +148,10 @@ class Model:
         c_gnome.set_model_duration(self.duration)
     
     def set_timestep(self, interval_seconds):
-        """ Sets the model time step in seconds. """
+        """
+        Sets the model time step in seconds.
+        """
+        
         if self.duration == None:
             return
         self.interval_seconds = interval_seconds
@@ -146,10 +160,15 @@ class Model:
 
     def set_spill(self, num_particles, windage, (start_time, stop_time), (start_position, stop_position), \
                     disp_status=disp_status_dont_disperse, uncertain=False):
+        # fixme: have windage range?
         """ 
             Sets a spill location.
-        ++args:
-            windage units?
+        :params num_particles: number of particles to use
+        :params windage: wind-drift factor of particles: fraction i.e. 0.03 for 3%
+        :params (start_time, stop_time): (start_time, stop_time) start and stop time of release
+        :params (start_position, stop_position): (start_position, stop_position) start and stop position of release
+        :params disp_status: should the oil be dispersed?
+        
         """
         allowable_spill = self.lw_map.allowable_spill_position
         if not (allowable_spill(start_position) and allowable_spill(stop_position)):
@@ -183,12 +202,11 @@ class Model:
 
     def move_particles(self):
         """ 
-            Moves particles, checks that they've not been landed, 
-            and beaches them if they have.
-        ++ locals:
-            "lwpra": last water position array
+        Moves particles, checks that they've not been landed, 
+        and beaches them if they have.
+
         """
-        lwpras = []
+        lwpras = [] # last water position array
         spills = self.spills
         beach_element = self.lw_map.beach_element
         for spill in spills:

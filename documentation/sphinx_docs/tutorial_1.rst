@@ -1,6 +1,6 @@
 .. _tutorial-1:
 
-Tutorial 1.
+Ultra Simple
 =====================
 
 For a first introduction to the pyGNOME, we will set up the very simplest model possible:

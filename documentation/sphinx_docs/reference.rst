@@ -1,6 +1,7 @@
-.. _reference
+.. _reference:
+
 ``pyGNOME`` Reference
-=====================
+===========================
 
 .. automodule:: gnome
    :members:
@@ -9,13 +10,11 @@
 --------------------------------------------------
 .. automodule:: gnome.model
    :members:
-   
-   
+      
 ``gnome.map`` -- the map classes
 ---------------------------------------------------
-.. automodule:: gnome.model
+.. automodule:: gnome.map
    :members:
-   
 
 
 

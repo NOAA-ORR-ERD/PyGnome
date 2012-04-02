@@ -4,17 +4,10 @@ Tutorials
 
 A collection of tutorials to get you up an running
 
+.. toctree::
+   :maxdepth: 2
 
-Ultra Simple:
-----------------
-For a first introduction to the pyGNOME, we will set up the very simplest model possible:
-
-see :ref:`tutorial-1`
-
-CATS currents:
--------------------
-
-see :ref:`tutorial-2`
-
+   tutorial_1
+   tutorial_2
 
 
