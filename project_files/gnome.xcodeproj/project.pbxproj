@@ -614,8 +614,6 @@
 		EDCB3FF3150FFA6600199C36 /* lib_gnome */ = {
 			isa = PBXGroup;
 			children = (
-				EDF6164715223F860025FE54 /* TimeValuesIO.cpp */,
-				EDF6164D1522401A0025FE54 /* TimeValuesIO.h */,
 				EDCB4044150FFA6700199C36 /* ObjectUtils.h */,
 				ED2971F3151918500000481F /* CMapLayer_c.cpp */,
 				ED07DEC91517F3DD008FA1CC /* MakeDagTree.cpp */,
@@ -744,6 +742,8 @@
 				EDCB4065150FFA6700199C36 /* TimeValue_b.h */,
 				EDCB4066150FFA6700199C36 /* TimeValue_c.cpp */,
 				EDCB4067150FFA6700199C36 /* TimeValue_c.h */,
+				EDF6164715223F860025FE54 /* TimeValuesIO.cpp */,
+				EDF6164D1522401A0025FE54 /* TimeValuesIO.h */,
 				EDCB4068150FFA6700199C36 /* TriCurMover_b.h */,
 				EDCB406A150FFA6700199C36 /* TriCurMover_c.h */,
 				EDCB4069150FFA6700199C36 /* TriCurMover_c.cpp */,

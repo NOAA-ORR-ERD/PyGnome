@@ -88,6 +88,7 @@ Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl);
 OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 						long offset, long length, VOIDPTR ptr, CHARHP handle);
 OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size);
+void paramtext(char* p0,char* p1,char* p2,char* p3);
 Boolean CmdPeriod(void);
 void PenNormal(void);
 long			ScreenToWorldDistance(short pixels);
