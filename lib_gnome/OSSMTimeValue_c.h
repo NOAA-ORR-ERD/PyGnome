@@ -41,6 +41,9 @@ public:
 	virtual void			SetUserUnits(short userUnits){fUserUnits=userUnits;}
 	virtual double			GetMaxValue();
 	virtual OSErr			InitTimeFunc ();
+	virtual OSErr			ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance);
+			OSErr 			ReadHydrologyHeader (char *path);
+
 	
 protected:
 	OSErr					GetInterpolatedComponent (Seconds forTime, double *value, short index);
