@@ -540,7 +540,10 @@ OSErr TVectorMap::ImportMap (char *path)
 		///////////////{
 		// JLM 12/24/98
 		if(!strcmpnocase(ObjectName,"SpillableArea"))// special polygon defining spillable area
+		{
 			theLayer = allowableSpillLayer;
+			strcpy(ObjectName2,"1");	// spillable area lakes mess up bitmap
+		}
 		else if(!strcmpnocase(ObjectName,"Map Bounds"))// special polygon defining the map bounds
 			theLayer = mapBoundsLayer;
 		else if(!strcmpnocase(ObjectName,"Ice Map"))// special polygon defining the ice shoreline (should match bna)

@@ -1,6 +1,7 @@
 #include "cross.h"
 #include "OUtils.h"
 #include "Overlays.h"
+#include "ObjectUtilsPD.h"
 
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
@@ -297,7 +298,7 @@ OSErr TNesdisOverlay::AllocateNesdisPoints(long numToAllocate)
 
 
 // code goes here, read directly from shape file
-// generalize to overlay generic shape file
+// generalize to overlay generic shape file or bna
 OSErr TNesdisOverlay::ReadFromFile(char * path)
 {
 	OSErr err = 0;
@@ -1007,7 +1008,7 @@ void TNesdisOverlay::AddSprayedLEsToLEList(void)
 	err = uncertaintyLEList->SetSprayDialogInfo(sprayDialogInfo);
 	if(err) goto done;
 	
-	// put an LE for each black pixel in the course bitmap
+	// put an LE for each black pixel in the coarse bitmap
 	totalNumLEs = 0;
 	for (i = 0; i < numFilledIn; i++)
 	{

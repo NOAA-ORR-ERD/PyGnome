@@ -6,7 +6,7 @@
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
-
+#ifdef pyGNOME
 #include "Replacements.h"
 #include <fstream>
 #include <ios>
@@ -58,4 +58,4 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 		return true;
 	}
 }
-		
+#endif	

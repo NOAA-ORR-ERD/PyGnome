@@ -255,6 +255,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\lib_gnome\Basics.h"
+					>
+				</File>
+				<File
 					RelativePath="..\lib_gnome\CATSMover3D_b.h"
 					>
 				</File>
@@ -264,10 +268,6 @@
 				</File>
 				<File
 					RelativePath="..\lib_gnome\CATSMover3D_c.h"
-					>
-				</File>
-				<File
-					RelativePath="..\lib_gnome\CATSMover_b.h"
 					>
 				</File>
 				<File
@@ -288,6 +288,34 @@
 				</File>
 				<File
 					RelativePath="..\lib_gnome\ClassID_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\CMap2.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\CMap2.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\CMapLayer_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\CMYLIST.CPP"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\CMYLIST.H"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\CompFunctions.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\CompFunctions.h"
 					>
 				</File>
 				<File
@@ -335,6 +363,42 @@
 					>
 				</File>
 				<File
+					RelativePath="..\lib_gnome\DagStruct.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\DagTree.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\DagTree.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\DagTreeIO.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\DagTreeIO.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GENDEFS.H"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GEOMETR2.CPP"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GEOMETRY.CPP"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GEOMETRY.H"
+					>
+				</File>
+				<File
 					RelativePath="..\lib_gnome\GridCurMover_b.h"
 					>
 				</File>
@@ -344,6 +408,10 @@
 				</File>
 				<File
 					RelativePath="..\lib_gnome\GridCurMover_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GridVel_c.h"
 					>
 				</File>
 				<File
@@ -359,6 +427,30 @@
 					>
 				</File>
 				<File
+					RelativePath="..\lib_gnome\LEList_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\LEList_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\LocaleWizard_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\LocaleWizard_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\MakeDagTree.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\MakeTriangles.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\lib_gnome\Map_b.h"
 					>
 				</File>
@@ -368,6 +460,22 @@
 				</File>
 				<File
 					RelativePath="..\lib_gnome\Map_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\MapUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\MapUtils.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\MemUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\MemUtils.h"
 					>
 				</File>
 				<File
@@ -388,6 +496,22 @@
 				</File>
 				<File
 					RelativePath="..\lib_gnome\Mover_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\my_build_list.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\MYRANDOM.CPP"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\MYRANDOM.H"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\netcdf.h"
 					>
 				</File>
 				<File
@@ -451,6 +575,18 @@
 					>
 				</File>
 				<File
+					RelativePath="..\lib_gnome\ObjectUtils.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\OLEList_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\OLEList_c.h"
+					>
+				</File>
+				<File
 					RelativePath="..\lib_gnome\OSSMTimeValue_b.h"
 					>
 				</File>
@@ -460,6 +596,22 @@
 				</File>
 				<File
 					RelativePath="..\lib_gnome\OSSMTimeValue_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\OSSMWeatherer_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\OSSMWeatherer_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\OUTILS.CPP"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\OUTILS.H"
 					>
 				</File>
 				<File
@@ -503,6 +655,62 @@
 					>
 				</File>
 				<File
+					RelativePath="..\lib_gnome\RectGridVeL_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\RectGridVeL_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\RectUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\RectUtils.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\Replacements.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\Replacements.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\Shio.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\ShioCurrent1.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\ShioCurrent2.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\ShioHeight.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\ShioTimeValue_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\ShioTimeValue_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\StringFunctions.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\StringFunctions.h"
+					>
+				</File>
+				<File
 					RelativePath="..\lib_gnome\TideCurCycleMover_b.h"
 					>
 				</File>
@@ -536,6 +744,46 @@
 				</File>
 				<File
 					RelativePath="..\lib_gnome\TriCurMover_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\TriGridVel3D_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\TriGridVel3D_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\TriGridVel_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\TriGridVel_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\TypeDefs.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\Units.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\VectMap_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\VectMap_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\Weatherer_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\Weatherer_c.h"
 					>
 				</File>
 				<File
@@ -595,35 +843,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\CMap2.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\CMap2.h"
-					>
-				</File>
-				<File
 					RelativePath="..\gui_gnome\CMapLayer.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\CMYLIST.CPP"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\CMYLIST.H"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\CMYLIST2.H"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\CompFunctions.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\CompFunctions.h"
 					>
 				</File>
 				<File
@@ -647,23 +867,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\DagStruct.h"
+					RelativePath="..\gui_gnome\DagTreePD.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\DagTree.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\DagTree.h"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\DagTreeIO.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\DagTreeIO.h"
+					RelativePath="..\gui_gnome\DagTreePD.h"
 					>
 				</File>
 				<File
@@ -699,27 +907,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\GENDEFS.H"
-					>
-				</File>
-				<File
 					RelativePath="..\gui_gnome\GENUTIL.CPP"
 					>
 				</File>
 				<File
 					RelativePath="..\gui_gnome\GENUTIL.H"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\GEOMETR2.CPP"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\GEOMETRY.CPP"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\GEOMETRY.H"
 					>
 				</File>
 				<File
@@ -771,10 +963,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\MakeDagTree.cpp"
-					>
-				</File>
-				<File
 					RelativePath="..\gui_gnome\MakeMovie.cpp"
 					>
 				</File>
@@ -783,43 +971,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\MakeTriangles.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\MapUtils.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\MapUtils.h"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\MemUtils.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\MemUtils.h"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\my_build_list.h"
-					>
-				</File>
-				<File
 					RelativePath="..\gui_gnome\MYFILES.CPP"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\MYRANDOM.CPP"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\MYRANDOM.H"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\netcdf.h"
 					>
 				</File>
 				<File
@@ -875,7 +1027,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\ObjectUtils.h"
+					RelativePath="..\gui_gnome\ObjectUtilsPD.h"
 					>
 				</File>
 				<File
@@ -884,14 +1036,6 @@
 				</File>
 				<File
 					RelativePath="..\gui_gnome\OSSM.H"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\OUTILS.CPP"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\OUTILS.H"
 					>
 				</File>
 				<File
@@ -927,11 +1071,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\RectUtils.cpp"
+					RelativePath="..\gui_gnome\RectUtilsPD.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\RectUtils.h"
+					RelativePath="..\gui_gnome\RectUtilsPD.h"
 					>
 				</File>
 				<File
@@ -948,30 +1092,6 @@
 				</File>
 				<File
 					RelativePath="..\gui_gnome\SETTINGS.CPP"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\Shio.h"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\ShioCurrent1.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\ShioCurrent2.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\ShioHeight.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\StringFunctions.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\StringFunctions.h"
 					>
 				</File>
 				<File
@@ -1063,6 +1183,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\gui_gnome\TLEList.h"
+					>
+				</File>
+				<File
 					RelativePath="..\gui_gnome\TMap.cpp"
 					>
 				</File>
@@ -1084,6 +1208,10 @@
 				</File>
 				<File
 					RelativePath="..\gui_gnome\TMover.h"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\TOLEList.h"
 					>
 				</File>
 				<File
@@ -1151,6 +1279,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\gui_gnome\TVectMap.h"
+					>
+				</File>
+				<File
 					RelativePath="..\gui_gnome\TWeather.cpp"
 					>
 				</File>
@@ -1163,19 +1295,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\TypeDefs.h"
-					>
-				</File>
-				<File
 					RelativePath="..\gui_gnome\Uncertainty.cpp"
 					>
 				</File>
 				<File
 					RelativePath="..\gui_gnome\Uncertainty.h"
-					>
-				</File>
-				<File
-					RelativePath="..\gui_gnome\Units.h"
 					>
 				</File>
 				<File

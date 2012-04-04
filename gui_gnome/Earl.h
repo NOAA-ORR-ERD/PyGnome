@@ -170,17 +170,17 @@ typedef int (*ProcPtr)();
 #define LW_MCTR 0
 #define LW_TEXT 0
 #define LW_CLNK 0
-typedef struct {
+/*typedef struct {
 	short v;
 	short h;
-} Point;
+} Point;*/
 typedef MSG EventRecord;
-typedef struct {
+/*typedef struct {
 	short top;
 	short left;
 	short bottom;
 	short right;
-} Rect;
+} Rect;*/
 typedef struct {
 	long picSize;
 	Rect picFrame;

@@ -10,6 +10,7 @@
 #include "NetCDFWindMoverCurv.h"
 #include "TideCurCycleMover.h"
 #include "Contdlg.h"
+#include "ObjectUtilsPD.h"
 //#include "TriCurMover.h"
 
 /////////////////////////////////////////////////

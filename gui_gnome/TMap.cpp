@@ -613,7 +613,7 @@ ListItem TMap::GetNthListItem(long n, short indent, short *style, char *text)
 {
 	long i, m, count;
 	TMover *mover;
-	ListItem item = { dynamic_cast<TMap *>(this), 0, indent, 0 };
+	ListItem item = { this, 0, indent, 0 };
 	
 	if (n == 0) {
 		item.index = I_MAPNAME;
@@ -960,7 +960,7 @@ OSErr TMap::AddItem(ListItem item)
 						if (gDispersedOilVersion && model->ThereIsA3DMover(&arrowDepth))	// hopefully redundant
 							//TMover *mover = ((PtCurMap*)this)->GetMover(TYPE_PTCURMOVER);
 							//if (mover && ((PtCurMover*)mover)->fVar.gridType != TWO_D)
-							return Random3DSettingsDialog	(0, dynamic_cast<TMap *>(this));	// code goes here, also check gridtype...
+							return Random3DSettingsDialog	(0, this);	// code goes here, also check gridtype...
 						/*if (!mover)
 						 {
 						 mover = ((PtCurMap*)this)->GetMover(TYPE_CATSMOVER3D);
@@ -976,27 +976,30 @@ OSErr TMap::AddItem(ListItem item)
 					}
 					else if (this->IAm(TYPE_MAP)) 
 					{	// for universal mover
-						PtCurMap *map = GetPtCurMap();
+						float arrowDepth = 0;
+						if (model->ThereIsA3DMover(&arrowDepth)) return Random3DSettingsDialog(0,this);
+						/*PtCurMap *map = GetPtCurMap();
 						if (map)
 						{
 							TMover *mover = map->GetMover(TYPE_PTCURMOVER);
-							if (mover && /*OK*/(dynamic_cast<PtCurMover*>(mover))->fVar.gridType != TWO_D)
-								return Random3DSettingsDialog	(0, dynamic_cast<TMap *>(this));	// code goes here, also check gridtype...
+							if (mover && ((PtCurMover*)mover)->fVar.gridType != TWO_D)
+								return Random3DSettingsDialog	(0, this);	// code goes here, also check gridtype...
 							if (!mover)
 							{
 								mover = map->GetMover(TYPE_CATSMOVER3D);
 								if (mover)
-									return Random3DSettingsDialog(0,dynamic_cast<TMap *>(this));
+									return Random3DSettingsDialog(0,this);
 								else
 								{
-									mover = /*OK*/ (dynamic_cast<PtCurMap *>(this))->GetMover(TYPE_TRICURMOVER);
+									//mover = (dynamic_cast<PtCurMap *>(this))->GetMover(TYPE_TRICURMOVER);
+									mover = map->GetMover(TYPE_TRICURMOVER);
 									if (mover)
-										return Random3DSettingsDialog(0,dynamic_cast<TMap *>(this));
+										return Random3DSettingsDialog(0,this);
 								}
 							}
-						}
+						}*/
 					}
-					return RandomSettingsDialog   (0, dynamic_cast<TMap *>(this));
+					return RandomSettingsDialog   (0, this);
 				case CONSTANT_MOVERTYPE: 
 					isConstantWind = true;
 					// fall thru

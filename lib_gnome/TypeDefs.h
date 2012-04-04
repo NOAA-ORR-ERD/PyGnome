@@ -9,7 +9,7 @@
 
 #ifndef __TypeDefs__
 #define __TypeDefs__
-
+#include "Earl.h"
 //++ Carry-over from basic definitions.
 
 #define DIRTY_EVERYTHING -1
@@ -25,11 +25,11 @@
 #define kDefSaveFileName "Untitled.sav"		// STH
 #define	kDefLEFileName "LEFile"				// STH
 
-#ifndef MAC
+/*#ifndef MAC
 typedef CHARPTR Ptr;
 typedef CHARH Handle;
 typedef Handle *HANDLEPTR;
-#endif
+#endif*/
 
 
 extern RGBColor colors[];

@@ -37,10 +37,6 @@
 #endif
 
 #ifdef pyGNOME
-
-/*****************************************************/
-// This is temporary:
-
 typedef unsigned char Boolean;
 struct Point {
 	short               v;
@@ -107,6 +103,45 @@ enum {
 
 #endif
 
+#ifdef IBM
+
+struct Point {
+	short               v;
+	short               h;
+};
+typedef struct Point                    Point;
+typedef Point *                         PointPtr;
+struct Rect {
+	short               top;
+	short               left;
+	short               bottom;
+	short               right;
+};
+typedef struct Rect						Rect;
+typedef Rect *                          RectPtr;
+
+enum {
+	/* Memory Manager errors*/
+	memROZWarn                    = -99,  /*soft error in ROZ*/
+	memROZError                   = -99,  /*hard error in ROZ*/
+	memROZErr                     = -99,  /*hard error in ROZ*/
+	memFullErr                    = -108, /*Not enough room in heap zone*/
+	nilHandleErr                  = -109, /*Master Pointer was NIL in HandleZone or other*/
+	memWZErr                      = -111, /*WhichZone failed (applied to free block)*/
+	memPurErr                     = -112, /*trying to purge a locked or non-purgeable block*/
+	memAdrErr                     = -110, /*address was odd; or out of range*/
+	memAZErr                      = -113, /*Address in zone check failed*/
+	memPCErr                      = -114, /*Pointer Check failed*/
+	memBCErr                      = -115, /*Block Check failed*/
+	memSCErr                      = -116, /*Size Check failed*/
+	memLockedErr                  = -117  /*trying to move a locked block (
+										   MoveHHi)*/
+};
+
+/*******************************************************/
+
+#endif
+
 typedef void *VOIDPTR, **VOIDH;
 typedef char *CHARPTR, **CHARH;
 typedef CHARH *CHARHP;
@@ -116,5 +151,10 @@ typedef float *FLOATPTR, **FLOATH;
 typedef double *DOUBLEPTR, **DOUBLEH;
 typedef Point *POINTPTR, **POINTH;
 typedef Rect *RECTPTR, **RECTH;
+#ifndef MAC
+typedef CHARPTR Ptr;
+typedef CHARH Handle;
+typedef Handle *HANDLEPTR;
+#endif
 
 #endif

@@ -9,7 +9,6 @@
 #include "TShioTimeValue.h"
 #include "GridVel.h"
 #include "PtCurMover.h"
-#include "CROSS.H"
 #include "TShioTimeValue.h"
 #include "DagTreeIO.h"
 #include "TideCurCycleMover.h"
@@ -1448,7 +1447,7 @@ done:
 			delete fGrid;
 			fGrid = 0;
 		}
-		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
+		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;	fVertexPtsH	 = 0;}
 	}
 	//printNote("NetCDF triangular grid model current mover is not yet implemented");
 	
