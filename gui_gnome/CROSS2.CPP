@@ -1,6 +1,46 @@
 
 #include "CROSS.h"
+#include "ObjectUtilsPD.h"
 //#include "HtmlHelp.h"
+
+
+short PixelsPerCentimeter()
+{
+	return PixelsPerInchScreen() / CENTPERINCH;
+}
+
+double PixelsPerMilDeg()
+{
+	// how many millionths of a degree latitude in a pixel?
+	
+	return 1000000 / (double)(MilesPerDegreeLat() * INPERMILE * PixelsPerInchScreen());
+}
+
+
+long PixelDiscrepancy(WorldRect wr)
+{
+	long topPixels, bottomPixels;
+	WorldPoint center;
+	
+	center.pLong = wr.loLong;
+	center.pLat = wr.hiLat;
+	topPixels = LongToPixels(wr.hiLong - wr.loLong, center);
+	center.pLat = wr.loLat;
+	bottomPixels = LongToPixels(wr.hiLong - wr.loLong, center);
+	
+	return abs(topPixels - bottomPixels);
+}
+
+long LongToPixels(long dLong, WorldPoint center)
+{
+	float baseLat = center.pLat / 1000000.0, degreesLat;
+	long pixels;
+	
+	degreesLat = ((dLong / 1000000.0) * LongToLatRatio(baseLat)) * 1000000.0;
+	pixels = (degreesLat / PixelsPerMilDeg()) / CurrentScaleDenominator();
+	
+	return pixels;
+}
 
 /////////////////////////////////////////////////
 
@@ -3868,11 +3908,6 @@ Boolean SectRect(RECTPTR r1, RECTPTR r2, RECTPTR r3)
    return !IsRectEmpty(&result);
 }
 
-void SetPt(POINTPTR p, short h, short v)
-{
-   p->h = h;
-   p->v = v;
-}
 
 void MapPt(POINTPTR pt, RECTPTR srcRect, RECTPTR dstRect)
 {
@@ -4883,79 +4918,6 @@ long GetDblTime(void)
 	return (long)(GetDoubleClickTime() * .06);
 }
 
-void GetDateTime(unsigned long *seconds)
-{
-   unsigned long secs;
-   
-   time((long *)&secs); // time() wants a near pointer; returns secs since 1/1/70
-   secs += 2082816000L; // convert to seconds since 1904
-   // would be secs += 126230400 if time returned time since 1900, as it says in the book
-   *seconds = secs;
-}
-
-void SecondsToDate (unsigned long seconds, DateTimeRec *date)
-{
-	struct tm *newTime;
-	
-	seconds -= 2082816000L; // convert from seconds since 1904 to seconds since 1970
-	// note time_t is now 64 bit by default on Windows, preprocessor definition for 32 bit (good til 2038)
-	newTime = localtime((long *)&seconds); // gmtime(&seconds)
-	if (newTime) {
-		if (newTime->tm_isdst == 1)
-		{	// we want to show standard time so we need to fake out the daylight savings time
-			if(newTime->tm_hour > 0)
-				newTime->tm_hour--;
-			else
-			{	
-				seconds -= 3600;
-				newTime = localtime((long *)&seconds);
-				if(newTime->tm_isdst == 1) {
-					newTime->tm_year = newTime->tm_year %100;// year 2000 fix , JLM 1/25/99
-					// life is good, both times were daylight savings time
-				}
-				else
-					printError("Programmer error in Secs2DateStrings");
-			}
-		}
-		
-		date->year = newTime->tm_year;
-		// this mimics the mac function which has a 4 digit value in the time field
-		if(date->year<40)date->year += 2000;
-		else if(date->year<200) date->year += 1900;
-		// code ges here JLM , does localtime have a year 2000 issue ?
-		date->month = newTime->tm_mon + 1;
-		date->day = newTime->tm_mday;
-		date->hour = newTime->tm_hour;
-		date->minute = newTime->tm_min;
-		date->second = newTime->tm_sec;
-		date->dayOfWeek = newTime->tm_wday + 1;
-	}
-	else {
-		SysBeep(1);
-		date->year = 0;
-		date->month = 0;
-		date->day = 0;
-		date->hour = 0;
-		date->minute = 0;
-		date->second = 0;
-		date->dayOfWeek = 0;
-	}
-}
-
-void DateToSeconds (DateTimeRec *date, unsigned long *seconds)
-{
-	char s[100];
-	unsigned long secs;
-	
-	sprintf(s, "%02hd/%02hd/%02hd", date->month, date->day, date->year);
-	
-	secs = DateString2Secs(s);
-	
-	secs += date->hour * 3600 + date->minute * 60 + date->second;
-	
-	(*seconds) = secs;
-}
-
 // Note: on the Mac, a tick is every 60th of a second.
 // On the IBM, it is the number of mSecs since the system was booted.
 // so to convert, Nticks = Nms * 60 / 1000
@@ -5010,35 +4972,6 @@ void c2pstr(char *string)
 }*/
 
 #endif
-
-
-void my_p2cstr(void *string)
-{
-	short i, len;
-	char *s = (char*) string;
-	
-	if(!s) return;
-	
-	len = (unsigned char)s[0];
-	for (i = 0 ; i < len ; i++)
-		s[i] = s[i + 1];
-	s[len] = 0;
-	
-}
-
-void my_c2pstr(void *string)
-{
-	short i, len;
-	char *s = (char*) string;
-	
-	if(!s) return;
-
-	len = strlen(s);
-	if (len > 255) len = 255;
-	for (i = len ; i > 0 ; i--)
-		s[i] = s[i - 1];
-	s[0] = (unsigned char)len;
-}
 
 ////////////////////////// IBM-SPECIFIC FUNCTIONS //////////////////////////
 

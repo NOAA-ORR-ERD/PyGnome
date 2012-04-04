@@ -10,7 +10,7 @@
 #ifndef __Model_c__
 #define __Model_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "CMYLIST.H"
 #include "ClassID_c.h"
@@ -28,6 +28,9 @@ using std::string;
 #define TRandom Random_c
 #define TRandom3D Random3D_c
 #define TCurrentMover CurrentMover_c
+#define TLEList LEList_c
+#define TOLEList OLEList_c
+#define LocaleWizard LocaleWizard_c
 #endif
 
 class TModel;
@@ -86,12 +89,7 @@ public:
 	map<string, int> ncVarIDs, ncDimIDs, ncVarIDs_C, ncDimIDs_C;
 	char ncPath[256], ncPathConfidence[256];
 	
-	// bitmap version of map at current view and window size without LEs or movement grid
-#ifdef MAC
-	CGrafPtr mapImage;		
-#else 		
-	HDIB	mapImage;		
-#endif
+
 	
 	CMyList	*fSquirreledLastComputeTimeLEList;
 	CMyList	*LESetsList;
@@ -137,23 +135,23 @@ public:
 	 TCurrentMover*		GetPossible3DCurrentMover();
 	 Boolean			IsUncertain () { return fDialogVariables.bUncertain; }
 
-	 virtual		OSErr	GetTotalAmountStatistics(short desiredMassVolUnits,double *amtTotal,double *amtReleased,double *amtEvaporated,
+	 virtual	OSErr	GetTotalAmountStatistics(short desiredMassVolUnits,double *amtTotal,double *amtReleased,double *amtEvaporated,
 										   double *amtDispersed,double *amtBeached,double * amtOffmap, double *amtFloating, double *amtRemoved);
 	// map methods
-	 TMap	*GetBestMap (WorldPoint p);
-	 Boolean IsWaterPoint(WorldPoint p);
-	 Boolean IsAllowableSpillPoint(WorldPoint p);
-	 Boolean HaveAllowableSpillLayer(WorldPoint p);
-	 Boolean CurrentBeachesLE(WorldPoint3D startPoint, WorldPoint3D *movedPoint, TMap *bestMap);
-	 WorldPoint3D TurnLEAlongShoreLine(WorldPoint3D waterPoint, WorldPoint3D beachedPoint, TMap *bestMap);
-	long	GetMapCount () { return mapList -> GetItemCount (); }
-	 WorldRect GetMapBounds (void);
+	 TMap				*GetBestMap (WorldPoint p);
+	 Boolean			IsWaterPoint(WorldPoint p);
+	 Boolean			IsAllowableSpillPoint(WorldPoint p);
+	 Boolean			HaveAllowableSpillLayer(WorldPoint p);
+	 Boolean			CurrentBeachesLE(WorldPoint3D startPoint, WorldPoint3D *movedPoint, TMap *bestMap);
+	 WorldPoint3D		TurnLEAlongShoreLine(WorldPoint3D waterPoint, WorldPoint3D beachedPoint, TMap *bestMap);
+	 long				GetMapCount () { return mapList -> GetItemCount (); }
+	 WorldRect			GetMapBounds (void);
 	 long 				NumLEs(LETYPE  leType);
 	 long 				NumOutputSteps(Seconds outputTimeStep);
 	
-	void	ResetMainKey ();
-	long	GetNextLEKey ();
-	void	ResetLEKeys ();
+	void				ResetMainKey ();
+	long				GetNextLEKey ();
+	void				ResetLEKeys ();
 	
 	void				ReDisperseOil(LERec* thisLE, double breakingWaveHeight);
 	void				PossiblyReFloatLE (TMap *theMap, TLEList *theLEList, long i, LETYPE leType);
@@ -167,6 +165,13 @@ public:
 	Boolean				ThereIsAnEarlierSpill(Seconds timeOfInterest, TLEList *someLEListToIgnore);
 	Boolean				ThereIsALaterSpill(Seconds timeOfInterest, TLEList *someLEListToIgnore);
 	
+	CMyList				*GetWeatherList () { return weatherList; }
+	
+	//++ Replacements:
+	
+	void				NewDirtNotification(void) { return; }
+	void				NewDirtNotification (long flags) { return; }
+	
 };
 
 
@@ -177,4 +182,7 @@ public:
 #undef TRandom 
 #undef TRandom3D
 #undef TCurrentMover
+#undef TLEList
+#undef TOLEList
+#undef LocaleWizard
 #endif

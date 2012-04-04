@@ -10,14 +10,26 @@
 #ifndef __NetCDFMoverCurv_c__
 #define __NetCDFMoverCurv_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "NetCDFMoverCurv_b.h"
 #include "NetCDFMover_c.h"
 
+#ifndef pyGNOME
+#include "TMap.h"
+#else
+#include "Map_c.h"
+#define TMap Map_c
+#endif
+
 class NetCDFMoverCurv_c : virtual public NetCDFMoverCurv_b, virtual public NetCDFMover_c {
 
 public:
+	NetCDFMoverCurv_c (TMap *owner, char *name);
+	NetCDFMoverCurv_c () {}
+	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERCURV; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERCURV) return TRUE; return NetCDFMover_c::IAm(id); }
+
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);

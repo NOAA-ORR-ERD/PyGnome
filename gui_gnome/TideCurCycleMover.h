@@ -19,23 +19,18 @@ class TideCurCycleMover : virtual public TideCurCycleMover_c,  public TCATSMover
 	//virtual OSErr		InitMover (); //  use TCATSMover version which sets grid ?
 	virtual ClassID 	GetClassID () { return TYPE_TIDECURCYCLEMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_TIDECURCYCLEMOVER) return TRUE; return TCATSMover::IAm(id); }
-	void 				DisposeLoadedData(LoadedData * dataPtr);	
-	void 				ClearLoadedData(LoadedData * dataPtr);
+
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
 	
 	//virtual OSErr		TextRead(char *path, TMap **newMap);
 	virtual OSErr		TextRead(char *path, TMap **newMap, char *topFilePath);
-	OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	
 	virtual	OSErr		ReadTopology(char* path, TMap **newMap);
 	virtual OSErr		ExportTopology(char* path);
 	
-	virtual Boolean 	CheckInterval(long &timeDataInterval);
-	virtual OSErr	 	SetInterval(char *errmsg);
-	long 		GetNumTimesInFile();
-	
+
 	// list display methods
 	
 	virtual OSErr 		CheckAndPassOnMessage(TModelMessage *message);

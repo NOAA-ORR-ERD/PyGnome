@@ -10,14 +10,18 @@
 #ifndef __PtCurMover_c__
 #define __PtCurMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "CurrentMover_c.h"
-#include "GridVel.h"
 #include "DagTree.h"
 
-#ifdef pyGNOME
-	#define TMap Map_c
+#ifndef pyGNOME
+#include "GridVel.h"
+#else
+#include "GridVel_c.h"
+#include "Map_c.h"
+#define TGridVel GridVel_c
+#define TMap Map_c
 #endif
 
 

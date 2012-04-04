@@ -137,6 +137,15 @@ Boolean TComponentMover::ListClick(ListItem item, Boolean inBullet, Boolean doub
 				model->NewDirtNotification(DIRTY_MAPDRAWINGRECT); return TRUE;
 		}
 	
+	if (ShiftKeyDown() && item.index == I_COMPONENT1NAME) {
+		pattern1 -> fColor = MyPickColor(fColor,mapWindow);
+		model->NewDirtNotification(DIRTY_LIST|DIRTY_MAPDRAWINGRECT);
+	}
+	if (ShiftKeyDown() && item.index == I_COMPONENT2NAME) {
+		pattern2 -> fColor = MyPickColor(fColor,mapWindow);
+		model->NewDirtNotification(DIRTY_LIST|DIRTY_MAPDRAWINGRECT);
+	}
+	
 	if (doubleClick)
 	{
 		ComponentMoverSettingsDialog(dynamic_cast<TComponentMover *>(this), this -> moverMap);

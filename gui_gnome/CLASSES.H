@@ -16,7 +16,6 @@ using std::string;
 #include "GridVel.h"
 #include "MemUtils.h"
 
-Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2);
 UNIQUEID ZeroID(void);
 
 
@@ -77,21 +76,15 @@ class TModelMessage
 
 // --
 
-///////////////////////////////////////////////////////////////////////////
+#include "Weatherer_c.h"
 
-class TWeatherer : public TClassID
+class TWeatherer : virtual public Weatherer_c, public TClassID
 {
 	public:
 							TWeatherer (char *name);
 		virtual			   ~TWeatherer () { Dispose (); }
 		virtual OSErr		InitWeatherer () { return noErr; }
-		virtual ClassID 	GetClassID () { return TYPE_WEATHERER; }
 		virtual void		Dispose () { return; }
-
-//		void				SetWeathererName (char *newName)    { SetClassName (newName); }
-//		void				GetWeathererName (char *returnName) { GetClassName (returnName); }
-
-		virtual void		WeatherLE (LERec *theLE) {}
 
 		// I/O methods
 		virtual OSErr 		Read  (BFPB *bfpb);  			// read from current position
@@ -103,22 +96,16 @@ class TWeatherer : public TClassID
 		virtual OSErr 		AddItem (ListItem item);
 };
 
-///////////////////////////////////////////////////////////////////////////
+#include "OSSMWeatherer_c.h"
 
-class TOSSMWeatherer : public TWeatherer
+class TOSSMWeatherer : virtual public OSSMWeatherer_c, public TWeatherer
 {
- 	public:
-		CMyList				*componentsList;
 
  	public:
 							TOSSMWeatherer (char *name);
 		virtual				~TOSSMWeatherer ();
 		virtual OSErr		InitWeatherer ();
-		virtual ClassID		GetClassID () { return TYPE_OSSMWEATHERER; }
 		virtual void		Dispose ();
-
-		virtual void		WeatherLE (LERec *theLE);
-
 		// I/O methods
 		virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 		virtual OSErr 		Write (BFPB *bfpb); // write to  current position
@@ -137,152 +124,9 @@ class TOSSMWeatherer : public TWeatherer
 // Note: the types determined by bit operations
 // so are powers of 2
 
+#include "TLEList.h"
 
-class TLEList : public TClassID
-{
-	public:
-		long			numOfLEs;
-		//short			massUnits;
-		LERecH			LEHandle; 	// handle to LE array
-		LETYPE 			fLeType;
-		UNIQUEID		fOwnersUniqueID; // set if owned by another LE set, i.e this is a mirrored set
-		
-	public:
-						TLEList ();
-		virtual		   ~TLEList () { Dispose (); }
-					   
-		//virtual OSErr	Initialize (long numElements, LERec *representativeLE, short massUnits,
-		//							WorldPoint startRelPos, WorldPoint endRelPos,
-		//							Seconds startRelTime, Seconds endRelTime,
-		//							Boolean bWantEndRelTime, Boolean bWantEndRelPosition) { return noErr; }
-		//virtual OSErr	Initialize (long numElements, LERecH array, short massUnits, Seconds fileTime) { return noErr; }
-		virtual OSErr	Reset (Boolean newKeys) { return noErr; }
-
-		virtual LETYPE 	GetLEType () { return fLeType; }
-		long			GetNumOfLEs(){return numOfLEs;}
-		void			SetLEStatus (long leNum, OilStatus status);
-		OilStatus		GetLEStatus (long leNum);
-		void			ReFloatLE (long leNum);
-		void			GetLE (long leNum, LERecP theLE);
-		void			SetLE (long leNum, LERecP theLE);
-		WorldPoint		GetLEPosition (long leNum);
-		void			SetLEPosition (long leNum, WorldPoint p);
-		Seconds			GetLEReleaseTime (long leNum);
-		void			ReleaseLE (long leNum);
-		void			AgeLE (long leNum);
-		virtual void	BeachLE (long leNum, WorldPoint beachPosition);
-		WorldRect		GetLEBounds ();
-		void 			GetLEStatistics(long* numReleased,long* numEvaporated,long* numBeached, long* numOffMap, long* numFloating);
-		void 			RecalculateLEStatistics(long* numEvaporated,long* numFloating, long* numRemoved, long* numOffMaps); // 	to account for dispersion
-		virtual void 	GetLEAmountStatistics(short desiredMassVolUnits, double *amtTotal,double *amtReleased,double *amtEvaporated,
-																double *amtDispersed,double *amtBeached,double *amtOffmap, double *amtFloating, double *amtRemoved){};
-		
-		void			SetFileDirty (Boolean bFileDirty) { bDirty = bFileDirty; }
-		Boolean			IsFileDirty () { return !bDirty; }
-		
-		virtual long	GetLECount () { return numOfLEs; }  
-		
-		virtual long	GetMassUnits () { return -1; } // they must override
-		virtual short	GetMassUnitType () { return -1; } // they must override
-		virtual double	GetTotalMass () { return -1; } ; // they must override
-
-		virtual ClassID GetClassID () { return TYPE_LELIST; }
-		virtual Boolean	IAm(ClassID id) { if(id==TYPE_LELIST) return TRUE; return TClassID::IAm(id); }
-
-		virtual	void	Dispose ();
-
-		virtual OSErr UpItem (ListItem item);	// code goes here, decide if this is okay - brought from GNOME_beta
-		virtual OSErr DownItem (ListItem item);
-
-		// I/O methods
-		virtual OSErr 	Read  (BFPB *bfpb); // read from the current position
-		virtual OSErr 	Write (BFPB *bfpb) ; // write to    the current position
-		virtual	OSErr	WriteLE (BFPB *bfpb, LERec *theLE);
-		virtual	OSErr	ReadLE  (BFPB *bfpb, LERec *theLE, long version);
-
-		// list display methods: base class functionality
-		virtual void	Draw (Rect r, WorldRect view) { return; }
-		
-
-};
-double GetLEMass(LERec theLE);
-
-
-class TOLEList : public TLEList
-{
-	public:
-		LESetSummary		fSetSummary; // summary of LE's in this list
-		Boolean 			bMassBalanceOpen;
-		Boolean 			bReleasePositionOpen;
-		CMyList	   		   *initialLEs;
-		Boolean				binitialLEsVisible;
-		Boolean				bShowDispersantArea;
-		DispersionRec		fDispersantData;
-		AdiosInfoRecH		fAdiosDataH;	// time after spill, amount dispersed, amount evaporated
-		BudgetTableDataH	fBudgetTableH;
-		char				fOilTypeName[kMaxNameLen];
-		WindageRec			fWindageData;
-	public:
-							TOLEList ();
-		virtual			   ~TOLEList () { Dispose (); }
-		//virtual OSErr		Initialize (long numElements, LERec *representativeLE, short massUnits,
-		//								WorldPoint startRelPos, WorldPoint endRelPos,
-		//								Seconds startRelTime, Seconds endRelTime,
-		//								Boolean bWantEndRelTime, Boolean bWantEndRelPosition);
-		virtual OSErr 		Initialize(LESetSummary * summary,Boolean deleteLERecH);
-		virtual OSErr		Initialize (long numElements, LERecH array, short massUnits, Seconds fileTime);
-		virtual OSErr		Reset (Boolean newKeys);
-
-		//void				ReleaseLE (long i);
-		//void				AgeLE (long i);
-		//virtual void		BeachLE (long i, WorldPoint beachPosition);
-	
-		long				GetLECount () { return fSetSummary.numOfLEs; }
-
-		virtual ClassID 	GetClassID () { return TYPE_OSSMLELIST; }
-		virtual Boolean		IAm(ClassID id) { if(id==TYPE_OSSMLELIST) return TRUE; return TLEList::IAm(id); }
-		virtual	void		Dispose ();
-		
-		virtual long		GetMassUnits () { return fSetSummary.massUnits; } 
-		virtual short		GetMassUnitType();
-		virtual double		GetTotalMass () { return fSetSummary.totalMass; } 
-		virtual OilType		GetOilType(){return fSetSummary.pollutantType;}
-		virtual Seconds		GetSpillStartTime() { return fSetSummary.startRelTime; }
-		virtual Seconds		GetSpillEndTime() { return fSetSummary.endRelTime; }
-		virtual void 		GetLEAmountStatistics(short desiredMassVolUnits, double *amtTotal,double *amtReleased,double *amtEvaporated,
-															double *amtDispersed,double *amtBeached,double *amtOffmap, double *amtFloating, double *amtRemoved);
-		virtual void 		GetMassBalanceLines(Boolean includePercentage, char* line1,char*line2,char* line3,char* line4,char* line5,char* line6,char* line7);
-		virtual OSErr 		CalculateAverageIntrusionDepth(double *avDepth, double *stdDev);
-
-		virtual DispersionRec 		GetDispersionInfo ();
-		virtual void 				SetDispersionInfo (DispersionRec info);
-
-		virtual AdiosInfoRecH 		GetAdiosInfo () {return fAdiosDataH;}
-		virtual void 				SetAdiosInfo (AdiosInfoRecH adiosInfoH){if (fAdiosDataH && fAdiosDataH != adiosInfoH) {DisposeHandle((Handle)fAdiosDataH);} fAdiosDataH = adiosInfoH;}
-		long 				GetNumAdiosBudgetTableItems(void);
-		void 				AddToBudgetTableHdl(BudgetTableData *budgetTable);
-		OSErr 				ExportBudgetTableHdl(char* path, BFPB *bfpb);
-		BudgetTableDataH	GetBudgetTable(){return fBudgetTableH;}
-
-		virtual WindageRec 	GetWindageInfo ();
-		virtual void 		SetWindageInfo (WindageRec info);
-
-		// I/O methods
-		virtual OSErr 		Read  (BFPB *bfpb); // read from the current position
-		virtual OSErr 		Write (BFPB *bfpb); // write to    the current position
-
-		// list display methods: base class functionality
-		virtual void		Draw (Rect r, WorldRect view);
-		virtual long		GetListLength ();
-		virtual ListItem 	GetNthListItem (long n, short indent, short *style, char *text);
-		virtual Boolean 	ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
-		virtual Boolean 	FunctionEnabled (ListItem item, short buttonID);
-//		virtual OSErr 		AddItem (ListItem item);
-		virtual OSErr 		SettingsItem (ListItem item);
-		virtual OSErr 		DeleteItem (ListItem item);
-
-		virtual OSErr 		CheckAndPassOnMessage(TModelMessage *message);
-};
+#include "TOLEList.h"
 
 OSErr DispersionDialog(DispersionRec *info, Seconds startRelTime, WindowPtr parentWindow);
 OSErr WindageSettingsDialog(WindageRec *info, WindowPtr parentWindow);
@@ -658,91 +502,11 @@ Boolean GetStrExtension (char *labelStr, char *extStr);
 
 extern Boolean gDrawBitmapInBlackAndWhite;
 
-class TVectorMap :  public TMap
-{
-	public:
-		CMapLayer			*thisMapLayer;
-		CMapLayer			*allowableSpillLayer;
-		CMapLayer			*mapBoundsLayer;
-		CMapLayer			*esiMapLayer;
-		CMap				*map;
-#ifdef IBM
-		HDIB				fLandWaterBitmap;
-		HDIB				fAllowableSpillBitmap;
-		HDIB				fMapBoundsBitmap;
-		HDIB				fESIBitmap;
-#else
-		BitMap				fLandWaterBitmap; 
-		BitMap				fAllowableSpillBitmap; 
-		BitMap				fMapBoundsBitmap; 
-		BitMap				fESIBitmap; 
-		//CGrafPtr 			fESIBitmap;		// ESI segments bitmap (color)
-#endif
-		Boolean				bDrawLandBitMap;
-		Boolean				bDrawAllowableSpillBitMap;
-		Boolean				bSpillableAreaOpen;
-		Boolean				bSpillableAreaActive;
+//++
 
-		WorldRect			fExtendedMapBounds;
-		Boolean				fUseExtendedBounds;
-		
-		Rect				fLegendRect;
-		Boolean				bShowLegend;
-		Boolean				bDrawESIBitMap;
-			
-		//long				fBitMapResMultiple;
-		
- 	public:
- 							TVectorMap (char* name, WorldRect bounds);
- 		virtual			   ~TVectorMap () { Dispose (); }
-		
-		virtual OSErr		InitMap ();
-		virtual OSErr		InitMap (char *path);
-		void		 		SetExtendedBounds (WorldRect newBounds) {fExtendedMapBounds = newBounds;}
-		virtual WorldRect	GetMapBounds () { if (fUseExtendedBounds) return fExtendedMapBounds; else return fMapBounds; }
-		virtual ClassID 	GetClassID () { return TYPE_VECTORMAP; }
-		virtual Boolean		IAm(ClassID id) { if(id==TYPE_VECTORMAP) return TRUE; return TMap::IAm(id); }
-		virtual void		Dispose ();
-		
-		virtual void		Draw (Rect r, WorldRect view);
-		virtual Boolean 	DrawingDependsOnTime(void){return TMap::DrawingDependsOnTime();}
-		virtual	void 		DrawESILegend(Rect r, WorldRect view);
-		virtual	Boolean 	InMap (WorldPoint p);
-		virtual Boolean 	OnLand (WorldPoint p);
-		virtual float		RefloatHalfLifeInHrs(WorldPoint p);
-		virtual WorldPoint3D	MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);
-		virtual long 		GetLandType (WorldPoint p);
-		virtual Boolean 	HaveAllowableSpillLayer(void);
-		virtual Boolean 	HaveMapBoundsLayer(void);
-		virtual	Boolean 	HaveLandWaterLayer(void);
-		virtual	Boolean 	HaveESIMapLayer(void);
-		//virtual	Boolean 	IsIceMap(void);
-		virtual Boolean 	IsAllowableSpillPoint(WorldPoint p);
-		
-		TMover* 			GetMover(ClassID desiredClassID);
-		TTriGridVel*		GetGrid();
-		virtual	double 				DepthAtPoint(WorldPoint wp);
+#include "TVectMap.h"
 
-		virtual long		GetListLength();
-		virtual ListItem 	GetNthListItem(long n, short indent, short *style, char *text);
-		virtual Boolean 	ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
-		virtual Boolean 	FunctionEnabled (ListItem item, short buttonID);
-
-		virtual OSErr 		CheckAndPassOnMessage(TModelMessage * model);
-
-		// I/O methods
-		virtual OSErr 		Read  (BFPB *bfpb); // read from the current position
-		virtual OSErr 		Write (BFPB *bfpb); // write to the current position
-		OSErr 				ExportAsBNAFileForGnomeAnalyst(char* path);
-		virtual void		GetSuggestedFileName(char* suggestedFileName,char* extension);
-		virtual OSErr 		ReplaceMap();
-		OSErr 				ImportESIData (char *path);
-		OSErr 				ChangeMapBox(WorldPoint p, WorldPoint p2);
-
-	private:
-		OSErr 				ImportMap (char *path); 
-		OSErr 				SelectMapBox (WorldRect bounds);
-};
+//--
 
 /////////////////////////////////////////////////
 // Files for CDOG
@@ -757,7 +521,6 @@ OSErr CDOGOutputOptionsDialog(Boolean *outputSubsurfaceFiles,Boolean *outputGasF
 OSErr CircInfoDialog(short *methodOfDeterminingHydrodynamics);
 /////////////////////////////////////////////////
 extern RGBColor esicolors[];
-TVectorMap* GetNthVectorMap(long desiredNum0Relative);
 Boolean IsVectorMap (char *path, Boolean *isESI);
 #ifdef MAC
 Boolean IsBlackPixel(WorldPoint p,WorldRect mapBounds,BitMap bm);
@@ -880,12 +643,7 @@ enum { NONE = 0, WINDSPEED, WINDSTRESS };	// for scaling
 TModelDialogVariables DefaultTModelDialogVariables(Seconds start);
 Boolean EqualTModelDialogVariables(TModelDialogVariables* var1,TModelDialogVariables *var2);
 void TellPlayersAboutNewDirt(void);
-#define DIRTY_EVERYTHING -1
-#define DIRTY_RUNBAR 1
-#define DIRTY_LIST 2
-#define DIRTY_MAPDRAWINGRECT  4
-#define DIRTY_TOOLBAR  8
-#define DIRTY_ENTIREWINDOW  16
+
 // powers of 2 so we can do bit checks
 
 //++ TTimeValue

@@ -4,6 +4,7 @@
 #define __CROSSH__
 
 #include "Earl.h"
+#include "TypeDefs.h"
 
 //#ifdef MAC
 //extern THPrint gPrRecHdl;
@@ -30,11 +31,7 @@ void GlobalToLocalRect (Rect *globalRect);
 Boolean WindowObscured(WindowPtr w);
 Boolean FloatingWindowAbove(WindowPtr w);
 Boolean WindowNeedsUpdating(WindowPtr w);
-void Secs2DateStrings(unsigned long seconds, CHARPTR dateLong, CHARPTR dateShort, CHARPTR time24, CHARPTR time12);
-void Secs2DateString(unsigned long seconds, CHARPTR s);
-void Secs2DateString2(unsigned long seconds, CHARPTR s);
-unsigned long DateString2Secs(CHARPTR s);
-char *Date2String(DateTimeRec *time, char *s);
+
 #ifdef MAC
 void InitPrinting();
 OSErr DoPrintFunction(short function, Boolean *accepted);
@@ -94,10 +91,16 @@ OSErr catmove(short vRefNum, long dirID, CHARPTR oldName, long newDirID, CHARPTR
 #define GetBValue(c) (c.blue / 256)
 #endif
 
+
+Boolean DragRectInRect (WindowPtr theWindow, Point clickPoint, Rect *startRect, Rect *limitRect, Rect *endRect);
 RGBColor MyPickColor(RGBColor color, WindowPtr w);
 Rect GetScreenBounds();
 short PixelsPerInchCurrent();
 short PixelsPerInchScreen();
+short PixelsPerCentimeter();
+double PixelsPerMilDeg();
+long PixelDiscrepancy(WorldRect wr);
+long LongToPixels(long dLong, WorldPoint center);
 Boolean MyPtInRect(Point p, RECTPTR r);
 void MyMoveTo(short x, short y);
 void MyLineTo(short x, short y);
@@ -242,9 +245,7 @@ OSErr myAEGetParamIn_NewPtr(AppleEvent *ae, char *keyWord, Ptr *ptr, Boolean bee
 		#define  SetPortDialogPort(x)  SetPortWindowPort(GetDialogWindow(x))
 	#endif
 #endif
-/////////////////////////////////////////////////
-void my_p2cstr(void *string);
-void my_c2pstr(void *string);
+
 /////////////////////////////////////////////////
 void TextFontSize(long font,long size); 
 void TextFontSizeFace(long font,long size,long style) ; 
@@ -290,7 +291,6 @@ CHARPTR PathNameFromDirID(long dirID, short vRefNum, CHARPTR pathName);
 CHARPTR PathNameFromWD(long vRefNum, CHARPTR pathName);
 #endif
 CHARPTR GetFullPath(short vRefNum, long dirID, CHARPTR fileName, CHARPTR path);
-void SplitPathFile(CHARPTR fullPath, CHARPTR fileName);
 void AddFileSuffix(char *fileName, char *suffix, short vRefNum);
 OSErr FindFileFromPath(char *path, char *suffix, char *name, short dialogID, Boolean exeFiles);
 CHARPTR MyGetFolderName(short vRefNum, long dirID, Boolean fullPath, CHARPTR folderName);
@@ -546,7 +546,6 @@ short stringwidth(CHARPTR s);
 short StringWidth(CHARPTR s);
 void MyInsetRect(RECTPTR r, short h, short v);
 Boolean SectRect(RECTPTR r1, RECTPTR r2, RECTPTR r3);
-void SetPt(POINTPTR p, short h, short v);
 void MapPt(POINTPTR pt, RECTPTR srcRect, RECTPTR dstRect);
 
 /////////// MACUTIL: FILES
@@ -576,12 +575,6 @@ long NumFilesSelected(void); // JLM 6/4/10
 void strcpyNthFile(char *szFile,long n);// JLM 6/4/10
 
 #endif
-
-/////////// MACUTIL: MEMORY
-
-
-#include "MemUtils.h"
-
 
 /////////// MACUTIL: DIALOGS
 
@@ -633,9 +626,7 @@ short GetControlMaximum(ControlHandle h);
 void SetControlMinimim(ControlHandle h, short minVal);
 void SetControlMaximim(ControlHandle h, short maxVal);
 long GetDblTime(void);
-void GetDateTime(unsigned long *seconds);
-void SecondsToDate(unsigned long seconds, DateTimeRec *date);
-void DateToSeconds(DateTimeRec *date, unsigned long *seconds);
+
 unsigned long TickCount();
 double rint(double value);
 double anint(double num1);
@@ -834,6 +825,9 @@ void	DrawBlackAndWhiteBitMap(BitMap *bitmap, Rect m);
 void 	DisposeBlackAndWhiteBitMap (BitMap *theBitMap);
 
 #endif
+
+OSErr CurrentUncertaintyDialog(CurrentUncertainyInfo *info, WindowPtr parentWindow, Boolean *uncertaintyChanged);
+
 
 void mysfpputfile(POINTPTR where, CHARPTR rType, CHARPTR defaultName,
             MyDlgHookUPP hook, MySFReplyPtr reply, short dialogID,

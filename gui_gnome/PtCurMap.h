@@ -21,11 +21,18 @@ class PtCurMap : virtual public PtCurMap_c,  public TMap
 {
 
 public:
+	
+#ifdef IBM
+	HDIB			fWaterBitmap;
+	HDIB			fLandBitmap;
+#else
+	BitMap			fWaterBitmap; 
+	BitMap			fLandBitmap; 
+#endif
+	
 	PtCurMap (char* name, WorldRect bounds);
 	virtual		   ~PtCurMap () { Dispose (); }
-	
-	virtual OSErr	InitMap();
-	virtual OSErr	InitDropletSizes();
+
 	//virtual OSErr	InitMap (char *path);
 	virtual void	Dispose ();
 	
@@ -40,7 +47,13 @@ public:
 	void 	SetBeachSegmentFlag(LONGH *beachBoundaryH, long *numBeachBoundaries);
 	
 	void 	FindNearestBoundary(Point where, long *verNum, long *segNo);
-	void  FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo);
+
+	virtual long 	GetLandType (WorldPoint p);
+	virtual	Boolean InMap (WorldPoint p);
+	virtual Boolean OnLand (WorldPoint p);
+	Boolean InWater (WorldPoint p);
+	virtual WorldPoint3D	MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);
+	virtual WorldPoint3D	MovementCheck2 (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);
 	
 	virtual void	Draw (Rect r, WorldRect view);
 	virtual void 	DrawBoundaries(Rect r);

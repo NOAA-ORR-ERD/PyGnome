@@ -10,7 +10,7 @@
 #ifndef __ClassID_c__
 #define __ClassID_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "ClassID_b.h"
 
@@ -21,6 +21,8 @@ public:
 	virtual Boolean		IAm(ClassID id) { return FALSE; }
 	void				GetClassName (char* theName) { strcpy (theName, className); }	// sohail
 	void				SetClassName (char* name);
+	UNIQUEID			GetUniqueID () { return fUniqueID; }
+	Boolean 			MatchesUniqueID(UNIQUEID uid);	
 	virtual void		Dispose 	() { return; }
 	virtual Boolean		IsDirty  	() { return bDirty;  }
 	virtual Boolean		IsOpen   	() { return bOpen;   }

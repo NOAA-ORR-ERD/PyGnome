@@ -1,6 +1,7 @@
 #include <QuicktimeComponents.h>
 #include <Movies.h>
 #ifdef IBM
+	// Note: Windows uses the quicktime/Mac memory management tools in this file, do not include Gnome's header files for _NewHandle, etc.
 	#include "Windows.h"
 	#include "Gestalt.h"
 	#include "QTML.h"
@@ -15,20 +16,7 @@
 
 #endif
 
-#ifdef IBM
-#ifndef __Earl__
-#define __Earl__
-	typedef char *CHARPTR, **CHARH;
-	typedef void *VOIDPTR, **VOIDH;
-	typedef long *LONGPTR, **LONGH;
-	typedef Handle *HANDLEPTR;
-#endif
-#endif
-
-#include "MemUtils.h"
-
 #include "MakeMovie.h"
-
 
 Boolean 	gMoviesAllowed = FALSE;
 Boolean  gHaveCalledInitMovies = FALSE;
@@ -284,16 +272,19 @@ long PICStoMovie(	char *moviePath,
 		result = BeginMediaEdits(dstMedia);
 		BailOnError(result);
 
-		idh = (ImageDescription**)_NewHandle(sizeof(ImageDescription));
+		//idh = (ImageDescription**)_NewHandle(sizeof(ImageDescription));
+		idh = (ImageDescription**)NewHandle(sizeof(ImageDescription));	// Use the QuickTime version of NewHandle
 		
 		//result = GetMaxCompressionSize(pictGWorld->portPixMap,&pictRect,p.depth,p.spatialQuality,
 					//p.theCodecType,p.theCodec,&compressedFrameSize);
 		result = GetMaxCompressionSize(GetPortPixMap(pictGWorld),&pictRect,p.depth,p.spatialQuality,
 				p.theCodecType,p.theCodec,&compressedFrameSize);
 		BailOnError(result);
-		compressedData = _NewHandle(compressedFrameSize);
+		//compressedData = _NewHandle(compressedFrameSize);
+		compressedData = NewHandle(compressedFrameSize);	// Use the QuickTime version of NewHandle
 		BailOnNil(compressedData);
-		_HLock(compressedData);
+		//_HLock(compressedData);
+		HLock(compressedData);
 		
 		
 		//result = CompressSequenceBegin(&srcSeqID,pictGWorld->portPixMap,nil,&pictRect,nil,p.depth,
@@ -338,7 +329,8 @@ long PICStoMovie(	char *moviePath,
 			BailOnError(result);
 		}
 		
-		_HUnlock((Handle)compressedData);
+		//_HUnlock((Handle)compressedData);
+		HUnlock((Handle)compressedData);
 
 
 		{

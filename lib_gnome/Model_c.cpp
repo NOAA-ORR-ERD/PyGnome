@@ -8,27 +8,16 @@
  */
 
 #include "Model_c.h"
+#include "MemUtils.h"
+#include "StringFunctions.h"
+#include "CompFunctions.h"
+
+#ifndef pyGNOME
 #include "CROSS.H"
-
-
-#ifdef pyGNOME
-#define TModel Model_c
-#define TMap Map_c
-#define TMover Mover_c
-#define TWindMover WindMover_c
-#define TRandom Random_c
-#define TRandom3D Random3D_c
-#define TOSSMTimeValue OSSMTimeValue_c
-#define NetCDFMover NetCDFMover_c
-#define TriCurMover TriCurMover_c
-#define TCompoundMover CompoundMover_c
-#define TCurrentMover CurrentMover_c
-#define PtCurMover PtCurMover_c
-	
-	Model_c *model;
+#else
+#include "Replacements.h"
 #endif
 
-Seconds gTapWindOffsetInSeconds = 0;
 Boolean gNoaaVersion = FALSE;
 Boolean gMearnsVersion = FALSE;
 Boolean gDispersedOilVersion = FALSE;
@@ -48,7 +37,6 @@ Model_c::Model_c(Seconds start)
 	uMap = nil;
 	weatherList = nil;
 	LEFramesList = nil;
-	mapImage = nil;
 	frameMapList = nil;
 	movieFrameIndex = 0;
 	modelMode = ADVANCEDMODE;
@@ -153,16 +141,16 @@ void Model_c::UpdateWindage(TLEList* theLEList)
 	LERec theLE;
 	double originalWindageRange, currentWindageRange, meanWindage, persistence;
 	double windage, windageA, windageB, currentWindageA, currentWindageB;
-	WindageRec windageRec = (*(TOLEList*)theLEList).fWindageData;
+	WindageRec windageRec = (*(dynamic_cast<TOLEList*>(theLEList))).fWindageData;
 	Boolean timeAfterSpillStart;
 	
 	if (!bHindcast)
 		//timeAfterModelStart = !(modelTime == model->GetStartTime());
-		timeAfterSpillStart = (modelTime > ((TOLEList*)theLEList)->GetSpillStartTime());
+		timeAfterSpillStart = (modelTime > (dynamic_cast<TOLEList*>(theLEList))->GetSpillStartTime());
 	else
 		//timeAfterModelStart = !(modelTime == model->GetEndTime());
 		//timeAfterSpillStart = (modelTime < ((TOLEList*)theLEList)->GetSpillStartTime());
-		timeAfterSpillStart = (modelTime < ((TOLEList*)theLEList)->GetSpillEndTime());
+		timeAfterSpillStart = (modelTime < (dynamic_cast<TOLEList*>(theLEList))->GetSpillEndTime());
 	
 	
 	// new algorithm to eliminate dependence of spread on time step 12/22/00
@@ -218,8 +206,8 @@ void Model_c::DisperseOil(TLEList* theLEList, long index)
 	long disperseStep, totalSteps, numBudgetTableItems, numDropletSizes = 0;
 	float x,y,rand,rand2;
 	LERec theLE,savedLE;
-	DispersionRec dispInfo = ((TOLEList*)theLEList) -> GetDispersionInfo();
-	AdiosInfoRecH adiosBudgetTable = ((TOLEList *)theLEList) -> GetAdiosInfo();
+	DispersionRec dispInfo = (dynamic_cast<TOLEList*>(theLEList)) -> GetDispersionInfo();
+	AdiosInfoRecH adiosBudgetTable = (dynamic_cast<TOLEList *>(theLEList)) -> GetAdiosInfo();
 	Boolean chemicalDispersion = dispInfo.bDisperseOil, naturalDispersion = false;
 	DropletInfoRecH dropSizeHdl = 0;
 	
@@ -238,7 +226,7 @@ void Model_c::DisperseOil(TLEList* theLEList, long index)
 		float totalAmountToDisperse,totalAmountToEvaporate,totalAmountToRemove;
 		float startAmtDisp, endAmtDisp, startAmtEvap, endAmtEvap, startAmtRem, endAmtRem, frac=0;
 		Seconds currentTime, previousTime=0, adiosIntervalStartTime, adiosIntervalEndTime, duration;
-		numBudgetTableItems = ((TOLEList*)theLEList) -> GetNumAdiosBudgetTableItems();
+		numBudgetTableItems = (dynamic_cast<TOLEList*>(theLEList)) -> GetNumAdiosBudgetTableItems();
 		if (numBudgetTableItems<1) 
 		{
 			printError("Problem accessing Adios Budget Table data"); 
@@ -247,7 +235,7 @@ void Model_c::DisperseOil(TLEList* theLEList, long index)
 		totalAmountToDisperse = INDEXH(adiosBudgetTable,numBudgetTableItems-1).amountDispersed;
 		totalAmountToEvaporate = INDEXH(adiosBudgetTable,numBudgetTableItems-1).amountEvaporated;
 		totalAmountToRemove = INDEXH(adiosBudgetTable,numBudgetTableItems-1).amountRemoved;
-		currentTime = GetModelTime() - ((TOLEList*)theLEList) ->fSetSummary.startRelTime;
+		currentTime = GetModelTime() - (dynamic_cast<TOLEList*>(theLEList)) ->fSetSummary.startRelTime;
 		//currentTime = GetModelTime() - GetStartTime();
 		if (currentTime>0) previousTime = currentTime - GetTimeStep();
 		err = GetAdiosIndices(adiosBudgetTable,currentTime,&adiosStartIndex,&adiosEndIndex);
@@ -293,7 +281,7 @@ void Model_c::DisperseOil(TLEList* theLEList, long index)
 		endIndexRem = numLEs * (startAmtRem + frac * (endAmtRem - startAmtRem)) / totalAmountToRemove;
 		//if (disperseStep==1 || (((TOLEList*)theLEList) ->fSetSummary.startRelTime != ((TOLEList*)theLEList) ->fSetSummary.endRelTime && GetModelTime() - theLE.releaseTime) <= GetTimeStep())	// time dependent release
 		//if (disperseStep==1 ||  (GetModelTime() - theLE.releaseTime) < GetTimeStep())	// time dependent release
-		if (disperseStep==1 ||  ((GetModelTime() - theLE.releaseTime) < GetTimeStep() && theLE.releaseTime > ((TOLEList*)theLEList) ->fSetSummary.startRelTime))	// time dependent release
+		if (disperseStep==1 ||  ((GetModelTime() - theLE.releaseTime) < GetTimeStep() && theLE.releaseTime > (dynamic_cast<TOLEList*>(theLEList)) ->fSetSummary.startRelTime))	// time dependent release
 		{
 			// mark the LEs that will be dispersed
 			// what if combine lasso with adios??
@@ -333,7 +321,7 @@ void Model_c::DisperseOil(TLEList* theLEList, long index)
 		if (!chemicalDispersion) goto weatherLE;
 	}
 	if (!chemicalDispersion) return;
-	if (this->GetModelTime() - ((TOLEList*)theLEList) ->fSetSummary.startRelTime < dispInfo.timeToDisperse) goto weatherLE;
+	if (this->GetModelTime() - (dynamic_cast<TOLEList*>(theLEList)) ->fSetSummary.startRelTime < dispInfo.timeToDisperse) goto weatherLE;
 	//if (this->GetModelTime() - this->GetStartTime() < dispInfo.timeToDisperse) goto weatherLE;
 	//if (this->GetModelTime() - this->GetStartTime() < dispInfo.timeToDisperse && !naturalDispersion) return;
 	// code goes here, check wind speed >= 7 knots, can assume only one wind mover? only at first step?
@@ -348,7 +336,7 @@ void Model_c::DisperseOil(TLEList* theLEList, long index)
 	}
 	//disperseStep = (GetModelTime() - GetStartTime() - dispInfo.timeToDisperse + GetTimeStep())/GetTimeStep();
 	else
-		disperseStep = (GetModelTime() - ((TOLEList*)theLEList) ->fSetSummary.startRelTime - dispInfo.timeToDisperse + GetTimeStep())/GetTimeStep();
+		disperseStep = (GetModelTime() - (dynamic_cast<TOLEList*>(theLEList)) ->fSetSummary.startRelTime - dispInfo.timeToDisperse + GetTimeStep())/GetTimeStep();
 	totalSteps = dispInfo.duration/GetTimeStep() + 1;
 	numLEs = theLEList->GetLECount();
 	startIndex = numLEs * (disperseStep - 1) / totalSteps;
@@ -842,7 +830,7 @@ Boolean Model_c::ThereIsAnEarlierSpill(Seconds timeOfInterest, TLEList *someLELi
 		if(thisLEList == someLEListToIgnore) continue;
 		if(thisLEList -> IAm(TYPE_OSSMLELIST))
 		{
-			TOLEList *thisOLEList = (TOLEList*)thisLEList; // typecast
+			TOLEList *thisOLEList = dynamic_cast<TOLEList*>(thisLEList); // typecast
 			if(thisOLEList->fSetSummary.startRelTime < timeOfInterest)
 				return true;
 		}
@@ -866,7 +854,7 @@ Boolean Model_c::ThereIsALaterSpill(Seconds timeOfInterest, TLEList *someLEListT
 		if(thisLEList == someLEListToIgnore) continue;
 		if(thisLEList -> IAm(TYPE_OSSMLELIST))
 		{
-			TOLEList *thisOLEList = (TOLEList*)thisLEList; // typecast
+			TOLEList *thisOLEList = dynamic_cast<TOLEList*>(thisLEList); // typecast
 			if (thisOLEList->fSetSummary.bWantEndRelTime) testTime = thisOLEList->fSetSummary.endRelTime;
 			else testTime = thisOLEList->fSetSummary.startRelTime;
 			if(testTime > timeOfInterest)
@@ -942,10 +930,10 @@ OSErr Model_c::GetTotalBudgetTableHdl(short desiredMassVolUnits, BudgetTableData
 		model->LESetsList->GetListItem((Ptr)&thisLEList, i);
 		if(thisLEList -> GetLEType() == UNCERTAINTY_LE ) continue;
 		
-		massunits = ((TOLEList*)thisLEList) -> GetMassUnits();
-		density =  ((TOLEList*)thisLEList) -> fSetSummary.density;	
+		massunits = (dynamic_cast<TOLEList*>(thisLEList)) -> GetMassUnits();
+		density =  (dynamic_cast<TOLEList*>(thisLEList)) -> fSetSummary.density;	
 		if (massunits!=desiredMassVolUnits) convertMassUnits = true;
-		thisBudgetTableH = ((TOLEList*)thisLEList) -> GetBudgetTable();
+		thisBudgetTableH = (dynamic_cast<TOLEList*>(thisLEList)) -> GetBudgetTable();
 		if (thisBudgetTableH) sizeOfBudgetHdl = _GetHandleSize((Handle)thisBudgetTableH)/sizeof(BudgetTableData);
 		if (totalBudgetTableH)
 		{
@@ -1036,10 +1024,10 @@ OSErr Model_c::GetTotalAmountSpilled(short desiredMassVolUnits,double *amtTotal)
 		LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		if(thisLEList -> GetLEType() != UNCERTAINTY_LE )
 		{
-			totalMass = ((TOLEList*)thisLEList)->GetTotalMass();
+			totalMass = (dynamic_cast<TOLEList*>(thisLEList))->GetTotalMass();
 			massFrac = totalMass / thisLEList->GetNumOfLEs();
-			massunits = ((TOLEList*)thisLEList)->GetMassUnits();
-			density =  ((TOLEList*)thisLEList)->fSetSummary.density;	
+			massunits = (dynamic_cast<TOLEList*>(thisLEList))->GetMassUnits();
+			density =  (dynamic_cast<TOLEList*>(thisLEList))->fSetSummary.density;	
 			amttotal = VolumeMassToVolumeMass(totalMass,density,massunits,desiredMassVolUnits);
 			*amtTotal+=amttotal;
 		}

@@ -1,6 +1,6 @@
 
 #include "Cross.h"
-#include	"ObjectUtils.h"
+#include	"ObjectUtilsPD.h"
 #include	"Geometry.h"
 #include	"GenDefs.h"
 
@@ -84,14 +84,19 @@ void DrawMapPoly (CMap* theMap, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr drawSet
 	//Our_PmForeColor (bDrawBlackAndWhite ? kBlackColorInd : drawSettings -> foreColorInd);//JLM
 	// make sure the blackandwhite bitmaps come out right
 	Our_PmForeColor (bDrawBlackAndWhite || gDrawBitmapInBlackAndWhite ? kBlackColorInd : drawSettings -> foreColorInd);//JLM
-	if(bDrawBlackAndWhite) 
+	if (drawSettings -> fillCode == kNoFillCode && drawSettings->backColorInd == kWaterColorInd) 
+		Our_PmForeColor (drawSettings -> foreColorInd);
+	else
 	{
-		//SetPenPat(UPSTRIPES);
-		// we want solid outline and a patterned inside
-		FillPat(UPSTRIPES);
-		PenStyle(BLACK,1);
+		if(bDrawBlackAndWhite) 
+		{
+			//SetPenPat(UPSTRIPES);
+			// we want solid outline and a patterned inside
+			FillPat(UPSTRIPES);
+			PenStyle(BLACK,1);
+		}
 	}
-	
+
 	//if(numPts > 2) Polygon(currentHDC,*pointsH,numPts);
 	// 6/11/03 PC wasn't recognizing the flag for not filling a land polygon
 	if (drawSettings -> bClosed)
@@ -174,6 +179,41 @@ void DrawMapBoundsPoly (CMap* theMap, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr d
 	DisposeHandle((Handle)pointsH);
 	if(pointsPtr) {_DisposePtr((Ptr)pointsPtr); pointsPtr = 0;}
 }
+#else
+void DrawMapBoundsPoly (CMap* theMap, PolyObjectHdl MapPolyHdl, DrawSpecRecPtr drawSettings, Boolean erasePolygon)
+{
+	long numPts = (**MapPolyHdl).pointCount;
+	PolyHandle poly;
+
+	LongPoint** thisPointsHdl=nil;
+	Point pt,startPt;
+	LongPoint wPt;
+	long i;
+	Boolean offQuickDrawPlane = false;
+	RGBColor saveColor; // JLM ?? wouldn't compile without this
+
+	GetForeColor (&saveColor);		/* save original forecolor */
+	
+	thisPointsHdl = (LongPoint**) (**MapPolyHdl).objectDataHdl;
+	poly = OpenPoly();
+	wPt = INDEXH(thisPointsHdl,0);
+	startPt = GetQuickDrawPt(wPt.h,wPt.v,&gRect,&offQuickDrawPlane);
+	MyMoveTo(startPt.h,startPt.v);
+	for(i = 1; i< numPts;i++)
+	{
+		wPt = INDEXH(thisPointsHdl,i);
+		pt = GetQuickDrawPt(wPt.h,wPt.v,&gRect,&offQuickDrawPlane);
+		MyLineTo(pt.h,pt.v);
+	}
+	MyLineTo(startPt.h,startPt.v);
+	ClosePoly();
+	if (erasePolygon) ErasePoly(poly);
+	FramePoly(poly);
+	ErasePoly(poly);
+	KillPoly(poly);
+
+	RGBForeColor (&saveColor);
+}
 #endif
 
 /**************************************************************************************************/
@@ -200,14 +240,7 @@ void SetPolyPointCount (PolyObjectHdl thePolyHdl, long pointCount)
 
 	return;
 }
-/**************************************************************************************************/
-long GetPolyPointCount (PolyObjectHdl thePolyHdl)
-{
-	if (thePolyHdl != nil)
-		return ((**thePolyHdl).pointCount);
-	else
-		return (0);
-}
+
 /**************************************************************************************************/
 void CalcSetPolyLRect (PolyObjectHdl thePolyHdl)
 {
@@ -816,7 +849,11 @@ void DrawNoSectPolyRecursive (CMap *theMap, PolyObjectHdl MapPolyHdl, DrawSpecRe
 		if (drawSettings -> fillCode != kNoFillCode)
 			PolyHdl = OpenPoly ();
 		else
-			Our_PmForeColor (gDrawBitmapInBlackAndWhite ? kBlackColorInd : drawSettings -> foreColorInd);
+		{
+			PolyHdl = OpenPoly ();
+			//Our_PmForeColor (gDrawBitmapInBlackAndWhite ? kBlackColorInd : drawSettings -> foreColorInd);
+			Our_PmForeColor (drawSettings -> foreColorInd);
+		}
 
 		GetObjectESICode ((ObjectRecHdl) MapPolyHdl,&esiCode); 
 		if (esiCode>0) 	// -500 is the default
@@ -930,7 +967,7 @@ void DrawNoSectPolyRecursive (CMap *theMap, PolyObjectHdl MapPolyHdl, DrawSpecRe
 			{
 				if (PlotCount > 2)			/* polygon must contain more than 2 line-to points */
 				{
-					if (drawSettings -> bErase)
+					if (drawSettings -> bErase || drawSettings -> fillCode == kNoFillCode)
 						ErasePoly (PolyHdl);
 	
 					if (drawSettings -> fillCode == kPaintFillCode)

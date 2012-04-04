@@ -8,7 +8,9 @@
  */
 
 #include "Random_c.h"
-#include "CROSS.H"
+#include "CompFunctions.h"
+#include "GEOMETRY.H"
+#include "Units.h"
 
 #ifdef MAC
 #ifdef MPW
@@ -17,8 +19,13 @@
 #endif
 
 #ifndef pyGNOME
+#include "TModel.h"
+#include "TVectMap.h"
 extern TModel *model;
 #else
+#include "Map_c.h"
+#include "Model_c.h"
+#include "VectMap_c.h"
 #define TMap Map_c
 extern Model_c *model;
 #endif
@@ -61,7 +68,7 @@ WorldPoint3D Random_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LERe
 	{
 		float depth;
 		double localDiffusionCoefficient, factor;
-		TVectorMap* vMap = GetNthVectorMap(0);	// get first vector map
+		VectorMap_c* vMap = GetNthVectorMap(0);	// get first vector map
 		if (vMap) depth = vMap->DepthAtPoint(refPoint);
 		// logD = 1+exp(1-1/.1H) 
 		if (depth==0)	// couldn't find the point in dagtree, maybe a different default?

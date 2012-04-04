@@ -46,7 +46,6 @@ public:
 	virtual OSErr 		SettingsItem (ListItem item);
 	virtual OSErr 		DeleteItem (ListItem item);
 	
-	virtual	OSErr		ReadTopology(char* path, TMap **newMap);
 	virtual	OSErr		ExportTopology(char* path);
 	
 };

@@ -10,10 +10,17 @@
 #ifndef __TideCurCycleMover_c__
 #define __TideCurCycleMover_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "TideCurCycleMover_b.h"
 #include "CATSMover_c.h"
+
+#ifndef pyGNOME
+#include "TMap.h"
+#else
+#include "Map_c.h"
+#define TMap Map_c
+#endif
 
 class TideCurCycleMover_c : virtual public TideCurCycleMover_b, virtual public CATSMover_c {
 
@@ -43,8 +50,13 @@ public:
 	virtual OSErr 		PrepareForModelStep();
 	virtual void 		ModelStepIsDone();
 	OSErr 				ReorderPoints(TMap **newMap, short *bndry_indices, short *bndry_nums, short *bndry_type, long numBoundaryPts); 
+	virtual Boolean 	CheckInterval(long &timeDataInterval);
+	virtual OSErr	 	SetInterval(char *errmsg);
+	long				GetNumTimesInFile();
+	void 				DisposeLoadedData(LoadedData * dataPtr);	
+	void 				ClearLoadedData(LoadedData * dataPtr);	
+	OSErr				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 
-	
 };
 
 #endif

@@ -19,30 +19,16 @@ class NetCDFMover : virtual public NetCDFMover_c,  public TCurrentMover
 						   ~NetCDFMover () { Dispose (); }
 		virtual void		Dispose ();
 	virtual OSErr		InitMover (); //  use TCATSMover version which sets grid ?
-	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVER; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVER) return TRUE; return TCurrentMover::IAm(id); }
-	void 					DisposeLoadedData(LoadedData * dataPtr);	
-	void 					ClearLoadedData(LoadedData * dataPtr);
-	void 					DisposeAllLoadedData();
+
 	virtual	OSErr 	ReplaceMover();
-	
-	long 					GetNumTimesInFile();
-	long 					GetNumFiles();
-	
-	virtual long 		GetNumDepthLevelsInFile();	// eventually get rid of this
-	//virtual DepthValuesSetH 	GetDepthProfileAtPoint(WorldPoint refPoint) {return nil;}
-	virtual OSErr 	GetDepthProfileAtPoint(WorldPoint refPoint, long timeIndex, DepthValuesSetH *profilesH) {*profilesH=nil; return 0;}
-	virtual OSErr 		CheckAndScanFile(char *errmsg);
-	virtual Boolean 	CheckInterval(long &timeDataInterval);
-	virtual OSErr	 	SetInterval(char *errmsg);
+
+
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
 	
 	//virtual OSErr		TextRead(char *path,TMap **newMap);
 	virtual OSErr		TextRead(char *path,TMap **newMap,char *topFilePath);
-	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
-	OSErr 				ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime);
 	//OSErr 				ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH);
 	OSErr 				ReadInputFileNames(char *fileNamesPath);
 	

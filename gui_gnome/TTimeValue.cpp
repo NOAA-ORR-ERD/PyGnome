@@ -11,10 +11,7 @@
 
 #include "CROSS.H"
 
-OSErr TTimeValue::InitTimeFunc()
-{
-	return 0;
-}
+
 
 OSErr TTimeValue::Write(BFPB *bfpb)
 {

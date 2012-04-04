@@ -1,6 +1,6 @@
 
 #include "Cross.h"
-#include "ObjectUtils.h"
+#include "ObjectUtilsPD.h"
 #include "GenDefs.h"
 /**************************************************************************************************/
 
@@ -459,58 +459,8 @@ void CMapLayer::SetLayerScope (LongRect *thisLayerLRectPtr)
 	
 	return;
 }
-/**************************************************************************************************/
-void CMapLayer::GetLayerScope (LongRect *LayerLBoundsPtr, Boolean bRecalc)
-{
-	if (!bRecalc)
-		*LayerLBoundsPtr = layerScopeLRect;
-	else
-	{
-		long			ObjectCount, ObjectIndex;
-		LongRect		ObjectLRect, layerBoundsLRect;
-		ObjectRecHdl	thisObjectHdl;
-		CMyList			*thisObjectList = nil;
-	
-		/* set layer bounds rect to empty to start with */
-		SetLRect (&layerBoundsLRect, kWorldRight, kWorldBottom, kWorldLeft, kWorldTop);
-		
-		thisObjectList = GetLayerObjectList ();
-		ObjectCount = thisObjectList -> GetItemCount ();
-	
-		for (ObjectIndex = ObjectCount - 1; ObjectIndex >= 0; --ObjectIndex)
-		{
-			thisObjectList -> GetListItem ((Ptr) &thisObjectHdl, ObjectIndex);
-			GetObjectLRect (thisObjectHdl, &ObjectLRect);
-			
-			UnionLRect (&ObjectLRect, &layerBoundsLRect, &layerBoundsLRect);
-		}
-		
-		layerScopeLRect = layerBoundsLRect;		/* update internal class field */
-		*LayerLBoundsPtr = layerBoundsLRect;	/* send LRect back */
-	}
-	
-	return;
-}
-/**************************************************************************************************/
-long CMapLayer::GetLayerPolyPtsCount ()
-{
-	long			ObjectIndex, ObjectCount, TotalPointsCount = 0;
-	CMyList			*thisObjectList = nil;
-	ObjectRecHdl	thisObjectHdl;
-	OSType			thisObjectType;
 
-	thisObjectList = GetLayerObjectList ();
-	ObjectCount = thisObjectList -> GetItemCount ();
-	for (ObjectIndex = ObjectCount - 1; ObjectIndex >= 0; --ObjectIndex)
-	{
-		thisObjectList -> GetListItem ((Ptr) &thisObjectHdl, ObjectIndex);
-		GetObjectType (thisObjectHdl, &thisObjectType);
-		if (thisObjectType == kPolyType)
-			TotalPointsCount  += GetPolyPointCount ((PolyObjectHdl) thisObjectHdl);
-	}
 
-	return (TotalPointsCount);
-}
 /**************************************************************************************************/
 void CMapLayer::SetLayerModified (Boolean theModFlag)
 {
@@ -518,11 +468,7 @@ void CMapLayer::SetLayerModified (Boolean theModFlag)
 
 	return;
 }
-/**************************************************************************************************/
-Boolean CMapLayer::IsLayerModified ()
-{
-	return (bLayerModified);
-}
+
 /**************************************************************************************************/
 void CMapLayer::SetLayerObjectList (CMyList *ObjectList)
 {
@@ -546,35 +492,7 @@ void CMapLayer::SetLayerSelectList (CMyList *theSelectList)
 
 	return;
 }
-/**************************************************************************************************/
-CMyList* CMapLayer::GetLayerObjectList ()
-{
-	CMyList		*thisObjectList = nil;
 
-	thisObjectList = layerObjectList;
-
-	return (thisObjectList);
-}
-/**************************************************************************************************/
-CMyList* CMapLayer::GetLayerGroupList ()
-{
-	CMyList		*thisGroupList = nil;
-
-	thisGroupList = layerGroupList;
-
-	return (thisGroupList);
-}
-/**************************************************************************************************/
-long CMapLayer::GetLayerObjectCount ()
-{
-	long			ObjectCount = 0;
-	CMyList			*thisObjectList = nil;
-	
-	thisObjectList = GetLayerObjectList ();
-	ObjectCount = thisObjectList -> GetItemCount ();
-
-	return (ObjectCount);
-}
 /**************************************************************************************************/
 void CMapLayer::SetLayerOLMaxScale (long theScale)
 {

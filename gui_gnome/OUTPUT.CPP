@@ -3136,24 +3136,6 @@ OSErr CantSaveIfNoSpill(void)
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
-TVectorMap* GetNthVectorMap(long desiredNum0Relative)
-{
-	long i,n;
-	TMap *map;
-	long numVectorMaps = 0;
-	n = model -> mapList->GetItemCount() ;
-	for (i=0; i<n; i++)
-	{
-		model -> mapList->GetListItem((Ptr)&map, i);
-		if (map->IAm(TYPE_VECTORMAP)) 
-		{
-			if(desiredNum0Relative == numVectorMaps)
-				return dynamic_cast<TVectorMap*>(map);
-			numVectorMaps++;
-		}
-	}
-	return nil;
-}
 
 void BNAMapInit(DialogPtr dialog, VLISTPTR L)
 {
@@ -3185,7 +3167,7 @@ Boolean BNAMapClick(DialogPtr dialog, VLISTPTR L, short dialogItem, long *listIt
 void DrawBNAMapItem(DialogPtr dialog, Rect *r, long item0Relative)
 {
 	char s[256] ="";
-	TVectorMap *map = GetNthVectorMap(item0Relative);
+	VectorMap_c *map = GetNthVectorMap(item0Relative);
 	
 	TextFontSize(kFontIDGeneva,LISTTEXTSIZE);
 	
@@ -3600,7 +3582,7 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			long numVectorMaps = 0;
 			short buttonSelected;
 			long listItemSelected;
-			TVectorMap* vMap;
+			VectorMap_c* vMap;
 			char suggestedFileName[256];
 
 			n = model -> mapList->GetItemCount() ;
@@ -3645,12 +3627,12 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			
 			if(vMap) 
 			{
-				vMap -> GetSuggestedFileName(suggestedFileName,".BNA");
+				dynamic_cast<TVectorMap *>(vMap) -> GetSuggestedFileName(suggestedFileName,".BNA");
 				
 				err = AskUserForSaveFilename(suggestedFileName,path,".BNA",TRUE);
 				if(err) goto done; // note: might be user cancel
 			
-				err = vMap ->ExportAsBNAFileForGnomeAnalyst(path);
+				err = dynamic_cast<TVectorMap *>(vMap) ->ExportAsBNAFileForGnomeAnalyst(path);
 				goto done;
 			}
 			break;

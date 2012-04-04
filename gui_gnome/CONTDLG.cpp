@@ -122,15 +122,6 @@ RGBColor GetRGBColor(double val)
 }
 #endif
 
-long GetNumHandleItems(Handle h, long itemSize)
-{
-	return h ? _GetHandleSize(h)/itemSize : 0;
-}
-
-long GetNumDoubleHdlItems(DOUBLEH h)
-{
-	return GetNumHandleItems((Handle)h,sizeof(double));
-}
 		
 long DeleteDoubleHdlItem(DOUBLEH h, long itemno)
 {
@@ -380,38 +371,6 @@ void MakeLevels(DOUBLEH contourLevels, double startval, double endval, double in
 	(*contourLevels)[5] = 200;	
 	return noErr;
 }*/
-
-OSErr SetDefaultContours(DOUBLEH contourLevels,short contourType)
-{
-	// default values selected by Alan
-	if (contourType==0)
-	{
-		_SetHandleSize((Handle)contourLevels,6*sizeof(double));
-		//_SetHandleSize((Handle)contourLevels,7*sizeof(double));
-		if (_MemError()) { TechError("SetDefaultContours()", "_SetHandleSize()", 0); return -1; }
-		//(*contourLevels)[0] = 0;
-		(*contourLevels)[0] = 0.01;
-		(*contourLevels)[1] = .5;
-		(*contourLevels)[2] = 1;
-		//(*contourLevels)[2] = 2;
-		(*contourLevels)[3] = 5;
-		(*contourLevels)[4] = 10;
-		(*contourLevels)[5] = 50;	
-	}
-	else if (contourType==1)
-	{
-		// default values selected by Alan
-		_SetHandleSize((Handle)contourLevels,6*sizeof(double));
-		if (_MemError()) { TechError("SetDefaultContours()", "_SetHandleSize()", 0); return -1; }
-		(*contourLevels)[0] = 5.;
-		(*contourLevels)[1] = 10.;
-		(*contourLevels)[2] = 30.;
-		(*contourLevels)[3] = 60;
-		(*contourLevels)[4] = 100;
-		(*contourLevels)[5] = 200;	
-	}
-	return noErr;
-}
 
 void MakeContourLevels(DialogPtr d,VLISTPTR L)
 {

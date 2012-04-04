@@ -25,7 +25,6 @@ public:
 	TMap (char *name, WorldRect bounds);
 	virtual			   ~TMap () { Dispose (); }
 	virtual void		Dispose ();		
-	virtual OSErr		InitMap ();
 
 	virtual OSErr	CheckAndPassOnMessage(TModelMessage * model);
 	virtual Boolean	IsDirty ();

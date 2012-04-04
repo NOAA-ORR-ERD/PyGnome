@@ -504,7 +504,7 @@ done:
 			delete fGrid;
 			fGrid = 0;
 		}
-		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
+		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;	fVertexPtsH	 = 0;}
 	}
 	
 	if (timeUnits) delete [] timeUnits;
@@ -883,7 +883,7 @@ void NetCDFWindMoverCurv::Draw(Rect r, WorldRect view)
 			}
 		}
 	}
-	if (bShowGrid) fGrid->Draw(r,view,wayOffMapPt,fWindScale,fArrowScale,false,true);
+	if (bShowGrid) fGrid->Draw(r,view,wayOffMapPt,fWindScale,fArrowScale,false,true,fColor);
 	
 	RGBForeColor(&colors[BLACK]);
 }

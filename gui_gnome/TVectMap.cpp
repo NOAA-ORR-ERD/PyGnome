@@ -1,7 +1,7 @@
 
 #include "Cross.h"
 #include "Classes.h"
-#include "ObjectUtils.h"
+#include "ObjectUtilsPD.h"
 #include "GenDefs.h"
 
 /**************************************************************************************************/
@@ -117,12 +117,17 @@ void DrawCMapLayer(CMap *theMap,CMapLayer* mapLayer)
 	// you must call this once with nil, don't ask me who coded it this way
 	mapLayer -> GetDrawSettings (&drawSettings, nil, kScreenMode);
 	
-	for (ObjectIndex = ObjectCount - 1; ObjectIndex >= 0; --ObjectIndex)
+	// to have lakes show up as water on bitmap, draw on top and use kNoFillCode (set in GetDrawSettings)
+	//for (ObjectIndex = ObjectCount - 1; ObjectIndex >= 0; --ObjectIndex)
+	for (ObjectIndex = 0; ObjectIndex < ObjectCount; ObjectIndex++)
 	{
 		thisObjectList -> GetListItem ((Ptr) &thisObjectHdl, ObjectIndex);
 		mapLayer -> GetDrawSettings (&drawSettings, (ObjectRecHdl)thisObjectHdl, kScreenMode);
 
-		DrawMapPoly (theMap, thisObjectHdl,  &drawSettings);
+		if (drawSettings.fillCode == kNoFillCode && drawSettings.backColorInd == kWaterColorInd)	
+			DrawMapBoundsPoly (theMap, thisObjectHdl,  &drawSettings, true);
+		else
+			DrawMapPoly (theMap, thisObjectHdl,  &drawSettings);
 	}
 }
 
@@ -441,244 +446,6 @@ OSErr CreateMapBox()
 
 	return err;
 }
-/////////////////////////////////////////////////
-// This subroutine is for CDOG map bounds 
-/**************************************************************************************************/
-OSErr TVectorMap::ChangeMapBox(WorldPoint p, WorldPoint p2)
-{
-	char nameStr [256];
-	OSErr	err = noErr;
-	TVectorMap 	*map = nil;
-	LongRect	LayerLBounds;
-	WorldRect mapBounds, newBounds;
-	Rect bitMapRect;
-	long bmWidth, bmHeight;
-	
-	strcpy (nameStr, "VectorMap: ");
-	strcat (nameStr, "Map Box");
-	
-	// check that the bounds are ok
-	if (p.pLat<=p2.pLat || p.pLong>=p2.pLong) {printError("Bounds are not consistent"); return -1;}
-	map = new TVectorMap (nameStr, voidWorldRect);
-	if (!map)
-		{ TechError("ChangeMapBox()", "new TVectorMap()", 0); return -1; }
-
-	if (err = map->InitMap()) return err;
-
-	newBounds.hiLat = p.pLat;
-	newBounds.loLong = p.pLong;
-	newBounds.loLat = p2.pLat;
-	newBounds.hiLong = p2.pLong;
-	if (err = map->SelectMapBox(newBounds)) return err;	// this sets up the map bounds layer
-
-	if(map->HaveMapBoundsLayer()){
-		(map->mapBoundsLayer) -> GetLayerScope (&LayerLBounds, true);
-		mapBounds.hiLat = LayerLBounds.top;
-		mapBounds.loLat = LayerLBounds.bottom;
-		mapBounds.loLong = LayerLBounds.left;
-		mapBounds.hiLong = LayerLBounds.right;
-	}
-	
-	map->SetMapBounds (mapBounds);
-	map->SetExtendedBounds (mapBounds);
-	LandBitMapWidthHeight(mapBounds,&bmWidth,&bmHeight);
-	MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
-	
-	if(!err && map->HaveMapBoundsLayer())
-		(map->fMapBoundsBitmap) = GetBlackAndWhiteBitmap(DrawMapBoundsLayer,map,mapBounds,bitMapRect,&err);
-
-	switch(err) 
-	{
-		case noErr: break;
-		case memFullErr: printError("Out of memory in TVectorMap::ChangeMapBox"); break;
-		default: TechError("TVectorMap::ChangeMapBox", "GetBlackAndWhiteBitmap", err); break;
-	}
-
-	if (err) return err;
-
-	if (err = model->AddMap(map, 0))
-		{ map->Dispose(); delete map; return -1; } 
-	else 
-	{
-		// put movers on the new map and activate
-		TMover *thisMover = nil;
-		Boolean	timeFileChanged = false;
-		long k, d = this -> moverList -> GetItemCount ();
-		for (k = 0; k < d; k++)
-		{
-			this -> moverList -> GetListItem ((Ptr) &thisMover, 0); // will always want the first item in the list
-			if (err = AddMoverToMap(map, timeFileChanged, thisMover)) return err; 
-			thisMover->SetMoverMap(map);	
-			if (err = this->DropMover(thisMover)) return err; // gets rid of first mover, moves rest up
-		}
-		if (err = model->DropMap(this)) return err;
-		model->NewDirtNotification();
-	}
-
-	return err;
-	
-}
-/////////////////////////////////////////////////
-OSErr TVectorMap::SelectMapBox (WorldRect mapBoxBounds)
-{
-	OSErr			err = noErr;
-	Size			NewHSize;
-	long			PointCount = 5, PointIndex, AddPointCount, ObjectCount;
-	long			colorIndex;
-	Boolean			bClosed, GroupFlag, PointsAddedFlag;
-	LongRect		ObjectLRect;
-	LongPoint		MatrixPt, MatrixPoints[5],**thisPointsHdl;
-	PolyObjectHdl	thisPolyHdl = nil;
-	ObjectIDRec		FirstObjectID, LastObjectID;
-	CMapLayer * theLayer = nil;
-	char ObjectName [128] = "Map Bounds";
-	
-	// call dialog to select points
-	if (mapBoxBounds.loLong == 0 && mapBoxBounds.hiLong == 0) err = MapBoxDialog(&mapBoxBounds);
-	if (err) return err;
-
-	MatrixPoints[0].h = mapBoxBounds.loLong;
-	MatrixPoints[0].v = mapBoxBounds.loLat;
-	MatrixPoints[1].h = mapBoxBounds.hiLong;
-	MatrixPoints[1].v = mapBoxBounds.loLat;
-	MatrixPoints[2].h = mapBoxBounds.hiLong;
-	MatrixPoints[2].v = mapBoxBounds.hiLat;
-	MatrixPoints[3].h = mapBoxBounds.loLong;
-	MatrixPoints[3].v = mapBoxBounds.hiLat;
-	MatrixPoints[4].h = mapBoxBounds.loLong;
-	MatrixPoints[4].v = mapBoxBounds.loLat;
-
-	theLayer = mapBoundsLayer;
-							
-	bClosed = true;
-
-	// set region rect to empty to start with
-	SetLRect (&ObjectLRect, kWorldRight, kWorldBottom, kWorldLeft, kWorldTop);
-
-	GroupFlag = false;			// clear flag indicating grouping
-	PointsAddedFlag  = false;	// will be set to true if a point is appended
-	AddPointCount = 0;			// number of points added
-	
-	// now read in the points for the next region in the file
-	// should be able to reduce this code...
-	for (PointIndex = 1; PointIndex <= PointCount && err == 0; ++PointIndex)
-	{			
-		MatrixPt = MatrixPoints[PointIndex-1];
-		if (MatrixPt.h < kWorldLeft)   MatrixPt.h = kWorldLeft;
-		if (MatrixPt.h > kWorldRight)  MatrixPt.h = kWorldRight;
-		if (MatrixPt.v > kWorldTop)    MatrixPt.v = kWorldTop;
-		if (MatrixPt.v < kWorldBottom) MatrixPt.v = kWorldBottom;
-
-		if (bClosed && PointIndex > 1  && PointIndex == PointCount)
-		{
-			thisPolyHdl = (PolyObjectHdl) theLayer -> AddNewObject (kPolyType, &ObjectLRect, false);
-			if (thisPolyHdl != nil)
-			{
-				SetObjectLabel ((ObjectRecHdl) thisPolyHdl, ObjectName);
-				
-				// set the object label point at the center of polygon
-				GetObjectCenter ((ObjectRecHdl) thisPolyHdl, &MatrixPt);
-				SetOLabelLPoint ((ObjectRecHdl) thisPolyHdl, &MatrixPt);
-
-				// set the polygon points handle field
-				SetPolyPointsHdl (thisPolyHdl, thisPointsHdl);
-				SetPolyPointCount (thisPolyHdl, AddPointCount);
-										
-				if (!GroupFlag) GroupFlag = true;
-
-				colorIndex = kLandColorInd;
-
-				SetObjectBColor ((ObjectRecHdl) thisPolyHdl, colorIndex);
-				SetObjectColor ((ObjectRecHdl) thisPolyHdl, colorIndex);// added JLM 7/1/99
-
-				// poke the filled flag into poly handle!!
-				SetPolyClosed (thisPolyHdl, bClosed);
-
-				// set the next region's rect to empty
-				SetLRect (&ObjectLRect, kWorldRight, kWorldBottom, kWorldLeft, kWorldTop);
-
-				PointsAddedFlag = false;
-				AddPointCount = 0;
-			}
-			else
-			{
-				err = memFullErr;
-				goto done;
-			}
-		}
-		else
-		{
-			if (AddPointCount == 0)
-			{
-				thisPointsHdl = (LongPoint**) _NewHandleClear (0);
-				if (thisPointsHdl == nil)
-				{
-					err = memFullErr;
-					goto done;
-				}
-			}
-
-			NewHSize = _GetHandleSize ((Handle) thisPointsHdl) + sizeof (LongPoint);
-			_SetHandleSize ((Handle) thisPointsHdl, NewHSize);
-			if (_MemError ())
-				err = memFullErr;
-
-			if (err)
-				goto done;
-			else
-			{
-				++AddPointCount;
-				PointsAddedFlag = true;
-				
-				// store the new point in the points handle
-				(*thisPointsHdl) [AddPointCount - 1] = MatrixPt;
-				
-				// update region boundary rectangle
-				if (MatrixPt.h < ObjectLRect.left)   ObjectLRect.left   = MatrixPt.h;
-				if (MatrixPt.v > ObjectLRect.top)    ObjectLRect.top    = MatrixPt.v;
-				if (MatrixPt.h > ObjectLRect.right)  ObjectLRect.right  = MatrixPt.h;
-				if (MatrixPt.v < ObjectLRect.bottom) ObjectLRect.bottom = MatrixPt.v;
-			}
-		}
-	}
-
-/////////////////////////////////////////////////
-	
-	if (PointsAddedFlag)
-	{
-		thisPolyHdl = (PolyObjectHdl) theLayer -> AddNewObject (kPolyType, &ObjectLRect, false);
-		if (thisPolyHdl != nil)
-		{
-			SetObjectLabel ((ObjectRecHdl) thisPolyHdl, ObjectName);
-			
-			// set the object label point at the center of polygon
-			GetObjectCenter ((ObjectRecHdl) thisPolyHdl, &MatrixPt);
-			SetOLabelLPoint ((ObjectRecHdl) thisPolyHdl, &MatrixPt);
-			
-			// set the polygon points handle field
-			SetPolyPointsHdl (thisPolyHdl, thisPointsHdl);
-			SetPolyPointCount (thisPolyHdl, AddPointCount);
-													
-			colorIndex = kLandColorInd;			// default land color index
-
-			SetObjectBColor ((ObjectRecHdl) thisPolyHdl, colorIndex);
-			SetObjectColor ((ObjectRecHdl) thisPolyHdl, colorIndex);// added JLM 7/1/99
-			SetPolyClosed (thisPolyHdl, bClosed);
-		}	
-		else
-		{
-			err = memFullErr;
-			goto done;
-		}
-	}
-
-done:
-
-	if (err == memFullErr)
-		printError ("Out of application memory! Try increasing application's memory partition.");
-
-	return err;
-}
 /**************************************************************************************************/
 OSErr TVectorMap::ImportMap (char *path)
 {
@@ -773,7 +540,10 @@ OSErr TVectorMap::ImportMap (char *path)
 		///////////////{
 		// JLM 12/24/98
 		if(!strcmpnocase(ObjectName,"SpillableArea"))// special polygon defining spillable area
+		{
 			theLayer = allowableSpillLayer;
+			strcpy(ObjectName2,"1");	// spillable area lakes mess up bitmap
+		}
 		else if(!strcmpnocase(ObjectName,"Map Bounds"))// special polygon defining the map bounds
 			theLayer = mapBoundsLayer;
 		else if(!strcmpnocase(ObjectName,"Ice Map"))// special polygon defining the ice shoreline (should match bna)
@@ -1080,33 +850,6 @@ long GetColorFromESICode(long code)
 	return -1; // should have a default
 }*/
 
-float GetRefloatTimeInHoursFromESICode(long code)
-{
-	switch(code) 
-	{	// will have 16 codes corresponding to all the colors
-		// need to decide what refloat goes with each ESI code
-		case 1: return 0;
-		//case 1: return 8760;
-		//case 2: return 1;
-		//case 3: return kRedColorInd;
-		//case 3: return 100;
-		//case 3: return 8760;
-		case 3: return 0;
-		//case 4: return 3600;
-		//case 5: return 1;
-		//case 6: return 1;
-		//case 7: return 8760;
-		case 7: return 0;
-		//case 7: return 1;
-		//case 8: return 1;
-		//case 9: return 8760;
-		case 9: return 0;
-		//case 10: return 8760;
-		//case 10: return 0;
-	}
-	//return 1; // should have a default, maybe fRefloat?
-	return 8760; // should have a default, maybe fRefloat?
-}
 
 long GetESICode(char *ESICodeStr)
 {	// will also have to handle 6B, 6B/2, ...
@@ -2141,14 +1884,6 @@ void TVectorMap::DrawESILegend(Rect r, WorldRect view)
 	return;
 }
 
-/**************************************************************************************************/
-long TVectorMap::GetLandType(WorldPoint p)
-{
-	return LT_WATER;
-}
-/////////////////////////////////////////////////
-
-/**************************************************************************************************/
 #ifdef MAC
 Boolean IsBlackPixel(WorldPoint p,WorldRect mapBounds,BitMap bm)
 #else
@@ -2256,121 +1991,6 @@ Boolean TVectorMap::OnLand(WorldPoint p)
 	return onLand;
 }
 
-/////////////////////////////////////////////////
-
-double DistFromWPointToSegmentDouble(long pLong, long pLat, long long1, long lat1, 
-														long long2, long lat2, long dLong, long dLat)
-{
-	double a, b, x, y, h, dist, numer;
-	WorldPoint p;
-
-	if (long1 < long2) { if (pLong < (long1 - dLong) ||
-							 pLong > (long2 + dLong)) return -1; }
-	else			   { if (pLong < (long2 - dLong) ||
-							 pLong > (long1 + dLong)) return -1; }
-	
-	if (lat1 < lat2) { if (pLat < (lat1 - dLat) ||
-						   pLat > (lat2 + dLat)) return -1; }
-	else			 { if (pLat < (lat2 - dLat) ||
-						   pLat > (lat1 + dLat)) return -1; }
-	
-	p.pLong = pLong;
-	p.pLat = pLat;
-	
-	// translate origin to start of segment
-	
-	a = LongToDistance(long2 - long1, p);
-	b = LatToDistance(lat2 - lat1);
-	x = LongToDistance(pLong - long1, p);
-	y = LatToDistance(pLat - lat1);
-	h = sqrt(a * a + b * b);
-	
-	// distance from point to segment
-	numer = abs(a * y - b * x);
-	dist = numer / h;
-	return dist;
-}
-
-long CheckShoreline (long longVal, long latVal,CMapLayer *mapLayer)
-{
-	long	ObjectIndex, ObjectCount;
-	ObjectRecHdl	thisObjectHdl = nil;
-	CMyList	*thisObjectList = nil;
-	long	PointCount, PointIndex;
-	LongPoint	MatrixPt1, MatrixPt2;
-	LongPoint	**RgnPtsHdl;
-	long 	x1, y1, x2, y2;
-	long dLong, dLat, objectNum=-1;
-	double dist, smallestDistWithinPolygon = 100.,smallestDist = 100;
-	long oneSecond = (1000000/3600); // map border is several pixels wide
-	//dLong = dLat = oneSecond * 50;
-	 //dLong = dLat = oneSecond * 5;
-	 dLong = dLat = oneSecond / 5;
-	 //dLong = dLat = oneSecond;	// need to figure how to set this
-	//dLong = dLat = 0;
-	long theESICode = 0; // default value
-
-	thisObjectList = mapLayer->GetLayerObjectList (); //- if don't put into CMapLayer
-	//thisObjectList = GetLayerObjectList ();
-	ObjectCount = thisObjectList -> GetItemCount ();
-	for (ObjectIndex = 0; ObjectIndex < ObjectCount; ObjectIndex++)
-	{
-		thisObjectList -> GetListItem ((Ptr) &thisObjectHdl, ObjectIndex);
-		PointCount = GetPolyPointCount ((PolyObjectHdl) thisObjectHdl);
-		RgnPtsHdl = GetPolyPointsHdl ((PolyObjectHdl) thisObjectHdl);
-
-		if (RgnPtsHdl != nil)
-		{
-			if (ObjectIndex>201)
-			{
-				dist = -1;
-			}
-	
-			// send in point to compare against
-			for (PointIndex = 0;PointIndex < PointCount-1; ++PointIndex)
-			{
-				MatrixPt1 = (*RgnPtsHdl) [PointIndex];
-				MatrixPt2 = (*RgnPtsHdl) [PointIndex+1];
-	
-				x1 = MatrixPt1.h;
-				y1 = MatrixPt1.v;
-				x2 = MatrixPt2.h;
-				y2 = MatrixPt2.v;
-	
-				dist = DistFromWPointToSegmentDouble(longVal, latVal, x1, y1, x2, y2, dLong, dLat);
-				if (dist==-1) continue;	// not within range
-	
-				if (dist<smallestDistWithinPolygon)
-				{
-					smallestDistWithinPolygon = dist;
-				}
-			}
-		}
-		if (smallestDistWithinPolygon<smallestDist)
-		{
-			smallestDist = smallestDistWithinPolygon;
-			objectNum = ObjectIndex;
-		}
-	}
-	if (objectNum>=0)
-	{	
-		thisObjectList -> GetListItem ((Ptr) &thisObjectHdl, objectNum);
-		GetObjectESICode (thisObjectHdl, &theESICode);
-	}
-	return theESICode; // need an error code?
-}
-
-float TVectorMap::RefloatHalfLifeInHrs(WorldPoint wp) 
-{ 
-	float refloatHalfLifeInHrs = fRefloatHalfLifeInHrs;
-	long esiCode = 1;
-	if (HaveESIMapLayer())	// change to ESILayer
-	{
-		esiCode = CheckShoreline(wp.pLong,wp.pLat,esiMapLayer);
-		refloatHalfLifeInHrs = GetRefloatTimeInHoursFromESICode(esiCode);
-	}
-	return refloatHalfLifeInHrs;
-}
 
 WorldPoint3D	TVectorMap::MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed)
 {
@@ -2556,113 +2176,6 @@ Boolean TVectorMap::IsAllowableSpillPoint(WorldPoint p)
 }
 
 /////////////////////////////////////////////////
-
-Boolean TVectorMap::HaveAllowableSpillLayer(void)
-{
-	CMyList *thisObjectList = nil;
-	long numObjs;
-	
-	if(!this->allowableSpillLayer) return false;
-	thisObjectList = this->allowableSpillLayer->GetLayerObjectList ();
-	numObjs = thisObjectList -> GetItemCount ();
-	if(numObjs>0) return true;
-	else return false;
-}
-
-/////////////////////////////////////////////////
-
-Boolean TVectorMap::HaveMapBoundsLayer(void)
-{
-	CMyList *thisObjectList = nil;
-	long numObjs;
-	
-	if(!this->mapBoundsLayer) return false;
-	thisObjectList = this->mapBoundsLayer->GetLayerObjectList ();
-	numObjs = thisObjectList -> GetItemCount ();
-	if(numObjs>0) return true;
-	else return false;
-}
-
-/////////////////////////////////////////////////
-
-Boolean TVectorMap::HaveLandWaterLayer(void)
-{
-	CMyList *thisObjectList = nil;
-	long numObjs;
-	
-	if(!this->thisMapLayer) return false;
-	thisObjectList = this->thisMapLayer->GetLayerObjectList ();
-	numObjs = thisObjectList -> GetItemCount ();
-	if(numObjs>0) return true;
-	else return false;
-}
-
-/////////////////////////////////////////////////
-
-Boolean TVectorMap::HaveESIMapLayer(void)
-{
-	CMyList *thisObjectList = nil;
-	long numObjs;
-	
-	if(!this->esiMapLayer) return false;
-	thisObjectList = this->esiMapLayer->GetLayerObjectList ();
-	numObjs = thisObjectList -> GetItemCount ();
-	if(numObjs>0) return true;
-	else return false;
-}
-
-TMover* TVectorMap::GetMover(ClassID desiredClassID)
-{
-	// loop through each mover in the map
-	TMover *thisMover = nil;
-	long k;
-	for (k = 0; k < moverList -> GetItemCount (); k++)
-	{
-		moverList -> GetListItem ((Ptr) &thisMover, k);
-		if(thisMover -> IAm(desiredClassID)) return thisMover;
-	}
-	return nil;
-}
-
-/////////////////////////////////////////////////
-TTriGridVel* TVectorMap::GetGrid()
-{
-	TTriGridVel* triGrid = 0;	
-	TMover *mover = 0;
-
-	// Figure out if this map has a TCATSMover current
-	mover = this->GetMover(TYPE_CATSMOVER);	// get first one, assume all grids are the same
-	if (mover)
-	{
-		triGrid = (TTriGridVel*)/*OK*/((dynamic_cast<TCATSMover *>(mover)) -> fGrid);
-	}
-	return triGrid;
-}
-
-double TVectorMap::DepthAtPoint(WorldPoint wp)
-{
-	float depth1,depth2,depth3;
-	double depthAtPoint = 0;	
-	InterpolationVal interpolationVal;
-	FLOATH depthsHdl = 0;
-	TTriGridVel* triGrid = GetGrid();	// don't use refined grid, depths aren't refined
-
-	if (!triGrid) return 0; // some error alert, no depth info to check
-	interpolationVal = triGrid->GetInterpolationValues(wp);
-	if (interpolationVal.ptIndex1<0)	// couldn't find point in dag tree
-	{
-		return 0;
-	}
-	depthsHdl = triGrid->GetBathymetry();
-	if (!depthsHdl) return 0;	// some error alert, no depth info to check
-
-	depth1 = (*depthsHdl)[interpolationVal.ptIndex1];
-	depth2 = (*depthsHdl)[interpolationVal.ptIndex2];
-	depth3 = (*depthsHdl)[interpolationVal.ptIndex3];
-	depthAtPoint = interpolationVal.alpha1*depth1 + interpolationVal.alpha2*depth2 + interpolationVal.alpha3*depth3;
-
-	return depthAtPoint;
-}
 
 /**************************************************************************************************/
 Boolean IsVectorMap (char *path, Boolean *isESI)
@@ -3141,3 +2654,244 @@ done:
 	}
 	return err;
 }
+
+
+/////////////////////////////////////////////////
+// This subroutine is for CDOG map bounds 
+/**************************************************************************************************/
+OSErr TVectorMap::ChangeMapBox(WorldPoint p, WorldPoint p2)
+{
+	char nameStr [256];
+	OSErr	err = noErr;
+	TVectorMap 	*map = nil;
+	LongRect	LayerLBounds;
+	WorldRect mapBounds, newBounds;
+	Rect bitMapRect;
+	long bmWidth, bmHeight;
+	
+	strcpy (nameStr, "VectorMap: ");
+	strcat (nameStr, "Map Box");
+	
+	// check that the bounds are ok
+	if (p.pLat<=p2.pLat || p.pLong>=p2.pLong) {printError("Bounds are not consistent"); return -1;}
+	map = new TVectorMap (nameStr, voidWorldRect);
+	if (!map)
+	{ TechError("ChangeMapBox()", "new TVectorMap()", 0); return -1; }
+	
+	if (err = map->InitMap()) return err;
+	
+	newBounds.hiLat = p.pLat;
+	newBounds.loLong = p.pLong;
+	newBounds.loLat = p2.pLat;
+	newBounds.hiLong = p2.pLong;
+	if (err = map->SelectMapBox(newBounds)) return err;	// this sets up the map bounds layer
+	
+	if(map->HaveMapBoundsLayer()){
+		(map->mapBoundsLayer) -> GetLayerScope (&LayerLBounds, true);
+		mapBounds.hiLat = LayerLBounds.top;
+		mapBounds.loLat = LayerLBounds.bottom;
+		mapBounds.loLong = LayerLBounds.left;
+		mapBounds.hiLong = LayerLBounds.right;
+	}
+	
+	map->SetMapBounds (mapBounds);
+	map->SetExtendedBounds (mapBounds);
+	LandBitMapWidthHeight(mapBounds,&bmWidth,&bmHeight);
+	MySetRect (&bitMapRect, 0, 0, bmWidth, bmHeight);
+	
+	if(!err && map->HaveMapBoundsLayer())
+		(map->fMapBoundsBitmap) = GetBlackAndWhiteBitmap(DrawMapBoundsLayer,map,mapBounds,bitMapRect,&err);
+	
+	switch(err) 
+	{
+		case noErr: break;
+		case memFullErr: printError("Out of memory in TVectorMap::ChangeMapBox"); break;
+		default: TechError("TVectorMap::ChangeMapBox", "GetBlackAndWhiteBitmap", err); break;
+	}
+	
+	if (err) return err;
+	
+	if (err = model->AddMap(map, 0))
+	{ map->Dispose(); delete map; return -1; } 
+	else 
+	{
+		// put movers on the new map and activate
+		TMover *thisMover = nil;
+		Boolean	timeFileChanged = false;
+		long k, d = this -> moverList -> GetItemCount ();
+		for (k = 0; k < d; k++)
+		{
+			this -> moverList -> GetListItem ((Ptr) &thisMover, 0); // will always want the first item in the list
+			if (err = AddMoverToMap(map, timeFileChanged, thisMover)) return err; 
+			thisMover->SetMoverMap(map);	
+			if (err = this->DropMover(thisMover)) return err; // gets rid of first mover, moves rest up
+		}
+		if (err = model->DropMap(this)) return err;
+		model->NewDirtNotification();
+	}
+	
+	return err;
+	
+}
+/////////////////////////////////////////////////
+OSErr TVectorMap::SelectMapBox (WorldRect mapBoxBounds)
+{
+	OSErr			err = noErr;
+	Size			NewHSize;
+	long			PointCount = 5, PointIndex, AddPointCount, ObjectCount;
+	long			colorIndex;
+	Boolean			bClosed, GroupFlag, PointsAddedFlag;
+	LongRect		ObjectLRect;
+	LongPoint		MatrixPt, MatrixPoints[5],**thisPointsHdl;
+	PolyObjectHdl	thisPolyHdl = nil;
+	ObjectIDRec		FirstObjectID, LastObjectID;
+	CMapLayer * theLayer = nil;
+	char ObjectName [128] = "Map Bounds";
+	
+	// call dialog to select points
+	if (mapBoxBounds.loLong == 0 && mapBoxBounds.hiLong == 0) err = MapBoxDialog(&mapBoxBounds);
+	if (err) return err;
+	
+	MatrixPoints[0].h = mapBoxBounds.loLong;
+	MatrixPoints[0].v = mapBoxBounds.loLat;
+	MatrixPoints[1].h = mapBoxBounds.hiLong;
+	MatrixPoints[1].v = mapBoxBounds.loLat;
+	MatrixPoints[2].h = mapBoxBounds.hiLong;
+	MatrixPoints[2].v = mapBoxBounds.hiLat;
+	MatrixPoints[3].h = mapBoxBounds.loLong;
+	MatrixPoints[3].v = mapBoxBounds.hiLat;
+	MatrixPoints[4].h = mapBoxBounds.loLong;
+	MatrixPoints[4].v = mapBoxBounds.loLat;
+	
+	theLayer = mapBoundsLayer;
+	
+	bClosed = true;
+	
+	// set region rect to empty to start with
+	SetLRect (&ObjectLRect, kWorldRight, kWorldBottom, kWorldLeft, kWorldTop);
+	
+	GroupFlag = false;			// clear flag indicating grouping
+	PointsAddedFlag  = false;	// will be set to true if a point is appended
+	AddPointCount = 0;			// number of points added
+	
+	// now read in the points for the next region in the file
+	// should be able to reduce this code...
+	for (PointIndex = 1; PointIndex <= PointCount && err == 0; ++PointIndex)
+	{			
+		MatrixPt = MatrixPoints[PointIndex-1];
+		if (MatrixPt.h < kWorldLeft)   MatrixPt.h = kWorldLeft;
+		if (MatrixPt.h > kWorldRight)  MatrixPt.h = kWorldRight;
+		if (MatrixPt.v > kWorldTop)    MatrixPt.v = kWorldTop;
+		if (MatrixPt.v < kWorldBottom) MatrixPt.v = kWorldBottom;
+		
+		if (bClosed && PointIndex > 1  && PointIndex == PointCount)
+		{
+			thisPolyHdl = (PolyObjectHdl) theLayer -> AddNewObject (kPolyType, &ObjectLRect, false);
+			if (thisPolyHdl != nil)
+			{
+				SetObjectLabel ((ObjectRecHdl) thisPolyHdl, ObjectName);
+				
+				// set the object label point at the center of polygon
+				GetObjectCenter ((ObjectRecHdl) thisPolyHdl, &MatrixPt);
+				SetOLabelLPoint ((ObjectRecHdl) thisPolyHdl, &MatrixPt);
+				
+				// set the polygon points handle field
+				SetPolyPointsHdl (thisPolyHdl, thisPointsHdl);
+				SetPolyPointCount (thisPolyHdl, AddPointCount);
+				
+				if (!GroupFlag) GroupFlag = true;
+				
+				colorIndex = kLandColorInd;
+				
+				SetObjectBColor ((ObjectRecHdl) thisPolyHdl, colorIndex);
+				SetObjectColor ((ObjectRecHdl) thisPolyHdl, colorIndex);// added JLM 7/1/99
+				
+				// poke the filled flag into poly handle!!
+				SetPolyClosed (thisPolyHdl, bClosed);
+				
+				// set the next region's rect to empty
+				SetLRect (&ObjectLRect, kWorldRight, kWorldBottom, kWorldLeft, kWorldTop);
+				
+				PointsAddedFlag = false;
+				AddPointCount = 0;
+			}
+			else
+			{
+				err = memFullErr;
+				goto done;
+			}
+		}
+		else
+		{
+			if (AddPointCount == 0)
+			{
+				thisPointsHdl = (LongPoint**) _NewHandleClear (0);
+				if (thisPointsHdl == nil)
+				{
+					err = memFullErr;
+					goto done;
+				}
+			}
+			
+			NewHSize = _GetHandleSize ((Handle) thisPointsHdl) + sizeof (LongPoint);
+			_SetHandleSize ((Handle) thisPointsHdl, NewHSize);
+			if (_MemError ())
+				err = memFullErr;
+			
+			if (err)
+				goto done;
+			else
+			{
+				++AddPointCount;
+				PointsAddedFlag = true;
+				
+				// store the new point in the points handle
+				(*thisPointsHdl) [AddPointCount - 1] = MatrixPt;
+				
+				// update region boundary rectangle
+				if (MatrixPt.h < ObjectLRect.left)   ObjectLRect.left   = MatrixPt.h;
+				if (MatrixPt.v > ObjectLRect.top)    ObjectLRect.top    = MatrixPt.v;
+				if (MatrixPt.h > ObjectLRect.right)  ObjectLRect.right  = MatrixPt.h;
+				if (MatrixPt.v < ObjectLRect.bottom) ObjectLRect.bottom = MatrixPt.v;
+			}
+		}
+	}
+	
+	/////////////////////////////////////////////////
+	
+	if (PointsAddedFlag)
+	{
+		thisPolyHdl = (PolyObjectHdl) theLayer -> AddNewObject (kPolyType, &ObjectLRect, false);
+		if (thisPolyHdl != nil)
+		{
+			SetObjectLabel ((ObjectRecHdl) thisPolyHdl, ObjectName);
+			
+			// set the object label point at the center of polygon
+			GetObjectCenter ((ObjectRecHdl) thisPolyHdl, &MatrixPt);
+			SetOLabelLPoint ((ObjectRecHdl) thisPolyHdl, &MatrixPt);
+			
+			// set the polygon points handle field
+			SetPolyPointsHdl (thisPolyHdl, thisPointsHdl);
+			SetPolyPointCount (thisPolyHdl, AddPointCount);
+			
+			colorIndex = kLandColorInd;			// default land color index
+			
+			SetObjectBColor ((ObjectRecHdl) thisPolyHdl, colorIndex);
+			SetObjectColor ((ObjectRecHdl) thisPolyHdl, colorIndex);// added JLM 7/1/99
+			SetPolyClosed (thisPolyHdl, bClosed);
+		}	
+		else
+		{
+			err = memFullErr;
+			goto done;
+		}
+	}
+	
+done:
+	
+	if (err == memFullErr)
+		printError ("Out of application memory! Try increasing application's memory partition.");
+	
+	return err;
+}
+

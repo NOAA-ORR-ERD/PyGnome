@@ -10,7 +10,7 @@
 #ifndef __Map_b__
 #define __Map_b__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "ClassID_b.h"
 #include "CMYLIST.H"

@@ -11,18 +11,21 @@
 #ifndef __PtCurMap_c__
 #define __PtCurMap_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "Map_c.h"
 #include "RectUtils.h"
 
 #ifdef pyGNOME
+#include "Mover_c.h"
+#include "CurrentMover_c.h"
+#include "TriGridVel_c.h"
+#include "TriGridVel3D_c.h"
 #define TMover Mover_c
 #define TCurrentMover CurrentMover_c
+#define TTriGridVel TriGridVel_c
+#define TTriGridVel3D TriGridVel3D_c
 #endif
-
-class TMover;
-class TCurrentMover;
 
 class PtCurMap_c : virtual public Map_c
 {
@@ -34,13 +37,7 @@ public:
 	LONGH			fSegSelectedH;
 	LONGH			fSelectedBeachHdl;	//not sure if both are needed
 	LONGH			fSelectedBeachFlagHdl;	//not sure if both are needed
-#ifdef IBM
-	HDIB			fWaterBitmap;
-	HDIB			fLandBitmap;
-#else
-	BitMap			fWaterBitmap; 
-	BitMap			fLandBitmap; 
-#endif
+
 	Boolean			bDrawLandBitMap;
 	Boolean			bDrawWaterBitMap;
 	Boolean			bShowSurfaceLEs;
@@ -77,7 +74,9 @@ public:
 public:
 	PtCurMap_c (char* name, WorldRect bounds);
 	PtCurMap_c () {}
-	
+
+	virtual OSErr	InitMap();
+	virtual OSErr	InitDropletSizes();
 	virtual ClassID GetClassID () { return TYPE_PTCURMAP; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_PTCURMAP) return TRUE; return Map_c::IAm(id); }
 	virtual OSErr	InitContourLevels();
@@ -92,11 +91,7 @@ public:
 	void			SetMinDistOffshore(WorldRect wBounds);
 	long 	WhichSelectedSegAmIIn(long index);
 	
-	virtual	Boolean InMap (WorldPoint p);
-	virtual Boolean OnLand (WorldPoint p);
-	Boolean InWater (WorldPoint p);
-	virtual WorldPoint3D	MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);
-	virtual WorldPoint3D	MovementCheck2 (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);
+
 	virtual	Boolean	HaveMapBoundsLayer (void) { return true; }
 	virtual long	PointOnWhichSeg(long p);
 	virtual	long 	PointOnWhichSeg(long longVal, long latVal, long *startver, long *endver, float *dist);
@@ -111,7 +106,7 @@ public:
 	LongPointHdl 	GetPointsHdl(Boolean useRefinedGrid);	
 	virtual Boolean		CanReFloat (Seconds time, LERec *theLE);
 	//		virtual Boolean	CanReFloat (Seconds time, LERec *theLE) { return true; }
-	virtual long 	GetLandType (WorldPoint p);
+
 	//Boolean			LEInMap(WorldPoint p);	// not used
 	Boolean			InVerticalMap(WorldPoint3D wp);
 	//float 			GetMaxDepth(void);
@@ -132,6 +127,9 @@ public:
 	virtual	long 	GetNumBoundarySegs(void);
 	virtual  long 	GetNumPointsInBoundarySeg(long segno);
 	virtual	long 	GetNumBoundaryPts(void);
+	
+	void	FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo);
+
 	long 	CountLEsOnSelectedBeach();
 	void 	FindStartEndSeg(long ptnum,long *startPt, long *endPt);
 	long 	NextPointOnSeg(long segno, long point);
@@ -142,9 +140,15 @@ public:
 	Boolean 	IsBoundaryPoint(long pt);
 	virtual	long 	GetNumContourLevels(void);
 	virtual	float			GetMaxDepth2(void);
-	DropletInfoRecH	GetDropletSizesH(void) {return fDropletSizesH;}		
+	DropletInfoRecH	GetDropletSizesH(void) {return fDropletSizesH;}	
+
 };
+
+OSErr SetDefaultContours(DOUBLEH contourLevels, short contourType);
+OSErr SetDefaultDropletSizes(DropletInfoRecH dropletSizes);
 
 #undef TMover
 #undef TCurrentMover
+#undef TTriGridVel
+#undef TTriGridVel3D
 #endif

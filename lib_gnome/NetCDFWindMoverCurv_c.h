@@ -10,7 +10,7 @@
 #ifndef __NetCDFWindMoverCurv_c__
 #define __NetCDFWindMoverCurv_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "NetCDFWindMoverCurv_b.h"
 #include "NetCDFWindMover_c.h"
@@ -18,6 +18,11 @@
 class NetCDFWindMoverCurv_c : virtual public NetCDFWindMoverCurv_b, virtual public NetCDFWindMover_c {
 
 public:
+	NetCDFWindMoverCurv_c (TMap *owner, char *name);
+	NetCDFWindMoverCurv_c () {}
+	virtual ClassID 	GetClassID () { return TYPE_NETCDFWINDMOVERCURV; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFWINDMOVERCURV) return TRUE; return NetCDFWindMover_c::IAm(id); }
+
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);

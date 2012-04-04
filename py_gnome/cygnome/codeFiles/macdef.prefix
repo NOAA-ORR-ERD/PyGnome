@@ -1,0 +1,78 @@
+#define AGNOSTIC
+#define pyGNOME 1
+#define NO_GUI
+
+//#define IBM
+//#define MAC
+//#define TARGET_API_MAC_CARBON 1
+//#define TARGET_CARBON 1
+//#define TARGET_CARBON 1
+//#define ACCESSOR_CALLS_ARE_FUNCTIONS 1
+//#define OPAQUE_TOOLBOX_STRUCTS 1
+//#define OPAQUE_UPP_TYPES 1	// this highlights all the open file dialog calls
+//#define CALL_NOT_IN_CARBON 0
+/****************************************************************************************************
+
+    TARGET_CARBON                   - default: false. Switches all of the above as described.  Overrides all others
+                                    - NOTE: If you set TARGET_CARBON to 1, then the other switches will be setup by
+                                            ConditionalMacros, and should not be set manually.
+
+    If you wish to do development for pre-Carbon Systems, you can set the following:
+
+    OPAQUE_TOOLBOX_STRUCTS          - default: false. True for Carbon builds, hides struct fields.
+    OPAQUE_UPP_TYPES                - default: false. True for Carbon builds, UPP types are unique and opaque.
+    ACCESSOR_CALLS_ARE_FUNCTIONS    - default: false. True for Carbon builds, enables accessor functions.
+    CALL_NOT_IN_CARBON              - default: true.  False for Carbon builds, hides calls not supported in Carbon.
+    
+    Specifically, if you are building a non-Carbon application (one that links against InterfaceLib)
+    but you wish to use some of the accessor functions, you can set ACCESSOR_CALLS_ARE_FUNCTIONS to 1
+    and link with CarbonAccessors.o, which implements just the accessor functions. This will help you
+    preserve source compatibility between your Carbon and non-Carbon application targets.
+    
+    MIXEDMODE_CALLS_ARE_FUNCTIONS   - deprecated.
+
+****************************************************************************************************/
+//#include <MacHeadersCarbon.h>
+	
+	//#include <MacWindows.h>
+	
+//#include <Carbon.h>
+#include <string.h> 
+//#include <strings.h> 
+#include <stdio.h> 
+#include <stdlib.h>
+#include <sys/types.h>
+#include <Windows.h> 
+
+#ifndef pyGNOME
+#include <TextEdit.h>
+#include <ToolUtils.h> 
+//#include <Traps.h>
+#include <LowMem.h>  // JLM
+#include <Processes.h> // JLM 4/28/99
+//#include <StandardFile.h> 
+//#include <Printing.h>
+#include <Lists.h>
+#include <fp.h>
+#include <Palettes.h>
+#include <Sound.h>
+#include <ColorPicker.h>
+#include <Gestalt.h>
+#include <Scrap.h>
+#include <Devices.h>
+#include <Folders.h>
+#include <PictUtils.h>
+//#include <New.h>
+#include <MacHelp.h>
+#include <Navigation.h>
+#include <Controls.h>
+#include <ControlDefinitions.h>
+#endif
+#include <ctype.h>
+#include <Math.h>
+#define OSSM
+#define SYMANTEC
+#define VERSIONPPC
+//#define	USE_HCREATERESFILE_GLUE		// alows the use of HCreateResFile in Metrowerks, see Resources.h
+//#define _MSL_USING_NAMESPACE
+//#define __cplusplus

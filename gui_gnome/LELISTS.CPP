@@ -1042,45 +1042,7 @@ OSErr GetAdiosFileName(char *path)
 	return noErr;
 }
 
-long TOLEList::GetNumAdiosBudgetTableItems(void)
-{
-	long numInHdl = 0;
-	if (fAdiosDataH) numInHdl = _GetHandleSize((Handle)fAdiosDataH)/sizeof(**fAdiosDataH);
-	
-	return numInHdl;
-}
-/////////////////////////////////////////////////
-double GetLEMass(LERec theLE)
-{
-	long i;
-	double tHours, fracLeft = 0.;
-	TWeatherer	*thisWeatherer;
-	OilComponent	component;
-	CMyList	*weatherList = model->GetWeatherList();
-			
-	if (theLE.pollutantType == CHEMICAL)
-	{
-		weatherList->GetListItem((Ptr)&thisWeatherer, 0);	// assume there is only one
-		((TOSSMWeatherer*)thisWeatherer)->componentsList -> GetListItem ((Ptr) &component, theLE.pollutantType - 1);
-		tHours = (double) ( model -> GetModelTime () - theLE.releaseTime)/ 3600.0  + theLE.ageInHrsWhenReleased;
-		// if LE has not been released yet return 0?
-		//if (theLE.releaseTime > model->GetModelTime()) return theLE.mass;
-		if (theLE.releaseTime > model->GetModelTime()) return 0;
-		
-		for(i = 0;i<3;i++)	// at this point only using 1 half life component
-		{
-			if(component.percent[i] > 0.0)
-			{
-				fracLeft +=  (component.percent[i])*pow(0.5,tHours/(component.halfLife[i]));
-			}
-		}
-		fracLeft = _max (0.0,fracLeft);
-		fracLeft = _min (1.0,fracLeft);
-		return fracLeft*theLE.mass;
-	}
-	else
-		return theLE.mass;
-}
+
 /////////////////////////////////////////////////
 void GetLeUnitsStr(char* str,short massUnits)
 {
@@ -1112,6 +1074,129 @@ void GetLeUnitsStr(char* str,short massUnits)
 	#endif
 }
 
+
+void TOLEList::GetMassBalanceLines(Boolean includePercentage, char* line1,char*line2,char* line3,char* line4,char* line5,char* line6,char* line7)
+{
+	char infoStr [255];
+	char unitsStr [64];
+	float fractionOfReleased,fractionOfTotal;
+	double totalMass,massReleased;
+	long numReleased,numEvaporated,numBeached,numOffMap,numFloating,numDispersed=0,numRemoved=0;
+	long numLEs = this->GetLECount();
+	short numDecPlaces;
+	char ofTotalStr[64] = "",ofReleasedStr[64] = "";
+	char percentageStr[64];
+	this->GetLEStatistics(&numReleased,&numEvaporated,&numBeached,&numOffMap,&numFloating);
+	GetLeUnitsStr(unitsStr,fSetSummary.massUnits);
+	totalMass = fSetSummary.totalMass;
+	if(totalMass < 100) numDecPlaces = 1;
+	else numDecPlaces = 0;
+	massReleased = (totalMass* numReleased)/numLEs;
+	if(0 < numReleased && numReleased < numLEs)
+	{	// could be confusing so label percents
+		strcpy(ofTotalStr," of total");
+		strcpy(ofReleasedStr," of released");
+	}
+	////////////
+	if (line1) {// released
+		fractionOfTotal = numReleased/(double)numLEs;
+		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
+		sprintf(line1, "Released: %s %s",infoStr,unitsStr);
+		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfTotal,ofTotalStr);
+		if(includePercentage) strcat(line1,percentageStr);
+	}
+	// code goes here, do we want to categorize bottom spills as floating or subsurface?
+	if (line2) {// floating
+		if (fDispersantData.bDisperseOil || fAdiosDataH || fSetSummary.z > 0) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
+		fractionOfReleased = (numReleased <= 0) ? 0: numFloating/(double)numReleased;
+		fractionOfTotal = numFloating/(double)numLEs;
+		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
+		sprintf(line2, "Floating: %s %s",infoStr,unitsStr);
+		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfReleased,ofReleasedStr);
+		if(includePercentage) strcat(line2,percentageStr);
+	}
+	
+	if (line3) {// beached
+		fractionOfReleased = (numReleased <= 0) ? 0: numBeached/(double)numReleased;
+		fractionOfTotal = numBeached/(double)numLEs;
+		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
+		sprintf(line3, "Beached: %s %s",infoStr,unitsStr);
+		sprintf(percentageStr, " (%.1f%%%s )",100.0*fractionOfReleased,ofReleasedStr);
+		if(includePercentage) strcat(line3,percentageStr);
+	}
+	
+	// code goes here, for natural dispersants may want to do something different here
+	if (line4) {// evaporated/dispersed
+		//if (fDispersantData.bDisperseOil || fAdiosDataH) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
+		if (this->GetOilType()==CHEMICAL) 
+		{ 
+			double totalMassRemaining = 0;
+			if (LEHandle) 
+			{
+				long i;
+				for (i = 0 ; i < this->numOfLEs ; i++) 
+				{
+					LERec theLE = INDEXH(LEHandle, i);
+					double LEmass = GetLEMass(theLE);	// for time dependent release might want just percent of released
+					totalMassRemaining += LEmass;
+				}
+				
+			}
+			if (totalMassRemaining/(numReleased*totalMass/(double)numLEs) > 1)
+				//if ((1-totalMassRemaining/totalMass)*100 > 99)
+				//sprintf(line4, "Dissolved: %.2f %% of released",(1-totalMassRemaining/(numReleased*totalMass/(double)numLEs))*100);	
+				sprintf(line4, "Dissolved: 0 %% of released");	// assume this is sig digit issue
+			else				
+				sprintf(line4, "Dissolved: %.1f %% of released",(1-totalMassRemaining/(numReleased*totalMass/(double)numLEs))*100);	
+			//sprintf(line4, "Dissolved: %.1f %%",(1-totalMassRemaining/totalMass)*100);	
+			return;
+		}
+		
+		fractionOfReleased = (numReleased <= 0) ? 0: numEvaporated/(double)numReleased;
+		fractionOfTotal = numEvaporated/(double)numLEs;
+		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
+		if (fDispersantData.bDisperseOil || fAdiosDataH || fSetSummary.z > 0)
+			sprintf(line4, "Evaporated: %s %s",infoStr,unitsStr);	// split into 2
+		else
+			sprintf(line4, "Evaporated and Dispersed: %s %s",infoStr,unitsStr);	// split into 2
+		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfReleased,ofReleasedStr);
+		if(includePercentage) strcat(line4,percentageStr);
+	}
+	
+	if (line5) {// Dispersed
+		if (fDispersantData.bDisperseOil || fAdiosDataH || fSetSummary.z > 0) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
+		fractionOfReleased = (numReleased <= 0) ? 0: numDispersed/(double)numReleased;
+		fractionOfTotal = numDispersed/(double)numLEs;
+		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
+		if (fSetSummary.z > 0) sprintf(line5, "Subsurface: %s %s",infoStr,unitsStr);	// should check if chemical
+		else sprintf(line5, "Dispersed: %s %s",infoStr,unitsStr);
+		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfReleased,ofReleasedStr);
+		if(includePercentage) strcat(line5,percentageStr);
+	}
+	
+	if (line6) {// offmap
+		if (fAdiosDataH) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
+		fractionOfReleased = (numReleased <= 0) ? 0: numOffMap/(double)numReleased;
+		fractionOfTotal = numOffMap/(double)numLEs;
+		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
+		sprintf(line6, "Off map: %s %s",infoStr,unitsStr);
+		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfReleased,ofReleasedStr);
+		if(includePercentage) strcat(line6,percentageStr);
+	}
+	
+	if (line7) {// removed
+		if (fAdiosDataH) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
+		fractionOfReleased = (numReleased <= 0) ? 0: numRemoved/(double)numReleased;
+		fractionOfTotal = numRemoved/(double)numLEs;
+		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
+		sprintf(line7, "Removed: %s %s",infoStr,unitsStr);
+		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfReleased,ofReleasedStr);
+		if(includePercentage) strcat(line7,percentageStr);
+	}
+	
+}
+
+
 /////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1141,172 +1226,6 @@ void TLEList::Dispose()
 	return;
 }
 
-
-void TLEList::GetLE(long i, LERecP theLE)
-{
-	*theLE = INDEXH(LEHandle, i);
-}
-
-void TLEList::SetLE(long i, LERecP theLE)
-{
-	INDEXH(LEHandle, i) =  *theLE;
-}
-
-WorldRect TLEList::GetLEBounds()
-{
-	long i;
-	WorldPoint p;
-	WorldRect bounds = voidWorldRect;
-	
-	for (i = 0 ; i < this->numOfLEs ; i++) {
-		p = INDEXH(LEHandle, i).p;
-		AddWPointToWRect(p.pLat, p.pLong, &bounds);
-	}
-	
-	return bounds;
-}
-
-//JLE 1/6/99
-
-
-short TOLEList::GetMassUnitType()
-{
-	short masstype;
-	switch(GetMassUnits())
-	{
-		case GALLONS:
-		case BARRELS:
-		case CUBICMETERS:
-			masstype= VOLUMETYPE;
-		
-		case KILOGRAMS: 
-		case METRICTONS:
-		case SHORTTONS: 
-			masstype= MASSTYPE;
-	}
-	return masstype;
-}
-
-
-
-// Return amount statistics in desiredMassVolUnits 
-void TOLEList::GetLEAmountStatistics(short desiredMassVolUnits, double *amtTotal,double *amtReleased,double *amtEvaporated,double *amtDispersed,
-																	double *amtBeached,double * amtOffmap, double *amtFloating, double *amtRemoved)
-{	// this is only called in Standard mode
-	long numReleased,numEvap,numBeached,numOffmap,numfloating,numDisp=0,numRemoved=0;
-	double massFrac = GetTotalMass()/GetNumOfLEs();
-	short massunits = this->GetMassUnits();
-	double density =  GetPollutantDensity(this->GetOilType());	
-
-	this->GetLEStatistics(&numReleased,&numEvap,&numBeached,&numOffmap,&numfloating);
-	if (fDispersantData.bDisperseOil || fAdiosDataH || fSetSummary.z > 0) this->RecalculateLEStatistics(&numDisp,&numfloating,&numRemoved,&numOffmap);
-	
-	//*amtTotal = GetTotalMass();
-	*amtTotal = VolumeMassToVolumeMass(GetTotalMass(),density,massunits,desiredMassVolUnits);
-	*amtReleased = VolumeMassToVolumeMass(numReleased*massFrac,density,massunits,desiredMassVolUnits);
-	*amtEvaporated = VolumeMassToVolumeMass(numEvap*massFrac,density,massunits,desiredMassVolUnits);
-	*amtDispersed = VolumeMassToVolumeMass(numDisp*massFrac,density,massunits,desiredMassVolUnits);
-	*amtBeached = VolumeMassToVolumeMass(numBeached*massFrac,density,massunits,desiredMassVolUnits);
-	*amtOffmap = VolumeMassToVolumeMass(numOffmap*massFrac,density,massunits,desiredMassVolUnits);
-	*amtFloating = VolumeMassToVolumeMass(numfloating*massFrac,density,massunits,desiredMassVolUnits);
-	*amtRemoved = VolumeMassToVolumeMass(numRemoved*massFrac,density,massunits,desiredMassVolUnits);
-}
-
-  
-void TLEList::GetLEStatistics(long* numReleased,long* numEvaporated,long* numBeached, long* numOffMap, long* numFloating)
-{
-	long i,numNotReleased = 0;
-	*numEvaporated = *numBeached = *numOffMap = *numFloating = 0;
-	if (LEHandle) {
-		for (i = 0 ; i < this->numOfLEs ; i++) {
-			switch( INDEXH(LEHandle, i).statusCode)
-			{
-				case OILSTAT_NOTRELEASED: numNotReleased++; break;
-				case OILSTAT_OFFMAPS: (*numOffMap)++; break;
-				case OILSTAT_ONLAND: (*numBeached)++; break;
-				case OILSTAT_EVAPORATED: (*numEvaporated)++; break;
-				case OILSTAT_INWATER:(*numFloating)++; break;
-			}
-		}
-	}
-	*numReleased = this->numOfLEs - numNotReleased;
-}
-
-void TLEList::RecalculateLEStatistics(long* numDispersed,long* numFloating,long* numRemoved,long* numOffMaps)
-{
-	// code goes here, might want to calculate percent dissolved here
-	long i;
-	if (LEHandle) {
-		for (i = 0 ; i < this->numOfLEs ; i++) {	// code goes here, Alan occasionally seeing budget table floating < 0, maybe not released has z>0 or dispersed Le is getting beached?
-			if( ((INDEXH(LEHandle, i).dispersionStatus == HAVE_DISPERSED || INDEXH(LEHandle, i).dispersionStatus == HAVE_DISPERSED_NAT) || INDEXH(LEHandle,i).z > 0) && !(INDEXH(LEHandle, i).statusCode==OILSTAT_EVAPORATED) && !(INDEXH(LEHandle, i).statusCode==OILSTAT_OFFMAPS) && !(INDEXH(LEHandle, i).statusCode==OILSTAT_NOTRELEASED) && !(INDEXH(LEHandle, i).statusCode==OILSTAT_ONLAND))
-			//if( ((INDEXH(LEHandle, i).dispersionStatus == HAVE_DISPERSED || INDEXH(LEHandle, i).dispersionStatus == HAVE_DISPERSED_NAT) || INDEXH(LEHandle,i).z > 0) && INDEXH(LEHandle, i).statusCode==OILSTAT_INWATER )
-			{
-				(*numDispersed)++; 
-				(*numFloating)--; 
-				if ((*numFloating) < 0) 
-				{
-					//printNote("Num floating < 0 in RecalculateLEStatistics");
-				}
-			}
-			if( (INDEXH(LEHandle, i).dispersionStatus == HAVE_REMOVED) && (INDEXH(LEHandle, i).statusCode==OILSTAT_OFFMAPS) )
-			{
-				(*numRemoved)++; 
-				(*numOffMaps)--; 
-				if ((*numOffMaps) < 0) 
-				{
-					printNote("Num off maps < 0 in RecalculateLEStatistics");
-				}
-			}
-		}
-	}
-}
-
-void TLEList::BeachLE(long i, WorldPoint beachPosition)
-{
-	if (GetLEStatus (i) == OILSTAT_INWATER)
-	{
-		INDEXH(LEHandle, i).lastWaterPt = INDEXH(LEHandle, i).p;
-		SetLEPosition(i, beachPosition);
-		INDEXH(LEHandle, i).beachTime = model->modelTime;
-		SetLEStatus(i, OILSTAT_ONLAND);
-	}
-}
-
-void TLEList::ReFloatLE(long i)
-{
-	SetLEPosition(i, INDEXH(LEHandle, i).lastWaterPt);
-	SetLEStatus(i, OILSTAT_INWATER);
-}
-
-OilStatus TLEList::GetLEStatus(long i)
-{
-	return INDEXH(LEHandle, i).statusCode;
-}
-
-void TLEList::SetLEStatus(long i, OilStatus status)
-{
-	INDEXH(LEHandle, i).statusCode = status;
-}
-
-WorldPoint TLEList::GetLEPosition(long i)
-{
-	return INDEXH(LEHandle, i).p;
-}
-
-void TLEList::SetLEPosition(long i, WorldPoint p)
-{
-	INDEXH(LEHandle, i).p = p;
-}
-
-Seconds TLEList::GetLEReleaseTime(long i)
-{
-	return INDEXH(LEHandle, i).releaseTime;
-}
-
-void TLEList::ReleaseLE(long i)
-{
-	INDEXH(LEHandle, i).statusCode = OILSTAT_INWATER;
-}
 
 //#define  TLEList_FileVersion 1
 //#define  TLEList_FileVersion 2	// 6/18/01, added windage to LERec
@@ -1494,35 +1413,6 @@ void TOLEList::Dispose ()
 	}
 
 	TLEList::Dispose ();
-}
-
-OSErr TOLEList::CalculateAverageIntrusionDepth(double *avDepth, double *stdDev)
-{	// this was just a diagnostic for Debra, not using anymore...
-	long j, numSubsurfaceLEs = 0;
-	double totalDepth = 0, totalDev = 0;
-	LERec thisLE;
-	OSErr err = 0;
-	for (j = 0; j < this -> numOfLEs; j++)
-	{
-		this -> GetLE (j, &thisLE);
-		if (thisLE.z > 0)
-		{
-			numSubsurfaceLEs ++;
-			totalDepth += thisLE.z;			
-		}
-	}
-	if (numSubsurfaceLEs>0) totalDepth /= numSubsurfaceLEs;
-	for (j = 0; j < this -> numOfLEs; j++)
-	{
-		this -> GetLE (j, &thisLE);
-		if (thisLE.z > 0)
-		{
-			totalDev += (thisLE.z - totalDepth)*(thisLE.z - totalDepth);
-		}
-	}
-	*avDepth = totalDepth;
-	if (numSubsurfaceLEs > 0) *stdDev = sqrt(totalDev/numSubsurfaceLEs); 
-	return err;		
 }
 
 OSErr TOLEList::Reset(Boolean newKeys)
@@ -2152,31 +2042,6 @@ OSErr TOLEList::CheckAndPassOnMessage(TModelMessage *message)
 }
 
 
-
-void TOLEList::AddToBudgetTableHdl(BudgetTableData *budgetTable)
-{	// may want to switch this to a model field, then can total all the spills information
-	// rather than have a separate budget table for each spill
-	long i,sizeOfHdl;
-	OSErr err = 0;
-	if(!fBudgetTableH)
-	{
-		fBudgetTableH = (BudgetTableData**)_NewHandle(0);
-		if(!fBudgetTableH) {TechError("TOLEList::AddToBudgetTableHdl()", "_NewHandle()", 0); err = memFullErr; return;}
-	}
-	sizeOfHdl = _GetHandleSize((Handle)fBudgetTableH)/sizeof(BudgetTableData);
-	_SetHandleSize((Handle) fBudgetTableH, (sizeOfHdl+1)*sizeof(BudgetTableData));
-	if (_MemError()) { TechError("TOLEList::AddToBudgetTableHdl()", "_SetHandleSize()", 0); return; }
-	(*fBudgetTableH)[sizeOfHdl].timeAfterSpill = (*budgetTable).timeAfterSpill;				
-	(*fBudgetTableH)[sizeOfHdl].amountReleased = (*budgetTable).amountReleased;				
-	(*fBudgetTableH)[sizeOfHdl].amountFloating = (*budgetTable).amountFloating;				
-	(*fBudgetTableH)[sizeOfHdl].amountDispersed = (*budgetTable).amountDispersed;				
-	(*fBudgetTableH)[sizeOfHdl].amountEvaporated = (*budgetTable).amountEvaporated;				
-	(*fBudgetTableH)[sizeOfHdl].amountBeached = (*budgetTable).amountBeached;				
-	(*fBudgetTableH)[sizeOfHdl].amountOffMap = (*budgetTable).amountOffMap;
-	(*fBudgetTableH)[sizeOfHdl].amountRemoved = (*budgetTable).amountRemoved;
-	return;
-}
-
 OSErr TOLEList::ExportBudgetTableHdl(char* path, BFPB *bfpb)
 {
 	// want to change this to calculate total budget for multiple spills
@@ -2259,127 +2124,6 @@ OSErr TOLEList::ExportBudgetTableHdl(char* path, BFPB *bfpb)
 
 done:
 	return err;
-}
-
-void TOLEList::GetMassBalanceLines(Boolean includePercentage, char* line1,char*line2,char* line3,char* line4,char* line5,char* line6,char* line7)
-{
-	char infoStr [255];
-	char unitsStr [64];
-	float fractionOfReleased,fractionOfTotal;
-	double totalMass,massReleased;
-	long numReleased,numEvaporated,numBeached,numOffMap,numFloating,numDispersed=0,numRemoved=0;
-	long numLEs = this->GetLECount();
-	short numDecPlaces;
-	char ofTotalStr[64] = "",ofReleasedStr[64] = "";
-	char percentageStr[64];
-	this->GetLEStatistics(&numReleased,&numEvaporated,&numBeached,&numOffMap,&numFloating);
-	GetLeUnitsStr(unitsStr,fSetSummary.massUnits);
-	totalMass = fSetSummary.totalMass;
-	if(totalMass < 100) numDecPlaces = 1;
-	else numDecPlaces = 0;
-	massReleased = (totalMass* numReleased)/numLEs;
-	if(0 < numReleased && numReleased < numLEs)
-	{	// could be confusing so label percents
-		strcpy(ofTotalStr," of total");
-		strcpy(ofReleasedStr," of released");
-	}
-	////////////
-	if (line1) {// released
-		fractionOfTotal = numReleased/(double)numLEs;
-		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
-		sprintf(line1, "Released: %s %s",infoStr,unitsStr);
-		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfTotal,ofTotalStr);
-		if(includePercentage) strcat(line1,percentageStr);
-	}
-	// code goes here, do we want to categorize bottom spills as floating or subsurface?
-	if (line2) {// floating
-		if (fDispersantData.bDisperseOil || fAdiosDataH || fSetSummary.z > 0) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
-		fractionOfReleased = (numReleased <= 0) ? 0: numFloating/(double)numReleased;
-		fractionOfTotal = numFloating/(double)numLEs;
-		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
-		sprintf(line2, "Floating: %s %s",infoStr,unitsStr);
-		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfReleased,ofReleasedStr);
-		if(includePercentage) strcat(line2,percentageStr);
-	}
-
-	if (line3) {// beached
-		fractionOfReleased = (numReleased <= 0) ? 0: numBeached/(double)numReleased;
-		fractionOfTotal = numBeached/(double)numLEs;
-		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
-		sprintf(line3, "Beached: %s %s",infoStr,unitsStr);
-		sprintf(percentageStr, " (%.1f%%%s )",100.0*fractionOfReleased,ofReleasedStr);
-		if(includePercentage) strcat(line3,percentageStr);
-	}
-
-	// code goes here, for natural dispersants may want to do something different here
-	if (line4) {// evaporated/dispersed
-		//if (fDispersantData.bDisperseOil || fAdiosDataH) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
-		if (this->GetOilType()==CHEMICAL) 
-		{ 
-			double totalMassRemaining = 0;
-			if (LEHandle) 
-			{
-				long i;
-				for (i = 0 ; i < this->numOfLEs ; i++) 
-				{
-					LERec theLE = INDEXH(LEHandle, i);
-					double LEmass = GetLEMass(theLE);	// for time dependent release might want just percent of released
-					totalMassRemaining += LEmass;
-				}
-				
-			}
-			if (totalMassRemaining/(numReleased*totalMass/(double)numLEs) > 1)
-			//if ((1-totalMassRemaining/totalMass)*100 > 99)
-				//sprintf(line4, "Dissolved: %.2f %% of released",(1-totalMassRemaining/(numReleased*totalMass/(double)numLEs))*100);	
-				sprintf(line4, "Dissolved: 0 %% of released");	// assume this is sig digit issue
-			else				
-				sprintf(line4, "Dissolved: %.1f %% of released",(1-totalMassRemaining/(numReleased*totalMass/(double)numLEs))*100);	
-			//sprintf(line4, "Dissolved: %.1f %%",(1-totalMassRemaining/totalMass)*100);	
-			return;
-		}
-
-		fractionOfReleased = (numReleased <= 0) ? 0: numEvaporated/(double)numReleased;
-		fractionOfTotal = numEvaporated/(double)numLEs;
-		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
-		if (fDispersantData.bDisperseOil || fAdiosDataH || fSetSummary.z > 0)
-			sprintf(line4, "Evaporated: %s %s",infoStr,unitsStr);	// split into 2
-		else
-			sprintf(line4, "Evaporated and Dispersed: %s %s",infoStr,unitsStr);	// split into 2
-		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfReleased,ofReleasedStr);
-		if(includePercentage) strcat(line4,percentageStr);
-	}
-	
-	if (line5) {// Dispersed
-		if (fDispersantData.bDisperseOil || fAdiosDataH || fSetSummary.z > 0) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
-		fractionOfReleased = (numReleased <= 0) ? 0: numDispersed/(double)numReleased;
-		fractionOfTotal = numDispersed/(double)numLEs;
-		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
-		if (fSetSummary.z > 0) sprintf(line5, "Subsurface: %s %s",infoStr,unitsStr);	// should check if chemical
-		else sprintf(line5, "Dispersed: %s %s",infoStr,unitsStr);
-		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfReleased,ofReleasedStr);
-		if(includePercentage) strcat(line5,percentageStr);
-	}
-
-	if (line6) {// offmap
-		if (fAdiosDataH) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
-		fractionOfReleased = (numReleased <= 0) ? 0: numOffMap/(double)numReleased;
-		fractionOfTotal = numOffMap/(double)numLEs;
-		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
-		sprintf(line6, "Off map: %s %s",infoStr,unitsStr);
-		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfReleased,ofReleasedStr);
-		if(includePercentage) strcat(line6,percentageStr);
-	}
-
-	if (line7) {// removed
-		if (fAdiosDataH) this->RecalculateLEStatistics(&numDispersed,&numFloating,&numRemoved,&numOffMap);
-		fractionOfReleased = (numReleased <= 0) ? 0: numRemoved/(double)numReleased;
-		fractionOfTotal = numRemoved/(double)numLEs;
-		StringWithoutTrailingZeros(infoStr,fractionOfTotal * totalMass,numDecPlaces); 
-		sprintf(line7, "Removed: %s %s",infoStr,unitsStr);
-		sprintf(percentageStr, " (%.1f%%%s)",100.0*fractionOfReleased,ofReleasedStr);
-		if(includePercentage) strcat(line7,percentageStr);
-	}
-
 }
 
 
@@ -5092,60 +4836,3 @@ void TOLEList::Draw(Rect r, WorldRect view)
 	RGBForeColor(&colors[BLACK]);
 }
 
-/**************************************************************************************************/
-WindageRec TOLEList::GetWindageInfo ()
-{
-	WindageRec	info;
-
-	memset(&info,0,sizeof(info));
-	info.windageA = this -> fWindageData.windageA;
-	info.windageB = this -> fWindageData.windageB;
-	info.persistence = this -> fWindageData.persistence;
-
-	return info;
-}
-
-void TOLEList::SetWindageInfo (WindageRec info)
-{
-	this -> fWindageData.windageA = info.windageA;
-	this -> fWindageData.windageB = info.windageB;
-	this -> fWindageData.persistence = info.persistence;
-
-	return;
-}
-
-/**************************************************************************************************/
-DispersionRec TOLEList::GetDispersionInfo ()
-{
-	DispersionRec	info;
-
-	memset(&info,0,sizeof(info));
-	info.bDisperseOil = this -> fDispersantData.bDisperseOil;
-	info.timeToDisperse	= this -> fDispersantData.timeToDisperse;
-	info.duration = this -> fDispersantData.duration;
-	info.api = this -> fDispersantData.api;		
-	info.areaToDisperse.hiLat	= this -> fDispersantData.areaToDisperse.hiLat;
-	info.areaToDisperse.loLat	= this -> fDispersantData.areaToDisperse.loLat;
-	info.areaToDisperse.hiLong	= this -> fDispersantData.areaToDisperse.hiLong;
-	info.areaToDisperse.loLong	= this -> fDispersantData.areaToDisperse.loLong;
-	info.amountToDisperse		= this -> fDispersantData.amountToDisperse;	
-	info.lassoSelectedLEsToDisperse = this -> fDispersantData.lassoSelectedLEsToDisperse;
-
-	return info;
-}
-/**************************************************************************************************/
-void TOLEList::SetDispersionInfo (DispersionRec info)
-{
-	this -> fDispersantData.bDisperseOil = info.bDisperseOil;
-	this -> fDispersantData.timeToDisperse = info.timeToDisperse;
-	this -> fDispersantData.duration = info.duration;
-	this -> fDispersantData.api = info.api;
-	this -> fDispersantData.areaToDisperse.hiLat 	= info.areaToDisperse.hiLat;		
-	this -> fDispersantData.areaToDisperse.loLat 	= info.areaToDisperse.loLat;			
-	this -> fDispersantData.areaToDisperse.hiLong 	= info.areaToDisperse.hiLong;	
-	this -> fDispersantData.areaToDisperse.loLong 	= info.areaToDisperse.loLong;	
-	this -> fDispersantData.amountToDisperse 	= info.amountToDisperse;	
-	this -> fDispersantData.lassoSelectedLEsToDisperse = info.lassoSelectedLEsToDisperse;
-
-	return;
-}

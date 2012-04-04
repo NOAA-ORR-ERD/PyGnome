@@ -10,7 +10,7 @@
 #ifndef __TimeValue_c__
 #define __TimeValue_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "TimeValue_b.h"
 #include "ClassID_c.h"
@@ -24,9 +24,12 @@ class TimeValue_c : virtual public TimeValue_b, virtual public ClassID_c {
 public:
 	TimeValue_c (TMover *theOwner) { owner = theOwner; }
 	TimeValue_c () {}
+	virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEVALUES) return TRUE; return ClassID_c::IAm(id); }
 	virtual OSErr	GetTimeValue (Seconds time, VelocityRec *value);
 	virtual OSErr	CheckStartTime (Seconds time);
 	virtual void	Dispose () {}
+	virtual OSErr	InitTimeFunc ();
 
 };
 

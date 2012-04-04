@@ -34,66 +34,16 @@ short ClosestMatchingColor(RGBColor color);
 Boolean EarlierThan(Seconds time1, Seconds time2);
 Boolean LaterThan(Seconds time1, Seconds time2);
 
-///// STRINGS ///////////////////////////////////////////////////////////////////////////
-char* lfFix(char* str);
-OSErr StringToDouble(char* str,double* val);
-void StringWithoutTrailingZeros(char* str,double val,short maxNumDecimalPlaces); //JLM
-void ChopEndZeros(CHARPTR cString); //JLM
-CHARPTR RemoveTrailingSpaces(CHARPTR s);
+//++ Strings
 
-void RemoveLeadingWhiteSpace(CHARPTR s);//JLM
-void RemoveTrailingWhiteSpace(CHARPTR s);//JLM
-void RemoveLeadingAndTrailingWhiteSpace(CHARPTR s);//JLM
+#include "StringFunctions.h"
 
-void RemoveLeadingTrailingQuotes(CHARPTR s);
-
-long CountSetInString(CHARPTR s, CHARPTR set);
-long CountSetInString(CHARPTR s, CHARPTR set, CHARPTR stop);
-void RemoveSetFromString(CHARPTR strin, CHARPTR set, CHARPTR strout);
-CHARPTR AfterSetInString(CHARPTR s, CHARPTR set, long count);
-CHARPTR StringSubstitute(CHARPTR s, char old, char newC);
-CHARPTR strnzcpy(CHARPTR to, CHARPTR from, short n);
-CHARPTR strnztrimcpy(CHARPTR to, CHARPTR from, short n);
-CHARPTR strtrimcpy(CHARPTR to, CHARPTR from);
-char mytolower(char c);
-CHARPTR StrToLower(CHARPTR s);
-char mytoupper(char c);
-CHARPTR StrToUpper(CHARPTR s);
-char *strstrnocase(CHARPTR s1, CHARPTR s2);
-short strcmpnocase(CHARPTR s1, CHARPTR s2);
-short strncmpnocase(CHARPTR s1, CHARPTR s2, short n);
-short strnblankcmp(CHARPTR s1, CHARPTR s2, short n);
-Boolean strcmptoreturn(CHARPTR s1, CHARPTR s2);
-Boolean strcmptoreturnnocase(CHARPTR s1, CHARPTR s2);
-void AbbreviateString(CHARPTR s, short maxWidth);
-CHARPTR strcatres(CHARPTR s, short resID, short index);
-CHARPTR mypstrcat(CHARPTR dest, CHARPTR src);
-CHARPTR mypstrcpy(CHARPTR dest, CHARPTR src);
-void mypstrcatJM(void* dest_asVoidPtr, void* src_asVoidPtr);
-void mypstrcpyJM(void* dest_asVoidPtr, void* src_asVoidPtr);
-
-long NumLinesInText(CHARPTR text);
-CHARPTR NthLineInTextOptimized(CHARPTR text, long n, CHARPTR line, long maxLen);
-CHARPTR NthLineInTextNonOptimized(CHARPTR text, long n, CHARPTR line, long maxLen);
-CHARPTR LineInText(CHARPTR text, CHARPTR line);
-CHARPTR LineInTextNoCase(CHARPTR text, CHARPTR line);
-CHARPTR AddLineToText(CHARPTR text, CHARPTR line);
-CHARPTR IntersectLinesInText(CHARPTR text1, CHARPTR text2, CHARPTR intersection);
-CHARPTR strcpyToDelimeter(CHARPTR target, CHARPTR source, char delimiter);
-CHARPTR strcpyWithDelimeter(CHARPTR target, CHARPTR source, char delimiter);
-Boolean ForceStringNumber(CHARPTR s);
-Boolean ForceStringNumberAllowingNegative(CHARPTR s);//JLM
-Boolean DecForceStringNumber(CHARPTR s);
-Boolean DecForceStringNumberAllowingNegative(CHARPTR s); //JLM
-Boolean DecForceStringDirection(CHARPTR s);
 char *RGBColorToString(RGBColor color, char *s);
 RGBColor StringToRGBColor(char *s);
 Boolean ValidRGBString(char *s);
 
 ///// RECTS ///////////////////////////////////////////////////////////////////////////
 
-void MySetRect(RECTPTR r, short left, short top, short right, short bottom);
-Point RectCenter(Rect r);
 Boolean RectInRect(RECTPTR r1, RECTPTR r2);
 Rect ForceRectIntoRect(Rect r, Rect r2);
 void NormalizeRect(RECTPTR r);

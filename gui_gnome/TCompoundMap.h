@@ -2,7 +2,7 @@
  *  TCompoundMap.h
  *  gnome
  *
- *  Created by Alex Hadjilambris on 1/23/12.
+ *  Created by Generic Programmer on 1/23/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
@@ -44,7 +44,6 @@ public:
 	// list display methods
 	virtual void		Draw(Rect r, WorldRect view);
 	void 	FindNearestBoundary(Point where, long *verNum, long *segNo);
-	void  FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo);
 	
 	virtual long		GetListLength();
 	virtual ListItem 	GetNthListItem(long n, short indent, short *style, char *text);
@@ -67,6 +66,10 @@ public:
 	
 	//virtual void 	DrawBoundaries(Rect r);
 	//virtual void 	DrawBoundaries2(Rect r);
+	virtual	Boolean InMap (WorldPoint p);	//  check all maps
+	virtual Boolean OnLand (WorldPoint p);	// check all maps
+	virtual WorldPoint3D	MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);	// have to do something here
+	virtual long 	GetLandType (WorldPoint p);
 	void			DrawContoursFromMapIndex(Rect r, WorldRect view, long mapIndex);
 	virtual	void 	DrawContours(Rect r, WorldRect view);	// total over all LELists
 	virtual void  	DrawContourScale(Rect r, WorldRect view);
@@ -87,8 +90,12 @@ public:
 	Rect 			DoArrowTool(long triNum);
 	void 			DoLassoTool(Point p);
 	void 			MarkRect(Point p);
-	
-	
+	long			WhichMapIsPtIn(WorldPoint wp);
+	long			WhichMapIsPtInWater(WorldPoint wp);
+	virtual double	DepthAtPoint(WorldPoint wp);// check by priority
+	OSErr 			GetDepthAtMaxTri(long *maxTriIndex, double *depthAtPnt);	
+	WorldPoint3D	ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,WorldPoint3D wp);
+
 };
 
 #endif

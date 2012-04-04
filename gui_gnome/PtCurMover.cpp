@@ -1021,6 +1021,11 @@ Boolean PtCurMover::ListClick(ListItem item, Boolean inBullet, Boolean doubleCli
 			return TRUE;
 		}
 
+	if (ShiftKeyDown() && item.index == I_PTCURNAME) {
+		fColor = MyPickColor(fColor,mapWindow);
+		model->NewDirtNotification(DIRTY_LIST|DIRTY_MAPDRAWINGRECT);
+	}
+	
 	if (doubleClick && !inBullet)
 	{
 		Boolean userCanceledOrErr ;
@@ -1104,9 +1109,10 @@ void PtCurMover::Draw(Rect r, WorldRect view)
 	if(fGrid && (fVar.bShowArrows || fVar.bShowGrid))
 	{
 		Boolean overrideDrawArrows = FALSE;
-		fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,overrideDrawArrows,fVar.bShowGrid);
+		fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,overrideDrawArrows,fVar.bShowGrid,fColor);
 		if(fVar.bShowArrows)
 		{ // we have to draw the arrows
+			RGBForeColor(&fColor);
 			long numVertices,i;
 			LongPointHdl ptsHdl = 0;
 			long timeDataInterval;
@@ -1215,6 +1221,7 @@ void PtCurMover::Draw(Rect r, WorldRect view)
 				}
 			}
 		}
+		RGBForeColor(&colors[BLACK]);
 	}
 }
 
@@ -2227,106 +2234,6 @@ done:
 
 }
 
-
-/**************************************************************************************************/
-OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
-{	// expects a number of the form 
-	// <number><comma><number>
-	//e.g.  "-120.2345,40.345"
-	// JLM, 2/26/99 extended to handle
-	// <number><whiteSpace><number>
-	long	j, k, pairIndex;
-	char	num [64];
-	OSErr	err = 0;
-	char delimiterChar = ',';
-	Boolean scientificNotation = false;
-	
-	j = 0;	/* index into supplied string */
-
-	for (pairIndex = 1; pairIndex <= 2 && !err; ++pairIndex)
-	{
-	   /* scan u, then v */
-	   Boolean keepGoing = true;
-	   for (k = 0 ; keepGoing; j++)
-	   {	   			
-			switch(startChar[j])
-			{
-				case ',': // delimiter
-				case 0: // end of string
-					keepGoing = false;
-					break;
-				case '.':
-					num[k++] = startChar[j];
-					break;
-				case '+': // number
-					if (!scientificNotation) 
-					{
-						err=-1; 
-						return err;
-					}
-					// else number
-				case '-': // number
-				case '0': case '1': case '2': case '3': case '4':
-				case '5': case '6': case '7': case '8': case '9':
-						num[k++] = startChar[j];
-						if(k>=32) // no space or comma found to signal end of number
-						{
-							err = -1;
-							return err;
-						}
-					break;
-				case 'e': 
-						num[k++] = startChar[j];
-						if(k>=32) // no space or comma found to signal end of number
-						{
-							err = -1;
-							return err;
-						}
-						scientificNotation = true;
-					break;
-				case ' ':
-				case '\t': // white space
-					if(k == 0) continue; // ignore leading white space
-					while(startChar[j+1] == ' ' || startChar[j+1] == '\t') j++; // move past any additional whitespace chars
-					if(startChar[j+1] == ',') j++; // it was <whitespace><comma>, use the comma as the delimiter
-					// we have either found a comma or will use the white space as a delimiter
-					// in either case we stop this loop
-					keepGoing = false;
-					break;
-				default:
-					err = -1;
-					return err;
-					break;
-			}
-		}
-		
-		if(err) break; // so we break out of the main loop, shouldn't happen
-		
-		num[k++] = 0;									/* terminate the number-string */
-		
-		if (pairIndex == 1)
-		{
-			if (!scientificNotation) VelocityPtr -> u = atof(num);
-			
-			if (startChar[j] == ',')					/* increment j past the comma to next coordinate */
-			{
-				++j;
-				delimiterChar = ','; // JLM reset the delimiter char
-			}
-		}
-		else
-		{
-			if (!scientificNotation) VelocityPtr -> v = atof(num);
-			*scanLength = j; // amount of input string that was read
-		}
-	}
-	///////////////
-	
-	if (scientificNotation) return -2;
-	return err;
-
-}
-/**************************************************************************************************/
 
 /**************************************************************************************************/
 OSErr ScanDepth (char *startChar, double *DepthPtr)

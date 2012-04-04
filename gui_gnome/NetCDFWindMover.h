@@ -24,8 +24,6 @@ public:
 	NetCDFWindMover (TMap *owner, char* name);
 	~NetCDFWindMover () { Dispose (); }
 	virtual void		Dispose ();
-	virtual ClassID 	GetClassID () { return TYPE_NETCDFWINDMOVER; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_NETCDFWINDMOVER) return TRUE; return TWindMover::IAm(id); }
 	void 					DisposeLoadedData(LoadedData * dataPtr);	
 	void 					ClearLoadedData(LoadedData * dataPtr);
 	// I/O methods

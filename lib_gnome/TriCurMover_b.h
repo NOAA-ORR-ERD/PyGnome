@@ -10,14 +10,18 @@
 #ifndef __TriCurMover_b__
 #define __TriCurMover_b__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
-#include "DagTree.h"
-#include "my_build_list.h"
-#include "GridVel.h"
-#include "PtCurMover.h"
+#include "GridVel_c.h"
 #include "DagTree.h"
 #include "CurrentMover_b.h"
+
+#ifndef pyGNOME
+#include "GridVel.h"
+#else
+#include "GridVel_c.h"
+#define TGridVel GridVel_c
+#endif
 
 Boolean IsTriCurFile (char *path);
 Boolean IsTriCurVerticesHeaderLine(char *s, long* numPts);

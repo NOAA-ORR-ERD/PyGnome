@@ -11,7 +11,6 @@
 Boolean IsPtCurFile (char *path);
 Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts);
 OSErr ScanDepth (char *startChar, double *DepthPtr);
-OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength);
 void CheckYear(short *year);
 
 

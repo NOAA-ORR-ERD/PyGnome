@@ -525,16 +525,19 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		if (!reply.good) /*return 0;*/
 		{
 			if (bVelocitiesOnTriangles)
-			{err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
-			//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
-			if (err) goto done;
-			goto depths;}
+			{
+				err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+				//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+				if (err) goto done;
+				goto depths;
+			}
 			else
 			{
-			err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
-			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
-			if (err) goto done;
-	 		goto depths;}
+				err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+				//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
+				if (err) goto done;
+	 			goto depths;
+			}
 		}
 		else
 			strcpy(topPath, reply.fullPath);
@@ -555,16 +558,19 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		if (!reply.good) 
 		{
 			if (bVelocitiesOnTriangles)
-			{err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
-			//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
-			if (err) goto done;
-			goto depths;}
+			{
+				err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+				//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);		 
+				if (err) goto done;
+				goto depths;
+			}
 			else
 			{
-			err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
-			//goto done;
-			if (err) goto done;	
-			goto depths;}	
+				err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+				//goto done;
+				if (err) goto done;	
+				goto depths;
+			}	
 			//return 0;
 		}
 		
@@ -894,16 +900,17 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 	char errmsg[256];
 	long amtOfDepthData = 0;
 	
-	RGBForeColor(&fColor);
+	RGBForeColor(&colors[PURPLE]);
 	
 	if(fDepthDataInfo) amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
 	
 	if(fGrid && (fVar.bShowArrows || fVar.bShowGrid))
 	{
 		Boolean overrideDrawArrows = FALSE;
-		fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,overrideDrawArrows,fVar.bShowGrid);
+		fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,overrideDrawArrows,fVar.bShowGrid,fColor);
 		if(fVar.bShowArrows && bVelocitiesOnTriangles == false)
 		{ // we have to draw the arrows
+			RGBForeColor(&fColor);
 			long numVertices,i;
 			LongPointHdl ptsHdl = 0;
 			long timeDataInterval;
@@ -1062,7 +1069,8 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 			long timeDataInterval;
 			Boolean loaded;
 			TTriGridVel* triGrid = (TTriGridVel*)fGrid;	// don't need 3D stuff to draw here
-			
+			RGBForeColor(&fColor);
+		
 			err = this -> SetInterval(errmsg);
 			if(err) return;
 			
@@ -1268,18 +1276,6 @@ OSErr NetCDFMoverTri::ReadTopology(char* path, TMap **newMap)
 	{
 		if (!bVelocitiesOnTriangles) {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
 		else line--;
-		/*if (!bVelocitiesOnTriangles)
-		{
-			sprintf(hdrStr,"TransposeArray\t%ld\n",n);	
-			strcpy(buffer,hdrStr);
-			if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-			for(i=0;i<n;i++)
-			{	
-				sprintf(topoStr,"%ld\n",(*fVerdatToNetCDFH)[i]);
-				strcpy(buffer,topoStr);
-				if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-			}
-		}*/
 	}
 	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
 	
@@ -1348,7 +1344,7 @@ OSErr NetCDFMoverTri::ReadTopology(char* path, TMap **newMap)
 	else
 	{
 		//err = -1;
-		//strcpy(errmsg,"Error in Boundary segment header line");
+		//strcpy(errmsg,"Error in Boundary points header line");
 		//goto done;
 		// not always needed ? probably always needed for curvilinear
 	}
@@ -1553,7 +1549,7 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 		if (!boundaryTypeH || !boundarySegmentsH) {printError("No map info to export"); err=-1; goto done;}
 		if (bVelocitiesOnTriangles) 
 		{
-			boundaryPointsH = /*CHECK*/(dynamic_cast<PtCurMap *>(moverMap))->GetBoundaryPoints();
+			boundaryPointsH = map->GetBoundaryPoints();
 			if (!boundaryPointsH) {printError("No map info to export"); err=-1; goto done;}
 		}
 	}
@@ -1641,13 +1637,13 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 	nBoundaryPts = 0;
 	if (boundaryPointsH) 
 	{
-		nBoundaryPts = _GetHandleSize((Handle)boundaryPointsH)/sizeof(long);	// should be same size as previous handle
+		nBoundaryPts = _GetHandleSize((Handle)boundaryPointsH)/sizeof(long);	
 		sprintf(hdrStr,"BoundaryPoints\t%ld\n",nBoundaryPts);	// total boundary points
 		strcpy(buffer,hdrStr);
 		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		for(i=0;i<nBoundaryPts;i++)
 		{	
-			sprintf(topoStr,"%ld\n",(*boundaryPointsH)[i]);	// when reading in subtracts 1
+			sprintf(topoStr,"%ld\n",(*boundaryPointsH)[i]);	
 			strcpy(buffer,topoStr);
 			if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 		}

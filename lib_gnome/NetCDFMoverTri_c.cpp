@@ -8,18 +8,31 @@
  */
 
 #include "NetCDFMoverTri_c.h"
-#include "NetCDFMoverTri.h"
-#include "NetCDFMoverCurv.h"
+#include "CompFunctions.h"
+#include "StringFunctions.h"
+#include "my_build_list.h"
 #include "netcdf.h"
-#include "CROSS.H"
 
-#ifdef pyGNOME
-#define NetCDFMoverTri NetCDFMoverTri_c
+#ifndef pyGNOME
+#include "CROSS.H"
+#else
+#include "Replacements.h"
 #endif
+
+//NetCDFMoverTri::NetCDFMoverTri (TMap *owner, char *name) : NetCDFMover(owner, name)
+NetCDFMoverTri_c::NetCDFMoverTri_c (TMap *owner, char *name) : NetCDFMoverCurv_c(owner, name)
+{
+	//fVerdatToNetCDFH = 0;	
+	//fVertexPtsH = 0;
+	fNumNodes = 0;
+	fNumEles = 0;
+	bVelocitiesOnTriangles = false;
+}
+
 
 LongPointHdl NetCDFMoverTri_c::GetPointsHdl()
 {
-	return ((TTriGridVel*)fGrid) -> GetPointsHdl();
+	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
 }
 
 Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
@@ -58,7 +71,7 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 		//long triIndex;
 		TDagTree *dagTree = 0;
 		//TTriGridVel3D* triGrid = GetGrid3D(false);	
-		dagTree = ((TTriGridVel3D*)fGrid) -> GetDagTree();
+		dagTree = ((dynamic_cast<TTriGridVel3D*>(fGrid))) -> GetDagTree();
 		if(!dagTree) return false;
 		lp.h = wp.p.pLong;
 		lp.v = wp.p.pLat;
@@ -341,7 +354,7 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(Seconds timeStep,long setIndex,long leInd
 		//long triIndex;
 		TDagTree *dagTree = 0;
 		//TTriGridVel3D* triGrid = GetGrid3D(false);	
-		dagTree = ((TTriGridVel3D*)fGrid) -> GetDagTree();
+		dagTree = (dynamic_cast<TTriGridVel3D*>(fGrid)) -> GetDagTree();
 		if(!dagTree) return deltaPoint;
 		lp.h = refPoint.pLong;
 		lp.v = refPoint.pLat;

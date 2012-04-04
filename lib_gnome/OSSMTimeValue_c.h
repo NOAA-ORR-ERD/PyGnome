@@ -11,7 +11,7 @@
 #ifndef __OSSMTimeValue_c__
 #define __OSSMTimeValue_c__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "OSSMTimeValue_b.h"
 #include "TimeValue_c.h"
@@ -26,6 +26,9 @@ public:
 	OSSMTimeValue_c (TMover *theOwner);
 	OSSMTimeValue_c (TMover *theOwner,TimeValuePairH tvals,short userUnits);
 	OSSMTimeValue_c () {}
+	virtual ClassID 		GetClassID () { return TYPE_OSSMTIMEVALUES; }
+	virtual Boolean			IAm(ClassID id) { if(id==TYPE_OSSMTIMEVALUES) return TRUE; return TimeValue_c::IAm(id); }
+	
 	virtual void			Dispose ();
 	virtual OSErr			GetTimeValue (Seconds time, VelocityRec *value);
 	virtual OSErr			CheckStartTime (Seconds time);
@@ -37,6 +40,7 @@ public:
 	virtual short			GetUserUnits(){return fUserUnits;}
 	virtual void			SetUserUnits(short userUnits){fUserUnits=userUnits;}
 	virtual double			GetMaxValue();
+	virtual OSErr			InitTimeFunc ();
 	
 protected:
 	OSErr					GetInterpolatedComponent (Seconds forTime, double *value, short index);

@@ -1,3 +1,5 @@
+#ifndef __VList__
+#define __VList__
 
 typedef struct {
 	//GrafPtr			port;			// List's grafPort
@@ -81,4 +83,5 @@ LRESULT CALLBACK VListWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 #endif
 #ifdef MAC
 void FillRectWithWhite(Rect * r);
+#endif
 #endif

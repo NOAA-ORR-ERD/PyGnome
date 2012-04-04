@@ -20,6 +20,14 @@ class TModel : virtual public Model_c,  public TClassID
 {
 	
 public:
+	
+	// bitmap version of map at current view and window size without LEs or movement grid
+#ifdef MAC
+	CGrafPtr mapImage;		
+#else 		
+	HDIB	mapImage;		
+#endif
+	
 	TModel(Seconds start);
 	virtual		   ~TModel () { Dispose (); }
 	virtual OSErr	InitModel ();
@@ -73,7 +81,7 @@ public:
 	OSErr	AddLEList (TLEList *theLEList, short where);
 	OSErr	DropLEList (TLEList *theLEList, Boolean bDispose);
 	
-	CMyList	*GetWeatherList () { return weatherList; }
+
 	OSErr	AddWeatherer (TWeatherer *theWeatherer, short where);
 	OSErr	DropWeatherer (TWeatherer *theWeatherer);
 	

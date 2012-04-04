@@ -14,8 +14,7 @@ public:
 	TWindMover (TMap *owner, char* name);
 	virtual			   ~TWindMover () { Dispose (); }
 	virtual void		Dispose ();
-	virtual ClassID 	GetClassID () { return TYPE_WINDMOVER; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_WINDMOVER) return TRUE; return TMover::IAm(id); }
+
 	virtual OSErr		MakeClone(TWindMover **clonePtrPtr);
 	virtual OSErr		BecomeClone(TWindMover *clone);
 	// I/O methods

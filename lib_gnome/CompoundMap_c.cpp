@@ -2,36 +2,19 @@
  *  CompoundMap_c.cpp
  *  gnome
  *
- *  Created by Alex Hadjilambris on 1/23/12.
+ *  Created by Generic Programmer on 1/23/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
 
 #include "CompoundMap_c.h"
-#include "TMover.h"
-#include "TCurrentMover.h"
-#include "TWindMover.h"
-#include "NetCDFMover.h"
-#include "NetCDFMoverCurv.h"
-#include "NetCDFMoverTri.h"
-#include "TriCurMover.h"
-#include "PtCurMover.h"
+#include "CompFunctions.h"
+#include "MemUtils.h"
 
-#ifdef pyGNOME
-#define TModel Model_c
-#define TMap Map_c
-#define TMover Mover_c
-#define TWindMover WindMover_c
-#define TRandom Random_c
-#define TRandom3D Random3D_c
-#define TOSSMTimeValue OSSMTimeValue_c
-#define NetCDFMover NetCDFMover_c
-#define TriCurMover TriCurMover_c
-#define TCompoundMover CompoundMover_c
-#define TCurrentMover CurrentMover_c
-#define PtCurMover PtCurMover_c
+#ifndef pyGNOME
+#include "CROSS.H"
 #else
-#include "CONTDLG.H"
+#include "Replacements.h"
 #endif
 
 static long theSegno,theSegStart,theSegEnd,theIndex,theBndryStart,theBndryEnd;
@@ -145,244 +128,6 @@ TMover* CompoundMap_c::GetMover(ClassID desiredClassID)
 	return nil;
 }
 
-
-Boolean CompoundMap_c::InMap(WorldPoint p)
-{
-	WorldRect ourBounds = this -> GetMapBounds(); 
-	long i,n;
-	TMap *map = 0;
-	
-	if (!WPointInWRect(p.pLong, p.pLat, &ourBounds))
-		return false;
-	
-	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
-	{
-		mapList->GetListItem((Ptr)&map, i);
-		if (map -> InMap(p)) return true;
-	}
-	
-	return false;
-}
-
-
-long CompoundMap_c::GetLandType(WorldPoint p)
-{
-	// This isn't used at the moment
-	long i,n,landType;
-	TMap *map = 0;
-	//	Boolean onLand = IsBlackPixel(p,ourBounds,fLandBitmap);
-	//	Boolean inWater = IsBlackPixel(p,ourBounds,fWaterBitmap);
-	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
-	{
-		mapList->GetListItem((Ptr)&map, i);
-		landType = map->GetLandType(p);
-		if (!(landType==LT_UNDEFINED)) return landType;
-	}
-	return LT_UNDEFINED;
-	
-}
-
-
-Boolean CompoundMap_c::OnLand(WorldPoint p)
-{	// here might want to check if in water in any map instead or onland or offmap for all maps
-	WorldRect ourBounds = this -> GetMapBounds(); 
-	Boolean onLand = false;
-	Boolean onSomeMapsLand = false;
-	Boolean inSomeMapsWater = false;
-	//TTriGridVel* triGrid = GetGrid(false);	// don't think need 3D here
-	//TDagTree *dagTree = triGrid->GetDagTree();
-	long i,n;
-	TMap *map = 0;
-	
-	if (!WPointInWRect(p.pLong, p.pLat, &ourBounds)) return false; // off map is not on land
-	
-	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
-	{
-		mapList->GetListItem((Ptr)&map, i);
-		if (map -> OnLand(p)) return true;	// need to check if in higher priority map 
-		else if (map->InMap(p)) return false;
-		//if (map -> OnLand(p)) onSomeMapsLand = true;
-		//else if (((PtCurMap*)map)->InWater(p)) inSomeMapsWater = true;
-	}
-	
-	//if (onSomeMapsLand && !inSomeMapsWater) onLand = true;	//  how to handle mismatched boundaries?
-	return onLand;
-}
-
-
-WorldPoint3D	CompoundMap_c::MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed)
-{
-	// check every pixel along the line it makes on the water bitmap
-	// for any non-water point check the land bitmap as well and if it crosses a land boundary
-	// force the point to the closest point in the bounds
-	/*#ifdef MAC
-	 BitMap bm = fWaterBitmap;
-	 #else
-	 HDIB bm = fWaterBitmap;
-	 #endif*/
-	
-	// need to do this for each map and if offmap check the next map
-	
-	long i,n,fromPtMapIndex,toPtMapIndex,newMapIndex;
-	double depthAtPt;
-	TMap *map = 0;
-	WorldPoint3D checkedPt, checkedPt2;
-	
-	toPtMapIndex = WhichMapIsPtIn(toWPt.p);
-	fromPtMapIndex = WhichMapIsPtIn(fromWPt.p);
-	
-	Boolean LEsOnSurface = (fromWPt.z == 0 && toWPt.z == 0);
-	
-	if (toWPt.z == 0 && !isDispersed) LEsOnSurface = true;
-	
-	if (fromPtMapIndex == -1)
-	{
-		//this should be an error
-		return toWPt;
-	}
-	if (LEsOnSurface)
-	{
-		mapList->GetListItem((Ptr)&map, fromPtMapIndex);
-		//if (map->InMap(fromWPt) && map->InMap(toWPt))
-		// if fromWPt is not in map ?
-		checkedPt = /*CHECK*/(dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
-		if (checkedPt.p.pLat == toWPt.p.pLat && checkedPt.p.pLong == toWPt.p.pLong)
-			return checkedPt;
-		/*else
-		 {
-		 if (map->OnLand(checkedPt.p))
-		 {
-		 if (this->OnLand(checkedPt.p))
-		 return checkedPt;
-		 }
-		 return fromWPt;
-		 }*/
-		//return checkedPt;
-	}
-	if (toPtMapIndex == fromPtMapIndex && toPtMapIndex != -1)
-	{	// staying on same map
-		mapList->GetListItem((Ptr)&map, toPtMapIndex);
-		//if (map->InMap(fromWPt) && map->InMap(toWPt))
-		// if fromWPt is not in map ?
-		checkedPt = /*CHECK*/(dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
-		if (LEsOnSurface) return checkedPt;
-		if (map -> InMap(checkedPt.p) && !map->OnLand(checkedPt.p)) 
-		{
-			if (!this->OnLand(checkedPt.p)) 
-				return checkedPt;
-			else
-				return fromWPt;
-		}
-		else
-			return fromWPt;
-	}
-	if (toPtMapIndex == -1 && fromPtMapIndex != -1)
-	{
-		mapList->GetListItem((Ptr)&map, fromPtMapIndex);
-		//if (map->InMap(fromWPt) && map->InMap(toWPt))
-		// if fromWPt is not in map ?
-		checkedPt = /*CHECK*/(dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
-		if (LEsOnSurface) return checkedPt;
-		if (map -> InMap(checkedPt.p)  && !map->OnLand(checkedPt.p)) /*return checkedPt;*/
-		{
-			if (!this->OnLand(checkedPt.p)) 
-				return checkedPt;
-			else
-				return fromWPt;
-		}
-		else
-			return fromWPt;
-	}
-	if (toPtMapIndex != fromPtMapIndex && toPtMapIndex  != -1 && fromPtMapIndex != -1)
-	{
-		// code goes here, special version of MovementCheck that returns first point off map, then use that as fromWPt on next map
-		// what if crossed over more than one map??
-		
-		// for subsurface points
-		// if point is back in original map it has been reflected and can be returned
-		// if point is on new map need to check depth
-		// if off maps or beached something has gone wrong
-		// for surface points, LEs should beach on original map or move to other map or cross off water boundary
-		if (LEsOnSurface)
-		{
-			mapList->GetListItem((Ptr)&map, fromPtMapIndex);
-			checkedPt = /*CHECK*/(dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
-			return checkedPt;
-		}
-		
-		else
-		{
-			mapList->GetListItem((Ptr)&map, fromPtMapIndex);
-			checkedPt = /*CHECK*/(dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
-			return checkedPt;
-		}
-		/*mapList->GetListItem((Ptr)&map, fromPtMapIndex);
-		 checkedPt = ((PtCurMap*)map)->MovementCheck2(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
-		 newMapIndex = WhichMapIsPtIn(checkedPt.p);
-		 if (newMapIndex != -1)
-		 {
-		 mapList->GetListItem((Ptr)&map, newMapIndex);
-		 checkedPt2 = ((PtCurMap*)map)->MovementCheck2(checkedPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
-		 if (newMapIndex == toPtMapIndex)
-		 {
-		 }
-		 else			
-		 {
-		 newMapIndex = WhichMapIsPtIn(checkedPt2.p);
-		 mapList->GetListItem((Ptr)&map, newMapIndex);
-		 checkedPt = ((PtCurMap*)map)->MovementCheck2(checkedPt2,toWPt,isDispersed);	// issue if have to reflect from one map to another...
-		 }
-		 }
-		 else
-		 {
-		 //
-		 }
-		 */
-		mapList->GetListItem((Ptr)&map, toPtMapIndex);
-		if (LEsOnSurface) return toWPt;
-		
-		if (!LEsOnSurface && /*OK*/ (!(dynamic_cast<PtCurMap *>(map))->InVerticalMap(toWPt) || toWPt.z == 0))  
-		{
-			/*double*/ depthAtPt = map->DepthAtPoint(toWPt.p);	// code goes here, a check on return value
-			//if (depthAtPt < 0) 
-			if (depthAtPt <= 0) 
-			{
-				//OSErr err = 0;
-				return fromWPt;	// some sort of problem
-			}
-			//if (depthAtPt==0)
-			//toWPt.z = .1;
-			
-			if (toWPt.z > depthAtPt) toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
-			//if (toWPt.z > depthAtPt) toWPt.z = GetRandomFloat(.7*depthAtPt,.99*depthAtPt);
-			
-			if (toWPt.z <= 0) toWPt.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
-			
-			//movedPoint.z = fromWPt.z;	// try not changing depth
-			//if (!InVerticalMap(toWPt))
-			//toWPt.p = fromWPt.p;	// use original point - code goes here, need to find a z in the map
-		}
-		if (map->InMap(toWPt.p) && !map->OnLand(toWPt.p)) /*return toWPt;*/	// will need to check the transition from one map to the other, at least check z is in vertical map
-			//if (map -> InMap(checkedPt.p)  && !map->OnLand(checkedPt.p)) return checkedPt;
-		{
-			if (!this->OnLand(toWPt.p)) 
-				return toWPt;
-			else
-				return fromWPt;
-		}
-		else
-			return fromWPt;
-	}
-	/*for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
-	 {	// if maps overlap should be able to do crossing
-	 mapList->GetListItem((Ptr)&map, i);
-	 //if (map->InMap(fromWPt) && map->InMap(toWPt))
-	 // if fromWPt is not in map ?
-	 checkedPt = map->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
-	 if (map -> InMap(checkedPt.p)) return checkedPt;
-	 }*/
-	return toWPt;	// means off all maps	
-}
 
 TTriGridVel* CompoundMap_c::GetGrid(Boolean wantRefinedGrid)
 {
@@ -518,48 +263,17 @@ Boolean CompoundMap_c::InVerticalMap(WorldPoint3D wp)
 		return true;
 }
 
-long CompoundMap_c::WhichMapIsPtIn(WorldPoint wp)
-{
-	long i,n;
-	TMap *map = 0;
-	
-	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
-	{
-		mapList->GetListItem((Ptr)&map, i);
-		if (map -> InMap(wp)) return i;
-	}
-	return -1;	// means off all maps	
-}
 
-long CompoundMap_c::WhichMapIsPtInWater(WorldPoint wp)
-{
-	long i,n;
-	TMap *map = 0;
-	
-	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
-	{
-		mapList->GetListItem((Ptr)&map, i);
-		/*OK*/ if ((dynamic_cast<PtCurMap *>(map)) -> InWater(wp)) return i;
-	}
-	return -1;	// means off all maps	
-}
-
-double CompoundMap_c::DepthAtPoint(WorldPoint wp)
+double CompoundMap_c::DepthAtPoint(WorldPoint wp, NetCDFMover *mover, TTriGridVel3D *triGrid)
 {	// here need to check by priority
 	float depth1,depth2,depth3;
 	double depthAtPoint;	
 	long mapIndex;
 	InterpolationVal interpolationVal;
 	FLOATH depthsHdl = 0;
-	TTriGridVel3D* triGrid = 0;	
 	//TTriGridVel3D* triGrid = GetGrid3D(false);	// don't use refined grid, depths aren't refined
 	//NetCDFMover *mover = (NetCDFMover*)(model->GetMover(TYPE_NETCDFMOVER));
 	//NetCDFMover *mover = (NetCDFMover*)(Get3DCurrentMover());
-	
-	mapIndex = WhichMapIsPtInWater(wp);
-	if (mapIndex == -1) return -1.;	// off maps
-	NetCDFMover *mover = dynamic_cast<NetCDFMover*>(Get3DCurrentMoverFromIndex(mapIndex));	// may not be netcdfmover?
-	triGrid = GetGrid3DFromMapIndex(mapIndex);
 	
 	if (mover && mover->fVar.gridType==SIGMA_ROMS)
 		return (double)/*OK*/(dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepth(wp,-1);	// expand options here
@@ -831,7 +545,7 @@ double CompoundMap_c::DepthAtCentroidFromMapIndex(long triNum,long mapIndex)
 	return depthAtPoint;
 }
 
-WorldPoint3D CompoundMap_c::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,WorldPoint3D wp)
+WorldPoint3D CompoundMap_c::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,WorldPoint3D wp, NetCDFMover *mover, TTriGridVel3D *triGrid3D)
 {
 	//WorldPoint3D movedPoint = model->TurnLEAlongShoreLine(fromWPt, wp, this);	// use length of fromWPt to beached point or to toWPt?
 	WorldPoint3D movedPoint = TurnLEAlongShoreLine(fromWPt, wp, toWPt);	// use length of fromWPt to beached point or to toWPt?
@@ -845,7 +559,7 @@ WorldPoint3D CompoundMap_c::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt
 	// code goes here, check mixedLayerDepth?
 	if (!InVerticalMap(movedPoint) || movedPoint.z == 0) // these points are supposed to be below the surface
 	{
-		double depthAtPt = DepthAtPoint(movedPoint.p);	// code goes here, a check on return value
+		double depthAtPt = DepthAtPoint(movedPoint.p, mover, triGrid3D);	// code goes here, a check on return value
 		if (depthAtPt < 0) 
 		{
 			OSErr err = 0;
@@ -1026,6 +740,46 @@ Boolean CompoundMap_c::MoreBoundarySegments(long *a,long *b)
 	theIndex = j;
 	return true;
 }
+
+void  CompoundMap_c::FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo)
+{
+	long startVer = 0,i,jseg;
+	//WorldPoint wp = ScreenToWorldPoint(where, MapDrawingRect(), settings.currentView);
+	WorldPoint wp2;
+	LongPoint lp;
+	long lastVer = GetNumBoundaryPts();
+	//long nbounds = GetNumBoundaries();
+	long nSegs = GetNumBoundarySegs();	
+	float wdist = LatToDistance(ScreenToWorldDistance(4));
+	LongPointHdl ptsHdl = GetPointsHdl(false);	// will use refined grid if there is one
+	if(!ptsHdl) return;
+	*verNum= -1;
+	*segNo =-1;
+	for(i = 0; i < lastVer; i++)
+	{
+		//wp2 = (*gVertices)[i];
+		lp = (*ptsHdl)[i];
+		wp2.pLat = lp.v;
+		wp2.pLong = lp.h;
+		
+		if(WPointNearWPoint(wp,wp2 ,wdist))
+		{
+			//for(jseg = 0; jseg < nbounds; jseg++)
+			for(jseg = 0; jseg < nSegs; jseg++)
+			{
+				if(i <= (*fBoundarySegmentsH)[jseg])
+				{
+					*verNum  = i;
+					*segNo = jseg;
+					break;
+				}
+			}
+		}
+	} 
+}
+
+
+
 
 double CompoundMap_c::PathLength(Boolean selectionDirection,long segNo, long startno, long endno)
 {
@@ -1328,7 +1082,7 @@ double CompoundMap_c::PathLength(Boolean selectionDirection,long segNo, long sta
  RGBForeColor(&sc);
  }*/
 
-OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)	
+OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt, NetCDFMover *mover, TTriGridVel3D *triGrid3D)	
 {	// 
 	long i,j,n,numOfLEs=0,numLESets,numDepths=0,numTri;
 	TTriGridVel3D* triGrid = GetGrid3D(false);
@@ -1372,13 +1126,13 @@ OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)
 		model -> LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		if (thisLEList->fLeType == UNCERTAINTY_LE)	
 			continue;	
-		if (!((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil && ((model->GetModelTime() - model->GetStartTime()) >= (*(TOLEList*)thisLEList).fDispersantData.timeToDisperse ) )
-			&& !(*(TOLEList*)thisLEList).fAdiosDataH && !((*(TOLEList*)thisLEList).fSetSummary.z > 0)) 
+		if (!((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil && ((model->GetModelTime() - model->GetStartTime()) >= (*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.timeToDisperse ) )
+			&& !(*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH && !((*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0)) 
 			continue;
 		numOfLEs = thisLEList->numOfLEs;
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
-		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 		massunits = thisLEList->GetMassUnits();
 		
 		for (j = 0 ; j < numOfLEs ; j++) 
@@ -1394,7 +1148,7 @@ OSErr CompoundMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)
 			massInGrams = VolumeMassToGrams(LEmass, density, massunits);	// need to do this above too
 			if (fContourDepth1==BOTTOMINDEX)
 			{
-				double depthAtLE = DepthAtPoint(LE.p);
+				double depthAtLE = DepthAtPoint(LE.p, mover, triGrid3D);
 				if (depthAtLE <= 0) continue;
 				//if (LE.z > (depthAtLE-1.) && LE.z > 0 && LE.z <= depthAtLE) // assume it's in map, careful with 2 grids...
 				if (LE.z > (depthAtLE-fBottomRange) && LE.z > 0 && LE.z <= depthAtLE) // assume it's in map, careful with 2 grids...
@@ -1553,15 +1307,15 @@ OSErr CompoundMap_c::CreateDepthSlice(long triNum, float **depthSlice)
 			model -> LESetsList -> GetListItem ((Ptr) &thisLEList, k);
 			if (thisLEList->fLeType == UNCERTAINTY_LE)	
 				continue;	// don't draw uncertainty for now...
-			if (! ((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil && model->GetModelTime() - model->GetStartTime() >= (*(TOLEList*)thisLEList).fDispersantData.timeToDisperse
-				   || (*(TOLEList*)thisLEList).fAdiosDataH
-				   || (*(TOLEList*)thisLEList).fSetSummary.z > 0	))// for bottom spill
+			if (! ((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil && model->GetModelTime() - model->GetStartTime() >= (*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.timeToDisperse
+				   || (*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH
+				   || (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0	))// for bottom spill
 				continue;	// this list has no subsurface LEs
 			
 			numOfLEs = thisLEList->numOfLEs;
 			// density set from API
 			//density =  GetPollutantDensity(thisLEList->GetOilType());	
-			density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+			density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 			massunits = thisLEList->GetMassUnits();
 			for (i = 0 ; i < numOfLEs ; i++) 
 			{
@@ -1705,7 +1459,7 @@ long CompoundMap_c::CountLEsOnSelectedBeach()
 		model -> LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		leType = thisLEList -> GetLEType();
 		if(leType == UNCERTAINTY_LE && !model->IsUncertain()) continue; //JLM 9/10/98
-		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 		massunits = thisLEList->GetMassUnits();
 		massFrac = thisLEList->GetTotalMass()/thisLEList->GetNumOfLEs();
 		for (j = 0, c = thisLEList -> numOfLEs; j < c; j++)

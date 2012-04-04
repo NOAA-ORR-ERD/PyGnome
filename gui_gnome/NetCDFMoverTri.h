@@ -25,9 +25,7 @@ public:
 	NetCDFMoverTri (TMap *owner, char *name);
 	~NetCDFMoverTri () { Dispose (); }
 	virtual void		Dispose ();
-	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERTRI; }
-	//virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERTRI) return TRUE; return NetCDFMover::IAm(id); }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERTRI) return TRUE; return NetCDFMoverCurv::IAm(id); }
+
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position

@@ -10,12 +10,7 @@
 #ifndef __Earl__
 #define __Earl__
 
-#ifdef pyGNOME
-	#define TARGET_CARBON 1
-	#define MAC	1
-	#include "../../py_gnome/macdef.prefix"
-#endif
-
+#include "Basics.h"
 
 #ifdef MAC
 #ifdef VERSION881
@@ -104,8 +99,6 @@ typedef LPOFNHOOKPROC DlgHookProcPtr;
 typedef LPOFNHOOKPROC MyDlgHookProcPtr;
 typedef char *StringPtr;
 typedef int (*ProcPtr)();
-#define nil NULL
-#define noErr 0
 #define fsCurPerm 0
 #define fsRdPerm 1
 #define fsWrPerm 2
@@ -177,17 +170,17 @@ typedef int (*ProcPtr)();
 #define LW_MCTR 0
 #define LW_TEXT 0
 #define LW_CLNK 0
-typedef struct {
+/*typedef struct {
 	short v;
 	short h;
-} Point;
+} Point;*/
 typedef MSG EventRecord;
-typedef struct {
+/*typedef struct {
 	short top;
 	short left;
 	short bottom;
 	short right;
-} Rect;
+} Rect;*/
 typedef struct {
 	long picSize;
 	Rect picFrame;
@@ -279,17 +272,8 @@ typedef struct {
 typedef SFReply MySFReply;
 #endif
 
-typedef void *VOIDPTR, **VOIDH;
 typedef Boolean *BOOLEANPTR;
 typedef Byte *BYTEPTR;
-typedef char *CHARPTR, **CHARH;
-typedef CHARH *CHARHP;
-typedef short *SHORTPTR, **SHORTH;
-typedef long *LONGPTR, **LONGH;
-typedef float *FLOATPTR, **FLOATH;
-typedef double *DOUBLEPTR, **DOUBLEH;
-typedef Point *POINTPTR, **POINTH;
-typedef Rect *RECTPTR, **RECTH;
 typedef Picture *PICTUREPTR, **PICTUREH;
 typedef PICTUREH *PICTUREHP;
 typedef EventRecord *EVENTRECORDPTR;
@@ -303,8 +287,6 @@ typedef MySFReply *MySFReplyPtr;
 #ifdef IBM
 typedef SFReply *SFREPLYPTR;	// should get rid of this altogether
 typedef SFTypeList SFTYPELISTPTR;
-typedef CHARPTR Ptr;
-typedef CHARH Handle;
 typedef PICTUREH PicHandle;
 typedef HANDLE HDIB;
 typedef HDIB PixMapHandle;
@@ -315,8 +297,7 @@ typedef long Size;
 #define HiWord HIWORD
 #define true TRUE
 #define false FALSE
-#define DIRDELIMITER '\\'
-#define OPPOSITEDIRDELIMITER ':'
+
 typedef Boolean (pascal_ifMac *ModalFilterProcPtr)(DialogPtr, EVENTRECORDPTR, SHORTPTR);
 typedef Boolean (pascal_ifMac *FileFilterProcPtr)(PARMBLKPTR);
 #define _min(a,b) ((a) < (b) ? (a) : (b))  //AH
@@ -326,12 +307,7 @@ typedef Boolean (pascal_ifMac *FileFilterProcPtr)(PARMBLKPTR);
 #ifdef MPW
 #define _MAX_DIR 128
 #endif
-#define TRUE 1
-#define FALSE 0
-#define _min(a,b) ((a) < (b) ? (a) : (b))
-#define _max(a,b) ((a) > (b) ? (a) : (b))
-#define DIRDELIMITER ':'
-#define OPPOSITEDIRDELIMITER '\\'
+
 #define LW_DATA 'DATA'
 #define LW_INDX 'INDX'
 #define LW_MCTR 'MCTR'
@@ -340,16 +316,11 @@ typedef Boolean (pascal_ifMac *FileFilterProcPtr)(PARMBLKPTR);
 #endif
 
 #ifdef MAC
-#define _HLock(h) MyHLock(h)
 #define WITHOUTERRORS(c) c
 #else
 #define WITHOUTERRORS(c) { UINT e; e = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX); c SetErrorMode(e); }
 #endif
 
-#define DEREFH(h) (*(h))
-#define INDEXH(h, i) (*(h))[i]
-
-typedef Handle *HANDLEPTR;
 
 /*#if MACB4CARBON
  extern QDGlobals qd; 	
@@ -457,15 +428,10 @@ extern EventRecord lastEvent;
 extern Handle rainyDayReserve;
 extern Boolean resetCursor, inBackground;
 
-enum { BLACK = 1, WHITE, DARKGRAY, GRAY, LIGHTGRAY,
-	BROWN, LIGHTBROWN, OLIVE = 7, DARKGREEN, GREEN,
-	LIGHTBLUE, BLUE, DARKBLUE, PURPLE, PINK, RED, YELLOW, OTHERCOLOR }; // colors
-
 enum { VERTSTRIPES = 6, HORIZSTRIPES, UPSTRIPES, DOWNSTRIPES, BOXES }; // patterns
 enum { ANTSH1 = 14, ANTSH2, ANTSH3, ANTSH4, ANTSH5, ANTSH6, ANTSH7, ANTSH8,
 	ANTSV1, ANTSV2, ANTSV3, ANTSV4, ANTSV5, ANTSV6, ANTSV7, ANTSV8 }; // ant patterns
 enum { TWOPOINT = 3, THREEPOINT, FOURPOINT, DOTS, DASHDOTDOT, DASHDOT, DASHES }; // Windows line patterns
-extern RGBColor colors[];
 
 
 #endif

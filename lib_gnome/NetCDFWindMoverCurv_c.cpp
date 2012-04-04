@@ -10,6 +10,11 @@
 #include "NetCDFWindMoverCurv_c.h"
 #include "CROSS.H"
 
+NetCDFWindMoverCurv_c::NetCDFWindMoverCurv_c (TMap *owner, char *name) : NetCDFWindMover_c(owner, name)
+{
+	fVerdatToNetCDFH = 0;	
+	fVertexPtsH = 0;
+}
 LongPointHdl NetCDFWindMoverCurv_c::GetPointsHdl()
 {
 	return ((TTriGridVel*)fGrid) -> GetPointsHdl();

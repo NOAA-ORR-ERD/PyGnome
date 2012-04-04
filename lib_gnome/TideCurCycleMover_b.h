@@ -10,12 +10,10 @@
 #ifndef __TideCurCycleMover_b__
 #define __TideCurCycleMover_b__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
-#include "CATSMover_b.h"
-#include "PtCurMover.h"
 
-class TideCurCycleMover_b : virtual public CATSMover_b {
+class TideCurCycleMover_b {
 
 public:
 	//long fNumRows;

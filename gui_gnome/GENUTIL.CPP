@@ -134,23 +134,6 @@ Boolean ValidRGBString(char *s)
 
 ///// RECTS ///////////////////////////////////////////////////////////////////////////
 
-void MySetRect(RECTPTR r, short left, short top, short right, short bottom)
-{
-   r->left = left;
-   r->top = top;
-   r->right = right;
-   r->bottom = bottom;
-}
-
-Point RectCenter(Rect r)
-{
-	Point p;
-	
-	p.h = (r.left + r.right) / 2;
-	p.v = (r.top + r.bottom) / 2;
-	
-	return p;
-}
 
 Rect ForceRectIntoRect(Rect r, Rect r2)
 {

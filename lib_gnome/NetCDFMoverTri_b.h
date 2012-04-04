@@ -10,7 +10,7 @@
 #ifndef __NetCDFMoverTri_b__
 #define __NetCDFMoverTri_b__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "NetCDFMoverCurv_b.h"
 

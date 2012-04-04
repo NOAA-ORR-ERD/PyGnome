@@ -3,8 +3,9 @@
 #include "TideCurCycleMover.h"
 #include "TWindMover.h"
 #include "TShioTimeValue.h"
+#include "DagTreePD.h"
 #include "DagTreeIO.h"
-
+#include "CROSS.H"
 
 #ifdef MAC
 #ifdef MPW
@@ -709,6 +710,11 @@ Boolean TCATSMover::ListClick(ListItem item, Boolean inBullet, Boolean doubleCli
 				}
 				return TRUE;
 		}
+	
+	if (ShiftKeyDown() && item.index == I_CATSNAME) {
+		fColor = MyPickColor(fColor,mapWindow);
+		model->NewDirtNotification(DIRTY_LIST|DIRTY_MAPDRAWINGRECT);
+	}
 	
 	if (doubleClick && !inBullet)
 	{
@@ -2215,7 +2221,7 @@ Error: // JLM 	 10/27/98
 void TCATSMover::Draw(Rect r, WorldRect view)
 {
 	if(fGrid && (bShowArrows || bShowGrid))
-		fGrid->Draw(r,view,refP,refScale,arrowScale,bShowArrows,bShowGrid);
+		fGrid->Draw(r,view,refP,refScale,arrowScale,bShowArrows,bShowGrid,fColor);
 }
 
 /**************************************************************************************************/
@@ -2263,220 +2269,6 @@ Boolean TCATSMover::CurrentUncertaintySame (CurrentUncertainyInfo info)
 		return true;
 	else return false;
 }
-/**************************************************************************************************/
-OSErr TCATSMover::ReadTopology(char* path, TMap **newMap)
-{
-	// import PtCur triangle info so don't have to regenerate
-	char s[1024], errmsg[256];
-	long i, numPoints, numTopoPoints, line = 0, numPts;
-	CHARH f = 0;
-	OSErr err = 0;
-	
-	TopologyHdl topo=0;
-	LongPointHdl pts=0;
-	FLOATH depths=0;
-	VelocityFH velH = 0;
-	DAGTreeStruct tree;
-	WorldRect bounds = voidWorldRect;
-	
-	TTriGridVel *triGrid = nil;
-	tree.treeHdl = 0;
-	TDagTree *dagTree = 0;
-	
-	//long numWaterBoundaries, numBoundaryPts, numBoundarySegs;
-	//LONGH boundarySegs=0, waterBoundaries=0;
-	
-	errmsg[0]=0;
-	
-	if (!path || !path[0]) return 0;
-	
-	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
-		TechError("TCATSMover::ReadTopology()", "ReadFileContents()", err);
-		goto done;
-	}
-	
-	_HLock((Handle)f); // JLM 8/4/99
-	
-	MySpinCursor(); // JLM 8/4/99
-	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
-	
-	if(pts) 
-	{
-		LongPoint	thisLPoint;
-		
-		numPts = _GetHandleSize((Handle)pts)/sizeof(LongPoint);
-		if(numPts > 0)
-		{
-			WorldPoint  wp;
-			for(i=0;i<numPts;i++)
-			{
-				thisLPoint = INDEXH(pts,i);
-				wp.pLat = thisLPoint.v;
-				wp.pLong = thisLPoint.h;
-				AddWPointToWRect(wp.pLat, wp.pLong, &bounds);
-			}
-		}
-	}
-	MySpinCursor();
-	
-	NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	/*if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
-	 {
-	 MySpinCursor();
-	 if (numBoundarySegs>0)
-	 err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
-	 if(err) goto done;
-	 NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	 }
-	 else
-	 {
-	 //err = -1;
-	 //strcpy(errmsg,"Error in Boundary segment header line");
-	 //goto done;
-	 // not needed for 2D files, but we require for now
-	 }
-	 MySpinCursor(); // JLM 8/4/99
-	 
-	 if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
-	 {
-	 MySpinCursor();
-	 err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
-	 if(err) goto done;
-	 NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	 }
-	 else
-	 {
-	 //err = -1;
-	 //strcpy(errmsg,"Error in Water boundaries header line");
-	 //goto done;
-	 // not needed for 2D files, but we require for now
-	 }
-	 MySpinCursor(); // JLM 8/4/99
-	 //NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	 */
-	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
-	{
-		MySpinCursor();
-		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
-		if(err) goto done;
-		NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	}
-	else
-	{
-		err = -1; // for now we require TTopology
-		strcpy(errmsg,"Error in topology header line");
-		if(err) goto done;
-	}
-	MySpinCursor(); // JLM 8/4/99
-	
-	
-	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
-	
-	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
-	{
-		MySpinCursor();
-		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
-		if(err) goto done;
-	}
-	else
-	{
-		err = -1; // for now we require TIndexedDagTree
-		strcpy(errmsg,"Error in dag tree header line");
-		if(err) goto done;
-	}
-	MySpinCursor(); // JLM 8/4/99
-	
-	/////////////////////////////////////////////////
-	// if the boundary information is in the file we'll need to create a bathymetry map (required for 3D)
-	
-	/*if (waterBoundaries && (this -> moverMap == model -> uMap))
-	 {
-	 //PtCurMap *map = CreateAndInitPtCurMap(fVar.userName,bounds); // the map bounds are the same as the grid bounds
-	 PtCurMap *map = CreateAndInitPtCurMap("Extended Topology",bounds); // the map bounds are the same as the grid bounds
-	 if (!map) {strcpy(errmsg,"Error creating ptcur map"); goto done;}
-	 // maybe move up and have the map read in the boundary information
-	 map->SetBoundarySegs(boundarySegs);	
-	 map->SetWaterBoundaries(waterBoundaries);
-	 
-	 *newMap = map;
-	 }
-	 
-	 //if (!(this -> moverMap == model -> uMap))	// maybe assume rectangle grids will have map?
-	 else	// maybe assume rectangle grids will have map?
-	 {
-	 if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
-	 if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
-	 }*/
-	
-	/////////////////////////////////////////////////
-	
-	
-	triGrid = new TTriGridVel;
-	if (!triGrid)
-	{		
-		err = true;
-		TechError("Error in TCATSMover3D::ReadTopology()","new TTriGridVel" ,err);
-		goto done;
-	}
-	
-	fGrid = (TTriGridVel*)triGrid;
-	
-	triGrid -> SetBounds(bounds); 
-	
-	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
-	if(!dagTree)
-	{
-		printError("Unable to read Extended Topology file.");
-		goto done;
-	}
-	
-	triGrid -> SetDagTree(dagTree);
-	//triGrid -> SetDepths(depths);
-	
-	pts = 0;	// because fGrid is now responsible for it
-	topo = 0; // because fGrid is now responsible for it
-	tree.treeHdl = 0; // because fGrid is now responsible for it
-	velH = 0; // because fGrid is now responsible for it
-	//depths = 0;
-	
-done:
-	
-	if(depths) {DisposeHandle((Handle)depths); depths=0;}
-	if(f) 
-	{
-		_HUnlock((Handle)f); 
-		DisposeHandle((Handle)f); 
-		f = 0;
-	}
-	
-	if(err)
-	{
-		if(!errmsg[0])
-			strcpy(errmsg,"An error occurred in TCATSMover3D::ReadTopology");
-		printError(errmsg); 
-		if(pts) {DisposeHandle((Handle)pts); pts=0;}
-		if(topo) {DisposeHandle((Handle)topo); topo=0;}
-		if(velH) {DisposeHandle((Handle)velH); velH=0;}
-		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
-		if(depths) {DisposeHandle((Handle)depths); depths=0;}
-		if(fGrid)
-		{
-			fGrid ->Dispose();
-			delete fGrid;
-			fGrid = 0;
-		}
-		/*if (*newMap) 
-		 {
-		 (*newMap)->Dispose();
-		 delete *newMap;
-		 *newMap=0;
-		 }*/
-		//if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
-		//if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
-	}
-	return err;
-}
-
 OSErr TCATSMover::ExportTopology(char* path)
 {
 	// export triangle info so don't have to regenerate each time

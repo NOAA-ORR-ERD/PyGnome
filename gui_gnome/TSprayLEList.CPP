@@ -1,6 +1,7 @@
 
 #include "CROSS.h"
 #include "TimUtils.h"
+#include "ObjectUtilsPD.h"
 
 TSprayLEList* gSprayLEListInDialog = 0;				
 static SprayDialogInfo	sharedSprayDialogInfo;

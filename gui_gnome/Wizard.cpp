@@ -5849,34 +5849,6 @@ Boolean LocaleWizard::FunctionEnabled(ListItem item, short buttonID)
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 
-
-/////////////////////////////////////////////////
-#define STARTSTRING "RESNUM "
-
-Boolean PathIsWizardResourceHelper(char* path,long* resNum)
-{
-	if(path && path[0])
-	{
-		if(!strncmpnocase(path,STARTSTRING,strlen(STARTSTRING)))
-		{
-			// get the file contents from a TEXT resource
-			*resNum = atol(path+strlen(STARTSTRING));
-			if(*resNum > 0)
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-Boolean LocaleWizard::PathIsWizardResource(char* path)
-{
-	long resNum;
-	return PathIsWizardResourceHelper(path,&resNum);
-}
-
-
 OSErr LocaleWizard::ReadFileContentsFromResource(char* path,CHARHP handle,Boolean terminate)
 {	//// get the file contents from a TEXT resource
 	long resNum;

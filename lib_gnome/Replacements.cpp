@@ -1,0 +1,61 @@
+/*
+ *  Replacements.cpp
+ *  gnome
+ *
+ *  Created by Generic Programmer on 3/13/12.
+ *  Copyright 2012 __MyCompanyName__. All rights reserved.
+ *
+ */
+#ifdef pyGNOME
+#include "Replacements.h"
+#include <fstream>
+#include <ios>
+
+using std::fstream;
+using std::ios;
+
+Model_c *model = new Model_c();	// poo poo global.
+Settings settings;
+
+PtCurMap_c *GetPtCurMap(void) {
+	return NULL;
+}
+
+void MySpinCursor(void) { return; }
+
+void SysBeep(short x) { return; }
+
+Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl) { return 0; }
+
+Boolean CmdPeriod(void) { return false; }
+
+void PenNormal(void) { return; }
+
+long ScreenToWorldDistance(short pixels) { return 0; } // temporary, obviously.\
+
+OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
+						long offset, long length, VOIDPTR ptr, CHARHP handle) {
+	char c;
+	try {
+		int x = 0, i = 0;
+		fstream *_ifstream = new fstream(name, ios::in);
+		for(; _ifstream->get(c); x++);
+		delete _ifstream;
+		_ifstream = new fstream(name, ios::in);
+		for(int k = 0; k < offset; k++) _ifstream->get(c); 
+		if(handle) {
+			*handle = _NewHandle(x-offset);
+			for(; i < x && _ifstream->get(c); i++)
+				DEREFH(*handle)[i] = c;
+		} 
+		else {
+			for(; i < x && _ifstream->get(c); i++)
+				((char *)ptr)[i] = c;
+		}
+	} 
+	catch(...) {
+		printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().");
+		return true;
+	}
+}
+#endif	

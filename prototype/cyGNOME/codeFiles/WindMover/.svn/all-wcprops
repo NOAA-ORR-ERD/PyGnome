@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/GNOME/!svn/ver/308/trunk/codeFiles/WindMover
+END
+TWindMover.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/GNOME/!svn/ver/301/trunk/codeFiles/WindMover/TWindMover.cpp
+END
+EditWindsDialog.h
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/GNOME/!svn/ver/301/trunk/codeFiles/WindMover/EditWindsDialog.h
+END
+WindMover_b.h
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/GNOME/!svn/ver/301/trunk/codeFiles/WindMover/WindMover_b.h
+END
+WindMover_g.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/GNOME/!svn/ver/301/trunk/codeFiles/WindMover/WindMover_g.cpp
+END
+WindMover_c.h
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/GNOME/!svn/ver/301/trunk/codeFiles/WindMover/WindMover_c.h
+END
+TWindMover.h
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/GNOME/!svn/ver/301/trunk/codeFiles/WindMover/TWindMover.h
+END
+WindMover_g.h
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/GNOME/!svn/ver/301/trunk/codeFiles/WindMover/WindMover_g.h
+END
+WindSettings.h
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/GNOME/!svn/ver/301/trunk/codeFiles/WindMover/WindSettings.h
+END
+EditWindsDialog.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/GNOME/!svn/ver/301/trunk/codeFiles/WindMover/EditWindsDialog.cpp
+END
+WindMover_c.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/GNOME/!svn/ver/308/trunk/codeFiles/WindMover/WindMover_c.cpp
+END

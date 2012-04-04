@@ -256,7 +256,8 @@ class WizardFile
 
 };
 
-class LocaleWizard : public TClassID
+#include "LocaleWizard_c.h"
+class LocaleWizard : virtual public LocaleWizard_c, public TClassID
 {
 	public:
 		//OSErr CheckAndPassOnMessage(TModelMessage * model);
@@ -303,7 +304,6 @@ class LocaleWizard : public TClassID
 		OSErr 		AddItem 		(ListItem item) { return 0; }
 		OSErr 		DeleteItem 		(ListItem item) { return 0; }
 
-		Boolean PathIsWizardResource(char* path);
 		OSErr ReadFileContentsFromResource(char* path,CHARHP handle,Boolean terminate);
 		OSErr ReadSectionOfFileFromResource(char* path,char* ptr,long maxLength,long offset);
 		OSErr MyGetFileSizeFromResource(CHARPTR pathName, LONGPTR size);
@@ -322,11 +322,9 @@ class LocaleWizard : public TClassID
 		ListItem GetNthListItemOrListLength(long n, short indent, short *style, char *text,long *listLength);
 		void DisposeCurrentFile(void);
 		void OffToSeeTheWizard(Boolean ask,char* providedPath);
-		
-	// instance vaiables	
-	private:
+
 		WizardFile *fCurrentFile;
-		//
+
 };
 
  

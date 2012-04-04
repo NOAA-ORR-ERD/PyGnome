@@ -10,7 +10,7 @@
 #ifndef __NetCDFWindMoverCurv_b__
 #define __NetCDFWindMoverCurv_b__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
 #include "NetCDFWindMover_b.h"
 

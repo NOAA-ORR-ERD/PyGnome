@@ -24,9 +24,7 @@ public:
 	TClassID ();
 	virtual			   ~TClassID () { Dispose (); }
 	
-	UNIQUEID			GetUniqueID () { return fUniqueID; }
-	Boolean 			MatchesUniqueID(UNIQUEID uid);
-	
+
 	Boolean 			GetSelectedListItem(ListItem *item);
 	Boolean 			SelectedListItemIsMine(void);
 	virtual Boolean 	IAmEditableInMapDrawingRect(void);

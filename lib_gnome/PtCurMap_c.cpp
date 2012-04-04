@@ -2,26 +2,52 @@
  *  PtCurMap_c.cpp
  *  gnome
  *
- *  Created by Alex Hadjilambris on 1/23/12.
+ *  Created by Generic Programmer on 1/23/12.
  *  Copyright 2012 __MyCompanyName__. All rights reserved.
  *
  */
 
 #include "PtCurMap_c.h"
-#include "TideCurCycleMover.h"
-#include "CONTDLG.H"
-#include "TMover.h"
 #include "CurrentMover_c.h"
+#include "MemUtils.h"
+#include "StringFunctions.h"
+#include "CompFunctions.h"
 
-#ifdef pyGNOME
-#define TMover Mover_c
-#define TCurrentMover CurrentMover_c
-#define TRandom3D Random3D_c
-#define TWindMover WindMover_c
+#ifndef pyGNOME
+#include "CROSS.H"
+#include "TideCurCycleMover.h"
+#else
+#include "Replacements.h"
 #endif
 
 static long theSegno,theSegStart,theSegEnd,theIndex,theBndryStart,theBndryEnd;
 static Boolean IsClockWise;
+
+PtCurMap* CreateAndInitPtCurMap(char *path, WorldRect bounds)
+{
+	char 		nameStr[256];
+	OSErr		err = noErr;
+	PtCurMap 	*map = nil;
+	char fileName[256],s[256];
+	
+	if (path[0])
+	{
+		strcpy(s,path);
+		SplitPathFile (s, fileName);
+		strcpy (nameStr, "BathymetryMap: ");
+		strcat (nameStr, fileName);
+	}
+	else
+		strcpy(nameStr,"Bathymetry Map");
+	map = new PtCurMap(nameStr, bounds);
+	if (!map)
+	{ TechError("AddPtCurMap()", "new PtCurMap()", 0); return nil; }
+	
+	if (err = map->InitMap()) { delete map; return nil; }
+	
+	return map;
+}
+
 
 PtCurMap_c::PtCurMap_c(char* name, WorldRect bounds) : Map_c(name, bounds)
 {
@@ -31,13 +57,7 @@ PtCurMap_c::PtCurMap_c(char* name, WorldRect bounds) : Map_c(name, bounds)
 	fSegSelectedH = 0;
 	fSelectedBeachHdl = 0;	//not sure if both are needed
 	fSelectedBeachFlagHdl = 0;
-#ifdef MAC
-	memset(&fWaterBitmap,0,sizeof(fWaterBitmap)); //JLM
-	memset(&fLandBitmap,0,sizeof(fLandBitmap)); //JLM
-#else
-	fWaterBitmap = 0;
-	fLandBitmap = 0;
-#endif
+
 	bDrawLandBitMap = false;	// combined option for now
 	bDrawWaterBitMap = false;
 	
@@ -71,6 +91,39 @@ PtCurMap_c::PtCurMap_c(char* name, WorldRect bounds) : Map_c(name, bounds)
 	fWaveHtInput = 0;	// default compute from wind speed
 	
 	bTrackAllLayers = false;
+}
+
+
+OSErr SetDefaultContours(DOUBLEH contourLevels,short contourType)
+{
+	// default values selected by Alan
+	if (contourType==0)
+	{
+		_SetHandleSize((Handle)contourLevels,6*sizeof(double));
+		//_SetHandleSize((Handle)contourLevels,7*sizeof(double));
+		if (_MemError()) { TechError("SetDefaultContours()", "_SetHandleSize()", 0); return -1; }
+		//(*contourLevels)[0] = 0;
+		(*contourLevels)[0] = 0.01;
+		(*contourLevels)[1] = .5;
+		(*contourLevels)[2] = 1;
+		//(*contourLevels)[2] = 2;
+		(*contourLevels)[3] = 5;
+		(*contourLevels)[4] = 10;
+		(*contourLevels)[5] = 50;	
+	}
+	else if (contourType==1)
+	{
+		// default values selected by Alan
+		_SetHandleSize((Handle)contourLevels,6*sizeof(double));
+		if (_MemError()) { TechError("SetDefaultContours()", "_SetHandleSize()", 0); return -1; }
+		(*contourLevels)[0] = 5.;
+		(*contourLevels)[1] = 10.;
+		(*contourLevels)[2] = 30.;
+		(*contourLevels)[3] = 60;
+		(*contourLevels)[4] = 100;
+		(*contourLevels)[5] = 200;	
+	}
+	return noErr;
 }
 
 OSErr PtCurMap_c::InitContourLevels()
@@ -259,10 +312,10 @@ Boolean PtCurMap_c::ThereIsADispersedSpill()
 		model->LESetsList->GetListItem((Ptr)&thisLEList, i);
 		leType = thisLEList -> GetLEType();
 		if(leType == UNCERTAINTY_LE /*&& !this->IsUncertain()*/) continue;
-		if ((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil || (*(TOLEList*)thisLEList).fAdiosDataH)
+		if ((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil || (*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH)
 			return true;
 		// will need to consider spill set below the surface
-		if ((*(TOLEList*)thisLEList).fSetSummary.z > 0)
+		if ((*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0)
 			return true;
 	}
 	return false;
@@ -290,8 +343,8 @@ double PtCurMap_c::GetSpillStartDepth()
 		//if ((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil || (*(TOLEList*)thisLEList).fAdiosDataH)
 		//return true;
 		// will need to consider spill set below the surface
-		if ((*(TOLEList*)thisLEList).fSetSummary.z > 0)
-			return (*(TOLEList*)thisLEList).fSetSummary.z;
+		if ((*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0)
+			return (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z;
 	}
 	return spillStartDepth;
 	/*	TMover *mover = this->GetMover(TYPE_RANDOMMOVER3D);
@@ -301,26 +354,6 @@ double PtCurMap_c::GetSpillStartDepth()
 	//return false;
 }
 
-Boolean PtCurMap_c::InMap(WorldPoint p)
-{
-	WorldRect ourBounds = this -> GetMapBounds(); 
-	//TTriGridVel* triGrid = GetGrid(false);	// don't think need 3D here
-	//TDagTree *dagTree = triGrid->GetDagTree();
-	
-	/*LongPoint lp;
-	 lp.h = p.pLong;
-	 lp.v = p.pLat;
-	 if (dagTree -> WhatTriAmIIn(lp) >= 0) return true;*/
-	
-	if (!WPointInWRect(p.pLong, p.pLat, &ourBounds))
-		return false;
-	Boolean onLand = IsBlackPixel(p,ourBounds,fLandBitmap);
-	Boolean inWater = IsBlackPixel(p,ourBounds,fWaterBitmap);
-	if (onLand || inWater) 
-		return true;
-	else
-		return false;
-}
 
 Boolean PtCurMap_c::CanReFloat(Seconds time, LERec *theLE) 
 { 
@@ -333,652 +366,6 @@ Boolean PtCurMap_c::CanReFloat(Seconds time, LERec *theLE)
 	return true; 
 }
 
-long PtCurMap_c::GetLandType(WorldPoint p)
-{
-	// This isn't used at the moment
-	WorldRect ourBounds = this -> GetMapBounds(); 
-	Boolean onLand = IsBlackPixel(p,ourBounds,fLandBitmap);
-	Boolean inWater = IsBlackPixel(p,ourBounds,fWaterBitmap);
-	if (onLand) 
-		return LT_LAND;
-	else if (inWater)
-		return LT_WATER;
-	else
-		return LT_UNDEFINED;
-	
-}
-
-Boolean PtCurMap_c::InWater(WorldPoint p)
-{
-	WorldRect ourBounds = this -> GetMapBounds(); 
-	Boolean inWater = false;
-	TTriGridVel* triGrid = GetGrid(false);	// don't think need 3D here
-	TDagTree *dagTree = triGrid->GetDagTree();
-	
-	if (!WPointInWRect(p.pLong, p.pLat, &ourBounds)) return false; // off map is not in water
-	
-	inWater = IsBlackPixel(p,ourBounds,fLandBitmap);
-	LongPoint lp;
-	lp.h = p.pLong;
-	lp.v = p.pLat;
-	if (dagTree -> WhatTriAmIIn(lp) >= 0) inWater = true;
-	
-	return inWater;
-}
-
-
-Boolean PtCurMap_c::OnLand(WorldPoint p)
-{
-	WorldRect ourBounds = this -> GetMapBounds(); 
-	Boolean onLand = false;
-	TTriGridVel* triGrid = GetGrid(false);	// don't think need 3D here
-	TDagTree *dagTree = triGrid->GetDagTree();
-	
-	if (!WPointInWRect(p.pLong, p.pLat, &ourBounds)) return false; // off map is not on land
-	
-	onLand = IsBlackPixel(p,ourBounds,fLandBitmap);
-	
-	if (bIAmPartOfACompoundMap) return onLand;	
-	
-	if (gDispersedOilVersion) return onLand;	
-	// code goes here, for narrow channels bitmap is too large and beaches too many LEs but this allows some LEs to cross boundary...
-	// maybe let user set parameter instead
-	
-	/*LongPoint lp;
-	 lp.h = p.pLong;
-	 lp.v = p.pLat;
-	 if (dagTree -> WhatTriAmIIn(lp) >= 0) onLand = false;*/
-	
-	return onLand;
-}
-
-
-WorldPoint3D	PtCurMap_c::MovementCheck2 (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed)
-{
-	// check every pixel along the line it makes on the water bitmap
-	// for any non-water point check the land bitmap as well and if it crosses a land boundary
-	// force the point to the closest point in the bounds
-#ifdef MAC
-	BitMap bm = fWaterBitmap;
-#else
-	HDIB bm = fWaterBitmap;
-#endif
-	
-	// this code is similar to IsBlackPixel
-	Rect bounds;
-	char* baseAddr= 0;
-	long rowBytes;
-	long rowByte,bitNum,byteNumber,offset;
-	Point fromPt,toPt;
-	Boolean isBlack = false;
-	
-#ifdef MAC
-	bounds = bm.bounds;
-	rowBytes = bm.rowBytes;
-	baseAddr = bm.baseAddr;
-#else //IBM
-	if(bm)
-	{
-		LPBITMAPINFOHEADER lpDIBHdr  = (LPBITMAPINFOHEADER)GlobalLock(bm);
-		baseAddr = (char*) FindDIBBits((LPSTR)lpDIBHdr);
-#define WIDTHBYTES(bits)    (((bits) + 31) / 32 * 4)
-		rowBytes = WIDTHBYTES(lpDIBHdr->biBitCount * lpDIBHdr->biWidth);
-		MySetRect(&bounds,0,0,lpDIBHdr->biWidth,lpDIBHdr->biHeight);
-	}
-#endif
-	
-	Boolean LEsOnSurface = (fromWPt.z == 0 && toWPt.z == 0);
-	if (toWPt.z == 0 && !isDispersed) LEsOnSurface = true;
-	//Boolean LEsOnSurface = true;
-	if (!gDispersedOilVersion) LEsOnSurface = true;	// something went wrong
-	//if (bUseLineCrossAlgorithm) return SubsurfaceMovementCheck(fromWPt, toWPt, status);	// dispersed oil GNOME had some diagnostic options
-	if(baseAddr)
-	{
-		// find the point in question in the bitmap
-		// determine the pixel in the bitmap we need to look at
-		// think of the bitmap as an array of pixels 
-		long maxChange;
-		WorldPoint3D wp = {0,0,0.};
-		WorldRect mapBounds = this->GetMapBounds();
-		
-		fromPt = WorldToScreenPoint(fromWPt.p,mapBounds,bounds);
-		toPt = WorldToScreenPoint(toWPt.p,mapBounds,bounds);
-		
-		// check the bitmap for each pixel when in range
-		// so find the number of pixels change hori and vertically
-		maxChange = _max(abs(toPt.h - fromPt.h),abs(toPt.v - fromPt.v));
-		
-		if(maxChange == 0) {
-			// it's the same pixel, there is nothing to do
-		}
-		else { // maxChange >= 1
-			long i;
-			double fraction;
-			Point pt, prevPt = fromPt;
-			WorldPoint3D prevWPt = fromWPt;
-			
-			// note: there is no need to check the first or final pixel, so i only has to go to maxChange-1 
-			//for(i = 0; i < maxChange; i++) 
-			for(i = 0; i < maxChange+1; i++) 
-			{
-				//fraction = (i+1)/(double)(maxChange); 
-				fraction = (i)/(double)(maxChange); 
-				wp.p.pLat = (1-fraction)*fromWPt.p.pLat + fraction*toWPt.p.pLat;
-				wp.p.pLong = (1-fraction)*fromWPt.p.pLong + fraction*toWPt.p.pLong;
-				wp.z = (1-fraction)*fromWPt.z + fraction*toWPt.z;
-				
-				pt = WorldToScreenPoint(wp.p,mapBounds,bounds);
-				
-				// only check this pixel if it is in range
-				// otherwise it is not on our map, hence not our problem
-				// so assume it is water and OK
-				
-				if(bounds.left <= pt.h && pt.h < bounds.right
-				   && bounds.top <= pt.v && pt.v < bounds.bottom)
-				{
-					
-#ifdef IBM
-					/// on the IBM, the rows of pixels are "upsidedown"
-					offset = rowBytes*(long)(bounds.bottom - 1 - pt.v);
-					/// on the IBM, for a mono map, 1 is background color,
-					isBlack = !BitTst(baseAddr + offset, pt.h);
-#else
-					offset = (rowBytes*(long)pt.v);
-					isBlack = BitTst(baseAddr + offset, pt.h);
-#endif
-					
-					// don't beach LEs that are below the surface, reflect in some way
-					if (!isBlack) // checking water bitmap, so not water
-					{  // either a land point or outside a water boundary, calling code will check which is the case
-						if (LEsOnSurface)
-							return wp; 
-						else
-							// reflect and check z and return, but if not inmap return as is (or return towpt?)
-						{	// here return the point and then see if it's on another map, else use toWPt
-							if (!InMap(wp.p))
-							{
-								if(!InMap(toWPt.p))
-									return toWPt;
-								else
-									return wp;
-							}
-							if (InMap(toWPt.p) && !OnLand(toWPt.p)) 
-								goto done;
-							return ReflectPoint(fromWPt,toWPt,wp);
-						}
-					}
-					else
-					{	// also check if point is on both bitmaps and if so beach it
-						Boolean onLand = OnLand(wp.p);	// on the boundary
-						if (onLand) 
-						{
-							if (LEsOnSurface)	
-								return wp;
-							else
-							{
-								if (InMap(toWPt.p) && !OnLand(toWPt.p)) 
-									goto done;
-								return ReflectPoint(fromWPt,toWPt,wp);
-							}
-						}
-					}
-					if (abs(pt.h - prevPt.h) == 1 && abs(pt.v - prevPt.v) == 1)
-					{	// figure out which pixel was crossed
-						
-						float xRatio = (float)(wp.p.pLong - mapBounds.loLong) / (float)WRectWidth(mapBounds),
-						yRatio = (float)(wp.p.pLat - mapBounds.loLat) / (float)WRectHeight(mapBounds);
-						float ptL = bounds.left + RectWidth(bounds) * xRatio;
-						float ptB = bounds.bottom - RectHeight(bounds) * yRatio;
-						xRatio = (float)(prevWPt.p.pLong - mapBounds.loLong) / (float)WRectWidth(mapBounds);
-						yRatio = (float)(prevWPt.p.pLat - mapBounds.loLat) / (float)WRectHeight(mapBounds);
-						float prevPtL = bounds.left + RectWidth(bounds) * xRatio;
-						float prevPtB = bounds.bottom - RectHeight(bounds) * yRatio;
-						float dir = (ptB - prevPtB)/(ptL - prevPtL);
-						float testv; 
-						
-						testv = dir*(_max(prevPt.h,pt.h) - prevPtL) + prevPtB;
-						
-						if (prevPt.v < pt.v)
-						{
-							if (ceil(testv) == pt.v)
-								prevPt.h = pt.h;
-							else if (floor(testv) == pt.v)
-								prevPt.v = pt.v;
-						}
-						else if (prevPt.v > pt.v)
-						{
-							if (ceil(testv) == prevPt.v)
-								prevPt.v = pt.v;
-							else if (floor(testv) == prevPt.v)
-								prevPt.h = pt.h;
-						}
-						
-						if(bounds.left <= prevPt.h && prevPt.h < bounds.right
-						   && bounds.top <= prevPt.v && prevPt.v < bounds.bottom)
-						{
-							
-#ifdef IBM
-							/// on the IBM, the rows of pixels are "upsidedown"
-							offset = rowBytes*(long)(bounds.bottom - 1 - prevPt.v);
-							/// on the IBM, for a mono map, 1 is background color,
-							isBlack = !BitTst(baseAddr + offset, prevPt.h);
-#else
-							offset = (rowBytes*(long)prevPt.v);
-							isBlack = BitTst(baseAddr + offset, prevPt.h);
-#endif
-							
-							if (!isBlack) 
-							{  // either a land point or outside a water boundary, calling code will check which is the case
-								wp.p = ScreenToWorldPoint(prevPt, bounds, mapBounds);		
-								if (LEsOnSurface)
-									return wp; 
-								else
-									// reflect and check z and return, but if not inmap return as is (or return towpt?)
-								{
-									if (!InMap(wp.p))
-									{
-										if(!InMap(toWPt.p))
-											return toWPt;
-										else
-											return wp;
-									}
-									if (InMap(toWPt.p) && !OnLand(toWPt.p)) 
-										goto done;
-									return ReflectPoint(fromWPt,toWPt,wp);
-								}
-							}
-							else
-							{	// also check if point is on both bitmaps and if so beach it
-								Boolean onLand = OnLand(ScreenToWorldPoint(prevPt, bounds, mapBounds));	// on the boundary
-								if (onLand) 
-								{
-									wp.p = ScreenToWorldPoint(prevPt, bounds, mapBounds);	// update wp.z too
-									if (LEsOnSurface)	
-										return wp;
-									else
-									{
-										if (InMap(toWPt.p) && !OnLand(toWPt.p)) 
-											goto done;
-										return ReflectPoint(fromWPt,toWPt,wp);
-									}
-								}
-							}
-						}
-					}
-				}
-				prevPt = pt;
-				prevWPt = wp;
-			}
-		}
-	}
-	
-done:
-	
-#ifdef IBM
-	if(bm) GlobalUnlock(bm);
-#endif
-	
-	if (!LEsOnSurface && InMap(toWPt.p)) // if off map let it go
-	{	
-		//if (toWPt.z < 0)
-		//toWPt.z = -toWPt.z;
-		//toWPt.z = 0.;
-		if (!InVerticalMap(toWPt) || toWPt.z == 0)	// check z is ok, else use original z, or entire fromWPt
-		{
-			double depthAtPt = DepthAtPoint(toWPt.p);	// check depthAtPt return value
-			if (depthAtPt <= 0)
-			{
-				OSErr err = 0;
-				return fromWPt;	// something is wrong, can't force new point into vertical map
-			}
-			//	if (toWPt.z > depthAtPt) toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
-			if (toWPt.z > depthAtPt) 
-			{
-				if (bUseSmoothing)	// just testing some ideas, probably don't want to do this
-				{
-					// get depth at previous point, add a kick of horizontal diffusion based on the difference in depth
-					// this will flatten out the blips but also takes longer to pass through the area
-					double dLong, dLat, horizontalDiffusionCoefficient = 0;
-					float rand1,rand2,r,w;
-					double horizontalScale = 1, depthAtPrevPt = DepthAtPoint(fromWPt.p);
-					WorldPoint3D deltaPoint ={0,0,0.};
-					TRandom3D* diffusionMover = model->Get3DDiffusionMover();
-					
-					if (diffusionMover) horizontalDiffusionCoefficient = diffusionMover->fHorizontalDiffusionCoefficient;
-					if (depthAtPrevPt > depthAtPt) horizontalScale = 1 + sqrt(depthAtPrevPt - depthAtPt); // or toWPt.z ?
-					//if (depthAtPrevPt > depthAtPt) horizontalScale = sqrt(depthAtPrevPt - depthAtPt); // or toWPt.z ?
-					// then recheck if in vertical map and force up
-					
-					//horizontalDiffusionCoefficient = sqrt(2.*(fHorizontalDiffusionCoefficient/10000.)*timeStep)/METERSPERDEGREELAT;
-					horizontalDiffusionCoefficient = sqrt(2.*(horizontalDiffusionCoefficient/10000.)*model->GetTimeStep())/METERSPERDEGREELAT;
-					if (depthAtPrevPt > depthAtPt) horizontalDiffusionCoefficient *= horizontalScale*horizontalScale;
-					//if (depthAtPrevPt > depthAtPt) horizontalDiffusionCoefficient *= horizontalScale;
-					GetRandomVectorInUnitCircle(&rand1,&rand2);
-					r = sqrt(rand1*rand1+rand2*rand2);
-					w = sqrt(-2*log(r)/r);
-					//dLong = (rand1 * w * horizontalDiffusionCoefficient )/ LongToLatRatio3 (refPoint.pLat);
-					dLong = (rand1 * w * horizontalDiffusionCoefficient )/ LongToLatRatio3 (fromWPt.p.pLat);
-					dLat  = rand2 * w * horizontalDiffusionCoefficient;
-					
-					deltaPoint.p.pLong = dLong * 1000000;
-					deltaPoint.p.pLat  = dLat  * 1000000;
-					toWPt.p.pLong += deltaPoint.p.pLong;
-					toWPt.p.pLat += deltaPoint.p.pLat;
-					
-					if (!InVerticalMap(toWPt))	// check z is ok, else use original z, or entire fromWPt
-					{
-						toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
-					}	
-				}
-				else
-					toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
-			}
-			if (toWPt.z <= 0) 
-			{
-				toWPt.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
-			}
-			//toWPt.z = fromWPt.z;
-			//if (!InVerticalMap(toWPt))	
-			//toWPt.p = fromWPt.p;
-			//toWPt = fromWPt;
-		}
-	}
-	
-	return toWPt;
-}
-
-WorldPoint3D	PtCurMap_c::MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed)
-{
-	// check every pixel along the line it makes on the water bitmap
-	// for any non-water point check the land bitmap as well and if it crosses a land boundary
-	// force the point to the closest point in the bounds
-#ifdef MAC
-	BitMap bm = fWaterBitmap;
-#else
-	HDIB bm = fWaterBitmap;
-#endif
-	
-	// this code is similar to IsBlackPixel
-	Rect bounds;
-	char* baseAddr= 0;
-	long rowBytes;
-	long rowByte,bitNum,byteNumber,offset;
-	Point fromPt,toPt;
-	Boolean isBlack = false;
-	
-#ifdef MAC
-	bounds = bm.bounds;
-	rowBytes = bm.rowBytes;
-	baseAddr = bm.baseAddr;
-#else //IBM
-	if(bm)
-	{
-		LPBITMAPINFOHEADER lpDIBHdr  = (LPBITMAPINFOHEADER)GlobalLock(bm);
-		baseAddr = (char*) FindDIBBits((LPSTR)lpDIBHdr);
-#define WIDTHBYTES(bits)    (((bits) + 31) / 32 * 4)
-		rowBytes = WIDTHBYTES(lpDIBHdr->biBitCount * lpDIBHdr->biWidth);
-		MySetRect(&bounds,0,0,lpDIBHdr->biWidth,lpDIBHdr->biHeight);
-	}
-#endif
-	
-	Boolean LEsOnSurface = (fromWPt.z == 0 && toWPt.z == 0);
-	if (toWPt.z == 0 && !isDispersed) LEsOnSurface = true;
-	//Boolean LEsOnSurface = true;
-	if (!gDispersedOilVersion) LEsOnSurface = true;	// something went wrong
-	//if (bUseLineCrossAlgorithm) return SubsurfaceMovementCheck(fromWPt, toWPt, status);	// dispersed oil GNOME had some diagnostic options
-	if(baseAddr)
-	{
-		// find the point in question in the bitmap
-		// determine the pixel in the bitmap we need to look at
-		// think of the bitmap as an array of pixels 
-		long maxChange;
-		WorldPoint3D wp = {0,0,0.};
-		WorldRect mapBounds = this->GetMapBounds();
-		
-		fromPt = WorldToScreenPoint(fromWPt.p,mapBounds,bounds);
-		toPt = WorldToScreenPoint(toWPt.p,mapBounds,bounds);
-		
-		// check the bitmap for each pixel when in range
-		// so find the number of pixels change hori and vertically
-		maxChange = _max(abs(toPt.h - fromPt.h),abs(toPt.v - fromPt.v));
-		
-		if(maxChange == 0) {
-			// it's the same pixel, there is nothing to do
-		}
-		else { // maxChange >= 1
-			long i;
-			double fraction;
-			Point pt, prevPt = fromPt;
-			WorldPoint3D prevWPt = fromWPt;
-			
-			// note: there is no need to check the first or final pixel, so i only has to go to maxChange-1 
-			for(i = 0; i < maxChange; i++) 
-			{
-				fraction = (i+1)/(double)(maxChange); 
-				wp.p.pLat = (1-fraction)*fromWPt.p.pLat + fraction*toWPt.p.pLat;
-				wp.p.pLong = (1-fraction)*fromWPt.p.pLong + fraction*toWPt.p.pLong;
-				wp.z = (1-fraction)*fromWPt.z + fraction*toWPt.z;
-				
-				pt = WorldToScreenPoint(wp.p,mapBounds,bounds);
-				
-				// only check this pixel if it is in range
-				// otherwise it is not on our map, hence not our problem
-				// so assume it is water and OK
-				
-				if(bounds.left <= pt.h && pt.h < bounds.right
-				   && bounds.top <= pt.v && pt.v < bounds.bottom)
-				{
-					
-#ifdef IBM
-					/// on the IBM, the rows of pixels are "upsidedown"
-					offset = rowBytes*(long)(bounds.bottom - 1 - pt.v);
-					/// on the IBM, for a mono map, 1 is background color,
-					isBlack = !BitTst(baseAddr + offset, pt.h);
-#else
-					offset = (rowBytes*(long)pt.v);
-					isBlack = BitTst(baseAddr + offset, pt.h);
-#endif
-					
-					// don't beach LEs that are below the surface, reflect in some way
-					if (!isBlack) // checking water bitmap, so not water
-					{  // either a land point or outside a water boundary, calling code will check which is the case
-						if (LEsOnSurface)
-							return wp; 
-						else
-							// reflect and check z and return, but if not inmap return as is (or return towpt?)
-						{
-							if (!InMap(wp.p))
-							{
-								if(!InMap(toWPt.p))
-									return toWPt;
-								else
-									return wp;
-							}
-							if (InMap(toWPt.p) && !OnLand(toWPt.p)) 
-								goto done;
-							return ReflectPoint(fromWPt,toWPt,wp);
-						}
-					}
-					else
-					{	// also check if point is on both bitmaps and if so beach it
-						Boolean onLand = OnLand(wp.p);	// on the boundary
-						if (onLand) 
-						{
-							if (LEsOnSurface)	
-								return wp;
-							else
-							{
-								if (InMap(toWPt.p) && !OnLand(toWPt.p)) 
-									goto done;
-								return ReflectPoint(fromWPt,toWPt,wp);
-							}
-						}
-					}
-					if (abs(pt.h - prevPt.h) == 1 && abs(pt.v - prevPt.v) == 1)
-					{	// figure out which pixel was crossed
-						
-						float xRatio = (float)(wp.p.pLong - mapBounds.loLong) / (float)WRectWidth(mapBounds),
-						yRatio = (float)(wp.p.pLat - mapBounds.loLat) / (float)WRectHeight(mapBounds);
-						float ptL = bounds.left + RectWidth(bounds) * xRatio;
-						float ptB = bounds.bottom - RectHeight(bounds) * yRatio;
-						xRatio = (float)(prevWPt.p.pLong - mapBounds.loLong) / (float)WRectWidth(mapBounds);
-						yRatio = (float)(prevWPt.p.pLat - mapBounds.loLat) / (float)WRectHeight(mapBounds);
-						float prevPtL = bounds.left + RectWidth(bounds) * xRatio;
-						float prevPtB = bounds.bottom - RectHeight(bounds) * yRatio;
-						float dir = (ptB - prevPtB)/(ptL - prevPtL);
-						float testv; 
-						
-						testv = dir*(_max(prevPt.h,pt.h) - prevPtL) + prevPtB;
-						
-						if (prevPt.v < pt.v)
-						{
-							if (ceil(testv) == pt.v)
-								prevPt.h = pt.h;
-							else if (floor(testv) == pt.v)
-								prevPt.v = pt.v;
-						}
-						else if (prevPt.v > pt.v)
-						{
-							if (ceil(testv) == prevPt.v)
-								prevPt.v = pt.v;
-							else if (floor(testv) == prevPt.v)
-								prevPt.h = pt.h;
-						}
-						
-						if(bounds.left <= prevPt.h && prevPt.h < bounds.right
-						   && bounds.top <= prevPt.v && prevPt.v < bounds.bottom)
-						{
-							
-#ifdef IBM
-							/// on the IBM, the rows of pixels are "upsidedown"
-							offset = rowBytes*(long)(bounds.bottom - 1 - prevPt.v);
-							/// on the IBM, for a mono map, 1 is background color,
-							isBlack = !BitTst(baseAddr + offset, prevPt.h);
-#else
-							offset = (rowBytes*(long)prevPt.v);
-							isBlack = BitTst(baseAddr + offset, prevPt.h);
-#endif
-							
-							if (!isBlack) 
-							{  // either a land point or outside a water boundary, calling code will check which is the case
-								wp.p = ScreenToWorldPoint(prevPt, bounds, mapBounds);		
-								if (LEsOnSurface)
-									return wp; 
-								else
-									// reflect and check z and return, but if not inmap return as is (or return towpt?)
-								{
-									if (!InMap(wp.p))
-									{
-										if(!InMap(toWPt.p))
-											return toWPt;
-										else
-											return wp;
-									}
-									if (InMap(toWPt.p) && !OnLand(toWPt.p)) 
-										goto done;
-									return ReflectPoint(fromWPt,toWPt,wp);
-								}
-							}
-							else
-							{	// also check if point is on both bitmaps and if so beach it
-								Boolean onLand = OnLand(ScreenToWorldPoint(prevPt, bounds, mapBounds));	// on the boundary
-								if (onLand) 
-								{
-									wp.p = ScreenToWorldPoint(prevPt, bounds, mapBounds);	// update wp.z too
-									if (LEsOnSurface)	
-										return wp;
-									else
-									{
-										if (InMap(toWPt.p) && !OnLand(toWPt.p)) 
-											goto done;
-										return ReflectPoint(fromWPt,toWPt,wp);
-									}
-								}
-							}
-						}
-					}
-				}
-				prevPt = pt;
-				prevWPt = wp;
-			}
-		}
-	}
-	
-done:
-	
-#ifdef IBM
-	if(bm) GlobalUnlock(bm);
-#endif
-	
-	if (!LEsOnSurface && InMap(toWPt.p)) // if off map let it go
-	{	
-		//if (toWPt.z < 0)
-		//toWPt.z = -toWPt.z;
-		//toWPt.z = 0.;
-		if (!InVerticalMap(toWPt) || toWPt.z == 0)	// check z is ok, else use original z, or entire fromWPt
-		{
-			double depthAtPt = DepthAtPoint(toWPt.p);	// check depthAtPt return value
-			if (depthAtPt <= 0)
-			{
-				OSErr err = 0;
-				return fromWPt;	// something is wrong, can't force new point into vertical map
-			}
-			//	if (toWPt.z > depthAtPt) toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
-			if (toWPt.z > depthAtPt) 
-			{
-				if (bUseSmoothing)	// just testing some ideas, probably don't want to do this
-				{
-					// get depth at previous point, add a kick of horizontal diffusion based on the difference in depth
-					// this will flatten out the blips but also takes longer to pass through the area
-					double dLong, dLat, horizontalDiffusionCoefficient = 0;
-					float rand1,rand2,r,w;
-					double horizontalScale = 1, depthAtPrevPt = DepthAtPoint(fromWPt.p);
-					WorldPoint3D deltaPoint ={0,0,0.};
-					TRandom3D* diffusionMover = model->Get3DDiffusionMover();
-					
-					if (diffusionMover) horizontalDiffusionCoefficient = diffusionMover->fHorizontalDiffusionCoefficient;
-					if (depthAtPrevPt > depthAtPt) horizontalScale = 1 + sqrt(depthAtPrevPt - depthAtPt); // or toWPt.z ?
-					//if (depthAtPrevPt > depthAtPt) horizontalScale = sqrt(depthAtPrevPt - depthAtPt); // or toWPt.z ?
-					// then recheck if in vertical map and force up
-					
-					//horizontalDiffusionCoefficient = sqrt(2.*(fHorizontalDiffusionCoefficient/10000.)*timeStep)/METERSPERDEGREELAT;
-					horizontalDiffusionCoefficient = sqrt(2.*(horizontalDiffusionCoefficient/10000.)*model->GetTimeStep())/METERSPERDEGREELAT;
-					if (depthAtPrevPt > depthAtPt) horizontalDiffusionCoefficient *= horizontalScale*horizontalScale;
-					//if (depthAtPrevPt > depthAtPt) horizontalDiffusionCoefficient *= horizontalScale;
-					GetRandomVectorInUnitCircle(&rand1,&rand2);
-					r = sqrt(rand1*rand1+rand2*rand2);
-					w = sqrt(-2*log(r)/r);
-					//dLong = (rand1 * w * horizontalDiffusionCoefficient )/ LongToLatRatio3 (refPoint.pLat);
-					dLong = (rand1 * w * horizontalDiffusionCoefficient )/ LongToLatRatio3 (fromWPt.p.pLat);
-					dLat  = rand2 * w * horizontalDiffusionCoefficient;
-					
-					deltaPoint.p.pLong = dLong * 1000000;
-					deltaPoint.p.pLat  = dLat  * 1000000;
-					toWPt.p.pLong += deltaPoint.p.pLong;
-					toWPt.p.pLat += deltaPoint.p.pLat;
-					
-					if (!InVerticalMap(toWPt))	// check z is ok, else use original z, or entire fromWPt
-					{
-						toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
-					}	
-				}
-				else
-					toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
-			}
-			if (toWPt.z <= 0) 
-			{
-				toWPt.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
-			}
-			//toWPt.z = fromWPt.z;
-			//if (!InVerticalMap(toWPt))	
-			//toWPt.p = fromWPt.p;
-			//toWPt = fromWPt;
-		}
-	}
-	
-	return toWPt;
-}
-
 TTriGridVel* PtCurMap_c::GetGrid(Boolean wantRefinedGrid)
 {
 	TTriGridVel* triGrid = 0;	
@@ -988,7 +375,7 @@ TTriGridVel* PtCurMap_c::GetGrid(Boolean wantRefinedGrid)
 	mover = this->GetMover(TYPE_PTCURMOVER);
 	if (mover)
 	{
-		/*OK*/ triGrid = (TTriGridVel*)((dynamic_cast<PtCurMover *>(mover)) -> fGrid);
+		/*OK*/ triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<PtCurMover *>(mover)) -> fGrid));
 	}
 	else	
 	{
@@ -998,35 +385,35 @@ TTriGridVel* PtCurMap_c::GetGrid(Boolean wantRefinedGrid)
 			/*OK*/	if (wantRefinedGrid && (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
 			/*OK*/		triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
 			else
-			/*OK*/ triGrid = (TTriGridVel3D*)((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid);
+			/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid));
 		}
 		else
 		{
 			mover = this->GetMover(TYPE_NETCDFMOVERCURV);
 			if (mover)
 			{
-				/*OK*/ triGrid = (TTriGridVel*)((dynamic_cast<NetCDFMoverCurv *>(mover)) -> fGrid);
+				/*OK*/ triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMoverCurv *>(mover)) -> fGrid));
 			}
 			else
 			{
 				mover = this->GetMover(TYPE_NETCDFMOVERTRI);
 				if (mover)
 				{
-					/*OK*/ triGrid = (TTriGridVel*)((dynamic_cast<NetCDFMoverTri *>(mover)) -> fGrid);
+					/*OK*/ triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMoverTri *>(mover)) -> fGrid));
 				}
 				else
 				{
 					mover = this->GetMover(TYPE_TIDECURCYCLEMOVER);
 					if (mover)
 					{
-						/*OK*/	triGrid = (TTriGridVel3D*)((dynamic_cast<TideCurCycleMover *>(mover)) -> fGrid);
+						/*OK*/	triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TideCurCycleMover *>(mover)) -> fGrid));
 					}
 					else
 					{
 						mover = this->GetMover(TYPE_TRICURMOVER);
 						if (mover)
 						{
-							/*OK*/	triGrid = (TTriGridVel3D*)((dynamic_cast<TriCurMover *>(mover)) -> fGrid);
+							/*OK*/	triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TriCurMover *>(mover)) -> fGrid));
 						}
 					}
 				}
@@ -1048,7 +435,7 @@ TTriGridVel3D* PtCurMap_c::GetGrid3D(Boolean wantRefinedGrid)
 	if (mover)
 	{
 		/*OK*/ if (((dynamic_cast<PtCurMover *>(mover)) -> fGrid)->GetClassID()==TYPE_TRIGRIDVEL3D)	
-		/*OK*/ triGrid = (TTriGridVel3D*)((dynamic_cast<PtCurMover *>(mover)) -> fGrid);
+		/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<PtCurMover *>(mover)) -> fGrid));
 	}
 	else	
 	{
@@ -1058,7 +445,7 @@ TTriGridVel3D* PtCurMap_c::GetGrid3D(Boolean wantRefinedGrid)
 			/*OK*/ if (wantRefinedGrid && (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
 			/*OK*/	triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
 			else
-			/*OK*/	triGrid = (TTriGridVel3D*)((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid);
+			/*OK*/	triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid));
 		}
 		else
 		{
@@ -1066,14 +453,14 @@ TTriGridVel3D* PtCurMap_c::GetGrid3D(Boolean wantRefinedGrid)
 			if (mover)
 			{
 				/*OK*/ if (((dynamic_cast<NetCDFMover *>(mover)) -> fGrid)->GetClassID()==TYPE_TRIGRIDVEL3D)	
-				/*OK*/ triGrid = (TTriGridVel3D*)((dynamic_cast<NetCDFMover *>(mover)) -> fGrid);
+				/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
 			}
 			else
 			{
 				mover = this->GetMover(TYPE_TRICURMOVER);	// always was 3D
 				if (mover)
 				{
-					/*OK*/ triGrid = (TTriGridVel3D*)((dynamic_cast<TriCurMover *>(mover)) -> fGrid);
+					/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TriCurMover *>(mover)) -> fGrid));
 				}
 			}
 		}
@@ -1727,7 +1114,7 @@ OSErr PtCurMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)
 		numOfLEs = thisLEList->numOfLEs;
 		// density set from API
 		//density =  GetPollutantDensity(thisLEList->GetOilType());	
-		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 		massunits = thisLEList->GetMassUnits();
 		
 		for (j = 0 ; j < numOfLEs ; j++) 
@@ -1902,15 +1289,15 @@ OSErr PtCurMap_c::CreateDepthSlice(long triNum, float **depthSlice)
 			model -> LESetsList -> GetListItem ((Ptr) &thisLEList, k);
 			if (thisLEList->fLeType == UNCERTAINTY_LE)	
 				continue;	// don't draw uncertainty for now...
-			if (! ((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil && model->GetModelTime() - model->GetStartTime() >= (*(TOLEList*)thisLEList).fDispersantData.timeToDisperse
-				   || (*(TOLEList*)thisLEList).fAdiosDataH
-				   || (*(TOLEList*)thisLEList).fSetSummary.z > 0	))// for bottom spill
+			if (! ((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil && model->GetModelTime() - model->GetStartTime() >= (*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.timeToDisperse
+				   || (*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH
+				   || (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0	))// for bottom spill
 				continue;	// this list has no subsurface LEs
 			
 			numOfLEs = thisLEList->numOfLEs;
 			// density set from API
 			//density =  GetPollutantDensity(thisLEList->GetOilType());	
-			density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+			density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 			massunits = thisLEList->GetMassUnits();
 			for (i = 0 ; i < numOfLEs ; i++) 
 			{
@@ -2055,7 +1442,7 @@ long PtCurMap_c::CountLEsOnSelectedBeach()
 		model -> LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		leType = thisLEList -> GetLEType();
 		if(leType == UNCERTAINTY_LE && !model->IsUncertain()) continue; //JLM 9/10/98
-		density = ((TOLEList*)thisLEList)->fSetSummary.density;	
+		density = ((dynamic_cast<TOLEList*>(thisLEList)))->fSetSummary.density;	
 		massunits = thisLEList->GetMassUnits();
 		massFrac = thisLEList->GetTotalMass()/thisLEList->GetNumOfLEs();
 		for (j = 0, c = thisLEList -> numOfLEs; j < c; j++)
@@ -2232,3 +1619,85 @@ done:
 	return numLEs;
 }
 
+OSErr SetDefaultDropletSizes(DropletInfoRecH dropletSizes)
+{
+	// default values from Bill
+	if (!dropletSizes) {return -1;}
+	_SetHandleSize((Handle)dropletSizes,7*sizeof(DropletInfoRec));
+	if (_MemError()) { TechError("SetDefaultDropletSizes()", "_SetHandleSize()", 0); return -1; }
+	(*dropletSizes)[0].probability = .056;
+	(*dropletSizes)[1].probability = .147;
+	(*dropletSizes)[2].probability = .267;
+	(*dropletSizes)[3].probability = .414;
+	(*dropletSizes)[4].probability = .586;
+	(*dropletSizes)[5].probability = .782;	
+	(*dropletSizes)[6].probability = 1.;	
+	(*dropletSizes)[0].dropletSize = 10;
+	(*dropletSizes)[1].dropletSize = 20;
+	(*dropletSizes)[2].dropletSize = 30;
+	(*dropletSizes)[3].dropletSize = 40;
+	(*dropletSizes)[4].dropletSize = 50;
+	(*dropletSizes)[5].dropletSize = 60;	
+	(*dropletSizes)[6].dropletSize = 70;	
+	return noErr;
+}
+
+OSErr PtCurMap_c::InitMap()
+{
+	OSErr err = 0;
+	//	code goes here, only if there is a 3D mover?
+	if (err = InitContourLevels()) return err;
+	if (err = InitDropletSizes()) return err;
+	return Map_c::InitMap();
+}
+
+
+OSErr PtCurMap_c::InitDropletSizes()
+{
+	OSErr err = 0;
+	if (!fDropletSizesH) 
+	{
+		fDropletSizesH = (DropletInfoRecH)_NewHandleClear(0);
+		if(!fDropletSizesH){TechError("PtCurMap::InitDropletSizes()", "_NewHandle()", 0); err = memFullErr; return -1;}
+		err = SetDefaultDropletSizes(fDropletSizesH);
+	}
+	return err;
+}
+
+
+void  PtCurMap_c::FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo)
+{
+	long startVer = 0,i,jseg;
+	//WorldPoint wp = ScreenToWorldPoint(where, MapDrawingRect(), settings.currentView);
+	WorldPoint wp2;
+	LongPoint lp;
+	long lastVer = GetNumBoundaryPts();
+	//long nbounds = GetNumBoundaries();
+	long nSegs = GetNumBoundarySegs();	
+	float wdist = LatToDistance(ScreenToWorldDistance(4));
+	LongPointHdl ptsHdl = GetPointsHdl(false);	// will use refined grid if there is one
+	if(!ptsHdl) return;
+	*verNum= -1;
+	*segNo =-1;
+	for(i = 0; i < lastVer; i++)
+	{
+		//wp2 = (*gVertices)[i];
+		lp = (*ptsHdl)[i];
+		wp2.pLat = lp.v;
+		wp2.pLong = lp.h;
+		
+		if(WPointNearWPoint(wp,wp2 ,wdist))
+		{
+			//for(jseg = 0; jseg < nbounds; jseg++)
+			for(jseg = 0; jseg < nSegs; jseg++)
+			{
+				if(i <= (*fBoundarySegmentsH)[jseg])
+				{
+					*verNum  = i;
+					*segNo = jseg;
+					break;
+				}
+			}
+		}
+	} 
+}

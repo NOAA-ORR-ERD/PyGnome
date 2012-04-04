@@ -4052,7 +4052,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	Boolean hadError = FALSE;
 	char str[512], hindCastStr[256];
 	char outputDirectory[256];
-	char outputPath[256];
+	char outputPath[256], ncOutputPath[256];
 	long len;
 	double runDurationInHrs;
 	double timeStepInMinutes = GetTimeStep()/60,outputStepInMinutes = GetOutputStep()/60;
@@ -4072,6 +4072,112 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	//
 	///////////////
 	
+		message->GetParameterString("NETCDFPATH", ncOutputPath, 256);
+	if(ncOutputPath[0]) {
+		int tLen;
+		char *p, classicPath[256];
+		this->writeNC = true;
+		if(strlen(ncOutputPath) == 0)
+			strncpy(ncOutputPath, "UntitledOut", 12);
+
+		if (ConvertIfUnixPath(ncOutputPath, classicPath)) strcpy(ncOutputPath,classicPath);
+		err = ResolvePathFromCommandFile(ncOutputPath);
+		if (err) ResolvePathFromApplication(ncOutputPath);
+		strcpy(str,ncOutputPath);
+		p =  strrchr(str,DIRDELIMITER);
+		if(p) *(p+1) = 0; // chop off the file name
+		// create the folder if it does not exist
+		if (!FolderExists(0, 0, str)) 
+		{
+			long dirID;
+			err = dircreate(0, 0, str, &dirID);
+			if(err) 
+			{	// try to create folders 
+				err = CreateFoldersInDirectoryPath(str);
+				if (err)	
+				{
+					printError("Unable to create the directory for the output file.");
+				}
+			}
+		}
+#ifdef MAC
+		ConvertTraditionalPathToUnixPath(ncOutputPath, model->ncPath, 256);
+		ConvertTraditionalPathToUnixPath(ncOutputPath, model->ncPathConfidence,256);
+#else
+		strncpy(model->ncPath, ncOutputPath, 256);
+		strncpy(model->ncPathConfidence, ncOutputPath, 256);
+#endif
+		tLen = strlen(model->ncPath);
+		if(!(tLen <= 256-11)) {
+			strncpy(&model->ncPath[tLen-11], ".nc", 4);
+			strncpy(&model->ncPathConfidence[tLen-11], "_uncert.nc", 11);
+		} 
+		else {
+			if(strcmp(&model->ncPath[tLen-3], ".nc") != 0) {
+				strncpy(&model->ncPath[tLen], ".nc", 4);
+				strncpy(&model->ncPathConfidence[tLen], "_uncert.nc", 11);
+			}
+			else {
+				strncpy(&model->ncPath[tLen-3], ".nc", 4);
+				strncpy(&model->ncPathConfidence[tLen-3], "_uncert.nc", 11);
+			}
+		}
+	}
+	else
+		this->writeNC = false;	message->GetParameterString("NETCDFPATH", ncOutputPath, 256);
+	if(ncOutputPath[0]) {
+		int tLen;
+		char *p, classicPath[256];
+		this->writeNC = true;
+		if(strlen(ncOutputPath) == 0)
+			strncpy(ncOutputPath, "UntitledOut", 12);
+
+		if (ConvertIfUnixPath(ncOutputPath, classicPath)) strcpy(ncOutputPath,classicPath);
+		err = ResolvePathFromCommandFile(ncOutputPath);
+		if (err) ResolvePathFromApplication(ncOutputPath);
+		strcpy(str,ncOutputPath);
+		p =  strrchr(str,DIRDELIMITER);
+		if(p) *(p+1) = 0; // chop off the file name
+		// create the folder if it does not exist
+		if (!FolderExists(0, 0, str)) 
+		{
+			long dirID;
+			err = dircreate(0, 0, str, &dirID);
+			if(err) 
+			{	// try to create folders 
+				err = CreateFoldersInDirectoryPath(str);
+				if (err)	
+				{
+					printError("Unable to create the directory for the output file.");
+				}
+			}
+		}
+#ifdef MAC
+		ConvertTraditionalPathToUnixPath(ncOutputPath, model->ncPath, 256);
+		ConvertTraditionalPathToUnixPath(ncOutputPath, model->ncPathConfidence,256);
+#else
+		strncpy(model->ncPath, ncOutputPath, 256);
+		strncpy(model->ncPathConfidence, ncOutputPath, 256);
+#endif
+		tLen = strlen(model->ncPath);
+		if(!(tLen <= 256-11)) {
+			strncpy(&model->ncPath[tLen-11], ".nc", 4);
+			strncpy(&model->ncPathConfidence[tLen-11], "_uncert.nc", 11);
+		} 
+		else {
+			if(strcmp(&model->ncPath[tLen-3], ".nc") != 0) {
+				strncpy(&model->ncPath[tLen], ".nc", 4);
+				strncpy(&model->ncPathConfidence[tLen], "_uncert.nc", 11);
+			}
+			else {
+				strncpy(&model->ncPath[tLen-3], ".nc", 4);
+				strncpy(&model->ncPathConfidence[tLen-3], "_uncert.nc", 11);
+			}
+		}
+	}
+	else
+		this->writeNC = false;
+
 	gRunSpillNoteStr[0] = 0;
 	message->GetParameterString("note",gRunSpillNoteStr,256);// this parameter is optional
 	
@@ -4271,10 +4377,10 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	if(outputPath[0]) {
 		hdelete(0, 0, outputPath);
 		if (err = hcreate(0, 0, outputPath, '\?\?\?\?', 'BINA'))
-			{ TechError("HandleRunSpillMessage()", "hcreate()", err); goto done ; }
+			{ TechError("HandleRunMessage()", "hcreate()", err); goto done ; }
 		
 		if (err = FSOpenBuf(0, 0, outputPath, &gRunSpillForecastFile, 1000000, FALSE))
-			{ TechError("HandleRunSpillMessage()", "FSOpenBuf()", err); goto done ; }
+			{ TechError("HandleRunMessage()", "FSOpenBuf()", err); goto done ; }
 	}
 
 	
@@ -4659,7 +4765,7 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 		this->writeNC = true;
 		if(strlen(ncOutputPath) == 0)
 			strncpy(ncOutputPath, "UntitledOut", 12);
-#ifdef MAC
+
 		if (ConvertIfUnixPath(ncOutputPath, classicPath)) strcpy(ncOutputPath,classicPath);
 		err = ResolvePathFromCommandFile(ncOutputPath);
 		if (err) ResolvePathFromApplication(ncOutputPath);
@@ -4680,6 +4786,7 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 				}
 			}
 		}
+#ifdef MAC
 		ConvertTraditionalPathToUnixPath(ncOutputPath, model->ncPath, 256);
 		ConvertTraditionalPathToUnixPath(ncOutputPath, model->ncPathConfidence,256);
 #else

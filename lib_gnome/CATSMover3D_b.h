@@ -10,11 +10,15 @@
 #ifndef __CATSMover3D_b__
 #define __CATSMover3D_b__
 
-#include "Earl.h"
+#include "Basics.h"
 #include "TypeDefs.h"
-#include "CATSMover_b.h"
 
-class CATSMover3D_b : virtual public CATSMover_b {
+#ifdef pyGNOME
+#include "TriGridVel3D_c.h"
+#define TTriGridVel3D TriGridVel3D_c
+#endif
+
+class CATSMover3D_b {
 
 public:
 	TTriGridVel3D	*fRefinedGrid;			// store a second grid for contouring

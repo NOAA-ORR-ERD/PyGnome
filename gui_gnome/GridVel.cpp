@@ -3,6 +3,7 @@
 //#include "Classes.h"
 #include "GridVel.h"
 #include "MapUtils.h"
+#include "DagTreePD.h"
 #include "DagTreeIO.h"
 //#include "RectUtils.h"
 #include "PtCurMover.h"
@@ -386,11 +387,7 @@ TGridVel::TGridVel()
 	fGridBounds = emptyWorldRect;
 }
 		
-		
-void TGridVel::Dispose()
-{ 
-	return; 
-}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // RectGridVel 
@@ -404,103 +401,8 @@ TRectGridVel::TRectGridVel(void)
 	fNumCols = 0;
 }
 
-void TRectGridVel::Dispose ()
-{
-	if (fGridHdl)
-	{
-		DisposeHandle((Handle)fGridHdl);
-		fGridHdl = nil;
-	}
-	TGridVel::Dispose ();
-}
-
-long TRectGridVel::NumVelsInGridHdl(void)
-{
-	long numInHdl = 0;
-	if (fGridHdl) numInHdl = _GetHandleSize((Handle)fGridHdl)/sizeof(**fGridHdl);
-	
-	return numInHdl;
-}
-
-void TRectGridVel::SetBounds(WorldRect bounds)
-{
-	// if we read on old style OSSM cur file, we take the bounds from the map
-	// (The map calls SetBounds with its bounds)
-	// BUT if we read a new style grid file, we already know the lat long and don't want the map overriding it 
-	// so ignore the call to this function in that case
-	if(EqualWRects(fGridBounds,emptyWorldRect))
-	{
-		fGridBounds = bounds; // we haven't set the bounds, take their value
-	}
-	else
-	{
-		// ignore their value, we already know the bounds
-	}
-}
 
 
-VelocityRec TRectGridVel::GetPatValue(WorldPoint p)
-{
-
-	long rowNum, colNum;
-	VelocityRec	velocity;
-	
-	LongRect		gridLRect, geoRect;
-	ScaleRec		thisScaleRec;
-
-	SetLRect (&gridLRect, 0, fNumRows, fNumCols, 0);
-	SetLRect (&geoRect, fGridBounds.loLong, fGridBounds.loLat, fGridBounds.hiLong, fGridBounds.hiLat);	
-	GetLScaleAndOffsets (&geoRect, &gridLRect, &thisScaleRec);
-	
-//	gridP = WorldToScreenPoint(p, bounds, CATSgridRect);
-	colNum = p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset;
-	rowNum = p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset;
-
-
-	if (!fGridHdl || colNum < 0 || colNum >= fNumCols || rowNum < 0 || rowNum >= fNumRows)
-
-		{ velocity.u = 0.0; velocity.v = 0.0; return velocity; }
-		
-	return INDEXH (fGridHdl, rowNum * fNumCols + colNum);
-
-}
-
-VelocityRec TRectGridVel::GetSmoothVelocity(WorldPoint p)
-{
-	Point gridP;
-	long rowNum, colNum;
-	VelocityRec	velocity, velNew;
-	
-	LongRect		gridLRect, geoRect;
-	ScaleRec		thisScaleRec;
-
-	SetLRect (&gridLRect, 0, fNumRows, fNumCols, 0);
-	SetLRect (&geoRect, fGridBounds.loLong, fGridBounds.loLat, fGridBounds.hiLong, fGridBounds.hiLat);	
-	GetLScaleAndOffsets (&geoRect, &gridLRect, &thisScaleRec);
-
-	colNum = p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset;
-	rowNum = p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset;
-	
-	velocity = GetPatValue (p);
-
-	if (colNum > 0 && colNum < fNumCols - 1 &&
-		rowNum > 0 && rowNum < fNumRows - 1)
-	{
-		VelocityRec		topV, leftV, bottomV, rightV;
-		
-		topV    = INDEXH (fGridHdl, rowNum + 1 * fNumCols + colNum);
-		bottomV = INDEXH (fGridHdl, rowNum - 1 * fNumCols + colNum);
-		leftV   = INDEXH (fGridHdl, rowNum     * fNumCols + colNum - 1);
-		rightV  = INDEXH (fGridHdl, rowNum     * fNumCols + colNum + 1);
-		
-		velNew.u = .5 * velocity.u + .125 * (topV.u + bottomV.u + leftV.u + rightV.u);
-		velNew.v = .5 * velocity.v + .125 * (topV.v + bottomV.v + leftV.v + rightV.v);
-	}
-	else
-		velNew = velocity;
-
-	return velNew;
-}
 /////////////////////////////////////////////////////////////////////////////
 #define TRectGridVelREADWRITEVERSION 1
 OSErr TRectGridVel::Write(BFPB *bfpb)
@@ -911,7 +813,7 @@ done:
 }
 
 void TRectGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
-						double arrowScale, Boolean bDrawArrows, Boolean bDrawGrid) 
+						double arrowScale, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor) 
 {
 	short row, col, pixX, pixY;
 	long dLong, dLat;
@@ -957,6 +859,7 @@ void TRectGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 				
 			if (bDrawArrows && (velocity.u != 0 || velocity.v != 0))
 			{
+				RGBForeColor(&arrowColor);
 				inchesX = (velocity.u * refScale) / arrowScale;
 				inchesY = (velocity.v * refScale) / arrowScale;
 				pixX = inchesX * PixelsPerInchCurrent();
@@ -968,6 +871,7 @@ void TRectGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 				MyDrawArrow(p.h,p.v,p2.h,p2.v);
 				//DrawArrowHead (p, p2, velocity);
 				//DrawArrowHead(p2, velocity);
+				RGBForeColor(&colors[PURPLE]);
 			}
 		}
 		
@@ -977,21 +881,6 @@ void TRectGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 
 /////////////////////////////////////////////////
 
-void TTriGridVel::Dispose ()
-{
-	if (fDagTree)
-	{
-		fDagTree->Dispose();
-		delete fDagTree;
-		fDagTree = nil;
-	}
-	if (fBathymetryH)
-	{
-		DisposeHandle((Handle)fBathymetryH);
-		fBathymetryH = 0;
-	}
-	TGridVel::Dispose ();
-}
 
 OSErr TTriGridVel::TextRead(char *path)
 {
@@ -1216,368 +1105,8 @@ done:
 	return err;
 }
 
-LongPointHdl TTriGridVel::GetPointsHdl(void)
-{
-	if(!fDagTree) return nil;
-	
-	return fDagTree->GetPointsHdl();
-}
-
-TopologyHdl TTriGridVel::GetTopologyHdl(void)
-{
-	if(!fDagTree) return nil;
-	
-	return fDagTree->GetTopologyHdl();
-}
-
-/*DAGHdl TTriGridVel::GetDagTreeHdl(void)
-{
-	if(!fDagTree) return nil;
-	
-	return fDagTree->GetDagTreeHdl();
-}*/
-
-long TTriGridVel::GetNumTriangles(void)
-{
-	long numTriangles = 0;
-	TopologyHdl topoH = fDagTree->GetTopologyHdl();
-	if (topoH) numTriangles = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
-	
-	return numTriangles;
-}
-
-InterpolationVal TTriGridVel::GetInterpolationValues(WorldPoint refPoint)
-{
-	InterpolationVal interpolationVal;
-	LongPoint lp;
-	long ntri;
-	ExPoint vertex1,vertex2,vertex3;
-	double denom,refLon,refLat;
-	double num1,num2,num3;
-
-	TopologyHdl topH ;
-	LongPointHdl ptsH ;
-
-	memset(&interpolationVal,0,sizeof(interpolationVal));
-	
-	if(!fDagTree) return interpolationVal;
-
-	lp.h = refPoint.pLong;
-	lp.v = refPoint.pLat;
-	ntri = fDagTree->WhatTriAmIIn(lp);
-	if (ntri < 0) 
-	{
-		interpolationVal.ptIndex1 = ntri; // flag it
-		return interpolationVal;
-	}
-
-	refLon = lp.h/1000000.;
-	refLat = lp.v/1000000.;
-
-	topH = fDagTree->GetTopologyHdl();
-	ptsH = fDagTree->GetPointsHdl();
-
-	if(!topH || !ptsH) return interpolationVal;
-
-	// get the index into the pts handle for each vertex
-	
-	interpolationVal.ptIndex1 = (*topH)[ntri].vertex1;
-	interpolationVal.ptIndex2 = (*topH)[ntri].vertex2;
-	interpolationVal.ptIndex3 = (*topH)[ntri].vertex3;
-	
-	// get the vertices from fPtsH and figure out the interpolation coefficients
-
-	vertex1.h = (*ptsH)[interpolationVal.ptIndex1].h/1000000.;
-	vertex1.v = (*ptsH)[interpolationVal.ptIndex1].v/1000000.;
-	vertex2.h = (*ptsH)[interpolationVal.ptIndex2].h/1000000.;
-	vertex2.v = (*ptsH)[interpolationVal.ptIndex2].v/1000000.;
-	vertex3.h = (*ptsH)[interpolationVal.ptIndex3].h/1000000.;
-	vertex3.v = (*ptsH)[interpolationVal.ptIndex3].v/1000000.;
-
-
-	// use a1*x1+a2*x2+a3*x3=x_ref, a1*y1+a2*y2+a3*y3=y_ref, and a1+a2+a3=1
-	
-	denom = (vertex3.v-vertex1.v)*(vertex2.h-vertex1.h)-(vertex3.h-vertex1.h)*(vertex2.v-vertex1.v);
-	
-	num1 = ((refLat-vertex3.v)*(vertex3.h-vertex2.h)-(refLon-vertex3.h)*(vertex3.v-vertex2.v));
-	num2 = ((refLon-vertex1.h)*(vertex3.v-vertex1.v)-(refLat-vertex1.v)*(vertex3.h-vertex1.h));
-	num3 = ((refLat-vertex1.v)*(vertex2.h-vertex1.h)-(refLon-vertex1.h)*(vertex2.v-vertex1.v));
-
-	interpolationVal.alpha1 = num1/denom;
-	interpolationVal.alpha2 = num2/denom;
-	interpolationVal.alpha3 = num3/denom;
-
-	return interpolationVal;
-}
-
-long TTriGridVel::GetRectIndexFromTriIndex2(long triIndex,LONGH ptrVerdatToNetCDFH,long numCols_ext)
-{
-	// code goes here, may eventually want to get interpolation indices around point
-	LongPoint lp;
-	long i, n, ntri = triIndex, index=-1, ptIndex1,ptIndex2,ptIndex3;
-	long iIndex[3],jIndex[3],largestI,smallestJ;
-	double refLon,refLat;
-
-	TopologyHdl topH ;
-
-	if(!fDagTree) return -1;
-
-	if (ntri < 0) return ntri;
-
-	topH = fDagTree->GetTopologyHdl();
-
-	if(!topH) return -1;
-
-	// get the index into the pts handle for each vertex
-	
-	//ptIndex1 = (*topH)[ntri].vertex1;
-	//ptIndex2 = (*topH)[ntri].vertex2;
-	//ptIndex3 = (*topH)[ntri].vertex3;
-	
-	ptIndex1 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex1);
-	ptIndex2 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex2);
-	ptIndex3 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex3);
-	//n = INDEXH(verdatPtsH,i);
-	// need to translate back to original index via verdatPtsH
-	
-	iIndex[0] = ptIndex1/numCols_ext;
-	jIndex[0] = ptIndex1%numCols_ext;
-	iIndex[1] = ptIndex2/numCols_ext;
-	jIndex[1] = ptIndex2%numCols_ext;
-	iIndex[2] = ptIndex3/numCols_ext;
-	jIndex[2] = ptIndex3%numCols_ext;
-
-	largestI = iIndex[0];
-	smallestJ = jIndex[0];
-	for(i=0;i<2;i++)
-	{
-		if (iIndex[i+1]>largestI) largestI = iIndex[i+1];
-		if (jIndex[i+1]<smallestJ) smallestJ = jIndex[i+1];
-	}
-	index = (largestI-1)*(numCols_ext-1)+smallestJ;	// velocity for grid box is lower left hand corner 
-	return index;
-}
-
-long TTriGridVel::GetRectIndexFromTriIndex(WorldPoint refPoint,LONGH ptrVerdatToNetCDFH,long numCols_ext)
-{
-	// code goes here, may eventually want to get interpolation indices around point
-	LongPoint lp;
-	long i, n, ntri, index=-1, ptIndex1,ptIndex2,ptIndex3;
-	long iIndex[3],jIndex[3],largestI,smallestJ;
-	double refLon,refLat;
-
-	TopologyHdl topH ;
-
-	if(!fDagTree) return -1;
-
-	lp.h = refPoint.pLong;
-	lp.v = refPoint.pLat;
-	ntri = fDagTree->WhatTriAmIIn(lp);
-	if (ntri < 0) 
-	{
-		index = ntri; // flag it
-		return index;
-	}
-
-	topH = fDagTree->GetTopologyHdl();
-
-	if(!topH) return -1;
-
-	// get the index into the pts handle for each vertex
-	
-	//ptIndex1 = (*topH)[ntri].vertex1;
-	//ptIndex2 = (*topH)[ntri].vertex2;
-	//ptIndex3 = (*topH)[ntri].vertex3;
-	
-	ptIndex1 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex1);
-	ptIndex2 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex2);
-	ptIndex3 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex3);
-	//n = INDEXH(verdatPtsH,i);
-	// need to translate back to original index via verdatPtsH
-	
-	iIndex[0] = ptIndex1/numCols_ext;
-	jIndex[0] = ptIndex1%numCols_ext;
-	iIndex[1] = ptIndex2/numCols_ext;
-	jIndex[1] = ptIndex2%numCols_ext;
-	iIndex[2] = ptIndex3/numCols_ext;
-	jIndex[2] = ptIndex3%numCols_ext;
-
-	largestI = iIndex[0];
-	smallestJ = jIndex[0];
-	for(i=0;i<2;i++)
-	{
-		if (iIndex[i+1]>largestI) largestI = iIndex[i+1];
-		if (jIndex[i+1]<smallestJ) smallestJ = jIndex[i+1];
-	}
-	index = (largestI-1)*(numCols_ext-1)+smallestJ;	// velocity for grid box is lower left hand corner 
-	return index;
-}
-
-OSErr TTriGridVel::GetRectCornersFromTriIndexOrPoint(long *index1, long *index2, long *index3, long *index4, WorldPoint refPoint,long triNum, Boolean useTriNum, LONGH ptrVerdatToNetCDFH,long numCols_ext)
-{
-	// code goes here, may eventually want to get interpolation indices around point
-	LongPoint lp;
-	long i, n, ntri, index=-1, ptIndex1,ptIndex2,ptIndex3;
-	long debug_ptIndex1, debug_ptIndex2, debug_ptIndex3;
-	long iIndex[3],jIndex[3],largestI,smallestJ, numCols = numCols_ext-1;
-	double refLon,refLat;
-
-	TopologyHdl topH ;
-
-	if(!fDagTree) return -1;
-
-	if (!useTriNum)
-	{
-		lp.h = refPoint.pLong;
-		lp.v = refPoint.pLat;
-		ntri = fDagTree->WhatTriAmIIn(lp);
-	}
-	else ntri = triNum;
-	if (ntri < 0) 
-	{
-		index = ntri; // flag it
-		return index;
-	}
-
-	topH = fDagTree->GetTopologyHdl();
-
-	if(!topH) return -1;
-
-	// get the index into the pts handle for each vertex
-	
-	debug_ptIndex1 = (*topH)[ntri].vertex1;
-	debug_ptIndex2 = (*topH)[ntri].vertex2;
-	debug_ptIndex3 = (*topH)[ntri].vertex3;
-	
-	ptIndex1 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex1);
-	ptIndex2 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex2);
-	ptIndex3 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex3);
-	//n = INDEXH(verdatPtsH,i);
-	// need to translate back to original index via verdatPtsH
-	
-	iIndex[0] = ptIndex1/numCols_ext;
-	jIndex[0] = ptIndex1%numCols_ext;
-	iIndex[1] = ptIndex2/numCols_ext;
-	jIndex[1] = ptIndex2%numCols_ext;
-	iIndex[2] = ptIndex3/numCols_ext;
-	jIndex[2] = ptIndex3%numCols_ext;
-
-	largestI = iIndex[0];
-	smallestJ = jIndex[0];
-	for(i=0;i<2;i++)
-	{
-		if (iIndex[i+1]>largestI) largestI = iIndex[i+1];
-		if (jIndex[i+1]<smallestJ) smallestJ = jIndex[i+1];
-	}
-	//index = (largestI-1)*(numCols_ext-1)+smallestJ;	// velocity for grid box is lower left hand corner 
-	
-	/**index1 = (largestI-1)*(numCols_ext-1)+smallestJ;
-	*index2 = (largestI)*(numCols_ext-1)+smallestJ;
-	*index3 = (largestI-1)*(numCols_ext-1)+smallestJ+1;
-	*index4 = (largestI)*(numCols_ext-1)+smallestJ+1;*/
-
-if (smallestJ>=numCols-1)
-{
-	if (smallestJ==numCols)
-		*index1=0;
-}
-if (largestI<=1) 
-{
-	if (largestI==0) 
-		*index2 = -1;
-}
-	*index1 = (largestI-2)*(numCols_ext-1)+smallestJ;
-	*index2 = (largestI-1)*(numCols_ext-1)+smallestJ;
-	*index3 = (largestI-2)*(numCols_ext-1)+smallestJ+1;
-	*index4 = (largestI-1)*(numCols_ext-1)+smallestJ+1;
-
-	if (largestI==1) {*index1=-1; *index3=-1;}
-	if (smallestJ==numCols-1) {*index3=-1;*index4=-1;}
-
-	return 0;
-}
-
-LongPoint TTriGridVel::GetRectIndicesFromTriIndex(WorldPoint refPoint,LONGH ptrVerdatToNetCDFH,long numCols_ext)
-{
-	// code goes here, may eventually want to get interpolation indices around point
-	LongPoint lp={-1,-1}, indices;
-	long i, n, ntri, index=-1, ptIndex1,ptIndex2,ptIndex3;
-	long iIndex[3],jIndex[3],largestI,smallestJ;
-	double refLon,refLat;
-
-	TopologyHdl topH ;
-
-	if(!fDagTree) return lp;
-
-	lp.h = refPoint.pLong;
-	lp.v = refPoint.pLat;
-	ntri = fDagTree->WhatTriAmIIn(lp);
-	if (ntri < 0) 
-	{
-		index = ntri; // flag it
-		return lp;
-	}
-
-	topH = fDagTree->GetTopologyHdl();
-
-	if(!topH) return lp;
-
-	// get the index into the pts handle for each vertex
-	
-	ptIndex1 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex1);
-	ptIndex2 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex2);
-	ptIndex3 = INDEXH(ptrVerdatToNetCDFH,(*topH)[ntri].vertex3);
-	//n = INDEXH(verdatPtsH,i);
-	// need to translate back to original index via verdatPtsH
-	
-	iIndex[0] = ptIndex1/numCols_ext;
-	jIndex[0] = ptIndex1%numCols_ext;
-	iIndex[1] = ptIndex2/numCols_ext;
-	jIndex[1] = ptIndex2%numCols_ext;
-	iIndex[2] = ptIndex3/numCols_ext;
-	jIndex[2] = ptIndex3%numCols_ext;
-
-	largestI = iIndex[0];
-	smallestJ = jIndex[0];
-	for(i=0;i<2;i++)
-	{
-		if (iIndex[i+1]>largestI) largestI = iIndex[i+1];
-		if (jIndex[i+1]<smallestJ) smallestJ = jIndex[i+1];
-	}
-	//index = (largestI-1)*(numCols_ext-1)+smallestJ;	// velocity for grid box is lower left hand corner 
-	indices.h = smallestJ;
-	indices.v = largestI-1;
-	return indices;
-}
-
-VelocityRec TTriGridVel::GetSmoothVelocity(WorldPoint p)
-{
-	VelocityRec r;
-	LongPoint lp;
-
-	lp.h = p.pLong;
-	lp.v = p.pLat;
-
-	fDagTree->GetVelocity(lp,&r);
-
-	return r;
-}
-
-VelocityRec TTriGridVel::GetPatValue(WorldPoint p)
-{
-	VelocityRec r;
-	LongPoint lp;
-
-	lp.h = p.pLong;
-	lp.v = p.pLat;
-
-	fDagTree->GetVelocity(lp,&r);
-
-	return r;
-}
-
 void TTriGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,double arrowScale,
-					   Boolean bDrawArrows, Boolean bDrawGrid)
+					   Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)
 {
 	short row, col, pixX, pixY;
 	float inchesX, inchesY;
@@ -1618,6 +1147,7 @@ void TTriGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,do
 	{
 		if (bDrawArrows)
 		{
+			RGBForeColor(&arrowColor);
 			wp1 = (*ptsH)[(*topH)[i].vertex1];
 			wp2 = (*ptsH)[(*topH)[i].vertex2];
 			wp3 = (*ptsH)[(*topH)[i].vertex3];
@@ -1648,7 +1178,11 @@ void TTriGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,do
 			}
 		}
 		
-		if (bDrawGrid) DrawTriangle(&r,i,FALSE);	// don't fill triangles
+		if (bDrawGrid) 
+		{
+			RGBForeColor(&colors[PURPLE]);
+			DrawTriangle(&r,i,FALSE);	// don't fill triangles
+		}
 	}
 	RGBForeColor(&colors[BLACK]);
 
@@ -1775,21 +1309,7 @@ TTriGridVel3D::TTriGridVel3D()
 	bShowMaxTri = false;
 	memset(&fLegendRect,0,sizeof(fLegendRect)); 
 }
-		
-void TTriGridVel3D::Dispose ()
-{
-	if(fDepthsH) {DisposeHandle((Handle)fDepthsH); fDepthsH=0;}
-	if(fDepthContoursH) {DisposeHandle((Handle)fDepthContoursH); fDepthContoursH=0;}
-	if(fTriSelected) {DisposeHandle((Handle)fTriSelected); fTriSelected=0;}
-	if(fPtsSelected) {DisposeHandle((Handle)fPtsSelected); fPtsSelected=0;}
-	if(fOilConcHdl) {DisposeHandle((Handle)fOilConcHdl); fOilConcHdl=0;}
-	if(fMaxLayerDataHdl) {DisposeHandle((Handle)fMaxLayerDataHdl); fMaxLayerDataHdl=0;}
-	if(fTriAreaHdl) {DisposeHandle((Handle)fTriAreaHdl); fTriAreaHdl=0;}
-	if(fDosageHdl) {DisposeHandle((Handle)fDosageHdl); fDosageHdl=0;}
-	//if(gCoord) {DisposeHandle((Handle)gCoord); gCoord=0;}
-	
-	TTriGridVel::Dispose ();
-}
+
 
 //#define TTriGridVel3DREADWRITEVERSION 1  
 #define TTriGridVel3DREADWRITEVERSION 2  // added depth contours 7/21/03
@@ -1981,515 +1501,6 @@ done:
 	return err;
 }
 
-long TTriGridVel3D::GetNumDepths(void)
-{
-	long numDepths = 0;
-	if (fDepthsH) numDepths = _GetHandleSize((Handle)fDepthsH)/sizeof(**fDepthsH);
-	
-	return numDepths;
-}
-
-void TTriGridVel3D::ScaleDepths(double scaleFactor)
-{
-	long i, numDepths;
-	if (!fDepthsH) return;
-	numDepths = GetNumDepths();
-	for (i=0;i<numDepths;i++)
-	{
-		(*fDepthsH)[i] *= scaleFactor;
-	}
-	return;
-}
-
-long TTriGridVel3D::GetNumDepthContours(void)
-{
-	long numContourValues = 0;
-	if (fDepthContoursH) numContourValues = _GetHandleSize((Handle)fDepthContoursH)/sizeof(**fDepthContoursH);
-	
-	return numContourValues;
-}
-
-long TTriGridVel3D::GetNumOutputDataValues(void)
-{
-	long numOutputDataValues = 0;
-	if (fOilConcHdl) numOutputDataValues = _GetHandleSize((Handle)fOilConcHdl)/sizeof(**fOilConcHdl);
-	
-	return numOutputDataValues;
-}
-
-/*long TTriGridVel3D::GetNumTriangles(void)
-{
-	long numTriangles = 0;
-	TopologyHdl topoH = fDagTree->GetTopologyHdl();
-	if (topoH) numTriangles = _GetHandleSize((Handle)topoH)/sizeof(**topoH);
-	
-	return numTriangles;
-}*/
-
-long TTriGridVel3D::GetNumPoints(void)
-{
-	long numPts = 0;
-	LongPointHdl ptsH ;
-
-	ptsH = fDagTree->GetPointsHdl();
-	if (ptsH) numPts = _GetHandleSize((Handle)ptsH)/sizeof(LongPoint);
-	
-	return numPts;
-}
-
-OSErr TTriGridVel3D::GetTriangleVertices(long i, long *x, long *y)
-{
-	TopologyHdl topH ;
-	LongPointHdl ptsH ;
-	long ptIndex1, ptIndex2, ptIndex3;
-
-	if(!fDagTree) return -1;
-
-	topH = fDagTree->GetTopologyHdl();
-	ptsH = fDagTree->GetPointsHdl();
-
-	if(!topH || !ptsH) return -1;
-
-	ptIndex1 = (*topH)[i].vertex1;
-	ptIndex2 = (*topH)[i].vertex2;
-	ptIndex3 = (*topH)[i].vertex3;
-	
-	x[0] = (*ptsH)[ptIndex1].h;
-	y[0] = (*ptsH)[ptIndex1].v;
-	x[1] = (*ptsH)[ptIndex2].h;
-	y[1] = (*ptsH)[ptIndex2].v;
-	x[2] = (*ptsH)[ptIndex3].h;
-	y[2] = (*ptsH)[ptIndex3].v;
-	
-	return noErr;
-}	
-
-OSErr TTriGridVel3D::GetTriangleVertices3D(long i, long *x, long *y, long *z)
-{
-	TopologyHdl topH ;
-	LongPointHdl ptsH ;
-	long ptIndex1, ptIndex2, ptIndex3;
-
-	if(!fDagTree) return -1;
-
-	topH = fDagTree->GetTopologyHdl();
-	ptsH = fDagTree->GetPointsHdl();
-
-	if(!topH || !ptsH) return -1;
-
-	ptIndex1 = (*topH)[i].vertex1;
-	ptIndex2 = (*topH)[i].vertex2;
-	ptIndex3 = (*topH)[i].vertex3;
-	
-	x[0] = (*ptsH)[ptIndex1].h;
-	y[0] = (*ptsH)[ptIndex1].v;
-	x[1] = (*ptsH)[ptIndex2].h;
-	y[1] = (*ptsH)[ptIndex2].v;
-	x[2] = (*ptsH)[ptIndex3].h;
-	y[2] = (*ptsH)[ptIndex3].v;
-	
-	z[0] = (*fDepthsH)[ptIndex1];
-	z[1] = (*fDepthsH)[ptIndex2];
-	z[2] = (*fDepthsH)[ptIndex3];
-	
-	return noErr;
-}	
-
-double GetTriangleArea(WorldPoint pt1, WorldPoint pt2, WorldPoint pt3)
-{
-	double sideA, sideB, sideC, angle3;
-	double cp, triArea;
-	WorldPoint center1,center2;
-	// flat earth or spherical earth?
-	sideC = DistanceBetweenWorldPoints(pt1,pt2);	// kilometers
-	sideB = DistanceBetweenWorldPoints(pt1,pt3);
-	sideA = DistanceBetweenWorldPoints(pt2,pt3);
-
-	center1.pLat = (pt1.pLat + pt2.pLat) / 2.;	// center of map or center of line?
-	center1.pLong = (pt1.pLong + pt2.pLong) / 2.;
-	center2.pLat = (pt1.pLat + pt3.pLat) / 2.;
-	center2.pLong = (pt1.pLong + pt3.pLong) / 2.;
-	cp = LongToDistance(pt2.pLong - pt1.pLong, center1) * LatToDistance(pt3.pLat - pt1.pLat) - LongToDistance(pt3.pLong - pt1.pLong, center2) * LatToDistance(pt2.pLat - pt1.pLat);
-	//angle3 = acos((sideA*sideA + sideB*sideB - sideC*sideC)/(2*sideA*sideB));
-	//triArea = sin(angle3)*sideA*sideB/2.;
-	triArea = fabs(cp)/2.;
-
-	return triArea;
-}
-
-// combine with GetTriangleArea
-double GetQuadArea(WorldPoint pt1, WorldPoint pt2, WorldPoint pt3, WorldPoint pt4)
-{
-	double cp, quadArea;
-	WorldPoint center1,center2,center3;
-
-	center1.pLat = (pt1.pLat + pt2.pLat) / 2.;
-	center1.pLong = (pt1.pLong + pt2.pLong) / 2.;
-	center2.pLat = (pt1.pLat + pt3.pLat) / 2.;
-	center2.pLong = (pt1.pLong + pt3.pLong) / 2.;
-	center3.pLat = (pt1.pLat + pt4.pLat) / 2.;
-	center3.pLong = (pt1.pLong + pt4.pLong) / 2.;
-	cp =  LongToDistance(pt2.pLong - pt1.pLong, center1) * LatToDistance(pt3.pLat - pt1.pLat) - LongToDistance(pt3.pLong - pt1.pLong, center2) * LatToDistance(pt2.pLat - pt1.pLat)
-		+ LongToDistance(pt3.pLong - pt1.pLong, center2) * LatToDistance(pt4.pLat - pt1.pLat) - LongToDistance(pt4.pLong - pt1.pLong, center3) * LatToDistance(pt3.pLat - pt1.pLat);
-	
-	quadArea = fabs(cp)/2.;
-
-	return quadArea;
-}
-
-int WorldPoint3DCompare(void const *x1, void const *x2)
-{
-	WorldPoint3D *p1,*p2;	
-	p1 = (WorldPoint3D*)x1;
-	p2 = (WorldPoint3D*)x2;
-	
-	if ((*p1).z < (*p2).z) 
-		return -1;  // first less than second
-	else if ((*p1).z > (*p2).z)
-		return 1;
-	else return 0;// equivalent	
-}
-
-void FindPolygonPoints(short polygonType, WorldPoint3D *pts, double upperDepth, double lowerDepth, double *midPtArea, double *bottomArea)
-{
-	long k;
-	double offset, dist, len;
-	WorldPoint3D ptOnT1B3,ptOnT3B3,ptOnB2B3,ptOnT1B2,ptOnT2B2,center1;
-	WorldPoint3D T1,T2,T3,B1,B2,B3;
-	double h = lowerDepth -  upperDepth;
-
-	T1 = pts[0]; T2 = pts[1]; T3 = pts[2];
-	B1 = pts[0]; B2 = pts[1]; B3 = pts[2];
-	T2.z = T1.z; T3.z = T1.z;
-	
-	*bottomArea = 0;
-	*midPtArea = 0;
-	for (k = 0; k<2; k++)
-	{
-		if (k==0) offset = h/2;
-		else offset = 0;
-		if (k==1 && lowerDepth == B3.z) break;
-		dist = lowerDepth - offset - T1.z;
-		len = B3.z - T1.z;
-		ptOnT1B3.z = lowerDepth - offset;
-		ptOnT1B3.p.pLat = T1.p.pLat + dist/len * (B3.p.pLat - T1.p.pLat);
-		ptOnT1B3.p.pLong = T1.p.pLong + dist/len * (B3.p.pLong - T1.p.pLong);
-		dist = lowerDepth - offset - T3.z;
-		len = B3.z - T3.z;
-		//  here lat/lon same at both points
-		ptOnT3B3.p.pLat = T3.p.pLat;
-		ptOnT3B3.p.pLong = T3.p.pLong;
-		ptOnT3B3.z =  lowerDepth - offset;
-		
-		if (polygonType==0)
-		{	// triangle
-			dist = lowerDepth - offset - B2.z;
-			len = B3.z - B2.z;
-			//ptOnB2B3.p.pLat = B2.p.pLat + DistanceToLat(dist/len * LatToDistance(B3.p.pLat - B2.p.pLat, center),center);
-			ptOnB2B3.p.pLat = B2.p.pLat + dist/len * (B3.p.pLat - B2.p.pLat);
-			ptOnB2B3.p.pLong = B2.p.pLong + dist/len * (B3.p.pLong - B2.p.pLong);
-			ptOnB2B3.z = lowerDepth - offset;
-			if (k==1) *bottomArea = GetTriangleArea(ptOnT1B3.p,ptOnT3B3.p,ptOnB2B3.p);
-			if (k==0) *midPtArea = GetTriangleArea(ptOnT1B3.p,ptOnT3B3.p,ptOnB2B3.p);
-		}
-		else
-		{	// quadrilateral
-			dist = lowerDepth - offset - T1.z;
-			len = B2.z - T1.z;
-			//ptOnT1B2.p.pLat = T1.p.pLat + DistanceToLat(dist/len * LatToDistance(B2.p.pLat - T1.p.pLat));
-			ptOnT1B2.p.pLat = T1.p.pLat + dist/len * (B2.p.pLat - T1.p.pLat);
-			//center1.pLong = (B2.p.pLong + T1.p.pLong) / 2.; center1.pLat = (B2.p.pLat + T1.p.pLat)/2.;
-			//ptOnT1B2.p.pLong = T1.p.pLong + DistanceToLong(dist/len * LongToDistance(B2.p.pLong - T1.p.pLong,center1),center1);
-			ptOnT1B2.p.pLong = T1.p.pLong + dist/len * (B2.p.pLong - T1.p.pLong);
-			ptOnT1B2.z = lowerDepth - offset;
-			dist = lowerDepth - offset - T2.z;
-			len = B2.z - T2.z;
-			// here lat/lon same at both points
-			ptOnT2B2.p.pLat = T2.p.pLat;
-			ptOnT2B2.p.pLong = T2.p.pLong;
-			ptOnT2B2.z = lowerDepth - offset;
-			if (k==0) *midPtArea = GetQuadArea(ptOnT1B2.p, ptOnT2B2.p, ptOnT3B3.p, ptOnT1B3.p);
-			if (k==1) *bottomArea = GetQuadArea(ptOnT1B2.p, ptOnT2B2.p, ptOnT3B3.p, ptOnT1B3.p);
-		}
-	}
-	return;
-}
-
-OSErr TTriGridVel3D::CalculateDepthSliceVolume(double *triVol, long triNum,float origUpperDepth, float origLowerDepth)
-{
-	double h, dist, len, debugTriVol;
-	WorldPoint3D ptOnT1B2, ptOnT2B2, ptOnT1B3, ptOnT3B3, ptOnB2B3;
-	long i,j,k, shallowIndex, midLevelIndex, deepIndex;
-	double triArea, topTriArea, botTriArea, midTriArea, lastTriArea, offset = 0;
-	if (triNum < 0) return -1;
-	WorldPoint center1,center2;
-	float upperDepth = origUpperDepth, lowerDepth = origLowerDepth; 
-	OSErr err = 0;
-
-	WorldPoint3D T1,T2,T3,B1,B2,B3, wp[3];
-
-	err = GetTriangleVerticesWP3D(triNum, wp);
-	qsort(wp,3,sizeof(WorldPoint3D),WorldPoint3DCompare);
-	
-	T1 = wp[0]; T2 = wp[1]; T3 = wp[2];
-	B1 = wp[0]; B2 = wp[1]; B3 = wp[2];
-	T2.z = T1.z; T3.z = T1.z;
-	
-	triArea = GetTriArea(triNum);	// kilometers
-	lastTriArea = triArea;
-
-	h = lowerDepth - upperDepth;	// usually 1 for depth profile
-	if (h<=0) {*triVol = 0; return -1;}
-	if (upperDepth > B3.z) {*triVol = 0; return noErr;}	// range is below bottom
-	if (lowerDepth <= B1.z)	// shallowest depth
-	{ 
-		double theTriArea = GetTriangleArea(T1.p,T2.p,T3.p);
-		*triVol = triArea * h * 1000 * 1000;	//	convert to meters 
-		return noErr;
-	}
-	// need to deal with non-uniform volume once depth of shallowest vertex is reached
-	else 
-	{
-		double firstPart = 0, secondPart = 0, thirdPart = 0;
-		topTriArea = lastTriArea;
-		if (lowerDepth <= B2.z)
-		{
-			// here bottom shape will be quadrilateral
-			// get points where depth line intersects prism
-			// get points where half depth line intersects prism - check if upperDepth > B1.z, otherwise need pieces
-			// also check if j - B1.z < 0, then part of the region is above, ...
-			if (upperDepth < B1.z)
-			{
-				firstPart = triArea * (B1.z - upperDepth);
-				h = lowerDepth - B1.z;
-			}
-			FindPolygonPoints(1, wp, upperDepth, lowerDepth, &midTriArea, &botTriArea);
-			secondPart =  h/6. * (topTriArea + 4.*midTriArea + botTriArea);
-		}
-		//else if ((j+1) <= B3.z)
-		else	// bottom depth below second depth
-		{	// special cases first
-			if (lowerDepth > B3.z) 
-			{
-				// don't go below bottom
-				h = B3.z - upperDepth;
-				lowerDepth = B3.z;
-			}
-			if (upperDepth < B2.z)	// check B2 == B3 too
-			{
-				if (B2.z == B1.z)
-				{
-					firstPart = triArea * (B1.z - upperDepth);
-					h = lowerDepth - B1.z;	
-					upperDepth = B1.z;
-					// fall to triArea calculation
-				}
-				else if (B2.z == B3.z)
-				{
-					if (upperDepth < B1.z)
-					{
-						firstPart = triArea * (B1.z - upperDepth);
-						h = lowerDepth - B1.z;	// lower depth must be B2.z = B3.z
-					}
-					else
-					{
-						firstPart = 0;
-						h = lowerDepth - upperDepth;
-					}
-					FindPolygonPoints(1, wp, upperDepth, lowerDepth, &midTriArea, &botTriArea);
-					secondPart =  h/6. * (topTriArea + 4.*midTriArea + botTriArea);
-					// no third part
-				}
-				else
-				{
-					// calculate the quad area, check if all points fall inside region
-					if (upperDepth < B1.z)
-					{	// three pieces
-						firstPart = triArea * (B1.z - upperDepth);
-						h = B2.z - B1.z;
-						// calculate quad area
-						FindPolygonPoints(1, wp, B1.z, B2.z, &midTriArea, &botTriArea);
-						secondPart =  h/6. * (topTriArea + 4.*midTriArea + botTriArea);
-						h = lowerDepth - B2.z;
-						upperDepth = B2.z;
-						topTriArea = botTriArea;
-						// calculate tri area
-					}
-					else
-					{
-						h = B2.z - upperDepth;
-						//lowerDepth = B2.z;
-						FindPolygonPoints(1, wp, upperDepth, B2.z, &midTriArea, &botTriArea);
-						secondPart =  h/6. * (topTriArea + 4.*midTriArea + botTriArea);
-						// Calculate quad stuff
-						// then calcuate tri stuff with
-						topTriArea = botTriArea;
-						h = lowerDepth - B2.z;
-						upperDepth = B2.z;
-					}
-				}
-			}
-			if (B2.z != B3.z) {FindPolygonPoints(0, wp, upperDepth, B2.z, &midTriArea, &botTriArea);
-			thirdPart =  h/6. * (topTriArea + 4.*midTriArea + botTriArea);}
-
-		}
-		lastTriArea = botTriArea;
-		//debugTriVol = (firstPart + h/6. * (topTriArea + 4.*midTriArea + botTriArea)) * 1000 * 1000;	
-		//*triVol = (firstPart +  h/6. * (topTriArea + 4.*midTriArea + botTriArea)) * 1000 * 1000;	// convert to meters
-		debugTriVol = (firstPart + secondPart + thirdPart) * 1000 * 1000;	
-		*triVol = (firstPart + secondPart + thirdPart) * 1000 * 1000;	// convert to meters
-	}
-
-	return noErr;
-}
-
-OSErr TTriGridVel3D::GetTriangleDepths(long i, float *z)
-{
-	TopologyHdl topH ;
-	LongPointHdl ptsH ;
-	long ptIndex1, ptIndex2, ptIndex3;
-
-	if(!fDagTree) return -1;
-
-	topH = fDagTree->GetTopologyHdl();
-	ptsH = fDagTree->GetPointsHdl();
-
-	if(!topH || !ptsH) return -1;
-
-	ptIndex1 = (*topH)[i].vertex1;
-	ptIndex2 = (*topH)[i].vertex2;
-	ptIndex3 = (*topH)[i].vertex3;
-	
-	z[0] = (*fDepthsH)[ptIndex1];
-	z[1] = (*fDepthsH)[ptIndex2];
-	z[2] = (*fDepthsH)[ptIndex3];
-	
-	return noErr;
-}	
-
-OSErr TTriGridVel3D::GetMaxDepthForTriangle(long triNum, double *maxDepth)
-{
-	TopologyHdl topH ;
-	long i, ptIndex[3];
-	double z;
-
-	if(!fDagTree) return -1;
-
-	topH = fDagTree->GetTopologyHdl();
-
-	if(!topH) return -1;
-
-	*maxDepth = 0;
-	ptIndex[0] = (*topH)[triNum].vertex1;
-	ptIndex[1] = (*topH)[triNum].vertex2;
-	ptIndex[2] = (*topH)[triNum].vertex3;
-	
-	for (i=0;i<3;i++)
-	{
-		z = (*fDepthsH)[ptIndex[i]];
-		if (z > *maxDepth) *maxDepth = z;
-	}	
-	
-	return noErr;
-}	
-
-OSErr TTriGridVel3D::GetTriangleCentroidWC(long trinum, WorldPoint *p)
-{	
-	long x[3],y[3];
-	OSErr err = GetTriangleVertices(trinum,x,y);
-	p->pLat = (y[0]+y[1]+y[2])/3;
-	p->pLong =(x[0]+x[1]+x[2])/3;
-	return err;
-}
-
-double TTriGridVel3D::GetTriArea(long triNum)
-{
-	WorldPoint pt1,pt2,pt3,center1,center2;
-	long ptIndex1, ptIndex2, ptIndex3;
-	//double sideA, sideB, sideC, angle3;
-	double cp, triArea;
-
-	TopologyHdl topH ;
-	LongPointHdl ptsH ;
-
-	if(!fDagTree) return -1;
-
-	topH = fDagTree->GetTopologyHdl();
-	ptsH = fDagTree->GetPointsHdl();
-
-	if(!topH || !ptsH) return -1;
-	if (triNum < 0) return -1;
-	
-	// get the index into the pts handle for each vertex
-	ptIndex1 = (*topH)[triNum].vertex1;
-	ptIndex2 = (*topH)[triNum].vertex2;
-	ptIndex3 = (*topH)[triNum].vertex3;
-	
-	// get the vertices from the points handle
-
-	pt1.pLong = (*ptsH)[ptIndex1].h;
-	pt1.pLat = (*ptsH)[ptIndex1].v;
-	pt2.pLong = (*ptsH)[ptIndex2].h;
-	pt2.pLat = (*ptsH)[ptIndex2].v;
-	pt3.pLong = (*ptsH)[ptIndex3].h;
-	pt3.pLat = (*ptsH)[ptIndex3].v;
-
-	center1.pLong = (pt2.pLong+pt1.pLong) / 2;
-	center1.pLat = (pt2.pLat+pt1.pLat) / 2;
-	center2.pLong = (pt3.pLong+pt1.pLong) / 2;
-	center2.pLat = (pt3.pLat+pt1.pLat) / 2;
-	//sideC = DistanceBetweenWorldPoints(pt1,pt2);	// kilometers
-	//sideB = DistanceBetweenWorldPoints(pt1,pt3);
-	//sideA = DistanceBetweenWorldPoints(pt2,pt3);
-
-	cp = LongToDistance(pt2.pLong - pt1.pLong, center1) * LatToDistance(pt3.pLat - pt1.pLat) - LongToDistance(pt3.pLong - pt1.pLong, center2) * LatToDistance(pt2.pLat - pt1.pLat);
-	//angle3 = acos((sideA*sideA + sideB*sideB - sideC*sideC)/(2.*sideA*sideB));
-	//triArea = sin(angle3)*sideA*sideB/2.;
-	triArea = fabs(cp)/2.;
-	return triArea;
-}
-
-double **TTriGridVel3D::GetDosageHdl(Boolean initHdl)
-{
-	if (fDosageHdl) return fDosageHdl;
-	else if (initHdl)
-	{
-		long i;
-		long ntri = GetNumTriangles();
-		fDosageHdl =(double **)_NewHandle(sizeof(double)*ntri);
-		if(fDosageHdl)
-		{
-			for(i=0; i < ntri; i++)
-			{
-				(*fDosageHdl)[i] = 0.;
-			}
-			return fDosageHdl;
-		}
-		else {printError("Not enough memory to create dosage handle"); return nil;}
-	}
-	return nil;
-	
-}
-Boolean **TTriGridVel3D::GetTriSelection(Boolean initHdl) 
-{
-	if (fTriSelected)	
-		return fTriSelected;
-	else if (initHdl)
-	{
-		long i;
-		long ntri = GetNumTriangles();
-		fTriSelected =(Boolean **)_NewHandle(sizeof(Boolean)*ntri);
-		if(fTriSelected)
-		{
-			for(i=0; i < ntri; i++)
-			{
-				(*fTriSelected)[i] = false;
-			}
-			return fTriSelected;
-		}
-	}
-	return nil;
-}
 
 Boolean **TTriGridVel3D::GetPtsSelection(Boolean initHdl) 
 {
@@ -2530,252 +1541,7 @@ void TTriGridVel3D::ClearPtsSelection()
 	}
 }
 
-double TTriGridVel3D::GetMaxAtPreviousTimeStep(Seconds time)
-{
-	long sizeOfHdl;
-	float prevMax = -1;
-	OSErr err = 0;
-	outputData data;
-	if(!fOilConcHdl)
-	{
-		return -1;
-	}
-	sizeOfHdl = _GetHandleSize((Handle)fOilConcHdl)/sizeof(outputData);
-	if (sizeOfHdl>0) data = (*fOilConcHdl)[sizeOfHdl-1];
-	if (sizeOfHdl>1 && time==(*fOilConcHdl)[sizeOfHdl-1].time)	
-		prevMax = (*fOilConcHdl)[sizeOfHdl-2].maxOilConcOverSelectedTri;
-	return prevMax;
-}
 
-	
-void TTriGridVel3D::AddToOutputHdl(double avConcOverSelectedTriangles, double maxConcOverSelectedTriangles, Seconds time)
-{
-	long sizeOfHdl;
-	OSErr err = 0;
-	if(!fOilConcHdl)
-	{
-		fOilConcHdl = (outputDataHdl)_NewHandle(0);
-		if(!fOilConcHdl) {TechError("TTriGridVel3D::AddToOutputHdl()", "_NewHandle()", 0); err = memFullErr; return;}
-	}
-	sizeOfHdl = _GetHandleSize((Handle)fOilConcHdl)/sizeof(outputData);
-	//if (sizeOfHdl>0 && time==(*fOilConcHdl)[sizeOfHdl-1].time) return;	// code goes here, check all times
-	_SetHandleSize((Handle) fOilConcHdl, (sizeOfHdl+1)*sizeof(outputData));
-	if (_MemError()) { TechError("TTriGridVel3D::AddToOutputHdl()", "_SetHandleSize()", 0); return; }
-	//(*fOilConcHdl)[sizeOfHdl].oilConcAtSelectedTri = concentrationInSelectedTriangles;	// should add to old value??			
-	(*fOilConcHdl)[sizeOfHdl].avOilConcOverSelectedTri = avConcOverSelectedTriangles;	// should add to old value??			
-	(*fOilConcHdl)[sizeOfHdl].maxOilConcOverSelectedTri = maxConcOverSelectedTriangles;	// should add to old value??			
-	(*fOilConcHdl)[sizeOfHdl].time = time;				
-}
-
-/*void TTriGridVel3D::AddToMaxLayerHdl(long maxLayer, long maxTri, Seconds time)
-{	// want top/bottom ? 
-	long sizeOfHdl;
-	OSErr err = 0;
-	if(!fMaxLayerDataHdl)
-	{
-		fMaxLayerDataHdl = (maxLayerDataHdl)_NewHandle(0);
-		if(!fMaxLayerDataHdl) {TechError("TTriGridVel3D::AddToMaxLayerHdl()", "_NewHandle()", 0); err = memFullErr; return;}
-	}
-	sizeOfHdl = _GetHandleSize((Handle)fMaxLayerDataHdl)/sizeof(maxLayerData);
-	if (sizeOfHdl>0 && time==(*fMaxLayerDataHdl)[sizeOfHdl-1].time) return;	// code goes here, check all times
-	_SetHandleSize((Handle) fMaxLayerDataHdl, (sizeOfHdl+1)*sizeof(maxLayerData));
-	if (_MemError()) { TechError("TTriGridVel3D::AddToMaxLayerHdl()", "_SetHandleSize()", 0); return; }
-	(*fMaxLayerDataHdl)[sizeOfHdl].maxLayer = maxLayer;	// should add to old value??			
-	(*fMaxLayerDataHdl)[sizeOfHdl].maxTri = maxTri;	// should add to old value??			
-	(*fMaxLayerDataHdl)[sizeOfHdl].time = time;				
-}
-Boolean TTriGridVel3D::GetMaxLayerInfo(long *maxLayer, long *maxTri, Seconds time)
-{
-	long i, sizeOfHdl = _GetHandleSize((Handle)fMaxLayerDataHdl)/sizeof(maxLayerData);
-	*maxLayer = -1; *maxTri = -1;
-	if (time > (*fMaxLayerDataHdl)[sizeOfHdl-1].time) return false;	// will need to calculate the info
-
-	for (i=0;i<sizeOfHdl;i++)
-	{
-		if (time==(*fMaxLayerDataHdl)[i].time)
-		{
-			*maxLayer = (*fMaxLayerDataHdl)[i].maxLayer;
-			*maxTri = (*fMaxLayerDataHdl)[i].maxTri;
-			return true;
-		}
-	}
-	return false;	// error message? if time step has changed either need to rerun
-}
-*/
-void TTriGridVel3D::AddToTriAreaHdl(double *triAreaArray, long numValues)
-{
-	long i,sizeOfHdl;
-	OSErr err = 0;
-	if(!fTriAreaHdl)
-	{
-		fTriAreaHdl = (double**)_NewHandle(0);
-		if(!fTriAreaHdl) {TechError("TTriGridVel3D::AddToTriAreaHdl()", "_NewHandle()", 0); err = memFullErr; return;}
-	}
-	sizeOfHdl = _GetHandleSize((Handle)fTriAreaHdl)/sizeof(double);
-	//if (sizeOfHdl>0 && time==(*fTriAreaHdl)[sizeOfHdl-1].time) return;	// code goes here, check all times
-	_SetHandleSize((Handle) fTriAreaHdl, (sizeOfHdl+numValues)*sizeof(double));
-	if (_MemError()) { TechError("TTriGridVel3D::AddToTriAreaHdl()", "_SetHandleSize()", 0); return; }
-	for (i=0;i<numValues;i++)
-	{
-		(*fTriAreaHdl)[sizeOfHdl+i] = triAreaArray[i];				
-	}
-}
-
-void TTriGridVel3D::ClearOutputHandles()
-{
-	if(fOilConcHdl) 
-	{
-		DisposeHandle((Handle)fOilConcHdl); 
-		fOilConcHdl = 0;
-	}
-	if(fTriAreaHdl) 
-	{
-		DisposeHandle((Handle)fTriAreaHdl); 
-		fTriAreaHdl = 0;
-	}
-	if(fDosageHdl) 
-	{
-		DisposeHandle((Handle)fDosageHdl); 
-		fDosageHdl = 0;
-	}
-	if(fMaxLayerDataHdl)
-	{
-		DisposeHandle((Handle)fMaxLayerDataHdl); 
-		fMaxLayerDataHdl = 0;
-	}
-}
-
-OSErr TTriGridVel3D::ExportOilConcHdl(char* path)
-{
-	OSErr err = 0;
-	DateTimeRec dateTime;
-	Seconds time;
-	double avConc,maxConc;
-	outputData data;
-	long numOutputValues,i;
-	char buffer[512],concStr1[64],concStr2[64],timeStr[128];
-	BFPB bfpb;
-
-
-	(void)hdelete(0, 0, path);
-	if (err = hcreate(0, 0, path, 'ttxt', 'TEXT'))
-		{ TechError("WriteToPath()", "hcreate()", err); return err; }
-	if (err = FSOpenBuf(0, 0, path, &bfpb, 100000, FALSE))
-		{ TechError("WriteToPath()", "FSOpenBuf()", err); return err; }
-
-
-	// Write out the times and values
-	// add header line
-	//strcpy(buffer,"Day Mo Yr Hr Min\t\tAv Conc\tMax Conc");
-	strcpy(buffer,"Day\tMo\tYr\tHr\tMin\tAv Conc\tMax Conc");
-	strcat(buffer,NEWLINESTRING);
-	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-	numOutputValues = _GetHandleSize((Handle)fOilConcHdl)/sizeof(outputData);
-	for(i = 0; i< numOutputValues;i++)
-	{
-		data = INDEXH(fOilConcHdl,i);
-		time = data.time;
-		avConc = data.avOilConcOverSelectedTri;
-		maxConc = data.maxOilConcOverSelectedTri;
-		SecondsToDate(time,&dateTime); // convert to 2 digit year?
-		//if(dateTime.year>=2000) dateTime.year-=2000;
-		//if(dateTime.year>=1900) dateTime.year-=1900;
-		/*sprintf(timeStr, "%02hd,%02hd,%02hd,%02hd,%02hd",
-			   dateTime.day, dateTime.month, dateTime.year,
-			   dateTime.hour, dateTime.minute);*/
-
-		sprintf(timeStr, "%02hd\t%02hd\t%02hd\t%02hd\t%02hd",
-			   dateTime.day, dateTime.month, dateTime.year,
-			   dateTime.hour, dateTime.minute);
-
-		StringWithoutTrailingZeros(concStr1,avConc,3);
-		StringWithoutTrailingZeros(concStr2,maxConc,3);
-		/////
-		strcpy(buffer,timeStr);
-		//strcat(buffer,"		");
-		strcat(buffer,"\t");
-		strcat(buffer,concStr1);
-		//strcat(buffer,"		");
-		strcat(buffer,"\t");
-		strcat(buffer,concStr2);
-		strcat(buffer,NEWLINESTRING);
-		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-	}
-
-done:
-	// 
-	FSCloseBuf(&bfpb);
-	if(err) {	
-		// the user has already been told there was a problem
-		(void)hdelete(0, 0, path); // don't leave them with a partial file
-	}
-	return err;
-}
-
-OSErr TTriGridVel3D::ExportTriAreaHdl(char* path, long numLevels)
-{
-	OSErr err = 0;
-	double triArea;
-	long numOutputValues,i,j,numTimes,k=0;
-	char buffer[512],triAreaStr[64],indexStr[24],concStr[64];
-	BFPB bfpb;
-
-
-	(void)hdelete(0, 0, path);
-	if (err = hcreate(0, 0, path, 'ttxt', 'TEXT'))
-		{ TechError("WriteToPath()", "hcreate()", err); return err; }
-	if (err = FSOpenBuf(0, 0, path, &bfpb, 100000, FALSE))
-		{ TechError("WriteToPath()", "FSOpenBuf()", err); return err; }
-
-	// Write out the times and values
-	numOutputValues = _GetHandleSize((Handle)fTriAreaHdl)/sizeof(double);
-	numTimes = numOutputValues / numLevels;
-	
-	// add header line
-	strcpy(buffer,"Hr");
-	for (j=0; j < numLevels; j++)
-	{
-		strcpy(concStr,"C");
-		sprintf(indexStr,"%ld",j+1);
-		strcat(concStr,indexStr);
-		//strcat(buffer,"	  ");
-		strcat(buffer,"\t");
-		strcat(buffer,concStr);
-	}
-	strcat(buffer,NEWLINESTRING);
-	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-	for(i = 0; i< numTimes;i++)
-	{
-		float outputTime;
-		if(k>=numOutputValues) break;
-		outputTime = model->LEDumpInterval / 3600.;
-		sprintf(indexStr,"%ld",(i+1) * (long)outputTime);	// should multiply by LEDumpInterval since that is the output time step
-		strcpy(buffer,indexStr);
-		//strcat(buffer,"		");
-		strcat(buffer,"\t");
-		for (j=0; j < numLevels; j++)
-		{
-			triArea = INDEXH(fTriAreaHdl,k);
-			MyNumToStr(triArea,triAreaStr);
-			//sprintf(triAreaStr,"%.1g",triArea);
-			strcat(buffer,triAreaStr);
-			//strcat(buffer,"		");
-			strcat(buffer,"\t");
-			k++;
-		}
-		strcat(buffer,NEWLINESTRING);
-		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-	}
-
-done:
-	// 
-	FSCloseBuf(&bfpb);
-	if(err) {	
-		// the user has already been told there was a problem
-		(void)hdelete(0, 0, path); // don't leave them with a partial file
-	}
-	return err;
-}
 
 OSErr TTriGridVel3D::ExportAllDataAtSetTimes(char* path)
 {	// av, max concentration, area at each level, budget table, at 3,12,24,48,72 hours after dispersion or after spill
@@ -3114,108 +1880,6 @@ long TTriGridVel3D::FindTriNearClick(Point where)
 	long trinum = fDagTree->WhatTriAmIIn(lp);
 	return trinum;
 }
-
-void TTriGridVel3D::GetTriangleVerticesWP(long i, WorldPoint *w)
-{
-	TopologyHdl topH;
-	LongPointHdl ptsH;
-	topH = fDagTree->GetTopologyHdl();	
-	ptsH = fDagTree->GetPointsHdl();
-	if(!topH || !ptsH) return;
-	w[0].pLong = (*ptsH)[(*topH)[i].vertex1].h;
-	w[0].pLat = (*ptsH)[(*topH)[i].vertex1].v;
-	w[1].pLong = (*ptsH)[(*topH)[i].vertex2].h;
-	w[1].pLat = (*ptsH)[(*topH)[i].vertex2].v;
-	w[2].pLong = (*ptsH)[(*topH)[i].vertex3].h;
-	w[2].pLat = (*ptsH)[(*topH)[i].vertex3].v;
-	return;
-}
-
-OSErr TTriGridVel3D::GetTriangleVerticesWP3D(long i, WorldPoint3D *w)
-{
-	TopologyHdl topH;
-	LongPointHdl ptsH;
-	topH = fDagTree->GetTopologyHdl();	
-	ptsH = fDagTree->GetPointsHdl();
-	if(!topH || !ptsH) return -1;
-	w[0].p.pLong = (*ptsH)[(*topH)[i].vertex1].h;
-	w[0].p.pLat = (*ptsH)[(*topH)[i].vertex1].v;
-	w[1].p.pLong = (*ptsH)[(*topH)[i].vertex2].h;
-	w[1].p.pLat = (*ptsH)[(*topH)[i].vertex2].v;
-	w[2].p.pLong = (*ptsH)[(*topH)[i].vertex3].h;
-	w[2].p.pLat = (*ptsH)[(*topH)[i].vertex3].v;
-	w[0].z = (*fDepthsH)[(*topH)[i].vertex1];
-	w[1].z = (*fDepthsH)[(*topH)[i].vertex2];
-	w[2].z = (*fDepthsH)[(*topH)[i].vertex3];
-	return 0;
-}
-
-Boolean TTriGridVel3D::ThereAreTrianglesSelected2() 
-{
-	long i, numTri;
-	if (!fTriSelected) return false;
-	numTri = GetNumTriangles();
-	for (i=0;i<numTri;i++)
-	{
-		if ((*fTriSelected)[i]) return true;
-	}
-	return false;
-}
-
-Boolean TTriGridVel3D::SelectTriInPolygon(WORLDPOINTH wh, Boolean *needToRefresh)
-{	// code extended from original cats to deal with refreshing
-	long ntri = GetNumTriangles(),i,numsegs;
-	WorldPoint w[3];
-	Boolean triSelected = false, someTrisInPolygonAlreadySelected = false;
-	Boolean someTrisOutsidePolygonStillSelected = false;
-	SEGMENTH poly = WPointsToSegments(wh,_GetHandleSize((Handle)(wh))/sizeof(WorldPoint),&numsegs);
-	*needToRefresh = false;
-	if(poly != 0)
-	{
-		for(i=0; i < ntri; i++)
-		{
-			GetTriangleVerticesWP(i, w);
-			if( PointInPolygon(w[0],poly,numsegs,true) &&
-				PointInPolygon(w[1],poly,numsegs,true) &&
-				PointInPolygon(w[2],poly,numsegs,true)
-				)
-			{
-				*needToRefresh = true;
-				if ((*fTriSelected)[i] == true)
-				{
-					someTrisInPolygonAlreadySelected = true;
-					break;
-				}
-				(*fTriSelected)[i]=true;		
-				triSelected = true;
-			}
-		}
-		if (someTrisInPolygonAlreadySelected)
-		{
-			for(i=0; i < ntri; i++)
-			{
-				GetTriangleVerticesWP(i, w);
-				if( PointInPolygon(w[0],poly,numsegs,true) &&
-					PointInPolygon(w[1],poly,numsegs,true) &&
-					PointInPolygon(w[2],poly,numsegs,true)
-					)
-				{
-					(*fTriSelected)[i]=false;		
-					triSelected = true;	// marks a change
-				}
-				else
-				{
-					if ((*fTriSelected)[i])
-						someTrisOutsidePolygonStillSelected = true;
-				}
-			}
-			// need to draw if deselected but not if didn't select at all
-			if (!someTrisOutsidePolygonStillSelected)	{ClearTriSelection(); triSelected = false;}
-		}
-	}
-	return triSelected;
-}
-
 Boolean TTriGridVel3D::PointsSelected()
 {
 	long n = GetNumPoints();
@@ -3451,7 +2115,7 @@ void TTriGridVel3D::DrawTriangleStr(Rect *r,long triNum, double value)
 
 ////////////////////////////////////////////////////////////////////////////////////
 void TTriGridVel3D::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,double arrowScale,
-					   Boolean bDrawArrows, Boolean bDrawGrid)
+					   Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)
 {
 	short row, col, pixX, pixY;
 	float inchesX, inchesY;
@@ -3494,6 +2158,7 @@ void TTriGridVel3D::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 	{
 		if (bDrawArrows) 
 		{
+			RGBForeColor(&arrowColor);
 			wp1 = (*ptsH)[(*topH)[i].vertex1];
 			wp2 = (*ptsH)[(*topH)[i].vertex2];
 			wp3 = (*ptsH)[(*topH)[i].vertex3];
@@ -3522,6 +2187,7 @@ void TTriGridVel3D::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
 				//DrawArrowHead (p, p2, velocity);
 				MyDrawArrow(p.h,p.v,p2.h,p2.v);
 			}
+			RGBForeColor(&colors[PURPLE]);
 		}
 		
 		//if (bDrawGrid) DrawTriangle3D(&r,i,FALSE,FALSE);	// don't fill triangles
@@ -3675,5 +2341,203 @@ void TTriGridVel3D::DrawPointAt(Rect *r,long verIndex,short selectMode )
 		}
 	}
 }
+Boolean TTriGridVel3D::ThereAreTrianglesSelected2() 
+{
+	long i, numTri;
+	if (!fTriSelected) return false;
+	numTri = GetNumTriangles();
+	for (i=0;i<numTri;i++)
+	{
+		if ((*fTriSelected)[i]) return true;
+	}
+	return false;
+}
 
+Boolean TTriGridVel3D::SelectTriInPolygon(WORLDPOINTH wh, Boolean *needToRefresh)
+{	// code extended from original cats to deal with refreshing
+	long ntri = GetNumTriangles(),i,numsegs;
+	WorldPoint w[3];
+	Boolean triSelected = false, someTrisInPolygonAlreadySelected = false;
+	Boolean someTrisOutsidePolygonStillSelected = false;
+	SEGMENTH poly = WPointsToSegments(wh,_GetHandleSize((Handle)(wh))/sizeof(WorldPoint),&numsegs);
+	*needToRefresh = false;
+	if(poly != 0)
+	{
+		for(i=0; i < ntri; i++)
+		{
+			GetTriangleVerticesWP(i, w);
+			if( PointInPolygon(w[0],poly,numsegs,true) &&
+			   PointInPolygon(w[1],poly,numsegs,true) &&
+			   PointInPolygon(w[2],poly,numsegs,true)
+			   )
+			{
+				*needToRefresh = true;
+				if ((*fTriSelected)[i] == true)
+				{
+					someTrisInPolygonAlreadySelected = true;
+					break;
+				}
+				(*fTriSelected)[i]=true;		
+				triSelected = true;
+			}
+		}
+		if (someTrisInPolygonAlreadySelected)
+		{
+			for(i=0; i < ntri; i++)
+			{
+				GetTriangleVerticesWP(i, w);
+				if( PointInPolygon(w[0],poly,numsegs,true) &&
+				   PointInPolygon(w[1],poly,numsegs,true) &&
+				   PointInPolygon(w[2],poly,numsegs,true)
+				   )
+				{
+					(*fTriSelected)[i]=false;		
+					triSelected = true;	// marks a change
+				}
+				else
+				{
+					if ((*fTriSelected)[i])
+						someTrisOutsidePolygonStillSelected = true;
+				}
+			}
+			// need to draw if deselected but not if didn't select at all
+			if (!someTrisOutsidePolygonStillSelected)	{ClearTriSelection(); triSelected = false;}
+		}
+	}
+	return triSelected;
+}
+
+
+
+OSErr TTriGridVel3D::ExportOilConcHdl(char* path)
+{
+	OSErr err = 0;
+	DateTimeRec dateTime;
+	Seconds time;
+	double avConc,maxConc;
+	outputData data;
+	long numOutputValues,i;
+	char buffer[512],concStr1[64],concStr2[64],timeStr[128];
+	BFPB bfpb;
+	
+	
+	(void)hdelete(0, 0, path);
+	if (err = hcreate(0, 0, path, 'ttxt', 'TEXT'))
+	{ TechError("WriteToPath()", "hcreate()", err); return err; }
+	if (err = FSOpenBuf(0, 0, path, &bfpb, 100000, FALSE))
+	{ TechError("WriteToPath()", "FSOpenBuf()", err); return err; }
+	
+	
+	// Write out the times and values
+	// add header line
+	//strcpy(buffer,"Day Mo Yr Hr Min\t\tAv Conc\tMax Conc");
+	strcpy(buffer,"Day\tMo\tYr\tHr\tMin\tAv Conc\tMax Conc");
+	strcat(buffer,NEWLINESTRING);
+	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	numOutputValues = _GetHandleSize((Handle)fOilConcHdl)/sizeof(outputData);
+	for(i = 0; i< numOutputValues;i++)
+	{
+		data = INDEXH(fOilConcHdl,i);
+		time = data.time;
+		avConc = data.avOilConcOverSelectedTri;
+		maxConc = data.maxOilConcOverSelectedTri;
+		SecondsToDate(time,&dateTime); // convert to 2 digit year?
+		//if(dateTime.year>=2000) dateTime.year-=2000;
+		//if(dateTime.year>=1900) dateTime.year-=1900;
+		/*sprintf(timeStr, "%02hd,%02hd,%02hd,%02hd,%02hd",
+		 dateTime.day, dateTime.month, dateTime.year,
+		 dateTime.hour, dateTime.minute);*/
+		
+		sprintf(timeStr, "%02hd\t%02hd\t%02hd\t%02hd\t%02hd",
+				dateTime.day, dateTime.month, dateTime.year,
+				dateTime.hour, dateTime.minute);
+		
+		StringWithoutTrailingZeros(concStr1,avConc,3);
+		StringWithoutTrailingZeros(concStr2,maxConc,3);
+		/////
+		strcpy(buffer,timeStr);
+		//strcat(buffer,"		");
+		strcat(buffer,"\t");
+		strcat(buffer,concStr1);
+		//strcat(buffer,"		");
+		strcat(buffer,"\t");
+		strcat(buffer,concStr2);
+		strcat(buffer,NEWLINESTRING);
+		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	}
+	
+done:
+	// 
+	FSCloseBuf(&bfpb);
+	if(err) {	
+		// the user has already been told there was a problem
+		(void)hdelete(0, 0, path); // don't leave them with a partial file
+	}
+	return err;
+}
+
+OSErr TTriGridVel3D::ExportTriAreaHdl(char* path, long numLevels)
+{
+	OSErr err = 0;
+	double triArea;
+	long numOutputValues,i,j,numTimes,k=0;
+	char buffer[512],triAreaStr[64],indexStr[24],concStr[64];
+	BFPB bfpb;
+	
+	
+	(void)hdelete(0, 0, path);
+	if (err = hcreate(0, 0, path, 'ttxt', 'TEXT'))
+	{ TechError("WriteToPath()", "hcreate()", err); return err; }
+	if (err = FSOpenBuf(0, 0, path, &bfpb, 100000, FALSE))
+	{ TechError("WriteToPath()", "FSOpenBuf()", err); return err; }
+	
+	// Write out the times and values
+	numOutputValues = _GetHandleSize((Handle)fTriAreaHdl)/sizeof(double);
+	numTimes = numOutputValues / numLevels;
+	
+	// add header line
+	strcpy(buffer,"Hr");
+	for (j=0; j < numLevels; j++)
+	{
+		strcpy(concStr,"C");
+		sprintf(indexStr,"%ld",j+1);
+		strcat(concStr,indexStr);
+		//strcat(buffer,"	  ");
+		strcat(buffer,"\t");
+		strcat(buffer,concStr);
+	}
+	strcat(buffer,NEWLINESTRING);
+	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	for(i = 0; i< numTimes;i++)
+	{
+		float outputTime;
+		if(k>=numOutputValues) break;
+		outputTime = model->LEDumpInterval / 3600.;
+		sprintf(indexStr,"%ld",(i+1) * (long)outputTime);	// should multiply by LEDumpInterval since that is the output time step
+		strcpy(buffer,indexStr);
+		//strcat(buffer,"		");
+		strcat(buffer,"\t");
+		for (j=0; j < numLevels; j++)
+		{
+			triArea = INDEXH(fTriAreaHdl,k);
+			MyNumToStr(triArea,triAreaStr);
+			//sprintf(triAreaStr,"%.1g",triArea);
+			strcat(buffer,triAreaStr);
+			//strcat(buffer,"		");
+			strcat(buffer,"\t");
+			k++;
+		}
+		strcat(buffer,NEWLINESTRING);
+		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	}
+	
+done:
+	// 
+	FSCloseBuf(&bfpb);
+	if(err) {	
+		// the user has already been told there was a problem
+		(void)hdelete(0, 0, path); // don't leave them with a partial file
+	}
+	return err;
+}
 
