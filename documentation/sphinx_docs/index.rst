@@ -7,21 +7,20 @@ Welcome to pyGNOME's documentation!
 ===================================
 
 Contents:
+---------------
 
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 2
 
   introduction
   structure
   tutorials
   reference
   
-  
-  
 
 
 Indices and tables
-==================
+-----------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
