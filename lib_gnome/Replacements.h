@@ -75,7 +75,7 @@
 #define printError(msg) printf(msg)
 #define printNote(msg) printf(msg)
 #define DisplayMessage(msg) printf(msg)
-#ifdef MAC
+#ifndef ibmpyGNOME
 #define _isnan isnan
 #endif
 
