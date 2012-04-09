@@ -240,13 +240,13 @@ class Model:
             return False
         if self.time_step >= self.num_timesteps:
             return False
+        c_gnome.step_model()
+        self.time_step += 1
         self.release_particles()
         #self.refloat_particles()
         self.move_particles()
         filename = os.path.join(output_dir, 'map%05i.png'%self.time_step)
         print "filename:", filename
         self.c_map.draw_particles(self.spills, filename)
-        self.time_step += 1
-        c_gnome.step_model()
         return filename
         

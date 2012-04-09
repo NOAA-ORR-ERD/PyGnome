@@ -48,7 +48,6 @@ elif sys.platform == "win32":
 setup(name='python gnome',
       version='beta', 
       requires=['numpy'],
-      cmdclass={'build_ext': build_ext },
       packages=['gnome','gnome.utilities',],
       ext_modules=[Extension('gnome.c_gnome',
                              files, 

@@ -36,16 +36,6 @@ extra_includes="."
 compile_args=None
 macros = [('pyGNOME', 1),]
 
-#if sys.platform == "darwin":
-#    macros += [('MAC', 1), ('TARGET_CARBON', 1),]
-#    if get_config_var('UNIVERSALSDK') != None:
-#        extra_includes=get_config_var('UNIVERSALSDK')+'/Developer/Headers/FlatCarbon'
-#    else:
-#        print 'UNIVERSALSDK not set. aborting.'
-#        exit(-1)
-#elif sys.platform == "win32":
-#	compile_args = ['/W0',]
-#	macros += [('IBM', 1),]
 
 setup(name='python gnome',
       version='beta', 
@@ -57,7 +47,6 @@ setup(name='python gnome',
                              language="c++",
 			     define_macros = macros,
                              extra_compile_args=compile_args,
-			     #extra_link_args=['-Wl,-framework', '-Wl,Carbon',],
 			     extra_link_args=['-Wl,../third_party_lib/libnetcdf.a',],
 			     include_dirs=[CPP_CODE_DIR,
                                            np.get_include(),

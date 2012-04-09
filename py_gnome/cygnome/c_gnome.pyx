@@ -127,7 +127,6 @@ cdef class cats_mover:
         self.mover.fOptimize.isOptimizedForStep = 1
         self.mover.fOptimize.isFirstStep = 0
         self.mover.ModelStepIsDone()
-        print 'cats move finished.'
     
     def compute_velocity_scale(self):
         self.mover.ComputeVelocityScale()
@@ -170,7 +169,6 @@ cdef class random_mover:
             LEs[i].p.pLat += (dpLat/1000000)
             LEs[i].p.pLong += (dpLong/1000000)
         self.mover.ModelStepIsDone()
-        print 'random move finished.'
 
 
 cdef class wind_mover:
@@ -223,5 +221,4 @@ cdef class wind_mover:
             dpLong = wp3d.p.pLong
             LEs[i].p.pLat += (dpLat/1000000)
             LEs[i].p.pLong += (dpLong/1000000)
-        print 'wind move finished.'
 
