@@ -98,6 +98,8 @@ OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR
 
 void paramtext(char* p0,char* p1,char* p2,char* p3) { return; }
 
+OSErr AskUserForUnits(short* selectedUnits,Boolean *userCancel) { return -1; }
+
 OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size) {
 	
 	char c;

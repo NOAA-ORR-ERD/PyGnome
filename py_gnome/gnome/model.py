@@ -42,6 +42,9 @@ class Model:
         self.lwp_arrays = []
         self.shio = None
         
+    def set_uncertain(self):
+        c_gnome.set_model_uncertain()
+        
     def add_map(self, image_size, bna_filename, refloat_halflife):
         """ 
             Adds both a color bitmap for visualization and a land-water map, for movement regulatoin and other tasks. 
@@ -195,7 +198,7 @@ class Model:
             lwpras += [numpy.copy(spill.npra['p'])]
         for mover in self.movers:
             for j in xrange(0, len(spills)):
-                mover.get_move(self.interval_seconds, spills[j].npra, spills[j].uncertain)
+                mover.get_move(self.interval_seconds, spills[j].npra, spills[j].uncertain, j+1) #1-indexed sets list
         for j in xrange(0, len(spills)):
             spill = spills[j]
             chromgph = spill.movement_check()
@@ -204,14 +207,12 @@ class Model:
                     self.lwp_arrays[j][i] = lwpras[j][i]
                     beach_element(spill.npra['p'][i], lwpras[j][i])
    
-    def initialize_model(self, vacuous):
+    def initialize(self):
         """ Calls on Cython module to intialize the cpp model object. """
         c_gnome.initialize_model(self.spills)
-        self.initialize_model = lambda null: None
         
     def step(self, output_dir="."):
         """ Steps the model forward in time. Needs support for hindcasting. """
-        self.initialize_model(None)
         "step called: time step:", self.time_step
         if(self.duration == None):
             return False
