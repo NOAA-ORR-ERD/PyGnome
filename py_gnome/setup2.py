@@ -10,7 +10,8 @@ from setuptools import setup
 from distutils.extension import Extension
 
 files = ['MemUtils.cpp', 'Mover_c.cpp', 'Replacements.cpp']
-files += ['CMapLayer_c.cpp', 'ClassID_c.cpp', ]
+files += ['CMapLayer_c.cpp', 'ClassID_c.cpp', 'ComponentMover_c.cpp']
+files += ['OUTILS.cpp', 'TimeValuesIO.cpp',]
 files += ['NetCDFMover_c.cpp', 'RectGridVel_c.cpp', 'Model_c.cpp',]
 files += ['PtCurMover_c.cpp', 'CompoundMap_c.cpp', 'NetCDFMoverCurv_c.cpp',]
 files += ['TriGridVel3D_c.cpp', 'TideCurCycleMover_c.cpp', 'MakeTriangles.cpp',]
@@ -26,7 +27,7 @@ files += ['Random_c.cpp', 'WindMover_c.cpp', 'CurrentMover_c.cpp']
 files += ['CompFunctions.cpp', 'CMYLIST.cpp', 'GEOMETR2.cpp']
 files += ['TriGridVel_c.cpp', 'DagTree.cpp', 'StringFunctions.cpp']
 
-temp_list = ['cyGNOME/c_gnome.cpp']
+temp_list = ['cyGNOME/c_gnome.pyx']
 for file in files:
     temp_list.append(os.path.join(CPP_CODE_DIR ,file))
 files = temp_list
@@ -34,30 +35,27 @@ files = temp_list
 extra_includes="."
 compile_args=None
 macros = [('pyGNOME', 1),]
+link_args = []
 
-#if sys.platform == "darwin":
-#    macros += [('MAC', 1), ('TARGET_CARBON', 1),]
-#    if get_config_var('UNIVERSALSDK') != None:
-#        extra_includes=get_config_var('UNIVERSALSDK')+'/Developer/Headers/FlatCarbon'
-#    else:
-#        print 'UNIVERSALSDK not set. aborting.'
-#        exit(-1)
-#elif sys.platform == "win32":
-#	compile_args = ['/W0',]
-#	macros += [('IBM', 1),]
-
+if sys.platform == "darwin":
+    link_args = ['-Wl,../third_party_lib/libnetcdf.a',]
+elif sys.platform == "win32":
+	compile_args = ['/W0',]
+    link_args = ['../third_party_lib/netcdf3.6.3.lib', \
+                  '/DEFAULTLIB:MSVCRT.lib',
+                  '/NODEFAULTLIB:LIBCMT.lib',
+                ]
 setup(name='python gnome',
       version='beta', 
       requires=['numpy'],
-      #cmdclass={'build_ext': build_ext },
+      cmdclass={'build_ext': build_ext },
       packages=['gnome','gnome.utilities',],
       ext_modules=[Extension('gnome.c_gnome',
                              files, 
                              language="c++",
 			     define_macros = macros,
                              extra_compile_args=compile_args,
-			     #extra_link_args=['-Wl,-framework', '-Wl,Carbon',],
-			     extra_link_args=['-Wl,../third_party_lib/libnetcdf.a',],
+			     extra_link_args=link_args,
 			     include_dirs=[CPP_CODE_DIR,
                                            np.get_include(),
                                            'cyGNOME',
