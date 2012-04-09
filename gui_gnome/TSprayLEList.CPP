@@ -1620,6 +1620,11 @@ Boolean TSprayLEList::ListClick(ListItem item, Boolean inBullet, Boolean doubleC
 		return TRUE;
 	}*/
 				
+	if (ShiftKeyDown() && item.index == I_LEFIRSTLINE) {
+		fColor = MyPickColor(fColor,mapWindow);
+		model->NewDirtNotification(DIRTY_LIST|DIRTY_MAPDRAWINGRECT);
+	}
+	
 	if(doubleClick)  return this -> SettingsItem (item); // do the settings
 	
 	return FALSE;

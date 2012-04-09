@@ -2453,6 +2453,11 @@ Boolean TOLEList::ListClick(ListItem item, Boolean inBullet, Boolean doubleClick
 	if (inBullet && item.index == I_LERELEASE_MASSBALANCE)
 		{ bMassBalanceOpen = !bMassBalanceOpen; return TRUE; }
 	
+	if (ShiftKeyDown() && item.index == I_LEFIRSTLINE) {
+		fColor = MyPickColor(fColor,mapWindow);
+		model->NewDirtNotification(DIRTY_LIST|DIRTY_MAPDRAWINGRECT);
+	}
+	
 	//JLM  9/18/98
 	if (doubleClick && item.index == I_LENATURALDISP)  {AdiosTable(fAdiosDataH,fOilTypeName,fDispersantData.api); return true;}
 	if (doubleClick && item.index == I_LERELEASE_MASSBALANCE) {BudgetTable(GetMassUnits(),GetTotalMass(),fBudgetTableH); return true;}
@@ -4784,8 +4789,10 @@ void TOLEList::Draw(Rect r, WorldRect view)
 					inWaterColor = &colors[RED];
 					break;
 				default:
-					onLandColor  = &colors[BLACK];
-					inWaterColor = &colors[BLACK];
+					//onLandColor  = &colors[BLACK];
+					//inWaterColor = &colors[BLACK];
+					onLandColor  = &fColor;
+					inWaterColor = &fColor;
 					break;
 			}
 			
