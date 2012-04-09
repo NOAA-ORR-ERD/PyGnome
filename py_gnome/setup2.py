@@ -45,7 +45,7 @@ elif sys.platform == "win32":
                   '/DEFAULTLIB:MSVCRT.lib',
                   '/NODEFAULTLIB:LIBCMT.lib',
                 ]
-    macros += [('ibmpyGNOME', 1),]
+    macros += [('ibmpyGNOME', 1), ('CYTHON_CCOMPLEX', 0),]
 
 setup(name='python gnome',
       version='beta', 
