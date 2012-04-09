@@ -75,7 +75,9 @@
 #define printError(msg) printf(msg)
 #define printNote(msg) printf(msg)
 #define DisplayMessage(msg) printf(msg)
+#ifdef MAC
 #define _isnan isnan
+#endif
 
 extern Model_c *model;
 extern Settings settings;

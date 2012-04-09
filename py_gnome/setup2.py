@@ -27,7 +27,7 @@ files += ['Random_c.cpp', 'WindMover_c.cpp', 'CurrentMover_c.cpp']
 files += ['CompFunctions.cpp', 'CMYLIST.cpp', 'GEOMETR2.cpp']
 files += ['TriGridVel_c.cpp', 'DagTree.cpp', 'StringFunctions.cpp']
 
-temp_list = ['cyGNOME/c_gnome.pyx']
+temp_list = ['cyGNOME/c_gnome.cpp']
 for file in files:
     temp_list.append(os.path.join(CPP_CODE_DIR ,file))
 files = temp_list
@@ -40,7 +40,7 @@ link_args = []
 if sys.platform == "darwin":
     link_args = ['-Wl,../third_party_lib/libnetcdf.a',]
 elif sys.platform == "win32":
-	compile_args = ['/W0',]
+    compile_args = ['/W0',]
     link_args = ['../third_party_lib/netcdf3.6.3.lib', \
                   '/DEFAULTLIB:MSVCRT.lib',
                   '/NODEFAULTLIB:LIBCMT.lib',
