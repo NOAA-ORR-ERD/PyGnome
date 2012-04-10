@@ -2,6 +2,51 @@
 
 """
 script to test time aspects of GNOME with long island sound data
+
+some timings:
+
+start:
+
+time_run: 2.45
+time_init: 0.12
+time_currents: 0.05
+time_wind: 0.0
+time_diffusion: 0.0
+time_map: 0.38
+time_draw: 2.02
+
+
+with new map code:
+( still not vectorized at all --  tiny bit faster, but not really )
+time_run: 2.41
+time_init: 0.13
+time_currents: 0.06
+time_wind: 0.0
+time_diffusion: 0.0
+time_map: 0.32
+time_draw: 2.03
+
+with to_pixel_array vectorized:
+
+time_run: 2.56
+time_init: 0.12
+time_currents: 0.04
+time_wind: 0.0
+time_diffusion: 0.0
+time_map: 0.28
+time_draw: 2.24
+
+with on_land_pixel_array vectorized
+
+time_run: 1.81
+time_init: 0.11
+time_currents: 0.05
+time_wind: 0.0
+time_diffusion: 0.0
+time_map: 0.01
+time_draw: 1.75
+
+
 """
 
 import os
@@ -82,7 +127,7 @@ mini_gnome.set_run_duration(model_start_time, model_stop_time)
 mini_gnome.set_timestep(3600 * 2) # seconds
 
 print "adding a wind mover:"
-mini_gnome.add_wind_mover((-.5, -.2))
+mini_gnome.add_wind_mover( (-1.0, -2.0) )
 
 print "adding a random mover:"
 mini_gnome.add_random_mover(10000)
@@ -111,33 +156,22 @@ while True:
     if mini_gnome.time_step >= mini_gnome.num_timesteps:
         break
     mini_gnome.release_particles()
+
     #mini_gnome.refloat_particles()
     
-    lwpras = [] # last water position array
-    spills = mini_gnome.spills
-    beach_element = mini_gnome.lw_map.beach_element
-    for spill in spills:
-        lwpras += [numpy.copy(spill.npra['p'])]
-
     start = time.clock()
-    for mover in mini_gnome.movers:
-        for j in xrange(0, len(spills)):
-            mover.get_move(mini_gnome.interval_seconds, spills[j].npra, spills[j].uncertain)
+    lwpras = mini_gnome.move_particles()
     time_currents += time.clock() - start
 
+
     start = time.clock()
-    for j in xrange(0, len(spills)):
-        spill = spills[j]
-        chromgph = spill.movement_check()
-        for i in xrange(0, len(chromgph)):
-            if chromgph[i]:
-                mini_gnome.lwp_arrays[j][i] = lwpras[j][i]
-                beach_element(spill.npra['p'][i], lwpras[j][i])
+    mini_gnome.beach_particles(lwpras)
     time_map += time.clock() - start
-    
+
     
     filename = os.path.join(output_dir, 'map%05i.png'%mini_gnome.time_step)
     print "filename:", filename
+
     start = time.clock()
     mini_gnome.c_map.draw_particles(mini_gnome.spills, filename)
     time_draw += time.clock() - start

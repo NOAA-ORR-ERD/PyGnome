@@ -4,6 +4,7 @@ import os
 import sys
 from math import floor
 import collections
+import gnome
 from gnome import c_gnome, greenwich
 from map import gnome_map, lw_map
 from basic_types import disp_status_dont_disperse
@@ -22,7 +23,7 @@ class Model:
         - Continuous Spill
         - Refloating
     """
-    lw_bmp_dimensions = (1000, 1000)
+    lw_bmp_size = (1024*1024)
 
     def __init__(self):
         """ 
@@ -44,16 +45,23 @@ class Model:
         
     def add_map(self, image_size, bna_filename, refloat_halflife):
         """ 
-            Adds both a color bitmap for visualization and a land-water map, for movement regulatoin and other tasks. 
-        ++arguments:
-            refloat_halflife is in seconds.
+        Adds both a color bitmap for visualization and a land-water map, for movement regulation and other tasks. 
+
+        :param image_size  tuple of the size of the image to use for the visual map.
+
+        :param refloat_halflife is the half-life of re-floating from shore, in seconds.
         """
-        if not refloat_halflife:
-            print 'Refloat halflife must be nonzero.'
-            exit(-1)
+        ##fixme: I'm not sure the visual should be defined here anyway
+        ##       Perhaps that should be handled by drawing code later on, when needed.
+        if refloat_halflife <= 0.0:
+            raise ValueError("Refloat half life must be a positive nonzero value.")
         self.c_map = gnome_map(image_size, bna_filename)
-        self.lw_map = lw_map(self.lw_bmp_dimensions, bna_filename, refloat_halflife, '1')
-    
+        # old code here -- 
+        #bmp_dimensions = numpy.sqrt( (self.lw_bmp_size, self.lw_bmp_size) ).astype(numpy.int)
+        #self.lw_map = lw_map(bmp_dimensions, bna_filename, refloat_halflife, '1')
+        #this version used numpy array for bitmap
+        self.lw_map = gnome.map.MapFromBNA(bna_filename, refloat_halflife, self.lw_bmp_size, )    
+
     def add_mover(self, mover):
         """
             add a new mover to the model -- at the end of the stack
@@ -162,7 +170,8 @@ class Model:
                     disp_status=disp_status_dont_disperse, uncertain=False):
         # fixme: have windage range?
         """ 
-            Sets a spill location.
+        Sets a spill location.
+        
         :params num_particles: number of particles to use
         :params windage: wind-drift factor of particles: fraction i.e. 0.03 for 3%
         :params (start_time, stop_time): (start_time, stop_time) start and stop time of release
@@ -179,7 +188,7 @@ class Model:
                                             (greenwich.gwtm(start_time).time_seconds, greenwich.gwtm(stop_time).time_seconds), (start_position, stop_position), uncertain)]
         except:
             print 'Please check the format of your date time strings.'
-            exit(-1)
+            raise
         self.lwp_arrays += [numpy.copy(self.spills[len(self.spills)-1].npra['p'])]
     
     def reset(self):
@@ -199,28 +208,35 @@ class Model:
         for i in xrange(0, len(spills)):
             spills[i].refloat_particles(self.interval_seconds, lwp_arrays[i])
 
-
     def move_particles(self):
         """ 
         Moves particles, checks that they've not been landed, 
         and beaches them if they have.
 
+        returns: the last water position array
+
         """
         lwpras = [] # last water position array
         spills = self.spills
-        beach_element = self.lw_map.beach_element
         for spill in spills:
             lwpras += [numpy.copy(spill.npra['p'])]
         for mover in self.movers:
             for j in xrange(0, len(spills)):
                 mover.get_move(self.interval_seconds, spills[j].npra, spills[j].uncertain)
-        for j in xrange(0, len(spills)):
-            spill = spills[j]
-            chromgph = spill.movement_check()
-            for i in xrange(0, len(chromgph)):
-                if chromgph[i]:
-                    self.lwp_arrays[j][i] = lwpras[j][i]
-                    beach_element(spill.npra['p'][i], lwpras[j][i])
+        return lwpras
+
+    def beach_particles(self, lwpras):
+        """
+        beaches the particles -- checking if they have hit land, and putting
+        them on the land-water interface is they have.
+        
+        param: lwpras  last water position array
+        
+        """
+        spills = self.spills
+        for j, spill in enumerate( spills ):
+            chromgph = self.lw_map.movement_check(spill)
+            self.lw_map.beach_elements(spill.npra, lwpras[j], self.lwp_arrays[j], chromgph)
    
     def initialize_model(self, vacuous):
         """ Calls on Cython module to intialize the cpp model object. """
@@ -241,7 +257,8 @@ class Model:
             return False
         self.release_particles()
         #self.refloat_particles()
-        self.move_particles()
+        lwpras = self.move_particles()
+        self.beach_particles(lwpras)
         filename = os.path.join(output_dir, 'map%05i.png'%self.time_step)
         print "filename:", filename
         self.c_map.draw_particles(self.spills, filename)
