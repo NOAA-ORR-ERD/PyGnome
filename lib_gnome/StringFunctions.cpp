@@ -13,12 +13,11 @@
 #include "StringFunctions.h"
 #include "Cross.h"
 #include <iostream>
+#include <time.h>
 
 #ifdef pyGNOME
 #include "Replacements.h"
 #endif
-
-using namespace std;
 
 Boolean gUseColonIn24HrTime = true; // JLM likes the colon
 

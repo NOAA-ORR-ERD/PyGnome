@@ -47,13 +47,13 @@ class Model_c : virtual public ClassID_c {
 
 protected:
 	
-	TModelDialogVariables fDialogVariables;
 	char		fSaveFileName [255];			
 	char		fOutputFileName [255];
 	Seconds 	fOutputTimeStep;
 	Boolean 	fWantOutput;
 	
 public:
+	TModelDialogVariables fDialogVariables;
 	long		nextKeyValue; 	// next available key value for new LE's
 	Seconds		modelTime; 		// current model time
 	Seconds		lastComputeTime;// the latest time for which the model has computed output that is still valid

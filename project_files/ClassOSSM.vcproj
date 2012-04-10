@@ -735,6 +735,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\lib_gnome\TimeValuesIO.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\TimeValuesIO.h"
+					>
+				</File>
+				<File
 					RelativePath="..\lib_gnome\TriCurMover_b.h"
 					>
 				</File>
@@ -1171,7 +1179,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\gui_gnome\TimeValuesIO.cpp"
+					RelativePath="..\gui_gnome\TimeValuesIOPD.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\TimeValuesIOPD.h"
 					>
 				</File>
 				<File

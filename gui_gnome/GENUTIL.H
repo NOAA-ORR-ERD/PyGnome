@@ -125,7 +125,6 @@ OSErr FSTransferBuf(BFPBP from, BFPBP to, long start, long end);
 OSErr FSCloseBuf(BFPBP bfpb);
 
 ///// BLOCK FILES //////////////////////////////////////////////////////////////////////
-enum {TERMINATED = 2,NONTERMINATED};
 OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR name,
 					   VOIDPTR ptr, long length, CHARHP handle);
 OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
