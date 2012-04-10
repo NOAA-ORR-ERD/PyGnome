@@ -10,7 +10,7 @@ import numpy as np
 
 include "c_gnome_defs.pxi"
 
-cpdef extern Model_c *model
+cdef extern Model_c *model
 
 cpdef set_model_start_time(Seconds uh):
     model.SetStartTime(uh)
@@ -29,7 +29,10 @@ cpdef step_model():
     t = model.GetModelTime()
     s = model.GetTimeStep()
     model.SetModelTime(t + s)
-    
+
+cpdef set_model_uncertain():
+    model.fDialogVariables.bUncertain = True
+
 cpdef initialize_model(spills):
     cdef CMyList *le_superlist
     cdef LEList_c *le_list
@@ -104,7 +107,7 @@ cdef class cats_mover:
             return False
         return True
             
-    def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs, uncertain):
+    def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs, uncertain, set_index):
         cdef int i    
         cdef WorldPoint3D wp3d
         cdef np.ndarray[LERec] ra = np.copy(LEs)
@@ -112,16 +115,18 @@ cdef class cats_mover:
         ra['p']['p_long']*=10**6
         ra['p']['p_lat']*=10**6
         uncertain += 1
+        self.mover.PrepareForModelStep()
         for i in xrange(0, len(ra)):
             if ra[i].statusCode != status_in_water:
                 continue
-            wp3d = self.mover.GetMove(t, 0, 0, &ra[i], uncertain)
+            wp3d = self.mover.GetMove(t, set_index, i+1, &ra[i], uncertain)
             dpLat = wp3d.p.pLat
             dpLong = wp3d.p.pLong
             LEs[i].p.pLat += (dpLat/1000000)
             LEs[i].p.pLong += (dpLong/1000000)
         self.mover.fOptimize.isOptimizedForStep = 1
         self.mover.fOptimize.isFirstStep = 0
+        self.mover.ModelStepIsDone()
     
     def compute_velocity_scale(self):
         self.mover.ComputeVelocityScale()
@@ -146,7 +151,7 @@ cdef class random_mover:
         self.mover.fUncertaintyFactor = 2
         self.mover.fDiffusionCoefficient = diffusion_coefficient
 
-    def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs, uncertain):
+    def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs, uncertain, set_index):
         cdef int i    
         cdef WorldPoint3D wp3d
         cdef np.ndarray[LERec] ra = np.copy(LEs)
@@ -154,6 +159,7 @@ cdef class random_mover:
         ra['p']['p_long']*=10**6
         ra['p']['p_lat']*=10**6
         uncertain += 1
+        self.mover.PrepareForModelStep()
         for i in xrange(0, len(ra)):
             if ra[i].statusCode != status_in_water:
                 continue
@@ -162,6 +168,8 @@ cdef class random_mover:
             dpLong = wp3d.p.pLong
             LEs[i].p.pLat += (dpLat/1000000)
             LEs[i].p.pLong += (dpLong/1000000)
+        self.mover.ModelStepIsDone()
+
 
 cdef class wind_mover:
 
@@ -193,8 +201,9 @@ cdef class wind_mover:
         self.mover.fIsConstantWind = 1
         self.mover.fConstantValue.u = constant_wind_value[0]
         self.mover.fConstantValue.v = constant_wind_value[1]
-
-    def get_move(self, t, np.ndarray[LERec, ndim=1] LEs, uncertain):
+        self.mover.AllocateUncertainty()
+        
+    def get_move(self, t, np.ndarray[LERec, ndim=1] LEs, uncertain, set_index):
         cdef:
             int i
             WorldPoint3D wp3d
@@ -203,11 +212,13 @@ cdef class wind_mover:
         ra['p']['p_long']*=10**6
         ra['p']['p_lat']*=10**6
         uncertain += 1
+        self.mover.PrepareForModelStep()
         for i in xrange(0, len(ra)):
             if ra[i].statusCode != status_in_water:
                 continue
-            wp3d = self.mover.GetMove(t, 0, 0, &ra[i], uncertain)
+            wp3d = self.mover.GetMove(t, set_index, i+1, &ra[i], uncertain)
             dpLat = wp3d.p.pLat
             dpLong = wp3d.p.pLong
             LEs[i].p.pLat += (dpLat/1000000)
             LEs[i].p.pLong += (dpLong/1000000)
+

@@ -50,7 +50,8 @@ mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_tim
 
 if model_has_uncertainty:
     print "setting and uncertainty spill:"
-    mini_gnome.set_spill(spill['num_particles']/10, spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']), uncertain=True)
+    mini_gnome.set_uncertain()
+    mini_gnome.set_spill(spill['num_particles']/10, spill['windage']/10000, (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']), uncertain=True)
 
 scale_type = 1
 shio_file = "./SampleData/CLISShio.txt"
@@ -62,9 +63,9 @@ model_stop_time = '12/13/2012 06:59:00'
 
 mini_gnome.set_run_duration(model_start_time, model_stop_time)
 mini_gnome.set_timestep(900)
-
+mini_gnome.initialize()
 print "adding a wind mover:"
-mini_gnome.add_wind_mover((-.5, -.2))
+mini_gnome.add_wind_mover((-.1, -.05))
 
 print "adding a random mover:"
 mini_gnome.add_random_mover(10000)

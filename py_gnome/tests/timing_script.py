@@ -151,8 +151,7 @@ time_init += time.clock() - start
 
 start_run = time.clock()
 while True:
-    mini_gnome.initialize_model(None)
-    "step called: time step:", mini_gnome.time_step
+
     if mini_gnome.time_step >= mini_gnome.num_timesteps:
         break
     mini_gnome.release_particles()

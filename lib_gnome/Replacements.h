@@ -75,7 +75,9 @@
 #define printError(msg) printf(msg)
 #define printNote(msg) printf(msg)
 #define DisplayMessage(msg) printf(msg)
+#ifndef ibmpyGNOME
 #define _isnan isnan
+#endif
 
 extern Model_c *model;
 extern Settings settings;
@@ -85,10 +87,13 @@ PtCurMap_c *GetPtCurMap(void);
 void MySpinCursor(void);
 void SysBeep(short);
 Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl);
+OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size);
 OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 						long offset, long length, VOIDPTR ptr, CHARHP handle);
-OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size);
+OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR name,
+					   VOIDPTR ptr, long length, CHARHP handle);
 void paramtext(char* p0,char* p1,char* p2,char* p3);
+OSErr AskUserForUnits(short* selectedUnits,Boolean *userCancel);
 Boolean CmdPeriod(void);
 void PenNormal(void);
 long			ScreenToWorldDistance(short pixels);

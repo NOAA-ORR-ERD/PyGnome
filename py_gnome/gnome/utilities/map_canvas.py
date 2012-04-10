@@ -256,7 +256,7 @@ class MapCanvas:
             for i in xrange(0, len(pra)):
                 xy = self.to_pixel((pra[i]['p_long'], pra[i]['p_lat']))
                 try:
-                    img.putpixel(xy, 1)
+                    img.putpixel(xy, rgbt)
                 except: # fixme! what exception are we catching?
                     pass
         img.save(filename)

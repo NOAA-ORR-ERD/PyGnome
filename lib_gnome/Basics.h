@@ -10,6 +10,8 @@
 #ifndef __gnome_basics__
 #define __gnome_basics__
 
+#define _USE_32BIT_TIME_T	1
+
 #include <cstdlib>
 #include <iostream>
 #include <math.h>
