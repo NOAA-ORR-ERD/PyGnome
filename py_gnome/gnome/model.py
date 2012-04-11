@@ -226,7 +226,7 @@ class Model:
         for mover in self.movers:
             for j in xrange(0, len(spills)):
                 #mover.get_move(self.interval_seconds, spills[j].npra, spills[j].uncertain)
-                mover.get_move(self.interval_seconds, spills[j].npra, spills[j].uncertain, j+1) #1-indexed sets list
+                mover.get_move(self.interval_seconds, spills[j].npra, spills[j].uncertain, j) #1-indexed sets list
         return lwpras
 
     def beach_particles(self, lwpras):

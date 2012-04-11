@@ -26,6 +26,7 @@ import sys
 import os
 import numpy as np
 import random
+from numpy import ma
 from PIL import Image, ImageDraw
 
 from gnome.utilities import map_canvas
@@ -372,9 +373,18 @@ class RasterMap(GnomeMap):
         
         returns: a (N,) array of booleans- true for the particles that are on land
         """
-        return self.bitmap[coords[:,0], coords[:,1] ]
+        lxy = self.projection.to_pixel([self.map_bounds[0,0], self.map_bounds[0,1]])
+        hxy = self.projection.to_pixel([self.map_bounds[2,0], self.map_bounds[2,1]])
+        mask = coords[:,0] > lxy[0]
+        mask &= coords[:,0] < hxy[0]
+        mask &= coords[:,1] < lxy[1]
+        mask &= coords[:,1] > hxy[1]
+        racpy = np.copy(coords)[mask]
+        mskgph = self.bitmap[racpy[:,0], racpy[:,1]]
+        chrmgph = np.array([0,]*len(coords))
+        chrmgph[np.array(mask)] = mskgph
+        return chrmgph
 
-    
     def _in_water_pixel(self, coord):
         try:
             return not (self.bitmap[coord[0], coord[1]] & self.land_flag)

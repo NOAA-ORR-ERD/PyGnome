@@ -12,12 +12,17 @@ cdef extern from "CMYLIST.H":
     cdef cppclass CMyList:
         CMyList(long)
         OSErr AppendItem(char *)
+        OSErr IList()
 
 cdef extern from "LEList_c.h":
     cdef cppclass LEList_c:
         long numOfLEs
         LETYPE fLeType
 
+cdef extern from "OLEList_c.h":
+    cdef cppclass OLEList_c(LEList_c):
+        pass
+        
 cdef extern from "GEOMETRY.H":
     ctypedef struct WorldPoint:
         float pLong

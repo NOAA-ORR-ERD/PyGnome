@@ -8,7 +8,7 @@ import os
 from gnome import model
 
 dimensions_bmp = (800, 500)
-model_has_uncertainty = True
+model_has_uncertainty = False
 
 print "initializing the model"
 
@@ -51,7 +51,7 @@ mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_tim
 if model_has_uncertainty:
     print "setting and uncertainty spill:"
     mini_gnome.set_uncertain()
-    mini_gnome.set_spill(spill['num_particles']/10, spill['windage']/10000, (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']), uncertain=True)
+    mini_gnome.set_spill(spill['num_particles'], spill['windage'], (spill['start_time'], spill['stop_time']), (spill['start_position'], spill['stop_position']), uncertain=True)
 
 scale_type = 1
 shio_file = "./SampleData/CLISShio.txt"

@@ -258,7 +258,6 @@ OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	if(abs(norm) < 1e-6)
 		return 0;
 	
-	
 	unrec=(*fWindUncertaintyList)[(*fLESetSizes)[setIndex]+leIndex];
 	w=norm;
 	s = w*w-fSigma2;
