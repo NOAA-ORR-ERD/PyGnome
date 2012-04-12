@@ -28,8 +28,20 @@ extern Model_c *model;
 
 using std::fstream;
 using std::ios;
+using std::cout;
 
-using namespace std;
+CATSMover_c::CATSMover_c () { 
+	
+	fDuration=48*3600; //48 hrs as seconds 
+	fTimeUncertaintyWasSet =0;
+	fGrid = 0;
+	SetTimeDep (nil);
+	bTimeFileActive = false;
+	fEddyDiffusion=0; // JLM 5/20/991e6; // cm^2/sec
+	fEddyV0 = 0.1; // JLM 5/20/99
+	memset(&fOptimize,0,sizeof(fOptimize));
+
+}
 
 CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 {

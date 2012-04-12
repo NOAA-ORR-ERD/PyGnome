@@ -18,11 +18,14 @@ cdef extern from "LEList_c.h":
     cdef cppclass LEList_c:
         long numOfLEs
         LETYPE fLeType
-
-cdef extern from "OLEList_c.h":
-    cdef cppclass OLEList_c(LEList_c):
-        pass
         
+#############################################        
+# cdef extern from "OLEList_c.h":
+#     cdef cppclass OLEList_c(LEList_c):
+#         pass
+#############################################        
+   
+
 cdef extern from "GEOMETRY.H":
     ctypedef struct WorldPoint:
         float pLong
@@ -120,7 +123,6 @@ cdef extern from "WindMover_c.h":
         long **fLESetSizes
         WorldPoint3D GetMove (Seconds timeStep, long setIndex, long leIndex, LERec *theLE, LETYPE leType)
         OSErr        PrepareForModelStep()
-        OSErr        AllocateUncertainty()
 
 cdef extern from "GridVel_c.h":
     cdef cppclass GridVel_c:

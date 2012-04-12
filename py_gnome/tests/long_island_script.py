@@ -8,7 +8,7 @@ import os
 from gnome import model
 
 dimensions_bmp = (800, 500)
-model_has_uncertainty = False
+model_has_uncertainty = True
 
 print "initializing the model"
 

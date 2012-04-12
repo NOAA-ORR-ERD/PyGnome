@@ -35,13 +35,13 @@ cpdef set_model_uncertain():
 
 cpdef initialize_model(spills):
     cdef CMyList *le_superlist
-    cdef OLEList_c *le_list
+    cdef LEList_c *le_list
     cdef OSErr err
-    le_superlist = new CMyList(sizeof(OLEList_c*))
+    le_superlist = new CMyList(sizeof(LEList_c*))
     le_superlist.IList()
     for spill in spills:
         le_type = spill.uncertain + 1
-        le_list = new OLEList_c()
+        le_list = new LEList_c()
         le_list.fLeType = le_type
         le_list.numOfLEs = len(spill.npra)
         err = le_superlist.AppendItem(<char *>&le_list) #hrm.
@@ -202,7 +202,6 @@ cdef class wind_mover:
         self.mover.fIsConstantWind = 1
         self.mover.fConstantValue.u = constant_wind_value[0]
         self.mover.fConstantValue.v = constant_wind_value[1]
-        self.mover.AllocateUncertainty()
         
     def get_move(self, t, np.ndarray[LERec, ndim=1] LEs, uncertain, set_index):
         cdef:
