@@ -373,12 +373,7 @@ class RasterMap(GnomeMap):
         
         returns: a (N,) array of booleans- true for the particles that are on land
         """
-        lxy = self.projection.to_pixel([self.map_bounds[0,0], self.map_bounds[0,1]])
-        hxy = self.projection.to_pixel([self.map_bounds[2,0], self.map_bounds[2,1]])
-        mask = coords[:,0] > lxy[0]
-        mask &= coords[:,0] < hxy[0]
-        mask &= coords[:,1] < lxy[1]
-        mask &= coords[:,1] > hxy[1]
+        mask = map(point_in_poly, [self.map_bounds,]*len(coords), coords)
         racpy = np.copy(coords)[mask]
         mskgph = self.bitmap[racpy[:,0], racpy[:,1]]
         chrmgph = np.array([0,]*len(coords))
