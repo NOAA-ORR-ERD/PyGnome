@@ -34,6 +34,8 @@ CATSMover_c::CATSMover_c () {
 	
 	fDuration=48*3600; //48 hrs as seconds 
 	fTimeUncertaintyWasSet =0;
+	fLESetSizesH = 0;
+	fUncertaintyListH = 0;
 	fGrid = 0;
 	SetTimeDep (nil);
 	bTimeFileActive = false;
