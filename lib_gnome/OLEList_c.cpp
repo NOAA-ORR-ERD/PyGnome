@@ -33,6 +33,9 @@ OLEList_c::OLEList_c()
 	fAdiosDataH = nil;	
 	fBudgetTableH = nil;	
 	fOilTypeName[0] = 0;
+#ifndef pyGNOME
+	fColor = colors[BLACK];	// default to draw LEs in black
+#endif
 }
 
 void OLEList_c::AddToBudgetTableHdl(BudgetTableData *budgetTable)

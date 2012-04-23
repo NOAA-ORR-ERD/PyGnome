@@ -30,6 +30,7 @@ public:
 	BudgetTableDataH	fBudgetTableH;
 	char				fOilTypeName[kMaxNameLen];
 	WindageRec			fWindageData;
+	RGBColor			fColor;
 	
 						OLEList_c ();
 	long				GetLECount () { return fSetSummary.numOfLEs; }
