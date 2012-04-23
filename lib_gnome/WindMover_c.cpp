@@ -375,6 +375,7 @@ WorldPoint3D WindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 	WorldPoint refPoint = (*theLE).p;	
 	OSErr err = noErr;
 	
+	
 	// if ((*theLE).z > 0) return deltaPoint; // wind doesn't act below surface
 	// or use some sort of exponential decay below the surface...
 	if (((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT || (*theLE).z>0) && !bSubsurfaceActive) return deltaPoint;
@@ -436,7 +437,7 @@ WorldPoint3D WindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 	
 	dLong = ((timeValue.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPoint.pLat);
 	dLat =   (timeValue.v / METERSPERDEGREELAT) * timeStep;
-	
+
 	deltaPoint.p.pLong = dLong * 1000000;
 	deltaPoint.p.pLat  = dLat  * 1000000;
 	

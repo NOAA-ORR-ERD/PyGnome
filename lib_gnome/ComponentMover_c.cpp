@@ -8,11 +8,14 @@
  */
 
 #include "ComponentMover_c.h"
+#include "StringFunctions.h"
+#include "OUTILS.H"
+
+#ifndef pyGNOME
 #include "CROSS.H"
-#include "Uncertainty.h"
-
-
-double speedconversion(long speedUnits);
+#else
+#include "Replacements.h"
+#endif
 
 void ComponentMover_c::ModelStepIsDone()
 {

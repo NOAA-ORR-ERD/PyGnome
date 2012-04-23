@@ -13,6 +13,7 @@
 #include "TypeDefs.h"
 #include "MemUtils.h"
 
+
 char* lfFix(char* str);
 OSErr StringToDouble(char* str,double* val);
 void StringWithoutTrailingZeros(char* str,double val,short maxNumDecimalPlaces); //JLM

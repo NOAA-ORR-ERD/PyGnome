@@ -2,6 +2,8 @@
 import numpy
 from gnome import c_gnome
 
+
+""" Basic types. Should each have a corresponding, equivalent type in the Cython."""
 world_point_type = numpy.float32
 world_point = numpy.dtype([('p_long', world_point_type),
                            ('p_lat', world_point_type)],

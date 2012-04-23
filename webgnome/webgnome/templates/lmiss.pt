@@ -1,0 +1,1339 @@
+<!--
+2011 NOAA OR&R ERD Daniel Smith - Mathews
+GNOME2: webGNOME Prototype ERDware ver 0.1
+-->
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>GNOME</title>
+		<style>
+			<link rel="sytlesheet" href="css/GNOME.css">
+
+			header, nav, article, footer, address, canvas, section {
+			display: block;
+			}
+
+			#surface {
+			height:505px;
+			width: 660px;
+			background-color: #777777;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			padding: 5px 0px 0px 5px;
+			margin: 0 auto 0 auto;
+			text-align: center;
+			}
+
+			#leftpane{
+			height:495px;
+			width: 165px;
+			background-color: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			padding: 5px 5px 5px 5px;
+			text-align: left;
+			margin: auto auto 25px 25px;
+			position: absolute;
+			left: 0px;
+			down: 0px;
+			border-style:solid;
+			border-width:2px;
+			border-color:#777777;
+			}
+
+			#rightpane{
+			height:495px;
+			width: 165px;
+			background-color: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			padding: 5px 5px 5px 5px;
+			text-align: center;
+			margin: auto auto auto auto;
+			position: absolute;
+			right: 0px;
+			down: 0px; 
+			border-style:solid;
+			border-width:2px;
+			border-color:#777777;
+			}
+
+			#console {
+			width:660px;
+			height:145px;
+			margin:0px;
+			text-align: left;
+			background-color: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			position:relative;
+			margin: 0 auto 0 auto;
+			top: 25px;
+			border-style:solid;
+			border-width:2px;
+			border-color:#777777;
+			}
+
+			#navi{
+			width:140px;
+			height: 490px;
+			margin:0px;
+			background-color: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			padding: 5px 5px 5px 5px;
+			}
+
+			#mapcanvas{
+			height:500px;
+			width:500px;
+			background: white;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			margin: 0 auto 0 auto;
+			position: relative;
+			left: 75px;
+			bottom: 500px;
+			}
+			
+			#background{
+			height: 600px; 
+			width: 100%;
+			position: absolute;
+			background: #EEEEEE;
+			color: white;
+			}
+			
+			#slider { margin: 10px; }
+
+			.curved-box-css3
+			{
+			width: 120px;
+			margin: 10px;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			background-color: #EEEEEE;
+			}
+
+			.curved-box-control
+			{
+			width: 75px;
+			margin: 10px;
+			-webkit-border-radius: 10px;
+			-moz-border-radius: 10px;
+			border-radius: 10px;
+			background-color: #EEEEEE;
+			}
+
+			.curved-box-css3 h2
+			{
+			margin: 0px;
+			text-align: center;
+
+			}
+
+			.curved-box-css3 p
+			{
+			margin: 0px;
+			text-align: center;
+
+			}
+
+			body{
+			background: #EEEEEE;
+			margin: 0;
+			padding: 0;
+			text-align: center;
+			
+			}
+
+			div#parent {
+			width: 100%;
+			height: 2px;
+			background-color: #0E2D88;
+			}
+			div#parent2 {
+			width: 100%;
+			height: 2px;
+			background-color: #028AB4;
+			top: auto
+			}
+			div#child {
+			width: 100%;
+			height: 10px;
+			background-color: #0E2D88;
+			}
+
+			div#child2 {
+			width: 100%;
+			height: 20px;
+			background-color: #EEEEEE;
+			}
+
+			div#child3 {
+			width: 100%;
+			height: 30px;
+			background-color: white;
+			text-align: left;
+			}
+			
+			div#gnomemenu{
+			font-size:62.5%;
+			}
+			
+			.input {
+   			 border: 1px solid #006;
+    		 background: #ffc;
+			 }
+			 
+			 textarea{
+			 width: 100px; 
+			 height: 20px;
+			 }
+			 
+			 input{
+			 width: 100px;
+			 height: 20px;
+			 }
+			 
+			 promptfont{
+			 font-size: 20px;
+			 }
+			 
+  .tooltip {
+    display:none;
+    background:transparent url(static/black_arrow.png);
+    font-size:12px;
+    height:70px;
+    width:160px;
+    padding:25px;
+    color:#eee;
+  }
+  
+
+    
+   .cs-buttons a {
+margin-left: 5px;
+height: 10px;
+width: 10px;
+float: left;
+border: 1px solid #B8C4CF;
+color: #B8C4CF;
+text-indent: -1000px;
+}
+    
+.cs-buttons {
+font-size: 0px;
+padding: 10px;
+padding-top: 10px;
+padding-right: 10px;
+padding-bottom: 10px;
+padding-left: 10px;
+float: left;
+}
+
+/*
+  root element for the scrollable.
+  when scrolling occurs this element stays still.
+  */
+.scrollable {
+
+    /* required settings */
+    position:relative;
+    overflow:hidden;
+    width: 550px;
+    height:120px;
+
+    /* custom decorations */
+    border:1px solid #ccc;
+    background: white;
+}
+
+/*
+   root element for scrollable items. Must be absolutely positioned
+   and it should have a extremely large width to accomodate scrollable
+   items.  it's enough that you set the width and height for the root
+   element and not for this element.
+*/
+.scrollable .items {
+    /* this cannot be too large */
+    width:20000em;
+    position:absolute;
+    clear:both;
+}
+
+.items div {
+    float:left;
+    width:680px;
+}
+
+/* single scrollable item */
+.scrollable img {
+    float:left;
+    margin:20px 5px 20px 21px;
+    background-color:#fff;
+    padding:2px;
+    border:1px solid #ccc;
+    width:100px;
+    height:75px;
+
+    -moz-border-radius:4px;
+    -webkit-border-radius:4px;
+}
+
+/* active item */
+.scrollable .active {
+    border:2px solid #000;
+    position:relative;
+    cursor:default;
+}
+
+
+/* this makes it possible to add next button beside scrollable */
+.scrollable {
+    float:left;
+}
+
+/* prev, next, prevPage and nextPage buttons */
+a.browse {
+    background:gray;
+    display:block;
+    width:30px;
+    height:30px;
+    float:left;
+    margin:40px 10px;
+    cursor:pointer;
+    font-size:1px;
+}
+
+/* right */
+a.right { background-position: 0 -30px; clear:right; margin-right: 0px;}
+a.right:hover { background-position:-30px -30px; }
+a.right:active { background-position:-60px -30px; }
+
+
+/* left */
+a.left { margin-left: 0px; }
+a.left:hover  { background-position:-30px 0; }
+a.left:active { background-position:-60px 0; }
+
+/* up and down */
+a.up, a.down  {
+    background:url(/static/black_arrow.png) no-repeat;
+    float: none;
+    margin: 10px 50px;
+}
+
+/* up */
+a.up:hover { background-position:-30px 0; }
+a.up:active { background-position:-60px 0; }
+
+/* down */
+a.down { background-position: 0 -30px; }
+a.down:hover { background-position:-30px -30px; }
+a.down:active { background-position:-60px -30px; }
+
+
+/* disabled navigational button */
+a.disabled {
+    visibility:hidden !important;
+}
+
+/* this makes it possible to add next button beside scrollable */
+.scrollable {
+    float:left;
+}
+
+/* prev, next, prevPage and nextPage buttons */
+a.browse {
+    background: gray;
+    display:block;
+    width:30px;
+    height:30px;
+    float:left;
+    margin:40px 10px;
+    cursor:pointer;
+    font-size:1px;
+}
+
+/* right */
+a.right { background-position: 0 -30px; clear:right; margin-right: 0px;}
+a.right:hover { background-position:-30px -30px; }
+a.right:active { background-position:-60px -30px; }
+
+
+/* left */
+a.left { margin-left: 0px; }
+a.left:hover  { background-position:-30px 0; }
+a.left:active { background-position:-60px 0; }
+
+/* up and down */
+a.up, a.down  {
+    background:url(/media/img/scrollable/arrow/vert_large.png) no-repeat;
+    float: none;
+    margin: 10px 50px;
+}
+
+/* up */
+a.up:hover { background-position:-30px 0; }
+a.up:active { background-position:-60px 0; }
+
+/* down */
+a.down { background-position: 0 -30px; }
+a.down:hover { background-position:-30px -30px; }
+a.down:active { background-position:-60px -30px; }
+
+
+/* disabled navigational button */
+a.disabled {
+    visibility:hidden !important;
+}
+
+
+/*
+  root element for the scrollable.
+  when scrolling occurs this element stays still.
+  */
+.scrollable {
+
+    /* required settings */
+    position:relative;
+    overflow:hidden;
+    width: 550px;
+    height:120px;
+
+    /* custom decorations */
+    border:1px solid #ccc;
+    background:url(/media/img/gradient/h300.png) repeat-x;
+}
+
+/*
+   root element for scrollable items. Must be absolutely positioned
+   and it should have a extremely large width to accomodate scrollable
+   items.  it's enough that you set the width and height for the root
+   element and not for this element.
+*/
+.scrollable .items {
+    /* this cannot be too large */
+    width:20000em;
+    position:absolute;
+    clear:both;
+}
+
+.items div {
+    float:left;
+    width:680px;
+}
+
+/* single scrollable item */
+.scrollable img {
+    float:left;
+    margin:20px 5px 20px 21px;
+    background-color:#fff;
+    padding:2px;
+    border:1px solid #ccc;
+    width:100px;
+    height:75px;
+
+    -moz-border-radius:4px;
+    -webkit-border-radius:4px;
+}
+
+/* active item */
+.scrollable .active {
+    border:2px solid #000;
+    position:relative;
+    cursor:default;
+}
+
+
+
+		</style>
+		<!--Validation Style-->
+		<style type="text/css">
+			* {
+				font-family: Verdana;
+				font-size: 96%;
+			}
+			label {
+				width: 10em;
+				float: left;
+			}
+			label.error {
+				float: none;
+				color: red;
+				padding-left: .5em;
+				vertical-align: top;
+			}
+			p {
+				clear: both;
+			}
+			.submit {
+				margin-left: 12em;
+			}
+			em {
+				font-weight: bold;
+				padding-right: 1em;
+				vertical-align: top;
+			}
+		</style>
+		<!--Validation Style-->
+		<!-- jQuery-->
+		<!--
+		<script src="js/jquery-1.6.4.js" type="text/javascript"></script>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6/jquery.min.js"></script>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.min.js"></script>
+		<script type="text/javascript" src="js/jquery-ui-1.8.16.custom/js/jquery-1.6.2.min.js"></script>
+		<script type="text/javascript" src="js/jquery-ui-1.8.16.custom/js/jquery-ui-1.8.16.custom.min.js"></script>
+		<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+		<script src="http://view.jqueryui.com/menu/ui/jquery.ui.menu.js"></script>
+		<link href="http://view.jqueryui.com/menu/themes/base/jquery.ui.menu.css" rel="stylesheet" type="text/css"/>
+		<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+		<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+  		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+ 		<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+ 		<script src="http://cdn.jquerytools.org/1.2.6/full/jquery.tools.min.js"></script>
+		-->
+		
+		<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+ 		<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+ 		<!--<script src="http://cdn.jquerytools.org/1.2.6/full/jquery.tools.min.js"></script>
+
+
+
+
+		<!--jQuery-->
+		<!--jQuery Testing--> 
+		
+		<!--jQuery Testing--> 
+		<!--Dialog-->
+		<script type="text/javascript">
+		
+			$(function() {
+				var doOk = function() {
+					$("#myDialog").dialog("close");
+
+				}
+				var dialogOpts = {
+					modal : true,
+					buttons : {
+						"Ok" : doOk,
+						"Cancel" : doOk,
+					},
+					height : "auto",
+					width : "auto",
+					autoOpen : false
+				};
+				$("#myDialog").dialog(dialogOpts);
+				$("#openDialog").click(function() {
+					$("#myDialog").dialog("open");
+				});
+			});
+
+		</script>
+		<!--Dialog-->
+		<!--Dialog-->
+		<script type="text/javascript">
+			$(function() {
+				var doOk = function() {
+					$("#myDialog2").dialog("close");
+
+				}
+				var dialogOpts = {
+					modal : true,
+					buttons : {
+						"Ok" : doOk,
+						"Cancel" : doOk,
+					},
+					height : "auto",
+					width : "auto",
+					autoOpen : false
+				};
+				$("#myDialog2").dialog(dialogOpts);
+				$("#openDialog2").click(function() {
+					$("#myDialog2").dialog("open");
+				});
+			});
+
+		</script>
+		<!--Dialog-->
+		<!--Dialog-->
+		<script type="text/javascript">
+			$(function() {
+				var doOk = function() {
+					$("#myDialog3").dialog("close");
+
+				}
+				var dialogOpts = {
+					modal : true,
+					buttons : {
+						"Ok" : doOk,
+						"Cancel" : doOk,
+					},
+					height : "auto",
+					width : "auto",
+					autoOpen : false
+				};
+				$("#myDialog3").dialog(dialogOpts);
+				$("#openDialog3").click(function() {
+					$("#myDialog3").dialog("open");
+				});
+			});
+
+		</script>
+		<!--Dialog-->
+				<!--Dialog-->
+		<script type="text/javascript">
+			$(function() {
+				var doOk = function() {
+					$("#myDialog4").dialog("close");
+
+				}
+				var dialogOpts = {
+					modal : true,
+					buttons : {
+						"Ok" : doOk,
+						"Cancel" : doOk,
+					},
+					height : "auto",
+					width : "auto",
+					autoOpen : false
+				};
+				$("#myDialog4").dialog(dialogOpts);
+				$("#openDialog4").click(function() {
+					$("#myDialog4").dialog("open");
+				});
+			});
+
+		</script>
+		<!--Dialog-->
+				<!--Dialog-->
+		<script type="text/javascript">
+			$(function() {
+				var doOk = function() {
+					$("#myDialog5").dialog("close");
+
+				}
+				var dialogOpts = {
+					modal : true,
+					buttons : {
+						"Ok" : doOk,
+						"Cancel" : doOk,
+					},
+					height : "auto",
+					width : "auto",
+					autoOpen : false
+				};
+				$("#myDialog5").dialog(dialogOpts);
+				$("#openDialog5").click(function() {
+					$("#myDialog5").dialog("open");
+				});
+			});
+
+		</script>
+		<!--Dialog-->
+		<!--Dialog-->
+		<script type="text/javascript">
+			$(function() {
+				var doOk = function() {
+					$("#myDialog6").dialog("close");
+
+				}
+				var dialogOpts = {
+					modal : true,
+					buttons : {
+						"Ok" : doOk,
+						"Cancel" : doOk,
+					},
+					height : "auto",
+					width : "auto",
+					autoOpen : false
+				};
+				$("#myDialog6").dialog(dialogOpts);
+				$("#openDialog6").click(function() {
+					$("#myDialog6").dialog("open");
+				});
+			});
+
+		</script>
+		<!--Dialog-->
+				<!--Dialog-->
+		<script type="text/javascript">
+			$(function() {
+				var doOk = function() {
+					$("#welcome").dialog("close");
+
+				}
+				var dialogOpts = {
+					modal : true,
+					buttons : {
+						"Start" : doOk,
+						"Quit" : doOk,
+					},
+					height : "auto",
+					width : "auto",
+					autoOpen : false
+				};
+				$("#welcome").dialog(dialogOpts);
+				$("#welcome").click(function() {
+					$("#welcome").dialog("open");
+				});
+			});
+
+		</script>
+		<!--Dialog-->
+
+		<!--Button-->
+		<script>
+			$(function() {
+				$("input:submit, a, button", ".demo").button();
+				$("a", ".demo").click(function() {
+					return false;
+				});
+			});
+
+		</script>
+		<!--Button-->
+		<!--Datepicker-->
+		<script>
+			$(function() {
+				$("#datepicker").datepicker();
+			});
+
+		</script>
+		<!--Datepicker-->
+		<!--Timepicker-->
+		<!--Timepicker-->
+		<!--Effect-->
+		<script>
+			$(function() {
+				$("#consolebutton").function() {
+					$("#effect").animate({
+						backgroundColor : "#aa0000",
+						color : "#fff",
+						width : 500
+					}, 1000);
+				}, function() {
+					$("#effect").animate({
+						backgroundColor : "#fff",
+						color : "#000",
+						width : 240
+					}, 1000);
+				});
+			});
+
+		</script>
+		<!--Effect-->
+		<!--Validation
+		<script>
+			$(document).ready(function() {
+				$("#speed").validate({
+					errorPlacement : function(error, element) {
+						error.appendTo(element.parent("td").next("td"));
+					},
+					debug : true
+				})
+			});
+		</script>
+		<!--Validation-->
+		<!--GNOME MENU-->
+		<script>
+ 		$(document).ready(function() {
+    	$("ul").menu();
+    	$("ul").click(function() {
+      	$("ul").fadeOut(300).delay(100).fadeIn(300);
+    	});
+ 	    });
+        </script>
+		<!--GNOME MENU-->
+		<!--slider-->
+		<script>
+  		$(document).ready(function() {
+    	$("#slider").slider();
+  		});
+  </script>
+		<!--slider-->
+		<!--HTML5 DOC STRUCTURE-->
+		<script>document.createElement("header")</script>
+		<script>document.createElement("footer")</script>
+		<!--HTML5 DOC STRUCTURE-->
+	</head>
+	<body>
+		<div id="parent2"></div>
+		<div id="child3">
+			<a href="http://www.noaa.gov"> <img src="static/noaa.jpeg" height="20" width ="20" alt="National Oceanic and Atmospheric Administration"/></a>
+			<!--Search <input id="search" type="text" name="search" value="Search GNOME"> --> 
+			<a href="http://www.noaa.gov"> <img src="static/gnome.jpg" height="20" width ="20" alt="National Oceanic and Atmospheric Administration"/></a>
+		</div>
+		<div id="parent"></div>
+
+		<div id="child2"></div>	
+		<div id="leftregion"></div>	
+  
+
+
+		<div id="surface">
+			<div id="navi">
+
+				<div class="demo">
+					<!--
+					<p>
+						<button id="openDialog">
+							Set Wind
+						</button>
+					</p>
+					<p>
+						<button id="openDialog2">
+							Set Spill
+						</button>
+					</p>
+					<p>
+						<button id="somedialog" onclick="runspill();">
+							Run Spill
+						</button>
+					</p>
+					
+					<p><button id="replay" onclick="movie()">Replay Movie</button></p>
+					-->
+					<p><button id="openDialog3">Model</button></p>
+					<p><button id="openDialog4">River Flow</button></p>
+					<p><button id="openDialog5">Constant Wind</button></p>
+					<p><button id="openDialog6">Variable Wind</button></p>
+					<p><button id="openDialog2">Set Spill</button></p>
+					<p><button id="somedialog" onclick="runspill();">Run Spill</button></p>
+					<p><button id="replay" onclick="movie()">Replay Movie</button></p>
+					
+					
+
+					<div id="myDialog" title= "Wind Parameters" class="curved-box-control">
+						<p>
+							&nbsp&nbsp&nbsp&nbspSpeed:
+							<input id="speed">
+							knots </input>
+						</p>
+						<p>
+							Direction:
+							<input id="direction">
+							&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+							</input>
+						</p>
+					</div>
+					<div id="myDialog3" title= "Model Settings" class="curved-box-control">
+						<p>
+							&nbsp&nbsp&nbsp&nbsp&nbspDate:
+							<input id="datepicker" type="text">
+							</input>
+						</p>
+						<p>
+							&nbsp&nbsp&nbsp&nbsp&nbspTime:
+							<input id="modeltime" type="text">
+							</input>
+						</p>
+						<p>
+							Duration:
+							<input id="duration" type="text">
+							</input>
+						</p>
+					</div>
+					<div id="myDialog4" title= "StageHeight or Surface Current" class="curved-box-control">
+						<!--
+						<p>
+							&nbsp&nbsp&nbsp&nbspStage Height:&nbsp
+							<input id="stageheight">
+							&nbspfeet </input>
+						</p>--> 
+						<p>
+							&nbsp&nbsp&nbsp&nbsp&nbspSuface Current:
+							<input id="surfacecurrent">
+							&nbspknots
+							</input>
+						</p>
+					</div>
+					<div id="myDialog5" title= "Constant Wind Settings" class="curved-box-control">
+						<p>
+							&nbsp&nbsp&nbsp&nbspConstant Wind Speed:
+							<input id="constantwindspeed">
+							knots </input>
+						</p>
+						<p>
+							Constant Wind Direction:
+							<input id="constantwinddirection">
+							</input>
+						</p>
+					</div>
+					<div id="myDialog6" title= "Variable Wind Settings" class="curved-box-control">
+						<p>
+							&nbsp&nbsp&nbspVariable Wind Speed:
+							<input id="variablewindspeed">
+							knots </input>
+						</p>
+						<p>
+							&nbsp&nbsp&nbsp Variable Wind Direction:
+							<input id="variablewinddirection">
+							&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+							</input>
+						</p>
+					</div>
+					<div id="welcome" title= "Welcome" class="curved-box-control">
+						
+					</div>
+					<div id="myDialog2" title= "Spill Parameters" class="curved-box-control">
+						<p>
+							&nbsp&nbsp&nbspLatitude:
+							<input id="lat" title="lat">
+							&deg
+							</input>
+						</p>
+						<p>
+							Longitude:
+							<input id="long" title="long">
+							&deg
+							</input>
+						</p>
+						<p>
+							&nbsp&nbsp&nbsp&nbsp&nbspDate:
+							<input id="datepicker" type="text">
+							</input>
+						</p>
+						<p>
+							&nbsp&nbsp&nbsp&nbsp&nbspTime:
+							<input id="timepicker" type="text">
+							</input>
+						</p>
+					</div>
+				</div><!--demo-->
+		
+			</div><!--navi-->
+			<div id="mapcanvas">
+				<img id="mappng" src="static/lmiss.png" height="500" width ="500" style = "border-radius:10px" />
+				<script>
+					//Initialize input boxes to show user valid input
+					document.getElementById('speed').value = 0;
+					document.getElementById('direction').value = 0;
+					document.getElementById('lat').value = 0;
+					document.getElementById('long').value = 0;
+					document.getElementById('datepicker').value = '01/01/2012';
+					document.getElementById('timepicker').value = '00:00:00';
+					document.getElementById('stageheight').value = '0';
+					document.getElementById('surfacecurrent').value = '0';
+					document.getElementById('constantwindspeed').value = '0';
+					document.getElementById('constantwinddirection').value = '0';
+					document.getElementById('variablewindspeed').value = '0';
+					document.getElementById('variablewinddirection').value = '0';
+					document.getElementById('duration').value = '0';
+					document.getElementById('modeltime').value = '00:00:00';
+
+				</script>
+
+<!--Intial Settings for GNOME></-->
+<script>
+/*
+//this is set in the UI by the user on the client in later versions 
+var location = {}; 
+<img>id=""</img>
+//Client Initializaition Request
+function initgnome(){
+jQuery.ajax({
+type: 'POST',
+url: '/gnome',
+data: JSON.stringify({'location': longislandsound}),
+contentType: 'application/json; charset=utf-8'});
+};
+
+function init(){
+initgnome();
+}
+
+//secure data namespace will go here 
+dataspace = {};
+*/
+</script>
+
+
+<script>			
+//Gather and validate model data
+function getgnomedata(){
+	var velocity = $("#speed").val();
+	var direction = $("#direction").val();
+	var latitude = $("#lat").val();
+	var longitude = $("#long").val();
+	var date = $("#datepicker").val(); 
+	var time = $("#timepicker").val();
+	var surfacecurrent = $("#surfacecurrent").val();
+	var constantwindspeed = $("#constantwindspeed").val();
+	var constantwinddirection = $("#constantwinddirection").val(); 
+	
+	//GNOME JSON object
+	//gnomedata = [
+	//[{"speed": speed},
+	//{"direction": direction},],
+	//[{"latitude": latitude},
+	//{"longitude": longitude},
+	//{"date": date},
+	//{"time": time},]
+	//];
+	
+	
+	//GNOME DATA STRUCTURE
+	//gnomestruct = 
+	//[
+	//[{"movers" : "movers"},  {"type" : "constant_wind"}, {"velocity" : velocity}, {"direction" : direction}], 
+	//[{"params" : "params"},  {"type" : "none"},	{"p1" : "1"}, {"p2" : "2"}, {"p3" : 3}], 
+	//[{"spills" : "spills"},  {"type" : "point source"}, {"latitude" : latitude}, {"longitude" : longitude}, {"date" : date}, {"start time" : time}]
+	//];
+	
+	//GNOME MODEL DATA
+	var movers = {'type' : 'constant_wind', 'velocity': constantwindspeed, 'direction': constantwinddirection};
+	var params = {'type' : 'riverflow', 'surfacecurrent': surfacecurrent}; 
+	var spills = {'type' : 'point_source', 'latitude' : latitude, 'longitude': longitude, 'date' : date, 'start_time' : time};
+	var locationfile = {'locationfile': 'lmiss'};
+	var modeldata = {'movers' : movers, 'params' : params, 'spills' : spills, 'locationfile': locationfile}; 
+	
+
+	
+	//GNOME JSON to be sent
+	gnomedatajson = JSON.stringify(modeldata);
+}
+
+function callback_json(response){
+       movie(response); 
+    }
+
+//Client request in JSON
+function sendgnomedata(){
+
+	//alert('data being sent:'+ gnomedatajson);
+  
+    jQuery.ajax({
+        type: "POST",
+		url:  "/run",
+		data: gnomedatajson,
+		success: callback_json,
+		dataType: 'json',
+		crossDomain: true
+		});
+
+}
+
+//function send_post_json() {
+//    jQuery.ajax( {
+//           type: "POST",
+//           url: "/test_json",
+//           data: JSON.stringify(wind_mover),
+//           success: callback_json,
+//           dataType: 'json',
+//          }
+//         )   
+//}
+
+
+function getgnomehash(){
+   
+    jQuery.ajax({
+        type: 'POST',
+		url:  '/test_string',
+		data: gnomedatajson,
+		
+		});
+}
+
+function sendgnometest(){
+jQuery.ajax({
+type: 'POST', 
+url: '/data', 
+data: gnomedatajson,
+contentType: 'application/json; charset=utf-8'});
+}
+
+//Adds map button in jquery
+function addmap()
+{
+var n = 0;
+if(n!=1){
+$('#navi').append('<button id="showspillbutton" onclick="addspillmap();">Show Spill</button>');
+}
+n=1;
+}
+
+//set padding on function
+function zeroFill( number, width )
+{
+  width -= number.toString().length;
+  if ( width > 0 )
+  {
+    return new Array( width + (/\./.test( number ) ? 2 : 1) ).join( '0' ) + number;
+  }
+  return number;
+}
+
+//Add the static spill map
+function addspillmap()
+{
+$("#mappng").attr("src","static/hash"+hashfolder+zeroFill(5,5)+"png.png");
+$('#navi').append('<button id="showmoviebutton" onclick="movie()">Simulate</button>');
+simulate();
+}
+
+//Add the dynamic spill map---Cacher-----
+function simulate()
+{
+//load the simulation
+for (i=0;i<50;i++){
+$.get("static/hashes/286be7ec4e69db4e23ec8a90e152f0f1/" + zeroFill(framenumber,5) + ".png"); 
+//$('#mappng').attr("src","static/ppng/ppng"+i+".png");
+}
+}
+
+var framenumber = 0;
+
+
+var a; 
+var b;
+
+function movie(response){
+//Get the data
+//Display the simulation images
+framenumber = 0;
+directory = response.hash;
+maxframe = response.numframes;
+var fps = setInterval(function (){
+//$('#mappng').attr("src","static/hashes/" + "cab5694094bf5f620ab3ec6f4b9da517/map" + zeroFill(framenumber,5) +".png");
+$('#mappng').attr("src","static/hashes/" + directory + "/map" + zeroFill(framenumber,5) +".png");
+framenumber++;
+if (framenumber === 100){
+clearInterval(fps);
+framenumber = 0;
+}
+}, 100)
+}
+
+//Console info
+function displays(){
+var console =  'GNOME CONSOLE'
+$('#leftregion').append('<div id=leftpane></div>').slideDown(); 
+$('#leftpane').append(gnomedatajson);
+$('body').append('<div class=curvedbox-control id=console></div>');
+$('#console').append(console); 
+$('#console').append('>>');
+$('#console').append('Spill Complete').fadeIn();
+}
+
+
+function moviemenu(){
+$("#slider").children("div").css("background","red");
+}
+moviemenu();
+
+var directoryhash = '';
+/*
+function gnomejson(){
+$.getJSON('/test_json',{},function(text){directoryhash = text;});			 		
+
+directory = directoryhash['hash'];
+numberofframes = directoryhash['frames'];
+return({'directory': directory,'numberofframes':numberofframes}); 
+}
+*/
+
+//Gathers and sends data for spill
+function runspill(){
+//$('#mappng').attr("src","static/hashes/286be7ec4e69db4e23ec8a90e152f0f1/map00109.png");
+getgnomedata();
+//getgnomehash();
+sendgnomedata();
+//$.getJSON('/test_json',{},function(text){response = text; window.a = response.hash; window.b = response.frames; movie(window.a, window.b);});		 		
+//$.getJSON('/test_json',{},function(text){response = text;  alert(window.a); alert(window.b); a = response.hash; b = response.frames; alert(window.a); alert(window.b);});		 		
+//movie();
+//gnomejson(a);
+//alert(a);
+//var directory = a['directory'];
+//framenumber = 9;
+//$('#mappng').attr("src","static/hashes/" + directory + "/map" + zeroFill(framenumber,5) +".png");
+}
+
+				</script>
+			</div>
+			
+<script>
+function logout ()
+{    $("#surface").click(function () {
+      $('#mapcanvas').fadeOut(300);
+	  $('#navi').fadeOut(300);
+      $(this).effect("scale", { percent: 55, direction: 'both' }, 500);
+      $(this).append('<p>User Name: <input type="text" size="25"></input>');
+	  $(this).append('<p>Password:&nbsp&nbsp&nbsp<input type="password" size="25" name="password" id="password" /></p>')
+      $(this).css({opacity: 0.20}); 
+	  });
+}
+
+</script>
+
+
+<script>
+var location;
+
+function start(){
+var step = 0; 
+$('#mappng').fadeOut(750);
+$("button").hide();
+$("#mapcanvas").append($('<div id="region">'));
+
+}
+//start(); 
+
+
+
+
+function welcome(){
+$('#mappng').fadeOut(750);
+$('#mapcanvas').append('<p><h3>Please select a location file</h3></p><p><img id="li" src="static/LongIslandSoundMap.png" height="100" width ="100" alt="National Oceanic and Atmospheric Administration"></img></p><p><h3>Long Island Sound</h3></p>'); 
+$('#mapcanvas').append('<p></p><p><img id="lmiss" src="static/lmiss.png" height="100" width ="100" alt="National Oceanic and Atmospheric Administration"></img></p><p><h3>Lower Mississippi River</h3></p>'); 
+$("button").hide();
+$('#mapcanvas').append('<img id="li" src="static/LongIslandSoundMap.png" height="100" width ="100" alt="Long Island Sound"><p>Long Island Sound</p></img>');
+$('#mapcanvas').append('<img id="lmiss" src="static/lmiss.png" height="100" width ="100" alt="Lower Mississippi River"><p>Lower Mississippi</p></img>');
+$('#mapcanvas').append('<img id="lmiss" src="static/lmiss.png" height="100" width ="100" alt="Lower Mississippi River"><p>Lower Mississippi</p></img>');
+}	
+//welcome();
+
+
+//Nota
+/*
+$('#mapcanvas').append('<div id="cs-buttons-games" class="cs-buttons" style="left: 50%; margin-left: -65px; position: relative; "><a href="#1" onclick="m1();" class="cs-button-games" id="cs-button-games-1">1</a><a href="#2" onclick="m2();" class="cs-button-games" id="cs-button-games-2">2</a><a href="#3" onclick="m3();" class="cs-button-games cs-active" id="cs-button-games-3">3</a><a href="#4" onclick="m4();" class="cs-button-games" id="cs-button-games-4">4</a><a href="#" class="cs-button-games" id="cs-button-games-5">5</a><a href="#" class="cs-button-games" id="cs-button-games-6">6</a><a href="#" class="cs-button-games" id="cs-button-games-7">7</a><a href="#" class="cs-button-games" id="cs-button-games-8">8</a></div>');
+$('#mapcanvas').append('<div class="cs-buttons" style="left: 50%; margin-left: -65px; position: relative; "><button>hello</button></div>');
+$('.demo').append('<p><button id="openDialog3" onclick=displays()>Model</button></p>');
+
+ 
+<p><button id="openDialog3" onclick=displays()>Model</button></p>
+<p><button id="openDialog4">River Flow</button></p>
+<p><button id="openDialog5">Constant Wind</button></p>
+<p><button id="openDialog6">Variable Wind</button></p>
+ */
+
+
+function select(){
+$("img").click(function () {
+	$(this).effect("size", { to: {width:500, height:500} },$("#mapcanvas img, #mapcanvas p").not(this).hide(), 1000);}); 
+	$('body').append('<button onclick="m1();">1</button><button onclick="m2();">2</button><button onclick="m3();">3</button><button onclick="m4();">4</button><button onclick="m5()">5</button>');
+	var d = $(this).attr("id");
+	$('body').append(d);  
+}
+select();
+
+function m1(){
+//$('button').show('<p><button id="openDialog3" >Model</button></p>');
+$("#openDialog3").show(500); 
+$('#openDialog3').trigger('click');
+}
+
+function m2(){
+//$('button').show('<p><button id="openDialog4">River Flow</button></p>');
+$("#openDialog4").show(500); 
+$('#openDialog4').trigger('click');
+}
+
+function m3(){
+//$('button').show('<p><button id="openDialog5">Constant Wind</button></p>');
+$("#openDialog5").show(500); 
+$('#openDialog5').trigger('click');
+}
+
+function m4(){
+//$('button').show('<p><button id="openDialog6">Variable Wind</button></p>');
+$("#openDialog6").show(500); 
+$('#openDialog5').trigger('click');
+}
+
+function m5(){
+//$('button').show('<p><button id="openDialog6">Variable Wind</button></p>');
+$("#openDialog2").show(500); 
+$("#somedialog").show(500); 
+$("#replay").show(500); 
+$('#openDialog2').trigger('click');
+}
+
+	
+function light(){
+$("#mapcanvas").click(function () {
+	$(this).effect("size", { to: {width: 1000,height: 800 } }, 1000);}); 
+	/*
+	$('#mappng').fadeOut(750);
+	$('#mapcanvas').append('<div class="demo"><p><button id="openDialog3">Model</button></p></div>');
+	$('body').append('<div id="background">Location files: </div>');
+	$('#background').append('<p><a href="http://www.noaa.gov"> <img src="static/LongIslandSoundMap.png" height="100" width ="100" alt="National Oceanic and Atmospheric Administration"/></a></p>'); 
+	$('#background').append('<p><img onclick="main()" src="static/LongIslandSoundMap.png" height="100" width ="100" alt="National Oceanic and Atmospheric Administration"/></p>'); 	
+	$('#background').append('<p><span<img onclick="main()" src="static/LongIslandSoundMap.png" height="100" width ="100" alt="National Oceanic and Atmospheric Administration"/></p>'); 	
+	$('#background').append('<p><span><p></p> </span><img onclick="main()" src="static/LongIslandSoundMap.png" height="100" width ="100" alt="National Oceanic and Atmospheric Administration"/></p>'); 	
+	*/
+	//$('#background').append('<div id="cs-buttons-games" class="cs-buttons" style="left: 50%; margin-left: -65px; position: relative; "><button class="cs-button-games"></button></div>');
+
+	//$('#background').append('<div class="demo"><div id="cs-buttons-games" class="cs-buttons" style="left: 50%; margin-left: -65px; position: relative; "><a href="openDialog3" onclick="alert();" class="cs-button-games" id="cs-button-games-1">1</a><a href="#" class="cs-button-games" id="cs-button-games-2">2</a><a href="#" class="cs-button-games cs-active" id="cs-button-games-3">3</a><a href="#" class="cs-button-games" id="cs-button-games-4">4</a><a href="#" class="cs-button-games" id="cs-button-games-5">5</a><a href="#" class="cs-button-games" id="cs-button-games-6">6</a><a href="#" class="cs-button-games" id="cs-button-games-7">7</a><a href="#" class="cs-button-games" id="cs-button-games-8">8</a></div></div>');
+
+}
+
+/*
+ * 
+ 
+/*
+<div id="cs-buttons-games" class="cs-buttons" style="left: 50%; margin-left: -65px; position: relative; "><a href="#" class="cs-button-games" id="cs-button-games-1">1</a><a href="#" class="cs-button-games" id="cs-button-games-2">2</a><a href="#" class="cs-button-games cs-active" id="cs-button-games-3">3</a><a href="#" class="cs-button-games" id="cs-button-games-4">4</a><a href="#" class="cs-button-games" id="cs-button-games-5">5</a><a href="#" class="cs-button-games" id="cs-button-games-6">6</a><a href="#" class="cs-button-games" id="cs-button-games-7">7</a><a href="#" class="cs-button-games" id="cs-button-games-8">8</a></div> 
+*/ 
+ 
+ 
+ 
+
+
+function main(){
+$('body').fadeIn(1000);
+}
+
+
+
+function replaymovie(){
+$("#replay").click(function () {
+	 $('#surface').hide("fade", {}, 1000);
+	 $('body,#child2').css("background", "black");
+	 $('body').append('<img id="mappng" src="static/LongIslandSoundMap.png" height="500" width ="500"/>').hide().fadeIn(1000);
+
+	 
+	 
+});
+}
+replaymovie();
+
+
+</script>
+
+
+		<!-->
+		<div id="rightregion"></div>	
+			</div>
+			<!--
+			<form class="cmxform" id="console" method="get" action="">
+				<fieldset>
+					<legend>
+						CODE REVIEW: (GNOME FEEDBACK FORM) THANK YOU!
+					</legend>
+					<p>
+						<label for="cemail">EMAIL</label>
+						<input id="cemail" name="email" size="25"  class="required email" />
+					</p>
+					<p>
+						<label for="ccomment">COMMENTS</label>
+						<textarea id="ccomment" name="comment" cols="26"  class="required"></textarea>
+					</p>
+					<p>
+						<input class="submit" type="submit" value="Submit"/>
+					</p>
+				</fieldset>
+			</form>
+			<-->
+	</body>
+</html>
+

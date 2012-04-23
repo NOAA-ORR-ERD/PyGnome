@@ -30,6 +30,8 @@ extern TModel *model;
 extern Model_c *model;
 #endif
 
+using std::cout;
+
 Random_c::Random_c (TMap *owner, char *name) : Mover_c (owner, name)
 {
 	fDiffusionCoefficient = 100000; //  cm**2/sec 

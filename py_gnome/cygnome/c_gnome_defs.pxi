@@ -6,6 +6,17 @@ cdef extern from "TypeDefs.h":
     ctypedef unsigned long Seconds
     ctypedef unsigned char    Boolean
     ctypedef short    OSErr
+    ctypedef unsigned long LETYPE
+
+cdef extern from "CMYLIST.H":
+    cdef cppclass CMyList:
+        CMyList(long)
+        OSErr AppendItem(char *)
+
+cdef extern from "LEList_c.h":
+    cdef cppclass LEList_c:
+        long numOfLEs
+        LETYPE fLeType
 
 cdef extern from "GEOMETRY.H":
     ctypedef struct WorldPoint:
@@ -21,6 +32,10 @@ cdef extern from "GEOMETRY.H":
         long hiLat
 
 cdef extern from "TypeDefs.h":
+    ctypedef struct TModelDialogVariables:
+        Boolean bUncertain
+        Boolean preventLandJumping
+        
     ctypedef struct TR_OPTIMZE:
         Boolean isOptimizedForStep
         Boolean isFirstStep
@@ -79,7 +94,8 @@ cdef extern from "Random_c.h":
         double fUncertaintyFactor
         TR_OPTIMZE fOptimize            
         WorldPoint3D GetMove (Seconds timeStep, long setIndex, long leIndex, LERec *theLE, LETYPE leType)
-
+        OSErr        PrepareForModelStep()
+        void        ModelStepIsDone()
 cdef extern from "WindMover_c.h":
     cdef cppclass WindMover_c:
         double fSpeedScale
@@ -98,7 +114,8 @@ cdef extern from "WindMover_c.h":
         LEWindUncertainRec **fWindUncertaintyList
         long **fLESetSizes
         WorldPoint3D GetMove (Seconds timeStep, long setIndex, long leIndex, LERec *theLE, LETYPE leType)
-
+        OSErr        PrepareForModelStep()
+        OSErr        AllocateUncertainty()
 
 cdef extern from "GridVel_c.h":
     cdef cppclass GridVel_c:
@@ -136,6 +153,8 @@ cdef extern from "Model_c.h":
         Seconds GetStartTime()
         Seconds GetModelTime()
         Seconds GetTimeStep()
+        CMyList *LESetsList
+        TModelDialogVariables fDialogVariables
 
 cdef extern from "CATSMover_c.h":
     ctypedef struct TCM_OPTIMZE:
@@ -165,7 +184,7 @@ cdef extern from "CATSMover_c.h":
         WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
         int             ReadTopology(char* path, Map_c **newMap)
         void            SetRefPosition (WorldPoint p, long z)
-        OSErr            ComputeVelocityScale()
+        OSErr           ComputeVelocityScale()
         void        SetTimeDep(OSSMTimeValue_c *time_dep)
         OSErr        PrepareForModelStep()
         void        ModelStepIsDone()
