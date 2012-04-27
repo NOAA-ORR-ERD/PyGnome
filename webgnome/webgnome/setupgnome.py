@@ -54,8 +54,8 @@ def instantiate_location(location, params):
             if(parameter['type'].strip().lower() == 'riverflow'):
                 scale_value = float(parameter['surfacecurrent'])
     except:
-        print 'exception!'
-        exit(-1)
+        print 'no valid river flow scale value'
+        scale_value = 1.0
 
     return constructor(model_start_time, model_stop_time, timestep, scale_value)
         

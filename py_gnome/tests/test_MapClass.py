@@ -219,7 +219,7 @@ class Test_RasterMap():
 from gnome.map import MapFromBNA
 class Test_MapfromBNA:
     filename = "SampleData/Mapbounds_Island.bna"
-    bna_map = MapFromBNA("SampleData/MapBounds_Island.bna", 6)
+    bna_map = MapFromBNA(filename, 6)
     def test__init__(self):
         m = MapFromBNA(self.filename, 6, raster_size=1000)
     
@@ -276,6 +276,11 @@ class Test_MapfromBNA:
     def test_map_on_map(self):
         point = (-126.12336, 47.454164)
         assert self.bna_map.on_map( point )
+
+    def test_map_off_map(self):
+        point = (-126.097336, 47.43962)
+        assert not self.bna_map.on_map( point )
+
 
     def test_map_off_map(self):
         point = (-126.097336, 47.43962)

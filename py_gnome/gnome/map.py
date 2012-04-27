@@ -476,9 +476,7 @@ class RasterMap(GnomeMap):
         that have been landed are beached.
         
         param: spill -- a gnome.spill object (with LE info, etc)
-        """
-        ##fixme: this code should be in the map classes
-        
+        """        
         # make a regular Nx2 numpy array 
         coords = np.copy(spill.npra['p']).view(world_point_type).reshape((-1, 2),)
         coords = self.to_pixel_array(coords)
@@ -493,6 +491,23 @@ class RasterMap(GnomeMap):
         self.chromgph = chromgph
         return merg
 
+    def movement_check2(self, current_pos, prev_pos, status):
+        """
+        checks the movement of the LEs to see if they have:
+        
+        hit land or gone off the map. The status code is changed if they are beached or off map
+        
+        param: current_pos -- a Nx2 array of lat-long coordinates of the current positions
+        param: prev_pos -- a Nx2 array of lat-long coordinates of the previous positions
+        param: status -- a N, array of status codes.
+        """
+        # check which ones are still on the map:
+        on_map = self.on_map(current_pos)
+        # check which ones are on land:
+        pixel_coords = self.to_pixel_array(current_pos)
+        on_land = self.on_land(current_pos)
+        
+        
 
         
 class MapFromBNA(RasterMap):
