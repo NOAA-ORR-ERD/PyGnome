@@ -89,7 +89,8 @@ void CurrentMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 OSErr CurrentMover_c::AllocateUncertainty()
 {
 	long i,j,n,numrec;
-	TOLEList *list;
+	//TOLEList *list; AH 04/12/2012: This should be the more basic list type. (Every time we call on AppendItem() we're passing TLELists, not TOLELists. Please correct me if I'm wrong here.)
+	TLEList *list;
 	LEUncertainRecH h;
 	OSErr err=0;
 	CMyList	*LESetsList = model->LESetsList;

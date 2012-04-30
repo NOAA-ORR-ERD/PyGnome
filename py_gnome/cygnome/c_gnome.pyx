@@ -38,12 +38,13 @@ cpdef initialize_model(spills):
     cdef LEList_c *le_list
     cdef OSErr err
     le_superlist = new CMyList(sizeof(LEList_c*))
+    le_superlist.IList()
     for spill in spills:
         le_type = spill.uncertain + 1
         le_list = new LEList_c()
         le_list.fLeType = le_type
         le_list.numOfLEs = len(spill.npra)
-        err = le_superlist.AppendItem(<char *>le_list) #hrm.
+        err = le_superlist.AppendItem(<char *>&le_list) #hrm.
     model.LESetsList = le_superlist
 
 #====================================================================#
@@ -119,7 +120,7 @@ cdef class cats_mover:
         for i in xrange(0, len(ra)):
             if ra[i].statusCode != status_in_water:
                 continue
-            wp3d = self.mover.GetMove(t, set_index, i+1, &ra[i], uncertain)
+            wp3d = self.mover.GetMove(t, set_index, i, &ra[i], uncertain)
             dpLat = wp3d.p.pLat
             dpLong = wp3d.p.pLong
             LEs[i].p.pLat += (dpLat/1000000)
@@ -201,7 +202,6 @@ cdef class wind_mover:
         self.mover.fIsConstantWind = 1
         self.mover.fConstantValue.u = constant_wind_value[0]
         self.mover.fConstantValue.v = constant_wind_value[1]
-        self.mover.AllocateUncertainty()
         
     def get_move(self, t, np.ndarray[LERec, ndim=1] LEs, uncertain, set_index):
         cdef:
@@ -216,7 +216,7 @@ cdef class wind_mover:
         for i in xrange(0, len(ra)):
             if ra[i].statusCode != status_in_water:
                 continue
-            wp3d = self.mover.GetMove(t, set_index, i+1, &ra[i], uncertain)
+            wp3d = self.mover.GetMove(t, set_index, i, &ra[i], uncertain)
             dpLat = wp3d.p.pLat
             dpLong = wp3d.p.pLong
             LEs[i].p.pLat += (dpLat/1000000)

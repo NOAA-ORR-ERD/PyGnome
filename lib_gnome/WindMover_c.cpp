@@ -33,6 +33,35 @@
 
 Seconds gTapWindOffsetInSeconds = 0;
 
+WindMover_c::WindMover_c () { 
+	
+	timeDep = nil;
+	
+	fUncertainStartTime = 0;
+	fDuration = 3*3600; // 3 hours
+	
+	fWindUncertaintyList = 0;
+	fLESetSizes = 0;
+	
+	fSpeedScale = 2;
+	fAngleScale = .4;
+	fMaxSpeed = 30; //mps
+	fMaxAngle = 60; //degrees
+	fSigma2 =0;
+	fSigmaTheta =  0; 
+	//conversion = 1.0;// JLM , I think this field should be removed
+	bUncertaintyPointOpen=false;
+	bSubsurfaceActive = false;
+	fGamma = 1.;
+	
+	fIsConstantWind = false;
+	fConstantValue.u = fConstantValue.v = 0.0;
+	
+	memset(&fWindBarbRect,0,sizeof(fWindBarbRect)); 
+	bShowWindBarb = true;
+
+}
+
 WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 {
 	if(!name || !name[0]) this->SetClassName("Variable Wind"); // JLM , a default useful in the wizard
@@ -257,7 +286,6 @@ OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	norm = sqrt(tempV.v*tempV.v + tempV.u*tempV.u);
 	if(abs(norm) < 1e-6)
 		return 0;
-	
 	
 	unrec=(*fWindUncertaintyList)[(*fLESetSizes)[setIndex]+leIndex];
 	w=norm;

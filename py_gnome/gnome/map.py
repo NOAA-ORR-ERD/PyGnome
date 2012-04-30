@@ -26,9 +26,12 @@ import sys
 import os
 import numpy as np
 import random
+from numpy import ma
 from PIL import Image, ImageDraw
 
 from gnome.utilities import map_canvas
+from gnome.basic_types import world_point_type, status_on_land
+
 from hazpy.file_tools import haz_files
 from hazpy.geometry import BBox
 from hazpy.geometry.PinP import CrossingsTest as point_in_poly
@@ -157,11 +160,12 @@ class lw_map(gnome_map):
         return self.in_water(coord)
         
     def set_spill(self, coord, num_particles, release_time):
+        ##fixme: why is this in the map class?
         """ 
-            Sets a spill.
-        ++args:
-            coord: (lon, lat)
-            release_time in seconds.
+        Sets a spill.
+        
+        param: coord: (lon, lat)
+        param: release_time in seconds.
         """
         if not self.allowable_spill_position(coord):
             print  "spill " + str(dict((('position', coord), ('num_particles', num_particles), ('release_time', release_time)))) + " ignored."
@@ -170,10 +174,11 @@ class lw_map(gnome_map):
 
     def beach_element(self, p, lwp):
         """ 
-            Beaches an element that has been landed.
-        ++args:
-            p: current position (see basic_types.world_point dtype)
-            lwp: last water position (see basic_types.world_point dtype)
+        Beaches an element that has been landed.
+        
+        param: p: current position (see basic_types.world_point dtype)
+        param: lwp: last water position (see basic_types.world_point dtype)
+        
         """
         in_water = self.in_water
         displacement = ((p['p_long'] - lwp['p_long']), (p['p_lat'] - lwp['p_lat']))
@@ -182,6 +187,7 @@ class lw_map(gnome_map):
             p['p_long'] = lwp['p_long'] + displacement[0]
             p['p_lat'] = lwp['p_lat'] + displacement[1]
 
+            
 class GnomeMap:
     """
     The very simplest map for GNOME -- all water,
@@ -229,7 +235,6 @@ class GnomeMap:
         This may not be the same as in_water!
         
         """
-        print "checking on_map:", coord
         return point_in_poly(self.map_bounds, coord)
         
     def on_land(self, coord):
@@ -347,7 +352,9 @@ class RasterMap(GnomeMap):
             return self.bitmap[coord[0], coord[1]] & self.land_flag
         except IndexError:
             return 0 # not on land if outside the land raster. (Might be off the map!) 
-        
+    ## fixme: just for compatibility with old code -- nothing outside this class should know about pixels...
+    on_land_pixel = _on_land_pixel
+    
     def on_land(self, coord):
         """
         returns 1 if point on land
@@ -357,7 +364,22 @@ class RasterMap(GnomeMap):
         
         """
         return self._on_land_pixel(self.projection.to_pixel(coord))
+    
+    def _on_land_pixel_array(self, coords):
+        """
+        determines which LEs are on lond
         
+        param: coords  Nx2 numpy integer array of pixel coords (matching the bitmap)
+        
+        returns: a (N,) array of booleans- true for the particles that are on land
+        """
+        mask = map(point_in_poly, [self.map_bounds,]*len(coords), coords)
+        racpy = np.copy(coords)[mask]
+        mskgph = self.bitmap[racpy[:,0], racpy[:,1]]
+        chrmgph = np.array([0,]*len(coords))
+        chrmgph[np.array(mask)] = mskgph
+        return chrmgph
+
     def _in_water_pixel(self, coord):
         try:
             return not (self.bitmap[coord[0], coord[1]] & self.land_flag)
@@ -377,6 +399,45 @@ class RasterMap(GnomeMap):
         else:
             return self._in_water_pixel(self.projection.to_pixel(coord))
     
+#    def beach_element(self, p, lwp):
+#        """ 
+#        Beaches an element that has been landed.
+#        
+#        param: p: current position (see basic_types.world_point dtype)
+#        param: lwp: last water position (see basic_types.world_point dtype)
+#        
+#        """
+#        in_water = self.in_water
+#        displacement = ((p['p_long'] - lwp['p_long']), (p['p_lat'] - lwp['p_lat']))
+#        while not in_water((p['p_long'], p['p_lat'])):
+#            displacement = (displacement[0]/2, displacement[1]/2)
+#            p['p_long'] = lwp['p_long'] + displacement[0]
+#            p['p_lat'] = lwp['p_lat'] + displacement[1]
+
+    def beach_elements(self, npra, lwpras, lwp_arrays, chromgph):
+        """ 
+        Beaches all the elements that have been landed.
+        
+        param: chromgrph -- mask of elements that hit land.
+
+        param: p: current position (see basic_types.world_point dtype)
+        param: lwp: last water position (see basic_types.world_point dtype)
+        
+        """
+        for i in xrange(0, len(chromgph)):
+            if chromgph[i]:
+                lwp_arrays[i] = lwpras[i]
+                #beach_element(spill.npra['p'][i], lwpras[i])
+                in_water = self.in_water
+                p = npra['p'][i]
+                lwp = lwpras[i]
+                displacement = ((p['p_long'] - lwp['p_long']), (p['p_lat'] - lwp['p_lat']))
+                while not in_water((p['p_long'], p['p_lat'])):
+                    displacement = (displacement[0]/2, displacement[1]/2)
+                    p['p_long'] = lwp['p_long'] + displacement[0]
+                    p['p_lat'] = lwp['p_lat'] + displacement[1]
+
+    
     def allowable_spill_position(self, coord):
         """
         returns true is the spill position is in the allowable spill area
@@ -384,19 +445,6 @@ class RasterMap(GnomeMap):
         This may not be the same as in_water!
         
         """
-        print "checking spillable:", coord
-         
-#        if self.spillable_area is None:
-#            if self.on_map(coord):
-#                return not self.on_land(coord)
-#            else:
-#                return False
-#        else:
-#            if point_in_poly(self.spillable_area, coord):
-#                return self.in_water(coord)
-#            else:
-#                return False
-        
         if self.on_map(coord):
             if not self.on_land(coord):
                 if self.spillable_area is None:
@@ -407,6 +455,59 @@ class RasterMap(GnomeMap):
                  return False
         else:
             return False
+    def to_pixel_array(self, coords):
+        """ 
+        Projects an array of (lon, lat) tuples onto the bitmap, and modifies it in 
+        place to hold the corresponding projected values.
+        
+        param: coords is a Nx2 numpy array
+        
+        returns: NX2 numpy array of integer pixel values
+        """
+        
+        return self.projection.to_pixel(coords)
+
+    def movement_check(self, spill):
+        """ 
+        After moving a spill (after superposing each of the movers' contributions),
+        we determine which of the particles have been landed, ie., that are in the
+        current time step on land but were not in the previous one. Chromgph is a list
+        of boolean values, determining which of the particles need treatment. Particles
+        that have been landed are beached.
+        
+        param: spill -- a gnome.spill object (with LE info, etc)
+        """        
+        # make a regular Nx2 numpy array 
+        coords = np.copy(spill.npra['p']).view(world_point_type).reshape((-1, 2),)
+        coords = self.to_pixel_array(coords)
+        chromgph = self._on_land_pixel_array(coords)
+        sra = spill.npra['status_code']
+        for i in xrange(0, spill.num_particles):
+            if chromgph[i]:
+                sra[i] = status_on_land
+        if spill.chromgph == None:
+            spill.chromgph = chromgph
+        merg = [int(chromgph[x] and not spill.chromgph[x]) for x in xrange(0, len(chromgph))]
+        self.chromgph = chromgph
+        return merg
+
+    def movement_check2(self, current_pos, prev_pos, status):
+        """
+        checks the movement of the LEs to see if they have:
+        
+        hit land or gone off the map. The status code is changed if they are beached or off map
+        
+        param: current_pos -- a Nx2 array of lat-long coordinates of the current positions
+        param: prev_pos -- a Nx2 array of lat-long coordinates of the previous positions
+        param: status -- a N, array of status codes.
+        """
+        # check which ones are still on the map:
+        on_map = self.on_map(current_pos)
+        # check which ones are on land:
+        pixel_coords = self.to_pixel_array(current_pos)
+        on_land = self.on_land(current_pos)
+        
+        
 
         
 class MapFromBNA(RasterMap):
@@ -415,7 +516,7 @@ class MapFromBNA(RasterMap):
     """
     def __init__(self,
                  bna_filename,
-                 refloat_halflife, #hours
+                 refloat_halflife, #seconds
                  raster_size = 1024*1024, # default to 1MB raster
                  ):
         """
@@ -423,7 +524,7 @@ class MapFromBNA(RasterMap):
         
         bna_file: full path to a bna file
         
-        refloat_halflife: the half-life (in hours) for the re-floating.
+        refloat_halflife: the half-life (in seconds) for the re-floating.
         
         raster_size: total number of pixels (bytes) to make the raster -- the actual size
         will match the aspect ratio of the bounding box of the land
@@ -440,17 +541,21 @@ class MapFromBNA(RasterMap):
         spillable_area = None
         map_bounds = None
         for p in polygons:
-            print p.metadata
             if p.metadata[1].lower() == "spillablearea":
                 spillable_area = p
             elif p.metadata[1].lower() == "map bounds":
                 map_bounds = p
             else:
                 just_land.append(p)
-
         # now draw the raster map with a map_canvas:
         #determine the size:
         BB = just_land.bounding_box
+        # create spillable area and  bounds if they weren't in the BNA
+        if map_bounds is None:
+            map_bounds = BB.AsPoly()
+        if spillable_area is None:
+            spillable_area = map_bounds
+
         ##fixme: should we just stick with non-projected coord for the raster map?
         W, H = BB.Width, BB.Height
         # stretch the bounding box, to get approximate aspect ratio in projected coords.
@@ -464,16 +569,14 @@ class MapFromBNA(RasterMap):
         
         ## get the bitmap as a numpy array:
         bitmap_array = canvas.as_array()
-        
-        print bitmap_array
-        
+                
         # __init__ the  RasterMap
         RasterMap.__init__(self,
-                                 refloat_halflife, #hours
-                                 bitmap_array,
-                                 canvas.projection,
-                                 map_bounds, 
-                                 spillable_area, 
-                                 )
+                           refloat_halflife, #hours
+                           bitmap_array,
+                           canvas.projection,
+                           map_bounds, 
+                           spillable_area, 
+                           )
         
         return None

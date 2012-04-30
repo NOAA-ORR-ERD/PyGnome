@@ -116,15 +116,18 @@ class Projection:
 
     def to_pixel(self, coords):
         """
-        takes an array of coordinates:
+        
+        converts input coordinates to pixel coords
+        
+        param: coords --  an array of coordinates:
           NX2: ( (long1, lat1),
                  (long2, lat2),
                  (long3, lat3),
                  .....
                 )
         
-        and returns the pixel coords as a similar Nx2 array of x,y coordinates
-        (using the y = 0 at the top, and y increasing down)
+        returns:  the pixel coords as a similar Nx2 array of integer x,y coordinates
+        (using the y = 0 at the top, and y increasing down) -- a
         """
         # b = a.view(shape=(10,2),dtype='<f4')
         # shift to center:
@@ -134,7 +137,7 @@ class Projection:
         # shift to pixel coords
         coords += self.offset
         
-        return np.round(coords).astype(np.int)
+        return coords.astype(np.int)
     
     def to_lat_long(self, coords):
         ## note: untested!
