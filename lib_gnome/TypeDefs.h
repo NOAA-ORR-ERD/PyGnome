@@ -9,7 +9,6 @@
 
 #ifndef __TypeDefs__
 #define __TypeDefs__
-#include "Earl.h"
 //++ Carry-over from basic definitions.
 
 #define DIRTY_EVERYTHING -1

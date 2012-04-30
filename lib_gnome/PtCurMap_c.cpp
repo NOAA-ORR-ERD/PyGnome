@@ -1108,8 +1108,8 @@ OSErr PtCurMap_c::GetDepthAtMaxTri(long *maxTriIndex,double *depthAtPnt)
 		model -> LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		if (thisLEList->fLeType == UNCERTAINTY_LE)	
 			continue;	
-		if (!((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil && ((model->GetModelTime() - model->GetStartTime()) >= (*(TOLEList*)thisLEList).fDispersantData.timeToDisperse ) )
-			&& !(*(TOLEList*)thisLEList).fAdiosDataH && !((*(TOLEList*)thisLEList).fSetSummary.z > 0)) 
+		if (!((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil && ((model->GetModelTime() - model->GetStartTime()) >= (*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.timeToDisperse ) )
+			&& !(*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH && !((*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0)) 
 			continue;
 		numOfLEs = thisLEList->numOfLEs;
 		// density set from API

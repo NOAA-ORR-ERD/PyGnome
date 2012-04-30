@@ -11,7 +11,6 @@
 #include "TypeDefs.h"
 #include "MemUtils.h"
 #include "StringFunctions.h"
-#include "Cross.h"
 #include <iostream>
 #include <time.h>
 
