@@ -1049,7 +1049,10 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_get_array_base(PyArrayObject *); /
 static PyTypeObject *__pyx_ptype_5gnome_7c_gnome_cats_mover = 0;
 static PyTypeObject *__pyx_ptype_5gnome_7c_gnome_random_mover = 0;
 static PyTypeObject *__pyx_ptype_5gnome_7c_gnome_wind_mover = 0;
-__PYX_EXTERN_C DL_IMPORT(Model_c) *model;
+
+//__PYX_EXTERN_C DL_IMPORT(Model_c) *model; for Brian 04/30/12. will find a way around doing this manually, eventually.
+extern Model_c *model; // for Brian 04/30/12.
+
 static PyObject *__pyx_f_5gnome_7c_gnome_set_model_start_time(Seconds, int __pyx_skip_dispatch); /*proto*/
 static PyObject *__pyx_f_5gnome_7c_gnome_set_model_duration(Seconds, int __pyx_skip_dispatch); /*proto*/
 static PyObject *__pyx_f_5gnome_7c_gnome_set_model_time(Seconds, int __pyx_skip_dispatch); /*proto*/
