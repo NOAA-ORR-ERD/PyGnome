@@ -18,7 +18,11 @@ from hazpy.file_tools import haz_files
 ## note -- these shouldn't be globals, really.
 
 def make_map(bna_filename, png_filename, image_size = (500, 500)):
-    image_size = (500, 500)
+    """
+    utility function to draw a PNG map from a BNA file
+    """
+
+
     #print "Reading input BNA"
     polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
 
@@ -32,8 +36,8 @@ def make_map(bna_filename, png_filename, image_size = (500, 500)):
     #polygons.TransformData(proj.to_pixel)
 
     canvas = MapCanvas(image_size)
+
     canvas.draw_land(polygons)
-    im = canvas.draw_land(polygons, image_size)
     
     canvas.save(png_filename, "PNG")
 
@@ -199,7 +203,8 @@ class MapCanvas:
     """
     # a bunch of constants -- maybe they should be settable, but...
     background_color = (255, 255, 255)
-    lake_color       = (0, 128, 255)
+    lake_color       = (0, 128, 255)# blue
+    lake_color       = background_color
     land_color       = (255, 204, 153)
 
     def __init__(self, size, projection=FlatEarthProjection, mode='RGB'):
