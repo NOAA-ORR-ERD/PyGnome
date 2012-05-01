@@ -137,19 +137,19 @@ class Model:
         date-time strings with format: 'mm/dd/yyyy hh:mm:ss' 
         (Greenwich Mean Time)
         """
-        # fixme: time zone?
+        # fixme: time zone -- I htink GNOME always uses "local time" -- i.e. not= time zone info
+        #        all timezone translation is done on IO
         # fixme: use python datetimes???
         
         try:
             start_time = greenwich.gwtm(start_time).time_seconds
             stop_time = greenwich.gwtm(stop_time).time_seconds
-        except:
+        except ValueError:
             print 'Please check the format of your date time strings.'
-            exit(-1)
+            raise
             
         if not start_time < stop_time:
-            print 'Please check your start and stop times.'
-            exit(-1)
+            raise ValueError('start_time must be less than stop_time')
             
         self.start_time = start_time
         self.stop_time = stop_time
@@ -161,17 +161,21 @@ class Model:
     def set_timestep(self, interval_seconds):
         """
         Sets the model time step in seconds.
-        """
         
+        param: interval_seconds  model time step in seconds.
+        """
+        self.interval_seconds = interval_seconds
+        # fixme == is there a global model in c_gnome -- doesn't seem right...
+        c_gnome.set_model_timestep(interval_seconds)
+        #fixme: are we handling duration = None right? why would it ever be None?
         if self.duration == None:
             return
-        self.interval_seconds = interval_seconds
         self.num_timesteps = floor(self.duration / self.interval_seconds)
-        c_gnome.set_model_timestep(interval_seconds)
 
     def set_spill(self, num_particles, windage, (start_time, stop_time), (start_position, stop_position), \
                     disp_status=disp_status_dont_disperse, uncertain=False):
         # fixme: have windage range?
+        # fixme: there should be a set_spill method that takes a spill object.
         """ 
         Sets a spill location.
         
@@ -248,7 +252,9 @@ class Model:
         
     def step(self, output_dir="."):
         """ Steps the model forward in time. Needs support for hindcasting. """
-        "step called: time step:", self.time_step
+        
+        # print  "step called: time step:", self.time_step
+        
         if(self.duration == None):
             return False
         if(self.interval_seconds == None):

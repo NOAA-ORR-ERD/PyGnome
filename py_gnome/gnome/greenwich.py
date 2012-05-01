@@ -59,6 +59,6 @@ class gwtm:
         """
         mtch = self.pattern.match(datetime_string)
         if not mtch:
-            raise Exception
+            raise ValueError( "%s is not a valid GNOME date-time string"%datetime_string )
         else:
             return mtch
