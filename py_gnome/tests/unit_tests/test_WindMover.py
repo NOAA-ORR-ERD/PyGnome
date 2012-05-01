@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Feb 14 15:38:03 PST 2012
-Modified on Fri Feb 24 13:38:00 PST 2012
+Modified on Mon May 1 15:30:00 PST 2012
 
 @author: brian.zelenke
 You should  be able to `git checkout prototype; cd py_gnome; python setup.py develop` and then run this script.
@@ -13,6 +13,16 @@ from gnome.basic_types import le_rec, status_in_water
 import numpy as np
 import geodesic_calcs
 
+class spill:
+    def __init__(self,npra,uncertain):
+        '''
+        Create a dictionary of the attributes used to initalize the model.
+        "npra" is the numpy array filled with the spill(s) parameters.
+        "uncertain" is the uncertainty value to use of each spill (can be set
+        to "False" to turn off uncertanity calculation.)
+        '''
+        self.npra=npra
+        self.uncertain=uncertain
 
 
 def test_init():
@@ -45,11 +55,16 @@ def test_northward():
     npra = np.zeros(num_particles, dtype=le_rec) #Initialize and empty array of zeros.
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
-    npra["status_code"]=status_in_water #Specify the particle state.
-    m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
+    npra["status_code"]=status_in_water #Specify the particle state.    
     
+    #Initalize the model.
+    SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
+    Spill=[SpillDict] #Make a list out of the dictionary.
+    c_gnome.initialize_model(Spill) #Pass in the list.
+    
+    m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
     print npra #See what the numpy array being input into the get_move function looks like.
-    m.get_move(Tstep,npra) #Timestep(seconds),NumpyArray.
+    m.get_move(Tstep,npra,False,0) #Timestep(seconds),NumpyArray,Uncertanity,SpillIndex
     print npra #See what the numpy array looks like after processing by the get_move function.
     
     #Ending coordinate.
@@ -96,11 +111,16 @@ def test_southward():
     npra = np.zeros(num_particles, dtype=le_rec) #Initialize and empty array of zeros.
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
-    npra["status_code"]=status_in_water #Specify the particle state.
-    m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
+    npra["status_code"]=status_in_water #Specify the particle state.    
     
+    #Initalize the model.
+    SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
+    Spill=[SpillDict] #Make a list out of the dictionary.
+    c_gnome.initialize_model(Spill) #Pass in the list.
+    
+    m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
     print npra #See what the numpy array being input into the get_move function looks like.
-    m.get_move(Tstep,npra) #Timestep(seconds),NumpyArray.
+    m.get_move(Tstep,npra,False,0) #Timestep(seconds),NumpyArray,Uncertanity,SpillIndex
     print npra #See what the numpy array looks like after processing by the get_move function.
     
     #Ending coordinate.
@@ -148,10 +168,15 @@ def test_eastward():
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
     npra["status_code"]=status_in_water #Specify the particle state.
-    m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
     
+    #Initalize the model.
+    SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
+    Spill=[SpillDict] #Make a list out of the dictionary.
+    c_gnome.initialize_model(Spill) #Pass in the list.
+    
+    m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
     print npra #See what the numpy array being input into the get_move function looks like.
-    m.get_move(Tstep,npra) #Timestep(seconds),NumpyArray.
+    m.get_move(Tstep,npra,False,0) #Timestep(seconds),NumpyArray,Uncertanity,SpillIndex
     print npra #See what the numpy array looks like after processing by the get_move function.
     
     #Ending coordinate.
@@ -199,10 +224,15 @@ def test_westward():
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
     npra["status_code"]=status_in_water #Specify the particle state.
-    m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
     
+    #Initalize the model.
+    SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
+    Spill=[SpillDict] #Make a list out of the dictionary.
+    c_gnome.initialize_model(Spill) #Pass in the list.
+    
+    m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
     print npra #See what the numpy array being input into the get_move function looks like.
-    m.get_move(Tstep,npra) #Timestep(seconds),NumpyArray.
+    m.get_move(Tstep,npra,False,0) #Timestep(seconds),NumpyArray,Uncertanity,SpillIndex
     print npra #See what the numpy array looks like after processing by the get_move function.
     
     #Ending coordinate.
@@ -250,10 +280,15 @@ def test_northeastward():
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
     npra["status_code"]=status_in_water #Specify the particle state.
-    m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
     
+    #Initalize the model.
+    SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
+    Spill=[SpillDict] #Make a list out of the dictionary.
+    c_gnome.initialize_model(Spill) #Pass in the list.
+    
+    m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
     print npra #See what the numpy array being input into the get_move function looks like.
-    m.get_move(Tstep,npra) #Timestep(seconds),NumpyArray.
+    m.get_move(Tstep,npra,False,0) #Timestep(seconds),NumpyArray,Uncertanity,SpillIndex
     print npra #See what the numpy array looks like after processing by the get_move function.
     
     #Ending coordinate.
@@ -304,6 +339,11 @@ def test_northward_stepwise():
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
     npra["status_code"]=status_in_water #Specify the particle state.
+    
+    #Initalize the model.
+    SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
+    Spill=[SpillDict] #Make a list out of the dictionary.
+    c_gnome.initialize_model(Spill) #Pass in the list.
     m = c_gnome.wind_mover((WindU,WindV)) #U,V velocity component in m/s.
     
     
@@ -321,7 +361,7 @@ def test_northward_stepwise():
     #   Calculate the end coordinate in a single time-step via pyGNOME.
     #==========================================================================
 
-    m.get_move(TotalT,npra) #Timestep(seconds),NumpyArray.
+    m.get_move(TotalT,npra,False,0) #Timestep(seconds),NumpyArray,Uncertanity,SpillIndex.
     
     #Ending coordinate.
     EndLat=npra["p"]["p_lat"][0]
@@ -338,7 +378,7 @@ def test_northward_stepwise():
     
     idx=-1
     for iStep in Tsteps:
-        m.get_move(iStep,npra)
+        m.get_move(iStep,npra,False,0)
         idx=idx+1
         LatSteps[idx]=npra["p"]["p_lat"][0]
         LonSteps[idx]=npra["p"]["p_long"][0]
