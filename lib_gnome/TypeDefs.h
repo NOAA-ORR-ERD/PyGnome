@@ -395,8 +395,8 @@ typedef struct {
 } WorldPoint, *WORLDPOINTP, **WORLDPOINTH;
 #else
 typedef struct {
-	float pLong;
-	float pLat;
+	double pLong;
+	double pLat;
 } WorldPoint, *WORLDPOINTP, **WORLDPOINTH;
 #endif
 

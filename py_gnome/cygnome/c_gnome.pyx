@@ -97,8 +97,8 @@ cdef class cats_mover:
         
     def set_ref_point(self, ref_point):
         cdef WorldPoint p
-        p.pLong = ref_point[0]
-        p.pLat = ref_point[1]
+        p.pLong = ref_point[0]*10**6
+        p.pLat = ref_point[1]*10**6
         self.mover.SetRefPosition(p, 0)
         
     def read_topology(self, path):

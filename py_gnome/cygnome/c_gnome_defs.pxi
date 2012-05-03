@@ -28,8 +28,8 @@ cdef extern from "LEList_c.h":
 
 cdef extern from "GEOMETRY.H":
     ctypedef struct WorldPoint:
-        float pLong
-        float pLat
+        double pLong
+        double pLat
     ctypedef struct WorldPoint3D:
         WorldPoint p
         double z
