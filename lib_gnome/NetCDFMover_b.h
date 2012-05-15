@@ -64,6 +64,7 @@ public:
 	FLOATH fDepthsH;	// check what this is, maybe rename
 	DepthDataInfoH fDepthDataInfo;
 	float fFillValue;
+	double fFileScaleFactor;
 	Boolean fIsNavy;	// special variable names for Navy, maybe change to grid type depending on Navy options
 	Boolean fIsOptimizedForStep;
 	Boolean fOverLap;

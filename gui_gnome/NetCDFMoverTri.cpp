@@ -707,7 +707,7 @@ done:
 			delete fGrid;
 			fGrid = 0;
 		}
-		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
+		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;	fVertexPtsH	 = 0;}
 		if(sigmaLevelsH) {DisposeHandle((Handle)sigmaLevelsH); sigmaLevelsH = 0;}
 	}
 	//printNote("NetCDF triangular grid model current mover is not yet implemented");
@@ -742,6 +742,7 @@ OSErr NetCDFMoverTri::ReadTimeData(long index,VelocityFH *velocityH, char* errms
 	long numNodes = fNumNodes;
 	long numTris = fNumEles;
 	long numDepths = fVar.maxNumDepths;	// assume will always have full set of depths at each point for now
+	double scale_factor = 1.;
 	
 	errmsg[0]=0;
 	
@@ -819,6 +820,8 @@ OSErr NetCDFMoverTri::ReadTimeData(long index,VelocityFH *velocityH, char* errms
 	//if (status != NC_NOERR) {err = -1; goto done;}
 	status = nc_get_att_float(ncid, curr_ucmp_id, "missing_value", &fill_value);// missing_value vs _FillValue
 	if (status != NC_NOERR) {/*err = -1; goto done;*/fill_value=-9999.;}
+	status = nc_get_att_double(ncid, curr_ucmp_id, "scale_factor", &scale_factor);
+	//if (status != NC_NOERR) {err = -1; goto done;}
 	status = nc_get_att_float(ncid, curr_ucmp_id, "dry_value", &dry_value);// missing_value vs _FillValue
 	if (status != NC_NOERR) {/*err = -1; goto done;*/}  
 	status = nc_close(ncid);
@@ -874,6 +877,7 @@ OSErr NetCDFMoverTri::ReadTimeData(long index,VelocityFH *velocityH, char* errms
 	}
 	*velocityH = velH;
 	fFillValue = fill_value;
+	if (scale_factor!=1.) fFileScaleFactor = scale_factor;
 	
 done:
 	if (err)
@@ -1041,8 +1045,8 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 				}
 				if ((velocity.u != 0 || velocity.v != 0))
 				{
-					float inchesX = (velocity.u * fVar.curScale) / fVar.arrowScale;
-					float inchesY = (velocity.v * fVar.curScale) / fVar.arrowScale;
+					float inchesX = (velocity.u * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
+					float inchesY = (velocity.v * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
 					short pixX = inchesX * PixelsPerInchCurrent();
 					short pixY = inchesY * PixelsPerInchCurrent();
 					p2.h = p.h + pixX;
@@ -1210,8 +1214,8 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 				}
 				if ((velocity.u != 0 || velocity.v != 0))
 				{
-					inchesX = (velocity.u * fVar.curScale) / fVar.arrowScale;
-					inchesY = (velocity.v * fVar.curScale) / fVar.arrowScale;
+					inchesX = (velocity.u * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
+					inchesY = (velocity.v * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
 					pixX = inchesX * PixelsPerInchCurrent();
 					pixY = inchesY * PixelsPerInchCurrent();
 					p2.h = p.h + pixX;

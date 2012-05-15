@@ -371,10 +371,11 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 		char c;
 		int x = i = 0;
 		int j = 0;
-		std::string *file_contents = new std::string();
 		fstream *_ifstream = new fstream(path, ios::in);
 		for(; _ifstream->get(c); x++);
 		delete _ifstream;
+		if(!(x > 0))
+			throw("empty file.\n");
 		_ifstream = new fstream(path, ios::in);
 		for(; j < 7; j++) _ifstream->get(c);
 		do {
@@ -387,8 +388,7 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 			DEREFH(f)[i] = c;
 		
 	} catch(...) {
-		
-		printError("We are unable to open or read from the topology file. \nBreaking from CATSMover_c::ReadTopology().");
+	    cout << "Unable to read from the topology file. Exiting.\n";
 		err = true;
 		goto done;
 		

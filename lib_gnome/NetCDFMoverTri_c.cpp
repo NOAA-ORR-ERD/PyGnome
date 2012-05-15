@@ -303,7 +303,9 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	velocity.u = pt1interp.u + pt2interp.u + pt3interp.u; 
 	velocity.v = pt1interp.v + pt2interp.v + pt3interp.v; 
 	
-	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
+	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * fFileScaleFactor;
+	//lengthS = this->fVar.curScale * lengthU;
+	//lengthS = this->fVar.curScale * fFileScaleFactor * lengthU;
 	lengthS = this->fVar.curScale * lengthU;
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
@@ -451,6 +453,8 @@ scale:
 	
 	scaledPatVelocity.u *= fVar.curScale; // may want to allow some sort of scale factor, though should be in file
 	scaledPatVelocity.v *= fVar.curScale; 
+	scaledPatVelocity.u *= fFileScaleFactor; // may want to allow some sort of scale factor, though should be in file
+	scaledPatVelocity.v *= fFileScaleFactor; 
 	
 	
 	if(leType == UNCERTAINTY_LE)

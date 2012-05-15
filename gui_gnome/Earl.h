@@ -50,6 +50,7 @@
 #include <ctype.h>
 #include <float.h>	// for isnan
 #include <shellapi.h>	// for command line argc/argv
+#include <shlobj.h>
 //	#include <StandardFile.h>	// changed for Codewarrior
 #endif
 

@@ -28,7 +28,7 @@ NetCDFMoverCurv_c::NetCDFMoverCurv_c (TMap *owner, char *name) : NetCDFMover_c(o
 
 LongPointHdl NetCDFMoverCurv_c::GetPointsHdl()
 {
-	return ((dynamic_cast<TTriGridVel*>(fGrid))) -> GetPointsHdl();
+	return ((TTriGridVel*)fGrid) -> GetPointsHdl();
 }
 
 long NetCDFMoverCurv_c::GetVelocityIndex(WorldPoint wp)
@@ -170,8 +170,10 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 		}
 	}
 	
-	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
+	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * fFileScaleFactor;
 	//lengthS = this->fWindScale * lengthU;
+	//lengthS = this->fVar.curScale * lengthU;
+	//lengthS = this->fVar.curScale * fFileScaleFactor * lengthU;
 	lengthS = this->fVar.curScale * lengthU;
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
@@ -180,8 +182,8 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	{
 		//sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
 		//this->className, uStr, sStr, fNumRows-indices.v-1, indices.h);
-		StringWithoutTrailingZeros(uStr,velocity.u,4);
-		StringWithoutTrailingZeros(vStr,velocity.v,4);
+		StringWithoutTrailingZeros(uStr,fFileScaleFactor*velocity.u,4);
+		StringWithoutTrailingZeros(vStr,fFileScaleFactor*velocity.v,4);
 		StringWithoutTrailingZeros(depthStr,depthIndex1,4);
 		sprintf(diagnosticStr, " [grid: %s, u vel: %s m/s, v vel: %s m/s], file indices : [%ld, %ld]",
 				this->className, uStr, vStr, fNumRows-indices.v-1, indices.h);
@@ -323,6 +325,8 @@ scale:
 	
 	scaledPatVelocity.u *= fVar.curScale; // may want to allow some sort of scale factor, though should be in file
 	scaledPatVelocity.v *= fVar.curScale; 
+	scaledPatVelocity.u *= fFileScaleFactor; // may want to allow some sort of scale factor, though should be in file
+	scaledPatVelocity.v *= fFileScaleFactor; 
 	
 	
 	if(leType == UNCERTAINTY_LE)
@@ -351,7 +355,7 @@ float NetCDFMoverCurv_c::GetTotalDepthFromTriIndex(long triNum)
 	if (fVar.gridType == SIGMA_ROMS)	// should always be true
 	{
 		//if (triNum < 0) useTriNum = false;
-		err = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
+		err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
 		if (err) return 0;
 		if (fDepthsH)
@@ -381,7 +385,7 @@ float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 	if (fVar.gridType == SIGMA_ROMS)
 	{
 		//if (triNum < 0) useTriNum = false;
-		err = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
+		err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
 		if (err) return 0;
 		if (fDepthsH)
@@ -407,7 +411,7 @@ void NetCDFMoverCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 {
 	// probably eventually switch to NetCDFMover only
 	long indexToDepthData = 0;
-	long numDepthLevels = /*CHECK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetNumDepthLevelsInFile();
+	long numDepthLevels = GetNumDepthLevelsInFile();
 	//float totalDepth = 0;
 	//FLOATH depthsH = ((TTriGridVel3D*)fGrid)->GetDepths();
 	
@@ -423,9 +427,9 @@ void NetCDFMoverCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 		return;
 	}
 	
-	if (fDepthLevelsHdl && numDepthLevels>0) 
+	if (fDepthLevelsHdl && numDepthLevels>0 && fVar.gridType==MULTILAYER) 
 	{
-		//totalDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);
+		totalDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);
 	}
 	else
 	{
@@ -452,6 +456,102 @@ void NetCDFMoverCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 			 }
 			 break;*/
 			//case MULTILAYER: //
+		/*case MULTILAYER: //
+			if (depthAtPoint <= totalDepth) // check data exists at chosen/LE depth for this point
+			{	// if depths are measured from the bottom this is confusing
+				long j;
+				for(j=0;j<numDepths-1;j++)
+				{
+					if(INDEXH(fDepthsH,indexToDepthData+j)<depthAtPoint &&
+					   depthAtPoint<=INDEXH(fDepthsH,indexToDepthData+j+1))
+					{
+						*depthIndex1 = indexToDepthData+j;
+						*depthIndex2 = indexToDepthData+j+1;
+					}
+					else if(INDEXH(fDepthsH,indexToDepthData+j)==depthAtPoint)
+					{
+						*depthIndex1 = indexToDepthData+j;
+						*depthIndex2 = UNASSIGNEDINDEX;
+					}
+				}
+				if(INDEXH(fDepthsH,indexToDepthData)==depthAtPoint)	// handles single depth case
+				{
+					*depthIndex1 = indexToDepthData;
+					*depthIndex2 = UNASSIGNEDINDEX;
+				}
+				else if(INDEXH(fDepthsH,indexToDepthData+numDepths-1)<depthAtPoint)
+				{
+					*depthIndex1 = indexToDepthData+numDepths-1;
+					*depthIndex2 = UNASSIGNEDINDEX; //BOTTOM, for now just extrapolate lowest depth value (at bottom case?)
+				}
+				else if(INDEXH(fDepthsH,indexToDepthData)>depthAtPoint)
+				{
+					*depthIndex1 = indexToDepthData;
+					*depthIndex2 = UNASSIGNEDINDEX; //TOP, for now just extrapolate highest depth value
+				}
+			}
+			else // no data at this point
+			{
+				*depthIndex1 = UNASSIGNEDINDEX;
+				*depthIndex2 = UNASSIGNEDINDEX;
+			}
+			break;*/
+		case MULTILAYER: // 
+			if (depthAtPoint<0)
+			{	// what is this?
+				//*depthIndex1 = indexToDepthData+numDepthLevels-1;
+				*depthIndex1 = indexToDepthData;
+				*depthIndex2 = UNASSIGNEDINDEX; //BOTTOM, for now just extrapolate lowest depth value (at bottom case?)
+				return;
+			}
+			if (depthAtPoint <= totalDepth) // check data exists at chosen/LE depth for this point
+			{	// is sigma always 0-1 ?
+				long j;
+				float depthAtLevel, depthAtNextLevel;
+				for(j=0;j<numDepthLevels-1;j++)
+				{
+					depthAtLevel = INDEXH(fDepthLevelsHdl,indexToDepthData+j);
+					depthAtNextLevel = INDEXH(fDepthLevelsHdl,indexToDepthData+j+1);
+					if(depthAtLevel<depthAtPoint &&
+					   depthAtPoint<=depthAtNextLevel)
+					{
+						*depthIndex1 = indexToDepthData+j;
+						*depthIndex2 = indexToDepthData+j+1;
+						return;
+					}
+					else if(depthAtLevel==depthAtPoint)
+					{
+						*depthIndex1 = indexToDepthData+j;
+						*depthIndex2 = UNASSIGNEDINDEX;
+						return;
+					}
+				}
+				if(INDEXH(fDepthLevelsHdl,indexToDepthData)==depthAtPoint)	// handles single depth case
+				{
+					*depthIndex1 = indexToDepthData;
+					*depthIndex2 = UNASSIGNEDINDEX;
+					return;
+				}
+				else if(INDEXH(fDepthLevelsHdl,indexToDepthData+numDepthLevels-1)<depthAtPoint)
+				{
+					*depthIndex1 = indexToDepthData+numDepthLevels-1;
+					*depthIndex2 = UNASSIGNEDINDEX; //BOTTOM, for now just extrapolate lowest depth value (at bottom case?)
+					return;
+				}
+				else if(INDEXH(fDepthLevelsHdl,indexToDepthData)>depthAtPoint)
+				{
+					*depthIndex1 = indexToDepthData;
+					*depthIndex2 = UNASSIGNEDINDEX; //TOP, for now just extrapolate highest depth value
+					return;
+				}
+			}
+			else // no data at this point
+			{
+				*depthIndex1 = UNASSIGNEDINDEX;
+				*depthIndex2 = UNASSIGNEDINDEX;
+				return;
+			}
+			break;
 			//break;
 		case SIGMA: // 
 			// code goes here, add SIGMA_ROMS, using z[k,:,:] = hc * (sc_r-Cs_r) + Cs_r * depth

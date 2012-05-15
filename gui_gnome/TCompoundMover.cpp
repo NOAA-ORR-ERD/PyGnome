@@ -313,7 +313,7 @@ long TCompoundMover::GetListLength()
 
 ListItem TCompoundMover::GetNthListItem (long n, short indent, short *style, char *text)
 {
-	ListItem item = { dynamic_cast<TComponentMover *>(this), 0, indent, 0 };
+	ListItem item = { this, 0, indent, 0 };
 	char *p, latS[20], longS[20], timeS[32],valStr[32],val2Str[32],unitStr[32];
 	long i, m, count;
 	TMover *mover;

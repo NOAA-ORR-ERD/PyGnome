@@ -298,6 +298,27 @@ OSErr InitSettings()
 	
 	err = ReadFileContents(NONTERMINATED,TATvRefNum, TATdirID,"SETTINGS.OSM", (char *)&settings, sizeof(Settings), 0);
 
+	if (err)
+	{
+#ifdef IBM
+		char szPath[MAX_PATH];
+
+		if(SUCCEEDED(SHGetFolderPath(NULL, 
+							CSIDL_LOCAL_APPDATA|CSIDL_FLAG_CREATE, 
+                             NULL, 
+                             0, 							 
+							 szPath)))
+		{
+			AddDelimiterAtEndIfNeeded(szPath);
+			strcat(szPath,"SETTINGS.OSM");
+			if (!MyGetFileSize(0, 0, szPath, &size))
+				if (size != sizeof(settings))
+					hdelete(0, 0, szPath);
+	
+			err = ReadFileContents(NONTERMINATED,0, 0,szPath, (char *)&settings, sizeof(Settings), 0);
+		}
+#endif
+	}
 	if(!err) 
 	{
 		// verify the file is OK
@@ -745,8 +766,27 @@ void CommonQuit()
 	
 	err = WriteFileContents(TATvRefNum, TATdirID, "SETTINGS.OSM", APPL_SIG, 'SETS',
 						 		(char *)&settings, sizeof(Settings), 0);
+	if (err)
+	{
+#ifdef IBM
+		char szPath[MAX_PATH];
+
+		if(SUCCEEDED(SHGetFolderPath(NULL, 
+                             //CSIDL_LOCAL_APPDATA|CSIDL_FLAG_CREATE, 
+                             CSIDL_LOCAL_APPDATA, 
+                             NULL, 
+                             0, 
+                             szPath)))
+		{
+			AddDelimiterAtEndIfNeeded(szPath);
+			strcat(szPath,"SETTINGS.OSM");
+			err = WriteFileContents(0, 0, szPath, APPL_SIG, 'SETS',
+						 		(char *)&settings, sizeof(Settings), 0);
+		}
+#endif
+	}
 	//if(err) printError(GS1(113, 0)); // Error saving settings.
-	
+
 	model->Dispose();
 	InvalidateMapImage();
 	CleanupMovieStuff();// JLM  7/7/99

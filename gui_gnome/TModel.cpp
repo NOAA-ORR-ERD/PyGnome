@@ -3359,9 +3359,11 @@ OSErr TModel::Step ()
 				{
 					PtCurMap *map = GetPtCurMap();
 					WorldPoint refPoint = (thisLE).p;	
-					if (map && thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
+					//if (map && thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
+					if (thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
 					{
-						float depthAtPoint = map->DepthAtPoint(refPoint);	
+						float depthAtPoint = 5000.;
+						if (map) depthAtPoint = map->DepthAtPoint(refPoint);	
 						thisLE.z -= (thisLE.riseVelocity/100.) * GetTimeStep();
 						if (thisLE.z < 0) 
 							thisLE.z = 0;

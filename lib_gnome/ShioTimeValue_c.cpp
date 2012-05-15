@@ -1236,9 +1236,10 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	char c;
 	try {
 		int x = i = 0;
-		std::string *file_contents = new std::string();
 		fstream *_ifstream = new fstream(path, ios::in);
 		for(; _ifstream->get(c); x++);
+		if(!(x > 0))
+			throw("empty file.\n");
 		f = _NewHandle(x);
 		delete _ifstream;
 		_ifstream = new fstream(path, ios::in);
