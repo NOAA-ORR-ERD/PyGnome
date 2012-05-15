@@ -74,6 +74,7 @@ NetCDFMover_c::NetCDFMover_c (TMap *owner, char *name) : CurrentMover_c(owner, n
 	 fOffset_v = 0.;
 	 fCurScale_u = 1.;
 	 fCurScale_v = 1.;*/
+	fFileScaleFactor = 1.;	// let user set a scale factor in addition to what is in the file
 	
 	memset(&fStartData,0,sizeof(fStartData));
 	fStartData.timeIndex = UNASSIGNEDINDEX; 
@@ -564,7 +565,8 @@ LAS:
 	}
 	*velocityH = velH;
 	fFillValue = fill_value;
-	if (scale_factor!=1.) fVar.curScale = scale_factor;
+	//if (scale_factor!=1.) fVar.curScale = scale_factor;
+	if (scale_factor!=1.) fFileScaleFactor = scale_factor;
 	//if (scale_factor!=1.) {fVar.curScale = scale_factor; fCurScale_u = scale_factor;  fCurScale_v = scale_factor_v;}
 	//else fCurScale_v = fCurScale_u = fVar.curScale;
 	//if (add_offset!=0.) {fOffset_u = add_offset; fOffset_v = add_offset_v;}
@@ -1137,9 +1139,11 @@ WorldPoint3D NetCDFMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,
 	}
 	
 scale:
-	
+
 	scaledPatVelocity.u *= fVar.curScale; 
 	scaledPatVelocity.v *= fVar.curScale; 
+	scaledPatVelocity.u *= fFileScaleFactor; 
+	scaledPatVelocity.v *= fFileScaleFactor; 
 	//scaledPatVelocity.u *= fCurScale_u; 
 	//scaledPatVelocity.v *= fCurScale_v; 
 	
@@ -1455,7 +1459,9 @@ CalcStr:
 	 }
 	 else
 	 {*/
-	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
+	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * this->fFileScaleFactor;
+	//lengthS = this->fVar.curScale * lengthU;
+	//lengthS = this->fVar.curScale * this->fFileScaleFactor* lengthU;
 	lengthS = this->fVar.curScale * lengthU;
 	//}
 	//if (this->fVar.offset != 0 && lengthS!=0) lengthS += this->fVar.offset;

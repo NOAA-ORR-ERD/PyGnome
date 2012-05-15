@@ -1257,6 +1257,7 @@ Boolean Model_c::ThereIsA3DMover(float *arrowDepth)
 			}
 		}
 	}
+	if (gNoaaVersion) return true;
 	return false;
 }
 

@@ -3178,7 +3178,27 @@ void PtCurMap::DrawContours(Rect r, WorldRect view)
 								
 						switch (LE.statusCode) {
 							case OILSTAT_INWATER:
-								RGBForeColor(&colors[BLACK]);
+								if (LE.z > 0)
+								{
+									if (LE.z > 100)
+									{
+										inWaterColor  = &colors[LIGHTGRAY];
+									}
+									else if (LE.z > 50)
+									{
+										inWaterColor = &colors[GRAY];
+									}
+									else
+									{
+										inWaterColor = &colors[DARKGRAY];
+									}
+								}
+								else
+								{
+									inWaterColor = &(((TOLEList*)thisLEList)->fColor);
+								}
+								//RGBForeColor(&colors[BLACK]);
+								RGBForeColor(inWaterColor);
 								leRect = floatingRect;
 								MyOffsetRect(&leRect,pt.h,pt.v);
 								PaintRect(&leRect);
@@ -3351,8 +3371,10 @@ void PtCurMap::DrawContours(Rect r, WorldRect view)
 						inWaterColor = &colors[RED];
 						break;
 					default:
-						onLandColor  = &colors[BLACK];	
-						inWaterColor = &colors[BLACK];	// surface LEs
+						onLandColor = &(((TOLEList*)thisLEList)->fColor);
+						inWaterColor = &(((TOLEList*)thisLEList)->fColor);
+						//onLandColor  = &colors[BLACK];fCOlor
+						//inWaterColor = &colors[BLACK];
 						break;
 				}
 				

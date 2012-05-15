@@ -828,8 +828,9 @@ OSErr TMap::AddItem(ListItem item)
 						{	
 							if (!newMap) 
 							{
-								err = AddMoverToMap (dynamic_cast<TMap *>(this), timeFileChanged, newMover);
-								if (!err && this == model -> uMap)
+								WorldRect mapBounds = this -> GetMapBounds();
+								err = AddMoverToMap (this, timeFileChanged, newMover);
+								if (!err && (this == model -> uMap || (mapBounds.loLong==-179000000 && mapBounds.hiLong==179000000)))
 								{
 									//ChangeCurrentView(AddWRectBorders(((PtCurMover*)newMover)->fGrid->GetBounds(), 10), TRUE, TRUE);
 									WorldRect newRect = newMover->GetGridBounds();
@@ -1076,7 +1077,7 @@ OSErr TMap::AddItem(ListItem item)
 					{	
 						if (!newMap) 
 						{
-							err = AddMoverToMap (dynamic_cast<TMap *>(this), timeFileChanged, newMover);
+							err = AddMoverToMap (this, timeFileChanged, newMover);
 							if (!err && this == model -> uMap)
 							{
 								//ChangeCurrentView(AddWRectBorders(((PtCurMover*)newMover)->fGrid->GetBounds(), 10), TRUE, TRUE);

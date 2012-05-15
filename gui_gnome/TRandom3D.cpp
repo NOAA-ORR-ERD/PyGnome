@@ -463,7 +463,7 @@ short M28bClick (DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			}
 			vertStep = sqrt(6*(sharedRMover3D -> fVerticalDiffusionCoefficient/10000)*model->GetTimeStep()); // in meters
 			// compare to mixed layer depth and warn if within a certain percentage - 
-			if (vertStep > map->fMixedLayerDepth)
+			if (map && vertStep > map->fMixedLayerDepth)
 				printNote("The combination of large vertical diffusion coefficient and choice of timestep will likely result in particles moving vertically on the order of the size of the mixed layer depth. They will be randomly placed in the mixed layer if reflection fails.");
 			
 			
