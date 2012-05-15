@@ -13,24 +13,58 @@ import numpy as np
 
 from PIL import Image, ImageDraw
 
+from hazpy.file_tools import haz_files
+
 ## note -- these shouldn't be globals, really.
 
-def make_map(bna_filename, png_filename):
-    print "Reading input BNA"
+def make_map(bna_filename, png_filename, image_size = (500, 500)):
+    image_size = (500, 500)
+    #print "Reading input BNA"
     polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
 
-    print "number of input polys: %i"% len(polygons)
-    print "total number of input points: %i "%polygons.total_num_points
+#    print "number of input polys: %i"% len(polygons)
+#    print "total number of input points: %i "%polygons.total_num_points
 
     # find the bounding box:
-    BB = polygons.bounding_box
-    proj = simple_projection(BB, image_size)
+    #BB = polygons.bounding_box
+    #proj = FlatEarthProjection(BB, image_size)
     # project the data:
-    polygons.TransformData(proj.ToPixel)
+    #polygons.TransformData(proj.to_pixel)
+
+    canvas = MapCanvas(image_size)
+    canvas.draw_land(polygons)
+    im = canvas.draw_land(polygons, image_size)
     
-    im = draw_map(polygons, image_size)
+    canvas.save(png_filename, "PNG")
+
+class NoProjection:
+    """
+    This is do-nothing projeciton class -- returns what it gets.
     
-    im.save(png_filename, "PNG")
+    used for testing.
+    """
+    def __init__(self, bounding_box=None, image_size=None):
+        """
+        create a new projection do-nothing projection
+        """
+        pass
+        return None
+    
+    def set_scale(self, bounding_box, image_size):
+        pass
+
+    def to_pixel(self, coords):
+        """
+        returns the same coords, but as an np.array , if they aren't already
+        """
+        return np.asarray(coords, dtype=np.int)
+    
+    def to_lat_long(self, coords):
+        """
+        returns the same coords, but as an np.array , if they aren't already
+        """
+        return np.AsArray(coords, dtype=np.float64)
+
 
 class Projection:
     """
@@ -157,11 +191,13 @@ class MapCanvas:
     
     This version uses PIL for the rendering, but it could be adjusted to use other rendering tools
     
+    fixme: this should be able to auto-shape the map to the aspect ratio of the map
+    
     """
     # a bunch of constants -- maybe they should be settable, but...
     background_color = (255, 255, 255)
-    lake_color       = (0, 255, 255)
-    land_color       = ((255, 204, 153))
+    lake_color       = (0, 128, 255)
+    land_color       = (255, 204, 153)
 
     def __init__(self, size, projection=FlatEarthProjection, mode='RGB'):
         """
@@ -193,35 +229,66 @@ class MapCanvas:
         drawer = ImageDraw.Draw(self.image)
 
         for p in polygons:
-            try:
-                #int(p.metadata[1])
-                temp_str = p.metadata[1].strip().lower()
-                if temp_str == "map bounds" or temp_str == "spillablearea":
-                    continue
+            if p.metadata[1].strip().lower() == "map bounds":
+                #Don't draw the map bounds polygon
+                continue
+            elif p.metadata[1].strip().lower() == "spillablearea":
+                # don't draw the spillable area polygon
+                continue
+            elif p.metadata[2] == "2": #this is a lake
+                poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
+                drawer.polygon(poly, fill=self.lake_color)
+            else:
                 poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
                 drawer.polygon(poly, fill=self.land_color)
-                #print "done drawing"
-                
-            except ValueError: # not a regular polygon
-                print 'exception!'
-                
-        print 'done drawing' + self._type()
         return None
     
     def draw_particles(self, spills, filename):
         img = self.image.copy()
         for spill in spills:
+            rgbt = (0,0,0)
+            if spill.uncertain:
+                rgbt = (255,0,0)
             pra = spill.npra['p']
             for i in xrange(0, len(pra)):
-            	xy = self.to_pixel((pra[i]['p_long'], pra[i]['p_lat']))
+                xy = self.to_pixel((pra[i]['p_long'], pra[i]['p_lat']))
                 try:
-            	    img.putpixel(xy, 1)
-            	except:
-				    pass
+                    img.putpixel(xy, rgbt)
+                except: # fixme! what exception are we catching?
+                    pass
         img.save(filename)
     
     def save(self, filename, type="PNG"):
         self.image.save(filename, type)
+        
+    def as_array(self):
+        """
+        returns a numpy array of the data in the image
+        """
+        # makes sure the you get a c-contiguous array with width-height right
+        #   (PIL uses the reverse convention)
+        return np.ascontiguousarray(np.asarray(self.image).T)
+
+class BW_MapCanvas(MapCanvas):
+    """
+    a version of the map canvas that draws B and White images
+    
+    used to generate the raster maps
+    """
+    # a bunch of constants -- maybe they should be settable, but...
+    background_color = 0
+    lake_color       = 0
+    land_color       = 1
+
+    def __init__(self, size, projection=FlatEarthProjection):
+        """
+        create a new map image from scratch -- specifying the size:
+        
+        size: (width, height) tuple
+        
+        """
+        self.image = Image.new('P', size, color=self.background_color)
+        self.projection = projection
     
 
 #if __name__ == "__main__":

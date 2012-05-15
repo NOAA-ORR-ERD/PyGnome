@@ -12,6 +12,7 @@
 #include "CompFunctions.h"
 #include "StringFunctions.h"
 #include <math.h>
+#include <float.h>
 
 #ifndef pyGNOME
 #include "CROSS.H"

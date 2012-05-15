@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+ 		<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+  <title>Location Files</title>
+  <style> 
+  	
+  	
+  	
+  	
+  	
+  
+/* this makes it possible to add next button beside scrollable */
+.scrollable {
+    float:left;
+}
+
+/* prev, next, prevPage and nextPage buttons */
+a.browse {
+    background:gray;
+    border-radius = 10px;
+    display: block;
+	opacity: 0.9;
+    width:30px;
+    height:30px;
+    float:left;
+    margin:40px 10px;
+    cursor:pointer;
+    font-size:1px;
+}
+
+/* right */
+a.right { background-position: 0 -30px; clear:right; margin-right: 0px;}
+a.right:hover { background-position:-30px -30px; }
+a.right:active { background-position:-60px -30px; }
+
+
+/* left */
+a.left { margin-left: 0px; }
+a.left:hover  { background-position:-30px 0; }
+a.left:active { background-position:-60px 0; }
+
+/* up and down */
+a.up, a.down  {
+    background:url(/media/img/scrollable/arrow/vert_large.png) no-repeat;
+    float: none;
+    margin: 10px 50px;
+}
+
+/* up */
+a.up:hover { background-position:-30px 0; }
+a.up:active { background-position:-60px 0; }
+
+/* down */
+a.down { background-position: 0 -30px; }
+a.down:hover { background-position:-30px -30px; }
+a.down:active { background-position:-60px -30px; }
+
+
+/* disabled navigational button */
+a.disabled {
+    visibility:hidden !important;
+}
+
+
+/*
+  root element for the scrollable.
+  when scrolling occurs this element stays still.
+  */
+.scrollable {
+
+    /* required settings */
+    position:relative;
+    overflow:hidden;
+    width: 550px;
+    height:450px;
+
+    /* custom decorations */
+    border:1px solid #ccc;
+    background:url(/media/img/gradient/h300.png) repeat-x;
+}
+
+/*
+   root element for scrollable items. Must be absolutely positioned
+   and it should have a extremely large width to accomodate scrollable
+   items.  it's enough that you set the width and height for the root
+   element and not for this element.
+*/
+.scrollable .items {
+    /* this cannot be too large */
+    width:20000em;
+    position:absolute;
+    clear:both;
+}
+
+.items div {
+    float:left;
+    width:680px;
+}
+
+/* single scrollable item */
+.scrollable img {
+    float:left;
+    margin:20px 5px 20px 21px;
+    background-color:#fff;
+    padding:2px;
+    border:1px solid #ccc;
+    width:100px;
+    height:75px;
+
+    -moz-border-radius:4px;
+    -webkit-border-radius:4px;
+}
+
+/* active item */
+.scrollable .active {
+    border:2px solid #000;
+    position:relative;
+    cursor:default;
+}
+
+
+
+  </style>
+    <!-- include the Tools -->
+  <script src="http://cdn.jquerytools.org/1.2.6/full/jquery.tools.min.js"></script>
+  
+</head>
+<body><!-- HTML structures -->
+<h2>Select your location file</h2>
+<h4>Regions: Arctic Atlantic Gulf Pacific International</h4>
+<div style="margin:0 auto; width: 634px; height:120px;">
+<!-- "previous page" action -->
+<a class="prev browse left"></a>
+
+<!-- root element for scrollable -->
+<div class="scrollable" id="scrollable">
+
+  <!-- root element for the items -->
+  <div class="items">
+
+    <!-- 1-5 -->
+    <div><h4>Arctic Region</h4>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+      <a href ="#"><img id="arctic" src="/static/arctic.jpg"/></a>
+
+     </div>
+
+    <!-- 5-10 -->
+    <div><h4>Atlantic Region</h4>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+      	<a href="/gnome"><img id="li" src="/static/LongIslandSoundMap.png"/></a>
+    </div>
+
+    <!-- 10-15 -->
+    <div><h4>Gulf of Mexico Region</h4>
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+     	<a href="/lmiss"><img id='lmiss' src="/static/lmiss.png"/></a>	
+    </div>
+
+ <!-- 10-15 -->
+    <div><h4>Pacific Region</h4>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     	  <a href="#"><img id='pacific' src="/static/pacific.gif"/></a>
+     </div>
+
+ <!-- 10-15 -->
+    <div><h4>International Region</h4>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+		<a href="#"><img id='international' src="/static/arctic.jpg"/></a>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- "next page" action -->
+<a class="next browse right"></a>
+</div>
+<!-- javascript coding -->
+<script>
+$(function() {
+  // initialize scrollable
+  $(".scrollable").scrollable();
+});
+</script>
+<script> 
+var window.location_file = long_island_sound;
+	function select(){
+$("a").click(function () {
+window.location_file = $(this).attr('id');
+alert()};
+)
+
+select();
+</script>
+</body>
+</html>

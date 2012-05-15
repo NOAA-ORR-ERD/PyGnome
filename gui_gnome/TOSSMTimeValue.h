@@ -26,8 +26,6 @@ public:
 	virtual OSErr 			MakeClone(TOSSMTimeValue **clonePtrPtr);
 	virtual OSErr			BecomeClone(TOSSMTimeValue *clone);
 	
-	virtual OSErr			ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance);
-	OSErr 			ReadHydrologyHeader (char *path);
 
 	// I/O methods
 	virtual OSErr 			Read  (BFPB *bfpb);  // read from current position

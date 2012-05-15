@@ -69,7 +69,6 @@
 		EDCB40A8150FFA6700199C36 /* TCurrentMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3FC4150FFA6600199C36 /* TCurrentMover.cpp */; };
 		EDCB40A9150FFA6700199C36 /* TextRect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3FC6150FFA6600199C36 /* TextRect.cpp */; };
 		EDCB40AA150FFA6700199C36 /* TideCurCycleMover.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3FC8150FFA6600199C36 /* TideCurCycleMover.cpp */; };
-		EDCB40AB150FFA6700199C36 /* TimeValuesIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3FCA150FFA6600199C36 /* TimeValuesIO.cpp */; };
 		EDCB40AC150FFA6700199C36 /* TimUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3FCB150FFA6600199C36 /* TimUtils.cpp */; };
 		EDCB40AD150FFA6700199C36 /* TMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3FCE150FFA6600199C36 /* TMap.cpp */; };
 		EDCB40AE150FFA6700199C36 /* TModel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDCB3FD0150FFA6600199C36 /* TModel.cpp */; };
@@ -148,6 +147,8 @@
 		EDDAD8DF150EA2EE00EFF92A /* OSSM.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8D6150EA2EE00EFF92A /* OSSM.r */; };
 		EDDAD8E0150EA2EE00EFF92A /* StartScreens.r in Rez */ = {isa = PBXBuildFile; fileRef = EDDAD8D7150EA2EE00EFF92A /* StartScreens.r */; };
 		EDEBC1F21517C2B300EF2DDF /* LocaleWizard_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDEBC1F11517C2B300EF2DDF /* LocaleWizard_c.cpp */; };
+		EDF6160E15223E160025FE54 /* TimeValuesIOPD.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDF6160D15223E160025FE54 /* TimeValuesIOPD.cpp */; };
+		EDF6164815223F860025FE54 /* TimeValuesIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EDF6164715223F860025FE54 /* TimeValuesIO.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -259,7 +260,6 @@
 		EDCB3FC7150FFA6600199C36 /* TextRect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TextRect.h; sourceTree = "<group>"; };
 		EDCB3FC8150FFA6600199C36 /* TideCurCycleMover.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TideCurCycleMover.cpp; sourceTree = "<group>"; };
 		EDCB3FC9150FFA6600199C36 /* TideCurCycleMover.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TideCurCycleMover.h; sourceTree = "<group>"; };
-		EDCB3FCA150FFA6600199C36 /* TimeValuesIO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TimeValuesIO.cpp; sourceTree = "<group>"; };
 		EDCB3FCB150FFA6600199C36 /* TimUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TimUtils.cpp; sourceTree = "<group>"; };
 		EDCB3FCC150FFA6600199C36 /* TimUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TimUtils.h; sourceTree = "<group>"; };
 		EDCB3FCD150FFA6600199C36 /* TLEList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TLEList.h; sourceTree = "<group>"; };
@@ -434,6 +434,10 @@
 		EDDAD8D7150EA2EE00EFF92A /* StartScreens.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = StartScreens.r; sourceTree = "<group>"; };
 		EDEBC1F01517C2B300EF2DDF /* LocaleWizard_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LocaleWizard_c.h; sourceTree = "<group>"; };
 		EDEBC1F11517C2B300EF2DDF /* LocaleWizard_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LocaleWizard_c.cpp; sourceTree = "<group>"; };
+		EDF6160C15223E160025FE54 /* TimeValuesIOPD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TimeValuesIOPD.h; sourceTree = "<group>"; };
+		EDF6160D15223E160025FE54 /* TimeValuesIOPD.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TimeValuesIOPD.cpp; sourceTree = "<group>"; };
+		EDF6164715223F860025FE54 /* TimeValuesIO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TimeValuesIO.cpp; sourceTree = "<group>"; };
+		EDF6164D1522401A0025FE54 /* TimeValuesIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TimeValuesIO.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -547,7 +551,8 @@
 				EDCB3FCD150FFA6600199C36 /* TLEList.h */,
 				EDCB3FCE150FFA6600199C36 /* TMap.cpp */,
 				EDCB3FCF150FFA6600199C36 /* TMap.h */,
-				EDCB3FCA150FFA6600199C36 /* TimeValuesIO.cpp */,
+				EDF6160C15223E160025FE54 /* TimeValuesIOPD.h */,
+				EDF6160D15223E160025FE54 /* TimeValuesIOPD.cpp */,
 				EDCB3FD0150FFA6600199C36 /* TModel.cpp */,
 				EDCB3FD1150FFA6600199C36 /* TModel.h */,
 				EDCB3FD2150FFA6600199C36 /* TMover.cpp */,
@@ -737,6 +742,8 @@
 				EDCB4065150FFA6700199C36 /* TimeValue_b.h */,
 				EDCB4066150FFA6700199C36 /* TimeValue_c.cpp */,
 				EDCB4067150FFA6700199C36 /* TimeValue_c.h */,
+				EDF6164715223F860025FE54 /* TimeValuesIO.cpp */,
+				EDF6164D1522401A0025FE54 /* TimeValuesIO.h */,
 				EDCB4068150FFA6700199C36 /* TriCurMover_b.h */,
 				EDCB406A150FFA6700199C36 /* TriCurMover_c.h */,
 				EDCB4069150FFA6700199C36 /* TriCurMover_c.cpp */,
@@ -902,7 +909,6 @@
 				EDCB40A8150FFA6700199C36 /* TCurrentMover.cpp in Sources */,
 				EDCB40A9150FFA6700199C36 /* TextRect.cpp in Sources */,
 				EDCB40AA150FFA6700199C36 /* TideCurCycleMover.cpp in Sources */,
-				EDCB40AB150FFA6700199C36 /* TimeValuesIO.cpp in Sources */,
 				EDCB40AC150FFA6700199C36 /* TimUtils.cpp in Sources */,
 				EDCB40AD150FFA6700199C36 /* TMap.cpp in Sources */,
 				EDCB40AE150FFA6700199C36 /* TModel.cpp in Sources */,
@@ -982,6 +988,8 @@
 				ED2971F01519181C0000481F /* CMapLayer.cpp in Sources */,
 				ED2971F11519181C0000481F /* ObjectUtils.cpp in Sources */,
 				ED2971F4151918500000481F /* CMapLayer_c.cpp in Sources */,
+				EDF6160E15223E160025FE54 /* TimeValuesIOPD.cpp in Sources */,
+				EDF6164815223F860025FE54 /* TimeValuesIO.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

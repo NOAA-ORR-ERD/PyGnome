@@ -37,5 +37,6 @@ double	UorV (VelocityRec vector, short index);
 double	Hermite (double v1, double s1, double t1,
 			     double v2, double s2, double t2,
 			     double time);
+double speedconversion(long speedUnits);
 
 #endif

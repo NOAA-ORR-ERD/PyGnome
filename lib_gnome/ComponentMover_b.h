@@ -14,6 +14,11 @@
 #include "TypeDefs.h"
 #include "CurrentMover_b.h"
 
+#ifdef pyGNOME
+#define TCATSMover CATSMover_c
+#define TOSSMTimeValue OSSMTimeValue_c
+#define TComponentMover ComponentMover_c
+#endif
 
 class TCATSMover;
 class TOSSMTimeValue;

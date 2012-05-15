@@ -366,7 +366,7 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 	//		TechError("TCATSMover::ReadTopology()", "ReadFileContents()", err);
 	//		goto done;
 	//	}
-	
+
 	try {
 		char c;
 		int x = i = 0;
@@ -386,12 +386,11 @@ OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
 		DEREFH(f)[i] = c;
 		for(++i; i < x-j+1 && _ifstream->get(c); i++)
 			DEREFH(f)[i] = c;
-		
+
 	} catch(...) {
 	    cout << "Unable to read from the topology file. Exiting.\n";
 		err = true;
 		goto done;
-		
 	}
 	_HLock((Handle)f); // JLM 8/4/99
 	
