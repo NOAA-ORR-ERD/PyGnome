@@ -606,7 +606,8 @@ OSErr NetCDFMover::InitMover()
 //#define NetCDFMoverREADWRITEVERSION 2 //JLM
 //#define NetCDFMoverREADWRITEVERSION 3 //JLM
 //#define NetCDFMoverREADWRITEVERSION 4 //JLM
-#define NetCDFMoverREADWRITEVERSION 5 //JLM
+//#define NetCDFMoverREADWRITEVERSION 5 //JLM
+#define NetCDFMoverREADWRITEVERSION 6 //added file scale factor to allow user scale factor to be separate
 
 OSErr NetCDFMover::Write (BFPB *bfpb)
 {
@@ -717,6 +718,7 @@ OSErr NetCDFMover::Write (BFPB *bfpb)
 		if (err = WriteMacValue(bfpb, numPts)) goto done;
 	}
 	if (err = WriteMacValue(bfpb, hc)) goto done;
+	if (err = WriteMacValue(bfpb, fFileScaleFactor)) goto done;
 	
 done:
 	if(err)
@@ -959,7 +961,9 @@ OSErr NetCDFMover::Read(BFPB *bfpb)
 		}
 		if (err = ReadMacValue(bfpb, &hc)) goto done;
 	}
-	
+	if (version>5)
+		if (err = ReadMacValue(bfpb, &fFileScaleFactor)) goto done;
+		
 done:
 	if(err)
 	{
@@ -1398,8 +1402,8 @@ void NetCDFMover::DrawContourScale(Rect r, WorldRect view)
 		
 		if ((velocity.u != 0 || velocity.v != 0))
 		{
-			float inchesX = (velocity.u * fVar.curScale) / fVar.arrowScale;
-			float inchesY = (velocity.v * fVar.curScale) / fVar.arrowScale;
+			float inchesX = (velocity.u * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
+			float inchesY = (velocity.v * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
 			short pixX = inchesX * PixelsPerInchCurrent();
 			short pixY = inchesY * PixelsPerInchCurrent();
 			//p.h = h+20;
@@ -1586,8 +1590,8 @@ void NetCDFMover::Draw(Rect r, WorldRect view)
 			
 			if (fVar.bShowArrows && (velocity.u != 0 || velocity.v != 0) && (fVar.arrowDepth==0 || showSubsurfaceVel))
 			{
-				inchesX = (velocity.u * fVar.curScale) / fVar.arrowScale;
-				inchesY = (velocity.v * fVar.curScale) / fVar.arrowScale;
+				inchesX = (velocity.u * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
+				inchesY = (velocity.v * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
 				//inchesX = (velocity.u * fCurScale_u + fOffset_u) / fVar.arrowScale;
 				//inchesY = (velocity.v * fCurScale_v + fOffset_v) / fVar.arrowScale;
 				pixX = inchesX * PixelsPerInchCurrent();

@@ -786,7 +786,7 @@ void CommonQuit()
 #endif
 	}
 	//if(err) printError(GS1(113, 0)); // Error saving settings.
-	
+
 	model->Dispose();
 	InvalidateMapImage();
 	CleanupMovieStuff();// JLM  7/7/99

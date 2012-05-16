@@ -1626,7 +1626,8 @@ OSErr TOLEList::Initialize(long numElements, LERecH array, short massUnits, Seco
 //#define TOLEListVersion 4  // 1/23/03, added density to initial LEs
 //#define TOLEListVersion 5  // 11/3/04, added spill name
 //#define TOLEListVersion 6  // 2/25/08, added the dispersed oil fields
-#define TOLEListVersion 7  // 8/23/10, added rise velocity
+//#define TOLEListVersion 7  // 8/23/10, added rise velocity
+#define TOLEListVersion 8  // 4/10/12, added color
 
 OSErr TOLEList::Write(BFPB *bfpb)
 {
@@ -1634,7 +1635,8 @@ OSErr TOLEList::Write(BFPB *bfpb)
 	ClassID id = GetClassID ();
 	OSErr	err = noErr;
 	Boolean	bHasInitialLEs;
-
+	char colorStr[64];
+	
 	if(err = TLEList::Write(bfpb)) return err;
 	
 	StartReadWriteSequence("TOLEList::Write()");
@@ -1718,6 +1720,9 @@ OSErr TOLEList::Write(BFPB *bfpb)
 
 	}
 	}
+	RGBColorToString(fColor, colorStr);
+	if (err = WriteMacValue(bfpb,colorStr,64)) return err;
+
 	return 0;
 }
 
@@ -1729,7 +1734,7 @@ OSErr TOLEList::Read(BFPB *bfpb)
 	OSErr	err = noErr;
 	long	LERecSize;
 	Boolean	bHadInitialLEs;
-	
+	char colorStr[64];	
 	
 	if(err = TLEList::Read(bfpb)) return err;
 	
@@ -1847,6 +1852,12 @@ OSErr TOLEList::Read(BFPB *bfpb)
 		}
 	}
 	}
+	if (version>7)
+	{
+		if (err = ReadMacValue(bfpb,colorStr,64)) return err;
+		fColor = StringToRGBColor(colorStr);
+	}
+
 	return err;
 }
 
@@ -3276,11 +3287,13 @@ short OSSMLEClick (DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 				//PtCurMap *map = Get3DMap();
 				float arrowDepth;
 				Boolean bottomSpill = GetButton (dialog, M13BOTTOMSPILL);
-				if (map && model->ThereIsA3DMover(&arrowDepth)) 
+				//if (map && model->ThereIsA3DMover(&arrowDepth)) 
+				if (model->ThereIsA3DMover(&arrowDepth)) 
 				{
 					if (!bottomSpill)
 					{
-						double spillZ = (double)EditText2Float(dialog,M13DEPTH), botZ = map->DepthAtPoint(tempSet.startRelPos) ;
+						double spillZ = (double)EditText2Float(dialog,M13DEPTH), botZ = 5000;
+						if (map) botZ = map->DepthAtPoint(tempSet.startRelPos) ;
 						//float spillZ = EditText2Float(dialog,M13DEPTH), botZ = (float)map->DepthAtPoint(tempSet.startRelPos) ;
 						if (spillZ > botZ)	
 						{
@@ -3293,7 +3306,8 @@ short OSSMLEClick (DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 					}
 					else
 					{	// code goes here, bottom z is losing sig digits and causing a bug...
-						double botZ = map->DepthAtPoint(tempSet.startRelPos);
+						double botZ = 5000;
+						if (map) botZ = map->DepthAtPoint(tempSet.startRelPos);
 						//float botZ = (float)map->DepthAtPoint(tempSet.startRelPos);
 						tempSet.z = botZ;
 						DisposeDialogDataH();
@@ -4791,8 +4805,29 @@ void TOLEList::Draw(Rect r, WorldRect view)
 				default:
 					//onLandColor  = &colors[BLACK];
 					//inWaterColor = &colors[BLACK];
+					if (LE.z > 0)
+					{
+						/*if (LE.z > 100)
+						{
+						onLandColor  = &colors[LIGHTGRAY];
+						inWaterColor  = &colors[LIGHTGRAY];
+						}
+						else if (LE.z > 50)
+						{*/
+						onLandColor  = &colors[GRAY];
+						inWaterColor = &colors[GRAY];
+						/*}
+						else
+						{
+						onLandColor = &colors[DARKGRAY];
+						inWaterColor = &colors[DARKGRAY];
+						}*/
+					}
+					else
+					{
 					onLandColor  = &fColor;
 					inWaterColor = &fColor;
+					}
 					break;
 			}
 			

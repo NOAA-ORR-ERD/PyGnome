@@ -95,9 +95,9 @@ WorldPoint3D Random3D_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LE
 	{
 		double g = 9.8, buoyancy = 0.;
 		double horizontalDiffusionCoefficient, verticalDiffusionCoefficient;
-		double mixedLayerDepth, totalLEDepth, breakingWaveHeight, depthAtPoint;
+		double mixedLayerDepth=10., totalLEDepth, breakingWaveHeight=1., depthAtPoint=5000.;
 		double karmen = .4, rho_a = 1.29, rho_w = 1030., dragCoeff, tau, uStar;
-		float water_density,water_viscosity = 1.e-6,eps = 1.e-6;
+		float water_density=1020.,water_viscosity = 1.e-6,eps = 1.e-6;
 		TWindMover *wind = model -> GetWindMover(false);
 		Boolean alreadyLeaked = false;
 		Boolean subsurfaceSpillStartPosition = !((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT);
@@ -108,6 +108,12 @@ WorldPoint3D Random3D_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LE
 		//breakingWaveHeight = ((PtCurMap*)moverMap)->fBreakingWaveHeight;	// meters
 		//breakingWaveHeight = ((PtCurMap*)moverMap)->GetBreakingWaveHeight();	// meters
 		//mixedLayerDepth = ((PtCurMap*)moverMap)->fMixedLayerDepth;	// meters
+
+		//defaults
+		//fWaterDensity = 1020;
+		//fMixedLayerDepth = 10.;	//meters
+		//fBreakingWaveHeight = 1.;	// meters
+		//depthAtPoint=5000.;	// allow no bathymetry
 		if (map) breakingWaveHeight = map->GetBreakingWaveHeight();	// meters
 		if (map) mixedLayerDepth = map->fMixedLayerDepth;	// meters
 		if (bUseDepthDependentDiffusion)
@@ -240,12 +246,14 @@ WorldPoint3D Random3D_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LE
 		 }*/
 		if (totalLEDepth<=0) 
 		{	// for non-dispersed subsurface spills, allow oil/chemical to resurface
-			/*if (chemicalSpill)
-			 {
+			//if (chemicalSpill)
+			if(subsurfaceSpillStartPosition)
+			{
 			 //deltaPoint.z = GetRandomFloat(0+eps,depthAtPoint-eps) - (*theLE).z;
-			 deltaPoint.z = GetRandomFloat(0+eps,1.) - (*theLE).z;
+			 //deltaPoint.z = GetRandomFloat(0+eps,1.) - (*theLE).z;
+			 deltaPoint.z = - (*theLE).z;
 			 return deltaPoint;
-			 }*/
+			}
 			// need to check if it was a giant step and if so throw le randomly back into mixed layer
 			if (abs(deltaPoint.z) > mixedLayerDepth/2. /*|| chemicalSpill*/)	// what constitutes a giant step??
 			{

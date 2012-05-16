@@ -129,7 +129,7 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	// this code is for curvilinear grids
 	OSErr err = 0;
 	long i,j,k, numScanned, indexOfStart = 0;
-	int status, ncid, latIndexid, lonIndexid, latid, lonid, recid, timeid, sigmaid, sigmavarid, sigmavarid2, hcvarid, depthid, mask_id, numdims;
+	int status, ncid, latIndexid, lonIndexid, latid, lonid, recid, timeid, sigmaid, sigmavarid, sigmavarid2, hcvarid, depthid, depthdimid, depthvarid, mask_id, numdims;
 	size_t latLength, lonLength, recs, t_len, t_len2, sigmaLength=0;
 	float startLat,startLon,endLat,endLon,hc_param=0.;
 	char recname[NC_MAX_NAME], *timeUnits=0;	
@@ -370,7 +370,29 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	
 	
 	status = nc_inq_dimid(ncid, "sigma", &sigmaid); 	
-	if (status != NC_NOERR || fIsNavy) {fVar.gridType = TWO_D; /*err = -1; goto done;*/}	// check for zgrid option here
+	//if (status != NC_NOERR || fIsNavy) {fVar.gridType = TWO_D; /*err = -1; goto done;*/}	// check for zgrid option here
+	if (status != NC_NOERR)
+	{
+		status = nc_inq_dimid(ncid, "depth", &depthdimid); 
+		if (status != NC_NOERR || fIsNavy) 
+		{
+			fVar.gridType = TWO_D; /*err = -1; goto done;*/
+		}	
+		else
+		{// check for zgrid option here
+			fVar.gridType = MULTILAYER; /*err = -1; goto done;*/
+			status = nc_inq_varid(ncid, "depth", &sigmavarid); //Navy
+			if (status != NC_NOERR) {err = -1; goto done;}
+			status = nc_inq_dimlen(ncid, depthdimid, &sigmaLength);
+			if (status != NC_NOERR) {err = -1; goto done;}
+			fVar.maxNumDepths = sigmaLength;
+			sigma_vals = new float[sigmaLength];
+			if (!sigma_vals) {err = memFullErr; goto done;}
+			sigma_count = sigmaLength;
+			status = nc_get_vara_float(ncid, sigmavarid, &sigmaIndex, &sigma_count, sigma_vals);
+			if (status != NC_NOERR) {err = -1; goto done;}
+		}
+	}
 	else
 	{
 		status = nc_inq_varid(ncid, "sigma", &sigmavarid); //Navy
@@ -422,16 +444,32 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	if (status != NC_NOERR || fIsNavy) {fVar.gridType = TWO_D;/*err = -1; goto done;*/}
 	else
 	{	
-		totalDepthsH = (FLOATH)_NewHandleClear(latLength*lonLength*sizeof(float));
-		if (!totalDepthsH) {err = memFullErr; goto done;}
-		depth_vals = new float[latLength*lonLength];
-		if (!depth_vals) {err = memFullErr; goto done;}
-		status = nc_get_vara_float(ncid, depthid, ptIndex,pt_count, depth_vals);
-		if (status != NC_NOERR) {err = -1; goto done;}
+		if (fVar.gridType==MULTILAYER)
+		{
+			// for now
+			totalDepthsH = (FLOATH)_NewHandleClear(latLength*lonLength*sizeof(float));
+			if (!totalDepthsH) {err = memFullErr; goto done;}
+			depth_vals = new float[latLength*lonLength];
+			if (!depth_vals) {err = memFullErr; goto done;}
+			for (i=0;i<latLength*lonLength;i++)
+			{
+				INDEXH(totalDepthsH,i)=sigma_vals[sigmaLength-1];
+				depth_vals[i] = INDEXH(totalDepthsH,i);
+			}
 		
-		status = nc_get_att_double(ncid, depthid, "scale_factor", &scale_factor);
-		if (status != NC_NOERR) {/*err = -1; goto done;*/}	// don't require scale factor
+		}
+		else
+		{
+			totalDepthsH = (FLOATH)_NewHandleClear(latLength*lonLength*sizeof(float));
+			if (!totalDepthsH) {err = memFullErr; goto done;}
+			depth_vals = new float[latLength*lonLength];
+			if (!depth_vals) {err = memFullErr; goto done;}
+			status = nc_get_vara_float(ncid, depthid, ptIndex,pt_count, depth_vals);
+			if (status != NC_NOERR) {err = -1; goto done;}
 		
+			status = nc_get_att_double(ncid, depthid, "scale_factor", &scale_factor);
+			if (status != NC_NOERR) {/*err = -1; goto done;*/}	// don't require scale factor
+		}
 	}
 	
 	status = nc_inq_dim(ncid, recid, recname, &recs);
@@ -591,8 +629,8 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 		err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 	else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 	if(err) goto done;
-	if (isLandMask) err = /*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);
-	else err = /*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPointsNoMask(velocityH,newMap,errmsg);
+	if (isLandMask) err = ReorderPoints(velocityH,newMap,errmsg);
+	else err = ReorderPointsNoMask(velocityH,newMap,errmsg);
 	//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	
 depths:
@@ -795,7 +833,7 @@ done:
 			delete fGrid;
 			fGrid = 0;
 		}
-		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
+		if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0; fVertexPtsH = 0;}
 		if(sigmaLevelsH) {DisposeHandle((Handle)sigmaLevelsH); sigmaLevelsH = 0;}
 		if (fDepthLevelsHdl) {DisposeHandle((Handle)fDepthLevelsHdl); fDepthLevelsHdl=0;}
 		if (fDepthLevelsHdl2) {DisposeHandle((Handle)fDepthLevelsHdl2); fDepthLevelsHdl2=0;}
@@ -1237,7 +1275,8 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 	//fFillValue = fill_value;
 	fFillValue = fill_value * velConversion;
 	
-	if (scale_factor!=1.) fVar.curScale = scale_factor;	// hmm, this forces a reset of scale factor each time, overriding any set by hand
+	//if (scale_factor!=1.) fVar.curScale = scale_factor;	// hmm, this forces a reset of scale factor each time, overriding any set by hand
+	if (scale_factor!=1.) fFileScaleFactor = scale_factor;
 	
 done:
 	if (err)
@@ -1471,8 +1510,8 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 				}
 				if ((velocity.u != 0 || velocity.v != 0) && (velocity.u != fFillValue && velocity.v != fFillValue)) // should already have handled fill value issue
 				{
-					float inchesX = (velocity.u * fVar.curScale) / fVar.arrowScale;
-					float inchesY = (velocity.v * fVar.curScale) / fVar.arrowScale;
+					float inchesX = (velocity.u * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
+					float inchesY = (velocity.v * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
 					short pixX = inchesX * PixelsPerInchCurrent();
 					short pixY = inchesY * PixelsPerInchCurrent();
 					p2.h = p.h + pixX;
@@ -1506,7 +1545,7 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
 	OSErr err = 0;
 	PtCurMap *map = GetPtCurMap();
 	TTriGridVel3D *triGrid = (TTriGridVel3D*) map->GetGrid3D(false);
-	Boolean **triSelected = triGrid -> GetTriSelection(false);	// don't init
+	Boolean **triSelected = 0;
 	long indexToDepthData = 0, index;
 	long numDepthLevels = /*CHECK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetNumDepthLevelsInFile();
 	long j;
@@ -1516,6 +1555,9 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
 	long timeDataInterval;
 	Boolean loaded;
 	
+	if (!triGrid) return;
+	triSelected = triGrid -> GetTriSelection(false);	// don't init
+
 	//if (fVar.gridType != SIGMA_ROMS) return;
 	err = /*CHECK*/dynamic_cast<NetCDFMoverCurv *>(this) -> SetInterval(errmsg);
 	if(err) return;
@@ -1694,8 +1736,8 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
 			
 			if ((velocity.u != 0 || velocity.v != 0))
 			{
-				float inchesX = (velocity.u * fVar.curScale) / fVar.arrowScale;
-				float inchesY = (velocity.v * fVar.curScale) / fVar.arrowScale;
+				float inchesX = (velocity.u * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
+				float inchesY = (velocity.v * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
 				short pixX = inchesX * PixelsPerInchCurrent();
 				short pixY = inchesY * PixelsPerInchCurrent();
 				//p.h = h+20;
@@ -1866,8 +1908,8 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
  
  if ((velocity.u != 0 || velocity.v != 0))
  {
- float inchesX = (velocity.u * fVar.curScale) / fVar.arrowScale;
- float inchesY = (velocity.v * fVar.curScale) / fVar.arrowScale;
+ float inchesX = (velocity.u * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
+ float inchesY = (velocity.v * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
  short pixX = inchesX * PixelsPerInchCurrent();
  short pixY = inchesY * PixelsPerInchCurrent();
  //p.h = h+20;
