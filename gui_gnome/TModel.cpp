@@ -3362,7 +3362,7 @@ OSErr TModel::Step ()
 					//if (map && thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
 					if (thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
 					{
-						float depthAtPoint = 5000.;
+						float depthAtPoint = INFINITE_DEPTH;
 						if (map) depthAtPoint = map->DepthAtPoint(refPoint);	
 						thisLE.z -= (thisLE.riseVelocity/100.) * GetTimeStep();
 						if (thisLE.z < 0) 
