@@ -3292,7 +3292,7 @@ short OSSMLEClick (DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 				{
 					if (!bottomSpill)
 					{
-						double spillZ = (double)EditText2Float(dialog,M13DEPTH), botZ = 5000;
+						double spillZ = (double)EditText2Float(dialog,M13DEPTH), botZ = INFINITE_DEPTH;
 						if (map) botZ = map->DepthAtPoint(tempSet.startRelPos) ;
 						//float spillZ = EditText2Float(dialog,M13DEPTH), botZ = (float)map->DepthAtPoint(tempSet.startRelPos) ;
 						if (spillZ > botZ)	
@@ -3306,7 +3306,7 @@ short OSSMLEClick (DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 					}
 					else
 					{	// code goes here, bottom z is losing sig digits and causing a bug...
-						double botZ = 5000;
+						double botZ = INFINITE_DEPTH;
 						if (map) botZ = map->DepthAtPoint(tempSet.startRelPos);
 						//float botZ = (float)map->DepthAtPoint(tempSet.startRelPos);
 						tempSet.z = botZ;

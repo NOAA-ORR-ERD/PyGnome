@@ -9,6 +9,7 @@
 
 #ifndef __TypeDefs__
 #define __TypeDefs__
+#include "Earl.h"
 //++ Carry-over from basic definitions.
 
 #define DIRTY_EVERYTHING -1
@@ -50,6 +51,9 @@ enum { BLACK = 1, WHITE, DARKGRAY, GRAY, LIGHTGRAY,
 #define	kOCurWidth			40
 #define	kOCurHeight			24
 #define	kVelsPerLine		10 // # of velocity numbers pairs per line
+
+#define INFINITE_DEPTH	5000.
+
 #define ITEM_OFFSET(index) ((index) * elementSize)
 #define ITEM_PTR(index) (&(*L)[ITEM_OFFSET(index)])
 

@@ -14,7 +14,9 @@
 #include <iostream>
 #include <time.h>
 
-#ifdef pyGNOME
+#ifndef pyGNOME
+#include "CROSS.H"
+#else
 #include "Replacements.h"
 #endif
 
