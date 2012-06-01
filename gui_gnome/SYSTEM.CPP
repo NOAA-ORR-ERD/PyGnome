@@ -296,9 +296,9 @@ OSErr InitSettings()
 		if (size != sizeof(settings))
 			hdelete(TATvRefNum, TATdirID, "SETTINGS.OSM");
 	
-	err = ReadFileContents(NONTERMINATED,TATvRefNum, TATdirID,"SETTINGS.OSM", (char *)&settings, sizeof(Settings), 0);
+	if (size>0) err = ReadFileContents(NONTERMINATED,TATvRefNum, TATdirID,"SETTINGS.OSM", (char *)&settings, sizeof(Settings), 0);
 
-	if (err)
+	if (err || size==0)
 	{
 #ifdef IBM
 		char szPath[MAX_PATH];
@@ -315,11 +315,11 @@ OSErr InitSettings()
 				if (size != sizeof(settings))
 					hdelete(0, 0, szPath);
 	
-			err = ReadFileContents(NONTERMINATED,0, 0,szPath, (char *)&settings, sizeof(Settings), 0);
+			if (size>0) err = ReadFileContents(NONTERMINATED,0, 0,szPath, (char *)&settings, sizeof(Settings), 0);
 		}
 #endif
 	}
-	if(!err) 
+	if(!err && size>0) 
 	{
 		// verify the file is OK
 		if(settings.platform == PLATFORM 
@@ -646,7 +646,7 @@ OSErr CommonInit()
 	gWorkingDirectory[0] = 0;
 
 #ifdef MAC
-	{	// on the MAC, we need to chop the package contents to get the folder the user "sees" as the MARPLOT "folder"
+	{	// on the MAC, we need to chop the package contents to get the folder the user "sees" as the GNOME "folder"
 		char path[256];
 		OSStatus err = 0;
 		FSSpec spec;
@@ -663,13 +663,16 @@ OSErr CommonInit()
 			// for debugging, recontruct the path to make sure we've got it correct
 			GetFullPath(TATvRefNum,TATdirID,"",path);
 			strcpy(gApplicationFolder,path);
+			strcpy(TATFolder,path);
 		}
-		else { // if not bundled, MARPLOT is in the folder the user sees as the MARPLOT "folder"
+		else { // if not bundled, GNOME is in the folder the user sees as the GNOME "folder"
 			//gMarplotFolderDirID = MARPLOT_hgetvol_dirID;
 		}
 	}
 	#else
 		// in Windows, the GNOME.exe is always in the GNOME "folder"
+		strcpy(gWorkingDirectory,TATFolder);
+		GetOurAppPathName(gApplicationFolder);
 	#endif
 
 	InitSettings();

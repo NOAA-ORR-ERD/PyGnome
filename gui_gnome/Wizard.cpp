@@ -6416,8 +6416,11 @@ void GetOurAppPathName(char* path)
 #else 
 	{
 		/// IBM code
+		char *p;
 		strcpy(path, _pgmptr);
 		RemoveTrailingSpaces(path);
+		p = strrchr(path,DIRDELIMITER);
+		if(p) *(p+1) = 0; // chop off the file name, leave the delimiter
 	}
 #endif
 }

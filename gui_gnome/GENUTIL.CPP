@@ -1,5 +1,10 @@
 
 #include "CROSS.h"
+#include <fstream>
+#include <ios>
+
+using std::fstream;
+using std::ios;
 
 // #define NOTEMPMEM
 
@@ -1100,6 +1105,70 @@ OSErr FSCloseBuf(BFPBP bfpb)
 ///// BLOCK FILES //////////////////////////////////////////////////////////////////////
 
 OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR name,
+					   VOIDPTR ptr, long length, CHARHP handle) {
+	char c;
+	int x = 0, i = 0;
+
+	long err = 0;
+	char filePath[256], tempFilePath[256];
+	Boolean terminate;
+	
+	if(handle) *handle = 0; //JLM,7/22/98	
+	switch(terminationFlag)
+	{
+		case TERMINATED:
+			terminate  = true; break;
+		case NONTERMINATED:
+			terminate  = false; break;
+		default:
+			printError("Bad flag in ReadFileContents");return -1;
+	}
+	
+	/////
+	if(model && model->fWizard && model->fWizard->PathIsWizardResource(name))
+	{	// wizard support, JLM 10/2/98
+		err = model->fWizard->ReadFileContentsFromResource(name,handle,terminate);
+		return err;
+	}
+	////////
+	if (vRefNum!=0 || dirID!=0) 
+	{
+		sprintf(tempFilePath, "%s%s", TATFolder, name);
+	}
+	else
+		strcpy(tempFilePath, name);
+#if TARGET_API_MAC_CARBON
+		err = ConvertTraditionalPathToUnixPath((const char *) tempFilePath, filePath, kMaxNameLen) ;
+#else
+		strcpy(filePath,tempFilePath);
+#endif
+	
+	try {
+		fstream *_ifstream = new fstream(filePath, ios::in);
+		for(; _ifstream->get(c); x++);
+		delete _ifstream;
+		if(!(x > 0))
+			throw("empty file.\n");
+		_ifstream = new fstream(filePath, ios::in);
+		if(x > length && length != 0)
+		    x = length;
+		if(handle) {
+			*handle = _NewHandle(x);
+			for(; i < x && _ifstream->get(c); i++)
+				DEREFH(*handle)[i] = c;
+		} 
+		else {
+			for(; i < x && _ifstream->get(c); i++)
+				((char *)ptr)[i] = c;
+		}
+	}
+	catch(...) {
+		//printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().\n");
+		return true;
+	}
+	return false;
+}
+/*OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR name,
 							 VOIDPTR ptr, long length, CHARHP handle)
 {	// note: "length" does not include the termination char
 	Boolean terminate;
@@ -1193,6 +1262,61 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 	
 	if(err && handle && *handle){DisposeHandle((Handle)*handle); *handle = 0;}//JLM,7/22/98	
 	return err;
+}*/
+
+OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
+						long offset, long length, VOIDPTR ptr, CHARHP handle) {
+	char c;
+	int x = 0, i = 0;
+
+	long err = 0;
+	char filePath[256], tempFilePath[256];
+	
+	if(handle) *handle = 0; //JLM,7/22/98	
+
+	/////
+	if(model && model->fWizard && model->fWizard->PathIsWizardResource(name))
+	{	// wizard support, JLM 10/2/98
+		err = model->fWizard->ReadSectionOfFileFromResource(name,(char*) ptr,length,offset);
+		return err;
+	}
+	////////
+	if (vRefNum!=0 || dirID!=0) 
+	{
+		sprintf(tempFilePath, "%s%s", TATFolder, name);
+	}
+	else
+		strcpy(tempFilePath, name);
+#if TARGET_API_MAC_CARBON
+		err = ConvertTraditionalPathToUnixPath((const char *) tempFilePath, filePath, kMaxNameLen) ;
+#else
+		strcpy(filePath,tempFilePath);
+#endif
+	try {
+		fstream *_ifstream = new fstream(filePath, ios::in);
+		for(; _ifstream->get(c); x++);
+		delete _ifstream;
+		if(!(x > 0))
+			throw("empty file.\n");
+		_ifstream = new fstream(filePath, ios::in);
+		for(int k = 0; k < offset; k++) _ifstream->get(c); 
+		if(x > offset+length && length != 0)
+		    x = offset+length;
+		if(handle) {
+			*handle = _NewHandle(x-offset);
+			for(; i < x-offset && _ifstream->get(c); i++)
+				DEREFH(*handle)[i] = c;
+		} 
+		else {
+			for(; i < x-offset && _ifstream->get(c); i++)
+				((char *)ptr)[i] = c;
+		}
+	}
+	catch(...) {
+		//printError("We are unable to open or read from the file. \nBreaking from ReadSectionOfFile().\n");
+		return true;
+	}
+	return false;
 }
 
 OSErr WriteFileContents(short vRefNum, long dirID, CHARPTR name, OSType creator, OSType fileType,

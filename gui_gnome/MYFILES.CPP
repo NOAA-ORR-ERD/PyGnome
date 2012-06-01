@@ -1,6 +1,12 @@
 
 #include "CROSS.h"
 #include "Wizard.h"
+#include <sys/stat.h>
+#include <fstream>
+#include <ios>
+
+using std::fstream;
+using std::ios;
 
 typedef struct {
 		short drive;
@@ -12,7 +18,32 @@ typedef struct {
 
 static VolumeInfo volumes[26];
 
-Boolean FileExists(short vRefNum, long dirID, CHARPTR fileName)
+Boolean FileExists(short vRefNum, long dirID, CHARPTR filename)
+{
+	char filePath[256], tempFilePath[256];
+	////////
+	if(model && model->fWizard && model->fWizard->PathIsWizardResource(filename))
+	{	// wizard support, JLM 7/25/00
+		return TRUE;
+	}
+	/////////////////
+	if (vRefNum!=0 || dirID!=0) 
+	{
+		sprintf(tempFilePath, "%s%s", TATFolder, filename);
+	}
+	else
+		strcpy(tempFilePath, filename);
+#if TARGET_API_MAC_CARBON
+		err = ConvertTraditionalPathToUnixPath((const char *) tempFilePath, filePath, kMaxNameLen) ;
+#else
+		strcpy(filePath,tempFilePath);
+#endif
+
+	struct stat buffer;
+ 	return (stat(filePath,&buffer)==0);
+}
+
+/*Boolean FileExists(short vRefNum, long dirID, CHARPTR fileName)
 {
 	FInfo fInfo;
 	long err;
@@ -27,7 +58,7 @@ Boolean FileExists(short vRefNum, long dirID, CHARPTR fileName)
 		return FALSE;
 	
 	return TRUE;
-}
+}*/
 
 Boolean FolderExists(short vRefNum, long dirID, CHARPTR folderName)
 #ifdef MAC
@@ -1299,8 +1330,45 @@ long GetFolderID(short vRefNum, long dirID, CHARPTR folder)
 	return spec.parID;
 }
 #endif
+OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size) {
+	
+	char c;
+	long x = 0;
 
-OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size)
+	OSErr err = 0;
+	char filePath[256], tempFilePath[256];
+	/////
+	if(model && model->fWizard && model->fWizard->PathIsWizardResource(pathName))
+	{	// wizard support, JLM 10/2/98
+		err = model->fWizard->MyGetFileSizeFromResource(pathName,size);
+		return err;
+	}
+	if (vRefNum!=0 || dirID!=0) 
+	{
+		sprintf(tempFilePath, "%s%s", TATFolder, pathName);
+	}
+	else
+		strcpy(tempFilePath, pathName);
+	////////
+#if TARGET_API_MAC_CARBON
+		err = ConvertTraditionalPathToUnixPath((const char *) tempFilePath, filePath, kMaxNameLen) ;
+#else
+		strcpy(filePath,tempFilePath);
+#endif
+	try {
+		fstream *_ifstream = new fstream(filePath, ios::in);
+		for(; _ifstream->get(c); x++);
+		delete _ifstream;
+		*size = x;
+		}
+    catch(...) {
+        //printError("We are unable to open or read from the file. \nBreaking from MyGetFileSize().\n");
+        return true;
+    }
+    return false;
+}
+
+/*OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size)
 {
 	OSErr err = 0;
 	/////
@@ -1351,7 +1419,7 @@ OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size)
    return 0;
 }
 #endif	
-}
+}*/
 
 OSErr GetFileModDate(short vRefNum, long dirID, CHARPTR pathName, LONGPTR seconds)
 #ifdef MAC
