@@ -1,4 +1,7 @@
+#!/usr/bin/env python
+
 CPP_CODE_DIR = "../lib_gnome"
+
 import numpy as np
 import os
 import sys
@@ -27,35 +30,38 @@ files += ['Random_c.cpp', 'WindMover_c.cpp', 'CurrentMover_c.cpp']
 files += ['CompFunctions.cpp', 'CMYLIST.cpp', 'GEOMETR2.cpp']
 files += ['TriGridVel_c.cpp', 'DagTree.cpp', 'StringFunctions.cpp']
 
-temp_list = ['model.pyx', 'cats_mover.pyx', 'random_mover.pyx', 'wind_mover.pyx',]
-for i in xrange(0, len(temp_list)):
-    temp_list[i] = 'cyGNOME/' + temp_list[i]
-for file in files:
-    temp_list.append(os.path.join(CPP_CODE_DIR ,file))
-files = temp_list
+files = [os.path.join(CPP_CODE_DIR , file) for file in files]
 
 extra_includes="."
 compile_args=None
 macros = [('pyGNOME', 1),]
 
-tmpx = Extension('gnome.c_gnome',
-                             files, 
-                             language="c++",
-			     define_macros = macros,
-                             extra_compile_args=compile_args,
-			     extra_link_args=['-Wl,../third_party_lib/libnetcdf.a',],
-			     include_dirs=[CPP_CODE_DIR,
-                                           np.get_include(),
-                                           'cyGNOME',
-                                           extra_includes,
-                                           ],
-                             )
-xts = [tmpx]*4
+print files
+
+extensions = []
+for mod_name in ['model', 'cats_mover', 'random_mover', 'wind_mover',]:
+    
+    cy_file = os.path.join("cyGNOME", mod_name+".pyx")
+    extensions.append(  Extension('gnome.' + mod_name,
+                                  [cy_file] + files, 
+                                  language="c++",
+                                  define_macros = macros,
+                                  extra_compile_args=compile_args,
+                                  extra_link_args=['-Wl,../third_party_lib/libnetcdf.a',],
+                                  include_dirs=[CPP_CODE_DIR,
+                                                np.get_include(),
+                                                'cyGNOME',
+                                                extra_includes,
+                                                ],
+                                  )
+                        )
+
+
 setup(name='python gnome',
       version='beta', 
       requires=['numpy'],
       cmdclass={'build_ext': build_ext },
       packages=['gnome','gnome.utilities',],
-      ext_modules=xts
+      ext_modules=extensions
      )
 
