@@ -27,7 +27,9 @@ files += ['Random_c.cpp', 'WindMover_c.cpp', 'CurrentMover_c.cpp']
 files += ['CompFunctions.cpp', 'CMYLIST.cpp', 'GEOMETR2.cpp']
 files += ['TriGridVel_c.cpp', 'DagTree.cpp', 'StringFunctions.cpp']
 
-temp_list = ['cyGNOME/c_gnome.pyx']
+temp_list = ['model.pyx', 'cats_mover.pyx', 'random_mover.pyx', 'wind_mover.pyx',]
+for i in xrange(0, len(temp_list)):
+    temp_list[i] = 'cyGNOME/' + temp_list[i]
 for file in files:
     temp_list.append(os.path.join(CPP_CODE_DIR ,file))
 files = temp_list
@@ -36,13 +38,7 @@ extra_includes="."
 compile_args=None
 macros = [('pyGNOME', 1),]
 
-
-setup(name='python gnome',
-      version='beta', 
-      requires=['numpy'],
-      cmdclass={'build_ext': build_ext },
-      packages=['gnome','gnome.utilities',],
-      ext_modules=[Extension('gnome.c_gnome',
+tmpx = Extension('gnome.c_gnome',
                              files, 
                              language="c++",
 			     define_macros = macros,
@@ -54,8 +50,12 @@ setup(name='python gnome',
                                            extra_includes,
                                            ],
                              )
-                   ]
-
-
+xts = [tmpx]*4
+setup(name='python gnome',
+      version='beta', 
+      requires=['numpy'],
+      cmdclass={'build_ext': build_ext },
+      packages=['gnome','gnome.utilities',],
+      ext_modules=xts
      )
 

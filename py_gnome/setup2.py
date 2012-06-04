@@ -27,7 +27,7 @@ files += ['Random_c.cpp', 'WindMover_c.cpp', 'CurrentMover_c.cpp']
 files += ['CompFunctions.cpp', 'CMYLIST.cpp', 'GEOMETR2.cpp']
 files += ['TriGridVel_c.cpp', 'DagTree.cpp', 'StringFunctions.cpp']
 
-temp_list = ['cyGNOME/c_gnome.cpp']
+temp_list = ['cyGNOME/model.cpp']
 for file in files:
     temp_list.append(os.path.join(CPP_CODE_DIR ,file))
 files = temp_list
