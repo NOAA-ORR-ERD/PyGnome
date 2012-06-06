@@ -9,7 +9,10 @@
 
 #ifndef __TypeDefs__
 #define __TypeDefs__
+#ifndef pyGNOME
 #include "Earl.h"
+#endif
+
 //++ Carry-over from basic definitions.
 
 #define DIRTY_EVERYTHING -1

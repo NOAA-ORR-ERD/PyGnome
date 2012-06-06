@@ -28,7 +28,7 @@ NetCDFMoverCurv_c::NetCDFMoverCurv_c (TMap *owner, char *name) : NetCDFMover_c(o
 
 LongPointHdl NetCDFMoverCurv_c::GetPointsHdl()
 {
-	return ((TTriGridVel*)fGrid) -> GetPointsHdl();
+	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
 }
 
 long NetCDFMoverCurv_c::GetVelocityIndex(WorldPoint wp)
@@ -355,7 +355,7 @@ float NetCDFMoverCurv_c::GetTotalDepthFromTriIndex(long triNum)
 	if (fVar.gridType == SIGMA_ROMS)	// should always be true
 	{
 		//if (triNum < 0) useTriNum = false;
-		err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
+		err = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
 		if (err) return 0;
 		if (fDepthsH)
@@ -385,7 +385,7 @@ float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 	if (fVar.gridType == SIGMA_ROMS)
 	{
 		//if (triNum < 0) useTriNum = false;
-		err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
+		err = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
 		//if (err) return 0;
 		if (err) return -1;
