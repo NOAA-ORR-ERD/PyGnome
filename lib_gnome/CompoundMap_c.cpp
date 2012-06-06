@@ -238,7 +238,7 @@ Boolean CompoundMap_c::InVerticalMap(WorldPoint3D wp)
 	NetCDFMover *mover = dynamic_cast<NetCDFMover*>(model->GetMover(TYPE_NETCDFMOVER));
 	
 	if (mover && mover->fVar.gridType==SIGMA_ROMS)	// really need to get priority grid
-		depthAtPoint = (double)/*OK*/(dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepth(wp.p,-1);
+		depthAtPoint = ((NetCDFMoverCurv*)mover)->GetTotalDepth(wp.p,-1);
 	else
 	{
 		if (!triGrid) return false; // some error alert, no depth info to check
@@ -276,7 +276,7 @@ double CompoundMap_c::DepthAtPoint(WorldPoint wp, NetCDFMover *mover, TTriGridVe
 	//NetCDFMover *mover = (NetCDFMover*)(Get3DCurrentMover());
 	
 	if (mover && mover->fVar.gridType==SIGMA_ROMS)
-		return (double)/*OK*/(dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepth(wp,-1);	// expand options here
+		return ((NetCDFMoverCurv*)mover)->GetTotalDepth(wp,-1);	// expand options here
 	
 	if (!triGrid) return -1; // some error alert, no depth info to check
 	interpolationVal = triGrid->GetInterpolationValues(wp);
@@ -481,10 +481,10 @@ double CompoundMap_c::DepthAtCentroid(long triNum)
 	
 	//NetCDFMover *mover = (NetCDFMover*)(model->GetMover(TYPE_NETCDFMOVER));
 	TCurrentMover* compoundMover = this->GetCompoundMover();
-	TCurrentMover* mover = /*OK*/ (dynamic_cast<TCompoundMover *>(compoundMover))->Get3DCurrentMoverFromIndex(0);
+	TCurrentMover* mover = ((TCompoundMover *)compoundMover)->Get3DCurrentMoverFromIndex(0);
 	
-	if (mover && /*OK*/ (dynamic_cast<NetCDFMoverCurv*>(mover))->fVar.gridType==SIGMA_ROMS)
-		return (double)/*OK*/ (dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepthFromTriIndex(triNum);
+	if (mover && ((NetCDFMoverCurv*)mover)->fVar.gridType==SIGMA_ROMS)
+		return ((NetCDFMoverCurv*)mover)->GetTotalDepthFromTriIndex(triNum);
 	
 	if (triNum < 0) return -1;
 	if (!triGrid) return -1; // some error alert, no depth info to check
@@ -519,10 +519,10 @@ double CompoundMap_c::DepthAtCentroidFromMapIndex(long triNum,long mapIndex)
 	
 	//NetCDFMover *mover = (NetCDFMover*)(model->GetMover(TYPE_NETCDFMOVER));
 	TCurrentMover *compoundMover = this->GetCompoundMover();
-	TCurrentMover* mover = /*OK*/ (dynamic_cast<TCompoundMover *>(compoundMover))->Get3DCurrentMoverFromIndex(mapIndex);
+	TCurrentMover* mover = ((TCompoundMover *)compoundMover)->Get3DCurrentMoverFromIndex(mapIndex);
 	
-	if (mover && /*OK*/ (dynamic_cast<NetCDFMoverCurv*>(mover))->fVar.gridType==SIGMA_ROMS)
-		return (double)/*OK*/ (dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepthFromTriIndex(triNum);
+	if (mover && ((NetCDFMoverCurv*)mover)->fVar.gridType==SIGMA_ROMS)
+		return ((NetCDFMoverCurv*)mover)->GetTotalDepthFromTriIndex(triNum);
 	
 	if (triNum < 0) return -1;
 	if (!triGrid) return -1; // some error alert, no depth info to check

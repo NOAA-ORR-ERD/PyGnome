@@ -30,7 +30,7 @@ class TGridVel : virtual public GridVel_c
 		virtual OSErr Write(BFPB *bfpb)=0;
 		virtual OSErr Read (BFPB *bfpb)=0;
 		virtual void Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
-						  double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)=0;
+						  double arrowScale,double arrowDepth, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)=0;
 };
 
 #include "RectGridVeL_c.h"
@@ -54,7 +54,7 @@ class TRectGridVel : virtual public RectGridVel_c, public TGridVel
 		OSErr 			Read(BFPB *bfpb);
 		
 		void 			Draw (Rect r, WorldRect view,WorldPoint refP,double refScale,
-		 					double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
+		 					double arrowScale,double arrowDepth,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
 };
 
 
@@ -68,7 +68,7 @@ class TTriGridVel : virtual public TriGridVel_c, public TGridVel
 		OSErr Read(BFPB *bfpb);
 		OSErr Write(BFPB *bfpb);
 		virtual void Draw (Rect r, WorldRect view,WorldPoint refP,double refScale,
-				   double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
+				   double arrowScale,double arrowDepth,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
 		void DrawBitMapTriangles (Rect r);
 		void DrawCurvGridPts(Rect r, WorldRect view);
 		
@@ -112,7 +112,7 @@ class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 		long FindTriNearClick(Point where);
 		//virtual InterpolationVal GetInterpolationValues(WorldPoint refPoint);
 		virtual void Draw (Rect r, WorldRect view,WorldPoint refP,double refScale,
-				   double arrowScale,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
+				   double arrowScale,double arrowDepth,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
 		void 	DrawPointAt(Rect *r,long verIndex,short selectMode );
 		void DrawTriangleStr(Rect *r,long triNum,double value);
 		//void DrawBitMapTriangles (Rect r);

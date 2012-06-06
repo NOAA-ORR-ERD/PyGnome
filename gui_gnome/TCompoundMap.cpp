@@ -3265,7 +3265,7 @@ double TCompoundMap::DepthAtPoint(WorldPoint wp)
 	triGrid = GetGrid3DFromMapIndex(mapIndex);
 	
 	if (mover && mover->fVar.gridType==SIGMA_ROMS)
-		return (double)/*OK*/(dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepth(wp,-1);	// expand options here
+		return ((NetCDFMoverCurv*)mover)->GetTotalDepth(wp,-1);	// expand options here
 	
 	if (!triGrid) return -1; // some error alert, no depth info to check
 	interpolationVal = triGrid->GetInterpolationValues(wp);

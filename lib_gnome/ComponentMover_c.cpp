@@ -73,9 +73,14 @@ OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 	Boolean		bFound = false;
 	double pat1Theta = PI * -(0.5 + (pat1Angle / 180.0));
 	double pat2Theta = PI * -(0.5 + (pat2Angle / 180.0));
-	VelocityRec pat1ValRef = pattern1 -> GetPatValue (refP);
-	double pat1ValRefLength = sqrt (pat1ValRef.u * pat1ValRef.u + pat1ValRef.v * pat1ValRef.v);
+	WorldPoint3D refPoint3D = {0,0,0.};
+	VelocityRec pat1ValRef;
+	double pat1ValRefLength;
 	
+	refPoint3D.p = refP;
+	pat1ValRef = pattern1 -> GetPatValue (refPoint3D);
+	pat1ValRefLength = sqrt (pat1ValRef.u * pat1ValRef.u + pat1ValRef.v * pat1ValRef.v);
+
 	strcpy(errmsg,"");
 	
 	// calculate handle size - number of time steps, end time - start time / time step + 1
@@ -253,10 +258,12 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 	double		pat1SpeedMPS,pat2SpeedMPS,pat1Theta,pat2Theta;
 	double		pat1ValRefLength,pat2ValRefLength;
 	double		windSpeedToScale;
+	WorldPoint3D refPoint3D = {0,0,0.};
 	
 	strcpy(errmsg,"");
 	
 	wVel.u = wVel.v = 0;
+	refPoint3D.p = refP;
 	
 	// get the time file / wind mover value for this time
 	
@@ -373,7 +380,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 	dot1 = wVel.u*ref1Wind.u + wVel.v*ref1Wind.v;
 	dot2 = wVel.u*ref2Wind.u + wVel.v*ref2Wind.v;
 	
-	pat1ValRef = pattern1 -> GetPatValue (refP);
+	pat1ValRef = pattern1 -> GetPatValue (refPoint3D);
 	pat1ValRefLength = sqrt (pat1ValRef.u * pat1ValRef.u + pat1ValRef.v * pat1ValRef.v);
 	
 	// code goes here, some restriction on when WINDSTRESS scaling can be used?
@@ -400,7 +407,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 	}
 	if (pattern2) 
 	{
-		pat2ValRef = pattern2 -> GetPatValue (refP);
+		pat2ValRef = pattern2 -> GetPatValue (refPoint3D);
 		pat2ValRefLength = sqrt (pat2ValRef.u * pat2ValRef.u + pat2ValRef.v * pat2ValRef.v);
 		if (!bUseAveragedWinds || (bUseAveragedWinds && bUseMainDialogScaleFactor))	// averaged winds shouldn't be an issue here
 		{
@@ -423,12 +430,14 @@ WorldPoint3D ComponentMover_c::GetMove (Seconds timeStep,long setIndex,long leIn
 	double 		dLat, dLong;
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	
+	WorldPoint3D	refPoint3D = {0,0,0.};
 	VelocityRec	finalVel, pat1Val,pat2Val;
 	OSErr err = 0;
 	char errmsg[256];
 	
-	pat1Val = pattern1 -> GetPatValue (refPoint);
-	if (pattern2) pat2Val = pattern2 -> GetPatValue (refPoint);
+	refPoint3D.p = refPoint;
+	pat1Val = pattern1 -> GetPatValue (refPoint3D);
+	if (pattern2) pat2Val = pattern2 -> GetPatValue (refPoint3D);
 	else {pat2Val.u = pat2Val.v = 0;}
 	
 	if (!fOptimize.isOptimizedForStep)
@@ -464,12 +473,12 @@ Boolean ComponentMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	char errmsg[256];
 	
 	if (this -> pattern1) {
-		pat1Val = this -> pattern1 -> GetPatValue (wp.p);
+		pat1Val = this -> pattern1 -> GetPatValue (wp);
 		length1 = sqrt(pat1Val.u * pat1Val.u + pat1Val.v * pat1Val.v);
 		StringWithoutTrailingZeros(str1,length1,6);
 	}
 	if (this -> pattern2) {
-		pat2Val = this -> pattern2 -> GetPatValue (wp.p);
+		pat2Val = this -> pattern2 -> GetPatValue (wp);
 		length2 = sqrt(pat2Val.u * pat2Val.u + pat2Val.v * pat2Val.v);
 		StringWithoutTrailingZeros(str2,length2,6);
 	}

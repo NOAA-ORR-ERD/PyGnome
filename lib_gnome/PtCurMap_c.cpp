@@ -541,8 +541,8 @@ Boolean PtCurMap_c::InVerticalMap(WorldPoint3D wp)
 	TCurrentMover *mover = Get3DCurrentMover();
 	
 	//if (mover && mover->fVar.gridType==SIGMA_ROMS)	// really need to get priority grid
-	if (mover && mover->IAm(TYPE_NETCDFMOVERCURV) && /*OK*/ (dynamic_cast<NetCDFMoverCurv*>(mover))->fVar.gridType==SIGMA_ROMS)	// really need to get priority grid
-	/*OK*/ depthAtPoint = (double)(dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepth(wp.p,-1);
+	if (mover && mover->IAm(TYPE_NETCDFMOVERCURV) && ((NetCDFMoverCurv*)mover)->fVar.gridType==SIGMA_ROMS)	// really need to get priority grid
+		depthAtPoint = ((NetCDFMoverCurv*)mover)->GetTotalDepth(wp.p,-1);
 	else
 	{
 		if (!triGrid) return false; // some error alert, no depth info to check
@@ -578,8 +578,8 @@ double PtCurMap_c::DepthAtPoint(WorldPoint wp)
 	TCurrentMover* mover = Get3DCurrentMover();
 	
 	//if (mover && mover->fVar.gridType==SIGMA_ROMS)
-	if (mover && mover->IAm(TYPE_NETCDFMOVERCURV) && /*OK*/ (dynamic_cast<NetCDFMoverCurv*>(mover))->fVar.gridType==SIGMA_ROMS)
-	/*OK*/ return (double)(dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepth(wp,-1);
+	if (mover && mover->IAm(TYPE_NETCDFMOVERCURV) && ((NetCDFMoverCurv*)mover)->fVar.gridType==SIGMA_ROMS)
+		return ((NetCDFMoverCurv*)mover)->GetTotalDepth(wp,-1);
 	
 	if (!triGrid) return -1; // some error alert, no depth info to check
 	interpolationVal = triGrid->GetInterpolationValues(wp);
@@ -793,8 +793,8 @@ double PtCurMap_c::DepthAtCentroid(long triNum)
 	TCurrentMover* mover = Get3DCurrentMover();
 	
 	//if (mover && mover->fVar.gridType==SIGMA_ROMS)
-	if (mover && mover->IAm(TYPE_NETCDFMOVERCURV) && /*OK*/ (dynamic_cast<NetCDFMoverCurv*>(mover))->fVar.gridType==SIGMA_ROMS)
-	/*OK*/ return (double)(dynamic_cast<NetCDFMoverCurv*>(mover))->GetTotalDepthFromTriIndex(triNum);
+	if (mover && mover->IAm(TYPE_NETCDFMOVERCURV) && ((NetCDFMoverCurv*)mover)->fVar.gridType==SIGMA_ROMS)
+		return ((NetCDFMoverCurv*)mover)->GetTotalDepthFromTriIndex(triNum);
 	
 	if (triNum < 0) return -1;
 	if (!triGrid) return -1; // some error alert, no depth info to check

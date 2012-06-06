@@ -1109,7 +1109,7 @@ void PtCurMover::Draw(Rect r, WorldRect view)
 	if(fGrid && (fVar.bShowArrows || fVar.bShowGrid))
 	{
 		Boolean overrideDrawArrows = FALSE;
-		fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,overrideDrawArrows,fVar.bShowGrid,fColor);
+		fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,fVar.arrowDepth,overrideDrawArrows,fVar.bShowGrid,fColor);
 		if(fVar.bShowArrows)
 		{ // we have to draw the arrows
 			RGBForeColor(&fColor);

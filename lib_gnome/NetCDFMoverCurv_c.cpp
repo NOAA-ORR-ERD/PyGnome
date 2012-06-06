@@ -387,7 +387,8 @@ float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 		//if (triNum < 0) useTriNum = false;
 		err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
-		if (err) return 0;
+		//if (err) return 0;
+		if (err) return -1;
 		if (fDepthsH)
 		{	// issue with extended grid not having depths - probably need to rework that idea
 			long numCorners = 4;
@@ -427,9 +428,11 @@ void NetCDFMoverCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 		return;
 	}
 	
-	if (fDepthLevelsHdl && numDepthLevels>0 && fVar.gridType==MULTILAYER) 
+	if (fDepthLevelsHdl && numDepthLevels>0) 
 	{
-		totalDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);
+		if (fVar.gridType==MULTILAYER)
+			totalDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);
+		// otherwise it's SIGMA_ROMS
 	}
 	else
 	{

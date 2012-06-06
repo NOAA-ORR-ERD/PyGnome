@@ -122,10 +122,12 @@ void ShowUnscaledValue(DialogPtr dialog)
 {
 	double length;
 	WorldPoint p;
+	WorldPoint3D p3D = {0,0,0.};
 	VelocityRec velocity;
 	
 	(void)EditTexts2LL(dialog, M16LATDEGREES, &p, FALSE);
-	velocity = sharedCMover->GetPatValue(p);
+	p3D.p = p;
+	velocity = sharedCMover->GetPatValue(p3D);
 	length = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	Float2EditText(dialog, M16UNSCALEDVALUE, length, 4);
 }
@@ -163,6 +165,8 @@ OSErr TCATSMover::InitMover(TGridVel *grid, WorldPoint p)
 	bShowGrid = FALSE;
 	arrowScale = 1;// debra wanted 10, CJ wanted 5, JLM likes 5 too (was 1)
 	// CJ wants it back to 1, 4/11/00
+	bApplyLogProfile = false;
+	arrowDepth = 0.;	// if want to show subsurface velocity for log profile
 	
 	/*CHECK*/dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale();
 	
@@ -446,6 +450,7 @@ long TCATSMover::GetListLength()
 	
 	if (bOpen) {
 		count += 4;		// minimum CATS mover lines
+		if (gNoaaVersion) count++;	// apply log profile
 		if (timeDep)count++;
 		if (bRefPointOpen) count += 3;
 		if(model->IsUncertain())count++;
@@ -505,6 +510,17 @@ ListItem TCATSMover::GetNthListItem(long n, short indent, short *style, char *te
 			return item;
 		}
 		
+		if (gNoaaVersion)
+		{
+		if (--n == 0) {
+			item.index = I_CATSLOGPROFILE;
+			item.bullet = bApplyLogProfile ? BULLET_FILLEDBOX : BULLET_EMPTYBOX;
+			//StringWithoutTrailingZeros(valStr,arrowScale,6);
+			sprintf(text, "Apply log profile");
+			
+			return item;
+		}
+		}
 		
 		if (--n == 0) {
 			item.index = I_CATSREFERENCE;
@@ -709,6 +725,8 @@ Boolean TCATSMover::ListClick(ListItem item, Boolean inBullet, Boolean doubleCli
 					//					VLUpdate (&objects);
 				}
 				return TRUE;
+			case I_CATSLOGPROFILE:
+				bApplyLogProfile = !bApplyLogProfile; return TRUE;
 		}
 	
 	if (ShiftKeyDown() && item.index == I_CATSNAME) {
@@ -926,6 +944,7 @@ short HydrologyClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			double userVelocity = 0, userTransport = 0, transportConversionFactor = 1, scaleFactor = 0, conversionFactor/*, origScaleFactor*/;
 			short typeOfInfoSpecified = GetPopSelection(dialog, M32INFOTYPEPOPUP);
 			short transportUnits = GetPopSelection(dialog, M32TRANSPORT1UNITS);
+			WorldPoint3D refPoint3D = {0,0,0.};
 			// code goes here, calculations to determine scaling factor based on inputs
 			
 			userTransport = EditText2Float(dialog, M32TRANSPORT1);
@@ -947,7 +966,9 @@ short HydrologyClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			transportConversionFactor = ConvertTransportUnitsToCMS(sTimeValue->fUserUnits) / ConvertTransportUnitsToCMS(transportUnits);
 			// get value at reference point and calculate scale factor
 			// need units conversion for transport and velocity
-			refVel = ((TCATSMover*)(TTimeValue*)sTimeValue->owner)->GetPatValue(sTimeValue->fStationPosition);
+			refPoint3D.p = sTimeValue->fStationPosition;
+			//refVel = ((TCATSMover*)(TTimeValue*)sTimeValue->owner)->GetPatValue(sTimeValue->fStationPosition);
+			refVel = ((TCATSMover*)(TTimeValue*)sTimeValue->owner)->GetPatValue(refPoint3D);
 			//origScaleFactor = sTimeValue->fScaleFactor;
 			if (typeOfInfoSpecified == 1)
 			{
@@ -2221,7 +2242,9 @@ Error: // JLM 	 10/27/98
 void TCATSMover::Draw(Rect r, WorldRect view)
 {
 	if(fGrid && (bShowArrows || bShowGrid))
-		fGrid->Draw(r,view,refP,refScale,arrowScale,bShowArrows,bShowGrid,fColor);
+		fGrid->Draw(r,view,refP,refScale,arrowScale,arrowDepth,bShowArrows,bShowGrid,fColor);
+	//if (bShowDepthContours) ((TTriGridVel3D*)fGrid)->DrawDepthContours(r,view,bShowDepthContourLabels);
+	//if (true) ((TTriGridVel*)fGrid)->DrawDepthContours(r,view,true);
 }
 
 /**************************************************************************************************/

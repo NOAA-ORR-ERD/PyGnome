@@ -589,9 +589,9 @@ long WhatTriIsPtIn(DAGHdl treeH,TopologyHdl topH, LongPointHdl ptsH,LongPoint pt
 
 			if(triRight == -1)
 			{
-				//i=-8;
-				//goto checkTriPts;	// this caused large runs to grind to a halt when LEs beached
-				return -1;
+				i=-8;
+				goto checkTriPts;	
+				//return -1;
 			}
 			triRightIndex = (triRight)*6;
 			// The order will reverse because the triangles are defined counterclockwise and 
@@ -625,7 +625,8 @@ checkTriPts:
 					return (triNum);
 			/////////////////////////////////////////////////
 			// check all triangles that include any of the original vertices in case we're close
-			long numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
+			// this caused large runs to grind to a halt when LEs beached
+			/*long numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
 			long testPt1,testPt2,testPt3,triIndex;
 			for (triIndex=0;triIndex<numTri;triIndex++)
 			{
@@ -653,7 +654,7 @@ checkTriPts:
 						}
 					}
 				}
-			}
+			}*/
 			/////////////////////////////////////////////////
 			
 			return(-8); 				// This is a special case caused by not being able

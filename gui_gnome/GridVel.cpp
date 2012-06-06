@@ -813,7 +813,7 @@ done:
 }
 
 void TRectGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
-						double arrowScale, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor) 
+						double arrowScale, double arrowDepth, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor) 
 {
 	short row, col, pixX, pixY;
 	long dLong, dLat;
@@ -1106,7 +1106,7 @@ done:
 }
 
 void TTriGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,double arrowScale,
-					   Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)
+					   double arrowDepth,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)
 {
 	short row, col, pixX, pixY;
 	float inchesX, inchesY;
@@ -1155,6 +1155,18 @@ void TTriGridVel::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,do
 			wp.pLong = (wp1.h+wp2.h+wp3.h)/3;
 			wp.pLat = (wp1.v+wp2.v+wp3.v)/3;
 			velocity = GetPatValue(wp);
+
+			// if want to see currents below surface
+			/*if (arrowDepth > 1 && bApplyLogProfile)	// start the profile after the first meter
+			{
+				double scaleFactor=1., depthAtPoint;
+				//depthAtPoint = ((TTriGridVel*)fGrid)->GetDepthAtPoint(p.p);
+				depthAtPoint = this->GetDepthAtPoint(wp);
+				if (arrowDepth >= depthAtPoint)scaleFactor = 0.;
+				else if (depthAtPoint > 0) scaleFactor = 1. - log(arrowDepth)/log(depthAtPoint);
+				velocity.u *= scaleFactor;
+				velocity.v *= scaleFactor;
+			}*/
 			
 			//p.h = SameDifferenceX(wp.pLong);
 			//p.v = (r.bottom + r.top) - SameDifferenceY(wp.pLat);
@@ -2115,7 +2127,7 @@ void TTriGridVel3D::DrawTriangleStr(Rect *r,long triNum, double value)
 
 ////////////////////////////////////////////////////////////////////////////////////
 void TTriGridVel3D::Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,double arrowScale,
-					   Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)
+					   double arrowDepth,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)
 {
 	short row, col, pixX, pixY;
 	float inchesX, inchesY;
