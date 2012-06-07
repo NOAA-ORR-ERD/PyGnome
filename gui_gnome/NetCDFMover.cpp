@@ -79,6 +79,7 @@ NetCDFMover::NetCDFMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 	 fOffset_v = 0.;
 	 fCurScale_u = 1.;
 	 fCurScale_v = 1.;*/
+	fFileScaleFactor = 1.;	// let user set a scale factor in addition to what is in the file
 	
 	memset(&fStartData,0,sizeof(fStartData));
 	fStartData.timeIndex = UNASSIGNEDINDEX; 

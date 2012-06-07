@@ -810,7 +810,14 @@ depths:
 			{
 				//printError("indices messed up"); 
 				//err=-1; goto done;
-				INDEXH(totalDepthsH,i) = 0;	// need to figure out what to do here...
+				//INDEXH(totalDepthsH,i) = 0;	// need to figure out what to do here...
+				if (iIndex==0 && jIndex==fNumCols) ptIndex = jIndex-1;
+				else if (iIndex==0) ptIndex = jIndex;
+				else if (jIndex==fNumCols)ptIndex = (iIndex-1)*fNumCols+jIndex-1;
+				if (ptIndex<0 || ptIndex >= fNumRows*fNumCols)
+					INDEXH(totalDepthsH,i) = 0;
+				else
+					INDEXH(totalDepthsH,i) = INDEXH(fDepthsH,ptIndex);	// need to figure out what to do here...
 				continue;
 			}
 			//INDEXH(totalDepthsH,i) = depth_vals[ptIndex];
@@ -1410,10 +1417,14 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 				else
 				{ptIndex = -1; continue;}
 				
-				totalDepth = /*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetTotalDepth(wp,ptIndex);
+				totalDepth = GetTotalDepth(wp,ptIndex);
 	 			if (amtOfDepthData>0 && ptIndex>=0)
 				{
-					/*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetDepthIndices(ptIndex,fVar.arrowDepth,totalDepth,&depthIndex1,&depthIndex2);
+					if (totalDepth==-1)
+					{
+						depthIndex1 = -1; depthIndex2 = -1;
+					}
+					else GetDepthIndices(ptIndex,fVar.arrowDepth,totalDepth,&depthIndex1,&depthIndex2);
 				}
 				else
 				{	// for old SAV files without fDepthDataInfo
@@ -1439,8 +1450,8 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 					 }*/
 					//topDepth = INDEXH(fDepthLevelsHdl,depthIndex1)*totalDepth; // times totalDepth
 					//bottomDepth = INDEXH(fDepthLevelsHdl,depthIndex2)*totalDepth;
-					topDepth = /*CHECK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetDepthAtIndex(depthIndex1,totalDepth); // times totalDepth
-					bottomDepth = /*CHECK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetDepthAtIndex(depthIndex2,totalDepth);
+					topDepth = GetDepthAtIndex(depthIndex1,totalDepth); // times totalDepth
+					bottomDepth = GetDepthAtIndex(depthIndex2,totalDepth);
 					//topDepth = GetTopDepth(depthIndex1,totalDepth); // times totalDepth
 					//bottomDepth = GetBottomDepth(depthIndex2,totalDepth);
 					if (totalDepth == 0) depthAlpha = 1;
@@ -1449,7 +1460,7 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 				}
 				// for now draw arrow at midpoint of diagonal of gridbox
 				// this will result in drawing some arrows more than once
-				if (/*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetLatLonFromIndex(iIndex-1,jIndex+1,&wp2)!=-1)	// may want to get all four points and interpolate
+				if (GetLatLonFromIndex(iIndex-1,jIndex+1,&wp2)!=-1)	// may want to get all four points and interpolate
 				{
 					wp.pLat = (wp.pLat + wp2.pLat)/2.;
 					wp.pLong = (wp.pLong + wp2.pLong)/2.;
@@ -1468,15 +1479,15 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 					//velocity.v = INDEXH(fStartData.dataHdl,ptIndex).v;
 					if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 					{
-						velocity.u = /*CHECK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
-						velocity.v = /*CHECK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
+						velocity.u = GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
+						velocity.v = GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
 						//velocity.u = INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u;
 						//velocity.v = INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v;
 					}
 					else 	// below surface velocity
 					{
-						velocity.u = /*CHECK*/depthAlpha*dynamic_cast<NetCDFMoverCurv *>(this)->GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-depthAlpha)*dynamic_cast<NetCDFMoverCurv *>(this)->GetStartUVelocity(ptIndex+depthIndex2*fNumRows*fNumCols);
-						velocity.v = /*CHECK*/depthAlpha*dynamic_cast<NetCDFMoverCurv *>(this)->GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-depthAlpha)*dynamic_cast<NetCDFMoverCurv *>(this)->GetStartVVelocity(ptIndex+depthIndex2*fNumRows*fNumCols);
+						velocity.u = depthAlpha*GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-depthAlpha)*GetStartUVelocity(ptIndex+depthIndex2*fNumRows*fNumCols);
+						velocity.v = depthAlpha*GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-depthAlpha)*GetStartVVelocity(ptIndex+depthIndex2*fNumRows*fNumCols);
 						//velocity.u = depthAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u+(1-depthAlpha)*INDEXH(fStartData.dataHdl,ptIndex+depthIndex2*fNumRows*fNumCols).u;
 						//velocity.v = depthAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v+(1-depthAlpha)*INDEXH(fStartData.dataHdl,ptIndex+depthIndex2*fNumRows*fNumCols).v;
 					}
@@ -1489,17 +1500,17 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 					//velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,ptIndex).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex).v;
 					if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 					{	
-						/*CHECK*/ velocity.u = timeAlpha*dynamic_cast<NetCDFMoverCurv *>(this)->GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-timeAlpha)*dynamic_cast<NetCDFMoverCurv *>(this)->GetEndUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
-						/*CHECK*/ velocity.v = timeAlpha*dynamic_cast<NetCDFMoverCurv *>(this)->GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-timeAlpha)*dynamic_cast<NetCDFMoverCurv *>(this)->GetEndVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
+						velocity.u = timeAlpha*GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-timeAlpha)*GetEndUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
+						velocity.v = timeAlpha*GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols)+(1-timeAlpha)*GetEndVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols);
 						//velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u;
 						//velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v;
 					}
 					else	// below surface velocity
 					{
-						/*CHECK*/ velocity.u = depthAlpha*(timeAlpha*dynamic_cast<NetCDFMoverCurv *>(this)->GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols) + (1-timeAlpha)*dynamic_cast<NetCDFMoverCurv *>(this)->GetEndUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols));
-						/*CHECK*/ velocity.u += (1-depthAlpha)*(timeAlpha*dynamic_cast<NetCDFMoverCurv *>(this)->GetStartUVelocity(ptIndex+depthIndex2*fNumRows*fNumCols) + (1-timeAlpha)*dynamic_cast<NetCDFMoverCurv *>(this)->GetEndUVelocity(ptIndex+depthIndex2*fNumRows*fNumCols));
-						/*CHECK*/ velocity.v = depthAlpha*(timeAlpha*dynamic_cast<NetCDFMoverCurv *>(this)->GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols) + (1-timeAlpha)*dynamic_cast<NetCDFMoverCurv *>(this)->GetEndVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols));
-						/*CHECK*/ velocity.v += (1-depthAlpha)*(timeAlpha*dynamic_cast<NetCDFMoverCurv *>(this)->GetStartVVelocity(ptIndex+depthIndex2*fNumRows*fNumCols) + (1-timeAlpha)*dynamic_cast<NetCDFMoverCurv *>(this)->GetEndVVelocity(ptIndex+depthIndex2*fNumRows*fNumCols));
+						velocity.u = depthAlpha*(timeAlpha*GetStartUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols) + (1-timeAlpha)*GetEndUVelocity(ptIndex+depthIndex1*fNumRows*fNumCols));
+						velocity.u += (1-depthAlpha)*(timeAlpha*GetStartUVelocity(ptIndex+depthIndex2*fNumRows*fNumCols) + (1-timeAlpha)*GetEndUVelocity(ptIndex+depthIndex2*fNumRows*fNumCols));
+						velocity.v = depthAlpha*(timeAlpha*GetStartVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols) + (1-timeAlpha)*GetEndVVelocity(ptIndex+depthIndex1*fNumRows*fNumCols));
+						velocity.v += (1-depthAlpha)*(timeAlpha*GetStartVVelocity(ptIndex+depthIndex2*fNumRows*fNumCols) + (1-timeAlpha)*GetEndVVelocity(ptIndex+depthIndex2*fNumRows*fNumCols));
 						//velocity.u = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).u);
 						//velocity.u += (1-depthAlpha)*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex2*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex2*fNumRows*fNumCols).u);
 						//velocity.v = depthAlpha*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex+depthIndex1*fNumRows*fNumCols).v);
@@ -1523,7 +1534,7 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 			}
 		}
 	}
-	if (fVar.bShowGrid) fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,false,true,fColor);
+	if (fVar.bShowGrid) fGrid->Draw(r,view,wayOffMapPt,fVar.curScale,fVar.arrowScale,fVar.arrowDepth,false,true,fColor);
 	if (bShowDepthContours && fVar.gridType!=TWO_D) ((TTriGridVel3D*)fGrid)->DrawDepthContours(r,view,bShowDepthContourLabels);// careful with 3D grid
 	
 	RGBForeColor(&colors[BLACK]);
@@ -1547,7 +1558,7 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
 	TTriGridVel3D *triGrid = (TTriGridVel3D*) map->GetGrid3D(false);
 	Boolean **triSelected = 0;
 	long indexToDepthData = 0, index;
-	long numDepthLevels = /*CHECK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetNumDepthLevelsInFile();
+	long numDepthLevels = GetNumDepthLevelsInFile();
 	long j;
 	float sc_r, sc_r2, Cs_r, Cs_r2, depthAtLevel, depthAtNextLevel;
 	
@@ -1559,10 +1570,10 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
 	triSelected = triGrid -> GetTriSelection(false);	// don't init
 
 	//if (fVar.gridType != SIGMA_ROMS) return;
-	err = /*CHECK*/dynamic_cast<NetCDFMoverCurv *>(this) -> SetInterval(errmsg);
+	err = SetInterval(errmsg);
 	if(err) return;
 	
-	loaded = /*CHECK*/dynamic_cast<NetCDFMoverCurv *>(this) -> CheckInterval(timeDataInterval);
+	loaded = CheckInterval(timeDataInterval);
 	if(!loaded) return;	
 	
 	//if (!fDepthDataInfo) return;
@@ -1597,7 +1608,7 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
 	//if (fDepthLevelsHdl && numDepthLevels>0) totalDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);
 	//else return;
 	if (fVar.gridType==SIGMA_ROMS)	// maybe always do it this way...
-		totalDepth = /*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetTotalDepthFromTriIndex(triNum);
+		totalDepth = GetTotalDepthFromTriIndex(triNum);
 	else
 	{
 		if (fDepthsH)

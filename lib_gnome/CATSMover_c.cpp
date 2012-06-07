@@ -41,6 +41,7 @@ CATSMover_c::CATSMover_c () {
 	bTimeFileActive = false;
 	fEddyDiffusion=0; // JLM 5/20/991e6; // cm^2/sec
 	fEddyV0 = 0.1; // JLM 5/20/99
+
 	memset(&fOptimize,0,sizeof(fOptimize));
 
 }
@@ -71,6 +72,7 @@ OSErr CATSMover_c::ComputeVelocityScale()
 	long i, j, m, n;
 	double length, theirLengthSq, myLengthSq, dotProduct;
 	VelocityRec theirVelocity,myVelocity;
+	WorldPoint3D refPt3D = {0,0,0.};
 	TMap *map;
 	TCATSMover *mover;
 	
@@ -80,11 +82,12 @@ OSErr CATSMover_c::ComputeVelocityScale()
 		return noErr;
 	}
 	
+	refPt3D.p = refP; refPt3D.z = 0.;
 	
 	switch (scaleType) {
 		case SCALE_NONE: this->refScale = 1; return noErr;
 		case SCALE_CONSTANT:
-			myVelocity = GetPatValue(refP);
+			myVelocity = GetPatValue(refPt3D);
 			length = sqrt(myVelocity.u * myVelocity.u + myVelocity.v * myVelocity.v);
 			/// check for too small lengths
 			if(fabs(scaleValue) > length*MAXREFSCALE
@@ -103,15 +106,15 @@ OSErr CATSMover_c::ComputeVelocityScale()
 						// JLM, note: we are implicitly matching by file name above
 						
 						// JLM: This code left out the possibility of a time file
-						//velocity = mover -> GetPatValue(refP);
+						//velocity = mover -> GetPatValue(refPt3D);
 						//velocity.u *= mover -> refScale;
 						//velocity.v *= mover -> refScale;
 						// so use GetScaledPatValue() instead
-						theirVelocity = mover -> GetScaledPatValue(refP,nil);
+						theirVelocity = mover -> GetScaledPatValue(refPt3D,nil);
 						
 						theirLengthSq = (theirVelocity.u * theirVelocity.u + theirVelocity.v * theirVelocity.v);
 						// JLM, we need to adjust the movers pattern 
-						myVelocity = GetPatValue(refP);
+						myVelocity = GetPatValue(refPt3D);
 						myLengthSq = (myVelocity.u * myVelocity.u + myVelocity.v * myVelocity.v);
 						// next problem is that the scale 
 						// can be negative, we would have to look at the angle between 
@@ -251,13 +254,18 @@ WorldPoint3D CATSMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 	Boolean useEddyUncertainty = false;	
 	double 		dLong, dLat;
 	WorldPoint3D	deltaPoint={0,0,0.};
-	WorldPoint refPoint = (*theLE).p;	
-	VelocityRec scaledPatVelocity = this->GetScaledPatValue(refPoint,&useEddyUncertainty);
+	WorldPoint3D refPoint3D = {0,0,0.};
+	//WorldPoint refPoint = (*theLE).p;	
+	VelocityRec scaledPatVelocity;
+
+	refPoint3D.p = (*theLE).p;
+	refPoint3D.z = (*theLE).z;
+	scaledPatVelocity = this->GetScaledPatValue(refPoint3D,&useEddyUncertainty);
 	if(leType == UNCERTAINTY_LE)
 	{
 		AddUncertainty(setIndex,leIndex,&scaledPatVelocity,timeStep,useEddyUncertainty);
 	}
-	dLong = ((scaledPatVelocity.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPoint.pLat);
+	dLong = ((scaledPatVelocity.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPoint3D.p.pLat);
 	dLat  =  (scaledPatVelocity.v / METERSPERDEGREELAT) * timeStep;
 	
 	deltaPoint.p.pLong = dLong * 1000000;
@@ -266,7 +274,7 @@ WorldPoint3D CATSMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LE
 	return deltaPoint;
 }
 
-VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint3D p,Boolean * useEddyUncertainty)
 {
 	/// 5/12/99 JLM, we only add the eddy uncertainty when the vectors are big enough when the timeValue is 1 
 	// This is in response to the Prince William sound problem where 5 patterns are being added together
@@ -310,9 +318,32 @@ VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncerta
 }
 
 
-VelocityRec CATSMover_c::GetPatValue(WorldPoint p)
+VelocityRec CATSMover_c::GetPatValue(WorldPoint3D p)
 {
-	return fGrid->GetPatValue(p);
+	//Boolean bApplyLogProfile = false;
+	double depthAtPoint = 0., scaleFactor = 1.;
+	VelocityRec patVal = {0.,0.};
+
+	if (p.z > 0 && !bApplyLogProfile) 
+	{	
+		if (!IAm(TYPE_CATSMOVER3D))
+		return patVal;	
+	}
+	//if (IAm(TYPE_CATSMOVER3D)) return fGrid->GetPatValue(p.p);	// need to either store the fBathymetry or get the depths from the grid
+	//if (gNoaaVersion) bApplyLogProfile = true;	// this will be a checkbox on the dialog
+	if (p.z > 1 && bApplyLogProfile)	// start the profile after the first meter
+	{
+		//depthAtPoint = ((TTriGridVel*)fGrid)->GetDepthAtPoint(p.p);
+		depthAtPoint = fGrid->GetDepthAtPoint(p.p);
+		if (p.z >= depthAtPoint)scaleFactor = 0.;
+		else if (depthAtPoint > 0) scaleFactor = 1. - log(p.z)/log(depthAtPoint);
+	}
+	patVal = fGrid->GetPatValue(p.p);
+	patVal.u = patVal.u * scaleFactor;
+	patVal.v = patVal.v * scaleFactor;
+
+	return patVal;
+	//return fGrid->GetPatValue(p.p);
 }
 
 VelocityRec CATSMover_c::GetSmoothVelocity (WorldPoint p)
@@ -326,7 +357,8 @@ Boolean CATSMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	double lengthU, lengthS;
 	VelocityRec velocity = {0.,0.};
 	
-	velocity = this->GetPatValue(wp.p);
+	wp.z = arrowDepth;
+	velocity = this->GetPatValue(wp);
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	lengthS = this->refScale * lengthU;
 	

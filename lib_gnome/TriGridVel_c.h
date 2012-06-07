@@ -29,10 +29,12 @@ public:
 	TopologyHdl GetTopologyHdl(void);
 	//DAGHdl GetDagTreeHdl(void);
 	virtual long GetNumTriangles(void);
+	long 	GetNumDepths(void);
 	void SetBathymetry(FLOATH depthsH){fBathymetryH=depthsH;}
 	FLOATH  GetBathymetry(){return fBathymetryH;}
 	VelocityRec GetPatValue(WorldPoint p);
 	VelocityRec GetSmoothVelocity(WorldPoint p);
+	virtual double GetDepthAtPoint(WorldPoint p);
 	virtual InterpolationVal GetInterpolationValues(WorldPoint refPoint);
 	virtual	long GetRectIndexFromTriIndex(WorldPoint refPoint, LONGH ptrVerdatToNetCDFH, long numCols_ext);
 	virtual	long GetRectIndexFromTriIndex2(long triIndex, LONGH ptrVerdatToNetCDFH, long numCols_ext);

@@ -797,7 +797,7 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 		numTri = triGrid->GetNumTriangles();
 		
 		err = this -> SetInterval(errmsg);
-		if (err) {fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,overrideDrawArrows,bShowGrid,fColor); return;}
+		if (err) {fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,arrowDepth,overrideDrawArrows,bShowGrid,fColor); return;}
 		//if(err) return;
 		
 		/*if (bShowGrid)
@@ -820,7 +820,7 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 		 }
 		 RGBForeColor(&colors[BLACK]);
 		 }*/
-		if (bShowGrid && !bShowArrows) fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,overrideDrawArrows,bShowGrid,fColor);
+		if (bShowGrid && !bShowArrows) fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,arrowDepth,overrideDrawArrows,bShowGrid,fColor);
 		//fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,overrideDrawArrows,bShowGrid);
 		
 		if(bShowArrows)

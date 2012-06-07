@@ -289,7 +289,7 @@ Boolean CATSMover3D_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	
 	((PtCurMap_c*)map)->FindNearestBoundary(wp.p,&verNum,&segNo); //AH 03/19/2012 (this needs to be fixed.)
 	
-	velocity = this->GetPatValue(wp.p);
+	velocity = this->GetPatValue(wp);
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	lengthS = this->refScale * lengthU;
 	

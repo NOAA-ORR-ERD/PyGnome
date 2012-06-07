@@ -44,6 +44,8 @@ public:
 	Boolean 		bShowGrid;
 	Boolean 		bShowArrows;
 	double 			arrowScale;
+	float 			arrowDepth;
+	Boolean			bApplyLogProfile;
 	TOSSMTimeValue *timeDep;
 	double			fEddyDiffusion;			// cm**2/s minimum eddy velocity for uncertainty
 	double			fEddyV0;			//  in m/s, used for cutoff of minimum eddy for uncertainty
@@ -58,8 +60,8 @@ public:
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep) { timeDep = newTimeDep; }
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	void				DeleteTimeDep ();
-	VelocityRec			GetPatValue (WorldPoint p);
-	VelocityRec 		GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
+	VelocityRec			GetPatValue (WorldPoint3D p);
+	VelocityRec 		GetScaledPatValue(WorldPoint3D p,Boolean * useEddyUncertainty);//JLM 5/12/99
 	VelocityRec			GetSmoothVelocity (WorldPoint p);
 	//OSErr				ComputeVelocityScale ();
 	virtual OSErr		ComputeVelocityScale ();

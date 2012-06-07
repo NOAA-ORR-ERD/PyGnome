@@ -42,6 +42,14 @@ long TriGridVel_c::GetNumTriangles(void)
 	return numTriangles;
 }
 
+long TriGridVel_c::GetNumDepths(void)
+{
+	long numDepths = 0;
+	if (fBathymetryH) numDepths = _GetHandleSize((Handle)fBathymetryH)/sizeof(**fBathymetryH);
+	
+	return numDepths;
+}
+
 InterpolationVal TriGridVel_c::GetInterpolationValues(WorldPoint refPoint)
 {
 	InterpolationVal interpolationVal;
@@ -370,6 +378,23 @@ VelocityRec TriGridVel_c::GetPatValue(WorldPoint p)
 	fDagTree->GetVelocity(lp,&r);
 
 	return r;
+}
+
+double TriGridVel_c::GetDepthAtPoint(WorldPoint p)
+{
+	double depthAtPoint = 0;
+	long ptIndex1,ptIndex2,ptIndex3; 
+	float depth1,depth2,depth3;
+	InterpolationVal interpolationVal;
+
+	interpolationVal = this->GetInterpolationValues(p);
+
+	depth1 = (*fBathymetryH)[interpolationVal.ptIndex1];
+	depth2 = (*fBathymetryH)[interpolationVal.ptIndex2];
+	depth3 = (*fBathymetryH)[interpolationVal.ptIndex3];
+	depthAtPoint = interpolationVal.alpha1*depth1 + interpolationVal.alpha2*depth2 + interpolationVal.alpha3*depth3;
+
+	return depthAtPoint;
 }
 
 void TriGridVel_c::Dispose ()

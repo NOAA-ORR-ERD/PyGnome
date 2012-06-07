@@ -617,6 +617,7 @@ void ShowUnscaledComponentValues(DialogPtr dialog,double * pat1Val,double* pat2V
 {
 	double len = 0;
 	WorldPoint p;
+	WorldPoint3D p3D;
 	VelocityRec velocity;
 	OSErr err = 0;
 	char str1[32]="*",str2[32] = "*";
@@ -627,14 +628,15 @@ void ShowUnscaledComponentValues(DialogPtr dialog,double * pat1Val,double* pat2V
 	
 	err = EditTexts2LL(dialog, M20LATDEGREES, &p, FALSE);
 	if (!err && mover) {
+		p3D.p = p;
 		if (mover -> pattern1) {
-			velocity = mover -> pattern1 -> GetPatValue (p);
+			velocity = mover -> pattern1 -> GetPatValue (p3D);
 			len = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 			if(pat1Val) *pat1Val = len;
 			StringWithoutTrailingZeros(str1,len,6);
 		}
 		if (mover -> pattern2) {
-			velocity = mover -> pattern2 -> GetPatValue (p);
+			velocity = mover -> pattern2 -> GetPatValue (p3D);
 			len = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 			if(pat2Val) *pat2Val = len;
 			StringWithoutTrailingZeros(str2,len,6);

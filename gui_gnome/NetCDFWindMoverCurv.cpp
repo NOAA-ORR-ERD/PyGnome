@@ -883,7 +883,7 @@ void NetCDFWindMoverCurv::Draw(Rect r, WorldRect view)
 			}
 		}
 	}
-	if (bShowGrid) fGrid->Draw(r,view,wayOffMapPt,fWindScale,fArrowScale,false,true,fColor);
+	if (bShowGrid) fGrid->Draw(r,view,wayOffMapPt,fWindScale,fArrowScale,0.,false,true,fColor);
 	
 	RGBForeColor(&colors[BLACK]);
 }

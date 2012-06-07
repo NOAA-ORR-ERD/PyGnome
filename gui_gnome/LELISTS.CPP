@@ -1391,6 +1391,7 @@ TOLEList::TOLEList()
 	fAdiosDataH = nil;	
 	fBudgetTableH = nil;	
 	fOilTypeName[0] = 0;
+	fColor = colors[BLACK];	// default to draw LEs in black
 }
 
 void TOLEList::Dispose ()
