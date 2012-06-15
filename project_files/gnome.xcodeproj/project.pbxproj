@@ -300,19 +300,15 @@
 		EDCB3FF0150FFA6600199C36 /* WindUncertainty.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WindUncertainty.h; sourceTree = "<group>"; };
 		EDCB3FF1150FFA6600199C36 /* Wizard.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Wizard.cpp; sourceTree = "<group>"; };
 		EDCB3FF2150FFA6600199C36 /* Wizard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Wizard.h; sourceTree = "<group>"; };
-		EDCB3FF4150FFA6600199C36 /* ADCPMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ADCPMover_b.h; sourceTree = "<group>"; };
 		EDCB3FF5150FFA6600199C36 /* ADCPMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ADCPMover_c.cpp; sourceTree = "<group>"; };
 		EDCB3FF6150FFA6600199C36 /* ADCPMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ADCPMover_c.h; sourceTree = "<group>"; };
-		EDCB3FF7150FFA6600199C36 /* ADCPTimeValue_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ADCPTimeValue_b.h; sourceTree = "<group>"; };
 		EDCB3FF8150FFA6600199C36 /* ADCPTimeValue_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ADCPTimeValue_c.cpp; sourceTree = "<group>"; };
 		EDCB3FF9150FFA6600199C36 /* ADCPTimeValue_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ADCPTimeValue_c.h; sourceTree = "<group>"; };
 		EDCB3FFA150FFA6600199C36 /* Basics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Basics.h; sourceTree = "<group>"; };
-		EDCB3FFB150FFA6600199C36 /* CATSMover3D_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CATSMover3D_b.h; sourceTree = "<group>"; };
 		EDCB3FFC150FFA6600199C36 /* CATSMover3D_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CATSMover3D_c.cpp; sourceTree = "<group>"; };
 		EDCB3FFD150FFA6600199C36 /* CATSMover3D_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CATSMover3D_c.h; sourceTree = "<group>"; };
 		EDCB3FFF150FFA6600199C36 /* CATSMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CATSMover_c.cpp; sourceTree = "<group>"; };
 		EDCB4000150FFA6600199C36 /* CATSMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CATSMover_c.h; sourceTree = "<group>"; };
-		EDCB4001150FFA6600199C36 /* ClassID_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClassID_b.h; sourceTree = "<group>"; };
 		EDCB4002150FFA6600199C36 /* ClassID_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ClassID_c.cpp; sourceTree = "<group>"; };
 		EDCB4003150FFA6600199C36 /* ClassID_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClassID_c.h; sourceTree = "<group>"; };
 		EDCB4004150FFA6600199C36 /* CMap2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CMap2.cpp; sourceTree = "<group>"; };
@@ -321,15 +317,12 @@
 		EDCB4008150FFA6600199C36 /* CMYLIST.H */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CMYLIST.H; sourceTree = "<group>"; };
 		EDCB4009150FFA6600199C36 /* CompFunctions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CompFunctions.cpp; sourceTree = "<group>"; };
 		EDCB400A150FFA6600199C36 /* CompFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CompFunctions.h; sourceTree = "<group>"; };
-		EDCB400B150FFA6600199C36 /* ComponentMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ComponentMover_b.h; sourceTree = "<group>"; };
 		EDCB400C150FFA6600199C36 /* ComponentMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ComponentMover_c.cpp; sourceTree = "<group>"; };
 		EDCB400D150FFA6600199C36 /* ComponentMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ComponentMover_c.h; sourceTree = "<group>"; };
 		EDCB400E150FFA6600199C36 /* CompoundMap_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CompoundMap_c.cpp; sourceTree = "<group>"; };
 		EDCB400F150FFA6600199C36 /* CompoundMap_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CompoundMap_c.h; sourceTree = "<group>"; };
-		EDCB4010150FFA6600199C36 /* CompoundMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CompoundMover_b.h; sourceTree = "<group>"; };
 		EDCB4011150FFA6600199C36 /* CompoundMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CompoundMover_c.cpp; sourceTree = "<group>"; };
 		EDCB4012150FFA6600199C36 /* CompoundMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CompoundMover_c.h; sourceTree = "<group>"; };
-		EDCB4013150FFA6600199C36 /* CurrentMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CurrentMover_b.h; sourceTree = "<group>"; };
 		EDCB4014150FFA6600199C36 /* CurrentMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CurrentMover_c.cpp; sourceTree = "<group>"; };
 		EDCB4015150FFA6600199C36 /* CurrentMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CurrentMover_c.h; sourceTree = "<group>"; };
 		EDCB4016150FFA6600199C36 /* DagStruct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DagStruct.h; sourceTree = "<group>"; };
@@ -341,16 +334,13 @@
 		EDCB401C150FFA6600199C36 /* GEOMETR2.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GEOMETR2.CPP; sourceTree = "<group>"; };
 		EDCB401D150FFA6600199C36 /* GEOMETRY.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GEOMETRY.CPP; sourceTree = "<group>"; };
 		EDCB401E150FFA6600199C36 /* GEOMETRY.H */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GEOMETRY.H; sourceTree = "<group>"; };
-		EDCB401F150FFA6600199C36 /* GridCurMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GridCurMover_b.h; sourceTree = "<group>"; };
 		EDCB4020150FFA6600199C36 /* GridCurMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GridCurMover_c.cpp; sourceTree = "<group>"; };
 		EDCB4021150FFA6600199C36 /* GridCurMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GridCurMover_c.h; sourceTree = "<group>"; };
 		EDCB4022150FFA6600199C36 /* GridVel_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GridVel_c.h; sourceTree = "<group>"; };
-		EDCB4023150FFA6600199C36 /* GridWindMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GridWindMover_b.h; sourceTree = "<group>"; };
 		EDCB4024150FFA6600199C36 /* GridWindMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GridWindMover_c.cpp; sourceTree = "<group>"; };
 		EDCB4025150FFA6600199C36 /* GridWindMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GridWindMover_c.h; sourceTree = "<group>"; };
 		EDCB4026150FFA6600199C36 /* LEList_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LEList_c.cpp; sourceTree = "<group>"; };
 		EDCB4027150FFA6600199C36 /* LEList_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LEList_c.h; sourceTree = "<group>"; };
-		EDCB4028150FFA6600199C36 /* Map_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Map_b.h; sourceTree = "<group>"; };
 		EDCB4029150FFA6600199C36 /* Map_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Map_c.cpp; sourceTree = "<group>"; };
 		EDCB402A150FFA6600199C36 /* Map_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Map_c.h; sourceTree = "<group>"; };
 		EDCB402B150FFA6600199C36 /* MapUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MapUtils.cpp; sourceTree = "<group>"; };
@@ -359,28 +349,21 @@
 		EDCB402E150FFA6700199C36 /* MemUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MemUtils.h; sourceTree = "<group>"; };
 		EDCB402F150FFA6700199C36 /* Model_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Model_c.cpp; sourceTree = "<group>"; };
 		EDCB4030150FFA6700199C36 /* Model_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Model_c.h; sourceTree = "<group>"; };
-		EDCB4031150FFA6700199C36 /* Mover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Mover_b.h; sourceTree = "<group>"; };
 		EDCB4032150FFA6700199C36 /* Mover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Mover_c.cpp; sourceTree = "<group>"; };
 		EDCB4033150FFA6700199C36 /* Mover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Mover_c.h; sourceTree = "<group>"; };
-		EDCB4034150FFA6700199C36 /* NetCDFMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFMover_b.h; sourceTree = "<group>"; };
 		EDCB4035150FFA6700199C36 /* NetCDFMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NetCDFMover_c.cpp; sourceTree = "<group>"; };
 		EDCB4036150FFA6700199C36 /* NetCDFMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFMover_c.h; sourceTree = "<group>"; };
-		EDCB4037150FFA6700199C36 /* NetCDFMoverCurv_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFMoverCurv_b.h; sourceTree = "<group>"; };
 		EDCB4038150FFA6700199C36 /* NetCDFMoverCurv_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NetCDFMoverCurv_c.cpp; sourceTree = "<group>"; };
 		EDCB4039150FFA6700199C36 /* NetCDFMoverCurv_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFMoverCurv_c.h; sourceTree = "<group>"; };
-		EDCB403A150FFA6700199C36 /* NetCDFMoverTri_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFMoverTri_b.h; sourceTree = "<group>"; };
 		EDCB403B150FFA6700199C36 /* NetCDFMoverTri_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NetCDFMoverTri_c.cpp; sourceTree = "<group>"; };
 		EDCB403C150FFA6700199C36 /* NetCDFMoverTri_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFMoverTri_c.h; sourceTree = "<group>"; };
-		EDCB403D150FFA6700199C36 /* NetCDFWindMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFWindMover_b.h; sourceTree = "<group>"; };
 		EDCB403E150FFA6700199C36 /* NetCDFWindMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NetCDFWindMover_c.cpp; sourceTree = "<group>"; };
 		EDCB403F150FFA6700199C36 /* NetCDFWindMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFWindMover_c.h; sourceTree = "<group>"; };
-		EDCB4040150FFA6700199C36 /* NetCDFWindMoverCurv_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFWindMoverCurv_b.h; sourceTree = "<group>"; };
 		EDCB4041150FFA6700199C36 /* NetCDFWindMoverCurv_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NetCDFWindMoverCurv_c.cpp; sourceTree = "<group>"; };
 		EDCB4042150FFA6700199C36 /* NetCDFWindMoverCurv_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetCDFWindMoverCurv_c.h; sourceTree = "<group>"; };
 		EDCB4044150FFA6700199C36 /* ObjectUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ObjectUtils.h; sourceTree = "<group>"; };
 		EDCB4045150FFA6700199C36 /* OLEList_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OLEList_c.cpp; sourceTree = "<group>"; };
 		EDCB4046150FFA6700199C36 /* OLEList_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OLEList_c.h; sourceTree = "<group>"; };
-		EDCB4047150FFA6700199C36 /* OSSMTimeValue_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OSSMTimeValue_b.h; sourceTree = "<group>"; };
 		EDCB4048150FFA6700199C36 /* OSSMTimeValue_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OSSMTimeValue_c.cpp; sourceTree = "<group>"; };
 		EDCB4049150FFA6700199C36 /* OSSMTimeValue_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OSSMTimeValue_c.h; sourceTree = "<group>"; };
 		EDCB404A150FFA6700199C36 /* OUTILS.CPP */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OUTILS.CPP; sourceTree = "<group>"; };
@@ -389,10 +372,8 @@
 		EDCB404D150FFA6700199C36 /* PtCurMap_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PtCurMap_c.h; sourceTree = "<group>"; };
 		EDCB404E150FFA6700199C36 /* PtCurMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PtCurMover_c.cpp; sourceTree = "<group>"; };
 		EDCB404F150FFA6700199C36 /* PtCurMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PtCurMover_c.h; sourceTree = "<group>"; };
-		EDCB4050150FFA6700199C36 /* Random3D_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Random3D_b.h; sourceTree = "<group>"; };
 		EDCB4051150FFA6700199C36 /* Random3D_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Random3D_c.cpp; sourceTree = "<group>"; };
 		EDCB4052150FFA6700199C36 /* Random3D_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Random3D_c.h; sourceTree = "<group>"; };
-		EDCB4053150FFA6700199C36 /* Random_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Random_b.h; sourceTree = "<group>"; };
 		EDCB4054150FFA6700199C36 /* Random_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Random_c.cpp; sourceTree = "<group>"; };
 		EDCB4055150FFA6700199C36 /* Random_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Random_c.h; sourceTree = "<group>"; };
 		EDCB4056150FFA6700199C36 /* RectUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RectUtils.cpp; sourceTree = "<group>"; };
@@ -405,13 +386,10 @@
 		EDCB405F150FFA6700199C36 /* ShioTimeValue_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ShioTimeValue_c.h; sourceTree = "<group>"; };
 		EDCB4060150FFA6700199C36 /* StringFunctions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StringFunctions.cpp; sourceTree = "<group>"; };
 		EDCB4061150FFA6700199C36 /* StringFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StringFunctions.h; sourceTree = "<group>"; };
-		EDCB4062150FFA6700199C36 /* TideCurCycleMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TideCurCycleMover_b.h; sourceTree = "<group>"; };
 		EDCB4063150FFA6700199C36 /* TideCurCycleMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TideCurCycleMover_c.cpp; sourceTree = "<group>"; };
 		EDCB4064150FFA6700199C36 /* TideCurCycleMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TideCurCycleMover_c.h; sourceTree = "<group>"; };
-		EDCB4065150FFA6700199C36 /* TimeValue_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TimeValue_b.h; sourceTree = "<group>"; };
 		EDCB4066150FFA6700199C36 /* TimeValue_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TimeValue_c.cpp; sourceTree = "<group>"; };
 		EDCB4067150FFA6700199C36 /* TimeValue_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TimeValue_c.h; sourceTree = "<group>"; };
-		EDCB4068150FFA6700199C36 /* TriCurMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TriCurMover_b.h; sourceTree = "<group>"; };
 		EDCB4069150FFA6700199C36 /* TriCurMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TriCurMover_c.cpp; sourceTree = "<group>"; };
 		EDCB406A150FFA6700199C36 /* TriCurMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TriCurMover_c.h; sourceTree = "<group>"; };
 		EDCB406B150FFA6700199C36 /* TriGridVel_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TriGridVel_c.cpp; sourceTree = "<group>"; };
@@ -420,7 +398,6 @@
 		EDCB406E150FFA6700199C36 /* Units.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Units.h; sourceTree = "<group>"; };
 		EDCB406F150FFA6700199C36 /* VectMap_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectMap_c.cpp; sourceTree = "<group>"; };
 		EDCB4070150FFA6700199C36 /* VectMap_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VectMap_c.h; sourceTree = "<group>"; };
-		EDCB4071150FFA6700199C36 /* WindMover_b.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WindMover_b.h; sourceTree = "<group>"; };
 		EDCB4072150FFA6700199C36 /* WindMover_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WindMover_c.cpp; sourceTree = "<group>"; };
 		EDCB4073150FFA6700199C36 /* WindMover_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WindMover_c.h; sourceTree = "<group>"; };
 		EDDAD8CF150EA2EE00EFF92A /* Dialogs.r */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.rez; path = Dialogs.r; sourceTree = "<group>"; };
@@ -624,19 +601,14 @@
 				EDBE9CA51517E4E600C5A7CC /* MakeTriangles.cpp */,
 				EDBE9CA61517E4E600C5A7CC /* my_build_list.h */,
 				EDA59D2815170C7000F0EE69 /* netcdf.h */,
-				EDCB4034150FFA6700199C36 /* NetCDFMover_b.h */,
 				EDCB4035150FFA6700199C36 /* NetCDFMover_c.cpp */,
 				EDCB4036150FFA6700199C36 /* NetCDFMover_c.h */,
-				EDCB4037150FFA6700199C36 /* NetCDFMoverCurv_b.h */,
 				EDCB4038150FFA6700199C36 /* NetCDFMoverCurv_c.cpp */,
 				EDCB4039150FFA6700199C36 /* NetCDFMoverCurv_c.h */,
-				EDCB403A150FFA6700199C36 /* NetCDFMoverTri_b.h */,
 				EDCB403B150FFA6700199C36 /* NetCDFMoverTri_c.cpp */,
 				EDCB403C150FFA6700199C36 /* NetCDFMoverTri_c.h */,
-				EDCB403D150FFA6700199C36 /* NetCDFWindMover_b.h */,
 				EDCB403E150FFA6700199C36 /* NetCDFWindMover_c.cpp */,
 				EDCB403F150FFA6700199C36 /* NetCDFWindMover_c.h */,
-				EDCB4040150FFA6700199C36 /* NetCDFWindMoverCurv_b.h */,
 				EDCB4041150FFA6700199C36 /* NetCDFWindMoverCurv_c.cpp */,
 				EDCB4042150FFA6700199C36 /* NetCDFWindMoverCurv_c.h */,
 				EDB99B471516FB8D00B08B8B /* Weatherer_c.h */,
@@ -645,19 +617,15 @@
 				EDB99B4E1516FC6300B08B8B /* OSSMWeatherer_c.cpp */,
 				EDB99A711516EFBF00B08B8B /* TriGridVel3D_c.h */,
 				EDB99A721516EFBF00B08B8B /* TriGridVel3D_c.cpp */,
-				EDCB3FF4150FFA6600199C36 /* ADCPMover_b.h */,
 				EDCB3FF5150FFA6600199C36 /* ADCPMover_c.cpp */,
 				EDCB3FF6150FFA6600199C36 /* ADCPMover_c.h */,
-				EDCB3FF7150FFA6600199C36 /* ADCPTimeValue_b.h */,
 				EDCB3FF8150FFA6600199C36 /* ADCPTimeValue_c.cpp */,
 				EDCB3FF9150FFA6600199C36 /* ADCPTimeValue_c.h */,
 				EDCB3FFA150FFA6600199C36 /* Basics.h */,
-				EDCB3FFB150FFA6600199C36 /* CATSMover3D_b.h */,
 				EDCB3FFC150FFA6600199C36 /* CATSMover3D_c.cpp */,
 				EDCB3FFD150FFA6600199C36 /* CATSMover3D_c.h */,
 				EDCB3FFF150FFA6600199C36 /* CATSMover_c.cpp */,
 				EDCB4000150FFA6600199C36 /* CATSMover_c.h */,
-				EDCB4001150FFA6600199C36 /* ClassID_b.h */,
 				EDCB4002150FFA6600199C36 /* ClassID_c.cpp */,
 				EDCB4003150FFA6600199C36 /* ClassID_c.h */,
 				EDCB4005150FFA6600199C36 /* CMap2.h */,
@@ -666,15 +634,12 @@
 				EDCB4008150FFA6600199C36 /* CMYLIST.H */,
 				EDCB4009150FFA6600199C36 /* CompFunctions.cpp */,
 				EDCB400A150FFA6600199C36 /* CompFunctions.h */,
-				EDCB400B150FFA6600199C36 /* ComponentMover_b.h */,
 				EDCB400C150FFA6600199C36 /* ComponentMover_c.cpp */,
 				EDCB400D150FFA6600199C36 /* ComponentMover_c.h */,
 				EDCB400E150FFA6600199C36 /* CompoundMap_c.cpp */,
 				EDCB400F150FFA6600199C36 /* CompoundMap_c.h */,
-				EDCB4010150FFA6600199C36 /* CompoundMover_b.h */,
 				EDCB4011150FFA6600199C36 /* CompoundMover_c.cpp */,
 				EDCB4012150FFA6600199C36 /* CompoundMover_c.h */,
-				EDCB4013150FFA6600199C36 /* CurrentMover_b.h */,
 				EDCB4014150FFA6600199C36 /* CurrentMover_c.cpp */,
 				EDCB4015150FFA6600199C36 /* CurrentMover_c.h */,
 				EDCB4016150FFA6600199C36 /* DagStruct.h */,
@@ -686,30 +651,25 @@
 				EDCB401C150FFA6600199C36 /* GEOMETR2.CPP */,
 				EDCB401D150FFA6600199C36 /* GEOMETRY.CPP */,
 				EDCB401E150FFA6600199C36 /* GEOMETRY.H */,
-				EDCB401F150FFA6600199C36 /* GridCurMover_b.h */,
 				EDCB4020150FFA6600199C36 /* GridCurMover_c.cpp */,
 				EDCB4021150FFA6600199C36 /* GridCurMover_c.h */,
 				EDCB4022150FFA6600199C36 /* GridVel_c.h */,
-				EDCB4023150FFA6600199C36 /* GridWindMover_b.h */,
 				EDCB4024150FFA6600199C36 /* GridWindMover_c.cpp */,
 				EDCB4025150FFA6600199C36 /* GridWindMover_c.h */,
 				EDCB4026150FFA6600199C36 /* LEList_c.cpp */,
 				EDCB4027150FFA6600199C36 /* LEList_c.h */,
-				EDCB4028150FFA6600199C36 /* Map_b.h */,
 				EDCB4029150FFA6600199C36 /* Map_c.cpp */,
 				EDCB402A150FFA6600199C36 /* Map_c.h */,
 				EDCB402B150FFA6600199C36 /* MapUtils.cpp */,
 				EDCB402C150FFA6600199C36 /* MapUtils.h */,
 				EDCB402F150FFA6700199C36 /* Model_c.cpp */,
 				EDCB4030150FFA6700199C36 /* Model_c.h */,
-				EDCB4031150FFA6700199C36 /* Mover_b.h */,
 				EDCB4033150FFA6700199C36 /* Mover_c.h */,
 				EDCB4032150FFA6700199C36 /* Mover_c.cpp */,
 				EDB99B731516FDD300B08B8B /* MYRANDOM.CPP */,
 				EDB99B741516FDD300B08B8B /* MYRANDOM.H */,
 				EDCB4045150FFA6700199C36 /* OLEList_c.cpp */,
 				EDCB4046150FFA6700199C36 /* OLEList_c.h */,
-				EDCB4047150FFA6700199C36 /* OSSMTimeValue_b.h */,
 				EDCB4048150FFA6700199C36 /* OSSMTimeValue_c.cpp */,
 				EDCB4049150FFA6700199C36 /* OSSMTimeValue_c.h */,
 				EDCB404B150FFA6700199C36 /* OUTILS.H */,
@@ -718,10 +678,8 @@
 				EDCB404D150FFA6700199C36 /* PtCurMap_c.h */,
 				EDCB404E150FFA6700199C36 /* PtCurMover_c.cpp */,
 				EDCB404F150FFA6700199C36 /* PtCurMover_c.h */,
-				EDCB4050150FFA6700199C36 /* Random3D_b.h */,
 				EDCB4051150FFA6700199C36 /* Random3D_c.cpp */,
 				EDCB4052150FFA6700199C36 /* Random3D_c.h */,
-				EDCB4053150FFA6700199C36 /* Random_b.h */,
 				EDCB4054150FFA6700199C36 /* Random_c.cpp */,
 				EDCB4055150FFA6700199C36 /* Random_c.h */,
 				EDCB4056150FFA6700199C36 /* RectUtils.cpp */,
@@ -736,15 +694,12 @@
 				EDCB4061150FFA6700199C36 /* StringFunctions.h */,
 				EDCB402D150FFA6700199C36 /* MemUtils.cpp */,
 				EDCB402E150FFA6700199C36 /* MemUtils.h */,
-				EDCB4062150FFA6700199C36 /* TideCurCycleMover_b.h */,
 				EDCB4063150FFA6700199C36 /* TideCurCycleMover_c.cpp */,
 				EDCB4064150FFA6700199C36 /* TideCurCycleMover_c.h */,
-				EDCB4065150FFA6700199C36 /* TimeValue_b.h */,
 				EDCB4066150FFA6700199C36 /* TimeValue_c.cpp */,
 				EDCB4067150FFA6700199C36 /* TimeValue_c.h */,
 				EDF6164715223F860025FE54 /* TimeValuesIO.cpp */,
 				EDF6164D1522401A0025FE54 /* TimeValuesIO.h */,
-				EDCB4068150FFA6700199C36 /* TriCurMover_b.h */,
 				EDCB406A150FFA6700199C36 /* TriCurMover_c.h */,
 				EDCB4069150FFA6700199C36 /* TriCurMover_c.cpp */,
 				EDCB406B150FFA6700199C36 /* TriGridVel_c.cpp */,
@@ -753,7 +708,6 @@
 				EDCB406E150FFA6700199C36 /* Units.h */,
 				EDCB406F150FFA6700199C36 /* VectMap_c.cpp */,
 				EDCB4070150FFA6700199C36 /* VectMap_c.h */,
-				EDCB4071150FFA6700199C36 /* WindMover_b.h */,
 				EDCB4072150FFA6700199C36 /* WindMover_c.cpp */,
 				EDCB4073150FFA6700199C36 /* WindMover_c.h */,
 			);
