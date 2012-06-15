@@ -117,7 +117,7 @@ OSErr TriCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *vel
 
 
 
-OSErr TriCurMover_c::PrepareForModelStep()
+OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;
@@ -132,7 +132,7 @@ OSErr TriCurMover_c::PrepareForModelStep()
 	 
 	 fIsOptimizedForStep = true;*/
 	
-	if (model->GetModelTime() == model->GetStartTime())	// first step
+	if (model_time == start_time)	// first step
 	{
 		//PtCurMap* ptCurMap = (PtCurMap*)moverMap;
 		PtCurMap* ptCurMap = GetPtCurMap();

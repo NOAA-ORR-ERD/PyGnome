@@ -397,7 +397,7 @@ Boolean PtCurMover::CheckInterval(long &timeDataInterval)
 
 
 
-OSErr PtCurMover::PrepareForModelStep()
+OSErr PtCurMover::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	//Boolean intervalLoaded;
@@ -419,7 +419,7 @@ OSErr PtCurMover::PrepareForModelStep()
 	 
 	 if(!intervalLoaded)*/
 	
-	if (model->GetModelTime() == model->GetStartTime())	// first step, save depth range here?
+	if (model_time == start_time)	// first step, save depth range here?
 	{
 		if (moverMap->IAm(TYPE_PTCURMAP))
 		{

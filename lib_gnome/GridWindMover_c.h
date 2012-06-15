@@ -17,7 +17,7 @@
 class GridWindMover_c : virtual public GridWindMover_b, virtual public WindMover_c {
 
 public:
-	virtual OSErr 		PrepareForModelStep();
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual long 		GetVelocityIndex(WorldPoint p);

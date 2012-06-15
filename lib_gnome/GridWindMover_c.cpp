@@ -39,9 +39,11 @@ long GridWindMover_c::GetVelocityIndex(WorldPoint p)
 }
 
 
-OSErr GridWindMover_c::PrepareForModelStep()
+OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
-	OSErr err = this->UpdateUncertainty();
+	OSErr err = 0;
+	if (uncertain)
+		err = this->UpdateUncertainty();
 	
 	char errmsg[256];
 	

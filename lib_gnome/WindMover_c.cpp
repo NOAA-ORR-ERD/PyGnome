@@ -355,9 +355,11 @@ void WindMover_c::DeleteTimeDep()
 	}
 }
 
-OSErr WindMover_c::PrepareForModelStep()
+OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
-	OSErr err = this->UpdateUncertainty();
+	OSErr err = 0;
+	if (uncertain)
+		err = this->UpdateUncertainty();
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
 	return err;
 }

@@ -20,7 +20,7 @@ class NetCDFWindMover_c : virtual public NetCDFWindMover_b, virtual public WindM
 public:
 	NetCDFWindMover_c (TMap *owner, char* name);
 	NetCDFWindMover_c () {}
-	virtual OSErr 		PrepareForModelStep();
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual long 		GetVelocityIndex(WorldPoint p);

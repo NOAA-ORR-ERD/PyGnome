@@ -18,7 +18,7 @@
 class ComponentMover_c : virtual public ComponentMover_b, virtual public CurrentMover_c {
 
 public:
-	virtual OSErr 		PrepareForModelStep();
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	OSErr				SetOptimizeVariables (char *errmsg);
 	OSErr				CalculateAveragedWindsHdl(char *errmsg);

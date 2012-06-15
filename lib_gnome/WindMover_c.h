@@ -35,7 +35,7 @@ public:
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
 	virtual OSErr		UpdateUncertainty(void);
 
-	virtual OSErr 		PrepareForModelStep();
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep) { timeDep = newTimeDep; }
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }

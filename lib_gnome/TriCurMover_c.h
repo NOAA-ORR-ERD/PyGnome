@@ -43,7 +43,7 @@ public:
 	OSErr 				GetTriangleCentroid(long trinum, LongPoint *p);
 	void 					GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
 	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
-	virtual OSErr 		PrepareForModelStep();
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	OSErr				CalculateVerticalGrid(LongPointHdl ptsH, FLOATH totalDepthH, TopologyHdl topH, long numTri,FLOATH sigmaLevels, long numSigmaLevels);
 	long				CreateDepthSlice(long triNum, float **depthSlice);

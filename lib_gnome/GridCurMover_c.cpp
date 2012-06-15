@@ -57,7 +57,7 @@ OSErr GridCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *ve
 	return err;
 }
 
-OSErr GridCurMover_c::PrepareForModelStep()
+OSErr GridCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;

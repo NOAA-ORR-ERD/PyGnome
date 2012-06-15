@@ -33,7 +33,7 @@ public:
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr) {return false;}
 	virtual float		GetArrowDepth(){return 0.;}
 	virtual LongPointHdl	GetPointsHdl(){return nil;}
-	virtual OSErr 		PrepareForModelStep(){ return noErr; }
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool) { return noErr; } // AH 04/16/12
 
 	virtual OSErr		UpdateUncertainty(void);
 	void				GetMoverName (char *name) { GetClassName (name); }

@@ -37,7 +37,8 @@ class CATSMover3D_c : virtual public CATSMover3D_b, virtual public CATSMover_c {
 	 VelocityRec			GetSmoothVelocity (WorldPoint p);
 	 OSErr				ComputeVelocityScale ();
 	 virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
-	 */		virtual OSErr 		PrepareForModelStep();
+	 */		
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	//virtual void 		ModelStepIsDone();
 	virtual	Boolean 		VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	

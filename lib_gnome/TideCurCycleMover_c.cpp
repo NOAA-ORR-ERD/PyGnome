@@ -205,7 +205,7 @@ OSErr TideCurCycleMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRe
 	return err;
 }
 
-OSErr TideCurCycleMover_c::PrepareForModelStep()
+OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;

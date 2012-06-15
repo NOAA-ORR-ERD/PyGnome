@@ -98,7 +98,8 @@ void CompoundMover_c::ModelStepIsDone()
 	
 }
 
-OSErr CompoundMover_c::PrepareForModelStep()
+OSErr CompoundMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+
 {
 	char errmsg[256];
 	OSErr err = 0;
@@ -112,11 +113,11 @@ OSErr CompoundMover_c::PrepareForModelStep()
 	TMover *mover;
 	for (i = 0, n = moverList->GetItemCount() ; i < n ; i++) {
 		moverList->GetListItem((Ptr)&mover, i);
-		err = mover->PrepareForModelStep();
+		err = mover->PrepareForModelStep(model_time, start_time, time_step, uncertain);
 		if (err) goto done;
 	}
 	
-	if (model->GetModelTime() == model->GetStartTime())	// first step
+	if (model_time == start_time)	// first step
 	{
 		if (moverMap->IAm(TYPE_COMPOUNDMAP))
 		{
