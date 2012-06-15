@@ -12,8 +12,8 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "Map_b.h"
 #include "ClassID_c.h"
+#include "CMYLIST.H"
 
 #ifdef pyGNOME
 #define TMover Mover_c
@@ -21,9 +21,15 @@
 
 class TMover;
 
-class Map_c : virtual public Map_b, virtual public ClassID_c {
+class Map_c :  virtual public ClassID_c {
 
 public:
+	WorldRect			fMapBounds; 				// bounding rectangle of map
+	CMyList				*moverList;					// list of this map's movers
+	Boolean				bMoversOpen;				// movers list open (display)	
+	float				fRefloatHalfLifeInHrs;	
+	Boolean				bIAmPartOfACompoundMap;
+	
 	Map_c (char *name, WorldRect bounds);
 	Map_c () {}
 	

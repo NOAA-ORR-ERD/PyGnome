@@ -12,7 +12,6 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "NetCDFMoverCurv_b.h"
 #include "NetCDFMover_c.h"
 
 #ifndef pyGNOME
@@ -22,9 +21,15 @@
 #define TMap Map_c
 #endif
 
-class NetCDFMoverCurv_c : virtual public NetCDFMoverCurv_b, virtual public NetCDFMover_c {
+class NetCDFMoverCurv_c : virtual public NetCDFMover_c {
 
 public:
+	
+	LONGH fVerdatToNetCDFH;	// for curvilinear
+	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+	LONGH fVerdatToNetCDFH_2;	// for curvilinear
+	
+	
 	NetCDFMoverCurv_c (TMap *owner, char *name);
 	NetCDFMoverCurv_c () {}
 	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERCURV; }

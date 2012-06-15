@@ -11,12 +11,38 @@
 #define __GridWindMover_c__
 
 #include "Basics.h"
-#include "GridWindMover_b.h"
+#include "PtCurMover.h"
 #include "WindMover_c.h"
 
-class GridWindMover_c : virtual public GridWindMover_b, virtual public WindMover_c {
+enum {
+	I_GRIDWINDNAME = 0, I_GRIDWINDACTIVE, I_GRIDWINDSHOWGRID, I_GRIDWINDSHOWARROWS, I_GRIDWINDUNCERTAIN,
+	I_GRIDWINDSPEEDSCALE,I_GRIDWINDANGLESCALE, I_GRIDWINDSTARTTIME,I_GRIDWINDDURATION
+};
+
+class GridWindMover_c : virtual public WindMover_c {
 
 public:
+	Boolean 	bShowGrid;
+	Boolean 	bShowArrows;
+	char		fPathName[kMaxNameLen];
+	char		fFileName[kPtCurUserNameLen]; // short file name
+	
+	long fNumRows;
+	long fNumCols;
+	TGridVel	*fGrid;	//VelocityH		grid; 
+	PtCurTimeDataHdl fTimeDataHdl;
+	LoadedData fStartData; 
+	LoadedData fEndData;
+	short	fUserUnits; 
+	//float fFillValue;
+	float fWindScale;	// not using this
+	float fArrowScale;	// not using this
+	Boolean fIsOptimizedForStep;
+	
+	Boolean fOverLap;
+	Seconds fOverLapStartTime;
+	PtCurFileInfoH	fInputFilesHdl;
+	
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);

@@ -12,12 +12,14 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "NetCDFWindMoverCurv_b.h"
 #include "NetCDFWindMover_c.h"
 
-class NetCDFWindMoverCurv_c : virtual public NetCDFWindMoverCurv_b, virtual public NetCDFWindMover_c {
+class NetCDFWindMoverCurv_c : virtual public NetCDFWindMover_c {
 
 public:
+	LONGH fVerdatToNetCDFH;	// for curvilinear
+	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+
 	NetCDFWindMoverCurv_c (TMap *owner, char *name);
 	NetCDFWindMoverCurv_c () {}
 	virtual ClassID 	GetClassID () { return TYPE_NETCDFWINDMOVERCURV; }

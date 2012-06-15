@@ -12,7 +12,6 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "Mover_b.h"
 #include "ClassID_c.h"
 #include "RectUtils.h"
 #include "Map_c.h"
@@ -20,8 +19,18 @@
 #ifdef pyGNOME
 #define TMap Map_c
 #endif
+class TMap;
 
-class Mover_c : virtual public Mover_b, virtual public ClassID_c {
+class Mover_c : virtual public ClassID_c {
+
+public:
+	TMap				*moverMap;			// mover's owner
+	Seconds				fUncertainStartTime;
+	double				fDuration; 				// duration time for uncertainty;
+	RGBColor			fColor;
+	
+protected:
+	double				fTimeUncertaintyWasSet;	// time to measure next uncertainty update
 
 public:
 	Mover_c (TMap *owner, char *name);

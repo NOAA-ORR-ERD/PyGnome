@@ -12,16 +12,19 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "TimeValue_b.h"
 #include "ClassID_c.h"
 
 #ifdef pyGNOME
 #define TMover Mover_c
 #endif
 
-class TimeValue_c : virtual public TimeValue_b, virtual public ClassID_c {
+class TMover;
+
+class TimeValue_c : virtual public ClassID_c {
 	
 public:
+	TMover *owner;
+	
 	TimeValue_c (TMover *theOwner) { owner = theOwner; }
 	TimeValue_c () {}
 	virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }

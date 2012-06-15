@@ -12,16 +12,22 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "Random3D_b.h"
 #include "Random_c.h"
 
 #ifdef pyGNOME
 #define TMap Map_c
 #endif
 
-class Random3D_c : virtual public Random3D_b, virtual public Random_c {
+class Random3D_c : virtual public Random_c {
 
 public:
+	double fVerticalDiffusionCoefficient; //cm**2/s
+	double fHorizontalDiffusionCoefficient; //cm**2/s
+	double fVerticalBottomDiffusionCoefficient; //cm**2/s
+	Boolean bUseDepthDependentDiffusion;
+	//double fDiffusionCoefficient; //cm**2/s
+	//TR_OPTIMZE fOptimize; // this does not need to be saved to the save file
+	//double fUncertaintyFactor;		// multiplicative factor applied when uncertainty is on
 	
 	Random3D_c (TMap *owner, char *name);
 	Random3D_c () {}

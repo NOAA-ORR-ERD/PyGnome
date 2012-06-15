@@ -12,7 +12,6 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "WindMover_b.h"
 #include "Mover_c.h"
 
 #ifdef pyGNOME
@@ -22,9 +21,33 @@
 
 class TOSSMTimeValue;
 class TMap;
-class WindMover_c : virtual public WindMover_b, virtual public Mover_c {
+class WindMover_c : virtual public Mover_c {
 
+	
+protected:
+	LONGH				fLESetSizes;		// cumulative total num le's in each set
+	LEWindUncertainRecH	fWindUncertaintyList;
+	
 public:
+	double fSpeedScale;
+	double fAngleScale;
+	double fMaxSpeed;
+	double fMaxAngle;
+	double fSigma2;				// time dependent std for speed
+	double fSigmaTheta; 		// time dependent std for angle
+	
+	Boolean fIsConstantWind;
+	VelocityRec fConstantValue;
+	
+	Boolean bTimeFileOpen;
+	Boolean bUncertaintyPointOpen;
+	Boolean bSubsurfaceActive;
+	double	fGamma;	// fudge factor for subsurface windage
+	TOSSMTimeValue *timeDep;
+	
+	Rect fWindBarbRect;
+	Boolean bShowWindBarb;
+	
 	WindMover_c (TMap *owner, char* name);
 	WindMover_c ();
 	virtual ClassID 	GetClassID () { return TYPE_WINDMOVER; }

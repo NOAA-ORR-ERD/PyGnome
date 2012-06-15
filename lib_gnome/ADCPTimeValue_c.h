@@ -12,12 +12,41 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "ADCPTimeValue_b.h"
 #include "TimeValue_c.h"
 
-class ADCPTimeValue_c : virtual public ADCPTimeValue_b, virtual public TimeValue_c {
+class ADCPTimeValue_c : virtual public TimeValue_c {
 
 public:
+	TimeValuePairH3D			timeValues;
+	char 					fileName [kMaxNameLen];
+	short					fFileType; //JLM
+	short					fUserUnits; //JLM
+	double					fScaleFactor; // user input for scaling height derivatives or hydrology files
+	char 					fStationName [kMaxNameLen];
+	WorldPoint				fStationPosition;	// will need a handle for a set of positions and a set of depths for each
+	double					fStationDepth;
+	long					fNumBins;
+	double					fBinSize;
+	long					fGMTOffset;
+	short					fSensorOrientation;
+	//Boolean					bOSSMStyle;
+	Boolean					bStationPositionOpen;
+	Boolean					bStationDataOpen;
+	DOUBLEH					fBinDepthsH;
+	
+	virtual void 			GetTimeFileName (char *theName) { strcpy (theName, fileName); }
+	virtual void 			SetTimeFileName (char *theName) { strcpy (fileName, theName); }
+	virtual void 			GetStationName (char *theName) { strcpy (theName, fStationName); }
+	virtual void 			SetStationName (char *theName) { strcpy (fStationName, theName); }
+	virtual short			GetUserUnits(){return fUserUnits;}
+	virtual void			SetUserUnits(short userUnits){fUserUnits=userUnits;}
+	virtual short			GetFileType	() { return fFileType; }
+	virtual void			SetFileType	(short fileType) { fFileType = fileType; }
+	long					GetNumBins(){return fNumBins; }
+	double					GetBinSize(){return fBinSize; }
+	long					GetSensorOrientation(){return fSensorOrientation; }
+	double					GetStationDepth(){return fStationDepth; }
+	WorldPoint				GetStationPosition(){return fStationPosition; }
 	virtual OSErr			GetTimeValue (Seconds time, VelocityRec *value);
 	virtual OSErr			GetTimeValueAtDepth (long depthIndex, Seconds time, VelocityRec *value);
 	double					GetBinDepth(long depthIndex);

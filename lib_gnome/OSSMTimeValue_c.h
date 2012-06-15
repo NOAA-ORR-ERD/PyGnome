@@ -13,16 +13,31 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "OSSMTimeValue_b.h"
 #include "TimeValue_c.h"
 
 #ifdef pyGNOME
 #define TMover Mover_c
 #endif
 
-class OSSMTimeValue_c : virtual public OSSMTimeValue_b, virtual public TimeValue_c {
+class OSSMTimeValue_c : virtual public TimeValue_c {
 
 public:
+	
+	TimeValuePairH			timeValues;
+	char 					fileName [kMaxNameLen];
+	short					fFileType; //JLM
+	short					fUserUnits; //JLM
+	double					fScaleFactor; // user input for scaling height derivatives or hydrology files
+	char 					fStationName [kMaxNameLen];
+	WorldPoint				fStationPosition;
+	Boolean					bOSSMStyle;
+	double					fTransport;
+	double					fVelAtRefPt;
+	
+	virtual void 			GetTimeFileName (char *theName) { strcpy (theName, fileName); }
+	virtual short			GetFileType	() { if (fFileType == PROGRESSIVETIDEFILE) return SHIOHEIGHTSFILE; else return fFileType; }
+	virtual void			SetFileType	(short fileType) { fFileType = fileType; }
+	
 	OSSMTimeValue_c (TMover *theOwner);
 	OSSMTimeValue_c (TMover *theOwner,TimeValuePairH tvals,short userUnits);
 	OSSMTimeValue_c () {}

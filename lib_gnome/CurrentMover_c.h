@@ -12,7 +12,6 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "CurrentMover_b.h"
 #include "Mover_c.h"
 #include "GEOMETRY.H"
 
@@ -20,9 +19,21 @@
 #define TMap Map_c
 #endif
 
-class CurrentMover_c : virtual public CurrentMover_b, virtual public Mover_c {
+class CurrentMover_c : virtual public Mover_c {
 	
 public:
+	LONGH			fLESetSizesH;			// cumulative total num le's in each set
+	LEUncertainRecH	fUncertaintyListH;		// list of uncertain factors list elements of type LEUncertainRec
+	
+public:
+	double			fDownCurUncertainty;	
+	double			fUpCurUncertainty;	
+	double			fRightCurUncertainty;	
+	double			fLeftCurUncertainty;	
+	
+	Boolean			bIAmPartOfACompoundMover;
+	Boolean			bIAmA3DMover;
+	
 	CurrentMover_c (TMap *owner, char *name);
 	CurrentMover_c () {}
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);

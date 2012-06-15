@@ -11,7 +11,6 @@
 #define __NetCDFMoverTri_c__
 
 #include "Basics.h"
-#include "NetCDFMoverTri_b.h"
 #include "NetCDFMoverCurv_c.h"
 
 #ifndef pyGNOME
@@ -21,9 +20,17 @@
 #define TMap Map_c
 #endif
 
-class NetCDFMoverTri_c : virtual public NetCDFMoverTri_b, virtual public NetCDFMoverCurv_c {
+class NetCDFMoverTri_c : virtual public NetCDFMoverCurv_c {
 
 public:
+	
+	//LONGH fVerdatToNetCDFH;	
+	//WORLDPOINTFH fVertexPtsH;	// may not need this if set pts in dagtree	
+	long fNumNodes;
+	long fNumEles;	//for now, number of triangles
+	Boolean bVelocitiesOnTriangles;
+	
+	
 	NetCDFMoverTri_c (TMap *owner, char *name);
 	NetCDFMoverTri_c () {}
 	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERTRI; }

@@ -69,9 +69,7 @@ class TModelMessage
 
 //++ TClassID
 
-#include "ClassID_b.h"
 #include "ClassID_c.h"
-
 #include "TClassID.h"
 
 // --
@@ -397,9 +395,7 @@ Boolean CDOGAvailable();
 
 //++ TMap
 
-#include "Map_b.h"
 #include "Map_c.h"
-
 #include "TMap.h"
 
 //--

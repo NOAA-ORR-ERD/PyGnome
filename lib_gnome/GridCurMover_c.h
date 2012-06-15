@@ -12,12 +12,39 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "GridCurMover_b.h"
+#include "PtCurMover.h"
 #include "CATSMover_c.h"
 
-class GridCurMover_c : virtual public GridCurMover_b, virtual public CATSMover_c {
+enum {
+	I_GRIDCURNAME = 0 ,
+	I_GRIDCURACTIVE, 
+	I_GRIDCURGRID, 
+	I_GRIDCURARROWS,
+	//I_GRIDCURSCALE,
+	I_GRIDCURUNCERTAINTY,
+	I_GRIDCURSTARTTIME,
+	I_GRIDCURDURATION, 
+	I_GRIDCURALONGCUR,
+	I_GRIDCURCROSSCUR,
+	//I_GRIDCURMINCURRENT
+};
+
+class GridCurMover_c : virtual public CATSMover_c {
 
 public:
+	long fNumRows;
+	long fNumCols;
+	PtCurTimeDataHdl fTimeDataHdl;
+	LoadedData fStartData; 
+	LoadedData fEndData;
+	short fUserUnits;
+	char fPathName[kMaxNameLen];
+	char fFileName[kMaxNameLen];
+	Boolean fOverLap;
+	Seconds fOverLapStartTime;
+	PtCurFileInfoH	fInputFilesHdl;
+	
+	
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	
 	long 				GetVelocityIndex(WorldPoint p);
