@@ -56,5 +56,14 @@ public:
 
 };
 
+inline void LEList_c::GetLE(long i, LERecP theLE)
+{
+	*theLE = INDEXH(LEHandle, i);
+}
+
+inline void LEList_c::SetLE(long i, LERecP theLE)
+{
+	INDEXH(LEHandle, i) =  *theLE;
+}
 
 #endif

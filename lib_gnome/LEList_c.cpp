@@ -28,15 +28,7 @@ LEList_c::LEList_c()
 	bOpen = FALSE;
 }
 
-void LEList_c::GetLE(long i, LERecP theLE)
-{
-	*theLE = INDEXH(LEHandle, i);
-}
 
-void LEList_c::SetLE(long i, LERecP theLE)
-{
-	INDEXH(LEHandle, i) =  *theLE;
-}
 
 WorldRect LEList_c::GetLEBounds()
 {

@@ -3,6 +3,8 @@
 #include "MYRANDOM.H"
 #include "TimUtils.h"
 #include "MakeMovie.h"
+#include <vector>
+#include <set>
 
 #ifdef MAC
 #ifdef MPW
@@ -10,6 +12,8 @@
 #endif
 #endif
 
+using std::vector;
+using std::set;
 
 enum { I_MODELSETTINGS = 0, I_STARTTIME, I_ENDTIME, I_COMPUTESTEP, I_OUTPUTSTEP, I_UNCERTAIN,I_UNCERTAIN2, I_DRAWLEMOVEMENT, I_PREVENTLANDJUMPING, I_HINDCAST, I_DSTDISABLED=11};
 
@@ -2894,6 +2898,19 @@ OSErr TModel::Step ()
 	WorldPoint3D  midPt;
 	TMap *midPtBestMap = 0;
 	double distanceInKm;
+	
+	vector<WorldPoint3D> *delta;
+	set <int> *dset;
+	int num_of_spills = LESetsList->GetItemCount();
+	try {
+		delta = new vector<WorldPoint3D>[num_of_spills]();
+		dset = new set<int>[num_of_spills]();
+	} catch(...) {
+		printError("Cannot allocate required space in TModel::Step. Returning.\n");
+		if(delta)
+			delete[] delta;
+		return 1;
+	}
 	
 #ifndef NO_GUI
 	GetPortGrafPtr(&savePort);
