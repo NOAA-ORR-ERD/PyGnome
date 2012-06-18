@@ -2905,15 +2905,28 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 
 	for(i = 0, n = LESetsList->GetItemCount(); i < n; i++) {
 		LESetsList->GetListItem((Ptr)list, i);
-		le_ptr = *list->LEHandle;
 		type = list->GetLEType();
+		if(!list->IsActive()) continue;
+		type = list->GetLEType();
+		if(type == UNCERTAINTY_LE && !this->IsUncertain()) continue; //JLM 9/10/98
+		UpdateWindage(list);
+		le_ptr = *list->LEHandle;
 		for (j = 0, m = list->GetNumOfLEs(); j < m; j++, le_ptr++) {
+			
+			(*le_ptr).leCustomData = 0;
+			if ((*le_ptr).statusCode == OILSTAT_NOTRELEASED) continue;
+			if ((*le_ptr).statusCode == OILSTAT_OFFMAPS) continue;
+
 			for(k = 0, N = mapList->GetItemCount(); k < N; k++) {
 				mapList->GetListItem((Ptr)t_map, k);
 				if(t_map->InMap((*le_ptr).p)) {
-					(*pmapping)[k].push_back(le_ptr);
-					tmapping[k].push_back(type);
-					imapping[k].push_back(pair<int, int>(i, j));
+					if ((*le_ptr).statusCode == OILSTAT_ONLAND)
+						PossiblyReFloatLE(t_map, list, j, type);
+					if((*le_ptr).statusCode == OILSTAT_INWATER) {
+						(*pmapping)[k].push_back(le_ptr);
+						tmapping[k].push_back(type);
+						imapping[k].push_back(pair<int, int>(i, j));
+					}
 				}
 			}
 		}
@@ -2928,8 +2941,12 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 		}
 		for(j = 0, m = mapList->GetItemCount(); j < m; j++) {
 			mapList->GetListItem((Ptr)t_map, j);
-			for(k = 0, N = (*pmapping)[j].size(); k < N; k++)
+			for(k = 0, N = (*pmapping)[j].size(); k < N; k++) {
 				(*delta)[j][k] = mover->GetMove(fDialogVariables.computeTimeStep, imapping[j][k].first, imapping[j][k].second, (*pmapping)[j][k], tmapping[j][k]);
+				(*delta)[j][k].p.pLat += (*(*pmapping)[j][k]).p.pLat;
+				(*delta)[j][k].p.pLong += (*(*pmapping)[j][k]).p.pLong;
+				(*delta)[j][k].z += (*(*pmapping)[j][k]).z;
+			}
 		}
 	}
 	
@@ -2981,7 +2998,7 @@ OSErr TModel::Step ()
 	TMap *midPtBestMap = 0;
 	double distanceInKm;	
 	vector<WorldPoint3D> *delta;
-
+	vector<LERec *> *pmapping;
 	
 #ifndef NO_GUI
 	GetPortGrafPtr(&savePort);
