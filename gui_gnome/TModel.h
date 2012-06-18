@@ -12,6 +12,9 @@
 
 #include "Model_c.h"
 #include "TClassID.h"
+#include <vector>
+
+using std::vector;
 
 class TOverlay;
 class TWeatherer;
@@ -183,7 +186,8 @@ private:
 	
 	OSErr 				WriteRunSpillOutputFileHeader(BFPB *bfpb,Seconds outputStep,char* noteStr);
 	OSErr 				AppendLEsToRunSpillOutputFile(BFPB *bfpb);
-	
+	OSErr				move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmapping);
+
 };
 
 #endif

@@ -3,8 +3,11 @@
 #include "MYRANDOM.H"
 #include "TimUtils.h"
 #include "MakeMovie.h"
-#include <vector>
 #include <set>
+#include <vector>
+#include <list>
+#include <map>
+
 
 #ifdef MAC
 #ifdef MPW
@@ -12,8 +15,11 @@
 #endif
 #endif
 
+using std::list;
 using std::vector;
 using std::set;
+using std::map;
+using std::pair;
 
 enum { I_MODELSETTINGS = 0, I_STARTTIME, I_ENDTIME, I_COMPUTESTEP, I_OUTPUTSTEP, I_UNCERTAIN,I_UNCERTAIN2, I_DRAWLEMOVEMENT, I_PREVENTLANDJUMPING, I_HINDCAST, I_DSTDISABLED=11};
 
@@ -2867,11 +2873,87 @@ OSErr TModel::SaveOutputSeriesFiles(Seconds oldTime,Boolean excludeRunBarFile)
 	return err;
 }
 
+OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmapping) {
+	
+	int i, n, j, m, k, N, q, M;
+	int num_spills, num_maps;
+	WorldPoint3D dp;
+	TMap *t_map;
+	TMover *mover;
+	TLEList *list;
+	LETYPE type;
+	LERecP le_ptr;
+	
+	vector<LETYPE> *tmapping;
+	vector< pair< int, int> > *imapping;
+	
+	num_maps = mapList->GetItemCount();
+	
+	try {
+		*delta = new vector<WorldPoint3D>[num_maps]();
+		*pmapping = new vector< LERec *>[num_maps]();
+		tmapping = new vector<LETYPE>[num_maps]();
+		imapping = new vector< pair<int, int> >[num_maps]();
+	} catch(...) {
+		printError("Cannot allocate required space in TModel::Step. Returning.\n");
+		if(*pmapping)
+			delete[] *pmapping;
+		if(*delta)
+			delete[] *delta;
+		return 1;
+	}
 
-/////////////////////////////////////////////////
+	for(i = 0, n = LESetsList->GetItemCount(); i < n; i++) {
+		LESetsList->GetListItem((Ptr)list, i);
+		le_ptr = *list->LEHandle;
+		type = list->GetLEType();
+		for (j = 0, m = list->GetNumOfLEs(); j < m; j++, le_ptr++) {
+			for(k = 0, N = mapList->GetItemCount(); k < N; k++) {
+				mapList->GetListItem((Ptr)t_map, k);
+				if(t_map->InMap((*le_ptr).p)) {
+					(*pmapping)[k].push_back(le_ptr);
+					tmapping[k].push_back(type);
+					imapping[k].push_back(pair<int, int>(i, j));
+				}
+			}
+		}
+	}
 
-/////////////////////////////////////////////////
-
+	for (i = 0, n = uMap->moverList->GetItemCount();i < n; i++) {
+		uMap->moverList->GetListItem((Ptr)mover, i);
+		switch(mover->GetClassID()) {
+				// set up the mover:
+			default:								
+				break;
+		}
+		for(j = 0, m = mapList->GetItemCount(); j < m; j++) {
+			mapList->GetListItem((Ptr)t_map, j);
+			for(k = 0, N = (*pmapping)[j].size(); k < N; k++)
+				(*delta)[j][k] = mover->GetMove(fDialogVariables.computeTimeStep, imapping[j][k].first, imapping[j][k].second, (*pmapping)[j][k], tmapping[j][k]);
+		}
+	}
+	
+	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) {
+		mapList->GetListItem((Ptr)t_map, i);
+		for (j = 0, m = t_map->moverList->GetItemCount (); j < m; j++) {
+			t_map->moverList->GetListItem((Ptr)&mover, j);
+			switch(mover->GetClassID()) {
+					// set up the mover:
+				default:							
+					break;
+			}
+			for(k = 0, M = (*pmapping)[j].size(); k < M; k++) {
+				dp = mover->GetMove(fDialogVariables.computeTimeStep, imapping[j][k].first, imapping[j][k].second, (*pmapping)[j][k], tmapping[j][k]);
+				(*delta)[i][k].p.pLat += dp.p.pLat;
+				(*delta)[i][k].p.pLong += dp.p.pLong;
+				(*delta)[i][k].z += dp.z;
+			}
+		}
+	}
+	
+	return noErr;
+	
+}
 
 
 /////////////////////////////////////////////////
@@ -2897,20 +2979,9 @@ OSErr TModel::Step ()
 	#define BEACHINGDISTANCE 0.05 // in kilometers 
 	WorldPoint3D  midPt;
 	TMap *midPtBestMap = 0;
-	double distanceInKm;
-	
+	double distanceInKm;	
 	vector<WorldPoint3D> *delta;
-	set <int> *dset;
-	int num_of_spills = LESetsList->GetItemCount();
-	try {
-		delta = new vector<WorldPoint3D>[num_of_spills]();
-		dset = new set<int>[num_of_spills]();
-	} catch(...) {
-		printError("Cannot allocate required space in TModel::Step. Returning.\n");
-		if(delta)
-			delete[] delta;
-		return 1;
-	}
+
 	
 #ifndef NO_GUI
 	GetPortGrafPtr(&savePort);
