@@ -2940,14 +2940,20 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 					if ((*le_ptr).statusCode == OILSTAT_ONLAND)
 						PossiblyReFloatLE(t_map, list, j, type);
 					if((*le_ptr).statusCode == OILSTAT_INWATER) {
-						(*pmapping)[k].push_back(le_ptr);
-						(*dmapping)[k].push_back(pair<bool, bool>(selected_disperse, should_disperse));
-						(*imapping)[k].push_back(pair<int, int>(i, j));
 						dp.p.pLat = le_ptr->p.pLat;
 						dp.p.pLong = le_ptr->p.pLong;
 						dp.z = le_ptr->z;
-						(*delta)[k].push_back(dp);
-						tmapping[k].push_back(type);
+						try	{
+							(*pmapping)[k].push_back(le_ptr);
+							(*dmapping)[k].push_back(pair<bool, bool>(selected_disperse, should_disperse));
+							(*imapping)[k].push_back(pair<int, int>(i, j));
+							(*delta)[k].push_back(dp);
+							tmapping[k].push_back(type);
+						} catch(...) {
+							printError("Cannot allocate required space in TModel::Step. Returning.\n");
+							delete[] tmapping;
+							return 1;
+						}
 					}
 					break;
 				}
@@ -3784,8 +3790,8 @@ OSErr TModel::Step ()
 	   // it's not a good idea to try to uncomment the block and use it as before, without double-checking
 	   // that the comment sub blocks have been terminated properly.
 
-	move_spills(&delta, &pmapping, &dmapping, &imapping);
-	check_spills(delta, pmapping, dmapping, imapping);	
+	if(move_spills(&delta, &pmapping, &dmapping, &imapping));	// handle error?
+	if(check_spills(delta, pmapping, dmapping, imapping));		// handle error?
 	delete[] delta;
 	delete[] pmapping;
 	delete[] dmapping;
