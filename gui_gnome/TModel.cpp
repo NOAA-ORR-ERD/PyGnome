@@ -2971,7 +2971,7 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 		}
 		for(j = 0, m = mapList->GetItemCount(); j < m; j++) {
 			for(k = 0, N = (*pmapping)[j].size(); k < N; k++) {
-				dp = mover->GetMove(fDialogVariables.computeTimeStep, (*imapping)[j][k].first, (*imapping)[j][k].second, (*pmapping)[j][k], tmapping[j][k]);
+				dp = mover->GetMove(this->GetModelTime(), fDialogVariables.computeTimeStep, (*imapping)[j][k].first, (*imapping)[j][k].second, (*pmapping)[j][k], tmapping[j][k]);
 				(*delta)[j][k].p.pLat += dp.p.pLat;
 				(*delta)[j][k].p.pLong += dp.p.pLong;
 				(*delta)[j][k].z += dp.z;
@@ -2990,7 +2990,7 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 					break;
 			}
 			for(k = 0, M = (*pmapping)[i].size(); k < M; k++) {
-				dp = mover->GetMove(fDialogVariables.computeTimeStep, (*imapping)[i][k].first, (*imapping)[i][k].second, (*pmapping)[i][k], tmapping[i][k]);
+				dp = mover->GetMove(this->GetModelTime(), fDialogVariables.computeTimeStep, (*imapping)[i][k].first, (*imapping)[i][k].second, (*pmapping)[i][k], tmapping[i][k]);
 				(*delta)[i][k].p.pLat += dp.p.pLat;
 				(*delta)[i][k].p.pLong += dp.p.pLong;
 				(*delta)[i][k].z += dp.z;
@@ -4063,7 +4063,7 @@ OSErr TModel::StepBackwards ()
 					uMap -> moverList -> GetListItem ((Ptr) &thisMover, k);
 					if (!thisMover -> IsActive ()) continue; // to next mover
 				
-					thisMove = thisMover -> GetMove (fDialogVariables.computeTimeStep,i,j,&thisLE,leType);
+					thisMove = thisMover -> GetMove (this->GetModelTime(), fDialogVariables.computeTimeStep,i,j,&thisLE,leType);
 					/*if(thisMover -> IAm(TYPE_CURRENTMOVER)) // maybe also for larvae (special LE type?)
 					{	// check if current beaches LE, and if so don't add into overall move
 						testPoint.p.pLat = currentMovedPoint.p.pLat - thisMove.p.pLat;
@@ -4105,7 +4105,7 @@ OSErr TModel::StepBackwards ()
 					bestMap -> moverList -> GetListItem ((Ptr) &thisMover, k);
 					if (!thisMover -> IsActive ()) continue; // to next mover
 				
-					thisMove = thisMover -> GetMove (fDialogVariables.computeTimeStep,i,j,&thisLE,leType);
+					thisMove = thisMover -> GetMove (this->GetModelTime(), fDialogVariables.computeTimeStep,i,j,&thisLE,leType);
 					/*if(thisMover -> IAm(TYPE_CURRENTMOVER)) 
 					{	// check if current beaches LE, and if so don't add into overall move
 						testPoint.p.pLat  = currentMovedPoint.p.pLat - thisMove.p.pLat;
@@ -6492,7 +6492,7 @@ Boolean GetPositionAfterNextStep(WorldPoint3D wp,Seconds timeStep, WorldPoint3D 
 				if (!thisMover -> IAm(TYPE_CURRENTMOVER)) continue;	// show movement only handles currents, not wind and dispersion
 				moversAffectPoint = true; // we moved this LE
 				//thisMove = thisMover -> GetMove (timeStep,0,0,wp,FORECAST_LE);
-				thisMove = thisMover -> GetMove (timeStep,0,0,&theLE,FORECAST_LE);
+				thisMove = thisMover -> GetMove (model->GetModelTime(), timeStep,0,0,&theLE,FORECAST_LE);
 				//movedPoint.pLat  += thisMove.pLat;
 				//movedPoint.pLong += thisMove.pLong;
 				movedPoint.p.pLat  += thisMove.p.pLat;
@@ -6508,7 +6508,7 @@ Boolean GetPositionAfterNextStep(WorldPoint3D wp,Seconds timeStep, WorldPoint3D 
 				if (!thisMover -> IAm(TYPE_CURRENTMOVER)) continue;	// show movement only handles currents, not wind and dispersion
 				moversAffectPoint = true; // we moved this LE
 				//thisMove = thisMover -> GetMove (timeStep,0,0,wp,FORECAST_LE);
-				thisMove = thisMover -> GetMove (timeStep,0,0,&theLE,FORECAST_LE);
+				thisMove = thisMover -> GetMove (model->GetModelTime(), timeStep,0,0,&theLE,FORECAST_LE);
 				movedPoint.p.pLat  += thisMove.p.pLat;
 				movedPoint.p.pLong += thisMove.p.pLong;
 				movedPoint.z += thisMove.z;

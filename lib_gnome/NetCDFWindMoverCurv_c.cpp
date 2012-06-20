@@ -125,7 +125,7 @@ Boolean NetCDFWindMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnos
 	return true;
 }
 
-WorldPoint3D NetCDFWindMoverCurv_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D NetCDFWindMoverCurv_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	

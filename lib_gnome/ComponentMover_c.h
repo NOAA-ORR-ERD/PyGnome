@@ -72,7 +72,7 @@ public:
 	OSErr				GetAveragedWindValue(Seconds time, VelocityRec *avValue);
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep);
 
-	virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual WorldPoint3D 	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual	Boolean 		VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);	
 	
 };

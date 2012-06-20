@@ -48,7 +48,7 @@ void Random3D_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D Random3D_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D Random3D_c::GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double		dLong, dLat, z;
 	WorldPoint3D	deltaPoint = {0,0,0.};

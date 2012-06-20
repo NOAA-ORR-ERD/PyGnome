@@ -92,7 +92,7 @@ void GridCurMover_c::ModelStepIsDone()
 
 
 
-WorldPoint3D GridCurMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D GridCurMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	

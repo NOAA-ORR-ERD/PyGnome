@@ -205,7 +205,7 @@ OSErr CATSMover3D_c::PrepareForModelStep(const Seconds& model_time, const Second
  }
  
  
- WorldPoint3D CATSMover3D_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+ WorldPoint3D CATSMover3D_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
  {
  Boolean useEddyUncertainty = false;	
  double 		dLong, dLat;

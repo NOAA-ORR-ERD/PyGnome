@@ -278,7 +278,7 @@ void NetCDFWindMover_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D NetCDFWindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D NetCDFWindMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 	dLong, dLat;
 	WorldPoint3D	deltaPoint ={0,0,0.};

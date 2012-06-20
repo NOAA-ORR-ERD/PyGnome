@@ -206,7 +206,7 @@ long TriCurMover_c::WhatTriAmIIn(WorldPoint wp)
 	return dagTree -> WhatTriAmIIn(lp);
 }
 
-WorldPoint3D TriCurMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D TriCurMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	// figure out which depth values the LE falls between
 	// since velocities are at centers no need to interpolate, use value over whole triangle

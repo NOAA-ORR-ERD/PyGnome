@@ -395,7 +395,7 @@ double TideCurCycleMover_c::GetEndVVelocity(long index)
 }
 
 
-WorldPoint3D TideCurCycleMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D TideCurCycleMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	// see PtCurMover::GetMove - will depend on what is in netcdf files and how it's stored
 	WorldPoint3D	deltaPoint = {0,0,0.};

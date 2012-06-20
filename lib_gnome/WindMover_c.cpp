@@ -395,9 +395,91 @@ OSErr WindMover_c::GetTimeValue (Seconds time, VelocityRec *value)
 	*value = timeValue;
 	return err;
 }
+using std::cout;
+OSErr WindMover_c::get_move(int n, long model_time, long step_len, WorldPoint3D *wp_ra, double *wind_ra, short *dispersion_ra, LEWindUncertainRec **uncertain_ra, TimeValuePair** time_vals, int num_times) {	
+	
+	if(!uncertain_ra) {
+		cout << "uncertainty values not provided! returning.\n";
+		return 1;
+	}
+
+	if(!wp_ra) {
+		cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	// and so on.
+	
+	if(num_times == 1) {
+		fIsConstantWind = true;
+		fConstantValue = (*time_vals)[0].value;
+	} else {
+#ifdef pyGNOME
+		timeDep = new OSSMTimeValue_c(this, time_vals, kCMS);	// should we have to instantiate this every time we call the mover?
+#endif
+	}
+	
+	
+	this->fWindUncertaintyList = (LEWindUncertainRecH)uncertain_ra;
+	this->fLESetSizes = (LONGH)_NewHandle(sizeof(long));
+	DEREFH(this->fLESetSizes)[0] = n;
+	
+	WorldPoint3D delta;
+	
+	for (int i = 0; i < n; i++) {
+		LERec rec;
+		rec.p = wp_ra[i].p;
+		rec.z = wp_ra[i].z;
+		rec.windage = wind_ra[i];
+		rec.dispersionStatus = dispersion_ra[i];
+		
+		delta = this->GetMove(model_time, step_len, 0, n, &rec, UNCERTAINTY_LE);
+		
+		wp_ra[i].p.pLat += delta.p.pLat / 1000000;
+		wp_ra[i].p.pLong += delta.p.pLong / 1000000;
+		wp_ra[i].z += delta.z;
+	}
+	if(timeDep)
+		delete timeDep;
+}
 
 
-WorldPoint3D WindMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+OSErr WindMover_c::get_move(int n, long model_time, long step_len, WorldPoint3D *wp_ra, double *wind_ra, short *dispersion_ra, TimeValuePair** time_vals, int num_times) {
+	
+	if(!wp_ra) {
+		cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	// and so on.
+	
+	if(num_times == 1) {
+		fIsConstantWind = true;
+		fConstantValue = (*time_vals)[0].value;
+	} else {
+#ifdef pyGNOME
+		timeDep = new OSSMTimeValue_c(this, time_vals, kCMS);	// should we have to instantiate this every time we call the mover?
+#endif
+	}
+
+	WorldPoint3D delta;
+	
+	for (int i = 0; i < n; i++) {
+		LERec rec;
+		rec.p = wp_ra[i].p;
+		rec.z = wp_ra[i].z;
+		rec.windage = wind_ra[i];
+		rec.dispersionStatus = dispersion_ra[i];
+		
+		delta = this->GetMove(model_time, step_len, 0, n, &rec, FORECAST_LE);
+		
+		wp_ra[i].p.pLat += delta.p.pLat / 1000000;
+		wp_ra[i].p.pLong += delta.p.pLong / 1000000;
+		wp_ra[i].z += delta.z;
+	}
+	if(timeDep)
+		delete timeDep;
+}
+
+WorldPoint3D WindMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 	dLong, dLat;
 	VelocityRec	patVelocity, timeValue = { 0, 0 };

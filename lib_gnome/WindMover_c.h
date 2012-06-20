@@ -59,7 +59,7 @@ public:
 	virtual OSErr		UpdateUncertainty(void);
 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
-	virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual WorldPoint3D 	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep) { timeDep = newTimeDep; }
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	void				DeleteTimeDep ();
@@ -67,8 +67,9 @@ public:
 	void				SetIsConstantWind (Boolean isConstantWind) { fIsConstantWind = isConstantWind; }
 	OSErr				GetTimeValue(Seconds time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
+	OSErr				get_move(int n, long model_time, long step_len, WorldPoint3D *wp_ra, double *wind_ra, short *dispersion_ra, TimeValuePair** time_vals, int num_times);
+	OSErr				get_move(int n, long model_time, long step_len, WorldPoint3D *wp_ra, double *wind_ra, short *dispersion_ra, LEWindUncertainRec **uncertain_ra, TimeValuePair** time_vals, int num_times);
 
-	
 };
 
 #undef TOSSMTimeValue

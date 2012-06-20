@@ -32,7 +32,7 @@ public:
 	Random_c() {}
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
-	virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual WorldPoint3D 	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	
 	
 };

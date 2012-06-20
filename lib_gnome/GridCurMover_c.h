@@ -58,7 +58,7 @@ public:
 	virtual double		GetEndUVelocity(long index);
 	virtual double		GetEndVVelocity(long index);
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);	
-	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	virtual WorldPoint3D	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	

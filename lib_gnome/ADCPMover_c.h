@@ -86,7 +86,7 @@ public:
 	VelocityRec			GetVelocityAtPoint(WorldPoint3D p);
 	//OSErr				ComputeVelocityScale ();
 	virtual OSErr		ComputeVelocityScale ();
-	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual WorldPoint3D	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr);

@@ -250,7 +250,7 @@ void CATSMover_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D CATSMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D CATSMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	Boolean useEddyUncertainty = false;	
 	double 		dLong, dLat;

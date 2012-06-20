@@ -63,7 +63,7 @@ public:
 	VelocityRec 		GetStartVelocity(long index, Boolean *isDryPt);
 	VelocityRec 		GetEndVelocity(long index, Boolean *isDryPt);
 	
-	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	virtual WorldPoint3D	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	OSErr 				ReorderPoints(TMap **newMap, short *bndry_indices, short *bndry_nums, short *bndry_type, long numBoundaryPts); 

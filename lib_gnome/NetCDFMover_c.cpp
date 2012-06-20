@@ -1030,7 +1030,7 @@ long NetCDFMover_c::GetNumDepths(void)
 	return numDepths;
 }
 
-WorldPoint3D NetCDFMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D NetCDFMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	
