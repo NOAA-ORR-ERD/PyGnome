@@ -2893,7 +2893,8 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 	AdiosInfoRecH adiosBudgetTable;
 	Boolean should_disperse;
 	Boolean selected_disperse;
-	
+	PtCurMap *pt_cur_map;	// in theory should be moverMap, unless universal...
+
 	
 	vector<LETYPE> *tmapping;
 	
@@ -2978,7 +2979,15 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 		switch(mover->GetClassID()) {			// AH 06/20/2012: maybe write a small function for this block, since we'll use it again.
 				// set up the mover:
 			case TYPE_WINDMOVER:
-				// set up the breaking wave, mixed layer depth, ..
+				// set up the breaking wave, mixed layer depth:
+				pt_cur_map = GetPtCurMap();
+				if (!pt_cur_map)  {
+					// AH 06/20/2012: (because we don't have a default value for mixed layer depth:)
+					printError("Programmer error - TWindMover::GetWindageMove(). Moving on to the next mover.\n");
+					continue;
+				}
+				((TWindMover*)mover)->breaking_wave_height = pt_cur_map->GetBreakingWaveHeight();
+				((TWindMover*)mover)->mixed_layer_depth = pt_cur_map->fMixedLayerDepth;
 				break;
 			case TYPE_RANDOMMOVER:
 				// ..
@@ -3005,10 +3014,18 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 		for (j = 0, m = t_map->moverList->GetItemCount (); j < m; j++) {
 			t_map->moverList->GetListItem((Ptr)&mover, j);
 			if (!mover->IsActive()) continue;
-			switch(mover->GetClassID()) {
+			switch(mover->GetClassID()) {			// AH 06/20/2012: maybe write a small function for this block, since we'll use it again.
 					// set up the mover:
 				case TYPE_WINDMOVER:
-					// set up the breaking wave, mixed layer depth
+					// set up the breaking wave, mixed layer depth:
+					pt_cur_map = GetPtCurMap();
+					if (!pt_cur_map)  {
+						// AH 06/20/2012: (because we don't have a default value for mixed layer depth:)
+						printError("Programmer error - TWindMover::GetWindageMove(). Moving on to the next mover.\n");
+						continue;
+					}
+					((TWindMover*)mover)->breaking_wave_height = pt_cur_map->GetBreakingWaveHeight();
+					((TWindMover*)mover)->mixed_layer_depth = pt_cur_map->fMixedLayerDepth;
 					break;
 				case TYPE_RANDOMMOVER:
 					// ..

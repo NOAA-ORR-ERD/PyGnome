@@ -561,6 +561,3 @@ WorldPoint3D WindMover_c::GetMove(Seconds model_time, Seconds timeStep,long setI
 	
 	return deltaPoint;
 }
-
-#undef TMap
-#undef TOSSMTimeValue
