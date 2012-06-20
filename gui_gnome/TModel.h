@@ -15,6 +15,7 @@
 #include <vector>
 
 using std::vector;
+using std::pair;
 
 class TOverlay;
 class TWeatherer;
@@ -186,7 +187,8 @@ private:
 	
 	OSErr 				WriteRunSpillOutputFileHeader(BFPB *bfpb,Seconds outputStep,char* noteStr);
 	OSErr 				AppendLEsToRunSpillOutputFile(BFPB *bfpb);
-	OSErr				move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmapping);
+	OSErr				move_spills(vector<WorldPoint3D> **, vector<LERec *> **, vector< pair<bool, bool> > **, vector< pair<int, int> > **);
+	OSErr				check_spills(vector<WorldPoint3D> *, vector <LERec *> *, vector< pair<bool, bool> > *, vector< pair<int, int> > *);
 
 };
 

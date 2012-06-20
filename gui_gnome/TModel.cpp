@@ -3,10 +3,7 @@
 #include "MYRANDOM.H"
 #include "TimUtils.h"
 #include "MakeMovie.h"
-#include <set>
 #include <vector>
-#include <list>
-#include <map>
 
 
 #ifdef MAC
@@ -15,10 +12,7 @@
 #endif
 #endif
 
-using std::list;
 using std::vector;
-using std::set;
-using std::map;
 using std::pair;
 
 enum { I_MODELSETTINGS = 0, I_STARTTIME, I_ENDTIME, I_COMPUTESTEP, I_OUTPUTSTEP, I_UNCERTAIN,I_UNCERTAIN2, I_DRAWLEMOVEMENT, I_PREVENTLANDJUMPING, I_HINDCAST, I_DSTDISABLED=11};
@@ -2873,7 +2867,7 @@ OSErr TModel::SaveOutputSeriesFiles(Seconds oldTime,Boolean excludeRunBarFile)
 	return err;
 }
 
-OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmapping) {
+OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmapping, vector< pair<bool, bool> > **dmapping, vector< pair<int, int> > **imapping) {
 	
 	int i, n, j, m, k, N, q, M;
 	int num_spills, num_maps;
@@ -2883,33 +2877,56 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 	TLEList *list;
 	LETYPE type;
 	LERecP le_ptr;
+	DispersionRec dispInfo;
+	Seconds disperseTime;
+	AdiosInfoRecH adiosBudgetTable;
+	Boolean should_disperse;
+	Boolean selected_disperse;
+	
 	
 	vector<LETYPE> *tmapping;
-	vector< pair< int, int> > *imapping;
 	
 	num_maps = mapList->GetItemCount();
 	
 	try {
 		*delta = new vector<WorldPoint3D>[num_maps]();
 		*pmapping = new vector< LERec *>[num_maps]();
+		*dmapping = new vector< pair< bool, bool> > [num_maps]();
+		*imapping = new vector< pair<int, int> >[num_maps]();
 		tmapping = new vector<LETYPE>[num_maps]();
-		imapping = new vector< pair<int, int> >[num_maps]();
 	} catch(...) {
 		printError("Cannot allocate required space in TModel::Step. Returning.\n");
-		if(*pmapping)
-			delete[] *pmapping;
 		if(*delta)
 			delete[] *delta;
+		if(*pmapping)
+			delete[] *pmapping;
+		if(*dmapping)
+			delete[] *dmapping;
+		if(*imapping)
+			delete[] *imapping;
 		return 1;
 	}
 
 	for(i = 0, n = LESetsList->GetItemCount(); i < n; i++) {
-		LESetsList->GetListItem((Ptr)list, i);
+		LESetsList->GetListItem((Ptr)&list, i);
 		type = list->GetLEType();
 		if(!list->IsActive()) continue;
 		type = list->GetLEType();
 		if(type == UNCERTAINTY_LE && !this->IsUncertain()) continue; //JLM 9/10/98
 		UpdateWindage(list);
+		dispInfo = ((TOLEList *)list) -> GetDispersionInfo();
+		selected_disperse = dispInfo.lassoSelectedLEsToDisperse;
+		//Seconds disperseTime = model->GetStartTime() + dispInfo.timeToDisperse;
+		disperseTime = ((TOLEList*)list) ->fSetSummary.startRelTime + dispInfo.timeToDisperse;
+		// for natural dispersion should start at spill start time, last until
+		// the time of the final percent in the budget table
+		// bDisperseOil will only be used for chemical (or turn into a short)
+		adiosBudgetTable = ((TOLEList *)list) -> GetAdiosInfo();
+		should_disperse = dispInfo.bDisperseOil && modelTime >= disperseTime && modelTime <= disperseTime + dispInfo.duration; 
+		if (adiosBudgetTable) should_disperse = true;	// natural dispersion starts immediately, though should have an end
+		//if (dispInfo.timeToDisperse < model->GetTimeStep() && modelTime == model->GetStartTime()+model->GetTimeStep()) timeToDisperse = true;	// make sure don't skip over dispersing if time step is large
+		if (dispInfo.timeToDisperse < model->GetTimeStep() && modelTime == ((TOLEList*)list) ->fSetSummary.startRelTime+model->GetTimeStep()) should_disperse = true;	// make sure don't skip over dispersing if time step is large
+		//}
 		le_ptr = *list->LEHandle;
 		for (j = 0, m = list->GetNumOfLEs(); j < m; j++, le_ptr++) {
 			
@@ -2918,61 +2935,314 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 			if ((*le_ptr).statusCode == OILSTAT_OFFMAPS) continue;
 
 			for(k = 0, N = mapList->GetItemCount(); k < N; k++) {
-				mapList->GetListItem((Ptr)t_map, k);
+				mapList->GetListItem((Ptr)&t_map, k);
 				if(t_map->InMap((*le_ptr).p)) {
 					if ((*le_ptr).statusCode == OILSTAT_ONLAND)
 						PossiblyReFloatLE(t_map, list, j, type);
 					if((*le_ptr).statusCode == OILSTAT_INWATER) {
 						(*pmapping)[k].push_back(le_ptr);
+						(*dmapping)[k].push_back(pair<bool, bool>(selected_disperse, should_disperse));
+						(*imapping)[k].push_back(pair<int, int>(i, j));
+						dp.p.pLat = le_ptr->p.pLat;
+						dp.p.pLong = le_ptr->p.pLong;
+						dp.z = le_ptr->z;
+						(*delta)[k].push_back(dp);
 						tmapping[k].push_back(type);
-						imapping[k].push_back(pair<int, int>(i, j));
 					}
+					break;
 				}
 			}
 		}
 	}
 
-	for (i = 0, n = uMap->moverList->GetItemCount();i < n; i++) {
-		uMap->moverList->GetListItem((Ptr)mover, i);
+	for (i = 0, n = uMap->moverList->GetItemCount();i <n; i++) {
+		uMap->moverList->GetListItem((Ptr)&mover, i);
+		if (!mover->IsActive ()) continue;
 		switch(mover->GetClassID()) {
 				// set up the mover:
 			default:								
 				break;
 		}
 		for(j = 0, m = mapList->GetItemCount(); j < m; j++) {
-			mapList->GetListItem((Ptr)t_map, j);
 			for(k = 0, N = (*pmapping)[j].size(); k < N; k++) {
-				(*delta)[j][k] = mover->GetMove(fDialogVariables.computeTimeStep, imapping[j][k].first, imapping[j][k].second, (*pmapping)[j][k], tmapping[j][k]);
-				(*delta)[j][k].p.pLat += (*(*pmapping)[j][k]).p.pLat;
-				(*delta)[j][k].p.pLong += (*(*pmapping)[j][k]).p.pLong;
-				(*delta)[j][k].z += (*(*pmapping)[j][k]).z;
+				dp = mover->GetMove(fDialogVariables.computeTimeStep, (*imapping)[j][k].first, (*imapping)[j][k].second, (*pmapping)[j][k], tmapping[j][k]);
+				(*delta)[j][k].p.pLat += dp.p.pLat;
+				(*delta)[j][k].p.pLong += dp.p.pLong;
+				(*delta)[j][k].z += dp.z;
 			}
 		}
 	}
 	
 	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) {
-		mapList->GetListItem((Ptr)t_map, i);
+		mapList->GetListItem((Ptr)&t_map, i);
 		for (j = 0, m = t_map->moverList->GetItemCount (); j < m; j++) {
 			t_map->moverList->GetListItem((Ptr)&mover, j);
+			if (!mover->IsActive()) continue;
 			switch(mover->GetClassID()) {
 					// set up the mover:
 				default:							
 					break;
 			}
-			for(k = 0, M = (*pmapping)[j].size(); k < M; k++) {
-				dp = mover->GetMove(fDialogVariables.computeTimeStep, imapping[j][k].first, imapping[j][k].second, (*pmapping)[j][k], tmapping[j][k]);
+			for(k = 0, M = (*pmapping)[i].size(); k < M; k++) {
+				dp = mover->GetMove(fDialogVariables.computeTimeStep, (*imapping)[i][k].first, (*imapping)[i][k].second, (*pmapping)[i][k], tmapping[i][k]);
 				(*delta)[i][k].p.pLat += dp.p.pLat;
 				(*delta)[i][k].p.pLong += dp.p.pLong;
 				(*delta)[i][k].z += dp.z;
 			}
 		}
 	}
-	
+	delete[] tmapping;
 	return noErr;
 	
 }
 
+												 
+OSErr TModel::check_spills(vector<WorldPoint3D> *delta, vector <LERec *> *pmapping, vector< pair<bool, bool> > *dmapping, vector< pair<int, int> > *imapping) {
+	
+	int i, j, k, q, n, m, N, M;
+	int num_maps;
+	 bool should_disperse;
+	 bool prevent_land_jumps;
+	 double distanceInKm;	
+	 Boolean isDispersed;
+	 Boolean use_new_move_check;
+	 Boolean bBeachNearShore;
+	 
+	 #define BEACHINGDISTANCE 0.05 // in kilometers 
 
+	 LERec *le_ptr;
+	 TLEList *spill;
+	 TMap *new_best_map, *mid_pt_best_map, *best_map;	// need to implement maps storage?
+	 WorldPoint3D thisLE3D, midPt;
+	 
+	 use_new_move_check = true;
+	 bBeachNearShore = true;	//JLM,10/20/98 always use this 
+	 num_maps = mapList->GetItemCount();
+	 prevent_land_jumps = fDialogVariables.preventLandJumping;
+
+	 for(i = 0, n = num_maps; i < n; i++) {
+		 m = pmapping[i].size();
+		 for(j = 0; j < m; j++) {
+			 le_ptr = pmapping[i][j];
+			 LESetsList->GetListItem((Ptr)&spill, imapping[i][j].first);
+			 if(le_ptr->leCustomData != -1) {
+				 mapList->GetListItem((Ptr)&best_map, i);
+				 // do move check.
+				 // ..
+				 if (use_new_move_check && prevent_land_jumps)
+				 { 
+					 //////////////////////////////////////////
+					 // use the from and to points as a vector and check to see if the oil can move 
+					 // along that vector without hitting the shore
+					 //////////////////////////////////////////
+					 
+					 new_best_map = 0;
+					 isDispersed = (le_ptr->dispersionStatus == HAVE_DISPERSED_NAT || le_ptr->dispersionStatus == HAVE_DISPERSED);
+					 thisLE3D.p = le_ptr->p;
+					 thisLE3D.z = le_ptr->z;
+					 
+					 //movedPoint = bestMap -> MovementCheck(thisLE.p,movedPoint);
+					 delta[i][j] = best_map -> MovementCheck(thisLE3D,delta[i][j],isDispersed);
+					 if (!best_map -> InMap (delta[i][j].p))
+					 {	// the LE has left the map it was on
+						 new_best_map = GetBestMap (delta[i][j].p);
+						 if (new_best_map) {
+							 // it has moved to a new map
+							 // so we need to do the movement check on the new map as well
+							 // code goes here, we should worry about it jumping across maps
+							 // i.e. we should verify the maps rects intersect
+							 best_map = new_best_map; // set bestMap for the loop
+							 delta[i][j] = best_map -> MovementCheck(thisLE3D,delta[i][j],isDispersed);
+						 }
+						 else
+						 {	// it has moved off all maps
+							 le_ptr->p = delta[i][j].p;
+							 le_ptr->z = delta[i][j].z;
+							 le_ptr->statusCode = OILSTAT_OFFMAPS;
+							 continue; 
+						 }
+					 }
+					 ////////
+					 // check for beaching, don't beach if below surface, checkmovement should handle reflection 
+					 ////////
+					 if (best_map -> OnLand (delta[i][j].p))
+					 {
+						 // we could be smarter about this since we know we have checked the
+						 // the points on the land water bitmap and have beached it at the closest shore point, but
+						 // for now we'll do the binary seach anyway
+						 //////////////
+						 // move the le onto beach and set flag to beached
+						 // set the last water point to close off shore
+						 // thisLE.p is the water point
+						 // movedPoint is the land point
+						 mid_pt_best_map = best_map;
+						 distanceInKm = DistanceBetweenWorldPoints(le_ptr->p,delta[i][j].p);
+						 while(distanceInKm > BEACHINGDISTANCE)
+						 {
+							 midPt.p.pLong = (le_ptr->p.pLong + delta[i][j].p.pLong)/2;
+							 midPt.p.pLat = (le_ptr->p.pLat + delta[i][j].p.pLat)/2;
+							 midPt.z = (le_ptr->z + delta[i][j].z)/2;
+							 if (!mid_pt_best_map -> InMap (midPt.p))
+							 {	// unusual case, it is on a different map
+								 mid_pt_best_map = GetBestMap (midPt.p);
+								 if(!mid_pt_best_map) 
+								 {	// the midpt is off all maps
+									 delta[i][j] = midPt;
+									 le_ptr->statusCode = OILSTAT_OFFMAPS;
+									 continue;
+								 }
+							 }
+							 if (mid_pt_best_map -> OnLand (midPt.p)) delta[i][j] = midPt;
+							 else 
+							 {
+								 le_ptr->p = midPt.p;// midpt is water
+								 le_ptr->z = midPt.z;
+							 }
+							 distanceInKm = DistanceBetweenWorldPoints(le_ptr->p,delta[i][j].p);
+						 }
+						 ///////////////
+						 le_ptr->statusCode = OILSTAT_ONLAND;
+						 le_ptr->lastWaterPt = le_ptr->p;
+						 le_ptr->p = delta[i][j].p;
+						 le_ptr->z = delta[i][j].z;
+					 }
+					 else
+					 {
+						 le_ptr->p = delta[i][j].p;	  // move the LE to new water position
+						 le_ptr->z = delta[i][j].z;
+					 }
+				 }
+				 else
+				 {
+					 //////////////////
+					 // old code, check for transition off maps and then force beaching near shore
+					 //////////////////
+					 
+					 // check for transition off our map and into another
+					 if (!best_map -> InMap (delta[i][j].p))
+					 {
+						 TMap *new_best_map = GetBestMap (delta[i][j].p);
+						 if (new_best_map)
+							 best_map = new_best_map;
+						 else
+						 {
+							 le_ptr->p = delta[i][j].p;
+							 le_ptr->z = delta[i][j].z;
+							 le_ptr->statusCode = OILSTAT_OFFMAPS;
+							 continue;
+						 }
+					 }
+					 
+					 // check for beaching in the best map
+					 if (best_map -> OnLand (delta[i][j].p))
+					 {
+						 // move the le onto beach and set flag to beached
+						 le_ptr->statusCode = OILSTAT_ONLAND;
+						 
+						 /////{
+						 /// JLM 9/18/98
+						 if(bBeachNearShore)
+						 {	// first beaching 
+							 // code to make it beach near shore
+							 //le_ptr->p is the water point
+							 // delta[i][j] is the land point
+							 mid_pt_best_map = best_map;
+							 distanceInKm = DistanceBetweenWorldPoints(le_ptr->p,delta[i][j].p);
+							 while(distanceInKm > BEACHINGDISTANCE)
+							 {
+								 midPt.p.pLong = (le_ptr->p.pLong + delta[i][j].p.pLong)/2;
+								 midPt.p.pLat = (le_ptr->p.pLat + delta[i][j].p.pLat)/2;
+								 midPt.z = (le_ptr->z + delta[i][j].z)/2;
+								 if (!mid_pt_best_map -> InMap (midPt.p))
+								 {	// unusual case, it is on a different map
+									 mid_pt_best_map = GetBestMap (midPt.p);
+									 if(!mid_pt_best_map) 
+									 {	// the midpt is off all maps
+										 delta[i][j] = midPt;
+										 le_ptr->statusCode = OILSTAT_OFFMAPS;
+										 continue;
+									 }
+								 }
+								 if (mid_pt_best_map -> OnLand (midPt.p)) delta[i][j] = midPt;
+								 else 
+								 {
+									 le_ptr->p = midPt.p;// midpt is water
+									 le_ptr->z = midPt.z;
+								 }
+								 distanceInKm = DistanceBetweenWorldPoints(le_ptr->p,delta[i][j].p);
+							 }
+						 }
+						 /////////}
+						 
+						 le_ptr->lastWaterPt = le_ptr->p;
+						 le_ptr->p = delta[i][j].p;
+						 le_ptr->z = delta[i][j].z;
+					 }
+					 else
+					 {
+						 le_ptr->p = delta[i][j].p;	  // move the LE to new water position
+						 le_ptr->z = delta[i][j].z;
+					 }
+				 } // end old code
+				 
+				 
+				 // end move check.
+				 // check disperse.
+				 
+				 should_disperse = dmapping[i][j].first && le_ptr->beachTime >= GetModelTime() && le_ptr->beachTime < GetModelTime() + GetTimeStep();
+				 should_disperse = should_disperse || dmapping[i][j].second;
+				 if (should_disperse)
+					// by dispersing here it's possible to miss some LEs that have already beached at the first step
+					 if (le_ptr->statusCode == OILSTAT_INWATER)
+						 DisperseOil (spill, imapping[i][j].second);
+				 
+				 // now check ossm list
+				 // if ossm list use rise velocity
+				 // maybe should be mover or part of one
+				
+				 if(spill->IAm(TYPE_OSSMLELIST)) {
+					if((*(TOLEList*)spill).fSetSummary.riseVelocity != 0)
+					{
+						PtCurMap *map = GetPtCurMap();
+						WorldPoint refPoint = le_ptr->p;	
+						//if (map && thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
+						if (le_ptr->statusCode == OILSTAT_INWATER && le_ptr->z > 0) 
+						{
+							float depthAtPoint = INFINITE_DEPTH;
+							if (map) depthAtPoint = map->DepthAtPoint(refPoint);	
+							le_ptr->z -= (le_ptr->riseVelocity/100.) * GetTimeStep();
+							if (le_ptr->z < 0) 
+								le_ptr->z = 0;
+							if (le_ptr->z >= depthAtPoint) 
+								le_ptr->z = le_ptr->z + (le_ptr->riseVelocity/100.) * GetTimeStep();
+							if (le_ptr->z >= depthAtPoint) // shouldn't get here
+								le_ptr->z = depthAtPoint - (abs(le_ptr->riseVelocity)/100.) * GetTimeStep();
+						}
+					}
+				}
+			 } // end if(customData != -1)
+			 
+			 
+			 if (!((TOLEList *)spill)->GetAdiosInfo())	{ // do not weather if using Adios Budget Table
+				// make sure evaporation happens somewhere
+				 short	wCount, wIndex;
+				 Boolean	bWeathered;
+				 
+				 for (wIndex = 0, wCount = weatherList -> GetItemCount (); wIndex < wCount; wIndex++)
+				 {
+					 TWeatherer	*thisWeatherer;
+					 
+					 weatherList -> GetListItem ((Ptr) &thisWeatherer, wIndex);
+					 if (thisWeatherer -> IsActive ())
+						 thisWeatherer -> WeatherLE (le_ptr);
+				 }
+			 }
+		 }
+	 }
+	 return noErr;
+ }
+												 
+												 
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 
@@ -2997,8 +3267,12 @@ OSErr TModel::Step ()
 	WorldPoint3D  midPt;
 	TMap *midPtBestMap = 0;
 	double distanceInKm;	
-	vector<WorldPoint3D> *delta;
-	vector<LERec *> *pmapping;
+
+	
+	vector<WorldPoint3D> *delta;			// for storing moved points
+	vector <LERec *> *pmapping;				// for associating les with maps (since the movers are)
+	vector<pair<bool, bool> > *dmapping;	// for determining whether to disperse an individual le
+	vector<pair<int, int> > *imapping;		// for keeping track of indices
 	
 #ifndef NO_GUI
 	GetPortGrafPtr(&savePort);
@@ -3129,7 +3403,8 @@ OSErr TModel::Step ()
 	/// now step the LE's 
 	/////////////////////////////////////////////////
 
-		
+	/*	minus AH 06/19/2012:
+
 	for (i = 0, n = LESetsList -> GetItemCount (); i < n; i++)
 	{
 		LESetsList -> GetListItem ((Ptr) &thisLEList, i);
@@ -3184,7 +3459,7 @@ OSErr TModel::Step ()
 					DisperseOil (thisLEList, j);
 					thisLEList -> GetLE (j, &thisLE); // JLM 9/16/98 , we have to refresh the local variable thisLE
 					//thisLE.leCustomData = 1;	// for now use this so TRandom3D knows when to add z component
-				}*/
+				}
 	
 				movedPoint.p = thisLE.p; //JLM 10/8/98, moved line here because we need to do this assignment after we re-float it
 				movedPoint.z = thisLE.z; 
@@ -3221,7 +3496,7 @@ OSErr TModel::Step ()
 						}
 					}
 					else
-					{*/	// non-current movers, add contribution to movedPoint
+					{	// non-current movers, add contribution to movedPoint
 						//movedPoint.pLat  += thisMove.pLat;
 						//movedPoint.pLong += thisMove.pLong;
 						if (thisLE.leCustomData==-1)
@@ -3262,7 +3537,7 @@ OSErr TModel::Step ()
 						}
 					}
 					else
-					{*/	// non-current movers, add contribution to movedPoint
+					{	// non-current movers, add contribution to movedPoint
 						//movedPoint.pLat  += thisMove.pLat;
 						//movedPoint.pLong += thisMove.pLong;
 						if (thisLE.leCustomData==-1)
@@ -3503,6 +3778,19 @@ OSErr TModel::Step ()
 			thisLEList -> SetLE (j, &thisLE);
 		}
 	}
+	
+	*/ // end minus AH 06/19/2012.
+	   // beware: I had to remove some comment delimiters in order to comment this last block.
+	   // it's not a good idea to try to uncomment the block and use it as before, without double-checking
+	   // that the comment sub blocks have been terminated properly.
+
+	move_spills(&delta, &pmapping, &dmapping, &imapping);
+	check_spills(delta, pmapping, dmapping, imapping);	
+	delete[] delta;
+	delete[] pmapping;
+	delete[] dmapping;
+	delete[] imapping;
+	
 	{	// totals LEs from all spills
 		PtCurMap *map = GetPtCurMap();
 		//if (map && (dispInfo.bDisperseOil || adiosBudgetTable))
