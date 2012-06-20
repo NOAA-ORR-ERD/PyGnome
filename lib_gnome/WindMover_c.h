@@ -47,6 +47,7 @@ public:
 	
 	Rect fWindBarbRect;
 	Boolean bShowWindBarb;
+	Seconds tap_offset;		// AH 06/20/2012
 	
 	WindMover_c (TMap *owner, char* name);
 	WindMover_c ();

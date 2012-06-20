@@ -31,7 +31,7 @@
 #include "TMap.h"
 #endif
 
-Seconds gTapWindOffsetInSeconds = 0;
+// Seconds gTapWindOffsetInSeconds = 0;	minus AH 06/20/2012
 
 WindMover_c::WindMover_c () { 
 	
@@ -59,7 +59,7 @@ WindMover_c::WindMover_c () {
 	
 	memset(&fWindBarbRect,0,sizeof(fWindBarbRect)); 
 	bShowWindBarb = true;
-
+	tap_offset = 0; // AH 06/20/2012
 }
 
 WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
@@ -90,6 +90,7 @@ WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 	
 	memset(&fWindBarbRect,0,sizeof(fWindBarbRect)); 
 	bShowWindBarb = true;
+	tap_offset = 0;		// AH 06/20/2012
 }
 void rndv(float *rndv1,float *rndv2)
 {
@@ -496,7 +497,7 @@ WorldPoint3D WindMover_c::GetMove(Seconds model_time, Seconds timeStep,long setI
 	
 	// get and apply time file scale factor
 	// code goes here, use some sort of average of past winds for dispersed oil
-	err = this -> GetTimeValue (model -> modelTime + gTapWindOffsetInSeconds,&timeValue);
+	err = this -> GetTimeValue (model_time + this->tap_offset,&timeValue);
 	if(err)  return deltaPoint;
 	
 	// separate algorithm for dispersed oil

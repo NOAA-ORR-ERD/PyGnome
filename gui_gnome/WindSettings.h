@@ -51,4 +51,4 @@ enum {
 	M18bARROWUNITS,
 };
 
-extern Seconds gTapWindOffsetInSeconds;
+// extern Seconds gTapWindOffsetInSeconds; minus AH 06/20/2012

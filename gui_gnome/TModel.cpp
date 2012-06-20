@@ -802,13 +802,24 @@ OSErr TModel::WriteRunSpillOutputFileHeader(BFPB *bfpb,Seconds outputStep,char* 
 	
 	/////////
 	// JLM 2/27/01
-	if(gTapWindOffsetInSeconds != 0) {
-		Secs2DateString2 (fDialogVariables.startTime + gTapWindOffsetInSeconds, s);
+	/*
+	 if(gTapWindOffsetInSeconds != 0) {
+	 Secs2DateString2 (fDialogVariables.startTime + gTapWindOffsetInSeconds, s);
+	 sprintf(text, "  Wind start time: %s", s);
+	 strcat(text,IBMNEWLINESTRING);
+	 strcat(buffer,text); text[0] = 0;
+	 
+	}*/ // minus AH 06/20/2012
+	
+	TWindMover *wm = model->GetWindMover(false);	// AH 06/12/12
+	if(wm && wm->tap_offset != 0) {
+		Secs2DateString2 (fDialogVariables.startTime + wm->tap_offset, s);
 		sprintf(text, "  Wind start time: %s", s);
 		strcat(text,IBMNEWLINESTRING);
 		strcat(buffer,text); text[0] = 0;
-	
+		
 	}
+
 	////////////////
 
 	strcpy(text, "  Run duration: ");
@@ -4767,11 +4778,16 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	// check that we have winds for the time period
 	// check that we have a diffusion mover
 	if(haveSeparateWindStartTime) {
+		// JLM 2/14/01 this trick should work for Marc's extended TAP runs, but we should talk about this to see how to best implement a more flexible offset scheme.
+		model->GetWindMover(false)->tap_offset = windStartTime - startTime; // AH 06/12/12
+	}
+	/*
+	if(haveSeparateWindStartTime) {
 		gTapWindOffsetInSeconds = windStartTime - startTime; // JLM 2/14/01 this trick should work for Marc's extended TAP runs, but we should talk about this to see how to best implement a more flexible offset scheme.
 	}
 	else
 		gTapWindOffsetInSeconds = 0;
-
+	*/ // minus AH 06/20/2012
 	
 	// create and open the output file
 	memset(&gRunSpillForecastFile,0,sizeof(gRunSpillForecastFile));
@@ -4820,7 +4836,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 done:	 // reset important globals, etc
 	memset(&gRunSpillForecastFile,0,sizeof(gRunSpillForecastFile));
 	gRunSpillNoteStr[0] = 0;
-	gTapWindOffsetInSeconds = 0;
+	/// gTapWindOffsetInSeconds = 0;	AH 06/20/2012
 	return err;
 
 }
@@ -5645,11 +5661,19 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 
 	// check that we have winds for the time period
 	// check that we have a diffusion mover
+	/*
+	 if(haveSeparateWindStartTime) {
+	 gTapWindOffsetInSeconds = windStartTime - startRelTime; // JLM 2/14/01 this trick should work for Marc's extended TAP runs, but we should talk about this to see how to best implement a more flexible offset scheme.
+	 }
+	 else
+	 gTapWindOffsetInSeconds = 0;
+	*/ // minus AH 06/20/2012
+	
 	if(haveSeparateWindStartTime) {
-		gTapWindOffsetInSeconds = windStartTime - startRelTime; // JLM 2/14/01 this trick should work for Marc's extended TAP runs, but we should talk about this to see how to best implement a more flexible offset scheme.
+		// JLM 2/14/01 this trick should work for Marc's extended TAP runs, but we should talk about this to see how to best implement a more flexible offset scheme.
+		model->GetWindMover(false)->tap_offset = windStartTime - startRelTime; // AH 06/12/12
 	}
-	else
-		gTapWindOffsetInSeconds = 0;
+	
 
 	
 	// create and open the output file
@@ -5699,7 +5723,7 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 done:	 // reset important globals, etc
 	memset(&gRunSpillForecastFile,0,sizeof(gRunSpillForecastFile));
 	gRunSpillNoteStr[0] = 0;
-	gTapWindOffsetInSeconds = 0;
+	// gTapWindOffsetInSeconds = 0;		minus AH 06/20/2012
 	return err;
 
 }
