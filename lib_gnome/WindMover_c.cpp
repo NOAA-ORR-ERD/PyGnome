@@ -506,7 +506,6 @@ WorldPoint3D WindMover_c::GetMove(Seconds model_time, Seconds timeStep,long setI
 		//return deltaPoint;
 		//code goes here, check if depth at point is less than mixed layer depth or breaking wave depth
 		// shouldn't happen if other checks are done...
-		double mixedLayerDepth, breakingWaveHeight;
 		double f=0, z = (*theLE).z,angle, u_mag; 
 /*
 		PtCurMap *map = GetPtCurMap();	// in theory should be moverMap, unless universal...
@@ -518,15 +517,16 @@ WorldPoint3D WindMover_c::GetMove(Seconds model_time, Seconds timeStep,long setI
 		// AH 06/20/2012: The value should have been computed by the time we've gotten here
 	
 		if (breaking_wave_height==0) breaking_wave_height = 1;	// need to have a default or give an error
-		mixedLayerDepth = map->fMixedLayerDepth;
-		if (z<=fGamma*breakingWaveHeight*1.5)
+		
+		// mixedLayerDepth = map->fMixedLayerDepth;		minus AH 06/20/2012
+		if (z<=fGamma*breaking_wave_height*1.5)
 		{
 			f = 2./3.;	// note, setting fGamma = 0 does not reduce subsurface windage effect
 			// at this point only making it inactive will do the trick
 		}
-		else if (z<=mixedLayerDepth)
+		else if (z<=mixed_layer_depth)
 		{
-			f = 2.*(1 - (log(z/(breakingWaveHeight*1.5))/log(mixedLayerDepth/(breakingWaveHeight*1.5))))/3.;
+			f = 2.*(1 - (log(z/(breaking_wave_height*1.5))/log(mixed_layer_depth/(breaking_wave_height*1.5))))/3.;
 		}
 		else
 			f = 0.; // for depth dependent diffusion, z could get below mixed layer depth
