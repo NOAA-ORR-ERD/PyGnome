@@ -489,8 +489,11 @@ double ConvertCM3ToGrams(double val,double density)
 	return val*density;
 }
 
-double GetLEMass(LERec theLE)
+
+double GetLEMass(LERec theLE)	// AH 06/20/2012
 {
+#ifndef pyGNOME
+
 	long i;
 	double tHours, fracLeft = 0.;
 	TWeatherer	*thisWeatherer;
@@ -519,7 +522,11 @@ double GetLEMass(LERec theLE)
 	}
 	else
 		return theLE.mass;
+#else
+	return theLE.mass
+#endif
 }
+
 
 
 Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2)

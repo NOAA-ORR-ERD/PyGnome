@@ -93,7 +93,7 @@ void LEList_c::RecalculateLEStatistics(long* numDispersed,long* numFloating,long
 		}
 	}
 }
-
+/*
 void LEList_c::BeachLE(long i, WorldPoint beachPosition)
 {
 	if (GetLEStatus (i) == OILSTAT_INWATER)
@@ -104,6 +104,7 @@ void LEList_c::BeachLE(long i, WorldPoint beachPosition)
 		SetLEStatus(i, OILSTAT_ONLAND);
 	}
 }
+*/ // minus AH 06/20/2012
 
 void LEList_c::ReFloatLE(long i)
 {

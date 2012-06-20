@@ -508,11 +508,16 @@ WorldPoint3D WindMover_c::GetMove(Seconds model_time, Seconds timeStep,long setI
 		// shouldn't happen if other checks are done...
 		double mixedLayerDepth, breakingWaveHeight;
 		double f=0, z = (*theLE).z,angle, u_mag; 
+/*
 		PtCurMap *map = GetPtCurMap();	// in theory should be moverMap, unless universal...
 		if (!map) printError("Programmer error - TWindMover::GetWindageMove()");
 		//breakingWaveHeight = map->GetBreakingWaveHeight();
 		breakingWaveHeight = map->GetBreakingWaveHeight();
-		if (breakingWaveHeight==0) breakingWaveHeight = 1;	// need to have a default or give an error
+*/	// minus AH 06/20/2012
+		
+		// AH 06/20/2012: The value should have been computed by the time we've gotten here
+	
+		if (breaking_wave_height==0) breaking_wave_height = 1;	// need to have a default or give an error
 		mixedLayerDepth = map->fMixedLayerDepth;
 		if (z<=fGamma*breakingWaveHeight*1.5)
 		{

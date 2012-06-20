@@ -2975,8 +2975,18 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 	for (i = 0, n = uMap->moverList->GetItemCount();i <n; i++) {
 		uMap->moverList->GetListItem((Ptr)&mover, i);
 		if (!mover->IsActive ()) continue;
-		switch(mover->GetClassID()) {
+		switch(mover->GetClassID()) {			// AH 06/20/2012: maybe write a small function for this block, since we'll use it again.
 				// set up the mover:
+			case TYPE_WINDMOVER:
+				// set up the breaking wave.
+				break;
+			case TYPE_RANDOMMOVER:
+				// ..
+				break;
+			case TYPE_RANDOMMOVER3D:
+				// ..
+				break;
+				
 			default:								
 				break;
 		}
@@ -2997,7 +3007,17 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 			if (!mover->IsActive()) continue;
 			switch(mover->GetClassID()) {
 					// set up the mover:
-				default:							
+				case TYPE_WINDMOVER:
+					// set up the breaking wave.
+					break;
+				case TYPE_RANDOMMOVER:
+					// ..
+					break;
+				case TYPE_RANDOMMOVER3D:
+					// ..
+					break;
+					
+				default:								
 					break;
 			}
 			for(k = 0, M = (*pmapping)[i].size(); k < M; k++) {
