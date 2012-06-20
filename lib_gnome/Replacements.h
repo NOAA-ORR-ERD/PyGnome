@@ -78,10 +78,11 @@
 #ifndef ibmpyGNOME
 #define _isnan isnan
 #endif
-
+/*
 extern Model_c *model;
 extern Settings settings;
 extern Boolean gNoaaVersion;
+*/ // AH 06/20/2012
 
 PtCurMap_c *GetPtCurMap(void);
 void MySpinCursor(void);

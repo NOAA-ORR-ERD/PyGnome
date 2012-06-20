@@ -14,9 +14,6 @@
 using std::fstream;
 using std::ios;
 
-Model_c *model = new Model_c();	// poo poo global.
-Settings settings;
-
 PtCurMap_c *GetPtCurMap(void) {
 	return NULL;
 }

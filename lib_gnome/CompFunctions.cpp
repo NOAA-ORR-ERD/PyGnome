@@ -523,7 +523,7 @@ double GetLEMass(LERec theLE)	// AH 06/20/2012
 	else
 		return theLE.mass;
 #else
-	return theLE.mass
+	return theLE.mass;
 #endif
 }
 

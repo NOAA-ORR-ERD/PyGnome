@@ -17,6 +17,7 @@
 #include "MemUtils.h"
 #include "GEOMETRY.H"
 #include "CompFunctions.h"
+#include "OUTILS.H"
 
 #ifdef pyGNOME
 #include "OSSMTimeValue_c.h"
@@ -162,6 +163,9 @@ void WindMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 	}
 }
 
+
+#ifndef pyGNOME
+
 OSErr WindMover_c::AllocateUncertainty()
 {
 	long i,j,n,numrec;
@@ -270,6 +274,11 @@ OSErr WindMover_c::UpdateUncertainty(void)
 	}
 	return err;
 }
+#else
+
+OSErr WindMover_c::UpdateUncertainty(void) { return 0; }
+
+#endif	// AH 06/20/2012 (this does not affect stand alone behavior.
 
 OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVel)
 {
@@ -397,7 +406,15 @@ OSErr WindMover_c::GetTimeValue (Seconds time, VelocityRec *value)
 	return err;
 }
 using std::cout;
-OSErr WindMover_c::get_move(int n, long model_time, long step_len, WorldPoint3D *wp_ra, double *wind_ra, short *dispersion_ra, LEWindUncertainRec **uncertain_ra, TimeValuePair** time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
+
+// AH 06/20/2012:	
+// unfortunately, because we determine the size of the handle by a small region at the base of the array,
+// we have to recreate the container for any set of values passed, so that we're compatible with the existing
+// _GetHandleSize() logic. maybe we can talk about this next meeting.
+	
+
+	TimeValuePairH time_val_hdl = 0;
 	
 	if(!uncertain_ra) {
 		cout << "uncertainty values not provided! returning.\n";
@@ -408,77 +425,81 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, WorldPoint3D 
 		cout << "worldpoints array not provided! returning.\n";
 		return 1;
 	}
+	
+	if(!time_vals) {
+		cout << "time values array not provided! returning.\n";
+		return 1;
+	} else {
+		if(num_times == 1) {
+			fIsConstantWind = true;
+			fConstantValue = ((TimeValuePair*)time_vals)->value;
+		} else {
+#ifdef pyGNOME
+			try {
+				time_val_hdl = (TimeValuePairH)_NewHandle(sizeof(TimeValuePair)*num_times);
+				memcpy(time_vals, *time_val_hdl, sizeof(TimeValuePair)*num_times);
+				timeDep = new OSSMTimeValue_c(this, time_val_hdl, kCMS);	// should we have to instantiate this every time we call the mover?
+			} catch(...) {
+				cout << "cannot create time values handle in windmover::get_move. returning.\n";
+				if(time_val_hdl)
+					_DisposeHandle((Handle)time_val_hdl);
+				return 1;
+			}
+#endif
+		}
+	}
 	// and so on.
 	
-	if(num_times == 1) {
-		fIsConstantWind = true;
-		fConstantValue = (*time_vals)[0].value;
-	} else {
-#ifdef pyGNOME
-		timeDep = new OSSMTimeValue_c(this, time_vals, kCMS);	// should we have to instantiate this every time we call the mover?
-#endif
+	this->breaking_wave_height = breaking_wave;
+	this->mixed_layer_depth = mix_layer;
+	try {
+		this->fWindUncertaintyList = (LEWindUncertainRecH)_NewHandle(sizeof(LEWindUncertainRecH)*n);
+		memcpy(uncertain_ra, *fWindUncertaintyList, sizeof(LEWindUncertainRec)*n);
+		this->fLESetSizes = (LONGH)_NewHandle(sizeof(long));
+		DEREFH(this->fLESetSizes)[0] = n;
+	} catch(...) {
+		cout << "cannot create uncertainty handle in windmover::get_move. returning.\n";
+		if(this->fWindUncertaintyList)
+			_DisposeHandle((Handle)this->fWindUncertaintyList);
+		return 1;
 	}
 	
-	
-	this->fWindUncertaintyList = (LEWindUncertainRecH)uncertain_ra;
-	this->fLESetSizes = (LONGH)_NewHandle(sizeof(long));
-	DEREFH(this->fLESetSizes)[0] = n;
-	
 	WorldPoint3D delta;
+	WorldPoint3D *wp;
+	double *windages;
+	short *disp_ra;
+	wp = (WorldPoint3D*)wp_ra;
+	windages = (double*)wind_ra;
+	disp_ra = (short*)dispersion_ra;
 	
 	for (int i = 0; i < n; i++) {
 		LERec rec;
-		rec.p = wp_ra[i].p;
-		rec.z = wp_ra[i].z;
-		rec.windage = wind_ra[i];
-		rec.dispersionStatus = dispersion_ra[i];
+		rec.p = wp[i].p;
+		rec.z = wp[i].z;
+		rec.windage = windages[i];
+		rec.dispersionStatus = disp_ra[i];
 		
 		delta = this->GetMove(model_time, step_len, 0, n, &rec, UNCERTAINTY_LE);
 		
-		wp_ra[i].p.pLat += delta.p.pLat / 1000000;
-		wp_ra[i].p.pLong += delta.p.pLong / 1000000;
-		wp_ra[i].z += delta.z;
+		wp[i].p.pLat += delta.p.pLat / 1000000;
+		wp[i].p.pLong += delta.p.pLong / 1000000;
+		wp[i].z += delta.z;
 	}
 	if(timeDep)
 		delete timeDep;
 }
 
+// AH 06/20/2012:
+// maybe we really don't need to two functions at all.
+// consider using variable length arguments..
 
-OSErr WindMover_c::get_move(int n, long model_time, long step_len, WorldPoint3D *wp_ra, double *wind_ra, short *dispersion_ra, TimeValuePair** time_vals, int num_times) {
-	
-	if(!wp_ra) {
-		cout << "worldpoints array not provided! returning.\n";
-		return 1;
-	}
-	// and so on.
-	
-	if(num_times == 1) {
-		fIsConstantWind = true;
-		fConstantValue = (*time_vals)[0].value;
-	} else {
-#ifdef pyGNOME
-		timeDep = new OSSMTimeValue_c(this, time_vals, kCMS);	// should we have to instantiate this every time we call the mover?
-#endif
-	}
+// ++
 
-	WorldPoint3D delta;
-	
-	for (int i = 0; i < n; i++) {
-		LERec rec;
-		rec.p = wp_ra[i].p;
-		rec.z = wp_ra[i].z;
-		rec.windage = wind_ra[i];
-		rec.dispersionStatus = dispersion_ra[i];
-		
-		delta = this->GetMove(model_time, step_len, 0, n, &rec, FORECAST_LE);
-		
-		wp_ra[i].p.pLat += delta.p.pLat / 1000000;
-		wp_ra[i].p.pLong += delta.p.pLong / 1000000;
-		wp_ra[i].z += delta.z;
-	}
-	if(timeDep)
-		delete timeDep;
-}
+
+
+// ..
+
+
 
 WorldPoint3D WindMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {

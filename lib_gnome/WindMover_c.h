@@ -56,7 +56,11 @@ public:
 	WindMover_c ();
 	virtual ClassID 	GetClassID () { return TYPE_WINDMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_WINDMOVER) return TRUE; return Mover_c::IAm(id); }
+	
+#ifndef pyGNOME
 	virtual OSErr		AllocateUncertainty ();
+#endif
+	
 	virtual void		DisposeUncertainty ();
 	virtual OSErr		AddUncertainty(long setIndex,long leIndex,VelocityRec *v);
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
@@ -71,8 +75,7 @@ public:
 	void				SetIsConstantWind (Boolean isConstantWind) { fIsConstantWind = isConstantWind; }
 	OSErr				GetTimeValue(Seconds time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
-	OSErr				get_move(int n, long model_time, long step_len, WorldPoint3D *wp_ra, double *wind_ra, short *dispersion_ra, TimeValuePair** time_vals, int num_times);
-	OSErr				get_move(int n, long model_time, long step_len, WorldPoint3D *wp_ra, double *wind_ra, short *dispersion_ra, LEWindUncertainRec **uncertain_ra, TimeValuePair** time_vals, int num_times);
+	OSErr				get_move(int n, long model_time, long step_len, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times);
 
 };
 
