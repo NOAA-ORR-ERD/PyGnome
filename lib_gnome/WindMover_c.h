@@ -76,6 +76,7 @@ public:
 	OSErr				GetTimeValue(Seconds time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
 	OSErr				get_move(int n, long model_time, long step_len, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times);
+	OSErr				get_move(int n, long model_time, long step_len, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times);
 
 };
 

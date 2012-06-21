@@ -19,4 +19,5 @@ cdef extern from "WindMover_c.h":
         double breaking_wave_height
         double mix_layer_depth
         OSErr get_move(int n, long model_time, long step_len, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times)
+        OSErr get_move(int n, long model_time, long step_len, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times)
         OSErr PrepareForModelStep( Seconds&,  Seconds&, Seconds&, bool)
