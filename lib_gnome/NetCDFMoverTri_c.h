@@ -11,7 +11,6 @@
 #define __NetCDFMoverTri_c__
 
 #include "Basics.h"
-#include "NetCDFMoverTri_b.h"
 #include "NetCDFMoverCurv_c.h"
 
 #ifndef pyGNOME
@@ -21,9 +20,17 @@
 #define TMap Map_c
 #endif
 
-class NetCDFMoverTri_c : virtual public NetCDFMoverTri_b, virtual public NetCDFMoverCurv_c {
+class NetCDFMoverTri_c : virtual public NetCDFMoverCurv_c {
 
 public:
+	
+	//LONGH fVerdatToNetCDFH;	
+	//WORLDPOINTFH fVertexPtsH;	// may not need this if set pts in dagtree	
+	long fNumNodes;
+	long fNumEles;	//for now, number of triangles
+	Boolean bVelocitiesOnTriangles;
+	
+	
 	NetCDFMoverTri_c (TMap *owner, char *name);
 	NetCDFMoverTri_c () {}
 	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERTRI; }
@@ -31,7 +38,7 @@ public:
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVERTRI) return TRUE; return NetCDFMoverCurv_c::IAm(id); }
 	LongPointHdl			GetPointsHdl();
 	Boolean 				VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
-	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	virtual WorldPoint3D	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	VelocityRec				GetMove3D(InterpolationVal interpolationVal,float depth);
 	void					GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
 	//OSErr 				ReorderPoints(TMap **newMap, short *bndry_indices, short *bndry_nums, short *bndry_type, long numBoundaryPts); 

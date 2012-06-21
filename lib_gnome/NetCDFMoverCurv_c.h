@@ -12,7 +12,6 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "NetCDFMoverCurv_b.h"
 #include "NetCDFMover_c.h"
 
 #ifndef pyGNOME
@@ -22,9 +21,15 @@
 #define TMap Map_c
 #endif
 
-class NetCDFMoverCurv_c : virtual public NetCDFMoverCurv_b, virtual public NetCDFMover_c {
+class NetCDFMoverCurv_c : virtual public NetCDFMover_c {
 
 public:
+	
+	LONGH fVerdatToNetCDFH;	// for curvilinear
+	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+	LONGH fVerdatToNetCDFH_2;	// for curvilinear
+	
+	
 	NetCDFMoverCurv_c (TMap *owner, char *name);
 	NetCDFMoverCurv_c () {}
 	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVERCURV; }
@@ -32,7 +37,7 @@ public:
 
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
-	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	virtual WorldPoint3D	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	long 				CheckSurroundingPoints(LONGH maskH, long row, long col) ;
 	Boolean 			InteriorLandPoint(LONGH maskH, long row, long col); 
 	Boolean 			ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long row, long col) ;

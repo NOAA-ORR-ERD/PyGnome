@@ -22,10 +22,13 @@ void ComponentMover_c::ModelStepIsDone()
 	memset(&fOptimize,0,sizeof(fOptimize));
 }
 
-OSErr ComponentMover_c::PrepareForModelStep()
+OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+
 {
 	char errmsg[256];
-	OSErr err = CurrentMover_c::PrepareForModelStep(); // note: this calls UpdateUncertainty()
+	OSErr err = 0;
+
+	err = CurrentMover_c::PrepareForModelStep(model_time, start_time, time_step, uncertain); // note: this calls UpdateUncertainty()
 	
 	errmsg[0]=0;
 	
@@ -35,7 +38,7 @@ OSErr ComponentMover_c::PrepareForModelStep()
 	//if (err) goto done;
 	
 	this -> fOptimize.isOptimizedForStep = true;
-	this -> fOptimize.isFirstStep = (model->GetModelTime() == model->GetStartTime());
+	this -> fOptimize.isFirstStep = (model_time == start_time);
 	
 	// code goes here, I think this is redundant
 	if (this -> fOptimize.isFirstStep)
@@ -425,7 +428,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 	return noErr;
 }
 
-WorldPoint3D ComponentMover_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D ComponentMover_c::GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 		dLat, dLong;
 	WorldPoint3D	deltaPoint = {0,0,0.};

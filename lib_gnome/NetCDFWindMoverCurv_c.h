@@ -12,12 +12,14 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "NetCDFWindMoverCurv_b.h"
 #include "NetCDFWindMover_c.h"
 
-class NetCDFWindMoverCurv_c : virtual public NetCDFWindMoverCurv_b, virtual public NetCDFWindMover_c {
+class NetCDFWindMoverCurv_c : virtual public NetCDFWindMover_c {
 
 public:
+	LONGH fVerdatToNetCDFH;	// for curvilinear
+	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
+
 	NetCDFWindMoverCurv_c (TMap *owner, char *name);
 	NetCDFWindMoverCurv_c () {}
 	virtual ClassID 	GetClassID () { return TYPE_NETCDFWINDMOVERCURV; }
@@ -25,7 +27,7 @@ public:
 
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
-	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	virtual WorldPoint3D	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	long 					CheckSurroundingPoints(LONGH maskH, long row, long col) ;
 	Boolean 				InteriorLandPoint(LONGH maskH, long row, long col); 
 	Boolean 				ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long row, long col) ;

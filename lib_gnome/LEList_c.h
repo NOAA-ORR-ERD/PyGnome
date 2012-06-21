@@ -38,7 +38,7 @@ public:
 	Seconds			GetLEReleaseTime (long leNum);
 	void			ReleaseLE (long leNum);
 	void			AgeLE (long leNum);
-	virtual void	BeachLE (long leNum, WorldPoint beachPosition);
+//	virtual void	BeachLE (long leNum, WorldPoint beachPosition);		minus AH 06/20/2012
 	WorldRect		GetLEBounds ();
 	void 			GetLEStatistics(long* numReleased,long* numEvaporated,long* numBeached, long* numOffMap, long* numFloating);
 	void 			RecalculateLEStatistics(long* numEvaporated,long* numFloating, long* numRemoved, long* numOffMaps); // 	to account for dispersion
@@ -56,5 +56,14 @@ public:
 
 };
 
+inline void LEList_c::GetLE(long i, LERecP theLE)
+{
+	*theLE = INDEXH(LEHandle, i);
+}
+
+inline void LEList_c::SetLE(long i, LERecP theLE)
+{
+	INDEXH(LEHandle, i) =  *theLE;
+}
 
 #endif

@@ -117,7 +117,7 @@ OSErr TriCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *vel
 
 
 
-OSErr TriCurMover_c::PrepareForModelStep()
+OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;
@@ -132,7 +132,7 @@ OSErr TriCurMover_c::PrepareForModelStep()
 	 
 	 fIsOptimizedForStep = true;*/
 	
-	if (model->GetModelTime() == model->GetStartTime())	// first step
+	if (model_time == start_time)	// first step
 	{
 		//PtCurMap* ptCurMap = (PtCurMap*)moverMap;
 		PtCurMap* ptCurMap = GetPtCurMap();
@@ -206,7 +206,7 @@ long TriCurMover_c::WhatTriAmIIn(WorldPoint wp)
 	return dagTree -> WhatTriAmIIn(lp);
 }
 
-WorldPoint3D TriCurMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D TriCurMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	// figure out which depth values the LE falls between
 	// since velocities are at centers no need to interpolate, use value over whole triangle

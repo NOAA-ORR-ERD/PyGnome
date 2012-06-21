@@ -161,7 +161,7 @@ long NetCDFMover_c::GetNumFiles()
 }
 
 
-OSErr NetCDFMover_c::PrepareForModelStep()
+OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;
@@ -169,7 +169,7 @@ OSErr NetCDFMover_c::PrepareForModelStep()
 	
 	errmsg[0]=0;
 	
-	if (model->GetModelTime() == model->GetStartTime())	// first step
+	if (model_time == start_time)	// first step
 	{
 		if (/*OK*/dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERCURV) || dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERTRI))
 		{
@@ -1030,7 +1030,7 @@ long NetCDFMover_c::GetNumDepths(void)
 	return numDepths;
 }
 
-WorldPoint3D NetCDFMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D NetCDFMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	

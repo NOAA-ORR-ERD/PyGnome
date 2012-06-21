@@ -42,12 +42,12 @@ Random_c::Random_c (TMap *owner, char *name) : Mover_c (owner, name)
 }
 
 
-OSErr Random_c::PrepareForModelStep()
+OSErr Random_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
 	this -> fOptimize.isOptimizedForStep = true;
-	this -> fOptimize.value = sqrt(6.*(fDiffusionCoefficient/10000.)*model->GetTimeStep())/METERSPERDEGREELAT; // in deg lat
-	this -> fOptimize.uncertaintyValue = sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*model->GetTimeStep())/METERSPERDEGREELAT; // in deg lat
-	this -> fOptimize.isFirstStep = (model->GetModelTime() == model->GetStartTime());
+	this -> fOptimize.value = sqrt(6.*(fDiffusionCoefficient/10000.)*time_step)/METERSPERDEGREELAT; // in deg lat
+	this -> fOptimize.uncertaintyValue = sqrt(fUncertaintyFactor*6.*(fDiffusionCoefficient/10000.)*time_step)/METERSPERDEGREELAT; // in deg lat
+	this -> fOptimize.isFirstStep = (model_time == start_time);
 	return noErr;
 }
 
@@ -56,7 +56,7 @@ void Random_c::ModelStepIsDone()
 	memset(&fOptimize,0,sizeof(fOptimize));
 }
 
-WorldPoint3D Random_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D Random_c::GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double		dLong, dLat;
 	WorldPoint3D	deltaPoint = {0,0,0.};

@@ -12,11 +12,17 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "ClassID_b.h"
 
-class ClassID_c : virtual public ClassID_b {
+class ClassID_c {
 
 public:
+	Boolean				bDirty;
+	Boolean				bOpen;
+	Boolean				bActive;
+	char				className [kMaxNameLen];
+	UNIQUEID			fUniqueID;
+	
+
 	virtual ClassID 	GetClassID 	() { return TYPE_UNDENTIFIED; }
 	virtual Boolean		IAm(ClassID id) { return FALSE; }
 	void				GetClassName (char* theName) { strcpy (theName, className); }	// sohail

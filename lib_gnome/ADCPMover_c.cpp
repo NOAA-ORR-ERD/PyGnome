@@ -172,17 +172,17 @@ OSErr ADCPMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 
 
 
-OSErr ADCPMover_c::PrepareForModelStep()
+OSErr ADCPMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
 	OSErr err =0;
-	
-	if (err = CurrentMover_c::PrepareForModelStep()) return err; // note: this calls UpdateUncertainty()
+	if (err = CurrentMover_c::PrepareForModelStep(model_time, start_time, time_step, uncertain)) 
+		return err; // note: this calls UpdateUncertainty()
 	
 	err = this -> ComputeVelocityScale();// JLM, will this do it ???
-	
+
 	this -> fOptimize.isOptimizedForStep = true;
-	this -> fOptimize.value = sqrt(6*(fEddyDiffusion/10000)/model->GetTimeStep()); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
-	this -> fOptimize.isFirstStep = (model->GetModelTime() == model->GetStartTime());
+	this -> fOptimize.value = sqrt(6*(fEddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
+	this -> fOptimize.isFirstStep = (model_time == start_time);
 	
 	if (err) 
 		printError("An error occurred in ADCPMover::PrepareForModelStep");
@@ -195,7 +195,7 @@ void ADCPMover_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D ADCPMover_c::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D ADCPMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	Boolean useEddyUncertainty = false;	
 	double 		dLong, dLat;

@@ -12,17 +12,61 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "NetCDFWindMover_b.h"
 #include "WindMover_c.h"
 
-class NetCDFWindMover_c : virtual public NetCDFWindMover_b, virtual public WindMover_c {
+
+#ifndef pyGNOME
+#include "GridVel.h"
+#else
+#include "GridVel_c.h"
+#define TGridVel GridVel_c
+#endif
+
+
+enum {
+	I_NETCDFWINDNAME = 0, I_NETCDFWINDACTIVE, I_NETCDFWINDSHOWGRID, I_NETCDFWINDSHOWARROWS, I_NETCDFWINDUNCERTAIN,
+	I_NETCDFWINDSPEEDSCALE,I_NETCDFWINDANGLESCALE, I_NETCDFWINDSTARTTIME,I_NETCDFWINDDURATION
+};
+
+class NetCDFWindMover_c : virtual public WindMover_c {
 
 public:
+	
+	Boolean 	bShowGrid;
+	Boolean 	bShowArrows;
+	
+	////// start: new fields to support multi-file NetCDFPathsFile
+	Boolean fOverLap;
+	Seconds fOverLapStartTime;
+	PtCurFileInfoH	fInputFilesHdl; 
+	////// end:  multi-file fields
+	
+	char		fPathName[kMaxNameLen];
+	char		fFileName[kPtCurUserNameLen]; // short file name
+	//char		fFileName[kMaxNameLen]; // short file name - might want to allow longer names
+	
+	long fNumRows;
+	long fNumCols;
+	//NetCDFVariables fVar;
+	TGridVel	*fGrid;	//VelocityH		grid; 
+	//PtCurTimeDataHdl fTimeDataHdl;
+	Seconds **fTimeHdl;
+	LoadedData fStartData; 
+	LoadedData fEndData;
+	short fUserUnits;
+	//double fFillValue;
+	float fFillValue;
+	float fWindScale;
+	float fArrowScale;
+	long fTimeShift;		// to convert GMT to local time
+	Boolean fAllowExtrapolationOfWinds;
+	Boolean fIsOptimizedForStep;
+
 	NetCDFWindMover_c (TMap *owner, char* name);
 	NetCDFWindMover_c () {}
-	virtual OSErr 		PrepareForModelStep();
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
-	virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual WorldPoint3D 	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual long 		GetVelocityIndex(WorldPoint p);
 	virtual LongPoint 		GetVelocityIndices(WorldPoint wp); /*{LongPoint lp = {-1,-1}; printError("GetVelocityIndices not defined for windmover"); return lp;}*/
 	Seconds 			GetTimeValue(long index);

@@ -28,15 +28,7 @@ LEList_c::LEList_c()
 	bOpen = FALSE;
 }
 
-void LEList_c::GetLE(long i, LERecP theLE)
-{
-	*theLE = INDEXH(LEHandle, i);
-}
 
-void LEList_c::SetLE(long i, LERecP theLE)
-{
-	INDEXH(LEHandle, i) =  *theLE;
-}
 
 WorldRect LEList_c::GetLEBounds()
 {
@@ -101,7 +93,7 @@ void LEList_c::RecalculateLEStatistics(long* numDispersed,long* numFloating,long
 		}
 	}
 }
-
+/*
 void LEList_c::BeachLE(long i, WorldPoint beachPosition)
 {
 	if (GetLEStatus (i) == OILSTAT_INWATER)
@@ -112,6 +104,7 @@ void LEList_c::BeachLE(long i, WorldPoint beachPosition)
 		SetLEStatus(i, OILSTAT_ONLAND);
 	}
 }
+*/ // minus AH 06/20/2012
 
 void LEList_c::ReFloatLE(long i)
 {

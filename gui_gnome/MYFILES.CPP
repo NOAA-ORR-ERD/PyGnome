@@ -20,6 +20,7 @@ static VolumeInfo volumes[26];
 
 Boolean FileExists(short vRefNum, long dirID, CHARPTR filename)
 {
+	OSErr err = 0;
 	char filePath[256], tempFilePath[256];
 	////////
 	if(model && model->fWizard && model->fWizard->PathIsWizardResource(filename))

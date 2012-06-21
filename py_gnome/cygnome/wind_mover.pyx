@@ -1,8 +1,6 @@
 import cython
-DEF HEADERS = list()
 cimport numpy as np
-import numpy as np
-include "type_defs.pxi"
+import numpy as nmp
 include "wind_mover.pxi"
 
 cdef class wind_mover:
@@ -15,12 +13,16 @@ cdef class wind_mover:
     def __dealloc__(self):
         del self.mover
     
-    def __init__(self, constant_wind_value):
+    def __init__(self):
         """
         initialize a constant wind mover
         
         constant_wind_value is a tuple of values: (u, v)
         """
+        self.mover.breaking_wave_height = 0
+        # AH 06/20/2012: should there be a default value here?
+        # self.mover.mix_layer_depth = ??     
+        
         self.mover.fUncertainStartTime = 0
         self.mover.fDuration = 3*3600                                
         self.mover.fSpeedScale = 2
@@ -33,25 +35,40 @@ cdef class wind_mover:
         self.mover.bSubsurfaceActive = 0
         self.mover.fGamma = 1
         self.mover.fIsConstantWind = 1
-        self.mover.fConstantValue.u = constant_wind_value[0]
-        self.mover.fConstantValue.v = constant_wind_value[1]
-        
-    def get_move(self, t, np.ndarray[LERec, ndim=1] LEs, uncertain, set_index):
+        self.mover.fConstantValue.u = 0
+        self.mover.fConstantValue.v = 0
+    
+    def get_move_uncertain(self, n, model_time, step_len, np.ndarray[WorldPoint3D] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double breaking_wave, double mix_layer, np.ndarray[LEWindUncertainRec] uncertain_ra, np.ndarray[TimeValuePair] time_vals, int num_times):
         cdef:
-            int i
-            WorldPoint3D wp3d
-            float dpLat, dpLong
-            np.ndarray[LERec] ra = np.copy(LEs)
-        ra['p']['p_long']*=10**6
-        ra['p']['p_lat']*=10**6
-        uncertain += 1
-        self.mover.PrepareForModelStep()
-        for i in xrange(0, len(ra)):
-            if ra[i].statusCode != status_in_water:
-                continue
-            wp3d = self.mover.GetMove(t, set_index, i, &ra[i], uncertain)
-            dpLat = wp3d.p.pLat
-            dpLong = wp3d.p.pLong
-            LEs[i].p.pLat += (dpLat/1000000)
-            LEs[i].p.pLong += (dpLong/1000000)
+            char *time_vals_ptr
+            char *uncertain_ptr
+            char *world_points
+            char *windages
+            char *disp_vals
+            
+        N = len(wp_ra)
+        M = len(time_vals)
+        world_points = np.PyArray_BYTES(wp_ra)
+        windages = np.PyArray_BYTES(wind_ra)
+        disp_vals = np.PyArray_BYTES(dispersion_ra)
+        time_vals_ptr = np.PyArray_BYTES(time_vals)
+        uncertain_ptr = np.PyArray_BYTES(uncertain_ra)
+        
+        self.mover.get_move(N, model_time, step_len, world_points, windages, disp_vals, breaking_wave, mix_layer, uncertain_ptr, time_vals_ptr, M)
 
+    def get_move(self, n, model_time, step_len, np.ndarray[WorldPoint3D] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double breaking_wave, double mix_layer, np.ndarray[TimeValuePair] time_vals, int num_times):
+        cdef:
+            char *time_vals_ptr
+            char *uncertain_ptr
+            char *world_points
+            char *windages
+            char *disp_vals
+            
+        N = len(wp_ra)
+        M = len(time_vals)
+        world_points = np.PyArray_BYTES(wp_ra)
+        windages = np.PyArray_BYTES(wind_ra)
+        disp_vals = np.PyArray_BYTES(dispersion_ra)
+        time_vals_ptr = np.PyArray_BYTES(time_vals)
+        
+        self.mover.get_move(N, model_time, step_len, world_points, windages, disp_vals, breaking_wave, mix_layer, time_vals_ptr, M)

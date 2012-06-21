@@ -12,7 +12,6 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "Random_b.h"
 #include "Mover_c.h"
 
 #ifdef pyGNOME
@@ -21,14 +20,19 @@
 
 class TMap;
 
-class Random_c : virtual public Random_b, virtual public Mover_c {
+class Random_c : virtual public Mover_c {
 	
 public:
+	double fDiffusionCoefficient; //cm**2/s
+	TR_OPTIMZE fOptimize; // this does not need to be saved to the save file
+	double fUncertaintyFactor;		// multiplicative factor applied when uncertainty is on
+	Boolean bUseDepthDependent;
+	
 	Random_c (TMap *owner, char *name);
 	Random_c() {}
-	virtual OSErr 		PrepareForModelStep();
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
-	virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual WorldPoint3D 	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	
 	
 };

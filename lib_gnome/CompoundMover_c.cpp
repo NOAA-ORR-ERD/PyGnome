@@ -98,7 +98,8 @@ void CompoundMover_c::ModelStepIsDone()
 	
 }
 
-OSErr CompoundMover_c::PrepareForModelStep()
+OSErr CompoundMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+
 {
 	char errmsg[256];
 	OSErr err = 0;
@@ -112,11 +113,11 @@ OSErr CompoundMover_c::PrepareForModelStep()
 	TMover *mover;
 	for (i = 0, n = moverList->GetItemCount() ; i < n ; i++) {
 		moverList->GetListItem((Ptr)&mover, i);
-		err = mover->PrepareForModelStep();
+		err = mover->PrepareForModelStep(model_time, start_time, time_step, uncertain);
 		if (err) goto done;
 	}
 	
-	if (model->GetModelTime() == model->GetStartTime())	// first step
+	if (model_time == start_time)	// first step
 	{
 		if (moverMap->IAm(TYPE_COMPOUNDMAP))
 		{
@@ -156,7 +157,7 @@ OSErr CompoundMover_c::AddMover(TMover *theMover, short where)
 }
 
 
-WorldPoint3D CompoundMover_c::GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D CompoundMover_c::GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 		dLat, dLong;
 	WorldPoint3D	deltaPoint = {0,0,0.};
@@ -178,7 +179,7 @@ WorldPoint3D CompoundMover_c::GetMove (Seconds timeStep,long setIndex,long leInd
 			moverList->GetListItem((Ptr)&mover, i);
 			//check if LE is on the mover's grid
 			if (!mover -> IsActive ()) continue; // to next mover
-			deltaPoint = mover->GetMove(timeStep,setIndex,leIndex,theLE,leType);
+			deltaPoint = mover->GetMove(model_time, timeStep,setIndex,leIndex,theLE,leType);
 			if (deltaPoint.p.pLong == 0 && deltaPoint.p.pLat == 0 && deltaPoint.z == 0.)
 				continue;
 			else break;

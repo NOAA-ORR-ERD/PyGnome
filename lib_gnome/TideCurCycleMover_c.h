@@ -12,7 +12,6 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "TideCurCycleMover_b.h"
 #include "CATSMover_c.h"
 
 #ifndef pyGNOME
@@ -22,9 +21,27 @@
 #define TMap Map_c
 #endif
 
-class TideCurCycleMover_c : virtual public TideCurCycleMover_b, virtual public CATSMover_c {
+class TideCurCycleMover_c : virtual public CATSMover_c {
 
 public:
+	//long fNumRows;
+	//long fNumCols;
+	//PtCurTimeDataHdl fTimeDataHdl;
+	Seconds **fTimeHdl;
+	LoadedData fStartData; 
+	LoadedData fEndData;
+	float fFillValue;
+	float fDryValue;
+	short fUserUnits;
+	char fPathName[kMaxNameLen];
+	char fFileName[kMaxNameLen];
+	LONGH fVerdatToNetCDFH;		// these two fields will be in curvilinear if we extend there
+	WORLDPOINTFH fVertexPtsH;	// may not need this if set pts in dagtree	
+	long fNumNodes;
+	short fPatternStartPoint;	// maxflood, maxebb, etc
+	float fTimeAlpha;
+	char fTopFilePath[kMaxNameLen];
+	
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	
 	LongPointHdl 		GetPointsHdl();
@@ -46,8 +63,8 @@ public:
 	VelocityRec 		GetStartVelocity(long index, Boolean *isDryPt);
 	VelocityRec 		GetEndVelocity(long index, Boolean *isDryPt);
 	
-	virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
-	virtual OSErr 		PrepareForModelStep();
+	virtual WorldPoint3D	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	OSErr 				ReorderPoints(TMap **newMap, short *bndry_indices, short *bndry_nums, short *bndry_type, long numBoundaryPts); 
 	virtual Boolean 	CheckInterval(long &timeDataInterval);

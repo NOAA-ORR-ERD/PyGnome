@@ -181,9 +181,11 @@ OSErr CurrentMover_c::UpdateUncertainty(void)
 }
 
 
-OSErr CurrentMover_c::PrepareForModelStep()
+OSErr CurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
 {
-	OSErr err = this->UpdateUncertainty();
+	OSErr err = 0;
+	if (uncertain)
+		err = this->UpdateUncertainty();
 	if (err) printError("An error occurred in TCurrentMover::PrepareForModelStep");
 	return err;
 }
