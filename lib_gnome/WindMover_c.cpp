@@ -491,6 +491,8 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 	}
 	if(timeDep)
 		delete timeDep;
+
+	return noErr;
 }
 
 // AH 06/20/2012:
@@ -565,6 +567,8 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 	}
 	if(timeDep)
 		delete timeDep;
+
+	return noErr;
 }
 
 // ..

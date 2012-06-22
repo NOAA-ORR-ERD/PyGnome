@@ -1695,7 +1695,11 @@ OSErr TModel::SaveMossLEFile (Seconds fileTime, short fileNumber)
 				char* status;
 				double ageInHrs, elapsedTimeInHrs, mass;
 				
-				elapsedTimeInHrs = (GetModelTime() - theLE.releaseTime) / 3600.;
+				if (bHindcast)	
+					elapsedTimeInHrs = (double)(theLE.releaseTime - GetModelTime()) / 3600.;
+				else
+					elapsedTimeInHrs = (double)(GetModelTime() - theLE.releaseTime) / 3600.;
+				
 				
 				if(isUncertainLE){
 					keyWord = "RELATIVEPROBABILITY";
