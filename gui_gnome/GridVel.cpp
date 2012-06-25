@@ -1946,7 +1946,7 @@ void GetTextOffsets(char s[], short *h, short *v)
 	*v += Finfo.ascent/2;
 }
 
-void TTriGridVel3D::DrawContourScale(Rect r, WorldRect view)
+void TTriGridVel::DrawContourScale(Rect r, WorldRect view)
 {
 	Point		p;
 	short		h,v,x,y,dY,widestNum=0;

@@ -56,6 +56,8 @@ WindMover_c::WindMover_c () {
 	bUncertaintyPointOpen=false;
 	bSubsurfaceActive = false;
 	fGamma = 1.;
+	breaking_wave_height = 1.;	// meters
+	mixed_layer_depth = 10.;	// meters
 	
 	fIsConstantWind = false;
 	fConstantValue.u = fConstantValue.v = 0.0;
@@ -87,6 +89,8 @@ WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 	bUncertaintyPointOpen=false;
 	bSubsurfaceActive = false;
 	fGamma = 1.;
+	breaking_wave_height = 1.;	// meters
+	mixed_layer_depth = 10.;	// meters
 	
 	fIsConstantWind = false;
 	fConstantValue.u = fConstantValue.v = 0.0;

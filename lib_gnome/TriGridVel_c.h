@@ -20,6 +20,9 @@ class TriGridVel_c : virtual public GridVel_c {
 protected:
 	FLOATH fBathymetryH;
 	TDagTree *fDagTree;
+public:
+	DOUBLEH fDepthContoursH;
+	Rect	fLegendRect;
 	
 public:
 	virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL; }
@@ -31,7 +34,9 @@ public:
 	virtual long GetNumTriangles(void);
 	long 	GetNumDepths(void);
 	void SetBathymetry(FLOATH depthsH){fBathymetryH=depthsH;}
+	void SetDepths(FLOATH depthsH){fBathymetryH=depthsH;}
 	FLOATH  GetBathymetry(){return fBathymetryH;}
+	FLOATH  GetDepths(){return fBathymetryH;}
 	VelocityRec GetPatValue(WorldPoint p);
 	VelocityRec GetSmoothVelocity(WorldPoint p);
 	virtual double GetDepthAtPoint(WorldPoint p);

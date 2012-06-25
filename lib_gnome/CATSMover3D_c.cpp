@@ -17,7 +17,7 @@
 #include "Replacements.h"
 #endif
 
-PtCurMap* GetPtCurMap(void);
+//PtCurMap* GetPtCurMap(void);
 
 /*OSErr CATSMover3D_c::ComputeVelocityScale()
  {	// this function computes and sets this->refScale
@@ -189,11 +189,14 @@ OSErr CATSMover3D_c::PrepareForModelStep(const Seconds& model_time, const Second
 	
 	if (this -> fOptimize.isFirstStep)
 	{
-		PtCurMap* ptCurMap = dynamic_cast<PtCurMap *>(moverMap);
-		/*OK*/(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
-		/*OK*/(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
-		((dynamic_cast<TTriGridVel3D*>(fGrid)))->ClearOutputHandles();
-		if (fRefinedGrid) fRefinedGrid->ClearOutputHandles();
+		if (moverMap->IAm(TYPE_PTCURMAP))
+		{
+			//PtCurMap* ptCurMap = (PtCurMap *)moverMap;
+			((PtCurMap *)moverMap)->fContourDepth1AtStartOfRun = ((PtCurMap *)moverMap)->fContourDepth1;	
+			((PtCurMap *)moverMap)->fContourDepth2AtStartOfRun = ((PtCurMap *)moverMap)->fContourDepth2;	
+			((TTriGridVel3D*)fGrid)->ClearOutputHandles();
+			if (fRefinedGrid) fRefinedGrid->ClearOutputHandles();
+		}
 	}
 	
 	return err;
@@ -283,11 +286,11 @@ Boolean CATSMover3D_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	char uStr[32],sStr[32],verStr[32];
 	double lengthU, lengthS;
 	VelocityRec velocity = {0.,0.};
-	long segNo,verNum;
-	PtCurMap *map = GetPtCurMap();
-	if (map==nil) return false;
+	//long segNo,verNum;
+	//PtCurMap *map = GetPtCurMap();
+	//if (map==nil) return false;
 	
-	((PtCurMap_c*)map)->FindNearestBoundary(wp.p,&verNum,&segNo); //AH 03/19/2012 (this needs to be fixed.)
+	//((PtCurMap_c*)map)->FindNearestBoundary(wp.p,&verNum,&segNo); //AH 03/19/2012 (this needs to be fixed.)
 	
 	velocity = this->GetPatValue(wp);
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
@@ -296,13 +299,14 @@ Boolean CATSMover3D_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
 	
-	if(verNum > -1) 
+	// a diagnostic to get the boundary point numbers
+	/*if(verNum > -1) 
 	{
 		StringWithoutTrailingZeros(verStr,verNum,4);
 		sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s, ptNum: %s]",
 				this->className, uStr, sStr, verStr);
 	}
-	else
+	else*/
 		sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s]",
 				this->className, uStr, sStr);
 	return true;

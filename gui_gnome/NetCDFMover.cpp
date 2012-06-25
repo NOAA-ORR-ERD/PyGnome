@@ -189,9 +189,10 @@ short NetCDFMoverSettingsClick(DialogPtr dialog, short itemNum, long lParam, VOI
 			TMap *map = sNetCDFDialogMover -> GetMoverMap();
 			
 			if (showBottomVel) arrowDepth = -2;	//check maxDepth>0
-			if (map && map->IAm(TYPE_PTCURMAP))
+			if (map /*&& map->IAm(TYPE_PTCURMAP)*/)
 			{
-				maxDepth = /*CHECK*/(dynamic_cast<PtCurMap *>(map)) -> GetMaxDepth2();	// 2D vs 3D ?
+				//maxDepth = /*CHECK*/(dynamic_cast<PtCurMap *>(map)) -> GetMaxDepth2();	// 2D vs 3D ?
+				maxDepth = map -> GetMaxDepth2();	// 2D vs 3D ?
 				//arrowDepth = EditText2Float(dialog, M33ARROWDEPTH);
 				if (arrowDepth > maxDepth)
 				{
@@ -1505,7 +1506,11 @@ void NetCDFMover::Draw(Rect r, WorldRect view)
 		}
 	}	
 	
-	/*OK*/dynamic_cast<NetCDFMover *>(this)->GetDepthIndices(0,fVar.arrowDepth,&depthIndex1,&depthIndex2);
+	GetDepthIndices(0,fVar.arrowDepth,&depthIndex1,&depthIndex2);
+	if (depthIndex1==UNASSIGNEDINDEX && depthIndex2==UNASSIGNEDINDEX)
+		return;	// no value for this point at chosen depth
+		//continue;	// no value for this point at chosen depth
+
 	if (depthIndex2!=UNASSIGNEDINDEX)
 	{
 		// Calculate the depth weight factor
@@ -1911,19 +1916,33 @@ OSErr NetCDFMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_inq_dimid(ncid, "lon", &lonid);	//Navy
 	if (status != NC_NOERR) 
 	{
-		status = nc_inq_dimid(ncid, "LON_UV", &lonid);	if (status != NC_NOERR) {err = -1; goto done;}	// this is for SSH files which have 2 sets of lat,lon (LAT,LON is for SSH)
+		status = nc_inq_dimid(ncid, "LON_UV", &lonid);	
+		if (status != NC_NOERR) {err = -1; goto done;}	// this is for SSH files which have 2 sets of lat,lon (LAT,LON is for SSH)
 	}
 	status = nc_inq_varid(ncid, "lon", &lonvarid);	//Navy
 	if (status != NC_NOERR) 
 	{
-		status = nc_inq_varid(ncid, "LON_UV", &lonvarid);	if (status != NC_NOERR) {err = -1; goto done;}
+		status = nc_inq_varid(ncid, "LON_UV", &lonvarid);	
+		if (status != NC_NOERR) {err = -1; goto done;}
 	}
 	status = nc_inq_dimlen(ncid, lonid, &lonLength);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
 	status = nc_inq_dimid(ncid, "depth", &depthid);	//3D
 	if (status != NC_NOERR) 
-	{depthLength=1;/*err = -1; goto done;*/}	// surface data only
+	{
+		status = nc_inq_dimid(ncid, "levels", &depthid);	//3D
+		if (status != NC_NOERR) 
+		{depthLength=1;/*err = -1; goto done;*/}	// surface data only
+		else
+		{
+			status = nc_inq_varid(ncid, "depth_levels", &depthvarid); //Navy
+			if (status != NC_NOERR) {err = -1; goto done;}
+			status = nc_inq_dimlen(ncid, depthid, &depthLength);
+			if (status != NC_NOERR) {err = -1; goto done;}
+			if (depthLength>1) fVar.gridType = MULTILAYER;
+		}
+	}
 	else
 	{
 		status = nc_inq_varid(ncid, "depth", &depthvarid); //Navy

@@ -1504,6 +1504,29 @@ PtCurMap* GetPtCurMap(void)
 	}
 	return nil;
 }
+TMap* Get3DMap(void)
+{
+	long i,n;
+	TMap *map;
+	n = model -> mapList->GetItemCount() ;
+	for (i=0; i<n; i++)
+	{
+		model -> mapList->GetListItem((Ptr)&map, i);
+		if (map->IAm(TYPE_COMPOUNDMAP))
+		{
+			return map;
+		} 
+		if (map->IAm(TYPE_PTCURMAP)) 
+		{
+			return map;
+		}
+		if (map->IAm(TYPE_MAP3D)) 
+		{
+			return map;
+		}
+	}
+	return nil;
+}
 
 OSErr NetCDFMoverTri::ExportTopology(char* path)
 {
@@ -1512,12 +1535,13 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 	OSErr err = 0;
 	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts;
 	long i, n=0, v1,v2,v3,n1,n2,n3;
-	double x,y;
+	double x,y,z=0;
 	char buffer[512],hdrStr[64],topoStr[128];
 	TopologyHdl topH=0;
 	TTriGridVel* triGrid = 0;	
 	TDagTree* dagTree = 0;
 	LongPointHdl ptsH=0;
+	FLOATH depthsH=0;
 	DAGHdl treeH = 0;
 	LONGH	boundarySegmentsH = 0, boundaryTypeH = 0, boundaryPointsH = 0;
 	BFPB bfpb;
@@ -1537,6 +1561,7 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 		printError("There is no topology to export");
 		return -1;
 	}
+	depthsH = ((TTriGridVel3D*)triGrid)->GetDepths();
 	if(!ptsH || !topH || !treeH) 
 	{
 		printError("There is no topology to export");
@@ -1596,7 +1621,13 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 		y =(*ptsH)[i].v/1000000.0;
 		//sprintf(topoStr,"%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
 		//sprintf(topoStr,"%ld\t%lf\t%lf\n",i+1,x,y);
-		sprintf(topoStr,"%lf\t%lf\n",x,y);
+		if (depthsH) 
+		{
+			z = (*depthsH)[i];
+			sprintf(topoStr,"%lf\t%lf\t%lf\n",x,y,z);
+		}
+		else
+			sprintf(topoStr,"%lf\t%lf\n",x,y);
 		strcpy(buffer,topoStr);
 		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	}

@@ -47,6 +47,23 @@ long TriGridVel3D_c::GetNumDepths(void)
 	return numDepths;
 }
 
+double TriGridVel3D_c::GetDepthAtPoint(WorldPoint p)
+{
+	double depthAtPoint = 0;
+	long ptIndex1,ptIndex2,ptIndex3; 
+	float depth1,depth2,depth3;
+	InterpolationVal interpolationVal;
+
+	interpolationVal = this->GetInterpolationValues(p);
+
+	depth1 = (*fDepthsH)[interpolationVal.ptIndex1];
+	depth2 = (*fDepthsH)[interpolationVal.ptIndex2];
+	depth3 = (*fDepthsH)[interpolationVal.ptIndex3];
+	depthAtPoint = interpolationVal.alpha1*depth1 + interpolationVal.alpha2*depth2 + interpolationVal.alpha3*depth3;
+
+	return depthAtPoint;
+}
+
 void TriGridVel3D_c::ScaleDepths(double scaleFactor)
 {
 	long i, numDepths;

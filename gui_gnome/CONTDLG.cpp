@@ -575,7 +575,7 @@ void DrawContourLevelValue(short x, short y, double level)
 	RGBForeColor(&savecolor);
 }
 
-void TTriGridVel3D::DrawContourLine(short *ix, short *iy, double** contourValue,Boolean showvals,double level)
+void TTriGridVel::DrawContourLine(short *ix, short *iy, double** contourValue,Boolean showvals,double level)
 {
 	long i,j,k,p,p1,p2,p3,count=0;
 	long x0,y0,xold,yold;
@@ -698,7 +698,7 @@ void TTriGridVel3D::DrawContourLine(short *ix, short *iy, double** contourValue,
 	return;
 }
 
-void TTriGridVel3D::DrawContourLines(Boolean printing,DOUBLEH dataVals,Boolean showvals,DOUBLEH contourLevels,short *sxi,short *syi)
+void TTriGridVel::DrawContourLines(Boolean printing,DOUBLEH dataVals,Boolean showvals,DOUBLEH contourLevels,short *sxi,short *syi)
 {
 	RGBColor col;
 	double minlevel,maxlevel,level,range;
@@ -751,7 +751,7 @@ Boolean AutoContour(DOUBLEH contourValues, DOUBLEH *contourLevels)
 	return true;
 }
 
-OSErr TTriGridVel3D::DepthContourDialog()
+OSErr TTriGridVel::DepthContourDialog()
 {
 	long i,numDepths;
 	OSErr err = 0;
@@ -779,6 +779,64 @@ OSErr TTriGridVel3D::DepthContourDialog()
 	err = ContourDialog(&fDepthContoursH,1);
 	//if (depthsAsDoubleHdl){DisposeHandle((Handle)depthsAsDoubleHdl);depthsAsDoubleHdl = 0;}
 	return err;
+}
+
+void TTriGridVel::DrawDepthContours(Rect r, WorldRect view, Boolean showLabels)
+{
+	short *cxi=0, *cyi= 0;
+	long i,nv,numDepths;	
+	Point p;
+	RGBColor saveColor;
+	WorldPoint wp;
+	LongPointHdl ptsH = 0;
+	DOUBLEH depthsAsDoubleHdl = 0;
+	Boolean offQuickDrawPlane = false;				
+	
+	if(fDagTree == 0) return;
+
+	ptsH = fDagTree->GetPointsHdl();
+	if (ptsH) nv = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
+	else return;
+	
+	//cxi = (short *)_NewPtr(sizeof(short)*nv);
+	//cyi = (short *)_NewPtr(sizeof(short)*nv);
+	//if (!cxi || !cyi) {printError("Not enough memory in DrawDepthContours"); return;}
+	cxi = (short *)calloc(nv,sizeof(short));
+	if (cxi==NULL) {printError("Not enough memory in DrawDepthContours"); return;}
+	cyi = (short *)calloc(nv,sizeof(short));
+	if (cyi==NULL) {printError("Not enough memory in DrawDepthContours"); return;}
+
+	numDepths = GetNumDepths();
+	if (nv != numDepths) {printError("The number of depths does not equal the number of vertices. Check your data"); return;}
+
+	depthsAsDoubleHdl = (DOUBLEH)_NewHandle(sizeof(double)*numDepths);
+	if (!depthsAsDoubleHdl) {printError("Not enough memory to copy depth values in DrawDepthContours"); return;}
+
+	for(i=nv-1; i>=0; i--)
+	{
+		INDEXH(depthsAsDoubleHdl,i) = INDEXH(fBathymetryH,i);
+		wp.pLong = (*ptsH)[i].h; wp.pLat = (*ptsH)[i].v;
+		//p = WorldToScreenPoint(wp,view,r); // or use mapbounds?
+		p = GetQuickDrawPt(wp.pLong, wp.pLat, &r, &offQuickDrawPlane);	
+		cxi[i] = p.h; cyi[i] = p.v;
+	}
+	GetForeColor(&saveColor);
+	//if (!fDepthContoursH) if (!AutoContour(depthsAsDoubleHdl,&fDepthContoursH)) return;
+	if (!fDepthContoursH) 
+	{
+		fDepthContoursH = (DOUBLEH)_NewHandleClear(0);
+		if(!fDepthContoursH){TechError("TTriGridVel::DrawDepthContours()", "_NewHandle()", 0); /*err = memFullErr;*/ return;}
+		if (SetDefaultContours(fDepthContoursH,1)) return;
+	}
+	DrawContourLines(sharedPrinting,depthsAsDoubleHdl,showLabels,fDepthContoursH,cxi,cyi);
+
+	RGBForeColor(&saveColor);
+	//if (cxi) _DisposePtr((Ptr)cxi);
+	//if (cyi) _DisposePtr((Ptr)cyi);
+	if(cxi) {free(cxi); cxi = NULL;}
+	if(cyi) {free(cyi); cyi = NULL;}
+	if (depthsAsDoubleHdl){DisposeHandle((Handle)depthsAsDoubleHdl);depthsAsDoubleHdl = 0;}
+	return;
 }
 
 void TTriGridVel3D::DrawDepthContours(Rect r, WorldRect view, Boolean showLabels)

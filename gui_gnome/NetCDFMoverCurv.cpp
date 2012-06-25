@@ -373,7 +373,8 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	//if (status != NC_NOERR || fIsNavy) {fVar.gridType = TWO_D; /*err = -1; goto done;*/}	// check for zgrid option here
 	if (status != NC_NOERR)
 	{
-		status = nc_inq_dimid(ncid, "depth", &depthdimid); 
+		status = nc_inq_dimid(ncid, "levels", &depthdimid); 
+		//status = nc_inq_dimid(ncid, "depth", &depthdimid); 
 		if (status != NC_NOERR || fIsNavy) 
 		{
 			fVar.gridType = TWO_D; /*err = -1; goto done;*/
@@ -381,7 +382,8 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 		else
 		{// check for zgrid option here
 			fVar.gridType = MULTILAYER; /*err = -1; goto done;*/
-			status = nc_inq_varid(ncid, "depth", &sigmavarid); //Navy
+			//status = nc_inq_varid(ncid, "depth", &sigmavarid); //Navy
+			status = nc_inq_varid(ncid, "depth_levels", &sigmavarid); //Navy
 			if (status != NC_NOERR) {err = -1; goto done;}
 			status = nc_inq_dimlen(ncid, depthdimid, &sigmaLength);
 			if (status != NC_NOERR) {err = -1; goto done;}
@@ -444,7 +446,7 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	if (status != NC_NOERR || fIsNavy) {fVar.gridType = TWO_D;/*err = -1; goto done;*/}
 	else
 	{	
-		if (fVar.gridType==MULTILAYER)
+		/*if (fVar.gridType==MULTILAYER)
 		{
 			// for now
 			totalDepthsH = (FLOATH)_NewHandleClear(latLength*lonLength*sizeof(float));
@@ -458,7 +460,7 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 			}
 		
 		}
-		else
+		else*/
 		{
 			totalDepthsH = (FLOATH)_NewHandleClear(latLength*lonLength*sizeof(float));
 			if (!totalDepthsH) {err = memFullErr; goto done;}
@@ -649,8 +651,8 @@ depths:
 				//lat_vals[(latLength-i-1)*lonLength+j]=0.;
 				//if (lon_vals[(latLength-i-1)*lonLength+j]==fill_value)
 				//lon_vals[(latLength-i-1)*lonLength+j]=0.;
-				INDEXH(totalDepthsH,i*lonLength+j) = depth_vals[(latLength-i-1)*lonLength+j] * scale_factor;	
-				INDEXH(fDepthsH,i*lonLength+j) = depth_vals[(latLength-i-1)*lonLength+j] * scale_factor;	
+				INDEXH(totalDepthsH,i*lonLength+j) = abs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;	
+				INDEXH(fDepthsH,i*lonLength+j) = abs(depth_vals[(latLength-i-1)*lonLength+j]) * scale_factor;	
 			}
 		}
 		//((TTriGridVel3D*)fGrid)->SetDepths(totalDepthsH);
@@ -2319,12 +2321,13 @@ OSErr NetCDFMoverCurv::ExportTopology(char* path)
 	OSErr err = 0;
 	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts;
 	long i, n, v1,v2,v3,n1,n2,n3;
-	double x,y;
+	double x,y,z=0;
 	char buffer[512],hdrStr[64],topoStr[128];
 	TopologyHdl topH=0;
 	TTriGridVel* triGrid = 0;	
 	TDagTree* dagTree = 0;
 	LongPointHdl ptsH=0;
+	FLOATH depthsH=0;
 	DAGHdl		treeH = 0;
 	LONGH	boundarySegmentsH = 0, boundaryTypeH = 0, boundaryPointsH = 0;
 	BFPB bfpb;
@@ -2343,6 +2346,7 @@ OSErr NetCDFMoverCurv::ExportTopology(char* path)
 		printError("There is no topology to export");
 		return -1;
 	}
+	depthsH = ((TTriGridVel3D*)triGrid)->GetDepths();
 	if(!ptsH || !topH || !treeH) 
 	{
 		printError("There is no topology to export");
@@ -2394,7 +2398,13 @@ OSErr NetCDFMoverCurv::ExportTopology(char* path)
 		y =(*ptsH)[i].v/1000000.0;
 		//sprintf(topoStr,"%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
 		//sprintf(topoStr,"%ld\t%lf\t%lf\n",i+1,x,y);
-		sprintf(topoStr,"%lf\t%lf\n",x,y);
+		if (depthsH) 
+		{
+			z = (*depthsH)[i];
+			sprintf(topoStr,"%lf\t%lf\t%lf\n",x,y,z);
+		}
+		else
+			sprintf(topoStr,"%lf\t%lf\n",x,y);
 		strcpy(buffer,topoStr);
 		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	}

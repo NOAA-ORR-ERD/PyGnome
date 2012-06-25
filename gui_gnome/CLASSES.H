@@ -463,11 +463,15 @@ int ConcentrationCompare(void const *x1, void const *x2);
 #include "PtCurMap.h"
 
 //-- 
+#include "Map3D_c.h"
+#include "Map3D.h"
 
+//-- 
 
 
 OSErr AddPtCurMap(char *path, WorldRect bounds);
 PtCurMap* CreateAndInitPtCurMap(char *path, WorldRect bounds);
+Map3D* CreateAndInitMap3D(char *path, WorldRect bounds);
 void DrawFilledWaterTriangles(void * object,WorldRect wRect,Rect r);
 void DrawWideLandSegments(void * object,WorldRect wRect,Rect r);
 //PtCurMap* GetPtCurMap(void);	// defined in Netcdfmover.h maybe should be part of model class?
@@ -525,6 +529,7 @@ Boolean IsBlackPixel(WorldPoint p,WorldRect mapBounds,HDIB bm);
 #endif
 void 	LandBitMapWidthHeight(WorldRect wRect, long *width, long* height);
 OSErr	AddMapsDialog ();
+OSErr	AddMapsDialog2 ();
 
 ///////////////////////////////////////////////////////////////////////////
 

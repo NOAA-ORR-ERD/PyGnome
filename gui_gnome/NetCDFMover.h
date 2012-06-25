@@ -10,6 +10,7 @@
 
 Seconds RoundDateSeconds(Seconds timeInSeconds);
 PtCurMap* GetPtCurMap(void);
+TMap* Get3DMap(void);
 
 
 class NetCDFMover : virtual public NetCDFMover_c,  public TCurrentMover

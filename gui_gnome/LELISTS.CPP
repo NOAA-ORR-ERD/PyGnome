@@ -3284,8 +3284,8 @@ short OSSMLEClick (DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 
 			// get depth	
 			tempSet.z  = 0;
-			{ PtCurMap *map = GetPtCurMap();
-				//PtCurMap *map = Get3DMap();
+			{ //PtCurMap *map = GetPtCurMap();
+				TMap *map = Get3DMap();
 				float arrowDepth;
 				Boolean bottomSpill = GetButton (dialog, M13BOTTOMSPILL);
 				//if (map && model->ThereIsA3DMover(&arrowDepth)) 
@@ -3952,7 +3952,8 @@ OSErr OSSMLEInit (DialogPtr dialog, VOIDPTR data)
 	DateTimeRec	time;
 	float arrowDepth;
 	float z, z2;
-	PtCurMap *map = GetPtCurMap();
+	//PtCurMap *map = GetPtCurMap();
+	TMap *map = Get3DMap();
 	char blankStr[32];
 	strcpy(blankStr,"");
 	
@@ -4808,6 +4809,19 @@ void TOLEList::Draw(Rect r, WorldRect view)
 					//inWaterColor = &colors[BLACK];
 					if (LE.z > 0)
 					{
+						RGBColor underWaterColor = fColor;	// make subsurface LEs a lighter shade
+						short red = GetRValue(fColor), blue = GetBValue(fColor), green = GetGValue(fColor);	
+						if (red >= 128 && green >= 128 && blue >= 128) 
+						{
+							underWaterColor = colors[GRAY];	// use gray if going lighter would make LEs invisible...
+						}
+						else
+						{	
+							if (red < 128) red += 128; else red = 255;
+							if (green < 128) green += 128; else green = 255;
+							if (blue < 128) blue += 128; else blue = 255;
+						}
+						underWaterColor = RGB(red,green,blue);
 						/*if (LE.z > 100)
 						{
 						onLandColor  = &colors[LIGHTGRAY];
@@ -4815,8 +4829,10 @@ void TOLEList::Draw(Rect r, WorldRect view)
 						}
 						else if (LE.z > 50)
 						{*/
-						onLandColor  = &colors[GRAY];
-						inWaterColor = &colors[GRAY];
+						//onLandColor  = &colors[GRAY];
+						//inWaterColor = &colors[GRAY];
+						onLandColor  = &underWaterColor;
+						inWaterColor = &underWaterColor;
 						/*}
 						else
 						{
