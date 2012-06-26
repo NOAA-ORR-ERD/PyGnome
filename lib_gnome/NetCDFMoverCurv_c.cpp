@@ -430,8 +430,8 @@ void NetCDFMoverCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 	
 	if (fDepthLevelsHdl && numDepthLevels>0) 
 	{
-		if (fVar.gridType==MULTILAYER)
-			totalDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);
+		/*if (fVar.gridType==MULTILAYER)
+			totalDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);*/
 		// otherwise it's SIGMA_ROMS
 	}
 	else

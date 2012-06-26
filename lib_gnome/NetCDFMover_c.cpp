@@ -1521,7 +1521,7 @@ float NetCDFMover_c::GetTotalDepth(WorldPoint wp, long triNum)
 void NetCDFMover_c::GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2)
 {
 	long indexToDepthData = 0;
-	long numDepthLevels = /*CHECK*/dynamic_cast<NetCDFMover *>(this)->GetNumDepthLevelsInFile();
+	long numDepthLevels = GetNumDepthLevelsInFile();
 	float totalDepth = 0;
 	
 	

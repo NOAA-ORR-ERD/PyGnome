@@ -451,7 +451,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\Map_b.h"
+					RelativePath="..\lib_gnome\Map3D_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\Map3D_c.h"
 					>
 				</File>
 				<File
@@ -976,6 +980,14 @@
 				</File>
 				<File
 					RelativePath="..\gui_gnome\MakeMovie.h"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\Map3D.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\Map3D.h"
 					>
 				</File>
 				<File

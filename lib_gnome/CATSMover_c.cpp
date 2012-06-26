@@ -42,6 +42,8 @@ CATSMover_c::CATSMover_c () {
 	fEddyDiffusion=0; // JLM 5/20/991e6; // cm^2/sec
 	fEddyV0 = 0.1; // JLM 5/20/99
 
+	bApplyLogProfile = false;
+
 	memset(&fOptimize,0,sizeof(fOptimize));
 
 }
@@ -57,6 +59,8 @@ CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 	fEddyDiffusion=0; // JLM 5/20/991e6; // cm^2/sec
 	fEddyV0 = 0.1; // JLM 5/20/99
 	
+	bApplyLogProfile = false;
+
 	memset(&fOptimize,0,sizeof(fOptimize));
 	SetClassName (name);
 }
@@ -336,7 +340,7 @@ VelocityRec CATSMover_c::GetPatValue(WorldPoint3D p)
 	{
 		//depthAtPoint = ((TTriGridVel*)fGrid)->GetDepthAtPoint(p.p);
 		depthAtPoint = fGrid->GetDepthAtPoint(p.p);
-		if (p.z >= depthAtPoint)scaleFactor = 0.;
+		if (p.z >= depthAtPoint) scaleFactor = 0.;
 		else if (depthAtPoint > 0) scaleFactor = 1. - log(p.z)/log(depthAtPoint);
 	}
 	patVal = fGrid->GetPatValue(p.p);

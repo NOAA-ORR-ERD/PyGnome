@@ -56,6 +56,8 @@ WindMover_c::WindMover_c () {
 	bUncertaintyPointOpen=false;
 	bSubsurfaceActive = false;
 	fGamma = 1.;
+	breaking_wave_height = 1.;	// meters
+	mixed_layer_depth = 10.;	// meters
 	
 	fIsConstantWind = false;
 	fConstantValue.u = fConstantValue.v = 0.0;
@@ -87,6 +89,8 @@ WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 	bUncertaintyPointOpen=false;
 	bSubsurfaceActive = false;
 	fGamma = 1.;
+	breaking_wave_height = 1.;	// meters
+	mixed_layer_depth = 10.;	// meters
 	
 	fIsConstantWind = false;
 	fConstantValue.u = fConstantValue.v = 0.0;
@@ -491,6 +495,16 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 	}
 	if(timeDep)
 		delete timeDep;
+	cout << "..\n";
+	if(time_val_hdl)
+		_DisposeHandle((Handle)time_val_hdl);
+	cout << "..\n";
+	if(this->fLESetSizes)
+		_DisposeHandle((Handle)this->fLESetSizes);
+	cout << "..\n";
+	if(this->fWindUncertaintyList)
+		_DisposeHandle((Handle)this->fWindUncertaintyList);
+	return noErr;
 }
 
 // AH 06/20/2012:
@@ -565,6 +579,9 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 	}
 	if(timeDep)
 		delete timeDep;
+	if(time_val_hdl)
+		_DisposeHandle((Handle)time_val_hdl);
+	return noErr;
 }
 
 // ..

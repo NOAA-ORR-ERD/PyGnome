@@ -61,7 +61,7 @@ class TRectGridVel : virtual public RectGridVel_c, public TGridVel
 class TTriGridVel : virtual public TriGridVel_c, public TGridVel
 {
 	public:		
-		TTriGridVel(){fDagTree = 0; fBathymetryH=0;}
+		TTriGridVel(){fDagTree = 0; fBathymetryH=0;	fDepthContoursH=0;	memset(&fLegendRect,0,sizeof(fLegendRect));}
 		virtual	~TTriGridVel() { Dispose (); }
 
 		OSErr TextRead(char *path);
@@ -72,6 +72,12 @@ class TTriGridVel : virtual public TriGridVel_c, public TGridVel
 		void DrawBitMapTriangles (Rect r);
 		void DrawCurvGridPts(Rect r, WorldRect view);
 		
+		void DrawDepthContours(Rect r, WorldRect view, Boolean showLabels);
+		void DrawContourScale(Rect r, WorldRect view/*, Rect *legendRect*/);
+		void DrawContourLine(short *ix, short *iy, double** contourValue,Boolean showvals,double level);
+		void DrawContourLines(Boolean printing,DOUBLEH dataVals, Boolean showvals,DOUBLEH contourLevels, short *sxi,short *syi);
+
+		OSErr DepthContourDialog();
 	//private:
 		void DrawTriangle(Rect *r,long triNum,Boolean fillTriangle);
 };
@@ -86,7 +92,7 @@ class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 		virtual	~TTriGridVel3D() { Dispose (); }
 
 
-		OSErr DepthContourDialog();
+		//OSErr DepthContourDialog();
 		//WORLDPOINTDH  GetCoords(){return gCoord;}
 
 		Boolean **GetPtsSelection(Boolean initHdl);
@@ -117,9 +123,9 @@ class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 		void DrawTriangleStr(Rect *r,long triNum,double value);
 		//void DrawBitMapTriangles (Rect r);
 		void DrawDepthContours(Rect r, WorldRect view, Boolean showLabels);
-		void DrawContourScale(Rect r, WorldRect view/*, Rect *legendRect*/);
-		void DrawContourLine(short *ix, short *iy, double** contourValue,Boolean showvals,double level);
-		void DrawContourLines(Boolean printing,DOUBLEH dataVals, Boolean showvals,DOUBLEH contourLevels, short *sxi,short *syi);
+		//void DrawContourScale(Rect r, WorldRect view/*, Rect *legendRect*/);
+		//void DrawContourLine(short *ix, short *iy, double** contourValue,Boolean showvals,double level);
+		//void DrawContourLines(Boolean printing,DOUBLEH dataVals, Boolean showvals,DOUBLEH contourLevels, short *sxi,short *syi);
 
 		
 	//private:

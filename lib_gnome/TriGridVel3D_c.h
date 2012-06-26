@@ -31,7 +31,7 @@ class TriGridVel3D_c : virtual public TriGridVel_c {
 
 protected:
 	FLOATH fDepthsH;
-	DOUBLEH fDepthContoursH;
+	//DOUBLEH fDepthContoursH;
 	Boolean	**fTriSelected;
 	Boolean	**fPtsSelected;
 	// maybe define a new class to handle all the output...
@@ -56,6 +56,7 @@ public:
 	FLOATH  GetDepths(){return fDepthsH;}
 	void 	ScaleDepths(double scaleFactor);
 	//void SetDepthContours(DOUBLEH depthContoursH){if(fDepthContoursH!=depthContoursH) (fDepthContoursH=depthContoursH;}
+	virtual double GetDepthAtPoint(WorldPoint p);
 	DOUBLEH  GetDepthContours(){return fDepthContoursH;}
 	long 	GetNumDepths(void);
 	//long	GetNumTriangles(void);
@@ -73,6 +74,7 @@ public:
 	OSErr 	GetMaxDepthForTriangle(long triNum, double *maxDepth);
 	OSErr 	GetTriangleCentroidWC(long trinum, WorldPoint *p);
 	double	GetTriArea(long triNum);
+
 	OSErr 	CalculateDepthSliceVolume(double *triVol, long triNum,float upperDepth, float lowerDepth);
 	double	GetMaxAtPreviousTimeStep(Seconds time);
 	void	AddToOutputHdl(double avConcOverSelectedTriangles,double maxConcOverSelectedTriangles,Seconds time);

@@ -3667,7 +3667,7 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			TCurrentMover *mover = 0;
 		
 			// Figure out if there is a current
-			mover = dynamic_cast<TCurrentMover *>((model->GetMover(TYPE_CURRENTMOVER)));
+			mover = (TCurrentMover *)(model->GetMover(TYPE_CURRENTMOVER));
 			if (mover)	// code goes here, check for netcdf or ptcur only
 			{	
 				err = AskUserForSaveFilename(suggestedFileName,path,".DAT",TRUE);
@@ -3678,7 +3678,7 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			}
 			else	
 			{
-				NetCDFWindMoverCurv *windMover = dynamic_cast<NetCDFWindMoverCurv *>(model->GetMover(TYPE_NETCDFWINDMOVERCURV));
+				NetCDFWindMoverCurv *windMover = (NetCDFWindMoverCurv *)(model->GetMover(TYPE_NETCDFWINDMOVERCURV));
 				if (windMover)
 				{
 					err = AskUserForSaveFilename(suggestedFileName,path,".DAT",TRUE);
@@ -3686,6 +3686,18 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 					err = windMover -> ExportTopology(path);
 					if (err == 2) printNote("There is no curvilinear grid netCDF wind mover. No topology will be exported");
 					goto done;
+				}
+				else
+				{
+					Map3D *map3D = 0;
+					map3D = (Map3D*)(model->GetMap(TYPE_MAP3D));
+					if (map3D) 
+					{
+						err = AskUserForSaveFilename(suggestedFileName,path,".DAT",TRUE);
+						if(err) goto done; // note: might be user cancel
+						err = map3D->ExportTopology(path);
+						goto done;
+					}
 				}
 				printNote("There is no current mover. No topology will be exported");
 				err = -1;

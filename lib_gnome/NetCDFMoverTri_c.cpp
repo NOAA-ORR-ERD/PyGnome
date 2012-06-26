@@ -343,7 +343,7 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(Seconds model_time, Seconds timeStep,long
 	
 	if(!fIsOptimizedForStep) 
 	{
-		err = /*CHECK*/dynamic_cast<NetCDFMoverTri *>(this) -> SetInterval(errmsg);
+		err = SetInterval(errmsg);
 		if (err) return deltaPoint;
 	}
 	
@@ -384,7 +384,8 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(Seconds model_time, Seconds timeStep,long
 		scaledPatVelocity = GetMove3D(interpolationVal,depth);
 		goto scale;
 	}						
-	
+	if (depth > 0) return deltaPoint;	// set subsurface spill with no subsurface velocity
+
 	// Check for constant current 
 	if((/*OK*/dynamic_cast<NetCDFMoverTri *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
 		//if(GetNumTimesInFile()==1)

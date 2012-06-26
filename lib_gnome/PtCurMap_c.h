@@ -118,6 +118,7 @@ public:
 	//WorldPoint3D	SubsurfaceMovementCheck (WorldPoint3D fromWPt, WorldPoint3D toWPt, OilStatus *status);
 	//Boolean 		PointOnBoundaryLine(WorldPoint p);
 	double 			GetBreakingWaveHeight(void);
+	double 			GetMixedLayerDepth(void) {return fMixedLayerDepth;}
 	//OSErr 			GetDepthAtMaxTri(TOLEList *thisLEList,long *maxTriIndex,double *depthAtPnt);	
 	OSErr 			GetDepthAtMaxTri(long *maxTriIndex, double *depthAtPnt);	
 	//OSErr 			CreateDepthSlice(TLEList *thisLEList, long triNum)	;

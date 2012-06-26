@@ -3,6 +3,7 @@
 #include "OUtils.h"
 #include "GridVel.h"
 #include "NetCDFMover.h"
+#include "Map3D.h"
 
 void	GetOWeatherValues (DialogPtr dialog, long item);
 void 	SetOWeatherValues (DialogPtr dialog, long item);
@@ -870,6 +871,291 @@ OSErr AddMapsDialog()
 		err = true;
 		sprintf(tempStr,"File %s is not a recognizable map file.",shortFileName);
 		printError(tempStr);
+	}
+
+	if (!err)
+	{
+		model->NewDirtNotification();
+	}
+
+	return err;
+}
+OSErr AddMapsDialog2()
+{
+	char 		path[256], nameStr [256], shortFileName[256], tempStr[256];
+	OSErr		err = noErr;
+	long 		n;
+	Point 		where = CenteredDialogUpLeft(M38b);
+	TVectorMap	*vMap;
+	TOSSMMap 	*oMap;
+	Map3D 		*gMap;
+	OSType 	typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
+	MySFReply 	reply;
+	WorldRect	theRect = emptyWorldRect;
+	short 		gridType;
+	Boolean		isESI = false;
+	float arrowDepth = 0;
+
+#if TARGET_API_MAC_CARBON
+		mysfpgetfile(&where, "", -1, typeList,
+				   (MyDlgHookUPP)0, &reply, M38b, MakeModalFilterUPP(STDFilter));
+		if (!reply.good) return USERCANCEL;
+		strcpy(path, reply.fullPath);
+		strcpy(tempStr,path);
+		SplitPathFile(tempStr,shortFileName);
+#else
+	sfpgetfile(&where, "",
+			   (FileFilterUPP)0,
+			   -1, typeList,
+			   (DlgHookUPP)0,
+			   &reply, M38b,
+			   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
+	if (!reply.good) return USERCANCEL;
+
+	my_p2cstr(reply.fName);
+	#ifdef MAC
+		GetFullPath(reply.vRefNum, 0, (char *)reply.fName, path);
+		strcpy(shortFileName,(char*) reply.fName);
+	#else
+		strcpy(path, reply.fName);
+		strcpy(tempStr,path);
+		SplitPathFile(tempStr,shortFileName);
+	#endif
+#endif	
+	if (IsVectorMap (path, &isESI))
+	{
+		if (isESI) {printNote("File is ESI segments not map polygons");err=-1; return err;}
+		strcpy (nameStr, "Vector Map: ");
+		strcat (nameStr, shortFileName);
+	
+		vMap = (TVectorMap*) new TVectorMap (nameStr, theRect);
+		if (!vMap)
+			{ TechError("AddMapsDialog()", "new TVectorMap()", 0); return -1; }
+
+		if (err = vMap -> InitMap(path)) { delete vMap; return err; }
+	
+		if (err = model->AddMap(vMap, 0))
+		{
+			vMap -> Dispose ();
+			delete vMap;
+			err = -1;
+		}
+	}
+	else if (IsGridMap (path))
+	{
+		strcpy (nameStr, "Grid Map: ");
+		strcat (nameStr, shortFileName);
+
+		oMap = new TOSSMMap(nameStr, voidWorldRect);
+		if (!oMap)
+			{ TechError("AddMapsDialog()", "new TOSSMMap()", 0); return -1; }
+	
+		if (err = ((TOSSMMap*) oMap) -> InitMap(path)) { delete oMap; return err; }
+	
+		if (err = model->AddMap(oMap, 0))
+		{
+			oMap -> Dispose ();
+			delete oMap;
+			err = -1;
+		}
+	}
+	else if (IsPtCurFile (path))
+	{
+		TMap *newMap = 0;
+		TCurrentMover *newMover = CreateAndInitCurrentsMover (model->uMap,false,path,"ptcurfile",&newMap);	// already have path
+		
+		if (newMover)
+		{
+			PtCurMover *ptCurMover = dynamic_cast<PtCurMover*>(newMover);
+			err = ptCurMover -> SettingsDialog();
+			if(err)	
+			{ 
+				newMover->Dispose(); delete newMover; newMover = 0;
+				if (newMap) {newMap->Dispose(); delete newMap; newMap = 0;} 
+			}
+	
+			if(newMover && !err)
+			{
+				Boolean timeFileChanged = false;
+				if (!newMap) 
+				{
+					err = AddMoverToMap (model->uMap, timeFileChanged, newMover);
+				}
+				else
+				{
+					err = model -> AddMap(newMap, 0);
+					if (!err) err = AddMoverToMap(newMap, timeFileChanged, newMover);
+					//if(!err) err = ((PtCurMap*)newMap)->MakeBitmaps();
+					if (!err) newMover->SetMoverMap(newMap);
+					if (model->ThereIsA3DMover(&arrowDepth)) InitAnalysisMenu();	// want to have it come and go?
+					else 
+					{
+						newMap->Dispose(); delete newMap; newMap =0; 
+						newMover->Dispose(); delete newMover; newMover = 0;
+						return -1; 
+					}
+				}
+			}
+		}
+	}
+	else if (IsNetCDFFile (path, &gridType))
+	{
+		TMap *newMap = 0;
+		//TCurrentMover *newMover = CreateAndInitCurrentsMover (model->uMap,false,path,"NetCDFfile",&newMap);	// already have path
+		
+		char s[256],fileName[256];
+		WorldRect bounds = theWorld;
+
+		strcpy(s,path);
+		SplitPathFile (s, fileName);
+		strcat (nameStr, fileName);
+		gMap = CreateAndInitMap3D (path,bounds);	// need to fix bounds afterwards
+		
+		if (gMap && gridType!=REGULAR && gridType!=REGULAR_SWAFS)
+		{
+			FLOATH depthPtsH = 0;
+			WORLDPOINTFH vertexPtsH=0;
+			long numRows=0, numCols=0, numNodes=0, numTri=0, numBoundaryPts=0;
+			char errmsg[256];
+			if (gridType == CURVILINEAR)
+			{
+				DOUBLEH maskH = 0;
+				err = gMap->GetPointsAndMask(path,&maskH,&vertexPtsH,&depthPtsH,&numRows, &numCols);	//Text read	
+				if (!err) err = gMap->SetUpCurvilinearGrid(path,maskH,numRows,numCols,vertexPtsH,depthPtsH,errmsg);	//Reorder points
+				if(maskH) {DisposeHandle((Handle)maskH); maskH = 0;}
+			}
+			else if (gridType == TRIANGULAR)
+			{	// check if topology is included
+				LONGPTR bndry_indices=0, bndry_nums=0, bndry_type=0, tri_verts=0, tri_neighbors=0;
+				err = gMap->GetPointsAndBoundary(path,&vertexPtsH,&depthPtsH, &numNodes, &bndry_indices, &bndry_nums, &bndry_type, &numBoundaryPts, &tri_verts, &tri_neighbors, &numTri);	//Text read	
+				if (!err) 
+				{	// separate points and boundary
+					if (numTri == 0)
+						err = gMap->SetUpTriangleGrid(path,numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts);	//Reorder points
+					else
+						err = gMap->SetUpTriangleGrid2(path,numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts,tri_verts, tri_neighbors);	//Reorder points
+				
+				}
+				if (bndry_indices) delete [] bndry_indices;
+				if (bndry_nums) delete [] bndry_nums;
+				if (bndry_type) delete [] bndry_type;
+				if (tri_verts) delete [] tri_verts;
+				if (tri_neighbors) delete [] tri_neighbors;
+			}
+			if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
+			if(depthPtsH) {DisposeHandle((Handle)depthPtsH); depthPtsH = 0;}
+			if( !err) err = gMap->MakeBitmaps();
+			if (!err) err = model->AddMap(gMap, 0);
+			if (err)
+			{
+				gMap -> Dispose ();
+				delete gMap;
+				err = -1;
+			}
+		}
+		else
+		{
+			err = true;
+			sprintf(tempStr,"File %s is a current file and should be input as a universal mover.",shortFileName);
+			printNote(tempStr);
+		}
+	}
+	else if (IsTriCurFile (path))
+	{
+		TMap *newMap = 0;
+		TCurrentMover *newMover = CreateAndInitCurrentsMover (model->uMap,false,path,"TriCurFile",&newMap);	// already have path
+		
+		if (newMover)
+		{
+			TriCurMover *triCurMover = dynamic_cast<TriCurMover *>(newMover);
+			err = triCurMover -> SettingsDialog();
+			if(err)	
+			{ 
+				newMover->Dispose(); delete newMover; newMover = 0;
+				if (newMap) {newMap->Dispose(); delete newMap; newMap = 0;} 
+			}
+	
+			if(newMover && !err)
+			{
+				Boolean timeFileChanged = false;
+				if (!newMap) 
+				{
+					err = AddMoverToMap (model->uMap, timeFileChanged, newMover);
+				}
+				else
+				{
+					err = model -> AddMap(newMap, 0);
+					if (err) 
+					{
+						newMap->Dispose(); delete newMap; newMap =0; 
+						newMover->Dispose(); delete newMover; newMover = 0;
+						return -1; 
+					}
+					err = AddMoverToMap(newMap, timeFileChanged, newMover);
+					if(err) 
+					{
+						newMap->Dispose(); delete newMap; newMap =0; 
+						newMover->Dispose(); delete newMover; newMover = 0;
+						return -1; 
+					}
+					/*err = ((PtCurMap*)newMap)->MakeBitmaps();
+					if(err) 
+					{
+						newMap->Dispose(); delete newMap; newMap = 0; 
+						newMover->Dispose(); delete newMover; newMover = 0;
+						return -1; 
+					}*/
+					newMover->SetMoverMap(newMap);
+					if (model->ThereIsA3DMover(&arrowDepth)) InitAnalysisMenu();	// want to have it come and go?
+				}
+			}
+		}
+		else
+		{
+			err = true;
+			sprintf(tempStr,"File %s is a current file and should be input as a universal mover.",shortFileName);
+			printNote(tempStr);
+		}
+	}
+	else if (IsCATS3DFile (path))
+	{
+		char s[256],fileName[256];
+		WorldRect bounds = theWorld;
+
+		strcpy(s,path);
+		SplitPathFile (s, fileName);
+		strcat (nameStr, fileName);
+		gMap = CreateAndInitMap3D (path,bounds);	// need to fix bounds afterwards
+		
+		if (gMap)
+		{
+			err = gMap->ReadCATSMap(path);	
+			if(!err) err = gMap->MakeBitmaps();
+
+			if (err = model->AddMap(gMap, 0))
+			{
+				gMap -> Dispose ();
+				delete gMap;
+				err = -1;
+			}
+		}
+	}
+	else
+	{
+		WorldRect bounds = theWorld;
+		gMap = CreateAndInitMap3D (path,bounds);	// need to fix bounds afterwards
+		err = gMap -> ReadTopology(path);
+			if(!err) err = gMap->MakeBitmaps();
+			if (err = model->AddMap(gMap, 0))
+			{
+				gMap -> Dispose ();
+				delete gMap;
+				err = -1;
+			}
+		//err = true;
+		if (err)
+		{sprintf(tempStr,"File %s is not a recognizable map file.",shortFileName);
+		printError(tempStr);}
 	}
 
 	if (!err)

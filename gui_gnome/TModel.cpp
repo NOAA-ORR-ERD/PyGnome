@@ -1695,7 +1695,11 @@ OSErr TModel::SaveMossLEFile (Seconds fileTime, short fileNumber)
 				char* status;
 				double ageInHrs, elapsedTimeInHrs, mass;
 				
-				elapsedTimeInHrs = (GetModelTime() - theLE.releaseTime) / 3600.;
+				if (bHindcast)	
+					elapsedTimeInHrs = (double)(theLE.releaseTime - GetModelTime()) / 3600.;
+				else
+					elapsedTimeInHrs = (double)(GetModelTime() - theLE.releaseTime) / 3600.;
+				
 				
 				if(isUncertainLE){
 					keyWord = "RELATIVEPROBABILITY";
@@ -2893,7 +2897,7 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 	AdiosInfoRecH adiosBudgetTable;
 	Boolean should_disperse;
 	Boolean selected_disperse;
-	PtCurMap *pt_cur_map;	// in theory should be moverMap, unless universal...
+	TMap *map;	// in theory should be moverMap, unless universal...
 
 	
 	vector<LETYPE> *tmapping;
@@ -2980,14 +2984,17 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 				// set up the mover:
 			case TYPE_WINDMOVER:
 				// set up the breaking wave, mixed layer depth:
-				pt_cur_map = GetPtCurMap();
-				if (!pt_cur_map)  {
-					// AH 06/20/2012: (because we don't have a default value for mixed layer depth:)
-					printError("Programmer error - TWindMover::GetWindageMove(). Moving on to the next mover.\n");
-					continue;
+				map = Get3DMap();
+				if (!map)  {
+					// use defaults
+					((TWindMover*)mover)->breaking_wave_height = 1.;	// meters
+					((TWindMover*)mover)->mixed_layer_depth = 10.;	// meters
 				}
-				((TWindMover*)mover)->breaking_wave_height = pt_cur_map->GetBreakingWaveHeight();
-				((TWindMover*)mover)->mixed_layer_depth = pt_cur_map->fMixedLayerDepth;
+				else
+				{
+					((TWindMover*)mover)->breaking_wave_height = map->GetBreakingWaveHeight();
+					((TWindMover*)mover)->mixed_layer_depth = map->GetMixedLayerDepth();
+				}
 				break;
 			case TYPE_RANDOMMOVER:
 				// ..
@@ -3018,14 +3025,18 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 					// set up the mover:
 				case TYPE_WINDMOVER:
 					// set up the breaking wave, mixed layer depth:
-					pt_cur_map = GetPtCurMap();
-					if (!pt_cur_map)  {
-						// AH 06/20/2012: (because we don't have a default value for mixed layer depth:)
-						printError("Programmer error - TWindMover::GetWindageMove(). Moving on to the next mover.\n");
-						continue;
+					map = Get3DMap();
+					if (!map)  
+					{
+						//use defaults
+						((TWindMover*)mover)->breaking_wave_height = 1.;	// meters
+						((TWindMover*)mover)->mixed_layer_depth = 10.;	// meters
 					}
-					((TWindMover*)mover)->breaking_wave_height = pt_cur_map->GetBreakingWaveHeight();
-					((TWindMover*)mover)->mixed_layer_depth = pt_cur_map->fMixedLayerDepth;
+					else
+					{
+						((TWindMover*)mover)->breaking_wave_height = map->GetBreakingWaveHeight();
+						((TWindMover*)mover)->mixed_layer_depth = map->GetMixedLayerDepth();
+					}
 					break;
 				case TYPE_RANDOMMOVER:
 					// ..
@@ -3155,10 +3166,17 @@ OSErr TModel::check_spills(vector<WorldPoint3D> *delta, vector <LERec *> *pmappi
 							 distanceInKm = DistanceBetweenWorldPoints(le_ptr->p,delta[i][j].p);
 						 }
 						 ///////////////
-						 le_ptr->statusCode = OILSTAT_ONLAND;
-						 le_ptr->lastWaterPt = le_ptr->p;
-						 le_ptr->p = delta[i][j].p;
-						 le_ptr->z = delta[i][j].z;
+						if ( delta[i][j].z > 0) 
+						{
+							// don't let subsurface LEs beach, refloat immediately
+						}
+						else
+						{
+							le_ptr->statusCode = OILSTAT_ONLAND;
+							le_ptr->lastWaterPt = le_ptr->p;
+							le_ptr->p = delta[i][j].p;
+							le_ptr->z = delta[i][j].z;
+						}
 					 }
 					 else
 					 {
@@ -3227,10 +3245,17 @@ OSErr TModel::check_spills(vector<WorldPoint3D> *delta, vector <LERec *> *pmappi
 							 }
 						 }
 						 /////////}
-						 
-						 le_ptr->lastWaterPt = le_ptr->p;
-						 le_ptr->p = delta[i][j].p;
-						 le_ptr->z = delta[i][j].z;
+						if ( delta[i][j].z > 0) 
+						{
+							le_ptr->statusCode = OILSTAT_INWATER;
+							// don't let subsurface LEs beach, refloat immediately
+						}
+						else
+						{
+							le_ptr->lastWaterPt = le_ptr->p;
+							le_ptr->p = delta[i][j].p;
+							le_ptr->z = delta[i][j].z;
+						}
 					 }
 					 else
 					 {
@@ -3257,7 +3282,8 @@ OSErr TModel::check_spills(vector<WorldPoint3D> *delta, vector <LERec *> *pmappi
 				 if(spill->IAm(TYPE_OSSMLELIST)) {
 					if((*(TOLEList*)spill).fSetSummary.riseVelocity != 0)
 					{
-						PtCurMap *map = GetPtCurMap();
+						//PtCurMap *map = GetPtCurMap();
+						TMap *map = Get3DMap();
 						WorldPoint refPoint = le_ptr->p;	
 						//if (map && thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
 						if (le_ptr->statusCode == OILSTAT_INWATER && le_ptr->z > 0) 
@@ -3849,7 +3875,6 @@ OSErr TModel::Step ()
 		PtCurMap *map = GetPtCurMap();
 		//if (map && (dispInfo.bDisperseOil || adiosBudgetTable))
 		if (map)	// allow tracking budget table if not dispersed
-			//map->TrackOutputData((TOLEList *)thisLEList);	// issue of more than one dispersed spill...
 		{
 			//if (map->bTrackAllLayers) map->TrackOutputDataInAllLayers();
 			map->TrackOutputData();	
@@ -4392,13 +4417,6 @@ OSErr TModel::StepBackwards ()
 			thisLEList -> SetLE (j, &thisLE);
 		}
 	}
-	/*{	// totals LEs from all spills
-		PtCurMap *map = GetPtCurMap();
-		//if (map && (dispInfo.bDisperseOil || adiosBudgetTable))
-		if (map)	// allow tracking budget table if not dispersed
-			//map->TrackOutputData((TOLEList *)thisLEList);	// issue of more than one dispersed spill...
-			map->TrackOutputData();	
-	}*/	//want to hindcast 3D ?
 
 	this -> TellMoversStepIsDone();
 		
@@ -7527,6 +7545,7 @@ OSErr TModel::Read(BFPB *bfpb)
 			case TYPE_VECTORMAP: thisMap = (TMap *)new TVectorMap ("", voidWorldRect); break;
 			case TYPE_PTCURMAP: thisMap = (TMap *)new PtCurMap ("", voidWorldRect); break;
 			case TYPE_COMPOUNDMAP: thisMap = (TMap *)new TCompoundMap ("", voidWorldRect); break;
+			case TYPE_MAP3D: thisMap = (TMap *)new Map3D ("", voidWorldRect); break;
 			
 			default: printError("Unrecognized map type in TModel::Read()."); return -1;
 		}
@@ -8470,7 +8489,8 @@ OSErr TModel::AddItem(ListItem item)
 			short dItem = MyModalDialog (M21b, mapWindow, 0, M21bInit, M21bClick);
 			if (dItem == M21bLOAD)
 			{
-				AddMapsDialog (); break;
+				//AddMapsDialog (); break;
+				AddMapsDialog2 (); break;
 			}
 			else if (dItem == M21bCREATE)
 			{

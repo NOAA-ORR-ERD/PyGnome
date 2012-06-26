@@ -46,6 +46,8 @@ TCATSMover::TCATSMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 	fEddyDiffusion=0; // JLM 5/20/991e6; // cm^2/sec
 	fEddyV0 = 0.1; // JLM 5/20/99
 
+	bApplyLogProfile = false;
+
 	memset(&fOptimize,0,sizeof(fOptimize));
 	SetClassName (name);
 }
@@ -165,6 +167,7 @@ OSErr TCATSMover::InitMover(TGridVel *grid, WorldPoint p)
 	bShowGrid = FALSE;
 	arrowScale = 1;// debra wanted 10, CJ wanted 5, JLM likes 5 too (was 1)
 	// CJ wants it back to 1, 4/11/00
+
 	bApplyLogProfile = false;
 	arrowDepth = 0.;	// if want to show subsurface velocity for log profile
 	
