@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+"""
+Point in Polygon code.
+"""
+
 import numpy as np
 
 def CrossingsTest( pgon, (tx, ty) ):
@@ -19,7 +25,7 @@ def CrossingsTest( pgon, (tx, ty) ):
     
     """
     # make it a numpy array if it isn't one
-    pgon = np.asarray(pgon)
+    pgon = np.asarray(pgon).reshape((-1, 2))
     
     if pgon[0,0] == pgon[-1,0] and pgon[0,1] == pgon[-1,1]:
         # first and last points are the same, so ignore the last point

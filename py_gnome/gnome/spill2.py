@@ -47,6 +47,7 @@ class FloatingSpill(object):
         ##fixme: perhaps the data types should be pulled from a central location, 
         ##       to make sure it's compatible with the the C++ types. 
         self.data_dict['positions'] = np.ndarray((num_particles, 2), dtype=np.float64)
+        self.data_dict['prev_positions'] =  np.ndarray((num_particles, ), dtype = np.float64)
         self.data_dict['windage'] =  np.ndarray((num_particles, ), dtype = np.float64)
         self.data_dict['last_water_pt'] = np.ndarray((num_particles, 2), dtype = np.float64)
         self.data_dict['status_code'] = np.ndarray((num_particles, ), dtype = np.int16)
@@ -57,11 +58,11 @@ class FloatingSpill(object):
         
         param: fields: a list of the fields that you want
         
-        a dict of the data, indexed by the field names, is returned
+        returns: a list of the data arrays, in the order of the inputs
         """
-        data_arrays = {}
+        data_arrays = []
         for key in fields:
-            data_arrays[key] = self.data_dict[key]
+            data_arrays.append = self.data_dict[key]
         
         return data_arrays
 

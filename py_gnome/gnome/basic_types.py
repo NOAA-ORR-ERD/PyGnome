@@ -22,11 +22,15 @@ wind_uncertain_rec = numpy.dtype([('randCos', numpy.float), ('randSin', numpy.fl
 velocity_rec = numpy.dtype([('u', numpy.double), ('v', numpy.double),], align=True)
 time_value_pair = numpy.dtype([('time', numpy.uint32), ('value', velocity_rec),], align=True)
 
+## could we use bit flags for status???
+## and/or simpler status -- i.e 0 is "regular old LE that's moving... (I guess that's the status_in_water code)
+## why are these found in the wind_move module?
 status_not_released = wind_mover.status_not_released
 status_in_water = wind_mover.status_in_water
 status_on_land = wind_mover.status_on_land
 status_off_maps = wind_mover.status_off_maps
 status_evaporated = wind_mover.status_evaporated
+
 
 disp_status_dont_disperse = wind_mover.disp_status_dont_disperse
 disp_status_disperse = wind_mover.disp_status_disperse

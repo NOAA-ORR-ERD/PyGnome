@@ -47,7 +47,12 @@ def test_outside1():
 def test_outside2():
     assert PinP.CrossingsTest( poly2, (2, 2) ) is False
 
-
-
+def test_float():
+    poly = ( (-50, -30), (-50, 30), (50, 30), (50, -30) )
+    poly = np.array(poly, dtype = np.float64)
+    
+    #assert PinP.CrossingsTest( poly, (0, 0) ) is True
+    
+    assert PinP.CrossingsTest( poly, (100.0, 1.0) ) is False
 
                

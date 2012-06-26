@@ -18,6 +18,9 @@ def test_import_spill():
 ## import the cython extensions:
 
 def test_import_model():
+    import gnome.c_gnome
+
+def test_import_model():
     import gnome.model
 
 def test_import_cats_mover():

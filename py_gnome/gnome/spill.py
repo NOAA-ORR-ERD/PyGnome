@@ -129,3 +129,11 @@ class spill:
 #        merg = [int(chromgph[x] and not self.chromgph[x]) for x in xrange(0, len(chromgph))]
 #        self.chromgph = chromgph
 #        return merg
+
+        
+        
+        
+    
+    
+    
+    

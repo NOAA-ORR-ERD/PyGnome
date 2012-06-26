@@ -1,12 +1,16 @@
 import cython
+
 DEF HEADERS = list()
+
 cimport numpy as np
 import numpy as np
+
 include "type_defs.pxi"
+
 include "map.pxi"
+
 include "cats_mover.pxi"
 include "shio_time.pxi"
-
 
 cdef class cats_mover:
 
@@ -46,7 +50,8 @@ cdef class cats_mover:
         
     def read_topology(self, path):
         cdef Map_c **naught
-        #fixme: why might htis fail? 
+        #fixme: why might this fail? 
+        # does **naught have to be initialized?
         if(self.mover.ReadTopology(path, naught)):
             return False
         return True

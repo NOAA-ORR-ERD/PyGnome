@@ -13,182 +13,38 @@ import numpy as np
 
 from PIL import Image, ImageDraw
 
-from hazpy.file_tools import haz_files
+from gnome.utilities.file_tools import haz_files
+from gnome.utilities import projections
 
-## note -- these shouldn't be globals, really.
 
-def make_map(bna_filename, png_filename, image_size = (500, 500)):
+def make_map(bna_filename, png_filename, image_size = (500, 500), format='RGB'):
     """
     utility function to draw a PNG map from a BNA file
+    
+    param: bna_filename -- file name of BNA file to draw map from
+    param: png_filename -- file name of PNG file to write out
+    param: image_size=(500,500) -- size of image (width, height) tuple
+    param: format='RGB' -- format of image. Options are: 'RGB', 'palette', 'B&W'
+    
     """
 
 
     #print "Reading input BNA"
     polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
 
-#    print "number of input polys: %i"% len(polygons)
-#    print "total number of input points: %i "%polygons.total_num_points
-
-    # find the bounding box:
-    #BB = polygons.bounding_box
-    #proj = FlatEarthProjection(BB, image_size)
-    # project the data:
-    #polygons.TransformData(proj.to_pixel)
-
-    canvas = MapCanvas(image_size)
-
+    if format == 'B&W':
+        canvas = BW_MapCanvas(image_size)
+    elif format == 'palette':
+        canvas = Palette_MapCanvas(image_size)
+    elif format == 'RGB':
+        canvas = MapCanvas(image_size)
+    else:
+        raise ValueError("image format: %s not supported"%format)
+    
     canvas.draw_land(polygons)
     
     canvas.save(png_filename, "PNG")
 
-class NoProjection:
-    """
-    This is do-nothing projeciton class -- returns what it gets.
-    
-    used for testing.
-    """
-    def __init__(self, bounding_box=None, image_size=None):
-        """
-        create a new projection do-nothing projection
-        """
-        pass
-        return None
-    
-    def set_scale(self, bounding_box, image_size):
-        pass
-
-    def to_pixel(self, coords):
-        """
-        returns the same coords, but as an np.array , if they aren't already
-        """
-        return np.asarray(coords, dtype=np.int)
-    
-    def to_lat_long(self, coords):
-        """
-        returns the same coords, but as an np.array , if they aren't already
-        """
-        return np.AsArray(coords, dtype=np.float64)
-
-
-class Projection:
-    """
-    This is the base class for a projection
-    
-    This one doesn't really project, but does convert to pixel coords
-    i.e. "geo-coorddinaes"
-    """
-    def __init__(self, bounding_box, image_size):
-        """
-        create a new projection
-
-        Projection(bounding_box, image_size)
-    
-        bounding_box: the bounding box of the map:
-           ( (min_long, min_lat),
-             (max_lon,  max_lat) )
-        
-        (or a BoundingBox Object)
-        
-        image_size: the size of the map image -- (width, height)
-        """
-        self.set_scale(bounding_box, image_size)
-        
-        return None
-    
-    def set_scale(self, bounding_box, image_size):
-        """
-        set (or reset) the scaling, etc of the projection
-        
-        This should be called whenever the bounding box of the map,
-        or the size of the image is changed
-        """
-        
-        bounding_box = np.asarray(bounding_box, dtype=np.float64)
-
-        self.center = np.mean(bounding_box, axis=0)
-        self.offset = np.array((image_size), dtype=np.float64) / 2
-        
-        # compute BB to fit image
-        h = bounding_box[1,1] - bounding_box[0,1]
-        # width scaled to longitude
-        w = (bounding_box[1,0] - bounding_box[0,0])
-        if w/h > image_size[0] / image_size[1]:
-            s = image_size[0] / w
-        else:
-            s = image_size[1] / h
-        self.scale = (s, -s)
-
-    def to_pixel(self, coords):
-        """
-        
-        converts input coordinates to pixel coords
-        
-        param: coords --  an array of coordinates:
-          NX2: ( (long1, lat1),
-                 (long2, lat2),
-                 (long3, lat3),
-                 .....
-                )
-        
-        returns:  the pixel coords as a similar Nx2 array of integer x,y coordinates
-        (using the y = 0 at the top, and y increasing down) -- a
-        """
-        # b = a.view(shape=(10,2),dtype='<f4')
-        # shift to center:
-        coords = coords - self.center
-        # scale to pixels:
-        coords *= self.scale
-        # shift to pixel coords
-        coords += self.offset
-        
-        return coords.astype(np.int)
-    
-    def to_lat_long(self, coords):
-        ## note: untested!
-
-        # shift to pixel center coords
-        coords = coords - self.offset
-        # scale to lat-lon
-        coords /= self.scale
-        # shift from center:
-        coords += self.center
-        return coords
-
-class FlatEarthProjection(Projection):
-    """
-    class to define a "flat earth" projection:
-        longitude is scaled to the cos of the mid-latitude -- but that's it.
-        
-        not conforming to eaual area, distance, bearing, or any other nifty
-        map properties -- but easy to compute
-        
-    """
-    
-    def set_scale(self, bounding_box, image_size):
-        """
-        set the scaling, etc of the projection
-        
-        This should be called whenever the boudnign box of the map,
-        or the size of the image is changed
-        """
-        
-        bounding_box = np.asarray(bounding_box, dtype=np.float64)
-
-        self.center = np.mean(bounding_box, axis=0)
-        self.offset = np.array((image_size), dtype=np.float64) / 2
-        
-        lon_scale = np.cos(np.deg2rad(self.center[1]))
-        # compute BB to fit image
-        h = bounding_box[1,1] -	 bounding_box[0,1]
-        # width scaled to longitude
-        w = lon_scale * (bounding_box[1,0] - bounding_box[0,0])
-        if w/h > image_size[0] / image_size[1]:
-            s = image_size[0] / w
-        else:
-            s = image_size[1] / h
-        #s *= 0.5
-        self.scale = (lon_scale*s, -s)
-        
         
 class MapCanvas:
     """
@@ -203,11 +59,11 @@ class MapCanvas:
     """
     # a bunch of constants -- maybe they should be settable, but...
     background_color = (255, 255, 255)
-    lake_color       = (0, 128, 255)# blue
+    #lake_color       = (0, 128, 255) # blue
     lake_color       = background_color
     land_color       = (255, 204, 153)
 
-    def __init__(self, size, projection=FlatEarthProjection, mode='RGB'):
+    def __init__(self, size, projection=projections.FlatEarthProjection, mode='RGB'):
         """
         create a new map image from scratch -- specifying the size:
         
@@ -275,28 +131,71 @@ class MapCanvas:
         """
         # makes sure the you get a c-contiguous array with width-height right
         #   (PIL uses the reverse convention)
+        ## fixme: what data type and shape will this give us?
         return np.ascontiguousarray(np.asarray(self.image).T)
 
-class BW_MapCanvas(MapCanvas):
+class Palette_MapCanvas(MapCanvas):
     """
-    a version of the map canvas that draws B and White images
+    a version of the map canvas that uses a palleted image:
+    256 colors only.
     
-    used to generate the raster maps
     """
-    # a bunch of constants -- maybe they should be settable, but...
-    background_color = 0
-    lake_color       = 0
-    land_color       = 1
-
-    def __init__(self, size, projection=FlatEarthProjection):
+    
+    def __init__(self, size, projection=projections.FlatEarthProjection):
         """
         create a new map image from scratch -- specifying the size:
         
         size: (width, height) tuple
         
         """
-        self.image = Image.new('P', size, color=self.background_color)
+        self.image = Image.new('P', size, color=0)
+        drawer = ImageDraw.Draw(self.image) # couldn't find a better way to initilize the colors right.
+        drawer.rectangle(((0,0), size), fill=self.background_color)
+        
         self.projection = projection
+
+    def as_array(self):
+        """
+        returns a numpy array of the data in the image
+        
+        this version returns dtype: np.uint8
+
+        """
+        # makes sure the you get a c-contiguous array with width-height right
+        #   (PIL uses the reverse convention)
+        return np.ascontiguousarray(np.asarray(self.image, dtype=np.uint8).T)
+    
+class BW_MapCanvas(MapCanvas):
+    """
+    a version of the map canvas that draws Black and White images
+    (Note -- hard to see -- water color is very, very dark grey!)
+    used to generate the raster maps
+    """
+    background_color = 0
+    land_color       = 1
+    lake_color       = 0 # same as background -- i.e. water.
+    
+    def __init__(self, size, projection=projections.FlatEarthProjection):
+        """
+        create a new map image from scratch -- specifying the size:
+        
+        size: (width, height) tuple
+        
+        """
+        self.image = Image.new('L', size, color=self.background_color)
+        self.projection = projection
+
+    def as_array(self):
+        """
+        returns a numpy array of the data in the image
+        
+        this version returns dtype: np.uint8
+
+        """
+        # makes sure the you get a c-contiguous array with width-height right
+        #   (PIL uses the reverse convention)
+        return np.ascontiguousarray(np.asarray(self.image, dtype=np.uint8).T)
+
     
 
 #if __name__ == "__main__":

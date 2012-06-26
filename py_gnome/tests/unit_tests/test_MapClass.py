@@ -2,7 +2,7 @@
 """
 Latest Revision: Mar 26
 
-Can be run with either nose or py.test
+Designed to be run with py.test
 
 
 @author: brian.zelenke
@@ -13,69 +13,82 @@ You should  be able to `git checkout prototype; cd py_gnome; python setup.py bui
 from __future__ import division
 import numpy as np
 import gnome.map
+from gnome.utilities.file_tools import haz_files
+from gnome.utilities import map_canvas
 
 
+##fixme: these two should maybe be in their own test file -- for testing map_canvas.
 def test_map_island_color():
     '''
     Test the creation of a color map with an island inset.
     '''
-    m = gnome.map.gnome_map([500,500],
-                            "SampleData/MapBounds_Island.bna",
-                            color_mode='RGB') #Create a 500x500 pixel map.
-    m.image.save('Color_MapBounds.png') #Write the result to the present working directory as a PNG image file.
+    polygons = haz_files.ReadBNA("SampleData/MapBounds_Island.bna", "PolygonSet")
+    m = map_canvas.Palette_MapCanvas( (500,500) )
+    m.draw_land(polygons)
+    m.save('Color_LandMap.png') #Write the result to the present working directory as a PNG image file.
     assert True
+
     #assert False #Force this test to fail so that NOSE will print output to the command window.
 
 def test_map_island_monochrome():
     '''
     Test the creation of a black and white map with an island inset.
     '''
-    m = gnome.map.lw_map([500,500],"SampleData/MapBounds_Island.bna",2.*60.*60.,"1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
-    m.image.save('B&W_MapBounds.png') #Write the result to the present working directory as a PNG image file.
+    polygons = haz_files.ReadBNA("SampleData/MapBounds_Island.bna", "PolygonSet")
+    m = map_canvas.BW_MapCanvas( (500,500) )
+    m.draw_land(polygons)
+    m.save('BW_LandMap.png') #Write the result to the present working directory as a PNG image file.
     assert True
+
     #assert False #Force this test to fail so that NOSE will print output to the command window.
 
-def test_map_in_water():
-    '''
-    Test whether the location of a particle on the map -- in or out of water -- is determined correctly.
-    '''
-    m = gnome.map.lw_map([500,500],"SampleData/MapBounds_Island.bna",2.*60.*60.,"1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
-    
-    #Coordinate of a point within the water area of MapBounds_Island.bna.
-    LatInWater=48.1647
-    LonInWater=-126.78709
-    
-    assert(m.in_water((LonInWater,LatInWater))) #Throw an error if the know in-water location returns false.
-
-def test_map_on_land():
-    '''
-    Test whether the location of a particle on the map -- off or on land -- is determined correctly.
-    '''
-    m = gnome.map.lw_map((500,500),
-                         "SampleData/MapBounds_Island.bna",
-                         2.*60.*60.,
-                         color_mode = "1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
-    
-    #Coordinate of a point on the island of MapBounds_Island.bna.  This point
-    #passes the test.  [Commented-out in favor of coordinate below.]
-    #OnLand = (-126.78709, 47.833333)
-    
-    #Coordinate of a point that is outside of the "Map Bounds" polygon.
-    OnLand = (-127, 47.4) #Barker:  this should be failing! that's not on land == but it is on the map.  Zelenke:  This point falls outside of the "Map Bounds" polygon.
-    
-    #Coordinate of a point in water that is within both the "Map Bounds" and
-    #"SpillableArea" polygons of of MapBounds_Island.bna.
-    #InWater = (-127, 47.7)
-    #assert(m.on_land( InWater )) #This should fail.  Commented out in lieu of line below.
-    
-    assert(m.on_land( OnLand )) #Throw an error if the known on-land location returns false.
+### tests of depricated code -- port to new map code?
+#def test_map_in_water():
+#    '''
+#    Test whether the location of a particle on the map -- in or out of water -- is determined correctly.
+#    '''
+#    m = gnome.map.lw_map([500,500],
+#                         "SampleData/MapBounds_Island.bna",
+#                         2.*60.*60.,"1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
+#    
+#    #Coordinate of a point within the water area of MapBounds_Island.bna.
+#    LatInWater=48.1647
+#    LonInWater=-126.78709
+#    
+#    assert(m.in_water((LonInWater,LatInWater))) #Throw an error if the know in-water location returns false.
+#
+#def test_map_on_land():
+#    '''
+#    Test whether the location of a particle on the map -- off or on land -- is determined correctly.
+#    '''
+#    m = gnome.map.lw_map((500,500),
+#                         "SampleData/MapBounds_Island.bna",
+#                         2.*60.*60.,
+#                         color_mode = "1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
+#    
+#    #Coordinate of a point on the island of MapBounds_Island.bna.  This point
+#    #passes the test.  [Commented-out in favor of coordinate below.]
+#    #OnLand = (-126.78709, 47.833333)
+#    
+#    #Coordinate of a point that is outside of the "Map Bounds" polygon.
+#    OnLand = (-127, 47.4) #Barker:  this should be failing! that's not on land == but it is on the map.  Zelenke:  This point falls outside of the "Map Bounds" polygon.
+#    
+#    #Coordinate of a point in water that is within both the "Map Bounds" and
+#    #"SpillableArea" polygons of of MapBounds_Island.bna.
+#    #InWater = (-127, 47.7)
+#    #assert(m.on_land( InWater )) #This should fail.  Commented out in lieu of line below.
+#    
+#    assert(m.on_land( OnLand )) #Throw an error if the known on-land location returns false.
 
 def test_in_water_resolution():
     '''
     Test the limits of the precision, to within an order of magnitude, defining whether a point is in or out of water.
     '''
     
-    m = gnome.map.lw_map([500,500],"SampleData/MapBounds_Island.bna",2.*60.*60.,"1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
+    m = gnome.map.MapFromBNA( bna_filename = "SampleData/MapBounds_Island.bna" ,
+                              refloat_halflife = (2.*60.*60.) ,
+                              raster_size = 500*500 , # approx resolution
+                              ) #Create an 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
     
     #Specify coordinates of the two points that make up the southeastern coastline segment of the island in the BNA map.
     x1=-126.78709
@@ -144,7 +157,7 @@ class Test_GnomeMap:
     
 #####
 from gnome.map import RasterMap
-from gnome.utilities import map_canvas
+from gnome.utilities import map_canvas, projections
 class Test_RasterMap():
     """
     some tests for the raster map
@@ -160,7 +173,7 @@ class Test_RasterMap():
         map = RasterMap(refloat_halflife = 6, #hours
                         bitmap_array= self.raster,
                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
-                        projection=map_canvas.NoProjection(),
+                        projection=projections.NoProjection(),
                         )
         assert map.on_map((0.0, 0.0))
 
@@ -170,7 +183,7 @@ class Test_RasterMap():
         map = RasterMap(refloat_halflife = 6, #hours
                         bitmap_array= self.raster,
                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
-                        projection=map_canvas.NoProjection(),
+                        projection=projections.NoProjection(),
                         )
         print "testing a land point:"
         assert map.on_land((10, 6)) # right in the middle
@@ -184,7 +197,7 @@ class Test_RasterMap():
         map = RasterMap(refloat_halflife = 6, #hours
                         bitmap_array= self.raster,
                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
-                        projection=map_canvas.NoProjection(),
+                        projection=projections.NoProjection(),
                         )
         print "testing a land point:"
         assert not map.allowable_spill_position((10, 6)) # right in the middle of land
@@ -199,7 +212,7 @@ class Test_RasterMap():
         map = RasterMap(refloat_halflife = 6, #hours
                         bitmap_array= self.raster,
                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
-                        projection=map_canvas.NoProjection(),
+                        projection=projections.NoProjection(),
                         spillable_area = poly
                         )
         
@@ -219,13 +232,11 @@ class Test_RasterMap():
 from gnome.map import MapFromBNA
 class Test_MapfromBNA:
     filename = "SampleData/Mapbounds_Island.bna"
-    bna_map = MapFromBNA(filename, 6)
-    def test__init__(self):
-        m = MapFromBNA(self.filename, 6, raster_size=1000)
+    bna_map = MapFromBNA(filename, 6, raster_size=1000)
     
     def test_map_in_water(self):
         '''
-        Test whether the location of a particle on in water -- is determined correctly.
+        Test whether the location of a particle is in water -- is determined correctly.
         '''
         InWater=( -126.78709, 48.1647 )
         
@@ -240,9 +251,10 @@ class Test_MapfromBNA:
         '''
         Test whether the location of a particle  on land -- is determined correctly.
         '''
-        
         OnLand = (-127, 47.8)
+        
         assert self.bna_map.on_land( OnLand )  #Throw an error if the know on-land location returns false.
+        
         assert not self.bna_map.in_water( OnLand )  #Throw an error if the know on-land location returns false.
 
     def test_map_in_lake(self):
@@ -259,7 +271,7 @@ class Test_MapfromBNA:
 
     def test_map_spillable_lake(self):
         point = (-126.793592, 47.841064) # in lake, should be spillable
-        assert self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
+        assert self.bna_map.allowable_spill_position( point )  #Throw an error if the known on-land location returns false.
     
     def test_map_not_spillable(self):        
         point = (-127, 47.8) # on land should not be spillable
@@ -285,3 +297,51 @@ class Test_MapfromBNA:
     def test_map_off_map(self):
         point = (-126.097336, 47.43962)
         assert not self.bna_map.on_map( point )
+        
+class Test_full_move:
+    """
+    A test to see if the full API is working for beaching
+    
+    
+    It should check for land-jumping and return the "last known water point" 
+    """
+    # a very simple raster:
+    w, h = 20, 10
+    raster = np.zeros((w, h), dtype=np.uint8)
+    # a single skinny vertical line:
+    raster[10, :] = 1
+        
+    def test_on_map(self):
+        map = RasterMap(refloat_halflife = 6, #hours
+                        bitmap_array= self.raster,
+                        map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
+                        projection=projections.NoProjection(),
+                        )
+        # making sure the map is set up right
+        assert map.on_map((100.0, 1.0)) is False
+        assert map.on_map((0.0, 1.0))
+
+    def test_on_land(self):
+        map = RasterMap(refloat_halflife = 6, #hours
+                        bitmap_array= self.raster,
+                        map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
+                        projection=projections.NoProjection(),
+                        )
+        assert map.on_land( (10, 3) ) == 1 
+        assert map.on_land( (9, 3) ) == 0
+        assert map.on_land( (11, 3) ) == 0
+        
+
+    def test_land_cross(self):
+        map = RasterMap(refloat_halflife = 6, #hours
+                        bitmap_array= self.raster,
+                        map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
+                        projection=projections.NoProjection(),
+                        )
+        
+        new_pos, lkwp = map.beach_elements(self, start_pos=(5.0, 5.0), end_pos=(15.0, 5.0))
+        
+        assert new_pos == (10.0, 5.0)
+        assert lkwp == (9.0, 5.0)
+        
+        
