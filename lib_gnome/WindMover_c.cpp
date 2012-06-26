@@ -495,7 +495,15 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 	}
 	if(timeDep)
 		delete timeDep;
-
+	cout << "..\n";
+	if(time_val_hdl)
+		_DisposeHandle((Handle)time_val_hdl);
+	cout << "..\n";
+	if(this->fLESetSizes)
+		_DisposeHandle((Handle)this->fLESetSizes);
+	cout << "..\n";
+	if(this->fWindUncertaintyList)
+		_DisposeHandle((Handle)this->fWindUncertaintyList);
 	return noErr;
 }
 
@@ -571,7 +579,8 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 	}
 	if(timeDep)
 		delete timeDep;
-
+	if(time_val_hdl)
+		_DisposeHandle((Handle)time_val_hdl);
 	return noErr;
 }
 
