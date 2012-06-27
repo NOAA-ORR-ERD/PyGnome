@@ -531,10 +531,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\lib_gnome\NetCDFMoverCurv_b.h"
-					>
-				</File>
-				<File
 					RelativePath="..\lib_gnome\NetCDFMoverCurv_c.cpp"
 					>
 				</File>

@@ -26,12 +26,12 @@
 
 //enum { WIZ_POPUP = 1, WIZ_UNITS , WIZ_EDIT, WIZ_BMP, WIZ_HELPBUTTON };
 
-typedef struct
+/*typedef struct
 {
 	short year;// 1998, etc
 	YEARDATAHDL yearDataHdl;
 } ShioYearInfo;
-
+*/
 typedef struct
 {
 	Seconds time;
@@ -47,6 +47,7 @@ typedef struct
 } HighLowData,*HighLowDataP,**HighLowDataH;
 
 YEARDATAHDL GetYearData(short year);
+YEARDATA2* ReadYearData(short year, const char *path, char *errStr);
 
 class ShioTimeValue_c : virtual public OSSMTimeValue_c {
 

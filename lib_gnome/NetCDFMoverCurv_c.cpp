@@ -24,11 +24,44 @@ NetCDFMoverCurv_c::NetCDFMoverCurv_c (TMap *owner, char *name) : NetCDFMover_c(o
 {
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;
+	bIsCOOPSWaterMask = false;
 }	
+
+Boolean NetCDFMoverCurv_c::IsCOOPSFile()
+{
+	OSErr err = 0;
+	Boolean isCOOPSFile = false;
+	long i,j,k;
+	char path[256], outPath[256];
+	int status, ncid;
+	int mask_id;
+	strcpy(path,fVar.pathName);
+	if (!path || !path[0]) return -1;
+	
+	status = nc_open(path, NC_NOWRITE, &ncid);
+	if (status != NC_NOERR)
+	{
+#if TARGET_API_MAC_CARBON
+		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+		status = nc_open(outPath, NC_NOWRITE, &ncid);
+#endif
+		if (status != NC_NOERR) {err = -1; return false;}
+	}
+
+	status = nc_inq_varid(ncid, "coops_mask", &mask_id);
+	if (status != NC_NOERR)	{isCOOPSFile = false;}
+	else {isCOOPSFile = true; bIsCOOPSWaterMask = true;}
+
+	status = nc_close(ncid);
+	if (status != NC_NOERR) {err = -1; return isCOOPSFile;}
+
+	return 	isCOOPSFile;
+
+}
 
 LongPointHdl NetCDFMoverCurv_c::GetPointsHdl()
 {
-	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
+	return ((TTriGridVel*)fGrid) -> GetPointsHdl();
 }
 
 long NetCDFMoverCurv_c::GetVelocityIndex(WorldPoint wp)
@@ -37,7 +70,10 @@ long NetCDFMoverCurv_c::GetVelocityIndex(WorldPoint wp)
 	if (fGrid) 
 	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectIndexFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		if (bIsCOOPSWaterMask)
+		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+		else
+		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	}
 	return index;
 }
@@ -48,7 +84,10 @@ LongPoint NetCDFMoverCurv_c::GetVelocityIndices(WorldPoint wp)
 	if (fGrid) 
 	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		indices = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectIndicesFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		if (bIsCOOPSWaterMask)
+			indices = ((TTriGridVel*)fGrid)->GetRectIndicesFromTriIndex(wp,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+		else
+			indices = ((TTriGridVel*)fGrid)->GetRectIndicesFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	}
 	return indices;
 }
@@ -80,7 +119,10 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	if (fGrid) 
 	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		if (bIsCOOPSWaterMask)
+		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+		else
+		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 		if (index < 0) return 0;
 		indices = this->GetVelocityIndices(wp.p);
 	}
@@ -214,6 +256,7 @@ WorldPoint3D NetCDFMoverCurv_c::GetMove(Seconds model_time, Seconds timeStep,lon
 	Seconds time = model->GetModelTime();
 	VelocityRec scaledPatVelocity;
 	Boolean useEddyUncertainty = false;	
+	InterpolationVal interpolationVal;
 	OSErr err = 0;
 	char errmsg[256];
 	
@@ -226,7 +269,13 @@ WorldPoint3D NetCDFMoverCurv_c::GetMove(Seconds model_time, Seconds timeStep,lon
 	if (fGrid) 
 	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		if (bIsCOOPSWaterMask)
+		{
+			index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			interpolationVal = fGrid -> GetInterpolationValues(refPoint);
+		}
+		else
+		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	}
 	
 	totalDepth = GetTotalDepth(refPoint,index);
@@ -355,7 +404,7 @@ float NetCDFMoverCurv_c::GetTotalDepthFromTriIndex(long triNum)
 	if (fVar.gridType == SIGMA_ROMS)	// should always be true
 	{
 		//if (triNum < 0) useTriNum = false;
-		err = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
+		err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
 		if (err) return 0;
 		if (fDepthsH)
@@ -385,7 +434,7 @@ float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 	if (fVar.gridType == SIGMA_ROMS)
 	{
 		//if (triNum < 0) useTriNum = false;
-		err = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
+		err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
 		//if (err) return 0;
 		if (err) return -1;
@@ -2079,6 +2128,418 @@ done:
 	return err;
 }
 
+OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSMask(VelocityFH velocityH, TMap **newMap, char* errmsg) 
+{
+	OSErr err = 0;
+	long i,j,k;
+	char path[256], outPath[256];
+	char *velUnits=0; 
+	int status, ncid, numdims;
+	int mask_id, uv_ndims;
+	static size_t mask_index[] = {0,0};
+	static size_t mask_count[2];
+	double *landmask = 0, *mylandmask=0;
+	double debug_mask;
+	long latlength = fNumRows, numtri = 0;
+	long lonlength = fNumCols;
+	Boolean isLandMask = true;
+	float fDepth1, fLat1, fLong1;
+	long index1=0;
+	
+	errmsg[0]=0;
+	*newMap = 0;
+
+	long n, ntri, numVerdatPts=0;
+	long fNumRows_minus1 = fNumRows-1, fNumCols_minus1 = fNumCols-1;
+	long nv = fNumRows * fNumCols;
+	long nCells = fNumRows_minus1 * fNumCols_minus1;
+	long iIndex, jIndex, index; 
+	long triIndex1, triIndex2, waterCellNum=0;
+	long ptIndex = 0, cellNum = 0;
+	
+	LONGH landWaterInfo = (LONGH)_NewHandleClear(nCells * sizeof(long));
+	LONGH maskH2 = (LONGH)_NewHandleClear(nv * sizeof(long));
+	
+	LONGH ptIndexHdl = (LONGH)_NewHandleClear(nv * sizeof(**ptIndexHdl));
+	LONGH verdatPtsH = (LONGH)_NewHandleClear(nv * sizeof(**verdatPtsH));
+	GridCellInfoHdl gridCellInfo = (GridCellInfoHdl)_NewHandleClear(nCells * sizeof(**gridCellInfo));
+	
+	TopologyHdl topo=0;
+	LongPointHdl pts=0;
+	VelocityFH velH = 0;
+	DAGTreeStruct tree;
+	WorldRect triBounds;
+	
+	TTriGridVel *triGrid = nil;
+	tree.treeHdl = 0;
+	TDagTree *dagTree = 0;
+	
+	// write out verdat file for debugging
+	/* FILE *outfile = 0;
+	 char name[32], verdatpath[256],m[300];
+	 strcpy(name,"NewVerdat.dat");
+	 errmsg[0]=0;
+	 
+	 err = AskUserForSaveFilename(name,verdatpath,".dat",true);
+	 if(err) return USERCANCEL; 
+	 
+	 SetWatchCursor();
+	 sprintf(m, "Exporting VERDAT to %s...",verdatpath);
+	 DisplayMessage("NEXTMESSAGETEMP");
+	 DisplayMessage(m);*/
+	/////////////////////////////////////////////////
+	
+	strcpy(path,fVar.pathName);
+	if (!path || !path[0]) return -1;
+	
+	status = nc_open(path, NC_NOWRITE, &ncid);
+	//if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR) /*{err = -1; goto done;}*/
+	{
+#if TARGET_API_MAC_CARBON
+		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+		status = nc_open(outPath, NC_NOWRITE, &ncid);
+#endif
+		if (status != NC_NOERR) {err = -1; goto done;}
+	}
+	status = nc_inq_ndims(ncid, &numdims);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	
+	mask_count[0] = latlength;
+	mask_count[1] = lonlength;
+	
+	status = nc_inq_varid(ncid, "coops_mask", &mask_id);
+	if (status != NC_NOERR)	{/*err=-1; goto done;*/ isLandMask = false;}
+	if (isLandMask)
+	{
+		landmask = new double[latlength*lonlength]; 
+		if(!landmask) {TechError("NetCDFMoverCurv::ReorderPointsCOOPSMask()", "new[]", 0); err = memFullErr; goto done;}
+		mylandmask = new double[latlength*lonlength]; 
+		if(!mylandmask) {TechError("NetCDFMoverCurv::ReorderPointsCOOPSMask()", "new[]", 0); err = memFullErr; goto done;}
+	}
+	if (isLandMask)
+	{
+		//status = nc_get_vara_float(ncid, mask_id, angle_index, angle_count, landmask);
+		status = nc_get_vara_double(ncid, mask_id, mask_index, mask_count, landmask);
+		if (status != NC_NOERR) {err = -1; goto done;}
+	}
+	
+	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH || !maskH2) {err = memFullErr; goto done;}
+	
+	/*outfile=fopen(verdatpath,"w");
+	if (!outfile) {err = -1; printError("Unable to open file for writing"); goto done;}
+	fprintf(outfile,"DOGS\tMETERS\n");*/
+
+						
+	/*for (i=0;i<fNumRows;i++)
+	{
+		for (j=0;j<fNumCols;j++)
+		{
+			debug_mask = landmask[(latlength-i-1)*lonlength+j];
+			//if (debug_mask == 1.1) numtri++;
+			if (debug_mask > 0) 
+			{
+				numtri++;
+			}
+			// eventually will need to have a land mask, for now assume fillValue represents land
+			if (landmask[(latlength-i-1)*fNumCols+j]==0)	// land point
+			{
+			}
+			else
+			{
+				index1++;
+				//fLat1 = INDEXH(fVertexPtsH,(iIndex)*fNumCols+jIndex).pLat;
+				//fLong1 = INDEXH(fVertexPtsH,(iIndex)*fNumCols+jIndex).pLong;
+				fLat1 = INDEXH(fVertexPtsH,(i)*fNumCols+j).pLat;
+				fLong1 = INDEXH(fVertexPtsH,(i)*fNumCols+j).pLong;
+			
+			fDepth1 = 1.;				
+			//fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index1, fLong1, fLat1, fDepth1);	
+			}
+
+		}
+	}*/
+	//fclose(outfile);
+	for (i=0;i<fNumRows;i++)
+	{
+		for (j=0;j<fNumCols;j++)
+		{
+			mylandmask[i*lonlength+j] = landmask[(latlength-i-1)*lonlength+j];
+		}
+	}
+	index1 = 0;
+	for (i=0;i<fNumRows-1;i++)
+	{
+		for (j=0;j<fNumCols-1;j++)
+		{
+			//if (landmask[i*fNumCols_minus1+j]==0 && landmask[i*fNumCols_minus1+j]=0)	// land point
+			if (mylandmask[i*fNumCols+j]==0)	// land point
+			{
+				INDEXH(landWaterInfo,i*fNumCols_minus1+j) = -1;	// may want to mark each separate island with a unique number
+			}
+			else
+			{
+				//if (landmask[(latlength-i)*fNumCols+j]==0 || landmask[(latlength-i-1)*fNumCols+j+1]==0 || landmask[(latlength-i)*fNumCols+j+1]==0)
+				if (mylandmask[(i+1)*fNumCols+j]==0 || mylandmask[i*fNumCols+j+1]==0 || mylandmask[(i+1)*fNumCols+j+1]==0)
+				{
+					INDEXH(landWaterInfo,i*fNumCols_minus1+j) = -1;	// may want to mark each separate island with a unique number
+				}
+				else
+				{
+					INDEXH(landWaterInfo,i*fNumCols_minus1+j) = 1;
+					INDEXH(ptIndexHdl,i*fNumCols+j) = -2;	// water box
+					INDEXH(ptIndexHdl,i*fNumCols+j+1) = -2;
+					INDEXH(ptIndexHdl,(i+1)*fNumCols+j) = -2;
+					INDEXH(ptIndexHdl,(i+1)*fNumCols+j+1) = -2;
+				}
+			}
+		}
+	}
+	
+	for (i=0;i<fNumRows;i++)
+	{
+		for (j=0;j<fNumCols;j++)
+		{
+			if (INDEXH(ptIndexHdl,i*fNumCols+j) == -2)
+			{
+				INDEXH(ptIndexHdl,i*fNumCols+j) = ptIndex;	// count up grid points
+				ptIndex++;
+			}
+			else
+				INDEXH(ptIndexHdl,i*fNumCols+j) = -1;
+		}
+	}
+	
+	for (i=0;i<fNumRows-1;i++)
+	{
+		for (j=0;j<fNumCols-1;j++)
+		{
+			if (INDEXH(landWaterInfo,i*fNumCols_minus1+j)>0)
+			{
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).cellNum = cellNum;
+				cellNum++;
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).topLeft = INDEXH(ptIndexHdl,i*fNumCols+j);
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).topRight = INDEXH(ptIndexHdl,i*fNumCols+j+1);
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomLeft = INDEXH(ptIndexHdl,(i+1)*fNumCols+j);
+				INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomRight = INDEXH(ptIndexHdl,(i+1)*fNumCols+j+1);
+			}
+			else INDEXH(gridCellInfo,i*fNumCols_minus1+j).cellNum = -1;
+		}
+	}
+	ntri = cellNum*2;	// each water cell is split into two triangles
+	if(!(topo = (TopologyHdl)_NewHandleClear(ntri * sizeof(Topology)))){err = memFullErr; goto done;}	
+	for (i=0;i<nv;i++)
+	{
+		if (INDEXH(ptIndexHdl,i) != -1)
+		{
+			INDEXH(verdatPtsH,numVerdatPts) = i;
+			numVerdatPts++;
+		}
+	}
+	_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(**verdatPtsH));
+	pts = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numVerdatPts));
+	if(pts == nil)
+	{
+		strcpy(errmsg,"Not enough memory to triangulate data.");
+		return -1;
+	}
+	
+	/////////////////////////////////////////////////
+	// write out the file
+	/////////////////////////////////////////////////
+	/*outfile=fopen(verdatpath,"w");
+	if (!outfile) {err = -1; printError("Unable to open file for writing"); goto done;}
+	fprintf(outfile,"DOGS\tMETERS\n");*/
+	index = 0;
+	for (i=0; i<=numVerdatPts; i++)	// make a list of grid points that will be used for triangles
+	{
+		float fLong, fLat, fDepth, dLon, dLat, dLon1, dLon2, dLat1, dLat2;
+		double val, u=0., v=0.;
+		LongPoint vertex;
+		
+		if(i < numVerdatPts) 
+		{	// since velocities are defined at the lower left corner of each grid cell
+			// need to add an extra row/col at the top/right of the grid
+			// set lat/lon based on distance between previous two points 
+			// these are just for boundary/drawing purposes, velocities are set to zero
+			index = i+1;
+			n = INDEXH(verdatPtsH,i);
+			iIndex = n/fNumCols;
+			jIndex = n%fNumCols;
+			//fLat = INDEXH(fVertexPtsH,(iIndex-1)*fNumCols+jIndex).pLat;
+			//fLong = INDEXH(fVertexPtsH,(iIndex-1)*fNumCols+jIndex).pLong;
+			fLat = INDEXH(fVertexPtsH,(iIndex)*fNumCols+jIndex).pLat;
+			fLong = INDEXH(fVertexPtsH,(iIndex)*fNumCols+jIndex).pLong;
+			/*if (landmask[(latlength-iIndex-1)*fNumCols+jIndex]==0)	// land point
+			{
+				//index1++;
+				u = INDEXH(velocityH,(iIndex)*fNumCols+jIndex).u;
+				v = INDEXH(velocityH,(iIndex)*fNumCols+jIndex).v;
+			}*/
+			vertex.v = (long)(fLat*1e6);
+			vertex.h = (long)(fLong*1e6);
+			
+			fDepth = 1.;
+			INDEXH(pts,i) = vertex;
+		}
+		else { // for outputting a verdat the last line should be all zeros
+			index = 0;
+			fLong = fLat = fDepth = 0.0;
+		}
+		//fprintf(outfile, "%ld,%.6f,%.6f,%.6f,%.6f,%.6f\n", index, fLong, fLat, fDepth, u, v);	
+		//fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index, fLong, fLat, fDepth);	
+		//if (u!=0. && v!=0.) {index=index+1; fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index, fLong, fLat, fDepth);}	
+		/////////////////////////////////////////////////
+		
+	}
+	//fclose(outfile);
+	// figure out the bounds
+	triBounds = voidWorldRect;
+	if(pts) 
+	{
+		LongPoint	thisLPoint;
+		
+		if(numVerdatPts > 0)
+		{
+			WorldPoint  wp;
+			for(i=0;i<numVerdatPts;i++)
+			{
+				thisLPoint = INDEXH(pts,i);
+				wp.pLat = thisLPoint.v;
+				wp.pLong = thisLPoint.h;
+				AddWPointToWRect(wp.pLat, wp.pLong, &triBounds);
+			}
+		}
+	}
+	
+	DisplayMessage("NEXTMESSAGETEMP");
+	DisplayMessage("Making Triangles");
+	
+	/////////////////////////////////////////////////
+	for (i=0;i<fNumRows_minus1;i++)
+	{
+		for (j=0;j<fNumCols_minus1;j++)
+		{
+			if (INDEXH(landWaterInfo,i*fNumCols_minus1+j)==-1)
+				continue;
+			waterCellNum = INDEXH(gridCellInfo,i*fNumCols_minus1+j).cellNum;	// split each cell into 2 triangles
+			triIndex1 = 2*waterCellNum;
+			triIndex2 = 2*waterCellNum+1;
+			// top/left tri in rect
+			(*topo)[triIndex1].vertex1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).topRight;
+			(*topo)[triIndex1].vertex2 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).topLeft;
+			(*topo)[triIndex1].vertex3 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomLeft;
+			if (j==0 || INDEXH(gridCellInfo,i*fNumCols_minus1+j-1).cellNum == -1)
+				(*topo)[triIndex1].adjTri1 = -1;
+			else
+			{
+				(*topo)[triIndex1].adjTri1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j-1).cellNum * 2 + 1;
+			}
+			(*topo)[triIndex1].adjTri2 = triIndex2;
+			if (i==0 || INDEXH(gridCellInfo,(i-1)*fNumCols_minus1+j).cellNum==-1)
+				(*topo)[triIndex1].adjTri3 = -1;
+			else
+			{
+				(*topo)[triIndex1].adjTri3 = INDEXH(gridCellInfo,(i-1)*fNumCols_minus1+j).cellNum * 2 + 1;
+			}
+			// bottom/right tri in rect
+			(*topo)[triIndex2].vertex1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomLeft;
+			(*topo)[triIndex2].vertex2 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).bottomRight;
+			(*topo)[triIndex2].vertex3 = INDEXH(gridCellInfo,i*fNumCols_minus1+j).topRight;
+			if (j==fNumCols-2 || INDEXH(gridCellInfo,i*fNumCols_minus1+j+1).cellNum == -1)
+				(*topo)[triIndex2].adjTri1 = -1;
+			else
+			{
+				(*topo)[triIndex2].adjTri1 = INDEXH(gridCellInfo,i*fNumCols_minus1+j+1).cellNum * 2;
+			}
+			(*topo)[triIndex2].adjTri2 = triIndex1;
+			if (i==fNumRows-2 || INDEXH(gridCellInfo,(i+1)*fNumCols_minus1+j).cellNum == -1)
+				(*topo)[triIndex2].adjTri3 = -1;
+			else
+			{
+				(*topo)[triIndex2].adjTri3 = INDEXH(gridCellInfo,(i+1)*fNumCols_minus1+j).cellNum * 2;
+			}
+		}
+	}
+	
+	DisplayMessage("NEXTMESSAGETEMP");
+	DisplayMessage("Making Dag Tree");
+	MySpinCursor(); // JLM 8/4/99
+	tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); 
+	MySpinCursor(); // JLM 8/4/99
+	if (errmsg[0])	
+	{err = -1; goto done;} 
+	// sethandle size of the fTreeH to be tree.fNumBranches, the rest are zeros
+	_SetHandleSize((Handle)tree.treeHdl,tree.numBranches*sizeof(DAG));
+	/////////////////////////////////////////////////
+	
+	fVerdatToNetCDFH = verdatPtsH;
+	
+	/////////////////////////////////////////////////
+	
+	triGrid = new TTriGridVel;
+	if (!triGrid)
+	{		
+		err = true;
+		TechError("Error in NetCDFMoverCurv::ReorderPointsCOOPSMask()","new TTriGridVel",err);
+		goto done;
+	}
+	
+	fGrid = (TTriGridVel*)triGrid;
+	
+	triGrid -> SetBounds(triBounds); 
+	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
+	if(!dagTree)
+	{
+		err = -1;
+		printError("Unable to create dag tree.");
+		goto done;
+	}
+	
+	triGrid -> SetDagTree(dagTree);
+	//triGrid -> SetDepths(totalDepthH);	// used by PtCurMap to check vertical movement
+	
+	pts = 0;	// because fGrid is now responsible for it
+	topo = 0; // because fGrid is now responsible for it
+	velH = 0; // because fGrid is now responsible for it
+	tree.treeHdl = 0; // because fGrid is now responsible for it
+	velH = 0; // because fGrid is now responsible for it
+	
+	/////////////////////////////////////////////////
+done:
+	if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
+	if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
+	if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+	
+	if(err)
+	{
+		if(!errmsg[0])
+			strcpy(errmsg,"An error occurred in NetCDFMoverCurv::ReorderPointsCOOPSMask");
+		printError(errmsg); 
+		if(pts) {DisposeHandle((Handle)pts); pts=0;}
+		if(topo) {DisposeHandle((Handle)topo); topo=0;}
+		if(velH) {DisposeHandle((Handle)velH); velH=0;}
+		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
+		
+		if(fGrid)
+		{
+			fGrid ->Dispose();
+			delete fGrid;
+			fGrid = 0;
+		}
+		if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
+		if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
+		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
+		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
+	}
+
+
+
+
+	return err;	
+}
+
 OSErr NetCDFMoverCurv_c::GetLatLonFromIndex(long iIndex, long jIndex, WorldPoint *wp)
 {
 	float dLat, dLon, dLat1, dLon1, dLat2, dLon2, fLat, fLong;
@@ -2200,9 +2661,14 @@ OSErr NetCDFMoverCurv_c::GetDepthProfileAtPoint(WorldPoint refPoint, long timeIn
 	LongPoint indices;
 	//if (fDepthLevelsHdl) numDepthLevels = _GetHandleSize((Handle)fDepthLevelsHdl)/sizeof(**fDepthLevelsHdl);
 	if (fGrid) 
+	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
 		//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
-		indices = ((dynamic_cast<TTriGridVel*>(fGrid)))->GetRectIndicesFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		if (bIsCOOPSWaterMask)
+		indices = ((TTriGridVel*)fGrid)->GetRectIndicesFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+		else
+		indices = ((TTriGridVel*)fGrid)->GetRectIndicesFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+	}
 	else return nil;
 	iIndex = indices.v;
 	iIndex = fNumRows-iIndex-1;

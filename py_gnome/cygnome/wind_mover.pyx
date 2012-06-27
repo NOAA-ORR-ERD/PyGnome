@@ -38,7 +38,7 @@ cdef class wind_mover:
         self.mover.fConstantValue.u = 0
         self.mover.fConstantValue.v = 0
     
-    def get_move_uncertain(self, n, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double breaking_wave, double mix_layer, np.ndarray[LEWindUncertainRec] uncertain_ra, np.ndarray[TimeValuePair] time_vals, int num_times):
+    def get_move_uncertain(self, n, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double f_sigma_vel, double f_sigma_theta, double breaking_wave, double mix_layer, np.ndarray[LEWindUncertainRec] uncertain_ra, np.ndarray[TimeValuePair] time_vals, int num_times):
         cdef:
             char *time_vals_ptr
             char *uncertain_ptr
@@ -48,19 +48,16 @@ cdef class wind_mover:
             
         N = len(wp_ra)
         M = len(time_vals)
-
-        wp_ra = nmp.require(wp_ra, requirements=['C_CONTIGUOUS', 'ALIGNED', 'WRITEABLE', 'UPDATEIFCOPY'])
-        print wp_ra.flags
-        exit(1)
-        world_points = np.PyArray_BYTES(wp_ra)
-        windages = np.PyArray_BYTES(wind_ra)
-        disp_vals = np.PyArray_BYTES(dispersion_ra)
-        time_vals_ptr = np.PyArray_BYTES(time_vals)
-        uncertain_ptr = np.PyArray_BYTES(uncertain_ra)
+        ref_points = ref_ra.data
+        world_points = wp_ra.data
+        windages = wind_ra.data
+        disp_vals = dispersion_ra.data
+        time_vals_ptr = time_vals.data
+        uncertain_ptr = uncertain_ra.data
         
-        self.mover.get_move(N, model_time, step_len, world_points, windages, disp_vals, breaking_wave, mix_layer, uncertain_ptr, time_vals_ptr, M)
+        self.mover.get_move(N, model_time, step_len, ref_points, world_points, windages, disp_vals, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer, uncertain_ptr, time_vals_ptr, M)
 
-    def get_move(self, n, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double breaking_wave, double mix_layer, np.ndarray[TimeValuePair] time_vals, int num_times):
+    def get_move(self, n, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double breaking_wave, double mix_layer, np.ndarray[TimeValuePair] time_vals, int num_times):
         cdef:
             char *time_vals_ptr
             char *uncertain_ptr
@@ -70,9 +67,9 @@ cdef class wind_mover:
             
         N = len(wp_ra)
         M = len(time_vals)
-        wp_ra = nmp.require(wp_ra, requirements=['C_CONTIGUOUS', 'ALIGNED', 'WRITEABLE', 'UPDATEIFCOPY'])
-        world_points = np.PyArray_BYTES(wp_ra)
-        windages = np.PyArray_BYTES(wind_ra)
-        disp_vals = np.PyArray_BYTES(dispersion_ra)
-        time_vals_ptr = np.PyArray_BYTES(time_vals)
-        self.mover.get_move(N, model_time, step_len, world_points, windages, disp_vals, breaking_wave, mix_layer, time_vals_ptr, M)
+        ref_points = ref_ra.data
+        world_points = wp_ra.data
+        windages = wind_ra.data
+        disp_vals = dispersion_ra.data
+        time_vals_ptr = time_vals.data
+        self.mover.get_move(N, model_time, step_len, ref_points, world_points, windages, disp_vals, breaking_wave, mix_layer, time_vals_ptr, M)
