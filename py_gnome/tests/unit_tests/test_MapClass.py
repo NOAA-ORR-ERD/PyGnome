@@ -297,7 +297,9 @@ class Test_MapfromBNA:
     def test_map_off_map(self):
         point = (-126.097336, 47.43962)
         assert not self.bna_map.on_map( point )
-        
+
+
+from gnome import basic_types        
 class Test_full_move:
     """
     A test to see if the full API is working for beaching
@@ -339,9 +341,17 @@ class Test_full_move:
                         projection=projections.NoProjection(),
                         )
         
-        new_pos, lkwp = map.beach_elements(self, start_pos=(5.0, 5.0), end_pos=(15.0, 5.0))
-        
-        assert new_pos == (10.0, 5.0)
+        start_positions= np.array( ( ( 5.0, 5.0), ), dtype=np.float64) 
+        end_positions =  np.array( ( (15.0, 5.0), ), dtype=np.float64)
+        status_code   =  np.array( (basic_types.status_in_water), dtype=np.short),
+
+        lkwp = map.beach_elements(start_positions,
+                                  end_positions,
+                                  status_code,
+                                  )
+
+        assert end_pos == (10.0, 5.0)
         assert lkwp == (9.0, 5.0)
+        assert status_code[0] == basic_types.status_on_land
         
         

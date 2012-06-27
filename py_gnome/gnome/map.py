@@ -154,6 +154,7 @@ class GnomeMap:
         
         
         
+import land_check
 
 class RasterMap(GnomeMap):
     """
@@ -295,7 +296,7 @@ class RasterMap(GnomeMap):
 #            p['p_long'] = lwp['p_long'] + displacement[0]
 #            p['p_lat'] = lwp['p_lat'] + displacement[1]
 
-    def beach_elements(self, start_positions, end_positions):
+    def beach_elements(self, start_positions, end_positions, status_codes):
         
         """ 
         Beaches all the elements that have crossed over land
@@ -304,24 +305,35 @@ class RasterMap(GnomeMap):
            if land is crossed, the beached flag is set, and the last  water postion returned
         
         param: start_positions -- (long, lat) positions elements begin the time step at (NX2 array)
-        param: end_positions -- (long, lat) positions elements end the time step at (NX2 array)
+        param: end_positions   -- (long, lat) positions elements end the time step at (NX2 array)
+        param: status_codes    -- the status flag for the LEs
 
-        : returns last_water_positions, beached_flags : 
+        : returns last_water_positions 
         
         """
         
         # project the positions:
-        start_positions = self.projection.to_pixel(start_positions)
-        end_positions   = self.projection.to_pixel(end_positions)
+        start_positions_px = self.projection.to_pixel(start_positions)
+        end_positions_px   = self.projection.to_pixel(end_positions)
 
+        last_water_positions_px = np.array_like(start_positions_px)
         # do the inner loop
         for i in range(len(start_positions)):
             #do the check...
-            
-            
-            
+            result = land_check.find_first_pixel(self.bitmap, start_positions_px[i], end_positions_px[i], draw=False)
+            if result is not None:
+                last_water_positions_px[i], end_positions_px[i] = result
+                status_codes[i] = STATUS_CODE_BEACHED
+        # put the data back in the arrays
+        beached_mask =  status_codes[i] == STATUS_CODE_BEACHED
+        end_positions[beached_mask] = self.projection.to_lat_long(end_positions_px[beached_mask])
+        last_water_positions = np.zeros_like(start_positions)
+        last_water_positions = self.projection.to_lat_long(end_positions_px[beached_mask])
         
-
+        return last_water_positions
+              
+                            
+            
     def beach_LEs(self, spill):
         """
         beach_LEs
