@@ -17,6 +17,7 @@ NetCDFMoverCurv::NetCDFMoverCurv (TMap *owner, char *name) : NetCDFMover(owner, 
 {
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;
+	bIsCOOPSWaterMask = false;
 }	
 
 void NetCDFMoverCurv::Dispose ()
@@ -149,7 +150,7 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	Point where;
 	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
 	MySFReply reply;
-	Boolean bTopFile = false, isLandMask = true;
+	Boolean bTopFile = false, isLandMask = true, isCoopsMask = false;
 	VelocityFH velocityH = 0;
 	//long numTimesInFile = 0;
 	
@@ -533,6 +534,10 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_inq_varid(ncid, "mask", &mask_id);
 	if (status != NC_NOERR)	{/*err=-1; goto done;*/ isLandMask = false;}
 	
+	status = nc_inq_varid(ncid, "coops_mask", &mask_id);
+	if (status != NC_NOERR)	{/*err=-1; goto done;*/ isCoopsMask = false;}
+	else {isCoopsMask = true; bIsCOOPSWaterMask = true;}
+	
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
@@ -632,6 +637,7 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 	if(err) goto done;
 	if (isLandMask) err = ReorderPoints(velocityH,newMap,errmsg);
+	else if (isCoopsMask) err = ReorderPointsCOOPSMask(velocityH,newMap,errmsg);
 	else err = ReorderPointsNoMask(velocityH,newMap,errmsg);
 	//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	
@@ -1412,13 +1418,22 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 				
 				ptIndex = INDEXH(fVerdatToNetCDFH,i);
 				
+				if (bIsCOOPSWaterMask)
+				{
+				iIndex = ptIndex/(fNumCols);
+				jIndex = ptIndex%(fNumCols);
+				}
+				else
+				{
 				iIndex = ptIndex/(fNumCols+1);
 				jIndex = ptIndex%(fNumCols+1);
+				}
 				if (iIndex>0 && jIndex<fNumCols)
 					ptIndex = (iIndex-1)*(fNumCols)+jIndex;
 				else
 				{ptIndex = -1; continue;}
 				
+				if (bIsCOOPSWaterMask) ptIndex = INDEXH(fVerdatToNetCDFH,i);
 				totalDepth = GetTotalDepth(wp,ptIndex);
 	 			if (amtOfDepthData>0 && ptIndex>=0)
 				{
@@ -1468,6 +1483,11 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 					wp.pLong = (wp.pLong + wp2.pLong)/2.;
 				}
 				
+				if (bIsCOOPSWaterMask)
+				{
+					wp.pLat = (long)(1e6*INDEXH(fVertexPtsH,ptIndex).pLat);
+					wp.pLong = (long)(1e6*INDEXH(fVertexPtsH,ptIndex).pLong);
+				}
 				if (wp.pLong < cmdr.loLong || wp.pLong > cmdr.hiLong || wp.pLat < cmdr.loLat || wp.pLat > cmdr.hiLat) 
 					continue;
 				p = GetQuickDrawPt(wp.pLong, wp.pLat, &r, &offQuickDrawPlane);	// should put velocities in center of grid box

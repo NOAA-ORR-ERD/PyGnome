@@ -45,6 +45,8 @@ class TOverlay : public TClassID
 		virtual ListItem 	GetNthListItem (long n, short indent, short *style, char *text);
 		virtual Boolean 	ListClick (ListItem item, Boolean inBullet, Boolean doubleClick);
 		virtual Boolean 	FunctionEnabled (ListItem item, short buttonID);
+		virtual OSErr		UpItem(ListItem item);
+		virtual OSErr		DownItem(ListItem item);
 		virtual OSErr 		SettingsItem (ListItem item);
 		virtual OSErr 		DeleteItem (ListItem item);
 };
@@ -94,6 +96,7 @@ class TNesdisOverlay : public TOverlay
 		
 		// override base class functionality
 		virtual OSErr	ReadFromFile(char *path);
+		virtual OSErr	ReadFromBNAFile(char *path);
 		virtual void	Draw (Rect r, WorldRect view);
 
 		//

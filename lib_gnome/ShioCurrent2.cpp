@@ -403,7 +403,11 @@ short GetRefCurrent(CONSTITUENT *constituent,	// Amplitude-phase array structs
 			j=i-actualNoOfConst;
 		}
 		
-	 	AMPAPtr[i] = constituent[i].H ;// AH 03/21/2012 * XODE[j];
+#ifdef pyGNOME
+		AMPAPtr[i] = constituent[i].H ;// AH 03/21/2012 * XODE[j];
+#else
+	 	AMPAPtr[i] = constituent[i].H * XODE[j];
+#endif
 		epochPtr[i] = VPU[j] - constituent[i].kPrime;
 	}
 	
