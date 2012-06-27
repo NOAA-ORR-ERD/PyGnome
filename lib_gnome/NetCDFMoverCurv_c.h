@@ -27,7 +27,8 @@ public:
 	
 	LONGH fVerdatToNetCDFH;	// for curvilinear
 	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
-	LONGH fVerdatToNetCDFH_2;	// for curvilinear
+	//LONGH fVerdatToNetCDFH_2;	// for curvilinear
+	Boolean bIsCOOPSWaterMask;
 	
 	
 	NetCDFMoverCurv_c (TMap *owner, char *name);
@@ -46,7 +47,8 @@ public:
 	OSErr 				NumberIslands(LONGH *islandNumberH, VelocityFH velocityH,LONGH landWaterInfo,long *numIslands);
 	OSErr 				ReorderPoints(VelocityFH velocityH, TMap **newMap, char* errmsg); 
 	OSErr 				ReorderPointsNoMask(VelocityFH velocityH, TMap **newMap, char* errmsg); 
-	OSErr 				ReorderPointsNoMask2(VelocityFH velocityH, TMap **newMap, char* errmsg); 
+	OSErr 				ReorderPointsCOOPSMask(VelocityFH velocityH, TMap **newMap, char* errmsg); 
+	Boolean				IsCOOPSFile();
 	//double GetTopDepth(long depthIndex, double totalDepth);
 	//double GetBottomDepth(long depthIndex, double totalDepth);
 	

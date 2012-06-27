@@ -118,7 +118,6 @@ Boolean TOverlay::FunctionEnabled (ListItem item, short buttonID)
 				case ADDBUTTON: return FALSE;
 				case SETTINGSBUTTON: return TRUE; 
 				case DELETEBUTTON: return TRUE;
-				/*
 				case UPBUTTON:
 				case DOWNBUTTON:
 					if (!model->fOverlayList->IsItemInList((Ptr)&item.owner, &i)) return FALSE;
@@ -126,13 +125,49 @@ Boolean TOverlay::FunctionEnabled (ListItem item, short buttonID)
 						case UPBUTTON: return i > 0;
 						case DOWNBUTTON: return i < (model->fOverlayList->GetItemCount() - 1);
 					}
-				*/
 			}
 			break;
 	}
 	return false;
 }
 
+OSErr TOverlay::UpItem(ListItem item)
+{	
+	long i;
+	OSErr err = 0;
+	
+	if (item.index == I_OVERLAYNAME)
+		if (model->fOverlayList->IsItemInList((Ptr)&item.owner, &i))
+			if (i > 0) {
+				if (err = model->fOverlayList->SwapItems(i, i - 1))
+					{ TechError("TOverlay::UpItem()", "model->fOverlayList->SwapItems()", err); return err; }
+				SelectListItem(item);
+				UpdateListLength(true);
+				InvalidateMapImage();
+				InvalMapDrawingRect();
+			}
+	
+	return 0;
+}
+
+OSErr TOverlay::DownItem(ListItem item)
+{
+	long i;
+	OSErr err = 0;
+	
+	if (item.index == I_OVERLAYNAME)
+		if (model->fOverlayList->IsItemInList((Ptr)&item.owner, &i))
+			if (i < (model->fOverlayList->GetItemCount() - 1)) {
+				if (err = model->fOverlayList->SwapItems(i, i + 1))
+					{ TechError("TOverlay::UpItem()", "model->fOverlayList->SwapItems()", err); return err; }
+				SelectListItem(item);
+				UpdateListLength(true);
+				InvalidateMapImage();
+				InvalMapDrawingRect();
+			}
+	
+	return 0;
+}
 OSErr TOverlay::SettingsItem (ListItem item)
 {
 	fColor =  MyPickColor(fColor,mapWindow);
@@ -299,6 +334,191 @@ OSErr TNesdisOverlay::AllocateNesdisPoints(long numToAllocate)
 
 // code goes here, read directly from shape file
 // generalize to overlay generic shape file or bna
+OSErr TNesdisOverlay::ReadFromBNAFile(char * path)
+{
+	OSErr			ReadErrCode = noErr, err = noErr;
+	long			PointCount, PointIndex, AddPointCount, ObjectCount;
+	long			colorIndex;
+	long			line = -1;
+	Boolean			bClosed, GroupFlag, PointsAddedFlag;
+	CHARH			f =0;
+	char			strLine [255], ObjectName [128], ObjectName2 [128], KeyStr [255],
+					*LineStartPtr;
+	long numLinesText;
+	int thisPolyNum = -1; 
+	int thisPolyFlag = -1; 
+	int thisPolyInteriorRingFlag = -1;
+	int i, numScanned;
+	double lat,lng;
+	NesdisPoint np;
+
+	memset(&np,0,sizeof(np));
+	
+	err = 0;
+
+	err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f);
+	if (err)
+	{
+		printError ("Error opening BNA map file for reading!");
+		return err;
+	}
+
+	_HLock((Handle)f); // JLM 8/4/99
+
+	numLinesText = NumLinesInText (*f);
+
+	err = AllocateNesdisPoints(numLinesText);
+	if(err) goto done;
+	
+	while (err == 0)
+	{
+		MySpinCursor(); // JLM 8/4/99
+		if (++line >= numLinesText - 1)
+			ReadErrCode = 1;
+		else
+		{
+			NthLineInTextOptimized(*f, line, strLine, 255); 
+			if (strlen (strLine) <= 2)
+				ReadErrCode = -1;
+		}
+		if (ReadErrCode)
+			break;
+
+		if (strLine [0] == LINEFEED)
+			LineStartPtr = &(strLine [1]);	// if line-feed char exists, advance pointer by one
+		else
+			LineStartPtr = &(strLine [0]);	// else keep it at the start of line
+
+		err = GetHeaderLineInfo (LineStartPtr, ObjectName, ObjectName2, &PointCount);
+		if (err==1)
+		{
+			// in case of error object-name still contains the name of the last polygon read
+			sprintf (strLine, "Unexpected data encountered after reading polygon %s", ObjectName);
+			printError(strLine);
+		}
+		if (err) goto done;
+		
+		// check for "Map Box" header used in digitized maps and ignore the following polygon
+		if(!strcmpnocase(ObjectName,"Map Box")) // digitized map header, ignore the following polygon
+		{
+			for (PointIndex = 1; PointIndex <= labs(PointCount); ++PointIndex)
+			{
+				if (++line >= numLinesText - 1)
+					ReadErrCode = 1;
+				else
+				{
+					NthLineInTextOptimized(*f, line, strLine, 255); 
+					if (strlen (strLine) <= 2)
+						ReadErrCode = -1;
+				}
+			}
+			if (ReadErrCode) 
+				break;
+			else 
+				continue;
+		}
+		///////////}
+
+		///////////////{
+		// JLM 12/24/98
+		/*if(!strcmpnocase(ObjectName,"SpillableArea"))// special polygon defining spillable area
+		{	// do anything differently here
+		}
+		else if(!strcmpnocase(ObjectName,"Map Bounds"))// special polygon defining the map bounds
+		else */
+			
+		///////////}
+					
+		if (PointCount < 0)		// negative number indicates unfilled polygon
+		{
+			PointCount = labs (PointCount);
+			bClosed = false;
+		}
+		else
+			bClosed = true;
+	
+		if(!strcmpnocase(ObjectName2,"2"))// lake polygon
+			thisPolyInteriorRingFlag = 1;
+		else
+		{
+			thisPolyInteriorRingFlag = 0;
+			thisPolyNum++;
+		}
+		GroupFlag = false;			// clear flag indicating grouping
+		PointsAddedFlag  = false;	// will be set to true if a point is appended
+		AddPointCount = 0;			// number of points added
+		
+		// now read in the points for the next region in the file
+		for (PointIndex = 1; PointIndex <= PointCount && err == 0; ++PointIndex)
+		{
+			if (++line >= numLinesText)
+				ReadErrCode = 1;
+			else
+			{
+				NthLineInTextOptimized(*f, line, strLine, 255); 
+				if (strlen (strLine) <= 2)
+					ReadErrCode = -1;
+			}
+			if (ReadErrCode)
+				break;
+			
+			if (strLine [0] == LINEFEED)
+				LineStartPtr = &(strLine [1]);	// if line-feed char exists, advance pointer by one
+			else
+				LineStartPtr = &(strLine [0]);	// else keep it at the start of line
+			
+			if (PointIndex == 1)	// save the key string for comparing later
+				strcpy (KeyStr, LineStartPtr);
+		
+		StringSubstitute(strLine, ',', ' ');
+		numScanned = sscanf(strLine,"%lf %lf",&lng,&lat);
+		if(numScanned == 2 && -90 <= lat && lat <= 90 && -360 <= lng && lng <= 360) {
+			// it is a point
+			// Note: we expect the first point to be the same as the last point 
+			// Note: we could verify the point is in sequence here
+			if(fNesdisPoints.numFilledIn < fNesdisPoints.numAllocated){ // safety check
+				np.lat = lat;
+				np.lng = lng;
+				np.polyNum = thisPolyNum;
+				np.flag = thisPolyFlag;
+				np.interiorRingFlag = thisPolyInteriorRingFlag;
+				fNesdisPoints.pts[fNesdisPoints.numFilledIn++] = np;	
+			}
+		}
+	}
+	//thisPolyNum++;
+	}
+
+	strcpy(fFilePath,path); // record the path now that we have been successful
+	this->SetClassNameToFileName(); // for the wizard
+
+	// figure out the bounds
+	fBounds = voidWorldRect;
+	for(i = 0; i < fNesdisPoints.numFilledIn; i++) {
+		WorldPoint wp;
+		np = fNesdisPoints.pts[i];
+		wp.pLat = 1000000.0*np.lat;
+		wp.pLong = 1000000.0*np.lng;
+		AddWPointToWRect(wp.pLat, wp.pLong, &fBounds);
+	}
+	this->MakeBitmap(); //Amy wants to be able to auto fill a spray can with points, perhaps we could use a bitmap to do this for her, 6/6/10
+	
+	// make sure the overlay is shown in the current view
+	if(!EqualWRects(voidWorldRect,fBounds))
+		ChangeCurrentView(UnionWRect(settings.currentView,fBounds), TRUE, TRUE);
+
+done:
+	// cause a screen refresh
+	InvalMapDrawingRect();
+	if(f) 
+	{
+		_HUnlock((Handle)f); 
+		DisposeHandle((Handle)f); 
+		f = 0;
+	}
+	return err;
+}
+
 OSErr TNesdisOverlay::ReadFromFile(char * path)
 {
 	OSErr err = 0;
@@ -552,7 +772,9 @@ void DrawNesdisPolygonsForBitmap(NesdisPointsInfo nesdisPoints, Rect r, WorldRec
 		ClosePoly();
 	
 		//if(fillTriangle)
-			PaintPoly(poly);	// want bitmap filled in
+			//if (drawPolygonAsHole) ErasePoly(poly);
+
+			/*else*/ PaintPoly(poly);	// want bitmap filled in
 		
 		FramePoly(poly);
 		
@@ -566,6 +788,7 @@ void DrawNesdisPolygonsForBitmap(NesdisPointsInfo nesdisPoints, Rect r, WorldRec
 
 		lastPt = thisPt;
 	}
+	RGBForeColor(&colors[BLACK]);
 
 	free(pts); pts = NULL;
 }
@@ -1244,7 +1467,6 @@ Boolean TBuoyOverlay::FunctionEnabled (ListItem item, short buttonID)
 				case ADDBUTTON: return FALSE;
 				case SETTINGSBUTTON: return TRUE; 
 				case DELETEBUTTON: return TRUE;
-				/*
 				case UPBUTTON:
 				case DOWNBUTTON:
 					if (!model->fOverlayList->IsItemInList((Ptr)&item.owner, &i)) return FALSE;
@@ -1252,7 +1474,6 @@ Boolean TBuoyOverlay::FunctionEnabled (ListItem item, short buttonID)
 						case UPBUTTON: return i > 0;
 						case DOWNBUTTON: return i < (model->fOverlayList->GetItemCount() - 1);
 					}
-				*/
 			}
 			break;
 	}
@@ -1949,10 +2170,12 @@ void TOverflightOverlay::Draw (Rect r, WorldRect view)
 
 Boolean IsOverlayFile(char* path)
 {
+	Boolean isESI = false;
 	if(IsNesdisPolygonFile(path)) return true;
 	if(IsBpBuoyFile(path)) return true;
 	if(IsSLDMBBuoyFile(path)) return true;
 	if(IsOverflightFile(path)) return true;
+	if(IsVectorMap(path, &isESI)) return true;
 	return false; // not a recognized type of overlay file
 }
 
@@ -1964,6 +2187,7 @@ OSErr AddOverlayFromFile(char *path)
 	OSErr err = noErr;
 	char tempStr[256];
 	TOverlay *thisOverlay = NULL;
+	Boolean isESI = false;
 
 	if(!IsOverlayFile(path)) {
 		err = true;
@@ -1982,10 +2206,16 @@ OSErr AddOverlayFromFile(char *path)
 	else if(IsOverflightFile(path)) {
 		thisOverlay = new TOverflightOverlay ();
 	}
-
+	else if (IsVectorMap (path, &isESI)){
+		thisOverlay = new TNesdisOverlay ();
+	}
 	/// read the file and add the overlay if we got one
 	if(thisOverlay) {
-		err = thisOverlay->ReadFromFile(path);
+		if (IsVectorMap (path, &isESI)){
+			err = ((TNesdisOverlay*)thisOverlay)->ReadFromBNAFile(path);
+		}
+		else err = thisOverlay->ReadFromFile(path);
+		//err = thisOverlay->ReadFromFile(path);
 		if(!err) err = model->AddOverlay(thisOverlay, 0);
 	
 		if (err)

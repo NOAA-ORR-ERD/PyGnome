@@ -275,6 +275,28 @@ long	ShioTimeValue_c::GetNumHighLowValues()
 	return numHighLowValues;
 }
 
+void GetYearDataDirectory(char* directoryPath)
+{
+
+	char applicationFolderPath[256];
+
+#ifdef MAC
+//#include <sys/syslimits.h>
+	CFURLRef appURL = CFBundleCopyBundleURL(CFBundleGetMainBundle());
+	//CFURLGetFileSystemRepresentation(appURL, TRUE, (UInt8 *)directoryPath, PATH_MAX);
+	CFURLGetFileSystemRepresentation(appURL, TRUE, (UInt8 *)directoryPath, kMaxNameLen);
+    strcat(directoryPath, "/Contents/Resources/Data/yeardata/");
+#else
+    //dataDirectory = wxGetCwd();
+	PathNameFromDirID(TATdirID,TATvRefNum,applicationFolderPath);
+	my_p2cstr((StringPtr)applicationFolderPath);
+	strcpy(directoryPath,applicationFolderPath);
+	strcat(directoryPath,"Data\\yeardata\\");
+#endif
+
+	return;
+}
+
 OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 {
 	OSErr err = 0;
@@ -289,8 +311,10 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
     //YEARDATA		*yearData = (YEARDATA *) NULL;
 	long numConstituents;
 	CONSTITUENT		*conArray = 0;
+	char	directoryPath[256], errStr[256];
+	YEARDATA2* yearData = 0;
 	
-	long numValues = this->GetNumValues(), amtYearData, i;
+	long numValues = this->GetNumValues(), amtYearData = 0, i;
 	// check that to see if the value is in our already computed range
 	if(numValues > 0)
 	{	
@@ -326,13 +350,17 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 	 
 	daylightSavings = DaylightSavingTimeInEffect(&beginDate);// code goes here, set the daylight flag
 #ifndef pyGNOME	
+#ifdef IBM
 	YHdl = GetYearData(beginDate.year);
 #else
-	YHdl = (YEARDATAHDL)_NewHandle(0);
+	//YHdl = (YEARDATAHDL)_NewHandle(0);
+	GetYearDataDirectory(directoryPath);	// put full path together	
+	yearData = ReadYearData(beginDate.year,directoryPath,errStr);	
 #endif
-	if(!YHdl)  { TechError("TShioTimeValue::GetTimeValue()", "GetYearData()", 0); return -1; }
+	if(!YHdl && !yearData)  { TechError("TShioTimeValue::GetTimeValue()", "GetYearData()", 0); return -1; }
 	
-	amtYearData = _GetHandleSize((Handle)YHdl)/sizeof(**YHdl);
+	if (YHdl) amtYearData = _GetHandleSize((Handle)YHdl)/sizeof(**YHdl);
+	else if (yearData) amtYearData = yearData->numElements;
 	try
 	{
 		XODE = new double[amtYearData];
@@ -342,11 +370,39 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 	{
 		TechError("TShioTimeValue::GetTimeValue()", "new double()", 0); return -1;
 	}
-	for (i = 0; i<amtYearData; i++)
+	if (YHdl)
 	{
-		XODE[i] = (double) INDEXH(YHdl,i).XODE;	
-		VPU[i] = (double) INDEXH(YHdl,i).VPU;
+		for (i = 0; i<amtYearData; i++)
+		{
+			XODE[i] = (double) INDEXH(YHdl,i).XODE;	
+			VPU[i] = (double) INDEXH(YHdl,i).VPU;
+		}
 	}
+	else if (yearData)
+	{
+		for (i = 0; i<amtYearData; i++)
+		{
+			XODE[i] = yearData->XODE[i];
+			VPU[i] = yearData->VPU[i];
+		}
+	}
+#else
+	// code goes here, find a place to keep the year data
+	YHdl = (YEARDATAHDL)_NewHandle(0);
+	amtYearData = 0;
+	try
+	{
+		XODE = new double[amtYearData];
+		VPU = new double[amtYearData];
+	}
+	catch (...)
+	{
+		TechError("TShioTimeValue::GetTimeValue()", "new double()", 0); return -1;
+	}
+	//GetYearDataDirectory(directoryPath);	// put full path together	
+	//yearData = ReadYearData(beginDate.year,directoryPath,errStr);
+#endif
+	
 	
 	numConstituents = _GetHandleSize((Handle)fConstituent.H)/sizeof(**fConstituent.H);
 	conArray = new CONSTITUENT[numConstituents];
@@ -392,6 +448,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 							 answers,		// Current-time struc with answers
 							 //YHdl,
 							 XODE,VPU,
+							 //yearData->XODE,yearData->VPU,
 							 daylightSavings,
 							 fStationName);
 		//model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
