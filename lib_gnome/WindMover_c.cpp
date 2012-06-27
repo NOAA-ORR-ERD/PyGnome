@@ -412,7 +412,7 @@ OSErr WindMover_c::GetTimeValue (Seconds time, VelocityRec *value)
 	return err;
 }
 
-OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double f_sigma_2, double f_sigma_theta, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
 
 // AH 06/20/2012:	
 // unfortunately, because we determine the size of the handle by a small region at the base of the array,
@@ -458,13 +458,16 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 	
 	this->breaking_wave_height = breaking_wave;
 	this->mixed_layer_depth = mix_layer;
+	this->fSigma2 = f_sigma_2;
+	this->fSigmaTheta = f_sigma_theta;
 	this->tap_offset = 0;
-	
+	this->bSubsurfaceActive = true;
+
 	try {
-		this->fWindUncertaintyList = (LEWindUncertainRecH)_NewHandle(sizeof(LEWindUncertainRecH)*n);
-		memcpy(*fWindUncertaintyList, uncertain_ra,sizeof(LEWindUncertainRec)*n);
+		this->fWindUncertaintyList = (LEWindUncertainRecH)_NewHandle(sizeof(LEWindUncertainRec)*n);
+		memcpy(*fWindUncertaintyList, uncertain_ra, sizeof(LEWindUncertainRec)*n);
 		this->fLESetSizes = (LONGH)_NewHandle(sizeof(long));
-		DEREFH(this->fLESetSizes)[0] = n;
+		DEREFH(this->fLESetSizes)[0] = 0;
 	} catch(...) {
 		cout << "cannot create uncertainty handle in windmover::get_move. returning.\n";
 		if(this->fWindUncertaintyList)
@@ -473,21 +476,23 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 	}
 	
 	WorldPoint3D delta;
+	WorldPoint3D *ref;
 	WorldPoint3D *wp;
 	double *windages;
 	short *disp_ra;
+	ref = (WorldPoint3D*)ref_ra;
 	wp = (WorldPoint3D*)wp_ra;
 	windages = (double*)wind_ra;
 	disp_ra = (short*)dispersion_ra;
 	
 	for (int i = 0; i < n; i++) {
 		LERec rec;
-		rec.p = wp[i].p;
-		rec.z = wp[i].z;
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
 		rec.windage = windages[i];
 		rec.dispersionStatus = disp_ra[i];
 		
-		delta = this->GetMove(model_time, step_len, 0, n, &rec, UNCERTAINTY_LE);
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
 		
 		wp[i].p.pLat += delta.p.pLat / 1000000;
 		wp[i].p.pLong += delta.p.pLong / 1000000;
@@ -495,13 +500,10 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 	}
 	if(timeDep)
 		delete timeDep;
-	cout << "..\n";
 	if(time_val_hdl)
 		_DisposeHandle((Handle)time_val_hdl);
-	cout << "..\n";
 	if(this->fLESetSizes)
 		_DisposeHandle((Handle)this->fLESetSizes);
-	cout << "..\n";
 	if(this->fWindUncertaintyList)
 		_DisposeHandle((Handle)this->fWindUncertaintyList);
 	return noErr;
@@ -513,7 +515,7 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 
 // ++
 
-OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
 	
 	// AH 06/20/2012:	
 	// unfortunately, because we determine the size of the handle by a small region at the base of the array,
@@ -555,23 +557,26 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *wp_ra, 
 	this->breaking_wave_height = breaking_wave;
 	this->mixed_layer_depth = mix_layer;
 	this->tap_offset = 0;
+	this->bSubsurfaceActive = true;
 	
 	WorldPoint3D delta;
 	WorldPoint3D *wp;
+	WorldPoint3D *ref;
 	double *windages;
 	short *disp_ra;
+	ref = (WorldPoint3D*)ref_ra;
 	wp = (WorldPoint3D*)wp_ra;
 	windages = (double*)wind_ra;
 	disp_ra = (short*)dispersion_ra;
 	
 	for (int i = 0; i < n; i++) {
 		LERec rec;
-		rec.p = wp[i].p;
-		rec.z = wp[i].z;
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
 		rec.windage = windages[i];
 		rec.dispersionStatus = disp_ra[i];
 		
-		delta = this->GetMove(model_time, step_len, 0, n, &rec, FORECAST_LE);
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
 		
 		wp[i].p.pLat += delta.p.pLat / 1000000;
 		wp[i].p.pLong += delta.p.pLong / 1000000;
