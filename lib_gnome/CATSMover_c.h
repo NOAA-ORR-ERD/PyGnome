@@ -49,7 +49,7 @@ public:
 	TOSSMTimeValue *timeDep;
 	double			fEddyDiffusion;			// cm**2/s minimum eddy velocity for uncertainty
 	double			fEddyV0;			//  in m/s, used for cutoff of minimum eddy for uncertainty
-	TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file
+	TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file	
 	
 						CATSMover_c (TMap *owner, char *name);
 						CATSMover_c ();
@@ -70,6 +70,10 @@ public:
 	virtual void 		ModelStepIsDone();
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr);
 	virtual	OSErr		ReadTopology(char* path, TMap **newMap);
+
+	
+			OSErr		get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra, char* time_vals, int num_times);
+			OSErr		get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char* time_vals, int num_times);
 
 };
 

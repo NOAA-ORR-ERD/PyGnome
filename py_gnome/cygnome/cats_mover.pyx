@@ -1,16 +1,10 @@
 import cython
-
-DEF HEADERS = list()
-
 cimport numpy as np
 import numpy as np
 
-include "type_defs.pxi"
-
-include "map.pxi"
-
 include "cats_mover.pxi"
 include "shio_time.pxi"
+include "map.pxi"
 
 cdef class cats_mover:
 
@@ -55,30 +49,40 @@ cdef class cats_mover:
         if(self.mover.ReadTopology(path, naught)):
             return False
         return True
-            
-    def get_move(self, int t, np.ndarray[LERec, ndim=1] LEs, uncertain, set_index):
-        cdef int i    
-        cdef WorldPoint3D wp3d
-        cdef np.ndarray[LERec] ra = np.copy(LEs)
-        cdef float dpLat, dpLong
-        ra['p']['p_long']*=10**6
-        ra['p']['p_lat']*=10**6
-        uncertain += 1
-        self.mover.PrepareForModelStep()
-        for i in xrange(0, len(ra)):
-            if ra[i].statusCode != status_in_water:
-                continue
-            wp3d = self.mover.GetMove(t, set_index, i, &ra[i], uncertain)
-            dpLat = wp3d.p.pLat
-            dpLong = wp3d.p.pLong
-            LEs[i].p.pLat += (dpLat/1000000)
-            LEs[i].p.pLong += (dpLong/1000000)
-        self.mover.fOptimize.isOptimizedForStep = 1
-        self.mover.fOptimize.isFirstStep = 0
-        self.mover.ModelStepIsDone()
     
-    def compute_velocity_scale(self):
-        self.mover.ComputeVelocityScale()
+    def get_move_uncertain(self, n, model_time, start_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double f_sigma_vel, double f_sigma_theta, double breaking_wave, double mix_layer, np.ndarray[LEWindUncertainRec] uncertain_ra, np.ndarray[TimeValuePair] time_vals, int num_times):
+        cdef:
+            char *time_vals_ptr
+            char *uncertain_ptr
+            char *world_points
+            
+        N = len(wp_ra)
+        M = len(time_vals)
+        ref_points = ref_ra.data
+        world_points = wp_ra.data
+        time_vals_ptr = time_vals.data
+        uncertain_ptr = uncertain_ra.data
+
+        self.mover.PrepareForModelStep(model_time, start_time, step_len, True) 
+        self.mover.get_move(N, model_time, step_len, ref_points, world_points, uncertain_ptr, time_vals_ptr, M)
+
+    def get_move(self, n, model_time, start_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double breaking_wave, double mix_layer, np.ndarray[TimeValuePair] time_vals, int num_times):
+        cdef:
+            char *time_vals_ptr
+            char *uncertain_ptr
+            char *world_points
+            
+        N = len(wp_ra)
+        M = len(time_vals)
+        ref_points = ref_ra.data
+        world_points = wp_ra.data
+        time_vals_ptr = time_vals.data
+
+        self.mover.PrepareForModelStep(model_time, start_time, step_len, False) 
+        self.mover.get_move(N, model_time, step_len, ref_points, world_points, time_vals_ptr, M)
+
+    def compute_velocity_scale(self, model_time):
+        self.mover.ComputeVelocityScale(model_time)
         
     def set_velocity_scale(self, scale_value):
         self.mover.refScale = scale_value

@@ -13,6 +13,7 @@
 #include "MemUtils.h"
 #include "DagTreeIO.h"
 #include "StringFunctions.h"
+#include "OUTILS.H"
 
 #ifndef pyGNOME
 #include "CROSS.H"
@@ -301,6 +302,134 @@ void CATSMover_c::ModelStepIsDone()
 }
 
 
+OSErr CATSMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra, char* time_vals, int num_times) {	
+	
+	TimeValuePairH time_val_hdl = 0;
+	
+	if(!uncertain_ra) {
+		cout << "uncertainty values not provided! returning.\n";
+		return 1;
+	}
+	
+	if(!wp_ra) {
+		cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	
+	if(!time_vals) {
+		cout << "time values array not provided! returning.\n";
+		return 1;
+	} else {
+#ifdef pyGNOME
+			try {
+				time_val_hdl = (TimeValuePairH)_NewHandle(sizeof(TimeValuePair)*num_times);
+				memcpy(*time_val_hdl, time_vals, sizeof(TimeValuePair)*num_times);
+				timeDep = new OSSMTimeValue_c(this, time_val_hdl, kCMS);	// should we have to instantiate this every time we call the mover?
+			} catch(...) {
+				cout << "cannot create time values handle in windmover::get_move. returning.\n";
+				if(time_val_hdl)
+					_DisposeHandle((Handle)time_val_hdl);
+				return 1;
+			}
+#endif
+	}
+	// and so on.
+	
+	try {
+		this->fUncertaintyListH = (LEUncertainRecH)_NewHandle(sizeof(LEUncertainRec)*n);
+		memcpy(*this->fUncertaintyListH, uncertain_ra, sizeof(LEUncertainRec)*n);
+		this->fLESetSizesH = (LONGH)_NewHandle(sizeof(long));
+		DEREFH(this->fLESetSizesH)[0] = 0;
+	} catch(...) {
+		cout << "cannot create uncertainty handle in windmover::get_move. returning.\n";
+		if(this->fUncertaintyListH)
+			_DisposeHandle((Handle)this->fUncertaintyListH);
+		return 1;
+	}
+	
+	WorldPoint3D delta;
+	WorldPoint3D *ref;
+	WorldPoint3D *wp;
+	ref = (WorldPoint3D*)ref_ra;
+	wp = (WorldPoint3D*)wp_ra;
+	
+	for (int i = 0; i < n; i++) {
+		LERec rec;
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
+		
+		wp[i].p.pLat += delta.p.pLat / 1000000;
+		wp[i].p.pLong += delta.p.pLong / 1000000;
+		wp[i].z += delta.z;
+	}
+	if(timeDep)
+		delete timeDep;
+	if(time_val_hdl)
+		_DisposeHandle((Handle)time_val_hdl);
+	if(this->fLESetSizesH)
+		_DisposeHandle((Handle)this->fLESetSizesH);
+	if(this->fUncertaintyListH)
+		_DisposeHandle((Handle)this->fUncertaintyListH);
+	return noErr;
+}
+
+
+OSErr CATSMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char* time_vals, int num_times) {	
+
+	TimeValuePairH time_val_hdl = 0;
+	
+	if(!wp_ra) {
+		cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	
+	if(!time_vals) {
+		cout << "time values array not provided! returning.\n";
+		return 1;
+	} else {
+#ifdef pyGNOME
+			try {
+				time_val_hdl = (TimeValuePairH)_NewHandle(sizeof(TimeValuePair)*num_times);
+				memcpy(*time_val_hdl, time_vals, sizeof(TimeValuePair)*num_times);
+				timeDep = new OSSMTimeValue_c(this, time_val_hdl, kCMS);	// should we have to instantiate this every time we call the mover?
+			} catch(...) {
+				cout << "cannot create time values handle in windmover::get_move. returning.\n";
+				if(time_val_hdl)
+					_DisposeHandle((Handle)time_val_hdl);
+				return 1;
+			}
+#endif
+	}
+	// and so on.
+
+	WorldPoint3D delta;
+	WorldPoint3D *wp;
+	WorldPoint3D *ref;
+	
+	ref = (WorldPoint3D*)ref_ra;
+	wp = (WorldPoint3D*)wp_ra;
+	
+	for (int i = 0; i < n; i++) {
+		LERec rec;
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
+		
+		wp[i].p.pLat += delta.p.pLat / 1000000;
+		wp[i].p.pLong += delta.p.pLong / 1000000;
+		wp[i].z += delta.z;
+	}
+	if(timeDep)
+		delete timeDep;
+	if(time_val_hdl)
+		_DisposeHandle((Handle)time_val_hdl);
+	return noErr;
+}
+
+// ..
 WorldPoint3D CATSMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	Boolean useEddyUncertainty = false;	

@@ -1,4 +1,5 @@
 include "type_defs.pxi"
+
 cdef extern from "WindMover_c.h":
     cdef cppclass WindMover_c:
         double fSpeedScale

@@ -3,6 +3,9 @@
 #include "MYRANDOM.H"
 #include "TimUtils.h"
 #include "MakeMovie.h"
+#include "TShioTimeValue.h"
+#include "TideCurCycleMover.h"
+
 #include <vector>
 
 
@@ -2897,6 +2900,8 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 	AdiosInfoRecH adiosBudgetTable;
 	Boolean should_disperse;
 	Boolean selected_disperse;
+	TOSSMTimeValue *time_val_ptr;
+	CMyList *time_val_list;
 	TMap *map;	// in theory should be moverMap, unless universal...
 
 	
@@ -3002,9 +3007,36 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 			case TYPE_RANDOMMOVER3D:
 				// ..
 				break;
-				
-			default:								
+			case TYPE_CATSMOVER:
+				time_val_ptr = ((TCATSMover*)mover)->timeDep;
+				if(time_val_ptr) {
+					if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+						dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+				}
 				break;
+			case TYPE_TIDECURCYCLEMOVER:
+				time_val_ptr = ((TideCurCycleMover*)mover)->timeDep;
+				if(time_val_ptr) {
+					if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+						dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+				}
+				// ..
+				break;
+			case TYPE_ADCPMOVER:
+				time_val_list = ((ADCPMover*)mover)->timeDepList;
+				if(time_val_list) {
+					for(int i = 0; i < time_val_list->GetItemCount(); i++) {
+						if(time_val_list->GetListItem((Ptr)&time_val_ptr, i)) break;
+						if(time_val_ptr) {
+							if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+								dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+						}
+					}
+				}
+				// ..
+				break;
+			default:								
+				break;			
 		}
 		for(j = 0, m = mapList->GetItemCount(); j < m; j++) {
 			for(k = 0, N = (*pmapping)[j].size(); k < N; k++) {
@@ -3026,9 +3058,8 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 				case TYPE_WINDMOVER:
 					// set up the breaking wave, mixed layer depth:
 					map = Get3DMap();
-					if (!map)  
-					{
-						//use defaults
+					if (!map)  {
+						// use defaults
 						((TWindMover*)mover)->breaking_wave_height = 1.;	// meters
 						((TWindMover*)mover)->mixed_layer_depth = 10.;	// meters
 					}
@@ -3044,9 +3075,36 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 				case TYPE_RANDOMMOVER3D:
 					// ..
 					break;
-					
-				default:								
+				case TYPE_CATSMOVER:
+					time_val_ptr = ((TCATSMover*)mover)->timeDep;
+					if(time_val_ptr) {
+						if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+							dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+					}
 					break;
+				case TYPE_TIDECURCYCLEMOVER:
+					time_val_ptr = ((TideCurCycleMover*)mover)->timeDep;
+					if(time_val_ptr) {
+						if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+							dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+					}
+					// ..
+					break;
+				case TYPE_ADCPMOVER:
+					time_val_list = ((ADCPMover*)mover)->timeDepList;
+					if(time_val_list) {
+						for(int i = 0; i < time_val_list->GetItemCount(); i++) {
+							if(time_val_list->GetListItem((Ptr)&time_val_ptr, i)) break;
+							if(time_val_ptr) {
+								if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+									dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+							}
+						}
+					}
+					// ..
+					break;
+				default:								
+					break;			
 			}
 			for(k = 0, M = (*pmapping)[i].size(); k < M; k++) {
 				dp = mover->GetMove(this->GetModelTime(), fDialogVariables.computeTimeStep, (*imapping)[i][k].first, (*imapping)[i][k].second, (*pmapping)[i][k], tmapping[i][k]);

@@ -205,7 +205,8 @@ long  ShioTimeValue_c::I_SHIOEBBFLOODS(void)
 	
 }
 
-Boolean DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)
+Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)	// AH 07/09/2012
+
 {
 	// Assume that the change from standard to daylight
 	// savings time is on the first Sunday in April at 0200 and 
@@ -213,7 +214,9 @@ Boolean DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)
 	// last Sunday in October at 0200.             
 	
 	//return false;	// code goes here, outside US don't use daylight savings
-	if (settings.daylightSavingsTimeFlag == DAYLIGHTSAVINGSOFF) return false;
+// 	if (settings.daylightSavingsTimeFlag == DAYLIGHTSAVINGSOFF) return false; // minus AH 07/09/2012
+	
+	if (this->daylight_savings == DAYLIGHTSAVINGSOFF) return false;	// AH 07/09/2012
 	
 	switch(dateStdTime->month)
 	{
@@ -274,7 +277,7 @@ long	ShioTimeValue_c::GetNumHighLowValues()
  	long numHighLowValues = _GetHandleSize((Handle)fHighLowDataHdl)/sizeof(**fHighLowDataHdl);
 	return numHighLowValues;
 }
-
+#ifndef pyGNOME
 void GetYearDataDirectory(char* directoryPath)
 {
 
@@ -296,6 +299,7 @@ void GetYearDataDirectory(char* directoryPath)
 
 	return;
 }
+#endif
 
 OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 {
@@ -348,7 +352,7 @@ OSErr ShioTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 	endDate.minute = 0;
 	endDate.second = 0;
 	 
-	daylightSavings = DaylightSavingTimeInEffect(&beginDate);// code goes here, set the daylight flag
+	daylightSavings = this->DaylightSavingTimeInEffect(&beginDate);// code goes here, set the daylight flag
 #ifndef pyGNOME	
 #ifdef IBM
 	YHdl = GetYearData(beginDate.year);
