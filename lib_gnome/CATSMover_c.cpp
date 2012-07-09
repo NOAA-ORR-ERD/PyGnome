@@ -65,6 +65,49 @@ CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 	SetClassName (name);
 }
 
+#ifdef pyGNOME
+
+OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time) {
+	// this function computes and sets this->refScale
+	// returns Error when the refScale is not defined
+	// or in allowable range.  
+	// Note it also sets the refScale to 0 if there is an error
+#define MAXREFSCALE  1.0e6  // 1 million times is too much
+#define MIN_UNSCALED_REF_LENGTH 1.0E-5 // it's way too small
+	long i, j, m, n;
+	double length, theirLengthSq, myLengthSq, dotProduct;
+	VelocityRec theirVelocity,myVelocity;
+	WorldPoint3D refPt3D = {0,0,0.};
+	TMap *map;
+	TCATSMover *mover;
+	
+	if (this->timeDep && this->timeDep->fFileType==HYDROLOGYFILE)
+	{
+		this->refScale = this->timeDep->fScaleFactor;
+		return noErr;
+	}
+	
+	refPt3D.p = refP; refPt3D.z = 0.;
+	
+	switch (scaleType) {
+		case SCALE_NONE: this->refScale = 1; return noErr;
+		case SCALE_CONSTANT:
+			myVelocity = GetPatValue(refPt3D);
+			length = sqrt(myVelocity.u * myVelocity.u + myVelocity.v * myVelocity.v);
+			/// check for too small lengths
+			if(fabs(scaleValue) > length*MAXREFSCALE
+			   || length < MIN_UNSCALED_REF_LENGTH)
+			{ this->refScale = 0;return -1;} // unable to compute refScale
+			this->refScale = scaleValue / length; 
+			return noErr;
+	}
+	
+	this->refScale = 0;
+	return -1;
+	
+}
+
+#else
 
 OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 {	// this function computes and sets this->refScale
@@ -154,6 +197,8 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 	this->refScale = 0;
 	return -1;
 }
+
+#endif
 
 OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty)
 {
@@ -304,7 +349,8 @@ VelocityRec CATSMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint
 		// VelocityRec errVelocity={1,1};
 		// JLM 11/22/99, if there are no time file values, use zero not 1
 		VelocityRec errVelocity={0,1}; 
-		err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); 
+		// err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); // minus AH 07/09/2012
+		err = timeDep -> GetTimeValue (model_time, &timeValue); // AH 07/09/2012
 		if(err) timeValue = errVelocity;
 	}
 	
