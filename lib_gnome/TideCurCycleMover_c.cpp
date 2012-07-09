@@ -27,7 +27,7 @@ LongPointHdl TideCurCycleMover_c::GetPointsHdl()
 	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
 }
 
-OSErr TideCurCycleMover_c::ComputeVelocityScale()
+OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& model_time)
 {	// this function computes and sets this->refScale
 	// returns Error when the refScale is not defined
 	// or in allowable range.  
@@ -46,7 +46,10 @@ OSErr TideCurCycleMover_c::ComputeVelocityScale()
 	long ptIndex1,ptIndex2,ptIndex3; 
 	long index = -1; 
 	Seconds startTime,endTime;
-	Seconds time = model->GetModelTime();
+	
+	//Seconds time = model->GetModelTime(); AH 07/09/2012
+	Seconds time = model_time;	// AH 07/09/2012
+	
 	InterpolationVal interpolationVal;
 	VelocityRec scaledPatVelocity;
 	Boolean useEddyUncertainty = false;	
@@ -68,7 +71,7 @@ OSErr TideCurCycleMover_c::ComputeVelocityScale()
 		case SCALE_CONSTANT:
 			if(!this -> fOptimize.isOptimizedForStep) 
 			{
-				err = /*CHECK*/dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);
+				err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);
 				if (err) 
 				{
 					this->refScale = 0;
@@ -215,7 +218,7 @@ OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const 
 	
 	//check to see that the time interval is loaded and set if necessary
 	if (!bActive) return noErr;
-	err = /*CHECK*/dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);
+	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);
 	if(err) goto done;
 	
 	fOptimize.isOptimizedForStep = true;	// don't  use CATS eddy diffusion stuff, follow ptcur
@@ -395,7 +398,7 @@ double TideCurCycleMover_c::GetEndVVelocity(long index)
 }
 
 
-WorldPoint3D TideCurCycleMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	// see PtCurMover::GetMove - will depend on what is in netcdf files and how it's stored
 	WorldPoint3D	deltaPoint = {0,0,0.};
@@ -416,7 +419,7 @@ WorldPoint3D TideCurCycleMover_c::GetMove(Seconds model_time, Seconds timeStep,l
 	
 	if(!this -> fOptimize.isOptimizedForStep) 
 	{
-		err = /*CHECK*/dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);
+		err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);
 		if (err) return deltaPoint;
 	}
 	
@@ -544,7 +547,7 @@ scale:
 	return deltaPoint;
 }
 
-VelocityRec TideCurCycleMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec TideCurCycleMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("TideCurCycleMover::GetScaledPatValue is unimplemented");
@@ -658,7 +661,7 @@ Boolean TideCurCycleMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosti
 	// maybe should set interval right after reading the file...
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
-	err = /*CHECK*/dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);
+	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);
 	if(err) return false;
 	
 	// Get the interpolation coefficients, alpha1,ptIndex1,alpha2,ptIndex2,alpha3,ptIndex3

@@ -220,7 +220,7 @@ LongPointHdl CompoundMap_c::GetPointsHdl(Boolean useRefinedGrid)	// always false
 	// Figure out if this map has a PtCurMover or TCATSMover3D current
 	mover = this->GetMover(TYPE_COMPOUNDMOVER);
 	if (mover)
-		ptsHdl = /*CHECK*/(dynamic_cast<TCompoundMover *>(mover))->GetPointsHdl();
+		ptsHdl = (dynamic_cast<TCompoundMover *>(mover))->GetPointsHdl();
 	else
 	{
 	}
@@ -329,7 +329,7 @@ float CompoundMap_c::GetMaxDepth2(void)
 	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
 	{
 		mapList->GetListItem((Ptr)&map, i);
-		if (map) maxDepth = /*CHECK*/(dynamic_cast<PtCurMap *>(map)) -> GetMaxDepth2();
+		if (map) maxDepth = (dynamic_cast<PtCurMap *>(map)) -> GetMaxDepth2();
 		if (maxDepth > overallMaxDepth) overallMaxDepth = maxDepth;
 	}
 	return overallMaxDepth;		
@@ -618,7 +618,7 @@ long CompoundMap_c::GetNumBoundarySegs(void)
 	numMaps = mapList->GetItemCount();
 	mapList->GetListItem((Ptr)&map, numMaps-1);	// get lowest priority map ? (probably biggest)
 	
-	return /*CHECK*/(dynamic_cast<PtCurMap *>(map))->GetNumBoundarySegs();
+	return (dynamic_cast<PtCurMap *>(map))->GetNumBoundarySegs();
 }
 
 long CompoundMap_c::GetNumPointsInBoundarySeg(long segno)
@@ -629,7 +629,7 @@ long CompoundMap_c::GetNumPointsInBoundarySeg(long segno)
 	numMaps = mapList->GetItemCount();
 	mapList->GetListItem((Ptr)&map, numMaps-1);	// get lowest priority map ? (probably biggest)
 	
-	return /*CHECK*/(dynamic_cast<PtCurMap *>(map))->GetNumPointsInBoundarySeg(segno);
+	return (dynamic_cast<PtCurMap *>(map))->GetNumPointsInBoundarySeg(segno);
 }
 
 long CompoundMap_c::GetNumBoundaryPts(void)
@@ -640,7 +640,7 @@ long CompoundMap_c::GetNumBoundaryPts(void)
 	numMaps = mapList->GetItemCount();
 	mapList->GetListItem((Ptr)&map, numMaps-1);	// get lowest priority map ? (probably biggest)
 	
-	return /*CHECK*/(dynamic_cast<PtCurMap *>(map))->GetNumBoundaryPts();
+	return (dynamic_cast<PtCurMap *>(map))->GetNumBoundaryPts();
 }
 
 Boolean CompoundMap_c::IsBoundaryPoint(long pt)

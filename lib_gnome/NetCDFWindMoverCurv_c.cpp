@@ -57,7 +57,7 @@ Boolean NetCDFWindMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnos
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
 	if (!bShowArrows && !bShowGrid) return 0;
-	err = /*CHECK*/dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg);
+	err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg);
 	if(err) return false;
 	
 	if (fGrid) 
@@ -125,7 +125,7 @@ Boolean NetCDFWindMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnos
 	return true;
 }
 
-WorldPoint3D NetCDFWindMoverCurv_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D NetCDFWindMoverCurv_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	
@@ -143,7 +143,7 @@ WorldPoint3D NetCDFWindMoverCurv_c::GetMove(Seconds model_time, Seconds timeStep
 	// might want to check for fFillValue and set velocity to zero - shouldn't be an issue unless we interpolate
 	if(!fIsOptimizedForStep) 
 	{
-		err = /*CHECK*/dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg);
+		err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg);
 		if (err) return deltaPoint;
 	}
 	if (fGrid) 

@@ -322,7 +322,7 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 						{
 							newMover = new NetCDFWindMoverCurv(dynamic_cast<TMap *>(this),moverName);
 							TMap *newMap = 0;
-							err = /*CHECK*/ (dynamic_cast<NetCDFWindMoverCurv *>(newMover)) -> TextRead(netcdfFilePath,&newMap);
+							err =  (dynamic_cast<NetCDFWindMoverCurv *>(newMover)) -> TextRead(netcdfFilePath,&newMap);
 						}
 						else
 						{
@@ -534,7 +534,7 @@ void TMap::Draw(Rect r, WorldRect view)
 	long i, n;
 	Rect m;
 	TMover *mover;
-	WorldRect ourBounds =  /*CHECK*/ dynamic_cast<TMap *>(this) -> GetMapBounds();
+	WorldRect ourBounds =   dynamic_cast<TMap *>(this) -> GetMapBounds();
 	
 	//Boolean offQuickDrawPlane = false;
 	//Point pt1 = GetQuickDrawPt(ourBounds.loLong, ourBounds.hiLat, &r, &offQuickDrawPlane);
@@ -551,7 +551,7 @@ void TMap::Draw(Rect r, WorldRect view)
 	
 	PenNormal();
 	// Draw rectangular map bounds if no alternative map bounds exist
-	/*CHECK*/if (!dynamic_cast<TMap *>(this)->HaveMapBoundsLayer() /*&& !this->IsIceMap()*/) MyFrameRect(&m);
+	if (!dynamic_cast<TMap *>(this)->HaveMapBoundsLayer() /*&& !this->IsIceMap()*/) MyFrameRect(&m);
 	
 	// for large bnas with time dependent currents showing, drawing is very slow
 	// if more than one map on top of each other don't want movers all on top map
@@ -877,7 +877,7 @@ OSErr TMap::AddItem(ListItem item)
 						{
 							newMover = new NetCDFWindMoverCurv(dynamic_cast<TMap *>(this),"");
 							TMap *newMap = 0;
-							/*CHECK*/ err = (dynamic_cast<NetCDFWindMoverCurv *>(newMover)) -> TextRead(path,&newMap);
+							 err = (dynamic_cast<NetCDFWindMoverCurv *>(newMover)) -> TextRead(path,&newMap);
 						}
 						else
 						{

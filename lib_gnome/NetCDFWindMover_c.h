@@ -66,7 +66,7 @@ public:
 	NetCDFWindMover_c () {}
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
-	virtual WorldPoint3D 	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual long 		GetVelocityIndex(WorldPoint p);
 	virtual LongPoint 		GetVelocityIndices(WorldPoint wp); /*{LongPoint lp = {-1,-1}; printError("GetVelocityIndices not defined for windmover"); return lp;}*/
 	Seconds 			GetTimeValue(long index);

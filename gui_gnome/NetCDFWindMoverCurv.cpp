@@ -1176,9 +1176,9 @@ OSErr NetCDFWindMoverCurv::ExportTopology(char* path)
 	}
 	if (moverMap->IAm(TYPE_PTCURMAP))
 	{
-		boundaryTypeH = /*CHECK*/(dynamic_cast<PtCurMap *>(moverMap))->GetWaterBoundaries();
-		boundarySegmentsH = /*CHECK*/(dynamic_cast<PtCurMap *>(moverMap))->GetBoundarySegs();
-		boundaryPointsH = /*CHECK*/(dynamic_cast<PtCurMap *>(moverMap))->GetBoundaryPoints();
+		boundaryTypeH = (dynamic_cast<PtCurMap *>(moverMap))->GetWaterBoundaries();
+		boundarySegmentsH = (dynamic_cast<PtCurMap *>(moverMap))->GetBoundarySegs();
+		boundaryPointsH = (dynamic_cast<PtCurMap *>(moverMap))->GetBoundaryPoints();
 		if (!boundaryTypeH || !boundarySegmentsH || !boundaryPointsH) {printError("No map info to export"); err=-1; goto done;}
 	}
 	

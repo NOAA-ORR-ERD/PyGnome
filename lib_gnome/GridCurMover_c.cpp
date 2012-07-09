@@ -67,7 +67,7 @@ OSErr GridCurMover_c::PrepareForModelStep(const Seconds& model_time, const Secon
 	
 	//check to see that the time interval is loaded and set if necessary
 	if (!bActive) return noErr;
-	err = /*CHECK*/dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg);
+	err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg);
 	if(err) goto done;
 	
 	fOptimize.isOptimizedForStep = true;	// don't  use CATS eddy diffusion stuff, follow ptcur
@@ -92,7 +92,7 @@ void GridCurMover_c::ModelStepIsDone()
 
 
 
-WorldPoint3D GridCurMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D GridCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	
@@ -108,7 +108,7 @@ WorldPoint3D GridCurMover_c::GetMove(Seconds model_time, Seconds timeStep,long s
 	
 	if(!fOptimize.isOptimizedForStep) 
 	{
-		err = /*CHECK*/dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg);
+		err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg);
 		if (err) return deltaPoint;
 	}
 	
@@ -173,7 +173,7 @@ WorldPoint3D GridCurMover_c::GetMove(Seconds model_time, Seconds timeStep,long s
 	return deltaPoint;
 }
 
-VelocityRec GridCurMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec GridCurMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("GridCurMover::GetScaledPatValue is unimplemented");
@@ -276,7 +276,7 @@ Boolean GridCurMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	VelocityRec velocity = {0.,0.};
 	OSErr err = 0;
 	long timeDataInterval,numTimesInFile = /*OK*/dynamic_cast<GridCurMover *>(this)->GetNumTimesInFile();
-	Boolean intervalLoaded = /*CHECK*/dynamic_cast<GridCurMover *>(this) -> CheckInterval(timeDataInterval);
+	Boolean intervalLoaded = dynamic_cast<GridCurMover *>(this) -> CheckInterval(timeDataInterval);
 	
 	Seconds startTime, endTime, time = model->GetModelTime();
 	double timeAlpha;

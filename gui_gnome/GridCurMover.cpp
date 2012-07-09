@@ -234,7 +234,7 @@ OSErr GridCurMover::SettingsDialog()
 	
 	if(M33OK == item)	
 	{
-		if (sDialogUncertaintyChanged) /*CHECK*/dynamic_cast<GridCurMover *>(this)->UpdateUncertaintyValues(model->GetModelTime()-model->GetStartTime());
+		if (sDialogUncertaintyChanged) dynamic_cast<GridCurMover *>(this)->UpdateUncertaintyValues(model->GetModelTime()-model->GetStartTime());
 		model->NewDirtNotification();// tell model about dirt
 	}
 	return M33OK == item ? 0 : -1;

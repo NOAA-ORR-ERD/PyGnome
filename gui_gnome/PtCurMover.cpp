@@ -72,7 +72,7 @@ short PtCurMoverSettingsClick(DialogPtr dialog, short itemNum, long lParam, VOID
 			TMap *map = sPtCurDialogMover -> GetMoverMap();
 			if (map && map->IAm(TYPE_PTCURMAP))
 			{	// can't set depth on first viewing of dialog since map doesn't exist yet so can't check value
-				maxDepth = /*CHECK*/(dynamic_cast<PtCurMap *>(map)) -> GetMaxDepth2();
+				maxDepth = (dynamic_cast<PtCurMap *>(map)) -> GetMaxDepth2();
 				arrowDepth = EditText2Float(dialog, M30ARROWDEPTH);
 				if (arrowDepth > maxDepth)
 				{
@@ -2629,8 +2629,8 @@ OSErr PtCurMover::ExportTopology(char* path)
 	
 	if (moverMap->IAm(TYPE_PTCURMAP))
 	{
-		boundaryTypeH = /*CHECK*/(dynamic_cast<PtCurMap *>(moverMap))->GetWaterBoundaries();
-		boundarySegmentsH = /*CHECK*/(dynamic_cast<PtCurMap *>(moverMap))->GetBoundarySegs();
+		boundaryTypeH = (dynamic_cast<PtCurMap *>(moverMap))->GetWaterBoundaries();
+		boundarySegmentsH = (dynamic_cast<PtCurMap *>(moverMap))->GetBoundarySegs();
 		if (!boundaryTypeH || !boundarySegmentsH) {printError("No map info to export"); err=-1; goto done;}
 	}
 	

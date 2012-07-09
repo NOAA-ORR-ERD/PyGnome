@@ -66,7 +66,7 @@ CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 }
 
 
-OSErr CATSMover_c::ComputeVelocityScale()
+OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 {	// this function computes and sets this->refScale
 	// returns Error when the refScale is not defined
 	// or in allowable range.  
@@ -114,7 +114,8 @@ OSErr CATSMover_c::ComputeVelocityScale()
 						//velocity.u *= mover -> refScale;
 						//velocity.v *= mover -> refScale;
 						// so use GetScaledPatValue() instead
-						theirVelocity = mover -> GetScaledPatValue(refPt3D,nil);
+						// theirVelocity = mover -> GetScaledPatValue(refPt3D,nil); // minus AH 07/09/2012
+						theirVelocity = mover -> GetScaledPatValue(model_time, refPt3D,nil);	// AH 07/09/2012
 						
 						theirLengthSq = (theirVelocity.u * theirVelocity.u + theirVelocity.v * theirVelocity.v);
 						// JLM, we need to adjust the movers pattern 
@@ -237,7 +238,8 @@ OSErr CATSMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds&
 	if (err = CurrentMover_c::PrepareForModelStep(model_time, start_time, time_step, uncertain)) 
 		return err; // note: this calls UpdateUncertainty()
 	
-	err = this -> ComputeVelocityScale();// JLM, will this do it ???
+	// err = this -> ComputeVelocityScale();// JLM, will this do it ??? // minus AH 07/09/2012
+	err = this -> ComputeVelocityScale(model_time);	// AH 07/09/2012
 	
 	this -> fOptimize.isOptimizedForStep = true;
 	this -> fOptimize.value = sqrt(6*(fEddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
@@ -254,7 +256,7 @@ void CATSMover_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D CATSMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D CATSMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	Boolean useEddyUncertainty = false;	
 	double 		dLong, dLat;
@@ -265,7 +267,10 @@ WorldPoint3D CATSMover_c::GetMove(Seconds model_time, Seconds timeStep,long setI
 
 	refPoint3D.p = (*theLE).p;
 	refPoint3D.z = (*theLE).z;
-	scaledPatVelocity = this->GetScaledPatValue(refPoint3D,&useEddyUncertainty);
+	
+	// scaledPatVelocity = this->GetScaledPatValue(refPoint3D,&useEddyUncertainty); // minus AH 07/09/2012
+	scaledPatVelocity = this->GetScaledPatValue(model_time, refPoint3D,&useEddyUncertainty); // AH 07/09/2012
+	
 	if(leType == UNCERTAINTY_LE)
 	{
 		AddUncertainty(setIndex,leIndex,&scaledPatVelocity,timeStep,useEddyUncertainty);
@@ -279,7 +284,7 @@ WorldPoint3D CATSMover_c::GetMove(Seconds model_time, Seconds timeStep,long setI
 	return deltaPoint;
 }
 
-VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint3D p,Boolean * useEddyUncertainty)
+VelocityRec CATSMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint3D p,Boolean * useEddyUncertainty)
 {
 	/// 5/12/99 JLM, we only add the eddy uncertainty when the vectors are big enough when the timeValue is 1 
 	// This is in response to the Prince William sound problem where 5 patterns are being added together
@@ -289,7 +294,8 @@ VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint3D p,Boolean * useEddyUncer
 	
 	if(!this -> fOptimize.isOptimizedForStep && this->scaleType == SCALE_OTHERGRID) 
 	{	// we need to update refScale
-		this -> ComputeVelocityScale();
+		// this -> ComputeVelocityScale(); // minus AH 07/09/2012
+		this->ComputeVelocityScale(model_time);
 	}
 	
 	// get and apply our time file scale factor

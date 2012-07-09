@@ -51,7 +51,7 @@ TOSSMTimeValue::TOSSMTimeValue(TMover *theOwner) : TTimeValue(theOwner)
 long TOSSMTimeValue::GetListLength() 
 {//JLM
 	long listLength;
-	/*CHECK*/ listLength =  this->GetNumValues();
+	 listLength =  this->GetNumValues();
 	if(listLength > TOSSMMAXNUMDATALINESINLIST)
 		listLength = TOSSMMAXNUMDATALINESINLIST; // JLM 7/21/00 , don't show the user too many lines in the case of a huge wind record
 	return listLength;

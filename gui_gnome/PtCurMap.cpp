@@ -2491,7 +2491,7 @@ void PtCurMap::DrawContourScale(Rect r, WorldRect view)
 	
 	TCurrentMover *mover = Get3DCurrentMover();
 	if ((mover) && mover->IAm(TYPE_TRICURMOVER)) {/*OK*/ (dynamic_cast<TriCurMover *>(mover))->DrawContourScale(r,view);/* return;*/}
-	if ((mover) && mover->IAm(TYPE_NETCDFMOVER)) {/*CHECK*/(dynamic_cast<NetCDFMover*>(mover))->DrawContourScale(r,view);/* return;*/}
+	if ((mover) && mover->IAm(TYPE_NETCDFMOVER)) {(dynamic_cast<NetCDFMover*>(mover))->DrawContourScale(r,view);/* return;*/}
 	if (!this->ThereIsADispersedSpill()) return;
 	SetRGBColor(&rgb,0,0,0);
 	TextFont(kFontIDGeneva); TextSize(LISTTEXTSIZE);

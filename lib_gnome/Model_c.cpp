@@ -1250,8 +1250,8 @@ Boolean Model_c::ThereIsA3DMover(float *arrowDepth)
 					mover = this->GetMover(TYPE_COMPOUNDMOVER);
 					if (mover && gNoaaVersion)
 					{
-						*arrowDepth = /*CHECK*/(dynamic_cast<TCompoundMover*>(mover)) -> GetArrowDepth();
-						return /*CHECK*/(dynamic_cast<TCompoundMover*>(mover))->IAmA3DMover();
+						*arrowDepth = (dynamic_cast<TCompoundMover*>(mover)) -> GetArrowDepth();
+						return (dynamic_cast<TCompoundMover*>(mover))->IAmA3DMover();
 					}
 				}
 			}

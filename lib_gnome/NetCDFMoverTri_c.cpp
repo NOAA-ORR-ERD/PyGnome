@@ -56,7 +56,7 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
 	if (!fVar.bShowArrows && !fVar.bShowGrid) return 0;
-	err = /*CHECK*/dynamic_cast<NetCDFMoverTri *>(this) -> SetInterval(errmsg);
+	err = dynamic_cast<NetCDFMoverTri *>(this) -> SetInterval(errmsg);
 	if(err) return false;
 	
 	// Get the interpolation coefficients, alpha1,ptIndex1,alpha2,ptIndex2,alpha3,ptIndex3
@@ -324,7 +324,7 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	return true;
 }
 
-WorldPoint3D NetCDFMoverTri_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	// see PtCurMover::GetMove - will depend on what is in netcdf files and how it's stored
 	WorldPoint3D	deltaPoint = {{0,0},0.};

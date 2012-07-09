@@ -4821,7 +4821,17 @@ void TOLEList::Draw(Rect r, WorldRect view)
 							if (green < 128) green += 128; else green = 255;
 							if (blue < 128) blue += 128; else blue = 255;
 						}
-						underWaterColor = RGB(red,green,blue);
+						
+						// underWaterColor = RGB(red,green,blue); // minus AH 07/09/2012
+						
+						RGBColor temp_color; 
+						temp_color.red = red;
+						temp_color.green = green;
+						temp_color.blue = blue;
+						underWaterColor = temp_color;		// AH 07/09/2012:
+
+					
+						
 						/*if (LE.z > 100)
 						{
 						onLandColor  = &colors[LIGHTGRAY];

@@ -171,7 +171,8 @@ OSErr TCATSMover::InitMover(TGridVel *grid, WorldPoint p)
 	bApplyLogProfile = false;
 	arrowDepth = 0.;	// if want to show subsurface velocity for log profile
 	
-	/*CHECK*/dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale();
+	// dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(); AH 07/09/2012
+	dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(model->GetModelTime());	// AH 07/09/2012
 	
 	return 0;
 }
@@ -420,7 +421,8 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 		}
 		//////////////
 		/////////////
-		/*CHECK*/dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale();
+		// dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(); AH 07/09/2012
+		dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(model->GetModelTime());	// AH 07/09/2012
 		model->NewDirtNotification();// tell model about dirt
 	}
 	
@@ -758,7 +760,7 @@ Boolean TCATSMover::ListClick(ListItem item, Boolean inBullet, Boolean doubleCli
 					{
 						this->SetCurrentUncertaintyInfo(info);
 						// code goes here, if values have changed needToReInit in UpdateUncertainty
-						/*CHECK*/dynamic_cast<TCATSMover *>(this)->UpdateUncertaintyValues(model->GetModelTime()-model->GetStartTime());
+						dynamic_cast<TCATSMover *>(this)->UpdateUncertaintyValues(model->GetModelTime()-model->GetStartTime());
 					}
 				}
 				return TRUE;
@@ -1317,7 +1319,10 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			
 			if(!(sharedCMDialogTimeDep && (sharedCMDialogTimeDep->GetFileType() == HYDROLOGYFILE) && sharedCMDialogTimeDep->bOSSMStyle))
 			{	// old OSSM style files may have refP on land, but this point is not used in calculation
-				err = sharedCMover->ComputeVelocityScale();
+				
+				// err = sharedCMover->ComputeVelocityScale(); AH 07/09/2012
+				err = sharedCMover->ComputeVelocityScale(model->GetModelTime());	// AH 07/09/2012
+				
 				if(err) 
 				{	// restore values and report error to user
 					printError("The unscaled value is too small at the chosen reference point.");

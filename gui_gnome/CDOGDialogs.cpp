@@ -239,7 +239,7 @@ Boolean DoCDOGMenu(short menuCodedItemID, Boolean dontDoIt)
 							// check ThereIsA3DMover()
 							TCurrentMover *possible3DMover = model->GetPossible3DCurrentMover();	// probably a better way to do this
 							if (!possible3DMover) {printError("Please load a 3D current mover or select a different circulation option. Error outputting data to CDOG input folder."); return true;}
-							if (possible3DMover->IAm(TYPE_NETCDFMOVER)) numDepthLevels = /*CHECK*/(dynamic_cast<NetCDFMover *>(possible3DMover))->GetNumDepthLevels();
+							if (possible3DMover->IAm(TYPE_NETCDFMOVER)) numDepthLevels = (dynamic_cast<NetCDFMover *>(possible3DMover))->GetNumDepthLevels();
 							else {printError("Only currents in NetCDF format are allowed");return true;}
 							if (numDepthLevels<=1)
 							{
@@ -4401,7 +4401,7 @@ OSErr CDOGLEList::ExportProfilesAsNetCDF(TCurrentMover *hydrodynamicData)
 	else return -1;
 	if (numTimes < 1) return -1;
 
-	sigmaLength = /*CHECK*/(dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetNumDepthLevels();
+	sigmaLength = (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetNumDepthLevels();
 	timeValInSecs = /*OK*/ (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetTimeValue(numTimes-1);
 	if (numTimes>1 && timeValInSecs < model->GetEndTime()) {printNote("The hydrodynamic data runs out before the model end time. This may affect CDOG run.");}
 
@@ -4549,7 +4549,7 @@ OSErr CDOGLEList::ExportProfilesAsNetCDF(TCurrentMover *hydrodynamicData)
 	for (k=0;k<numTimes;k++)
 	{
 		timeIndex = k;
-		if (hydrodynamicData->IAm(TYPE_NETCDFMOVER)) err = /*CHECK*/(dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetDepthProfileAtPoint(fSetSummary.startRelPos,timeIndex,&profilesH);
+		if (hydrodynamicData->IAm(TYPE_NETCDFMOVER)) err = (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetDepthProfileAtPoint(fSetSummary.startRelPos,timeIndex,&profilesH);
 		if (!err && profilesH) numProfileSets = _GetHandleSize((Handle)profilesH)/sizeof(**profilesH);
 		else return -1;
 		// code goes here, add an h.dat file  numValues * largest depth (or larger?)
@@ -4738,7 +4738,7 @@ OSErr CDOGLEList::ExportProfilesToCDOGInputFolder(TCurrentMover *hydrodynamicDat
 	for (k=0;k<numTimes;k++)
 	{
 		timeIndex = k;
-	if (hydrodynamicData->IAm(TYPE_NETCDFMOVER)) err = /*CHECK*/(dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetDepthProfileAtPoint(fSetSummary.startRelPos,timeIndex,&profilesH);
+	if (hydrodynamicData->IAm(TYPE_NETCDFMOVER)) err = (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetDepthProfileAtPoint(fSetSummary.startRelPos,timeIndex,&profilesH);
 	if (!err && profilesH) numProfileSets = _GetHandleSize((Handle)profilesH)/sizeof(**profilesH);
 	else return -1;
 	// code goes here, add an h.dat file  numValues * largest depth (or larger?)
