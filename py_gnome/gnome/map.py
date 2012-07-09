@@ -155,6 +155,7 @@ class GnomeMap:
         
         
 import land_check
+from gnome import basic_types
 
 class RasterMap(GnomeMap):
     """
@@ -316,16 +317,16 @@ class RasterMap(GnomeMap):
         start_positions_px = self.projection.to_pixel(start_positions)
         end_positions_px   = self.projection.to_pixel(end_positions)
 
-        last_water_positions_px = np.array_like(start_positions_px)
+        last_water_positions_px = np.zeros_like(start_positions_px)
         # do the inner loop
         for i in range(len(start_positions)):
             #do the check...
             result = land_check.find_first_pixel(self.bitmap, start_positions_px[i], end_positions_px[i], draw=False)
             if result is not None:
                 last_water_positions_px[i], end_positions_px[i] = result
-                status_codes[i] = STATUS_CODE_BEACHED
+                status_codes[i] = basic_types.status_on_land
         # put the data back in the arrays
-        beached_mask =  status_codes[i] == STATUS_CODE_BEACHED
+        beached_mask =  status_codes == basic_types.status_on_land
         end_positions[beached_mask] = self.projection.to_lat_long(end_positions_px[beached_mask])
         last_water_positions = np.zeros_like(start_positions)
         last_water_positions = self.projection.to_lat_long(end_positions_px[beached_mask])

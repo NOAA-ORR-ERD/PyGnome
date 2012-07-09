@@ -49,7 +49,7 @@ class NoProjection:
         """
         returns the same coords, but as an np.array , if they aren't already
         """
-        return np.AsArray(coords, dtype=np.float64)
+        return np.asarray(coords, dtype=np.float64)
 
 
 class GeoProjection:

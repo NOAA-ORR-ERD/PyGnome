@@ -343,11 +343,11 @@ class Test_full_move:
         
         start_positions= np.array( ( ( 5.0, 5.0), ), dtype=np.float64) 
         end_positions =  np.array( ( (15.0, 5.0), ), dtype=np.float64)
-        status_code   =  np.array( (basic_types.status_in_water), dtype=np.short),
+        status_codes  =  np.array( (basic_types.status_in_water, ), dtype=np.short)
 
-        lkwp = map.beach_elements(start_positions,
+        lkwp, end_pos = map.beach_elements(start_positions,
                                   end_positions,
-                                  status_code,
+                                  status_codes,
                                   )
 
         assert end_pos == (10.0, 5.0)
