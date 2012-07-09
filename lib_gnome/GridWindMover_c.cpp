@@ -51,7 +51,7 @@ OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seco
 	
 	if (!bActive) return noErr;
 	
-	err = /*CHECK*/dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg); // SetInterval checks to see that the time interval is loaded
+	err = dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg); // SetInterval checks to see that the time interval is loaded
 	if (err) goto done;	// might not want to have error if outside time interval
 	
 	fIsOptimizedForStep = true;	// is this needed?
@@ -74,7 +74,7 @@ void GridWindMover_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D GridWindMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double dLong, dLat;
 	WorldPoint3D deltaPoint ={0,0,0.};
@@ -92,7 +92,7 @@ WorldPoint3D GridWindMover_c::GetMove(Seconds model_time, Seconds timeStep,long 
 	
 	if(!fIsOptimizedForStep) 
 	{
-		err = /*CHECK*/dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg);	// ok, but don't print error message here
+		err = dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg);	// ok, but don't print error message here
 		if (err) return deltaPoint;
 	}
 	index = GetVelocityIndex(refPoint);  // regular grid

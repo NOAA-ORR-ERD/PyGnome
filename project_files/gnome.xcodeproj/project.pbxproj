@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		ED07DECA1517F3DD008FA1CC /* MakeDagTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED07DEC91517F3DD008FA1CC /* MakeDagTree.cpp */; };
+		ED229B6815AB5E030038BD39 /* Map3D_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED229B6715AB5E030038BD39 /* Map3D_c.cpp */; };
+		ED229B7315AB5E310038BD39 /* Map3D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED229B7215AB5E310038BD39 /* Map3D.cpp */; };
 		ED2971F01519181C0000481F /* CMapLayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED2971EE1519181C0000481F /* CMapLayer.cpp */; };
 		ED2971F11519181C0000481F /* ObjectUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED2971EF1519181C0000481F /* ObjectUtils.cpp */; };
 		ED2971F4151918500000481F /* CMapLayer_c.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED2971F3151918500000481F /* CMapLayer_c.cpp */; };
@@ -154,6 +156,10 @@
 /* Begin PBXFileReference section */
 		0D9D32EF0E226E6E0083E689 /* gnome.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = gnome.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED07DEC91517F3DD008FA1CC /* MakeDagTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MakeDagTree.cpp; sourceTree = "<group>"; };
+		ED229B6615AB5E030038BD39 /* Map3D_c.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Map3D_c.h; sourceTree = "<group>"; };
+		ED229B6715AB5E030038BD39 /* Map3D_c.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Map3D_c.cpp; sourceTree = "<group>"; };
+		ED229B7115AB5E310038BD39 /* Map3D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Map3D.h; sourceTree = "<group>"; };
+		ED229B7215AB5E310038BD39 /* Map3D.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Map3D.cpp; sourceTree = "<group>"; };
 		ED2971D0151915650000481F /* ObjectUtilsPD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ObjectUtilsPD.h; sourceTree = "<group>"; };
 		ED2971EE1519181C0000481F /* CMapLayer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CMapLayer.cpp; sourceTree = "<group>"; };
 		ED2971EF1519181C0000481F /* ObjectUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ObjectUtils.cpp; sourceTree = "<group>"; };
@@ -449,6 +455,8 @@
 		EDCB3F6A150FFA6600199C36 /* gui_gnome */ = {
 			isa = PBXGroup;
 			children = (
+				ED229B7115AB5E310038BD39 /* Map3D.h */,
+				ED229B7215AB5E310038BD39 /* Map3D.cpp */,
 				EDCB3F6B150FFA6600199C36 /* ADCPMover.cpp */,
 				EDCB3F6C150FFA6600199C36 /* ADCPMover.h */,
 				EDCB3F6D150FFA6600199C36 /* ADCPTimeValue.cpp */,
@@ -591,6 +599,8 @@
 		EDCB3FF3150FFA6600199C36 /* lib_gnome */ = {
 			isa = PBXGroup;
 			children = (
+				ED229B6615AB5E030038BD39 /* Map3D_c.h */,
+				ED229B6715AB5E030038BD39 /* Map3D_c.cpp */,
 				EDCB4044150FFA6700199C36 /* ObjectUtils.h */,
 				ED2971F3151918500000481F /* CMapLayer_c.cpp */,
 				ED07DEC91517F3DD008FA1CC /* MakeDagTree.cpp */,
@@ -626,6 +636,8 @@
 				EDCB3FFD150FFA6600199C36 /* CATSMover3D_c.h */,
 				EDCB3FFF150FFA6600199C36 /* CATSMover_c.cpp */,
 				EDCB4000150FFA6600199C36 /* CATSMover_c.h */,
+				EDCB405E150FFA6700199C36 /* ShioTimeValue_c.cpp */,
+				EDCB405F150FFA6700199C36 /* ShioTimeValue_c.h */,
 				EDCB4002150FFA6600199C36 /* ClassID_c.cpp */,
 				EDCB4003150FFA6600199C36 /* ClassID_c.h */,
 				EDCB4005150FFA6600199C36 /* CMap2.h */,
@@ -688,8 +700,6 @@
 				EDCB405B150FFA6700199C36 /* ShioCurrent1.cpp */,
 				EDCB405C150FFA6700199C36 /* ShioCurrent2.cpp */,
 				EDCB405D150FFA6700199C36 /* ShioHeight.cpp */,
-				EDCB405E150FFA6700199C36 /* ShioTimeValue_c.cpp */,
-				EDCB405F150FFA6700199C36 /* ShioTimeValue_c.h */,
 				EDCB4060150FFA6700199C36 /* StringFunctions.cpp */,
 				EDCB4061150FFA6700199C36 /* StringFunctions.h */,
 				EDCB402D150FFA6700199C36 /* MemUtils.cpp */,
@@ -944,6 +954,8 @@
 				ED2971F4151918500000481F /* CMapLayer_c.cpp in Sources */,
 				EDF6160E15223E160025FE54 /* TimeValuesIOPD.cpp in Sources */,
 				EDF6164815223F860025FE54 /* TimeValuesIO.cpp in Sources */,
+				ED229B6815AB5E030038BD39 /* Map3D_c.cpp in Sources */,
+				ED229B7315AB5E310038BD39 /* Map3D.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

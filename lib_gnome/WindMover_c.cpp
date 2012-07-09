@@ -593,7 +593,7 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra,
 
 
 
-WorldPoint3D WindMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 	dLong, dLat;
 	VelocityRec	patVelocity, timeValue = { 0, 0 };

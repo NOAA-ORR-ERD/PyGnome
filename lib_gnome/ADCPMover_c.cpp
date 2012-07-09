@@ -10,7 +10,7 @@
 #include "ADCPMover_c.h"
 #include "CROSS.H"
 
-OSErr ADCPMover_c::ComputeVelocityScale()
+OSErr ADCPMover_c::ComputeVelocityScale(const Seconds& model_time)
 {	// this function computes and sets this->refScale
 	// returns Error when the refScale is not defined
 	// or in allowable range.  
@@ -56,7 +56,8 @@ OSErr ADCPMover_c::ComputeVelocityScale()
 						//velocity.u *= mover -> refScale;
 						//velocity.v *= mover -> refScale;
 						// so use GetScaledPatValue() instead
-						theirVelocity = mover -> GetScaledPatValue(refP,nil);
+						// theirVelocity = mover -> GetScaledPatValue(refP,nil); // minus AH 07/09/2012
+						theirVelocity = mover -> GetScaledPatValue(model_time, refP,nil);	// AH 07/09/2012
 						
 						theirLengthSq = (theirVelocity.u * theirVelocity.u + theirVelocity.v * theirVelocity.v);
 						// JLM, we need to adjust the movers pattern 
@@ -178,7 +179,8 @@ OSErr ADCPMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds&
 	if (err = CurrentMover_c::PrepareForModelStep(model_time, start_time, time_step, uncertain)) 
 		return err; // note: this calls UpdateUncertainty()
 	
-	err = this -> ComputeVelocityScale();// JLM, will this do it ???
+	// err = this -> ComputeVelocityScale();// JLM, will this do it ???	// minus AH 07/09/2012
+	err = this -> ComputeVelocityScale(model_time);	// AH 07/09/2012
 
 	this -> fOptimize.isOptimizedForStep = true;
 	this -> fOptimize.value = sqrt(6*(fEddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
@@ -195,7 +197,7 @@ void ADCPMover_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D ADCPMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D ADCPMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	Boolean useEddyUncertainty = false;	
 	double 		dLong, dLat;
@@ -221,7 +223,7 @@ WorldPoint3D ADCPMover_c::GetMove(Seconds model_time, Seconds timeStep,long setI
 	return deltaPoint;
 }
 
-VelocityRec ADCPMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec ADCPMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {	
 	VelocityRec	patVelocity, timeValue = {1, 1};
 	float lengthSquaredBeforeTimeFactor;
@@ -272,7 +274,7 @@ VelocityRec ADCPMover_c::GetVelocityAtPoint(WorldPoint3D p)
 	// will need to interpolate - this will get redone for multiple stations
 	if (moverMap->IAm(TYPE_PTCURMAP)) 
 	{
-		totalDepth = /*CHECK*/(dynamic_cast<PtCurMap *>(moverMap))->DepthAtPoint(p.p);
+		totalDepth = (dynamic_cast<PtCurMap *>(moverMap))->DepthAtPoint(p.p);
 		depthAtPoint = p.z;
 	}
 	for (i = 0; i < timeDepList -> GetItemCount (); i++)

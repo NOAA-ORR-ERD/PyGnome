@@ -49,7 +49,7 @@ public:
 	TOSSMTimeValue *timeDep;
 	double			fEddyDiffusion;			// cm**2/s minimum eddy velocity for uncertainty
 	double			fEddyV0;			//  in m/s, used for cutoff of minimum eddy for uncertainty
-	TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file
+	TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file	
 	
 						CATSMover_c (TMap *owner, char *name);
 						CATSMover_c ();
@@ -61,15 +61,19 @@ public:
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	void				DeleteTimeDep ();
 	VelocityRec			GetPatValue (WorldPoint3D p);
-	VelocityRec 		GetScaledPatValue(WorldPoint3D p,Boolean * useEddyUncertainty);//JLM 5/12/99
+	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p,Boolean * useEddyUncertainty);//JLM 5/12/99
 	VelocityRec			GetSmoothVelocity (WorldPoint p);
-	//OSErr				ComputeVelocityScale ();
-	virtual OSErr		ComputeVelocityScale ();
-	virtual WorldPoint3D	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	//OSErr       ComputeVelocityScale(const Seconds& model_time);
+	virtual OSErr       ComputeVelocityScale(const Seconds& model_time);
+	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr);
 	virtual	OSErr		ReadTopology(char* path, TMap **newMap);
+
+	
+			OSErr		get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra, char* time_vals, int num_times);
+			OSErr		get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char* time_vals, int num_times);
 
 };
 

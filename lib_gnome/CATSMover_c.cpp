@@ -13,6 +13,7 @@
 #include "MemUtils.h"
 #include "DagTreeIO.h"
 #include "StringFunctions.h"
+#include "OUTILS.H"
 
 #ifndef pyGNOME
 #include "CROSS.H"
@@ -65,8 +66,51 @@ CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 	SetClassName (name);
 }
 
+#ifdef pyGNOME
 
-OSErr CATSMover_c::ComputeVelocityScale()
+OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time) {
+	// this function computes and sets this->refScale
+	// returns Error when the refScale is not defined
+	// or in allowable range.  
+	// Note it also sets the refScale to 0 if there is an error
+#define MAXREFSCALE  1.0e6  // 1 million times is too much
+#define MIN_UNSCALED_REF_LENGTH 1.0E-5 // it's way too small
+	long i, j, m, n;
+	double length, theirLengthSq, myLengthSq, dotProduct;
+	VelocityRec theirVelocity,myVelocity;
+	WorldPoint3D refPt3D = {0,0,0.};
+	TMap *map;
+	TCATSMover *mover;
+	
+	if (this->timeDep && this->timeDep->fFileType==HYDROLOGYFILE)
+	{
+		this->refScale = this->timeDep->fScaleFactor;
+		return noErr;
+	}
+	
+	refPt3D.p = refP; refPt3D.z = 0.;
+	
+	switch (scaleType) {
+		case SCALE_NONE: this->refScale = 1; return noErr;
+		case SCALE_CONSTANT:
+			myVelocity = GetPatValue(refPt3D);
+			length = sqrt(myVelocity.u * myVelocity.u + myVelocity.v * myVelocity.v);
+			/// check for too small lengths
+			if(fabs(scaleValue) > length*MAXREFSCALE
+			   || length < MIN_UNSCALED_REF_LENGTH)
+			{ this->refScale = 0;return -1;} // unable to compute refScale
+			this->refScale = scaleValue / length; 
+			return noErr;
+	}
+	
+	this->refScale = 0;
+	return -1;
+	
+}
+
+#else
+
+OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 {	// this function computes and sets this->refScale
 	// returns Error when the refScale is not defined
 	// or in allowable range.  
@@ -114,7 +158,8 @@ OSErr CATSMover_c::ComputeVelocityScale()
 						//velocity.u *= mover -> refScale;
 						//velocity.v *= mover -> refScale;
 						// so use GetScaledPatValue() instead
-						theirVelocity = mover -> GetScaledPatValue(refPt3D,nil);
+						// theirVelocity = mover -> GetScaledPatValue(refPt3D,nil); // minus AH 07/09/2012
+						theirVelocity = mover -> GetScaledPatValue(model_time, refPt3D,nil);	// AH 07/09/2012
 						
 						theirLengthSq = (theirVelocity.u * theirVelocity.u + theirVelocity.v * theirVelocity.v);
 						// JLM, we need to adjust the movers pattern 
@@ -153,6 +198,8 @@ OSErr CATSMover_c::ComputeVelocityScale()
 	this->refScale = 0;
 	return -1;
 }
+
+#endif
 
 OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty)
 {
@@ -237,7 +284,8 @@ OSErr CATSMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds&
 	if (err = CurrentMover_c::PrepareForModelStep(model_time, start_time, time_step, uncertain)) 
 		return err; // note: this calls UpdateUncertainty()
 	
-	err = this -> ComputeVelocityScale();// JLM, will this do it ???
+	// err = this -> ComputeVelocityScale();// JLM, will this do it ??? // minus AH 07/09/2012
+	err = this -> ComputeVelocityScale(model_time);	// AH 07/09/2012
 	
 	this -> fOptimize.isOptimizedForStep = true;
 	this -> fOptimize.value = sqrt(6*(fEddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
@@ -254,7 +302,135 @@ void CATSMover_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D CATSMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+OSErr CATSMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra, char* time_vals, int num_times) {	
+	
+	TimeValuePairH time_val_hdl = 0;
+	
+	if(!uncertain_ra) {
+		cout << "uncertainty values not provided! returning.\n";
+		return 1;
+	}
+	
+	if(!wp_ra) {
+		cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	
+	if(!time_vals) {
+		cout << "time values array not provided! returning.\n";
+		return 1;
+	} else {
+#ifdef pyGNOME
+			try {
+				time_val_hdl = (TimeValuePairH)_NewHandle(sizeof(TimeValuePair)*num_times);
+				memcpy(*time_val_hdl, time_vals, sizeof(TimeValuePair)*num_times);
+				timeDep = new OSSMTimeValue_c(this, time_val_hdl, kCMS);	// should we have to instantiate this every time we call the mover?
+			} catch(...) {
+				cout << "cannot create time values handle in windmover::get_move. returning.\n";
+				if(time_val_hdl)
+					_DisposeHandle((Handle)time_val_hdl);
+				return 1;
+			}
+#endif
+	}
+	// and so on.
+	
+	try {
+		this->fUncertaintyListH = (LEUncertainRecH)_NewHandle(sizeof(LEUncertainRec)*n);
+		memcpy(*this->fUncertaintyListH, uncertain_ra, sizeof(LEUncertainRec)*n);
+		this->fLESetSizesH = (LONGH)_NewHandle(sizeof(long));
+		DEREFH(this->fLESetSizesH)[0] = 0;
+	} catch(...) {
+		cout << "cannot create uncertainty handle in windmover::get_move. returning.\n";
+		if(this->fUncertaintyListH)
+			_DisposeHandle((Handle)this->fUncertaintyListH);
+		return 1;
+	}
+	
+	WorldPoint3D delta;
+	WorldPoint3D *ref;
+	WorldPoint3D *wp;
+	ref = (WorldPoint3D*)ref_ra;
+	wp = (WorldPoint3D*)wp_ra;
+	
+	for (int i = 0; i < n; i++) {
+		LERec rec;
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
+		
+		wp[i].p.pLat += delta.p.pLat / 1000000;
+		wp[i].p.pLong += delta.p.pLong / 1000000;
+		wp[i].z += delta.z;
+	}
+	if(timeDep)
+		delete timeDep;
+	if(time_val_hdl)
+		_DisposeHandle((Handle)time_val_hdl);
+	if(this->fLESetSizesH)
+		_DisposeHandle((Handle)this->fLESetSizesH);
+	if(this->fUncertaintyListH)
+		_DisposeHandle((Handle)this->fUncertaintyListH);
+	return noErr;
+}
+
+
+OSErr CATSMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char* time_vals, int num_times) {	
+
+	TimeValuePairH time_val_hdl = 0;
+	
+	if(!wp_ra) {
+		cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	
+	if(!time_vals) {
+		cout << "time values array not provided! returning.\n";
+		return 1;
+	} else {
+#ifdef pyGNOME
+			try {
+				time_val_hdl = (TimeValuePairH)_NewHandle(sizeof(TimeValuePair)*num_times);
+				memcpy(*time_val_hdl, time_vals, sizeof(TimeValuePair)*num_times);
+				timeDep = new OSSMTimeValue_c(this, time_val_hdl, kCMS);	// should we have to instantiate this every time we call the mover?
+			} catch(...) {
+				cout << "cannot create time values handle in windmover::get_move. returning.\n";
+				if(time_val_hdl)
+					_DisposeHandle((Handle)time_val_hdl);
+				return 1;
+			}
+#endif
+	}
+	// and so on.
+
+	WorldPoint3D delta;
+	WorldPoint3D *wp;
+	WorldPoint3D *ref;
+	
+	ref = (WorldPoint3D*)ref_ra;
+	wp = (WorldPoint3D*)wp_ra;
+	
+	for (int i = 0; i < n; i++) {
+		LERec rec;
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
+		
+		wp[i].p.pLat += delta.p.pLat / 1000000;
+		wp[i].p.pLong += delta.p.pLong / 1000000;
+		wp[i].z += delta.z;
+	}
+	if(timeDep)
+		delete timeDep;
+	if(time_val_hdl)
+		_DisposeHandle((Handle)time_val_hdl);
+	return noErr;
+}
+
+// ..
+WorldPoint3D CATSMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	Boolean useEddyUncertainty = false;	
 	double 		dLong, dLat;
@@ -265,7 +441,10 @@ WorldPoint3D CATSMover_c::GetMove(Seconds model_time, Seconds timeStep,long setI
 
 	refPoint3D.p = (*theLE).p;
 	refPoint3D.z = (*theLE).z;
-	scaledPatVelocity = this->GetScaledPatValue(refPoint3D,&useEddyUncertainty);
+	
+	// scaledPatVelocity = this->GetScaledPatValue(refPoint3D,&useEddyUncertainty); // minus AH 07/09/2012
+	scaledPatVelocity = this->GetScaledPatValue(model_time, refPoint3D,&useEddyUncertainty); // AH 07/09/2012
+	
 	if(leType == UNCERTAINTY_LE)
 	{
 		AddUncertainty(setIndex,leIndex,&scaledPatVelocity,timeStep,useEddyUncertainty);
@@ -279,7 +458,7 @@ WorldPoint3D CATSMover_c::GetMove(Seconds model_time, Seconds timeStep,long setI
 	return deltaPoint;
 }
 
-VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint3D p,Boolean * useEddyUncertainty)
+VelocityRec CATSMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint3D p,Boolean * useEddyUncertainty)
 {
 	/// 5/12/99 JLM, we only add the eddy uncertainty when the vectors are big enough when the timeValue is 1 
 	// This is in response to the Prince William sound problem where 5 patterns are being added together
@@ -289,7 +468,8 @@ VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint3D p,Boolean * useEddyUncer
 	
 	if(!this -> fOptimize.isOptimizedForStep && this->scaleType == SCALE_OTHERGRID) 
 	{	// we need to update refScale
-		this -> ComputeVelocityScale();
+		// this -> ComputeVelocityScale(); // minus AH 07/09/2012
+		this->ComputeVelocityScale(model_time);
 	}
 	
 	// get and apply our time file scale factor
@@ -298,7 +478,8 @@ VelocityRec CATSMover_c::GetScaledPatValue(WorldPoint3D p,Boolean * useEddyUncer
 		// VelocityRec errVelocity={1,1};
 		// JLM 11/22/99, if there are no time file values, use zero not 1
 		VelocityRec errVelocity={0,1}; 
-		err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); 
+		// err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); // minus AH 07/09/2012
+		err = timeDep -> GetTimeValue (model_time, &timeValue); // AH 07/09/2012
 		if(err) timeValue = errVelocity;
 	}
 	

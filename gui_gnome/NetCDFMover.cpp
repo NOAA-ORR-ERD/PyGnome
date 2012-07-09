@@ -143,7 +143,7 @@ void ShowHideVerticalExtrapolationDialogItems(DialogPtr dialog)
 	
 	if (map && map->IAm(TYPE_PTCURMAP))
 	{
-		if ((/*CHECK*/dynamic_cast<PtCurMap *>(map))->GetMaxDepth2() > 0 || sNetCDFDialogMover -> GetMaxDepth() > 0) okToExtrapolate = true;
+		if ((dynamic_cast<PtCurMap *>(map))->GetMaxDepth2() > 0 || sNetCDFDialogMover -> GetMaxDepth() > 0) okToExtrapolate = true;
 	} 
 	
 	if (sNetCDFDialogMover->fVar.gridType!=TWO_D || !okToExtrapolate)	// if model has depth data assume that is what user wants to use
@@ -191,7 +191,7 @@ short NetCDFMoverSettingsClick(DialogPtr dialog, short itemNum, long lParam, VOI
 			if (showBottomVel) arrowDepth = -2;	//check maxDepth>0
 			if (map /*&& map->IAm(TYPE_PTCURMAP)*/)
 			{
-				//maxDepth = /*CHECK*/(dynamic_cast<PtCurMap *>(map)) -> GetMaxDepth2();	// 2D vs 3D ?
+				//maxDepth = (dynamic_cast<PtCurMap *>(map)) -> GetMaxDepth2();	// 2D vs 3D ?
 				maxDepth = map -> GetMaxDepth2();	// 2D vs 3D ?
 				//arrowDepth = EditText2Float(dialog, M33ARROWDEPTH);
 				if (arrowDepth > maxDepth)
@@ -590,7 +590,7 @@ OSErr NetCDFMover::SettingsDialog()
 	
 	if(M33OK == item)	
 	{
-		if (sDialogUncertaintyChanged) /*CHECK*/dynamic_cast<NetCDFMover *>(this)->UpdateUncertaintyValues(model->GetModelTime()-model->GetStartTime());
+		if (sDialogUncertaintyChanged) dynamic_cast<NetCDFMover *>(this)->UpdateUncertaintyValues(model->GetModelTime()-model->GetStartTime());
 		model->NewDirtNotification();// tell model about dirt
 	}
 	return M33OK == item ? 0 : -1;
@@ -1544,7 +1544,7 @@ void NetCDFMover::Draw(Rect r, WorldRect view)
 			velocity.u = velocity.v = 0.;
 			if (loaded && !err)
 			{
-				index = /*CHECK*/dynamic_cast<NetCDFMover *>(this)->GetVelocityIndex(wp);	// need alternative for curvilinear
+				index = dynamic_cast<NetCDFMover *>(this)->GetVelocityIndex(wp);	// need alternative for curvilinear
 				
 				if (fVar.bShowArrows && index >= 0)
 				{

@@ -500,7 +500,7 @@ LongPointHdl PtCurMap_c::GetPointsHdl(Boolean useRefinedGrid)	// always false at
 		mover = this->GetMover(TYPE_CATSMOVER3D);
 		if (mover)
 			//ptsHdl = ((TCATSMover3D *)mover)->GetPointsHdl(useRefinedGrid);	// will use refined grid if there is one
-		/*CHECK*/ ptsHdl = (dynamic_cast<TCATSMover3D *>(mover))->GetPointsHdl();	// will use refined grid if there is one
+		 ptsHdl = (dynamic_cast<TCATSMover3D *>(mover))->GetPointsHdl();	// will use refined grid if there is one
 		else
 		{
 			mover = this->GetMover(TYPE_NETCDFMOVERCURV);
@@ -520,7 +520,7 @@ LongPointHdl PtCurMap_c::GetPointsHdl(Boolean useRefinedGrid)	// always false at
 					{
 						mover = this->GetMover(TYPE_TRICURMOVER);
 						if (mover)
-						/*CHECK*/ ptsHdl = (dynamic_cast<TriCurMover *>(mover))->GetPointsHdl();
+						 ptsHdl = (dynamic_cast<TriCurMover *>(mover))->GetPointsHdl();
 					}
 				}
 			}

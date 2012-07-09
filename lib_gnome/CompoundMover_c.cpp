@@ -157,7 +157,7 @@ OSErr CompoundMover_c::AddMover(TMover *theMover, short where)
 }
 
 
-WorldPoint3D CompoundMover_c::GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D CompoundMover_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 		dLat, dLong;
 	WorldPoint3D	deltaPoint = {0,0,0.};

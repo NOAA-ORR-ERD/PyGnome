@@ -60,10 +60,10 @@ public:
 	 TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	 void				DeleteTimeDep ();
 	 VelocityRec			GetPatValue (WorldPoint p);
-	 VelocityRec 		GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
+	 VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
 	 VelocityRec			GetSmoothVelocity (WorldPoint p);
-	 OSErr				ComputeVelocityScale ();
-	 virtual WorldPoint3D	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	 OSErr       ComputeVelocityScale(const Seconds& model_time);
+	 virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	 */		
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	//virtual void 		ModelStepIsDone();

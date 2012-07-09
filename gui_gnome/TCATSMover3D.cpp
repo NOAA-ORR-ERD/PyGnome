@@ -1375,8 +1375,8 @@ OSErr TCATSMover3D::ExportTopology(char* path)
 	
 	if (moverMap->IAm(TYPE_PTCURMAP))
 	{
-		boundaryTypeH = /*CHECK*/(dynamic_cast<PtCurMap *>(moverMap))->GetWaterBoundaries();
-		boundarySegmentsH = /*CHECK*/(dynamic_cast<PtCurMap *>(moverMap))->GetBoundarySegs();
+		boundaryTypeH = (dynamic_cast<PtCurMap *>(moverMap))->GetWaterBoundaries();
+		boundarySegmentsH = (dynamic_cast<PtCurMap *>(moverMap))->GetBoundarySegs();
 		if (!boundaryTypeH || !boundarySegmentsH) {printError("No map info to export"); err=-1; goto done;}
 	}
 	

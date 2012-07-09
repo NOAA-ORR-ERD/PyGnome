@@ -146,7 +146,7 @@ OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Second
 	
 	if (!bActive) return 0; 
 	
-	err = /*CHECK*/dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
+	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
 	if(err) goto done;
 	
 	fIsOptimizedForStep = true;
@@ -206,7 +206,7 @@ long TriCurMover_c::WhatTriAmIIn(WorldPoint wp)
 	return dagTree -> WhatTriAmIIn(lp);
 }
 
-WorldPoint3D TriCurMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D TriCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	// figure out which depth values the LE falls between
 	// since velocities are at centers no need to interpolate, use value over whole triangle
@@ -231,7 +231,7 @@ WorldPoint3D TriCurMover_c::GetMove(Seconds model_time, Seconds timeStep,long se
 	
 	if(!fIsOptimizedForStep) 
 	{
-		err = /*CHECK*/dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
+		err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
 		if (err) return deltaPoint;
 	}
 	
@@ -315,7 +315,7 @@ WorldPoint3D TriCurMover_c::GetMove(Seconds model_time, Seconds timeStep,long se
 	return deltaPoint;
 }
 
-VelocityRec TriCurMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec TriCurMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("TriCurMover::GetScaledPatValue is unimplemented");
@@ -348,7 +348,7 @@ Boolean TriCurMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	// maybe should set interval right after reading the file...
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
-	err = /*CHECK*/dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
+	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
 	if(err) return false;
 	
 	
@@ -505,10 +505,10 @@ long TriCurMover_c::CreateDepthSlice(long triNum, float **depthSlice)
 		depthSliceArray[i+1]=0;
 	}
 	
-	err = /*CHECK*/dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
+	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
 	if(err) return -1;
 	
-	loaded = /*CHECK*/dynamic_cast<TriCurMover *>(this) -> CheckInterval(timeDataInterval);
+	loaded = dynamic_cast<TriCurMover *>(this) -> CheckInterval(timeDataInterval);
 	if(!loaded) return -1;
 	
 	// Check for time varying current 

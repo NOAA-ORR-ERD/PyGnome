@@ -527,7 +527,7 @@ TCurrentMover* TCompoundMover::AddCurrent(OSErr *err,TCompoundMap **compoundMap)
 				if (!newMap) 
 				{	
 					//err = AddMoverToMap (this->moverMap, timeFileChanged, newMover);
-					*err = /*CHECK*/dynamic_cast<TCompoundMover *>(this)->AddMover(newMover,0);
+					*err = dynamic_cast<TCompoundMover *>(this)->AddMover(newMover,0);
 					if (*err)
 					{
 						newMover->Dispose(); delete newMover; newMover = 0;

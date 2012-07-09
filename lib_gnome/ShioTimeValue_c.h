@@ -82,6 +82,9 @@ protected:
 	long 		I_SHIOEBBFLOODS(void);
 	
 public:						
+	
+	bool	daylight_savings;	// AH 07/09/2012
+	
 							ShioTimeValue_c() { fEbbFloodDataHdl = 0; fHighLowDataHdl = 0;}
 							ShioTimeValue_c (TMover *theOwner);
 							ShioTimeValue_c (TMover *theOwner,TimeValuePairH tvals);
@@ -98,7 +101,7 @@ public:
 	virtual	OSErr			GetProgressiveWaveValue(Seconds forTime, VelocityRec *value);
 	OSErr 					GetLocationInTideCycle(short *ebbFloodType, float *fraction);
 	virtual OSErr			InitTimeFunc ();
-
+			Boolean			DaylightSavingTimeInEffect(DateTimeRec *dateStdTime);	// AH 07/09/2012
 	
 	
 };

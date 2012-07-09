@@ -42,7 +42,7 @@ OSErr Mover_c::UpdateUncertainty(void)
 }
 
 
-WorldPoint3D Mover_c::GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType) 
+WorldPoint3D Mover_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType) 
 {
 	//WorldPoint3D theLE3D [] = {(*theLE).p.pLat,(*theLE).p.pLong,(*theLE).z}; 
 	WorldPoint3D theLE3D; 

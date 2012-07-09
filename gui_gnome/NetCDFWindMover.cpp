@@ -1458,7 +1458,7 @@ void NetCDFWindMover::Draw(Rect r, WorldRect view)
 			velocity.u = velocity.v = 0.;
 			if (loaded && !err)
 			{
-				index = /*CHECK*/dynamic_cast<NetCDFWindMover *>(this)->GetVelocityIndex(wp);	
+				index = dynamic_cast<NetCDFWindMover *>(this)->GetVelocityIndex(wp);	
 				
 				if (bShowArrows && index >= 0)
 				{

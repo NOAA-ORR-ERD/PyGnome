@@ -1501,7 +1501,7 @@ WorldPoint3D	TCompoundMap::MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toW
 		mapList->GetListItem((Ptr)&map, fromPtMapIndex);
 		//if (map->InMap(fromWPt) && map->InMap(toWPt))
 		// if fromWPt is not in map ?
-		checkedPt = /*CHECK*/(dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
+		checkedPt = (dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
 		if (checkedPt.p.pLat == toWPt.p.pLat && checkedPt.p.pLong == toWPt.p.pLong)
 			return checkedPt;
 		/*else
@@ -1520,7 +1520,7 @@ WorldPoint3D	TCompoundMap::MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toW
 		mapList->GetListItem((Ptr)&map, toPtMapIndex);
 		//if (map->InMap(fromWPt) && map->InMap(toWPt))
 		// if fromWPt is not in map ?
-		checkedPt = /*CHECK*/(dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
+		checkedPt = (dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
 		if (LEsOnSurface) return checkedPt;
 		if (map -> InMap(checkedPt.p) && !map->OnLand(checkedPt.p)) 
 		{
@@ -1537,7 +1537,7 @@ WorldPoint3D	TCompoundMap::MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toW
 		mapList->GetListItem((Ptr)&map, fromPtMapIndex);
 		//if (map->InMap(fromWPt) && map->InMap(toWPt))
 		// if fromWPt is not in map ?
-		checkedPt = /*CHECK*/(dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
+		checkedPt = (dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
 		if (LEsOnSurface) return checkedPt;
 		if (map -> InMap(checkedPt.p)  && !map->OnLand(checkedPt.p)) /*return checkedPt;*/
 		{
@@ -1562,14 +1562,14 @@ WorldPoint3D	TCompoundMap::MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toW
 		if (LEsOnSurface)
 		{
 			mapList->GetListItem((Ptr)&map, fromPtMapIndex);
-			checkedPt = /*CHECK*/(dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
+			checkedPt = (dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
 			return checkedPt;
 		}
 		
 		else
 		{
 			mapList->GetListItem((Ptr)&map, fromPtMapIndex);
-			checkedPt = /*CHECK*/(dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
+			checkedPt = (dynamic_cast<PtCurMap *>(map))->MovementCheck(fromWPt,toWPt,isDispersed);	// issue if have to reflect from one map to another...
 			return checkedPt;
 		}
 		/*mapList->GetListItem((Ptr)&map, fromPtMapIndex);
@@ -1693,7 +1693,7 @@ void TCompoundMap::DrawContourScale(Rect r, WorldRect view)
 	//TCurrentMover *mover = Get3DCurrentMover();
 	TCurrentMover *mover = Get3DCurrentMoverFromIndex(0);	// do for all?
 	//if ((mover) && mover->IAm(TYPE_TRICURMOVER)) {((TriCurMover*)mover)->DrawContourScale(r,view);}
-	if ((mover) && mover->IAm(TYPE_NETCDFMOVER)) {/*CHECK*/(dynamic_cast<NetCDFMover*>(mover))->DrawContourScale(r,view);}
+	if ((mover) && mover->IAm(TYPE_NETCDFMOVER)) {(dynamic_cast<NetCDFMover*>(mover))->DrawContourScale(r,view);}
 	// could just go back to PtCurMap after this...
 	if (!this->ThereIsADispersedSpill()) return;
 	SetRGBColor(&rgb,0,0,0);

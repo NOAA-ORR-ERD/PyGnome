@@ -56,7 +56,7 @@ void Random_c::ModelStepIsDone()
 	memset(&fOptimize,0,sizeof(fOptimize));
 }
 
-WorldPoint3D Random_c::GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double		dLong, dLat;
 	WorldPoint3D	deltaPoint = {0,0,0.};

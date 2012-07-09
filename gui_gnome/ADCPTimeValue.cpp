@@ -844,7 +844,7 @@ long ADCPTimeValue::GetListLength()
 		listLength += 1;	// data header
 		if (bStationDataOpen)
 		{
-			listLength =  /*CHECK*/dynamic_cast<ADCPTimeValue *>(this)->GetNumValues();
+			listLength =  dynamic_cast<ADCPTimeValue *>(this)->GetNumValues();
 			if(listLength > ADCPMAXNUMDATALINESINLIST)
 				listLength = ADCPMAXNUMDATALINESINLIST; // don't show the user too many lines in the case of a huge data record
 		}
@@ -1127,7 +1127,7 @@ OSErr ADCPTimeValue::Write(BFPB *bfpb)
 	if (err = WriteMacValue(bfpb, bStationDataOpen)) return err;
 	
 	//if (err = WriteMacValue(bfpb, bOSSMStyle)) return err;
-	if (timeValues) n = /*CHECK*/dynamic_cast<ADCPTimeValue *>(this)->GetNumValues();
+	if (timeValues) n = dynamic_cast<ADCPTimeValue *>(this)->GetNumValues();
 	if (err = WriteMacValue(bfpb, n)) return err;
 	
 	if (timeValues)

@@ -173,7 +173,7 @@ long PtCurMover_c::WhatTriAmIIn(WorldPoint wp)
 
 
 
-VelocityRec PtCurMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec PtCurMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("PtCurMover::GetScaledPatValue is unimplemented");

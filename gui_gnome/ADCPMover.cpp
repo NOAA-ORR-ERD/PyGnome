@@ -230,7 +230,8 @@ OSErr ADCPMover::InitMover(TGridVel *grid, WorldPoint p)
 	else if (err = timeDepList->IList())
 	{ TechError("ADCPMover::InitModel()", "IList()", 0); }
 	
-	/*CHECK*/dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale();
+	// dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale();	 AH 07/09/2012
+	dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale(model->GetModelTime());	// AH 07/09/2012
 	
 	return err;
 }
@@ -491,7 +492,8 @@ OSErr ADCPMover::CheckAndPassOnMessage(TModelMessage *message)
 		 }*/
 		//////////////
 		/////////////
-		/*CHECK*/dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale();
+		// dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale();	 AH 07/09/2012
+		dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale(model->GetModelTime());	// AH 07/09/2012
 		model->NewDirtNotification();// tell model about dirt
 	}
 	
@@ -837,7 +839,7 @@ Boolean ADCPMover::ListClick(ListItem item, Boolean inBullet, Boolean doubleClic
 					{
 						this->SetCurrentUncertaintyInfo(info);
 						// code goes here, if values have changed needToReInit in UpdateUncertainty
-						/*CHECK*/dynamic_cast<ADCPMover *>(this)->UpdateUncertaintyValues(model->GetModelTime()-model->GetStartTime());
+						dynamic_cast<ADCPMover *>(this)->UpdateUncertaintyValues(model->GetModelTime()-model->GetStartTime());
 					}
 				}
 				return TRUE;

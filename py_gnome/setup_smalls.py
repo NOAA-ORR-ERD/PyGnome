@@ -5,6 +5,7 @@ CPP_CODE_DIR = "../lib_gnome"
 import numpy as np
 import os
 import sys
+
 from sysconfig import get_config_var
 
 from setuptools import setup
@@ -16,6 +17,7 @@ from distutils.extension import Extension
 # the cython extensions to build -- each should corespond to a *.pyx file
 extension_names = [
                    'wind_mover',
+		   'cats_mover',
                    ]
 
 cpp_files = [ 'MemUtils.cpp',
@@ -34,6 +36,8 @@ cpp_files = [ 'MemUtils.cpp',
               'GEOMETR2.cpp',
               'StringFunctions.cpp',
               'OUTILS.cpp',
+              'CATSMover_c.cpp',
+              'ShioTimeValue_c.cpp',
               ]
 
 files = [os.path.join(CPP_CODE_DIR , file) for file in cpp_files]

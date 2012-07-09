@@ -428,7 +428,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 	return noErr;
 }
 
-WorldPoint3D ComponentMover_c::GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D ComponentMover_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 		dLat, dLong;
 	WorldPoint3D	deltaPoint = {0,0,0.};

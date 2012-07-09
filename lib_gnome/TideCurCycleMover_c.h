@@ -47,7 +47,7 @@ public:
 	LongPointHdl 		GetPointsHdl();
 	//long 					GetVelocityIndex(WorldPoint p);
 	VelocityRec			GetPatValue (WorldPoint p);
-	VelocityRec 		GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
+	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
 	
 	/*virtual OSErr		GetStartTime(Seconds *startTime);
 	 virtual OSErr		GetEndTime(Seconds *endTime);*/
@@ -56,14 +56,14 @@ public:
 	virtual double		GetEndUVelocity(long index);
 	virtual double		GetEndVVelocity(long index);
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
-	virtual OSErr 		ComputeVelocityScale();
+	virtual OSErr       ComputeVelocityScale(const Seconds& model_time);
 	
 	Boolean 			IsDryTriangle(long index1, long index2, long index3, float timeAlpha);
 	Boolean 			IsDryTri(long triIndex);
 	VelocityRec 		GetStartVelocity(long index, Boolean *isDryPt);
 	VelocityRec 		GetEndVelocity(long index, Boolean *isDryPt);
 	
-	virtual WorldPoint3D	GetMove (Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
 	virtual void 		ModelStepIsDone();
 	OSErr 				ReorderPoints(TMap **newMap, short *bndry_indices, short *bndry_nums, short *bndry_type, long numBoundaryPts); 

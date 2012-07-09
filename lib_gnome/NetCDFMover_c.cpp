@@ -187,7 +187,7 @@ OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& model_time, const Second
 	}
 	if (!bActive) return noErr;
 	
-	err = /*CHECK*/dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg); // SetInterval checks to see that the time interval is loaded
+	err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg); // SetInterval checks to see that the time interval is loaded
 	if (err) goto done;
 	
 	fIsOptimizedForStep = true;
@@ -1030,7 +1030,7 @@ long NetCDFMover_c::GetNumDepths(void)
 	return numDepths;
 }
 
-WorldPoint3D NetCDFMover_c::GetMove(Seconds model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D NetCDFMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	
@@ -1049,7 +1049,7 @@ WorldPoint3D NetCDFMover_c::GetMove(Seconds model_time, Seconds timeStep,long se
 	
 	if(!fIsOptimizedForStep) 
 	{
-		err = /*CHECK*/dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg);
+		err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg);
 		if (err) return deltaPoint;
 	}
 	index = GetVelocityIndex(refPoint);  // regular grid
@@ -1164,7 +1164,7 @@ scale:
 	return deltaPoint;
 }
 
-VelocityRec NetCDFMover_c::GetScaledPatValue(WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec NetCDFMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("NetCDFMover::GetScaledPatValue is unimplemented");
@@ -1366,7 +1366,7 @@ Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
 	if (!fVar.bShowArrows && !fVar.bShowGrid) return 0;
-	err = /*CHECK*/dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg);
+	err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg);
 	if(err) return false;
 	
 	if (fVar.arrowDepth>0 && fVar.gridType==TWO_D)
@@ -1501,7 +1501,7 @@ float NetCDFMover_c::GetMaxDepth()
 	}
 	else
 	{
-		long numDepthLevels = /*CHECK*/dynamic_cast<NetCDFMover *>(this)->GetNumDepthLevelsInFile();
+		long numDepthLevels = dynamic_cast<NetCDFMover *>(this)->GetNumDepthLevelsInFile();
 		if (numDepthLevels<=0) return maxDepth;
 		if (fDepthLevelsHdl) maxDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);
 	}
@@ -1512,7 +1512,7 @@ float NetCDFMover_c::GetTotalDepth(WorldPoint wp, long triNum)
 {	// z grid only 
 #pragma unused(wp)
 #pragma unused(triNum)
-	long numDepthLevels = /*CHECK*/dynamic_cast<NetCDFMover *>(this)->GetNumDepthLevelsInFile();
+	long numDepthLevels = dynamic_cast<NetCDFMover *>(this)->GetNumDepthLevelsInFile();
 	float totalDepth = 0;
 	if (fDepthLevelsHdl && numDepthLevels>0) totalDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);
 	return totalDepth;
