@@ -50,39 +50,35 @@ cdef class cats_mover:
             return False
         return True
     
-    def get_move_uncertain(self, n, model_time, start_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double f_sigma_vel, double f_sigma_theta, double breaking_wave, double mix_layer, np.ndarray[LEWindUncertainRec] uncertain_ra, np.ndarray[TimeValuePair] time_vals, int num_times):
+    def get_move_uncertain(self, n, start_time, stop_time, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[LEWindUncertainRec] uncertain_ra):
         cdef:
             char *time_vals_ptr
             char *uncertain_ptr
             char *world_points
             
         N = len(wp_ra)
-        M = len(time_vals)
         ref_points = ref_ra.data
         world_points = wp_ra.data
-        time_vals_ptr = time_vals.data
         uncertain_ptr = uncertain_ra.data
 
-        self.mover.PrepareForModelStep(model_time, start_time, step_len, True) 
-        self.mover.get_move(N, model_time, step_len, ref_points, world_points, uncertain_ptr, time_vals_ptr, M)
+        self.mover.PrepareForModelStep(start_time, stop_time, model_time, step_len, True) 
+        self.mover.get_move(N, start_time, stop_time, model_time, step_len, ref_points, world_points, uncertain_ptr)
 
-    def get_move(self, n, model_time, start_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double breaking_wave, double mix_layer, np.ndarray[TimeValuePair] time_vals, int num_times):
+    def get_move(self, n, start_time, stop_time, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra):
         cdef:
             char *time_vals_ptr
             char *uncertain_ptr
             char *world_points
             
         N = len(wp_ra)
-        M = len(time_vals)
         ref_points = ref_ra.data
         world_points = wp_ra.data
-        time_vals_ptr = time_vals.data
 
-        self.mover.PrepareForModelStep(model_time, start_time, step_len, False) 
-        self.mover.get_move(N, model_time, step_len, ref_points, world_points, time_vals_ptr, M)
+        self.mover.PrepareForModelStep(start_time, stop_time, model_time, step_len, False) 
+        self.mover.get_move(N, start_time, stop_time, model_time, step_len, ref_points, world_points)
 
-    def compute_velocity_scale(self, model_time):
-        self.mover.ComputeVelocityScale(model_time)
+    def compute_velocity_scale(self, start_time, stop_time, model_time):
+        self.mover.ComputeVelocityScale(start_time, stop_time, model_time)
         
     def set_velocity_scale(self, scale_value):
         self.mover.refScale = scale_value

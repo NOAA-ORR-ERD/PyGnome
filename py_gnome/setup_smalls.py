@@ -37,7 +37,14 @@ cpp_files = [ 'MemUtils.cpp',
               'StringFunctions.cpp',
               'OUTILS.cpp',
               'CATSMover_c.cpp',
+	      'CurrentMover_c.cpp',
               'ShioTimeValue_c.cpp',
+	      'ShioHeight.cpp',
+	      'TriGridVel_c.cpp',
+	      'DagTree.cpp',
+	      'DagTreeIO.cpp',
+	      'ShioCurrent1.cpp',
+	      'ShioCurrent2.cpp',
               ]
 
 files = [os.path.join(CPP_CODE_DIR , file) for file in cpp_files]

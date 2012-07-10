@@ -85,7 +85,9 @@ void CurrentMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 	}	
 }
 
-
+#ifdef pyGNOME
+OSErr CurrentMover_c::AllocateUncertainty(void) { return 0; }
+#else
 OSErr CurrentMover_c::AllocateUncertainty()
 {
 	long i,j,n,numrec;
@@ -116,7 +118,11 @@ errHandler:
 	TechError("TCurrentMover::AllocateUncertainty()", "_NewHandle()", 0);
 	return memFullErr;
 }
+#endif
 
+#ifdef pyGNOME
+OSErr CurrentMover_c::UpdateUncertainty(void) { return 0; }
+#else
 OSErr CurrentMover_c::UpdateUncertainty(void)
 {
 	OSErr err = noErr;
@@ -179,7 +185,7 @@ OSErr CurrentMover_c::UpdateUncertainty(void)
 	
 	return err;
 }
-
+#endif
 
 OSErr CurrentMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {

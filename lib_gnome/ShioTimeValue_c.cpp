@@ -469,7 +469,9 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& st
 		//model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
 		if(!err)
 		{
+#ifndef pyGNOME	// AH 07/10/2012
 			model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
+#endif
 			long i,num10MinValues = answers->nPts,numCopied = 0;
 			if(num10MinValues > 0 && answers->time && answers->speed)
 			{
@@ -662,7 +664,9 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& st
 		
 		if (!err)
 		{
+#ifndef pyGNOME	// AH 07/10/2012
 			model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
+#endif
 			long i,num10MinValues = answers->nPts,numCopied = 0;
 			if(num10MinValues > 0 && answers->time && answers->height)
 			{
@@ -891,7 +895,9 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& st
 		
 		if (!err)
 		{
+#ifndef pyGNOME	// AH 07/10/2012
 			model->NewDirtNotification(DIRTY_LIST);// what we display in the list is invalid
+#endif
 			long i,num10MinValues = answers->nPts,numCopied = 0;
 			if(num10MinValues > 0 && answers->time && answers->height)
 			{
@@ -1099,6 +1105,7 @@ WorldPoint ShioTimeValue_c::GetRefWorldPoint (void)
 	return wp;
 }
 
+#ifndef pyGNOME
 /////////////////////////////////////////////////
 OSErr ShioTimeValue_c::GetLocationInTideCycle(short *ebbFloodType, float *fraction)
 {
@@ -1256,6 +1263,7 @@ OSErr ShioTimeValue_c::GetLocationInTideCycle(short *ebbFloodType, float *fracti
 	return 0;
 }
 
+#endif
 void ShioTimeValue_c::ProgrammerError(char* routine)
 {
 	char str[256];

@@ -72,8 +72,8 @@ public:
 	virtual	OSErr		ReadTopology(char* path, TMap **newMap);
 
 	
-			OSErr		get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra, char* time_vals, int num_times);
-			OSErr		get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char* time_vals, int num_times);
+			OSErr		get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra);
+			OSErr		get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra);
 
 };
 

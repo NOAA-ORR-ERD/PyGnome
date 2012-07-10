@@ -19,6 +19,7 @@ le_rec = numpy.dtype([('le_units', numpy.int), ('le_key', numpy.int), ('le_custo
             ('rise_velocity', numpy.double), ('status_code', numpy.short), ('last_water_pt', world_point), ('beach_time', numpy.uint)], align=True)
 
 wind_uncertain_rec = numpy.dtype([('randCos', numpy.float32), ('randSin', numpy.float32),], align=True)
+le_uncertain_rec = numpy.dtype([('downStream', numpy.float32), ('crossStream', numpy.float32),], align=True)
 velocity_rec = numpy.dtype([('u', numpy.double), ('v', numpy.double),], align=True)
 time_value_pair = numpy.dtype([('time', numpy.uint32), ('value', velocity_rec),], align=True)
 

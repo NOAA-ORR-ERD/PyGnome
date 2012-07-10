@@ -302,7 +302,7 @@ void CATSMover_c::ModelStepIsDone()
 }
 
 
-OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra, char* time_vals, int num_times) {	
+OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra) {	
 	
 	TimeValuePairH time_val_hdl = 0;
 	
@@ -316,22 +316,9 @@ OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_t
 		return 1;
 	}
 	
-	if(!time_vals) {
-		cout << "time values array not provided! returning.\n";
+	if(!this->timeDep) {
+		cout << "time values array not set! returning.\n";
 		return 1;
-	} else {
-#ifdef pyGNOME
-			try {
-				time_val_hdl = (TimeValuePairH)_NewHandle(sizeof(TimeValuePair)*num_times);
-				memcpy(*time_val_hdl, time_vals, sizeof(TimeValuePair)*num_times);
-				timeDep = new OSSMTimeValue_c(this, time_val_hdl, kCMS);	// should we have to instantiate this every time we call the mover?
-			} catch(...) {
-				cout << "cannot create time values handle in windmover::get_move. returning.\n";
-				if(time_val_hdl)
-					_DisposeHandle((Handle)time_val_hdl);
-				return 1;
-			}
-#endif
 	}
 	// and so on.
 	
@@ -376,7 +363,7 @@ OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_t
 }
 
 
-OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char* time_vals, int num_times) {	
+OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra) {	
 
 	TimeValuePairH time_val_hdl = 0;
 	
@@ -385,23 +372,10 @@ OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_t
 		return 1;
 	}
 	
-	if(!time_vals) {
-		cout << "time values array not provided! returning.\n";
+	if(!this->timeDep) {
+		cout << "time values array not set! returning.\n";
 		return 1;
-	} else {
-#ifdef pyGNOME
-			try {
-				time_val_hdl = (TimeValuePairH)_NewHandle(sizeof(TimeValuePair)*num_times);
-				memcpy(*time_val_hdl, time_vals, sizeof(TimeValuePair)*num_times);
-				timeDep = new OSSMTimeValue_c(this, time_val_hdl, kCMS);	// should we have to instantiate this every time we call the mover?
-			} catch(...) {
-				cout << "cannot create time values handle in windmover::get_move. returning.\n";
-				if(time_val_hdl)
-					_DisposeHandle((Handle)time_val_hdl);
-				return 1;
-			}
-#endif
-	}
+	} 
 	// and so on.
 
 	WorldPoint3D delta;
