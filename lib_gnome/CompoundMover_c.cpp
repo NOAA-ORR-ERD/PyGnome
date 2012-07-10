@@ -98,7 +98,7 @@ void CompoundMover_c::ModelStepIsDone()
 	
 }
 
-OSErr CompoundMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+OSErr CompoundMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
 
 {
 	char errmsg[256];
@@ -113,7 +113,8 @@ OSErr CompoundMover_c::PrepareForModelStep(const Seconds& model_time, const Seco
 	TMover *mover;
 	for (i = 0, n = moverList->GetItemCount() ; i < n ; i++) {
 		moverList->GetListItem((Ptr)&mover, i);
-		err = mover->PrepareForModelStep(model_time, start_time, time_step, uncertain);
+		//err = mover->PrepareForModelStep(model_time, start_time, time_step, uncertain);	// minus AH 07/10/2012
+		err = mover->PrepareForModelStep(start_time, stop_time, model_time, time_step, uncertain);	// AH 07/10/2012
 		if (err) goto done;
 	}
 	
@@ -157,7 +158,7 @@ OSErr CompoundMover_c::AddMover(TMover *theMover, short where)
 }
 
 
-WorldPoint3D CompoundMover_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D CompoundMover_c::GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 		dLat, dLong;
 	WorldPoint3D	deltaPoint = {0,0,0.};
@@ -179,7 +180,8 @@ WorldPoint3D CompoundMover_c::GetMove (const Seconds& model_time, Seconds timeSt
 			moverList->GetListItem((Ptr)&mover, i);
 			//check if LE is on the mover's grid
 			if (!mover -> IsActive ()) continue; // to next mover
-			deltaPoint = mover->GetMove(model_time, timeStep,setIndex,leIndex,theLE,leType);
+			// deltaPoint = mover->GetMove(model_time, timeStep,setIndex,leIndex,theLE,leType);	 // minus AH 07/10/2012
+				deltaPoint = mover->GetMove(start_time, stop_time, model_time, timeStep,setIndex,leIndex,theLE,leType);
 			if (deltaPoint.p.pLong == 0 && deltaPoint.p.pLat == 0 && deltaPoint.z == 0.)
 				continue;
 			else break;

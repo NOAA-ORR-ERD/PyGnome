@@ -41,7 +41,7 @@ public:
 	virtual OSErr		AllocateUncertainty ();
 	virtual void		DisposeUncertainty ();
 	
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	
 	virtual WorldRect GetGridBounds(){return theWorld;}	
 	virtual float		GetArrowDepth(){return 0.;}

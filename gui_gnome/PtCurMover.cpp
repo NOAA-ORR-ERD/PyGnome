@@ -397,7 +397,7 @@ Boolean PtCurMover::CheckInterval(long &timeDataInterval)
 
 
 
-OSErr PtCurMover::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+OSErr PtCurMover::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time,const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	//Boolean intervalLoaded;
@@ -2740,7 +2740,7 @@ done:
 	return err;
 }
 
-WorldPoint3D PtCurMover::GetMove(Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D PtCurMover::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	

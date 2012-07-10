@@ -27,7 +27,7 @@ LongPointHdl TideCurCycleMover_c::GetPointsHdl()
 	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
 }
 
-OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& model_time)
+OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time)
 {	// this function computes and sets this->refScale
 	// returns Error when the refScale is not defined
 	// or in allowable range.  
@@ -119,7 +119,9 @@ OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& model_time)
 				// Calculate the time weight factor
 				if (fTimeAlpha==-1)
 				{
-					Seconds relTime = time - model->GetStartTime();
+					//Seconds relTime = time - model->GetStartTime();	// minus AH 07/10/2012
+					Seconds relTime = time - start_time;	// AH 07/10/2012
+					
 					startTime = (*fTimeHdl)[fStartData.timeIndex];
 					endTime = (*fTimeHdl)[fEndData.timeIndex];
 					//timeAlpha = (endTime - time)/(double)(endTime - startTime);
@@ -208,7 +210,7 @@ OSErr TideCurCycleMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRe
 	return err;
 }
 
-OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;
@@ -398,7 +400,7 @@ double TideCurCycleMover_c::GetEndVVelocity(long index)
 }
 
 
-WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	// see PtCurMover::GetMove - will depend on what is in netcdf files and how it's stored
 	WorldPoint3D	deltaPoint = {0,0,0.};
@@ -521,7 +523,7 @@ scale:
 		// JLM 11/22/99, if there are no time file values, use zero not 1
 		VelocityRec errVelocity={0,1};
 //		err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue);	// AH 07/10/2012
-		err = timeDep -> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model -> GetModelTime(), &timeValue);	// AH 07/10/2012
+		err = timeDep -> GetTimeValue (start_time, stop_time, model_time, &timeValue);	// AH 07/10/2012
 		
 		if(err) timeValue = errVelocity;
 	}
@@ -549,7 +551,7 @@ scale:
 	return deltaPoint;
 }
 
-VelocityRec TideCurCycleMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec TideCurCycleMover_c::GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("TideCurCycleMover::GetScaledPatValue is unimplemented");

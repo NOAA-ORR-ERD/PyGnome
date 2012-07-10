@@ -175,14 +175,14 @@
 
 
 
-OSErr CATSMover3D_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+OSErr CATSMover3D_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
 
 {
 	OSErr err =0;
-	CurrentMover_c::PrepareForModelStep(model_time, start_time, time_step, uncertain); // note: this calls UpdateUncertainty()
+	CurrentMover_c::PrepareForModelStep(start_time, stop_time, model_time,time_step, uncertain); // note: this calls UpdateUncertainty()	// AH 07/10/2012
 	
 	// err = this -> ComputeVelocityScale();// JLM, will this do it ??? // minus AH 07/09/2012
-	err = this -> ComputeVelocityScale(model_time);	// AH 07/09/2012
+	err = this -> ComputeVelocityScale(start_time, stop_time, model_time);	// AH 07/10/2012
 	
 	this -> fOptimize.isOptimizedForStep = true;
 	this -> fOptimize.value = sqrt(6*(fEddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
@@ -209,7 +209,7 @@ OSErr CATSMover3D_c::PrepareForModelStep(const Seconds& model_time, const Second
  }
  
  
- WorldPoint3D CATSMover3D_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+ WorldPoint3D CATSMover3D_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
  {
  Boolean useEddyUncertainty = false;	
  double 		dLong, dLat;

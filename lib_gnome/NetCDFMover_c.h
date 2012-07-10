@@ -107,7 +107,7 @@ public:
 	virtual long 		GetVelocityIndex(WorldPoint p);
 	virtual LongPoint 	GetVelocityIndices(WorldPoint wp);
 	VelocityRec			GetPatValue (WorldPoint p);
-	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
+	VelocityRec 		GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
 	void 				GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
 	float 				GetMaxDepth();
 	virtual float		GetArrowDepth() {return fVar.arrowDepth;}
@@ -125,8 +125,8 @@ public:
 	virtual double	GetDepthAtIndex(long depthIndex, double totalDepth);
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	float		GetTotalDepth(WorldPoint refPoint, long triNum);
-	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
+	virtual WorldPoint3D       GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	virtual void 		ModelStepIsDone();
 	
 	long 					GetNumTimesInFile();

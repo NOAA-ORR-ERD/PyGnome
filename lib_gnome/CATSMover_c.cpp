@@ -68,7 +68,7 @@ CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 
 #ifdef pyGNOME
 
-OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time) {
+OSErr CATSMover_c::ComputeVelocityScale(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time) {
 	// this function computes and sets this->refScale
 	// returns Error when the refScale is not defined
 	// or in allowable range.  
@@ -110,7 +110,7 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time) {
 
 #else
 
-OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
+OSErr CATSMover_c::ComputeVelocityScale(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time)
 {	// this function computes and sets this->refScale
 	// returns Error when the refScale is not defined
 	// or in allowable range.  
@@ -159,7 +159,7 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 						//velocity.v *= mover -> refScale;
 						// so use GetScaledPatValue() instead
 						// theirVelocity = mover -> GetScaledPatValue(refPt3D,nil); // minus AH 07/09/2012
-						theirVelocity = mover -> GetScaledPatValue(model_time, refPt3D,nil);	// AH 07/09/2012
+						theirVelocity = mover -> GetScaledPatValue(start_time, stop_time, model_time, refPt3D,nil);	// AH 07/10/2012
 						
 						theirLengthSq = (theirVelocity.u * theirVelocity.u + theirVelocity.v * theirVelocity.v);
 						// JLM, we need to adjust the movers pattern 
@@ -277,15 +277,15 @@ OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 
 
 
-OSErr CATSMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+OSErr CATSMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
 
 {
 	OSErr err =0;
-	if (err = CurrentMover_c::PrepareForModelStep(model_time, start_time, time_step, uncertain)) 
+	if (err = CurrentMover_c::PrepareForModelStep(start_time, stop_time, model_time, time_step, uncertain)) 
 		return err; // note: this calls UpdateUncertainty()
 	
 	// err = this -> ComputeVelocityScale();// JLM, will this do it ??? // minus AH 07/09/2012
-	err = this -> ComputeVelocityScale(model_time);	// AH 07/09/2012
+	err = this -> ComputeVelocityScale(start_time, stop_time, model_time);	// AH 07/10/2012
 	
 	this -> fOptimize.isOptimizedForStep = true;
 	this -> fOptimize.value = sqrt(6*(fEddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
@@ -302,7 +302,7 @@ void CATSMover_c::ModelStepIsDone()
 }
 
 
-OSErr CATSMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra, char* time_vals, int num_times) {	
+OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra, char* time_vals, int num_times) {	
 	
 	TimeValuePairH time_val_hdl = 0;
 	
@@ -358,7 +358,7 @@ OSErr CATSMover_c::get_move(int n, long model_time, long step_len, char *ref_ra,
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
 		
-		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
+		delta = this->GetMove(start_time, stop_time, model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
 		
 		wp[i].p.pLat += delta.p.pLat / 1000000;
 		wp[i].p.pLong += delta.p.pLong / 1000000;
@@ -376,7 +376,7 @@ OSErr CATSMover_c::get_move(int n, long model_time, long step_len, char *ref_ra,
 }
 
 
-OSErr CATSMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char* time_vals, int num_times) {	
+OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char* time_vals, int num_times) {	
 
 	TimeValuePairH time_val_hdl = 0;
 	
@@ -416,7 +416,7 @@ OSErr CATSMover_c::get_move(int n, long model_time, long step_len, char *ref_ra,
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
 		
-		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
+		delta = this->GetMove(start_time, stop_time, model_time, step_len, 0, i, &rec, FORECAST_LE);
 		
 		wp[i].p.pLat += delta.p.pLat / 1000000;
 		wp[i].p.pLong += delta.p.pLong / 1000000;
@@ -430,7 +430,7 @@ OSErr CATSMover_c::get_move(int n, long model_time, long step_len, char *ref_ra,
 }
 
 // ..
-WorldPoint3D CATSMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D CATSMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	Boolean useEddyUncertainty = false;	
 	double 		dLong, dLat;
@@ -443,7 +443,7 @@ WorldPoint3D CATSMover_c::GetMove(const Seconds& model_time, Seconds timeStep,lo
 	refPoint3D.z = (*theLE).z;
 	
 	// scaledPatVelocity = this->GetScaledPatValue(refPoint3D,&useEddyUncertainty); // minus AH 07/09/2012
-	scaledPatVelocity = this->GetScaledPatValue(model_time, refPoint3D,&useEddyUncertainty); // AH 07/09/2012
+	scaledPatVelocity = this->GetScaledPatValue(start_time, stop_time, model_time, refPoint3D,&useEddyUncertainty); // AH 07/10/2012
 	
 	if(leType == UNCERTAINTY_LE)
 	{
@@ -458,7 +458,7 @@ WorldPoint3D CATSMover_c::GetMove(const Seconds& model_time, Seconds timeStep,lo
 	return deltaPoint;
 }
 
-VelocityRec CATSMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint3D p,Boolean * useEddyUncertainty)
+VelocityRec CATSMover_c::GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint3D p,Boolean * useEddyUncertainty)
 {
 	/// 5/12/99 JLM, we only add the eddy uncertainty when the vectors are big enough when the timeValue is 1 
 	// This is in response to the Prince William sound problem where 5 patterns are being added together
@@ -469,7 +469,7 @@ VelocityRec CATSMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint
 	if(!this -> fOptimize.isOptimizedForStep && this->scaleType == SCALE_OTHERGRID) 
 	{	// we need to update refScale
 		// this -> ComputeVelocityScale(); // minus AH 07/09/2012
-		this->ComputeVelocityScale(model_time);
+		this->ComputeVelocityScale(start_time, stop_time, model_time);	// AH 07/10/2012
 	}
 	
 	// get and apply our time file scale factor
@@ -479,7 +479,7 @@ VelocityRec CATSMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint
 		// JLM 11/22/99, if there are no time file values, use zero not 1
 		VelocityRec errVelocity={0,1}; 
 		// err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); // minus AH 07/09/2012
-		err = timeDep -> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model_time, &timeValue); // AH 07/10/2012
+		err = timeDep -> GetTimeValue (start_time, stop_time, model_time, &timeValue); // AH 07/10/2012
 		if(err) timeValue = errVelocity;
 	}
 	

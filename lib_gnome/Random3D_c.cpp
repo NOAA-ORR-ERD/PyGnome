@@ -33,7 +33,7 @@ Random3D_c::Random3D_c (TMap *owner, char *name) : Mover_c(owner, name), Random_
 	//fUncertaintyFactor = 2;		// default uncertainty mult-factor
 }
 
-OSErr Random3D_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+OSErr Random3D_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	this -> fOptimize.isOptimizedForStep = true;
 	this -> fOptimize.value = sqrt(6*(fDiffusionCoefficient/10000)*time_step)/METERSPERDEGREELAT; // in deg lat
@@ -48,7 +48,7 @@ void Random3D_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D Random3D_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D Random3D_c::GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double		dLong, dLat, z;
 	WorldPoint3D	deltaPoint = {0,0,0.};
@@ -121,7 +121,7 @@ WorldPoint3D Random3D_c::GetMove (const Seconds& model_time, Seconds timeStep,lo
 			VelocityRec windVel;
 			double vel;
 		//	if (wind) err = wind -> GetTimeValue(model->GetModelTime(),&windVel);	// minus AH 07/10/2012
-			if (wind) err = wind -> GetTimeValue(model->GetStartTime(), model->GetEndTime(), model->GetModelTime(),&windVel);	// AH 07/10/2012
+			if (wind) err = wind -> GetTimeValue(start_time, stop_time, model_time,&windVel);	// AH 07/10/2012
 			if (err || !wind) 
 			{
 				//printNote("Depth dependent diffusion requires a wind");

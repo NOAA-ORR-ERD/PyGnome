@@ -780,7 +780,8 @@ OSErr Model_c::TellMoversPrepareForStep()
 		for (k = 0, d = map -> moverList -> GetItemCount (); k < d; k++)
 		{
 			map -> moverList -> GetListItem ((Ptr) &thisMover, k);	// 04/16/12 AH:
-			if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;
+			// if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;	// minus AH 07/10/2012
+			if (err = thisMover->PrepareForModelStep(this->GetStartTime(), this->GetEndTime(), this->GetModelTime(), this->GetTimeStep(), true)) return err;	// AH 07/10/2012
 		}
 	}
 	
@@ -788,7 +789,9 @@ OSErr Model_c::TellMoversPrepareForStep()
 	for (k = 0, d = uMap -> moverList -> GetItemCount (); k < d; k++)
 	{
 		uMap -> moverList -> GetListItem ((Ptr) &thisMover, k);
-		if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;
+	//	if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;	// minus AH 07/10/2012
+		if (err = thisMover->PrepareForModelStep(this->GetStartTime(), this->GetEndTime(), this->GetModelTime(), this->GetTimeStep(), true)) return err;	// AH 07/10/2012
+		
 	}
 	return err;
 }

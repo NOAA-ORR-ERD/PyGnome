@@ -25,7 +25,7 @@ class PtCurMover : virtual public PtCurMover_c,  public TCurrentMover
 		virtual void		Dispose ();
 	
 
-		virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+		virtual WorldPoint3D	GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 		VelocityRec			GetMove3D(InterpolationVal interpolationVal,float depth);
 		virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 
@@ -59,7 +59,7 @@ class PtCurMover : virtual public PtCurMover_c,  public TCurrentMover
 		virtual OSErr 		DeleteItem (ListItem item);
 		virtual Boolean 	CheckInterval(long &timeDataInterval);
 		virtual OSErr	 	SetInterval(char *errmsg);
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
 		virtual OSErr 		SettingsDialog();
 
 };

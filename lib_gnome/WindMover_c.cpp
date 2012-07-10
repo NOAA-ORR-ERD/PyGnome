@@ -371,7 +371,7 @@ void WindMover_c::DeleteTimeDep()
 	}
 }
 
-OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+OSErr WindMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	OSErr err = 0;
 	if (uncertain)
@@ -414,7 +414,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_t
 	return err;
 }
 
-OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double f_sigma_2, double f_sigma_theta, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double f_sigma_2, double f_sigma_theta, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
 
 // AH 06/20/2012:	
 // unfortunately, because we determine the size of the handle by a small region at the base of the array,
@@ -494,7 +494,7 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra,
 		rec.windage = windages[i];
 		rec.dispersionStatus = disp_ra[i];
 		
-		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
+		delta = this->GetMove(start_time, stop_time, model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
 		
 		wp[i].p.pLat += delta.p.pLat / 1000000;
 		wp[i].p.pLong += delta.p.pLong / 1000000;
@@ -517,7 +517,7 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra,
 
 // ++
 
-OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
 	
 	// AH 06/20/2012:	
 	// unfortunately, because we determine the size of the handle by a small region at the base of the array,
@@ -578,7 +578,7 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra,
 		rec.windage = windages[i];
 		rec.dispersionStatus = disp_ra[i];
 		
-		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
+		delta = this->GetMove(start_time, stop_time, model_time, step_len, 0, i, &rec, FORECAST_LE);
 		
 		wp[i].p.pLat += delta.p.pLat / 1000000;
 		wp[i].p.pLong += delta.p.pLong / 1000000;
@@ -595,7 +595,7 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra,
 
 
 
-WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D WindMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 	dLong, dLat;
 	VelocityRec	patVelocity, timeValue = { 0, 0 };
@@ -613,7 +613,7 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,lo
 	// get and apply time file scale factor
 	// code goes here, use some sort of average of past winds for dispersed oil
 // 	err = this -> GetTimeValue (model_time + this->tap_offset,&timeValue);	 // minus AH 07/10/2012
-	err = this -> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model_time + this->tap_offset,&timeValue);	// AH 07/10/2012
+	err = this -> GetTimeValue (start_time, stop_time, model_time + this->tap_offset,&timeValue);	// AH 07/10/2012
 	
 	if(err)  return deltaPoint;
 	

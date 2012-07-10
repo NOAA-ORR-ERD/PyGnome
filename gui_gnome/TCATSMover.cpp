@@ -172,7 +172,7 @@ OSErr TCATSMover::InitMover(TGridVel *grid, WorldPoint p)
 	arrowDepth = 0.;	// if want to show subsurface velocity for log profile
 	
 	// dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(); AH 07/09/2012
-	dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(model->GetModelTime());	// AH 07/09/2012
+	dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(model->GetStartTime(), model->GetEndTime(), model->GetModelTime());	// AH 07/10/2012
 	
 	return 0;
 }
@@ -425,7 +425,7 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 		//////////////
 		/////////////
 		// dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(); AH 07/09/2012
-		dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(model->GetModelTime());	// AH 07/09/2012
+		dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(model->GetStartTime(), model->GetEndTime(), model->GetModelTime());	// AH 07/10/2012
 		model->NewDirtNotification();// tell model about dirt
 	}
 	
@@ -437,7 +437,7 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 			// new data, make sure it is ok
 			if (timeDep) 
 			// 	err = timeDep->GetTimeValue(model->GetStartTime(),&dummyValue);	// minus AH 07/10/2012
-				err = timeDep->GetTimeValue(model->GetStartTime(), model->GetEndTime(), model->GetStartTime(),&dummyValue);
+				err = timeDep->GetTimeValue(model->GetStartTime(), model->GetEndTime(), model->GetStartTime(),&dummyValue);	// AH 07/10/2012
 			if (err) dynamic_cast<TCATSMover *>(this)->DeleteTimeDep();
 			break;
 	}
@@ -1326,7 +1326,7 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			{	// old OSSM style files may have refP on land, but this point is not used in calculation
 				
 				// err = sharedCMover->ComputeVelocityScale(); AH 07/09/2012
-				err = sharedCMover->ComputeVelocityScale(model->GetModelTime());	// AH 07/09/2012
+				err = sharedCMover->ComputeVelocityScale(model->GetStartTime(), model->GetEndTime(), model->GetModelTime());	// AH 07/10/2012
 				
 				if(err) 
 				{	// restore values and report error to user

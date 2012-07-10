@@ -231,7 +231,7 @@ OSErr ADCPMover::InitMover(TGridVel *grid, WorldPoint p)
 	{ TechError("ADCPMover::InitModel()", "IList()", 0); }
 	
 	// dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale();	 AH 07/09/2012
-	dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale(model->GetModelTime());	// AH 07/09/2012
+	dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale(model->GetStartTime(), model->GetEndTime(), model->GetModelTime());	// AH 07/10/2012
 	
 	return err;
 }
@@ -493,7 +493,7 @@ OSErr ADCPMover::CheckAndPassOnMessage(TModelMessage *message)
 		//////////////
 		/////////////
 		// dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale();	 AH 07/09/2012
-		dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale(model->GetModelTime());	// AH 07/09/2012
+		dynamic_cast<ADCPMover *>(this)->ComputeVelocityScale(model->GetStartTime(), model->GetEndTime(), model->GetModelTime());	// AH 07/10/2012
 		model->NewDirtNotification();// tell model about dirt
 	}
 	

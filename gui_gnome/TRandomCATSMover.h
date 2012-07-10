@@ -31,10 +31,10 @@ class TRandom : public TMover
 		virtual ClassID 	GetClassID () { return TYPE_RANDOMMOVER; }
 		virtual Boolean		IAm(ClassID id) { if(id==TYPE_RANDOMMOVER) return TRUE; return TMover::IAm(id); }
 		
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	
 		virtual void 		ModelStepIsDone();
-		virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+		virtual WorldPoint3D 	GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 		
 		// I/O methods
 		virtual OSErr 		Read (BFPB *bfpb);  // read from current position
@@ -95,9 +95,9 @@ class TRandomCATSMover : public TRandomMover
 		virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 		
 		VelocityRec			GetPatValue (WorldPoint p);
-		VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
-		virtual WorldPoint3D	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
+		VelocityRec 		GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
+		virtual WorldPoint3D	GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	
 		virtual void 		ModelStepIsDone();
 
@@ -162,10 +162,10 @@ class TRandomGridMover : public TRandomMover
 		void 					DisposeLoadedData(LoadedData * dataPtr);	
 		void 					ClearLoadedData(LoadedData * dataPtr);
 		
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, bool); // AH 04/16/12
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	
 		virtual void 		ModelStepIsDone();
-		virtual WorldPoint3D 	GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+		virtual WorldPoint3D 	GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 
 		// I/O methods
 		virtual OSErr 		Read (BFPB *bfpb);  // read from current position

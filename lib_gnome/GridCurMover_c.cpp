@@ -57,7 +57,7 @@ OSErr GridCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *ve
 	return err;
 }
 
-OSErr GridCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+OSErr GridCurMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;
@@ -92,7 +92,7 @@ void GridCurMover_c::ModelStepIsDone()
 
 
 
-WorldPoint3D GridCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D GridCurMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	
@@ -173,7 +173,7 @@ WorldPoint3D GridCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep
 	return deltaPoint;
 }
 
-VelocityRec GridCurMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec GridCurMover_c::GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("GridCurMover::GetScaledPatValue is unimplemented");

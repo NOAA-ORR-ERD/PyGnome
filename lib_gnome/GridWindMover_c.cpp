@@ -39,7 +39,7 @@ long GridWindMover_c::GetVelocityIndex(WorldPoint p)
 }
 
 
-OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+OSErr GridWindMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	OSErr err = 0;
 	if (uncertain)
@@ -74,7 +74,7 @@ void GridWindMover_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D GridWindMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double dLong, dLat;
 	WorldPoint3D deltaPoint ={0,0,0.};

@@ -117,7 +117,7 @@ OSErr TriCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *vel
 
 
 
-OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& start_time, const Seconds& time_step, bool uncertain)
+OSErr TriCurMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;
@@ -206,7 +206,7 @@ long TriCurMover_c::WhatTriAmIIn(WorldPoint wp)
 	return dagTree -> WhatTriAmIIn(lp);
 }
 
-WorldPoint3D TriCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D TriCurMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	// figure out which depth values the LE falls between
 	// since velocities are at centers no need to interpolate, use value over whole triangle
@@ -315,7 +315,7 @@ WorldPoint3D TriCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 	return deltaPoint;
 }
 
-VelocityRec TriCurMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec TriCurMover_c::GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("TriCurMover::GetScaledPatValue is unimplemented");
