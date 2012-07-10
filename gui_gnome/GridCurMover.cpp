@@ -1018,7 +1018,7 @@ void GridCurMover::Draw(Rect r, WorldRect view)
 			velocity.u = velocity.v = 0.;
 			if (loaded && !err)
 			{
-				index = /*OK*/dynamic_cast<GridCurMover *>(this)->GetVelocityIndex(wp);
+				index = dynamic_cast<GridCurMover *>(this)->GetVelocityIndex(wp);
 				if (bShowArrows && index >= 0)
 				{
 					// Check for constant current 

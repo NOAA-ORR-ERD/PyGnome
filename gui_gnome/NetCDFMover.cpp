@@ -616,7 +616,7 @@ OSErr NetCDFMover::Write (BFPB *bfpb)
 	long i, version = NetCDFMoverREADWRITEVERSION; //JLM
 	ClassID id = GetClassID ();
 	long numTimes = GetNumTimesInFile(), numPoints = 0, numPts = 0, numFiles = 0;
-	long 	numDepths = /*OK*/dynamic_cast<NetCDFMover *>(this)->GetNumDepths();
+	long 	numDepths = dynamic_cast<NetCDFMover *>(this)->GetNumDepths();
 	Seconds time;
 	float val, depthLevel;
 	DepthDataInfo depthData;

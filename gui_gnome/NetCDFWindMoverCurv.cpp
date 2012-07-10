@@ -439,7 +439,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 				err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 			if(err) goto done;
-			err = /*OK*/dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+			err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	 		goto done;
 		}
@@ -469,7 +469,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 				err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 			if(err) goto done;
-			err = /*OK*/dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+			err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	
 	 		/*if (err)*/ goto done;
 		}
@@ -491,7 +491,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 		err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 	else {strcpy(errmsg,"No times in file. Error opening NetCDF wind file"); err =  -1;}
 	if(err) goto done;
-	err = /*OK*/dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+	err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
 	//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	
 	
 done:
@@ -847,7 +847,7 @@ void NetCDFWindMoverCurv::Draw(Rect r, WorldRect view)
 				
 				// for now draw arrow at midpoint of diagonal of gridbox
 				// this will result in drawing some arrows more than once
-				if (/*OK*/dynamic_cast<NetCDFWindMoverCurv *>(this)->GetLatLonFromIndex(iIndex-1,jIndex+1,&wp2)!=-1)	// may want to get all four points and interpolate
+				if (dynamic_cast<NetCDFWindMoverCurv *>(this)->GetLatLonFromIndex(iIndex-1,jIndex+1,&wp2)!=-1)	// may want to get all four points and interpolate
 				{
 					wp.pLat = (wp.pLat + wp2.pLat)/2.;
 					wp.pLong = (wp.pLong + wp2.pLong)/2.;

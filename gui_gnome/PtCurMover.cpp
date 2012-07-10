@@ -423,8 +423,8 @@ OSErr PtCurMover::PrepareForModelStep(const Seconds& model_time, const Seconds& 
 	{
 		if (moverMap->IAm(TYPE_PTCURMAP))
 		{
-			/*OK*/(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
-			/*OK*/(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
+			(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
+			(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
 			if (fGrid->GetClassID()==TYPE_TRIGRIDVEL3D)	// I think this will always be 3D, but maybe old SAV files...
 				((TTriGridVel3D*)fGrid)->ClearOutputHandles();
 		}

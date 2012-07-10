@@ -1138,7 +1138,7 @@ OSErr TCompoundMap::Read(BFPB *bfpb)
 	if (err = ReadMacValue(bfpb,&numMaps)) return err;
 	
 	compoundMover = GetMover(TYPE_COMPOUNDMOVER);
-	if (compoundMover) numMovers = /*OK*/(dynamic_cast<TCompoundMover*>(compoundMover))->moverList->GetItemCount();
+	if (compoundMover) numMovers = (dynamic_cast<TCompoundMover*>(compoundMover))->moverList->GetItemCount();
 	for (i = 0 ; i < numMaps ; i++) {
 		if (err = ReadMacValue(bfpb,&id)) return err;
 		switch (id) {
@@ -1157,7 +1157,7 @@ OSErr TCompoundMap::Read(BFPB *bfpb)
 		
 		if (numMaps==numMovers)	// if not we will have to write out a mapping
 		{
-			/*OK*/(dynamic_cast<TCompoundMover*>(compoundMover))->moverList->GetListItem((Ptr)&mover, i);
+			(dynamic_cast<TCompoundMover*>(compoundMover))->moverList->GetListItem((Ptr)&mover, i);
 			mover->SetMoverMap(thisMap);
 		}
 	}
@@ -1597,7 +1597,7 @@ WorldPoint3D	TCompoundMap::MovementCheck (WorldPoint3D fromWPt, WorldPoint3D toW
 		mapList->GetListItem((Ptr)&map, toPtMapIndex);
 		if (LEsOnSurface) return toWPt;
 		
-		if (!LEsOnSurface && /*OK*/ (!(dynamic_cast<PtCurMap *>(map))->InVerticalMap(toWPt) || toWPt.z == 0))  
+		if (!LEsOnSurface &&  (!(dynamic_cast<PtCurMap *>(map))->InVerticalMap(toWPt) || toWPt.z == 0))  
 		{
 			/*double*/ depthAtPt = map->DepthAtPoint(toWPt.p);	// code goes here, a check on return value
 			//if (depthAtPt < 0) 
@@ -1960,7 +1960,7 @@ void TCompoundMap::DrawContours(Rect r, WorldRect view)
 	{
 		mapList->GetListItem((Ptr)&map, n);
 		//map -> DrawContours(r,view);
-		if (/*OK*/ (dynamic_cast<PtCurMap *>(map))->bDrawContours)
+		if ( (dynamic_cast<PtCurMap *>(map))->bDrawContours)
 			this->DrawContoursFromMapIndex(r,view,n);
 	}
 	return;	
@@ -2321,7 +2321,7 @@ Rect TCompoundMap::DoArrowTool(long triNum)
 	mover = this->GetMover(TYPE_TRICURMOVER);
 	if (mover)
 	{
-		numDepths = (/*OK*/ dynamic_cast<TriCurMover*>(mover)) -> CreateDepthSlice(triNum,&fDepthSliceArray);
+		numDepths = ( dynamic_cast<TriCurMover*>(mover)) -> CreateDepthSlice(triNum,&fDepthSliceArray);
 		//numDepths = ((TriCurMover*)mover) -> CreateDepthSlice(triNum,fDepthSliceArray);
 		if (numDepths > 0) goto drawPlot; else return r;
 	}
@@ -3307,7 +3307,7 @@ long TCompoundMap::WhichMapIsPtInWater(WorldPoint wp)
 	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) 
 	{
 		mapList->GetListItem((Ptr)&map, i);
-		/*OK*/ if ((dynamic_cast<PtCurMap *>(map)) -> InWater(wp)) return i;
+		 if ((dynamic_cast<PtCurMap *>(map)) -> InWater(wp)) return i;
 	}
 	return -1;	// means off all maps	
 }

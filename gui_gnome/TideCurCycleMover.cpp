@@ -840,7 +840,7 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 				for (j = 0 ; j< numTri; j++)
 				{
 					// get vertices, check if dry triangle, then draw gray
-					Boolean isDryTri = /*OK*/dynamic_cast<TideCurCycleMover *>(this)->IsDryTri(j);
+					Boolean isDryTri = dynamic_cast<TideCurCycleMover *>(this)->IsDryTri(j);
 					if (model->GetModelMode()==ADVANCEDMODE && isDryTri)
 					{
 						RGBForeColor(&colors[LIGHTGRAY]);
@@ -1390,8 +1390,8 @@ OSErr TideCurCycleMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 					 (MyDlgHookUPP)0, &reply, M38c, MakeModalFilterUPP(STDFilter));
 		if (!reply.good) /*return USERCANCEL;*/
 		{
-			err = /*OK*/dynamic_cast<TideCurCycleMover *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
-			//err = /*OK*/dynamic_cast<TideCurCycleMover *>(this)->ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
+			err = dynamic_cast<TideCurCycleMover *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+			//err = dynamic_cast<TideCurCycleMover *>(this)->ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	 		goto done;
 		}
 		else
@@ -1411,7 +1411,7 @@ OSErr TideCurCycleMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 				   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
 		if (!reply.good) 
 		{
-			err = /*OK*/dynamic_cast<TideCurCycleMover *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+			err = dynamic_cast<TideCurCycleMover *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 			goto done;	
 			//return 0;
 		}
@@ -1430,7 +1430,7 @@ OSErr TideCurCycleMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 		//SplitPathFile (s, fileName);
 	}
 	
-	err = /*OK*/dynamic_cast<TideCurCycleMover *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+	err = dynamic_cast<TideCurCycleMover *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 	
 	
 	

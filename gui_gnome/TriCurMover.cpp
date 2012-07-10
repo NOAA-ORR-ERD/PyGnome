@@ -456,7 +456,7 @@ OSErr TriCurMover::Write (BFPB *bfpb)
 	long i, j, version = TriCurMoverREADWRITEVERSION; //JLM
 	ClassID id = GetClassID ();
 	VelocityRec velocity;
-	long 	numDepths = /*OK*/dynamic_cast<TriCurMover *>(this)->GetNumDepths(), amtTimeData = GetNumTimesInFile();
+	long 	numDepths = dynamic_cast<TriCurMover *>(this)->GetNumDepths(), amtTimeData = GetNumTimesInFile();
 	long numPoints, numFiles, numTris;
 	float val;
 	PtCurTimeData timeData;
@@ -1205,7 +1205,7 @@ void TriCurMover::Draw(Rect r, WorldRect view)
 				long depthIndex1,depthIndex2;	// default to -1?
 				err = ((TTriGridVel3D*)fGrid)->GetTriangleCentroidWC(i,&wp);
 				
-				/*OK*/dynamic_cast<TriCurMover *>(this)->GetDepthIndices(i,fVar.arrowDepth,&depthIndex1,&depthIndex2);
+				dynamic_cast<TriCurMover *>(this)->GetDepthIndices(i,fVar.arrowDepth,&depthIndex1,&depthIndex2);
 				
 				if (depthIndex1==UNASSIGNEDINDEX && depthIndex2==UNASSIGNEDINDEX)
 					continue;	// no value for this point at chosen depth
@@ -2117,7 +2117,7 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 		haveCentroidDepths = false;
 		if (fVar.gridType == TWO_D) 
 		{
-			err = /*OK*/dynamic_cast<TriCurMover *>(this)->CalculateVerticalGrid(pts,totalDepthH,topo,numTopoPoints,sigmaLevelsH,numLevels);
+			err = dynamic_cast<TriCurMover *>(this)->CalculateVerticalGrid(pts,totalDepthH,topo,numTopoPoints,sigmaLevelsH,numLevels);
 			if (err) goto done;
 		}
 		//err = -1; // for now we require Centroid Depths
@@ -2138,7 +2138,7 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 		if (!haveCentroidDepths && !(fVar.gridType == TWO_D))
 		{
 			// use sigma levels to set fDepthDataInfo and fDepthsH, will need to interpolate total centroid depths from vertex depths
-			err = /*OK*/dynamic_cast<TriCurMover *>(this)->CalculateVerticalGrid(pts,totalDepthH,topo,numTopoPoints,sigmaLevelsH,numLevels);
+			err = dynamic_cast<TriCurMover *>(this)->CalculateVerticalGrid(pts,totalDepthH,topo,numTopoPoints,sigmaLevelsH,numLevels);
 			if (err) goto done;
 		}
 	}

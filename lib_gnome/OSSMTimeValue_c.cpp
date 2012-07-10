@@ -270,7 +270,7 @@ OSErr OSSMTimeValue_c::CheckStartTime(Seconds forTime)
 	return 0;
 }
 
-OSErr OSSMTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
+OSErr OSSMTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& forTime, VelocityRec *value)
 {
 	OSErr err = 0;
 	if (!timeValues || _GetHandleSize((Handle)timeValues) == 0)

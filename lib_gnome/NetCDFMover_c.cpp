@@ -171,15 +171,15 @@ OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& model_time, const Second
 	
 	if (model_time == start_time)	// first step
 	{
-		if (/*OK*/dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERCURV) || dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERTRI))
+		if (dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERCURV) || dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERTRI))
 		{
 			//PtCurMap* ptCurMap = (PtCurMap*)moverMap;
 			//PtCurMap* ptCurMap = GetPtCurMap();
 			//if (ptCurMap)
 			if (moverMap->IAm(TYPE_PTCURMAP))
 			{
-				(/*OK*/dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
-				(/*OK*/dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
+				(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
+				(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
 				if (fGrid->GetClassID()==TYPE_TRIGRIDVEL3D)
 					(dynamic_cast<TTriGridVel3D*>(fGrid))->ClearOutputHandles();
 			}
@@ -1076,7 +1076,7 @@ WorldPoint3D NetCDFMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 	}
 	
 	// Check for constant current 
-	if((/*OK*/dynamic_cast<NetCDFMover *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMover *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
+	if((dynamic_cast<NetCDFMover *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMover *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
 		//if(GetNumTimesInFile()==1 && !(GetNumFiles()>1))
 		//if(GetNumTimesInFile()==1)
 	{
@@ -1105,7 +1105,7 @@ WorldPoint3D NetCDFMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 	else // time varying current 
 	{
 		// Calculate the time weight factor
-		if (/*OK*/dynamic_cast<NetCDFMover *>(this)->GetNumFiles()>1 && fOverLap)
+		if (dynamic_cast<NetCDFMover *>(this)->GetNumFiles()>1 && fOverLap)
 			startTime = fOverLapStartTime + fTimeShift;
 		else
 			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
@@ -1389,7 +1389,7 @@ Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 		depthAlpha = (bottomDepth - fVar.arrowDepth)/(double)(bottomDepth - topDepth);
 	}
 	
-	if(/*OK*/dynamic_cast<NetCDFMover *>(this)->GetNumTimesInFile()>1)
+	if(dynamic_cast<NetCDFMover *>(this)->GetNumTimesInFile()>1)
 		//&& loaded && !err)
 	{
 		if (err = this->GetStartTime(&startTime)) return false;	// should this stop us from showing any velocity?
@@ -1414,7 +1414,7 @@ Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 		if (index >= 0)
 		{
 			// Check for constant current 
-			if(/*OK*/dynamic_cast<NetCDFMover *>(this)->GetNumTimesInFile()==1 || timeAlpha == 1)
+			if(dynamic_cast<NetCDFMover *>(this)->GetNumTimesInFile()==1 || timeAlpha == 1)
 			{
 				if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 				{

@@ -394,7 +394,7 @@ OSErr WindMover_c::CheckStartTime (Seconds time)
 	return err;
 }
 
-OSErr WindMover_c::GetTimeValue (Seconds time, VelocityRec *value)
+OSErr WindMover_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& current_time, VelocityRec *value)
 {
 	VelocityRec	timeValue = { 0, 0 };
 	OSErr err = 0;
@@ -405,7 +405,9 @@ OSErr WindMover_c::GetTimeValue (Seconds time, VelocityRec *value)
 		if (this -> timeDep)
 		{
 			// note : constant wind always uses the first record
-			err = timeDep -> GetTimeValue(time, &timeValue);
+//			err = timeDep -> GetTimeValue(time, &timeValue);	// minus AH 07/10/2012
+			err = timeDep -> GetTimeValue(start_time, stop_time, current_time, &timeValue);	// AH 07/10/2012
+			
 		}
 	}
 	*value = timeValue;
@@ -610,7 +612,9 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,lo
 	
 	// get and apply time file scale factor
 	// code goes here, use some sort of average of past winds for dispersed oil
-	err = this -> GetTimeValue (model_time + this->tap_offset,&timeValue);
+// 	err = this -> GetTimeValue (model_time + this->tap_offset,&timeValue);	 // minus AH 07/10/2012
+	err = this -> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model_time + this->tap_offset,&timeValue);	// AH 07/10/2012
+	
 	if(err)  return deltaPoint;
 	
 	// separate algorithm for dispersed oil

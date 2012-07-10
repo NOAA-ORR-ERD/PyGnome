@@ -73,7 +73,7 @@ public:
 	void				DeleteTimeDep ();
 	void				ClearWindValues (); 
 	void				SetIsConstantWind (Boolean isConstantWind) { fIsConstantWind = isConstantWind; }
-	OSErr				GetTimeValue(Seconds time, VelocityRec *value);
+	OSErr				GetTimeValue(const Seconds& start_time, const Seconds& end_time, const Seconds& current_time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
 	OSErr				get_move(int, long, long, char *, char *, char *, char *, double, double, double, double, char *, char*, int);
 	OSErr				get_move(int, long, long, char *, char *, char *, char *, double, double, char*, int);

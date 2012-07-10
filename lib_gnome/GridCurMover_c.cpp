@@ -115,7 +115,7 @@ WorldPoint3D GridCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep
 	index = GetVelocityIndex(refPoint); 
 	
 	// Check for constant current 
-	if(/*OK*/dynamic_cast<GridCurMover *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<GridCurMover *>(this)->GetNumFiles()>1))
+	if(dynamic_cast<GridCurMover *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<GridCurMover *>(this)->GetNumFiles()>1))
 	{
 		// Calculate the interpolated velocity at the point
 		if (index >= 0) 
@@ -132,7 +132,7 @@ WorldPoint3D GridCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep
 	else // time varying current 
 	{
 		// Calculate the time weight factor
-		if (/*OK*/dynamic_cast<GridCurMover *>(this)->GetNumFiles()>1 && fOverLap)
+		if (dynamic_cast<GridCurMover *>(this)->GetNumFiles()>1 && fOverLap)
 			startTime = fOverLapStartTime;
 		else
 			startTime = (*fTimeDataHdl)[fStartData.timeIndex].time;
@@ -275,7 +275,7 @@ Boolean GridCurMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	double lengthU, lengthS;
 	VelocityRec velocity = {0.,0.};
 	OSErr err = 0;
-	long timeDataInterval,numTimesInFile = /*OK*/dynamic_cast<GridCurMover *>(this)->GetNumTimesInFile();
+	long timeDataInterval,numTimesInFile = dynamic_cast<GridCurMover *>(this)->GetNumTimesInFile();
 	Boolean intervalLoaded = dynamic_cast<GridCurMover *>(this) -> CheckInterval(timeDataInterval);
 	
 	Seconds startTime, endTime, time = model->GetModelTime();

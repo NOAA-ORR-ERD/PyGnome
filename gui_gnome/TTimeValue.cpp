@@ -75,7 +75,7 @@ OSErr TTimeValue::BecomeClone(TTimeValue *clone)
 		{
 			TTimeValue * cloneP = dynamic_cast<TTimeValue *>(clone);// typecast
 			
-			/*OK*/ dynamic_cast<TTimeValue *>(this)->TTimeValue::Dispose(); // get rid of any memory we currently are using
+			 dynamic_cast<TTimeValue *>(this)->TTimeValue::Dispose(); // get rid of any memory we currently are using
 			
 			err =  TClassID::BecomeClone(clone);//  pass clone to base class
 			if(err) goto done;
@@ -85,6 +85,6 @@ OSErr TTimeValue::BecomeClone(TTimeValue *clone)
 		}
 	}
 done:
-	if(err) /*OK*/ dynamic_cast<TTimeValue *>(this)->TTimeValue::Dispose(); // don't leave ourselves in a weird state
+	if(err)  dynamic_cast<TTimeValue *>(this)->TTimeValue::Dispose(); // don't leave ourselves in a weird state
 	return err;
 }

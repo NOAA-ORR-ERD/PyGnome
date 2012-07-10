@@ -45,7 +45,7 @@ public:
 	virtual Boolean			IAm(ClassID id) { if(id==TYPE_OSSMTIMEVALUES) return TRUE; return TimeValue_c::IAm(id); }
 	
 	virtual void			Dispose ();
-	virtual OSErr			GetTimeValue (Seconds time, VelocityRec *value);
+	virtual OSErr			GetTimeValue(const Seconds& start_time, const Seconds& end_time, const Seconds& current_time, VelocityRec *value);
 	virtual OSErr			CheckStartTime (Seconds time);
 	virtual void			RescaleTimeValues (double oldScaleFactor, double newScaleFactor);
 	virtual long			GetNumValues ();

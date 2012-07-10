@@ -145,7 +145,7 @@ OSErr ADCPTimeValue::BecomeClone(ADCPTimeValue *clone)
 		{
 			ADCPTimeValue * cloneP = dynamic_cast<ADCPTimeValue *>(clone);// typecast
 			
-			/*OK*/dynamic_cast<ADCPTimeValue *>(this)->ADCPTimeValue::Dispose(); // get rid of any memory we currently are using
+			dynamic_cast<ADCPTimeValue *>(this)->ADCPTimeValue::Dispose(); // get rid of any memory we currently are using
 			////////////////////
 			// do the memory stuff first, in case it fails
 			////////
@@ -174,7 +174,7 @@ OSErr ADCPTimeValue::BecomeClone(ADCPTimeValue *clone)
 		}
 	}
 done:
-	if(err) /*OK*/dynamic_cast<ADCPTimeValue *>(this)->ADCPTimeValue::Dispose(); // don't leave ourselves in a weird state
+	if(err) dynamic_cast<ADCPTimeValue *>(this)->ADCPTimeValue::Dispose(); // don't leave ourselves in a weird state
 	return err;
 }
 

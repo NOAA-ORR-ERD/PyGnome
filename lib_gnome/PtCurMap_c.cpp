@@ -375,45 +375,45 @@ TTriGridVel* PtCurMap_c::GetGrid(Boolean wantRefinedGrid)
 	mover = this->GetMover(TYPE_PTCURMOVER);
 	if (mover)
 	{
-		/*OK*/ triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<PtCurMover *>(mover)) -> fGrid));
+		 triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<PtCurMover *>(mover)) -> fGrid));
 	}
 	else	
 	{
 		mover = this->GetMover(TYPE_CATSMOVER3D);
 		if (mover)
 		{
-			/*OK*/	if (wantRefinedGrid && (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
-			/*OK*/		triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
+				if (wantRefinedGrid && (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
+					triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
 			else
-			/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid));
+			 triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid));
 		}
 		else
 		{
 			mover = this->GetMover(TYPE_NETCDFMOVERCURV);
 			if (mover)
 			{
-				/*OK*/ triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMoverCurv *>(mover)) -> fGrid));
+				 triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMoverCurv *>(mover)) -> fGrid));
 			}
 			else
 			{
 				mover = this->GetMover(TYPE_NETCDFMOVERTRI);
 				if (mover)
 				{
-					/*OK*/ triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMoverTri *>(mover)) -> fGrid));
+					 triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMoverTri *>(mover)) -> fGrid));
 				}
 				else
 				{
 					mover = this->GetMover(TYPE_TIDECURCYCLEMOVER);
 					if (mover)
 					{
-						/*OK*/	triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TideCurCycleMover *>(mover)) -> fGrid));
+							triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TideCurCycleMover *>(mover)) -> fGrid));
 					}
 					else
 					{
 						mover = this->GetMover(TYPE_TRICURMOVER);
 						if (mover)
 						{
-							/*OK*/	triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TriCurMover *>(mover)) -> fGrid));
+								triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TriCurMover *>(mover)) -> fGrid));
 						}
 					}
 				}
@@ -434,33 +434,33 @@ TTriGridVel3D* PtCurMap_c::GetGrid3D(Boolean wantRefinedGrid)
 	mover = this->GetMover(TYPE_PTCURMOVER);
 	if (mover)
 	{
-		/*OK*/ if (((dynamic_cast<PtCurMover *>(mover)) -> fGrid)->GetClassID()==TYPE_TRIGRIDVEL3D)	
-		/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<PtCurMover *>(mover)) -> fGrid));
+		 if (((dynamic_cast<PtCurMover *>(mover)) -> fGrid)->GetClassID()==TYPE_TRIGRIDVEL3D)	
+		 triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<PtCurMover *>(mover)) -> fGrid));
 	}
 	else	
 	{
 		mover = this->GetMover(TYPE_CATSMOVER3D);	// always was 3D
 		if (mover)
 		{
-			/*OK*/ if (wantRefinedGrid && (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
-			/*OK*/	triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
+			 if (wantRefinedGrid && (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
+				triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
 			else
-			/*OK*/	triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid));
+				triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid));
 		}
 		else
 		{
 			mover = this->GetMover(TYPE_NETCDFMOVER);
 			if (mover)
 			{
-				/*OK*/ if (((dynamic_cast<NetCDFMover *>(mover)) -> fGrid)->GetClassID()==TYPE_TRIGRIDVEL3D)	
-				/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
+				 if (((dynamic_cast<NetCDFMover *>(mover)) -> fGrid)->GetClassID()==TYPE_TRIGRIDVEL3D)	
+				 triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
 			}
 			else
 			{
 				mover = this->GetMover(TYPE_TRICURMOVER);	// always was 3D
 				if (mover)
 				{
-					/*OK*/ triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TriCurMover *>(mover)) -> fGrid));
+					 triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TriCurMover *>(mover)) -> fGrid));
 				}
 			}
 		}
@@ -494,7 +494,7 @@ LongPointHdl PtCurMap_c::GetPointsHdl(Boolean useRefinedGrid)	// always false at
 	// Figure out if this map has a PtCurMover or TCATSMover3D current
 	mover = this->GetMover(TYPE_PTCURMOVER);
 	if (mover)
-	/*OK*/ ptsHdl = (dynamic_cast<PtCurMover *>(mover))->GetPointsHdl();
+	 ptsHdl = (dynamic_cast<PtCurMover *>(mover))->GetPointsHdl();
 	else
 	{
 		mover = this->GetMover(TYPE_CATSMOVER3D);
@@ -505,17 +505,17 @@ LongPointHdl PtCurMap_c::GetPointsHdl(Boolean useRefinedGrid)	// always false at
 		{
 			mover = this->GetMover(TYPE_NETCDFMOVERCURV);
 			if (mover)
-			/*OK*/ ptsHdl = (dynamic_cast<NetCDFMoverCurv *>(mover))->GetPointsHdl();
+			 ptsHdl = (dynamic_cast<NetCDFMoverCurv *>(mover))->GetPointsHdl();
 			else
 			{
 				mover = this->GetMover(TYPE_NETCDFMOVERTRI);
 				if (mover)
-				/*OK*/ ptsHdl = (dynamic_cast<NetCDFMoverTri *>(mover))->GetPointsHdl();
+				 ptsHdl = (dynamic_cast<NetCDFMoverTri *>(mover))->GetPointsHdl();
 				else
 				{
 					mover = this->GetMover(TYPE_TIDECURCYCLEMOVER);
 					if (mover)
-					/*OK*/	ptsHdl = (dynamic_cast<TideCurCycleMover *>(mover))->GetPointsHdl();
+						ptsHdl = (dynamic_cast<TideCurCycleMover *>(mover))->GetPointsHdl();
 					else
 					{
 						mover = this->GetMover(TYPE_TRICURMOVER);
@@ -864,7 +864,9 @@ double PtCurMap_c::GetBreakingWaveHeight(void)
 	else
 	{
 		TWindMover *wind = model -> GetWindMover(false);
-		if (wind) err = wind -> GetTimeValue(model->GetModelTime(),&windVel);
+//		if (wind) err = wind -> GetTimeValue(model->GetModelTime(),&windVel);	// minus AH 07/10/2012
+		if (wind) err = wind -> GetTimeValue(model->GetStartTime(), model->GetEndTime(), model->GetModelTime(),&windVel);	// AH 07/10/2012
+		
 		if (err || !wind) 
 		{
 			velAt10meters = 1;	// set to a minimum wind value

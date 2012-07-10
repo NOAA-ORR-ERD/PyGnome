@@ -108,7 +108,7 @@ OSErr TMover::BecomeClone(TMover *clone)
 		{
 			TMover * cloneP = dynamic_cast<TMover *>(clone);// typecast
 			
-			/*OK*/ dynamic_cast<TMover *>(this)->TMover::Dispose(); // get rid of any memory we currently are using
+			 dynamic_cast<TMover *>(this)->TMover::Dispose(); // get rid of any memory we currently are using
 			////////////////////
 			// do the memory stuff first, in case it fails
 			////////
@@ -123,7 +123,7 @@ OSErr TMover::BecomeClone(TMover *clone)
 		}
 	}
 done:
-	if(err) /*OK*/ dynamic_cast<TMover *>(this)->TMover::Dispose(); // don't leave ourselves in a weird state
+	if(err)  dynamic_cast<TMover *>(this)->TMover::Dispose(); // don't leave ourselves in a weird state
 	return err;
 }
 

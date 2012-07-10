@@ -1202,9 +1202,9 @@ Boolean Model_c::ThereIsA3DMover(float *arrowDepth)
 	TMover *mover = GetMover(TYPE_PTCURMOVER);
 	if (mover && gNoaaVersion)
 	{	
-		if (/*OK*/ (dynamic_cast<PtCurMover*>(mover)) -> fVar.gridType != TWO_D)
+		if ( (dynamic_cast<PtCurMover*>(mover)) -> fVar.gridType != TWO_D)
 		{
-			*arrowDepth = /*OK*/ (dynamic_cast<PtCurMover*>(mover)) -> fVar.arrowDepth;
+			*arrowDepth =  (dynamic_cast<PtCurMover*>(mover)) -> fVar.arrowDepth;
 			return true;
 		}
 	}
@@ -1217,9 +1217,9 @@ Boolean Model_c::ThereIsA3DMover(float *arrowDepth)
 			mover = this->GetMover(TYPE_NETCDFMOVER);
 			if (mover && gNoaaVersion)
 			{
-				if (/*OK*/ (dynamic_cast<NetCDFMover*>(mover)) -> fVar.gridType != TWO_D)
+				if ( (dynamic_cast<NetCDFMover*>(mover)) -> fVar.gridType != TWO_D)
 				{
-					*arrowDepth = /*OK*/ (dynamic_cast<NetCDFMover*>(mover)) -> fVar.arrowDepth;
+					*arrowDepth =  (dynamic_cast<NetCDFMover*>(mover)) -> fVar.arrowDepth;
 					return true;
 				}
 			}
@@ -1231,7 +1231,7 @@ Boolean Model_c::ThereIsA3DMover(float *arrowDepth)
 			mover = this->GetMover(TYPE_TRICURMOVER);
 			if (mover)
 			{
-				*arrowDepth = /*OK*/ (dynamic_cast<TriCurMover*>(mover)) -> fVar.arrowDepth;
+				*arrowDepth =  (dynamic_cast<TriCurMover*>(mover)) -> fVar.arrowDepth;
 				return true;
 			}
 			else
@@ -1239,9 +1239,9 @@ Boolean Model_c::ThereIsA3DMover(float *arrowDepth)
 				mover = this->GetMover(TYPE_NETCDFMOVER);
 				if (mover && gNoaaVersion)
 				{
-					if (/*OK*/(dynamic_cast<NetCDFMover*>(mover)) -> fVar.gridType != TWO_D)
+					if ((dynamic_cast<NetCDFMover*>(mover)) -> fVar.gridType != TWO_D)
 					{
-						*arrowDepth = /*OK*/ (dynamic_cast<NetCDFMover*>(mover)) -> fVar.arrowDepth;
+						*arrowDepth =  (dynamic_cast<NetCDFMover*>(mover)) -> fVar.arrowDepth;
 						return true;
 					}
 				}

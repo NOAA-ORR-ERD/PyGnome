@@ -403,7 +403,7 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 			}
 			
 			timeFile = CreateTOSSMTimeValue(dynamic_cast<TCATSMover *>(this),str,shortFileName,unitsIfKnownInAdvance);	
-			/*OK*/dynamic_cast<TCATSMover *>(this)->DeleteTimeDep();
+			dynamic_cast<TCATSMover *>(this)->DeleteTimeDep();
 			if(timeFile) 
 			{
 				this -> timeDep = timeFile;
@@ -411,8 +411,11 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 				{
 					VelocityRec dummyValue;
 					this -> timeDep -> fScaleFactor = val;
-					if (err = timeFile->GetTimeValue(model->GetStartTime(),&dummyValue))	// make sure data is ok
-					/*OK*/dynamic_cast<TCATSMover *>(this)->DeleteTimeDep();
+//					if (err = timeFile->GetTimeValue(model->GetStartTime(),&dummyValue))	// make sure data is ok		// minus AH 07/10/2012
+					Seconds start_time = model->GetStartTime();
+					if (err = timeFile->GetTimeValue(start_time, model->GetEndTime(), start_time,&dummyValue))	// AH 07/10/2012
+					
+					dynamic_cast<TCATSMover *>(this)->DeleteTimeDep();
 					if (this -> timeDep -> GetFileType()==SHIOHEIGHTSFILE || this -> timeDep -> GetFileType()==PROGRESSIVETIDEFILE) this -> timeDep -> RescaleTimeValues(1.0,val);	// does this apply value twice??
 					if (this -> timeDep -> GetFileType()==HYDROLOGYFILE) this -> refScale = this -> timeDep -> fScaleFactor;
 				}
@@ -432,8 +435,10 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 		case M_UPDATEVALUES:
 			VelocityRec dummyValue;
 			// new data, make sure it is ok
-			if (timeDep) err = timeDep->GetTimeValue(model->GetStartTime(),&dummyValue);
-			if (err) /*OK*/dynamic_cast<TCATSMover *>(this)->DeleteTimeDep();
+			if (timeDep) 
+			// 	err = timeDep->GetTimeValue(model->GetStartTime(),&dummyValue);	// minus AH 07/10/2012
+				err = timeDep->GetTimeValue(model->GetStartTime(), model->GetEndTime(), model->GetStartTime(),&dummyValue);
+			if (err) dynamic_cast<TCATSMover *>(this)->DeleteTimeDep();
 			break;
 	}
 	
@@ -1611,7 +1616,9 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 					// if file contains height coefficients force derivative to be calculated and scale to be input
 					if (timeFile->GetFileType() == SHIOHEIGHTSFILE || timeFile->GetFileType() == SHIOCURRENTSFILE || timeFile->GetFileType() == PROGRESSIVETIDEFILE)
 					{
-						if (err = timeFile->GetTimeValue(model->GetStartTime(),&vel)) 
+//						if (err = timeFile->GetTimeValue(model->GetStartTime(),&vel))	// minus AH 07/10/2012
+						Seconds start_time = model->GetStartTime();
+						if (err = timeFile->GetTimeValue(start_time, model->GetEndTime(), start_time, &vel))	// AH 07/10/2012
 							goto donetimefile;	// user cancel or error
 					}
 				}
@@ -1921,9 +1928,9 @@ TCurrentMover *CreateAndInitLocationFileCurrentsMover (TMap *owner, char* givenP
 		if (isNetCDFPathsFile)
 		{
 			char errmsg[256];
-			err = /*OK*/(dynamic_cast<NetCDFMover*>(newMover))->ReadInputFileNames(fileNamesPath);
+			err = (dynamic_cast<NetCDFMover*>(newMover))->ReadInputFileNames(fileNamesPath);
 			if (err) goto Error;
-			/*OK*/(dynamic_cast<NetCDFMover*>(newMover))->DisposeAllLoadedData();
+			(dynamic_cast<NetCDFMover*>(newMover))->DisposeAllLoadedData();
 			//err = ((NetCDFMover*)newMover)->SetInterval(errmsg);	// if set interval here will get error if times are not in model range
 			if(err) goto Error;
 		}
@@ -2188,9 +2195,9 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 		if (isNetCDFPathsFile)
 		{
 			char errmsg[256];
-			err = /*OK*/(dynamic_cast<NetCDFMover*>(newMover))->ReadInputFileNames(fileNamesPath);
+			err = (dynamic_cast<NetCDFMover*>(newMover))->ReadInputFileNames(fileNamesPath);
 			if (err) goto Error;
-			/*OK*/(dynamic_cast<NetCDFMover*>(newMover))->DisposeAllLoadedData();
+			(dynamic_cast<NetCDFMover*>(newMover))->DisposeAllLoadedData();
 			//err = ((NetCDFMover*)newMover)->SetInterval(errmsg);	// if set interval here will get error if times are not in model range
 			if(err) goto Error;
 		}

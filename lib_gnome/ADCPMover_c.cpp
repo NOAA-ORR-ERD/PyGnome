@@ -241,7 +241,9 @@ VelocityRec ADCPMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint
 			thisTimeDep->GetDepthIndices(depthAtPoint, totalDepth, &depthIndex1, &depthIndex2);
 			// need to get top/bottom depths if necessary, calculate scale
 			// if (moverMap->IAm(TYPE_PTCURMAP)) totalDepth = DepthAtPoint(p);
-			err = thisTimeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); 
+// 			err = thisTimeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); // minus AH 07/10/2012
+			err = thisTimeDep -> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model -> GetModelTime(), &timeValue);	// AH 07/10/2012
+			
 			/*if (depthIndex1 != UNASSIGNEDINDEX)	
 			 err = thisTimeDep->GetTimeValueAtDepth(depthIndex, model->GetModelTime(), &timeValue);
 			 if (depthIndex2 != UNASSIGNEDINDEX)	
@@ -376,7 +378,7 @@ Boolean ADCPMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	double spillStartDepth = 0.;
 	
 	if (moverMap->IAm(TYPE_PTCURMAP))
-		spillStartDepth = /*OK*/(dynamic_cast<PtCurMap *>(moverMap))->GetSpillStartDepth();
+		spillStartDepth = (dynamic_cast<PtCurMap *>(moverMap))->GetSpillStartDepth();
 	
 	wp.z = spillStartDepth;
 	

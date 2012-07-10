@@ -3191,40 +3191,40 @@ Rect DoArrowTool(Point p)
 		mover = map->GetMover(TYPE_PTCURMOVER);
 		if (mover)
 		{
-		/*OK*/ if (!(dynamic_cast<PtCurMover *>(mover)) -> fVar.bShowGrid && !OptionKeyDown()) 
+		 if (!(dynamic_cast<PtCurMover *>(mover)) -> fVar.bShowGrid && !OptionKeyDown()) 
 				return r;	// only select triangles if grid is showing
-			triGrid = (TTriGridVel3D*)(/*OK*/dynamic_cast<PtCurMover *>(mover) -> fGrid);
+			triGrid = (TTriGridVel3D*)(dynamic_cast<PtCurMover *>(mover) -> fGrid);
 		}
 		else	
 		{
 			mover = map->GetMover(TYPE_CATSMOVER3D);
 			if (mover)
 			{
-		/*OK*/	if (!(dynamic_cast<TCATSMover3D *>(mover)) -> bShowGrid && !OptionKeyDown()) return r; // only select triangles if grid is showing
-		/*OK*/	if ((dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
-				/*OK*/	triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
+			if (!(dynamic_cast<TCATSMover3D *>(mover)) -> bShowGrid && !OptionKeyDown()) return r; // only select triangles if grid is showing
+			if ((dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
+					triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
 				else
-				/*OK*/	triGrid = (TTriGridVel3D*)((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid);
+					triGrid = (TTriGridVel3D*)((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid);
 			}
 			else
 			{
 				mover = map->GetMover(TYPE_TRICURMOVER);
 				if (mover)
 				{
-			/*OK*/	if (!(dynamic_cast<TriCurMover *>(mover)) -> fVar.bShowGrid && !OptionKeyDown()) 
+				if (!(dynamic_cast<TriCurMover *>(mover)) -> fVar.bShowGrid && !OptionKeyDown()) 
 						return r;	// only select triangles if grid is showing
-			/*OK*/	triGrid = (TTriGridVel3D*)((dynamic_cast<TriCurMover *>(mover)) -> fGrid);
+				triGrid = (TTriGridVel3D*)((dynamic_cast<TriCurMover *>(mover)) -> fGrid);
 				}
 				else
 				{
 					mover = map->GetMover(TYPE_NETCDFMOVER);
 					if (mover)
 					{
-			/*OK*/		if (!(dynamic_cast<NetCDFMover *>(mover)) -> fVar.bShowGrid && !OptionKeyDown()) 
+					if (!(dynamic_cast<NetCDFMover *>(mover)) -> fVar.bShowGrid && !OptionKeyDown()) 
 							return r;	// only select triangles if grid is showing
-		/*OK*/			if (!((dynamic_cast<NetCDFMover *>(mover)) -> fNumDepthLevels > 1))
+					if (!((dynamic_cast<NetCDFMover *>(mover)) -> fNumDepthLevels > 1))
 							return r;
-				/*OK*/	triGrid = (TTriGridVel3D*)((dynamic_cast<NetCDFMover *>(mover)) -> fGrid);
+					triGrid = (TTriGridVel3D*)((dynamic_cast<NetCDFMover *>(mover)) -> fGrid);
 					}
 				}
 			}
@@ -3506,8 +3506,8 @@ void DoLassoTool(Point p)
 	if (mover)
 	{
 		//if (!((PtCurMover *)mover) -> fVar.bShowGrid && !OptionKeyDown() && !ControlKeyDown()) return;	// only select triangles if grid is showing
-/*OK*/	if ((dynamic_cast<PtCurMover *>(mover)) -> fVar.bShowGrid) gridShowing = true;	// only select triangles if grid is showing
-		triGrid = (TTriGridVel3D*)(/*OK*/(dynamic_cast<PtCurMover *>(mover)) -> fGrid);
+	if ((dynamic_cast<PtCurMover *>(mover)) -> fVar.bShowGrid) gridShowing = true;	// only select triangles if grid is showing
+		triGrid = (TTriGridVel3D*)((dynamic_cast<PtCurMover *>(mover)) -> fGrid);
 	}
 	else	
 	{
@@ -3515,11 +3515,11 @@ void DoLassoTool(Point p)
 		if (mover)
 		{
 			//if (!((TCATSMover3D *)mover) -> bShowGrid && !OptionKeyDown() && !ControlKeyDown()) return; // only select triangles if grid is showing
-			if (/*OK*/(dynamic_cast<TCATSMover3D *>(mover)) -> bShowGrid) gridShowing = true; // only select triangles if grid is showing
-			if (/*OK*/(dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
-				triGrid = /*OK*/(dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
+			if ((dynamic_cast<TCATSMover3D *>(mover)) -> bShowGrid) gridShowing = true; // only select triangles if grid is showing
+			if ((dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid)
+				triGrid = (dynamic_cast<TCATSMover3D *>(mover)) -> fRefinedGrid;
 			else
-				triGrid = (TTriGridVel3D*)(/*OK*/(dynamic_cast<TCATSMover3D *>(mover)) -> fGrid);
+				triGrid = (TTriGridVel3D*)((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid);
 		}
 	}
 

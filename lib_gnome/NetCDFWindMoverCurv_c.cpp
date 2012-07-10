@@ -69,7 +69,7 @@ Boolean NetCDFWindMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnos
 	}
 	
 	// Check for constant current 
-	if((/*OK*/dynamic_cast<NetCDFWindMoverCurv *>(this)->GetNumTimesInFile()==1 /*&& !(GetNumFiles()>1)*/) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds)  || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds))
+	if((dynamic_cast<NetCDFWindMoverCurv *>(this)->GetNumTimesInFile()==1 /*&& !(GetNumFiles()>1)*/) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds)  || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds))
 		//if(GetNumTimesInFile()==1)
 	{
 		// Calculate the interpolated velocity at the point
@@ -152,7 +152,7 @@ WorldPoint3D NetCDFWindMoverCurv_c::GetMove(const Seconds& model_time, Seconds t
 	
 	// Check for constant wind 
 	//if(GetNumTimesInFile()==1)
-	if(/*OK*/dynamic_cast<NetCDFWindMoverCurv *>(this)->GetNumTimesInFile()==1 || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds)  || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds))
+	if(dynamic_cast<NetCDFWindMoverCurv *>(this)->GetNumTimesInFile()==1 || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds)  || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds))
 	{
 		// Calculate the interpolated velocity at the point
 		if (index >= 0) 

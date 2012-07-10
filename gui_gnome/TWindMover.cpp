@@ -304,7 +304,7 @@ Boolean TWindMover::ListClick(ListItem item, Boolean inBullet, Boolean doubleCli
 			case I_WINDNAME:// JLM, first line brings up time dependent dialog
 			case I_WINDBARB:
 			default:
-				if(/*OK*/dynamic_cast<TWindMover *>(this)->GetTimeDep())
+				if(dynamic_cast<TWindMover *>(this)->GetTimeDep())
 				{
 					Boolean settingsForcedAfterDialog = false;
 					err=EditWindsDialog(dynamic_cast<TWindMover *>(this),model->GetStartTime(),false,settingsForcedAfterDialog);
@@ -439,7 +439,7 @@ OSErr TWindMover::BecomeClone(TWindMover *clone)
 			//TOSSMTimeValue *timeDepClone = nil;
 			TWindMover * cloneP = dynamic_cast<TWindMover *>(clone);// typecast
 			
-			/*OK*/ dynamic_cast<TWindMover *>(this)->TWindMover::Dispose(); // get rid of any memory we currently are using
+			 dynamic_cast<TWindMover *>(this)->TWindMover::Dispose(); // get rid of any memory we currently are using
 			////////////////////
 			// do the memory stuff first, in case it fails
 			////////
@@ -469,7 +469,7 @@ OSErr TWindMover::BecomeClone(TWindMover *clone)
 		}
 	}
 done:
-	if(err) /*OK*/ dynamic_cast<TWindMover *>(this)->TWindMover::Dispose(); // don't leave ourselves in a weird state
+	if(err)  dynamic_cast<TWindMover *>(this)->TWindMover::Dispose(); // don't leave ourselves in a weird state
 	return err;
 }
 
@@ -488,10 +488,10 @@ OSErr TWindMover::CheckAndPassOnMessage(TModelMessage *message)
 		char str[256];
 		////////////////
 		err = message->GetParameterAsDouble("uncertaintySpeedScale",&val);
-		if(!err) /*OK*/ dynamic_cast<TWindMover *>(this)->fSpeedScale = val; 
+		if(!err)  dynamic_cast<TWindMover *>(this)->fSpeedScale = val; 
 		////////////////
 		err = message->GetParameterAsDouble("uncertaintyAngleScale",&val);
-		if(!err) /*OK*/ dynamic_cast<TWindMover *>(this)->fAngleScale = val; 
+		if(!err)  dynamic_cast<TWindMover *>(this)->fAngleScale = val; 
 		////////////////
 		/*message->GetParameterString("windage",str,256); // was this ever used ?
 		 if(str[0]) 
@@ -511,9 +511,9 @@ OSErr TWindMover::CheckAndPassOnMessage(TModelMessage *message)
 	/////////////////////////////////////////////////
 	//  pass on this message to the TOSSMTimeValue object
 	/////////////////////////////////////////////////
-	if(/*OK*/ dynamic_cast<TWindMover *>(this)->timeDep)
+	if( dynamic_cast<TWindMover *>(this)->timeDep)
 	{
-		err = /*OK*/ dynamic_cast<TWindMover *>(this)->timeDep->CheckAndPassOnMessage(message);
+		err =  dynamic_cast<TWindMover *>(this)->timeDep->CheckAndPassOnMessage(message);
 	}
 	
 	/////////////////////////////////////////////////
@@ -579,7 +579,9 @@ void TWindMover::DrawWindVector(Rect r, WorldRect view)
 		VelocityRec velocity = {0.,0.}, velocity_orig = {0.,0.};
 		
 		settings.doNotPrintError = true;
-		err = /*OK*/ dynamic_cast<TWindMover *>(this)->GetTimeValue (model->GetModelTime(), &velocity_orig);
+//		err =  dynamic_cast<TWindMover *>(this)->GetTimeValue (model->GetModelTime(), &velocity_orig);	// minus AH 07/10/2012
+		err =  dynamic_cast<TWindMover *>(this)->GetTimeValue (model->GetStartTime(), model->GetEndTime(), model->GetModelTime(), &velocity_orig);	// AH 07/10/2012
+		
 		settings.doNotPrintError = false;
 		velocity.u = -1. * velocity_orig.u; velocity.v = -1. * velocity_orig.v;	// so velocity is from rather than to
 		length = sqrt(velocity.u*velocity.u + velocity.v*velocity.v);

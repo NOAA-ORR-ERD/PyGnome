@@ -98,7 +98,7 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	index = GetVelocityIndex(refPoint);  // regular grid
 	
 	// Check for constant wind 
-	if(/*OK*/dynamic_cast<GridWindMover *>(this)->GetNumTimesInFile()==1)
+	if(dynamic_cast<GridWindMover *>(this)->GetNumTimesInFile()==1)
 	{
 		// Calculate the interpolated velocity at the point
 		if (index >= 0) 
@@ -115,7 +115,7 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	else // time varying wind 
 	{
 		// Calculate the time weight factor
-		if (/*OK*/dynamic_cast<GridWindMover *>(this)->GetNumFiles()>1 && fOverLap)
+		if (dynamic_cast<GridWindMover *>(this)->GetNumFiles()>1 && fOverLap)
 			startTime = fOverLapStartTime;
 		else
 			startTime = (*fTimeDataHdl)[fStartData.timeIndex].time;

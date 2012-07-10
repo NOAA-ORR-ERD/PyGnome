@@ -325,7 +325,7 @@ OSErr TOSSMTimeValue::BecomeClone(TOSSMTimeValue *clone)
 		{
 			TOSSMTimeValue * cloneP = dynamic_cast<TOSSMTimeValue *>(clone);// typecast
 			
-			/*OK*/ dynamic_cast<TOSSMTimeValue *>(this)->TOSSMTimeValue::Dispose(); // get rid of any memory we currently are using
+			 dynamic_cast<TOSSMTimeValue *>(this)->TOSSMTimeValue::Dispose(); // get rid of any memory we currently are using
 			////////////////////
 			// do the memory stuff first, in case it fails
 			////////
@@ -356,6 +356,6 @@ OSErr TOSSMTimeValue::BecomeClone(TOSSMTimeValue *clone)
 		}
 	}
 done:
-	if(err) /*OK*/ dynamic_cast<TOSSMTimeValue *>(this)->TOSSMTimeValue::Dispose(); // don't leave ourselves in a weird state
+	if(err)  dynamic_cast<TOSSMTimeValue *>(this)->TOSSMTimeValue::Dispose(); // don't leave ourselves in a weird state
 	return err;
 }

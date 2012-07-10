@@ -4397,12 +4397,12 @@ OSErr CDOGLEList::ExportProfilesAsNetCDF(TCurrentMover *hydrodynamicData)
 	//if (possible3DMover->IAm(TYPE_NETCDFMOVER)) ((NetCDFMover*)possible3DMover)->GetNumDepthLevels();
 	// also need to get all the velocities and temp, sal, use DepthValuesSetH
 	
-	if (hydrodynamicData->IAm(TYPE_NETCDFMOVER)) numTimes = /*OK*/(dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetNumTimesInFile();
+	if (hydrodynamicData->IAm(TYPE_NETCDFMOVER)) numTimes = (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetNumTimesInFile();
 	else return -1;
 	if (numTimes < 1) return -1;
 
 	sigmaLength = (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetNumDepthLevels();
-	timeValInSecs = /*OK*/ (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetTimeValue(numTimes-1);
+	timeValInSecs =  (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetTimeValue(numTimes-1);
 	if (numTimes>1 && timeValInSecs < model->GetEndTime()) {printNote("The hydrodynamic data runs out before the model end time. This may affect CDOG run.");}
 
 	// for some reason the nc_create command gives an error, have to use nccreate with no error checking
@@ -4599,7 +4599,7 @@ OSErr CDOGLEList::ExportProfilesAsNetCDF(TCurrentMover *hydrodynamicData)
 			}
 		}
 		time_index[0] = timeIndex;
-		timeValInSecs = /*OK*/ (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetTimeValue(timeIndex);
+		timeValInSecs =  (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetTimeValue(timeIndex);
 		timeInHrs = (timeValInSecs - model->GetStartTime()) / 3600.;
 		nc_put_var1_double(ncid,time_id,time_index,&timeInHrs);
 		
@@ -4727,10 +4727,10 @@ OSErr CDOGLEList::ExportProfilesToCDOGInputFolder(TCurrentMover *hydrodynamicDat
 	//if (possible3DMover->IAm(TYPE_NETCDFMOVER)) ((NetCDFMover*)possible3DMover)->GetNumDepthLevels();
 	// also need to get all the velocities and temp, sal, use DepthValuesSetH
 	
-	if (hydrodynamicData->IAm(TYPE_NETCDFMOVER)) numTimes = /*OK*/ (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetNumTimesInFile();
+	if (hydrodynamicData->IAm(TYPE_NETCDFMOVER)) numTimes =  (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetNumTimesInFile();
 	else return -1;
 	if (numTimes < 1) return -1;
-	timeValInSecs = /*OK*/ (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetTimeValue(numTimes-1);
+	timeValInSecs =  (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetTimeValue(numTimes-1);
 	if (numTimes>1 && timeValInSecs < model->GetEndTime()) {printNote("The hydrodynamic data runs out before the model end time. This may affect CDOG run.");}
 
 	numFiles = numTimes;
@@ -4789,7 +4789,7 @@ OSErr CDOGLEList::ExportProfilesToCDOGInputFolder(TCurrentMover *hydrodynamicDat
 		}
 		else
 		{
-			timeValInSecs = /*OK*/ (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetTimeValue(timeIndex);
+			timeValInSecs =  (dynamic_cast<NetCDFMover *>(hydrodynamicData))->GetTimeValue(timeIndex);
 			timeInHrs = (timeValInSecs - model->GetStartTime()) / 3600.;
 			sprintf(headerStr,"%lf",timeInHrs);
 			//strcpy(headerStr,"0.00");	// start time - need to get this from the netcdf file

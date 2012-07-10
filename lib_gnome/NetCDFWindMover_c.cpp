@@ -190,7 +190,7 @@ Boolean NetCDFWindMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg);
 	if(err) return false;
 	
-	if(/*OK*/dynamic_cast<NetCDFWindMover *>(this)->GetNumTimesInFile()>1)
+	if(dynamic_cast<NetCDFWindMover *>(this)->GetNumTimesInFile()>1)
 		//&& loaded && !err)
 	{
 		if (err = this->GetStartTime(&startTime)) return false;	// should this stop us from showing any velocity?
@@ -215,7 +215,7 @@ Boolean NetCDFWindMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 		if (index >= 0)
 		{
 			// Check for constant current 
-			if(/*OK*/dynamic_cast<NetCDFWindMover *>(this)->GetNumTimesInFile()==1 || timeAlpha == 1)
+			if(dynamic_cast<NetCDFWindMover *>(this)->GetNumTimesInFile()==1 || timeAlpha == 1)
 			{
 				velocity.u = this->GetStartUVelocity(index);
 				velocity.v = this->GetStartVVelocity(index);
@@ -302,7 +302,7 @@ WorldPoint3D NetCDFWindMover_c::GetMove(const Seconds& model_time, Seconds timeS
 	index = GetVelocityIndex(refPoint);  // regular grid
 	
 	// Check for constant wind 
-	if( ( /*OK*/dynamic_cast<NetCDFWindMover *>(this)->GetNumTimesInFile()==1 && !( dynamic_cast<NetCDFWindMover *>(this)->GetNumFiles() > 1 ) ) ||
+	if( ( dynamic_cast<NetCDFWindMover *>(this)->GetNumTimesInFile()==1 && !( dynamic_cast<NetCDFWindMover *>(this)->GetNumFiles() > 1 ) ) ||
 	   (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds))
 		//if(GetNumTimesInFile()==1)
 	{
@@ -321,7 +321,7 @@ WorldPoint3D NetCDFWindMover_c::GetMove(const Seconds& model_time, Seconds timeS
 	else // time varying wind 
 	{
 		// Calculate the time weight factor
-		if (/*OK*/dynamic_cast<NetCDFWindMover *>(this)->GetNumFiles()>1 && fOverLap)
+		if (dynamic_cast<NetCDFWindMover *>(this)->GetNumFiles()>1 && fOverLap)
 			startTime = fOverLapStartTime + fTimeShift;
 		else
 			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;

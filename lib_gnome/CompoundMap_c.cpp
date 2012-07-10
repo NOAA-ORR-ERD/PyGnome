@@ -138,7 +138,7 @@ TTriGridVel* CompoundMap_c::GetGrid(Boolean wantRefinedGrid)
 	mover = this->GetMover(TYPE_COMPOUNDMOVER);
 	if (mover)
 	{
-		return /*OK*/ (dynamic_cast<TCompoundMover *>(mover)) -> GetGrid(false);
+		return  (dynamic_cast<TCompoundMover *>(mover)) -> GetGrid(false);
 	}
 	else	
 	{
@@ -157,7 +157,7 @@ TTriGridVel3D* CompoundMap_c::GetGrid3D(Boolean wantRefinedGrid)
 	mover = this->GetMover(TYPE_COMPOUNDMOVER);
 	if (mover)
 	{
-		return /*OK*/(dynamic_cast<TCompoundMover *>(mover)) -> GetGrid3D(false);
+		return (dynamic_cast<TCompoundMover *>(mover)) -> GetGrid3D(false);
 	}
 	else	
 	{
@@ -177,7 +177,7 @@ TTriGridVel3D* CompoundMap_c::GetGrid3DFromMapIndex(long mapIndex)
 	mover = this->GetMover(TYPE_COMPOUNDMOVER);
 	if (mover)
 	{
-		return /*OK*/(dynamic_cast<TCompoundMover *>(mover)) -> GetGrid3DFromMoverIndex(mapIndex);
+		return (dynamic_cast<TCompoundMover *>(mover)) -> GetGrid3DFromMoverIndex(mapIndex);
 	}
 	else	
 	{
@@ -194,7 +194,7 @@ TCurrentMover* CompoundMap_c::Get3DCurrentMover()
 	{
 		this -> moverList -> GetListItem ((Ptr) &thisMover, i);
 		if (thisMover->IAm(TYPE_COMPOUNDMOVER))
-			return /*OK*/ (dynamic_cast<TCompoundMover*>(thisMover))->Get3DCurrentMover();	// which one to use?
+			return  (dynamic_cast<TCompoundMover*>(thisMover))->Get3DCurrentMover();	// which one to use?
 	}
 	return nil;
 }
@@ -207,7 +207,7 @@ TCurrentMover* CompoundMap_c::Get3DCurrentMoverFromIndex(long moverIndex)
 	{
 		this -> moverList -> GetListItem ((Ptr) &thisMover, i);
 		if (thisMover->IAm(TYPE_COMPOUNDMOVER))
-			return /*OK*/ (dynamic_cast<TCompoundMover*>(thisMover))->Get3DCurrentMoverFromIndex(moverIndex);	// which one to use?
+			return  (dynamic_cast<TCompoundMover*>(thisMover))->Get3DCurrentMoverFromIndex(moverIndex);	// which one to use?
 	}
 	return nil;
 }

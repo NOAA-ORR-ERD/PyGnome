@@ -120,7 +120,8 @@ WorldPoint3D Random3D_c::GetMove (const Seconds& model_time, Seconds timeStep,lo
 		{	
 			VelocityRec windVel;
 			double vel;
-			if (wind) err = wind -> GetTimeValue(model->GetModelTime(),&windVel);
+		//	if (wind) err = wind -> GetTimeValue(model->GetModelTime(),&windVel);	// minus AH 07/10/2012
+			if (wind) err = wind -> GetTimeValue(model->GetStartTime(), model->GetEndTime(), model->GetModelTime(),&windVel);	// AH 07/10/2012
 			if (err || !wind) 
 			{
 				//printNote("Depth dependent diffusion requires a wind");

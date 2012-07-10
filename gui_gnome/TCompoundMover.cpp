@@ -469,7 +469,7 @@ void TCompoundMover::SetShowDepthContours()
 	{	// movers should be listed in priority order
 		moverList->GetListItem((Ptr)&mover, i);
 		//should have separate arrowDepth for combined mover ?, otherwise which one to use?
-		if (mover->IAm(TYPE_NETCDFMOVER)) /*OK*/(dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours = !(dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours;
+		if (mover->IAm(TYPE_NETCDFMOVER)) (dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours = !(dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours;
 	}
 	return;
 }
@@ -482,7 +482,7 @@ Boolean TCompoundMover::ShowDepthContourChecked()
 	{	// movers should be listed in priority order
 		moverList->GetListItem((Ptr)&mover, i);
 		//should have separate arrowDepth for combined mover ?, otherwise which one to use?
-		if (mover->IAm(TYPE_NETCDFMOVER) && /*OK*/(dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours == true) return true;
+		if (mover->IAm(TYPE_NETCDFMOVER) && (dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours == true) return true;
 	}
 	return false;
 }
@@ -820,7 +820,7 @@ short CompoundDlgClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR dat
 							if (currentMover->moverMap == currentMap)
 							{
 								err=sDialogMapList->AppendItem((Ptr)&currentMap);
-								if (i==0) /*OK*/(dynamic_cast<PtCurMap *>(currentMap))->bDrawContours=true; else (dynamic_cast<PtCurMap *>(currentMap))->bDrawContours=false;
+								if (i==0) (dynamic_cast<PtCurMap *>(currentMap))->bDrawContours=true; else (dynamic_cast<PtCurMap *>(currentMap))->bDrawContours=false;
 								break;
 							}
 						}
@@ -1164,7 +1164,7 @@ OSErr CompoundMoverSettingsDialog(TCompoundMover *theMover, TMap *ownerMap, TMap
 	{
 		sSharedDialogCompoundMap = dynamic_cast<TCompoundMap *>(ownerMap);
 		// copy map to sSavedCompoundMap
-		/*OK*/ sDialogMapList = (dynamic_cast<TCompoundMap *>(ownerMap))->mapList;
+		 sDialogMapList = (dynamic_cast<TCompoundMap *>(ownerMap))->mapList;
 	}
 	else
 	{

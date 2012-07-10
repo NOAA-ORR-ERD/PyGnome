@@ -176,7 +176,7 @@ OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 		//averageTimeSteps = fPastHoursToAverage+1; // for now, will change to match model time steps...
 		averageTimeSteps = fPastHoursToAverage; // for now, will change to match model time steps...
 		// code goes here, may want to change to GetStartTime, GetEndTime, then check out of range
-		if (i==0) 	err = /*OK*/dynamic_cast<TWindMover *>(mover)->CheckStartTime(startPastTime); //if (forTime < INDEXH(timeValues, 0).time) 
+		if (i==0) 	err = dynamic_cast<TWindMover *>(mover)->CheckStartTime(startPastTime); //if (forTime < INDEXH(timeValues, 0).time) 
 		if (err==-1) 
 		{
 			if (bExtrapolateWinds)
@@ -206,7 +206,9 @@ OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 			// also check if it's not a time file...
 			// make sure in the GetMove to GetTimeValue from the averaged handle
 			// check here that time is in the handle...
-			dynamic_cast<TWindMover *>(mover)-> GetTimeValue (timeToAddToAverage, &wVel);
+// 			dynamic_cast<TWindMover *>(mover)-> GetTimeValue (timeToAddToAverage, &wVel);	// minus AH 07/10/2012
+			dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model->GetStartTime(), model->GetEndTime(), timeToAddToAverage, &wVel);	// AH 07/10/2012
+			
 			//windSpeedToScale = sqrt(wVel.u*wVel.u + wVel.v*wVel.v);
 			// code goes here, take the component first, then average ?
 			windSpeedToScale = wVel.u * cos (pat1Theta) + wVel.v * sin (pat1Theta);
@@ -339,7 +341,8 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 					if (mover -> GetClassID() != TYPE_WINDMOVER) continue;
 					if (!strcmp(mover -> className, windMoverName)) {
 						// JLM, note: we are implicitly matching by file name above
-						/*OK*/dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);
+				//		dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
+						dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model -> modelTime, &wVel);	// AH 07/10/2012
 						bFound = true;
 						break;
 					}
@@ -353,7 +356,9 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 						if (mover -> GetClassID() != TYPE_WINDMOVER) continue;
 						if (!strcmp(mover -> className, windMoverName)) {
 							// JLM, note: we are implicitly matching by file name above
-							/*OK*/dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);
+			//				dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
+							dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model -> modelTime, &wVel);	// AH 07/10/2012
+							
 							bFound = true;
 							break;
 						}

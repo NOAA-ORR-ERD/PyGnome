@@ -568,8 +568,14 @@ OSErr TShioTimeValue::CheckAndPassOnMessage(TModelMessage *message)
 		case M_UPDATEVALUES:
 			VelocityRec dummyValue;
 			// new data, make sure we are displaying data for the current model range
-			this->GetTimeValue(model->GetStartTime(),&dummyValue);
-			this->GetTimeValue(model->GetEndTime(),&dummyValue);	// in case model duration was increased
+			// this->GetTimeValue(model->GetStartTime(),&dummyValue);											// minus AH 07/10/2012
+			// this->GetTimeValue(model->GetEndTime(),&dummyValue);	// in case model duration was increased		// minus AH 07/10/2012
+			Seconds start_time, end_time;
+			start_time = model->GetStartTime();
+			end_time = model->GetEndTime();
+			
+			this->GetTimeValue(start_time, end_time, start_time, &dummyValue);	// AH 07/10/2012
+			this->GetTimeValue(start_time, end_time, end_time, &dummyValue);	// AH 07/10/2012
 			break;
 	}
 	

@@ -138,8 +138,8 @@ OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Second
 		PtCurMap* ptCurMap = GetPtCurMap();
 		if (ptCurMap)
 		{
-			/*OK*/(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
-			/*OK*/(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
+			(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
+			(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
 			(dynamic_cast<TTriGridVel3D*>(fGrid))->ClearOutputHandles();
 		}
 	}
@@ -244,7 +244,7 @@ WorldPoint3D TriCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 	GetDepthIndices(triNum,depth,&depthIndex1,&depthIndex2);
 	if (depthIndex1 == -1) return deltaPoint;
 	
-	if(/*OK*/dynamic_cast<TriCurMover *>(this)->GetNumTimesInFile()==1 /*&& !(GetNumFiles()>1)*/)
+	if(dynamic_cast<TriCurMover *>(this)->GetNumTimesInFile()==1 /*&& !(GetNumFiles()>1)*/)
 	{
 		if (depthIndex1!=-1)
 		{
@@ -376,7 +376,7 @@ Boolean TriCurMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	
 	// Check for constant current 
 	//if(GetNumTimesInFile()==1 && !(GetNumFiles()>1))
-	if(/*OK*/dynamic_cast<TriCurMover *>(this)->GetNumTimesInFile()==1)
+	if(dynamic_cast<TriCurMover *>(this)->GetNumTimesInFile()==1)
 	{
 		// Calculate the interpolated velocity at the point
 		//if (ptIndex >= 0) 
@@ -512,7 +512,7 @@ long TriCurMover_c::CreateDepthSlice(long triNum, float **depthSlice)
 	if(!loaded) return -1;
 	
 	// Check for time varying current 
-	if(/*OK*/dynamic_cast<TriCurMover *>(this)->GetNumTimesInFile()>1 /*|| GetNumFiles()>1*/)
+	if(dynamic_cast<TriCurMover *>(this)->GetNumTimesInFile()>1 /*|| GetNumFiles()>1*/)
 	{
 		// Calculate the time weight factor
 		//if (GetNumFiles()>1 && fOverLap)
@@ -547,7 +547,7 @@ long TriCurMover_c::CreateDepthSlice(long triNum, float **depthSlice)
 		//p = GetQuickDrawPt(wp.pLong, wp.pLat, &r, &offQuickDrawPlane);
 		
 		// Check for constant current 
-		if(/*OK*/dynamic_cast<TriCurMover *>(this)->GetNumTimesInFile()==1)
+		if(dynamic_cast<TriCurMover *>(this)->GetNumTimesInFile()==1)
 		{
 			if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 			{

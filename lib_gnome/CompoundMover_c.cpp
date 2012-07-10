@@ -122,8 +122,8 @@ OSErr CompoundMover_c::PrepareForModelStep(const Seconds& model_time, const Seco
 		if (moverMap->IAm(TYPE_COMPOUNDMAP))
 		{
 			//TCompoundMap* compoundMap = (TCompoundMap*)moverMap;
-			/*OK*/(dynamic_cast<TCompoundMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<TCompoundMap *>(moverMap))->fContourDepth1;	
-			/*OK*/(dynamic_cast<TCompoundMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<TCompoundMap *>(moverMap))->fContourDepth2;	
+			(dynamic_cast<TCompoundMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<TCompoundMap *>(moverMap))->fContourDepth1;	
+			(dynamic_cast<TCompoundMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<TCompoundMap *>(moverMap))->fContourDepth2;	
 			//if (fGrid->GetClassID()==TYPE_TRIGRIDVEL3D)
 			//((TTriGridVel3D*)fGrid)->ClearOutputHandles();	// this gets done by the individual movers
 		}
@@ -261,7 +261,7 @@ TTriGridVel* CompoundMover_c::GetGrid(Boolean wantRefinedGrid)
 		moverList->GetListItem((Ptr)&mover, i);
 		if (mover)
 		{
-			/*OK*/triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
+			triGrid = dynamic_cast<TTriGridVel*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
 			if (triGrid) return triGrid;
 		}
 		//return mover->GetPointsHdl();
@@ -278,7 +278,7 @@ TTriGridVel3D* CompoundMover_c::GetGrid3D(Boolean wantRefinedGrid)
 		moverList->GetListItem((Ptr)&mover, i);
 		if (mover)
 		{
-			/*OK*/triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
+			triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
 			if (triGrid) return triGrid;
 		}
 		//return mover->GetPointsHdl();
@@ -299,7 +299,7 @@ TTriGridVel3D* CompoundMover_c::GetGrid3DFromMoverIndex(long moverIndex)
 	moverList->GetListItem((Ptr)&mover, moverIndex);
 	if (mover)
 	{	// could be TCATS or PtCUr?
-		/*OK*/triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
+		triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<NetCDFMover *>(mover)) -> fGrid));
 		if (triGrid) return triGrid;
 	}
 	//return mover->GetPointsHdl();

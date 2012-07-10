@@ -2490,7 +2490,7 @@ void PtCurMap::DrawContourScale(Rect r, WorldRect view)
 	double 	value, value2=0, totalArea = 0, htScale = 1., wScale = 1.;
 	
 	TCurrentMover *mover = Get3DCurrentMover();
-	if ((mover) && mover->IAm(TYPE_TRICURMOVER)) {/*OK*/ (dynamic_cast<TriCurMover *>(mover))->DrawContourScale(r,view);/* return;*/}
+	if ((mover) && mover->IAm(TYPE_TRICURMOVER)) { (dynamic_cast<TriCurMover *>(mover))->DrawContourScale(r,view);/* return;*/}
 	if ((mover) && mover->IAm(TYPE_NETCDFMOVER)) {(dynamic_cast<NetCDFMover*>(mover))->DrawContourScale(r,view);/* return;*/}
 	if (!this->ThereIsADispersedSpill()) return;
 	SetRGBColor(&rgb,0,0,0);
@@ -3430,7 +3430,7 @@ Rect PtCurMap::DoArrowTool(long triNum)
 	mover = this->GetMover(TYPE_TRICURMOVER);
 	if (mover)
 	{
-		numDepths = /*OK*/ (dynamic_cast<TriCurMover*>(mover)) -> CreateDepthSlice(triNum,&fDepthSliceArray);
+		numDepths =  (dynamic_cast<TriCurMover*>(mover)) -> CreateDepthSlice(triNum,&fDepthSliceArray);
 		//numDepths = ((TriCurMover*)mover) -> CreateDepthSlice(triNum,fDepthSliceArray);
 		if (numDepths > 0) goto drawPlot; else return r;
 	}
@@ -4774,14 +4774,14 @@ showGrid:
 			TMover *mover = this->GetMover(TYPE_CATSMOVER3D);
 			if (!mover) return -1;
 
-			if (menuCodedItemID == CONCATPTITEM && /*OK*/ (dynamic_cast<TCATSMover*>(mover))->bShowGrid == true) 
+			if (menuCodedItemID == CONCATPTITEM &&  (dynamic_cast<TCATSMover*>(mover))->bShowGrid == true) 
 				{model->NewDirtNotification(); break;}
 #ifdef MAC
 			ToggleMenuCheck(ANALYSISMENU,SHOWGRIDITEM-ANALYSISMENU); 
 #else
 			ToggleMenuCheck2(GetSubMenu(GetMenu(mapWindow),4),SHOWGRIDITEM-ANALYSISMENU);
 #endif
-			/*OK*/ (dynamic_cast<TCATSMover*>(mover))->bShowGrid = !(dynamic_cast<TCATSMover*>(mover))->bShowGrid;
+			 (dynamic_cast<TCATSMover*>(mover))->bShowGrid = !(dynamic_cast<TCATSMover*>(mover))->bShowGrid;
 			model->NewDirtNotification();	
 			break;
 		}
@@ -4796,7 +4796,7 @@ showGrid:
 #else
 			ToggleMenuCheck2(GetSubMenu(GetMenu(mapWindow),4),SHOWSELECTEDTRIITEM-ANALYSISMENU);
 #endif
-			/*OK*/ triGrid = (TTriGridVel3D*)((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid);
+			 triGrid = (TTriGridVel3D*)((dynamic_cast<TCATSMover3D *>(mover)) -> fGrid);
 			if (!triGrid) return -1;
 			
 			triGrid->bShowSelectedTriangles = !triGrid->bShowSelectedTriangles;
@@ -4842,23 +4842,23 @@ showGrid:
 			if (!mover) mover = this->GetMover(TYPE_COMPOUNDMOVER);
 			if (!mover) return -1;
 
-			if (menuCodedItemID == DEPTHCONTOURSITEM && mover->IAm(TYPE_CATSMOVER3D) && /*OK*/ (dynamic_cast<TCATSMover3D*>(mover))->bShowDepthContours == true) 
+			if (menuCodedItemID == DEPTHCONTOURSITEM && mover->IAm(TYPE_CATSMOVER3D) &&  (dynamic_cast<TCATSMover3D*>(mover))->bShowDepthContours == true) 
 				{model->NewDirtNotification(); break;}
-			if (menuCodedItemID == DEPTHCONTOURSITEM && mover->IAm(TYPE_TRICURMOVER) && /*OK*/ (dynamic_cast<TriCurMover*>(mover))->bShowDepthContours == true) 
+			if (menuCodedItemID == DEPTHCONTOURSITEM && mover->IAm(TYPE_TRICURMOVER) &&  (dynamic_cast<TriCurMover*>(mover))->bShowDepthContours == true) 
 				{model->NewDirtNotification(); break;}
-			if (menuCodedItemID == DEPTHCONTOURSITEM && mover->IAm(TYPE_NETCDFMOVER) && /*OK*/ (dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours == true) 
+			if (menuCodedItemID == DEPTHCONTOURSITEM && mover->IAm(TYPE_NETCDFMOVER) &&  (dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours == true) 
 				{model->NewDirtNotification(); break;}
-			if (menuCodedItemID == DEPTHCONTOURSITEM && mover->IAm(TYPE_COMPOUNDMOVER) && /*OK*/ (dynamic_cast<TCompoundMover*>(mover))->ShowDepthContourChecked()) 
+			if (menuCodedItemID == DEPTHCONTOURSITEM && mover->IAm(TYPE_COMPOUNDMOVER) &&  (dynamic_cast<TCompoundMover*>(mover))->ShowDepthContourChecked()) 
 				{model->NewDirtNotification(); break;}
 #ifdef MAC
 			ToggleMenuCheck(ANALYSISMENU,SHOWCONTOURSITEM-ANALYSISMENU); 
 #else
 			ToggleMenuCheck2(GetSubMenu(GetMenu(mapWindow),4),SHOWCONTOURSITEM-ANALYSISMENU);
 #endif
-			if (mover->IAm(TYPE_CATSMOVER3D)) /*OK*/ (dynamic_cast<TCATSMover3D*>(mover))->bShowDepthContours = !(dynamic_cast<TCATSMover3D*>(mover))->bShowDepthContours;
-			if (mover->IAm(TYPE_TRICURMOVER)) /*OK*/ (dynamic_cast<TriCurMover*>(mover))->bShowDepthContours = !(dynamic_cast<TriCurMover*>(mover))->bShowDepthContours;
-			if (mover->IAm(TYPE_NETCDFMOVER)) /*OK*/ (dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours = !(dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours;
-			if (mover->IAm(TYPE_COMPOUNDMOVER)) /*OK*/ (dynamic_cast<TCompoundMover*>(mover))->SetShowDepthContours();	// will want to set these individually fminon left hand list
+			if (mover->IAm(TYPE_CATSMOVER3D))  (dynamic_cast<TCATSMover3D*>(mover))->bShowDepthContours = !(dynamic_cast<TCATSMover3D*>(mover))->bShowDepthContours;
+			if (mover->IAm(TYPE_TRICURMOVER))  (dynamic_cast<TriCurMover*>(mover))->bShowDepthContours = !(dynamic_cast<TriCurMover*>(mover))->bShowDepthContours;
+			if (mover->IAm(TYPE_NETCDFMOVER))  (dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours = !(dynamic_cast<NetCDFMover*>(mover))->bShowDepthContours;
+			if (mover->IAm(TYPE_COMPOUNDMOVER))  (dynamic_cast<TCompoundMover*>(mover))->SetShowDepthContours();	// will want to set these individually fminon left hand list
 			model->NewDirtNotification();	
 			break;
 		}
@@ -4873,17 +4873,17 @@ showGrid:
 			//if (!mover) return -1;
 			//((TCATSMover3D*)mover)->bShowDepthContourLabels = !((TCATSMover3D*)mover)->bShowDepthContourLabels;
 			if (mover) 
-				/*OK*/ (dynamic_cast<TCATSMover3D*>(mover))->bShowDepthContourLabels = !(dynamic_cast<TCATSMover3D*>(mover))->bShowDepthContourLabels;
+				 (dynamic_cast<TCATSMover3D*>(mover))->bShowDepthContourLabels = !(dynamic_cast<TCATSMover3D*>(mover))->bShowDepthContourLabels;
 			else
 			{
 			 	mover = this->GetMover(TYPE_TRICURMOVER);
 				if (mover) 
-					/*OK*/ (dynamic_cast<TriCurMover*>(mover))->bShowDepthContourLabels = !(dynamic_cast<TriCurMover*>(mover))->bShowDepthContourLabels;
+					 (dynamic_cast<TriCurMover*>(mover))->bShowDepthContourLabels = !(dynamic_cast<TriCurMover*>(mover))->bShowDepthContourLabels;
 				else
 				{
 					mover = this->GetMover(TYPE_NETCDFMOVER);
 					if (mover) 
-						/*OK*/ (dynamic_cast<NetCDFMover*>(mover))->bShowDepthContourLabels = !(dynamic_cast<NetCDFMover*>(mover))->bShowDepthContourLabels;
+						 (dynamic_cast<NetCDFMover*>(mover))->bShowDepthContourLabels = !(dynamic_cast<NetCDFMover*>(mover))->bShowDepthContourLabels;
 						else
 							return -1;
 				}
@@ -5392,7 +5392,7 @@ OSErr AnalysisInit(DialogPtr dialog, VOIDPTR data)
 	if (!map) return -1;
 	TMover *mover = map->GetMover(TYPE_CATSMOVER3D);
 	if (!mover) return -1;
-	/*OK*/ WorldPoint wp = (dynamic_cast<TCATSMover*>(mover))->refP;
+	 WorldPoint wp = (dynamic_cast<TCATSMover*>(mover))->refP;
 
 	SetDialogItemHandle(dialog, ANALYSIS_HILITE, (Handle)FrameDefault);
 	SetDialogItemHandle(dialog, ANALYSIS_FROST1, (Handle)FrameEmbossed);

@@ -114,7 +114,7 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	}
 	
 	// Check for constant current 
-	if((/*OK*/dynamic_cast<NetCDFMoverTri *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
+	if((dynamic_cast<NetCDFMoverTri *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
 	{
 		if (bVelocitiesOnTriangles)
 		{
@@ -387,7 +387,7 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 	if (depth > 0) return deltaPoint;	// set subsurface spill with no subsurface velocity
 
 	// Check for constant current 
-	if((/*OK*/dynamic_cast<NetCDFMoverTri *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
+	if((dynamic_cast<NetCDFMoverTri *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
 		//if(GetNumTimesInFile()==1)
 	{
 		// Calculate the interpolated velocity at the point
@@ -417,7 +417,7 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 	else // time varying current 
 	{
 		// Calculate the time weight factor
-		if (/*OK*/dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1 && fOverLap)
+		if (dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1 && fOverLap)
 			startTime = fOverLapStartTime + fTimeShift;
 		else
 			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
@@ -518,7 +518,7 @@ VelocityRec NetCDFMoverTri_c::GetMove3D(InterpolationVal interpolationVal,float 
 	
  	// the contributions from each point will default to zero if the depth indicies
 	// come back negative (ie the LE depth is out of bounds at the grid point)
-	if(/*OK*/dynamic_cast<NetCDFMoverTri *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
+	if(dynamic_cast<NetCDFMoverTri *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
 	{
 		if (pt1depthIndex1!=-1)
 		{
@@ -581,7 +581,7 @@ VelocityRec NetCDFMoverTri_c::GetMove3D(InterpolationVal interpolationVal,float 
 	else // time varying current 
 	{
 		// Calculate the time weight factor
-		if (/*OK*/dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1 && fOverLap)
+		if (dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1 && fOverLap)
 			startTime = fOverLapStartTime;
 		else
 			startTime = (*fTimeHdl)[fStartData.timeIndex];

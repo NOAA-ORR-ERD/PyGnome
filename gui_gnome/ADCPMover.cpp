@@ -389,7 +389,7 @@ OSErr ADCPMover::Read(BFPB *bfpb)
 		if (err = thisTimeDep -> InitTimeFunc()) return err;
 		
 		if (err = thisTimeDep -> Read(bfpb)) return err;
-		/*OK*/dynamic_cast<ADCPMover *>(this)->AddTimeDep(thisTimeDep,0);
+		dynamic_cast<ADCPMover *>(this)->AddTimeDep(thisTimeDep,0);
 	}
 	
 	// read the type of grid used for the ADCP mover
@@ -1548,7 +1548,7 @@ OSErr ADCPMover::TextRead(char *path)
 		err = timeValObj->ReadTimeValues2 (path, M19REALREAL, unitsIfKnownInAdvance);
 		if(err) { delete timeValObj; timeValObj = nil; return err;}
 		//return timeValObj;
-		/*OK*/dynamic_cast<ADCPMover *>(this)->AddTimeDep(timeValObj,0);
+		dynamic_cast<ADCPMover *>(this)->AddTimeDep(timeValObj,0);
 	}	
 	// code goes here, add code for OSSMHeightFiles, need scale factor to calculate derivative
 	else
@@ -1753,7 +1753,7 @@ void ADCPMover::Draw(Rect r, WorldRect view)
 	OSErr err = 0;
 	
 	if (moverMap->IAm(TYPE_PTCURMAP))
-		spillStartDepth = /*OK*/(dynamic_cast<PtCurMap *>(moverMap))->GetSpillStartDepth();
+		spillStartDepth = (dynamic_cast<PtCurMap *>(moverMap))->GetSpillStartDepth();
 	
 	//velocity = this->GetPatValue(wp.p);
 	/*center.p = WorldRectCenter(mapBounds);

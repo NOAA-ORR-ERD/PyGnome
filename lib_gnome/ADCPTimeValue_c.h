@@ -47,7 +47,7 @@ public:
 	long					GetSensorOrientation(){return fSensorOrientation; }
 	double					GetStationDepth(){return fStationDepth; }
 	WorldPoint				GetStationPosition(){return fStationPosition; }
-	virtual OSErr			GetTimeValue (Seconds time, VelocityRec *value);
+	virtual OSErr       GetTimeValue(const Seconds& start_time, const Seconds& end_time, const Seconds& current_time, VelocityRec *value);
 	virtual OSErr			GetTimeValueAtDepth (long depthIndex, Seconds time, VelocityRec *value);
 	double					GetBinDepth(long depthIndex);
 	virtual OSErr			CheckStartTime (Seconds time);

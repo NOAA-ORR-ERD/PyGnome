@@ -479,7 +479,7 @@ VelocityRec CATSMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint
 		// JLM 11/22/99, if there are no time file values, use zero not 1
 		VelocityRec errVelocity={0,1}; 
 		// err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); // minus AH 07/09/2012
-		err = timeDep -> GetTimeValue (model_time, &timeValue); // AH 07/09/2012
+		err = timeDep -> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model_time, &timeValue); // AH 07/10/2012
 		if(err) timeValue = errVelocity;
 	}
 	

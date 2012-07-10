@@ -68,18 +68,18 @@ OSErr TCurrentMover::UpItem(ListItem item)
 				if (mover->IAm(TYPE_COMPOUNDMOVER))
 				{
 					
-					/*OK*/ if (!((dynamic_cast<TCompoundMover *>(mover))->moverList->IsItemInList((Ptr)&item.owner, &i)))
+					 if (!((dynamic_cast<TCompoundMover *>(mover))->moverList->IsItemInList((Ptr)&item.owner, &i)))
 						continue;
 					else
 					{
 						if (i>0) {
-							/*OK*/ if (err = (dynamic_cast<TCompoundMover *>(mover)) -> moverList -> SwapItems(i, i - 1))
+							 if (err = (dynamic_cast<TCompoundMover *>(mover)) -> moverList -> SwapItems(i, i - 1))
 							{ TechError("TCurrentMover::UpItem()", "mover -> moverList -> SwapItems()", err); return err; }
 							SelectListItem(item);
 							InvalListLength();// why ? JLM
 							if (moverMap->bIAmPartOfACompoundMap)
 							{
-								/*OK*/ if (err = (dynamic_cast<TCompoundMap *>(map)) -> mapList -> SwapItems(i, i - 1))
+								 if (err = (dynamic_cast<TCompoundMap *>(map)) -> mapList -> SwapItems(i, i - 1))
 								{ TechError("TCurrentMover::UpItem()", "map -> mapList -> SwapItems()", err); return err; }
 								model->NewDirtNotification();
 							}
@@ -137,18 +137,18 @@ OSErr TCurrentMover::DownItem(ListItem item)
 				map->moverList->GetListItem((Ptr)&mover, i);
 				if (mover->IAm(TYPE_COMPOUNDMOVER))
 				{
-					/*OK*/ if (!(dynamic_cast<TCompoundMover *>(mover)->moverList->IsItemInList((Ptr)&item.owner, &i)))
+					 if (!(dynamic_cast<TCompoundMover *>(mover)->moverList->IsItemInList((Ptr)&item.owner, &i)))
 						continue;
 					else
 					{
-						/*OK*/ if ((dynamic_cast<TCompoundMover *>(mover))->moverList->GetItemCount() - 1) {
-							/*OK*/ if (err = ((dynamic_cast<TCompoundMover *>(mover)) -> moverList -> SwapItems(i, i + 1)))
+						 if ((dynamic_cast<TCompoundMover *>(mover))->moverList->GetItemCount() - 1) {
+							 if (err = ((dynamic_cast<TCompoundMover *>(mover)) -> moverList -> SwapItems(i, i + 1)))
 							{ TechError("TCurrentMover::DownItem()", "mover -> moverList -> SwapItems()", err); return err; }
 							SelectListItem(item);
 							InvalListLength();// why ? JLM
 							if (moverMap->bIAmPartOfACompoundMap)
 							{
-								/*OK*/ if (err = (dynamic_cast<TCompoundMap *>(map)) -> mapList -> SwapItems(i, i + 1))
+								 if (err = (dynamic_cast<TCompoundMap *>(map)) -> mapList -> SwapItems(i, i + 1))
 								{ TechError("TCurrentMover::DownItem()", "map -> mapList -> SwapItems()", err); return err; }
 								model->NewDirtNotification();
 							}
@@ -211,19 +211,19 @@ Boolean TCurrentMover::FunctionEnabled(ListItem item, short buttonID)
 						map->moverList->GetListItem((Ptr)&mover, i);
 						if (mover->IAm(TYPE_COMPOUNDMOVER))
 						{
-							/*OK*/ for (j = 0, num = (dynamic_cast<TCompoundMover *>(mover))->moverList->GetItemCount() ;  j < num; j++)
+							 for (j = 0, num = (dynamic_cast<TCompoundMover *>(mover))->moverList->GetItemCount() ;  j < num; j++)
 							{
 								(dynamic_cast<TCompoundMover *>(mover))->moverList->GetListItem((Ptr)&mover2, j);
 								if (mover2==(TMover *)this)			// AH: CHECK	11/23
 									
-								/*OK*/ if (!((dynamic_cast<TCompoundMover *>(mover))->moverList->IsItemInList((Ptr)&item.owner, &j))) 
+								 if (!((dynamic_cast<TCompoundMover *>(mover))->moverList->IsItemInList((Ptr)&item.owner, &j))) 
 									//return FALSE;
 									continue;
 								else
 								{
 									switch (buttonID) {
 										case UPBUTTON: return j > 0;
-											/*OK*/		case DOWNBUTTON: return j < ((dynamic_cast<TCompoundMover *>(mover))->moverList->GetItemCount()-1);
+													case DOWNBUTTON: return j < ((dynamic_cast<TCompoundMover *>(mover))->moverList->GetItemCount()-1);
 									}
 								}
 							}

@@ -355,7 +355,7 @@ void ShowHidePtCurMapDialogItems(DialogPtr dialog)
 
 	if(GetPopSelection(dialog,M51WATERDENSITYPOPUP)==4)
 	{
-		Long2EditText(dialog, M51WATERDENSITY, /*OK*/ (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaterDensity);
+		Long2EditText(dialog, M51WATERDENSITY,  (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaterDensity);
 		ShowHideDialogItem(dialog, M51WATERDENSITY, true);
 	}
 	else
@@ -384,28 +384,28 @@ OSErr M51Init(DialogPtr dialog, VOIDPTR data)
 	RegisterPopTable (M51PopTable, sizeof (M51PopTable) / sizeof (PopInfoRec));
 	RegisterPopUpDialog (M51, dialog);
 	
-	if (/*OK*/ (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaterDensity == 1020)
+	if ( (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaterDensity == 1020)
 		SetPopSelection (dialog, M51WATERDENSITYPOPUP, 1);
-	else if (/*OK*/ (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaterDensity == 1010)
+	else if ( (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaterDensity == 1010)
 		SetPopSelection (dialog, M51WATERDENSITYPOPUP, 2);
-	else if (/*OK*/ (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaterDensity == 1000)
+	else if ( (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaterDensity == 1000)
 		SetPopSelection (dialog, M51WATERDENSITYPOPUP, 3);
 	else 
 		SetPopSelection (dialog, M51WATERDENSITYPOPUP, 4);
 
 	//SetPopSelection (dialog, M51WAVEHTLABEL, 1);
 	//SetPopSelection (dialog, M51WAVEHTLABEL, 2);	// significant wave height should be the default
-	SetPopSelection (dialog, M51WAVEHTLABEL, /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaveHtInput == 0 ? 2 : (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaveHtInput);	// significant wave height should be the default
-	SetPopSelection (dialog, M51WAVEHTINPUT, /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaveHtInput == 0 ? 1 : 2 );	// significant wave height should be the default
+	SetPopSelection (dialog, M51WAVEHTLABEL, (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaveHtInput == 0 ? 2 : (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaveHtInput);	// significant wave height should be the default
+	SetPopSelection (dialog, M51WAVEHTINPUT, (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaveHtInput == 0 ? 1 : 2 );	// significant wave height should be the default
 	SetPopSelection (dialog, M51DEPTHLABEL, 1);
 	SetPopSelection (dialog, M51DEPTHUNITS, 1);
 	SetPopSelection (dialog, M51WAVEHTUNITS, 1);
-	SetPopSelection (dialog, M51DIAGNOSTICSTRTYPE, /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fDiagnosticStrType + 1);
+	SetPopSelection (dialog, M51DIAGNOSTICSTRTYPE, (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fDiagnosticStrType + 1);
 
 	gDialogTMap -> GetMapName(name);
 	mysetitext(dialog, M51NAME, name);
 	
-	contourBottom = /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth1 == BOTTOMINDEX;
+	contourBottom = (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth1 == BOTTOMINDEX;
 	SetButton(dialog, M51CONTOURBOTTOM, contourBottom);
 	//SetButton (dialog, M51REPLACEMAP, false); 
 	
@@ -418,17 +418,17 @@ OSErr M51Init(DialogPtr dialog, VOIDPTR data)
 	}
 	else
 	{
-		Float2EditText(dialog,M51CONTOURDEPTH1, /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth1, 4);
-		Float2EditText(dialog,M51CONTOURDEPTH2, /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth2, 4);
+		Float2EditText(dialog,M51CONTOURDEPTH1, (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth1, 4);
+		Float2EditText(dialog,M51CONTOURDEPTH2, (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth2, 4);
 	}
 	
-	Float2EditText(dialog,M51CONTOURBOTTOMRANGE, /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fBottomRange, 4);	// have a default value
+	Float2EditText(dialog,M51CONTOURBOTTOMRANGE, (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fBottomRange, 4);	// have a default value
 	//Long2EditText(dialog, M51WATERDENSITY, ((PtCurMap*)gDialogTMap) -> fWaterDensity);
-	Float2EditText(dialog, M51DEPTH, /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fMixedLayerDepth, 2);
-	if (/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaveHtInput == 1)
-		Float2EditText(dialog, M51WAVEHT, /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fBreakingWaveHeight, 2);	// breaking wave height
+	Float2EditText(dialog, M51DEPTH, (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fMixedLayerDepth, 2);
+	if ((dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaveHtInput == 1)
+		Float2EditText(dialog, M51WAVEHT, (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fBreakingWaveHeight, 2);	// breaking wave height
 	else
-		Float2EditText(dialog, M51WAVEHT, /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fBreakingWaveHeight * 1.42, 2);	// significant wave height
+		Float2EditText(dialog, M51WAVEHT, (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fBreakingWaveHeight * 1.42, 2);	// significant wave height
 	//MySelectDialogItemText(dialog, M51REFLOATTIME, 0, 255);
 	MySelectDialogItemText(dialog, M51CONTOURDEPTH1, 0, 255);
 
@@ -538,30 +538,30 @@ short M51Click(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			}
 			
 			// point of no return
-			/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaterDensity = waterDensity;
-			/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fMixedLayerDepth = mixedLayerDepth;
-			/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fBreakingWaveHeight = breakingWaveHeight;
-			/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaveHtInput = inputType-1+seaType-1;
+			(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaterDensity = waterDensity;
+			(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fMixedLayerDepth = mixedLayerDepth;
+			(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fBreakingWaveHeight = breakingWaveHeight;
+			(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fWaveHtInput = inputType-1+seaType-1;
 
 			gDialogTMap -> fRefloatHalfLifeInHrs = EditText2Float(dialog,M51REFLOATTIME);
 			if (!contourBottom)
 			{
-				/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth1 = depth1;
-				/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth2 = depth2;
+				(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth1 = depth1;
+				(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth2 = depth2;
 			}
 			else
 			{
-				/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth1 = BOTTOMINDEX;
-				/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth2 = BOTTOMINDEX;
-				/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fBottomRange = bottomDepth;
+				(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth1 = BOTTOMINDEX;
+				(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourDepth2 = BOTTOMINDEX;
+				(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fBottomRange = bottomDepth;
 			}
-			if (gEditContourLevels && gEditContourLevels != /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH) 
+			if (gEditContourLevels && gEditContourLevels != (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH) 
 			{
-				MyDisposeHandle((Handle*)&(/*OK*/dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH);
-				/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH = gEditContourLevels;
+				MyDisposeHandle((Handle*)&(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH);
+				(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH = gEditContourLevels;
 			}
 
-			/*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fDiagnosticStrType = GetPopSelection(dialog, M51DIAGNOSTICSTRTYPE) - 1;
+			(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fDiagnosticStrType = GetPopSelection(dialog, M51DIAGNOSTICSTRTYPE) - 1;
 			return itemNum;
 			
 		case M51DEPTH:
@@ -586,9 +586,9 @@ short M51Click(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			// should dispose if exists ?
 			gEditContourLevels = (DOUBLEH)_NewHandleClear(0);
 			// code goes here, should init fContourLevelsH if nil
-	/*OK*/ if((dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH)
+	 if((dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH)
 			{
-				gEditContourLevels = /*OK*/(dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH;
+				gEditContourLevels = (dynamic_cast<PtCurMap *>(gDialogTMap)) -> fContourLevelsH;
 				if(_HandToHand((Handle *)&gEditContourLevels))
 				{
 					printError("Not enough memory to create temporary contour levels");
@@ -685,7 +685,7 @@ OSErr TMapSettingsDialog(TMap* theMap)
 	gDialogTMap = theMap;
 	if(theMap->IAm(TYPE_VECTORMAP) /*&& !theMap->HaveMapBoundsLayer()*/) // allow user to extend map bounds
 		item = MyModalDialog(M25, mapWindow, 0, M25Init, M25Click);
-	else if((theMap->IAm(TYPE_PTCURMAP) || theMap->IAm(TYPE_COMPOUNDMAP)) && /*OK*/(dynamic_cast<PtCurMap *>(theMap))->ThereIsADispersedSpill()) 
+	else if((theMap->IAm(TYPE_PTCURMAP) || theMap->IAm(TYPE_COMPOUNDMAP)) && (dynamic_cast<PtCurMap *>(theMap))->ThereIsADispersedSpill()) 
 	{	// code goes here, make sure there is no way for casual users to see this 
 		item = MyModalDialog(M51, mapWindow, 0, M51Init, M51Click);
 	}

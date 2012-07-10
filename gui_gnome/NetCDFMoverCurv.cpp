@@ -578,7 +578,7 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 				err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 			if(err) goto done;
-			err = /*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+			err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	 		goto done;
 		}
@@ -610,7 +610,7 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 				err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
 			if(err) goto done;
-			err = /*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+			err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	 		goto done;
 			//return 0;
@@ -1739,7 +1739,7 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
 				depthIndex1 = indexToDepthData+numDepthLevels-j-1;
 			//depthIndex2 = UNASSIGNEDINDEX;
 			
-			if((/*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
+			if((dynamic_cast<NetCDFMoverCurv *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
 			{
 				if (index >= 0 && depthIndex1 >= 0) 
 				{
@@ -1750,7 +1750,7 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
 			else
 			{
 				// Calculate the time weight factor
-				if (/*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1 && fOverLap)
+				if (dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1 && fOverLap)
 					startTime = fOverLapStartTime + fTimeShift;
 				else
 					startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;

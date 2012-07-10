@@ -526,14 +526,14 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		{
 			if (bVelocitiesOnTriangles)
 			{
-				err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
 				//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
 				if (err) goto done;
 				goto depths;
 			}
 			else
 			{
-				err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 				//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 				if (err) goto done;
 	 			goto depths;
@@ -559,14 +559,14 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		{
 			if (bVelocitiesOnTriangles)
 			{
-				err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
 				//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);		 
 				if (err) goto done;
 				goto depths;
 			}
 			else
 			{
-				err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 				//goto done;
 				if (err) goto done;	
 				goto depths;
@@ -591,9 +591,9 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 	}
 	
 	if (bVelocitiesOnTriangles)
-		err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+		err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
 	else
-		err = /*OK*/dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+		err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 	
 depths:
 	if (err) goto done;
@@ -973,7 +973,7 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 				//amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
 	 			if (amtOfDepthData>0)
 				{
-					/*OK*/dynamic_cast<NetCDFMoverTri *>(this)->GetDepthIndices(index,fVar.arrowDepth,&depthIndex1,&depthIndex2);
+					dynamic_cast<NetCDFMoverTri *>(this)->GetDepthIndices(index,fVar.arrowDepth,&depthIndex1,&depthIndex2);
 				}
 				else
 				{	// for old SAV files without fDepthDataInfo
@@ -1133,7 +1133,7 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 	 			if (amtOfDepthData>0 && !bVelocitiesOnTriangles)	// for now, will have to figure out how depth data is handled
 				{
 					//GetDepthIndices(index,fVar.arrowDepth,&depthIndex1,&depthIndex2);
-					/*OK*/dynamic_cast<NetCDFMoverTri *>(this)->GetDepthIndices(i,fVar.arrowDepth,&depthIndex1,&depthIndex2);
+					dynamic_cast<NetCDFMoverTri *>(this)->GetDepthIndices(i,fVar.arrowDepth,&depthIndex1,&depthIndex2);
 				}
 				else
 				{	// for old SAV files without fDepthDataInfo

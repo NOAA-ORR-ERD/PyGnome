@@ -821,7 +821,9 @@ void DrawFooter(Rect r, Boolean bitmapIcons)
 			char timeStr[20];
 			SecondsToDate (model->GetModelTime(), &time);
 			Date2String(&time, timeStr);
-			err = mover->GetTimeValue(model->GetModelTime(),&vel);
+//			err = mover->GetTimeValue(model->GetModelTime(),&vel);	// minus AH 07/10/2012
+			err = mover->GetTimeValue(model->GetStartTime(), model->GetEndTime(), model->GetModelTime(),&vel);	// AH 07/10/2012
+			
 			UV2RThetaStrings(vel.u,vel.v,mover->timeDep -> GetUserUnits(),str);
 			
 			//sprintf(s,"Wind: Variable %s",str);
@@ -961,7 +963,9 @@ void DrawFooter2(Rect r, Boolean bitmapIcons)
 			char timeStr[20];
 			SecondsToDate (model->GetModelTime(), &time);
 			Date2String(&time, timeStr);
-			err = mover->GetTimeValue(model->GetModelTime(),&vel);
+//			err = mover->GetTimeValue(model->GetModelTime(),&vel);					// minus AH 07/10/2012
+			err = mover->GetTimeValue(model->GetStartTime(), model->GetEndTime(), model->GetModelTime(),&vel);	// AH 07/10/2012
+			
 			UV2RThetaStrings(vel.u,vel.v,mover->timeDep -> GetUserUnits(),str);
 			
 			sprintf(s,"Wind: Variable %s",str);

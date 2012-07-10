@@ -96,7 +96,7 @@ OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& model_time)
 			}
 			
 			// Check for constant current 
-			if(/*OK*/dynamic_cast<TideCurCycleMover *>(this)->GetNumTimesInFile()==1)
+			if(dynamic_cast<TideCurCycleMover *>(this)->GetNumTimesInFile()==1)
 			{
 				// Calculate the interpolated velocity at the point
 				if (interpolationVal.ptIndex1 >= 0) 
@@ -298,7 +298,7 @@ Boolean TideCurCycleMover_c::IsDryTri(long triIndex)
 	ptIndex2 =  (*fVerdatToNetCDFH)[index2];
 	ptIndex3 =  (*fVerdatToNetCDFH)[index3];
 	
-	if(/*OK*/dynamic_cast<TideCurCycleMover *>(this)->GetNumTimesInFile()>1)
+	if(dynamic_cast<TideCurCycleMover *>(this)->GetNumTimesInFile()>1)
 	{
 		// Calculate the time weight factor
 		if (fTimeAlpha==-1)
@@ -437,7 +437,7 @@ WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& model_time, Seconds tim
 		return deltaPoint;	// set to zero, avoid any accidental access violation
 	
 	// Check for constant current 
-	if(/*OK*/dynamic_cast<TideCurCycleMover *>(this)->GetNumTimesInFile()==1)
+	if(dynamic_cast<TideCurCycleMover *>(this)->GetNumTimesInFile()==1)
 	{
 		// check if all 3 values are dry and if so set LE.customdata = -1;, else 0;
 		// set u,v=0 for dry values, on return check if customdata=-1 and then don't move at all this step
@@ -520,7 +520,9 @@ scale:
 		// VelocityRec errVelocity={1,1};
 		// JLM 11/22/99, if there are no time file values, use zero not 1
 		VelocityRec errVelocity={0,1};
-		err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); 
+//		err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue);	// AH 07/10/2012
+		err = timeDep -> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model -> GetModelTime(), &timeValue);	// AH 07/10/2012
+		
 		if(err) timeValue = errVelocity;
 	}
 	
@@ -677,7 +679,7 @@ Boolean TideCurCycleMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosti
 	}
 	
 	// Check for constant current 
-	if(/*OK*/dynamic_cast<TideCurCycleMover *>(this)->GetNumTimesInFile()==1)
+	if(dynamic_cast<TideCurCycleMover *>(this)->GetNumTimesInFile()==1)
 	{
 		// Calculate the interpolated velocity at the point
 		if (interpolationVal.ptIndex1 >= 0) 

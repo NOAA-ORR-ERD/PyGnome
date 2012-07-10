@@ -444,7 +444,7 @@ OSErr ADCPTimeValue_c::CheckStartTime(Seconds forTime)
 	return 0;
 }
 
-OSErr ADCPTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
+OSErr ADCPTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& current_time, VelocityRec *value)
 {	// need to have depth indices too
 	Boolean linear = FALSE;
 	long a, b, i, n = GetNumValues();
@@ -463,8 +463,8 @@ OSErr ADCPTimeValue_c::GetTimeValue(Seconds forTime, VelocityRec *value)
 		return -1; 
 	}
 	
-	if (err = GetInterpolatedComponent(forTime, &value -> u, kUCode)) return err;
-	if (err = GetInterpolatedComponent(forTime, &value -> v, kVCode)) return err;
+	if (err = GetInterpolatedComponent(current_time, &value -> u, kUCode)) return err;
+	if (err = GetInterpolatedComponent(current_time, &value -> v, kVCode)) return err;
 	/*if (forTime < INDEXH(timeValues, 0).time) 
 	 {	// before first element
 	 (*value).u = INDEXH(timeValues, 0).value.u;

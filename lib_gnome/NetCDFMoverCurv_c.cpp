@@ -154,7 +154,7 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	}
 	
 	// Check for constant current 
-	if((/*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime)  || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
+	if((dynamic_cast<NetCDFMoverCurv *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime)  || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
 		//if(GetNumTimesInFile()==1)
 	{
 		// Calculate the interpolated velocity at the point
@@ -309,7 +309,7 @@ WorldPoint3D NetCDFMoverCurv_c::GetMove(const Seconds& model_time, Seconds timeS
 	}
 	
 	// Check for constant current 
-	if((/*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
+	if((dynamic_cast<NetCDFMoverCurv *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
 		//if(GetNumTimesInFile()==1)
 	{
 		// Calculate the interpolated velocity at the point
@@ -337,7 +337,7 @@ WorldPoint3D NetCDFMoverCurv_c::GetMove(const Seconds& model_time, Seconds timeS
 	else // time varying current 
 	{
 		// Calculate the time weight factor
-		if (/*OK*/dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1 && fOverLap)
+		if (dynamic_cast<NetCDFMoverCurv *>(this)->GetNumFiles()>1 && fOverLap)
 			startTime = fOverLapStartTime + fTimeShift;
 		else
 			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
