@@ -33,8 +33,12 @@ f_sigma_vel = 1     # ??
 N = len(wp_ra)
 M = len(time_vals)
 
-wp_ra[:] = 1
-ref_ra[:] = 1
+wp_ra[:] = 1.
+ref_ra[:] = 1.
+
+ref_ra[:]['p']['p_lat'] *= 1000000
+ref_ra[:]['p']['p_long'] *= 1000000
+
 wind_ra[:] = 1
 disp_ra[:] = 0
 time_vals['value']['u'] = 10000
@@ -56,6 +60,15 @@ for x in range(0, N):
 breaking_wave = 10 #?? 
 mix_layer_depth = 10 #??
 
+
+print '###################'
+print '# init. positions #'
+print '###################'
+
+print wp_ra
+print
+
+
 print '#################'
 print '# forecast move #'
 print '#################'
@@ -70,7 +83,11 @@ print '#################'
 print '# uncertainmove #'
 print '#################'
 
-wp_ra[:] = 1
+wp_ra[:] = 1.
+ref_ra[:] = 1.
+
+ref_ra[:]['p']['p_lat'] *= 1000000
+ref_ra[:]['p']['p_long'] *= 1000000
 
 for x in range(0, 1):
     wm.get_move_uncertain(N, start_time, stop_time, model_time, 10, ref_ra, wp_ra, wind_ra, disp_ra, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer_depth, uncertain_ra, time_vals, M)
