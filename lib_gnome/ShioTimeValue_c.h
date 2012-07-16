@@ -83,9 +83,9 @@ protected:
 	
 public:						
 	
-	bool	daylight_savings;	// AH 07/09/2012
+	bool	daylight_savings_off;	// AH 07/09/2012
 	
-							ShioTimeValue_c() { fEbbFloodDataHdl = 0; fHighLowDataHdl = 0;}
+							ShioTimeValue_c() { fEbbFloodDataHdl = 0; fHighLowDataHdl = 0; daylight_savings_off = true; timeValues = 0;}
 							ShioTimeValue_c (TMover *theOwner);
 							ShioTimeValue_c (TMover *theOwner,TimeValuePairH tvals);
 	virtual ClassID 		GetClassID () { return TYPE_SHIOTIMEVALUES; }

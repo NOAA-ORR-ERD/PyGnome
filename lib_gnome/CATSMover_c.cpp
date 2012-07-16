@@ -278,7 +278,6 @@ OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 
 
 OSErr CATSMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
-
 {
 	OSErr err =0;
 	if (err = CurrentMover_c::PrepareForModelStep(start_time, stop_time, model_time, time_step, uncertain)) 
@@ -334,11 +333,14 @@ OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_t
 		return 1;
 	}
 	
+	this->PrepareForModelStep(start_time, stop_time, model_time, step_len, false);
+
 	WorldPoint3D delta;
 	WorldPoint3D *ref;
 	WorldPoint3D *wp;
 	ref = (WorldPoint3D*)ref_ra;
 	wp = (WorldPoint3D*)wp_ra;
+	
 	
 	for (int i = 0; i < n; i++) {
 		LERec rec;
@@ -351,14 +353,12 @@ OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_t
 		wp[i].p.pLong += delta.p.pLong / 1000000;
 		wp[i].z += delta.z;
 	}
-	if(timeDep)
-		delete timeDep;
-	if(time_val_hdl)
-		_DisposeHandle((Handle)time_val_hdl);
+
 	if(this->fLESetSizesH)
 		_DisposeHandle((Handle)this->fLESetSizesH);
 	if(this->fUncertaintyListH)
 		_DisposeHandle((Handle)this->fUncertaintyListH);
+	this->ModelStepIsDone();
 	return noErr;
 }
 
@@ -378,6 +378,8 @@ OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_t
 	} 
 	// and so on.
 
+	this->PrepareForModelStep(start_time, stop_time, model_time, step_len, false);
+
 	WorldPoint3D delta;
 	WorldPoint3D *wp;
 	WorldPoint3D *ref;
@@ -396,10 +398,8 @@ OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_t
 		wp[i].p.pLong += delta.p.pLong / 1000000;
 		wp[i].z += delta.z;
 	}
-	if(timeDep)
-		delete timeDep;
-	if(time_val_hdl)
-		_DisposeHandle((Handle)time_val_hdl);
+	
+	this->ModelStepIsDone();
 	return noErr;
 }
 

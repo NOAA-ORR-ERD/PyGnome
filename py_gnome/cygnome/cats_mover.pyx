@@ -24,7 +24,7 @@ cdef class cats_mover:
         ## should not have to do this manually.
         ## make-shifting for now.
         self.mover.fOptimize.isOptimizedForStep = 0
-        self.mover.fOptimize.isFirstStep = 1  
+        self.mover.fOptimize.isFirstStep = 1
             
     def set_shio(self, shio_file):
         cdef ShioTimeValue_c *shio
@@ -44,8 +44,6 @@ cdef class cats_mover:
         
     def read_topology(self, path):
         cdef Map_c **naught
-        #fixme: why might this fail? 
-        # does **naught have to be initialized?
         if(self.mover.ReadTopology(path, naught)):
             return False
         return True
@@ -61,7 +59,6 @@ cdef class cats_mover:
         world_points = wp_ra.data
         uncertain_ptr = uncertain_ra.data
 
-        self.mover.PrepareForModelStep(start_time, stop_time, model_time, step_len, True) 
         self.mover.get_move(N, start_time, stop_time, model_time, step_len, ref_points, world_points, uncertain_ptr)
 
     def get_move(self, n, start_time, stop_time, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra):
@@ -74,7 +71,6 @@ cdef class cats_mover:
         ref_points = ref_ra.data
         world_points = wp_ra.data
 
-        self.mover.PrepareForModelStep(start_time, stop_time, model_time, step_len, False) 
         self.mover.get_move(N, start_time, stop_time, model_time, step_len, ref_points, world_points)
 
     def compute_velocity_scale(self, start_time, stop_time, model_time):

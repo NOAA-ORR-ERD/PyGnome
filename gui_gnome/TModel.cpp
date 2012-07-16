@@ -3011,14 +3011,14 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 				time_val_ptr = ((TCATSMover*)mover)->timeDep;
 				if(time_val_ptr) {
 					if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
-						dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+						dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
 				}
 				break;
 			case TYPE_TIDECURCYCLEMOVER:
 				time_val_ptr = ((TideCurCycleMover*)mover)->timeDep;
 				if(time_val_ptr) {
 					if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
-						dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+						dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
 				}
 				// ..
 				break;
@@ -3029,7 +3029,7 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 						if(time_val_list->GetListItem((Ptr)&time_val_ptr, i)) break;
 						if(time_val_ptr) {
 							if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
-								dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+								dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
 						}
 					}
 				}
@@ -3079,14 +3079,14 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 					time_val_ptr = ((TCATSMover*)mover)->timeDep;
 					if(time_val_ptr) {
 						if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
-							dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+							dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
 					}
 					break;
 				case TYPE_TIDECURCYCLEMOVER:
 					time_val_ptr = ((TideCurCycleMover*)mover)->timeDep;
 					if(time_val_ptr) {
 						if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
-							dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+							dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
 					}
 					// ..
 					break;
@@ -3097,7 +3097,7 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 							if(time_val_list->GetListItem((Ptr)&time_val_ptr, i)) break;
 							if(time_val_ptr) {
 								if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
-									dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings = settings.daylightSavingsTimeFlag;
+									dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
 							}
 						}
 					}

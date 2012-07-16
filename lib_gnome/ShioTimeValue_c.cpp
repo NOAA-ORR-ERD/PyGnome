@@ -216,7 +216,7 @@ Boolean ShioTimeValue_c::DaylightSavingTimeInEffect(DateTimeRec *dateStdTime)	//
 	//return false;	// code goes here, outside US don't use daylight savings
 // 	if (settings.daylightSavingsTimeFlag == DAYLIGHTSAVINGSOFF) return false; // minus AH 07/09/2012
 	
-	if (this->daylight_savings == DAYLIGHTSAVINGSOFF) return false;	// AH 07/09/2012
+	if (this->daylight_savings_off == DAYLIGHTSAVINGSOFF) return false;	// AH 07/09/2012
 	
 	switch(dateStdTime->month)
 	{
