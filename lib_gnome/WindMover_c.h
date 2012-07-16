@@ -51,6 +51,7 @@ public:
 	Seconds tap_offset;		// AH 06/20/2012
 	double	breaking_wave_height;	// AH 06/20/2012
 	double	mixed_layer_depth;
+	VelocityRec	current_time_value;		// AH 07/16/2012
 	
 	WindMover_c (TMap *owner, char* name);
 	WindMover_c ();

@@ -376,6 +376,7 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds&
 	OSErr err = 0;
 	if (uncertain)
 		err = this->UpdateUncertainty();
+	err = this -> GetTimeValue (start_time, stop_time, model_time + this->tap_offset,&this->current_time_value);	// AH 07/16/2012
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
 	return err;
 }
@@ -477,6 +478,8 @@ OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_t
 		return 1;
 	}
 	
+	this->PrepareForModelStep(start_time, stop_time, model_time, step_len, false);
+	
 	WorldPoint3D delta;
 	WorldPoint3D *ref;
 	WorldPoint3D *wp;
@@ -561,6 +564,8 @@ OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_t
 	this->tap_offset = 0;
 	this->bSubsurfaceActive = true;
 	
+	this->PrepareForModelStep(start_time, stop_time, model_time, step_len, false);
+
 	WorldPoint3D delta;
 	WorldPoint3D *wp;
 	WorldPoint3D *ref;
@@ -613,7 +618,9 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& start_time, const Seconds& stop
 	// get and apply time file scale factor
 	// code goes here, use some sort of average of past winds for dispersed oil
 // 	err = this -> GetTimeValue (model_time + this->tap_offset,&timeValue);	 // minus AH 07/10/2012
-	err = this -> GetTimeValue (start_time, stop_time, model_time + this->tap_offset,&timeValue);	// AH 07/10/2012
+
+	timeValue.u = this->current_time_value.u;	// AH 07/16/2012
+	timeValue.v = this->current_time_value.v;
 	
 	if(err)  return deltaPoint;
 	
