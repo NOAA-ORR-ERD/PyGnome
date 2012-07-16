@@ -60,8 +60,8 @@ print '###################'
 print '# init. positions #'
 print '###################'
 
-
 print wp_ra
+print
 
 print '#################'
 print '# forecast move #'
@@ -72,15 +72,11 @@ for x in range(0, 10):
 
 
 print wp_ra
-
 print
+
 print '#################'
 print '# uncertainmove #'
 print '#################'
-
-print '###################'
-print '# init. positions #'
-print '###################'
 
 wp_ra[:]['p'] = (-72.419992,41.202120)
 wp_ra[:]['z'] = 0.
