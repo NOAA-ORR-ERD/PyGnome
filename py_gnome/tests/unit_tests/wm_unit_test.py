@@ -4,7 +4,13 @@ from math import sin,cos,pi
 from random import random
 from gnome import wind_mover
 from gnome import basic_types
+from gnome import greenwich
 wm = wind_mover.wind_mover()
+
+start_time = greenwich.gwtm('01/01/1970 10:00:00').time_seconds
+stop_time = greenwich.gwtm('01/01/1970 12:00:00').time_seconds
+model_time = greenwich.gwtm('01/01/1970 11:00:00').time_seconds
+
 
 #################
 # create arrays #
@@ -55,7 +61,7 @@ print '# forecast move #'
 print '#################'
 
 for x in range(0, 1):
-    wm.get_move(N, 100, 10, ref_ra, wp_ra, wind_ra, disp_ra, breaking_wave, mix_layer_depth, time_vals, M)
+    wm.get_move(N, start_time, stop_time, model_time, 10, ref_ra, wp_ra, wind_ra, disp_ra, breaking_wave, mix_layer_depth, time_vals, M)
 
 print wp_ra
 
@@ -67,6 +73,6 @@ print '#################'
 wp_ra[:] = 1
 
 for x in range(0, 1):
-    wm.get_move_uncertain(N, 100, 10, ref_ra, wp_ra, wind_ra, disp_ra, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer_depth, uncertain_ra, time_vals, M)
+    wm.get_move_uncertain(N, start_time, stop_time, model_time, 10, ref_ra, wp_ra, wind_ra, disp_ra, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer_depth, uncertain_ra, time_vals, M)
 
 print wp_ra
