@@ -37,8 +37,8 @@ class PtCurMover : virtual public PtCurMover_c,  public TCurrentMover
 		OSErr 				ReadPtCurVertices(CHARH fileBufH,long *line,LongPointHdl *pointsH, FLOATH *totalDepth,char* errmsg,long numPoints);
 		OSErr 				ReadHeaderLine(char *s);
 		OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
-		OSErr 				ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataHdl,Boolean setStartTime);
-		virtual OSErr 		CheckAndScanFile(char *errmsg);
+		OSErr 				ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataHdl,Boolean setStartTime, const Seconds& start_time);	// AH 07/17/2012
+		virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
 		OSErr 				ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile);
 
 		virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
@@ -57,8 +57,8 @@ class PtCurMover : virtual public PtCurMover_c,  public TCurrentMover
 		//virtual OSErr 		AddItem (ListItem item);
 		virtual OSErr 		SettingsItem (ListItem item);
 		virtual OSErr 		DeleteItem (ListItem item);
-		virtual Boolean 	CheckInterval(long &timeDataInterval);
-		virtual OSErr	 	SetInterval(char *errmsg);
+		virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+		virtual OSErr	 	SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
 		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
 		virtual OSErr 		SettingsDialog();
 

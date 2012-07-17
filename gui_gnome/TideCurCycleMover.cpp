@@ -209,9 +209,11 @@ done:
 
 
 
-/*Boolean TideCurCycleMover::CheckInterval(long &timeDataInterval)
+/*Boolean TideCurCycleMover::CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time)
  {
- Seconds time =  model->GetModelTime();
+
+ // Seconds time =  model->GetModelTime();	// minus AH 07/17/2012
+ Seconds time =  model_time;	// AH 07/17/2012
  long i,numTimes;
  
  
@@ -253,7 +255,7 @@ done:
  return false;
  
  }*/
-/*OSErr TideCurCycleMover::SetInterval(char *errmsg)
+/*OSErr TideCurCycleMover::SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time)
  {
  long timeDataInterval;
  Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);
@@ -796,7 +798,9 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 		//numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
 		numTri = triGrid->GetNumTriangles();
 		
-		err = this -> SetInterval(errmsg);
+//		err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
+		err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		
 		if (err) {fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,arrowDepth,overrideDrawArrows,bShowGrid,fColor); return;}
 		//if(err) return;
 		
@@ -1344,7 +1348,9 @@ OSErr TideCurCycleMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
-	err = this -> SetInterval(errmsg);
+//	err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
+	err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	
 	if(err) goto done;
 	
 	if (!bndry_indices || !bndry_nums || !bndry_type) {err = memFullErr; goto done;}

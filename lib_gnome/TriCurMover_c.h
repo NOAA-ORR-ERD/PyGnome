@@ -90,8 +90,8 @@ public:
 	long				CreateDepthSlice(long triNum, float **depthSlice);
 	void 					DisposeLoadedData(LoadedData * dataPtr);	
 	void 					ClearLoadedData(LoadedData * dataPtr);
-	virtual Boolean 	CheckInterval(long &timeDataInterval);
-	virtual OSErr	 	SetInterval(char *errmsg);
+	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
 	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	long 				GetNumTimesInFile();
 	

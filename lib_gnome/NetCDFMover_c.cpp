@@ -187,7 +187,9 @@ OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& start_time, const Second
 	}
 	if (!bActive) return noErr;
 	
-	err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg); // SetInterval checks to see that the time interval is loaded
+//	err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg); // SetInterval checks to see that the time interval is loaded	// minus AH 07/17/2012
+	err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+	
 	if (err) goto done;
 	
 	fIsOptimizedForStep = true;
@@ -204,9 +206,11 @@ done:
 }
 
 
-Boolean NetCDFMover_c::CheckInterval(long &timeDataInterval)
+Boolean NetCDFMover_c::CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time)
 {
-	Seconds time =  model->GetModelTime(), startTime, endTime;
+//	Seconds time =  model->GetModelTime(), startTime, endTime;	// minus AH 07/17/2012
+	Seconds time =  model_time, startTime, endTime;	// AH 07/17/2012
+	
 	long i,numTimes,numFiles = GetNumFiles();
 	
 	numTimes = this -> GetNumTimesInFile(); 
@@ -586,10 +590,12 @@ done:
 }
 
 
-OSErr NetCDFMover_c::SetInterval(char *errmsg)
+OSErr NetCDFMover_c::SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time)
 {
 	long timeDataInterval = 0;
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);
+//	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+	
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
 	long numTimesInFile = this -> GetNumTimesInFile();
@@ -630,8 +636,12 @@ OSErr NetCDFMover_c::SetInterval(char *errmsg)
 		
 		if (GetNumFiles()>1)
 		{
-			if ((err = CheckAndScanFile(errmsg)) || fOverLap) goto done;	// overlap is special case
-			intervalLoaded = this -> CheckInterval(timeDataInterval);
+//			if ((err = CheckAndScanFile(errmsg)) || fOverLap) goto done;	// overlap is special case	// minus AH 07/17/2012
+			if ((err = CheckAndScanFile(errmsg, start_time, model_time)) || fOverLap) goto done;	// AH 07/17/2012
+			
+//			intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
+			intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+			
 			indexOfStart = timeDataInterval-1;
 			indexOfEnd = timeDataInterval;
 			numTimesInFile = this -> GetNumTimesInFile();
@@ -711,9 +721,11 @@ done:
 }
 
 
-OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg)
+OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time)
 {
-	Seconds time = model->GetModelTime(), startTime, endTime, lastEndTime, testTime, firstStartTime;
+//	Seconds time = model->GetModelTime(), startTime, endTime, lastEndTime, testTime, firstStartTime;	// AH 07/17/2012
+	Seconds time = model_time, startTime, endTime, lastEndTime, testTime, firstStartTime; // AH 07/17/2012
+	
 	long i,numFiles = GetNumFiles();
 	OSErr err = 0;
 	
@@ -729,7 +741,9 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg)
 		if (startTime<=time&&time<=endTime && !(startTime==endTime))
 		{
 			if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);
+//			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false,start_time);	// AH 07/17/2012
+			
 			// code goes here, check that start/end times match
 			strcpy(fVar.pathName,(*fInputFilesHdl)[i].pathName);
 			fOverLap = false;
@@ -752,14 +766,18 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg)
 			 else*/
 			{
 				if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeHdl,false);
+//				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
+				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeHdl,false, start_time);	// AH 07/17/2012
+				
 				DisposeLoadedData(&fEndData);
 				strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum-1].pathName);
 				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeHdl,false);
+//			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeHdl,false, start_time);	// AH 07/17/2012
+			
 			strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
 			if(err) return err;
@@ -779,14 +797,18 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg)
 			else
 			{
 				if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeHdl,false);
+//				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
+				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeHdl,false, start_time);	// AH 07/17/2012
+				
 				DisposeLoadedData(&fEndData);
 				strcpy(fVar.pathName,(*fInputFilesHdl)[i-1].pathName);
 				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;	
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);
+//			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false, start_time);	// AH 07/17/2012
+			
 			strcpy(fVar.pathName,(*fInputFilesHdl)[i].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
 			if(err) return err;
@@ -799,7 +821,9 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg)
 	if (fAllowExtrapolationOfCurrentsInTime && time > lastEndTime)
 	{
 		if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-		err = ScanFileForTimes((*fInputFilesHdl)[numFiles-1].pathName,&fTimeHdl,false);
+//		err = ScanFileForTimes((*fInputFilesHdl)[numFiles-1].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
+		err = ScanFileForTimes((*fInputFilesHdl)[numFiles-1].pathName,&fTimeHdl,false, start_time);	// AH 07/17/2012
+		
 		// code goes here, check that start/end times match
 		strcpy(fVar.pathName,(*fInputFilesHdl)[numFiles-1].pathName);
 		fOverLap = false;
@@ -808,7 +832,9 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg)
 	if (fAllowExtrapolationOfCurrentsInTime && time < firstStartTime)
 	{
 		if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false);
+//		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
+		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false, start_time);	// AH 07/17/2012
+		
 		// code goes here, check that start/end times match
 		strcpy(fVar.pathName,(*fInputFilesHdl)[0].pathName);
 		fOverLap = false;
@@ -860,7 +886,7 @@ Seconds RoundDateSeconds(Seconds timeInSeconds)
 }
 
 
-OSErr NetCDFMover_c::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime)
+OSErr NetCDFMover_c::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime, const Seconds& start_time)
 {
 	OSErr err = 0;
 	long i,numScanned,line=0;
@@ -905,7 +931,10 @@ OSErr NetCDFMover_c::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setSta
 	{
 		timeUnits = 0;	// files should always have this info
 		timeConversion = 3600.;		// default is hours
-		startTime2 = model->GetStartTime();	// default to model start time
+		
+//		startTime2 = model->GetStartTime();	// default to model start time	// AH 07/17/2012
+		startTime2 = start_time;	// AH 07/17/2012
+		
 		/*err = -1; goto done;*/
 	}
 	else
@@ -1049,7 +1078,9 @@ WorldPoint3D NetCDFMover_c::GetMove(const Seconds& start_time, const Seconds& st
 	
 	if(!fIsOptimizedForStep) 
 	{
-		err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg);
+//		err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
+		err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+		
 		if (err) return deltaPoint;
 	}
 	index = GetVelocityIndex(refPoint);  // regular grid
@@ -1366,7 +1397,9 @@ Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
 	if (!fVar.bShowArrows && !fVar.bShowGrid) return 0;
-	err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg);
+//	err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
+	err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	
 	if(err) return false;
 	
 	if (fVar.arrowDepth>0 && fVar.gridType==TWO_D)

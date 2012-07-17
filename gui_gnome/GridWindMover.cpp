@@ -289,9 +289,10 @@ OSErr GridWindMover::CheckAndPassOnMessage(TModelMessage *message)
 }
 
 
-Boolean GridWindMover::CheckInterval(long &timeDataInterval)
+Boolean GridWindMover::CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time)
 {
-	Seconds time =  model->GetModelTime();
+//	Seconds time =  model->GetModelTime();	// AH 07/17/2012
+	Seconds time =  model_time;	// AH 07/17/2012
 	long i,numTimes;
 	
 	numTimes = this -> GetNumTimesInFile(); 
@@ -367,10 +368,12 @@ long GridWindMover::GetNumFiles()
 	return numFiles;     
 }
 
-OSErr GridWindMover::SetInterval(char *errmsg)
+OSErr GridWindMover::SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time)
 {
 	long timeDataInterval;
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);
+//	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+	
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
 	long numTimesInFile = this -> GetNumTimesInFile();
@@ -712,7 +715,10 @@ OSErr GridWindMover::ReadHeaderLines(char *path, WorldRect *bounds)
 	}
 	if(!strstr(s,"[FILE]")) 
 	{	// single file
-		err = ScanFileForTimes(path,&fTimeDataHdl,true);
+		
+//		err = ScanFileForTimes(path,&fTimeDataHdl,true);	// minus AH 07/17/2012
+		err = ScanFileForTimes(path,&fTimeDataHdl,true, model->GetStartTime());	// AH 07/17/2012
+		
 		if (err) goto done;
 	}
 	else
@@ -725,7 +731,9 @@ OSErr GridWindMover::ReadHeaderLines(char *path, WorldRect *bounds)
 		ResolvePathFromInputFile(path,fPathName); // JLM 6/8/10
 		if(fPathName[0] && FileExists(0,0,fPathName))
 		{
-			err = ScanFileForTimes(fPathName,&fTimeDataHdl,true);
+//			err = ScanFileForTimes(fPathName,&fTimeDataHdl,true);	// minus AH 07/17/2012
+			err = ScanFileForTimes(fPathName,&fTimeDataHdl,true, model->GetStartTime());	// AH 07/17/2012
+			
 			if (err) goto done;
 			// code goes here, maybe do something different if constant wind
 			line--;
@@ -938,7 +946,7 @@ done:
 	return err;
 }
 
-OSErr GridWindMover::ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime)
+OSErr GridWindMover::ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime, const Seconds& start_time)
 {
 	// scan through the file looking for times "[TIME "  (close file if necessary...)
 	
@@ -1259,10 +1267,14 @@ void GridWindMover::Draw(Rect r, WorldRect view)
 	
 	if (bShowArrows)
 	{
-		err = this -> SetInterval(errmsg);
+//		err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
+		err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		
 		if(err && !bShowGrid) return;	// want to show grid even if there's no wind data
 		
-		loaded = this -> CheckInterval(timeDataInterval);
+//		loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
+		loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		
 		if(!loaded && !bShowGrid) return;
 		
 		if(GetNumTimesInFile()>1 && loaded && !err)

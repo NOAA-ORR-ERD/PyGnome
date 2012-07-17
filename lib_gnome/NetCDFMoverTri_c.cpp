@@ -56,7 +56,9 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
 	if (!fVar.bShowArrows && !fVar.bShowGrid) return 0;
-	err = dynamic_cast<NetCDFMoverTri *>(this) -> SetInterval(errmsg);
+//	err = dynamic_cast<NetCDFMoverTri *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
+	err = dynamic_cast<NetCDFMoverTri *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	
 	if(err) return false;
 	
 	// Get the interpolation coefficients, alpha1,ptIndex1,alpha2,ptIndex2,alpha3,ptIndex3
@@ -343,7 +345,9 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& start_time, const Seconds&
 	
 	if(!fIsOptimizedForStep) 
 	{
-		err = SetInterval(errmsg);
+//		err = SetInterval(errmsg);	// minus AH 07/17/2012
+		err = SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+		
 		if (err) return deltaPoint;
 	}
 	

@@ -27,9 +27,9 @@ class GridCurMover : virtual public GridCurMover_c,  public TCATSMover
 	void 				ClearLoadedData(LoadedData * dataPtr);
 	long 				GetNumTimesInFile();
 	long 				GetNumFiles();
-	virtual OSErr 		CheckAndScanFile(char *errmsg);
-	virtual Boolean 	CheckInterval(long &timeDataInterval);
-	virtual OSErr	 	SetInterval(char *errmsg);
+	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
@@ -37,7 +37,7 @@ class GridCurMover : virtual public GridCurMover_c,  public TCATSMover
 	virtual OSErr		TextRead(char *path);
 	OSErr 				ReadHeaderLines(char *path, WorldRect *bounds);
 	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
-	OSErr 				ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataHdl,Boolean setStartTime);
+	OSErr 				ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataHdl,Boolean setStartTime, const Seconds& start_time);	// AH 07/17/2012
 	OSErr 				ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile);
 	
 	// list display methods

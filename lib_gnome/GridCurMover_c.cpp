@@ -67,7 +67,9 @@ OSErr GridCurMover_c::PrepareForModelStep(const Seconds& start_time, const Secon
 	
 	//check to see that the time interval is loaded and set if necessary
 	if (!bActive) return noErr;
-	err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg);
+//	err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
+	err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg, start_time, model_time);	// AH 07/17/2012
+	
 	if(err) goto done;
 	
 	fOptimize.isOptimizedForStep = true;	// don't  use CATS eddy diffusion stuff, follow ptcur
@@ -108,7 +110,9 @@ WorldPoint3D GridCurMover_c::GetMove(const Seconds& start_time, const Seconds& s
 	
 	if(!fOptimize.isOptimizedForStep) 
 	{
-		err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg);
+//		err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
+		err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg, start_time, model_time);	// AH 07/17/2012
+		
 		if (err) return deltaPoint;
 	}
 	
@@ -276,7 +280,9 @@ Boolean GridCurMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	VelocityRec velocity = {0.,0.};
 	OSErr err = 0;
 	long timeDataInterval,numTimesInFile = dynamic_cast<GridCurMover *>(this)->GetNumTimesInFile();
-	Boolean intervalLoaded = dynamic_cast<GridCurMover *>(this) -> CheckInterval(timeDataInterval);
+//	Boolean intervalLoaded = dynamic_cast<GridCurMover *>(this) -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
+	Boolean intervalLoaded = dynamic_cast<GridCurMover *>(this) -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+	
 	
 	Seconds startTime, endTime, time = model->GetModelTime();
 	double timeAlpha;

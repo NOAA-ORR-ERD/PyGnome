@@ -67,8 +67,8 @@ public:
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	virtual void 		ModelStepIsDone();
 	OSErr 				ReorderPoints(TMap **newMap, short *bndry_indices, short *bndry_nums, short *bndry_type, long numBoundaryPts); 
-	virtual Boolean 	CheckInterval(long &timeDataInterval);
-	virtual OSErr	 	SetInterval(char *errmsg);
+	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time); // AH 07/17/2012
 	long				GetNumTimesInFile();
 	void 				DisposeLoadedData(LoadedData * dataPtr);	
 	void 				ClearLoadedData(LoadedData * dataPtr);	

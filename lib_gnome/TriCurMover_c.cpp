@@ -146,7 +146,9 @@ OSErr TriCurMover_c::PrepareForModelStep(const Seconds& start_time, const Second
 	
 	if (!bActive) return 0; 
 	
-	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
+// 	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
+	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, start_time, model_time);	// AH 07/17/2012
+	
 	if(err) goto done;
 	
 	fIsOptimizedForStep = true;
@@ -231,7 +233,9 @@ WorldPoint3D TriCurMover_c::GetMove(const Seconds& start_time, const Seconds& st
 	
 	if(!fIsOptimizedForStep) 
 	{
-		err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
+//		err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
+		err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+		
 		if (err) return deltaPoint;
 	}
 	
@@ -348,7 +352,9 @@ Boolean TriCurMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	// maybe should set interval right after reading the file...
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
-	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
+//	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
+	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	
 	if(err) return false;
 	
 	
@@ -505,10 +511,14 @@ long TriCurMover_c::CreateDepthSlice(long triNum, float **depthSlice)
 		depthSliceArray[i+1]=0;
 	}
 	
-	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);
+//	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
+	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	
 	if(err) return -1;
 	
-	loaded = dynamic_cast<TriCurMover *>(this) -> CheckInterval(timeDataInterval);
+//	loaded = dynamic_cast<TriCurMover *>(this) -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
+	loaded = dynamic_cast<TriCurMover *>(this) -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+	
 	if(!loaded) return -1;
 	
 	// Check for time varying current 
@@ -904,10 +914,11 @@ done:
 }
 
 
-OSErr TriCurMover_c::SetInterval(char *errmsg)
+OSErr TriCurMover_c::SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time)
 {
 	long timeDataInterval=0;
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);
+//	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
 	long numTimesInFile = this -> GetNumTimesInFile();
@@ -985,9 +996,11 @@ done:
 	
 }
 
-Boolean TriCurMover_c::CheckInterval(long &timeDataInterval)
+Boolean TriCurMover_c::CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time)
 {
-	Seconds time = model->GetModelTime();
+//	Seconds time = model->GetModelTime();	// minus AH 07/17/2012
+	Seconds time = model_time; // AH 07/17/2012
+	
 	long i,numTimes;
 	
 	

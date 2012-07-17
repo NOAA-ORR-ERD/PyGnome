@@ -189,13 +189,13 @@ class TRandomGridMover : public TRandomMover
 		//virtual OSErr		GetStartTime(Seconds *startTime);
 		//virtual OSErr		GetEndTime(Seconds *endTime);
 
-		virtual Boolean 	CheckInterval(long &timeDataInterval);
-		virtual OSErr	 	SetInterval(char *errmsg);
+		virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+		virtual OSErr	 	SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
 
 		virtual OSErr		TextRead(char *path);
 		OSErr 				ReadHeaderLines(char *path, WorldRect *bounds);
 		virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
-		OSErr 				ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime);
+		OSErr 				ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime, const Seconds& start_time);	// AH 07/17/2012
 		OSErr 				ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char * pathOfInputfile);
 
 		virtual void		Draw (Rect r, WorldRect view);

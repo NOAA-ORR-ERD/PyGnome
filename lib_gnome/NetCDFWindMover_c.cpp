@@ -187,7 +187,9 @@ Boolean NetCDFWindMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
 	if (!bShowArrows && !bShowGrid) return 0;
-	err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg);
+//	err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
+	err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	
 	if(err) return false;
 	
 	if(dynamic_cast<NetCDFWindMover *>(this)->GetNumTimesInFile()>1)
@@ -255,7 +257,9 @@ OSErr NetCDFWindMover_c::PrepareForModelStep(const Seconds& start_time, const Se
 	
 	if (!bActive) return noErr;
 	
-	err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg); // SetInterval checks to see that the time interval is loaded
+//	err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg); // SetInterval checks to see that the time interval is loaded	// minus AH 07/17/2012
+	err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+	
 	if (err) goto done;	// again don't want to have error if outside time interval
 	
 	fIsOptimizedForStep = true;	// is this needed?
@@ -296,7 +300,9 @@ WorldPoint3D NetCDFWindMover_c::GetMove(const Seconds& start_time, const Seconds
 	
 	if(!fIsOptimizedForStep) 
 	{
-		err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg);	// ok, but don't print error message heref
+//		err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg);	// ok, but don't print error message heref	// minus AH 07/17/2012
+		err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+		
 		if (err) return deltaPoint;
 	}
 	index = GetVelocityIndex(refPoint);  // regular grid

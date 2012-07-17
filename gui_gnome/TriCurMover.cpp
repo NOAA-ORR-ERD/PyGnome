@@ -358,9 +358,11 @@ OSErr TriCurMover::InitMover()
 }
 
 
-/*OSErr TriCurMover::CheckAndScanFile(char *errmsg)
+/*OSErr TriCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time)
  {
- Seconds time = model->GetModelTime(), startTime, endTime, lastEndTime, testTime;
+//  Seconds time = model->GetModelTime(), startTime, endTime, lastEndTime, testTime;	// minus AH 07/17/2012
+ Seconds time = model_time, startTime, endTime, lastEndTime, testTime; // AH 07/17/2012
+ 
  long i,numFiles = GetNumFiles();
  OSErr err = 0;
  
@@ -1004,10 +1006,14 @@ void TriCurMover::DrawContourScale(Rect r, WorldRect view)
 	long timeDataInterval;
 	Boolean loaded;
 	
-	err = this -> SetInterval(errmsg);
+//	err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
+	err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+	
 	if(err) return;
 	
-	loaded = this -> CheckInterval(timeDataInterval);
+//	loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
+	loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+	
 	if(!loaded) return;
 	
 	
@@ -1177,10 +1183,14 @@ void TriCurMover::Draw(Rect r, WorldRect view)
 			long timeDataInterval;
 			Boolean loaded;
 			
-			err = this -> SetInterval(errmsg);
+//			err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
+			err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+			
 			if(err) return;
 			
-			loaded = this -> CheckInterval(timeDataInterval);
+//			loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
+			loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+			
 			if(!loaded) return;
 			
 			// Check for time varying current 
@@ -2221,7 +2231,9 @@ OSErr TriCurMover::TextRead(char *path, TMap **newMap)
 	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	//if(!strstr(s,"[FILE]")) 
 	//{	// single file
-	err = ScanFileForTimes(path,&fTimeDataHdl,true);
+//	err = ScanFileForTimes(path,&fTimeDataHdl,true);	// minus AH 07/17/2012
+	err = ScanFileForTimes(path,&fTimeDataHdl,true, model->GetStartTime());	// AH 07/17/2012
+	
 	if (err) goto done;
 	//}
 	/*	else
@@ -2365,7 +2377,7 @@ done:
  return err;
  }
  */
-OSErr TriCurMover::ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataH,Boolean setStartTime)
+OSErr TriCurMover::ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataH,Boolean setStartTime, const Seconds& start_time)
 {
 	// scan through the file looking for times "[TIME "  (close file if necessary...)
 	

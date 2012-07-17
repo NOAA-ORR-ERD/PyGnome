@@ -28,10 +28,10 @@ class TriCurMover : virtual public TriCurMover_c,  public TCurrentMover
 	OSErr 				ReadTriCurDepths(CHARH fileBufH,long *line,LongPointHdl *pointsH,char* errmsg,long numPoints);
 	OSErr 				ReadHeaderLine(char *s);
 	OSErr 				ReadBaromodesInputValues(CHARH fileBufH,long *line,BaromodesParameters *inputValues,char* errmsg,short modelType);
-	OSErr 				ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataHdl,Boolean setStartTime);
+	OSErr 				ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataHdl,Boolean setStartTime, const Seconds& start_time);	// AH 07/17/2012
 	OSErr 				ReadCentroidDepths(CHARH fileBufH,long *line,long numTris,/*FLOATH *centroidDepthsH,*/char* errmsg);
 	OSErr 				ReadSigmaLevels(CHARH fileBufH,long *line,FLOATH *sigmaLevelsH,long numLevels,char* errmsg);
-	//virtual OSErr 		CheckAndScanFile(char *errmsg);
+	//virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
 	//OSErr 				ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH);
 	
 	//OSErr 				ReadTopology(char* path, TMap **newMap);

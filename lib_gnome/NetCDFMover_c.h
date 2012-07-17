@@ -131,11 +131,11 @@ public:
 	
 	long 					GetNumTimesInFile();
 	long 					GetNumFiles();
-	virtual OSErr 		CheckAndScanFile(char *errmsg);
-	virtual OSErr	 	SetInterval(char *errmsg);
-	OSErr 				ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime);
+	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+	OSErr 				ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime, const Seconds& start_time);	// AH 07/17/2012
 	
-	virtual Boolean 	CheckInterval(long &timeDataInterval);
+	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	void 				DisposeLoadedData(LoadedData * dataPtr);	
 	void 				ClearLoadedData(LoadedData * dataPtr);
