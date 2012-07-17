@@ -55,6 +55,17 @@ cdef extern from "TypeDefs.h":
     ctypedef struct VelocityRec:
         double u
         double v
+        
+    ctypedef struct VelocityFRec:
+        float u
+        float v
+        
+    ctypedef VelocityFRec **VelocityFH
+    
+    ctypedef struct LoadedData:
+        long timeIndex
+        VelocityFH dataHdl
+
     ctypedef struct LEWindUncertainRec:
         float randCos
         float randSin

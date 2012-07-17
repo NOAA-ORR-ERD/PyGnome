@@ -47,9 +47,9 @@ cdef extern from "NetCDFMover_c.h":
         
         NetCDFMover_c ()
         WorldPoint3D        GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
-#        OSErr 		        ReadTimeData(long index,VelocityFH *velocityH, char* errmsg)
-#        void 				DisposeLoadedData(LoadedData * dataPtr)
-#        void 				ClearLoadedData(LoadedData * dataPtr)
-#        void 				DisposeAllLoadedData()
+        OSErr 		        ReadTimeData(long index,VelocityFH *velocityH, char* errmsg)
+        void 				DisposeLoadedData(LoadedData * dataPtr)
+        void 				ClearLoadedData(LoadedData * dataPtr)
+        void 				DisposeAllLoadedData()
         
         
