@@ -16,12 +16,12 @@ model_time = greenwich.gwtm('01/01/1970 11:00:00').time_seconds
 # create arrays #
 #################
 
-wp_ra = np.ndarray((10,), dtype=basic_types.world_point_3d)
-ref_ra = np.ndarray((10,), dtype=basic_types.world_point_3d)
-wind_ra = np.ndarray((10,), dtype=np.double)
-disp_ra = np.ndarray((10,), dtype=np.short)
-time_vals = np.ndarray((1,), dtype=basic_types.time_value_pair)
-uncertain_ra = np.ndarray((10,), dtype=basic_types.wind_uncertain_rec)	# one uncertain rec per le
+wp_ra = np.empty((10,), dtype=basic_types.world_point_3d)
+ref_ra = np.empty((10,), dtype=basic_types.world_point_3d)
+wind_ra = np.empty((10,), dtype=np.double)
+disp_ra = np.empty((10,), dtype=np.short)
+time_vals = np.empty((1,), dtype=basic_types.time_value_pair)
+uncertain_ra = np.empty((10,), dtype=basic_types.wind_uncertain_rec)	# one uncertain rec per le
 
 f_sigma_theta = 1  # ?? 
 f_sigma_vel = 1     # ??

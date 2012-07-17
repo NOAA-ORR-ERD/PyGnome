@@ -14,6 +14,7 @@ cats_mover = cats_mover.cats_mover(scale_type)
 cats_mover.read_topology(topology_file)
 cats_mover.set_shio(shio_file)
 
+
 start_time = greenwich.gwtm('01/01/1970 10:00:00').time_seconds
 stop_time = greenwich.gwtm('01/01/1970 12:00:00').time_seconds
 model_time = greenwich.gwtm('01/01/1970 11:00:00').time_seconds
@@ -22,9 +23,9 @@ model_time = greenwich.gwtm('01/01/1970 11:00:00').time_seconds
 # create arrays #
 #################
 
-wp_ra = np.ndarray((10,), dtype=basic_types.world_point_3d)
-ref_ra = np.ndarray((10,), dtype=basic_types.world_point_3d)
-uncertain_ra = np.ndarray((10,), dtype=basic_types.le_uncertain_rec)	# one uncertain rec per le
+wp_ra = np.empty((10,), dtype=basic_types.world_point_3d)
+ref_ra = np.empty((10,), dtype=basic_types.world_point_3d)
+uncertain_ra = np.empty((10,), dtype=basic_types.le_uncertain_rec)	# one uncertain rec per le
 
 
 ################
@@ -36,7 +37,7 @@ N = len(wp_ra)
 wp_ra[:]['p'] = (-72.419992,41.202120)
 wp_ra[:]['z'] = 0.
 ref_ra[:]['p'] = (-72.419992,41.202120)
-wp_ra[:]['z'] = 0.
+ref_ra[:]['z'] = 0.
 
 ref_ra[:]['p']['p_lat'] *= 1000000
 ref_ra[:]['p']['p_long'] *= 1000000

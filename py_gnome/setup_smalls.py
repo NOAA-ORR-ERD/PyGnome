@@ -8,8 +8,8 @@ import sys
 
 from sysconfig import get_config_var
 
-from setuptools import setup
-#from distutils.core import setup
+#from setuptools import setup
+from distutils.core import setup
 
 from Cython.Distutils import build_ext 
 from distutils.extension import Extension
@@ -50,8 +50,20 @@ cpp_files = [ 'MemUtils.cpp',
 files = [os.path.join(CPP_CODE_DIR , file) for file in cpp_files]
 
 extra_includes="."
-
 compile_args=None
+macros = [('pyGNOME', 1),]
+link_args = []
+
+
+if sys.platform == "darwin":
+    link_args = ['-Wl,../third_party_lib/libnetcdf.a',]
+elif sys.platform == "win32":
+    compile_args = ['/W0',]
+    link_args = ['../third_party_lib/netcdf3.6.3.lib', \
+                  '/DEFAULTLIB:MSVCRT.lib',
+                  '/NODEFAULTLIB:LIBCMT.lib',
+                ]
+    macros += [('CYTHON_CCOMPLEX', 0),]
 
 ## setting the "pyGNOME" define so that conditional compliation in the cpp files is done right.
 macros = [('pyGNOME', 1),]

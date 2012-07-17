@@ -45,7 +45,7 @@ elif sys.platform == "win32":
                   '/DEFAULTLIB:MSVCRT.lib',
                   '/NODEFAULTLIB:LIBCMT.lib',
                 ]
-    macros += [('ibmpyGNOME', 1), ('CYTHON_CCOMPLEX', 0),]
+    macros += [('CYTHON_CCOMPLEX', 0),]
 
 setup(name='python gnome',
       version='beta', 
@@ -54,10 +54,10 @@ setup(name='python gnome',
       ext_modules=[Extension('gnome.c_gnome',
                              files, 
                              language="c++",
-			     define_macros = macros,
+                             define_macros = macros,
                              extra_compile_args=compile_args,
-			     extra_link_args=link_args,
-			     include_dirs=[CPP_CODE_DIR,
+                             extra_link_args=link_args,
+                             include_dirs=[CPP_CODE_DIR,
                                            np.get_include(),
                                            'cyGNOME',
                                            extra_includes,
