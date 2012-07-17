@@ -20,6 +20,7 @@
 #include "Replacements.h"
 #endif
 
+#ifndef pyGNOME
 NetCDFMover_c::NetCDFMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name), Mover_c(owner, name)
 {
 	memset(&fVar,0,sizeof(fVar));
@@ -97,6 +98,7 @@ NetCDFMover_c::NetCDFMover_c (TMap *owner, char *name) : CurrentMover_c(owner, n
 	
 	memset(&fLegendRect,0,sizeof(fLegendRect)); 
 }
+#endif
 
 
 OSErr NetCDFMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *velocity,double timeStep,Boolean useEddyUncertainty)
@@ -1069,7 +1071,9 @@ WorldPoint3D NetCDFMover_c::GetMove(const Seconds& start_time, const Seconds& st
 	long index; 
 	long depthIndex1,depthIndex2;	// default to -1?
 	Seconds startTime,endTime;
-	Seconds time = model->GetModelTime();
+//	Seconds time = model->GetModelTime();	// minus AH 07/17/2012
+	Seconds time = model_time; // AH 07/17/2012
+	
 	VelocityRec scaledPatVelocity;
 	Boolean useEddyUncertainty = false;	
 	OSErr err = 0;
@@ -1378,7 +1382,7 @@ double NetCDFMover_c::GetDepthAtIndex(long depthIndex, double totalDepth)
 	
 	return depth;
 }
-
+#ifndef pyGNOME
 Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 {
 	char uStr[32],sStr[32],errmsg[256];
@@ -1515,6 +1519,7 @@ CalcStr:
 	
 	return true;
 }
+#endif
 
 
 float NetCDFMover_c::GetMaxDepth()

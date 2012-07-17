@@ -97,9 +97,12 @@ public:
 	//double fOffset_v;
 	//double fCurScale_u;
 	//double fCurScale_v;
-	
+
+#ifndef pyGNOME
 	NetCDFMover_c (TMap *owner, char *name);
-	NetCDFMover_c () {}
+#endif
+	NetCDFMover_c () {fTimeHdl = 0; fGrid = 0; fDepthLevelsHdl = 0; fDepthLevelsHdl2 = 0; fDepthsH = 0; fDepthDataInfo = 0; fInputFilesHdl = 0; fLESetSizesH = 0; fUncertaintyListH = 0;} // AH 07/17/2012
+	
 	virtual ClassID 	GetClassID () { return TYPE_NETCDFMOVER; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_NETCDFMOVER) return TRUE; return CurrentMover_c::IAm(id); }
 
@@ -123,7 +126,9 @@ public:
 	virtual double 	GetEndUVelocity(long index);
 	virtual double 	GetEndVVelocity(long index);
 	virtual double	GetDepthAtIndex(long depthIndex, double totalDepth);
+#ifndef pyGNOME
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
+#endif
 	float		GetTotalDepth(WorldPoint refPoint, long triNum);
 	virtual WorldPoint3D       GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012

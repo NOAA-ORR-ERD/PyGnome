@@ -18,6 +18,7 @@ from distutils.extension import Extension
 extension_names = [
                    'wind_mover',
 		   'cats_mover',
+		   'netcdf_mover',
                    ]
 
 cpp_files = [ 'MemUtils.cpp',
@@ -45,6 +46,7 @@ cpp_files = [ 'MemUtils.cpp',
 	      'DagTreeIO.cpp',
 	      'ShioCurrent1.cpp',
 	      'ShioCurrent2.cpp',
+	      'NetCDFMover_c.cpp',
               ]
 
 files = [os.path.join(CPP_CODE_DIR , file) for file in cpp_files]
