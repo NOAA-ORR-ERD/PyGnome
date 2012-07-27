@@ -13,7 +13,7 @@ import numpy as np
 
 from PIL import Image, ImageDraw
 
-from hazpy.file_tools import haz_files
+from gnome.utilities.file_tools import haz_files
 from gnome.utilities import projections
 
 
