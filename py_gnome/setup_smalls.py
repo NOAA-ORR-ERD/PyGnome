@@ -50,9 +50,7 @@ cpp_files = [
               'ShioCurrent1.cpp',
               'ShioCurrent2.cpp',
               'NetCDFMover_c.cpp',
-              'Map_c.cpp',
               'TriGridVel3D_c.cpp',
-              'PtCurMap_c.cpp',
               ]
 
 files = [os.path.join(CPP_CODE_DIR , file) for file in cpp_files]
