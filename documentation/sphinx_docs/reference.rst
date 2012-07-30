@@ -18,12 +18,14 @@ movers:
    At the C++ level, each mover has an `get_move` method that takes the curent time, model time step, and pointers to the arrays of particle properties it needs. At the Python levevel, the get_move method takes a spill object, and the required arrays are extracted form teh spill object -- this lets us pass only that data to a mover that it really needs, and lets us use Python for the dynamic parts -- making sure that the data needed exists.
 
 spills:
-   A spill class is a class that holds a set of particles and various information about them. each of the particle properties are stored as numpy arrays (in a dict) -- so that for a given model setup , the spill only needs to hae the properties required, and the properties used by a given mover (and only those) can be passed in as a C pointer to the mover code. At the very least, each spill has a set of particle position arrays.
-   There may be multiple spills in a model set-up, but for efficiency'y's sake, each spill usually is a set of 1000 or so particles that share various properties.
-  A spill class has a `release_particles` method that is called at each tiem step, so that the number of particles can increase as time goes on, etc.
+   A spill class is a class that holds a set of particles and various information about them. Each of the particle properties are stored as numpy arrays (in a dict) -- so that for a given model setup, the spill only needs to have the properties required, and the properties used by a given mover (and only those) can be passed in as a C pointer to the mover code. At the very least, each spill has a set of particle position arrays.
+
+   There may be multiple spills in a model set-up, but for efficiency's sake, each spill usually is a set of 1000 or so particles that share various properties.
+
+  A spill class has a `release_particles` method that is called at each time step, so that the number of particles can increase as time goes on, etc.
 
 a map:
-   A map keeps track of where land and water are. Teh siimplest map is all teh earth with no land. It has methods to ask if a locatino ison land, if a locatioin is "spillable", etc. The most comonnly used map for surface oil spills is intialized with a `*.bna` file describing parlygons of land -- this is rasterized into a land-eater bitmap. During teh run, the model calls the `'beach_LEs` method, which determines which particles have hit land in the last tioiem step, and sets htose particles to "beached".
+   A map keeps track of where land and water are. The simplest map is all the earth with no land. It has methods to ask if a locatino ison land, if a locatioin is "spillable", etc. The most comonnly used map for surface oil spills is intialized with a `*.bna` file describing parlygons of land -- this is rasterized into a land-eater bitmap. During teh run, the model calls the `'beach_LEs` method, which determines which particles have hit land in the last tioiem step, and sets htose particles to "beached".
 
 
 Class Reference:
