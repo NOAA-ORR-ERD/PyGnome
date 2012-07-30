@@ -22,7 +22,9 @@ extension_names = [
                    'netcdf_mover',
                    ]
 
-cpp_files = [ 'MemUtils.cpp',
+cpp_files = [ 
+              'RectGridVel_c.cpp',
+              'MemUtils.cpp',
               'Mover_c.cpp',
               'Replacements.cpp',
               'ClassID_c.cpp',
@@ -48,6 +50,9 @@ cpp_files = [ 'MemUtils.cpp',
               'ShioCurrent1.cpp',
               'ShioCurrent2.cpp',
               'NetCDFMover_c.cpp',
+              'Map_c.cpp',
+              'TriGridVel3D_c.cpp',
+              'PtCurMap_c.cpp',
               ]
 
 files = [os.path.join(CPP_CODE_DIR , file) for file in cpp_files]
@@ -96,7 +101,7 @@ basic_types_ext = Extension('gnome.basic_types',
                             include_dirs=[CPP_CODE_DIR],
                             )
 
-extensions.append(basic_types_ext)
+#extensions.append(basic_types_ext)
 
 
 setup(name='pyGnome',

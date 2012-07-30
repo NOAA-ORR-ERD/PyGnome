@@ -173,6 +173,7 @@ OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& start_time, const Second
 	
 	if (model_time == start_time)	// first step
 	{
+
 		if (dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERCURV) || dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERTRI))
 		{
 			//PtCurMap* ptCurMap = (PtCurMap*)moverMap;
@@ -180,8 +181,13 @@ OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& start_time, const Second
 			//if (ptCurMap)
 			if (moverMap->IAm(TYPE_PTCURMAP))
 			{
+				
+#ifndef pyGNOME				
 				(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
-				(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
+				(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;
+				
+#endif	// AH 07/30/2012
+				
 				if (fGrid->GetClassID()==TYPE_TRIGRIDVEL3D)
 					(dynamic_cast<TTriGridVel3D*>(fGrid))->ClearOutputHandles();
 			}
