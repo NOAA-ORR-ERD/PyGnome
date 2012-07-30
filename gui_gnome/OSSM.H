@@ -83,7 +83,7 @@ Boolean RestoreScreenImage();
 #endif
 
 	#define SETTINGS_VERSION  ((float)1.0)
-	#define GNOME_VERSION_STR  "1.3.4"
+	#define GNOME_VERSION_STR  "1.3.5"
 	
 
 // According to the manual this directive should be embedded 
@@ -2001,7 +2001,7 @@ short			OldToNewPollutantCode(short code, Boolean* isEvaporated);
 void			OpenProgressWindow(char *title, WindowPtr parentWindow);
 
 OSErr			OpenSaveFile(void);
-OSErr 		OpenSaveFileFromPath(char * path); 
+OSErr 		OpenSaveFileFromPath(char * path, Boolean openingSavFileFromLocFile); 
 
 Boolean		OSSMButtonEnabled(short buttonID);
 

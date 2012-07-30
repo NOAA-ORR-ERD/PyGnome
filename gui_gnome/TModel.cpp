@@ -5929,7 +5929,7 @@ OSErr TModel::CheckAndPassOnMessage(TModelMessage *message)
 				ResolvePath(path);
 				if(FileExists(0,0,path))
 				{	// need code to handle resnum rather than full path
-					(void)OpenSaveFileFromPath(path);
+					(void)OpenSaveFileFromPath(path,true);
 				}
 				else {
 					sprintf(msg,"Specified file for M_OPEN does not exist.%s%s",NEWLINESTRING,path);

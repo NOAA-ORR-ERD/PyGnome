@@ -549,7 +549,7 @@ OSErr OpenSaveFile(void)
 	strcpy(path, reply.fName);
 #endif
 #endif	
-	err = OpenSaveFileFromPath(path);  /// JLM HandleODOC
+	err = OpenSaveFileFromPath(path, false);  /// JLM HandleODOC
 	return err;
 }
 
@@ -564,7 +564,7 @@ void ResolvePathFromSavedFile(char* pathToResolveFromSaveFile) // JLM 6/3/10
 		ResolvePathFromInputFile(gCurrentPathOfSaveFile,pathToResolveFromSaveFile);
 }	
 
-OSErr OpenSaveFileFromPath(char * path) /// JLM HandleODOC
+OSErr OpenSaveFileFromPath(char * path, Boolean openingSavFileFromLocFile) /// JLM HandleODOC
 {
 	char m[300],fileName[256],shortName[256];
 	Boolean askUserAboutSaving, bCloseSaveFile = true;
@@ -612,8 +612,8 @@ OSErr OpenSaveFileFromPath(char * path) /// JLM HandleODOC
 	
 	askUserAboutSaving = TRUE;
 	
-	if (haveOpenWizFile)
-	{
+	if (haveOpenWizFile && openingSavFileFromLocFile)
+	{	// now don't really have to check the name
 		char locationFileNameStr[64];
 		strcpy(fileName,path);
 		SplitPathFile(fileName, shortName);

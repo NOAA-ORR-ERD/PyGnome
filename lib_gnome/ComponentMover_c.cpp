@@ -151,9 +151,13 @@ OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 		
 		if (!bFound)
 		{
-			strcpy(errmsg,"There is no wind time file associated with the component mover");
-			//printError("There is no wind time file associated with the component mover");
-			return -1;
+			mover =  (TMover*) (model->GetWindMover(false));	// see if there is a wind at all and use it
+			if (!mover) {
+				strcpy(errmsg,"There is no wind time file associated with the component mover");
+				//printError("There is no wind time file associated with the component mover");
+				return -1;
+			}
+			strcpy(windMoverName, mover->className);	// link the wind to the component mover
 			//print error, also check if it's a constant wind or times out of range
 		}
 		// alert code goes here if mover is not found
@@ -364,9 +368,20 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 						}
 					}
 				}
+
 			}
+			if (!bFound)
+			{
+				mover =  (TMover*) (model->GetWindMover(false));	// see if there is a wind at all and use it
+				/*if (!mover) {
+					strcpy(errmsg,"There is no wind time file associated with the component mover");
+					//printError("There is no wind time file associated with the component mover");
+					return -1;
+				}*/
+				if (mover) strcpy(windMoverName, mover->className);	// link the wind to the component mover
+			}
+			// alert code goes here if mover is not found
 		}
-		// alert code goes here if mover is not found
 	}
 	
 	// code goes here, option for averaged winds to set a scale or use the main dialog scale, would pat1ValScale/pat2ValScale just be averaged wind value? 

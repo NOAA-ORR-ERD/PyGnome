@@ -497,14 +497,14 @@ pascal_ifMac OSErr HandleODOC(const AppleEvent  * ae, AppleEvent  * reply, long 
 								long savedMode = model -> GetModelMode();
 								if (model -> GetModelMode() != ADVANCEDMODE) 
 									model -> SetModelMode (ADVANCEDMODE);	// must be in advanced mode to make SAVE files
-								err = OpenSaveFileFromPath(pathName);
+								err = OpenSaveFileFromPath(pathName,false);
 								if(err == noErr || err == USERCANCEL) return noErr;
 								if (err && savedMode != ADVANCEDMODE) model -> SetModelMode (savedMode);
 								break;
 							}
 							case WIZARDSAVEFILETYPE:
 							case WIZARDFILETYPE:
-								err = OpenSaveFileFromPath(pathName);
+								err = OpenSaveFileFromPath(pathName,false);
 								if(err == noErr || err == USERCANCEL) return noErr;
 								break;
 						}

@@ -6010,6 +6010,8 @@ OSErr LocaleWizard::SaveAsMenuHit(void)
 	}
 	
 	model -> GetSaveFileName (path);
+	//GetLocationFileName(path,false);
+
 	err = AskUserForSaveFilename(path,path,".LFS",true);
 	if(err) return USERCANCEL; // user cancel
 	
@@ -6138,6 +6140,7 @@ void LocaleWizard::OffToSeeTheWizard(Boolean ask,char* providedPath)
 	char pathName[256] = "",str[256];
 	char currentPathName[256] = "";
 	char wizSaveFilePath[256] = "";
+	char shortName[256] = "";
 	OSErr err = 0;
 	Boolean userCancel = false;
 	WizardFile *wfp = 0;
@@ -6281,6 +6284,11 @@ void LocaleWizard::OffToSeeTheWizard(Boolean ask,char* providedPath)
 	// record globals
 	if(wfp != this->fCurrentFile && this->fCurrentFile) delete this->fCurrentFile; // only delete it if it is different
 	this->fCurrentFile = wfp;
+	// set the location file name as the output name
+	GetLocationFileName(shortName,true);
+	strcpy(settings.headerSPILLID,shortName);
+	if (firstTimeFile) 	model -> SetSaveFileName (pathName);
+
 	
 	// Clear the left hand side answers so that they are not duplicated
 	this->fCurrentFile->ClearLeftHandSideAnswers();
@@ -6321,13 +6329,13 @@ void LocaleWizard::OffToSeeTheWizard(Boolean ask,char* providedPath)
 		}
 		
 		// restore spills  
-		if (saveLESets)
+		/*if (saveLESets)
 		{
 			if(model->LESetsList) // this is the new one created in Init()
 				{model->LESetsList->Dispose(); delete model->LESetsList; model->LESetsList =0;}
 			
 			model->LESetsList = saveLESets;
-		}
+		}*/
 
 		model->SetDialogVariables(savedSettings);
 		model->Reset(); // to force run time to startTime
@@ -6349,6 +6357,14 @@ void LocaleWizard::OffToSeeTheWizard(Boolean ask,char* providedPath)
 		err = this->fCurrentFile->DoCommandBlock("[AFTER]");// post-dialogs
 		// code goes here, special code to set uncertainty in currents
 		if(saveFileContentsHdl) this->fCurrentFile->SaveFileAddSpills(saveFileContentsHdl);
+		// restore spills  
+		if (saveLESets)
+		{
+			if(model->LESetsList) // this is the new one created in Init()
+				{model->LESetsList->Dispose(); delete model->LESetsList; model->LESetsList =0;}
+			
+			model->LESetsList = saveLESets;
+		}
 		
 	}
 	
