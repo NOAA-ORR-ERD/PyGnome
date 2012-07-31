@@ -343,15 +343,39 @@ class Test_full_move:
         
         start_positions= np.array( ( ( 5.0, 5.0), ), dtype=np.float64) 
         end_positions =  np.array( ( (15.0, 5.0), ), dtype=np.float64)
-        status_codes  =  np.array( (basic_types.status_in_water, ), dtype=np.short)
-
-        lkwp, end_pos = map.beach_elements(start_positions,
-                                  end_positions,
-                                  status_codes,
-                                  )
-
-        assert end_pos == (10.0, 5.0)
-        assert lkwp == (9.0, 5.0)
-        assert status_code[0] == basic_types.status_on_land
+        last_water_positions = np.empty_like( start_positions )
+        status_codes  =  np.array( (basic_types.status_in_water, ), dtype=basic_types.status_code_type)
+ 
+        map.beach_elements(start_positions,
+                           end_positions,
+                           last_water_positions,
+                           status_codes,
+                           )
+        
+        assert np.array_equal( end_positions[0], (10.0, 5.0) )
+        assert np.array_equal( last_water_positions[0], (9.0, 5.0) )
+        assert status_codes[0] == basic_types.status_on_land
+        
+    def test_land_cross_array(self):
+        map = RasterMap(refloat_halflife = 6, #hours
+                        bitmap_array= self.raster,
+                        map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
+                        projection=projections.NoProjection(),
+                        )
+        
+        start_positions= np.array( ( ( 5.0, 5.0), ), dtype=np.float64) 
+        end_positions =  np.array( ( (15.0, 5.0), ), dtype=np.float64)
+        last_water_positions = np.empty_like( start_positions )
+        status_codes  =  np.array( (basic_types.status_in_water, ), dtype=basic_types.status_code_type)
+ 
+        map.beach_elements(start_positions,
+                           end_positions,
+                           last_water_positions,
+                           status_codes,
+                           )
+        
+        assert np.array_equal( end_positions[0], (10.0, 5.0) )
+        assert np.array_equal( last_water_positions[0], (9.0, 5.0) )
+        assert status_codes[0] == basic_types.status_on_land
         
         
