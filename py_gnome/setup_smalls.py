@@ -99,7 +99,7 @@ basic_types_ext = Extension('gnome.basic_types',
                             include_dirs=[CPP_CODE_DIR],
                             )
 
-#extensions.append(basic_types_ext)
+extensions.append(basic_types_ext)
 
 
 setup(name='pyGnome',

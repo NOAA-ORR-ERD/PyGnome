@@ -311,8 +311,6 @@ class RasterMap(GnomeMap):
         param: status_codes    -- the status flag for the LEs
 
         last_water_positions and status_codes are changed in-place
-        
-        : returns last_water_positions 
         """
         
         # project the positions:

@@ -2,8 +2,10 @@
 import numpy as np
 from math import sin,cos,pi
 from random import random
-from gnome import wind_mover
+
+
 from gnome import basic_types
+from gnome import wind_mover
 from gnome import greenwich
 wm = wind_mover.wind_mover()
 
