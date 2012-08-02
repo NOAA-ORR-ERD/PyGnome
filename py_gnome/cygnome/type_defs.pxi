@@ -74,6 +74,8 @@ cdef extern from "TypeDefs.h":
         Seconds time
         VelocityRec value
 
+    ctypedef TimeValuePair **TimeValuePairH
+
     ctypedef enum:
         OILSTAT_NOTRELEASED = 0
         OILSTAT_INWATER = 2

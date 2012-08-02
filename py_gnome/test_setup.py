@@ -27,6 +27,7 @@ extension_names = [
                    'wind_mover',
                    'cats_mover',
                    'netcdf_mover',
+                   'ossm_time',
                    ]
 
 cpp_files = [ 
