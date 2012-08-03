@@ -39,7 +39,22 @@ cdef class wind_mover:
         self.mover.fConstantValue.u = 0
         self.mover.fConstantValue.v = 0
     
-    def get_move_uncertain(self, n, start_time, stop_time, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double f_sigma_vel, double f_sigma_theta, double breaking_wave, double mix_layer, np.ndarray[LEWindUncertainRec] uncertain_ra, np.ndarray[TimeValuePair] time_vals, int num_times):
+    def get_move_uncertain(self,
+                           start_time,
+                           stop_time,
+                           model_time,
+                           step_len,
+                           np.ndarray[WorldPoint3D, ndim=1] ref_ra,
+                           np.ndarray[WorldPoint3D, ndim=1] wp_ra,
+                           np.ndarray[np.npy_double] wind_ra,
+                           np.ndarray[np.npy_short] dispersion_ra,
+                           double f_sigma_vel,
+                           double f_sigma_theta,
+                           double breaking_wave,
+                           double mix_layer,
+                           np.ndarray[LEWindUncertainRec] uncertain_ra,
+                           np.ndarray[TimeValuePair] time_vals,
+                           int num_times):
         cdef:
             char *time_vals_ptr
             char *uncertain_ptr
@@ -58,7 +73,20 @@ cdef class wind_mover:
         
         self.mover.get_move(N, start_time, stop_time, model_time, step_len, ref_points, world_points, windages, disp_vals, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer, uncertain_ptr, time_vals_ptr, M)
 
-    def get_move(self, n, start_time, stop_time, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[np.npy_double] wind_ra, np.ndarray[np.npy_short] dispersion_ra, double breaking_wave, double mix_layer, np.ndarray[TimeValuePair] time_vals, int num_times):
+    def get_move(self,
+                 start_time,
+                 stop_time,
+                 model_time,
+                 step_len,
+                 np.ndarray[WorldPoint3D, ndim=1] ref_ra,
+                 np.ndarray[WorldPoint3D, ndim=1] wp_ra,
+                 np.ndarray[np.npy_double] wind_ra,
+                 np.ndarray[np.npy_short] dispersion_ra,
+                 double breaking_wave,
+                 double mix_layer,
+                 np.ndarray[TimeValuePair] time_vals,
+                 int num_times):
+
         cdef:
             char *time_vals_ptr
             char *uncertain_ptr

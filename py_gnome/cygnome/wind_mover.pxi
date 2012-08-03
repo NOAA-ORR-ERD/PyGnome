@@ -21,4 +21,4 @@ cdef extern from "WindMover_c.h":
         double mix_layer_depth
         OSErr get_move(int, long, long, long, long, char *, char *, char *, char *, double, double, double, double, char *, char*, int)
         OSErr get_move(int, long, long, long, long, char *, char *, char *, char *, double, double, char*, int)
-        OSErr PrepareForModelStep( Seconds&, Seconds&,  Seconds&, Seconds&, bool)
+        OSErr PrepareForModelStep( Seconds&, Seconds&, Seconds&, Seconds&, bool)
