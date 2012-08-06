@@ -39,6 +39,7 @@ world_rect = np.dtype([('lo_long', np.long),
 
 ## fixme -- I could be put in the wind_mover code...
 ##   it seems they are only relevent to the wind mover.
+
 windage_type = np.float64
 wind_uncertain_rec = np.dtype([('randCos', np.float32), ('randSin', np.float32),], align=True)
 le_uncertain_rec   = np.dtype([('downStream', np.float32), ('crossStream', np.float32),], align=True)

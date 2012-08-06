@@ -1,8 +1,8 @@
-include "type_defs.pxi"
 include "mover.pxi"
 
 cdef extern from "OSSMTimeValue_c.h":
     cdef cppclass OSSMTimeValue_c:
+        OSSMTimeValue_c()
         OSSMTimeValue_c(Mover_c *, TimeValuePairH, short)
         TimeValuePairH timeValues
         short fUserUnits # JLM

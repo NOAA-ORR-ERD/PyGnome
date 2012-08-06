@@ -415,7 +415,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_t
 	return err;
 }
 
-OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double f_sigma_2, double f_sigma_theta, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, unsigned long start_time, unsigned long stop_time, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double f_sigma_2, double f_sigma_theta, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
 
 // AH 06/20/2012:	
 // unfortunately, because we determine the size of the handle by a small region at the base of the array,
@@ -520,7 +520,7 @@ OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_t
 
 // ++
 
-OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, unsigned long start_time, unsigned long stop_time, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
 	
 	// AH 06/20/2012:	
 	// unfortunately, because we determine the size of the handle by a small region at the base of the array,

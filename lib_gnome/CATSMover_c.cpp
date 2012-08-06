@@ -301,7 +301,7 @@ void CATSMover_c::ModelStepIsDone()
 }
 
 
-OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra) {	
+OSErr CATSMover_c::get_move(int n, unsigned long start_time, unsigned long stop_time, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra) {	
 	
 	TimeValuePairH time_val_hdl = 0;
 	
@@ -363,7 +363,7 @@ OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_t
 }
 
 
-OSErr CATSMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra) {	
+OSErr CATSMover_c::get_move(int n, unsigned long start_time, unsigned long stop_time, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra) {	
 
 	TimeValuePairH time_val_hdl = 0;
 	
