@@ -34,5 +34,5 @@ cdef extern from "CATSMover_c.h":
         void        SetTimeDep(OSSMTimeValue_c *time_dep)
         OSErr        PrepareForModelStep(Seconds&, Seconds&, Seconds&, Seconds&, bool)
         void        ModelStepIsDone()
-        OSErr		get_move(int, long, long, long, long, char *, char *, char *)
-        OSErr		get_move(int, long, long, long, long, char *, char *)
+        OSErr		get_move(int, unsigned long, unsigned long, unsigned long, unsigned long, char *, char *, char *)
+        OSErr		get_move(int, unsigned long, unsigned long, unsigned long, unsigned long, char *, char *)

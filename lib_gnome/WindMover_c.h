@@ -77,8 +77,8 @@ public:
 	void				SetIsConstantWind (Boolean isConstantWind) { fIsConstantWind = isConstantWind; }
 	OSErr				GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
-	OSErr				get_move(int, long, long, char *, char *, char *, char *, double, double, double, double, char *, char*, int);
-	OSErr				get_move(int, long, long, char *, char *, char *, char *, double, double, char*, int);
+	OSErr				get_move(int, unsigned long, unsigned long, char *, char *, char *, char *, double, double, double, double, char *, char*, int);
+	OSErr				get_move(int, unsigned long, unsigned long, char *, char *, char *, char *, double, double, char*, int);
 
 };
 

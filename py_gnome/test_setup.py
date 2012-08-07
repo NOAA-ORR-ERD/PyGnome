@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+"""
+a setup.py to test putting all the shared stuff into one eetension
+
+-- will the others be able to find it?
+"""
+
+
 ## NOTE: this works with "distribute" package, but not with setuptools.
 from setuptools import setup # to support "develop" mode: 
 from distutils.extension import Extension
@@ -20,6 +27,7 @@ extension_names = [
                    'wind_mover',
                    'cats_mover',
                    'netcdf_mover',
+                   'ossm_time',
                    ]
 
 cpp_files = [ 
@@ -78,7 +86,7 @@ extensions = []
 for mod_name in extension_names:
     cy_file = os.path.join("cygnome", mod_name+".pyx")
     extensions.append(  Extension('gnome.' + mod_name,
-                                  [cy_file] + files, 
+                                  [cy_file], 
                                   language="c++",
                                   define_macros = macros,
                                   extra_compile_args=compile_args,
@@ -91,12 +99,19 @@ for mod_name in extension_names:
                                   )
                         )
 
-## non-standard extensions:
+## the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
+
 basic_types_ext = Extension('gnome.basic_types',
-                            ['cygnome/basic_types.pyx'], 
+                            ['cygnome/basic_types.pyx']+ files, 
                             language="c++",
                             define_macros = macros,
-                            include_dirs=[CPP_CODE_DIR],
+                            extra_compile_args=compile_args,
+                            extra_link_args = ['-Wl,../third_party_lib/libnetcdf.a',],
+                            include_dirs=[CPP_CODE_DIR,
+                                          np.get_include(),
+                                          'cyGNOME',
+                                          extra_includes,
+                                          ],
                             )
 
 extensions.append(basic_types_ext)

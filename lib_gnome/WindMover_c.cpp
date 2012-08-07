@@ -418,7 +418,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 	return err;
 }
 
-OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double f_sigma_2, double f_sigma_theta, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double f_sigma_2, double f_sigma_theta, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
 
 // AH 06/20/2012:	
 // unfortunately, because we determine the size of the handle by a small region at the base of the array,
@@ -523,7 +523,7 @@ OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra,
 
 // ++
 
-OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
 	
 	// AH 06/20/2012:	
 	// unfortunately, because we determine the size of the handle by a small region at the base of the array,
