@@ -67,17 +67,18 @@ public:
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
 	virtual OSErr		UpdateUncertainty(void);
 
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
-	virtual WorldPoint3D       GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual OSErr 		PrepareForModelRun(); 
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
+	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep) { timeDep = newTimeDep; }
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	void				DeleteTimeDep ();
 	void				ClearWindValues (); 
 	void				SetIsConstantWind (Boolean isConstantWind) { fIsConstantWind = isConstantWind; }
-	OSErr				GetTimeValue(const Seconds& start_time, const Seconds& end_time, const Seconds& current_time, VelocityRec *value);
+	OSErr				GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
-	OSErr				get_move(int, long, long, long, long, char *, char *, char *, char *, double, double, double, double, char *, char*, int);
-	OSErr				get_move(int, long, long, long, long, char *, char *, char *, char *, double, double, char*, int);
+	OSErr				get_move(int, long, long, char *, char *, char *, char *, double, double, double, double, char *, char*, int);
+	OSErr				get_move(int, long, long, char *, char *, char *, char *, double, double, char*, int);
 
 };
 

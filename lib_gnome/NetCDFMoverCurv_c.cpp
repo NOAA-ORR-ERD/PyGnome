@@ -113,8 +113,7 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
 	if (!fVar.bShowArrows && !fVar.bShowGrid) return 0;
-//	err = dynamic_cast<NetCDFMoverCurv *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = dynamic_cast<NetCDFMoverCurv *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	err = dynamic_cast<NetCDFMoverCurv *>(this) -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 	
 	if(err) return false;
 	
@@ -245,7 +244,7 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	return true;
 }
 
-WorldPoint3D NetCDFMoverCurv_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D NetCDFMoverCurv_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	
@@ -265,8 +264,7 @@ WorldPoint3D NetCDFMoverCurv_c::GetMove(const Seconds& start_time, const Seconds
 	// might want to check for fFillValue and set velocity to zero - shouldn't be an issue unless we interpolate
 	if(!fIsOptimizedForStep) 
 	{
-//		err = dynamic_cast<NetCDFMoverCurv *>(this) -> SetInterval(errmsg); // minus AH 07/17/2012
-		err = dynamic_cast<NetCDFMoverCurv *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+		err = dynamic_cast<NetCDFMoverCurv *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 		
 		if (err) return deltaPoint;
 	}

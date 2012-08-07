@@ -444,7 +444,7 @@ OSErr ADCPTimeValue_c::CheckStartTime(Seconds forTime)
 	return 0;
 }
 
-OSErr ADCPTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& current_time, VelocityRec *value)
+OSErr ADCPTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 {	// need to have depth indices too
 	Boolean linear = FALSE;
 	long a, b, i, n = GetNumValues();

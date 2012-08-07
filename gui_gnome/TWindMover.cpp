@@ -579,8 +579,7 @@ void TWindMover::DrawWindVector(Rect r, WorldRect view)
 		VelocityRec velocity = {0.,0.}, velocity_orig = {0.,0.};
 		
 		settings.doNotPrintError = true;
-//		err =  dynamic_cast<TWindMover *>(this)->GetTimeValue (model->GetModelTime(), &velocity_orig);	// minus AH 07/10/2012
-		err =  dynamic_cast<TWindMover *>(this)->GetTimeValue (model->GetStartTime(), model->GetEndTime(), model->GetModelTime(), &velocity_orig);	// AH 07/10/2012
+		err =  dynamic_cast<TWindMover *>(this)->GetTimeValue (model->GetModelTime(), &velocity_orig);	// minus AH 07/10/2012
 		
 		settings.doNotPrintError = false;
 		velocity.u = -1. * velocity_orig.u; velocity.v = -1. * velocity_orig.v;	// so velocity is from rather than to

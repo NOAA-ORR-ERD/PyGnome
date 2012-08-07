@@ -61,19 +61,19 @@ public:
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	void				DeleteTimeDep ();
 	VelocityRec			GetPatValue (WorldPoint3D p);
-	VelocityRec 		GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint3D p,Boolean * useEddyUncertainty);//JLM 5/12/99
+	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p,Boolean * useEddyUncertainty);//JLM 5/12/99
 	VelocityRec			GetSmoothVelocity (WorldPoint p);
-	//OSErr       ComputeVelocityScale(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time);
-	virtual OSErr       ComputeVelocityScale(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time);
-	virtual WorldPoint3D       GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
+	virtual OSErr       ComputeVelocityScale(const Seconds& model_time);
+	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual OSErr 		PrepareForModelRun(); 
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	virtual void 		ModelStepIsDone();
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr);
 	virtual	OSErr		ReadTopology(char* path, TMap **newMap);
 
 	
-			OSErr		get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra);
-			OSErr		get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra);
+			OSErr		get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra);
+			OSErr		get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra);
 
 };
 

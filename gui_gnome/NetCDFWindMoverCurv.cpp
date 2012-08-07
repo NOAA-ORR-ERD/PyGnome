@@ -794,13 +794,11 @@ void NetCDFWindMoverCurv::Draw(Rect r, WorldRect view)
 			Boolean loaded;
 			TTriGridVel* triGrid = (TTriGridVel*)fGrid;
 			
-//			err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-			err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+			err = this -> SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
 			
 			if(err) return;
 			
-//			loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-			loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+			loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	// AH 07/17/2012
 			
 			if(!loaded) return;
 			

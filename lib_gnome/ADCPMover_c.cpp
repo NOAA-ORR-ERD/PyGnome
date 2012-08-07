@@ -10,7 +10,7 @@
 #include "ADCPMover_c.h"
 #include "CROSS.H"
 
-OSErr ADCPMover_c::ComputeVelocityScale(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time)
+OSErr ADCPMover_c::ComputeVelocityScale(const Seconds& model_time)
 {	// this function computes and sets this->refScale
 	// returns Error when the refScale is not defined
 	// or in allowable range.  
@@ -56,8 +56,7 @@ OSErr ADCPMover_c::ComputeVelocityScale(const Seconds& start_time, const Seconds
 						//velocity.u *= mover -> refScale;
 						//velocity.v *= mover -> refScale;
 						// so use GetScaledPatValue() instead
-						// theirVelocity = mover -> GetScaledPatValue(refP,nil); // minus AH 07/09/2012
-						theirVelocity = mover -> GetScaledPatValue(start_time, stop_time, model_time, refP,nil);	// AH 07/10/2012
+						theirVelocity = mover -> GetScaledPatValue(model_time, refP,nil);	// AH 07/10/2012
 						
 						theirLengthSq = (theirVelocity.u * theirVelocity.u + theirVelocity.v * theirVelocity.v);
 						// JLM, we need to adjust the movers pattern 
@@ -172,19 +171,23 @@ OSErr ADCPMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 }
 
 
+OSErr ADCPMover_c::PrepareForModelRun()
+{
+	this -> fOptimize.isFirstStep = true;
+	return noErr;
+}
 
-OSErr ADCPMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr ADCPMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	OSErr err =0;
-	if (err = CurrentMover_c::PrepareForModelStep(start_time, stop_time, model_time, time_step, uncertain)) 
+	if (err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain)) 
 		return err; // note: this calls UpdateUncertainty()
 	
-	// err = this -> ComputeVelocityScale();// JLM, will this do it ???	// minus AH 07/09/2012
-	err = this -> ComputeVelocityScale(start_time, stop_time, model_time);	// AH 07/10/2012
+	err = this -> ComputeVelocityScale(model_time);	// AH 07/10/2012
 
 	this -> fOptimize.isOptimizedForStep = true;
 	this -> fOptimize.value = sqrt(6*(fEddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
-	this -> fOptimize.isFirstStep = (model_time == start_time);
+	//this -> fOptimize.isFirstStep = (model_time == start_time);
 	
 	if (err) 
 		printError("An error occurred in ADCPMover::PrepareForModelStep");
@@ -193,11 +196,12 @@ OSErr ADCPMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds&
 
 void ADCPMover_c::ModelStepIsDone()
 {
+	this -> fOptimize.isFirstStep = false;
 	memset(&fOptimize,0,sizeof(fOptimize));
 }
 
 
-WorldPoint3D ADCPMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D ADCPMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	Boolean useEddyUncertainty = false;	
 	double 		dLong, dLat;
@@ -223,7 +227,7 @@ WorldPoint3D ADCPMover_c::GetMove(const Seconds& start_time, const Seconds& stop
 	return deltaPoint;
 }
 
-VelocityRec ADCPMover_c::GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec ADCPMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {	
 	VelocityRec	patVelocity, timeValue = {1, 1};
 	float lengthSquaredBeforeTimeFactor;
@@ -241,8 +245,7 @@ VelocityRec ADCPMover_c::GetScaledPatValue(const Seconds& start_time, const Seco
 			thisTimeDep->GetDepthIndices(depthAtPoint, totalDepth, &depthIndex1, &depthIndex2);
 			// need to get top/bottom depths if necessary, calculate scale
 			// if (moverMap->IAm(TYPE_PTCURMAP)) totalDepth = DepthAtPoint(p);
-// 			err = thisTimeDep -> GetTimeValue (model -> GetModelTime(), &timeValue); // minus AH 07/10/2012
-			err = thisTimeDep -> GetTimeValue (start_time, stop_time, model_time, &timeValue);	// AH 07/10/2012
+ 			err = thisTimeDep -> GetTimeValue (model_time, &timeValue); // minus AH 07/10/2012
 			
 			/*if (depthIndex1 != UNASSIGNEDINDEX)	
 			 err = thisTimeDep->GetTimeValueAtDepth(depthIndex, model->GetModelTime(), &timeValue);

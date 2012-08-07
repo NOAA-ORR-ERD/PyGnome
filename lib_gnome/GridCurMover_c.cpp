@@ -56,8 +56,12 @@ OSErr GridCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *ve
 	}
 	return err;
 }
+OSErr GridCurMover_c::PrepareForModelRun()
+{
+	return noErr;
+}
 
-OSErr GridCurMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr GridCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;
@@ -67,8 +71,7 @@ OSErr GridCurMover_c::PrepareForModelStep(const Seconds& start_time, const Secon
 	
 	//check to see that the time interval is loaded and set if necessary
 	if (!bActive) return noErr;
-//	err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg, start_time, model_time);	// AH 07/17/2012
+	err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg, model_time);	// AH 07/17/2012
 	
 	if(err) goto done;
 	
@@ -94,7 +97,7 @@ void GridCurMover_c::ModelStepIsDone()
 
 
 
-WorldPoint3D GridCurMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D GridCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	
@@ -110,8 +113,7 @@ WorldPoint3D GridCurMover_c::GetMove(const Seconds& start_time, const Seconds& s
 	
 	if(!fOptimize.isOptimizedForStep) 
 	{
-//		err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-		err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg, start_time, model_time);	// AH 07/17/2012
+		err = dynamic_cast<GridCurMover *>(this) -> SetInterval(errmsg, model_time);	// AH 07/17/2012
 		
 		if (err) return deltaPoint;
 	}
@@ -177,7 +179,7 @@ WorldPoint3D GridCurMover_c::GetMove(const Seconds& start_time, const Seconds& s
 	return deltaPoint;
 }
 
-VelocityRec GridCurMover_c::GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec GridCurMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("GridCurMover::GetScaledPatValue is unimplemented");
@@ -280,8 +282,7 @@ Boolean GridCurMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	VelocityRec velocity = {0.,0.};
 	OSErr err = 0;
 	long timeDataInterval,numTimesInFile = dynamic_cast<GridCurMover *>(this)->GetNumTimesInFile();
-//	Boolean intervalLoaded = dynamic_cast<GridCurMover *>(this) -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-	Boolean intervalLoaded = dynamic_cast<GridCurMover *>(this) -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+	Boolean intervalLoaded = dynamic_cast<GridCurMover *>(this) -> CheckInterval(timeDataInterval, model->GetModelTime());	// AH 07/17/2012
 	
 	
 	Seconds startTime, endTime, time = model->GetModelTime();

@@ -43,9 +43,10 @@ public:
 	Seconds fOverLapStartTime;
 	PtCurFileInfoH	fInputFilesHdl;
 	
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
+	virtual OSErr 		PrepareForModelRun(); 
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	virtual void 		ModelStepIsDone();
-	virtual WorldPoint3D       GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual long 		GetVelocityIndex(WorldPoint p);
 
 	

@@ -157,6 +157,7 @@ public:
 	void				PossiblyReFloatLE (TMap *theMap, TLEList *theLEList, long i, LETYPE leType);
 	void 				DisperseOil(TLEList* theLEList, long index);
 	void 				UpdateWindage(TLEList* theLEList);
+	OSErr 				TellMoversPrepareForRun();
 	OSErr 				TellMoversPrepareForStep();
 	void 				TellMoversStepIsDone();
 	

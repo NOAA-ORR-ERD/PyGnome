@@ -38,8 +38,12 @@ long GridWindMover_c::GetVelocityIndex(WorldPoint p)
 	return rowNum * fNumCols + colNum;
 }
 
+OSErr GridWindMover_c::PrepareForModelRun()
+{
+	return noErr;
+}
 
-OSErr GridWindMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	OSErr err = 0;
 	if (uncertain)
@@ -51,8 +55,7 @@ OSErr GridWindMover_c::PrepareForModelStep(const Seconds& start_time, const Seco
 	
 	if (!bActive) return noErr;
 	
-//	err = dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg); // SetInterval checks to see that the time interval is loaded	// minus AH 07/17/2012
-	err = dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+	err = dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 	
 	if (err) goto done;	// might not want to have error if outside time interval
 	
@@ -76,7 +79,7 @@ void GridWindMover_c::ModelStepIsDone()
 }
 
 
-WorldPoint3D GridWindMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double dLong, dLat;
 	WorldPoint3D deltaPoint ={0,0,0.};
@@ -94,8 +97,7 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& start_time, const Seconds& 
 	
 	if(!fIsOptimizedForStep) 
 	{
-//		err = dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg);	// ok, but don't print error message here	// minus AH 07/17/2012
-		err = dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+		err = dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 		
 		if (err) return deltaPoint;
 	}

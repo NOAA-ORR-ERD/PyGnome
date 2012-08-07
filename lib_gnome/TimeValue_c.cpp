@@ -9,7 +9,7 @@
 
 #include "TimeValue_c.h"
 
-OSErr TimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& forTime, VelocityRec *value)
+OSErr TimeValue_c::GetTimeValue(const Seconds& forTime, VelocityRec *value)
 {
 	value -> u = 1.0;
 	value -> v = 1.0;

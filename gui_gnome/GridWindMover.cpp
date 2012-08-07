@@ -289,9 +289,8 @@ OSErr GridWindMover::CheckAndPassOnMessage(TModelMessage *message)
 }
 
 
-Boolean GridWindMover::CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time)
+Boolean GridWindMover::CheckInterval(long &timeDataInterval, const Seconds& model_time)
 {
-//	Seconds time =  model->GetModelTime();	// AH 07/17/2012
 	Seconds time =  model_time;	// AH 07/17/2012
 	long i,numTimes;
 	
@@ -368,11 +367,10 @@ long GridWindMover::GetNumFiles()
 	return numFiles;     
 }
 
-OSErr GridWindMover::SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time)
+OSErr GridWindMover::SetInterval(char *errmsg, const Seconds& model_time)
 {
 	long timeDataInterval;
-//	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
 	
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
@@ -716,7 +714,6 @@ OSErr GridWindMover::ReadHeaderLines(char *path, WorldRect *bounds)
 	if(!strstr(s,"[FILE]")) 
 	{	// single file
 		
-//		err = ScanFileForTimes(path,&fTimeDataHdl,true);	// minus AH 07/17/2012
 		err = ScanFileForTimes(path,&fTimeDataHdl,true, model->GetStartTime());	// AH 07/17/2012
 		
 		if (err) goto done;
@@ -731,7 +728,6 @@ OSErr GridWindMover::ReadHeaderLines(char *path, WorldRect *bounds)
 		ResolvePathFromInputFile(path,fPathName); // JLM 6/8/10
 		if(fPathName[0] && FileExists(0,0,fPathName))
 		{
-//			err = ScanFileForTimes(fPathName,&fTimeDataHdl,true);	// minus AH 07/17/2012
 			err = ScanFileForTimes(fPathName,&fTimeDataHdl,true, model->GetStartTime());	// AH 07/17/2012
 			
 			if (err) goto done;
@@ -1267,13 +1263,11 @@ void GridWindMover::Draw(Rect r, WorldRect view)
 	
 	if (bShowArrows)
 	{
-//		err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-		err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		err = this -> SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
 		
 		if(err && !bShowGrid) return;	// want to show grid even if there's no wind data
 		
-//		loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-		loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	// AH 07/17/2012
 		
 		if(!loaded && !bShowGrid) return;
 		

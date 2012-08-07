@@ -110,7 +110,7 @@ public:
 	virtual long 		GetVelocityIndex(WorldPoint p);
 	virtual LongPoint 	GetVelocityIndices(WorldPoint wp);
 	VelocityRec			GetPatValue (WorldPoint p);
-	VelocityRec 		GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
+	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
 	void 				GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
 	float 				GetMaxDepth();
 	virtual float		GetArrowDepth() {return fVar.arrowDepth;}
@@ -130,17 +130,18 @@ public:
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 #endif
 	float		GetTotalDepth(WorldPoint refPoint, long triNum);
-	virtual WorldPoint3D       GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
+	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	virtual OSErr 		PrepareForModelRun(); 
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	virtual void 		ModelStepIsDone();
 	
 	long 					GetNumTimesInFile();
 	long 					GetNumFiles();
-	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
-	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
-	OSErr 				ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime, const Seconds& start_time);	// AH 07/17/2012
+	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
+	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
+	OSErr 				ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime);	// AH 07/17/2012
 	
-	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	// AH 07/17/2012
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	void 				DisposeLoadedData(LoadedData * dataPtr);	
 	void 				ClearLoadedData(LoadedData * dataPtr);

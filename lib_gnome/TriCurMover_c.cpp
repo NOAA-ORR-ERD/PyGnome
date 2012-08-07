@@ -115,26 +115,28 @@ OSErr TriCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *vel
 	return err;
 }
 
+OSErr TriCurMover_c::PrepareForModelRun()
+{
+	PtCurMap* ptCurMap = GetPtCurMap();
+	if (ptCurMap)
+	{
+		(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
+		(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
+		(dynamic_cast<TTriGridVel3D*>(fGrid))->ClearOutputHandles();
+	}
+	return noErr;
+}
 
-
-OSErr TriCurMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;
 	char errmsg[256];
 	
 	errmsg[0]=0;
-	
-	/*if (!bActive) return 0; 
-	 
-	 err = this -> SetInterval(errmsg);
-	 if(err) goto done;
-	 
-	 fIsOptimizedForStep = true;*/
-	
-	if (model_time == start_time)	// first step
+		
+	/*if (model_time == start_time)	// first step
 	{
-		//PtCurMap* ptCurMap = (PtCurMap*)moverMap;
 		PtCurMap* ptCurMap = GetPtCurMap();
 		if (ptCurMap)
 		{
@@ -142,12 +144,11 @@ OSErr TriCurMover_c::PrepareForModelStep(const Seconds& start_time, const Second
 			(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
 			(dynamic_cast<TTriGridVel3D*>(fGrid))->ClearOutputHandles();
 		}
-	}
+	}*/
 	
 	if (!bActive) return 0; 
 	
-// 	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, start_time, model_time);	// AH 07/17/2012
+	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, model_time);	// AH 07/17/2012
 	
 	if(err) goto done;
 	
@@ -208,7 +209,7 @@ long TriCurMover_c::WhatTriAmIIn(WorldPoint wp)
 	return dagTree -> WhatTriAmIIn(lp);
 }
 
-WorldPoint3D TriCurMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D TriCurMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	// figure out which depth values the LE falls between
 	// since velocities are at centers no need to interpolate, use value over whole triangle
@@ -233,8 +234,7 @@ WorldPoint3D TriCurMover_c::GetMove(const Seconds& start_time, const Seconds& st
 	
 	if(!fIsOptimizedForStep) 
 	{
-//		err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-		err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+		err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 		
 		if (err) return deltaPoint;
 	}
@@ -319,7 +319,7 @@ WorldPoint3D TriCurMover_c::GetMove(const Seconds& start_time, const Seconds& st
 	return deltaPoint;
 }
 
-VelocityRec TriCurMover_c::GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec TriCurMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("TriCurMover::GetScaledPatValue is unimplemented");
@@ -352,8 +352,7 @@ Boolean TriCurMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	// maybe should set interval right after reading the file...
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
-//	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 	
 	if(err) return false;
 	
@@ -468,7 +467,6 @@ float TriCurMover_c::GetMaxDepth(void)
 }
 
 long TriCurMover_c::CreateDepthSlice(long triNum, float **depthSlice)	
-//long TriCurMover::CreateDepthSlice(long triNum, float *depthSlice)	
 {	// show depth concentration profile at selected triangle
 	long i,n,listIndex,numDepthsToPlot=0;
 	PtCurMap *map = GetPtCurMap();
@@ -511,13 +509,11 @@ long TriCurMover_c::CreateDepthSlice(long triNum, float **depthSlice)
 		depthSliceArray[i+1]=0;
 	}
 	
-//	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 	
 	if(err) return -1;
 	
-//	loaded = dynamic_cast<TriCurMover *>(this) -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-	loaded = dynamic_cast<TriCurMover *>(this) -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+	loaded = dynamic_cast<TriCurMover *>(this) -> CheckInterval(timeDataInterval, model->GetModelTime());	// AH 07/17/2012
 	
 	if(!loaded) return -1;
 	
@@ -914,11 +910,10 @@ done:
 }
 
 
-OSErr TriCurMover_c::SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time)
+OSErr TriCurMover_c::SetInterval(char *errmsg, const Seconds& model_time)
 {
 	long timeDataInterval=0;
-//	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
 	long numTimesInFile = this -> GetNumTimesInFile();
@@ -996,9 +991,8 @@ done:
 	
 }
 
-Boolean TriCurMover_c::CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time)
+Boolean TriCurMover_c::CheckInterval(long &timeDataInterval, const Seconds& model_time)
 {
-//	Seconds time = model->GetModelTime();	// minus AH 07/17/2012
 	Seconds time = model_time; // AH 07/17/2012
 	
 	long i,numTimes;

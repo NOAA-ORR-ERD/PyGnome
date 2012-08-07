@@ -31,10 +31,12 @@ class TRandom : public TMover
 		virtual ClassID 	GetClassID () { return TYPE_RANDOMMOVER; }
 		virtual Boolean		IAm(ClassID id) { if(id==TYPE_RANDOMMOVER) return TRUE; return TMover::IAm(id); }
 		
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
+		virtual OSErr 		PrepareForModelRun(); 
 	
 		virtual void 		ModelStepIsDone();
-		virtual WorldPoint3D 	GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+		//virtual WorldPoint3D 	GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+		virtual WorldPoint3D 	GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 		
 		// I/O methods
 		virtual OSErr 		Read (BFPB *bfpb);  // read from current position
@@ -95,9 +97,10 @@ class TRandomCATSMover : public TRandomMover
 		virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 		
 		VelocityRec			GetPatValue (WorldPoint p);
-		VelocityRec 		GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
-		virtual WorldPoint3D	GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
+		VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
+		virtual WorldPoint3D	GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+		virtual OSErr 		PrepareForModelRun(); 
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	
 		virtual void 		ModelStepIsDone();
 
@@ -162,10 +165,11 @@ class TRandomGridMover : public TRandomMover
 		void 					DisposeLoadedData(LoadedData * dataPtr);	
 		void 					ClearLoadedData(LoadedData * dataPtr);
 		
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, const Seconds&, const Seconds&, bool); // AH 07/10/2012
+		virtual OSErr 		PrepareForModelRun(); 
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	
 		virtual void 		ModelStepIsDone();
-		virtual WorldPoint3D 	GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+		virtual WorldPoint3D 	GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 
 		// I/O methods
 		virtual OSErr 		Read (BFPB *bfpb);  // read from current position
@@ -189,13 +193,13 @@ class TRandomGridMover : public TRandomMover
 		//virtual OSErr		GetStartTime(Seconds *startTime);
 		//virtual OSErr		GetEndTime(Seconds *endTime);
 
-		virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
-		virtual OSErr	 	SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+		virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	// AH 07/17/2012
+		virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
 
 		virtual OSErr		TextRead(char *path);
 		OSErr 				ReadHeaderLines(char *path, WorldRect *bounds);
 		virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
-		OSErr 				ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime, const Seconds& start_time);	// AH 07/17/2012
+		OSErr 				ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime);	// AH 07/17/2012
 		OSErr 				ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char * pathOfInputfile);
 
 		virtual void		Draw (Rect r, WorldRect view);

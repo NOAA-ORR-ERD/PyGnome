@@ -93,12 +93,12 @@ public:
 	virtual OSErr			ReadTimeValues (char *path);
 	virtual long			GetNumEbbFloodValues ();	
 	virtual long			GetNumHighLowValues ();
-	virtual OSErr			GetTimeValue(const Seconds& start_time, const Seconds& end_time, const Seconds& current_time, VelocityRec *value);
+	virtual OSErr			GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	virtual WorldPoint		GetRefWorldPoint (void);
 	
 	virtual	double			GetDeriv (Seconds t1, double val1, Seconds t2, double val2, Seconds theTime);
 	virtual	OSErr			GetConvertedHeightValue(Seconds forTime, VelocityRec *value);
-	virtual	OSErr			GetProgressiveWaveValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& current_time, VelocityRec *value);
+	virtual	OSErr			GetProgressiveWaveValue(const Seconds& current_time, VelocityRec *value);
 #ifndef pyGNOME
 	OSErr 					GetLocationInTideCycle(short *ebbFloodType, float *fraction);
 #endif

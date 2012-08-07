@@ -29,7 +29,7 @@ public:
 	TimeValue_c () {}
 	virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEVALUES) return TRUE; return ClassID_c::IAm(id); }
-	virtual OSErr   GetTimeValue(const Seconds& start_time, const Seconds& end_time, const Seconds& current_time, VelocityRec *value);
+	virtual OSErr   GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	virtual OSErr	CheckStartTime (Seconds time);
 	virtual void	Dispose () {}
 	virtual OSErr	InitTimeFunc ();

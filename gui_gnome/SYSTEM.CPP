@@ -678,11 +678,11 @@ OSErr CommonInit()
 	InitSettings();
 	ResetAllRandomSeeds();
 	
-	GetDateTime(&time);
+	/*GetDateTime(&time);
 	SecondsToDate (time, &tTime);
 	DateToSeconds (&tTime, &time);
 	SecondsToDate (time, &tTime);
-	DateToSeconds (&tTime, &time);
+	DateToSeconds (&tTime, &time);*/
 	
 	GetDateTime(&time);
 	SecondsToDate (time, &tTime);

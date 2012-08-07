@@ -171,8 +171,7 @@ OSErr TCATSMover::InitMover(TGridVel *grid, WorldPoint p)
 	bApplyLogProfile = false;
 	arrowDepth = 0.;	// if want to show subsurface velocity for log profile
 	
-	// dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(); AH 07/09/2012
-	dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(model->GetStartTime(), model->GetEndTime(), model->GetModelTime());	// AH 07/10/2012
+	dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(model->GetModelTime());	// AH 07/10/2012
 	
 	return 0;
 }
@@ -411,9 +410,7 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 				{
 					VelocityRec dummyValue;
 					this -> timeDep -> fScaleFactor = val;
-//					if (err = timeFile->GetTimeValue(model->GetStartTime(),&dummyValue))	// make sure data is ok		// minus AH 07/10/2012
-					Seconds start_time = model->GetStartTime();
-					if (err = timeFile->GetTimeValue(start_time, model->GetEndTime(), start_time,&dummyValue))	// AH 07/10/2012
+					if (err = timeFile->GetTimeValue(model->GetStartTime(),&dummyValue))	// make sure data is ok		// minus AH 07/10/2012
 					
 					dynamic_cast<TCATSMover *>(this)->DeleteTimeDep();
 					if (this -> timeDep -> GetFileType()==SHIOHEIGHTSFILE || this -> timeDep -> GetFileType()==PROGRESSIVETIDEFILE) this -> timeDep -> RescaleTimeValues(1.0,val);	// does this apply value twice??
@@ -424,8 +421,7 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 		}
 		//////////////
 		/////////////
-		// dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(); AH 07/09/2012
-		dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(model->GetStartTime(), model->GetEndTime(), model->GetModelTime());	// AH 07/10/2012
+		dynamic_cast<TCATSMover *>(this)->ComputeVelocityScale(model->GetModelTime());	// AH 07/10/2012
 		model->NewDirtNotification();// tell model about dirt
 	}
 	
@@ -436,8 +432,7 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 			VelocityRec dummyValue;
 			// new data, make sure it is ok
 			if (timeDep) 
-			// 	err = timeDep->GetTimeValue(model->GetStartTime(),&dummyValue);	// minus AH 07/10/2012
-				err = timeDep->GetTimeValue(model->GetStartTime(), model->GetEndTime(), model->GetStartTime(),&dummyValue);	// AH 07/10/2012
+			 	err = timeDep->GetTimeValue(model->GetStartTime(),&dummyValue);	// minus AH 07/10/2012
 			if (err) dynamic_cast<TCATSMover *>(this)->DeleteTimeDep();
 			break;
 	}
@@ -1325,8 +1320,7 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			if(!(sharedCMDialogTimeDep && (sharedCMDialogTimeDep->GetFileType() == HYDROLOGYFILE) && sharedCMDialogTimeDep->bOSSMStyle))
 			{	// old OSSM style files may have refP on land, but this point is not used in calculation
 				
-				// err = sharedCMover->ComputeVelocityScale(); AH 07/09/2012
-				err = sharedCMover->ComputeVelocityScale(model->GetStartTime(), model->GetEndTime(), model->GetModelTime());	// AH 07/10/2012
+				err = sharedCMover->ComputeVelocityScale(model->GetModelTime());	// AH 07/10/2012
 				
 				if(err) 
 				{	// restore values and report error to user
@@ -1616,9 +1610,7 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 					// if file contains height coefficients force derivative to be calculated and scale to be input
 					if (timeFile->GetFileType() == SHIOHEIGHTSFILE || timeFile->GetFileType() == SHIOCURRENTSFILE || timeFile->GetFileType() == PROGRESSIVETIDEFILE)
 					{
-//						if (err = timeFile->GetTimeValue(model->GetStartTime(),&vel))	// minus AH 07/10/2012
-						Seconds start_time = model->GetStartTime();
-						if (err = timeFile->GetTimeValue(start_time, model->GetEndTime(), start_time, &vel))	// AH 07/10/2012
+						if (err = timeFile->GetTimeValue(model->GetStartTime(),&vel))	// minus AH 07/10/2012
 							goto donetimefile;	// user cancel or error
 					}
 				}

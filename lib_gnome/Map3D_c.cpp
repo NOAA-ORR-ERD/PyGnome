@@ -624,8 +624,7 @@ double Map3D_c::GetBreakingWaveHeight(void)
 	else
 	{
 		TWindMover *wind = model -> GetWindMover(false);
-// 		if (wind) err = wind -> GetTimeValue(model->GetModelTime(),&windVel);	// minus AH 07/10/2012
-		if (wind) err = wind -> GetTimeValue(model->GetStartTime(), model->GetEndTime(), model->GetModelTime(),&windVel);	// AH 07/10/2012
+ 		if (wind) err = wind -> GetTimeValue(model->GetModelTime(),&windVel);	// minus AH 07/10/2012
 		
 		if (err || !wind) 
 		{

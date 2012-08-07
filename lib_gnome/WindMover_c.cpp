@@ -370,13 +370,17 @@ void WindMover_c::DeleteTimeDep()
 		timeDep = nil;
 	}
 }
+OSErr WindMover_c::PrepareForModelRun()
+{
+	return noErr;
+}
 
-OSErr WindMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	OSErr err = 0;
 	if (uncertain)
 		err = this->UpdateUncertainty();
-	err = this -> GetTimeValue (start_time, stop_time, model_time + this->tap_offset,&this->current_time_value);	// AH 07/16/2012
+	err = this -> GetTimeValue (model_time + this->tap_offset,&this->current_time_value);	// AH 07/16/2012
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
 	return err;
 }
@@ -395,7 +399,7 @@ OSErr WindMover_c::CheckStartTime (Seconds time)
 	return err;
 }
 
-OSErr WindMover_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& current_time, VelocityRec *value)
+OSErr WindMover_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 {
 	VelocityRec	timeValue = { 0, 0 };
 	OSErr err = 0;
@@ -406,8 +410,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_t
 		if (this -> timeDep)
 		{
 			// note : constant wind always uses the first record
-//			err = timeDep -> GetTimeValue(time, &timeValue);	// minus AH 07/10/2012
-			err = timeDep -> GetTimeValue(start_time, stop_time, current_time, &timeValue);	// AH 07/10/2012
+			err = timeDep -> GetTimeValue(current_time, &timeValue);	// minus AH 07/10/2012
 			
 		}
 	}
@@ -415,7 +418,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_t
 	return err;
 }
 
-OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double f_sigma_2, double f_sigma_theta, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double f_sigma_2, double f_sigma_theta, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
 
 // AH 06/20/2012:	
 // unfortunately, because we determine the size of the handle by a small region at the base of the array,
@@ -478,7 +481,7 @@ OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_t
 		return 1;
 	}
 	
-	this->PrepareForModelStep(start_time, stop_time, model_time, step_len, false);
+	this->PrepareForModelStep(model_time, step_len, false);
 	
 	WorldPoint3D delta;
 	WorldPoint3D *ref;
@@ -497,7 +500,7 @@ OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_t
 		rec.windage = windages[i];
 		rec.dispersionStatus = disp_ra[i];
 		
-		delta = this->GetMove(start_time, stop_time, model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
 		
 		wp[i].p.pLat += delta.p.pLat / 1000000;
 		wp[i].p.pLong += delta.p.pLong / 1000000;
@@ -520,7 +523,7 @@ OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_t
 
 // ++
 
-OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
+OSErr WindMover_c::get_move(int n, long model_time, long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
 	
 	// AH 06/20/2012:	
 	// unfortunately, because we determine the size of the handle by a small region at the base of the array,
@@ -564,7 +567,7 @@ OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_t
 	this->tap_offset = 0;
 	this->bSubsurfaceActive = true;
 	
-	this->PrepareForModelStep(start_time, stop_time, model_time, step_len, false);
+	this->PrepareForModelStep(model_time, step_len, false);
 
 	WorldPoint3D delta;
 	WorldPoint3D *wp;
@@ -583,7 +586,7 @@ OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_t
 		rec.windage = windages[i];
 		rec.dispersionStatus = disp_ra[i];
 		
-		delta = this->GetMove(start_time, stop_time, model_time, step_len, 0, i, &rec, FORECAST_LE);
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
 		
 		wp[i].p.pLat += delta.p.pLat / 1000000;
 		wp[i].p.pLong += delta.p.pLong / 1000000;
@@ -600,7 +603,7 @@ OSErr WindMover_c::get_move(int n, long start_time, long stop_time, long model_t
 
 
 
-WorldPoint3D WindMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 	dLong, dLat;
 	VelocityRec	patVelocity, timeValue = { 0, 0 };

@@ -38,7 +38,7 @@ public:
 
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
-	virtual WorldPoint3D       GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
+	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	long 				CheckSurroundingPoints(LONGH maskH, long row, long col) ;
 	Boolean 			InteriorLandPoint(LONGH maskH, long row, long col); 
 	Boolean 			ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long row, long col) ;

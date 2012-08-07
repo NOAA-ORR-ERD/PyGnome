@@ -250,9 +250,8 @@ OSErr GridCurMover::SettingsDialog()
 
 
 
-OSErr GridCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time)
+OSErr GridCurMover::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 {
-//	Seconds time = model->GetModelTime(), startTime, endTime, lastEndTime, testTime;	// minus AH 07/17/2012
 	Seconds time = model_time, startTime, endTime, lastEndTime, testTime; // AH 07/17/2012
 	
 	long i,numFiles = GetNumFiles();
@@ -269,8 +268,7 @@ OSErr GridCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, co
 		if (startTime<=time&&time<=endTime && !(startTime==endTime))
 		{
 			if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
-//			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false); // minus AH 07/17/2012
-			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false, start_time);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
 			// code goes here, check that start/end times match
 			strcpy(fPathName,(*fInputFilesHdl)[i].pathName);
 			fOverLap = false;
@@ -293,14 +291,14 @@ OSErr GridCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, co
 			 else*/
 			{
 				if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
-				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeDataHdl,false, start_time);	// AH 07/17/2012
+				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
 				DisposeLoadedData(&fEndData);
 				strcpy(fPathName,(*fInputFilesHdl)[fileNum-1].pathName);
 				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
-			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeDataHdl,false, start_time);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
 			strcpy(fPathName,(*fInputFilesHdl)[fileNum].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
 			if(err) return err;
@@ -320,14 +318,14 @@ OSErr GridCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, co
 			else
 			{
 				if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
-				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeDataHdl,false, start_time);	// AH 07/17/2012
+				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
 				DisposeLoadedData(&fEndData);
 				strcpy(fPathName,(*fInputFilesHdl)[i-1].pathName);
 				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;	
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
-			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false, start_time);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
 			if (err) return err;
 			strcpy(fPathName,(*fInputFilesHdl)[i].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
@@ -343,10 +341,9 @@ OSErr GridCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, co
 	//return err;
 }
 
-Boolean GridCurMover::CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time)
+Boolean GridCurMover::CheckInterval(long &timeDataInterval, const Seconds& model_time)
 {
 	
-//	Seconds time =  model->GetModelTime();	// minus AH 07/17/2012
 	Seconds time = model_time;	// AH 07/17/2012
 	
 	long i,numTimes;
@@ -426,11 +423,10 @@ long GridCurMover::GetNumFiles()
 	return numFiles;     
 }
 
-OSErr GridCurMover::SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time)
+OSErr GridCurMover::SetInterval(char *errmsg, const Seconds& model_time)
 {
 	long timeDataInterval=0;
-//	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time); // AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time); // AH 07/17/2012
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
 	long numTimesInFile = this -> GetNumTimesInFile();
@@ -453,10 +449,8 @@ OSErr GridCurMover::SetInterval(char *errmsg, const Seconds& start_time, const S
 		
 		if (GetNumFiles()>1)
 		{
-//			if ((err = CheckAndScanFile(errmsg)) || fOverLap) goto done;	// overlap is special case	// minus AH 07/17/2012
-			if ((err = CheckAndScanFile(errmsg, start_time, model_time)) || fOverLap) goto done;	// AH 07/17/2012
-//			intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-			intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+			if ((err = CheckAndScanFile(errmsg, model_time)) || fOverLap) goto done;	// AH 07/17/2012
+			intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
 			indexOfStart = timeDataInterval-1;
 			indexOfEnd = timeDataInterval;
 			numTimesInFile = this -> GetNumTimesInFile();
@@ -1000,13 +994,11 @@ void GridCurMover::Draw(Rect r, WorldRect view)
 	
 	if (bShowArrows)
 	{
-//		err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-		err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+		err = this -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 		
 		if(err && !bShowGrid) return;	// want to show grid even if there's no current data
 		
-//		loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-				loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	// AH 07/17/2012
 
 		if(!loaded && !bShowGrid) return;
 		
@@ -1193,8 +1185,7 @@ OSErr GridCurMover::ReadHeaderLines(char *path, WorldRect *bounds)
 	if(!strstr(s,"[FILE]")) 
 	{	// single file
 		
-//		err = ScanFileForTimes(path,&fTimeDataHdl,true);	// minus AH 07/17/2012
-		err = ScanFileForTimes(path,&fTimeDataHdl,true,model->GetStartTime());	// AH 07/17/2012
+		err = ScanFileForTimes(path,&fTimeDataHdl,true);	// AH 07/17/2012
 		
 		if (err) goto done;
 	}
@@ -1208,8 +1199,7 @@ OSErr GridCurMover::ReadHeaderLines(char *path, WorldRect *bounds)
 		ResolvePathFromInputFile(path,fPathName); // JLM 6/8/10
 		if(fPathName[0] && FileExists(0,0,fPathName))
 		{
-//			err = ScanFileForTimes(fPathName,&fTimeDataHdl,true);	// minus AH 07/17/2012
-			err = ScanFileForTimes(fPathName,&fTimeDataHdl,true, model->GetStartTime());	// AH 07/17/2012
+			err = ScanFileForTimes(fPathName,&fTimeDataHdl,true);	// AH 07/17/2012
 			
 			if (err) goto done;
 			// code goes here, maybe do something different if constant current
@@ -1424,7 +1414,7 @@ done:
 	return err;
 }
 
-OSErr GridCurMover::ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime, const Seconds& start_time)
+OSErr GridCurMover::ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime)
 {
 	// scan through the file looking for times "[TIME "  (close file if necessary...)
 	

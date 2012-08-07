@@ -441,11 +441,9 @@ OSErr NetCDFMover::ReplaceMover()	// code goes here, maybe not for NetCDF?
 		strcpy(s,(*fInputFilesHdl)[0].pathName);
 		SplitPathFile (s, fileName);
 		strcpy(fVar.userName, fileName);	// maybe use a name from the file
-//		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
-		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false, model->GetStartTime());	// AH 07/17/2012
+		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false);	// AH 07/17/2012
 		
-//		err = this->SetInterval(errmsg);	// minus AH 07/17/2012
-		err = this->SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		err = this->SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
 		
 		if(err) return err;
 	}
@@ -1293,13 +1291,11 @@ void NetCDFMover::DrawContourScale(Rect r, WorldRect view)
 	
 	return;	// will need to select grid cells or points rather than triangles here
 	
-//	err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+	err = this -> SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
 	
 	if(err) return;
 	
-//	loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-	loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+	loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	// AH 07/17/2012
 	
 	if(!loaded) return;
 	
@@ -1488,13 +1484,11 @@ void NetCDFMover::Draw(Rect r, WorldRect view)
 	
 	if (fVar.bShowArrows)
 	{
-//		err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-		err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		err = this -> SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
 		
 		if(err && !fVar.bShowGrid) return;	// want to show grid even if there's no current data
 		
-//		loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-		loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	// AH 07/17/2012
 		
 		if(!loaded && !fVar.bShowGrid) return;
 		

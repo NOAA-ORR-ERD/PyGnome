@@ -798,8 +798,7 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 		//numTri = _GetHandleSize((Handle)topH)/sizeof(Topology);
 		numTri = triGrid->GetNumTriangles();
 		
-//		err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-		err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		err = this -> SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
 		
 		if (err) {fGrid->Draw(r,view,wayOffMapPt,refScale,arrowScale,arrowDepth,overrideDrawArrows,bShowGrid,fColor); return;}
 		//if(err) return;
@@ -832,10 +831,7 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 			long numVertices,i;
 			LongPointHdl ptsHdl = 0;
 			long timeDataInterval;
-			Boolean loaded;
-			
-			
-			
+			Boolean loaded;			
 			
 			if (bShowGrid)
 			{	
@@ -1348,8 +1344,7 @@ OSErr TideCurCycleMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
-//	err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	err = this -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 	
 	if(err) goto done;
 	

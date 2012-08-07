@@ -40,8 +40,8 @@ public:
 	virtual OSErr 		DeleteItem (ListItem item);
 	virtual OSErr 		CheckAndPassOnMessage(TModelMessage *message);
 	long 				GetNumTimesInFile();
-	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
-	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
+	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	// AH 07/17/2012
+	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
 	
 	virtual OSErr		TextRead(char *path);
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
@@ -52,8 +52,8 @@ public:
 	OSErr		ReadInputFileNames(char *fileNamesPath);
 	void		DisposeAllLoadedData();
 	long		GetNumFiles();
-	OSErr		CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
-	OSErr		ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime, const Seconds& start_time);	// AH 07/17/2012
+	OSErr		CheckAndScanFile(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
+	OSErr		ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime);	// AH 07/17/2012
 	
 	
 };

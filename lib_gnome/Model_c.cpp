@@ -767,6 +767,34 @@ long Model_c::NumOutputSteps(Seconds outputTimeStep)
 	return numSteps;
 }
 
+OSErr Model_c::TellMoversPrepareForRun()
+{
+	long i,j,k, d,n;
+	TMap *map;
+	TMover *thisMover;
+	OSErr err = 0;
+	// loop through all maps except universal map
+	if (!mapList) return -3;	// special error for a hard exit
+	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) {
+		mapList->GetListItem((Ptr)&map, i);
+		for (k = 0, d = map -> moverList -> GetItemCount (); k < d; k++)
+		{
+			map -> moverList -> GetListItem ((Ptr) &thisMover, k);	// 04/16/12 AH:
+			// if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;	// minus AH 07/10/2012
+			if (err = thisMover->PrepareForModelRun()) return err;	// AH 07/10/2012
+		}
+	}
+	
+	// loop through each mover in the universal map
+	for (k = 0, d = uMap -> moverList -> GetItemCount (); k < d; k++)
+	{
+		uMap -> moverList -> GetListItem ((Ptr) &thisMover, k);
+		if (err = thisMover->PrepareForModelRun()) return err;	// AH 07/10/2012
+		
+	}
+	return err;
+}
+
 OSErr Model_c::TellMoversPrepareForStep()
 {
 	long i,j,k, d,n;
@@ -781,7 +809,7 @@ OSErr Model_c::TellMoversPrepareForStep()
 		{
 			map -> moverList -> GetListItem ((Ptr) &thisMover, k);	// 04/16/12 AH:
 			// if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;	// minus AH 07/10/2012
-			if (err = thisMover->PrepareForModelStep(this->GetStartTime(), this->GetEndTime(), this->GetModelTime(), this->GetTimeStep(), true)) return err;	// AH 07/10/2012
+			if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetTimeStep(), true)) return err;	// AH 07/10/2012
 		}
 	}
 	
@@ -790,7 +818,7 @@ OSErr Model_c::TellMoversPrepareForStep()
 	{
 		uMap -> moverList -> GetListItem ((Ptr) &thisMover, k);
 	//	if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;	// minus AH 07/10/2012
-		if (err = thisMover->PrepareForModelStep(this->GetStartTime(), this->GetEndTime(), this->GetModelTime(), this->GetTimeStep(), true)) return err;	// AH 07/10/2012
+		if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetTimeStep(), true)) return err;	// AH 07/10/2012
 		
 	}
 	return err;

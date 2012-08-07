@@ -339,8 +339,7 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 							char errmsg[256];
 							err = newMover->ReadInputFileNames(fileNamesPath);
 							if(!err) newMover->DisposeAllLoadedData();
-//							if(!err) err = newMover->SetInterval(errmsg);	// minus AH 07/17/2012
-							if(!err) err = newMover->SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+							if(!err) err = newMover->SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
 							
 						}
 						///////////////////

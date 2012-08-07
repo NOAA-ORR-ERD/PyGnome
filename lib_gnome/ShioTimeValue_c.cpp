@@ -301,7 +301,7 @@ void GetYearDataDirectory(char* directoryPath)
 }
 #endif
 
-OSErr ShioTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& current_time, VelocityRec *value)
+OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 {
 	OSErr err = 0;
 	Boolean needToCompute = true;
@@ -324,19 +324,14 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& st
 	if(numValues > 0)
 	{	
 		
-//		if(INDEXH(this->timeValues, 0).time <= forTime					// minus AH 07/10/2012
-//		   && forTime <= INDEXH(this->timeValues, numValues-1).time)
 		if(INDEXH(this->timeValues, 0).time <= current_time
 		   && current_time <= INDEXH(this->timeValues, numValues-1).time)	// AH 07/10/2012
 		{ // the value is in the computed range
 			if (this->fStationType == 'C')	// allow scale factor for 'P' case
-	//			return OSSMTimeValue_c::GetTimeValue(forTime,value);		// minus AH 07/10/2012
-				return OSSMTimeValue_c::GetTimeValue(start_time, stop_time, current_time,value);	// AH 07/10/2012
+				return OSSMTimeValue_c::GetTimeValue(current_time,value);		// minus AH 07/10/2012
 			else if (this->fStationType == 'P')
-	//			return GetProgressiveWaveValue(forTime,value);				// minus AH 07/10/2012
-				return GetProgressiveWaveValue(start_time, stop_time, current_time,value);			// AH 07/10/2012
+				return GetProgressiveWaveValue(current_time,value);				// minus AH 07/10/2012
 			else if (this->fStationType == 'H')
-	//			return GetConvertedHeightValue(forTime,value);			// minus AH 07/10/2012
 				return GetConvertedHeightValue(current_time,value);		// AH 07/10/2012
 		}
 		//this->fScaleFactor = 0;	//if we want to ask for a scale factor for each computed range...
@@ -349,7 +344,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& st
 	//SecondsToDate(modelStartTime,&beginDate);
 	
 //	SecondsToDate(modelStartTime-6*3600,&beginDate);	// for now to handle the new tidal current mover 1/27/04 // minus AH 07/10/2012
-	SecondsToDate(start_time-6*3600,&beginDate);	// AH 07/10/2012
+	SecondsToDate(current_time-6*3600,&beginDate);	// AH 07/10/2012
 	
 	beginDate.hour = 0; // Shio expects this to be the start of the day
 	beginDate.minute = 0;
@@ -357,7 +352,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& st
 	DateToSeconds(&beginDate, &beginSeconds);
 	
 //	SecondsToDate(modelEndTime+24*3600,&endDate);// add one day so that we can truncate to start of the day	// minus AH 07/10/2012
-	SecondsToDate(stop_time+24*3600,&endDate); // AH 07/10/2012
+	SecondsToDate(current_time+48*3600,&endDate); // AH 07/10/2012
 	
 	endDate.hour = 0; // Shio expects this to be the start of the day
 	endDate.minute = 0;
@@ -1041,8 +1036,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& start_time, const Seconds& st
 		if (conArray) {delete [] conArray; conArray = 0;}
 		return err;
 	}
-//	return OSSMTimeValue_c::GetTimeValue(forTime,value);	// minus AH 07/10/2012
-	return OSSMTimeValue_c::GetTimeValue(start_time, stop_time, current_time,value);	// AH 07/10/2012
+	return OSSMTimeValue_c::GetTimeValue(current_time,value);	// minus AH 07/10/2012
 }
 
 double ShioTimeValue_c::GetDeriv (Seconds t1, double val1, Seconds t2, double val2, Seconds theTime)
@@ -1082,14 +1076,15 @@ OSErr ShioTimeValue_c::GetConvertedHeightValue(Seconds forTime, VelocityRec *val
 	return -1; // point not found
 }
 
-OSErr ShioTimeValue_c::GetProgressiveWaveValue(const Seconds& start_time, const Seconds& end_time, const Seconds& current_time, VelocityRec *value)
+OSErr ShioTimeValue_c::GetProgressiveWaveValue(const Seconds& forTime, VelocityRec *value)
+//OSErr ShioTimeValue_c::GetProgressiveWaveValue(const Seconds& start_time, const Seconds& end_time, const Seconds& current_time, VelocityRec *value)
 {
 	OSErr err = 0;
 	(*value).u = 0;
 	(*value).v = 0;
 	
-//	if (err = OSSMTimeValue_c::GetTimeValue(forTime,value)) return err;									// minus AH 07/10/2012
-	if (err = OSSMTimeValue_c::GetTimeValue(start_time, end_time, current_time, value)) return err;		// AH 07/10/2012
+	if (err = OSSMTimeValue_c::GetTimeValue(forTime,value)) return err;									// minus AH 07/10/2012
+	//if (err = OSSMTimeValue_c::GetTimeValue(start_time, end_time, current_time, value)) return err;		// AH 07/10/2012
 	
 	(*value).u = (*value).u * fScaleFactor;	// derivative is zero at the highs and lows
 	(*value).v = (*value).v * fScaleFactor;

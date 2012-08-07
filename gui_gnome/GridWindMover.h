@@ -50,8 +50,8 @@ public:
 	//virtual OSErr		GetStartTime(Seconds *startTime);
 	//virtual OSErr		GetEndTime(Seconds *endTime);
 	
-	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time);	// AH 07/17/2012
-	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time); // AH 07/17/2012
+	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	// AH 07/17/2012
+	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time); // AH 07/17/2012
 	
 	virtual OSErr		TextRead(char *path);
 	OSErr 				ReadHeaderLines(char *path, WorldRect *bounds);

@@ -71,8 +71,7 @@ OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& start_time, const
 		case SCALE_CONSTANT:
 			if(!this -> fOptimize.isOptimizedForStep) 
 			{
-//				err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-				err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+				err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 				
 				if (err) 
 				{
@@ -211,8 +210,11 @@ OSErr TideCurCycleMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRe
 	}
 	return err;
 }
-
-OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr TideCurCycleMover_c::PrepareForModelRun()
+{
+	return noErr;
+}
+OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	OSErr err=0;
@@ -222,8 +224,7 @@ OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& start_time, const 
 	
 	//check to see that the time interval is loaded and set if necessary
 	if (!bActive) return noErr;
-//	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 	
 	if(err) goto done;
 	
@@ -404,7 +405,7 @@ double TideCurCycleMover_c::GetEndVVelocity(long index)
 }
 
 
-WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	// see PtCurMover::GetMove - will depend on what is in netcdf files and how it's stored
 	WorldPoint3D	deltaPoint = {0,0,0.};
@@ -425,8 +426,7 @@ WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& start_time, const Secon
 	
 	if(!this -> fOptimize.isOptimizedForStep) 
 	{
-//		err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-		err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+		err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 		
 		if (err) return deltaPoint;
 	}
@@ -528,8 +528,9 @@ scale:
 		// VelocityRec errVelocity={1,1};
 		// JLM 11/22/99, if there are no time file values, use zero not 1
 		VelocityRec errVelocity={0,1};
-//		err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue);	// AH 07/10/2012
-		err = timeDep -> GetTimeValue (start_time, stop_time, model_time, &timeValue);	// AH 07/10/2012
+		//err = timeDep -> GetTimeValue (model -> GetModelTime(), &timeValue);	// AH 07/10/2012
+		err = timeDep -> GetTimeValue (model_time, &timeValue);	// AH 07/10/2012
+		//err = timeDep -> GetTimeValue (start_time, stop_time, model_time, &timeValue);	// AH 07/10/2012
 		
 		if(err) timeValue = errVelocity;
 	}
@@ -557,7 +558,7 @@ scale:
 	return deltaPoint;
 }
 
-VelocityRec TideCurCycleMover_c::GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
+VelocityRec TideCurCycleMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};
 	printError("TideCurCycleMover::GetScaledPatValue is unimplemented");
@@ -671,8 +672,7 @@ Boolean TideCurCycleMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosti
 	// maybe should set interval right after reading the file...
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
-//	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 	
 	if(err) return false;
 	
@@ -1053,9 +1053,8 @@ done:
 }
 
 
-Boolean TideCurCycleMover_c::CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time)
+Boolean TideCurCycleMover_c::CheckInterval(long &timeDataInterval, const Seconds& model_time)
 {
-//	Seconds time =  model->GetModelTime();	// minus AH 07/17/2012
 	Seconds time =  model_time; // AH 07/17/2012
 	
 	long i,numTimes;
@@ -1173,11 +1172,10 @@ long TideCurCycleMover_c::GetNumTimesInFile()
 }
 
 
-OSErr TideCurCycleMover_c::SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time)
+OSErr TideCurCycleMover_c::SetInterval(char *errmsg, const Seconds& model_time)
 {
 	long timeDataInterval;
-//	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
 	
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;

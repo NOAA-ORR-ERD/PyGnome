@@ -19,16 +19,23 @@
 
 void ComponentMover_c::ModelStepIsDone()
 {
+	this -> fOptimize.isFirstStep = false;
 	memset(&fOptimize,0,sizeof(fOptimize));
 }
 
-OSErr ComponentMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr ComponentMover_c::PrepareForModelRun()
+{
+	this -> fOptimize.isFirstStep = true;
+	return noErr;
+}
+
+OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 
 {
 	char errmsg[256];
 	OSErr err = 0;
 
-	err = CurrentMover_c::PrepareForModelStep(start_time, stop_time, model_time, time_step, uncertain); // note: this calls UpdateUncertainty()	// AH 07/10/2012
+	err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain); // note: this calls UpdateUncertainty()	// AH 07/10/2012
 	
 	errmsg[0]=0;
 	
@@ -38,7 +45,7 @@ OSErr ComponentMover_c::PrepareForModelStep(const Seconds& start_time, const Sec
 	//if (err) goto done;
 	
 	this -> fOptimize.isOptimizedForStep = true;
-	this -> fOptimize.isFirstStep = (model_time == start_time);
+	//this -> fOptimize.isFirstStep = (model_time == start_time);
 	
 	// code goes here, I think this is redundant
 	if (this -> fOptimize.isFirstStep)
@@ -51,7 +58,6 @@ OSErr ComponentMover_c::PrepareForModelStep(const Seconds& start_time, const Sec
 				fAveragedWindsHdl = 0;
 			}
 			err = CalculateAveragedWindsHdl(errmsg);
-			//if (err) printError("There is a problem with the averaged winds. Please check your inputs.");
 			if (err) {if (!errmsg[0]) strcpy(errmsg,"There is a problem with the averaged winds. Please check your inputs.");}
 		}
 	}
@@ -61,7 +67,6 @@ done:
 		if(!errmsg[0])
 			strcpy(errmsg,"An error occurred in TComponentMover::PrepareForModelStep");
 		printError(errmsg); 
-		//printError("An error occurred in TComponentMover::PrepareForModelStep");
 	}
 	return err;
 }
@@ -210,8 +215,7 @@ OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 			// also check if it's not a time file...
 			// make sure in the GetMove to GetTimeValue from the averaged handle
 			// check here that time is in the handle...
-// 			dynamic_cast<TWindMover *>(mover)-> GetTimeValue (timeToAddToAverage, &wVel);	// minus AH 07/10/2012
-			dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model->GetStartTime(), model->GetEndTime(), timeToAddToAverage, &wVel);	// AH 07/10/2012
+ 			dynamic_cast<TWindMover *>(mover)-> GetTimeValue (timeToAddToAverage, &wVel);	// minus AH 07/10/2012
 			
 			//windSpeedToScale = sqrt(wVel.u*wVel.u + wVel.v*wVel.v);
 			// code goes here, take the component first, then average ?
@@ -345,8 +349,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 					if (mover -> GetClassID() != TYPE_WINDMOVER) continue;
 					if (!strcmp(mover -> className, windMoverName)) {
 						// JLM, note: we are implicitly matching by file name above
-				//		dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
-						dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model -> modelTime, &wVel);	// AH 07/10/2012
+						dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
 						bFound = true;
 						break;
 					}
@@ -360,8 +363,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 						if (mover -> GetClassID() != TYPE_WINDMOVER) continue;
 						if (!strcmp(mover -> className, windMoverName)) {
 							// JLM, note: we are implicitly matching by file name above
-			//				dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
-							dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model->GetStartTime(), model->GetEndTime(), model -> modelTime, &wVel);	// AH 07/10/2012
+							dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
 							
 							bFound = true;
 							break;
@@ -448,7 +450,7 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 	return noErr;
 }
 
-WorldPoint3D ComponentMover_c::GetMove (const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D ComponentMover_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double 		dLat, dLong;
 	WorldPoint3D	deltaPoint = {0,0,0.};

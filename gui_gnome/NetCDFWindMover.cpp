@@ -81,9 +81,8 @@ long NetCDFWindMover::GetNumFiles()
 	return numFiles;     
 }
 
-OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time)
+OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 {
-//	Seconds time = model->GetModelTime(), startTime, endTime, lastEndTime, testTime, firstStartTime;	// minus AH 07/17/2012
 	Seconds time = model_time, startTime, endTime, lastEndTime, testTime, firstStartTime; // AH 07/17/2012
 	
 	long i,numFiles = GetNumFiles();
@@ -101,8 +100,7 @@ OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& start_time,
 		if (startTime<=time&&time<=endTime && !(startTime==endTime))
 		{
 			if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-//			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
-			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false, start_time);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);	// AH 07/17/2012
 			
 			// code goes here, check that start/end times match
 			strcpy(fPathName,(*fInputFilesHdl)[i].pathName);
@@ -126,8 +124,7 @@ OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& start_time,
 			 else*/
 			{
 				if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-//				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
-				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeHdl,false, start_time);	// AH 07/17/2012
+				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeHdl,false);	// AH 07/17/2012
 				
 				DisposeLoadedData(&fEndData);
 				strcpy(fPathName,(*fInputFilesHdl)[fileNum-1].pathName);
@@ -135,8 +132,7 @@ OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& start_time,
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-//			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
-			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeHdl,false, start_time);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeHdl,false);	// AH 07/17/2012
 			
 			strcpy(fPathName,(*fInputFilesHdl)[fileNum].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
@@ -157,16 +153,14 @@ OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& start_time,
 			else
 			{
 				if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-//				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
-				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeHdl,false, start_time);
+				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeHdl,false);
 				DisposeLoadedData(&fEndData);
 				strcpy(fPathName,(*fInputFilesHdl)[i-1].pathName);
 				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;	
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-//			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
-			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false, start_time);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);	// AH 07/17/2012
 			
 			strcpy(fPathName,(*fInputFilesHdl)[i].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
@@ -180,8 +174,7 @@ OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& start_time,
 	if (fAllowExtrapolationOfWinds && time > lastEndTime)
 	{
 		if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-//		err = ScanFileForTimes((*fInputFilesHdl)[numFiles-1].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
-		err = ScanFileForTimes((*fInputFilesHdl)[numFiles-1].pathName,&fTimeHdl,false, start_time); // AH 07/17/2012
+		err = ScanFileForTimes((*fInputFilesHdl)[numFiles-1].pathName,&fTimeHdl,false); // AH 07/17/2012
 		// code goes here, check that start/end times match
 		strcpy(fPathName,(*fInputFilesHdl)[numFiles-1].pathName);
 		fOverLap = false;
@@ -190,8 +183,7 @@ OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& start_time,
 	if (fAllowExtrapolationOfWinds && time < firstStartTime)
 	{
 		if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-//		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false);	// minus AH 07/17/2012
-		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false, start_time); // AH 07/17/2012
+		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false); // AH 07/17/2012
 		// code goes here, check that start/end times match
 		strcpy(fPathName,(*fInputFilesHdl)[0].pathName);
 		fOverLap = false;
@@ -202,9 +194,8 @@ OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& start_time,
 	//return err;
 }
 
-Boolean NetCDFWindMover::CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time)
+Boolean NetCDFWindMover::CheckInterval(long &timeDataInterval, const Seconds& model_time)
 {
-//	Seconds time =  model->GetModelTime(), startTime, endTime;;	// minus AH 07/17/2012
 	Seconds time = model_time, startTime, endTime;	// AH 07/17/2012
 	
 	long i,numTimes,numFiles = GetNumFiles();
@@ -290,11 +281,10 @@ Boolean NetCDFWindMover::CheckInterval(long &timeDataInterval, const Seconds& st
 }
 
 
-OSErr NetCDFWindMover::SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time)
+OSErr NetCDFWindMover::SetInterval(char *errmsg, const Seconds& model_time)
 {
 	long timeDataInterval = 0;
-//	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval); // minus AH 07/17/2012
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
 	long numTimesInFile = this -> GetNumTimesInFile();
@@ -335,11 +325,9 @@ OSErr NetCDFWindMover::SetInterval(char *errmsg, const Seconds& start_time, cons
 		
 		if (GetNumFiles()>1)
 		{
-//			if ((err = CheckAndScanFile(errmsg)) || fOverLap) goto done;	// overlap is special case	// minus AH 07/17/2012
-			if ((err = CheckAndScanFile(errmsg, start_time, model_time)) || fOverLap) goto done;	// AH 07/17/2012
+			if ((err = CheckAndScanFile(errmsg, model_time)) || fOverLap) goto done;	// AH 07/17/2012
 				
-//			intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-			intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+			intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
 			indexOfStart = timeDataInterval-1;
 			indexOfEnd = timeDataInterval;
 			numTimesInFile = this -> GetNumTimesInFile();
@@ -563,7 +551,7 @@ done:
 	return err;
 }
 
-OSErr NetCDFWindMover::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime, const Seconds& start_time)
+OSErr NetCDFWindMover::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime)
 {
 	OSErr err = 0;
 	long i,numScanned,line=0;
@@ -1444,13 +1432,11 @@ void NetCDFWindMover::Draw(Rect r, WorldRect view)
 	
 	if (bShowArrows)
 	{
-//		err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-		err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+		err = this -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 		
 		if(err && !bShowGrid) return;	// want to show grid even if there's no wind data
 		
-//		loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-		loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+		loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	// AH 07/17/2012
 		if(!loaded && !bShowGrid) return;
 		
 		if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)

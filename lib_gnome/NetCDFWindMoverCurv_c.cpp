@@ -58,7 +58,8 @@ Boolean NetCDFWindMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnos
 	if (!bActive) return 0; 
 	if (!bShowArrows && !bShowGrid) return 0;
 //	err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	//err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 	
 	if(err) return false;
 	
@@ -127,7 +128,8 @@ Boolean NetCDFWindMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnos
 	return true;
 }
 
-WorldPoint3D NetCDFWindMoverCurv_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+//WorldPoint3D NetCDFWindMoverCurv_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D NetCDFWindMoverCurv_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	
@@ -146,7 +148,8 @@ WorldPoint3D NetCDFWindMoverCurv_c::GetMove(const Seconds& start_time, const Sec
 	if(!fIsOptimizedForStep) 
 	{
 //		err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-		err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+		//err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
+		err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 		
 		if (err) return deltaPoint;
 	}

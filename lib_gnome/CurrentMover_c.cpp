@@ -187,7 +187,12 @@ OSErr CurrentMover_c::UpdateUncertainty(void)
 }
 #endif
 
-OSErr CurrentMover_c::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr CurrentMover_c::PrepareForModelRun()
+{
+	return noErr;
+}
+
+OSErr CurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	OSErr err = 0;
 	if (uncertain)

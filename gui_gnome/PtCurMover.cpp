@@ -255,9 +255,8 @@ OSErr PtCurMover::InitMover()
 	return err;
 }
 
-OSErr PtCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, const Seconds& model_time)
+OSErr PtCurMover::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 {
-//	Seconds time = model->GetModelTime(), startTime, endTime, lastEndTime, testTime;	// minus AH 07/17/2012
 	Seconds time = model_time, startTime, endTime, lastEndTime, testTime; // AH 07/17/2012
 	
 	long i,numFiles = GetNumFiles();
@@ -274,8 +273,7 @@ OSErr PtCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, cons
 		if (startTime<=time&&time<=endTime && !(startTime==endTime))
 		{
 			if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
-//			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false);	// minus AH 07/17/2012
-			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false, start_time);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
 			
 			// code goes here, check that start/end times match
 			strcpy(fVar.pathName,(*fInputFilesHdl)[i].pathName);
@@ -299,8 +297,7 @@ OSErr PtCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, cons
 			else*/
 			{
 				if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
-//				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeDataHdl,false);	// minus AH 07/17/2012
-				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeDataHdl,false, start_time);	// AH 07/17/2012
+				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
 				
 				DisposeLoadedData(&fEndData);
 				strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum-1].pathName);
@@ -308,8 +305,7 @@ OSErr PtCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, cons
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
-//			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeDataHdl,false);	// minus AH 07/17/2012
-			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeDataHdl,false, start_time);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
 			
 			strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
@@ -330,8 +326,7 @@ OSErr PtCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, cons
 			else
 			{
 				if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
-//				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeDataHdl,false);	// minus AH 07/17/2012
-				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeDataHdl,false, start_time);	// AH 07/17/2012
+				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
 				
 				DisposeLoadedData(&fEndData);
 				strcpy(fVar.pathName,(*fInputFilesHdl)[i-1].pathName);
@@ -339,8 +334,7 @@ OSErr PtCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, cons
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
-//			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false);	// minus AH 07/17/2012
-			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false, start_time);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
 			
 			strcpy(fVar.pathName,(*fInputFilesHdl)[i].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
@@ -356,9 +350,8 @@ OSErr PtCurMover::CheckAndScanFile(char *errmsg, const Seconds& start_time, cons
 	//return err;
 }
 
-Boolean PtCurMover::CheckInterval(long &timeDataInterval, const Seconds& start_time, const Seconds& model_time)
+Boolean PtCurMover::CheckInterval(long &timeDataInterval, const Seconds& model_time)
 {
-//	Seconds time = model->GetModelTime();	// minus AH 07/17/2012
 	Seconds time = model_time; // AH 07/17/2012
 	
 	long i,numTimes;
@@ -410,8 +403,19 @@ Boolean PtCurMover::CheckInterval(long &timeDataInterval, const Seconds& start_t
 }
 
 
+OSErr PtCurMover::PrepareForModelRun()
+{
+	if (moverMap->IAm(TYPE_PTCURMAP))
+	{
+		(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
+		(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
+		if (fGrid->GetClassID()==TYPE_TRIGRIDVEL3D)	// I think this will always be 3D, but maybe old SAV files...
+			((TTriGridVel3D*)fGrid)->ClearOutputHandles();
+	}
+	return noErr;
+}
 
-OSErr PtCurMover::PrepareForModelStep(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time,const Seconds& time_step, bool uncertain)
+OSErr PtCurMover::PrepareForModelStep(const Seconds& model_time,const Seconds& time_step, bool uncertain)
 {
 	long timeDataInterval;
 	//Boolean intervalLoaded;
@@ -433,7 +437,7 @@ OSErr PtCurMover::PrepareForModelStep(const Seconds& start_time, const Seconds& 
 	 
 	 if(!intervalLoaded)*/
 	
-	if (model_time == start_time)	// first step, save depth range here?
+	/*if (model_time == start_time)	// first step, save depth range here?
 	{
 		if (moverMap->IAm(TYPE_PTCURMAP))
 		{
@@ -442,10 +446,9 @@ OSErr PtCurMover::PrepareForModelStep(const Seconds& start_time, const Seconds& 
 			if (fGrid->GetClassID()==TYPE_TRIGRIDVEL3D)	// I think this will always be 3D, but maybe old SAV files...
 				((TTriGridVel3D*)fGrid)->ClearOutputHandles();
 		}
-	}
+	}*/
 	if (!bActive) return 0; 
-//	err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	err = this -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 	
 	if(err) goto done;
 	
@@ -462,11 +465,10 @@ done:
 	return err;
 }
 
-OSErr PtCurMover::SetInterval(char *errmsg, const Seconds& start_time, const Seconds& model_time)
+OSErr PtCurMover::SetInterval(char *errmsg, const Seconds& model_time)
 {
 	long timeDataInterval=0;
-//	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
 	
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
@@ -489,11 +491,9 @@ OSErr PtCurMover::SetInterval(char *errmsg, const Seconds& start_time, const Sec
 	{	// before the first step in the file
 		if (GetNumFiles()>1)
 		{
-//			if ((err = CheckAndScanFile(errmsg)) || fOverLap) goto done;	// overlap is special case	// minus AH 07/17/2012
-			if ((err = CheckAndScanFile(errmsg, start_time, model_time)) || fOverLap) goto done;	// AH 07/17/2012
+			if ((err = CheckAndScanFile(errmsg, model_time)) || fOverLap) goto done;	// AH 07/17/2012
 			
-//			intervalLoaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-			intervalLoaded = this -> CheckInterval(timeDataInterval, start_time, model_time);	// AH 07/17/2012
+			intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
 			
 			indexOfStart = timeDataInterval-1;
 			indexOfEnd = timeDataInterval;
@@ -1141,13 +1141,11 @@ void PtCurMover::Draw(Rect r, WorldRect view)
 			Boolean loaded;
 			TTriGridVel* triGrid = (TTriGridVel*)fGrid;	// don't think need 3D here
 
-//			err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-			err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+			err = this -> SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
 			
 			if(err) return;
 			
-//			loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-			loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+			loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	// AH 07/17/2012
 			
 			if(!loaded) return;
 
@@ -1793,8 +1791,7 @@ OSErr PtCurMover::TextRead(char *path, TMap **newMap)
 	NthLineInTextOptimized(*f, (line)++, s, 1024); 
 	if(!strstr(s,"[FILE]")) 
 	{	// single file
-//		err = ScanFileForTimes(path,&fTimeDataHdl,true);	// minus AH 07/17/2012
-		err = ScanFileForTimes(path,&fTimeDataHdl,true, model->GetStartTime());	// AH 07/17/2012
+		err = ScanFileForTimes(path,&fTimeDataHdl,true);	// AH 07/17/2012
 		
 		if (err) goto done;
 	}
@@ -1804,8 +1801,7 @@ OSErr PtCurMover::TextRead(char *path, TMap **newMap)
 		long numFiles = (numLinesInText - (line - 1))/3;	// 3 lines for each file - filename, starttime, endtime
 		strcpy(fVar.pathName,s+strlen("[FILE]\t"));
 		ResolvePathFromInputFile(path,fVar.pathName); // JLM 6/8/10
-//		err = ScanFileForTimes(fVar.pathName,&fTimeDataHdl,true);	// minus AH 07/17/2012
-		err = ScanFileForTimes(fVar.pathName,&fTimeDataHdl,true, model->GetStartTime());	// AH 07/17/2012
+		err = ScanFileForTimes(fVar.pathName,&fTimeDataHdl,true);	// AH 07/17/2012
 		
 		if (err) goto done;
 		// code goes here, maybe do something different if constant current
@@ -1951,7 +1947,7 @@ done:
 	return err;
 }
 
-OSErr PtCurMover::ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataH,Boolean setStartTime, const Seconds& start_time)
+OSErr PtCurMover::ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataH,Boolean setStartTime)
 {
 	// scan through the file looking for times "[TIME "  (close file if necessary...)
 	
@@ -2546,8 +2542,7 @@ Boolean PtCurMover::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	// maybe should set interval right after reading the file...
 	// then wouldn't have to do it here
 	if (!bActive) return 0; 
-//	err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-	err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+	err = this -> SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
 	
 	if(err) return false;
 	
@@ -2772,7 +2767,8 @@ done:
 	return err;
 }
 
-WorldPoint3D PtCurMover::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+//WorldPoint3D PtCurMover::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+WorldPoint3D PtCurMover::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {0,0,0.};
 	WorldPoint refPoint = (*theLE).p;	
@@ -2791,8 +2787,7 @@ WorldPoint3D PtCurMover::GetMove(const Seconds& start_time, const Seconds& stop_
 	
 	if(!fIsOptimizedForStep) 
 	{
-//		err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-		err = this -> SetInterval(errmsg, start_time, model_time);	// AH 07/17/2012
+		err = this -> SetInterval(errmsg, model_time);	// AH 07/17/2012
 		
 		if (err) return deltaPoint;
 	}

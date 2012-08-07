@@ -48,7 +48,7 @@ public:
 	
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	VelocityRec			GetPatValue (WorldPoint p);
-	VelocityRec 		GetScaledPatValue(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
+	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
 	virtual WorldRect	GetGridBounds(){return fGrid->GetBounds();}	
 
 	

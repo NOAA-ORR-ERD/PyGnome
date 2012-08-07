@@ -1365,11 +1365,13 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 			TTriGridVel* triGrid = (TTriGridVel*)fGrid;
 			
 //			err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-			err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+			//err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+			err = this -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 			if(err) return;
 			
 //			loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-			loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	 // AH 07/17/2012
+			//loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	 // AH 07/17/2012
+			loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	 // AH 07/17/2012
 			
 			if(!loaded) return;
 			
@@ -1595,13 +1597,11 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
 	triSelected = triGrid -> GetTriSelection(false);	// don't init
 
 	//if (fVar.gridType != SIGMA_ROMS) return;
-//	err = SetInterval(errmsg);	// minus AH 07/17/2012
-	err = SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
+	err = SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 	
 	if(err) return;
 	
-//	loaded = CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-	loaded = CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	// AH 07/17/2012
+	loaded = CheckInterval(timeDataInterval, model->GetModelTime());	// AH 07/17/2012
 	
 	if(!loaded) return;	
 	
