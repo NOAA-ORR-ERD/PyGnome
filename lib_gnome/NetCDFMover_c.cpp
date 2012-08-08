@@ -162,6 +162,8 @@ long NetCDFMover_c::GetNumFiles()
 	return numFiles;     
 }
 
+#ifndef pyGNOME
+
 OSErr NetCDFMover_c::PrepareForModelRun()
 {
 	if (dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERCURV) || dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERTRI))
@@ -179,6 +181,8 @@ OSErr NetCDFMover_c::PrepareForModelRun()
 	}
 	return noErr;
 }
+
+#endif
 
 OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {

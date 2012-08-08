@@ -128,10 +128,10 @@ public:
 	virtual double	GetDepthAtIndex(long depthIndex, double totalDepth);
 #ifndef pyGNOME
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
+	virtual OSErr 		PrepareForModelRun(); 
 #endif
 	float		GetTotalDepth(WorldPoint refPoint, long triNum);
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
-	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	virtual void 		ModelStepIsDone();
 	
