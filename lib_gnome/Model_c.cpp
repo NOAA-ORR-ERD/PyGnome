@@ -1292,6 +1292,26 @@ Boolean Model_c::ThereIsA3DMover(float *arrowDepth)
 	return false;
 }
 
+Boolean Model_c::ThereIsASubsurfaceSpill()
+{
+	long i, n;
+	TLEList *thisLEList;
+	LETYPE leType;
+	
+	for (i = 0, n = this->LESetsList->GetItemCount(); i < n; i++) 
+	{
+		this->LESetsList->GetListItem((Ptr)&thisLEList, i);
+		leType = thisLEList -> GetLEType();
+		if(leType == UNCERTAINTY_LE /*&& !this->IsUncertain()*/) continue;
+		if ((*(dynamic_cast<TOLEList*>(thisLEList))).fDispersantData.bDisperseOil || (*(dynamic_cast<TOLEList*>(thisLEList))).fAdiosDataH)
+			return true;
+		// will need to consider spill set below the surface
+		if ((*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z > 0)
+			return true;
+	}
+	return false;
+}
+
 long Model_c::GetNumMovers(char* moverName)
 {
 	// loop through each mover in the universal map

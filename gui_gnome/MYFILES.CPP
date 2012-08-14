@@ -1339,6 +1339,7 @@ OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size) {
 	OSErr err = 0;
 	char filePath[256], tempFilePath[256];
 	/////
+
 	if(model && model->fWizard && model->fWizard->PathIsWizardResource(pathName))
 	{	// wizard support, JLM 10/2/98
 		err = model->fWizard->MyGetFileSizeFromResource(pathName,size);
@@ -1355,18 +1356,12 @@ OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size) {
 		err = ConvertTraditionalPathToUnixPath((const char *) tempFilePath, filePath, kMaxNameLen) ;
 #else
 		strcpy(filePath,tempFilePath);
-#endif
-	try {
-		fstream *_ifstream = new fstream(filePath, ios::in);
-		for(; _ifstream->get(c); x++);
-		delete _ifstream;
-		*size = x;
-		}
-    catch(...) {
-        //printError("We are unable to open or read from the file. \nBreaking from MyGetFileSize().\n");
-        return true;
-    }
-    return false;
+#endif	
+
+	struct stat stat_buf;
+    int rc = stat(filePath, &stat_buf);
+	if (rc == 0) {*size = stat_buf.st_size; return noErr;}
+	else {*size = 0; return -1;}
 }
 
 /*OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size)

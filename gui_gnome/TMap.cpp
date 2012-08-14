@@ -979,7 +979,9 @@ OSErr TMap::AddItem(ListItem item)
 					else if (this->IAm(TYPE_MAP)) 
 					{	// for universal mover
 						float arrowDepth = 0;
-						if (model->ThereIsA3DMover(&arrowDepth)) return Random3DSettingsDialog(0,this);
+						if (model->ThereIsASubsurfaceSpill()) return Random3DSettingsDialog(0,this);
+						//for now ThereIsA3DMover is always set to true
+						//if (model->ThereIsA3DMover(&arrowDepth)) return Random3DSettingsDialog(0,this);
 						/*PtCurMap *map = GetPtCurMap();
 						if (map)
 						{

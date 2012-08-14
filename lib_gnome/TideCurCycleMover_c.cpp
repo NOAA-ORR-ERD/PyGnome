@@ -212,6 +212,7 @@ OSErr TideCurCycleMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRe
 }
 OSErr TideCurCycleMover_c::PrepareForModelRun()
 {
+	fOptimize.isFirstStep = true;
 	return noErr;
 }
 OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
@@ -221,7 +222,9 @@ OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const 
 	char errmsg[256];
 	
 	errmsg[0]=0;
-	
+
+	if (fOptimize.isFirstStep) model_start_time = model_time;
+
 	//check to see that the time interval is loaded and set if necessary
 	if (!bActive) return noErr;
 	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
@@ -245,6 +248,7 @@ done:
 
 void TideCurCycleMover_c::ModelStepIsDone()
 {
+	fOptimize.isFirstStep = false;
 	fOptimize.isOptimizedForStep = false;
 }
 

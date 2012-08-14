@@ -41,6 +41,7 @@ public:
 	short fPatternStartPoint;	// maxflood, maxebb, etc
 	float fTimeAlpha;
 	char fTopFilePath[kMaxNameLen];
+	Seconds model_start_time;	// for the diagnostic case - no time file look at the patterns in the file that have no absolute time associated with them
 	
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	

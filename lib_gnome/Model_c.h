@@ -130,6 +130,7 @@ public:
 	 long				GetNumWindMovers();	
 	 TWindMover*			GetWindMover(Boolean createIfDoesNotExist);
 	 Boolean				ThereIsA3DMover(float *arrowDepth);
+	Boolean				ThereIsASubsurfaceSpill();
 	 TRandom*			GetDiffusionMover(Boolean createIfDoesNotExist);
 	 TRandom3D*			Get3DDiffusionMover();
 	 TCurrentMover*		GetPossible3DCurrentMover();

@@ -1143,6 +1143,36 @@ OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR
 		strcpy(filePath,tempFilePath);
 #endif
 	
+	/*FILE *fp;
+	long len=0;
+	char *buf=0;
+	fp=fopen(filePath,"rb");
+	fseek(fp,0,SEEK_END); //go to end
+	len=ftell(fp); //get position at end (length)
+	fseek(fp,0,SEEK_SET); //go to beg.
+	//len = len + (terminate ? 1 : 0);
+	buf=(char *)malloc(len); //malloc buffer
+	//buf = new char[len];
+	fread(buf,len,1,fp); //read into buffer
+	fclose(fp);	
+	
+	if(handle) {
+		*handle = _NewHandle(len + (terminate ? 1 : 0));
+		for(; i < len; i++)
+		{
+			DEREFH(*handle)[i] = buf[i];
+			c = buf[i];
+		}
+		if (terminate) DEREFH(*handle)[len] = 0;
+	} 
+	else {
+		for(; i < len; i++)
+			((char *)ptr)[i] = buf[i];
+		if (terminate) ((char *)ptr)[len] = 0;
+	}
+	if (buf) {free(buf); buf = 0;}
+	return noErr;	// check for errors
+	*/
 	try {
 		fstream *_ifstream = new fstream(filePath, ios::in);
 		for(; _ifstream->get(c); x++);
@@ -1153,13 +1183,15 @@ OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR
 		if(x > length && length != 0)
 		    x = length;
 		if(handle) {
-			*handle = _NewHandle(x);
+			*handle = _NewHandle(x + (terminate ? 1 : 0));
 			for(; i < x && _ifstream->get(c); i++)
 				DEREFH(*handle)[i] = c;
+			if (terminate) DEREFH(*handle)[x] = 0;
 		} 
 		else {
 			for(; i < x && _ifstream->get(c); i++)
 				((char *)ptr)[i] = c;
+			if (terminate) ((char *)ptr)[x] = 0;
 		}
 	}
 	catch(...) {
