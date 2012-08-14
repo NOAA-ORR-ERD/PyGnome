@@ -68,7 +68,7 @@ CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 
 #ifdef pyGNOME
 
-OSErr CATSMover_c::ComputeVelocityScale(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time) {
+OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time) {	// AH 08/08/2012
 	// this function computes and sets this->refScale
 	// returns Error when the refScale is not defined
 	// or in allowable range.  

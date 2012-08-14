@@ -76,7 +76,7 @@ print '# forecast move #'
 print '#################'
 
 for x in range(0, 1):
-    wm.get_move(N, start_time, stop_time, model_time, 10, ref_ra, wp_ra, wind_ra, disp_ra, breaking_wave, mix_layer_depth, time_vals, M)
+    wm.get_move(N, model_time, 10, ref_ra, wp_ra, wind_ra, disp_ra, breaking_wave, mix_layer_depth, time_vals)
 
 print wp_ra
 
@@ -92,6 +92,6 @@ ref_ra[:]['p']['p_lat'] *= 1000000
 ref_ra[:]['p']['p_long'] *= 1000000
 
 for x in range(0, 1):
-    wm.get_move_uncertain(N, start_time, stop_time, model_time, 10, ref_ra, wp_ra, wind_ra, disp_ra, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer_depth, uncertain_ra, time_vals, M)
+    wm.get_move_uncertain(N, model_time, 10, ref_ra, wp_ra, wind_ra, disp_ra, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer_depth, uncertain_ra, time_vals)
 
 print wp_ra

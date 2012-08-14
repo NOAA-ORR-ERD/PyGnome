@@ -1,3 +1,4 @@
+include "type_defs.pxi"
 include "mover.pxi"
 
 cdef extern from "OSSMTimeValue_c.h":

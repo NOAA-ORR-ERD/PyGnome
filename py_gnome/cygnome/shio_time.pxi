@@ -1,4 +1,6 @@
-include "ossm_time.pxi"
+cdef extern form "OSSMTimeValue_c.h":
+    cdef cppclass OSSMTimeValue_c:
+        pass
 
 cdef extern from "ShioTimeValue_c.h":
     cdef cppclass ShioTimeValue_c(OSSMTimeValue_c):

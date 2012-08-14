@@ -48,7 +48,7 @@ cdef class cats_mover:
             return False
         return True
     
-    def get_move_uncertain(self, n, start_time, stop_time, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[LEWindUncertainRec] uncertain_ra):
+    def get_move_uncertain(self, n, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[LEWindUncertainRec] uncertain_ra):
         cdef:
             char *time_vals_ptr
             char *uncertain_ptr
@@ -59,9 +59,9 @@ cdef class cats_mover:
         world_points = wp_ra.data
         uncertain_ptr = uncertain_ra.data
 
-        self.mover.get_move(N, start_time, stop_time, model_time, step_len, ref_points, world_points, uncertain_ptr)
+        self.mover.get_move(N, model_time, step_len, ref_points, world_points, uncertain_ptr)
 
-    def get_move(self, n, start_time, stop_time, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra):
+    def get_move(self, n, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra):
         cdef:
             char *time_vals_ptr
             char *uncertain_ptr
@@ -71,10 +71,10 @@ cdef class cats_mover:
         ref_points = ref_ra.data
         world_points = wp_ra.data
 
-        self.mover.get_move(N, start_time, stop_time, model_time, step_len, ref_points, world_points)
+        self.mover.get_move(N, model_time, step_len, ref_points, world_points)
 
-    def compute_velocity_scale(self, start_time, stop_time, model_time):
-        self.mover.ComputeVelocityScale(start_time, stop_time, model_time)
+    def compute_velocity_scale(self, model_time):
+        self.mover.ComputeVelocityScale(model_time)
         
     def set_velocity_scale(self, scale_value):
         self.mover.refScale = scale_value
