@@ -360,8 +360,10 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	 
 	daylightSavings = this->DaylightSavingTimeInEffect(&beginDate);// code goes here, set the daylight flag
 #ifndef pyGNOME	
-#ifdef IBM
+#ifdef IBM	// code goes here - decide where to put the yeardata folder
 	YHdl = GetYearData(beginDate.year);
+	//GetYearDataDirectory(directoryPath);	// put full path together	
+	//yearData = ReadYearData(beginDate.year,directoryPath,errStr);	
 #else
 	//YHdl = (YEARDATAHDL)_NewHandle(0);
 	GetYearDataDirectory(directoryPath);	// put full path together	

@@ -6727,7 +6727,7 @@ void TModel::DrawLEMovement(void)
 	short numLEsHori = gNumLEsHori;
 	short numLEsVert = gNumLEsVert;
 	char* errorMessageStr = 0;
-	float arrowDepth;
+	float arrowDepth = 0.;
 	
 	long	numOfLEs = numLEsHori * numLEsVert;
 	

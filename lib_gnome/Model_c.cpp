@@ -1229,7 +1229,7 @@ Boolean Model_c::CurrentBeachesLE(WorldPoint3D startPoint, WorldPoint3D *movedPo
 Boolean Model_c::ThereIsA3DMover(float *arrowDepth)
 {	// for now until we decide who is allowed to use 3D stuff
 	//rework this 
-	
+	*arrowDepth = 0.;
 	TMover *mover = GetMover(TYPE_PTCURMOVER);
 	if (mover && gNoaaVersion)
 	{	
