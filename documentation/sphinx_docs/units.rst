@@ -21,7 +21,7 @@ Mass
     Mass is in floating point grams ???
 
 Velocity
-    Velocities are in meters per second
+    Velocities are in meters per second (usaully ``double``)
     
 Latitude-Longitude
    Lat-long is is floating point (``double``) degrees  -- range generally -360 to 360, so we can do stuff accross the date line.

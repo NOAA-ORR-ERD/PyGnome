@@ -1,7 +1,7 @@
 """
 cython file used to store all the type info for GNOME.
 
-Some hard-coded here, some pulled form C++ headers, etc.
+Some hard-coded here, some pulled from C++ headers, etc.
 """
 
 import cython
@@ -16,7 +16,11 @@ import numpy as np
 
 # Basic types. Should each have a corresponding, equivalent type in the C++ (type_defs.pxi)
 
+mover_type = np.float64 # the type used by the movers to do their calculations
+                        # data should genreally be passed in and stored in this type
+
 world_point_type = np.float64
+
 world_point = np.dtype([('p_long', world_point_type),
                         ('p_lat', world_point_type)],
                        align=True)
@@ -41,6 +45,7 @@ world_rect = np.dtype([('lo_long', np.long),
 ##   it seems they are only relevent to the wind mover.
 
 windage_type = np.float64
+
 wind_uncertain_rec = np.dtype([('randCos', np.float32), ('randSin', np.float32),], align=True)
 le_uncertain_rec   = np.dtype([('downStream', np.float32), ('crossStream', np.float32),], align=True)
 velocity_rec       = np.dtype([('u', np.double), ('v', np.double),], align=True)

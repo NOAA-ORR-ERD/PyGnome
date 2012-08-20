@@ -7,7 +7,8 @@ Designed to be run with py.test
 
 @author: brian.zelenke
 @author: Chris.Barker
-You should  be able to `git checkout prototype; cd py_gnome; python setup.py build; python setup2.py develop` and then run this script.
+You should  be able to `git pull; cd py_gnome; python setup.py develop` and then run this script.
+
 """
 
 from __future__ import division
@@ -335,6 +336,9 @@ class Test_full_move:
         
 
     def test_land_cross(self):
+        """
+        try a single LE
+        """
         map = RasterMap(refloat_halflife = 6, #hours
                         bitmap_array= self.raster,
                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
@@ -357,16 +361,35 @@ class Test_full_move:
         assert status_codes[0] == basic_types.status_on_land
         
     def test_land_cross_array(self):
+        """
+        test a few LEs
+        """
         map = RasterMap(refloat_halflife = 6, #hours
                         bitmap_array= self.raster,
                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
                         projection=projections.NoProjection(),
                         )
         
-        start_positions= np.array( ( ( 5.0, 5.0), ), dtype=np.float64) 
-        end_positions =  np.array( ( (15.0, 5.0), ), dtype=np.float64)
+        # one left to right
+        # one right to left
+        # one diagonal upper left to lower right
+        # one diagonal upper right to lower left
+        start_positions= np.array( ( ( 5.0, 5.0),
+                                     ( 15.0, 5.0),
+                                     ( 0.0, 0.0),
+                                     (19.0, 0.0),
+                                     ), dtype=np.float64) 
+
+        end_positions =  np.array( ( ( 15.0, 5.0),
+                                     (  5.0, 5.0),
+                                     ( 10.0, 5.0 ),
+                                     (  0.0, 9.0 ),
+                                     ),  dtype=np.float64)
+        
         last_water_positions = np.empty_like( start_positions )
-        status_codes  =  np.array( (basic_types.status_in_water, ), dtype=basic_types.status_code_type)
+
+        status_codes  =  np.empty( (start_positions.shape[0],), dtype=basic_types.status_code_type)
+        status_codes[:]  =  basic_types.status_in_water
  
         map.beach_elements(start_positions,
                            end_positions,
@@ -374,8 +397,115 @@ class Test_full_move:
                            status_codes,
                            )
         
-        assert np.array_equal( end_positions[0], (10.0, 5.0) )
-        assert np.array_equal( last_water_positions[0], (9.0, 5.0) )
-        assert status_codes[0] == basic_types.status_on_land
+        ## do we care what the end positon is here?
+        assert np.array_equal( end_positions, ( (10.0, 5.0),
+                                                (10.0, 5.0),
+                                                (10.0, 5.0),
+                                                (10.0, 4.0),
+                                                ) )
+        assert np.array_equal( last_water_positions, ( (9.0,  5.0),
+                                                       (11.0, 5.0),
+                                                       ( 9.0, 4.0),
+                                                       (11.0, 4.0),
+                                                       ) )
+
+        assert np.alltrue( status_codes == basic_types.status_on_land )
+
+    def test_some_cross_array(self):
+        """
+        test a few LEs
+        """
+        map = RasterMap(refloat_halflife = 6, #hours
+                        bitmap_array= self.raster,
+                        map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
+                        projection=projections.NoProjection(),
+                        )
         
+        # one left to right
+        # one right to left
+        # diagonal that doesn't hit
+        # diagonal that does hit
+        start_positions= np.array( ( ( 5.0, 5.0),
+                                     ( 15.0, 5.0),
+                                     ( 0.0, 0.0),
+                                     (19.0, 0.0),
+                                     ), dtype=np.float64) 
+
+        end_positions =  np.array( ( (  9.0, 5.0),
+                                     (  11.0, 5.0),
+                                     (  9.0, 9.0 ),
+                                     (  0.0, 9.0 ),
+                                     ),  dtype=np.float64)
+        
+        last_water_positions = np.empty_like( start_positions )
+
+        status_codes  =  np.empty( (start_positions.shape[0],), dtype=basic_types.status_code_type)
+        status_codes[:]  =  basic_types.status_in_water
+ 
+        map.beach_elements(start_positions,
+                           end_positions,
+                           last_water_positions,
+                           status_codes,
+                           )
+        assert np.array_equal( end_positions, ( ( 9.0, 5.0),
+                                                (11.0, 5.0),
+                                                ( 9.0, 9.0),
+                                                (10.0, 4.0),
+                                                ) )
+        # just the beached ones
+        assert np.array_equal( last_water_positions[3:], ( (11.0, 4.0),
+                                                           ) )
+
+        assert np.array_equal( status_codes[3:], ( basic_types.status_on_land,
+                                                   ) )
+        
+    def test_outside_raster(self):
+        """
+        test LEs starting form outside the raster bounds
+        """
+        map = RasterMap(refloat_halflife = 6, #hours
+                        bitmap_array= self.raster,
+                        map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
+                        projection=projections.NoProjection(),
+                        )
+        
+        # one left to right
+        # one right to left
+        # diagonal that doesn't hit
+        # diagonal that does hit
+        start_positions= np.array( ( ( 30.0, 5.0), # outside from right
+                                     ( -5.0, 5.0), # outside from left
+                                     ( 5.0, -5.0), # outside from top
+                                     ( -5.0, -5.0), # outside from upper left
+                                     ), dtype=np.float64) 
+
+        end_positions =  np.array( ( (  15.0, 5.0),
+                                     (  5.0, 5.0),
+                                     (  5.0, 15.0 ),
+                                     ( 25.0, 15.0 ),
+                                     ),  dtype=np.float64)
+        
+        last_water_positions = np.empty_like( start_positions )
+
+        status_codes  =  np.empty( (start_positions.shape[0],), dtype=basic_types.status_code_type)
+        status_codes[:]  =  basic_types.status_in_water
+ 
+        map.beach_elements(start_positions,
+                           end_positions,
+                           last_water_positions,
+                           status_codes,
+                           )
+        assert np.array_equal( end_positions, ( ( 15.0, 5.0),
+                                                ( 5.0, 5.0),
+                                                ( 5.0, 15.0),
+                                                (10.0, 5.0),
+                                                ) )
+        # just the beached ones
+        assert np.array_equal( last_water_positions[3:], ( ( 9.0, 4.0),
+                                                           ) )
+
+        assert np.array_equal( status_codes[3:], ( basic_types.status_on_land,
+                                                   ) )
+        
+
         

@@ -77,20 +77,16 @@ def find_first_pixel(grid, pt1, pt2, draw=False):
     
     last_pt  = pt1
     # check the first point
-    print "checking:", (x0, y0)
     if not (x0 < 0 or x0 >= m or y0 < 0 or y0 >= n):#  is the point off the grid? if so, it's not land!
         if draw: 
             grid[x0, y0] += 2
         ##fixme: we should never be starting on land! 
         ## should this raise an Error instead ?
         if grid[x0, y0] == 1: #we've hit "land"
-            print "we have a hit:"
-            print "ending at first point"
             return (x0, y0), (x0, y0)
     
     while True: #keep going till hit land or the final point
         if x0 == x1 and y0 == y1:
-            print "got to the end point:", x0, y0
             break
         previous_pt = (x0, y0) 
         # advance to next point
@@ -102,37 +98,29 @@ def find_first_pixel(grid, pt1, pt2, draw=False):
             err = err + dx
             y0 = y0 + sy
         # check for land hit
-        print "checking(a):", (x0,y0)
 
         if x0 < 0 or x0 >= m or y0 < 0 or y0 >= n:# is the point off the grid? if so, it's not land!
             continue                             # note: a diagonal movement, off the grid wouldn't be a hit either
         else:
             if grid[x0, y0] == 1:
                 hit_point = (x0, y0)
-                print "hit one :", hit_point
                 if draw:
                     grid[x0, y0] += 2
                 return previous_pt, hit_point
             else:
                 if (e2 > -dy) and (e2 < dx): # there is a diagonal move -- test adjacent points also
-                    print "diagonal move"
                     ## only call it a hit if BOTH adjacent points are land.
                     pt1 = (x0, y0-sy)
                     pt2 = (x0-sx, y0)
-                    print "checking for diag points:", pt1, pt2
                     try:
                         if ( (grid[pt1[0], pt1[1]] == 1) and #is the y-adjacent point on land? 
                              (grid[pt2[0], pt2[1]] == 1)     #is the x-adjacent point on land?
                             ): 
                             hit_point = pt1 # we have to pick one -- this is arbitrary
-                            print "hit one on the diagonal:", hit_point 
                             if draw:
                                 grid[hit_point[0], hit_point[1]] += 2
                             return previous_pt, hit_point
-                        else:
-                            print "diag points not land"
                     except IndexError:
-                        print "diagonal point off the grid"
                         pass
             if draw:
                 grid[x0, y0] += 2
@@ -264,7 +252,6 @@ def thick_line(grid, (x_1, y_1), (x_2, y_2), line_type=0, color=1):
         y=y1;
 
         while( y != y2 ):
-            print "y:", y
             if(line_type==0):
                 putpixel(x,y,color)
             elif(line_type==1):

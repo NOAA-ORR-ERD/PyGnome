@@ -1,15 +1,20 @@
-import numpy
-import random
+#!/usr/bin/env python
+
 import os
 import sys
-from math import floor
-import collections
-import gnome
-from gnome import c_gnome, greenwich
-from map import gnome_map, lw_map
-from basic_types import disp_status_dont_disperse
-import spill
+import numpy
+import random
 
+from math import floor
+
+import collections
+
+import gnome
+
+from gnome import greenwich
+from gnome.map import gnome_map, lw_map
+from basic_types import disp_status_dont_disperse
+import gnome.spill
     
 class Model:
     

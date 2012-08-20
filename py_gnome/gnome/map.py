@@ -15,7 +15,7 @@ Do we want to treat lakes differently than regular water?
 
 New features:
  - Map now handles spillable area and map bounds as polygons
- - raster is the same aspect ratio os the land
+ - raster is the same aspect ratio as the land
  - internally, raster is a numpy array
  - land raster is only as big as the land -- if the map bounds are bigger, extra space is not in the land map
     Question: what if map-bounds is smaller than land? wasted bitmap space? (though it should work)
@@ -328,7 +328,6 @@ class RasterMap(GnomeMap):
 
         # put the data back in the arrays
         beached_mask =  ( status_codes == basic_types.status_on_land )
-        print "beach_mask:", beached_mask
         end_positions[beached_mask] = self.projection.to_lat_long(end_positions_px[beached_mask])
         last_water_positions[beached_mask] = self.projection.to_lat_long(last_water_positions_px[beached_mask])
         

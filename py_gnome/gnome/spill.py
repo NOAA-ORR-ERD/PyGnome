@@ -1,139 +1,147 @@
-from basic_types import le_rec, status_not_released, status_in_water, status_on_land, disp_status_have_dispersed, world_point_type
-from math import ceil, pow
-from random import random
-import numpy
+#!/usr/bin/env python
 
-class spill:
+"""
+spill.py
+
+a new implementation of the spill class(s)
+
+keeps all the data in separate arrays, so we only store and move around the
+data that is needed
+
+This is the "magic" class -- it handles the smart allocation of arrays, etc.
+
+"""
+import numpy as np
+
+from gnome import basic_types
+
+class Spill(object):
+    """
+    Base class for all spills
+    
+    Needs to be subclassed to do anything useful
+
+    Many of the "fields" associated with a collection of LEs are optional,
+    or used only by some movers, so only the ones required will be requested
+    by each mover.
+    
+    The data for the LEs is stored in the _data_arrays dict. They can be
+    accessed by indexing:
+      
+    positions = Spill['positions'] : returns a (num_LEs, 3) array of world_point_types
+    """
+    
+    def __init__(self, num_LEs):
+        
+        self.num_LEs = num_LEs
+        self._data_arrays = {}
+        
+        self._data_arrays['positions'] = np.zeros((num_LEs, 3),
+                                                  dtype=basic_types.world_point_type)
+        
+        self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
+
+        self._data_arrays['status_codes'] = ( np.zeros((num_LEs, 2),
+                                                  dtype=basic_types.status_code_type)
+                                             )
+        self._data_arrays['status_codes'] += basic_types.status_not_released                      
+ 
+    def __getitem__(self, data_name):
+        """
+        The basic way to access data for the LEs
+        
+        a KeyError will be raised if the data is not there
+        """
+        return self._data_arrays[data_name]
+    
+    def __setitem__(self, data_name, array):
+        """
+        sets the data item
+        
+        careful -- this needs to be compatible with the needs of any mover that uses it.
+        
+        It will be checked to at least be size-consistent with the rest of the
+        data, and type-consistent if the data array is being replaced
+        """
+        array = np.asarray(array)
+        
+        if len(array) != self.num_LEs:
+            raise ValueError("Length of new data arrays must be number of LEs in the Spill")
+                        
+        if data_name in self._data_arrays:
+            # if the array is already here, the type should match        
+            if array.dtype !=  self._data_arrays[data_name].dtype:
+                raise ValueError("new data array must be the same type")
+            # and the shape should match        
+            if array.shape !=  self._data_arrays[data_name].shape:
+                raise ValueError("new data array must be the same shape")
+                    
+        self._data_arrays[data_name] = array
+
+
+class PointReleaseSpill(Spill):
+    """
+    The simplest real spill class  --  a point release of floating
+    non-weathering particles
 
     """
-    Spill container. Currently handles continuous release, as well as refloating.
-    (I suspect that refloating needs some more attention.)
-    """
+    def __init__(self, num_LEs, start_position, release_time, windage=(0.01, 0.04)):
+        """
+        :param num_LEs: number of LEs used for this spill
+        :param start_position: location the LEs are released (long, lat) (floating point)
+        :param release_time: time the LEs are released (datetime object)
+        :param windage: the windage range of the LEs (min, max) -- default is (0.01, 0.04) --1% to 4%
+        """
+        Spill.__init__(self, num_LEs)
 
-    def __init__(self, gnome_map, num_particles, disp_status, windage, \
-                    (start_time, stop_time), (start_position, stop_position),uncertain=False):
-        """
-            Initializes spill attributes.
-        ++args:
-            gnome_map must be a pyGNOME land-water map, or one of a similar implementation.
-            disp_status is the spill's initial status (see gnome.basic_types for more information)
-            windage has units? I suspect not
-            (start_time, stop_time) must be in seconds
-            (start_position, stop_position) is a tuple of tuples, in lat-lon coordinates
-            uncertain's value determines whether this spill will be treated for Minimum Regret.
-        """
-        self.npra = numpy.ndarray(num_particles, dtype=le_rec)
-        self.num_particles = num_particles
-        self.start_time = start_time
-        self.stop_minus_start_time = stop_time - start_time
+        self.release_time = release_time
         self.start_position = start_position
-        self.stop_minus_start_pos = (stop_position[0] - start_position[0], stop_position[1] - start_position[1])
-        self.gnome_map = gnome_map
-        self.released_index = 0
         self.windage = windage
-        self.uncertain = uncertain
-        self.initialize_spill(disp_status)
-        self.chromgph = None
-        
-    def initialize_spill(self, disp_status):
 
-        """ Initializes the spill's numpy array. See gnome.basic_types for more information. """
-        self.npra['status_code'] = status_not_released
-        self.npra['dispersion_status'] = disp_status
-        self.npra['p']['p_long'] = self.start_position[0]
-        self.npra['p']['p_lat'] = self.start_position[1]
-        self.npra['windage'] = self.windage
-        self.npra['z'] =  0.
-    
-    def release_particles(self, model_time):
-        """ 
-            Depending on the current model time, releases particles that are due to be released and that have not yet been. 
-            Simple algorithm that determines the proportion of the spill to be released per unit time, and determines
-            the proportion of displacement similarly.
+        self.__init_LEs()
+
+    def __init_LEs(self):
         """
-        if(self.released_index >= self.num_particles):
-            self.release_particles = lambda null: None
-            return
-        if(self.stop_minus_start_time == 0):
-            fraction_duration = 1
-        else:
-            fraction_duration = ((float(model_time) - self.start_time) / self.stop_minus_start_time)
-            if fraction_duration < 0:
-                return
-        fraction_duration = min(1, fraction_duration)
-        displacement = (fraction_duration * self.stop_minus_start_pos[0], fraction_duration *self.stop_minus_start_pos[1])
-        point_of_release = self.start_position + displacement
-        ra = self.npra['status_code']
-        for self.released_index in xrange(self.released_index, int(ceil(fraction_duration*self.num_particles))):
-            ra[self.released_index]=status_in_water
-        self.released_index += 1
-        
-    def refloat_particles(self, length_time_step, lwpra):
-        ## this should be in the model or map class
-        """ 
-            Refloats particles that have been landed.
-            Takes into account the proportion of the model's
-            configured time step that is taken by the land-water
-            map's configured half-life, in order to determine
-            roughly how many half-lives have expired in a single
-            step of the model. Does not currently support hindcaasting.
+        called internally to initialize the data arrays needed
         """
-        dra = self.npra['dispersion_status']
-        chromgph = self.chromgph
-        if chromgph == None:
-            return
-        considered_indices = []
-        for j in xrange(0, self.num_particles):
-            if chromgph[j] and not dra[j] == disp_status_have_dispersed: 
-                considered_indices += [j]
-        refloat_likelihood = 1 - pow(.5, length_time_step/(self.gnome_map.refloat_halflife))
-        pra = self.npra['p']
-        sra = self.npra['status_code']
-        for idx in considered_indices:
-            if (random() < refloat_likelihood):
-                chromgph[idx] = 0
-                sra[idx] = status_in_water
-                pra[idx] = lwpra[idx]
-                
-    def disperse_particles(self):
-        ## fixme: what is this?
-        pass
-    
-    def noneTypePrevention(self, chromgph):
-        ## fixme: what is this for?
-        self.chromgph = chromgph
-        self.noneTypePrevention = lambda null: None
+        self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
+        self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
+                                                  dtype = basic_types.windage_type)
+        self._data_arrays['last_water_pts'] = np.zeros_like(self['positions'])
 
-## moved to map.py        
-#    def movement_check(self):
-#        """ 
-#        After moving a spill (after superposing each of the movers' contributions),
-#        we determine which of the particles have been landed, ie., that are in the
-#        current time step on land but were not in the previous one. Chromgph is a list
-#        of boolean values, determining which of the particles need treatment. Particles
-#        that have been landed are beached.
-#        """
-#        ##fixme: this code should be in the map classes
-#        
-#        # make a regular Nx2 numpy array 
-#        coords = numpy.copy(self.npra['p']).view(world_point_type).reshape((-1, 2),)
-#        coords = self.gnome_map.to_pixel_array(coords)
-#        chromgph = self.gnome_map._on_land_pixel_array(coords)
-#        #chromgph = map(self.gnome_map.on_land_pixel, coords)
-#        sra = self.npra['status_code']
-#        for i in xrange(0, self.num_particles):
-#            if chromgph[i]:
-#                sra[i] = status_on_land
-#        if self.chromgph == None:
-#            self.chromgph = chromgph
-#        merg = [int(chromgph[x] and not self.chromgph[x]) for x in xrange(0, len(chromgph))]
-#        self.chromgph = chromgph
-#        return merg
+    def Release_LEs(self, current_time):
+        """
+        Release the LEs -- i.e. change their status to in_water
+        if the current time is greater than or equal to the release time
+        
+        :param current_time: datetime object for current time
+        """
+        if current_time >= self.release_time:
+            self['positions'][:] = self.start_position
+            self['status_codes'][:] = basic_types.status_in_water
+        return None
 
+    def Reset(self):
+        """
+        Release the LEs -- i.e. change their status
+        """
+        self['positions'][:] = self.start_position
+        self['status_codes'][:] = basic_types.status_not_released
+        
+
+## fixme -- is there a need for this, or should we use a flag in the regular
+##          version instead?
+class PointReleaseSpillUncert(PointReleaseSpill):
+    """
+    The "uncertainty" version of a Floating Spill
+    """  
+    def __init__ (self, *args, **kwargs):
+        """
+        same __init__ as the FloatingSpill
+        """
+        FloatingSpill.___init__(self, *args, **kwargs)
+        
+        # what other parameters do we need here?
+        # stuff for Uncetainty storage...
         
         
-        
-    
-    
-    
-    
