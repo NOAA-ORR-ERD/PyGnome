@@ -4,7 +4,7 @@
 code that uses Bresenham's line algorithm to check if LEs have crossed land
 on the raster map
 
-This will most likley be tranlated to Cython
+This will most likely be translated to Cython
 """
 
 import numpy as np

@@ -8,7 +8,14 @@ import pytest
 import numpy as np
 
 from gnome import basic_types
-import gnome.spill2 as spill
+from gnome import spill
+
+def test_init_simple():
+    sp = spill.Spill(num_LEs = 10)
+    
+    assert sp['status_codes'].shape == (10,)
+    assert sp['positions'].shape == (10,3)
+    assert np.alltrue( sp['status_codes'] == basic_types.status_in_water )
 
 
 def test_data_access():
@@ -100,15 +107,45 @@ def test_data_setting_new_error():
     with pytest.raises(ValueError):
         sp['new_name'] = new_arr
 
-class Test_point_release:
-
-    def test_point_release_init(self):
-        """
-        can it be initialized
-        """
-        sp = spill.PointReleaseSpill(num_LEs = 10,
-                                     start_position = (-120, 45),
-                                     release_time = datetime.datetime(2012, 8, 8, 13),
-                                     )
+## PointReleaseTests
     
+def test_point_init():
+    sp = spill.PointReleaseSpill(num_LEs = 10,
+                                 start_position = (28.5, -128.3, 0),
+                                 release_time=datetime.datetime(2012, 8, 20, 13),
+                                 )
+    
+    assert sp['status_codes'].shape == (10,)
+    assert sp['positions'].shape == (10,3)
+    assert np.alltrue( sp['status_codes'] == basic_types.status_not_released)
+
+def test_point_release():
+    rel_time = datetime.datetime(2012, 8, 20, 13)
+    sp = spill.PointReleaseSpill(num_LEs = 10,
+                                 start_position = (28.5, -128.3, 0),
+                                 release_time=rel_time,
+                                 )
+    
+    assert np.alltrue( sp['status_codes'] == basic_types.status_not_released)
+
+    sp.release_LEs(rel_time - datetime.timedelta(seconds=1) )# one second before release time
+    assert np.alltrue( sp['status_codes'] == basic_types.status_not_released )
+    
+    sp.release_LEs(rel_time)
+    assert np.alltrue( sp['status_codes'] == basic_types.status_in_water )
+
+def test_point_reset():
+    rel_time = datetime.datetime(2012, 8, 20, 13)
+    sp = spill.PointReleaseSpill(num_LEs = 10,
+                                 start_position = (28.5, -128.3, 0),
+                                 release_time=rel_time,
+                                 )
+    
+    sp.release_LEs(rel_time)
+    assert np.alltrue( sp['status_codes'] == basic_types.status_in_water )
+    sp.reset()
+    assert np.alltrue( sp['status_codes'] == basic_types.status_not_released)
+
+    
+
 

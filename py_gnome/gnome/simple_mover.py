@@ -27,12 +27,12 @@ class simple_mover(object):
 
         create a simple_mover instance
 
-        :param velocity: a (u, v) pair -- in meters per second
+        :param velocity: a (u, v, w) triple -- in meters per second
 
         """
         self.velocity = np.asarray( velocity,
-                                    dtype = basic_types.mover_type, # use this, to be compatible with whatber we are using for location
-                                    ).reshape((2,))
+                                    dtype = basic_types.mover_type, # use this, to be compatible with whatever we are using for location
+                                    ).reshape((3,))
         
         
     def get_move(self, spill, time_step):
@@ -52,26 +52,35 @@ class simple_mover(object):
         
         # Get the data:
         try:
-            positions = spill['positions']
+            positions      = spill['positions']
             next_positions = spill['next_positions']
-            status_codes = spill['status_codes']
+            status_codes   = spill['status_codes']
         except KeyError, err:
             raise ValueError("The spill does not have the required data arrays\n"+err.message)
         
         # which ones should we move?
-        in_water_mask = status_codes == basic_types.status_in_water
-        
+        in_water_mask =  (status_codes == basic_types.status_in_water)
+                
         # compute the move
-        delta = np.array((in_water_mask.sum(),), dtype = basic_types.mover_type)
+        delta = np.zeros((in_water_mask.sum(), 3), dtype = basic_types.mover_type)
+
         delta[:] = self.velocity * time_step
+
+        print "delta:", delta
 
         # scale for projection
         # fixme -- move this to a utility function???
+        print "positions", positions
         latitudes = positions[in_water_mask, 1]
-        scale = np.deg2rad(lattitudes)
+        print latitudes
+        scale = np.cos(np.deg2rad(latitudes))
+        print "scale:", scale
         delta[:,0] *= scale
 
-        next_positions[in_water_mask] += delta
+        print "delta:", delta
+
+        print "next_positions:", next_positions[in_water_mask]
+        next_positions[in_water_mask] += delta #only lat-lon
         
 
         

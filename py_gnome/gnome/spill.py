@@ -41,10 +41,10 @@ class Spill(object):
         
         self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
 
-        self._data_arrays['status_codes'] = ( np.zeros((num_LEs, 2),
-                                                  dtype=basic_types.status_code_type)
+        self._data_arrays['status_codes'] = ( np.zeros((num_LEs,),
+                                                       dtype=basic_types.status_code_type)
                                              )
-        self._data_arrays['status_codes'] += basic_types.status_not_released                      
+        self._data_arrays['status_codes'][:] = basic_types.status_in_water             
  
     def __getitem__(self, data_name):
         """
@@ -88,7 +88,7 @@ class PointReleaseSpill(Spill):
     def __init__(self, num_LEs, start_position, release_time, windage=(0.01, 0.04)):
         """
         :param num_LEs: number of LEs used for this spill
-        :param start_position: location the LEs are released (long, lat) (floating point)
+        :param start_position: location the LEs are released (long, lat, z) (floating point)
         :param release_time: time the LEs are released (datetime object)
         :param windage: the windage range of the LEs (min, max) -- default is (0.01, 0.04) --1% to 4%
         """
@@ -108,8 +108,9 @@ class PointReleaseSpill(Spill):
         self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
                                                   dtype = basic_types.windage_type)
         self._data_arrays['last_water_pts'] = np.zeros_like(self['positions'])
+        self.reset()
 
-    def Release_LEs(self, current_time):
+    def release_LEs(self, current_time):
         """
         Release the LEs -- i.e. change their status to in_water
         if the current time is greater than or equal to the release time
@@ -121,9 +122,9 @@ class PointReleaseSpill(Spill):
             self['status_codes'][:] = basic_types.status_in_water
         return None
 
-    def Reset(self):
+    def reset(self):
         """
-        Release the LEs -- i.e. change their status
+        reset to initial conditions -- i.e. not released, and at the start position
         """
         self['positions'][:] = self.start_position
         self['status_codes'][:] = basic_types.status_not_released
