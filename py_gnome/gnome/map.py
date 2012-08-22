@@ -41,7 +41,7 @@ from gnome.utilities.geometry.polygons import PolygonSet
 #from hazpy.geometry import polygons
 
             
-class GnomeMap:
+class GnomeMap(object):
     """
     The very simplest map for GNOME -- all water,
     only a bounding box for the map bounds.

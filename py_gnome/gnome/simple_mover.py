@@ -80,7 +80,9 @@ class simple_mover(object):
         print "delta:", delta
 
         print "next_positions:", next_positions[in_water_mask]
-        next_positions[in_water_mask] += delta #only lat-lon
+        
+        return delta
+        #next_positions[in_water_mask] += delta #only lat-lon
         
 
         

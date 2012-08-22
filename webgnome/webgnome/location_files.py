@@ -21,7 +21,7 @@ class LocationFile:
     
     There isn't much here, but it will serve as documentation for the interface
     """
-    ## set of defaults -- thes can/should be overridden in subclasses
+    ## set of defaults -- the can/should be overridden in subclasses
 
     run_duration = (0, 24*3600) # in seconds 
     time_step = 15*60 # 15 minutes in seconds 

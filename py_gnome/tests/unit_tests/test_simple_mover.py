@@ -17,9 +17,9 @@ def test_basic_move():
         
     mover = simple_mover.simple_mover(velocity= (1.0, 10, 0.0) )
 
-    mover.get_move(sp, time_step = 100.0)
+    delta = mover.get_move(sp, time_step = 100.0)
     
-    assert np.alltrue(sp['next_positions'] == (100, 1000, 0))
+    assert np.alltrue(delta == (100, 1000, 0))
     
     
     

@@ -4,7 +4,7 @@
 
 The master setup.py file
 
-you shoudl be abel to run :
+you should be able to run :
 
 python setup.py develop
 
@@ -19,6 +19,7 @@ It needs to be imported before any other extensions (which happens in the gnome.
 """
 
 ## NOTE: this works with "distribute" package, but not with setuptools.
+##       $ pip install distribute
 from setuptools import setup # to support "develop" mode: 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
