@@ -189,5 +189,75 @@ class Test_FlatEarthProjection():
         # tolerence set according to the scale:
         tol = 1. / self.proj.scale[0] / 1.5 # should be about 1/2 pixel
         assert np.allclose(coords, back_coords, rtol = 1e-100, atol=tol) # rtol tiny so it really doesn't matter
-    
+
+## tests for meters_to_latlon
+m2l = projections.FlatEarthProjection.meters_to_latlon
+
+def test_meters_to_latlon():
+    """ distance at equator """        
+    assert np.allclose( m2l( (111195.11, 111195.11), 0.0 ),
+                           (1.0, 1.0) )
+     
+def test_meters_to_latlon2():
+    """ distance at 60 deg north (1/2) """
+    assert np.allclose( m2l( (111195.11, 111195.11), 60.0 ),
+                           (2.0, 1.0) )
+     
+def test_meters_to_latlon3():
+    """ distance at 90 deg north: it should get very large!"""
+
+    dlonlat = m2l( (111195.11, 111195.11), 90.0 )
+    assert dlonlat[0,0] > 1e16  # somewhat arbitrary...it should be infinity, but apparently not with fp rounding
+
+## test the geodesic on the sphere code:     
+geodesic_sphere = projections.FlatEarthProjection.geodesic_sphere
+def test_near_equatorE():
+    """ directly east on the equator """
+    lon, lat = geodesic_sphere(30, 0.0, 111195.11, 90.0)
+    print lon, lat
+    assert round(lon, 6) == 31.0
+    assert round(lat, 15) == 0.0
+     
+def test_near_equatorW():
+    """ directly west on the equator """
+    lon, lat = geodesic_sphere(-30.0, 0.0, 111195.11, 270.0)
+    print lon, lat
+    assert round(lon, 6) == -31.0
+    assert round(lat, 15) == 0.0
+     
+def test_near_equatorN():
+    """ directly north on the equator """
+    lon, lat = geodesic_sphere(30, 0.0, 111195.11, 0.0)
+    print lon, lat
+    assert round(lon, 6) == 30.0
+    assert round(lat, 6) == 1.0
+     
+def test_near_equatorS():
+    """ directly south on the equator """
+    lon, lat = geodesic_sphere(30, 0.0, 111195.11, 180.0)
+    print lon, lat
+    assert round(lon, 6) == 30.0
+    assert round(lat, 6) == -1.0
+     
+def test_near_equatorNE():
+    """ directly northeast from the equator """
+    lon, lat = geodesic_sphere(0.0, 0.0, 111195.11, 45.0)
+    print lon, lat
+    # these values from the online geodesic calculator (which uses and elipsoidal earth)
+    #   http://geographiclib.sourceforge.net/cgi-bin/Geod
+    acc = 2 # almost good to 3 decimal place -- still not great!
+    assert round(lon, acc) == round(0.70635273, acc)
+    assert round(lat, acc) == round(0.71105843, acc) 
+     
+def test_north_NE():
+    """ directly northeast from north of the equator """
+    lon, lat = geodesic_sphere(0.0, 60.0, 111195.11, 45.0)
+    print lon, lat
+    # these values from the online geodesic calculator (which uses and elipsoidal earth)
+    #   http://geographiclib.sourceforge.net/cgi-bin/Geod
+    acc = 3 # almost good to 3 decimal place -- still not great!
+    assert round(lon, acc) == round(0.71106 , acc)
+    assert round(lat, acc) == round(60.70635, acc) 
+     
+     
      

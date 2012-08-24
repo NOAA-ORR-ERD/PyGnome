@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
 """
-Module to hold classes and suporting code for projections used in GNOME.
+Module to hold classes and supporting code for projections used in GNOME.
 
-Only a simple "flat earth projection for now.
+Only a simple "flat earth" projection for now.
+
+Also a bit of code for scaling lat-long to meters, etc.
 
 Used by map_canvas code and map code.
 
@@ -15,7 +17,7 @@ the web version
 import sys
 import numpy as np
 
-class NoProjection:
+class NoProjection(object):
     """
     This is do-nothing projeciton class -- returns what it gets.
     
@@ -52,9 +54,9 @@ class NoProjection:
         return np.asarray(coords, dtype=np.float64)
 
 
-class GeoProjection:
+class GeoProjection(object):
     """
-    This acxts as the base class for a projection
+    This acts as the base class for a projection
     
     This one doesn't really project, but does convert to pixel coords
     i.e. "geo-coordinates"
@@ -182,6 +184,71 @@ class FlatEarthProjection(GeoProjection):
         map properties -- but easy to compute
         
     """
+    
+    @staticmethod
+    def meters_to_latlon(meters, ref_latitudes):
+        """
+        Converts from delta meters to delta latitude-longitude, using the Flat-Earth projection.
+        
+        :param meters: NX2 numpy array of (dx, dy) distances in meters
+        :param ref_latitudes: N, numpy array of reference latitudes in degrees
+
+        :returns delta_lon_lat: Nx2numpy array of (delta-lon, delta-lat) pairs
+
+        dlat = dy * 8.9992801e-06
+
+        dlat = dy * 8.9992801e-06 * cos(ref_lat) 
+
+        (based on an average radius of the earth of 6371010 m)
+
+        """
+        #make a copy -- don't change meters
+        delta_lon_lat = np.array(meters, dtype=np.float64).reshape(-1, 2)
+        ref_latitudes = np.asarray(ref_latitudes, dtype=np.float64)
+        print delta_lon_lat
+        delta_lon_lat *= 8.993201e-06
+        print delta_lon_lat
+        delta_lon_lat[:,0] /= np.cos(np.deg2rad(ref_latitudes))
+        print delta_lon_lat
+        return delta_lon_lat
+
+    @staticmethod
+    def geodesic_sphere(lon, lat, distance, bearing):
+        """
+        Given a start point, initial bearing, and distance, returns the
+        destination point along a (shortest distance) great circle arc --
+        assuming a spherical earth. Similar to how GNOME does it.
+        
+        :param lon: longitude in decimal degrees.
+        :param lat: latitude in decimal degrees.
+        :param distance:  meters.
+        :param bearing: in decimal degrees, measured clockwise from north.
+        
+        :returns longitude, latitude: in degrees.
+        
+        Code from Brian Zelenke
+        
+        NOTE: performance could be improved a lot here is need be (lots of data copies)
+        
+        """
+        EarthRadius = 6371010.0 #Earth's mean radius, in m.
+
+        #Convert from degrees to radians.
+        lat = np.deg2rad(lat)
+        lon = np.deg2rad(lon)
+        bearing = np.deg2rad(bearing)
+        
+        #Convert linear distance to angular distance (in radians).
+        distance = distance/EarthRadius
+        
+        latout = np.arcsin(np.sin(lat)*np.cos(distance)+np.cos(lat)*np.sin(distance)*np.cos(bearing))
+        lonout = lon+np.arctan2(np.sin(bearing)*np.sin(distance)*np.cos(lat),np.cos(distance)-np.sin(lat)*np.sin(latout))
+        
+        #Convert from radians to degrees.
+        lonout = np.rad2deg(lonout)
+        latout = np.rad2deg(latout)
+        
+        return lonout, latout
     
     def set_scale(self, bounding_box, image_size):
         """
