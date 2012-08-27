@@ -1,0 +1,12 @@
+# ignore following files
+.cproject
+.project
+*.swp
+*.so
+*.pyc
+*~
+project_files/Debug/*
+py_gnome/build/**/*
+py_gnome/gnome.utilities.egg-info/*
+py_gnome/pyGnome.egg-info/*
+py_gnome/gnome/pyGnome.egg-info/*
