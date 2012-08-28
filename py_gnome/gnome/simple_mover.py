@@ -73,10 +73,8 @@ class simple_mover(object):
         print "positions", positions
         latitudes = positions[in_water_mask, 1]
         print latitudes
-        scale = np.cos(np.deg2rad(latitudes))
-        print "scale:", scale
-        delta[:,0] *= scale
-
+        print "delta:", delta
+        delta = meters_to_latlon(delta, latitudes)
         print "delta:", delta
 
         print "next_positions:", next_positions[in_water_mask]

@@ -25,6 +25,8 @@ def round_time(dt=None, roundTo=60):
    rounding = (seconds+roundTo/2) // roundTo * roundTo
    return dt + datetime.timedelta(0,rounding-seconds,-dt.microsecond)
 
+
+
 if __name__ == "__main__":
     
     dt = datetime.datetime(2012,12,31,23,44,59,1234)

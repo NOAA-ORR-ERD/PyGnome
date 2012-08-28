@@ -31,13 +31,14 @@ class Spill(object):
     positions = Spill['positions'] : returns a (num_LEs, 3) array of world_point_types
     """
     
-    def __init__(self, num_LEs):
+    def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0)):
         
         self.num_LEs = num_LEs
         self._data_arrays = {}
         
         self._data_arrays['positions'] = np.zeros((num_LEs, 3),
                                                   dtype=basic_types.world_point_type)
+        self._data_arrays['positions'][:,:] = initial_positions
         
         self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
 
