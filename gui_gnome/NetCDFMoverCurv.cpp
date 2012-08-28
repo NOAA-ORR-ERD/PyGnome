@@ -1195,6 +1195,7 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 					 if (curr_vvals[(latlength-i-1)*lonlength+j]==fill_value)
 					 curr_vvals[(latlength-i-1)*lonlength+j]=0.;*/
 					
+
 					if (isLandMask)
 					{
 						if (curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value || curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)

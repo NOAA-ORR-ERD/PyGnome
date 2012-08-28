@@ -364,7 +364,7 @@ enum { ON = 1, OFF = 0 };
 #endif
 
 #define round(n) floor((n) + 0.5)
-#define abs(n) ((n) >= 0 ? (n) : -(n))
+//#define abs(n) ((n) >= 0 ? (n) : -(n))
 #define TOPLEFT(r) (POINTPTR)(&(r).top)
 #define BOTRIGHT(r) (POINTPTR)(&(r).bottom)
 
