@@ -134,7 +134,7 @@ class Model(object):
         
         releases elements, refloats, etc.
         """
-        model_time = self._start_time + self._current_time_step*self.time_step
+        self.model_time = self._start_time + self._current_time_step*self.time_step
         for spill in self.spills:
             spill.release_elements(model_time)
             self.map.refloat_elements(spill)
@@ -148,7 +148,7 @@ class Model(object):
         """
         for mover in self.movers:
             for spill in self.spills:
-                delta = mover.get_move(self.time_step, spill)
+                delta = mover.get_move(spill, self.time_step, self.model_time)
                 #delta_uncertain = mover.get_move(self.time_step, spill, uncertain=True)
                 ## fixme: should we be doing the projection here?
                 spill['next_positions'] += delta

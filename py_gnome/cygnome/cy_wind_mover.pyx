@@ -4,7 +4,7 @@ import numpy as nmp
 
 include "wind_mover.pxi"
 
-cdef class wind_mover:
+cdef class Cy_wind_mover:
 
     cdef WindMover_c *mover
 
@@ -70,6 +70,8 @@ cdef class wind_mover:
         
         self.mover.get_move(N, model_time, step_len, ref_points, world_points, windages, disp_vals, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer, uncertain_ptr, time_vals_ptr, M)
 
+    ##fixme: don't need breaking wave, etc...
+    ## need to clarify what is going on here -- is the delta put into the wp_ra??    
     def get_move(self,
                  model_time,
                  step_len,

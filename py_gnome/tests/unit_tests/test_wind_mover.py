@@ -12,11 +12,11 @@ from random import random
 
 
 from gnome import basic_types
-from gnome import wind_mover
+from gnome import cy_wind_mover
 from gnome import greenwich
 
 def test_init(): # can we create a wind_mover?
-    wm = wind_mover.wind_mover()
+    wm = cy_wind_mover.Cy_wind_mover()
     assert True
 
 class Test_setup_1():
@@ -25,7 +25,7 @@ class Test_setup_1():
     
     setup is done is the class constructor
     """
-    wm = wind_mover.wind_mover()
+    wm = cy_wind_mover.Cy_wind_mover()
     
     start_time = greenwich.gwtm('01/01/1970 10:00:00').time_seconds
     stop_time  = greenwich.gwtm('01/01/1970 12:00:00').time_seconds
@@ -35,12 +35,12 @@ class Test_setup_1():
     #################
     # create arrays #
     #################
-    wp_ra   =  np.empty((4,), dtype=basic_types.world_point_3d)
-    ref_ra  =  np.empty((4,), dtype=basic_types.world_point_3d)
+    wp_ra   =  np.empty((4,), dtype=basic_types.world_point)
+    ref_ra  =  np.empty((4,), dtype=basic_types.world_point)
     wind_ra =  np.empty((4,), dtype=np.double)
     disp_ra =  np.empty((4,), dtype=np.short)
     time_vals = np.empty((1,), dtype=basic_types.time_value_pair)
-    uncertain_ra = np.empty((10,), dtype=basic_types.wind_uncertain_rec)	# one uncertain rec per le
+    uncertain_ra = np.empty((4,), dtype=basic_types.wind_uncertain_rec)	# one uncertain rec per le
 
     f_sigma_theta = 1  # ?? 
     f_sigma_vel   = 1  # ??
@@ -55,8 +55,8 @@ class Test_setup_1():
     wp_ra[:] = 1.
     ref_ra[:] = 1.
 
-    ref_ra[:]['p']['p_lat'] *= 1000000 #huh? I thought we were getting rid of the 1e6 stuff.
-    ref_ra[:]['p']['p_long'] *= 1000000 
+    ref_ra[:]['lat'] *= 1000000 #huh? I thought we were getting rid of the 1e6 stuff.
+    ref_ra[:]['long'] *= 1000000 
 
     wind_ra[:] = 1
     disp_ra[:] = 0

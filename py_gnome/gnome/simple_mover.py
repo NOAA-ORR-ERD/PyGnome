@@ -12,6 +12,10 @@ import numpy as np
 
 from gnome import basic_types
 
+## this allows for this to be changed in the future.
+from gnome.utilities.projections import FlatEarthProjection as proj
+
+
 class simple_mover(object):
     """
     simple_mover
@@ -35,7 +39,7 @@ class simple_mover(object):
                                     ).reshape((3,))
         
         
-    def get_move(self, spill, time_step):
+    def get_move(self, spill, time_step, model_time=None):
         """
         moves the particles defined in the spill object
         
@@ -44,16 +48,16 @@ class simple_mover(object):
         
         In this case, it uses the:
             positions
-            next_positions
             status_code
         data arrays.
+        
+        :returns delta: Nx3 numpy array of movement -- in (long, lat, meters) units
         
         """
         
         # Get the data:
         try:
             positions      = spill['positions']
-            next_positions = spill['next_positions']
             status_codes   = spill['status_codes']
         except KeyError, err:
             raise ValueError("The spill does not have the required data arrays\n"+err.message)
@@ -72,15 +76,12 @@ class simple_mover(object):
         # fixme -- move this to a utility function???
         print "positions", positions
         latitudes = positions[in_water_mask, 1]
-        print latitudes
+        print "latitudes:", latitudes
         print "delta:", delta
-        delta = meters_to_latlon(delta, latitudes)
+        delta = proj.meters_to_latlon(delta[:,:2], latitudes) # just the lat-lon...
         print "delta:", delta
-
-        print "next_positions:", next_positions[in_water_mask]
         
         return delta
-        #next_positions[in_water_mask] += delta #only lat-lon
         
 
         

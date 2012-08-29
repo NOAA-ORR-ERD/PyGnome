@@ -31,11 +31,11 @@ CPP_CODE_DIR = "../lib_gnome"
 
 # the cython extensions to build -- each should correspond to a *.pyx file
 extension_names = [
-                   'wind_mover',
+                   'cy_wind_mover',
 # CATS mover broken at the moment                   
 #                   'cats_mover',
-                   'netcdf_mover',
-                   'ossm_time',
+                   'cy_netcdf_mover',
+                   'cy_ossm_time',
                    ]
 
 cpp_files = [ 
@@ -73,18 +73,18 @@ cpp_files = [
 cpp_files = [os.path.join(CPP_CODE_DIR , file) for file in cpp_files]
 
 extra_includes="."
-compile_args=None
-macros = [('pyGNOME', 1),]
+compile_args = []
 link_args = []
 
 if sys.platform == "darwin":
-	# the default sysconfig for python is defined as:
-	# gcc-4.0 -bundle -undefined dynamic_lookup -arch ppc -arch i386   -g 
-	# It appears Mac OS no longer supports libraries build using the -bundle option. It seems to load dynamic libraries
-	# created using the '-dynamiclib' option. Hence, update LDSHARED variable so as to create a 'dynamiclib'
-	# TODO: need to figure out how to give compiler/linker the output flag: -o lib_gnome.dylib
-    os.environ['LDSHARED']="gcc-4.0 -dynamiclib -undefined dynamic_lookup -arch ppc -arch i386   -g"
+    # the default sysconfig for python is defined as:
+    # gcc-4.0 -bundle -undefined dynamic_lookup -arch ppc -arch i386   -g 
+    # It appears Mac OS no longer supports libraries build using the -bundle option. It seems to load dynamic libraries
+    # created using the '-dynamiclib' option. Hence, update LDSHARED variable so as to create a 'dynamiclib'
+    # TODO: need to figure out how to give compiler/linker the output flag: -o lib_gnome.dylib
+    # os.environ['LDSHARED']="gcc-4.0 -dynamiclib -undefined dynamic_lookup -arch ppc -arch i386   -g"
     link_args = ['-Wl,../third_party_lib/libnetcdf.a']
+
 elif sys.platform == "win32":
     compile_args = ['/W0',]
     link_args = ['../third_party_lib/netcdf3.6.3.lib', \
@@ -96,29 +96,27 @@ elif sys.platform == "win32":
 ## setting the "pyGNOME" define so that conditional compilation in the cpp files is done right.
 macros = [('pyGNOME', 1),]
 
-## Build the extension objects
+## Create the extension objects
 extensions = []
 
-## CPP library (lib_gnome.so on unix/mac and lib_gnome.dll on windows)
-
-lib_gnome_ext = Extension('gnome.lib_gnome',
-    language="c++", 
-    define_macros = macros,
-    #extra_compile_args=[''],
-	extra_link_args=link_args,
-    sources = cpp_files, 
-    include_dirs=[CPP_CODE_DIR]
-    )
- 
-extensions.append(lib_gnome_ext)
+### CPP library (lib_gnome.so on unix/mac and lib_gnome.dll on windows)
+#lib_gnome_ext = Extension('gnome.lib_gnome',
+#                          language="c++", 
+#                          define_macros = macros,
+#                          #extra_compile_args=[''],
+#                          extra_link_args=link_args,
+#                          sources = cpp_files, 
+#                          include_dirs=[CPP_CODE_DIR]
+#                          )
+#extensions.append(lib_gnome_ext)
 
 ## the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
-
-basic_types_ext = Extension('gnome.basic_types',
-                            ['cygnome/basic_types.pyx'], 
+basic_types_ext = Extension('gnome.cy_basic_types',
+                            ['cygnome/cy_basic_types.pyx'] + cpp_files, 
                             language="c++",
                             define_macros = macros,
                             extra_compile_args=compile_args,
+                            extra_link_args=link_args,
                             include_dirs=[CPP_CODE_DIR,
                                           np.get_include(),
                                           'cyGNOME',
@@ -130,26 +128,26 @@ extensions.append(basic_types_ext)
 
 # TODO: the extensions below look for the shared object lib_gnome in 
 # './build/lib.macosx-10.3-fat-2.7/gnome' and './gnome'
-# Ideally, we should build lib_gnome first and move it to whereever we wish to link from .. currently
+# Ideally, we should build lib_gnome first and move it to wherever we wish to link from .. currently
 # the build_ext and develop will find and link to the object in different places.
 
 for mod_name in extension_names:
-   cy_file = os.path.join("cygnome", mod_name+".pyx")
-   extensions.append(  Extension('gnome.' + mod_name,
-                                 [cy_file], 
-                                 language="c++",
-                                 define_macros = macros,
-                                 extra_compile_args=compile_args,
-                                 libraries = ['_gnome'],
-                                 library_dirs = ['./build/lib.macosx-10.3-fat-2.7/gnome','./gnome'],
-                                 include_dirs=[CPP_CODE_DIR,
-                                               np.get_include(),
-                                               'cyGNOME',
-                                               extra_includes,
-                                               ],
-                                 )
-                       )
-
+    cy_file = os.path.join("cygnome", mod_name+".pyx")
+    extensions.append(  Extension('gnome.' + mod_name,
+                                  [cy_file], 
+                                  language="c++",
+                                  define_macros = macros,
+                                  extra_compile_args=compile_args,
+                                  #libraries = ['_gnome'],
+                                  #library_dirs = ['./build/lib.macosx-10.3-fat-2.7/gnome','./gnome'],
+                                  include_dirs=[CPP_CODE_DIR,
+                                                np.get_include(),
+                                                'cyGNOME',
+                                                extra_includes,
+                                                ],
+                                  )
+                        )
+    
 
 setup(name='pyGnome',
       version='alpha', 
