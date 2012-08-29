@@ -55,46 +55,47 @@ cdef class Cy_wind_mover:
         cdef:
             char *time_vals_ptr
             char *uncertain_ptr
-            char *world_points
+            char *delta
             char *windages
             char *disp_vals
             
-        N = len(wp_ra)
-        M = len(time_vals)
+        N = len(wp_ra) # set a data type here?
+        M = len(time_vals) # set a data type here?
         ref_points = ref_ra.data
-        world_points = wp_ra.data
+        delta = wp_ra.data
         windages = wind_ra.data
         disp_vals = dispersion_ra.data
         time_vals_ptr = time_vals.data
         uncertain_ptr = uncertain_ra.data
         
-        self.mover.get_move(N, model_time, step_len, ref_points, world_points, windages, disp_vals, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer, uncertain_ptr, time_vals_ptr, M)
+        self.mover.get_move(N, model_time, step_len, ref_points, delta, windages, disp_vals, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer, uncertain_ptr, time_vals_ptr, M)
 
     ##fixme: don't need breaking wave, etc...
     ## need to clarify what is going on here -- is the delta put into the wp_ra??    
     def get_move(self,
                  model_time,
                  step_len,
-                 np.ndarray[WorldPoint3D, ndim=1] ref_ra,
-                 np.ndarray[WorldPoint3D, ndim=1] wp_ra,
-                 np.ndarray[np.npy_double] wind_ra,
-                 np.ndarray[np.npy_short] dispersion_ra,
+                 np.ndarray[WorldPoint3D, ndim=1] ref_points,
+                 np.ndarray[WorldPoint3D, ndim=1] delta,
+                 np.ndarray[np.npy_double] windages,
+                 np.ndarray[np.npy_short] dispersion_flags,
                  double breaking_wave,
                  double mix_layer,
                  np.ndarray[TimeValuePair] time_vals):
 
-        cdef:
-            char *time_vals_ptr
-            char *uncertain_ptr
-            char *world_points
-            char *windages
-            char *disp_vals
-            
-        N = len(wp_ra)
-        M = len(time_vals)
-        ref_points = ref_ra.data
-        world_points = wp_ra.data
-        windages = wind_ra.data
-        disp_vals = dispersion_ra.data
-        time_vals_ptr = time_vals.data
-        self.mover.get_move(N, model_time, step_len, ref_points, world_points, windages, disp_vals, breaking_wave, mix_layer, time_vals_ptr, M)
+        N = len(ref_points) # set a data type?
+        M = len(time_vals) # set a data type?
+
+        # modifies delta in place
+        self.mover.get_move(N,
+                            model_time,
+                            step_len,
+                            <char*>&ref_points[0],
+                            <char*>&delta[0],
+                            <char*>&windages[0],
+                            <char*>&dispersion_flags[0],
+                            breaking_wave, # remove?
+                            mix_layer, # remove?
+                            <char*>&time_vals[0], # remove?
+                            M,# remove?
+                            )

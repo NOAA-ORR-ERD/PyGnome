@@ -54,10 +54,10 @@ class WindMover(Cy_wind_mover):
         
         model_time_seconds = basic_types.dt_to_epoch(model_time)        
         positions = position.view(dtype = basic_types.world_point)
-        delta = np.empty_like(positions)
+        delta = np.zeros_like(positions)
                 
         ## should we need these???
-        wind_array = np.ones((spill.num_LEs,), dtype=basic_types.mover_type)
+        windage_array = np.ones((spill.num_LEs,), dtype=basic_types.mover_type)
         dispersion_array = np.zeros((spill.num_LEs,), dtype=np.short) ## what should be the dtype here???
 
         ## we certainly shouldn't need these!!
@@ -67,6 +67,7 @@ class WindMover(Cy_wind_mover):
         time_vals['value']['v'] = 10 # 
 
         # initialize uncerainty array:
+        # fixme: this needs to get stored with the Mover -- keyed to a particular spill.
         uncertain_ra = np.empty((spill.num_LEs,), dtype=basic_types.wind_uncertain_rec)	# one uncertain rec per le
         for x in range(0, N):
             theta = random()*2*pi
@@ -74,21 +75,22 @@ class WindMover(Cy_wind_mover):
             uncertain_ra[x]['randSin'] = sin(theta)
 
         ## or these:
+        ## dump for now
         breaking_wave = 10 #?? 
         mix_layer_depth = 10 #??
 
         # call the Cython version 
-        delta = self._get_move(self,
-                               model_time,
-                               time_step,
-                               positions,
-                               delta,
-                               np.ndarray[np.npy_double] wind_ra,
-                               np.ndarray[np.npy_short] dispersion_ra,
-                               double breaking_wave,
-                               double mix_layer,
-                               np.ndarray[TimeValuePair] time_vals):
-
+        # (delta is changed in place)
+        self._get_move(self,
+                       model_time,
+                       time_step,
+                       positions,
+                       delta,
+                       windage_array,
+                       dispersion_array, # don't need
+                       breaking_wave, # don't need
+                       mix_layer, # don't need
+                       time_vals): # don't need
         return delta
 
         
