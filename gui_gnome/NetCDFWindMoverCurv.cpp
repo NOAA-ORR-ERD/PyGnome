@@ -245,10 +245,10 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 		else if (numScanned<8)	
 		//else if (numScanned!=8)	
 		{ 
-			timeUnits = 0;	// files should always have this info
-			timeConversion = 3600.;		// default is hours
-			startTime2 = model->GetStartTime();	// default to model start time
-			/*err = -1; TechError("NetCDFWindMoverCurv::TextRead()", "sscanf() == 8", 0); goto done;*/
+			//timeUnits = 0;	// files should always have this info
+			//timeConversion = 3600.;		// default is hours
+			//startTime2 = model->GetStartTime();	// default to model start time
+			err = -1; TechError("NetCDFWindMoverCurv::TextRead()", "sscanf() == 8", 0); goto done;
 		}
 		else
 		{

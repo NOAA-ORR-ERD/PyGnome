@@ -345,14 +345,14 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
     //tStr = "seconds since 1970-01-01 0:00:00";
     //tStr = "seconds since ";
 	//strcat(tStr,currentTimeStr);
-    ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Time"], "units", strlen(tStr), tStr);
+    //ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Time"], "units", strlen(tStr), tStr);
 	strcpy(timeStr, "seconds since ");
 	seconds = model->GetStartTime();
 	Secs2DateStringNetCDF(seconds, startTimeStr);
 	strcat(timeStr, startTimeStr);
 	//sprintf(currentTimeStr,"%s%s",timeStr,startTimeStr);
 
-    if(!CheckNC(ncErr)) return false; // handle error.
+    //if(!CheckNC(ncErr)) return false; // handle error.
 
     // Time:
     //tStr = "seconds since 1970-01-01 0:00:00";
