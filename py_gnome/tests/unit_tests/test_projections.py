@@ -255,9 +255,9 @@ def test_north_NE():
     print lon, lat
     # these values from the online geodesic calculator (which uses and elipsoidal earth)
     #   http://geographiclib.sourceforge.net/cgi-bin/Geod
-    acc = 3 # almost good to 3 decimal place -- still not great!
-    assert round(lon, acc) == round(0.71106 , acc)
-    assert round(lat, acc) == round(60.70635, acc) 
+    acc = 2 # almost good to 3 decimal place -- still not great!
+    assert round(lon, acc) == round(1.43959 , acc)
+    assert round(lat, acc) == round(60.69799, acc) 
      
      
      
