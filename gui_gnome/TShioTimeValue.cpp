@@ -1046,110 +1046,21 @@ Error:
 
 /////////////////////////////////////////////////
 
-YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
-
-{
-	// Get year data which are amplitude corrections XODE and epoc correcton VPU
-
-	// NOTE: as per Andy & Mikes code, this func provides only a single year's
-	// data: it does not handle requests spanning years. Both Andy and Mike would
-	// just ask for the year at the start of the data request.
-
-	// Each year has its own file of data, named "#2002" for year 2002, for example
-
-	// NOTE: you must pass in the file path because it is platform specific:
-	// the files live in the sub-directory "yeardata"
-	// - on Mac the path is ":yeardata:#2002" and works off the app dir as current directory
-	// - on Mac running in python in terminal, the path is "yeardata/#2002"
-
-	// if errStr not empty then don't bother, something has already gone wrong
-
-	YEARDATA2	*result = 0;
-	FILE		*stream = 0;
-	double		*xode = 0;
-	double		*vpu = 0;
-	double		data1, data2;
-	char		filePathName[256];
-	short		cnt, numPoints = 0, err = 0;
-
-	//if (errStr[0] != 0) return 0;
-	errStr[0] = 0;
-
-	// create the filename of the proper year data file
-	sprintf(filePathName, "%s#%d", path, year);
-		
-	// It appears that there are 128 data values for XODE and VPU in each file
-	// NOTE: we only collect the first 128 data points (BUG if any more ever get added)
-
-	try
-	{
-		result = new YEARDATA2;
-		xode = new double[128];
-		vpu = new double[128];
-	}
-	catch (...)
-	{
-		err = -1;
-		strcpy(errStr, "Memory error in ReadYearData");
-	}
-
-	if (!err) stream = fopen(filePathName, "r");
-
-	if (stream)
-	{
-		for (cnt = 0; cnt < 128; cnt++)
-		{
-			if (fscanf(stream, "%lf %lf", &data1, &data2) == 2)	// assigned 2 values
-			{
-				numPoints++;
-				xode[cnt] = data1;
-				vpu[cnt] = data2;
-			}
-			else	// we are not getting data points, init to zero
-			{
-				xode[cnt] = 0.0;
-				vpu[cnt] = 0.0;
-			}
-		}
-		fclose(stream);
-	}
-	else
-	{
-		err = -1;
-		sprintf(errStr, "Could not open file '%s'", filePathName);
-	}
-
-	if (err)
-
-	{
-		if (vpu) delete [] vpu;
-		if (xode) delete [] xode;
-		if (result) delete result;
-		return 0;
-	}	
-
-	result->numElements = numPoints;
-	result->XODE = xode;
-	result->VPU = vpu;
-
-	return result;
-
-}
 
 #define kMAXNUMSAVEDYEARS 30
-YEARDATAHDL gYearDataHdl1980Plus[kMAXNUMSAVEDYEARS];
+YEARDATAHDL gYearDataHdl1990Plus[kMAXNUMSAVEDYEARS];
 
 // will need to read from text file instead
 YEARDATAHDL GetYearData(short year)
 {
 	// IMPORTANT: The calling function should NOT dispose the handle it gets
 	YEARDATAHDL		yrHdl=nil;
-	short yearMinus1980 = year-1980;
+	short yearMinus1990 = year-1990;
 	long i,n,resSize=0;
 	
-	if(0<= yearMinus1980 && yearMinus1980 <kMAXNUMSAVEDYEARS)
+	if(0<= yearMinus1990 && yearMinus1990 <kMAXNUMSAVEDYEARS)
 	{
-		if(gYearDataHdl1980Plus[yearMinus1980]) return gYearDataHdl1980Plus[yearMinus1980];
+		if(gYearDataHdl1990Plus[yearMinus1990]) return gYearDataHdl1990Plus[yearMinus1990];
 	}
 	
 #ifdef MAC
@@ -1225,10 +1136,114 @@ YEARDATAHDL GetYearData(short year)
 	}
 #endif
 	
-	if(yrHdl && 0<= yearMinus1980 && yearMinus1980 <kMAXNUMSAVEDYEARS)
+	if(yrHdl && 0<= yearMinus1990 && yearMinus1990 <kMAXNUMSAVEDYEARS)
 	{
-		gYearDataHdl1980Plus[yearMinus1980] = yrHdl;
+		gYearDataHdl1990Plus[yearMinus1990] = yrHdl;
 	}
 	
 	return(yrHdl);
 }
+/////////////////////////////////////////////////
+YEARDATA2* gYearDataHdl1990Plus2[kMAXNUMSAVEDYEARS];
+
+YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
+
+{
+	// Get year data which are amplitude corrections XODE and epoc correcton VPU
+
+	// NOTE: as per Andy & Mikes code, this func provides only a single year's
+	// data: it does not handle requests spanning years. Both Andy and Mike would
+	// just ask for the year at the start of the data request.
+
+	// Each year has its own file of data, named "#2002" for year 2002, for example
+
+	// NOTE: you must pass in the file path because it is platform specific:
+	// the files live in the sub-directory "yeardata"
+	// - on Mac the path is ":yeardata:#2002" and works off the app dir as current directory
+	// - on Mac running in python in terminal, the path is "yeardata/#2002"
+
+	// if errStr not empty then don't bother, something has already gone wrong
+
+	YEARDATA2	*result = 0;
+	FILE		*stream = 0;
+	double		*xode = 0;
+	double		*vpu = 0;
+	double		data1, data2;
+	char		filePathName[256];
+	short		cnt, numPoints = 0, err = 0;
+
+	short yearMinus1990 = year-1990;
+	
+	if(0<= yearMinus1990 && yearMinus1990 <kMAXNUMSAVEDYEARS)
+	{
+		if(gYearDataHdl1990Plus2[yearMinus1990]) return gYearDataHdl1990Plus2[yearMinus1990];
+	}
+	//if (errStr[0] != 0) return 0;
+	errStr[0] = 0;
+
+	// create the filename of the proper year data file
+	sprintf(filePathName, "%s#%d", path, year);
+		
+	// It appears that there are 128 data values for XODE and VPU in each file
+	// NOTE: we only collect the first 128 data points (BUG if any more ever get added)
+
+	try
+	{
+		result = new YEARDATA2;
+		xode = new double[128];
+		vpu = new double[128];
+	}
+	catch (...)
+	{
+		err = -1;
+		strcpy(errStr, "Memory error in ReadYearData");
+	}
+
+	if (!err) stream = fopen(filePathName, "r");
+
+	if (stream)
+	{
+		for (cnt = 0; cnt < 128; cnt++)
+		{
+			if (fscanf(stream, "%lf %lf", &data1, &data2) == 2)	// assigned 2 values
+			{
+				numPoints++;
+				xode[cnt] = data1;
+				vpu[cnt] = data2;
+			}
+			else	// we are not getting data points, init to zero
+			{
+				xode[cnt] = 0.0;
+				vpu[cnt] = 0.0;
+			}
+		}
+		fclose(stream);
+	}
+	else
+	{
+		err = -1;
+		sprintf(errStr, "Could not open file '%s'", filePathName);
+	}
+
+	if (err)
+
+	{
+		if (vpu) delete [] vpu;
+		if (xode) delete [] xode;
+		if (result) delete result;
+		return 0;
+	}	
+
+	result->numElements = numPoints;
+	result->XODE = xode;
+	result->VPU = vpu;
+
+	if(result && 0<= yearMinus1990 && yearMinus1990 <kMAXNUMSAVEDYEARS)
+	{
+		gYearDataHdl1990Plus2[yearMinus1990] = result;
+	}
+	
+	return result;
+
+}
+

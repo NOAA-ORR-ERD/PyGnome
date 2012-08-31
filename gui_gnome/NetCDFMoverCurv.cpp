@@ -251,14 +251,14 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 		{time.hour = 0; time.minute = 0; time.second = 0; }
 		else if (numScanned==7)	time.second = 0;
 		else if (numScanned<8)	
-			//if (numScanned!=8)	
+		//if (numScanned!=8)	
 		{ 
-			timeUnits = 0;	// files should always have this info
-			timeConversion = 3600.;		// default is hours
-			startTime2 = model->GetStartTime();	// default to model start time
-			/*err = -1; TechError("NetCDFMoverCurv::TextRead()", "sscanf() == 8", 0); goto done;*/
+			//timeUnits = 0;	// files should always have this info
+			//timeConversion = 3600.;		// default is hours
+			//startTime2 = model->GetStartTime();	// default to model start time
+			err = -1; TechError("NetCDFMoverCurv::TextRead()", "sscanf() == 8", 0); goto done;
 		}
-		else
+		//else
 		{
 			// code goes here, trouble with the DAYS since 1900 format, since converts to seconds since 1904
 			if (time.year ==1900) {time.year += 40; time.day += 1; /*for the 1900 non-leap yr issue*/ yearShift = 40.;}
@@ -1195,6 +1195,7 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 					 if (curr_vvals[(latlength-i-1)*lonlength+j]==fill_value)
 					 curr_vvals[(latlength-i-1)*lonlength+j]=0.;*/
 					
+
 					if (isLandMask)
 					{
 						if (curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value || curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)

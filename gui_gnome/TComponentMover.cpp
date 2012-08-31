@@ -581,7 +581,7 @@ void ShowHideTComponentDialogItems(DialogPtr dialog)
 {
 	TComponentMover	*mover = sSharedDialogComponentMover;
 	short moverCode = GetPopSelection(dialog, M20MOVERTYPES);
-	Boolean showPat2Items = FALSE, showScaleByItems = FALSE;
+	Boolean showPat2Items = FALSE, showScaleByItems = FALSE, useAveWinds = false;
 	
 	if (mover -> pattern2) 	// don't show pattern 2 items unless the pattern has been loaded
 		showPat2Items = TRUE;
@@ -590,6 +590,12 @@ void ShowHideTComponentDialogItems(DialogPtr dialog)
 		showScaleByItems = TRUE;
 	
 	
+	useAveWinds = GetButton (dialog, M20USEAVERAGEDWINDS);
+	if (useAveWinds) showScaleByItems = false;
+
+	ShowHideDialogItem(dialog, M20EXTRAPOLATEWINDSCHECKBOX, useAveWinds);
+	ShowHideDialogItem(dialog, M20SETAVERAGEDWINDSPARAMETERS, useAveWinds); 
+
 	ShowHideDialogItem(dialog, M20SCALEUSING, showScaleByItems); 
 	ShowHideDialogItem(dialog, M20SCALEBYTYPES, showScaleByItems); 
 	
@@ -617,7 +623,7 @@ void ShowUnscaledComponentValues(DialogPtr dialog,double * pat1Val,double* pat2V
 {
 	double len = 0;
 	WorldPoint p;
-	WorldPoint3D p3D;
+	WorldPoint3D p3D = {0,0,0.};
 	VelocityRec velocity;
 	OSErr err = 0;
 	char str1[32]="*",str2[32] = "*";
@@ -1015,12 +1021,13 @@ short ComponentDlgClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR da
 			
 		case M20USEAVERAGEDWINDS:
 			ToggleButton(dialog, itemNum);
-			ShowHideDialogItem(dialog, M20SETAVERAGEDWINDSPARAMETERS, GetButton (dialog, itemNum)); 
+			//ShowHideDialogItem(dialog, M20SETAVERAGEDWINDSPARAMETERS, GetButton (dialog, itemNum)); 
+			ShowHideTComponentDialogItems(dialog);	
 			break;
 			
 		case M20EXTRAPOLATEWINDSCHECKBOX:
 			ToggleButton(dialog, itemNum);
-			ShowHideDialogItem(dialog, M20EXTRAPOLATEWINDSCHECKBOX, GetButton (dialog, itemNum)); 
+			//ShowHideDialogItem(dialog, M20EXTRAPOLATEWINDSCHECKBOX, GetButton (dialog, itemNum)); 
 			break;
 			
 		case M20SETAVERAGEDWINDSPARAMETERS:
@@ -1121,12 +1128,13 @@ OSErr ComponentDlgInit(DialogPtr dialog, VOIDPTR data)
 	SetPopSelection (dialog, M20PAT2SPEEDUNITS, mover -> pat2SpeedUnits);
 	
 	ShowUnscaledComponentValues(dialog,nil,nil);
-	ShowHideTComponentDialogItems(dialog);
+	//ShowHideTComponentDialogItems(dialog);
 	
 	SetButton (dialog, M20EXTRAPOLATEWINDSCHECKBOX, mover->bExtrapolateWinds);
 	SetButton (dialog, M20USEAVERAGEDWINDS, mover->bUseAveragedWinds);
-	ShowHideDialogItem(dialog, M20SETAVERAGEDWINDSPARAMETERS, GetButton (dialog, M20USEAVERAGEDWINDS)); 
 	
+	ShowHideTComponentDialogItems(dialog);
+	//ShowHideDialogItem(dialog, M20SETAVERAGEDWINDSPARAMETERS, GetButton (dialog, M20USEAVERAGEDWINDS)); 
 	return 0;
 }
 

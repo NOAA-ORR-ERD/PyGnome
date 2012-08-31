@@ -1062,6 +1062,65 @@ void Secs2DateString2(unsigned long seconds, CHARPTR s)
 	strcat (s, str);
 }
 
+void Secs2DateStringNetCDF(unsigned long seconds, CHARPTR s)
+{ // returns in format: 2012-08-23 08:31:00 
+	short day ; //1-31
+	short month; // 1-12
+	short year4; // 4 digit year
+	short hour; // 0-23
+	short minute;// 0-59 //
+	short second = 0;
+	char str[255];
+#ifdef MAC
+	DateTimeRec DTR;
+	SecondsToDate (seconds, &DTR);
+	month = DTR.month;
+	day = DTR.day;
+	year4 = DTR.year;
+	hour = DTR.hour;
+	minute = DTR.minute;
+#else
+	// IBM
+	struct tm *newTime;
+#ifndef pyGNOME
+	seconds -= 2082816000L; // convert from seconds since 1904 to seconds since 1970
+#endif
+	newTime = localtime((long *)&seconds); // gmtime(&seconds)
+	if (newTime)
+	{
+		if (newTime->tm_isdst == 1)
+		{	// we want to show standard time so we need to fake out the daylight savings time
+			if(newTime->tm_hour > 0)
+				newTime->tm_hour--;
+			else
+			{	
+				seconds -= 3600;
+				newTime = localtime((long *)&seconds);
+				if(newTime->tm_isdst == 1) {
+					// life is good, both times were daylight savings time
+				}
+				else
+					printError("Programmer error in Secs2DateStringNetCDF");
+			}
+		}
+		
+		month = newTime->tm_mon + 1;
+		day = newTime->tm_mday;
+		year4 = newTime->tm_year+1900; // year 2000 OK
+		hour = newTime->tm_hour;
+		minute = newTime->tm_min;
+	}
+	else
+	{ strcpy(s, "???"); return; }
+	
+#endif
+	
+	sprintf(str, "%hd-%02hd-%02hd ", year4, month, day);
+	strcpy (s, str);
+	sprintf (str, "%2.2d:%2.2d:%2.2d", hour, minute, second);
+	strcat (s, str);
+}
+
 unsigned long DateString2Secs(CHARPTR s)
 #ifdef MAC
 {

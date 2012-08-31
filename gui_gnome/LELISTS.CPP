@@ -3287,14 +3287,18 @@ short OSSMLEClick (DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 			{ //PtCurMap *map = GetPtCurMap();
 				TMap *map = Get3DMap();
 				float arrowDepth;
+				double spillZ = 0.;
 				Boolean bottomSpill = GetButton (dialog, M13BOTTOMSPILL);
+				if (!bottomSpill) spillZ = (double)EditText2Float(dialog,M13DEPTH);
 				//if (map && model->ThereIsA3DMover(&arrowDepth)) 
-				if (model->ThereIsA3DMover(&arrowDepth)) 
+				if ((bottomSpill || spillZ>0) && model->ThereIsA3DMover(&arrowDepth)) 
 				{
 					if (!bottomSpill)
 					{
-						double spillZ = (double)EditText2Float(dialog,M13DEPTH), botZ = INFINITE_DEPTH;
+						//double spillZ = (double)EditText2Float(dialog,M13DEPTH), 
+						double botZ = INFINITE_DEPTH;
 						if (map) botZ = map->DepthAtPoint(tempSet.startRelPos) ;
+						if (botZ == -1) botZ = 0;	// if there are no depths still let user spill
 						//float spillZ = EditText2Float(dialog,M13DEPTH), botZ = (float)map->DepthAtPoint(tempSet.startRelPos) ;
 						if (spillZ > botZ)	
 						{

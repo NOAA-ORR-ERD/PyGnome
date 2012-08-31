@@ -199,8 +199,11 @@ OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 		if (err==-2) 
 		{
 			//strcpy(errmsg,"No point in averaging for constant wind."); goto done;
-			fPastHoursToAverage=0; err=0;	// allow constant wind, only need one value though 
+			//fPastHoursToAverage=0; err=0;	// allow constant wind, only need one value though 
 			//printError("No point in averaging for constant wind."); goto done;
+			averageTimeSteps = 1; 
+			startPastTime = timeToGetAverageFor;	// this doesn't really matter with constant wind
+			err = 0;
 		}
 		//if (forTime > INDEXH(timeValues, n - 1).time) 
 		
