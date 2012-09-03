@@ -14,12 +14,13 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "TimeValue_c.h"
+#include "ExportSymbols.h"
 
 #ifdef pyGNOME
 #define TMover Mover_c
 #endif
 
-class OSSMTimeValue_c : virtual public TimeValue_c {
+class GNOMEDLL_API OSSMTimeValue_c : virtual public TimeValue_c {
 
 public:
 	

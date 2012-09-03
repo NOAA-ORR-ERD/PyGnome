@@ -13,6 +13,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "Mover_c.h"
+#include "ExportSymbols.h"
 
 #ifdef pyGNOME
 #define TOSSMTimeValue OSSMTimeValue_c
@@ -21,7 +22,7 @@
 
 class TOSSMTimeValue;
 class TMap;
-class WindMover_c : virtual public Mover_c {
+class GNOMEDLL_API WindMover_c : virtual public Mover_c {
 
 	
 protected:
