@@ -22,6 +22,7 @@ It needs to be imported before any other extensions (which happens in the gnome.
 from setuptools import setup # to support "develop" mode: 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
+from subprocess import call
 
 import numpy as np
 import os
@@ -34,7 +35,7 @@ extension_names = [
                    'wind_mover',
 # CATS mover broken at the moment                   
 #                   'cats_mover',
-                   'netcdf_mover',
+#                   'netcdf_mover',
                    'ossm_time',
                    ]
 
@@ -72,6 +73,14 @@ cpp_files = [
 
 cpp_files = [os.path.join(CPP_CODE_DIR , file) for file in cpp_files]
 
+## setting the "pyGNOME" define so that conditional compilation in the cpp files is done right.
+macros = [('pyGNOME', 1),]
+
+## Build the extension objects
+extensions = []
+lib= []
+libdirs= []
+
 extra_includes="."
 compile_args=None
 macros = [('pyGNOME', 1),]
@@ -85,32 +94,35 @@ if sys.platform == "darwin":
 	# TODO: need to figure out how to give compiler/linker the output flag: -o lib_gnome.dylib
     os.environ['LDSHARED']="gcc-4.0 -dynamiclib -undefined dynamic_lookup -arch ppc -arch i386   -g"
     link_args = ['-Wl,../third_party_lib/libnetcdf.a']
+    lib+= ['_gnome']
+    libdirs+= ['./build/lib.macosx-10.3-fat-2.7/gnome','./gnome']
+    ## CPP library (lib_gnome.so on unix/mac and lib_gnome.dll on windows)
+    lib_gnome_ext = Extension('gnome.lib_gnome',
+        language="c++", 
+        define_macros = macros,
+        #extra_compile_args=[''],
+    	extra_link_args=link_args,
+        sources = cpp_files, 
+        include_dirs=[CPP_CODE_DIR]
+        )
+    extensions.append(lib_gnome_ext)
 elif sys.platform == "win32":
     compile_args = ['/W0',]
-    link_args = ['../third_party_lib/netcdf3.6.3.lib', \
-                 '/DEFAULTLIB:MSVCRT.lib',
+    link_args = ['/DEFAULTLIB:MSVCRT.lib',
                  '/NODEFAULTLIB:LIBCMT.lib',
-                 ]
+                ] 
+    # let's build C++ here
+    sys.path.append(".\gnome\DLL")   # need this for linking to work properly
+    proj = '..\project_files\lib_gnomeDLL\lib_gnomeDLL.vcproj'
+    target = 'build'
+    config = '/p:configuration=debug' 
+    platform = '/p:platform=Win32'
+    call(['msbuild',proj,'/t:'+target,config,platform])
+
+    lib += ['lib_gnomeDLL']
+    libdirs += ['gnome/DLL']
     macros += [('CYTHON_CCOMPLEX', 0),]
 
-## setting the "pyGNOME" define so that conditional compilation in the cpp files is done right.
-macros = [('pyGNOME', 1),]
-
-## Build the extension objects
-extensions = []
-
-## CPP library (lib_gnome.so on unix/mac and lib_gnome.dll on windows)
-
-lib_gnome_ext = Extension('gnome.lib_gnome',
-    language="c++", 
-    define_macros = macros,
-    #extra_compile_args=[''],
-	extra_link_args=link_args,
-    sources = cpp_files, 
-    include_dirs=[CPP_CODE_DIR]
-    )
- 
-extensions.append(lib_gnome_ext)
 
 ## the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
 
@@ -140,8 +152,8 @@ for mod_name in extension_names:
                                  language="c++",
                                  define_macros = macros,
                                  extra_compile_args=compile_args,
-                                 libraries = ['_gnome'],
-                                 library_dirs = ['./build/lib.macosx-10.3-fat-2.7/gnome','./gnome'],
+                                 libraries = lib,
+                                 library_dirs = libdirs,
                                  include_dirs=[CPP_CODE_DIR,
                                                np.get_include(),
                                                'cyGNOME',
