@@ -1,18 +1,33 @@
+#!/usr/bin/env python
+
 """
-cython file used to store all the type info for GNOME.
+basic_types.py
 
-Some hard-coded here, some pulled from C++ headers, etc.
+The python version of the various type definitions used
+
+Imports all the symbols from cy_basic_types.pyx
+
+Adds some for Python-only use
+
 """
 
-import cython
+import datetime
+import numpy as np
 
-## pull stuff in from the C++ headers
-include "type_defs.pxi"
+
+from cy_basic_types import * # pull everything from the cython code
 
 ## Various Python-only type definitions
 
-## Package wide type definitions
-import numpy as np
+
+## Time stuff:
+EPOCH = datetime.datetime(1970, 1, 1)
+def dt_to_epoch(dt):
+    """
+    converts a python datetime to the epoch used in the GNOME C++ code
+    """
+    return (dt - EPOCH).total_seconds()
+
 
 # Basic types. Should each have a corresponding, equivalent type in the C++ (type_defs.pxi)
 
@@ -21,18 +36,20 @@ mover_type = np.float64 # the type used by the movers to do their calculations
 
 world_point_type = np.float64
 
-world_point = np.dtype([('p_long', world_point_type),
-                        ('p_lat', world_point_type)],
+world_point = np.dtype([('long', world_point_type),
+                        ('lat', world_point_type),
+                        ('z', world_point_type)],
                        align=True)
-world_point_3d = np.dtype([('p', world_point),
-                           ('z', np.float64)],
-                          align=True)
 
-world_rect = np.dtype([('lo_long', np.long),
-                       ('lo_lat', np.long),
-                       ('hi_long', np.long),
-                       ('hi_lat', np.long)],
-                      align=True)
+#world_point_3d = np.dtype([('p', world_point),
+#                           ('z', np.float64)],
+#                          align=True)
+
+#world_rect = np.dtype([('lo_long', np.long),
+#                       ('lo_lat', np.long),
+#                       ('hi_long', np.long),
+#                       ('hi_lat', np.long)],
+#                      align=True)
 
 #le_rec = np.dtype([('le_units', np.int), ('le_key', np.int), ('le_custom_data', np.int), 
 #                      ('p', world_point), ('z', np.double), ('release_time', np.uint), 

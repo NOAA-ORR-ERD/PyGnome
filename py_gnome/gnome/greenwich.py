@@ -1,9 +1,13 @@
+#!/usr/bin/env python
+
+## fixme -- probably all depricated now.
+
 import time
 import calendar
 import re
 import os
 
-class gwtm:
+class gwtm(object):
 
     """ 
         Handles date time strings across the pyGNOME package. 

@@ -12,14 +12,29 @@ from gnome import spill
 
 from gnome import simple_mover
 
+from gnome.utilities.projections import FlatEarthProjection as proj
+
 def test_basic_move():
-    sp = spill.Spill(num_LEs = 10)
+    sp = spill.Spill(num_LEs = 5) #initilizes to long.lat = 0.0, 0.0
         
-    mover = simple_mover.simple_mover(velocity= (1.0, 10, 0.0) )
+    mover = simple_mover.simple_mover(velocity= (1.0, 10.0, 0.0) )
+
+    delta = mover.get_move(sp, time_step = 100.0)
+
+    expected = proj.meters_to_latlon((100.0, 1000.0), 0.0) + 0.0
+    assert np.alltrue(delta == expected)
+    
+def test_north():
+    sp = spill.Spill(num_LEs = 10,
+                     initial_positions = (20, 0.0, 0.0),
+                     )
+        
+    mover = simple_mover.simple_mover(velocity= (0.0, 10, 0.0) )
 
     delta = mover.get_move(sp, time_step = 100.0)
     
-    assert np.alltrue(delta == (100, 1000, 0))
+    expected = proj.meters_to_latlon((0.0, 1000.0), 0.0) + 0.0
+    assert np.alltrue(delta == expected)
     
     
     

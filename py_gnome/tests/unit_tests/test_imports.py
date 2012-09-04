@@ -22,22 +22,22 @@ def test_import_greenwich():
 ## import the cython extensions:
 
 def test_import_basic_types():
-    import gnome.cy_gnome.basic_types
+    import gnome.cy_gnome.cy_basic_types
 
-#def test_import_netcdf_mover():
-#    import gnome.cy_gnome.netcdf_mover
+def test_import_netcdf_mover():
+    import gnome.cy_gnome.cy_netcdf_mover
 
 def test_import_ossm_time():
-    import gnome.cy_gnome.ossm_time
+    import gnomecy_gnome.cy_ossm_time
 
 #def test_import_cats_mover():
-#    import gnome.cats_mover
+#    import gnome.cy_cats_mover
 #    
 #def test_import_random_mover():
-#    import gnome.random_mover
+#    import gnome.cy_random_mover
 
 def test_import_wind_mover():
-    import gnome.cy_gnome.wind_mover
+    import gnome.cy_gnome.cy_wind_mover
     
     
 

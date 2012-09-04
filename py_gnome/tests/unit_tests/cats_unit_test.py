@@ -1,4 +1,12 @@
 #!/usr/bin/python
+
+"""
+
+NOTE: TEST IS DEPRICATED -- needs re-doing for new code structure
+
+"""
+
+
 import numpy as np
 from math import sin,cos,pi
 from random import random

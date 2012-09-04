@@ -36,12 +36,12 @@ else:
 CPP_CODE_DIR = "../lib_gnome"
 
 # the cython extensions to build -- each should correspond to a *.pyx file
-extension_names = ['basic_types',
-                   'wind_mover',
+extension_names = [
+                   'cy_wind_mover',
 # CATS mover broken at the moment                   
 #                   'cats_mover',
-#                   'netcdf_mover',
-                   'ossm_time',
+                   'cy_netcdf_mover',
+                   'cy_ossm_time',
                    ]
 
 cpp_files = [ 
@@ -87,8 +87,7 @@ lib= []
 libdirs= []
 
 extra_includes="."
-compile_args=None
-macros = [('pyGNOME', 1),]
+compile_args = []
 link_args = []
 
 if sys.platform == "darwin":
@@ -148,7 +147,7 @@ elif sys.platform == "win32":
 
 # TODO: the extensions below look for the shared object lib_gnome in 
 # './build/lib.macosx-10.3-fat-2.7/gnome' and './gnome'
-# Ideally, we should build lib_gnome first and move it to whereever we wish to link from .. currently
+# Ideally, we should build lib_gnome first and move it to wherever we wish to link from .. currently
 # the build_ext and develop will find and link to the object in different places.
 
 for mod_name in extension_names:

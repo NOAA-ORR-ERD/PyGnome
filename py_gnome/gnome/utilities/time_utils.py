@@ -8,6 +8,7 @@ assorted utilities for working with time and datetime
 
 import datetime
 
+
 def round_time(dt=None, roundTo=60):
    """
    Round a datetime object to any time laps in seconds
@@ -24,6 +25,8 @@ def round_time(dt=None, roundTo=60):
    # // is a floor division, not a comment on following line:
    rounding = (seconds+roundTo/2) // roundTo * roundTo
    return dt + datetime.timedelta(0,rounding-seconds,-dt.microsecond)
+
+
 
 if __name__ == "__main__":
     

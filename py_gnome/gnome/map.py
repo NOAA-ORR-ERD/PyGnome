@@ -38,15 +38,13 @@ from gnome.utilities.geometry.PinP import CrossingsTest as point_in_poly
 
 from gnome.utilities.geometry.polygons import PolygonSet
 
-#from hazpy.geometry import polygons
-
             
 class GnomeMap(object):
     """
     The very simplest map for GNOME -- all water,
     only a bounding box for the map bounds.
     
-    This also serves as a description of the inteface
+    This also serves as a description of the interface
     """
     
     refloat_halflife = None # note -- no land, so never used
