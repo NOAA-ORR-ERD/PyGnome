@@ -28,7 +28,7 @@ def test_import_netcdf_mover():
     import gnome.cy_gnome.cy_netcdf_mover
 
 def test_import_ossm_time():
-    import gnomecy_gnome.cy_ossm_time
+    import gnome.cy_gnome.cy_ossm_time
 
 #def test_import_cats_mover():
 #    import gnome.cy_cats_mover

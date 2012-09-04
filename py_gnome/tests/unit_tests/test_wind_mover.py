@@ -11,7 +11,7 @@ from math import sin,cos,pi
 from random import random
 
 
-from gnome.cy_gnome import cy_basic_types
+from gnome import basic_types
 from gnome.cy_gnome import cy_wind_mover
 from gnome import greenwich
 

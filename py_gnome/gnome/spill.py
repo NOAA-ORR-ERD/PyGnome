@@ -13,7 +13,7 @@ This is the "magic" class -- it handles the smart allocation of arrays, etc.
 """
 import numpy as np
 
-from gnome.cy_gnome import basic_types
+from gnome import basic_types
 
 class Spill(object):
     """

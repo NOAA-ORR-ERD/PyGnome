@@ -10,7 +10,7 @@ can be, for testing and demonstration purposes
 
 import numpy as np
 
-from gnome.cy_gnome import basic_types
+from gnome import basic_types
 
 ## this allows for this to be changed in the future.
 from gnome.utilities.projections import FlatEarthProjection as proj

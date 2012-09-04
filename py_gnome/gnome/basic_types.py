@@ -15,7 +15,7 @@ import datetime
 import numpy as np
 
 
-from cy_basic_types import * # pull everything from the cython code
+from cy_gnome.cy_basic_types import * # pull everything from the cython code
 
 ## Various Python-only type definitions
 

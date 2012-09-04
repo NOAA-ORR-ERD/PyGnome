@@ -7,7 +7,7 @@ import pytest
 
 import numpy as np
 
-from gnome.cy_gnome import basic_types
+from gnome import basic_types
 from gnome import spill
 
 def test_init_simple():

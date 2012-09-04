@@ -300,7 +300,7 @@ class Test_MapfromBNA:
         assert not self.bna_map.on_map( point )
 
 
-from gnome.cy_gnome import basic_types        
+from gnome import basic_types        
 class Test_full_move:
     """
     A test to see if the full API is working for beaching
