@@ -28,10 +28,15 @@ import numpy as np
 import os
 import sys
 
+if "clean" in "".join(sys.argv[1:]):
+    target = 'clean'
+else:
+    target = 'build'
+    
 CPP_CODE_DIR = "../lib_gnome"
 
 # the cython extensions to build -- each should correspond to a *.pyx file
-extension_names = [
+extension_names = ['basic_types',
                    'wind_mover',
 # CATS mover broken at the moment                   
 #                   'cats_mover',
@@ -107,6 +112,8 @@ if sys.platform == "darwin":
         )
     extensions.append(lib_gnome_ext)
 elif sys.platform == "win32":
+    
+    
     compile_args = ['/W0',]
     link_args = ['/DEFAULTLIB:MSVCRT.lib',
                  '/NODEFAULTLIB:LIBCMT.lib',
@@ -114,31 +121,30 @@ elif sys.platform == "win32":
     # let's build C++ here
     sys.path.append(".\gnome\DLL")   # need this for linking to work properly
     proj = '..\project_files\lib_gnomeDLL\lib_gnomeDLL.vcproj'
-    target = 'build'
     config = '/p:configuration=debug' 
     platform = '/p:platform=Win32'
     call(['msbuild',proj,'/t:'+target,config,platform])
 
     lib += ['lib_gnomeDLL']
-    libdirs += ['gnome/DLL']
+    libdirs += ['gnome/cy_gnome']
     macros += [('CYTHON_CCOMPLEX', 0),]
 
-
-## the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
-
-basic_types_ext = Extension('gnome.basic_types',
-                            ['cygnome/basic_types.pyx'], 
-                            language="c++",
-                            define_macros = macros,
-                            extra_compile_args=compile_args,
-                            include_dirs=[CPP_CODE_DIR,
-                                          np.get_include(),
-                                          'cyGNOME',
-                                          extra_includes,
-                                          ],
-                            )
-
-extensions.append(basic_types_ext)
+#
+### the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
+#
+#basic_types_ext = Extension('gnome.cy_gnome.basic_types',
+#                            ['cygnome/basic_types.pyx'], 
+#                            language="c++",
+#                            define_macros = macros,
+#                            extra_compile_args=compile_args,
+#                            include_dirs=[CPP_CODE_DIR,
+#                                          np.get_include(),
+#                                          'cyGNOME',
+#                                          extra_includes,
+#                                          ],
+#                            )
+#
+#extensions.append(basic_types_ext)
 
 # TODO: the extensions below look for the shared object lib_gnome in 
 # './build/lib.macosx-10.3-fat-2.7/gnome' and './gnome'
@@ -147,7 +153,7 @@ extensions.append(basic_types_ext)
 
 for mod_name in extension_names:
    cy_file = os.path.join("cygnome", mod_name+".pyx")
-   extensions.append(  Extension('gnome.' + mod_name,
+   extensions.append(  Extension('gnome.cy_gnome.' + mod_name,
                                  [cy_file], 
                                  language="c++",
                                  define_macros = macros,
@@ -168,7 +174,7 @@ setup(name='pyGnome',
       requires=['numpy'],
       cmdclass={'build_ext': build_ext },
       packages=['gnome',
-                'gnome.utilities',
+    #            'gnome.utilities',
                 ],
       ext_modules=extensions
      )
