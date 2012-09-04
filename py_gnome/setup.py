@@ -36,7 +36,7 @@ else:
 CPP_CODE_DIR = "../lib_gnome"
 
 # the cython extensions to build -- each should correspond to a *.pyx file
-extension_names = [
+extension_names = ['cy_basic_types',
                    'cy_wind_mover',
 # CATS mover broken at the moment                   
 #                   'cats_mover',
