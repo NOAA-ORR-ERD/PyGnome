@@ -100,9 +100,9 @@ if sys.platform == "darwin":
     os.environ['LDSHARED']="gcc-4.0 -dynamiclib -undefined dynamic_lookup -arch ppc -arch i386   -g"
     link_args = ['-Wl,../third_party_lib/libnetcdf.a']
     lib+= ['_gnome']
-    libdirs+= ['./build/lib.macosx-10.3-fat-2.7/gnome','./gnome']
+    libdirs+= ['./build/lib.macosx-10.3-fat-2.7/gnome','./gnome/cy_gnome']
     ## CPP library (lib_gnome.so on unix/mac and lib_gnome.dll on windows)
-    lib_gnome_ext = Extension('gnome.lib_gnome',
+    lib_gnome_ext = Extension('gnome.cy_gnome.lib_gnome',
         language="c++", 
         define_macros = macros,
         #extra_compile_args=[''],
