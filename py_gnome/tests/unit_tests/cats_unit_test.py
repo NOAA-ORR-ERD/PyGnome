@@ -3,7 +3,7 @@ import numpy as np
 from math import sin,cos,pi
 from random import random
 from gnome import cats_mover
-from gnome import basic_types
+from gnome.cy_gnome import basic_types
 from gnome import greenwich
 
 scale_type = 1

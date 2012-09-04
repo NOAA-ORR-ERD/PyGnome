@@ -30,7 +30,7 @@ from numpy import ma
 from PIL import Image, ImageDraw
 
 from gnome.utilities import map_canvas
-from gnome.basic_types import world_point_type, status_on_land
+from gnome.cy_gnome.basic_types import world_point_type, status_on_land
 
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities.geometry import BBox
@@ -155,7 +155,7 @@ class GnomeMap(object):
         
         
 import land_check
-from gnome import basic_types
+from gnome.cy_gnome import basic_types
 
 class RasterMap(GnomeMap):
     """

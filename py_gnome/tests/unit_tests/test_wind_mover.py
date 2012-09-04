@@ -11,8 +11,8 @@ from math import sin,cos,pi
 from random import random
 
 
-from gnome import basic_types
-from gnome import wind_mover
+from gnome.cy_gnome import basic_types
+from gnome.cy_gnome import wind_mover
 from gnome import greenwich
 
 def test_init(): # can we create a wind_mover?

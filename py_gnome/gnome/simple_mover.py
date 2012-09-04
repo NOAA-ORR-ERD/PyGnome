@@ -10,7 +10,7 @@ can be, for testing and demonstration purposes
 
 import numpy as np
 
-from gnome import basic_types
+from gnome.cy_gnome import basic_types
 
 class simple_mover(object):
     """
