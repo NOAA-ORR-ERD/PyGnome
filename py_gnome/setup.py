@@ -36,7 +36,7 @@ else:
 CPP_CODE_DIR = "../lib_gnome"
 
 # the cython extensions to build -- each should correspond to a *.pyx file
-extension_names = ['cy_basic_types',
+extension_names = [
                    'cy_wind_mover',
 # CATS mover broken at the moment                   
 #                   'cats_mover',
@@ -45,7 +45,7 @@ extension_names = ['cy_basic_types',
                    ]
 
 cpp_files = [ 
-              'RectGridVel_c.cpp',
+              'RectGridVeL_c.cpp',
               'MemUtils.cpp',
               'Mover_c.cpp',
               'Replacements.cpp',
@@ -91,25 +91,25 @@ compile_args = []
 link_args = []
 
 if sys.platform == "darwin":
-	# the default sysconfig for python is defined as:
-	# gcc-4.0 -bundle -undefined dynamic_lookup -arch ppc -arch i386   -g 
-	# It appears Mac OS no longer supports libraries build using the -bundle option. It seems to load dynamic libraries
-	# created using the '-dynamiclib' option. Hence, update LDSHARED variable so as to create a 'dynamiclib'
-	# TODO: need to figure out how to give compiler/linker the output flag: -o lib_gnome.dylib
-    os.environ['LDSHARED']="gcc-4.0 -dynamiclib -undefined dynamic_lookup -arch ppc -arch i386   -g"
-    link_args = ['-Wl,../third_party_lib/libnetcdf.a']
-    lib+= ['_gnome']
-    libdirs+= ['./build/lib.macosx-10.3-fat-2.7/gnome','./gnome/cy_gnome']
-    ## CPP library (lib_gnome.so on unix/mac and lib_gnome.dll on windows)
-    lib_gnome_ext = Extension('gnome.cy_gnome.lib_gnome',
-        language="c++", 
-        define_macros = macros,
-        #extra_compile_args=[''],
-    	extra_link_args=link_args,
-        sources = cpp_files, 
-        include_dirs=[CPP_CODE_DIR]
-        )
-    extensions.append(lib_gnome_ext)
+    # build cy_basic_types along with lib_gnome so we can use distutils for building everything
+    # and putting it in the correct place for linking.
+    # cy_basic_types needs to be imported before any other extensions - this is being done
+    # in the gnome/cy_gnome/__init__.py
+    basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
+                                ['cygnome/cy_basic_types.pyx'] + cpp_files, 
+                                language="c++",
+                                define_macros = macros,
+                                extra_compile_args=compile_args,
+   	                            extra_link_args= ['-Wl,../third_party_lib/libnetcdf.a'],
+                                include_dirs=[CPP_CODE_DIR,
+                                              np.get_include(),
+                                              'cyGNOME',
+                                              extra_includes,
+                                              ],
+                                )
+    
+    extensions.append(basic_types_ext)
+
 elif sys.platform == "win32":
     
     
@@ -127,23 +127,11 @@ elif sys.platform == "win32":
     lib += ['lib_gnomeDLL']
     libdirs += ['gnome/cy_gnome']
     macros += [('CYTHON_CCOMPLEX', 0),]
+    extension_names += ['cy_basic_types']
 
 #
 ### the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
 #
-#basic_types_ext = Extension('gnome.cy_gnome.basic_types',
-#                            ['cygnome/basic_types.pyx'], 
-#                            language="c++",
-#                            define_macros = macros,
-#                            extra_compile_args=compile_args,
-#                            include_dirs=[CPP_CODE_DIR,
-#                                          np.get_include(),
-#                                          'cyGNOME',
-#                                          extra_includes,
-#                                          ],
-#                            )
-#
-#extensions.append(basic_types_ext)
 
 # TODO: the extensions below look for the shared object lib_gnome in 
 # './build/lib.macosx-10.3-fat-2.7/gnome' and './gnome'
