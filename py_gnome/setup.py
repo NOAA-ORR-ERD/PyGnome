@@ -40,12 +40,12 @@ extension_names = ['cy_basic_types',
                    'cy_wind_mover',
 # CATS mover broken at the moment                   
 #                   'cats_mover',
-                   'cy_netcdf_mover',
+#                   'cy_netcdf_mover',
                    'cy_ossm_time',
                    ]
 
 cpp_files = [ 
-              'RectGridVel_c.cpp',
+              'RectGridVeL_c.cpp',
               'MemUtils.cpp',
               'Mover_c.cpp',
               'Replacements.cpp',
