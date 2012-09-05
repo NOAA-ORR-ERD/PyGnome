@@ -5,7 +5,8 @@
 *.so
 *.pyc
 *~
-project_files/Debug/*
+
+# ignore binaries generated during build 
 py_gnome/build/**/*
 py_gnome/gnome.utilities.egg-info/*
 py_gnome/pyGnome.egg-info/*

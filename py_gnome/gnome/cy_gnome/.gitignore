@@ -1,0 +1,7 @@
+# ignore binaries generated during build 
+*.pyd
+*.dll
+*.exp
+*.pdb
+*.ilk
+*.lib
