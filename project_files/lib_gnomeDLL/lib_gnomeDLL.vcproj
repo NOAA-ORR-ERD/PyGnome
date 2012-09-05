@@ -45,7 +45,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LIB_GNOMEDLL_EXPORTS;pyGNOME;ibmpyGNOME"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -61,6 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="..\..\third_party_lib\netcdfs.lib"
 				OutputFile="..\..\py_gnome\gnome\cy_gnome\$(ProjectName).dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
@@ -135,6 +136,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="..\..\third_party_lib\netcdfs.lib"
 				OutputFile="..\..\py_gnome\gnome\DLL\$(ProjectName).dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -220,6 +222,10 @@
 			</File>
 			<File
 				RelativePath="..\..\lib_gnome\MYRANDOM.CPP"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\NetCDFMover_c.cpp"
 				>
 			</File>
 			<File

@@ -15,13 +15,14 @@
 #include "ClassID_c.h"
 #include "RectUtils.h"
 #include "Map_c.h"
+#include "ExportSymbols.h"
 
 #ifdef pyGNOME
 #define TMap Map_c
 #endif
 class TMap;
 
-class Mover_c : virtual public ClassID_c {
+class GNOMEDLL_API Mover_c : virtual public ClassID_c {
 
 public:
 	TMap				*moverMap;			// mover's owner

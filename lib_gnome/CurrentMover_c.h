@@ -14,12 +14,13 @@
 #include "TypeDefs.h"
 #include "Mover_c.h"
 #include "GEOMETRY.H"
+#include "ExportSymbols.h"
 
 #ifdef pyGNOME
 #define TMap Map_c
 #endif
 
-class CurrentMover_c : virtual public Mover_c {
+class GNOMEDLL_API CurrentMover_c : virtual public Mover_c {
 	
 public:
 	LONGH			fLESetSizesH;			// cumulative total num le's in each set

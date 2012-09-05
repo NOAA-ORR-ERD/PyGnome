@@ -24,8 +24,8 @@ def test_import_greenwich():
 def test_import_basic_types():
     import gnome.cy_gnome.cy_basic_types
 
-#def test_import_netcdf_mover():
-#    import gnome.cy_gnome.cy_netcdf_mover
+def test_import_netcdf_mover():
+    import gnome.cy_gnome.cy_netcdf_mover
 
 def test_import_ossm_time():
     import gnome.cy_gnome.cy_ossm_time

@@ -13,6 +13,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "CurrentMover_c.h"
+#include "ExportSymbols.h"
 
 #ifndef pyGNOME
 #include "GridVel.h"
@@ -61,7 +62,7 @@ enum {
 	//I_NETCDFMINCURRENT
 };
 
-class NetCDFMover_c : virtual public CurrentMover_c {
+class GNOMEDLL_API NetCDFMover_c : virtual public CurrentMover_c {
 
 public:
 	long fNumRows;
