@@ -154,7 +154,7 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 	int curr_ucmp_id, uv_dimid[3], uv_ndims;
 	size_t nodeLength, nbndLength, neleLength, recs, t_len, sigmaLength=0;
 	float timeVal;
-	char recname[NC_MAX_NAME], *timeUnits=0;	
+	char recname[NC_MAX_NAME], *timeUnits=0, *topOrder=0;;	
 	WORLDPOINTFH vertexPtsH=0;
 	FLOATH totalDepthsH=0, sigmaLevelsH=0;
 	float *lat_vals=0,*lon_vals=0,*depth_vals=0, *sigma_vals=0;
@@ -171,7 +171,7 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 	Point where;
 	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
 	MySFReply reply;
-	Boolean bTopFile = false, bTopInfoInFile = false;
+	Boolean bTopFile = false, bTopInfoInFile = false, isCCW = true;
 	
 	if (!path || !path[0]) return 0;
 	strcpy(fVar.pathName,path);
@@ -439,7 +439,20 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		{
 			status = nc_inq_varid(ncid, "nbe", &nbe_varid); //Navy
 			if (status != NC_NOERR) {/*err = -1; goto done;*/}
-			else bTopInfoInFile = true;
+			else 
+			{
+				bTopInfoInFile = true;
+				status = nc_inq_attlen(ncid, nbe_varid, "order", &t_len);
+				topOrder = new char[t_len+1];
+				status = nc_get_att_text(ncid, nbe_varid, "order", topOrder);
+				if (status != NC_NOERR) {isCCW = false;} // for now to suppport old FVCOM
+				topOrder[t_len] = '\0'; 
+				if (!strncmpnocase (topOrder, "CW", 2))
+					isCCW = false;
+				else if (!strncmpnocase (topOrder, "CCW", 3))
+					isCCW = true;
+				// if order is there let it default to true, that will eventually be default
+			}
 		}
 		if (bTopInfoInFile)
 		{
@@ -524,16 +537,16 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		//if (!reply.good) return USERCANCEL;
 		if (!reply.good) /*return 0;*/
 		{
-			if (bVelocitiesOnTriangles)
-			{
-				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+			if (bTopInfoInFile/*bVelocitiesOnTriangles*/)
+			{	// code goes here, really this is topology included...
+				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength,isCCW);	 
 				//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
 				if (err) goto done;
 				goto depths;
 			}
 			else
 			{
-				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
+				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,isCCW);	 
 				//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 				if (err) goto done;
 	 			goto depths;
@@ -557,9 +570,9 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 				   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
 		if (!reply.good) 
 		{
-			if (bVelocitiesOnTriangles)
+			if (bTopInfoInFile/*bVelocitiesOnTriangles*/)	// code goes here, really this is topology included
 			{
-				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength,isCCW);	 
 				//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);		 
 				if (err) goto done;
 				goto depths;
@@ -590,8 +603,8 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		//SplitPathFile (s, fileName);
 	}
 	
-	if (bVelocitiesOnTriangles)
-		err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
+	if (bTopInfoInFile/*bVelocitiesOnTriangles*/)
+		err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength,isCCW);	 
 	else
 		err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 	
@@ -685,9 +698,9 @@ depths:
 	{
 		for (i=0; i<fNumNodes; i++)
 		{
-			long n;
+			long n = i;
 			
-			n = INDEXH(fVerdatToNetCDFH,i);
+			if (fVerdatToNetCDFH) n = INDEXH(fVerdatToNetCDFH,i);
 			if (n<0 || n>= fNumNodes) {printError("indices messed up"); err=-1; goto done;}
 			INDEXH(totalDepthsH,i) = depth_vals[n] * scale_factor;
 		}
@@ -720,6 +733,7 @@ done:
 	if (bndry_indices) delete [] bndry_indices;
 	if (bndry_nums) delete [] bndry_nums;
 	if (bndry_type) delete [] bndry_type;
+	if (topOrder) delete [] topOrder;
 	
 	return err;
 }
@@ -785,6 +799,7 @@ OSErr NetCDFMoverTri::ReadTimeData(long index,VelocityFH *velocityH, char* errms
 	if (status != NC_NOERR) {err = -1; goto done;}
 	status = nc_inq_varndims(ncid, curr_ucmp_id, &uv_ndims);
 	if (status==NC_NOERR){if (numdims < 6 && uv_ndims==3) {curr_count[1] = numDepths; curr_count[2] = numNodes;}}	// could have more dimensions than are used in u,v
+	if (status==NC_NOERR){if (numdims >= 6 && uv_ndims==2) {curr_count[1] = numNodes;}}	// could have more dimensions than are used in u,v
 	
 	status = nc_inq_vardimid (ncid, curr_ucmp_id, uv_dimid);	// see if dimid(1) or (2) == nele or node, depends on uv_ndims
 	if (status==NC_NOERR) 
@@ -967,7 +982,8 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 			 	// get the value at each vertex and draw an arrow
 				LongPoint pt = INDEXH(ptsHdl,i);
 				//long ptIndex = INDEXH(fVerdatToNetCDFH,i);
-				long index = INDEXH(fVerdatToNetCDFH,i);
+				long index = i;
+				if (fVerdatToNetCDFH) index = INDEXH(fVerdatToNetCDFH,i);
 				//long ptIndex = (*fDepthDataInfo)[index].indexToDepthData;	// not used ?
 				WorldPoint wp;
 				Point p,p2;
@@ -1286,8 +1302,9 @@ OSErr NetCDFMoverTri::ReadTopology(char* path, TMap **newMap)
 	else 
 	//{err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
 	{
-		if (!bVelocitiesOnTriangles) {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
-		else line--;
+		//if (!bVelocitiesOnTriangles) {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
+		//else line--;
+		line--;
 	}
 	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
 	
@@ -1406,7 +1423,8 @@ OSErr NetCDFMoverTri::ReadTopology(char* path, TMap **newMap)
 		// maybe move up and have the map read in the boundary information
 		map->SetBoundarySegs(boundarySegs);	
 		map->SetWaterBoundaries(waterBoundaries);
-		if (bVelocitiesOnTriangles && boundaryPts) map->SetBoundaryPoints(boundaryPts);	
+		//if (bVelocitiesOnTriangles && boundaryPts) map->SetBoundaryPoints(boundaryPts);	
+		if (boundaryPts) map->SetBoundaryPoints(boundaryPts);	
 		
 		*newMap = map;
 	}
@@ -1584,11 +1602,12 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 		boundaryTypeH = map->GetWaterBoundaries();
 		boundarySegmentsH = map->GetBoundarySegs();
 		if (!boundaryTypeH || !boundarySegmentsH) {printError("No map info to export"); err=-1; goto done;}
-		if (bVelocitiesOnTriangles) 
+		/*if (bVelocitiesOnTriangles) 
 		{
 			boundaryPointsH = map->GetBoundaryPoints();
 			if (!boundaryPointsH) {printError("No map info to export"); err=-1; goto done;}
-		}
+		}*/
+		boundaryPointsH = map->GetBoundaryPoints();
 	}
 	
 	(void)hdelete(0, 0, path);
@@ -1600,10 +1619,12 @@ OSErr NetCDFMoverTri::ExportTopology(char* path)
 	
 	// Write out values
 	if (fVerdatToNetCDFH) n = _GetHandleSize((Handle)fVerdatToNetCDFH)/sizeof(long);
+	else n = 0;
 	//else {printError("There is no transpose array"); err = -1; goto done;}
-	else 
-		{if (!bVelocitiesOnTriangles) {printError("There is no transpose array"); err = -1; goto done;}}
-	if (!bVelocitiesOnTriangles)
+	//else 
+		//{if (!bVelocitiesOnTriangles) {printError("There is no transpose array"); err = -1; goto done;}}
+	//if (!bVelocitiesOnTriangles)
+	if (n>0)
 	{
 		sprintf(hdrStr,"TransposeArray\t%ld\n",n);	
 		strcpy(buffer,hdrStr);
