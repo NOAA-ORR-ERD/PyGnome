@@ -22,8 +22,8 @@
 
 class TOSSMTimeValue;
 class TMap;
-class GNOMEDLL_API WindMover_c : virtual public Mover_c {
 
+class GNOMEDLL_API WindMover_c : virtual public Mover_c {
 	
 protected:
 	LONGH				fLESetSizes;		// cumulative total num le's in each set

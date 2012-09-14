@@ -1147,6 +1147,10 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
+	// NOTE: if allow fill_value as NaN need to be sure to check for it wherever fill_value is used
+	if (_isnan(fill_value)) 
+		fill_value = -9999.;
+
 	velH = (VelocityFH)_NewHandleClear(totalNumberOfVels * sizeof(VelocityFRec));
 	if (!velH) 
 	{
@@ -1247,15 +1251,9 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 					{
 						if (curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value || curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)
 							curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = 0;
-#ifdef MAC
-						//if (__isnan(curr_uvals[(latlength-i-1)*lonlength+j]) || __isnan(curr_vvals[(latlength-i-1)*lonlength+j]))
-						//if ((curr_uvals[(latlength-i-1)*lonlength+j])==NAN || (curr_vvals[(latlength-i-1)*lonlength+j])==NAN)
-						if (isnan(curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]) || isnan(curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
-							curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = 0;
-#else
+						// NOTE: if leave velocity as NaN need to be sure to check for it wherever velocity is used (GetMove,Draw,...)
 						if (_isnan(curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]) || _isnan(curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
 							curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = 0;
-#endif					// if use fill_value need to be sure to check for it in GetMove and VelocityStrAtPoint
 						//if (curr_uvals[(latlength-i-1)*lonlength+j]==0 && curr_vvals[(latlength-i-1)*lonlength+j]==0)
 						//curr_uvals[(latlength-i-1)*lonlength+j] = curr_vvals[(latlength-i-1)*lonlength+j] = fill_value;
 					}

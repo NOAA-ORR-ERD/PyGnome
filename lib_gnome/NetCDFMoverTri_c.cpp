@@ -85,9 +85,15 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
 	{
 		// this is only section that's different from ptcur
-		ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
-		ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
-		ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+		ptIndex1 =  interpolationVal.ptIndex1;	
+		ptIndex2 =  interpolationVal.ptIndex2;
+		ptIndex3 =  interpolationVal.ptIndex3;
+		if (fVerdatToNetCDFH)
+		{
+			ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+		}
 		//index1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
 		//index2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
 		//index3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
@@ -370,9 +376,15 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
 	{
 		// this is only section that's different from ptcur
-		ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
-		ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
-		ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+		ptIndex1 =  interpolationVal.ptIndex1;	
+		ptIndex2 =  interpolationVal.ptIndex2;
+		ptIndex3 =  interpolationVal.ptIndex3;
+		if (fVerdatToNetCDFH)
+		{
+			ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+		}
 	}
 	else
 	{
@@ -495,9 +507,15 @@ VelocityRec NetCDFMoverTri_c::GetMove3D(InterpolationVal interpolationVal,float 
 	if (interpolationVal.ptIndex1 >= 0)  // if negative corresponds to negative ntri
 	{
 		// this is only section that's different from ptcur
-		ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
-		ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
-		ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+		ptIndex1 =  interpolationVal.ptIndex1;	
+		ptIndex2 =  interpolationVal.ptIndex2;
+		ptIndex3 =  interpolationVal.ptIndex3;
+		if (fVerdatToNetCDFH)
+		{
+			ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+		}
 	}
 	else
 		return scaledPatVelocity;
@@ -838,7 +856,7 @@ void NetCDFMoverTri_c::GetDepthIndices(long ptIndex, float depthAtPoint, long *d
 
 
 //OSErr NetCDFMoverTri::ReorderPoints2(TMap **newMap, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts) 
-OSErr NetCDFMoverTri_c::ReorderPoints2(TMap **newMap, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors, long ntri) 
+OSErr NetCDFMoverTri_c::ReorderPoints2(TMap **newMap, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors, long ntri, Boolean isCCW) 
 {
 	OSErr err = 0;
 	char errmsg[256];
@@ -1037,22 +1055,30 @@ OSErr NetCDFMoverTri_c::ReorderPoints2(TMap **newMap, long *bndry_indices, long 
 	}
 	for(i = 0; i < ntri; i ++)
 	{	// topology data needs to be CCW
-		long debugTest = tri_verts[i];
+		//long debugTest = tri_verts[i];
 		(*topo)[i].vertex1 = tri_verts[i];
-		debugTest = tri_verts[i+ntri];
-		//(*topo)[i].vertex2 = tri_verts[i+ntri];
-		(*topo)[i].vertex3 = tri_verts[i+ntri];
-		debugTest = tri_verts[i+2*ntri];
-		//(*topo)[i].vertex3 = tri_verts[i+2*ntri];
-		(*topo)[i].vertex2 = tri_verts[i+2*ntri];
-		debugTest = tri_neighbors[i];
+		//debugTest = tri_verts[i+ntri];
+		if (isCCW)
+			(*topo)[i].vertex2 = tri_verts[i+ntri];
+		else
+			(*topo)[i].vertex3 = tri_verts[i+ntri];
+		//debugTest = tri_verts[i+2*ntri];
+		if (isCCW)
+			(*topo)[i].vertex3 = tri_verts[i+2*ntri];
+		else
+			(*topo)[i].vertex2 = tri_verts[i+2*ntri];
+		//debugTest = tri_neighbors[i];
 		(*topo)[i].adjTri1 = tri_neighbors[i];
-		debugTest = tri_neighbors[i+ntri];
-		//(*topo)[i].adjTri2 = tri_neighbors[i+ntri];
-		(*topo)[i].adjTri3 = tri_neighbors[i+ntri];
-		debugTest = tri_neighbors[i+2*ntri];
-		//(*topo)[i].adjTri3 = tri_neighbors[i+2*ntri];
-		(*topo)[i].adjTri2 = tri_neighbors[i+2*ntri];
+		//debugTest = tri_neighbors[i+ntri];
+		if (isCCW)
+			(*topo)[i].adjTri2 = tri_neighbors[i+ntri];
+		else
+			(*topo)[i].adjTri3 = tri_neighbors[i+ntri];
+		//debugTest = tri_neighbors[i+2*ntri];
+		if (isCCW)
+			(*topo)[i].adjTri3 = tri_neighbors[i+2*ntri];
+		else
+			(*topo)[i].adjTri2 = tri_neighbors[i+2*ntri];
 	}
 	
 	DisplayMessage("NEXTMESSAGETEMP");

@@ -361,6 +361,7 @@ enum { ESCAPEKEY = 0X35, ENTERKEY = 0X4C, RETURNKEY = 0X24, PERIODKEY = 0X2F,
 enum { ON = 1, OFF = 0 };
 #define _min(a, b) ((a) < (b) ? (a) : (b))
 #define _max(a, b) ((a) > (b) ? (a) : (b))
+#define _isnan isnan
 #endif
 
 #define round(n) floor((n) + 0.5)

@@ -21,6 +21,7 @@ class NetCDFStore // Houses stepwise run information for NetCDF output (and inpu
         float *mass;
         long *age;
         short *flag;
+        long *status;
         long *id;
 		map<string, int> *ncVarIDs, *ncDimIDs;
 	
