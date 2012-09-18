@@ -50,8 +50,6 @@ public:
 	Boolean bShowWindBarb;
 	
 	Seconds tap_offset;		// AH 06/20/2012
-	double	breaking_wave_height;	// AH 06/20/2012
-	double	mixed_layer_depth;
 	VelocityRec	current_time_value;		// AH 07/16/2012
 	
 	WindMover_c (TMap *owner, char* name);
@@ -78,8 +76,8 @@ public:
 	void				SetIsConstantWind (Boolean isConstantWind) { fIsConstantWind = isConstantWind; }
 	OSErr				GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
-	OSErr				get_move(int, unsigned long, unsigned long, char *, char *, char *, char *, double, double, double, double, char *, char*, int);
-	OSErr				get_move(int, unsigned long, unsigned long, char *, char *, char *, char *, double, double, char*, int);
+	OSErr				get_move(int, unsigned long, unsigned long, char *, char *, char *, double, double, char*);
+	OSErr				get_move(int, unsigned long, unsigned long, char *, char *, char *);
 
 };
 
