@@ -229,3 +229,25 @@ long StrToSpeedUnits(char* str)
 	
 	return kUndefined;
 }
+
+void SpeedUnitsToStr(long unitCode, char *unitStr)
+{
+	unitStr [0] = '\0';		// default is blank
+	
+	switch (unitCode)
+	{
+		case kKnots:
+			strcpy (unitStr, "knots");
+			break;
+		
+		case kMetersPerSec:
+			strcpy (unitStr, "meters per second");
+			break;
+		case kMilesPerHour:
+			strcpy(unitStr,"miles per hour");
+			break;
+	}
+
+	return;
+}
+

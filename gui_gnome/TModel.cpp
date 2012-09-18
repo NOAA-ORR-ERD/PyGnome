@@ -2988,18 +2988,6 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 		switch(mover->GetClassID()) {			// AH 06/20/2012: maybe write a small function for this block, since we'll use it again.
 				// set up the mover:
 			case TYPE_WINDMOVER:
-				// set up the breaking wave, mixed layer depth:
-				map = Get3DMap();
-				if (!map)  {
-					// use defaults
-					((TWindMover*)mover)->breaking_wave_height = 1.;	// meters
-					((TWindMover*)mover)->mixed_layer_depth = 10.;	// meters
-				}
-				else
-				{
-					((TWindMover*)mover)->breaking_wave_height = map->GetBreakingWaveHeight();
-					((TWindMover*)mover)->mixed_layer_depth = map->GetMixedLayerDepth();
-				}
 				break;
 			case TYPE_RANDOMMOVER:
 				// ..
@@ -3057,18 +3045,6 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 			switch(mover->GetClassID()) {			// AH 06/20/2012: maybe write a small function for this block, since we'll use it again.
 					// set up the mover:
 				case TYPE_WINDMOVER:
-					// set up the breaking wave, mixed layer depth:
-					map = Get3DMap();
-					if (!map)  {
-						// use defaults
-						((TWindMover*)mover)->breaking_wave_height = 1.;	// meters
-						((TWindMover*)mover)->mixed_layer_depth = 10.;	// meters
-					}
-					else
-					{
-						((TWindMover*)mover)->breaking_wave_height = map->GetBreakingWaveHeight();
-						((TWindMover*)mover)->mixed_layer_depth = map->GetMixedLayerDepth();
-					}
 					break;
 				case TYPE_RANDOMMOVER:
 					// ..
