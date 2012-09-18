@@ -17,4 +17,3 @@ cdef extern from "OSSMTimeValue_c.h":
         double fVelAtRefPt
         OSErr GetTimeValue(Seconds &, VelocityRec *)
         OSErr ReadTimeValues (char *, short, short)
-        #void SetTimeValueHandle(TimeValuePairH)	# sets all time values - consider changing function name

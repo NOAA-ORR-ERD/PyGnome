@@ -14,30 +14,9 @@ cdef class Cy_ossm_time:
     def __cinit__(self):
        self.time_dep = new OSSMTimeValue_c(NULL)
 
-#    def __cinit__(self, np.ndarray[TimeValuePair, ndim=1] time_vals, units=1):
-# 
-#        """
-#        units:
-# 
-#        kCMS = 1
-#        kKCMS = 2
-#        kCFS = 3
-#        kKCFS = 3
-# 
-#        (If you can make sense of any of this.)
-# 
-#	    """
-#        #self.time_dep = new OSSMTimeValue_c(NULL, &time_vals[0], units)
-#        cdef TimeValuePairH time_val_hdl
-#        cdef short tmp_size = sizeof(TimeValuePair)
-#        memcpy(time_val_hdl, <char *>deref(time_vals.data), time_vals.size*tmp_size)
-#        self.time_dep = new OSSMTimeValue_c(NULL, time_val_hdl, units)
-        
-        
     def __dealloc__(self):
         del self.time_dep
     
-    #def __init__(self, np.ndarray[TimeValuePair] time_vals, units=1):
     def __init__(self):
         """
         Initialize object
@@ -46,27 +25,27 @@ cdef class Cy_ossm_time:
     
     def GetTimeValue(self, modelTime, np.ndarray[VelocityRec, ndim=1] value):
       """
-      GetTimeValue - for a specified modelTime, gets the value 
+      GetTimeValue - for a specified modelTime, it interpolates and returns the value 
       """
       err = self.time_dep.GetTimeValue( modelTime, &value[0])
        
     def ReadTimeValues(self, path, format=5, units=1):
-       #===========================================================================
-       # enum { M19REALREAL = 1, M19HILITEDEFAULT,
-       # 
-       # M19MAGNITUDEDEGREES, M19DEGREESMAGNITUDE,
-       # 
-       # M19MAGNITUDEDIRECTION, M19DIRECTIONMAGNITUDE,
-       # 
-       # M19CANCEL, M19LABEL };
-       #===========================================================================
-       err = self.time_dep.ReadTimeValues(path, 5, 1)
-       return err
+        """
+        Read the TimeValues from a datafile. Currently, the format defaults to the
+        format of the Wind Data File. The units default to kKnots.
         
-#    def SetTimeValueHandle(self, np.ndarray[TimeValuePair, ndim=1] time_vals):
-#       cdef TimeValuePairH time_val_hdl
-#       #cdef short tmp_size = sizeof(TimeValuePair)
-#       #memcpy(time_val_hdl, <char *>deref(time_vals.data), time_vals.size*tmp_size)
-#       time_val_hdl = &time_vals[0]
-#       pass
+        Format is an enum type, defined as follows:
+        #===========================================================================
+        # enum { M19REALREAL = 1, M19HILITEDEFAULT,M19MAGNITUDEDEGREES, M19DEGREESMAGNITUDE,
+        #        M19MAGNITUDEDIRECTION, M19DIRECTIONMAGNITUDE,M19CANCEL, M19LABEL };
+        #===========================================================================
+
+        Similarly, units are defined by an integer as follows:
+        # kKnots            1
+        # kMetersPerSec    2
+        # kMilesPerHour    3
+        """
+        err = self.time_dep.ReadTimeValues(path, format, units)
+        return err
+        
         
