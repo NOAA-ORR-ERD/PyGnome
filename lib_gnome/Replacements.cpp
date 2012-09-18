@@ -62,10 +62,23 @@ OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 	return false;
 }
 
+// Make sure terminationFlag can be typed to a Boolean
 OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR name,
 					   VOIDPTR ptr, long length, CHARHP handle) {
 	char c;
 	int x = 0, i = 0;
+
+	Boolean terminate;
+	if(handle) *handle = 0; 
+	switch(terminationFlag)
+	{
+		case TERMINATED:
+			terminate  = true; break;
+		case NONTERMINATED:
+			terminate  = false; break;
+		default:
+			printError("Bad flag in ReadFileContents");return -1;
+	}	
 
 	try {
 		fstream *_ifstream = new fstream(name, ios::in);
@@ -77,7 +90,7 @@ OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR
 		if(x > length && length != 0)
 		    x = length;
 		if(handle) {
-			*handle = _NewHandle(x);
+			*handle = _NewHandle(x + (terminate ? 1 : 0));
 			for(; i < x && _ifstream->get(c); i++)
 				DEREFH(*handle)[i] = c;
 		} 
