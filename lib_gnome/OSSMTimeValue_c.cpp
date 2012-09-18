@@ -97,7 +97,12 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 	// interpolate value from timeValues array
 	
 	// only one element => values are constant
-	if (n == 1) { *value = UorV(INDEXH(timeValues, 0).value, index); return 0; }
+	if (n == 1) 
+	{ 
+		VelocityRec vRec = INDEXH(timeValues, 0).value;
+		*value = UorV(vRec, index); 
+		return 0; 
+	}
 	
 	// only two elements => use linear interopolation
 	if (n == 2) { a = 0; b = 1; linear = TRUE; }
@@ -231,6 +236,7 @@ void OSSMTimeValue_c::Dispose()
 	
 	TimeValue_c::Dispose();
 }
+
 
 OSErr OSSMTimeValue_c::CheckStartTime(Seconds forTime)
 {
@@ -532,7 +538,11 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	
 	if(numValues > 0)
 	{
-		long actualSize = numValues*sizeof(**timeValues); 
+		// JS: 9/17/12 - Following does not work for cython.
+		// Leave it commented so we can repro and try to do debugging
+		//long actualSize = numValues*(long)sizeof(**timeValues);
+		long sz = (long)sizeof(**timeValues);
+		long actualSize = numValues*sz;
 		_SetHandleSize((Handle)timeValues,actualSize);
 		err = _MemError();
 	}
