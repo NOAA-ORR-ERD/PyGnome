@@ -17,12 +17,9 @@ cdef class ossm_time:
         """
         units:
 
-        kCMS = 1
-        kKCMS = 2
-        kCFS = 3
-        kKCFS = 3
-
-        (If you can make sense of any of this.)
+        kKnots = 1
+        kMetersPerSec = 2
+        kMilesPerHour = 3
 
 	"""
 
