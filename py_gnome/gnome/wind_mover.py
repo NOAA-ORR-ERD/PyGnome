@@ -58,15 +58,8 @@ class WindMover(Cy_wind_mover):
                 
         ## should we need these???
         windage_array = np.ones((spill.num_LEs,), dtype=basic_types.mover_type)
-        dispersion_array = np.zeros((spill.num_LEs,), dtype=np.short) ## what should be the dtype here???
 
-        ## we certainly shouldn't need these!!
-        time_vals = np.empty((1,), dtype=basic_types.time_value_pair)
-        # Straight south wind... 10 meters per second
-        time_vals['value']['u'] =  0  # meters per second?
-        time_vals['value']['v'] = 10 # 
-
-        # initialize uncerainty array:
+        # initialize uncertainty array:
         # fixme: this needs to get stored with the Mover -- keyed to a particular spill.
         uncertain_ra = np.empty((spill.num_LEs,), dtype=basic_types.wind_uncertain_rec)	# one uncertain rec per le
         for x in range(0, N):
@@ -74,10 +67,6 @@ class WindMover(Cy_wind_mover):
             uncertain_ra[x]['randCos'] = cos(theta)
             uncertain_ra[x]['randSin'] = sin(theta)
 
-        ## or these:
-        ## dump for now
-        breaking_wave = 10 #?? 
-        mix_layer_depth = 10 #??
 
         # call the Cython version 
         # (delta is changed in place)
@@ -86,11 +75,7 @@ class WindMover(Cy_wind_mover):
                        time_step,
                        positions,
                        delta,
-                       windage_array,
-                       dispersion_array, # don't need
-                       breaking_wave, # don't need
-                       mix_layer, # don't need
-                       time_vals): # don't need
+                       windage_array):
         return delta
 
         

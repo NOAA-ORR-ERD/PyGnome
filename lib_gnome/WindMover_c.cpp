@@ -56,8 +56,6 @@ WindMover_c::WindMover_c () {
 	bUncertaintyPointOpen=false;
 	bSubsurfaceActive = false;
 	fGamma = 1.;
-	breaking_wave_height = 1.;	// meters
-	mixed_layer_depth = 10.;	// meters
 	
 	fIsConstantWind = false;
 	fConstantValue.u = fConstantValue.v = 0.0;
@@ -89,8 +87,6 @@ WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 	bUncertaintyPointOpen=false;
 	bSubsurfaceActive = false;
 	fGamma = 1.;
-	breaking_wave_height = 1.;	// meters
-	mixed_layer_depth = 10.;	// meters
 	
 	fIsConstantWind = false;
 	fConstantValue.u = fConstantValue.v = 0.0;
@@ -418,13 +414,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 	return err;
 }
 
-OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double f_sigma_2, double f_sigma_theta, double breaking_wave, double mix_layer, char *uncertain_ra, char* time_vals, int num_times) {	
-
-// AH 06/20/2012:	
-// unfortunately, because we determine the size of the handle by a small region at the base of the array,
-// we have to recreate the container for any set of values passed, so that we're compatible with the existing
-// _GetHandleSize() logic. maybe we can talk about this next meeting.
-	
+OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *wind_ra, double f_sigma_2, double f_sigma_theta, char *uncertain_ra) {	
 
 	TimeValuePairH time_val_hdl = 0;
 	
@@ -438,36 +428,10 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 		return 1;
 	}
 	
-	if(!time_vals) {
-		cout << "time values array not provided! returning.\n";
-		return 1;
-	} else {
-		if(num_times == 1) {
-			fIsConstantWind = true;
-			fConstantValue = ((TimeValuePair*)time_vals)->value;
-		} else {
-#ifdef pyGNOME
-			try {
-				time_val_hdl = (TimeValuePairH)_NewHandle(sizeof(TimeValuePair)*num_times);
-				memcpy(*time_val_hdl, time_vals, sizeof(TimeValuePair)*num_times);
-				timeDep = new OSSMTimeValue_c(this, time_val_hdl, kCMS);	// should we have to instantiate this every time we call the mover?
-			} catch(...) {
-				cout << "cannot create time values handle in windmover::get_move. returning.\n";
-				if(time_val_hdl)
-					_DisposeHandle((Handle)time_val_hdl);
-				return 1;
-			}
-#endif
-		}
-	}
-	// and so on.
 	
-	this->breaking_wave_height = breaking_wave;
-	this->mixed_layer_depth = mix_layer;
 	this->fSigma2 = f_sigma_2;
 	this->fSigmaTheta = f_sigma_theta;
 	this->tap_offset = 0;
-	this->bSubsurfaceActive = true;
 
 	try {
 		this->fWindUncertaintyList = (LEWindUncertainRecH)_NewHandle(sizeof(LEWindUncertainRec)*n);
@@ -487,18 +451,15 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 	WorldPoint3D *ref;
 	WorldPoint3D *wp;
 	double *windages;
-	short *disp_ra;
 	ref = (WorldPoint3D*)ref_ra;
 	wp = (WorldPoint3D*)wp_ra;
 	windages = (double*)wind_ra;
-	disp_ra = (short*)dispersion_ra;
 	
 	for (int i = 0; i < n; i++) {
 		LERec rec;
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
 		rec.windage = windages[i];
-		rec.dispersionStatus = disp_ra[i];
 		
 		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
 		
@@ -506,10 +467,6 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 		wp[i].p.pLong += delta.p.pLong / 1000000;
 		wp[i].z += delta.z;
 	}
-	if(timeDep)
-		delete timeDep;
-	if(time_val_hdl)
-		_DisposeHandle((Handle)time_val_hdl);
 	if(this->fLESetSizes)
 		_DisposeHandle((Handle)this->fLESetSizes);
 	if(this->fWindUncertaintyList)
@@ -523,49 +480,14 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 
 // ++
 
-OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *wind_ra, char *dispersion_ra, double breaking_wave, double mix_layer, char* time_vals, int num_times) {	
-	
-	// AH 06/20/2012:	
-	// unfortunately, because we determine the size of the handle by a small region at the base of the array,
-	// we have to recreate the container for any set of values passed, so that we're compatible with the existing
-	// _GetHandleSize() logic. maybe we can talk about this next meeting.
-	
-	
-	TimeValuePairH time_val_hdl = 0;
-	
+OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *wind_ra) {	
+		
 	if(!wp_ra) {
 		cout << "worldpoints array not provided! returning.\n";
 		return 1;
-	}
+	}	
 	
-	if(!time_vals) {
-		cout << "time values array not provided! returning.\n";
-		return 1;
-	} else {
-		if(num_times == 1) {
-			fIsConstantWind = true;
-			fConstantValue = ((TimeValuePair*)time_vals)->value;
-		} else {
-#ifdef pyGNOME
-			try {
-				time_val_hdl = (TimeValuePairH)_NewHandle(sizeof(TimeValuePair)*num_times);
-				memcpy(*time_val_hdl, time_vals, sizeof(TimeValuePair)*num_times);
-				timeDep = new OSSMTimeValue_c(this, time_val_hdl, kCMS);	// should we have to instantiate this every time we call the mover?
-			} catch(...) {
-				cout << "cannot create time values handle in windmover::get_move. returning.\n";
-				if(time_val_hdl)
-					_DisposeHandle((Handle)time_val_hdl);
-				return 1;
-			}
-#endif
-		}
-	}
-	// and so on.
-	
-	this->breaking_wave_height = breaking_wave;
-	this->mixed_layer_depth = mix_layer;
 	this->tap_offset = 0;
-	this->bSubsurfaceActive = true;
 	
 	this->PrepareForModelStep(model_time, step_len, false);
 
@@ -573,18 +495,15 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 	WorldPoint3D *wp;
 	WorldPoint3D *ref;
 	double *windages;
-	short *disp_ra;
 	ref = (WorldPoint3D*)ref_ra;
 	wp = (WorldPoint3D*)wp_ra;
 	windages = (double*)wind_ra;
-	disp_ra = (short*)dispersion_ra;
 	
 	for (int i = 0; i < n; i++) {
 		LERec rec;
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
 		rec.windage = windages[i];
-		rec.dispersionStatus = disp_ra[i];
 		
 		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
 		
@@ -592,10 +511,6 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 		wp[i].p.pLong += delta.p.pLong / 1000000;
 		wp[i].z += delta.z;
 	}
-	if(timeDep)
-		delete timeDep;
-	if(time_val_hdl)
-		_DisposeHandle((Handle)time_val_hdl);
 	return noErr;
 }
 
@@ -612,9 +527,9 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,lo
 	OSErr err = noErr;
 	
 	
-	// if ((*theLE).z > 0) return deltaPoint; // wind doesn't act below surface
+	if ((*theLE).z > 0) return deltaPoint; // wind doesn't act below surface
 	// or use some sort of exponential decay below the surface...
-	if (((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT || (*theLE).z>0) && !bSubsurfaceActive) return deltaPoint;
+	//if (((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT || (*theLE).z>0) && !bSubsurfaceActive) return deltaPoint;
 	
 	// code goes here, check LE type - plankton will have no windage
 	
@@ -628,24 +543,20 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,lo
 	if(err)  return deltaPoint;
 	
 	// separate algorithm for dispersed oil
-	if ((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT)
+	// this algorithm was not being used but might want to resurrect it at some point 9/18/12
+	/*if ((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT)
 	{
 		//return deltaPoint;
 		//code goes here, check if depth at point is less than mixed layer depth or breaking wave depth
 		// shouldn't happen if other checks are done...
 		double f=0, z = (*theLE).z,angle, u_mag; 
-/*
+
 		PtCurMap *map = GetPtCurMap();	// in theory should be moverMap, unless universal...
 		if (!map) printError("Programmer error - TWindMover::GetWindageMove()");
 		//breakingWaveHeight = map->GetBreakingWaveHeight();
 		breakingWaveHeight = map->GetBreakingWaveHeight();
-*/	// minus AH 06/20/2012
-		
-		// AH 06/20/2012: The value should have been computed by the time we've gotten here
-	
-		if (breaking_wave_height==0) breaking_wave_height = 1;	// need to have a default or give an error
-		
-		// mixedLayerDepth = map->fMixedLayerDepth;		minus AH 06/20/2012
+		mixedLayerDepth = map->fMixedLayerDepth;		
+
 		if (z<=fGamma*breaking_wave_height*1.5)
 		{
 			f = 2./3.;	// note, setting fGamma = 0 does not reduce subsurface windage effect
@@ -669,7 +580,7 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,lo
 		//timeValue.u = abs(timeValue.u) * .03 * sin(angle) * f;	// should use average wind
 		//timeValue.v = abs(timeValue.v) * .03 * cos(angle) * f;
 	}
-	else
+	else*/
 	{
 		if(leType == UNCERTAINTY_LE)
 		{

@@ -306,8 +306,6 @@ void CATSMover_c::ModelStepIsDone()
 
 OSErr CATSMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra) {	
 	
-	TimeValuePairH time_val_hdl = 0;
-	
 	if(!uncertain_ra) {
 		cout << "uncertainty values not provided! returning.\n";
 		return 1;
@@ -317,12 +315,6 @@ OSErr CATSMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 		cout << "worldpoints array not provided! returning.\n";
 		return 1;
 	}
-	
-	if(!this->timeDep) {
-		cout << "time values array not set! returning.\n";
-		return 1;
-	}
-	// and so on.
 	
 	try {
 		this->fUncertaintyListH = (LEUncertainRecH)_NewHandle(sizeof(LEUncertainRec)*n);
