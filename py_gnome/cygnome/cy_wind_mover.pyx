@@ -57,7 +57,6 @@ cdef class Cy_wind_mover:
         
         self.mover.get_move(N, model_time, step_len, ref_points, delta, windages, f_sigma_vel, f_sigma_theta, uncertain_ptr)
 
-    ##fixme: don't need breaking wave, etc...
     ## need to clarify what is going on here -- is the delta put into the wp_ra??    
     def get_move(self,
                  model_time,

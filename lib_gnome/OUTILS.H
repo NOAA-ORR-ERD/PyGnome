@@ -25,6 +25,7 @@ typedef struct {
 } DirectionRec;
 
 long StrToSpeedUnits(char* str);
+void SpeedUnitsToStr(long unitCode, char *unitStr);
 
 void	ConvertToUV (double magnitude, double angle, double *u, double *v);
 double	ConvertToDegrees (char *direction);

@@ -788,11 +788,11 @@ OSErr TWindMover::ExportVariableWind(char* path)
 	VelocityRec vel;
 	double r,theta;
 	long numTimeValuePairs,i;
-	char buffer[512],windMagStr[64],windDirStr[64],timeStr[128];
+	char buffer[512],windMagStr[64],windDirStr[64],timeStr[128],hdrStr[64];
 	Boolean askForUnits; 
 	double conversionFactor = 1.0;
 	BFPB bfpb;
-	
+	short selectedUnits = timeDep->GetUserUnits();	
 	
 	timeValueH = timeDep -> GetTimeValueHandle();
 	if(!timeValueH) 
@@ -808,7 +808,7 @@ OSErr TWindMover::ExportVariableWind(char* path)
 	if(askForUnits)
 	{	
 		Boolean userCancel=false;
-		short selectedUnits = timeDep->GetUserUnits(); 
+		//short selectedUnits = timeDep->GetUserUnits(); 
 		err = AskUserForUnits(&selectedUnits,&userCancel);
 		if(err || userCancel) { err = -1; goto done;}
 		
@@ -833,6 +833,22 @@ OSErr TWindMover::ExportVariableWind(char* path)
 	{ TechError("WriteToPath()", "FSOpenBuf()", err); return err; }
 	
 	
+	sprintf(hdrStr,"OSSM Long Wind from GNOME\n");	// station name
+	strcpy(buffer,hdrStr);
+	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	sprintf(hdrStr,"Station Position unknown\n");	// station position - may want to use -1,-1,-1,-1 or something in the right format
+	strcpy(buffer,hdrStr);
+	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	SpeedUnitsToStr(selectedUnits, hdrStr);
+	sprintf(hdrStr,"%s\n",hdrStr); // units
+	strcpy(buffer,hdrStr);
+	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	sprintf(hdrStr,"LTIME\n");	// local time
+	strcpy(buffer,hdrStr);
+	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	sprintf(hdrStr,"0,0,0,0,0,0,0,0\n");	// grid
+	strcpy(buffer,hdrStr);
+	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	// Write out the times and values
 	numTimeValuePairs = timeDep->GetNumValues();
 	for(i = 0; i< numTimeValuePairs;i++)
