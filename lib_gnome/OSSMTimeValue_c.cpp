@@ -404,6 +404,16 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	else
 		askForUnits = FALSE;
 	
+	// askForUnits must be FALSE if using pyGNOME
+	#ifdef pyGNOME
+	if( askForUnits)
+	{
+		printError("Units not found in file and units not provided as input.");
+		err = -1;
+		goto done;
+	}
+	#endif
+
 	if(askForUnits)
 	{	
 		// we have to ask the user for units...

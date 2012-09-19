@@ -1,6 +1,6 @@
-cdef extern from "Basics.h":
-    pass
-    
+cdef exterm from "Basic.h":
+	pass
+
 cdef extern from "TypeDefs.h":
     ctypedef unsigned long LETYPE    
     ctypedef unsigned long Seconds
@@ -75,6 +75,7 @@ cdef extern from "TypeDefs.h":
         VelocityRec value
 
     ctypedef TimeValuePair **TimeValuePairH
+    ctypedef TimeValuePair *TimeValuePairP 
 
     ctypedef enum:
         OILSTAT_NOTRELEASED = 0
