@@ -20,6 +20,8 @@
 #include "Replacements.h"
 #endif
 
+using std::cout;
+
 #ifndef pyGNOME
 NetCDFMover_c::NetCDFMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name), Mover_c(owner, name)
 {
@@ -1079,6 +1081,93 @@ long NetCDFMover_c::GetNumDepths(void)
 	if (fDepthsH) numDepths = _GetHandleSize((Handle)fDepthsH)/sizeof(**fDepthsH);
 	
 	return numDepths;
+}
+
+OSErr NetCDFMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra) {	
+	
+	if(!uncertain_ra) {
+		cout << "uncertainty values not provided! returning.\n";
+		return 1;
+	}
+	
+	if(!wp_ra) {
+		cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	
+	try {
+		this->fUncertaintyListH = (LEUncertainRecH)_NewHandle(sizeof(LEUncertainRec)*n);
+		memcpy(*this->fUncertaintyListH, uncertain_ra, sizeof(LEUncertainRec)*n);
+		this->fLESetSizesH = (LONGH)_NewHandle(sizeof(long));
+		DEREFH(this->fLESetSizesH)[0] = 0;
+	} catch(...) {
+		cout << "cannot create uncertainty handle in windmover::get_move. returning.\n";
+		if(this->fUncertaintyListH)
+			_DisposeHandle((Handle)this->fUncertaintyListH);
+		return 1;
+	}
+	
+	this->PrepareForModelStep(model_time, step_len, false);
+
+	WorldPoint3D delta;
+	WorldPoint3D *ref;
+	WorldPoint3D *wp;
+	ref = (WorldPoint3D*)ref_ra;
+	wp = (WorldPoint3D*)wp_ra;
+	
+	
+	for (int i = 0; i < n; i++) {
+		LERec rec;
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
+		
+		wp[i].p.pLat += delta.p.pLat / 1000000;
+		wp[i].p.pLong += delta.p.pLong / 1000000;
+		wp[i].z += delta.z;
+	}
+
+	if(this->fLESetSizesH)
+		_DisposeHandle((Handle)this->fLESetSizesH);
+	if(this->fUncertaintyListH)
+		_DisposeHandle((Handle)this->fUncertaintyListH);
+	this->ModelStepIsDone();
+	return noErr;
+}
+
+
+OSErr NetCDFMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra) {	
+
+	if(!wp_ra) {
+		cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	
+
+	this->PrepareForModelStep(model_time, step_len, false);
+
+	WorldPoint3D delta;
+	WorldPoint3D *wp;
+	WorldPoint3D *ref;
+	
+	ref = (WorldPoint3D*)ref_ra;
+	wp = (WorldPoint3D*)wp_ra;
+	
+	for (int i = 0; i < n; i++) {
+		LERec rec;
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
+		
+		wp[i].p.pLat += delta.p.pLat / 1000000;
+		wp[i].p.pLong += delta.p.pLong / 1000000;
+		wp[i].z += delta.z;
+	}
+	
+	this->ModelStepIsDone();
+	return noErr;
 }
 
 WorldPoint3D NetCDFMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)

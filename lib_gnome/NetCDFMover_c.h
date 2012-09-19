@@ -153,6 +153,8 @@ public:
 	virtual OSErr 	GetDepthProfileAtPoint(WorldPoint refPoint, long timeIndex, DepthValuesSetH *profilesH) {*profilesH=nil; return 0;}
 	
 
+			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra);
+			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra);
 
 };
 

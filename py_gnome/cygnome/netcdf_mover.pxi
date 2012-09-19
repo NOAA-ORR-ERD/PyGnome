@@ -51,5 +51,7 @@ cdef extern from "NetCDFMover_c.h":
         void 				DisposeLoadedData(LoadedData * dataPtr)
         void 				ClearLoadedData(LoadedData * dataPtr)
         void 				DisposeAllLoadedData()
-        
+        OSErr		get_move(int, unsigned long, unsigned long, char *, char *, char *)
+        OSErr		get_move(int, unsigned long, unsigned long, char *, char *)
+       
         
