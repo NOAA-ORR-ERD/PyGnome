@@ -1,4 +1,4 @@
-cdef extern form "OSSMTimeValue_c.h":
+cdef extern from "OSSMTimeValue_c.h":
     cdef cppclass OSSMTimeValue_c:
         pass
 
