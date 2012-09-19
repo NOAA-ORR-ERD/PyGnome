@@ -18,5 +18,5 @@ cdef extern from "WindMover_c.h":
         LEWindUncertainRec **fWindUncertaintyList
         long **fLESetSizes
         OSErr get_move(int, unsigned long, unsigned long, char *, char *, char *, double, double, char *)
-        OSErr get_move(int, unsigned long, unsigned long, char *, char *, char *, char*)
+        OSErr get_move(int, unsigned long, unsigned long, char *, char *, char *)
         OSErr PrepareForModelStep(Seconds&, Seconds&, bool)
