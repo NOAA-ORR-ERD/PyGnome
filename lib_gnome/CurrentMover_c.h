@@ -45,7 +45,9 @@ public:
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	
-	virtual WorldRect GetGridBounds(){return theWorld;}	
+	//temp fix
+	virtual WorldRect GetGridBounds(){WorldRect theWorld = { -360000000, -90000000, 360000000, 90000000 }; return theWorld;}	
+	//virtual WorldRect GetGridBounds(){return theWorld;}	
 	virtual float		GetArrowDepth(){return 0.;}
 	virtual Boolean		IAmA3DMover(){return false;}
 	virtual ClassID 	GetClassID () { return TYPE_CURRENTMOVER; }
