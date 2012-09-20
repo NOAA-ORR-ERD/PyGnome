@@ -4,14 +4,14 @@ Test time conversions from date time to seconds and vice versa
 Just a python script right now
 """
 
-from gnome.cy_gnome import cy_string_functions
+from gnome.cy_gnome import cy_date_time
 import datetime
 import time
 import numpy as np
 from gnome import basic_types
 
 class TestCyDateTime():
-    target = cy_string_functions.Cy_string_functions()
+    target = cy_date_time.Cy_date_time()
     now =  datetime.datetime.now()
     
     daterec = np.empty((1,), dtype=basic_types.date_rec)

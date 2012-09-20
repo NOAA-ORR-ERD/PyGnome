@@ -11,10 +11,10 @@ NOTE:
 import cython
 cimport numpy as np
 
-include "type_def.pxi"
+include "type_defs.pxi"
 include "date_time.pxi"
 
-cdef class Cy_string_functions:
+cdef class Cy_date_time:
    cdef unsigned long * seconds
    cdef unsigned long tSeconds
    
