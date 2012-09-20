@@ -4,6 +4,7 @@ import numpy as np
 
 include "cats_mover.pxi"
 include "shio_time.pxi"
+#include "ossm_time.pxi"
 include "map.pxi"
 
 cdef class cats_mover:
@@ -33,6 +34,16 @@ cdef class cats_mover:
             return False
         self.mover.SetTimeDep(shio)
         self.mover.SetRefPosition(shio.GetRefWorldPoint(), 0)
+        self.mover.bTimeFileActive = True
+        return True
+        
+    def set_ossm(self, ossm_file):
+        cdef OSSMTimeValue_c *ossm
+        ossm = new OSSMTimeValue_c()
+        if(ossm.ReadTimeValues(ossm_file,1,1) == -1):
+            return False
+        self.mover.SetTimeDep(ossm)
+        #self.mover.SetRefPosition(ossm.GetRefWorldPoint(), 0)
         self.mover.bTimeFileActive = True
         return True
         

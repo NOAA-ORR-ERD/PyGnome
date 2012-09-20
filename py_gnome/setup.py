@@ -39,8 +39,8 @@ CPP_CODE_DIR = "../lib_gnome"
 extension_names = [
                    'cy_wind_mover',
 # CATS mover broken at the moment                   
-#                   'cats_mover',
-#                   'cy_netcdf_mover',
+                   'cy_cats_mover',
+                   'cy_netcdf_mover',
                    'cy_ossm_time',
                    ]
 

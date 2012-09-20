@@ -1,6 +1,7 @@
-cdef extern form "OSSMTimeValue_c.h":
+cdef extern from "OSSMTimeValue_c.h":
     cdef cppclass OSSMTimeValue_c:
-        pass
+        OSErr    ReadTimeValues (char *path,short,short)
+        #pass
 
 cdef extern from "ShioTimeValue_c.h":
     cdef cppclass ShioTimeValue_c(OSSMTimeValue_c):

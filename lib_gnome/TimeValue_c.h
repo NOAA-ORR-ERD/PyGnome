@@ -13,6 +13,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "ClassID_c.h"
+#include "ExportSymbols.h"
 
 #ifdef pyGNOME
 #define TMover Mover_c
@@ -20,7 +21,8 @@
 
 class TMover;
 
-class TimeValue_c : virtual public ClassID_c {
+//class TimeValue_c : virtual public ClassID_c {
+class GNOMEDLL_API TimeValue_c : virtual public ClassID_c {
 	
 public:
 	TMover *owner;

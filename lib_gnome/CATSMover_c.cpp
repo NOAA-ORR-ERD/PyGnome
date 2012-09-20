@@ -360,19 +360,11 @@ OSErr CATSMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 
 OSErr CATSMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra) {	
 
-	TimeValuePairH time_val_hdl = 0;
-	
 	if(!wp_ra) {
 		cout << "worldpoints array not provided! returning.\n";
 		return 1;
 	}
 	
-	if(!this->timeDep) {
-		cout << "time values array not set! returning.\n";
-		return 1;
-	} 
-	// and so on.
-
 	this->PrepareForModelStep(model_time, step_len, false);
 
 	WorldPoint3D delta;

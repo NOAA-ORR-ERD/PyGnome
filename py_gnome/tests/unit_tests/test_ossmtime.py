@@ -11,44 +11,33 @@ import numpy as np
 from gnome import basic_types
 from gnome.cy_gnome import cy_ossm_time
  
-#===============================================================================
-# UNIT TESTING FRAMEWORK
-# import unittest
-# 
-# class TestOSSMTime(unittest.TestCase):
-#    # sample data generated and stored via Gnome GUI
-#    file = r"SampleData/WindDataFromGnome.WND"
-#    ossmT = cy_ossm_time.Cy_ossm_time()
-#    
-#    def test_ReadTimeValues(self):
-#        err = self.ossmT.ReadTimeValues(self.file); # assume default format and units
-#        #err = 1
-#        self.assertEqual(err, 0, "Error encountered in ReadTimeValues, error code: " + str(err) )
-#    
-#    #time_vals = np.empty((1,), dtype=basic_types.time_value_pair)
-#    #ossm_time = cy_ossm_time.Cy_ossm_time(time_vals)
-#    
-# if __name__ == '__main__':
-#   unittest.main()
-#===============================================================================
 
 class TestOSSMTime():
+    """
+    Test methods of the Cy_ossm_time class 
+    """
     # sample data generated and stored via Gnome GUI
     file = r"SampleData/WindDataFromGnome.WND"
     ossmT = cy_ossm_time.Cy_ossm_time()
     err = ossmT.ReadTimeValues(file); # assume default format and units
     
     def test_ReadTimeValues(self):
-        #err = 1
-        if (self.err != 0): 
-            #print "Error encountered in ReadTimeValues, error code: " + str(err)
-            assert False
+        """
+        Tests ReadTimeValues method. Use default format and units.
+        """
+        assert self.err == 0
+    
+    def test_ReadTimeValuesException(self):
+        """Test error when ReadTimeValues does not provide units in data file or as input"""
+        ossmT2 = cy_ossm_time.Cy_ossm_time()
+        err2 = ossmT2.ReadTimeValues(self.file, 5, -1)
+        assert err2 == -1
     
     def test_GetTimeValue(self):
+        """Test GetTimeValues method at model_time = 0"""
         velrec = np.empty((1,), dtype=basic_types.velocity_rec)
         velrec['u'] = 0
         velrec['v'] = 0
         self.ossmT.GetTimeValue( 0, velrec)
         assert True
         
-            

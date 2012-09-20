@@ -13,6 +13,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "CurrentMover_c.h"
+#include "ExportSymbols.h"
 
 #ifndef pyGNOME
 #include "TOSSMTimeValue.h"
@@ -27,7 +28,8 @@
 #define TMap Map_c
 #endif
 
-class CATSMover_c : virtual public CurrentMover_c {
+//class CATSMover_c : virtual public CurrentMover_c {
+class GNOMEDLL_API CATSMover_c : virtual public CurrentMover_c {
 
 public:
 	WorldPoint 		refP; 					// location of tide station or map-join pin

@@ -13,6 +13,9 @@
 #include "TypeDefs.h"
 #include "MemUtils.h"
 
+#ifdef pyGNOME
+#include "ExportSymbols.h"
+#endif
 
 char* lfFix(char* str);
 OSErr StringToDouble(char* str,double* val);
@@ -80,9 +83,9 @@ void my_p2cstr(void *string);
 void my_c2pstr(void *string);
 
 #ifndef MAC
-void DateToSeconds(DateTimeRec *date, unsigned long *seconds);
+void GNOMEDLL_API DateToSeconds(DateTimeRec *date, unsigned long *seconds);
 void GetDateTime(unsigned long *seconds);
-void SecondsToDate(unsigned long seconds, DateTimeRec *date);
+void GNOMEDLL_API SecondsToDate(unsigned long seconds, DateTimeRec *date);
 #endif
 
 #endif

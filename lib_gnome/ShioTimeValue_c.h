@@ -12,6 +12,7 @@
 
 #include "Shio.h"
 #include "OSSMTimeValue_c.h"
+#include "ExportSymbols.h"
 
 #define MAXNUMSHIOYEARS  20
 #define MAXSTATIONNAMELEN  128
@@ -49,7 +50,8 @@ typedef struct
 YEARDATAHDL GetYearData(short year);
 YEARDATA2* ReadYearData(short year, const char *path, char *errStr);
 
-class ShioTimeValue_c : virtual public OSSMTimeValue_c {
+//class ShioTimeValue_c : virtual public OSSMTimeValue_c {
+class GNOMEDLL_API ShioTimeValue_c : virtual public OSSMTimeValue_c {
 
 protected:
 
