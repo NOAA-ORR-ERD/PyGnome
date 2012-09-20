@@ -1,5 +1,12 @@
-cdef exterm from "Basic.h":
-	pass
+cdef extern from "Basics.h":
+    ctypedef struct DateTimeRec:
+        short year
+        short month
+        short day
+        short hour
+        short minute
+        short second
+        short dayOfWeek
 
 cdef extern from "TypeDefs.h":
     ctypedef unsigned long LETYPE    
