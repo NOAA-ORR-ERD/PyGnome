@@ -13,6 +13,7 @@ from random import random
 
 from gnome import basic_types
 from gnome.cy_gnome import cy_wind_mover
+from gnome.cy_gnome import cy_ossm_time
 from gnome import greenwich
 
 def test_init(): # can we create a wind_mover?
@@ -27,8 +28,6 @@ class Test_setup_1():
     """
     wm = cy_wind_mover.Cy_wind_mover()
     
-    start_time = greenwich.gwtm('01/01/1970 10:00:00').time_seconds
-    stop_time  = greenwich.gwtm('01/01/1970 12:00:00').time_seconds
     model_time = greenwich.gwtm('01/01/1970 11:00:00').time_seconds
 
 
@@ -38,7 +37,6 @@ class Test_setup_1():
     wp_ra   =  np.empty((4,), dtype=basic_types.world_point)
     ref_ra  =  np.empty((4,), dtype=basic_types.world_point)
     wind_ra =  np.empty((4,), dtype=np.double)
-    disp_ra =  np.empty((4,), dtype=np.short)
     time_vals = np.empty((1,), dtype=basic_types.time_value_pair)
     uncertain_ra = np.empty((4,), dtype=basic_types.wind_uncertain_rec)	# one uncertain rec per le
 
@@ -59,12 +57,15 @@ class Test_setup_1():
     ref_ra[:]['long'] *= 1000000 
 
     wind_ra[:] = 1
-    disp_ra[:] = 0
     # Straight south wind... 100! meters per second
     time_vals['value']['u'] =  0  # meters per second?
     time_vals['value']['v'] = 100 # 
 
-   # initialize uncerainty array:
+    #file = r"SampleData/ConstantWind.WND"
+    #ossmT = cy_ossm_time.Cy_ossm_time()
+    #err = ossmT.ReadTimeValues(file); # assume default format and units
+    wm.set_constantWind(time_vals['value']['u'],time_vals['value']['v'])
+   # initialize uncertainty array:
     for x in range(0, N):
         theta = random()*2*pi
         uncertain_ra[x]['randCos'] = cos(theta)
@@ -75,9 +76,6 @@ class Test_setup_1():
     ##################
     # call and check #
     ##################
-
-    breaking_wave = 10 #?? 
-    mix_layer_depth = 10 #??
 
 
 
@@ -96,10 +94,6 @@ class Test_setup_1():
                              self.ref_ra,
                              self.wp_ra,
                              self.wind_ra,
-                             self.disp_ra,
-                             self.breaking_wave,
-                             self.mix_layer_depth,
-                             self.time_vals,
                              )
         print self.wp_ra
         
@@ -118,6 +112,6 @@ class Test_setup_1():
 #    ref_ra[:]['p']['p_long'] *= 1000000
 #
 #    for x in range(0, 1):
-#        wm.get_move_uncertain(N, start_time, stop_time, model_time, 10, ref_ra, wp_ra, wind_ra, disp_ra, f_sigma_vel, f_sigma_theta, breaking_wave, mix_layer_depth, uncertain_ra, time_vals, M)
+#        wm.get_move_uncertain(N, model_time, 10, ref_ra, wp_ra, wind_ra, f_sigma_vel, f_sigma_theta, uncertain_ra)
 #
 #    print wp_ra

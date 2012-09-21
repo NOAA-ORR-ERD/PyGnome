@@ -75,3 +75,8 @@ cdef class Cy_wind_mover:
                             <char*>&delta[0],
                             <char*>&windages[0]
                             )
+
+    def set_constantWind(self,windU,windV):
+    
+        self.mover.fConstantValue.u = windU
+        self.mover.fConstantValue.v = windV

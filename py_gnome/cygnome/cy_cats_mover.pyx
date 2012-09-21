@@ -7,7 +7,7 @@ include "shio_time.pxi"
 #include "ossm_time.pxi"
 include "map.pxi"
 
-cdef class cats_mover:
+cdef class Cy_cats_mover:
 
     cdef CATSMover_c *mover
     
