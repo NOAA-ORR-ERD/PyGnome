@@ -42,6 +42,7 @@ extension_names = [
                    'cy_cats_mover',
                    'cy_netcdf_mover',
                    'cy_ossm_time',
+                   'cy_date_time'
                    'cy_random_mover',
                    ]
 
@@ -167,4 +168,3 @@ setup(name='pyGnome',
                 ],
       ext_modules=extensions
      )
-

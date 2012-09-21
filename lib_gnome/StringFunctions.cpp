@@ -1282,6 +1282,10 @@ void SecondsToDate (unsigned long seconds, DateTimeRec *date)
 		date->hour = newTime->tm_hour;
 		date->minute = newTime->tm_min;
 		date->second = newTime->tm_sec;
+        // JS: Not sure 1 is added to day of the week.
+        //     This doesn't seem to effect the date / time value - leave it as is.
+        // NOTE:The C++ time struct 0=Sunday and 6=Sat
+        //      For Python time struct 0=Monday and 6=Sunday
 		date->dayOfWeek = newTime->tm_wday + 1;
 	}
 	else {

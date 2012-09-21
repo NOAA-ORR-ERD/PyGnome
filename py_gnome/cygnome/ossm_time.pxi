@@ -1,6 +1,6 @@
-#
-# OSSMTimeValue_c header file
-#
+"""
+Expose methods from lib_gnome/OSSMTimeValue_c class
+"""
 
 include "type_defs.pxi"
 include "mover.pxi"
@@ -17,3 +17,4 @@ cdef extern from "OSSMTimeValue_c.h":
         double fVelAtRefPt
         OSErr GetTimeValue(Seconds &, VelocityRec *)
         OSErr ReadTimeValues (char *, short, short)
+        void SetTimeValueHandle(TimeValuePairH)	# sets all time values 

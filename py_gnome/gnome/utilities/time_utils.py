@@ -7,8 +7,33 @@ assorted utilities for working with time and datetime
 """
 
 import datetime
+import time
 
-
+def dateToSeconds_noDst(date_time):
+    """
+    :param date_time: python datetime object 
+    Takes the tuple and forces tm_isdst=0, then calls time.mktime to convert to seconds
+    Consistent with Gnome, it does not account for daylight savings time.
+    The epoch is as defined in python: Jan 1, 1970
+    """
+    temp = list(date_time.timetuple())
+    temp[-1] = 0 
+    return time.mktime(temp)
+   
+def secondsToDate_noDst(seconds):
+    """
+    :param seconds: time in seconds
+    Takes the time and converts it back using localtime()
+    If tm_dst = 1 (by default), then subtract 1 hour and set this flag to 0
+    Returns a time.struct_time
+    """
+    lt = list(time.localtime(seconds))
+    if lt[-1] != 0:
+        lt[-1] = 0
+        lt[3] -= 1
+    
+    return time.struct_time(lt)
+    
 def round_time(dt=None, roundTo=60):
    """
    Round a datetime object to any time laps in seconds
