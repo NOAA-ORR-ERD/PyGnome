@@ -12,10 +12,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "MemUtils.h"
-
-#ifdef pyGNOME
 #include "ExportSymbols.h"
-#endif
 
 char* lfFix(char* str);
 OSErr StringToDouble(char* str,double* val);
