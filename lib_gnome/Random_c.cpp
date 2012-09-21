@@ -61,6 +61,39 @@ void Random_c::ModelStepIsDone()
 	memset(&fOptimize,0,sizeof(fOptimize));
 }
 
+
+OSErr Random_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra) {	
+	
+	if(!wp_ra) {
+		cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	
+	this->PrepareForModelStep(model_time, step_len, false);
+
+	WorldPoint3D delta;
+	WorldPoint3D *wp;
+	WorldPoint3D *ref;
+	
+	ref = (WorldPoint3D*)ref_ra;
+	wp = (WorldPoint3D*)wp_ra;
+	
+	for (int i = 0; i < n; i++) {
+		LERec rec;
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		
+		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
+		
+		wp[i].p.pLat += delta.p.pLat / 1000000;
+		wp[i].p.pLong += delta.p.pLong / 1000000;
+		wp[i].z += delta.z;
+	}
+	
+	this->ModelStepIsDone();
+	return noErr;
+}
+
 WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	double		dLong, dLat;
@@ -73,10 +106,12 @@ WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long
 	
 	if (bUseDepthDependent)
 	{
-		float depth;
+		float depth=0.;
 		double localDiffusionCoefficient, factor;
+#ifndef pyGNOME
 		VectorMap_c* vMap = GetNthVectorMap(0);	// get first vector map
 		if (vMap) depth = vMap->DepthAtPoint(refPoint);
+#endif
 		// logD = 1+exp(1-1/.1H) 
 		if (depth==0)	// couldn't find the point in dagtree, maybe a different default?
 			factor = 1;

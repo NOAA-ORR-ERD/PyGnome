@@ -13,6 +13,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "Mover_c.h"
+#include "ExportSymbols.h"
 
 #ifdef pyGNOME
 #define TMap Map_c
@@ -20,7 +21,8 @@
 
 class TMap;
 
-class Random_c : virtual public Mover_c {
+class GNOMEDLL_API Random_c : virtual public Mover_c {
+//class Random_c : virtual public Mover_c {
 	
 public:
 	double fDiffusionCoefficient; //cm**2/s
@@ -36,6 +38,7 @@ public:
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	
 	
+			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra);
 };
 
 #undef TMap

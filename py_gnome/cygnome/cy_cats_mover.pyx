@@ -61,7 +61,6 @@ cdef class cats_mover:
     
     def get_move_uncertain(self, n, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra, np.ndarray[LEWindUncertainRec] uncertain_ra):
         cdef:
-            char *time_vals_ptr
             char *uncertain_ptr
             char *world_points
             
@@ -74,7 +73,6 @@ cdef class cats_mover:
 
     def get_move(self, n, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra):
         cdef:
-            char *time_vals_ptr
             char *uncertain_ptr
             char *world_points
             

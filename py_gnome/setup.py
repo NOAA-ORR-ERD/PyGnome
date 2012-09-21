@@ -42,6 +42,7 @@ extension_names = [
                    'cy_cats_mover',
                    'cy_netcdf_mover',
                    'cy_ossm_time',
+                   'cy_random_mover',
                    ]
 
 cpp_files = [ 
@@ -50,6 +51,7 @@ cpp_files = [
               'Mover_c.cpp',
               'Replacements.cpp',
               'ClassID_c.cpp',
+              'Random_c.cpp',
               'TimeValuesIO.cpp',
               'MYRANDOM.cpp',
               'GEOMETRY.cpp',
