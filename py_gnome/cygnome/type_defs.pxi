@@ -7,6 +7,9 @@ cdef extern from "Basics.h":
         short minute
         short second
         short dayOfWeek
+    
+    ctypedef char **CHARH
+    ctypedef CHARH Handle
 
 cdef extern from "TypeDefs.h":
     ctypedef unsigned long LETYPE    

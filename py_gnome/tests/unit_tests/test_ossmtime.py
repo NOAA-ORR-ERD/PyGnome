@@ -21,10 +21,22 @@ class TestOSSMTime():
     ossmT = cy_ossm_time.Cy_ossm_time()
     err = ossmT.ReadTimeValues(file); # assume default format and units
     
+    # use this to test setting / getting TimeValuePair
+    tval = np.empty((2,), dtype=basic_types.time_value_pair)
+    tval['time'][0] = 0
+    tval['value']['u'][0]=1
+    tval['value']['v'][0]=2
+    
+    tval['time'][1] = 1
+    tval['value']['u'][1]=2
+    tval['value']['v'][1]=3
+    
+    
     def test_ReadTimeValues(self):
         """
         Tests ReadTimeValues method. Use default format and units.
         """
+        print "Read file " + self.file
         assert self.err == 0
     
     def test_ReadTimeValuesException(self):
@@ -38,6 +50,20 @@ class TestOSSMTime():
         velrec = np.empty((1,), dtype=basic_types.velocity_rec)
         velrec['u'] = 0
         velrec['v'] = 0
-        self.ossmT.GetTimeValue( 0, velrec)
+        velrec = self.ossmT.GetTimeValue(0)
+        print "t = 0; " 
+        print "(u,v): " + str(velrec['u']) + ',' + str(velrec['v'])
         assert True
         
+    
+    def test_SetTimeValueHandle(self):
+        """
+        Sets the time series in OSSMTimeValue_c equal to the externally supplied numpy
+        array containing time_value_pair data
+        It then reads it back to make sure data was set correctly
+        """
+        self.ossmT.SetTimeValueHandle(self.tval)
+        t_val = self.ossmT.GetTimeValueHandle()
+        np.testing.assert_array_equal(t_val, self.tval, 
+                                      "cy_ossm_time.GetTimeValue did not return expected numpy array", 
+                                      0)
