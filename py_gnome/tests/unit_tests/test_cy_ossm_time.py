@@ -12,7 +12,7 @@ from gnome import basic_types
 from gnome.cy_gnome import cy_ossm_time
  
 
-class TestOSSMTime():
+class TestCyOSSMTime():
     """
     Test methods of the Cy_ossm_time class 
     """
