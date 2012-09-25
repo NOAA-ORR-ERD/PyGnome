@@ -15,8 +15,10 @@ cdef extern from "WindMover_c.h":
         double fGamma
         Boolean fIsConstantWind
         VelocityRec fConstantValue
+        OSSMTimeValue_c *timeDep
         LEWindUncertainRec **fWindUncertaintyList
         long **fLESetSizes
         OSErr get_move(int, unsigned long, unsigned long, char *, char *, char *, double, double, char *)
         OSErr get_move(int, unsigned long, unsigned long, char *, char *, char *)
         OSErr PrepareForModelStep(Seconds&, Seconds&, bool)
+        void SetTimeDep(OSSMTimeValue_c *time_dep)
