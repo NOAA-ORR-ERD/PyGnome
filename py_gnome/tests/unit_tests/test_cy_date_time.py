@@ -11,7 +11,7 @@ import numpy as np
 from gnome import basic_types
 from gnome.utilities import time_utils
 
-class TestCyDateTime():
+class TestCy_date_time():
     target = cy_date_time.Cy_date_time()
     now =  datetime.datetime.now()
 
