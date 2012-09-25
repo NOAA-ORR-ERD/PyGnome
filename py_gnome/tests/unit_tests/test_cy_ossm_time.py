@@ -47,15 +47,23 @@ class TestCy_ossm_time():
     
     def test_GetTimeValue(self):
         """Test GetTimeValues method at model_time = 0"""
-        velrec = np.empty((1,), dtype=basic_types.velocity_rec)
-        velrec['u'] = 0
-        velrec['v'] = 0
-        velrec = self.ossmT.GetTimeValue(0)
-        print "t = 0; " 
-        print "(u,v): " + str(velrec['u']) + ',' + str(velrec['v'])
-        assert True
         
-    
+        # Let's see what is stored in the Handle to expected result
+        #t_val = self.ossmT.GetTimeValueHandle()
+        velrec = np.empty((1,), dtype=basic_types.velocity_rec)
+        velrec['u'] = 8.7448
+        velrec['v'] = 0
+        
+        vel_rec = np.empty((1,), dtype=basic_types.velocity_rec)
+        vel_rec = self.ossmT.GetTimeValue(0)
+        print vel_rec['u'], velrec['u'][0]
+        print vel_rec['v'], velrec['v'][0]
+        # TODO: Figure out why following fails??
+        #np.testing.assert_allclose(vel_rec, velrec[0], 1e-3, 1e-3, 
+        #                          "GetTimeValue is not within a tolerance of 1e-3", 0)
+        assert np.abs( vel_rec['u']-velrec['u'][0]) < 1e-6
+        assert np.abs( vel_rec['v']-velrec['v'][0]) < 1e-6
+        
     def test_SetTimeValueHandle(self):
         """
         Sets the time series in OSSMTimeValue_c equal to the externally supplied numpy
