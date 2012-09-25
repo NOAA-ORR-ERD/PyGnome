@@ -35,11 +35,11 @@ cdef class Cy_ossm_time:
           GetTimeValue - for a specified modelTime, gets the value 
         """
         err = self.time_dep.GetTimeValue( modelTime, self.velrec)
-        if err is 0:
+        if err == 0:
             return self.tVelRec
         else:
             # TODO: raise an exception if err != 0
-            pass
+            raise IOError
           
        
     def ReadTimeValues(self, path, format=5, units=1):
