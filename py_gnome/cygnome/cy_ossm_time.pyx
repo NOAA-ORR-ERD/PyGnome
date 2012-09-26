@@ -18,6 +18,7 @@ cdef class Cy_ossm_time:
     
 
     def __cinit__(self):
+       """ TODO: Update it so it can take path as input argument"""
        self.time_dep = new OSSMTimeValue_c(NULL)
        self.velrec = &self.tVelRec
         
@@ -60,7 +61,11 @@ cdef class Cy_ossm_time:
                 MetersPerSec: 3
         """
         err = self.time_dep.ReadTimeValues(path, format, units)
-        return err
+        if err == 0:
+            return self.tVelRec
+        else:
+            # TODO: raise an exception if err != 0
+            raise IOError
     
     def SetTimeValueHandle(self, cnp.ndarray[TimeValuePair, ndim=1] time_val):
         """Takes a numpy array containing a time series, copies it to a Handle (TimeValuePairH),

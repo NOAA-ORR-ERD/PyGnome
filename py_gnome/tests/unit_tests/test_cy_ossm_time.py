@@ -19,7 +19,7 @@ class TestCy_ossm_time():
     # sample data generated and stored via Gnome GUI
     file = r"SampleData/WindDataFromGnome.WND"
     ossmT = cy_ossm_time.Cy_ossm_time()
-    err = ossmT.ReadTimeValues(file); # assume default format and units
+    ossmT.ReadTimeValues(file); # assume default format and units
     
     # use this to test setting / getting TimeValuePair
     tval = np.empty((2,), dtype=basic_types.time_value_pair)
@@ -37,13 +37,15 @@ class TestCy_ossm_time():
         Tests ReadTimeValues method. Use default format and units.
         """
         print "Read file " + self.file
-        assert self.err == 0
+        assert True
     
     def test_ReadTimeValuesException(self):
         """Test error when ReadTimeValues does not provide units in data file or as input"""
         ossmT2 = cy_ossm_time.Cy_ossm_time()
-        err2 = ossmT2.ReadTimeValues(self.file, 5, -1)
-        assert err2 == -1
+        try:
+            ossmT2.ReadTimeValues(self.file, 5, -1)
+        except IOError:
+            assert True
     
     def test_GetTimeValue(self):
         """Test GetTimeValues method at model_time = 0"""
@@ -56,6 +58,7 @@ class TestCy_ossm_time():
         
         vel_rec = np.empty((1,), dtype=basic_types.velocity_rec)
         vel_rec = self.ossmT.GetTimeValue(0)
+        
         print vel_rec['u'], velrec['u'][0]
         print vel_rec['v'], velrec['v'][0]
         # TODO: Figure out why following fails??
