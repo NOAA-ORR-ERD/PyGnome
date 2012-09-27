@@ -4,44 +4,74 @@ cimport numpy as cnp
 from libc.string cimport memcpy
 from gnome import basic_types
 
-include "ossm_time.pxi"
-include "mem_utils.pxi"
+from type_defs cimport * 
+from mem_utils cimport _NewHandle, _GetHandleSize
+from ossm_time cimport OSSMTimeValue_c
 
 cdef class Cy_ossm_time:
 
     # underlying C++ object that is instantiated
     cdef OSSMTimeValue_c * time_dep
-    
-    # velocity record passed to OSSMTimeValue_c methods and returned back to python
-    cdef VelocityRec * velrec
-    cdef VelocityRec tVelRec
-    
 
     def __cinit__(self):
        """ TODO: Update it so it can take path as input argument"""
-       self.time_dep = new OSSMTimeValue_c(NULL)
-       self.velrec = &self.tVelRec
+       self.time_dep = new OSSMTimeValue_c()
         
     def __dealloc__(self):
         del self.time_dep
     
-    def __init__(self):
+    def __init__(self, path=None, timeseries=None):
         """
-            Initialize object
+        Initialize object - takes either path or time value pair to initialize
+        :param path: path to file containing time series data
+        :param timeseries: numpy array containing time series data in time_value_pair structure as defined in type_defs
+        If both are given, it will use the first keyword it finds
         """
+#        if kwargs.items() == []:
+#            raise IOError   # user didn't provide required input arguments
+#        
+#        match = False
+#        for key in kwargs:
+#            if key == 'path':
+#                match = True
+#                self.filename = kwargs.get('path')
+#                
+#                break
+#                pass
+#            elif key == 'timeseries':
+#                match = True
+#                break
+#                pass
+#            
+#        if match == False:
+#            raise IOError   # must provide at least one input
+                
         pass
     
     def GetTimeValue(self, modelTime):
         """
-          GetTimeValue - for a specified modelTime, gets the value 
+          GetTimeValue - for a specified modelTime, gets the value
+          CURRENTLY NOT WORKING 
         """
-        err = self.time_dep.GetTimeValue( modelTime, self.velrec)
-        if err == 0:
-            return self.tVelRec
-        else:
-            # TODO: raise an exception if err != 0
-            raise IOError
-          
+        cdef cnp.ndarray[Seconds, ndim=1] modelTimeArray
+        modelTimeArray = np.asarray(modelTime, np.uint32).reshape((-1,))    # TODO: define seconds in basic_types 
+         
+        # velocity record passed to OSSMTimeValue_c methods and returned back to python
+        cdef cnp.ndarray[VelocityRec, ndim=1] vel_rec 
+        cdef VelocityRec * velrec
+        
+        cdef unsigned int i 
+        cdef OSErr err 
+        
+        vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
+
+        for i in range[modelTimeArray.size]:
+            err = self.time_dep.GetTimeValue( modelTimeArray[i], &vel_rec[i])
+            if err == 0:
+                raise ValueError
+            
+        return vel_rec
+    
        
     def ReadTimeValues(self, path, format=5, units=1):
         """
@@ -62,7 +92,7 @@ cdef class Cy_ossm_time:
         """
         err = self.time_dep.ReadTimeValues(path, format, units)
         if err == 0:
-            return self.tVelRec
+            return err
         else:
             # TODO: raise an exception if err != 0
             raise IOError

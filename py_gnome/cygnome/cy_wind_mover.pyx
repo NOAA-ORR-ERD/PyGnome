@@ -2,8 +2,9 @@ import cython
 cimport numpy as np
 import numpy as nmp
 
-include "wind_mover.pxi"
-include "shio_time.pxi"
+from ossm_time cimport OSSMTimeValue_c
+from wind_mover cimport WindMover_c
+from type_defs cimport WorldPoint3D, LEWindUncertainRec
 
 cdef class Cy_wind_mover:
 
