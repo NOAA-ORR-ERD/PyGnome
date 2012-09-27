@@ -5,6 +5,8 @@
 *.so
 *.pyc
 *~
+*.idea
+*.ropeproject
 
 # ignore binaries generated during build 
 py_gnome/build/**/*
