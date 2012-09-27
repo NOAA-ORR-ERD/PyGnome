@@ -54,7 +54,7 @@ cdef class Cy_ossm_time:
           CURRENTLY NOT WORKING 
         """
         cdef cnp.ndarray[Seconds, ndim=1] modelTimeArray
-        modelTimeArray = np.asarray(modelTime, np.uint32).reshape((-1,))    # TODO: define seconds in basic_types 
+        modelTimeArray = np.asarray(modelTime, basic_types.seconds).reshape((-1,))     
          
         # velocity record passed to OSSMTimeValue_c methods and returned back to python
         cdef cnp.ndarray[VelocityRec, ndim=1] vel_rec 
@@ -64,10 +64,10 @@ cdef class Cy_ossm_time:
         cdef OSErr err 
         
         vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
-
-        for i in range[modelTimeArray.size]:
+        
+        for i in range( 0, modelTimeArray.size):
             err = self.time_dep.GetTimeValue( modelTimeArray[i], &vel_rec[i])
-            if err == 0:
+            if err != 0:
                 raise ValueError
             
         return vel_rec
