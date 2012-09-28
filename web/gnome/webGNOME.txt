@@ -1,1 +1,0 @@
-Python Server and JS Web Application
