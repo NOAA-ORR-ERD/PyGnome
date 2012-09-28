@@ -1,7 +1,10 @@
 import cython
 import numpy as np
+import os 
+
 cimport numpy as cnp
 from libc.string cimport memcpy
+
 from gnome import basic_types
 
 from type_defs cimport * 
@@ -12,6 +15,14 @@ cdef class Cy_ossm_time:
 
     # underlying C++ object that is instantiated
     cdef OSSMTimeValue_c * time_dep
+    
+    # PYTHON CANNOT ACCESS THESE ATTRIBUTES DIRECTLY
+    # class attributes so that once the object is properly initialized
+    # we don't need to do any memcpy to get the time series
+    #     Cy_ossm_time.timeseries gives the time series
+    #     Cy_ossm_time.untis gives the units
+    #cdef cnp.ndarray[TimeValuePair, ndim=1] timeseries    # Cannot do this!
+    cdef cnp.ndarray tSeries
 
     def __cinit__(self):
        """ TODO: Update it so it can take path as input argument"""
@@ -20,41 +31,53 @@ cdef class Cy_ossm_time:
     def __dealloc__(self):
         del self.time_dep
     
-    def __init__(self, path=None, timeseries=None):
+    def __init__(self, path=None, file_contains=None, cnp.ndarray[TimeValuePair, ndim=1] timeseries=None, units=-1):
         """
         Initialize object - takes either path or time value pair to initialize
         :param path: path to file containing time series data
         :param timeseries: numpy array containing time series data in time_value_pair structure as defined in type_defs
         If both are given, it will use the first keyword it finds
         """
-#        if kwargs.items() == []:
-#            raise IOError   # user didn't provide required input arguments
-#        
-#        match = False
-#        for key in kwargs:
-#            if key == 'path':
-#                match = True
-#                self.filename = kwargs.get('path')
-#                
-#                break
-#                pass
-#            elif key == 'timeseries':
-#                match = True
-#                break
-#                pass
-#            
-#        if match == False:
-#            raise IOError   # must provide at least one input
-                
-        pass
+        if path is None and timeseries is None:
+            raise ValueError("Object needs either a path to the time series file or timeseries")   # TODO: check error
+        
+        if path is not None:
+            if file_contains is None:
+                raise ValueError('file_contains must contain valid basic_types.file_contains.* value')
+            
+            if os.path.exists(path):
+                self._ReadTimeValues(path, file_contains, units)
+            else:
+                raise IOError("No such file: " + path)
+        else:
+            # units must not be -1 in this case
+            if units == -1:
+                raise ValueError('Valid units must be provided with timeseries')
+            
+            
+            self._SetTimeValueHandle(timeseries)
+            self.time_dep.SetUserUnits(units)
+            
+            #self.tSeries = self._GetTimeValueHandle()    # make sure it is set correctly for OSSMTime Object
+            self.tSeries = timeseries
+            
+    
+    def Units(self):
+        """returns the class attribute for units - couldn't see the class attribute in python so had to return it
+        as part of the method"""
+        return self.time_dep.GetUserUnits()  
+    
+    def Timeseries(self):
+        """returns the class attribute for time series - couldn't see the class attribute in python so had to return it
+        as part of the method. This is just so we only do a memcpy once"""
+        return self.tSeries
     
     def GetTimeValue(self, modelTime):
         """
-          GetTimeValue - for a specified modelTime, gets the value
-          CURRENTLY NOT WORKING 
+          GetTimeValue - for a specified modelTime or array of model times, it returns the values
         """
         cdef cnp.ndarray[Seconds, ndim=1] modelTimeArray
-        modelTimeArray = np.asarray(modelTime, np.uint32).reshape((-1,))    # TODO: define seconds in basic_types 
+        modelTimeArray = np.asarray(modelTime, basic_types.seconds).reshape((-1,))     
          
         # velocity record passed to OSSMTimeValue_c methods and returned back to python
         cdef cnp.ndarray[VelocityRec, ndim=1] vel_rec 
@@ -64,19 +87,19 @@ cdef class Cy_ossm_time:
         cdef OSErr err 
         
         vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
-
-        for i in range[modelTimeArray.size]:
+        
+        for i in range( 0, modelTimeArray.size):
             err = self.time_dep.GetTimeValue( modelTimeArray[i], &vel_rec[i])
-            if err == 0:
+            if err != 0:
                 raise ValueError
             
         return vel_rec
     
        
-    def ReadTimeValues(self, path, format=5, units=1):
+    def _ReadTimeValues(self, path, file_contains=not None, units=-1):
         """
             Format for the data file. This is an enum type in C++
-            defined below. 
+            defined below. These are defined in cy_basic_types such that python can see them
             
             #===========================================================================
             # enum { M19REALREAL = 1, M19HILITEDEFAULT, M19MAGNITUDEDEGREES, M19DEGREESMAGNITUDE,
@@ -89,25 +112,37 @@ cdef class Cy_ossm_time:
                 Knots: 1
                 MilesPerHour: 2
                 MetersPerSec: 3
+                
+            Make this private since the constructor will likely call this when object is instantiated
         """
-        err = self.time_dep.ReadTimeValues(path, format, units)
+        err = self.time_dep.ReadTimeValues(path, file_contains, units)
         if err == 0:
-            return err
-        else:
-            # TODO: raise an exception if err != 0
-            raise IOError
+            # let's set class attributes
+            self.tSeries = self._GetTimeValueHandle()
+            
+        elif err == 1:
+            # TODO: need to define error codes in C++ and raise other exceptions
+            raise ValueError("Units not found in file and units not provided as input")
     
-    def SetTimeValueHandle(self, cnp.ndarray[TimeValuePair, ndim=1] time_val):
-        """Takes a numpy array containing a time series, copies it to a Handle (TimeValuePairH),
-        then invokes the SetTimeValueHandle method of OSSMTimeValue_c object"""
+    def _SetTimeValueHandle(self, cnp.ndarray[TimeValuePair, ndim=1] time_val):
+        """
+            Takes a numpy array containing a time series, copies it to a Handle (TimeValuePairH),
+        then invokes the SetTimeValueHandle method of OSSMTimeValue_c object
+        Make this private since the constructor will likely call this when object is instantiated
+        """
+        print time_val
+        print type(time_val)
+            
         cdef short tmp_size = sizeof(TimeValuePair)
         cdef TimeValuePairH time_val_hdlH
         time_val_hdlH = <TimeValuePairH>_NewHandle(time_val.nbytes)
-        memcpy( time_val_hdlH[0], &time_val[0], time_val.nbytes)   
-        self.time_dep.SetTimeValueHandle(time_val_hdlH)
+        memcpy( time_val_hdlH[0], &time_val[0], time_val.nbytes)
+        #self.time_dep.SetTimeValueHandle(time_val_hdlH)
     
-    def GetTimeValueHandle(self): 
-        """Invokes the GetTimeValueHandle method of OSSMTimeValue_c object to read the time series data"""
+    def _GetTimeValueHandle(self): 
+        """
+            Invokes the GetTimeValueHandle method of OSSMTimeValue_c object to read the time series data
+        """
         cdef short tmp_size = sizeof(TimeValuePair)
         cdef TimeValuePairH time_val_hdlH
         cdef cnp.ndarray[TimeValuePair, ndim=1] tval

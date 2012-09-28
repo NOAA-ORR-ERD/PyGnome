@@ -11,3 +11,5 @@ cdef extern from "OSSMTimeValue_c.h":
         OSErr ReadTimeValues (char *, short, short)
         void SetTimeValueHandle(TimeValuePairH)	# sets all time values 
         TimeValuePairH GetTimeValueHandle()
+        short GetUserUnits()
+        void  SetUserUnits(short)

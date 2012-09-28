@@ -107,3 +107,10 @@ cdef extern from "TypeDefs.h":
         REMOVE
         HAVE_REMOVED
         
+    ctypedef enum:
+        M19REALREAL = 1
+        M19HILITEDEFAULT    
+        M19MAGNITUDEDEGREES
+        M19DEGREESMAGNITUDE
+        M19MAGNITUDEDIRECTION
+        M19DIRECTIONMAGNITUDE

@@ -63,10 +63,12 @@ world_point = np.dtype([('long', world_point_type),
 
 windage_type = np.float64
 
+seconds = np.uint32 # model time is going to be given in seconds
+
 wind_uncertain_rec = np.dtype([('randCos', np.float32), ('randSin', np.float32),], align=True)
 le_uncertain_rec   = np.dtype([('downStream', np.float32), ('crossStream', np.float32),], align=True)
 velocity_rec       = np.dtype([('u', np.double), ('v', np.double),], align=True)
-time_value_pair    = np.dtype([('time', np.uint32), ('value', velocity_rec),], align=True)
+time_value_pair    = np.dtype([('time', seconds), ('value', velocity_rec),], align=True)
 date_rec           = np.dtype([('year', np.short),
                                ('month', np.short),
                                ('day', np.short),
