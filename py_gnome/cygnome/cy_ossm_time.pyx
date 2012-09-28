@@ -26,7 +26,7 @@ cdef class Cy_ossm_time:
 
     def __cinit__(self):
        """ TODO: Update it so it can take path as input argument"""
-       self.time_dep = new OSSMTimeValue_c()
+       self.time_dep = new OSSMTimeValue_c(NULL)
         
     def __dealloc__(self):
         del self.time_dep
@@ -43,7 +43,7 @@ cdef class Cy_ossm_time:
         
         if path is not None:
             if file_contains is None:
-                raise ValueError('file_contains must contain valid basic_types.file_contains.* value')
+                raise ValueError('Unknown file contents - need a valid basic_types.file_contains.* value')
             
             if os.path.exists(path):
                 self._ReadTimeValues(path, file_contains, units)
@@ -54,12 +54,13 @@ cdef class Cy_ossm_time:
             if units == -1:
                 raise ValueError('Valid units must be provided with timeseries')
             
+            if timeseries is None:
+                raise ValueError("timeseries cannot be None")
             
             self._SetTimeValueHandle(timeseries)
             self.time_dep.SetUserUnits(units)
             
-            #self.tSeries = self._GetTimeValueHandle()    # make sure it is set correctly for OSSMTime Object
-            self.tSeries = timeseries
+            self.tSeries = self._GetTimeValueHandle()    # make sure it is set correctly for OSSMTime Object
             
     
     def Units(self):
@@ -130,14 +131,11 @@ cdef class Cy_ossm_time:
         then invokes the SetTimeValueHandle method of OSSMTimeValue_c object
         Make this private since the constructor will likely call this when object is instantiated
         """
-        print time_val
-        print type(time_val)
-            
         cdef short tmp_size = sizeof(TimeValuePair)
         cdef TimeValuePairH time_val_hdlH
         time_val_hdlH = <TimeValuePairH>_NewHandle(time_val.nbytes)
         memcpy( time_val_hdlH[0], &time_val[0], time_val.nbytes)
-        #self.time_dep.SetTimeValueHandle(time_val_hdlH)
+        self.time_dep.SetTimeValueHandle(time_val_hdlH)
     
     def _GetTimeValueHandle(self): 
         """
