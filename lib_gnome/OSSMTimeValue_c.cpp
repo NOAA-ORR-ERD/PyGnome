@@ -405,24 +405,23 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 		askForUnits = FALSE;
 	
 	// askForUnits must be FALSE if using pyGNOME
-	#ifdef pyGNOME
+#ifdef pyGNOME
 	if( askForUnits)
 	{
-		printError("Units not found in file and units not provided as input.");
-		err = -1;
+		//printError("Units not found in file and units not provided as input.");
+		err = 1;	// JS: standard error codes dont exist in C++ gnome
 		goto done;
 	}
-	#endif
-
+#else
 	if(askForUnits)
-	{	
+	{		
 		// we have to ask the user for units...
 		Boolean userCancel=false;
 		selectedUnits = kKnots; // knots will be default
 		err = AskUserForUnits(&selectedUnits,&userCancel);
 		if(err || userCancel) { err = -1; goto done;}
 	}
-	
+#endif		
 	switch(selectedUnits)
 	{
 		case kKnots: conversionFactor = KNOTSTOMETERSPERSEC; break;
@@ -430,7 +429,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 		case kMetersPerSec: conversionFactor = 1.0; break;
 		default: err = -1; goto done;
 	}
-    this->SetUserUnits(selectedUnits);
+    this->SetUserUnits(selectedUnits);	
 	
 	if(dataInGMT)
 	{
@@ -560,7 +559,6 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 		printError("No lines were found");
 		err = true;
 	}
-	
 done:
 	if(f) {DisposeHandle((Handle)f); f = 0;}
 	if(err &&timeValues)  {DisposeHandle((Handle)timeValues); timeValues = 0;}
