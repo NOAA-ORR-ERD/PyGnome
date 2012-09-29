@@ -97,7 +97,7 @@ cdef class Cy_ossm_time:
         return vel_rec
     
        
-    def _ReadTimeValues(self, path, file_contains=not None, units=-1):
+    def _ReadTimeValues(self, path, file_contains, units=-1):
         """
             Format for the data file. This is an enum type in C++
             defined below. These are defined in cy_basic_types such that python can see them
@@ -115,7 +115,7 @@ cdef class Cy_ossm_time:
                 MetersPerSec: 3
                 
             Make this private since the constructor will likely call this when object is instantiated
-        """
+        """        
         err = self.time_dep.ReadTimeValues(path, file_contains, units)
         if err == 0:
             # let's set class attributes
@@ -131,6 +131,9 @@ cdef class Cy_ossm_time:
         then invokes the SetTimeValueHandle method of OSSMTimeValue_c object
         Make this private since the constructor will likely call this when object is instantiated
         """
+        if time_val is None:
+            raise TypeError("expected ndarray, NoneType found")
+        
         cdef short tmp_size = sizeof(TimeValuePair)
         cdef TimeValuePairH time_val_hdlH
         time_val_hdlH = <TimeValuePairH>_NewHandle(time_val.nbytes)

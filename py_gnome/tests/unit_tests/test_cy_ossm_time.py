@@ -125,3 +125,10 @@ class TestCy_ossm_timeGetTimeValue():
         #assert np.all( np.abs( vel_rec['u']-actual['u'])) < 1e-6
         #assert np.all( np.abs( vel_rec['v']-actual['v'])) < 1e-6
     
+    def test__SetTimeValueHandleNone(self):
+        """Check TypeError exception for private method"""
+        try:
+            self.ossmT._SetTimeValueHandle(None)
+        except TypeError:
+            assert True
+        
