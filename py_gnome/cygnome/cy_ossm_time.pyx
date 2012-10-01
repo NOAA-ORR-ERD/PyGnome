@@ -63,11 +63,13 @@ cdef class Cy_ossm_time:
             self.tSeries = self._GetTimeValueHandle()    # make sure it is set correctly for OSSMTime Object
             
     
+    @property
     def Units(self):
         """returns the class attribute for units - couldn't see the class attribute in python so had to return it
         as part of the method"""
-        return self.time_dep.GetUserUnits()  
+        return self.time_dep.GetUserUnits()
     
+    @property
     def Timeseries(self):
         """returns the class attribute for time series - couldn't see the class attribute in python so had to return it
         as part of the method. This is just so we only do a memcpy once"""
