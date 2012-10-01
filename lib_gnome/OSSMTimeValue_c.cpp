@@ -26,11 +26,11 @@
 
 using namespace std;
 
-OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner,TimeValuePairH tvals,short userUnits) : TimeValue_c(theOwner) 
+OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(NULL)
 { 
 	fileName[0]=0;
-	timeValues = tvals;
-	fUserUnits = userUnits;
+	timeValues = 0;
+	fUserUnits = kUndefined;
 	fFileType = OSSMTIMEFILE;
 	fScaleFactor = 0.;
 	fStationName[0] = 0;
