@@ -11,22 +11,15 @@ from type_defs cimport *
 from mem_utils cimport _NewHandle, _GetHandleSize
 from ossm_time cimport OSSMTimeValue_c
 
-cdef class Cy_ossm_time:
+cdef class CyOSSMTime:
 
     # underlying C++ object that is instantiated
     cdef OSSMTimeValue_c * time_dep
     
-    # PYTHON CANNOT ACCESS THESE ATTRIBUTES DIRECTLY
-    # class attributes so that once the object is properly initialized
-    # we don't need to do any memcpy to get the time series
-    #     Cy_ossm_time.timeseries gives the time series
-    #     Cy_ossm_time.untis gives the units
-    #cdef cnp.ndarray[TimeValuePair, ndim=1] timeseries    # Cannot do this!
-    cdef cnp.ndarray tSeries
 
     def __cinit__(self):
        """ TODO: Update it so it can take path as input argument"""
-       self.time_dep = new OSSMTimeValue_c(NULL)
+       self.time_dep = new OSSMTimeValue_c()
         
     def __dealloc__(self):
         del self.time_dep
@@ -46,7 +39,7 @@ cdef class Cy_ossm_time:
                 raise ValueError('Unknown file contents - need a valid basic_types.file_contains.* value')
             
             if os.path.exists(path):
-                self._ReadTimeValues(path, file_contains, units)
+                self._read_time_values(path, file_contains, units)
             else:
                 raise IOError("No such file: " + path)
         else:
@@ -57,25 +50,21 @@ cdef class Cy_ossm_time:
             if timeseries is None:
                 raise ValueError("timeseries cannot be None")
             
-            self._SetTimeValueHandle(timeseries)
+            self._set_time_value_handle(timeseries)
             self.time_dep.SetUserUnits(units)
-            
-            self.tSeries = self._GetTimeValueHandle()    # make sure it is set correctly for OSSMTime Object
             
     
     @property
-    def Units(self):
-        """returns the class attribute for units - couldn't see the class attribute in python so had to return it
-        as part of the method"""
+    def units(self):
+        """returns units for the time series"""
         return self.time_dep.GetUserUnits()
     
     @property
-    def Timeseries(self):
-        """returns the class attribute for time series - couldn't see the class attribute in python so had to return it
-        as part of the method. This is just so we only do a memcpy once"""
-        return self.tSeries
+    def time_series(self):
+        """returns the time series stored in the OSSMTimeValue_c object. It returns a memcpy of it."""
+        return self._get_time_value_handle()
     
-    def GetTimeValue(self, modelTime):
+    def get_time_value(self, modelTime):
         """
           GetTimeValue - for a specified modelTime or array of model times, it returns the values
         """
@@ -99,7 +88,7 @@ cdef class Cy_ossm_time:
         return vel_rec
     
        
-    def _ReadTimeValues(self, path, file_contains, units=-1):
+    def _read_time_values(self, path, file_contains, units=-1):
         """
             Format for the data file. This is an enum type in C++
             defined below. These are defined in cy_basic_types such that python can see them
@@ -119,15 +108,11 @@ cdef class Cy_ossm_time:
             Make this private since the constructor will likely call this when object is instantiated
         """        
         err = self.time_dep.ReadTimeValues(path, file_contains, units)
-        if err == 0:
-            # let's set class attributes
-            self.tSeries = self._GetTimeValueHandle()
-            
-        elif err == 1:
+        if err == 1:
             # TODO: need to define error codes in C++ and raise other exceptions
             raise ValueError("Units not found in file and units not provided as input")
     
-    def _SetTimeValueHandle(self, cnp.ndarray[TimeValuePair, ndim=1] time_val):
+    def _set_time_value_handle(self, cnp.ndarray[TimeValuePair, ndim=1] time_val):
         """
             Takes a numpy array containing a time series, copies it to a Handle (TimeValuePairH),
         then invokes the SetTimeValueHandle method of OSSMTimeValue_c object
@@ -142,7 +127,7 @@ cdef class Cy_ossm_time:
         memcpy( time_val_hdlH[0], &time_val[0], time_val.nbytes)
         self.time_dep.SetTimeValueHandle(time_val_hdlH)
     
-    def _GetTimeValueHandle(self): 
+    def _get_time_value_handle(self): 
         """
             Invokes the GetTimeValueHandle method of OSSMTimeValue_c object to read the time series data
         """
