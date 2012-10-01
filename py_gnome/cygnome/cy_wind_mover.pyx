@@ -86,7 +86,7 @@ cdef class Cy_wind_mover:
         
     def set_ossm(self, ossm_file):
         cdef OSSMTimeValue_c *ossm
-        ossm = new OSSMTimeValue_c()
+        ossm = new OSSMTimeValue_c(NULL)
         if(ossm.ReadTimeValues(ossm_file,5,1) == -1):
             raise Exception("something wrong with ossm file")
         self.mover.SetTimeDep(ossm)
