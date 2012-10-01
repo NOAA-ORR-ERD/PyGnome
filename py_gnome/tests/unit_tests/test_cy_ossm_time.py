@@ -65,13 +65,10 @@ class TestTimeSeriesInit():
    """
    tval = np.empty((2,), dtype=basic_types.time_value_pair)
    tval['time'][0] = 0
-   tval['value']['u'][0]=1
-   tval['value']['v'][0]=2
+   tval['value'][0]=(1,2)
        
-   #============================================================================
-   # tval['time'][1] = 1
-   # tval['value'][1]=(2,3)
-   #============================================================================
+   tval['time'][1] = 1
+   tval['value'][1]=(2,3)
    
    def test_init_no_units(self):
        """ timeseries requires units """
