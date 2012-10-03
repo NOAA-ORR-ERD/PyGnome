@@ -14,7 +14,7 @@ from ossm_time cimport OSSMTimeValue_c
 cdef class CyOSSMTime:
 
     # underlying C++ object that is instantiated
-    cdef OSSMTimeValue_c * time_dep
+    #cdef OSSMTimeValue_c * time_dep
     
 
     def __cinit__(self):
