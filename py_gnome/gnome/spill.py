@@ -111,7 +111,7 @@ class PointReleaseSpill(Spill):
         self._data_arrays['last_water_pts'] = np.zeros_like(self['positions'])
         self.reset()
 
-    def release_LEs(self, current_time):
+    def release_elements(self, current_time):
         """
         Release the LEs -- i.e. change their status to in_water
         if the current time is greater than or equal to the release time

@@ -135,9 +135,9 @@ class GnomeMap(object):
         """
         return self.on_map(coord)
 
-    def beach_LEs(self, spill):
+    def beach_elements(self, spill):
         """
-        beach_LEs
+        beach_LEs (spill)
         
         determines which LEs were or weren't beached.
         
@@ -149,8 +149,20 @@ class GnomeMap(object):
         The default base map has no land, so nothing changes
         """
         return None
+    
+    def refloat_elements(self, spill):
+        """
+        refloat_elements(spill)
         
+        :param spill: The spill object that hold the elements that need refloating
         
+        Does the re-float logic -- changing the element status flag, an moving the
+        element to the last knows water position
+        
+        This version has no land, and so is a no-op.
+        """
+        pass
+    
         
 import land_check
 from gnome import basic_types
