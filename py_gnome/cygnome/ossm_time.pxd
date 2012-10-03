@@ -7,8 +7,7 @@ from mover cimport Mover_c
 
 cdef extern from "OSSMTimeValue_c.h":
     cdef cppclass OSSMTimeValue_c:
-        OSSMTimeValue_c(Mover_c *) except +
-        #OSSMTimeValue_c() except +    # not sure why it never enters an empty constructor!
+        OSSMTimeValue_c() except +    # not sure why it never enters an empty constructor!
         OSErr GetTimeValue(Seconds &, VelocityRec *)
         OSErr ReadTimeValues (char *, short, short)
         void SetTimeValueHandle(TimeValuePairH)	# sets all time values 

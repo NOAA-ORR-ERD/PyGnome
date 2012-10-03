@@ -45,7 +45,7 @@ class Spill(object):
         self._data_arrays['status_codes'] = ( np.zeros((num_LEs,),
                                                        dtype=basic_types.status_code_type)
                                              )
-        self._data_arrays['status_codes'][:] = basic_types.status_in_water             
+        self._data_arrays['status_codes'][:] = basic_types.oil_status.status_in_water             
  
     def __getitem__(self, data_name):
         """
@@ -120,7 +120,7 @@ class PointReleaseSpill(Spill):
         """
         if current_time >= self.release_time:
             self['positions'][:] = self.start_position
-            self['status_codes'][:] = basic_types.status_in_water
+            self['status_codes'][:] = basic_types.oil_status.status_in_water
         return None
 
     def reset(self):
@@ -128,7 +128,7 @@ class PointReleaseSpill(Spill):
         reset to initial conditions -- i.e. not released, and at the start position
         """
         self['positions'][:] = self.start_position
-        self['status_codes'][:] = basic_types.status_not_released
+        self['status_codes'][:] = basic_types.oil_status.status_not_released
         
 
 ## fixme -- is there a need for this, or should we use a flag in the regular

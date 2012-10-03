@@ -75,7 +75,7 @@ class SimpleMover(object):
             raise ValueError("The spill does not have the required data arrays\n"+err.message)
         
         # which ones should we move?
-        in_water_mask =  (status_codes == basic_types.status_in_water)
+        in_water_mask =  (status_codes == basic_types.oil_status.status_in_water)
                 
         # compute the move
         delta = np.zeros((in_water_mask.sum(), 3), dtype = basic_types.mover_type)

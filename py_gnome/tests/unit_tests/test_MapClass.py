@@ -348,7 +348,7 @@ class Test_full_move:
         start_positions= np.array( ( ( 5.0, 5.0), ), dtype=np.float64) 
         end_positions =  np.array( ( (15.0, 5.0), ), dtype=np.float64)
         last_water_positions = np.empty_like( start_positions )
-        status_codes  =  np.array( (basic_types.status_in_water, ), dtype=basic_types.status_code_type)
+        status_codes  =  np.array( (basic_types.oil_status.status_in_water, ), dtype=basic_types.status_code_type)
  
         map.beach_elements(start_positions,
                            end_positions,
@@ -358,7 +358,7 @@ class Test_full_move:
         
         assert np.array_equal( end_positions[0], (10.0, 5.0) )
         assert np.array_equal( last_water_positions[0], (9.0, 5.0) )
-        assert status_codes[0] == basic_types.status_on_land
+        assert status_codes[0] == basic_types.oil_status.status_on_land
         
     def test_land_cross_array(self):
         """
@@ -389,7 +389,7 @@ class Test_full_move:
         last_water_positions = np.empty_like( start_positions )
 
         status_codes  =  np.empty( (start_positions.shape[0],), dtype=basic_types.status_code_type)
-        status_codes[:]  =  basic_types.status_in_water
+        status_codes[:]  =  basic_types.oil_status.status_in_water
  
         map.beach_elements(start_positions,
                            end_positions,
@@ -409,7 +409,7 @@ class Test_full_move:
                                                        (11.0, 4.0),
                                                        ) )
 
-        assert np.alltrue( status_codes == basic_types.status_on_land )
+        assert np.alltrue( status_codes == basic_types.oil_status.status_on_land )
 
     def test_some_cross_array(self):
         """
@@ -440,7 +440,7 @@ class Test_full_move:
         last_water_positions = np.empty_like( start_positions )
 
         status_codes  =  np.empty( (start_positions.shape[0],), dtype=basic_types.status_code_type)
-        status_codes[:]  =  basic_types.status_in_water
+        status_codes[:]  =  basic_types.oil_status.status_in_water
  
         map.beach_elements(start_positions,
                            end_positions,
@@ -456,7 +456,7 @@ class Test_full_move:
         assert np.array_equal( last_water_positions[3:], ( (11.0, 4.0),
                                                            ) )
 
-        assert np.array_equal( status_codes[3:], ( basic_types.status_on_land,
+        assert np.array_equal( status_codes[3:], ( basic_types.oil_status.status_on_land,
                                                    ) )
         
     def test_outside_raster(self):
@@ -488,7 +488,7 @@ class Test_full_move:
         last_water_positions = np.empty_like( start_positions )
 
         status_codes  =  np.empty( (start_positions.shape[0],), dtype=basic_types.status_code_type)
-        status_codes[:]  =  basic_types.status_in_water
+        status_codes[:]  =  basic_types.oil_status.status_in_water
  
         map.beach_elements(start_positions,
                            end_positions,
@@ -504,7 +504,7 @@ class Test_full_move:
         assert np.array_equal( last_water_positions[3:], ( ( 9.0, 4.0),
                                                            ) )
 
-        assert np.array_equal( status_codes[3:], ( basic_types.status_on_land,
+        assert np.array_equal( status_codes[3:], ( basic_types.oil_status.status_on_land,
                                                    ) )
         
 

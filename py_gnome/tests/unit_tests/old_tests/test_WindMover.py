@@ -9,7 +9,7 @@ You should  be able to `git checkout prototype; cd py_gnome; python setup.py dev
 
 from __future__ import division
 from gnome import c_gnome
-from gnome.basic_types import le_rec, status_in_water
+from gnome.basic_types import le_rec, oil_status
 import numpy as np
 import geodesic_calcs
 
@@ -55,7 +55,7 @@ def test_northward():
     npra = np.zeros(num_particles, dtype=le_rec) #Initialize and empty array of zeros.
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
-    npra["status_code"]=status_in_water #Specify the particle state.    
+    npra["status_code"]=oil_status.status_in_water #Specify the particle state.    
     
     #Initalize the model.
     SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
@@ -111,7 +111,7 @@ def test_southward():
     npra = np.zeros(num_particles, dtype=le_rec) #Initialize and empty array of zeros.
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
-    npra["status_code"]=status_in_water #Specify the particle state.    
+    npra["status_code"]=oil_status.status_in_water #Specify the particle state.    
     
     #Initalize the model.
     SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
@@ -167,7 +167,7 @@ def test_eastward():
     npra = np.zeros(num_particles, dtype=le_rec) #Initialize and empty array of zeros.
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
-    npra["status_code"]=status_in_water #Specify the particle state.
+    npra["status_code"]=oil_status.status_in_water #Specify the particle state.
     
     #Initalize the model.
     SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
@@ -223,7 +223,7 @@ def test_westward():
     npra = np.zeros(num_particles, dtype=le_rec) #Initialize and empty array of zeros.
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
-    npra["status_code"]=status_in_water #Specify the particle state.
+    npra["status_code"]=oil_status.status_in_water #Specify the particle state.
     
     #Initalize the model.
     SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
@@ -279,7 +279,7 @@ def test_northeastward():
     npra = np.zeros(num_particles, dtype=le_rec) #Initialize and empty array of zeros.
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
-    npra["status_code"]=status_in_water #Specify the particle state.
+    npra["status_code"]=oil_status.status_in_water #Specify the particle state.
     
     #Initalize the model.
     SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.
@@ -338,7 +338,7 @@ def test_northward_stepwise():
     npra = np.zeros(num_particles, dtype=le_rec) #Initialize and empty array of zeros.
     npra["p"]=(LonIn,LatIn) #World point longitude,latitude.
     npra["windage"]=(WindPrct) #Windage in percentage (as a decimal.)
-    npra["status_code"]=status_in_water #Specify the particle state.
+    npra["status_code"]=oil_status.status_in_water #Specify the particle state.
     
     #Initalize the model.
     SpillDict=spill(npra,False) #Set uncertanity to "False" to not use uncertanity.

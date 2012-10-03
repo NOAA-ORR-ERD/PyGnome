@@ -2,7 +2,7 @@ import cython
 cimport numpy as np
 import numpy as nmp
 
-from ossm_time cimport OSSMTimeValue_c
+from cy_ossm_time cimport CyOSSMTime
 from wind_mover cimport WindMover_c
 from type_defs cimport WorldPoint3D, LEWindUncertainRec
 
@@ -84,14 +84,13 @@ cdef class Cy_wind_mover:
         self.mover.fConstantValue.v = windV
         self.mover.fIsConstantWind = 1
         
-    def set_ossm(self, ossm_file):
-        cdef OSSMTimeValue_c *ossm
-        ossm = new OSSMTimeValue_c(NULL)
-        if(ossm.ReadTimeValues(ossm_file,5,1) == -1):
-            raise Exception("something wrong with ossm file")
-        self.mover.SetTimeDep(ossm)
-        #self.mover.SetRefPosition(ossm.GetRefWorldPoint(), 0)
-        #self.mover.bTimeFileActive = True
+    def set_ossm(self, CyOSSMTime ossm):
+        """
+        Use the CyOSSMTime object to set the wind mover OSSM time member variable using
+        the SetTimeDep method
+        """
+        #nOssm = deref(ossm.time_dep)
+        self.mover.SetTimeDep(ossm.time_dep)
         self.mover.fIsConstantWind = 0
         return True
         
