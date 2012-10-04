@@ -38,7 +38,7 @@ class SimpleMover(object):
                                     dtype = basic_types.mover_type, # use this, to be compatible with whatever we are using for location
                                     ).reshape((3,))
         
-    def prepare_for_model_step(model_time, time_step, uncertain_on):
+    def prepare_for_model_step(self, model_time, time_step, uncertain_on):
         """
         Called at the beginning of each time step -- so the mover has a chance to prepare itself.
         
@@ -82,16 +82,11 @@ class SimpleMover(object):
 
         delta[:] = self.velocity * time_step
 
-        print "delta:", delta
 
         # scale for projection
         # fixme -- move this to a utility function???
-        print "positions", positions
-        latitudes = positions[in_water_mask, 1]
-        print "latitudes:", latitudes
-        print "delta:", delta
-        delta = proj.meters_to_latlon(delta[:,:2], latitudes) # just the lat-lon...
-        print "delta:", delta
+        #          i.e. all movers should use the same projection -- rather than doing it themselves.
+        delta[:,:2] = proj.meters_to_latlon(delta[:,:2], positions[in_water_mask, 1]) # just the lat-lon...
         
         return delta
         
