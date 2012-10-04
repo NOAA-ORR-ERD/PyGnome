@@ -373,30 +373,39 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	/**/ paramtext(fileName, "", "", ""); /**/
 	//////////////////////////////////////////
 
-	isLongWindFile = IsLongWindFile(path,&selectedUnits,&dataInGMT);
-	if(isLongWindFile) {
-		if(format != M19MAGNITUDEDIRECTION)
-		{ // JLM thinks this is a user error, someone selecting a long wind file when creating a non-wind object
-			printError("isLongWindFile but format != M19MAGNITUDEDIRECTION");
-			{ err = -1; goto done;}
-		}
-		askForUnits = false;
-		numHeaderLines = 5;
-	}
-	
-	else if(IsOSSMTideFile(path,&selectedUnits))
-		numHeaderLines = 3;
-	
-	else if(isHydrologyFile = IsHydrologyFile(path))	// ask for scale factor, but not units
-	{
-		SetFileType(HYDROLOGYFILE);
-		numHeaderLines = 3;
-		selectedUnits = kMetersPerSec;	// so conversion factor is 1
-	}
-	
 	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f))
 	{ TechError("TOSSMTimeValue::ReadTimeValues()", "ReadFileContents()", 0); goto done; }
-	
+
+	numLines = NumLinesInText(*f);
+
+	// JS 10/3/12: Ensure there are enough lines in the file before doing the following checks
+	// else the method tries to read lines that don't exist and this somehow corrupts the stack 
+	if( numLines >= 5)
+	{
+		isLongWindFile = IsLongWindFile(path,&selectedUnits,&dataInGMT);
+		if(isLongWindFile) {
+			if(format != M19MAGNITUDEDIRECTION)
+			{ // JLM thinks this is a user error, someone selecting a long wind file when creating a non-wind object
+				printError("isLongWindFile but format != M19MAGNITUDEDIRECTION");
+				{ err = -1; goto done;}
+			}
+			askForUnits = false;
+			numHeaderLines = 5;
+		}
+	}
+	// maybe a OSSMTideFileor HYDROLOGY file
+	if(numLines >= 3 && !isLongWindFile)
+	{
+		if(IsOSSMTideFile(path,&selectedUnits))
+			numHeaderLines = 3;
+		else if(isHydrologyFile = IsHydrologyFile(path))	// ask for scale factor, but not units
+		{
+			SetFileType(HYDROLOGYFILE);
+			numHeaderLines = 3;
+			selectedUnits = kMetersPerSec;	// so conversion factor is 1
+		}
+	}
+		
 	//code goes here, see if we can get the units from the file somehow
 	
 	if(selectedUnits == kUndefined )
@@ -451,8 +460,6 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 			this->fScaleFactor = conversionFactor;
 		}
 	}
-	
-	numLines = NumLinesInText(*f);
 	
 	numDataLines = numLines - numHeaderLines;
 	

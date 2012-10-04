@@ -130,8 +130,6 @@ class TestGetTimeValues():
                                   "get_time_value is not within a tolerance of "+str(tol), 0)
         np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, 
                                   "get_time_value is not within a tolerance of "+str(tol), 0)
-        #assert np.all( np.abs( vel_rec['u']-actual['u'])) < 1e-6
-        #assert np.all( np.abs( vel_rec['v']-actual['v'])) < 1e-6
         
     def test__set_time_value_handle_none(self):
         """Check TypeError exception for private method"""
@@ -140,3 +138,35 @@ class TestGetTimeValues():
         except TypeError:
             assert True
         
+        
+class TestReadFileWithConstantWind():
+    """
+    Read contents for a file that contains a constant wind, this will be just 1 line in the text file.
+    """
+    file = r"SampleData/WindDataFromGnomeConstantWind.WND"
+    ossmT = cy_ossm_time.CyOSSMTime(path=file,
+                                      file_contains=basic_types.file_contains.magnitude_direction,
+                                      units=basic_types.velocity_units.knots)
+    
+    def test_get_time_value(self):
+        """Test get_time_values method. It gets the time value pair for the constant wind
+        per the data file. 
+            This test just gets the time value pair that was created from the file. It then invokes
+        get_time_value for that time in the time series and also looks at the velocity 100 sec later.
+        Since wind is constant, the value should be unchanged          
+        """
+        # Let's see what is stored in the Handle to expected result
+        t_val = self.ossmT.time_series 
+        
+        actual = np.array(t_val['value'], dtype=basic_types.velocity_rec)
+        time = np.array(t_val['time']+(0, 100), dtype=basic_types.seconds)
+        
+        vel_rec = self.ossmT.get_time_value(time)
+        
+        tol = 1e-6
+
+        for vel in vel_rec:
+            np.testing.assert_allclose(vel['u'], actual['u'], tol, tol, 
+                                      "get_time_value is not within a tolerance of "+str(tol), 0)
+            np.testing.assert_allclose(vel['v'], actual['v'], tol, tol, 
+                                      "get_time_value is not within a tolerance of "+str(tol), 0)
