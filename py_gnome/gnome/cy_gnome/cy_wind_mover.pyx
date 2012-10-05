@@ -2,7 +2,9 @@ import cython
 cimport numpy as np
 import numpy as nmp
 
-include "wind_mover.pxi"
+from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
+from movers cimport WindMover_c
+from type_defs cimport WorldPoint3D, LEWindUncertainRec
 
 cdef class Cy_wind_mover:
 
@@ -40,7 +42,7 @@ cdef class Cy_wind_mover:
                            step_len,
                            np.ndarray[WorldPoint3D, ndim=1] ref_ra,
                            np.ndarray[WorldPoint3D, ndim=1] wp_ra,
-                           np.ndarray[np.npy_double] wind_ra,
+                           np.ndarray[np.npy_double] windage_ra,
                            double f_sigma_vel,
                            double f_sigma_theta,
                            np.ndarray[LEWindUncertainRec] uncertain_ra):
@@ -52,7 +54,7 @@ cdef class Cy_wind_mover:
         N = len(wp_ra) # set a data type here?
         ref_points = ref_ra.data
         delta = wp_ra.data
-        windages = wind_ra.data
+        windages = windage_ra.data
         uncertain_ptr = uncertain_ra.data
         
         self.mover.get_move(N, model_time, step_len, ref_points, delta, windages, f_sigma_vel, f_sigma_theta, uncertain_ptr)
@@ -80,3 +82,16 @@ cdef class Cy_wind_mover:
     
         self.mover.fConstantValue.u = windU
         self.mover.fConstantValue.v = windV
+        self.mover.fIsConstantWind = 1
+        
+    def set_ossm(self, CyOSSMTime ossm):
+        """
+        Use the CyOSSMTime object to set the wind mover OSSM time member variable using
+        the SetTimeDep method
+        """
+        #nOssm = deref(ossm.time_dep)
+        self.mover.SetTimeDep(ossm.time_dep)
+        self.mover.fIsConstantWind = 0
+        return True
+        
+       

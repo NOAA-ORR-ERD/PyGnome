@@ -30,7 +30,7 @@ from numpy import ma
 from PIL import Image, ImageDraw
 
 from gnome.utilities import map_canvas
-from gnome.basic_types import world_point_type, status_on_land
+from gnome.basic_types import world_point_type, oil_status 
 
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities.geometry import BBox
@@ -135,9 +135,9 @@ class GnomeMap(object):
         """
         return self.on_map(coord)
 
-    def beach_LEs(self, spill):
+    def beach_elements(self, spill):
         """
-        beach_LEs
+        beach_LEs (spill)
         
         determines which LEs were or weren't beached.
         
@@ -149,8 +149,20 @@ class GnomeMap(object):
         The default base map has no land, so nothing changes
         """
         return None
+    
+    def refloat_elements(self, spill):
+        """
+        refloat_elements(spill)
         
+        :param spill: The spill object that hold the elements that need refloating
         
+        Does the re-float logic -- changing the element status flag, an moving the
+        element to the last knows water position
+        
+        This version has no land, and so is a no-op.
+        """
+        pass
+    
         
 import land_check
 from gnome import basic_types
@@ -322,10 +334,10 @@ class RasterMap(GnomeMap):
             result = land_check.find_first_pixel(self.bitmap, start_positions_px[i], end_positions_px[i], draw=False)
             if result is not None:
                 last_water_positions_px[i], end_positions_px[i] = result
-                status_codes[i] = basic_types.status_on_land
+                status_codes[i] = oil_status.status_on_land
 
         # put the data back in the arrays
-        beached_mask =  ( status_codes == basic_types.status_on_land )
+        beached_mask =  ( status_codes == oil_status.status_on_land )
         end_positions[beached_mask] = self.projection.to_lat_long(end_positions_px[beached_mask])
         last_water_positions[beached_mask] = self.projection.to_lat_long(last_water_positions_px[beached_mask])
         
@@ -417,7 +429,7 @@ class RasterMap(GnomeMap):
         sra = spill.npra['status_code']
         for i in xrange(0, spill.num_particles):
             if chromgph[i]:
-                sra[i] = status_on_land
+                sra[i] = oil_status.status_on_land
         if spill.chromgph == None:
             spill.chromgph = chromgph
         merg = [int(chromgph[x] and not spill.chromgph[x]) for x in xrange(0, len(chromgph))]

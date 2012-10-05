@@ -99,7 +99,7 @@ if sys.platform == "darwin":
     # cy_basic_types needs to be imported before any other extensions - this is being done
     # in the gnome/cy_gnome/__init__.py
     basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
-                                ['cygnome/cy_basic_types.pyx'] + cpp_files, 
+                                ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files, 
                                 language="c++",
                                 define_macros = macros,
                                 extra_compile_args=compile_args,
@@ -142,7 +142,7 @@ elif sys.platform == "win32":
 # the build_ext and develop will find and link to the object in different places.
 
 for mod_name in extension_names:
-   cy_file = os.path.join("cygnome", mod_name+".pyx")
+   cy_file = os.path.join("gnome/cy_gnome", mod_name+".pyx")
    extensions.append(  Extension('gnome.cy_gnome.' + mod_name,
                                  [cy_file], 
                                  language="c++",

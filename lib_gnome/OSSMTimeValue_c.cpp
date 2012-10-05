@@ -26,11 +26,11 @@
 
 using namespace std;
 
-OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner,TimeValuePairH tvals,short userUnits) : TimeValue_c(theOwner) 
+OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(NULL)
 { 
 	fileName[0]=0;
-	timeValues = tvals;
-	fUserUnits = userUnits;
+	timeValues = 0;
+	fUserUnits = kUndefined;
 	fFileType = OSSMTIMEFILE;
 	fScaleFactor = 0.;
 	fStationName[0] = 0;
@@ -373,30 +373,39 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	/**/ paramtext(fileName, "", "", ""); /**/
 	//////////////////////////////////////////
 
-	isLongWindFile = IsLongWindFile(path,&selectedUnits,&dataInGMT);
-	if(isLongWindFile) {
-		if(format != M19MAGNITUDEDIRECTION)
-		{ // JLM thinks this is a user error, someone selecting a long wind file when creating a non-wind object
-			printError("isLongWindFile but format != M19MAGNITUDEDIRECTION");
-			{ err = -1; goto done;}
-		}
-		askForUnits = false;
-		numHeaderLines = 5;
-	}
-	
-	else if(IsOSSMTideFile(path,&selectedUnits))
-		numHeaderLines = 3;
-	
-	else if(isHydrologyFile = IsHydrologyFile(path))	// ask for scale factor, but not units
-	{
-		SetFileType(HYDROLOGYFILE);
-		numHeaderLines = 3;
-		selectedUnits = kMetersPerSec;	// so conversion factor is 1
-	}
-	
 	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f))
 	{ TechError("TOSSMTimeValue::ReadTimeValues()", "ReadFileContents()", 0); goto done; }
-	
+
+	numLines = NumLinesInText(*f);
+
+	// JS 10/3/12: Ensure there are enough lines in the file before doing the following checks
+	// else the method tries to read lines that don't exist and this somehow corrupts the stack 
+	if( numLines >= 5)
+	{
+		isLongWindFile = IsLongWindFile(path,&selectedUnits,&dataInGMT);
+		if(isLongWindFile) {
+			if(format != M19MAGNITUDEDIRECTION)
+			{ // JLM thinks this is a user error, someone selecting a long wind file when creating a non-wind object
+				printError("isLongWindFile but format != M19MAGNITUDEDIRECTION");
+				{ err = -1; goto done;}
+			}
+			askForUnits = false;
+			numHeaderLines = 5;
+		}
+	}
+	// maybe a OSSMTideFileor HYDROLOGY file
+	if(numLines >= 3 && !isLongWindFile)
+	{
+		if(IsOSSMTideFile(path,&selectedUnits))
+			numHeaderLines = 3;
+		else if(isHydrologyFile = IsHydrologyFile(path))	// ask for scale factor, but not units
+		{
+			SetFileType(HYDROLOGYFILE);
+			numHeaderLines = 3;
+			selectedUnits = kMetersPerSec;	// so conversion factor is 1
+		}
+	}
+		
 	//code goes here, see if we can get the units from the file somehow
 	
 	if(selectedUnits == kUndefined )
@@ -405,24 +414,23 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 		askForUnits = FALSE;
 	
 	// askForUnits must be FALSE if using pyGNOME
-	#ifdef pyGNOME
+#ifdef pyGNOME
 	if( askForUnits)
 	{
-		printError("Units not found in file and units not provided as input.");
-		err = -1;
+		//printError("Units not found in file and units not provided as input.");
+		err = 1;	// JS: standard error codes dont exist in C++ gnome
 		goto done;
 	}
-	#endif
-
+#else
 	if(askForUnits)
-	{	
+	{		
 		// we have to ask the user for units...
 		Boolean userCancel=false;
 		selectedUnits = kKnots; // knots will be default
 		err = AskUserForUnits(&selectedUnits,&userCancel);
 		if(err || userCancel) { err = -1; goto done;}
 	}
-	
+#endif		
 	switch(selectedUnits)
 	{
 		case kKnots: conversionFactor = KNOTSTOMETERSPERSEC; break;
@@ -430,7 +438,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 		case kMetersPerSec: conversionFactor = 1.0; break;
 		default: err = -1; goto done;
 	}
-    this->SetUserUnits(selectedUnits);
+    this->SetUserUnits(selectedUnits);	
 	
 	if(dataInGMT)
 	{
@@ -452,8 +460,6 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 			this->fScaleFactor = conversionFactor;
 		}
 	}
-	
-	numLines = NumLinesInText(*f);
 	
 	numDataLines = numLines - numHeaderLines;
 	
@@ -560,7 +566,6 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 		printError("No lines were found");
 		err = true;
 	}
-	
 done:
 	if(f) {DisposeHandle((Handle)f); f = 0;}
 	if(err &&timeValues)  {DisposeHandle((Handle)timeValues); timeValues = 0;}

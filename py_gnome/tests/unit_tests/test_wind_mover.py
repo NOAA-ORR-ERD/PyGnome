@@ -55,6 +55,7 @@ class Test_setup_1():
 
     ref_ra[:]['lat'] *= 1000000 #huh? I thought we were getting rid of the 1e6 stuff.
     ref_ra[:]['long'] *= 1000000 
+    ref_ra[:]['z'] = 0 # particles will not move via wind if z>0
 
     wind_ra[:] = 1
     # Straight south wind... 100! meters per second

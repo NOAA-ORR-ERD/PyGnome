@@ -26,8 +26,14 @@ class Model(object):
         """ 
         Initializes model attributes. 
         """
+        self.uncertain_on = False # sets whether uncertainty is on or not.
+        
         self.reset() # initializes everything to nothing.
-
+        
+        ## Various run-time parameters for output
+        self.output_types = []# ["image"] # default output type -- there could be others (netcdf, etc)
+        self.image_dir = '.'
+        
     def reset(self):
         """
         Resets model to defaults -- Caution -- clears all movers, etc.
@@ -40,11 +46,11 @@ class Model(object):
         self.spills = []
 
         self._start_time = round_time(datetime.datetime.now(), 3600) # default to now, rounded to the nearest hour
-        self._duration = datetime.timedelta(days=2) # should round to multiple of time_step?
+        self._duration = datetime.timedelta(days=2) # fixme: should round to multiple of time_step?
         self._current_time_step = 0
 
         
-        self.time_step = datetime.timedelta(minutes=15)
+        self.time_step = datetime.timedelta(minutes=15).total_seconds()
 
         
         self.uncertain = False
@@ -72,9 +78,18 @@ class Model(object):
         return self._time_step
     @time_step.setter
     def time_step(self, time_step):
+        """
+        sets the time step, and rewinds the model
+
+        :param time_step: the timestep as a timedelta object or integer seconds.
+
+        """
         print "in time_step setter"
-        self._time_step = time_step
-        self._num_time_steps = self._duration.total_seconds() // time_step.total_seconds()
+        try: 
+            self._time_step = time_step.total_seconds
+        except AttributeError: # not a timedelta object...
+            self._time_step = int(time_step)
+        self._num_time_steps = self._duration.total_seconds() // self._time_step
         self.rewind()
     
     @property
@@ -89,7 +104,7 @@ class Model(object):
         if duration < self._duration: # only need to rewind if shorter than it was...
             self.rewind()
         self._duration = duration
-        num_time_steps = self._duration.total_seconds() // self.time_step.total_seconds()
+        num_time_steps = self._duration.total_seconds() // self.time_step
         
     @property
     def map(self):
@@ -132,12 +147,14 @@ class Model(object):
         """
         sets up everything for the current time_step:
         
-        releases elements, refloats, etc.
+        releases elements, refloats, prepares the movers, etc.
         """
-        self.model_time = self._start_time + self._current_time_step*self.time_step
+        self.model_time = self._start_time + timedelta(seconds=self._current_time_step*self.time_step)
         for spill in self.spills:
-            spill.release_elements(model_time)
+            spill.release_elements(self.model_time)
             self.map.refloat_elements(spill)
+        for mover in self.movers:
+            mover.prepare_for_model_step(self.model_time, self.time_step, self.uncertain_on)
 
     def move_elements(self):
         """ 
@@ -154,9 +171,36 @@ class Model(object):
                 spill['next_positions'] += delta
         for spill in self.spills:
             self.map.beach_elements(spill)
+    def write_output(self):
+        """
+        write the output of the current time step to whatever output
+        methods have been selected
+        """
+        for ouput_method in self.output_types:
+            if ouput_method == "image":
+                self.write_image()
+            else:
+                raise ValueError("%s output type not supported"%output_method)
+    
+    def write_image(self):
+        """
+        render the map image, according to current parameters
+        """
+        if render:
+            filename = os.path.join(output_dir, 'map%05i.png'%self._current_time_step)
+            print "filename:", filename
+            self.output_map.draw_elements(self.spills, filename)
+            return filename
 
-    def step(self, render=True, output_dir="."):
-        """ Steps the model forward in time. Needs testing for hindcasting. """
+            
+    def step(self):
+        """
+        Steps the model forward in time. Needs testing for hindcasting.
+        
+        :param render=False: should the model render the results of the time step
+        :param output_dir='.': the directory to write output to
+        
+        """
         
         # print  "step called: time step:", self.time_step
         
@@ -165,9 +209,27 @@ class Model(object):
         self._current_time_step += 1
         self.setup_time_step()
         self.move_elements()
-        if render:
-            filename = os.path.join(output_dir, 'map%05i.png'%self.time_step)
-            print "filename:", filename
-            self.output_map.draw_elements(self.spills, filename)
-            return filename
+        self.write_output()
         return True
+    
+    def __iter__(self):
+        """
+        for compatibility with Python's interator protocol
+        
+        resets the model and returns itself so it can be iterated over. 
+        """
+        self.rewind()
+        return self
+                
+    def next(self):
+        """
+        compute the next model step
+        
+        This method here to satisfy Python's interator protocal
+        """
+        if not self.step():
+            raise StopIteration
+        return self.current_time_step
+
+
+        

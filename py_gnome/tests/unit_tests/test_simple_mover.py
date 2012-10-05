@@ -17,7 +17,7 @@ from gnome.utilities.projections import FlatEarthProjection as proj
 def test_basic_move():
     sp = spill.Spill(num_LEs = 5) #initilizes to long.lat = 0.0, 0.0
         
-    mover = simple_mover.simple_mover(velocity= (1.0, 10.0, 0.0) )
+    mover = simple_mover.SimpleMover(velocity= (1.0, 10.0, 0.0) )
 
     delta = mover.get_move(sp, time_step = 100.0)
 
@@ -29,7 +29,7 @@ def test_north():
                      initial_positions = (20, 0.0, 0.0),
                      )
         
-    mover = simple_mover.simple_mover(velocity= (0.0, 10, 0.0) )
+    mover = simple_mover.SimpleMover(velocity= (0.0, 10, 0.0) )
 
     delta = mover.get_move(sp, time_step = 100.0)
     

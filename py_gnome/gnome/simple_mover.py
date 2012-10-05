@@ -16,7 +16,7 @@ from gnome import basic_types
 from gnome.utilities.projections import FlatEarthProjection as proj
 
 
-class simple_mover(object):
+class SimpleMover(object):
     """
     simple_mover
     
@@ -38,14 +38,26 @@ class simple_mover(object):
                                     dtype = basic_types.mover_type, # use this, to be compatible with whatever we are using for location
                                     ).reshape((3,))
         
+    def prepare_for_model_step(model_time, time_step, uncertain_on):
+        """
+        Called at the beginning of each time step -- so the mover has a chance to prepare itself.
         
+        This one is a no-op
+        
+        :param model_time: the time of this time step: datetime object
+        :param time_step: model time_step in seconds
+        :param uncertain_on: is uncertainty on  (bool) ?
+        
+        """
+        pass
+
     def get_move(self, spill, time_step, model_time=None):
         """
         moves the particles defined in the spill object
         
         :param spill: spill is an instance of the gnome.spill.Spill class
         :param time_step: time_step in seconds
-        
+        :param model_time: current model time as a datetime object
         In this case, it uses the:
             positions
             status_code
@@ -63,7 +75,7 @@ class simple_mover(object):
             raise ValueError("The spill does not have the required data arrays\n"+err.message)
         
         # which ones should we move?
-        in_water_mask =  (status_codes == basic_types.status_in_water)
+        in_water_mask =  (status_codes == basic_types.oil_status.status_in_water)
                 
         # compute the move
         delta = np.zeros((in_water_mask.sum(), 3), dtype = basic_types.mover_type)

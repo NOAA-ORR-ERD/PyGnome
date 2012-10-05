@@ -2,7 +2,8 @@ import cython
 cimport numpy as np
 from gnome import basic_types
 
-include "date_time.pxi"
+from type_defs cimport *
+from utils cimport DateToSeconds,SecondsToDate
 
 cdef class Cy_date_time:
    cdef unsigned long * seconds

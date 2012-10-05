@@ -1,8 +1,9 @@
 import cython
 cimport numpy as np
 import numpy as np
-include "type_defs.pxi"
-include "random_mover.pxi"
+
+from type_defs cimport *
+from movers cimport Random_c
 
 cdef class Cy_random_mover:
 
