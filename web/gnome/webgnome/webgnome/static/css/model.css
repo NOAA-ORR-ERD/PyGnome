@@ -1,4 +1,7 @@
 
+.dynatree-container {
+    max-height: 400px;
+}
 
 .dynatree-ico-cf span.dynatree-icon  /* Collapsed Folder */
 {
@@ -10,3 +13,53 @@
     background-image: none;
 }
 
+ul#tree-list {
+    display: none;
+}
+
+div.nav-collapse > div.btn-toolbar {
+    margin: 0;
+}
+
+.navbar .nav {
+    margin-right: 40px;
+}
+
+div#slider {
+    width: 150px;
+    margin-right: 15px;
+    margin-left: 15px;
+    font-size: 10px;
+    position: absolute;
+    left: 2px;
+    top: 15px;
+}
+
+div#slider-container {
+    width: 150px;
+    cursor: default;
+    color: #333;
+    opacity: 1;
+    background-color: whiteSmoke;
+}
+
+span#time {
+    position: relative;
+    top: -5px;
+    vertical-align: top;
+    padding: 0;
+    margin:0;
+    font-size: 9px;
+}
+
+.zooming-in {
+    cursor: url(/static/img/zoom_in.cur), auto;
+}
+
+.zooming-out {
+    cursor: url(/static/img/zoom_out.cur), auto;
+}
+
+.regular {
+    cursor: default;
+}

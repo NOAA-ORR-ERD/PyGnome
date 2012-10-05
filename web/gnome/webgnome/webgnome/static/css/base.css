@@ -1,0 +1,28 @@
+body {
+    padding-top: 80px;
+}
+
+div#content {
+    margin-bottom: 10px;
+}
+
+div.splash-image {
+    float: right;
+    margin: 0 0 20px 20px;
+}
+
+div.caption {
+    float: right;
+    clear: left;
+    font-size: .8em;
+    font-style: italic;
+}
+
+footer {
+    text-align: center;
+    font-size: 10px;
+}
+
+.hidden {
+    display: none;
+}

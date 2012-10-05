@@ -1,3 +1,5 @@
+<%namespace name="defs" file="defs.mak"/>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,19 +9,10 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <style>
-        body {
-            padding-top: 60px;
-        }
-
-        div#content {
-            margin-bottom: 10px;
-        }
-    </style>
-
     <link href="/static/css/bootstrap.css" rel="stylesheet">
     <link href="/static/css/bootstrap-responsive.css" rel="stylesheet">
     <link href="/static/css/smoothness/jquery-ui-1.8.24.custom.css" rel="stylesheet">
+    <link href="/static/css/base.css" rel="stylesheet">
     <%block name="css"> </%block>
     <link rel="shortcut icon" href="ico/favicon.ico">
 </head>
@@ -34,22 +27,28 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </a>
-            <a class="brand" href="#">Gnome</a>
+            <a class="brand" href="/">WebGNOME</a>
             <div class="nav-collapse collapse">
-                <ul class="nav">
-                    <li class="active"><a href="/">Home</a></li>
-                    <li><a href="/model">Model</a></li>
-                </ul>
+                <%block name="navbar"></%block>
             </div><!--/.nav-collapse -->
         </div>
     </div>
 </div>
 
-<%block name="content">
-</%block>
+
+<div class="container-fluid" id="content">
+    <div class="row-fluid">
+        <div class="span2">
+            <%block name="sidebar"> </%block>
+        </div>
+        <div class="span8">
+            <%block name="content"> </%block>
+        </div>
+    </div>
+</div>
 
 <footer>
-    <div class="container">
+    <div class="container-fluid">
         <p>Copyright NOAA 2012.</p>
     </div>
 </footer>
