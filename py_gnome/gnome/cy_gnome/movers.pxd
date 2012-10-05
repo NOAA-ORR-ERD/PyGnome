@@ -3,7 +3,7 @@ Declare the C++ mover classes from lib_gnome
 """
 
 from type_defs cimport *
-from ossm_time cimport OSSMTimeValue_c
+from utils cimport OSSMTimeValue_c
 
 
 """
@@ -18,12 +18,13 @@ cdef extern from "GridVel_c.h":
 
 
 # TODO: pre-processor directive for cython, but what is its purpose?
-IF not HEADERS.count("_LIST_"):
-    DEF HEADERS = HEADERS +  ["_LE_LIST_"]
-    cdef extern from "LEList_c.h":
-        cdef cppclass LEList_c:
-            long numOfLEs
-            LETYPE fLeType
+# comment for now so it doesn't give compile time errors
+#IF not HEADERS.count("_LIST_"):
+#    DEF HEADERS = HEADERS +  ["_LE_LIST_"]
+cdef extern from "LEList_c.h":
+    cdef cppclass LEList_c:
+        long numOfLEs
+        LETYPE fLeType
 
 cdef extern from "Map_c.h":
     cdef cppclass Map_c:

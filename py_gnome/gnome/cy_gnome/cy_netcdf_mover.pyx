@@ -2,7 +2,9 @@ import cython
 cimport numpy as np
 import numpy as np
 
-include "netcdf_mover.pxi"
+
+from type_defs cimport *
+from movers cimport NetCDFMover_c
 
 cdef class Cy_netcdf_mover:
 

@@ -2,8 +2,8 @@ import cython
 cimport numpy as np
 import numpy as nmp
 
-from cy_ossm_time cimport CyOSSMTime
-from wind_mover cimport WindMover_c
+from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
+from movers cimport WindMover_c
 from type_defs cimport WorldPoint3D, LEWindUncertainRec
 
 cdef class Cy_wind_mover:

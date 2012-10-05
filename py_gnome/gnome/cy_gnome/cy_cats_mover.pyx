@@ -2,10 +2,11 @@ import cython
 cimport numpy as np
 import numpy as np
 
-include "cats_mover.pxi"
-include "shio_time.pxi"
-#include "ossm_time.pxi"
-include "map.pxi"
+from type_defs cimport *
+
+from movers cimport CATSMover_c,Map_c
+from utils cimport OSSMTimeValue_c,ShioTimeValue_c
+
 
 cdef class Cy_cats_mover:
 
