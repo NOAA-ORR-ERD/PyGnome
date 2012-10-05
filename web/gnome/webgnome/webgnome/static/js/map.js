@@ -230,6 +230,10 @@ gnome.MapView.prototype = {
         });
 
         this.cycle = $(this.mapEl).cycle({
+            slideResize: true,
+            containerResize: false,
+            width: '100%',
+            fit: 1,
             nowrap: true,
             speed: 1,
             timeout: 1,

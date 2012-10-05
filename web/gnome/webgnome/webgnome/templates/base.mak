@@ -38,7 +38,7 @@
 
 <div class="container-fluid" id="content">
     <div class="row-fluid">
-        <div class="span2">
+        <div class="span4" id="sidebar">
             <%block name="sidebar"> </%block>
         </div>
         <div class="span8">

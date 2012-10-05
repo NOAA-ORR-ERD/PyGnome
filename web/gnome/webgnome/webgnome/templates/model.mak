@@ -33,24 +33,23 @@
             </ul>
         </li>
     </ul>
-
-    <div class="btn-toolbar">
-        <div class="btn-group">
-            <a class="btn" id="zoom-in-button" href="#"><i class="icon-zoom-in"></i></a>
-            <a class="btn" id="zoom-out-button" href="#"><i class="icon-zoom-out"></i></a>
-            <a class="btn" id="move-button" href="#"><i class="icon-move"></i></a>
-        </div>
-        <div class="btn-group">
-            <a class="btn" id="back-button" href="#"><i class="icon-fast-backward"></i></a>
-            <div class="btn disabled" id="slider-container"><span id="time">00:00</span> <div id="slider"></div></div>
-            <a class="btn" id="play-button" href="#"><i class="icon-play"></i></a>
-            <a class="btn" id="pause-button" href="#"><i class="icon-pause"></i></a>
-            <a class="btn" id="forward-button" href="#"><i class="icon-fast-forward"></i></a>
-        </div>
-    </div>
 </%block>
 
 <%block name="sidebar">
+     <div class="container" id="sidebar-toolbar">
+      <div class="btn-toolbar">
+        <div class="btn-group">
+            <a class="btn" id="open-button" href="#"><i class="icon-folder-open"></i></a>
+            <a class="btn" id="open-save" href="#"><i class="icon-download-alt"></i></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn" id="up-button" href="#"><i class="icon-arrow-up"></i></a>
+            <a class="btn" id="down-button" href="#"><i class="icon-arrow-down"></i></a>
+            <a class="btn" id="settings-button" href="#"><i class="icon-wrench"></i></a>
+            <a class="btn" id="delete-button" href="#"><i class="icon-trash"></i></a>
+        </div>
+      </div>
+    </div>
     <div id="tree">
         <ul id="tree-list">
             <li id="settings" title="Model Settings">
@@ -95,6 +94,22 @@
 </%block>
 
 <%block name="content">
+    <div class="container">
+      <div class="btn-toolbar">
+        <div class="btn-group">
+            <a class="btn" id="zoom-in-button" href="#"><i class="icon-zoom-in"></i></a>
+            <a class="btn" id="zoom-out-button" href="#"><i class="icon-zoom-out"></i></a>
+            <a class="btn" id="move-button" href="#"><i class="icon-move"></i></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn" id="back-button" href="#"><i class="icon-fast-backward"></i></a>
+            <div class="btn disabled" id="slider-container"><span id="time">00:00</span> <div id="slider"></div></div>
+            <a class="btn" id="play-button" href="#"><i class="icon-play"></i></a>
+            <a class="btn" id="pause-button" href="#"><i class="icon-pause"></i></a>
+            <a class="btn" id="forward-button" href="#"><i class="icon-fast-forward"></i></a>
+        </div>
+      </div>
+    </div>
     <div id="map">
         <img class="frame active" data-position="0" src="/static/img/placeholder.gif">
     </div>
