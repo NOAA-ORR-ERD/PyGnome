@@ -8,12 +8,12 @@ Python wrapper around the Cython wind_mover module
 """
 
 ## make sure the main lib is imported
-import gnome.cy_basic_types
+import gnome.cy_gnome.cy_basic_types
 
-from gnome.cy_wind_mover import Cy_wind_mover
+from gnome.cy_gnome.cy_wind_mover import CyWindMover
 
 ##fixme: should this use delegation, rather than subclassing?
-class WindMover(Cy_wind_mover):
+class WindMover(CyWindMover):
     """
     WindMover class
     
