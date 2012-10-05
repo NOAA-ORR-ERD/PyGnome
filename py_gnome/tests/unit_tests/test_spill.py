@@ -128,10 +128,10 @@ def test_point_release():
     
     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_not_released)
 
-    sp.release_LEs(rel_time - datetime.timedelta(seconds=1) )# one second before release time
+    sp.release_elements(rel_time - datetime.timedelta(seconds=1) )# one second before release time
     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_not_released )
     
-    sp.release_LEs(rel_time)
+    sp.release_elements(rel_time)
     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_in_water )
 
 def test_point_reset():
@@ -141,7 +141,7 @@ def test_point_reset():
                                  release_time=rel_time,
                                  )
     
-    sp.release_LEs(rel_time)
+    sp.release_elements(rel_time)
     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_in_water )
     sp.reset()
     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_not_released)

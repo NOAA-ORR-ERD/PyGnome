@@ -8,13 +8,14 @@ from libc.string cimport memcpy
 from gnome import basic_types
 
 from type_defs cimport * 
-from mem_utils cimport _NewHandle, _GetHandleSize
-from ossm_time cimport OSSMTimeValue_c
+from utils cimport _NewHandle, _GetHandleSize
+from utils cimport OSSMTimeValue_c
 
 cdef class CyOSSMTime:
 
     # underlying C++ object that is instantiated
-    cdef OSSMTimeValue_c * time_dep
+    # declared in pxd file
+    #cdef OSSMTimeValue_c * time_dep
     
 
     def __cinit__(self):
