@@ -35,7 +35,7 @@ class NoProjection(object):
     def set_scale(self, bounding_box, image_size):
         pass
 
-    def to_pixel(self, coords, asint=True):
+    def to_pixel(self, coords, asint=False):
         """
         returns the same coords, but as an np.array , if they aren't already
         
@@ -102,7 +102,7 @@ class GeoProjection(object):
             s = image_size[1] / h
         self.scale = (s, -s)
 
-    def to_pixel(self, coords, asint=True):
+    def to_pixel(self, coords, asint=False):
         """
         
         converts input coordinates to pixel coords
@@ -154,14 +154,13 @@ class GeoProjection(object):
                 )
          (as produced by to_pixel)
         
-        Note that  to_lat_long( to_pixel (coords) ) != coords, due to raounding.
+        Note that  to_lat_long( to_pixel (coords) ) != coords, due to rounding.
         If the input is integers, a 0.5 is added to "shift" the location to mid-pixel.
         returns:  the pixel coords as a similar Nx2 array of floating point x,y coordinates
         (using the y = 0 at the top, and y increasing down)
          """
         
         if np.issubdtype(coords.dtype, int):
-            print "it's integer data"
             # convert to float64:
             coords = coords.astype(np.float64)
             # add 0.5 to shift to center of pixel
@@ -205,11 +204,8 @@ class FlatEarthProjection(GeoProjection):
         #make a copy -- don't change meters
         delta_lon_lat = np.array(meters, dtype=np.float64).reshape(-1, 2)
         ref_latitudes = np.asarray(ref_latitudes, dtype=np.float64)
-        print delta_lon_lat
         delta_lon_lat *= 8.993201e-06
-        print delta_lon_lat
         delta_lon_lat[:,0] /= np.cos(np.deg2rad(ref_latitudes))
-        print delta_lon_lat
         return delta_lon_lat
 
     @staticmethod

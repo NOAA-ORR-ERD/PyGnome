@@ -3,8 +3,7 @@
 """
  An implementation of the GNOME land-water map.
  
- This is a port of the C++ raster map approach
- 
+ This is a re-write of the C++ raster map approach
  
  NOTES:
 
@@ -19,21 +18,15 @@ New features:
  - internally, raster is a numpy array
  - land raster is only as big as the land -- if the map bounds are bigger, extra space is not in the land map
     Question: what if map-bounds is smaller than land? wasted bitmap space? (though it should work)
-
 """
  
-import sys
-import os
 import numpy as np
-import random
-from numpy import ma
-from PIL import Image, ImageDraw
 
 from gnome.utilities import map_canvas
 from gnome.basic_types import world_point_type, oil_status 
 
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities.geometry import BBox
+#from gnome.utilities.geometry import BBox
 from gnome.utilities.geometry.PinP import CrossingsTest as point_in_poly
 
 from gnome.utilities.geometry.polygons import PolygonSet
@@ -86,10 +79,6 @@ class GnomeMap(object):
         This may not be the same as in_water!
         
         """
-        print "in on_map"
-        print self.map_bounds
-        print coord
-        print point_in_poly(self.map_bounds, coord)
         return point_in_poly(self.map_bounds, coord)
         
     def on_land(self, coord):
@@ -165,7 +154,6 @@ class GnomeMap(object):
     
         
 import land_check
-from gnome import basic_types
 
 class RasterMap(GnomeMap):
     """
@@ -231,14 +219,10 @@ class RasterMap(GnomeMap):
         coord is on pixel coordinates of the bitmap
         
         """  
-        print "in _on_land_pixel", coord 
-        print self.bitmap.shape, self.bitmap.dtype 
-        print self.bitmap[coord[0], coord[1]]
-        print self.bitmap
         try:
             return self.bitmap[coord[0], coord[1]] & self.land_flag
         except IndexError:
-            return 0 # not on land if outside the land raster. (Might be off the map!) 
+            return False # not on land if outside the land raster. (Might be off the map!) 
 
     ## fixme: just for compatibility with old code -- nothing outside this class should know about pixels...
     ##        on_land_pixel = _on_land_pixel
@@ -251,8 +235,6 @@ class RasterMap(GnomeMap):
         coord is (long, lat) location
         
         """
-        print "in on_land"
-        print coord
         return self._on_land_pixel(self.projection.to_pixel(coord))
     
     def _on_land_pixel_array(self, coords):
@@ -271,9 +253,6 @@ class RasterMap(GnomeMap):
         return chrmgph
 
     def _in_water_pixel(self, coord):
-        #print "in RasterMap.in_water_pixel", coord
-        #print self.bitmap.shape
-        #print self.bitmap[coord[0], coord[1]]
         try:
             return not (self.bitmap[coord[0], coord[1]] & self.land_flag)
         except IndexError:
@@ -307,44 +286,44 @@ class RasterMap(GnomeMap):
 #            p['p_long'] = lwp['p_long'] + displacement[0]
 #            p['p_lat'] = lwp['p_lat'] + displacement[1]
 
-    def beach_elements(self, start_positions, end_positions, last_water_positions, status_codes):
-        
-        """ 
-        Beaches all the elements that have crossed over land
-        
-        Checks to see if any land is crossed between the start and end positions.
-           if land is crossed, the beached flag is set, and the last  water postion returned
-        
-        param: start_positions -- (long, lat) positions elements begin the time step at (NX2 array)
-        param: end_positions   -- (long, lat) positions elements end the time step at (NX2 array)
-        param: last_water_positions -- (long, lat) positions elements end the time step at (NX2 array)
-        param: status_codes    -- the status flag for the LEs
-
-        last_water_positions and status_codes are changed in-place
-        """
-        
-        # project the positions:
-        start_positions_px = self.projection.to_pixel(start_positions)
-        end_positions_px   = self.projection.to_pixel(end_positions)
-
-        last_water_positions_px = np.zeros_like(start_positions_px)
-        # do the inner loop
-        for i in range( len(start_positions) ):
-            #do the check...
-            result = land_check.find_first_pixel(self.bitmap, start_positions_px[i], end_positions_px[i], draw=False)
-            if result is not None:
-                last_water_positions_px[i], end_positions_px[i] = result
-                status_codes[i] = oil_status.status_on_land
-
-        # put the data back in the arrays
-        beached_mask =  ( status_codes == oil_status.status_on_land )
-        end_positions[beached_mask] = self.projection.to_lat_long(end_positions_px[beached_mask])
-        last_water_positions[beached_mask] = self.projection.to_lat_long(last_water_positions_px[beached_mask])
-        
-        return None
-                                          
+#    def beach_elements(self, start_positions, end_positions, last_water_positions, status_codes):
+#        
+#        """ 
+#        Beaches all the elements that have crossed over land
+#        
+#        Checks to see if any land is crossed between the start and end positions.
+#           if land is crossed, the beached flag is set, and the last  water postion returned
+#        
+#        param: start_positions -- (long, lat) positions elements begin the time step at (NX2 array)
+#        param: end_positions   -- (long, lat) positions elements end the time step at (NX2 array)
+#        param: last_water_positions -- (long, lat) positions elements end the time step at (NX2 array)
+#        param: status_codes    -- the status flag for the LEs
+#
+#        last_water_positions and status_codes are changed in-place
+#        """
+#        
+#        # project the positions:
+#        start_positions_px = self.projection.to_pixel(start_positions)
+#        end_positions_px   = self.projection.to_pixel(end_positions)
+#
+#        last_water_positions_px = np.zeros_like(start_positions_px)
+#        # do the inner loop
+#        for i in range( len(start_positions) ):
+#            #do the check...
+#            result = land_check.find_first_pixel(self.bitmap, start_positions_px[i], end_positions_px[i], draw=False)
+#            if result is not None:
+#                last_water_positions_px[i], end_positions_px[i] = result
+#                status_codes[i] = oil_status.status_on_land
+#
+#        # put the data back in the arrays
+#        beached_mask =  ( status_codes == oil_status.status_on_land )
+#        end_positions[beached_mask] = self.projection.to_lat_long(end_positions_px[beached_mask])
+#        last_water_positions[beached_mask] = self.projection.to_lat_long(last_water_positions_px[beached_mask])
+#        
+#        return None
+#                                          
             
-    def beach_LEs(self, spill):
+    def beach_elements(self, spill):
         """
         beach_LEs
         
@@ -360,28 +339,39 @@ class RasterMap(GnomeMap):
         """
         # pull the data from the spill 
         ## is the last water point the same as the previos position? why not?? if beached, it won't move, if not, then we can use it?
-        start_pos, end_pos, status_code = spill.get_data_arrays( ('positions',
-                                                                  'prev_positions',
-                                                                  'last_water_pt',
-                                                                  'status_code',
-                                                                  ) )
+        start_pos     = spill['positions']
+        end_pos       = spill['next_positions']
+        status_codes  = spill['status_codes']
+        last_water_pts = spill['last_water_pts']
+        
         # transform to pixel coords:
-        start_pos = self.projection.to_pixel(start_pos)
-        end_pos   = self.projection.to_pixel(end_pos)
+        start_pos[:,:2] = self.projection.to_pixel(start_pos[:,:2])
+        end_pos[:,:2]   = self.projection.to_pixel(end_pos[:,:2])
         
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
-        self.check_land(self.bitmap, start_pos, end_pos, status_code, last_water_pt)
-                
+        self.check_land(self.bitmap, start_pos, end_pos, status_codes, last_water_pts)
+        
         #transform the points back to lat-long.
-        ##fixme -- only transform those that were changed -- no need to introcude rounding error otherwise
-        beached = status_code == STATUS_CODE_BEACHED
+        ##fixme -- only transform those that were changed -- no need to introduce rounding error otherwise
+        beached = status_codes == STATUS_CODE_BEACHED
         end_pos[beached]= self.projection.to_lat_long(end_pos[beached])
         last_water_pt[beached] = self.projection.to_lat_long(end_pos[beached])
-        
-        
-        
-        
+
+        def check_land(self, grid, start_pos, end_pos, status_codes, last_water_pts):
+            """
+            do the actual land-checking
+            """
+            ##fixme -- this needs to be ported to Cython!
+
+            for i in xrange(len(start_pos)):
+                pts = land_check.find_first_pixel(grid, start_pos[i,:2], end_pos[i,:2], draw=False):
+                    if pts is not None:
+                        last_water_pts[i, :2] = pts[0]
+                        status_codes[i] = STATUS_CODE_BEACHED
+            
+
+
     
     def allowable_spill_position(self, coord):
         """

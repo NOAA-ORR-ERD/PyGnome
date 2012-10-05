@@ -39,7 +39,6 @@ class Model(object):
         Resets model to defaults -- Caution -- clears all movers, etc.
         
         """
-        print "resetting model"
         self.output_map = None
         self.map = None
         self.movers = []
@@ -84,7 +83,6 @@ class Model(object):
         :param time_step: the timestep as a timedelta object or integer seconds.
 
         """
-        print "in time_step setter"
         try: 
             self._time_step = time_step.total_seconds()
         except AttributeError: # not a timedelta object...
@@ -167,9 +165,6 @@ class Model(object):
             for spill in self.spills:
                 delta = mover.get_move(spill, self.time_step, self.model_time)
                 #delta_uncertain = mover.get_move(self.time_step, spill, uncertain=True)
-                ## fixme: should we be doing the projection here?
-                print "delta shape:", delta.shape
-                print "positions shape:", spill['next_positions'].shape
                 spill['next_positions'] += delta
         for spill in self.spills:
             self.map.beach_elements(spill)
@@ -190,7 +185,6 @@ class Model(object):
         """
         if render:
             filename = os.path.join(output_dir, 'map%05i.png'%self._current_time_step)
-            print "filename:", filename
             self.output_map.draw_elements(self.spills, filename)
             return filename
 
@@ -212,7 +206,7 @@ class Model(object):
     
     def __iter__(self):
         """
-        for compatibility with Python's interator protocol
+        for compatibility with Python's iterator protocol
         
         resets the model and returns itself so it can be iterated over. 
         """
