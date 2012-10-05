@@ -6,7 +6,7 @@ from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from movers cimport WindMover_c
 from type_defs cimport WorldPoint3D, LEWindUncertainRec
 
-cdef class Cy_wind_mover:
+cdef class CyWindMover:
 
     cdef WindMover_c *mover
 
@@ -78,7 +78,7 @@ cdef class Cy_wind_mover:
                             <char*>&windages[0]
                             )
 
-    def set_constantWind(self,windU,windV):
+    def set_constant_wind(self,windU,windV):
     
         self.mover.fConstantValue.u = windU
         self.mover.fConstantValue.v = windV
