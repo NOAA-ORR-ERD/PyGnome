@@ -11,6 +11,8 @@ gnome.MapModel = function (opts) {
     // Optionally specify the zoom level of the map.
     this.zoomLevel = opts.zoomLevel == undefined ? 4 : opts.zoomLevel;
 
+    this.data = null;
+
     // If true, `MapModel` will request a new set of frames from the server
     // when the user runs the model.
     this.dirty = true;
@@ -149,6 +151,10 @@ gnome.MapModel.prototype = {
             return date.toUTCString();
         }
         return null;
+    },
+
+    hasData: function() {
+        return this.data != null;
     }
 };
 
@@ -482,12 +488,20 @@ gnome.AnimationControlView.prototype = {
         return this.status === gnome.AnimationControlView.STATUS_ZOOMING_OUT;
     },
 
-    enableSlider: function() {
+    enableControls: function() {
         $(this.sliderEl).slider('option', 'disabled', false);
+        _.each([this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
+            this.pauseButtonEl, this.moveButtonEl], function (buttonEl) {
+            $(buttonEl).removeClass('disabled');
+        });
     },
 
-    disableSlider: function() {
+    disableControls: function() {
         $(this.sliderEl).slider('option', 'disabled', true);
+        _.each([this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
+            this.pauseButtonEl, this.moveButtonEl], function (item) {
+            $(item).removeClass('enabled');
+        });
     }
 };
 
@@ -551,7 +565,7 @@ gnome.MapController.prototype = {
             this.animationControlView.setPlaying();
             this.mapView.play();
         } else {
-            this.animationControlView.disableSlider();
+            this.animationControlView.disableControls();
             this.animationControlView.setPlaying();
             this.mapModel.run();
         }
@@ -563,6 +577,10 @@ gnome.MapController.prototype = {
     },
 
     enableZoomIn: function (event) {
+        if (this.mapModel.hasData() === false) {
+            return;
+        }
+
         this.animationControlView.setZoomingIn();
         this.mapView.makeActiveImageClickable();
         this.mapView.makeActiveImageSelectable();
@@ -570,6 +588,10 @@ gnome.MapController.prototype = {
     },
 
     enableZoomOut: function (event) {
+        if (this.mapModel.hasData() === false) {
+            return;
+        }
+
         this.animationControlView.setZoomingOut();
         this.mapView.makeActiveImageClickable();
         this.mapView.setZoomingOutCursor();
@@ -586,7 +608,7 @@ gnome.MapController.prototype = {
     },
 
     refreshFinished: function (event) {
-        this.animationControlView.enableSlider();
+        this.animationControlView.enableControls();
         this.animationControlView.setFrameCount(this.mapView.getFrameCount());
         if (this.animationControlView.isPlaying()) {
             this.mapView.play();

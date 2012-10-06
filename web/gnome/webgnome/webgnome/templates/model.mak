@@ -39,14 +39,9 @@
      <div class="container" id="sidebar-toolbar">
       <div class="btn-toolbar">
         <div class="btn-group">
-            <a class="btn" id="open-button" href="#"><i class="icon-folder-open"></i></a>
-            <a class="btn" id="open-save" href="#"><i class="icon-download-alt"></i></a>
-        </div>
-        <div class="btn-group">
-            <a class="btn" id="up-button" href="#"><i class="icon-arrow-up"></i></a>
-            <a class="btn" id="down-button" href="#"><i class="icon-arrow-down"></i></a>
+            <a class="btn" id="add-button" href="#"><i class="icon-plus-sign"></i></a>
+            <a class="btn" id="minus-button" href="#"><i class="icon-minus-sign"></i></a>
             <a class="btn" id="settings-button" href="#"><i class="icon-wrench"></i></a>
-            <a class="btn" id="delete-button" href="#"><i class="icon-trash"></i></a>
         </div>
       </div>
     </div>
@@ -55,28 +50,25 @@
             <li id="settings" title="Model Settings">
                 Model Settings
                 <ul>
-                    <li>Configure</li>
                     % for setting in model.get_settings():
                             <li id="${setting['name']}">${setting['name']}
                                 : ${setting['value']}</li>
                     % endfor
+
+                    <% map = model.get_map() %>
+                    % if map:
+                        <li>${map['name']}</li>
+                    % else:
+                        <li>Add map</li>
+                    % endif
                 </ul>
             </li>
-            <li id="movers" title="Universal Movers">
-                Universal Movers
+            <li id="movers" title="Movers">
+                Movers
                 <ul>
                     <li>Add mover</li>
-                    % for mover in model.get_universal_movers():
+                    % for mover in model.get_movers():
                             <li>${mover['name']}</li>
-                    % endfor
-                </ul>
-            </li>
-            <li id="maps" title="Maps">
-                Maps
-                <ul>
-                    <li>Add map</li>
-                    % for map in model.get_maps():
-                            <li>${map['name']}</li>
                     % endfor
                 </ul>
             </li>
@@ -97,16 +89,16 @@
     <div class="container">
       <div class="btn-toolbar">
         <div class="btn-group">
-            <a class="btn" id="zoom-in-button" href="#"><i class="icon-zoom-in"></i></a>
-            <a class="btn" id="zoom-out-button" href="#"><i class="icon-zoom-out"></i></a>
-            <a class="btn" id="move-button" href="#"><i class="icon-move"></i></a>
+            <a class="btn disabled" id="zoom-in-button" href="#"><i class="icon-zoom-in"></i></a>
+            <a class="btn disabled" id="zoom-out-button" href="#"><i class="icon-zoom-out"></i></a>
+            <a class="btn disabled" id="move-button" href="#"><i class="icon-move"></i></a>
         </div>
         <div class="btn-group">
-            <a class="btn" id="back-button" href="#"><i class="icon-fast-backward"></i></a>
+            <a class="btn disabled" id="back-button" href="#"><i class="icon-fast-backward"></i></a>
             <div class="btn disabled" id="slider-container"><span id="time">00:00</span> <div id="slider"></div></div>
             <a class="btn" id="play-button" href="#"><i class="icon-play"></i></a>
-            <a class="btn" id="pause-button" href="#"><i class="icon-pause"></i></a>
-            <a class="btn" id="forward-button" href="#"><i class="icon-fast-forward"></i></a>
+            <a class="btn disabled" id="pause-button" href="#"><i class="icon-pause"></i></a>
+            <a class="btn disabled" id="forward-button" href="#"><i class="icon-fast-forward"></i></a>
         </div>
       </div>
     </div>

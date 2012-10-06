@@ -21,8 +21,8 @@
 
 <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
-        <div class="container">
-            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <div class="container-fluid">
+           <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
@@ -38,7 +38,7 @@
 
 <div class="container-fluid" id="content">
     <div class="row-fluid">
-        <div class="span3" id="sidebar">
+        <div class="span2" id="sidebar">
             <%block name="sidebar"> </%block>
         </div>
         <div class="span8">

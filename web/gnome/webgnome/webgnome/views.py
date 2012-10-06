@@ -19,7 +19,7 @@ class MockModel(object):
     def __init__(self):
         self.id = uuid.uuid4()
 
-    def get_universal_movers(self):
+    def get_movers(self):
         return []
 
     def get_settings(self):
@@ -27,8 +27,8 @@ class MockModel(object):
             {'name': 'ID', 'value': self.id}
         ]
 
-    def get_maps(self):
-        return []
+    def get_map(self):
+        return {'name': 'My map'}
 
     def get_spills(self):
         return []
