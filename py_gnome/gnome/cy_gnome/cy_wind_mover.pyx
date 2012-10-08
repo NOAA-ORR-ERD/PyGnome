@@ -1,4 +1,5 @@
 import cython
+from cython.operator cimport dereference as deref
 cimport numpy as np
 import numpy as nmp
 
@@ -89,7 +90,6 @@ cdef class CyWindMover:
         Use the CyOSSMTime object to set the wind mover OSSM time member variable using
         the SetTimeDep method
         """
-        #nOssm = deref(ossm.time_dep)
         self.mover.SetTimeDep(ossm.time_dep)
         self.mover.fIsConstantWind = 0
         return True
