@@ -6,10 +6,13 @@ import uuid
 from pyramid.view import view_config
 
 
-RUNNING_MODELS = {}
 MODEL_ID_KEY = 'model_id'
 MISSING_MODEL_ERROR = 'The model you were working on was deleted. Please ' \
                       'reload it from a save file or start again.'
+
+
+# A dictionary containing the active `py_gnome.model.Model` instances.
+_running_models = {}
 
 
 class MockModel(object):
@@ -64,13 +67,13 @@ def show_model(request):
     model = None
 
     if model_id:
-        model = RUNNING_MODELS.get(model_id)
+        model = _running_models.get(model_id, None)
         if model is None:
             request.session.flash(MISSING_MODEL_ERROR)
 
     if model is None:
         model = MockModel()
-        RUNNING_MODELS[model.id] = model
+        _running_models[model.id] = model
         request.session[MODEL_ID_KEY] = model.id
 
     return {'model': model}
@@ -86,7 +89,7 @@ def run_model(request):
         data['message'] = 'Model not found.'
         return data
 
-    model = RUNNING_MODELS.get(model_id)
+    model = _running_models.get(model_id, None)
 
     if model is None:
         data['error'] = True

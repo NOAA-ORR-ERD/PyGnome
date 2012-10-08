@@ -26,7 +26,7 @@ gnome.MapModel.RUN_FAILED = 'gnome:runFailed';
 gnome.MapModel.RUN_URL = '/model/run';
 gnome.MapModel.ZOOM_IN = 'zoom_in';
 gnome.MapModel.ZOOM_OUT = 'zoom_out';
-gnome.MapModel.ZOOM_NONE = 'zoom_none'
+gnome.MapModel.ZOOM_NONE = 'zoom_none';
 
 
 gnome.MapModel.prototype = {
@@ -549,6 +549,10 @@ gnome.MapController = function(opts) {
         gnome.AnimationControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
     $(this.animationControlView).bind(
         gnome.AnimationControlView.SLIDER_CHANGED, this.sliderChanged);
+     $(this.animationControlView).bind(
+        gnome.AnimationControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
+     $(this.animationControlView).bind(
+        gnome.AnimationControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
     $(this.mapModel).bind(gnome.MapModel.RUN_FINISHED, this.restart);
     $(this.mapView).bind(gnome.MapView.REFRESH_FINISHED, this.refreshFinished);
     $(this.mapView).bind(gnome.MapView.PLAYING_FINISHED, this.stopAnimation);
@@ -654,6 +658,16 @@ gnome.MapController.prototype = {
         var timestamp = this.mapModel.getTimestampForFrame(this.mapView.currentFrame);
         this.animationControlView.setCurrentFrame(this.mapView.currentFrame);
         this.animationControlView.setTime(timestamp);
+    },
+
+    jumpToFirstFrame: function(event) {
+        this.mapView.setCurrentFrame(0);
+    },
+
+    jumpToLastFrame: function(event) {
+        var lastFrame = this.mapView.getFrameCount();
+        this.mapView.setCurrentFrame(lastFrame);
+        this.animationControlView.setCurrentFrame(lastFrame);
     }
 };
 
