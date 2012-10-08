@@ -47,9 +47,6 @@ class Common():
         # init. arrays #
         ################
         self.ref[:] = 1.
-    
-        self.ref[:]['lat'] *= 1000000 #huh? I thought we were getting rid of the 1e6 stuff.
-        self.ref[:]['long'] *= 1000000 
         self.ref[:]['z'] = 0 # particles will not move via wind if z>0
     
         self.wind[:] = 1
@@ -106,6 +103,8 @@ class ConstantWindWithOSSM(Common):
                          self.delta,
                          self.wind,
                          )
+        
+        
 
 def test_constant_wind():
     """

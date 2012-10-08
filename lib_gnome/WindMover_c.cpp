@@ -493,6 +493,10 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 	prec = &rec;
 
 	for (int i = 0; i < n; i++) {
+		// let's do the multiply by 1000000 here - this is what gnome expects
+		ref[i].p.pLat *= 1000000;	// really only need this for the latitude
+		//ref[i].p.pLong*= 1000000;
+
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
 		rec.windage = windages[i];
