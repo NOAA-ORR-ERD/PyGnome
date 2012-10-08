@@ -22,19 +22,8 @@ cdef class CyWindMover:
         initialize a constant wind mover
         
         constant_wind_value is a tuple of values: (u, v)
-        """        
-        self.mover.fUncertainStartTime = 0
-        self.mover.fDuration = 3*3600                                
-        self.mover.fSpeedScale = 2
-        self.mover.fAngleScale = .4
-        self.mover.fMaxSpeed = 30 #mps
-        self.mover.fMaxAngle = 60 #degrees
-        self.mover.fSigma2 = 0
-        self.mover.fSigmaTheta = 0 
-        self.mover.bUncertaintyPointOpen = 0
-        self.mover.bSubsurfaceActive = 0
-        self.mover.fGamma = 1
-        self.mover.fIsConstantWind = 1
+        """
+        self.mover.fIsConstantWind  = 0  # don't assume wind is constant
         self.mover.fConstantValue.u = 0
         self.mover.fConstantValue.v = 0
     
@@ -60,7 +49,6 @@ cdef class CyWindMover:
         
         self.mover.get_move(N, model_time, step_len, ref_points, delta, windages, f_sigma_vel, f_sigma_theta, uncertain_ptr)
 
-    ## need to clarify what is going on here -- is the delta put into the wp_ra??    
     def get_move(self,
                  model_time,
                  step_len,
@@ -72,12 +60,12 @@ cdef class CyWindMover:
 
         # modifies delta in place
         self.mover.get_move(N,
-                            model_time,
-                            step_len,
-                            <char*>&ref_points[0],
-                            <char*>&delta[0],
-                            <char*>&windages[0]
-                            )
+                             model_time,
+                             step_len,
+                             &ref_points[0],
+                             &delta[0],
+                             &windages[0])
+        
 
     def set_constant_wind(self,windU,windV):
     

@@ -43,26 +43,16 @@ cdef extern from "CurrentMover_c.h":
 
 cdef extern from "WindMover_c.h":
     cdef cppclass WindMover_c:
-        double fSpeedScale
-        double fAngleScale
-        double fMaxSpeed
-        double fMaxAngle
-        double fSigma2
-        double fSigmaTheta
-        unsigned long fUncertainStartTime
-        unsigned long fDuration
-        Boolean bUncertaintyPointOpen
-        Boolean bSubsurfaceActive
-        double fGamma
         Boolean fIsConstantWind
         VelocityRec fConstantValue
         LEWindUncertainRec **fWindUncertaintyList
         long **fLESetSizes
         OSErr get_move(int, unsigned long, unsigned long, char *, char *, char *, double, double, char *)
-        OSErr get_move(int, unsigned long, unsigned long, char *, char *, char *)
-        OSErr PrepareForModelStep(Seconds&, Seconds&, bool)
+        OSErr get_move(int, unsigned long, unsigned long, WorldPoint3D *, WorldPoint3D *, double *)
         void SetTimeDep(OSSMTimeValue_c *)
+        # ARE FOLLOWING USED IN CYTHON??
         OSErr GetTimeValue(Seconds& , VelocityRec *)
+        OSErr PrepareForModelStep(Seconds&, Seconds&, bool)
         
 cdef extern from "CATSMover_c.h":
     ctypedef struct TCM_OPTIMZE:
