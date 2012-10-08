@@ -7,8 +7,8 @@ designed to be run with py.test
 """
 
 import numpy as np
-from math import sin,cos,pi
-from random import random
+#from math import sin,cos,pi
+#from random import random
 
 
 from gnome import basic_types
@@ -24,7 +24,7 @@ class Common():
     """
     test setting up and moving four particles
     
-    Base class that initializes stuff that is common for all cy_wind_mover objects
+    Base class that initializes stuff that is common for multiple cy_wind_mover objects
     """
     
     #################
@@ -58,6 +58,10 @@ class Common():
         self.const_wind['v'] = 100 # 
 
 class ConstantWind(Common):
+    """
+    Wind Mover object instantiated with a constant wind using member method set_constant_wind(...)
+    Used for test setup
+    """
     wm = cy_wind_mover.CyWindMover()
     
     def __init__(self):
@@ -65,7 +69,6 @@ class ConstantWind(Common):
         self.delta = np.zeros((self.num_le,), dtype=basic_types.world_point)
         self.wm.set_constant_wind(self.const_wind['u'], self.const_wind['v'])
     
-
     def test_move(self):
         """ forecast move """
         self.wm.get_move(self.model_time,
@@ -77,10 +80,11 @@ class ConstantWind(Common):
               
 class ConstantWindWithOSSM(Common):
     """
-    Test using the constant wind defined in Common
-    This defines the OSSMTimeValue_c object and uses the set_ossm method of
+    This defines the OSSMTimeValue_c object using the CyOSSMTime class, then uses the set_ossm method of
     CyWindMover object to set the time_dep member of the underlying WindMover_c
     C++ object
+    
+    Used for test setup
     """
     wm = cy_wind_mover.CyWindMover()
     
@@ -91,9 +95,9 @@ class ConstantWindWithOSSM(Common):
         time_val = np.empty((1,), dtype=basic_types.time_value_pair)
         time_val['time'] = 0   # should not matter
         time_val['value']= self.const_wind
-        ossm = cy_ossm_time.CyOSSMTime(timeseries=time_val,
+        self.ossm = cy_ossm_time.CyOSSMTime(timeseries=time_val,
                                         units=basic_types.velocity_units.knots)
-        self.wm.set_ossm(ossm)
+        self.wm.set_ossm(self.ossm)
         
     def test_move(self):
         self.wm.get_move(self.model_time,
@@ -102,11 +106,12 @@ class ConstantWindWithOSSM(Common):
                          self.delta,
                          self.wind,
                          )
-    
+
 def test_constant_wind():
     """
     The result of get_move should be the same irrespective of whether we use OSSM time object
-    or the fConstantValue of the CyWindMover object
+    or the fConstantValue member of the CyWindMover object
+    Use the setup in ConstantWind and ConstantWindWithOSSM for this test   
     """
     cw = ConstantWind()
     cww_ossm = ConstantWindWithOSSM()
@@ -114,50 +119,43 @@ def test_constant_wind():
     # the move should be the same from both objects
     cw.test_move()
     cww_ossm.test_move()
+    print cw.delta
+    print cww_ossm.delta
+    np.testing.assert_equal(cw.delta, cww_ossm.delta, "test_constant_wind() failed", 0)
     
-    np.testing.assert_equal(cw.delta, cww_ossm.delta, 
-                            "test_constant_wind() failed", 0)
     
-class VariableWind(Common):
+class TestVariableWind():
     """
     Uses OSSMTimeValue_c to define a variable wind - variable wind has 'v' component, so movement
-    should only be in 'lat' direction of world point 
-    NOTE: py.test does not run tests inside this class even if it is named as TestVariableWind
-    .. maybe because of __init__?
+    should only be in 'lat' direction of world point
+    
+    Leave as a class as we may add more methods to it for testing 
     """
     wm = cy_wind_mover.CyWindMover()
+    cm = Common()
+    delta = np.zeros((cm.num_le,), dtype=basic_types.world_point)
     
-    def __init__(self):
-        Common.__init__(self)
-        self.delta = np.zeros((self.num_le,), dtype=basic_types.world_point)
-        
-        time_val = np.zeros((2,), dtype=basic_types.time_value_pair)
-        
-        time_val['time'][:] = np.add([0,3600], self.model_time)   # change after 1 hour
-        time_val['value']['v'][:] = [100,200]
-        
-        ossm = cy_ossm_time.CyOSSMTime(timeseries=time_val,
-                                        units=basic_types.velocity_units.knots)
-        self.wm.set_ossm(ossm)
+    time_val = np.zeros((2,), dtype=basic_types.time_value_pair)
+    time_val['time'][:] = np.add([0,3600], cm.model_time)   # change after 1 hour
+    time_val['value']['v'][:] = [100,200]
+    
+    # CyOSSMTime needs the same scope as CyWindMover because CyWindMover uses the C++
+    # pointer defined in CyOSSMTime.time_dep. This must be defined for the scope
+    # of CyWindMover 
+    ossm = cy_ossm_time.CyOSSMTime(timeseries=time_val,
+                                    units=basic_types.velocity_units.knots)
+    wm.set_ossm(ossm)
         
     def test_move(self):
         for x in range(0,3):
             vary_time = x*1800
-            self.wm.get_move(self.model_time + vary_time,
-                             self.time_step, 
-                             self.ref,
+            self.wm.get_move(self.cm.model_time + vary_time,
+                             self.cm.time_step, 
+                             self.cm.ref,
                              self.delta,
-                             self.wind,
+                             self.cm.wind,
                              )
+            print self.delta
             assert np.all(self.delta['lat'] != 0)
             assert np.all(self.delta['long'] == 0)
             assert np.all(self.delta['z'] == 0)
-            
-def test_variable_wind():
-    """
-    Need this just so VariableWind.test_move() is invoked by py.test
-    Not sure why this is - perhaps because it is a derived class?
-    """
-    vw = VariableWind()
-    vw.test_move()
-    assert True
