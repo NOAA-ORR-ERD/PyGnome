@@ -26,6 +26,7 @@
 #include "Model_c.h"
 #include "PtCurMap_c.h"
 #include "Replacements.h"
+#define TOSSMTimeValue OSSMTimeValue_c
 #else
 #include "CROSS.H"
 #include "TOSSMTimeValue.h"
@@ -64,7 +65,6 @@ WindMover_c::WindMover_c () {
 	bShowWindBarb = true;
 	tap_offset = 0; // AH 06/20/2012
 }
-
 WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 {
 	if(!name || !name[0]) this->SetClassName("Variable Wind"); // JLM , a default useful in the wizard
@@ -598,4 +598,9 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,lo
 	deltaPoint.p.pLat  = dLat  * 1000000;
 	
 	return deltaPoint;
+}
+
+void WindMover_c::SetTimeDep (TOSSMTimeValue *newTimeDep) 
+{ 
+	timeDep = newTimeDep;
 }
