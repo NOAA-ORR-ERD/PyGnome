@@ -474,42 +474,33 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 	return noErr;
 }
 
-// AH 06/20/2012:
-// maybe we really don't need to two functions at all.
-// consider using variable length arguments..
 
-// ++
 
-OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *wind_ra) {	
+// JS 10/8/12: Updated get_move so the input arguments are not char * 
+// The second get_move method above may get deleted once we do uncertainty differently
+OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages) {	
 		
-	if(!wp_ra) {
+	if(!delta) {
 		cout << "worldpoints array not provided! returning.\n";
 		return 1;
 	}	
 	
-	this->tap_offset = 0;
-	
+	this->tap_offset = 0;	// what is this for?
 	this->PrepareForModelStep(model_time, step_len, false);
-
-	WorldPoint3D delta;
-	WorldPoint3D *wp;
-	WorldPoint3D *ref;
-	double *windages;
-	ref = (WorldPoint3D*)ref_ra;
-	wp = (WorldPoint3D*)wp_ra;
-	windages = (double*)wind_ra;
 	
+	LERec* prec;
+	LERec rec;
+	prec = &rec;
+
 	for (int i = 0; i < n; i++) {
-		LERec rec;
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
 		rec.windage = windages[i];
+
+		delta[i] = GetMove(model_time, step_len, 0, i, prec, FORECAST_LE);
 		
-		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
-		
-		wp[i].p.pLat += delta.p.pLat / 1000000;
-		wp[i].p.pLong += delta.p.pLong / 1000000;
-		wp[i].z += delta.z;
+		delta[i].p.pLat /= 1000000;
+		delta[i].p.pLong /= 1000000;
 	}
 	return noErr;
 }
