@@ -91,8 +91,21 @@ class TestTimeSeriesInit():
        np.testing.assert_array_equal(t_val, self.tval, 
                                      "CyOSSMTime.get_time_value did not return expected numpy array", 
                                      0)
-
-
+       
+   def test_get_time_value(self):
+       ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval, units=basic_types.velocity_units.knots)
+       
+       actual = np.array(self.tval['value'], dtype=basic_types.velocity_rec)
+       time = np.array(self.tval['time'], dtype=basic_types.seconds)
+       vel_rec = ossm.get_time_value(time)
+       tol = 1e-6
+       np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, 
+                                  "get_time_value is not within a tolerance of "+str(tol), 0)
+       np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, 
+                                  "get_time_value is not within a tolerance of "+str(tol), 0)
+        
+       
+        
 class TestGetTimeValues():
     """
     Test get_time_value method for CyOSSMTime

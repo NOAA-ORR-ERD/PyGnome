@@ -1,4 +1,5 @@
 import cython
+from cython.operator cimport dereference as deref
 cimport numpy as np
 import numpy as nmp
 
@@ -6,7 +7,7 @@ from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from movers cimport WindMover_c
 from type_defs cimport WorldPoint3D, LEWindUncertainRec
 
-cdef class Cy_wind_mover:
+cdef class CyWindMover:
 
     cdef WindMover_c *mover
 
@@ -78,7 +79,7 @@ cdef class Cy_wind_mover:
                             <char*>&windages[0]
                             )
 
-    def set_constantWind(self,windU,windV):
+    def set_constant_wind(self,windU,windV):
     
         self.mover.fConstantValue.u = windU
         self.mover.fConstantValue.v = windV
@@ -89,7 +90,6 @@ cdef class Cy_wind_mover:
         Use the CyOSSMTime object to set the wind mover OSSM time member variable using
         the SetTimeDep method
         """
-        #nOssm = deref(ossm.time_dep)
         self.mover.SetTimeDep(ossm.time_dep)
         self.mover.fIsConstantWind = 0
         return True

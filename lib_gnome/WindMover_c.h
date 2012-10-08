@@ -69,7 +69,7 @@ public:
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
-	void				SetTimeDep (TOSSMTimeValue *newTimeDep) { timeDep = newTimeDep; }
+	void				SetTimeDep (TOSSMTimeValue *newTimeDep); 
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	void				DeleteTimeDep ();
 	void				ClearWindValues (); 
