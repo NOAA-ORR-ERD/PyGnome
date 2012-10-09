@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import datetime
+from datetime import datetime, timedelta
 
 import gnome
 
@@ -39,18 +39,17 @@ class Model(object):
         Resets model to defaults -- Caution -- clears all movers, etc.
         
         """
-        print "resetting model"
         self.output_map = None
         self.map = None
         self.movers = []
         self.spills = []
 
-        self._start_time = round_time(datetime.datetime.now(), 3600) # default to now, rounded to the nearest hour
-        self._duration = datetime.timedelta(days=2) # fixme: should round to multiple of time_step?
+        self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
+        self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
         self._current_time_step = 0
 
         
-        self.time_step = datetime.timedelta(minutes=15).total_seconds()
+        self.time_step = timedelta(minutes=15).total_seconds()
 
         
         self.uncertain = False
@@ -84,9 +83,8 @@ class Model(object):
         :param time_step: the timestep as a timedelta object or integer seconds.
 
         """
-        print "in time_step setter"
         try: 
-            self._time_step = time_step.total_seconds
+            self._time_step = time_step.total_seconds()
         except AttributeError: # not a timedelta object...
             self._time_step = int(time_step)
         self._num_time_steps = self._duration.total_seconds() // self._time_step
@@ -167,7 +165,6 @@ class Model(object):
             for spill in self.spills:
                 delta = mover.get_move(spill, self.time_step, self.model_time)
                 #delta_uncertain = mover.get_move(self.time_step, spill, uncertain=True)
-                ## fixme: should we be doing the projection here?
                 spill['next_positions'] += delta
         for spill in self.spills:
             self.map.beach_elements(spill)
@@ -188,18 +185,13 @@ class Model(object):
         """
         if render:
             filename = os.path.join(output_dir, 'map%05i.png'%self._current_time_step)
-            print "filename:", filename
             self.output_map.draw_elements(self.spills, filename)
             return filename
 
-            
     def step(self):
         """
         Steps the model forward in time. Needs testing for hindcasting.
-        
-        :param render=False: should the model render the results of the time step
-        :param output_dir='.': the directory to write output to
-        
+                
         """
         
         # print  "step called: time step:", self.time_step
@@ -214,7 +206,7 @@ class Model(object):
     
     def __iter__(self):
         """
-        for compatibility with Python's interator protocol
+        for compatibility with Python's iterator protocol
         
         resets the model and returns itself so it can be iterated over. 
         """

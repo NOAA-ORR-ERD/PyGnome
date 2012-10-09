@@ -46,6 +46,7 @@ class Spill(object):
                                                        dtype=basic_types.status_code_type)
                                              )
         self._data_arrays['status_codes'][:] = basic_types.oil_status.status_in_water             
+
  
     def __getitem__(self, data_name):
         """
