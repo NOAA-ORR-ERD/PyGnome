@@ -334,7 +334,6 @@ TreeView.prototype = {
 
         $(this.treeEl).dynatree({
             onActivate: function(node) {
-                console.log(_this)
                 $(_this).trigger(TreeView.ITEM_ACTIVATED, node);
             },
             onPostInit: function(isReloading, isError) {
@@ -370,7 +369,6 @@ TreeControlView.prototype = {
         this.disableControls();
     },
     enableControls: function() {
-        console.log('ok')
         _.each(this.itemControls, function (buttonEl) {
             $(buttonEl).removeClass('disabled');
         });
@@ -406,13 +404,6 @@ function AnimationControlView(opts) {
     return this;
 }
 
-AnimationControlView.prototype = {
-   initialize: function() {
-       $(this.pauseButtonEl).hide();
-       $(this.resizeButtonEl).hide();
-   }
-};
-
 // Events for `AnimationControlView`
 AnimationControlView.PLAY_BUTTON_CLICKED = "gnome:playButtonClicked";
 AnimationControlView.PAUSE_BUTTON_CLICKED = "gnome:pauseButtonClicked";
@@ -438,6 +429,9 @@ AnimationControlView.prototype = {
     initialize: function() {
         var _this = this;
         this.status = AnimationControlView.STATUS_STOPPED;
+
+        $(this.pauseButtonEl).hide();
+        $(this.resizeButtonEl).hide();
 
         $(this.sliderEl).slider({
             start: function(event, ui) {
@@ -649,6 +643,7 @@ MapController.prototype = {
         this.treeControlView.initialize();
         this.treeView.initialize();
         this.animationControlView.initialize();
+        this.animationControlView.bozo();
         this.mapView.initialize();
     },
 
@@ -770,13 +765,11 @@ MapController.prototype = {
     },
 
     disableFullscreen: function(event) {
-        console.log('stuff')
         this.animationControlView.switchToNormalScreen();
         $(this.sidebarEl).show('slow');
     },
 
     treeItemActivated: function(event) {
-        console.log('??')
         this.treeControlView.enableControls();
     }
 };
@@ -792,5 +785,4 @@ $('#map').imagesLoaded(function() {
         sidebarEl: '#sidebar'
     });
 });
-
 

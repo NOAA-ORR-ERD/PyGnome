@@ -58,15 +58,12 @@
                     <% map = model.get_map() %>
                     % if map:
                         <li>${map['name']}</li>
-                    % else:
-                        <li>Add map</li>
                     % endif
                 </ul>
             </li>
             <li id="movers" title="Movers">
                 Movers
                 <ul>
-                    <li>Add mover</li>
                     % for mover in model.get_movers():
                             <li>${mover['name']}</li>
                     % endfor
@@ -75,7 +72,6 @@
             <li id="spills" title="Spills">
                 Spills
                 <ul>
-                    <li>Add spill</li>
                     % for spill in model.get_spills():
                             <li>${spill['name']}</li>
                     % endfor
