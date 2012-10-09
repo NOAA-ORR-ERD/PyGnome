@@ -23,6 +23,7 @@ def main(global_config, **settings):
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('show_model', '/')
     config.add_route('run_model', '/model/run')
+    config.add_route('add_wind_mover', '/model/mover/add/wind')
     config.add_renderer('gnome_json', gnome_json)
     config.scan()
     return config.make_wsgi_app()

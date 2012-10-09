@@ -1,55 +1,33 @@
-import glob
-import datetime
-import os
-import uuid
-
+from functools import wraps
 from pyramid.view import view_config
+from mock_model import ModelManager
 
 
 MODEL_ID_KEY = 'model_id'
-MISSING_MODEL_ERROR = 'The model you were working on was deleted. Please ' \
-                      'reload it from a save file or start again.'
+MISSING_MODEL_ERROR = 'The model you were working on is no longer available. ' \
+                      'We have created a new one for you.'
 
 
-# A dictionary containing the active `py_gnome.model.Model` instances.
-_running_models = {}
+_running_models = ModelManager()
 
 
-class MockModel(object):
+def json_require_model(f):
     """
-    A mock stand-in for what will eventually be a `py_gnome.model.Model`.
+    Wrap a JSON view in a precondition that checks if the user has a valid
+    `model_id` in his or her session and fails if not.
+
+    If the key is missing or no model is found for that key, return a JSON
+    object with an `error` flag  set to true and a `message` field.
     """
-    def __init__(self):
-        self.id = uuid.uuid4()
+    @wraps(f)
+    def inner(request, *args, **kwargs):
+        model_id = request.session.get(MODEL_ID_KEY, None)
+        model = _running_models.get(model_id)
 
-    def get_movers(self):
-        return []
-
-    def get_settings(self):
-        return [
-            {'name': 'ID', 'value': self.id}
-        ]
-
-    def get_map(self):
-        return {'name': 'My map'}
-
-    def get_spills(self):
-        return []
-
-    def run(self):
-        frames_glob = os.path.join(
-            os.path.dirname(__file__), 'static', 'img', 'test_frames', '*.jpg')
-        images = glob.glob(frames_glob)
-
-        # Mock out some timestamps until we accept this input from the user.
-        two_weeks_ago = datetime.datetime.now() - datetime.timedelta(weeks=4)
-
-        timestamps = [two_weeks_ago + datetime.timedelta(days=day_num)
-                      for day_num in range(len(images))]
-
-        return [
-            dict(url=image.split('webgnome')[-1], timestamp=timestamps[i])
-            for i, image in enumerate(images)]
+        if model is None:
+            return {'errorMessage': 'That model is no longer available.'}
+        return f(request, model, *args, **kwargs)
+    return inner
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -64,38 +42,34 @@ def show_model(request):
     warn the user and suggest that they reload from a save file.
     """
     model_id = request.session.get(MODEL_ID_KEY, None)
-    model = None
+    model, created = _running_models.get_or_create(model_id)
+    data = {}
 
-    if model_id:
-        model = _running_models.get(model_id, None)
-        if model is None:
-            request.session.flash(MISSING_MODEL_ERROR)
-
-    if model is None:
-        model = MockModel()
-        _running_models[model.id] = model
+    if created:
         request.session[MODEL_ID_KEY] = model.id
 
-    return {'model': model}
+        # A model with ID `model_id` did not exist, so we created a new one.
+        if model_id:
+            data['warning'] = MISSING_MODEL_ERROR
+
+    data['model'] = model
+
+    return data
 
 
 @view_config(route_name='run_model', renderer='gnome_json')
-def run_model(request):
-    model_id = request.session.get(MODEL_ID_KEY, None)
-    data = {}
+@json_require_model
+def run_model(request, model):
+    """
+    Run the user's current model and return a JSON object containing the result
+    of the run.
+    """
+    return {
+        'result': model.run()
+    }
 
-    if model_id is None:
-        data['error'] = True
-        data['message'] = 'Model not found.'
-        return data
 
-    model = _running_models.get(model_id, None)
-
-    if model is None:
-        data['error'] = True
-        data['message'] = MISSING_MODEL_ERROR
-        return data
-
-    data['result'] = model.run()
-
-    return data
+@view_config(route_name='add_wind_mover', renderer='gnome_json')
+@json_require_model
+def add_wind_mover(request, model):
+    pass

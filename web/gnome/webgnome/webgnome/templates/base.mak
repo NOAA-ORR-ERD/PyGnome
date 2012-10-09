@@ -53,6 +53,7 @@
     </div>
 </footer>
 
+## Enable this to use Google as a CDN for jQuery instead of serving it ourselves.
 ##<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
 <script src="/static/js/jquery.1.8.0.min.js"></script>
 <script src="/static/js/jquery-ui-1.8.24.custom.min.js"></script>
