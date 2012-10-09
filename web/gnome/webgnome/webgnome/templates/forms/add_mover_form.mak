@@ -1,7 +1,7 @@
 <div class="modal hide fade" id="constant-wind-mover-modal" tabindex="-1"
      role="dialog" aria-labelledby="modal-label" aria-hidden="true">
     <div class="modal-header">
-        <button type="button" class="close" data-dismiss="add-mover-form"
+        <button type="button" class="close" data-dismiss="modal"
                 aria-hidden="true">×
         </button>
         <h3 id="modal-label">Add Mover</h3>
