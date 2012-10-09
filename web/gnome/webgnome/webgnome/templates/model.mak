@@ -40,8 +40,8 @@
       <div class="btn-toolbar">
         <div class="btn-group">
             <a class="btn" id="add-button" href="javascript:"><i class="icon-plus-sign"></i></a>
-            <a class="btn" id="minus-button" href="javascript:"><i class="icon-minus-sign"></i></a>
-            <a class="btn" id="settings-button" href="javascript:"><i class="icon-wrench"></i></a>
+            <a class="btn disabled" id="remove-button" href="javascript:"><i class="icon-minus-sign"></i></a>
+            <a class="btn disabled" id="settings-button" href="javascript:"><i class="icon-wrench"></i></a>
         </div>
       </div>
     </div>

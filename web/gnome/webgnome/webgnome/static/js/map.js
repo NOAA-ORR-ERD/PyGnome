@@ -1,7 +1,5 @@
 
-MapModel = function (opts) {
-    this.bbox = opts.bbox;
-
+function MapModel(opts) {
     // Optionally specify the current frame the user is in.
     this.frame = opts.frame == undefined ? 0 : opts.frame;
 
@@ -13,7 +11,7 @@ MapModel = function (opts) {
     // If true, `MapModel` will request a new set of frames from the server
     // when the user runs the model.
     this.dirty = true;
-};
+}
 
 
 // `MapModel` events
@@ -152,18 +150,23 @@ MapModel.prototype = {
 
     hasData: function() {
         return this.data != null;
+    },
+
+    setBoundingBox: function(bbox) {
+        this.bbox = bbox;
     }
 };
 
 
-MapView = function(opts) {
+function MapView(opts) {
     this.mapEl = opts.mapEl;
     this.frameClass = opts.frameClass;
     this.activeFrameClass = opts.activeFrameClass;
     this.currentFrame = 0;
-};
+}
 
 // `MapView` events
+MapView.INIT_FINISHED = 'gnome:mapInitFinished';
 MapView.DRAGGING_FINISHED = 'gnome:draggingFinished';
 MapView.REFRESH_FINISHED = 'gnome:refreshFinished';
 MapView.PLAYING_FINISHED = 'gnome:playingFinished';
@@ -318,17 +321,29 @@ MapView.prototype = {
 };
 
 
-TreeView = function(opts) {
+function TreeView(opts) {
     this.treeEl = opts.treeEl;
     return this;
-};
+}
+
+TreeView.ITEM_ACTIVATED = 'gnome:treeItemActivated';
 
 TreeView.prototype = {
     initialize: function() {
+        var _this = this;
+
         $(this.treeEl).dynatree({
-            onActivate:function (node) {
-                console.log(node);
+            onActivate: function(node) {
+                console.log(_this)
+                $(_this).trigger(TreeView.ITEM_ACTIVATED, node);
             },
+            onPostInit: function(isReloading, isError) {
+                // Fire events for a tree that was reloaded from cookies.
+                // isReloading is true if status was read from existing cookies.
+                // isError is only used in Ajax mode
+                this.reactivate();
+            },
+
             persist:true
         });
 
@@ -337,7 +352,39 @@ TreeView.prototype = {
 };
 
 
-AnimationControlView = function(opts) {
+function TreeControlView(opts) {
+    this.addButtonEl = opts.addButtonEl;
+    this.removeButtonEl = opts.removeButtonEl;
+    this.settingsButtonEl = opts.settingsButtonEl;
+
+    // Controls that require the user to select an item in the TreeView.
+    this.itemControls = [this.removeButtonEl, this.settingsButtonEl];
+}
+
+TreeControlView.ADD_BUTTON_CLICKED = 'gnome:addItemButtonClicked';
+TreeControlView.REMOVE_BUTTON_CLICKED = 'gnome:removeItemButtonClicked';
+TreeControlView.SETTINGS_BUTTON_CLICKED = 'gnome:itemSettingsButtonClicked';
+
+TreeControlView.prototype = {
+    initialize: function() {
+        this.disableControls();
+    },
+    enableControls: function() {
+        console.log('ok')
+        _.each(this.itemControls, function (buttonEl) {
+            $(buttonEl).removeClass('disabled');
+        });
+    },
+
+    disableControls: function() {
+        _.each(this.itemControls, function (buttonEl) {
+            $(buttonEl).addClass('disabled');
+        });
+    },
+};
+
+
+function AnimationControlView(opts) {
     this.sliderEl = opts.sliderEl;
     this.playButtonEl = opts.playButtonEl;
     this.pauseButtonEl = opts.pauseButtonEl;
@@ -356,11 +403,14 @@ AnimationControlView = function(opts) {
         this.resizeButtonEl
     ];
 
-    $(this.pauseButtonEl).hide();
-    $(this.resizeButtonEl).hide();
-
-
     return this;
+}
+
+AnimationControlView.prototype = {
+   initialize: function() {
+       $(this.pauseButtonEl).hide();
+       $(this.resizeButtonEl).hide();
+   }
 };
 
 // Events for `AnimationControlView`
@@ -522,21 +572,25 @@ AnimationControlView.prototype = {
 
 
 MapController = function(opts) {
-    var _this = this;
-
     _.bindAll(this);
 
     this.sidebarEl = opts.sidebarEl;
 
     this.treeView = new TreeView({
         treeEl: "#tree"
-    }).initialize();
+    });
+
+    this.treeControlView = new TreeControlView({
+        addButtonEl: "#add-button",
+        removeButtonEl: "#remove-button",
+        settingsButtonEl: "#settings-button"
+    });
 
     this.mapView = new MapView({
         mapEl: opts.mapEl,
         frameClass: 'frame',
         activeFrameClass: 'active'
-    }).initialize();
+    });
 
     this.animationControlView = new AnimationControlView({
         sliderEl: "#slider",
@@ -550,14 +604,13 @@ MapController = function(opts) {
         fullscreenButtonEl: "#fullscreen-button",
         resizeButtonEl: "#resize-button",
         timeEl: "#time"
-    }).initialize();
-
-    this.mapModel = new MapModel({
-        // XXX: Get bbox from the server?
-        bbox: this.mapView.getBoundingBox()
     });
 
+    this.mapModel = new MapModel({});
+
     // Event handlers
+    $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
+
     $(this.animationControlView).bind(
         AnimationControlView.PLAY_BUTTON_CLICKED, this.play);
     $(this.animationControlView).bind(
@@ -576,17 +629,35 @@ MapController = function(opts) {
         AnimationControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
      $(this.animationControlView).bind(
         AnimationControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
+
     $(this.mapModel).bind(MapModel.RUN_FINISHED, this.restart);
+
+    $(this.mapView).bind(MapView.INIT_FINISHED, this.mapInitFinished);
     $(this.mapView).bind(MapView.REFRESH_FINISHED, this.refreshFinished);
     $(this.mapView).bind(MapView.PLAYING_FINISHED, this.stopAnimation);
     $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
     $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
     $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
 
+    this.initializeViews();
+
     return this;
 };
 
 MapController.prototype = {
+    initializeViews: function() {
+        this.treeControlView.initialize();
+        this.treeView.initialize();
+        this.animationControlView.initialize();
+        this.mapView.initialize();
+    },
+
+    mapInitFinished: function() {
+        // XXX: Get bbox from the server?
+        var bbox = this.mapView.getBoundingBox();
+        this.mapModel.setBoundingBox(bbox);
+    },
+
     play: function (event) {
         if (this.animationControlView.isPaused()) {
             this.animationControlView.setPlaying();
@@ -702,6 +773,11 @@ MapController.prototype = {
         console.log('stuff')
         this.animationControlView.switchToNormalScreen();
         $(this.sidebarEl).show('slow');
+    },
+
+    treeItemActivated: function(event) {
+        console.log('??')
+        this.treeControlView.enableControls();
     }
 };
 
