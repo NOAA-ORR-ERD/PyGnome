@@ -1,4 +1,3 @@
-
 function MapModel(opts) {
     // Optionally specify the current frame the user is in.
     this.frame = opts.frame == undefined ? 0 : opts.frame;
@@ -26,7 +25,7 @@ MapModel.ZOOM_NONE = 'zoom_none';
 
 MapModel.prototype = {
     getRect: function(rect) {
-         var newStartPosition, newEndPosition;
+        var newStartPosition, newEndPosition;
 
         // Do a shallow object copy, so we don't modify the original.
         if (rect.end.x > rect.start.x || rect.end.y > rect.start.y) {
@@ -35,11 +34,11 @@ MapModel.prototype = {
         } else {
             newStartPosition = $.extend({}, rect.end);
             newEndPosition = $.extend({}, rect.start);
-        }       
-        
+        }
+
         return {start: newStartPosition, end: newEndPosition};
     },
-    
+
     // Adjust a selection rectangle so that it fits within the bounding box.
     getAdjustedRect: function(rect) {
         var adjustedRect = this.getRect(rect);
@@ -50,8 +49,8 @@ MapModel.prototype = {
         }
         if (adjustedRect.start.y < this.bbox[0].y) {
             adjustedRect.start.y = this.bbox[0].y;
-        }       
-        
+        }
+
         if (adjustedRect.end.x < this.bbox[1].x) {
             adjustedRect.end.x = this.bbox[1].x;
         }
@@ -61,17 +60,26 @@ MapModel.prototype = {
 
         return adjustedRect;
     },
-    
+
     isPositionInsideMap: function(position) {
         return (position.x > this.bbox[0].x && position.x < this.bbox[1].x
             && position.y > this.bbox[0].y && position.y < this.bbox[1].y);
     },
 
-    isRectInsideMap: function (rect) {
+    isRectInsideMap: function(rect) {
         var _rect = this.getRect(rect);
 
         return this.isPositionInsideMap(_rect.start) &&
-               this.isPositionInsideMap(_rect.end);
+            this.isPositionInsideMap(_rect.end);
+    },
+
+    handleFailedRun: function(data) {
+        if ('errorMessage' in data) {
+            this.error = data.errorMessage;
+        } else {
+            this.error = 'The model failed to run. Please try again.'
+        }
+        $(this).trigger(MapModel.RUN_FAILED);
     },
 
     run: function(opts) {
@@ -88,7 +96,7 @@ MapModel.prototype = {
         });
 
         var isInvalid = function(obj) {
-            return obj === undefined || obj === null || typeof(obj) != "object"
+            return obj === undefined || obj === null || typeof(obj) != "object";
         };
 
         if ((opts.zoomLevel != this.zoomLevel) &&
@@ -101,13 +109,18 @@ MapModel.prototype = {
             url: MapModel.RUN_URL,
             data: opts,
             success: function(data) {
+                if ('errorMessage' in data) {
+                    _this.handleFailedRun(data);
+                    return false;
+                }
                 _this.dirty = false;
                 _this.data = data;
                 $(_this).trigger(MapModel.RUN_FINISHED);
+                return false;
             },
             error: function(data) {
-                _this.error = data;
-                $(_this).trigger(MapModel.RUN_FAILED);
+                _this.handleFailedRun(data);
+                return false;
             }
         });
     },
@@ -183,7 +196,7 @@ MapView.prototype = {
 
     makeImagesClickable: function() {
         var _this = this;
-        $(this.mapEl).on('click', 'img', function(event){
+        $(this.mapEl).on('click', 'img', function(event) {
             if ($(this).data('clickEnabled')) {
                 $(_this).trigger(
                     MapView.MAP_WAS_CLICKED,
@@ -201,10 +214,10 @@ MapView.prototype = {
         var _this = this;
         var image = this.getActiveImage();
         image.selectable({
-            start: function (event) {
+            start: function(event) {
                 _this.startPosition = {x: event.pageX, y: event.pageY};
             },
-            stop: function (event) {
+            stop: function(event) {
                 if (!$(this).selectable('option', 'disabled')) {
                     $(_this).trigger(
                         MapView.DRAGGING_FINISHED,
@@ -279,7 +292,7 @@ MapView.prototype = {
         this.cycle.cycle('resume');
     },
 
-    getSize: function () {
+    getSize: function() {
         var image = this.getActiveImage();
         return {height: image.height(), width: image.width()}
     },
@@ -343,7 +356,7 @@ TreeView.prototype = {
                 this.reactivate();
             },
 
-            persist:true
+            persist: true
         });
 
         return this;
@@ -369,13 +382,13 @@ TreeControlView.prototype = {
         this.disableControls();
     },
     enableControls: function() {
-        _.each(this.itemControls, function (buttonEl) {
+        _.each(this.itemControls, function(buttonEl) {
             $(buttonEl).removeClass('disabled');
         });
     },
 
     disableControls: function() {
-        _.each(this.itemControls, function (buttonEl) {
+        _.each(this.itemControls, function(buttonEl) {
             $(buttonEl).addClass('disabled');
         });
     },
@@ -443,7 +456,7 @@ AnimationControlView.prototype = {
             disabled: true
         });
 
-        $(this.pauseButtonEl).click(function () {
+        $(this.pauseButtonEl).click(function() {
             if (_this.status === AnimationControlView.STATUS_PLAYING) {
                 $(_this).trigger(AnimationControlView.PAUSE_BUTTON_CLICKED);
             }
@@ -461,7 +474,9 @@ AnimationControlView.prototype = {
         ];
 
         _.each(_.object(clickEvents), function(event, element) {
-            $(element).click(function () { $(_this).trigger(event); });
+            $(element).click(function() {
+                $(_this).trigger(event);
+            });
         });
 
         return this;
@@ -486,7 +501,7 @@ AnimationControlView.prototype = {
     setForward: function() {
         this.status = AnimationControlView.STATUS_FORWARD;
     },
-    
+
     setBack: function() {
         this.status = AnimationControlView.STATUS_BACK;
     },
@@ -551,14 +566,14 @@ AnimationControlView.prototype = {
 
     enableControls: function() {
         $(this.sliderEl).slider('option', 'disabled', false);
-        _.each(this.controls, function (buttonEl) {
+        _.each(this.controls, function(buttonEl) {
             $(buttonEl).removeClass('disabled');
         });
     },
 
     disableControls: function() {
         $(this.sliderEl).slider('option', 'disabled', true);
-        _.each(this.controls, function (item) {
+        _.each(this.controls, function(item) {
             $(item).removeClass('enabled');
         });
     }
@@ -615,16 +630,17 @@ MapController = function(opts) {
         AnimationControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
     $(this.animationControlView).bind(
         AnimationControlView.SLIDER_CHANGED, this.sliderChanged);
-     $(this.animationControlView).bind(
+    $(this.animationControlView).bind(
         AnimationControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
-     $(this.animationControlView).bind(
+    $(this.animationControlView).bind(
         AnimationControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
-      $(this.animationControlView).bind(
+    $(this.animationControlView).bind(
         AnimationControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
-     $(this.animationControlView).bind(
+    $(this.animationControlView).bind(
         AnimationControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
 
     $(this.mapModel).bind(MapModel.RUN_FINISHED, this.restart);
+    $(this.mapModel).bind(MapModel.RUN_FAILED, this.runFailed);
 
     $(this.mapView).bind(MapView.INIT_FINISHED, this.mapInitFinished);
     $(this.mapView).bind(MapView.REFRESH_FINISHED, this.refreshFinished);
@@ -643,7 +659,6 @@ MapController.prototype = {
         this.treeControlView.initialize();
         this.treeView.initialize();
         this.animationControlView.initialize();
-        this.animationControlView.bozo();
         this.mapView.initialize();
     },
 
@@ -653,7 +668,7 @@ MapController.prototype = {
         this.mapModel.setBoundingBox(bbox);
     },
 
-    play: function (event) {
+    play: function(event) {
         if (this.animationControlView.isPaused()) {
             this.animationControlView.setPlaying();
             this.mapView.play();
@@ -664,12 +679,12 @@ MapController.prototype = {
         }
     },
 
-    pause: function (event) {
+    pause: function(event) {
         this.animationControlView.setPaused();
         this.mapView.pause();
     },
 
-    enableZoomIn: function (event) {
+    enableZoomIn: function(event) {
         if (this.mapModel.hasData() === false) {
             return;
         }
@@ -680,7 +695,7 @@ MapController.prototype = {
         this.mapView.setZoomingInCursor();
     },
 
-    enableZoomOut: function (event) {
+    enableZoomOut: function(event) {
         if (this.mapModel.hasData() === false) {
             return;
         }
@@ -690,7 +705,7 @@ MapController.prototype = {
         this.mapView.setZoomingOutCursor();
     },
 
-    restart: function (event) {
+    restart: function(event) {
         var frames = this.mapModel.getFrames();
 
         if (frames === null) {
@@ -700,7 +715,11 @@ MapController.prototype = {
         this.mapView.refresh(frames);
     },
 
-    refreshFinished: function (event) {
+    runFailed: function(event) {
+        alert(this.mapModel.error);
+    },
+
+    refreshFinished: function(event) {
         this.animationControlView.enableControls();
         this.animationControlView.setFrameCount(this.mapView.getFrameCount());
         if (this.animationControlView.isPlaying()) {
@@ -708,7 +727,7 @@ MapController.prototype = {
         }
     },
 
-    stopAnimation: function (event) {
+    stopAnimation: function(event) {
         this.animationControlView.setStopped();
     },
 
@@ -716,7 +735,7 @@ MapController.prototype = {
         this.animationControlView.setStopped();
 
         if (endPosition) {
-             this.mapModel.zoomFromRect(
+            this.mapModel.zoomFromRect(
                 {start: startPosition, end: endPosition},
                 MapModel.ZOOM_IN
             );
@@ -779,6 +798,7 @@ MapController.prototype = {
 gnome = window.noaa.erd.gnome;
 
 
+// Wait until the placeholder image has loaded before loading controls.
 $('#map').imagesLoaded(function() {
     new MapController({
         mapEl: '#map',

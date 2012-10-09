@@ -83,6 +83,13 @@
 
 <%block name="content">
     <div class="container">
+       % if warning:
+       <div class="alert">
+          <button type="button" class="close" data-dismiss="alert">×</button>
+          <strong>Warning!</strong> ${warning}
+        </div>
+      % endif
+
       <div class="btn-toolbar">
           <div class="btn-group">
               <a class="btn disabled" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
@@ -103,10 +110,32 @@
             <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
         </div>
       </div>
+
     </div>
     <div id="map">
         <img class="frame active" data-position="0" src="/static/img/placeholder.gif">
     </div>
+
+
+    <script id="modalTemplate" type="text/x-jsrender">
+        <a href="#modal" role="button" class="btn" data-toggle="modal">Launch demo modal</a>
+        <div class="modal hide fade" id="modal" tabindex="-1"
+             role="dialog" aria-labelledby="modal-label" aria-hidden="true">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="mover-modal"
+                        aria-hidden="true">×
+                </button>
+                <h3 id="modal-label">{{ header }}</h3>
+            </div>
+            <div class="modal-body">
+                {{ body }}
+            </div>
+            <div class="modal-footer">
+                <button class="btn" data-dismiss="modal" aria-hidden="true"> Cancel </button>
+                <button class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </script>
 </%block>
 
 <%block name="javascript">
