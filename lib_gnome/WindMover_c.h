@@ -68,7 +68,7 @@ public:
 
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
-	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
+	virtual WorldPoint3D GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep); 
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	void				DeleteTimeDep ();
@@ -77,8 +77,7 @@ public:
 	OSErr				GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
 	OSErr				get_move(int, unsigned long, unsigned long, char *, char *, char *, double, double, char*);
-	OSErr				get_move(int, unsigned long, unsigned long, char *, char *, char *);
-
+	OSErr				get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref_ra, WorldPoint3D* wp, double* wind_ra);
 };
 
 #undef TOSSMTimeValue
