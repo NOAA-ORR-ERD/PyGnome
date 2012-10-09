@@ -22,7 +22,7 @@ def json_require_model(f):
     `model_id` in his or her session and fails if not.
 
     If the key is missing or no model is found for that key, return a JSON
-    object with an `error` flag  set to true and a `message` field.
+    object with an `errorMessage` flag  set to true and a `message` field.
     """
     @wraps(f)
     def inner(request, *args, **kwargs):
