@@ -1,10 +1,13 @@
 # ignore following files
 .cproject
 .project
+node_modules
 *.swp
 *.so
 *.pyc
 *~
+*.idea
+*.ropeproject
 
 # ignore binaries generated during build 
 py_gnome/build/**/*

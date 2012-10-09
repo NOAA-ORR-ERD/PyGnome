@@ -1,0 +1,6 @@
+Cython==0.17.1
+PIL==1.1.7
+distribute==0.6.28
+netCDF4==1.0
+numpy==1.6.2
+pytest==2.2.4
