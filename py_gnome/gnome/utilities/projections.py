@@ -39,8 +39,9 @@ class NoProjection(object):
         """
         returns the same coords, but as an np.array , if they aren't already
         
-        param: coords -- the coords to project (Nx2 numpy array or compatible sequence)
-        param: asint -- flag to set whether to convert to a integer or not
+        :param coords: -- the coords to project (Nx2 numpy array or compatible sequence)
+        :param asint: -- flag to set whether to convert to a integer or not default
+                         is to leave it as the same type it came in, so you can have fractional pixels
         """
         if asint:
             return np.asarray(coords, dtype=np.int)
@@ -196,7 +197,7 @@ class FlatEarthProjection(GeoProjection):
 
         dlat = dy * 8.9992801e-06
 
-        dlat = dy * 8.9992801e-06 * cos(ref_lat) 
+        dlon = dy * 8.9992801e-06 * cos(ref_lat) 
 
         (based on an average radius of the earth of 6371010 m)
 
@@ -204,7 +205,7 @@ class FlatEarthProjection(GeoProjection):
         #make a copy -- don't change meters
         delta_lon_lat = np.array(meters, dtype=np.float64).reshape(-1, 2)
         ref_latitudes = np.asarray(ref_latitudes, dtype=np.float64)
-        delta_lon_lat *= 8.993201e-06
+        delta_lon_lat *= 8.9992801e-06
         delta_lon_lat[:,0] /= np.cos(np.deg2rad(ref_latitudes))
         return delta_lon_lat
 
