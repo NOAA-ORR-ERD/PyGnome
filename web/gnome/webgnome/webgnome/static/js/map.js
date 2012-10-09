@@ -1,8 +1,5 @@
 
-// Get an alias to the `window.noaa.erd.gnome` namespace.
-gnome = window.noaa.erd.gnome;
-
-gnome.MapModel = function (opts) {
+MapModel = function (opts) {
     this.bbox = opts.bbox;
 
     // Optionally specify the current frame the user is in.
@@ -20,16 +17,16 @@ gnome.MapModel = function (opts) {
 
 
 // `MapModel` events
-gnome.MapModel.RUN_FINISHED = 'gnome:runFinished';
-gnome.MapModel.RUN_FAILED = 'gnome:runFailed';
+MapModel.RUN_FINISHED = 'gnome:runFinished';
+MapModel.RUN_FAILED = 'gnome:runFailed';
 
-gnome.MapModel.RUN_URL = '/model/run';
-gnome.MapModel.ZOOM_IN = 'zoom_in';
-gnome.MapModel.ZOOM_OUT = 'zoom_out';
-gnome.MapModel.ZOOM_NONE = 'zoom_none';
+MapModel.RUN_URL = '/model/run';
+MapModel.ZOOM_IN = 'zoom_in';
+MapModel.ZOOM_OUT = 'zoom_out';
+MapModel.ZOOM_NONE = 'zoom_none';
 
 
-gnome.MapModel.prototype = {
+MapModel.prototype = {
     getRect: function(rect) {
          var newStartPosition, newEndPosition;
 
@@ -83,13 +80,13 @@ gnome.MapModel.prototype = {
         var _this = this;
 
         if (this.dirty === false) {
-            $(_this).trigger(gnome.MapModel.RUN_FINISHED);
+            $(_this).trigger(MapModel.RUN_FINISHED);
             return;
         }
 
         opts = $.extend(opts, {
             zoomLevel: this.zoomLevel,
-            zoomDirection: gnome.MapModel.ZOOM_NONE
+            zoomDirection: MapModel.ZOOM_NONE
         });
 
         var isInvalid = function(obj) {
@@ -103,16 +100,16 @@ gnome.MapModel.prototype = {
 
         $.ajax({
             type: 'POST',
-            url: gnome.MapModel.RUN_URL,
+            url: MapModel.RUN_URL,
             data: opts,
             success: function(data) {
                 _this.dirty = false;
                 _this.data = data;
-                $(_this).trigger(gnome.MapModel.RUN_FINISHED);
+                $(_this).trigger(MapModel.RUN_FINISHED);
             },
             error: function(data) {
                 _this.error = data;
-                $(_this).trigger(gnome.MapModel.RUN_FAILED);
+                $(_this).trigger(MapModel.RUN_FAILED);
             }
         });
     },
@@ -159,7 +156,7 @@ gnome.MapModel.prototype = {
 };
 
 
-gnome.MapView = function(opts) {
+MapView = function(opts) {
     this.mapEl = opts.mapEl;
     this.frameClass = opts.frameClass;
     this.activeFrameClass = opts.activeFrameClass;
@@ -167,14 +164,14 @@ gnome.MapView = function(opts) {
 };
 
 // `MapView` events
-gnome.MapView.DRAGGING_FINISHED = 'gnome:draggingFinished';
-gnome.MapView.REFRESH_FINISHED = 'gnome:refreshFinished';
-gnome.MapView.PLAYING_FINISHED = 'gnome:playingFinished';
-gnome.MapView.FRAME_CHANGED = 'gnome:frameChanged';
-gnome.MapView.MAP_WAS_CLICKED = 'gnome:mapWasClicked';
+MapView.DRAGGING_FINISHED = 'gnome:draggingFinished';
+MapView.REFRESH_FINISHED = 'gnome:refreshFinished';
+MapView.PLAYING_FINISHED = 'gnome:playingFinished';
+MapView.FRAME_CHANGED = 'gnome:frameChanged';
+MapView.MAP_WAS_CLICKED = 'gnome:mapWasClicked';
 
 
-gnome.MapView.prototype = {
+MapView.prototype = {
     initialize: function() {
         // Only have to do this once.
         this.makeImagesClickable();
@@ -186,7 +183,7 @@ gnome.MapView.prototype = {
         $(this.mapEl).on('click', 'img', function(event){
             if ($(this).data('clickEnabled')) {
                 $(_this).trigger(
-                    gnome.MapView.MAP_WAS_CLICKED,
+                    MapView.MAP_WAS_CLICKED,
                     {x: event.pageX, y: event.pageY});
             }
         });
@@ -207,7 +204,7 @@ gnome.MapView.prototype = {
             stop: function (event) {
                 if (!$(this).selectable('option', 'disabled')) {
                     $(_this).trigger(
-                        gnome.MapView.DRAGGING_FINISHED,
+                        MapView.DRAGGING_FINISHED,
                         [_this.startPosition, {x: event.pageX, y: event.pageY}]);
                 }
             }
@@ -248,7 +245,7 @@ gnome.MapView.prototype = {
                 _this.pause();
                 var image = _this.getActiveImage();
                 _this.currentFrame = image.attr('data-position');
-                $(_this).trigger(gnome.MapView.PLAYING_FINISHED);
+                $(_this).trigger(MapView.PLAYING_FINISHED);
             },
             before: function(currSlideElement, nextSlideElement, options, forwardFlag) {
                 $(currSlideElement).removeClass('active');
@@ -256,14 +253,14 @@ gnome.MapView.prototype = {
             },
             after: function(currSlideElement, nextSlideElement, options, forwardFlag) {
                 _this.currentFrame = $(nextSlideElement).attr('data-position');
-                $(_this).trigger(gnome.MapView.FRAME_CHANGED);
+                $(_this).trigger(MapView.FRAME_CHANGED);
             }
         });
 
         this.cycle.cycle('pause')
         $(this.mapEl).show();
 
-        $(this).trigger(gnome.MapView.REFRESH_FINISHED);
+        $(this).trigger(MapView.REFRESH_FINISHED);
     },
 
     play: function() {
@@ -321,12 +318,12 @@ gnome.MapView.prototype = {
 };
 
 
-gnome.TreeView = function(opts) {
+TreeView = function(opts) {
     this.treeEl = opts.treeEl;
     return this;
 };
 
-gnome.TreeView.prototype = {
+TreeView.prototype = {
     initialize: function() {
         $(this.treeEl).dynatree({
             onActivate:function (node) {
@@ -340,7 +337,7 @@ gnome.TreeView.prototype = {
 };
 
 
-gnome.AnimationControlView = function(opts) {
+AnimationControlView = function(opts) {
     this.sliderEl = opts.sliderEl;
     this.playButtonEl = opts.playButtonEl;
     this.pauseButtonEl = opts.pauseButtonEl;
@@ -349,103 +346,113 @@ gnome.AnimationControlView = function(opts) {
     this.zoomInButtonEl = opts.zoomInButtonEl;
     this.zoomOutButtonEl = opts.zoomOutButtonEl;
     this.moveButtonEl = opts.moveButtonEl;
+    this.fullscreenButtonEl = opts.fullscreenButtonEl;
+    this.resizeButtonEl = opts.resizeButtonEl;
     this.timeEl = opts.timeEl;
+
+    this.controls = [
+        this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
+        this.pauseButtonEl, this.moveButtonEl, this.fullscreenButtonEl,
+        this.resizeButtonEl
+    ];
+
+    $(this.pauseButtonEl).hide();
+    $(this.resizeButtonEl).hide();
+
+
     return this;
 };
 
 // Events for `AnimationControlView`
-gnome.AnimationControlView.PLAY_BUTTON_CLICKED = "gnome:playButtonClicked";
-gnome.AnimationControlView.PAUSE_BUTTON_CLICKED = "gnome:pauseButtonClicked";
-gnome.AnimationControlView.BACK_BUTTON_CLICKED = "gnome:backButtonClicked";
-gnome.AnimationControlView.FORWARD_BUTTON_CLICKED = "gnome:forwardButtonClicked";
-gnome.AnimationControlView.ZOOM_IN_BUTTON_CLICKED = "gnome:zoomInButtonClicked";
-gnome.AnimationControlView.ZOOM_OUT_BUTTON_CLICKED = "gnome:zoomOutButtonClicked";
-gnome.AnimationControlView.MOVE_BUTTON_CLICKED = "gnome:moveButtonClicked";
-gnome.AnimationControlView.SLIDER_CHANGED = "gnome:sliderChanged";
+AnimationControlView.PLAY_BUTTON_CLICKED = "gnome:playButtonClicked";
+AnimationControlView.PAUSE_BUTTON_CLICKED = "gnome:pauseButtonClicked";
+AnimationControlView.BACK_BUTTON_CLICKED = "gnome:backButtonClicked";
+AnimationControlView.FORWARD_BUTTON_CLICKED = "gnome:forwardButtonClicked";
+AnimationControlView.ZOOM_IN_BUTTON_CLICKED = "gnome:zoomInButtonClicked";
+AnimationControlView.ZOOM_OUT_BUTTON_CLICKED = "gnome:zoomOutButtonClicked";
+AnimationControlView.MOVE_BUTTON_CLICKED = "gnome:moveButtonClicked";
+AnimationControlView.FULLSCREEN_BUTTON_CLICKED = "gnome:fullscreenButtonClicked";
+AnimationControlView.RESIZE_BUTTON_CLICKED = "gnome:resizeButtonClicked";
+AnimationControlView.SLIDER_CHANGED = "gnome:sliderChanged";
 
 // Statuses
-gnome.AnimationControlView.STATUS_STOPPED = 0;
-gnome.AnimationControlView.STATUS_PLAYING = 1;
-gnome.AnimationControlView.STATUS_PAUSED = 2;
-gnome.AnimationControlView.STATUS_BACK = 3;
-gnome.AnimationControlView.STATUS_FORWARD = 4;
-gnome.AnimationControlView.STATUS_ZOOMING_IN = 5;
-gnome.AnimationControlView.STATUS_ZOOMING_OUT = 6;
+AnimationControlView.STATUS_STOPPED = 0;
+AnimationControlView.STATUS_PLAYING = 1;
+AnimationControlView.STATUS_PAUSED = 2;
+AnimationControlView.STATUS_BACK = 3;
+AnimationControlView.STATUS_FORWARD = 4;
+AnimationControlView.STATUS_ZOOMING_IN = 5;
+AnimationControlView.STATUS_ZOOMING_OUT = 6;
 
-gnome.AnimationControlView.prototype = {
+AnimationControlView.prototype = {
     initialize: function() {
         var _this = this;
-        this.status = gnome.AnimationControlView.STATUS_STOPPED;
+        this.status = AnimationControlView.STATUS_STOPPED;
 
         $(this.sliderEl).slider({
             start: function(event, ui) {
-                $(_this).trigger(gnome.AnimationControlView.PAUSE_BUTTON_CLICKED);
+                $(_this).trigger(AnimationControlView.PAUSE_BUTTON_CLICKED);
             },
             change: function(event, ui) {
-                $(_this).trigger(gnome.AnimationControlView.SLIDER_CHANGED, ui.value);
+                $(_this).trigger(AnimationControlView.SLIDER_CHANGED, ui.value);
             },
             disabled: true
         });
 
-        $(this.playButtonEl).click(function () {
-            $(_this).trigger(gnome.AnimationControlView.PLAY_BUTTON_CLICKED);
-        });
-
         $(this.pauseButtonEl).click(function () {
-            if (_this.status === gnome.AnimationControlView.STATUS_PLAYING) {
-                $(_this).trigger(gnome.AnimationControlView.PAUSE_BUTTON_CLICKED);
+            if (_this.status === AnimationControlView.STATUS_PLAYING) {
+                $(_this).trigger(AnimationControlView.PAUSE_BUTTON_CLICKED);
             }
         });
 
-        $(this.backButtonEl).click(function () {
-            $(_this).trigger(gnome.AnimationControlView.BACK_BUTTON_CLICKED);
-        });
+        var clickEvents = [
+            [this.playButtonEl, AnimationControlView.PLAY_BUTTON_CLICKED],
+            [this.backButtonEl, AnimationControlView.BACK_BUTTON_CLICKED],
+            [this.forwardButtonEl, AnimationControlView.FORWARD_BUTTON_CLICKED],
+            [this.zoomInButtonEl, AnimationControlView.ZOOM_IN_BUTTON_CLICKED],
+            [this.zoomOutButtonEl, AnimationControlView.ZOOM_OUT_BUTTON_CLICKED],
+            [this.moveButtonEl, AnimationControlView.MOVE_BUTTON_CLICKED],
+            [this.fullscreenButtonEl, AnimationControlView.FULLSCREEN_BUTTON_CLICKED],
+            [this.resizeButtonEl, AnimationControlView.RESIZE_BUTTON_CLICKED]
+        ];
 
-        $(this.forwardButtonEl).click(function () {
-            $(_this).trigger(gnome.AnimationControlView.FORWARD_BUTTON_CLICKED);
-        });
-
-        $(this.zoomInButtonEl).click(function () {
-            $(_this).trigger(gnome.AnimationControlView.ZOOM_IN_BUTTON_CLICKED);
-        });
-
-        $(this.zoomOutButtonEl).click(function () {
-            $(_this).trigger(gnome.AnimationControlView.ZOOM_OUT_BUTTON_CLICKED);
-        });
-
-        $(this.moveButtonEl).click(function () {
-            $(_this).trigger(gnome.AnimationControlView.MOVE_BUTTON_CLICKED);
+        _.each(_.object(clickEvents), function(event, element) {
+            $(element).click(function () { $(_this).trigger(event); });
         });
 
         return this;
     },
 
     setStopped: function() {
-        this.status = gnome.AnimationControlView.STATUS_STOPPED;
+        this.status = AnimationControlView.STATUS_STOPPED;
     },
 
     setPlaying: function() {
-        this.status = gnome.AnimationControlView.STATUS_PLAYING;
+        this.status = AnimationControlView.STATUS_PLAYING;
+        $(this.playButtonEl).hide();
+        $(this.pauseButtonEl).show();
     },
 
     setPaused: function() {
-        this.status = gnome.AnimationControlView.STATUS_PAUSED;
+        this.status = AnimationControlView.STATUS_PAUSED;
+        $(this.pauseButtonEl).hide();
+        $(this.playButtonEl).show();
     },
 
     setForward: function() {
-        this.status = gnome.AnimationControlView.STATUS_FORWARD;
+        this.status = AnimationControlView.STATUS_FORWARD;
     },
     
     setBack: function() {
-        this.status = gnome.AnimationControlView.STATUS_BACK;
+        this.status = AnimationControlView.STATUS_BACK;
     },
 
     setZoomingIn: function() {
-        this.status = gnome.AnimationControlView.STATUS_ZOOMING_IN;
+        this.status = AnimationControlView.STATUS_ZOOMING_IN;
     },
 
     setZoomingOut: function() {
-        this.status = gnome.AnimationControlView.STATUS_ZOOMING_OUT;
+        this.status = AnimationControlView.STATUS_ZOOMING_OUT;
     },
 
     setFrameCount: function(frameCount) {
@@ -459,69 +466,79 @@ gnome.AnimationControlView.prototype = {
     setTime: function(time) {
         $(this.timeEl).text(time);
     },
-    
+
+    switchToFullscreen: function() {
+        $(this.fullscreenButtonEl).hide();
+        $(this.resizeButtonEl).show();
+    },
+
+    switchToNormalScreen: function() {
+        $(this.resizeButtonEl).hide();
+        $(this.fullscreenButtonEl).show();
+    },
+
     isPlaying: function() {
-        return this.status === gnome.AnimationControlView.STATUS_PLAYING;
+        return this.status === AnimationControlView.STATUS_PLAYING;
     },
 
     isStopped: function() {
-        return this.status === gnome.AnimationControlView.STATUS_STOPPED;
+        return this.status === AnimationControlView.STATUS_STOPPED;
     },
 
     isPaused: function() {
-        return this.status === gnome.AnimationControlView.STATUS_PAUSED;
+        return this.status === AnimationControlView.STATUS_PAUSED;
     },
 
     isForward: function() {
-        return this.status === gnome.AnimationControlView.STATUS_PLAYING;
+        return this.status === AnimationControlView.STATUS_PLAYING;
     },
 
     isBack: function() {
-        return this.status === gnome.AnimationControlView.STATUS_BACK;
+        return this.status === AnimationControlView.STATUS_BACK;
     },
 
     isZoomingIn: function() {
-        return this.status === gnome.AnimationControlView.STATUS_ZOOMING_IN;
+        return this.status === AnimationControlView.STATUS_ZOOMING_IN;
     },
 
     isZoomingOut: function() {
-        return this.status === gnome.AnimationControlView.STATUS_ZOOMING_OUT;
+        return this.status === AnimationControlView.STATUS_ZOOMING_OUT;
     },
 
     enableControls: function() {
         $(this.sliderEl).slider('option', 'disabled', false);
-        _.each([this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
-            this.pauseButtonEl, this.moveButtonEl], function (buttonEl) {
+        _.each(this.controls, function (buttonEl) {
             $(buttonEl).removeClass('disabled');
         });
     },
 
     disableControls: function() {
         $(this.sliderEl).slider('option', 'disabled', true);
-        _.each([this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
-            this.pauseButtonEl, this.moveButtonEl], function (item) {
+        _.each(this.controls, function (item) {
             $(item).removeClass('enabled');
         });
     }
 };
 
 
-gnome.MapController = function(opts) {
+MapController = function(opts) {
     var _this = this;
 
     _.bindAll(this);
 
-    this.treeView = new gnome.TreeView({
+    this.sidebarEl = opts.sidebarEl;
+
+    this.treeView = new TreeView({
         treeEl: "#tree"
     }).initialize();
 
-    this.mapView = new gnome.MapView({
+    this.mapView = new MapView({
         mapEl: opts.mapEl,
         frameClass: 'frame',
         activeFrameClass: 'active'
     }).initialize();
 
-    this.animationControlView = new gnome.AnimationControlView({
+    this.animationControlView = new AnimationControlView({
         sliderEl: "#slider",
         playButtonEl: "#play-button",
         pauseButtonEl: "#pause-button",
@@ -530,40 +547,46 @@ gnome.MapController = function(opts) {
         zoomInButtonEl: "#zoom-in-button",
         zoomOutButtonEl: "#zoom-out-button",
         moveButtonEl: "#move-button",
+        fullscreenButtonEl: "#fullscreen-button",
+        resizeButtonEl: "#resize-button",
         timeEl: "#time"
     }).initialize();
 
-    this.mapModel = new gnome.MapModel({
+    this.mapModel = new MapModel({
         // XXX: Get bbox from the server?
         bbox: this.mapView.getBoundingBox()
     });
 
     // Event handlers
     $(this.animationControlView).bind(
-        gnome.AnimationControlView.PLAY_BUTTON_CLICKED, this.play);
+        AnimationControlView.PLAY_BUTTON_CLICKED, this.play);
     $(this.animationControlView).bind(
-        gnome.AnimationControlView.PAUSE_BUTTON_CLICKED, this.pause);
+        AnimationControlView.PAUSE_BUTTON_CLICKED, this.pause);
     $(this.animationControlView).bind(
-        gnome.AnimationControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
+        AnimationControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
     $(this.animationControlView).bind(
-        gnome.AnimationControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
+        AnimationControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
     $(this.animationControlView).bind(
-        gnome.AnimationControlView.SLIDER_CHANGED, this.sliderChanged);
+        AnimationControlView.SLIDER_CHANGED, this.sliderChanged);
      $(this.animationControlView).bind(
-        gnome.AnimationControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
+        AnimationControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
      $(this.animationControlView).bind(
-        gnome.AnimationControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
-    $(this.mapModel).bind(gnome.MapModel.RUN_FINISHED, this.restart);
-    $(this.mapView).bind(gnome.MapView.REFRESH_FINISHED, this.refreshFinished);
-    $(this.mapView).bind(gnome.MapView.PLAYING_FINISHED, this.stopAnimation);
-    $(this.mapView).bind(gnome.MapView.DRAGGING_FINISHED, this.zoomIn);
-    $(this.mapView).bind(gnome.MapView.FRAME_CHANGED, this.frameChanged);
-    $(this.mapView).bind(gnome.MapView.MAP_WAS_CLICKED, this.zoomOut);
+        AnimationControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
+      $(this.animationControlView).bind(
+        AnimationControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
+     $(this.animationControlView).bind(
+        AnimationControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
+    $(this.mapModel).bind(MapModel.RUN_FINISHED, this.restart);
+    $(this.mapView).bind(MapView.REFRESH_FINISHED, this.refreshFinished);
+    $(this.mapView).bind(MapView.PLAYING_FINISHED, this.stopAnimation);
+    $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
+    $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
+    $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
 
     return this;
 };
 
-gnome.MapController.prototype = {
+MapController.prototype = {
     play: function (event) {
         if (this.animationControlView.isPaused()) {
             this.animationControlView.setPlaying();
@@ -629,12 +652,12 @@ gnome.MapController.prototype = {
         if (endPosition) {
              this.mapModel.zoomFromRect(
                 {start: startPosition, end: endPosition},
-                gnome.MapModel.ZOOM_IN
+                MapModel.ZOOM_IN
             );
         } else {
             this.mapModel.zoomFromPoint(
                 startPosition,
-                gnome.MapModel.ZOOM_OUT
+                MapModel.ZOOM_OUT
             );
         }
 
@@ -643,7 +666,7 @@ gnome.MapController.prototype = {
 
     zoomOut: function(event, point) {
         this.mapModel.zoomFromPoint(
-            point, gnome.MapModel.ZOOM_OUT
+            point, MapModel.ZOOM_OUT
         );
         this.mapView.setRegularCursor();
     },
@@ -668,13 +691,30 @@ gnome.MapController.prototype = {
         var lastFrame = this.mapView.getFrameCount();
         this.mapView.setCurrentFrame(lastFrame);
         this.animationControlView.setCurrentFrame(lastFrame);
+    },
+
+    useFullscreen: function(event) {
+        this.animationControlView.switchToFullscreen();
+        $(this.sidebarEl).hide('slow');
+    },
+
+    disableFullscreen: function(event) {
+        console.log('stuff')
+        this.animationControlView.switchToNormalScreen();
+        $(this.sidebarEl).show('slow');
     }
 };
 
 
+// Get an alias to the `window.noaa.erd.gnome` namespace.
+gnome = window.noaa.erd.gnome;
+
+
 $('#map').imagesLoaded(function() {
-    new gnome.MapController({
-        mapEl: '#map'
+    new MapController({
+        mapEl: '#map',
+        sidebarEl: '#sidebar'
     });
 });
+
 
