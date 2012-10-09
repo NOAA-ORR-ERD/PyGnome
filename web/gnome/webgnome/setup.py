@@ -10,7 +10,8 @@ requires = [
     'pyramid',
     'pyramid_debugtoolbar',
     'waitress',
-    ]
+    'wtforms',
+]
 
 setup(name='webgnome',
       version='0.0',

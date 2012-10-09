@@ -116,26 +116,8 @@
         <img class="frame active" data-position="0" src="/static/img/placeholder.gif">
     </div>
 
-
-    <script id="modalTemplate" type="text/x-jsrender">
-        <a href="#modal" role="button" class="btn" data-toggle="modal">Launch demo modal</a>
-        <div class="modal hide fade" id="modal" tabindex="-1"
-             role="dialog" aria-labelledby="modal-label" aria-hidden="true">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="mover-modal"
-                        aria-hidden="true">×
-                </button>
-                <h3 id="modal-label">{{ header }}</h3>
-            </div>
-            <div class="modal-body">
-                {{ body }}
-            </div>
-            <div class="modal-footer">
-                <button class="btn" data-dismiss="modal" aria-hidden="true"> Cancel </button>
-                <button class="btn btn-primary">Save</button>
-            </div>
-        </div>
-    </script>
+    ## A div that we'll add rendered modal forms into.
+    <div id="modal-container"></div>
 </%block>
 
 <%block name="javascript">

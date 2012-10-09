@@ -1,6 +1,11 @@
 from functools import wraps
+from pyramid.httpexceptions import HTTPFound, HTTPNotFound
+from pyramid.renderers import render
+from pyramid.url import route_url
 from pyramid.view import view_config
+
 from mock_model import ModelManager
+from forms import AddMoverForm, VariableWindMoverForm, ConstantWindMoverForm
 
 
 MODEL_ID_KEY = 'model_id'
@@ -69,7 +74,55 @@ def run_model(request, model):
     }
 
 
-@view_config(route_name='add_wind_mover', renderer='gnome_json')
+@view_config(route_name='add_constant_wind_mover', renderer='gnome_json')
 @json_require_model
-def add_wind_mover(request, model):
-    pass
+def add_constant_wind_mover(request, model):
+    form = ConstantWindMoverForm(request.POST)
+    data = {}
+
+    if request.method == 'POST' and form.validate():
+        # add to model
+        pass
+
+    data['form_html'] = render(
+        'webgnome:templates/forms/constant_wind_mover.mak', {'form': form})
+
+    return data
+
+
+@view_config(route_name='add_variable_wind_mover', renderer='gnome_json')
+@json_require_model
+def add_variable_wind_mover(request, model):
+    form = VariableWindMoverForm(request.POST)
+    data = {}
+
+    if request.method == 'POST' and form.validate():
+        # add to model
+        pass
+
+    data['form_html'] = render(
+        'webgnome:templates/forms/variable_wind_mover.mak', {'form': form})
+
+    return data
+
+
+@view_config(route_name='add_mover', renderer='gnome_json')
+@json_require_model
+def add_mover(request, model, type=None):
+    form = AddMoverForm(request.POST)
+    data = {}
+
+    mover_routes = {
+        AddMoverForm.MOVER_VARIABLE_WIND: 'add_variable_wind_mover',
+        AddMoverForm.MOVER_CONSTANT_WIND: 'add_constant_wind_mover'
+    }
+
+    if request.method == 'POST' and form.validate():
+        route = mover_routes.get(form.mover_type)
+        return HTTPFound(route_url(route, request))
+
+    data['form_html'] = render(
+        'webgnome:templates/forms/add_mover_form.mak', {'form': form})
+
+    return data
+

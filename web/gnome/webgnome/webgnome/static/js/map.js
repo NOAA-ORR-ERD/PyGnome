@@ -345,7 +345,7 @@ TreeView.prototype = {
     initialize: function() {
         var _this = this;
 
-        $(this.treeEl).dynatree({
+        this.tree = $(this.treeEl).dynatree({
             onActivate: function(node) {
                 $(_this).trigger(TreeView.ITEM_ACTIVATED, node);
             },
@@ -360,6 +360,10 @@ TreeView.prototype = {
         });
 
         return this;
+    },
+
+    getActiveItem: function() {
+        return this.tree.dynatree("getActiveNode");
     }
 };
 
@@ -379,7 +383,20 @@ TreeControlView.SETTINGS_BUTTON_CLICKED = 'gnome:itemSettingsButtonClicked';
 
 TreeControlView.prototype = {
     initialize: function() {
+        var _this = this;
         this.disableControls();
+
+        var clickEvents = [
+            [this.addButtonEl, TreeControlView.ADD_BUTTON_CLICKED],
+            [this.removeButtonEl, TreeControlView.REMOVE_BUTTON_CLICKED],
+            [this.settingsButtonEl, TreeControlView.SETTINGS_BUTTON_CLICKED],
+        ];
+
+        _.each(_.object(clickEvents), function(customEvent, element) {
+            $(element).click(function(event) {
+                $(_this).trigger(customEvent);
+            });
+        });
     },
     enableControls: function() {
         _.each(this.itemControls, function(buttonEl) {
@@ -473,9 +490,9 @@ AnimationControlView.prototype = {
             [this.resizeButtonEl, AnimationControlView.RESIZE_BUTTON_CLICKED]
         ];
 
-        _.each(_.object(clickEvents), function(event, element) {
-            $(element).click(function() {
-                $(_this).trigger(event);
+        _.each(_.object(clickEvents), function(customEvent, element) {
+            $(element).click(function(event) {
+                $(_this).trigger(customEvent);
             });
         });
 
@@ -583,6 +600,15 @@ AnimationControlView.prototype = {
 MapController = function(opts) {
     _.bindAll(this);
 
+    // TODO: Obtain from server via template variable passed into controller.
+    this.rootApiUrls = {
+        settings: '/model/setting',
+        movers: '/model/mover',
+        spills: '/model/spill'
+    };
+
+    this.formContainerEl = opts.formContainerEl;
+
     this.sidebarEl = opts.sidebarEl;
 
     this.treeView = new TreeView({
@@ -619,6 +645,13 @@ MapController = function(opts) {
 
     // Event handlers
     $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
+
+    $(this.treeControlView).bind(
+        TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
+     $(this.treeControlView).bind(
+        TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
+     $(this.treeControlView).bind(
+        TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
 
     $(this.animationControlView).bind(
         AnimationControlView.PLAY_BUTTON_CLICKED, this.play);
@@ -790,6 +823,57 @@ MapController.prototype = {
 
     treeItemActivated: function(event) {
         this.treeControlView.enableControls();
+    },
+
+    addButtonClicked: function(event) {
+        var node = this.treeView.getActiveItem();
+        var urlKey = null;
+
+        if (node.data.key in this.rootApiUrls) {
+            urlKey = node.data.key;
+        } else if (node.parent.data.key in this.rootApiUrls) {
+            urlKey = node.parent.data.key;
+        }
+
+        if (urlKey) {
+            this.showModalForm(urlKey);
+        }
+    },
+
+    showModalForm: function(urlKey, id) {
+        var _this = this;
+        var rootUrl = this.rootApiUrls[urlKey];
+        // TODO: We don't yet have a way of getting IDs for `TreeView` items.
+        var url = id === undefined ? rootUrl + '/add' : '/edit/' + id;
+
+        $.ajax({
+            type: 'GET',
+            url: url,
+            success: function(data) {
+                if ('form_html' in data) {
+                    var container = $(_this.formContainerEl);
+                    container.empty();
+                    container.html(data.form_html);
+                    container.find('div.modal').modal();
+                } else {
+                    alert('Error communicating with server. Please try again.')
+                }
+                return false;
+            },
+            error: function(data) {
+                alert('Could not connect to server. Please try again.');
+                console.log(data);
+                return false;
+            }
+        });
+    },
+
+    removeButtonClicked: function(event) {
+        console.log(event.data.key);
+    },
+
+    settingsButtonClicked: function(event) {
+        console.log(event.data.key);
     }
 };
 
@@ -802,7 +886,8 @@ gnome = window.noaa.erd.gnome;
 $('#map').imagesLoaded(function() {
     new MapController({
         mapEl: '#map',
-        sidebarEl: '#sidebar'
+        sidebarEl: '#sidebar',
+        'formContainerEl': '#modal-container'
     });
 });
 
