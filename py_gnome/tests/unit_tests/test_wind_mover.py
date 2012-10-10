@@ -16,6 +16,9 @@ from gnome.cy_gnome import cy_wind_mover
 from gnome.cy_gnome import cy_ossm_time
 from gnome import greenwich
 
+from gnome.utilities import projections
+
+
 def test_init(): # can we create a wind_mover?
     wm = cy_wind_mover.CyWindMover()
     assert True
@@ -47,14 +50,11 @@ class Common():
         # init. arrays #
         ################
         self.ref[:] = 1.
-    
-        self.ref[:]['lat'] *= 1000000 #huh? I thought we were getting rid of the 1e6 stuff.
-        self.ref[:]['long'] *= 1000000 
         self.ref[:]['z'] = 0 # particles will not move via wind if z>0
     
-        self.wind[:] = 1
+        self.wind[:] = 1./100.
         # Straight south wind... 100! meters per second
-        self.const_wind['u'] =  0  # meters per second?
+        self.const_wind['u'] = 50  # meters per second?
         self.const_wind['v'] = 100 # 
 
 class ConstantWind(Common):
@@ -96,7 +96,7 @@ class ConstantWindWithOSSM(Common):
         time_val['time'] = 0   # should not matter
         time_val['value']= self.const_wind
         self.ossm = cy_ossm_time.CyOSSMTime(timeseries=time_val,
-                                        units=basic_types.velocity_units.knots)
+                                        units=basic_types.velocity_units.meters_per_sec)
         self.wm.set_ossm(self.ossm)
         
     def test_move(self):
@@ -106,23 +106,45 @@ class ConstantWindWithOSSM(Common):
                          self.delta,
                          self.wind,
                          )
+        
+        
 
-def test_constant_wind():
-    """
-    The result of get_move should be the same irrespective of whether we use OSSM time object
-    or the fConstantValue member of the CyWindMover object
-    Use the setup in ConstantWind and ConstantWindWithOSSM for this test   
-    """
+class TestConstantWind():
     cw = ConstantWind()
-    cww_ossm = ConstantWindWithOSSM()
-    
-    # the move should be the same from both objects
     cw.test_move()
-    cww_ossm.test_move()
-    print cw.delta
-    print cww_ossm.delta
-    np.testing.assert_equal(cw.delta, cww_ossm.delta, "test_constant_wind() failed", 0)
     
+    cww_ossm = ConstantWindWithOSSM()
+    cww_ossm.test_move()
+    
+    def test_constant_wind(self):
+        """
+        The result of get_move should be the same irrespective of whether we use OSSM time object
+        or the fConstantValue member of the CyWindMover object
+        Use the setup in ConstantWind and ConstantWindWithOSSM for this test   
+        """
+        # the move should be the same from both objects
+        print self.cw.delta
+        print self.cww_ossm.delta
+        np.testing.assert_equal(self.cw.delta, self.cww_ossm.delta, "test_constant_wind() failed", 0)
+        
+    def test_move_value(self):
+        #meters_per_deg_lat = 111120.00024
+        #self.cw.wind/meters_per_deg_lat
+        delta = np.zeros((self.cw.num_le,2))
+        delta[:,0] = self.cw.wind*self.cw.const_wind['u']*self.cw.time_step # 'u'
+        delta[:,1] = self.cw.wind*self.cw.const_wind['v']*self.cw.time_step # 'v'
+        
+        xform = projections.FlatEarthProjection.meters_to_latlon( delta, self.cw.ref['lat'])
+        
+        actual = np.zeros((self.cw.num_le,), dtype=basic_types.world_point)
+        actual ['lat'] = xform[:,1]
+        actual ['long'] = xform[:,0]
+        
+        tol = 1e-10
+        np.testing.assert_allclose(self.cw.delta['lat'], actual['lat'], tol, tol, 
+                                   "get_time_value is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(self.cw.delta['long'], actual['long'], tol, tol, 
+                                   "get_time_value is not within a tolerance of "+str(tol), 0)
     
 class TestVariableWind():
     """
