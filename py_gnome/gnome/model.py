@@ -152,6 +152,7 @@ class Model(object):
             spill.release_elements(self.model_time)
             self.map.refloat_elements(spill)
         for mover in self.movers:
+            #loop through each spill and pass it in.
             mover.prepare_for_model_step(self.model_time, self.time_step, self.uncertain_on)
 
     def move_elements(self):
@@ -168,6 +169,7 @@ class Model(object):
                 spill['next_positions'] += delta
         for spill in self.spills:
             self.map.beach_elements(spill)
+
     def write_output(self):
         """
         write the output of the current time step to whatever output

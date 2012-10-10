@@ -15,7 +15,7 @@ def test_init_simple():
     
     assert sp['status_codes'].shape == (10,)
     assert sp['positions'].shape == (10,3)
-    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_in_water )
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.in_water )
 
 
 def test_data_access():
@@ -117,7 +117,7 @@ def test_point_init():
     
     assert sp['status_codes'].shape == (10,)
     assert sp['positions'].shape == (10,3)
-    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_not_released)
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.not_released)
 
 def test_point_release():
     rel_time = datetime.datetime(2012, 8, 20, 13)
@@ -126,13 +126,13 @@ def test_point_release():
                                  release_time=rel_time,
                                  )
     
-    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_not_released)
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.not_released)
 
     sp.release_elements(rel_time - datetime.timedelta(seconds=1) )# one second before release time
-    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_not_released )
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.not_released )
     
     sp.release_elements(rel_time)
-    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_in_water )
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.in_water )
 
 def test_point_reset():
     rel_time = datetime.datetime(2012, 8, 20, 13)
@@ -142,9 +142,9 @@ def test_point_reset():
                                  )
     
     sp.release_elements(rel_time)
-    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_in_water )
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.in_water )
     sp.reset()
-    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.status_not_released)
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.not_released)
 
     
 
