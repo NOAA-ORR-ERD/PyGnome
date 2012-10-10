@@ -597,7 +597,108 @@ AnimationControlView.prototype = {
 };
 
 
-MapController = function(opts) {
+function ModalFormView(opts) {
+    _.bindAll(this);
+    this.formContainerEl = opts.formContainerEl;
+    this.rootApiUrls = opts.rootApiUrls;
+}
+
+ModalFormView.SAVE_BUTTON_CLICKED = 'gnome:formSaveButtonClicked';
+
+// These events will fire if the server included a message in the JSON response
+// containing the rendered HTML of a submitted form. They are not fired for
+// regular form validation errors, which appear as HTML markup.
+ModalFormView.FORM_SUCCESS = 'gnome:formSuccess';
+ModalFormView.FORM_WARNING = 'gnome:formWarning';
+ModalFormView.FORM_ERROR = 'gnome:formError';
+
+ModalFormView.prototype = {
+
+    initialize: function() {
+        var _this = this;
+
+        $(this.formContainerEl).on('click', '.btn-primary', function(event) {
+            $(_this).trigger(ModalFormView.SAVE_BUTTON_CLICKED);
+        });
+
+        $(this.formContainerEl).on('submit', 'form', function(event) {
+            event.preventDefault();
+            _this.doAjaxFormSubmit(this);
+            return false;
+        });
+    },
+
+    showForm: function(urlKey, id) {
+        var _this = this;
+        var rootUrl = this.rootApiUrls[urlKey];
+        // TODO: We don't yet have a way of getting IDs for `TreeView` items.
+        var url = id === undefined ? rootUrl + '/add' : '/edit/' + id;
+
+        $.ajax({
+            type: 'GET',
+            url: url,
+            success: this.handleAjaxSuccess,
+            error: this.handleAjaxError
+        });
+    },
+
+    reloadForm: function(html) {
+        this.clearForm();
+        var container = $(this.formContainerEl);
+        container.html(html);
+        container.find('div.modal').modal();
+    },
+
+    clearForm: function() {
+        $(this.formContainerEl + ' div.modal').modal('hide');
+        $(this.formContainerEl).empty();
+    },
+
+    submitForm: function() {
+        $(this.formContainerEl + ' form').submit();
+        this.clearForm();
+    },
+
+    doAjaxFormSubmit: function(form) {
+        var _this = this;
+
+        $.ajax({
+            type: 'POST',
+            data: $(form).serialize(),
+            url: $(form).attr('action'),
+            success: this.handleAjaxSuccess,
+            error: this.handleAjaxError
+        });
+    },
+
+    handleAjaxSuccess: function(data, textStatus, xhr) {
+        console.log({data:data, textStatus:textStatus, xhr:xhr})
+
+        if ('form_html' in data) {
+            this.reloadForm(data.form_html);
+        } else {
+            this.clearForm();
+        }
+
+        if ('successMessage' in data) {
+            $(this).trigger(ModalFormView.FORM_SUCCESS, data.successMessage);
+        }
+        if ('warningMessage' in data) {
+            $(this).trigger(ModalFormView.FORM_WARNING, data.warningMessage);
+        }
+        if ('errorMessage' in data) {
+            $(this).trigger(ModalFormView.FORM_ERROR, data.errorMessage);
+        }
+    },
+    
+    handleAjaxError: function(xhr, textStatus, errorThrown) {
+        alert('Could not connect to server.');
+        console.log(xhr, textStatus, errorThrown);
+    }
+};
+
+
+function MapController(opts) {
     _.bindAll(this);
 
     // TODO: Obtain from server via template variable passed into controller.
@@ -607,7 +708,10 @@ MapController = function(opts) {
         spills: '/model/spill'
     };
 
-    this.formContainerEl = opts.formContainerEl;
+    this.formView = new ModalFormView({
+        formContainerEl: opts.formContainerEl,
+        rootApiUrls: this.rootApiUrls
+    });
 
     this.sidebarEl = opts.sidebarEl;
 
@@ -643,52 +747,60 @@ MapController = function(opts) {
 
     this.mapModel = new MapModel({});
 
-    // Event handlers
-    $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
-
-    $(this.treeControlView).bind(
-        TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
-     $(this.treeControlView).bind(
-        TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
-     $(this.treeControlView).bind(
-        TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
-
-    $(this.animationControlView).bind(
-        AnimationControlView.PLAY_BUTTON_CLICKED, this.play);
-    $(this.animationControlView).bind(
-        AnimationControlView.PAUSE_BUTTON_CLICKED, this.pause);
-    $(this.animationControlView).bind(
-        AnimationControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
-    $(this.animationControlView).bind(
-        AnimationControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
-    $(this.animationControlView).bind(
-        AnimationControlView.SLIDER_CHANGED, this.sliderChanged);
-    $(this.animationControlView).bind(
-        AnimationControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
-    $(this.animationControlView).bind(
-        AnimationControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
-    $(this.animationControlView).bind(
-        AnimationControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
-    $(this.animationControlView).bind(
-        AnimationControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
-
-    $(this.mapModel).bind(MapModel.RUN_FINISHED, this.restart);
-    $(this.mapModel).bind(MapModel.RUN_FAILED, this.runFailed);
-
-    $(this.mapView).bind(MapView.INIT_FINISHED, this.mapInitFinished);
-    $(this.mapView).bind(MapView.REFRESH_FINISHED, this.refreshFinished);
-    $(this.mapView).bind(MapView.PLAYING_FINISHED, this.stopAnimation);
-    $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
-    $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
-    $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
-
+    this.setupEventHandlers();
     this.initializeViews();
 
     return this;
-};
+}
 
 MapController.prototype = {
+    setupEventHandlers: function() {
+        $(this.formView).bind(ModalFormView.SAVE_BUTTON_CLICKED, this.saveForm);
+        $(this.formView).bind(ModalFormView.FORM_WARNING, this.displayMessage);
+        $(this.formView).bind(ModalFormView.FORM_SUCCESS, this.displayMessage);
+        $(this.formView).bind(ModalFormView.FORM_ERROR, this.displayMessage);
+
+        $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
+
+        $(this.treeControlView).bind(
+            TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
+        $(this.treeControlView).bind(
+            TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
+        $(this.treeControlView).bind(
+            TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
+
+        $(this.animationControlView).bind(
+            AnimationControlView.PLAY_BUTTON_CLICKED, this.play);
+        $(this.animationControlView).bind(
+            AnimationControlView.PAUSE_BUTTON_CLICKED, this.pause);
+        $(this.animationControlView).bind(
+            AnimationControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
+        $(this.animationControlView).bind(
+            AnimationControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
+        $(this.animationControlView).bind(
+            AnimationControlView.SLIDER_CHANGED, this.sliderChanged);
+        $(this.animationControlView).bind(
+            AnimationControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
+        $(this.animationControlView).bind(
+            AnimationControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
+        $(this.animationControlView).bind(
+            AnimationControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
+        $(this.animationControlView).bind(
+            AnimationControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
+
+        $(this.mapModel).bind(MapModel.RUN_FINISHED, this.restart);
+        $(this.mapModel).bind(MapModel.RUN_FAILED, this.runFailed);
+
+        $(this.mapView).bind(MapView.INIT_FINISHED, this.mapInitFinished);
+        $(this.mapView).bind(MapView.REFRESH_FINISHED, this.refreshFinished);
+        $(this.mapView).bind(MapView.PLAYING_FINISHED, this.stopAnimation);
+        $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
+        $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
+        $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
+    },
+
     initializeViews: function() {
+        this.formView.initialize();
         this.treeControlView.initialize();
         this.treeView.initialize();
         this.animationControlView.initialize();
@@ -836,36 +948,12 @@ MapController.prototype = {
         }
 
         if (urlKey) {
-            this.showModalForm(urlKey);
+            this.formView.showForm(urlKey);
         }
     },
 
-    showModalForm: function(urlKey, id) {
-        var _this = this;
-        var rootUrl = this.rootApiUrls[urlKey];
-        // TODO: We don't yet have a way of getting IDs for `TreeView` items.
-        var url = id === undefined ? rootUrl + '/add' : '/edit/' + id;
-
-        $.ajax({
-            type: 'GET',
-            url: url,
-            success: function(data) {
-                if ('form_html' in data) {
-                    var container = $(_this.formContainerEl);
-                    container.empty();
-                    container.html(data.form_html);
-                    container.find('div.modal').modal();
-                } else {
-                    alert('Error communicating with server. Please try again.')
-                }
-                return false;
-            },
-            error: function(data) {
-                alert('Could not connect to server. Please try again.');
-                console.log(data);
-                return false;
-            }
-        });
+    saveForm: function() {
+        this.formView.submitForm();
     },
 
     removeButtonClicked: function(event) {
@@ -874,6 +962,30 @@ MapController.prototype = {
 
     settingsButtonClicked: function(event) {
         console.log(event.data.key);
+    },
+
+    displayMessage: function(event, message) {
+        var alertDiv;
+
+        switch(event.type) {
+            case ModalFormView.FORM_SUCCESS:
+                alertDiv = $('div .alert-success');
+                break;
+            case ModalFormView.FORM_ERROR:
+                alertDiv = $('div .alert-error');
+                break;
+            case ModalFormView.FORM_WARNING:
+                alertDiv = $('div .alert-warning');
+                break;
+            default:
+                alertDiv = null;
+                break;
+        }
+
+        if (message && alertDiv) {
+            alertDiv.find('span.message').text(message);
+            alertDiv.removeClass('hidden');
+        }
     }
 };
 

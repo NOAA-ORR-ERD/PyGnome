@@ -7,11 +7,19 @@
         <h3 id="modal-label">Add Mover</h3>
     </div>
     <div class="modal-body">
-        <form action="" class="form-horizontal" method="POST">
-            <div class="control-group">
+        <form action="${ action_url }" class="form-horizontal" method="POST">
+            <div class="control-group ${ 'error' if form.mover_type.errors else ''}">
                 <label class="control-label">${ form.mover_type.label.text }</label>
                 <div class="controls">
                     ${ form.mover_type }
+
+                     % if form.mover_type.errors:
+                         <span class="help-inline">
+                         %for error in form.mover_type.errors:
+                             ${ error }
+                         %endfor
+                         </span>
+                    % endif
                 </div>
             </div>
         </form>

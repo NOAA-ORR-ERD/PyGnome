@@ -8,7 +8,8 @@ from wtforms import (
     DateTimeField,
     IntegerField,
     FloatField,
-    BooleanField
+    BooleanField,
+    TextField
 )
 
 
@@ -27,9 +28,9 @@ class AddMoverForm(Form):
     ))
 
 
-class WindFieldsMixin(object):
+class WindMoverForm(Form):
     """
-    A mixin of fields common to `VariableWindMoverForm` and
+    A form class containing fields common to `VariableWindMoverForm` and
     `ConstantWindMoverForm`
     """
     SPEED_KNOTS = 'knots'
@@ -45,6 +46,7 @@ class WindFieldsMixin(object):
         (SPEED_METERS, 'Meters / sec'),
         (SPEED_MILES, 'Miles / hour')
     ))
+    direction = TextField()
 
     active = BooleanField('Active'),
     start_time = IntegerField('Start Time')
@@ -57,11 +59,11 @@ class WindFieldsMixin(object):
     ))
 
 
-class ConstantWindMoverForm(Form, WindFieldsMixin):
+class ConstantWindMoverForm(WindMoverForm):
     pass
 
 
-class VariableWindMoverForm(Form, WindFieldsMixin):
+class VariableWindMoverForm(WindMoverForm):
     time = DateTimeField(validators=[Required()])
     auto_increment_time_by = IntegerField('Auto-increment time by')
 

@@ -1,5 +1,5 @@
 from functools import wraps
-from pyramid.httpexceptions import HTTPFound, HTTPNotFound
+from pyramid.httpexceptions import HTTPFound
 from pyramid.renderers import render
 from pyramid.url import route_url
 from pyramid.view import view_config
@@ -10,7 +10,7 @@ from forms import AddMoverForm, VariableWindMoverForm, ConstantWindMoverForm
 
 MODEL_ID_KEY = 'model_id'
 MISSING_MODEL_ERROR = 'The model you were working on is no longer available. ' \
-                      'We have created a new one for you.'
+                      'We created a new one for you.'
 
 
 _running_models = ModelManager()
@@ -118,11 +118,12 @@ def add_mover(request, model, type=None):
     }
 
     if request.method == 'POST' and form.validate():
-        route = mover_routes.get(form.mover_type)
+        route = mover_routes.get(form.mover_type.data)
         return HTTPFound(route_url(route, request))
 
     data['form_html'] = render(
-        'webgnome:templates/forms/add_mover_form.mak', {'form': form})
+        'webgnome:templates/forms/add_mover_form.mak', {
+            'form': form, 'action_url': route_url('add_mover', request)})
 
     return data
 

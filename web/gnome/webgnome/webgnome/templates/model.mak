@@ -83,13 +83,20 @@
 
 <%block name="content">
     <div class="container">
-       % if warning:
-       <div class="alert">
-          <button type="button" class="close" data-dismiss="alert">×</button>
-          <strong>Warning!</strong> ${warning}
-        </div>
-      % endif
-
+      <div class="messages">
+          <div class="alert alert-success ${ '' if success else 'hidden'}">
+              <button type="button" class="close" data-dismiss="alert">× </button>
+              <span class='message'>${ success if success else '' }</span>
+          </div>
+          <div class="alert alert-warning ${ '' if warning else 'hidden'}">
+              <button type="button" class="close" data-dismiss="alert">× </button>
+              <strong>Warning!</strong> <span class="message">${ warning if warning else '' }</span>
+          </div>
+           <div class="alert alert-error ${ '' if error else 'hidden'}">
+              <button type="button" class="close" data-dismiss="alert">× </button>
+              <strong>Error!</strong> <span class="message">${ error if error else '' }</span>
+          </div>         
+      </div>
       <div class="btn-toolbar">
           <div class="btn-group">
               <a class="btn disabled" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>

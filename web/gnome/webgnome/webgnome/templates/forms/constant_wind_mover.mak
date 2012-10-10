@@ -13,6 +13,8 @@
                 <div class="controls">
                     ${ form.speed } ${ form.speed_type }
                 </div>
+            </div>
+            <div class="control-group">
                 <label class="control-label">${ form.direction.label.text }</label>
                 <div class="controls">
                     ${ form.direction }
