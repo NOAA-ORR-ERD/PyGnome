@@ -14,6 +14,7 @@ You should  be able to `git pull; cd py_gnome; python setup.py develop` and then
 from __future__ import division
 import numpy as np
 import gnome.map
+import gnome.spill
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities import map_canvas
 
@@ -91,31 +92,31 @@ def test_in_water_resolution():
                               raster_size = 500*500 , # approx resolution
                               ) #Create an 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
     
-    #Specify coordinates of the two points that make up the southeastern coastline segment of the island in the BNA map.
-    x1=-126.78709
-    y1=47.666667
-    x2=-126.44218
-    y2=47.833333
+    # Specify coordinates of the two points that make up the southeastern coastline segment of the island in the BNA map.
+    x1 = -126.78709
+    y1 = 47.666667
+    x2 = -126.44218
+    y2 = 47.833333
     
-    #Define a point on the line formed by this coastline segment.
-    slope=(y2-y1)/(x2-x1)
-    b=y1-(slope*x1)
-    py=47.7
-    px=(py-b)/slope
+    # Define a point on the line formed by this coastline segment.
+    slope = (y2-y1)/(x2-x1)
+    b = y1-(slope*x1)
+    py = 47.7
+    px = (py-b)/slope
     
-    #Find the order of magnitude epsilon change in the latitude that causes the
-    #given point to "move" from water to land.
-    eps=np.spacing(1) #Distance between 1 and the nearest floating point number.
-    mag=0.
-    running=True
+    # Find the order of magnitude epsilon change in the latitude that causes the
+    # given point to "move" from water to land.
+    eps = np.spacing(1) #Distance between 1 and the nearest floating point number.
+    mag = 0.
+    running = True
     while running:
-        mag=mag+1.0
+        mag = mag+1.0
         print "Order of magnitude: %g" %mag
-        running=m.in_water((px,py+(eps*(10.0**mag))))
+        running = m.in_water((px, py + (eps*(10.0**mag)), 0.0))
     
-    #Difference in position within an order of magnitude in degrees of latitude necessary to "move" point from water to land.
-    dlatO0=(eps*(10.0**(mag-1.0)))
-    dlatO1=(eps*(10.0**mag))
+    # Difference in position within an order of magnitude in degrees of latitude necessary to "move" point from water to land.
+    dlatO0 = (eps*(10.0**(mag-1.0)))
+    dlatO1 = (eps*(10.0**mag))
     
     print "A particle positioned on a coastline segment must be moved something more than %g meters, but less than %g meters, inland before pyGNOME acknowledges it's no longer in water." %(dlatO0*1852.0,dlatO1*1852.0)
 
@@ -186,11 +187,12 @@ class Test_RasterMap():
                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
                         projection=projections.NoProjection(),
                         )
-        print "testing a land point:"
-        assert map.on_land((10, 6)) # right in the middle
+        print "testing a land point:", (10, 6, 0.0)
+        print map.on_land((10, 6, 0.0))
+        assert map.on_land((10, 6, 0.0)) # right in the middle
         
         print "testing a water point:"
-        assert not map.on_land((19.0, 11.0))
+        assert not map.on_land((19.0, 11.0, 0.0))
         
     def test_spillable_area(self):
         # anywhere not on land is spillable...
@@ -201,10 +203,10 @@ class Test_RasterMap():
                         projection=projections.NoProjection(),
                         )
         print "testing a land point:"
-        assert not map.allowable_spill_position((10, 6)) # right in the middle of land
+        assert not map.allowable_spill_position((10, 6, 0.0)) # right in the middle of land
         
         print "testing a water point:"
-        assert map.allowable_spill_position((19.0, 11.0))
+        assert map.allowable_spill_position((19.0, 11.0, 0.0))
     
     def test_spillable_area2(self):
         # a test with a polygon spillable area
@@ -218,17 +220,17 @@ class Test_RasterMap():
                         )
         
         # cases that are spillable
-        assert map.allowable_spill_position((11.0, 3.0))
-        assert map.allowable_spill_position((14.0, 9.0))
+        assert map.allowable_spill_position((11.0, 3.0, 0.0))
+        assert map.allowable_spill_position((14.0, 9.0, 0.0))
         
         # in polygon, but on land:
-        assert not map.allowable_spill_position((11.0, 6.0))
+        assert not map.allowable_spill_position((11.0, 6.0, 0.0))
 
         # outside polygon, on land:
-        assert not map.allowable_spill_position((8.0, 6.0))
+        assert not map.allowable_spill_position((8.0, 6.0, 0.0))
 
         # outside polygon, off land:
-        assert not map.allowable_spill_position((3.0, 3.0))
+        assert not map.allowable_spill_position((3.0, 3.0, 0.0))
 
 from gnome.map import MapFromBNA
 class Test_MapfromBNA:
@@ -239,21 +241,20 @@ class Test_MapfromBNA:
         '''
         Test whether the location of a particle is in water -- is determined correctly.
         '''
-        InWater=( -126.78709, 48.1647 )
+        InWater=( -126.78709, 48.1647, 0.0 )
         
         assert self.bna_map.in_water(InWater) #Throw an error if the know in-water location returns false.
         assert not self.bna_map.on_land(InWater)
 
     def test_map_in_water2(self):
-        InWater = (-126.971456, 47.935608) # in water, but inside land Bounding box
+        InWater = (-126.971456, 47.935608, 0.0) # in water, but inside land Bounding box
         assert self.bna_map.in_water(InWater) #Throw an error if the know in-water location returns false.
 
     def test_map_on_land(self):
         '''
         Test whether the location of a particle  on land -- is determined correctly.
         '''
-        OnLand = (-127, 47.8)
-        
+        OnLand = (-127, 47.8, 0.0)
         assert self.bna_map.on_land( OnLand )  #Throw an error if the know on-land location returns false.
         
         assert not self.bna_map.in_water( OnLand )  #Throw an error if the know on-land location returns false.
@@ -262,41 +263,41 @@ class Test_MapfromBNA:
         '''
         Test whether the location of a particle in a lake-- is determined correctly.
         '''
-        InLake = (-126.8, 47.84)
+        InLake = (-126.8, 47.84, 0.0)
         assert self.bna_map.in_water( InLake )  #Throw an error if the know on-land location returns false.
         assert not self.bna_map.on_land( InLake )  #Throw an error if the know on-land location returns false.
 
     def test_map_spillable(self):
-        point = (-126.984472, 48.08106) # in water, in spillable
+        point = (-126.984472, 48.08106, 0.0) # in water, in spillable
         assert self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
 
     def test_map_spillable_lake(self):
-        point = (-126.793592, 47.841064) # in lake, should be spillable
+        point = (-126.793592, 47.841064, 0.0) # in lake, should be spillable
         assert self.bna_map.allowable_spill_position( point )  #Throw an error if the known on-land location returns false.
     
     def test_map_not_spillable(self):        
-        point = (-127, 47.8) # on land should not be spillable
+        point = (-127, 47.8, 0.0) # on land should not be spillable
         assert not self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
 
     def test_map_not_spillable2(self):
-        point = (127.244752, 47.585072) # in water, but outside spillable area
+        point = (127.244752, 47.585072, 0.0 ) # in water, but outside spillable area
         assert not self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
     
     def test_map_not_spillable3(self):
-        point = (127.643856, 47.999608) # off the map -- should not be spillable
+        point = (127.643856, 47.999608, 0.0) # off the map -- should not be spillable
         assert not self.bna_map.allowable_spill_position( point )  #Throw an error if the know on-land location returns false.
 
     def test_map_on_map(self):
-        point = (-126.12336, 47.454164)
+        point = (-126.12336, 47.454164, 0.0)
         assert self.bna_map.on_map( point )
 
     def test_map_off_map(self):
-        point = (-126.097336, 47.43962)
+        point = (-126.097336, 47.43962, 0.0)
         assert not self.bna_map.on_map( point )
 
 
     def test_map_off_map(self):
-        point = (-126.097336, 47.43962)
+        point = (-126.097336, 47.43962, 0.0)
         assert not self.bna_map.on_map( point )
 
 
@@ -330,35 +331,32 @@ class Test_full_move:
                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
                         projection=projections.NoProjection(),
                         )
-        assert map.on_land( (10, 3) ) == 1 
-        assert map.on_land( (9, 3) ) == 0
-        assert map.on_land( (11, 3) ) == 0
+        assert map.on_land( (10, 3, 0) ) == 1 
+        assert map.on_land( (9,  3, 0) ) == 0
+        assert map.on_land( (11, 3, 0) ) == 0
         
 
     def test_land_cross(self):
         """
-        try a single LE
+        try a single LE that should be crossing land
         """
         map = RasterMap(refloat_halflife = 6, #hours
                         bitmap_array= self.raster,
                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
                         projection=projections.NoProjection(),
                         )
-        
-        start_positions= np.array( ( ( 5.0, 5.0), ), dtype=np.float64) 
-        end_positions =  np.array( ( (15.0, 5.0), ), dtype=np.float64)
-        last_water_positions = np.empty_like( start_positions )
-        status_codes  =  np.array( (basic_types.oil_status.status_in_water, ), dtype=basic_types.status_code_type)
+         
+        spill = gnome.spill.Spill(num_LEs=1)
+
+        spill['positions'] = np.array( ( ( 5.0, 5.0, 0.0), ), dtype=np.float64) 
+        spill['next_positions'] = np.array( ( (15.0, 5.0, 0.0), ), dtype=np.float64)
+        spill['status_codes'] = np.array( (basic_types.oil_status.in_water, ), dtype=basic_types.status_code_type)
  
-        map.beach_elements(start_positions,
-                           end_positions,
-                           last_water_positions,
-                           status_codes,
-                           )
+        map.beach_elements(spill)
         
-        assert np.array_equal( end_positions[0], (10.0, 5.0) )
-        assert np.array_equal( last_water_positions[0], (9.0, 5.0) )
-        assert status_codes[0] == basic_types.oil_status.status_on_land
+        assert np.array_equal( spill['positions'][0], (10.0, 5.0, 0.0) )
+        assert np.array_equal( spill['last_water_positions'][0], (9.0, 5.0, 0.0) )
+        assert spill['status_codes'][0] == basic_types.oil_status.on_land
         
     def test_land_cross_array(self):
         """
@@ -374,42 +372,34 @@ class Test_full_move:
         # one right to left
         # one diagonal upper left to lower right
         # one diagonal upper right to lower left
-        start_positions= np.array( ( ( 5.0, 5.0),
-                                     ( 15.0, 5.0),
-                                     ( 0.0, 0.0),
-                                     (19.0, 0.0),
-                                     ), dtype=np.float64) 
-
-        end_positions =  np.array( ( ( 15.0, 5.0),
-                                     (  5.0, 5.0),
-                                     ( 10.0, 5.0 ),
-                                     (  0.0, 9.0 ),
-                                     ),  dtype=np.float64)
         
-        last_water_positions = np.empty_like( start_positions )
+        spill = gnome.spill.Spill(num_LEs=4)
 
-        status_codes  =  np.empty( (start_positions.shape[0],), dtype=basic_types.status_code_type)
-        status_codes[:]  =  basic_types.oil_status.status_in_water
- 
-        map.beach_elements(start_positions,
-                           end_positions,
-                           last_water_positions,
-                           status_codes,
-                           )
+        spill['positions'] = np.array( ( ( 5.0, 5.0, 0.0),
+                                         ( 15.0, 5.0, 0.0),
+                                         ( 0.0, 0.0, 0.0),
+                                         (19.0, 0.0, 0.0),
+                                         ), dtype=np.float64) 
+        spill['next_positions'] = np.array( ( ( 15.0, 5.0, 0.0),
+                                              (  5.0, 5.0, 0.0),
+                                              ( 10.0, 5.0, 0.0),
+                                              (  0.0, 9.0, 0.0 ),
+                                              ),  dtype=np.float64) 
+        map.beach_elements(spill)
+
+        assert np.array_equal( spill['positions'], ( (10.0,  5.0, 0.0),
+                                                     (10.0, 5.0, 0.0),
+                                                     (10.0, 5.0, 0.0),
+                                                     (10.0, 4.0, 0.0),
+                                                     ) )
         
-        ## do we care what the end positon is here?
-        assert np.array_equal( end_positions, ( (10.0, 5.0),
-                                                (10.0, 5.0),
-                                                (10.0, 5.0),
-                                                (10.0, 4.0),
-                                                ) )
-        assert np.array_equal( last_water_positions, ( (9.0,  5.0),
-                                                       (11.0, 5.0),
-                                                       ( 9.0, 4.0),
-                                                       (11.0, 4.0),
-                                                       ) )
+        assert np.array_equal( spill['last_water_positions'], ( (9.0,  5.0, 0.0),
+                                                                (11.0, 5.0, 0.0),
+                                                                ( 9.0, 4.0, 0.0),
+                                                                (11.0, 4.0, 0.0),
+                                                                ) )
 
-        assert np.alltrue( status_codes == basic_types.oil_status.status_on_land )
+        assert np.alltrue( spill['status_codes']  ==  basic_types.oil_status.on_land )
 
     def test_some_cross_array(self):
         """
@@ -425,40 +415,36 @@ class Test_full_move:
         # one right to left
         # diagonal that doesn't hit
         # diagonal that does hit
-        start_positions= np.array( ( ( 5.0, 5.0),
-                                     ( 15.0, 5.0),
-                                     ( 0.0, 0.0),
-                                     (19.0, 0.0),
-                                     ), dtype=np.float64) 
-
-        end_positions =  np.array( ( (  9.0, 5.0),
-                                     (  11.0, 5.0),
-                                     (  9.0, 9.0 ),
-                                     (  0.0, 9.0 ),
-                                     ),  dtype=np.float64)
-        
-        last_water_positions = np.empty_like( start_positions )
-
-        status_codes  =  np.empty( (start_positions.shape[0],), dtype=basic_types.status_code_type)
-        status_codes[:]  =  basic_types.oil_status.status_in_water
  
-        map.beach_elements(start_positions,
-                           end_positions,
-                           last_water_positions,
-                           status_codes,
-                           )
-        assert np.array_equal( end_positions, ( ( 9.0, 5.0),
-                                                (11.0, 5.0),
-                                                ( 9.0, 9.0),
-                                                (10.0, 4.0),
-                                                ) )
-        # just the beached ones
-        assert np.array_equal( last_water_positions[3:], ( (11.0, 4.0),
-                                                           ) )
+        spill = gnome.spill.Spill(num_LEs=4)
 
-        assert np.array_equal( status_codes[3:], ( basic_types.oil_status.status_on_land,
-                                                   ) )
-        
+        spill['positions'] = np.array( ( ( 5.0, 5.0, 0.0),
+                                         (15.0, 5.0, 0.0),
+                                         ( 0.0, 0.0, 0.0),
+                                         (19.0, 0.0, 0.0),
+                                         ), dtype=np.float64) 
+
+        spill['next_positions'] = np.array( ( (  9.0, 5.0, 0.0),
+                                              ( 11.0, 5.0, 0.0),
+                                              (  9.0, 9.0, 0.0),
+                                              (  0.0, 9.0, 0.0),
+                                              ),  dtype=np.float64)
+ 
+        map.beach_elements(spill)
+
+        assert np.array_equal( spill['positions'], ( ( 9.0, 5.0, 0.0),
+                                                     (11.0, 5.0, 0.0),
+                                                     ( 9.0, 9.0, 0.0),
+                                                     (10.0, 4.0, 0.0),
+                                                     ) )
+        # just the beached ones
+        assert np.array_equal( spill['last_water_positions'][3:], ( (11.0, 4.0, 0.0),
+                                                                    ) )
+
+        assert np.array_equal( spill['status_codes'][3:], ( basic_types.oil_status.on_land,
+                                                            ) )   
+
+
     def test_outside_raster(self):
         """
         test LEs starting form outside the raster bounds
@@ -473,39 +459,32 @@ class Test_full_move:
         # one right to left
         # diagonal that doesn't hit
         # diagonal that does hit
-        start_positions= np.array( ( ( 30.0, 5.0), # outside from right
-                                     ( -5.0, 5.0), # outside from left
-                                     ( 5.0, -5.0), # outside from top
-                                     ( -5.0, -5.0), # outside from upper left
+        spill = gnome.spill.Spill(num_LEs=4)
+        spill['positions']= np.array( ( ( 30.0, 5.0, 0.0), # outside from right
+                                     ( -5.0, 5.0, 0.0), # outside from left
+                                     ( 5.0, -5.0, 0.0), # outside from top
+                                     ( -5.0, -5.0, 0.0), # outside from upper left
                                      ), dtype=np.float64) 
 
-        end_positions =  np.array( ( (  15.0, 5.0),
-                                     (  5.0, 5.0),
-                                     (  5.0, 15.0 ),
-                                     ( 25.0, 15.0 ),
+        spill['next_positions'] =  np.array( ( (  15.0, 5.0, 0.0),
+                                     (  5.0, 5.0, 0.0),
+                                     (  5.0, 15.0, 0.0 ),
+                                     ( 25.0, 15.0, 0.0 ),
                                      ),  dtype=np.float64)
         
-        last_water_positions = np.empty_like( start_positions )
-
-        status_codes  =  np.empty( (start_positions.shape[0],), dtype=basic_types.status_code_type)
-        status_codes[:]  =  basic_types.oil_status.status_in_water
- 
-        map.beach_elements(start_positions,
-                           end_positions,
-                           last_water_positions,
-                           status_codes,
-                           )
-        assert np.array_equal( end_positions, ( ( 15.0, 5.0),
-                                                ( 5.0, 5.0),
-                                                ( 5.0, 15.0),
-                                                (10.0, 5.0),
-                                                ) )
+        map.beach_elements(spill)
+        
+        assert np.array_equal( spill['positions'], ( ( 15.0, 5.0, 0.0),
+                                                     ( 5.0, 5.0, 0.0),
+                                                     ( 5.0, 15.0, 0.0),
+                                                     (10.0, 5.0, 0.0),
+                                                     ) )
         # just the beached ones
-        assert np.array_equal( last_water_positions[3:], ( ( 9.0, 4.0),
-                                                           ) )
+        assert np.array_equal( spill['last_water_positions'][3:], ( ( 9.0, 4.0, 0.0),
+                                                                    ) )
 
-        assert np.array_equal( status_codes[3:], ( basic_types.oil_status.status_on_land,
-                                                   ) )
+        assert np.array_equal( spill['status_codes'][3:], ( basic_types.oil_status.on_land,
+                                                            ) )
         
 
         

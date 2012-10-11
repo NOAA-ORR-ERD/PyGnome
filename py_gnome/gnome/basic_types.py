@@ -32,7 +32,7 @@ def dt_to_epoch(dt):
 # Basic types. Should each have a corresponding, equivalent type in the C++ (type_defs.pxi)
 
 mover_type = np.float64 # the type used by the movers to do their calculations
-                        # data should genreally be passed in and stored in this type
+                        # data should generally be passed in and stored in this type
 
 world_point_type = np.float64
 

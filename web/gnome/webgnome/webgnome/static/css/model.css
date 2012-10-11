@@ -68,3 +68,9 @@ span#time {
 .regular {
     cursor: default;
 }
+
+legend {
+    font-size: 18px;
+    margin-bottom: 0;
+    line-height: 20px;
+}

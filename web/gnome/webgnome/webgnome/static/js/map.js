@@ -74,8 +74,8 @@ MapModel.prototype = {
     },
 
     handleFailedRun: function(data) {
-        if ('errorMessage' in data) {
-            this.error = data.errorMessage;
+        if ('message' in data && data.message.type == 'error') {
+            this.error = data.message;
         } else {
             this.error = 'The model failed to run. Please try again.'
         }
@@ -345,7 +345,7 @@ TreeView.prototype = {
     initialize: function() {
         var _this = this;
 
-        $(this.treeEl).dynatree({
+        this.tree = $(this.treeEl).dynatree({
             onActivate: function(node) {
                 $(_this).trigger(TreeView.ITEM_ACTIVATED, node);
             },
@@ -360,6 +360,27 @@ TreeView.prototype = {
         });
 
         return this;
+    },
+
+    getActiveItem: function() {
+        return this.tree.dynatree("getActiveNode");
+    },
+
+    hasItem: function(data) {
+        return this.tree.dynatree('getTree').selectKey(data.id) != null;
+    },
+
+    addItem: function(data) {
+        if (!'type' in data) {
+            alert('An error occurred. Try refreshing the page.');
+            console.log(data);
+        }
+
+        var rootNode = this.tree.dynatree('getTree').selectKey(data.type);
+        rootNode.addChild({
+            title: data.id,
+            key: data.id
+        });
     }
 };
 
@@ -379,7 +400,20 @@ TreeControlView.SETTINGS_BUTTON_CLICKED = 'gnome:itemSettingsButtonClicked';
 
 TreeControlView.prototype = {
     initialize: function() {
+        var _this = this;
         this.disableControls();
+
+        var clickEvents = [
+            [this.addButtonEl, TreeControlView.ADD_BUTTON_CLICKED],
+            [this.removeButtonEl, TreeControlView.REMOVE_BUTTON_CLICKED],
+            [this.settingsButtonEl, TreeControlView.SETTINGS_BUTTON_CLICKED],
+        ];
+
+        _.each(_.object(clickEvents), function(customEvent, element) {
+            $(element).click(function(event) {
+                $(_this).trigger(customEvent);
+            });
+        });
     },
     enableControls: function() {
         _.each(this.itemControls, function(buttonEl) {
@@ -473,9 +507,9 @@ AnimationControlView.prototype = {
             [this.resizeButtonEl, AnimationControlView.RESIZE_BUTTON_CLICKED]
         ];
 
-        _.each(_.object(clickEvents), function(event, element) {
-            $(element).click(function() {
-                $(_this).trigger(event);
+        _.each(_.object(clickEvents), function(customEvent, element) {
+            $(element).click(function(event) {
+                $(_this).trigger(customEvent);
             });
         });
 
@@ -580,8 +614,230 @@ AnimationControlView.prototype = {
 };
 
 
-MapController = function(opts) {
+function ModalFormView(opts) {
     _.bindAll(this);
+    this.formContainerEl = opts.formContainerEl;
+    this.rootApiUrls = opts.rootApiUrls;
+}
+
+ModalFormView.SAVE_BUTTON_CLICKED = 'gnome:formSaveButtonClicked';
+
+ModalFormView.SUBMIT_SUCCESS = 'gnome:formSubmitSuccess';
+
+// These events will fire if the server included a message in the JSON response
+// containing the rendered HTML of a submitted form. They are not fired for
+// regular form validation errors, which appear as HTML markup.
+ModalFormView.FORM_SUCCESS = 'gnome:formSuccess';
+ModalFormView.FORM_WARNING = 'gnome:formWarning';
+ModalFormView.FORM_ERROR = 'gnome:formError';
+
+ModalFormView.prototype = {
+
+    initialize: function() {
+        var _this = this;
+
+        $(this.formContainerEl).on('click', '.btn-primary', function(event) {
+            $(_this).trigger(ModalFormView.SAVE_BUTTON_CLICKED);
+        });
+
+        $(this.formContainerEl).on('click', '.btn-next', this.goToNextStep);
+        $(this.formContainerEl).on('click', '.btn-prev', this.goToPreviousStep);
+
+        $(this.formContainerEl).on('submit', 'form', function(event) {
+            event.preventDefault();
+            _this.doAjaxFormSubmit(this);
+            return false;
+        });
+    },
+
+    getFirstStepWithError: function() {
+        var form = $(this.formContainerEl).find('form');
+        var step = 1;
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var errorDiv = $('div.control-group.error').first();
+        var stepDiv = errorDiv.closest('div.step');
+
+        if (stepDiv) {
+            step = stepDiv.attr('data-step');
+        }
+
+        return step;
+    },
+
+    previousStepExists: function(stepNum) {
+        var form = $(this.formContainerEl).find('form');
+        return form.find('div[data-step="' + (stepNum - 1) + '"]').length > 0;
+    },
+
+    nextStepExists: function(stepNum) {
+        stepNum = parseInt(stepNum);
+        var form = $(this.formContainerEl).find('form');
+        return form.find('div[data-step="' + (stepNum + 1) + '"]').length > 0;
+    },
+
+    goToStep: function(stepNum) {
+        var form = $(this.formContainerEl).find('form');
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var stepDiv = form.find('div.step[data-step="' + stepNum + '"]');
+
+        if (stepDiv.length == 0) {
+            return;
+        }
+
+        var otherSteps = form.find('div.step');
+        otherSteps.addClass('hidden');
+        otherSteps.removeClass('active');
+        stepDiv.removeClass('hidden');
+        stepDiv.addClass('active');
+
+        var prevButton = $(this.formContainerEl).find('.btn-prev');
+        var nextButton = $(this.formContainerEl).find('.btn-next');
+        var saveButton = $(this.formContainerEl).find('.btn-primary');
+
+        if (this.previousStepExists(stepNum)) {
+            prevButton.removeClass('hidden');
+        } else {
+            prevButton.addClass('hidden');
+        }
+
+        if (this.nextStepExists(stepNum)) {
+            nextButton.removeClass('hidden');
+            saveButton.addClass('hidden');
+        } else {
+            nextButton.addClass('hidden');
+            saveButton.removeClass('hidden');
+        }
+    },
+    
+    goToNextStep: function(event) {
+        var form = $(this.formContainerEl).find('form');
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var activeStep = form.find('div.step.active');
+        var currentStep = parseInt(activeStep.attr('data-step'));
+        this.goToStep(currentStep + 1);
+    },
+    
+    goToPreviousStep: function(event) {
+        var form = $(this.formContainerEl).find('form');
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var activeStep = form.find('div.step.active');
+        var currentStep = parseInt(activeStep.attr('data-step'));
+        this.goToStep(currentStep - 1);
+    },
+
+    showForm: function(urlKey, id) {
+        var _this = this;
+        var rootUrl = this.rootApiUrls[urlKey];
+        var url = id ? rootUrl + '/edit/' + id : rootUrl + '/add';
+
+        $.ajax({
+            type: 'GET',
+            url: url,
+            success: this.handleAjaxSuccess,
+            error: this.handleAjaxError
+        });
+    },
+
+    reloadForm: function(html) {
+        this.clearForm();
+        var container = $(this.formContainerEl);
+        container.html(html);
+        container.find('div.modal').modal();
+
+        var stepWithError = this.getFirstStepWithError();
+        if (stepWithError) {
+            this.goToStep(stepWithError);
+        }
+    },
+
+    clearForm: function() {
+        $(this.formContainerEl + ' div.modal').modal('hide');
+        $(this.formContainerEl).empty();
+    },
+
+    submitForm: function() {
+        $(this.formContainerEl + ' form').submit();
+        this.clearForm();
+    },
+
+    doAjaxFormSubmit: function(form) {
+        var _this = this;
+
+        $.ajax({
+            type: 'POST',
+            data: $(form).serialize(),
+            url: $(form).attr('action'),
+            success: this.handleAjaxSuccess,
+            error: this.handleAjaxError
+        });
+    },
+
+    handleAjaxSuccess: function(data, textStatus, xhr) {
+        if ('form_html' in data) {
+            this.reloadForm(data.form_html);
+        } else {
+            $(this).trigger(ModalFormView.SUBMIT_SUCCESS, data);
+            this.clearForm();
+        }
+
+        if ('message' in data) {
+            var messageEvent;
+
+            switch (data.message.type) {
+                case 'success':
+                    messageEvent = ModalFormView.FORM_SUCCESS;
+                    break;
+                case 'error':
+                    messageEvent = ModalFormView.FORM_ERROR;
+                    break;
+                case 'warning':
+                    messageEvent = ModalFormView.FORM_WARNING;
+                    break;
+            }
+
+            if (messageEvent) {
+                $(this).trigger(messageEvent, data.message);
+            }
+        }
+    },
+    
+    handleAjaxError: function(xhr, textStatus, errorThrown) {
+        alert('Could not connect to server.');
+        console.log(xhr, textStatus, errorThrown);
+    }
+};
+
+
+function MapController(opts) {
+    _.bindAll(this);
+
+    // TODO: Obtain from server via template variable passed into controller.
+    this.rootApiUrls = {
+        setting: '/model/setting',
+        mover: '/model/mover',
+        spill: '/model/spill'
+    };
+
+    this.formView = new ModalFormView({
+        formContainerEl: opts.formContainerEl,
+        rootApiUrls: this.rootApiUrls
+    });
 
     this.sidebarEl = opts.sidebarEl;
 
@@ -617,45 +873,61 @@ MapController = function(opts) {
 
     this.mapModel = new MapModel({});
 
-    // Event handlers
-    $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
-
-    $(this.animationControlView).bind(
-        AnimationControlView.PLAY_BUTTON_CLICKED, this.play);
-    $(this.animationControlView).bind(
-        AnimationControlView.PAUSE_BUTTON_CLICKED, this.pause);
-    $(this.animationControlView).bind(
-        AnimationControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
-    $(this.animationControlView).bind(
-        AnimationControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
-    $(this.animationControlView).bind(
-        AnimationControlView.SLIDER_CHANGED, this.sliderChanged);
-    $(this.animationControlView).bind(
-        AnimationControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
-    $(this.animationControlView).bind(
-        AnimationControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
-    $(this.animationControlView).bind(
-        AnimationControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
-    $(this.animationControlView).bind(
-        AnimationControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
-
-    $(this.mapModel).bind(MapModel.RUN_FINISHED, this.restart);
-    $(this.mapModel).bind(MapModel.RUN_FAILED, this.runFailed);
-
-    $(this.mapView).bind(MapView.INIT_FINISHED, this.mapInitFinished);
-    $(this.mapView).bind(MapView.REFRESH_FINISHED, this.refreshFinished);
-    $(this.mapView).bind(MapView.PLAYING_FINISHED, this.stopAnimation);
-    $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
-    $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
-    $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
-
+    this.setupEventHandlers();
     this.initializeViews();
 
     return this;
-};
+}
 
 MapController.prototype = {
+    setupEventHandlers: function() {
+        $(this.formView).bind(ModalFormView.SAVE_BUTTON_CLICKED, this.saveForm);
+        $(this.formView).bind(ModalFormView.FORM_WARNING, this.receivedMessage);
+        $(this.formView).bind(ModalFormView.FORM_SUCCESS, this.receivedMessage);
+        $(this.formView).bind(ModalFormView.FORM_ERROR, this.receivedMessage);
+        $(this.formView).bind(ModalFormView.SUBMIT_SUCCESS, this.formSubmitted);
+
+        $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
+
+        $(this.treeControlView).bind(
+            TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
+        $(this.treeControlView).bind(
+            TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
+        $(this.treeControlView).bind(
+            TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
+
+        $(this.animationControlView).bind(
+            AnimationControlView.PLAY_BUTTON_CLICKED, this.play);
+        $(this.animationControlView).bind(
+            AnimationControlView.PAUSE_BUTTON_CLICKED, this.pause);
+        $(this.animationControlView).bind(
+            AnimationControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
+        $(this.animationControlView).bind(
+            AnimationControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
+        $(this.animationControlView).bind(
+            AnimationControlView.SLIDER_CHANGED, this.sliderChanged);
+        $(this.animationControlView).bind(
+            AnimationControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
+        $(this.animationControlView).bind(
+            AnimationControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
+        $(this.animationControlView).bind(
+            AnimationControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
+        $(this.animationControlView).bind(
+            AnimationControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
+
+        $(this.mapModel).bind(MapModel.RUN_FINISHED, this.restart);
+        $(this.mapModel).bind(MapModel.RUN_FAILED, this.runFailed);
+
+        $(this.mapView).bind(MapView.INIT_FINISHED, this.mapInitFinished);
+        $(this.mapView).bind(MapView.REFRESH_FINISHED, this.refreshFinished);
+        $(this.mapView).bind(MapView.PLAYING_FINISHED, this.stopAnimation);
+        $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
+        $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
+        $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
+    },
+
     initializeViews: function() {
+        this.formView.initialize();
         this.treeControlView.initialize();
         this.treeView.initialize();
         this.animationControlView.initialize();
@@ -716,7 +988,7 @@ MapController.prototype = {
     },
 
     runFailed: function(event) {
-        alert(this.mapModel.error);
+        alert(this.mapModel.error.text);
     },
 
     refreshFinished: function(event) {
@@ -790,6 +1062,79 @@ MapController.prototype = {
 
     treeItemActivated: function(event) {
         this.treeControlView.enableControls();
+    },
+
+    showFormForActiveTreeItem: function() {
+        var node = this.treeView.getActiveItem();
+        var urlKey = null;
+        var id = null;
+
+        // TODO: Only activate 'Add item' button when a root node is selected.
+        if (node === null) {
+            return;
+        }
+
+        if (node.data.key in this.rootApiUrls) {
+            console.log(node)
+            urlKey = node.data.key;
+        } else if (node.parent.data.key in this.rootApiUrls) {
+            // TODO: Should we pass the name of the parent node in as a data
+            // value on the <li> item that created tihs node on page load?
+            // Otherwise we can't support more than one depth of nodes under
+            // a parent node.
+            urlKey = node.parent.data.key;
+            id = node.data.key;
+        }
+
+        console.log(urlKey, id);
+
+        if (urlKey) {
+            this.formView.showForm(urlKey, id);
+        }
+    },
+
+    addButtonClicked: function(event) {
+        this.showFormForActiveTreeItem();
+    },
+
+    settingsButtonClicked: function(event) {
+        this.showFormForActiveTreeItem();
+    },
+
+    saveForm: function() {
+        this.formView.submitForm();
+    },
+
+    removeButtonClicked: function(event) {
+        console.log(event.data.key);
+    },
+
+    receivedMessage: function(event, message) {
+        if (message) {
+            this.displayMessage(message);
+        }
+    },
+
+    displayMessage: function(message) {
+        if (!'type' in message || !'text' in message)  {
+            return;
+        }
+
+        var alertDiv = $('div .alert-' + message.type);
+
+        if (message.text && alertDiv) {
+            alertDiv.find('span.message').text(message.text);
+            alertDiv.removeClass('hidden');
+        }
+    },
+
+    formSubmitted: function(event, data) {
+        if ('message' in data) {
+            this.displayMessage(data.message);
+        }
+        if (!this.treeView.hasItem(data)) {
+            this.treeView.addItem(data);
+        }
     }
 };
 
@@ -802,7 +1147,8 @@ gnome = window.noaa.erd.gnome;
 $('#map').imagesLoaded(function() {
     new MapController({
         mapEl: '#map',
-        sidebarEl: '#sidebar'
+        sidebarEl: '#sidebar',
+        'formContainerEl': '#modal-container'
     });
 });
 

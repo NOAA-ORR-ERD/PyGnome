@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from pyramid.config import Configurator
 from pyramid.renderers import JSON
@@ -12,7 +13,8 @@ session_factory = UnencryptedCookieSessionFactoryConfig('ibjas45u3$@#$++slkjf__2
 
 gnome_json = JSON(adapters=(
     (datetime.datetime, json_date_adapter),
-    (datetime.date, json_date_adapter)
+    (datetime.date, json_date_adapter),
+    (uuid.UUID, lambda obj, request: str(obj))
 ))
 
 
@@ -23,7 +25,10 @@ def main(global_config, **settings):
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('show_model', '/')
     config.add_route('run_model', '/model/run')
-    config.add_route('add_wind_mover', '/model/mover/add/wind')
+    config.add_route('add_mover', '/model/mover/add')
+    config.add_route('add_constant_wind_mover', '/model/mover/add/constant_wind')
+    config.add_route('add_variable_wind_mover', '/model/mover/add/variable_wind')
+    config.add_route('edit_constant_wind_mover', '/model/mover/edit/{id}')
     config.add_renderer('gnome_json', gnome_json)
     config.scan()
     return config.make_wsgi_app()

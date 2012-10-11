@@ -47,33 +47,33 @@
     </div>
     <div id="tree">
         <ul id="tree-list">
-            <li id="settings" title="Model Settings">
+            <li id="setting" title="Model Settings">
                 Model Settings
                 <ul>
                     % for setting in model.get_settings():
-                            <li id="${setting['name']}">${setting['name']}
-                                : ${setting['value']}</li>
+                        <li id="${setting['name']}">${setting['name']}
+                            : ${setting['value']}</li>
                     % endfor
 
                     <% map = model.get_map() %>
                     % if map:
-                        <li>${map['name']}</li>
+                        <li id="${ map['name'] }">${map['name']}</li>
                     % endif
                 </ul>
             </li>
-            <li id="movers" title="Movers">
+            <li id="mover" title="Movers">
                 Movers
                 <ul>
-                    % for mover in model.get_movers():
-                            <li>${mover['name']}</li>
+                    % for id in model.get_movers().keys():
+                        <li id="${ id }">${ id }}</li>
                     % endfor
                 </ul>
             </li>
-            <li id="spills" title="Spills">
+            <li id="spill" title="Spills">
                 Spills
                 <ul>
                     % for spill in model.get_spills():
-                            <li>${spill['name']}</li>
+                        <li id="${ spill['id'] }">${spill['name']}</li>
                     % endfor
                 </ul>
             </li>
@@ -83,13 +83,20 @@
 
 <%block name="content">
     <div class="container">
-       % if warning:
-       <div class="alert">
-          <button type="button" class="close" data-dismiss="alert">×</button>
-          <strong>Warning!</strong> ${warning}
-        </div>
-      % endif
-
+      <div class="messages">
+          <div class="alert alert-success ${ '' if success else 'hidden'}">
+              <button type="button" class="close" data-dismiss="alert">× </button>
+              <span class='message'>${ success if success else '' }</span>
+          </div>
+          <div class="alert alert-warning ${ '' if warning else 'hidden'}">
+              <button type="button" class="close" data-dismiss="alert">× </button>
+              <strong>Warning!</strong> <span class="message">${ warning if warning else '' }</span>
+          </div>
+           <div class="alert alert-error ${ '' if error else 'hidden'}">
+              <button type="button" class="close" data-dismiss="alert">× </button>
+              <strong>Error!</strong> <span class="message">${ error if error else '' }</span>
+          </div>         
+      </div>
       <div class="btn-toolbar">
           <div class="btn-group">
               <a class="btn disabled" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
@@ -116,26 +123,8 @@
         <img class="frame active" data-position="0" src="/static/img/placeholder.gif">
     </div>
 
-
-    <script id="modalTemplate" type="text/x-jsrender">
-        <a href="#modal" role="button" class="btn" data-toggle="modal">Launch demo modal</a>
-        <div class="modal hide fade" id="modal" tabindex="-1"
-             role="dialog" aria-labelledby="modal-label" aria-hidden="true">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="mover-modal"
-                        aria-hidden="true">×
-                </button>
-                <h3 id="modal-label">{{ header }}</h3>
-            </div>
-            <div class="modal-body">
-                {{ body }}
-            </div>
-            <div class="modal-footer">
-                <button class="btn" data-dismiss="modal" aria-hidden="true"> Cancel </button>
-                <button class="btn btn-primary">Save</button>
-            </div>
-        </div>
-    </script>
+    ## A div that we'll add rendered modal forms into.
+    <div id="modal-container"></div>
 </%block>
 
 <%block name="javascript">

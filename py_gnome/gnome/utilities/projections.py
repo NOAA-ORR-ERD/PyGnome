@@ -3,15 +3,17 @@
 """
 Module to hold classes and supporting code for projections used in GNOME.
 
-Only a simple "flat earth" projection for now.
+Only:
+
+  * no projection
+  * geo-projection (jsut scaling to pixels)
+  * a simple "flat earth" projection for 
 
 Also a bit of code for scaling lat-long to meters, etc.
 
 Used by map_canvas code and map code.
 
-The drawing code for the interactive core mapping window -- at least for
-the web version
-
+NOTE: all coordinates are takes as (lon, lat, depth (even though depth is always ignored
 """
 
 import sys
@@ -19,15 +21,15 @@ import numpy as np
 
 class NoProjection(object):
     """
-    This is do-nothing projeciton class -- returns what it gets.
+    This is do-nothing projection class -- returns what it gets.
     
-    It rounds down to integer (pixel) coordinates
+    It optionally rounds down to integer (pixel) coordinates
     
-    used for testing, primarily
+    used for testing, primarily, and as a definition of the interface
     """
     def __init__(self, bounding_box=None, image_size=None):
         """
-        create a new projection do-nothing projection
+        create a new do-nothing projection
         """
         pass
         return None
@@ -37,9 +39,24 @@ class NoProjection(object):
 
     def to_pixel(self, coords, asint=False):
         """
-        returns the same coords, but as an np.array , if they aren't already
+        returns the same (lon, lat) coords, but as an np.array, if they aren't already
         
+        :param coords: -- the coords to project (Nx3 numpy array or compatible sequence)
+                          (lon, lat, depth)
+        :param asint: -- flag to set whether to convert to a integer or not default
+                         is to leave it as the same type it came in, so you can have fractional pixels
+        """
+        if asint:
+            return np.asarray(coords, dtype=np.int).reshape((-1,3))[:,:2]
+        else:
+            return np.asarray(coords).reshape((-1,3))[:,:2]
+
+    def to_pixel_2D(self, coords, asint=False):
+        """
+        same as to_pixel, but expects only (lon, lat) coords as input.
+
         :param coords: -- the coords to project (Nx2 numpy array or compatible sequence)
+                          (lon, lat)
         :param asint: -- flag to set whether to convert to a integer or not default
                          is to leave it as the same type it came in, so you can have fractional pixels
         """
@@ -48,9 +65,10 @@ class NoProjection(object):
         else:
             return np.asarray(coords)
 
+
     def to_lat_long(self, coords):
         """
-        returns the same coords, but as an np.array , if they aren't already
+        returns the same coords, but as a np.array of float64 , if they aren't already
         """
         return np.asarray(coords, dtype=np.float64)
 
@@ -109,11 +127,12 @@ class GeoProjection(object):
         converts input coordinates to pixel coords
         
         param: coords --  an array of coordinates:
-          NX2: ( (long1, lat1),
-                 (long2, lat2),
-                 (long3, lat3),
+          NX3: ( (long1, lat1, z1),
+                 (long2, lat2, z2),
+                 (long3, lat3, z3),
                  .....
                 )
+        (z is ignored, and there is no z in the returned array)
         
         returns:  the pixel coords as a similar Nx2 array of integer x,y coordinates
         (using the y = 0 at the top, and y increasing down) -- a
@@ -125,6 +144,34 @@ class GeoProjection(object):
               outside the map
         """
         # b = a.view(shape=(10,2),dtype='<f4')
+        coords = np.asarray(coords).reshape((-1,3))
+        # shift to center:
+        coords = coords[:, :2] - self.center
+        # scale to pixels:
+        coords *= self.scale
+        # shift to pixel coords
+        coords += self.offset
+
+        if asint:
+            # NOTE: using "floor" as it rounds negative numbers towards -inf
+            ##      simple casting rounds toward zero
+            ## we may need the negative coords to work right for locations off the grid.
+            ##  (used for the raster map code)
+            return np.floor(coords, coords).astype(np.int)
+        else:
+            return coords
+
+    def to_pixel_2D(self, coords, asint=False):
+        """
+        same as to_pixel, but expects only (lon, lat) coords as input.
+
+        :param coords: -- the coords to project (Nx2 numpy array or compatible sequence)
+                          (lon, lat)
+        :param asint: -- flag to set whether to convert to a integer or not default
+                         is to leave it as the same type it came in, so you can have fractional pixels
+        """
+        coords = np.asarray(coords).reshape((-1,2))
+
         # shift to center:
         coords = coords - self.center
         # scale to pixels:
@@ -154,6 +201,8 @@ class GeoProjection(object):
                  .....
                 )
          (as produced by to_pixel)
+        
+        NOTE: there is not depth in input -- pixels are always 2-d!
         
         Note that  to_lat_long( to_pixel (coords) ) != coords, due to rounding.
         If the input is integers, a 0.5 is added to "shift" the location to mid-pixel.
@@ -186,27 +235,29 @@ class FlatEarthProjection(GeoProjection):
     """
     
     @staticmethod
-    def meters_to_latlon(meters, ref_latitudes):
+    def meters_to_latlon(meters, ref_positions):
         """
         Converts from delta meters to delta latitude-longitude, using the Flat-Earth projection.
         
-        :param meters: NX2 numpy array of (dx, dy) distances in meters
-        :param ref_latitudes: N, numpy array of reference latitudes in degrees
+        :param meters: NX3 numpy array of (dx, dy, dz) distances in meters (dz is passed through untouched)
+        :param ref_positions: NX3, numpy array of reference positions in degrees (Only lat is used here)
 
-        :returns delta_lon_lat: Nx2numpy array of (delta-lon, delta-lat) pairs
+        :returns delta_lon_lat: Nx3 numpy array of (delta-lon, delta-lat, delta-z) triples
 
         dlat = dy * 8.9992801e-06
 
         dlon = dy * 8.9992801e-06 * cos(ref_lat) 
 
-        (based on an average radius of the earth of 6371010 m)
+        (based on previous GNOME value: and/or average radius of the earth of 6366706.989  m)
 
         """
         #make a copy -- don't change meters
-        delta_lon_lat = np.array(meters, dtype=np.float64).reshape(-1, 2)
-        ref_latitudes = np.asarray(ref_latitudes, dtype=np.float64)
-        delta_lon_lat *= 8.9992801e-06
-        delta_lon_lat[:,0] /= np.cos(np.deg2rad(ref_latitudes))
+        delta_lon_lat = np.array(meters, dtype=np.float64).reshape(-1, 3)
+        # reference is possible for reference positions
+        ref_positions = np.asarray(ref_positions, dtype=np.float64).reshape(-1, 3)
+
+        delta_lon_lat[:,:2] *= 8.9992801e-06
+        delta_lon_lat[:,0] /= np.cos(np.deg2rad(ref_positions[:,1]))
         return delta_lon_lat
 
     @staticmethod
@@ -228,7 +279,8 @@ class FlatEarthProjection(GeoProjection):
         NOTE: performance could be improved a lot here is need be (lots of data copies)
         
         """
-        EarthRadius = 6371010.0 #Earth's mean radius, in m.
+        # EarthRadius = 6371010.0 # Value I"ve looked up
+        EarthRadius = 6366706.989 # Matches the value used above -- GNOME value
 
         #Convert from degrees to radians.
         lat = np.deg2rad(lat)

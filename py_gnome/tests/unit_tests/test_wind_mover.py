@@ -34,9 +34,9 @@ class Common():
     # create arrays #
     #################
     num_le = 4  # test on 4 LEs
-    ref  =  np.empty((num_le,), dtype=basic_types.world_point)   # LEs - initial locations
-    wind =  np.empty((num_le,), dtype=np.double) # windage
-    const_wind = np.empty((1,), dtype=basic_types.velocity_rec) # constant wind
+    ref  =  np.zeros((num_le,), dtype=basic_types.world_point)   # LEs - initial locations
+    wind =  np.zeros((num_le,), dtype=np.double) # windage
+    const_wind = np.zeros((1,), dtype=basic_types.velocity_rec) # constant wind
     #uncertain_ra = np.empty((4,), dtype=basic_types.wind_uncertain_rec)    # one uncertain rec per le
 
     f_sigma_theta = 1  # ?? 
@@ -130,11 +130,13 @@ class TestConstantWind():
     def test_move_value(self):
         #meters_per_deg_lat = 111120.00024
         #self.cw.wind/meters_per_deg_lat
-        delta = np.zeros((self.cw.num_le,2))
+        delta = np.zeros( (self.cw.num_le, 3) )
         delta[:,0] = self.cw.wind*self.cw.const_wind['u']*self.cw.time_step # 'u'
         delta[:,1] = self.cw.wind*self.cw.const_wind['v']*self.cw.time_step # 'v'
         
-        xform = projections.FlatEarthProjection.meters_to_latlon( delta, self.cw.ref['lat'])
+        
+        ref = self.cw.ref.view(dtype=basic_types.world_point_type).reshape((-1,3))
+        xform = projections.FlatEarthProjection.meters_to_latlon( delta, ref)
         
         actual = np.zeros((self.cw.num_le,), dtype=basic_types.world_point)
         actual ['lat'] = xform[:,1]

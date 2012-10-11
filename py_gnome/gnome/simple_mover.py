@@ -51,7 +51,7 @@ class SimpleMover(object):
         """
         pass
 
-    def get_move(self, spill, time_step, model_time=None):
+    def get_move(self, spill, time_step, model_time):
         """
         moves the particles defined in the spill object
         
@@ -75,7 +75,7 @@ class SimpleMover(object):
             raise ValueError("The spill does not have the required data arrays\n"+err.message)
         
         # which ones should we move?
-        in_water_mask =  (status_codes == basic_types.oil_status.status_in_water)
+        in_water_mask =  (status_codes == basic_types.oil_status.in_water)
                 
         # compute the move
         delta = np.zeros((in_water_mask.sum(), 3), dtype = basic_types.mover_type)
@@ -86,7 +86,7 @@ class SimpleMover(object):
         # scale for projection
         # fixme -- move this to a utility function???
         #          i.e. all movers should use the same projection -- rather than doing it themselves.
-        delta[:,:2] = proj.meters_to_latlon(delta[:,:2], positions[in_water_mask, 1]) # just the lat-lon...
+        delta = proj.meters_to_latlon(delta, positions[in_water_mask]) # just the lat-lon...
         
         return delta
         

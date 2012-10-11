@@ -23,7 +23,7 @@ New features:
 import numpy as np
 
 from gnome.utilities import map_canvas
-from gnome.basic_types import world_point_type, oil_status 
+from gnome.basic_types import world_point_type, oil_status
 
 from gnome.utilities.file_tools import haz_files
 #from gnome.utilities.geometry import BBox
@@ -69,7 +69,7 @@ class GnomeMap(object):
         """
         returns True is the location is on the map
 
-        coord is a (long, lat) location.
+        coord is a (long, lat, depth) location.
                 
         note: should this support no-rectangular maps? -- point in polygon?
         """
@@ -79,7 +79,7 @@ class GnomeMap(object):
         This may not be the same as in_water!
         
         """
-        return point_in_poly(self.map_bounds, coord)
+        return point_in_poly(self.map_bounds, coord[:2])
         
     def on_land(self, coord):
         """
@@ -88,7 +88,7 @@ class GnomeMap(object):
         True if the point is on land,
         False if the point is on water
         
-        coord is a (long, lat) location
+        coord is a (long, lat, depth) location
         
         Always returns False-- no land in this implementation
         
@@ -104,7 +104,7 @@ class GnomeMap(object):
         True if the point is in the water,
         False if the point is on land (or off map?)
         
-        coord is a (long, lat) location
+        coord is a (long, lat, depth) location
         
         """
         return self.on_map(coord)
@@ -119,7 +119,7 @@ class GnomeMap(object):
         (Note: it could be either off the map, or in a location that spills
         aren't allowed)
         
-        coord is a (long, lat) location
+        coord is a (long, lat, depth) location
         
         """
         return self.on_map(coord)
@@ -130,12 +130,7 @@ class GnomeMap(object):
         
         determines which LEs were or weren't beached.
         
-        Any that are beached have the beached flag set, and a "last know water position" (lkwp) is computed
-        
-        param: spill  - a spill object -- it must have:
-               'prev_position', 'positions', 'last_water_pt' and 'status_code' data arrays
-        
-        The default base map has no land, so nothing changes
+        This map class  has no land, so nothing changes
         """
         return None
     
@@ -148,7 +143,7 @@ class GnomeMap(object):
         Does the re-float logic -- changing the element status flag, an moving the
         element to the last knows water position
         
-        This version has no land, and so is a no-op.
+        This map class has no land, and so is a no-op.
         """
         pass
     
@@ -232,10 +227,10 @@ class RasterMap(GnomeMap):
         returns 1 if point on land
         returns 0 if not on land
         
-        coord is (long, lat) location
+        coord is (long, lat, depth) location
         
         """
-        return self._on_land_pixel(self.projection.to_pixel(coord))
+        return self._on_land_pixel(self.projection.to_pixel(coord)[0]) # to_pixel converts to array of points...
     
     def _on_land_pixel_array(self, coords):
         """
@@ -253,6 +248,8 @@ class RasterMap(GnomeMap):
         return chrmgph
 
     def _in_water_pixel(self, coord):
+        print "in _in_water_pixel"
+        print coord
         try:
             return not (self.bitmap[coord[0], coord[1]] & self.land_flag)
         except IndexError:
@@ -264,12 +261,16 @@ class RasterMap(GnomeMap):
         """
         returns true if the point given by coord is in the water
         
+        :param coord: is a (lon, lat, depth) coordinate
+        
+        (depth is ignored in this version)
+        
         checks if it's on the map, first.
         """
         if not self.on_map(coord):
             return False
         else:
-            return self._in_water_pixel(self.projection.to_pixel(coord))
+            return self._in_water_pixel(self.projection.to_pixel(coord, asint=True)[0]) # to_pixel makes a NX2 array
     
 #    def beach_element(self, p, lwp):
 #        """ 
@@ -313,10 +314,10 @@ class RasterMap(GnomeMap):
 #            result = land_check.find_first_pixel(self.bitmap, start_positions_px[i], end_positions_px[i], draw=False)
 #            if result is not None:
 #                last_water_positions_px[i], end_positions_px[i] = result
-#                status_codes[i] = oil_status.status_on_land
+#                status_codes[i] = oil_status.on_land
 #
 #        # put the data back in the arrays
-#        beached_mask =  ( status_codes == oil_status.status_on_land )
+#        beached_mask =  ( status_codes == oil_status.on_land )
 #        end_positions[beached_mask] = self.projection.to_lat_long(end_positions_px[beached_mask])
 #        last_water_positions[beached_mask] = self.projection.to_lat_long(last_water_positions_px[beached_mask])
 #        
@@ -340,42 +341,61 @@ class RasterMap(GnomeMap):
         # pull the data from the spill 
         ## is the last water point the same as the previos position? why not?? if beached, it won't move, if not, then we can use it?
         start_pos     = spill['positions']
-        end_pos       = spill['next_positions']
+        next_pos      = spill['next_positions']
         status_codes  = spill['status_codes']
-        last_water_pts = spill['last_water_pts']
+        last_water_positions = spill['last_water_positions']
+        
         
         # transform to pixel coords:
-        start_pos[:,:2] = self.projection.to_pixel(start_pos[:,:2])
-        end_pos[:,:2]   = self.projection.to_pixel(end_pos[:,:2])
+        # should this be a copy?
+        start_pos_pixel = self.projection.to_pixel(start_pos)
+        next_pos_pixel  = self.projection.to_pixel(next_pos)
         
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
-        self.check_land(self.bitmap, start_pos, end_pos, status_codes, last_water_pts)
+        # only check the ones that aren't already beached?
+        self.check_land(self.bitmap, start_pos_pixel, next_pos_pixel, status_codes, last_water_positions)
         
         #transform the points back to lat-long.
         ##fixme -- only transform those that were changed -- no need to introduce rounding error otherwise
-        beached = status_codes == STATUS_CODE_BEACHED
-        end_pos[beached]= self.projection.to_lat_long(end_pos[beached])
-        last_water_pt[beached] = self.projection.to_lat_long(end_pos[beached])
+        beached = ( status_codes == oil_status.on_land )
+        next_pos[beached, :2]= self.projection.to_lat_long(next_pos_pixel[beached])
+        last_water_positions[beached, :2] = self.projection.to_lat_long(last_water_positions[beached,:2])
 
-        def check_land(self, grid, start_pos, end_pos, status_codes, last_water_pts):
-            """
-            do the actual land-checking
-            """
-            ##fixme -- this needs to be ported to Cython!
+        ##fixme -- add off-map check here
 
-            for i in xrange(len(start_pos)):
-                pts = land_check.find_first_pixel(grid, start_pos[i,:2], end_pos[i,:2], draw=False):
-                    if pts is not None:
-                        last_water_pts[i, :2] = pts[0]
-                        status_codes[i] = STATUS_CODE_BEACHED
-            
+
+    def check_land(self, raster_map, positions, end_positions, status_codes, last_water_positions):
+        """
+        do the actual land-checking
+                
+        status_codes, positions and last_water_positions are altered in place.
+        
+        """
+        ##fixme -- this needs to be ported to Cython!
+
+        for i in xrange(len(positions)):
+            pts = land_check.find_first_pixel(raster_map,
+                                              positions[i],
+                                              end_positions[i],
+                                              draw=False)
+            if pts is None:
+                # didn't hit land -- can move the LE
+                positions[i, :] = end_positions[i, :]
+            if pts is not None:
+                last_water_positions[i, :2] = pts[0]
+                positions[i] = pts[1]
+                status_codes[i] = oil_status.on_land
+        
+        return None
 
 
     
     def allowable_spill_position(self, coord):
         """
         returns true is the spill position is in the allowable spill area
+        
+        :param coord: (lon, lat, depth) triple
         
         This may not be the same as in_water!
         
@@ -385,64 +405,65 @@ class RasterMap(GnomeMap):
                 if self.spillable_area is None:
                     return True
                 else:
-                    return point_in_poly(self.spillable_area, coord)
+                    return point_in_poly(self.spillable_area, coord[:2]) # point_in_poly is 2-d
             else:
                  return False
         else:
             return False
+
     def to_pixel_array(self, coords):
         """ 
         Projects an array of (lon, lat) tuples onto the bitmap, and modifies it in 
         place to hold the corresponding projected values.
         
-        param: coords is a Nx2 numpy array
+        :param coords:  a Nx3 numpy array of (lon, lat, depth) points
         
         returns: NX2 numpy array of integer pixel values
         """
         
         return self.projection.to_pixel(coords)
 
-    def movement_check(self, spill):
-        """ 
-        After moving a spill (after superposing each of the movers' contributions),
-        we determine which of the particles have been landed, ie., that are in the
-        current time step on land but were not in the previous one. Chromgph is a list
-        of boolean values, determining which of the particles need treatment. Particles
-        that have been landed are beached.
-        
-        param: spill -- a gnome.spill object (with LE info, etc)
-        """        
-        # make a regular Nx2 numpy array 
-        coords = np.copy(spill.npra['p']).view(world_point_type).reshape((-1, 2),)
-        coords = self.to_pixel_array(coords)
-        chromgph = self._on_land_pixel_array(coords)
-        sra = spill.npra['status_code']
-        for i in xrange(0, spill.num_particles):
-            if chromgph[i]:
-                sra[i] = oil_status.status_on_land
-        if spill.chromgph == None:
-            spill.chromgph = chromgph
-        merg = [int(chromgph[x] and not spill.chromgph[x]) for x in xrange(0, len(chromgph))]
-        self.chromgph = chromgph
-        return merg
-
-    def movement_check2(self, current_pos, prev_pos, status):
-        """
-        checks the movement of the LEs to see if they have:
-        
-        hit land or gone off the map. The status code is changed if they are beached or off map
-        
-        param: current_pos -- a Nx2 array of lat-long coordinates of the current positions
-        param: prev_pos -- a Nx2 array of lat-long coordinates of the previous positions
-        param: status -- a N, array of status codes.
-        """
-        # check which ones are still on the map:
-        on_map = self.on_map(current_pos)
-        # check which ones are on land:
-        pixel_coords = self.to_pixel_array(current_pos)
-        on_land = self.on_land(current_pos)
-        
-        
+#    def movement_check(self, spill):
+#        """ 
+#        After moving a spill (after superposing each of the movers' contributions),
+#        we determine which of the particles have been landed, ie., that are in the
+#        current time step on land but were not in the previous one. Chromgph is a list
+#        of boolean values, determining which of the particles need treatment. Particles
+#        that have been landed are beached.
+#        
+#        param: spill -- a gnome.spill object (with LE info, etc)
+#        """        
+#        # make a regular Nx2 numpy array 
+#        coords = np.copy(spill.npra['p']).view(world_point_type).reshape((-1, 2),)
+#        coords = self.to_pixel_array(coords)
+#        chromgph = self._on_land_pixel_array(coords)
+#        sra = spill.npra['status_code']
+#        for i in xrange(0, spill.num_particles):
+#            if chromgph[i]:
+#                sra[i] = oil_status.on_land
+#        if spill.chromgph == None:
+#            spill.chromgph = chromgph
+#        merg = [int(chromgph[x] and not spill.chromgph[x]) for x in xrange(0, len(chromgph))]
+#        self.chromgph = chromgph
+#        return merg
+#
+#    def movement_check2(self, current_pos, prev_pos, status):
+#        """
+#        checks the movement of the LEs to see if they have:
+#        
+#        hit land or gone off the map. The status code is changed if they are beached or off map
+#        
+#        param: current_pos -- a Nx2 array of lat-long coordinates of the current positions
+#        param: prev_pos -- a Nx2 array of lat-long coordinates of the previous positions
+#        param: status -- a N, array of status codes.
+#        """
+#        # check which ones are still on the map:
+#        on_map = self.on_map(current_pos)
+#        # check which ones are on land:
+#        pixel_coords = self.to_pixel_array(current_pos)
+#        on_land = self.on_land(current_pos)
+#        
+#        
 
         
 class MapFromBNA(RasterMap):
