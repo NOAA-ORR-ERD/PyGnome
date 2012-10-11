@@ -58,7 +58,11 @@ class MockModel(object):
         self.movers = {}
 
     def get_movers(self):
-        return []
+        return self.movers
+
+    def get_mover(self, mover_id):
+        mover_id = self.get_uuid(mover_id)
+        return self.movers.get(mover_id, None)
 
     def get_settings(self):
         return [
@@ -71,10 +75,31 @@ class MockModel(object):
     def get_spills(self):
         return []
 
+    def get_uuid(self, id):
+        return uuid.UUID(id)
+
+    def make_mover(self, data):
+        """
+        XXX: Mock out having a Mover class by converting the `data` dict into
+        an object.
+        """
+        return type('Mover', (object,), data)()
+
+    def has_mover_with_id(self, mover_id):
+        mover_id = self.get_uuid(mover_id)
+        return mover_id in self.movers
+
     def add_mover(self, data):
         mover_id = uuid.uuid4()
-        self.movers[mover_id] = data
+        self.movers[mover_id] = self.make_mover(data)
         return mover_id
+
+    def update_mover(self, mover_id, data):
+        mover_id = self.get_uuid(mover_id)
+        if mover_id in self.movers:
+            self.movers[mover_id] = self.make_mover(data)
+            return True
+        return False
 
     def run(self):
         frames_glob = os.path.join(
@@ -82,7 +107,7 @@ class MockModel(object):
         images = glob.glob(frames_glob)
 
         # Mock out some timestamps until we accept this input from the user.
-        two_weeks_ago = datetime.datetime.now() - datetime.timedelta(weeks=4)
+        two_weeks_ago = datetime.datetime.nowitems() - datetime.timedelta(weeks=4)
 
         timestamps = [two_weeks_ago + datetime.timedelta(days=day_num)
                       for day_num in range(len(images))]

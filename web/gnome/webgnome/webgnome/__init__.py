@@ -28,6 +28,7 @@ def main(global_config, **settings):
     config.add_route('add_mover', '/model/mover/add')
     config.add_route('add_constant_wind_mover', '/model/mover/add/constant_wind')
     config.add_route('add_variable_wind_mover', '/model/mover/add/variable_wind')
+    config.add_route('edit_constant_wind_mover', '/model/mover/edit/{id}')
     config.add_renderer('gnome_json', gnome_json)
     config.scan()
     return config.make_wsgi_app()

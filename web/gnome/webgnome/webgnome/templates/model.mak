@@ -47,33 +47,33 @@
     </div>
     <div id="tree">
         <ul id="tree-list">
-            <li id="settings" title="Model Settings">
+            <li id="setting" title="Model Settings">
                 Model Settings
                 <ul>
                     % for setting in model.get_settings():
-                            <li id="${setting['name']}">${setting['name']}
-                                : ${setting['value']}</li>
+                        <li id="${setting['name']}">${setting['name']}
+                            : ${setting['value']}</li>
                     % endfor
 
                     <% map = model.get_map() %>
                     % if map:
-                        <li>${map['name']}</li>
+                        <li id="${ map['name'] }">${map['name']}</li>
                     % endif
                 </ul>
             </li>
-            <li id="movers" title="Movers">
+            <li id="mover" title="Movers">
                 Movers
                 <ul>
-                    % for mover in model.get_movers():
-                            <li>${mover['name']}</li>
+                    % for id in model.get_movers().keys():
+                        <li id="${ id }">${ id }}</li>
                     % endfor
                 </ul>
             </li>
-            <li id="spills" title="Spills">
+            <li id="spill" title="Spills">
                 Spills
                 <ul>
                     % for spill in model.get_spills():
-                            <li>${spill['name']}</li>
+                        <li id="${ spill['id'] }">${spill['name']}</li>
                     % endfor
                 </ul>
             </li>

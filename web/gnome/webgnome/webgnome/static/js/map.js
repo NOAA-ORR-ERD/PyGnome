@@ -74,8 +74,8 @@ MapModel.prototype = {
     },
 
     handleFailedRun: function(data) {
-        if ('errorMessage' in data) {
-            this.error = data.errorMessage;
+        if ('message' in data && data.message.type == 'error') {
+            this.error = data.message;
         } else {
             this.error = 'The model failed to run. Please try again.'
         }
@@ -364,6 +364,23 @@ TreeView.prototype = {
 
     getActiveItem: function() {
         return this.tree.dynatree("getActiveNode");
+    },
+
+    hasItem: function(data) {
+        return this.tree.dynatree('getTree').selectKey(data.id) != null;
+    },
+
+    addItem: function(data) {
+        if (!'type' in data) {
+            alert('An error occurred. Try refreshing the page.');
+            console.log(data);
+        }
+
+        var rootNode = this.tree.dynatree('getTree').selectKey(data.type);
+        rootNode.addChild({
+            title: data.id,
+            key: data.id
+        });
     }
 };
 
@@ -605,6 +622,8 @@ function ModalFormView(opts) {
 
 ModalFormView.SAVE_BUTTON_CLICKED = 'gnome:formSaveButtonClicked';
 
+ModalFormView.SUBMIT_SUCCESS = 'gnome:formSubmitSuccess';
+
 // These events will fire if the server included a message in the JSON response
 // containing the rendered HTML of a submitted form. They are not fired for
 // regular form validation errors, which appear as HTML markup.
@@ -725,8 +744,7 @@ ModalFormView.prototype = {
     showForm: function(urlKey, id) {
         var _this = this;
         var rootUrl = this.rootApiUrls[urlKey];
-        // TODO: We don't yet have a way of getting IDs for `TreeView` items.
-        var url = id === undefined ? rootUrl + '/add' : '/edit/' + id;
+        var url = id ? rootUrl + '/edit/' + id : rootUrl + '/add';
 
         $.ajax({
             type: 'GET',
@@ -774,17 +792,28 @@ ModalFormView.prototype = {
         if ('form_html' in data) {
             this.reloadForm(data.form_html);
         } else {
+            $(this).trigger(ModalFormView.SUBMIT_SUCCESS, data);
             this.clearForm();
         }
 
-        if ('successMessage' in data) {
-            $(this).trigger(ModalFormView.FORM_SUCCESS, data.successMessage);
-        }
-        if ('warningMessage' in data) {
-            $(this).trigger(ModalFormView.FORM_WARNING, data.warningMessage);
-        }
-        if ('errorMessage' in data) {
-            $(this).trigger(ModalFormView.FORM_ERROR, data.errorMessage);
+        if ('message' in data) {
+            var messageEvent;
+
+            switch (data.message.type) {
+                case 'success':
+                    messageEvent = ModalFormView.FORM_SUCCESS;
+                    break;
+                case 'error':
+                    messageEvent = ModalFormView.FORM_ERROR;
+                    break;
+                case 'warning':
+                    messageEvent = ModalFormView.FORM_WARNING;
+                    break;
+            }
+
+            if (messageEvent) {
+                $(this).trigger(messageEvent, data.message);
+            }
         }
     },
     
@@ -800,9 +829,9 @@ function MapController(opts) {
 
     // TODO: Obtain from server via template variable passed into controller.
     this.rootApiUrls = {
-        settings: '/model/setting',
-        movers: '/model/mover',
-        spills: '/model/spill'
+        setting: '/model/setting',
+        mover: '/model/mover',
+        spill: '/model/spill'
     };
 
     this.formView = new ModalFormView({
@@ -853,9 +882,10 @@ function MapController(opts) {
 MapController.prototype = {
     setupEventHandlers: function() {
         $(this.formView).bind(ModalFormView.SAVE_BUTTON_CLICKED, this.saveForm);
-        $(this.formView).bind(ModalFormView.FORM_WARNING, this.displayMessage);
-        $(this.formView).bind(ModalFormView.FORM_SUCCESS, this.displayMessage);
-        $(this.formView).bind(ModalFormView.FORM_ERROR, this.displayMessage);
+        $(this.formView).bind(ModalFormView.FORM_WARNING, this.receivedMessage);
+        $(this.formView).bind(ModalFormView.FORM_SUCCESS, this.receivedMessage);
+        $(this.formView).bind(ModalFormView.FORM_ERROR, this.receivedMessage);
+        $(this.formView).bind(ModalFormView.SUBMIT_SUCCESS, this.formSubmitted);
 
         $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
 
@@ -958,7 +988,7 @@ MapController.prototype = {
     },
 
     runFailed: function(event) {
-        alert(this.mapModel.error);
+        alert(this.mapModel.error.text);
     },
 
     refreshFinished: function(event) {
@@ -1034,19 +1064,41 @@ MapController.prototype = {
         this.treeControlView.enableControls();
     },
 
-    addButtonClicked: function(event) {
+    showFormForActiveTreeItem: function() {
         var node = this.treeView.getActiveItem();
         var urlKey = null;
+        var id = null;
+
+        // TODO: Only activate 'Add item' button when a root node is selected.
+        if (node === null) {
+            return;
+        }
 
         if (node.data.key in this.rootApiUrls) {
+            console.log(node)
             urlKey = node.data.key;
         } else if (node.parent.data.key in this.rootApiUrls) {
+            // TODO: Should we pass the name of the parent node in as a data
+            // value on the <li> item that created tihs node on page load?
+            // Otherwise we can't support more than one depth of nodes under
+            // a parent node.
             urlKey = node.parent.data.key;
+            id = node.data.key;
         }
 
+        console.log(urlKey, id);
+
         if (urlKey) {
-            this.formView.showForm(urlKey);
+            this.formView.showForm(urlKey, id);
         }
+    },
+
+    addButtonClicked: function(event) {
+        this.showFormForActiveTreeItem();
+    },
+
+    settingsButtonClicked: function(event) {
+        this.showFormForActiveTreeItem();
     },
 
     saveForm: function() {
@@ -1057,31 +1109,31 @@ MapController.prototype = {
         console.log(event.data.key);
     },
 
-    settingsButtonClicked: function(event) {
-        console.log(event.data.key);
+    receivedMessage: function(event, message) {
+        if (message) {
+            this.displayMessage(message);
+        }
     },
 
-    displayMessage: function(event, message) {
-        var alertDiv;
-
-        switch(event.type) {
-            case ModalFormView.FORM_SUCCESS:
-                alertDiv = $('div .alert-success');
-                break;
-            case ModalFormView.FORM_ERROR:
-                alertDiv = $('div .alert-error');
-                break;
-            case ModalFormView.FORM_WARNING:
-                alertDiv = $('div .alert-warning');
-                break;
-            default:
-                alertDiv = null;
-                break;
+    displayMessage: function(message) {
+        if (!'type' in message || !'text' in message)  {
+            return;
         }
 
-        if (message && alertDiv) {
-            alertDiv.find('span.message').text(message);
+        var alertDiv = $('div .alert-' + message.type);
+
+        if (message.text && alertDiv) {
+            alertDiv.find('span.message').text(message.text);
             alertDiv.removeClass('hidden');
+        }
+    },
+
+    formSubmitted: function(event, data) {
+        if ('message' in data) {
+            this.displayMessage(data.message);
+        }
+        if (!this.treeView.hasItem(data)) {
+            this.treeView.addItem(data);
         }
     }
 };
