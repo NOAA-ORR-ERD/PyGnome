@@ -88,7 +88,7 @@ class MapCanvas:
         BB = polygons.bounding_box
         self.projection = self.projection(BB, self.image.size)
         # project the data:
-        polygons.TransformData(self.projection.to_pixel)
+        polygons.TransformData(self.projection.to_pixel_2D)
         
         drawer = ImageDraw.Draw(self.image)
 

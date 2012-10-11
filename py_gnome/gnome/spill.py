@@ -15,6 +15,7 @@ import numpy as np
 
 from gnome import basic_types
 
+
 class Spill(object):
     """
     Base class for all spills
@@ -39,13 +40,13 @@ class Spill(object):
         self._data_arrays['positions'] = np.zeros((num_LEs, 3),
                                                   dtype=basic_types.world_point_type)
         self._data_arrays['positions'][:,:] = initial_positions
-        
         self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
+        self._data_arrays['last_water_positions'] = np.zeros_like(self['positions'])
 
         self._data_arrays['status_codes'] = ( np.zeros((num_LEs,),
                                                        dtype=basic_types.status_code_type)
                                              )
-        self._data_arrays['status_codes'][:] = basic_types.oil_status.status_in_water             
+        self._data_arrays['status_codes'][:] = basic_types.oil_status.in_water             
 
  
     def __getitem__(self, data_name):
@@ -80,6 +81,12 @@ class Spill(object):
                     
         self._data_arrays[data_name] = array
 
+    def __str__(self):
+        msg = ["gnome.spill.Spill(num_LEs=%i)\n"%self.num_LEs]
+        msg.append("spill LE attributes: %s"%self._data_arrays.keys())
+        return "".join(msg)
+
+    __repr__ = __str__ # should write a better one, I suppose
 
 class PointReleaseSpill(Spill):
     """
@@ -106,10 +113,8 @@ class PointReleaseSpill(Spill):
         """
         called internally to initialize the data arrays needed
         """
-        self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
         self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
                                                   dtype = basic_types.windage_type)
-        self._data_arrays['last_water_pts'] = np.zeros_like(self['positions'])
         self.reset()
 
     def release_elements(self, current_time):
@@ -121,7 +126,7 @@ class PointReleaseSpill(Spill):
         """
         if current_time >= self.release_time:
             self['positions'][:] = self.start_position
-            self['status_codes'][:] = basic_types.oil_status.status_in_water
+            self['status_codes'][:] = basic_types.oil_status.in_water
         return None
 
     def reset(self):
@@ -129,7 +134,7 @@ class PointReleaseSpill(Spill):
         reset to initial conditions -- i.e. not released, and at the start position
         """
         self['positions'][:] = self.start_position
-        self['status_codes'][:] = basic_types.oil_status.status_not_released
+        self['status_codes'][:] = basic_types.oil_status.not_released
         
 
 ## fixme -- is there a need for this, or should we use a flag in the regular
