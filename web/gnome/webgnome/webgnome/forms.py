@@ -1,6 +1,7 @@
 """
 forms.py: Forms for the webgnome package.
 """
+import datetime
 
 from wtforms import (
     Form,
@@ -9,14 +10,68 @@ from wtforms import (
     IntegerField,
     FloatField,
     BooleanField,
-    TextField
+    TextField,
+    HiddenField
 )
 
+from wtforms.widgets import TextInput
 
 from wtforms.validators import (
     Required,
     NumberRange
 )
+
+
+class DatePickerWidget(TextInput):
+    def __call__(self, field, **kwargs):
+        kwargs['class']  = 'date'
+        return super(DatePickerWidget, self).__call__(field, **kwargs)
+
+
+class LeadingZeroNumberWidget(TextInput):
+    """
+    A widget that will pad single-digit numbers with leading zeroes.
+
+    To use, create a subclass and provide the class variable `cast_to`, which
+    should be a callable used to cast the field's value, e.g.:
+
+            class IntegerLeadingZeroWidget(LeadingZeroNumberWidget):
+                cast_to = int
+    """
+    def cast_to(self, number):
+        raise NotImplementedError
+
+    def cast(self, number):
+        """
+        Try to use the class's `cast_to` value to cast `number`.
+        Return the casted value if it worked; otherwise return None.
+        """
+        try:
+            number = self.cast_to(number)
+        except TypeError:
+            # Not a suitable value.
+            return None
+        return number
+
+    def __call__(self, field, **kwargs):
+        if 'value' not in kwargs:
+            kwargs['value'] = field._value()
+
+        # The value must be cast to a data type than works with "%02d" first.
+        safe_value = self.cast(kwargs['value'])
+        if safe_value:
+            kwargs['value'] = "%02d" % safe_value
+
+        return super(LeadingZeroNumberWidget, self).__call__(field, **kwargs)
+
+
+
+class LeadingZeroFloatWidget(LeadingZeroNumberWidget):
+    cast_to = float
+
+
+class LeadingZeroIntegerWidget(LeadingZeroNumberWidget):
+    cast_to = int
 
 
 class AddMoverForm(Form):
@@ -58,11 +113,12 @@ class WindMoverForm(Form):
         validators=[Required()]
     )
     direction = TextField(
+        'Wind direction is from',
         default='S',
         validators=[Required()]
     )
 
-    is_active = BooleanField('Active', default=True, validators=[Required()])
+    is_active = BooleanField('Active', default=True)
     start_time = IntegerField('Start Time', default=0, validators=[NumberRange(min=0)])
     duration = IntegerField('Duration', default=3, validators=[NumberRange(min=0)])
     speed_scale = IntegerField('Speed Scale', default=2,
@@ -77,10 +133,20 @@ class WindMoverForm(Form):
 
 
 class ConstantWindMoverForm(WindMoverForm):
-    pass
+    type = HiddenField(default="variable_wind")
 
 
 class VariableWindMoverForm(WindMoverForm):
-    time = DateTimeField(validators=[Required()])
+    type = HiddenField(default="variable_wind")
+    date = DateTimeField('Date', widget=DatePickerWidget(),
+                         format="%m/%d/%Y",
+                         validators=[Required()],
+                         default=datetime.date.today())
+    hour = IntegerField(widget=LeadingZeroIntegerWidget(),
+                        validators=[NumberRange(min=0, max=20)],
+                        default=lambda: datetime.datetime.now().hour)
+    minute = IntegerField(widget=LeadingZeroIntegerWidget(),
+                          validators=[NumberRange(min=0, max=60)],
+                          default=lambda: datetime.datetime.now().minute)
     auto_increment_time_by = IntegerField('Auto-increment time by')
 

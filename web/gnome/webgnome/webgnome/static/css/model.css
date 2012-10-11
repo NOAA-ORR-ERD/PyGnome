@@ -74,3 +74,8 @@ legend {
     margin-bottom: 0;
     line-height: 20px;
 }
+
+input#hour,
+input#minute {
+    width: 20px;
+}

@@ -77,7 +77,7 @@ MapModel.prototype = {
         if ('message' in data && data.message.type == 'error') {
             this.error = data.message;
         } else {
-            this.error = 'The model failed to run. Please try again.'
+            this.error = {text: 'The model failed to run. Please try again.'}
         }
         $(this).trigger(MapModel.RUN_FAILED);
     },
@@ -90,10 +90,10 @@ MapModel.prototype = {
             return;
         }
 
-        opts = $.extend(opts, {
+        opts = $.extend({
             zoomLevel: this.zoomLevel,
             zoomDirection: MapModel.ZOOM_NONE
-        });
+        }, opts);
 
         var isInvalid = function(obj) {
             return obj === undefined || obj === null || typeof(obj) != "object";
@@ -109,7 +109,7 @@ MapModel.prototype = {
             url: MapModel.RUN_URL,
             data: opts,
             success: function(data) {
-                if ('errorMessage' in data) {
+                if ('message' in data) {
                     _this.handleFailedRun(data);
                     return false;
                 }
@@ -355,7 +355,9 @@ TreeView.prototype = {
                 // isError is only used in Ajax mode
                 this.reactivate();
             },
-
+            initAjax: {
+                url: '/tree'
+            },
             persist: true
         });
 
@@ -370,17 +372,23 @@ TreeView.prototype = {
         return this.tree.dynatree('getTree').selectKey(data.id) != null;
     },
 
-    addItem: function(data) {
-        if (!'type' in data) {
+    addItem: function(data, parent) {
+        if (!'id' in data || !'type' in data) {
             alert('An error occurred. Try refreshing the page.');
             console.log(data);
         }
 
-        var rootNode = this.tree.dynatree('getTree').selectKey(data.type);
+        var rootNode = this.tree.dynatree('getTree').selectKey(data.parent);
         rootNode.addChild({
             title: data.id,
-            key: data.id
+            key: data.id,
+            parent: parent,
+            type: data.type
         });
+    },
+
+    reload: function() {
+        this.tree.dynatree('getTree').reload();
     }
 };
 
@@ -741,10 +749,10 @@ ModalFormView.prototype = {
         this.goToStep(currentStep - 1);
     },
 
-    showForm: function(urlKey, id) {
+    showForm: function(urlKey, type, id) {
         var _this = this;
         var rootUrl = this.rootApiUrls[urlKey];
-        var url = id ? rootUrl + '/edit/' + id : rootUrl + '/add';
+        var url = id && type ? rootUrl + '/' + type + '/edit/' + id : rootUrl + '/add';
 
         $.ajax({
             type: 'GET',
@@ -759,6 +767,10 @@ ModalFormView.prototype = {
         var container = $(this.formContainerEl);
         container.html(html);
         container.find('div.modal').modal();
+        container.find('.date').datepicker({
+            changeMonth: true,
+            changeYear: true
+        });
 
         var stepWithError = this.getFirstStepWithError();
         if (stepWithError) {
@@ -1064,32 +1076,45 @@ MapController.prototype = {
         this.treeControlView.enableControls();
     },
 
-    showFormForActiveTreeItem: function() {
+    showFormForActiveTreeItem: function(opts) {
+        opts = $.extend({
+            editing: false
+        }, opts);
+
+        console.log(opts)
+
         var node = this.treeView.getActiveItem();
         var urlKey = null;
         var id = null;
+        var type = null;
 
         // TODO: Only activate 'Add item' button when a root node is selected.
         if (node === null) {
+            console.log('Failed to get active node');
             return;
         }
 
+        // If this is a top-level node, then its `data.key` value will match a
+        // URL in `this.rootApiUrl`. Otherwise it's a child node and its parent
+        // (in `node.parent` will have a `key` value  set to 'setting', 'spill'
+        // or 'mover' and `node` will have a `data.type` value specific to its
+        // server-side representation, e.g. 'constant_wind'.
         if (node.data.key in this.rootApiUrls) {
-            console.log(node)
             urlKey = node.data.key;
         } else if (node.parent.data.key in this.rootApiUrls) {
-            // TODO: Should we pass the name of the parent node in as a data
-            // value on the <li> item that created tihs node on page load?
-            // Otherwise we can't support more than one depth of nodes under
-            // a parent node.
             urlKey = node.parent.data.key;
-            id = node.data.key;
+
+            if (opts.editing) {
+                id = node.data.key;
+                type = node.data.type;
+            }
         }
 
-        console.log(urlKey, id);
+        console.log(node.data.key)
+        console.log(urlKey, id, type)
 
         if (urlKey) {
-            this.formView.showForm(urlKey, id);
+            this.formView.showForm(urlKey, type, id);
         }
     },
 
@@ -1098,7 +1123,7 @@ MapController.prototype = {
     },
 
     settingsButtonClicked: function(event) {
-        this.showFormForActiveTreeItem();
+        this.showFormForActiveTreeItem({ editing: true });
     },
 
     saveForm: function() {
@@ -1132,9 +1157,8 @@ MapController.prototype = {
         if ('message' in data) {
             this.displayMessage(data.message);
         }
-        if (!this.treeView.hasItem(data)) {
-            this.treeView.addItem(data);
-        }
+
+        this.treeView.reload();
     }
 };
 

@@ -45,40 +45,7 @@
         </div>
       </div>
     </div>
-    <div id="tree">
-        <ul id="tree-list">
-            <li id="setting" title="Model Settings">
-                Model Settings
-                <ul>
-                    % for setting in model.get_settings():
-                        <li id="${setting['name']}">${setting['name']}
-                            : ${setting['value']}</li>
-                    % endfor
-
-                    <% map = model.get_map() %>
-                    % if map:
-                        <li id="${ map['name'] }">${map['name']}</li>
-                    % endif
-                </ul>
-            </li>
-            <li id="mover" title="Movers">
-                Movers
-                <ul>
-                    % for id in model.get_movers().keys():
-                        <li id="${ id }">${ id }}</li>
-                    % endfor
-                </ul>
-            </li>
-            <li id="spill" title="Spills">
-                Spills
-                <ul>
-                    % for spill in model.get_spills():
-                        <li id="${ spill['id'] }">${spill['name']}</li>
-                    % endfor
-                </ul>
-            </li>
-        </ul>
-    </div>
+    <div id="tree"> </div>
 </%block>
 
 <%block name="content">
