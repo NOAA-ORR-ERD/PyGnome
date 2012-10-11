@@ -1,6 +1,8 @@
 """
 util.py: Utility function for the webgnome package.
 """
+from functools import wraps
+
 
 def json_date_adapter(obj, request):
     """
@@ -10,3 +12,4 @@ def json_date_adapter(obj, request):
     TODO: Move to a `utils` module.
     """
     return obj.isoformat()
+

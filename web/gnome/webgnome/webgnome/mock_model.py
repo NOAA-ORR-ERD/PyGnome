@@ -55,6 +55,7 @@ class MockModel(object):
     """
     def __init__(self):
         self.id = uuid.uuid4()
+        self.movers = {}
 
     def get_movers(self):
         return []
@@ -69,6 +70,11 @@ class MockModel(object):
 
     def get_spills(self):
         return []
+
+    def add_mover(self, data):
+        mover_id = uuid.uuid4()
+        self.movers[mover_id] = data
+        return mover_id
 
     def run(self):
         frames_glob = os.path.join(

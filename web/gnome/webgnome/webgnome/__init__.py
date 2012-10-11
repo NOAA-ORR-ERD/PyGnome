@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from pyramid.config import Configurator
 from pyramid.renderers import JSON
@@ -12,7 +13,8 @@ session_factory = UnencryptedCookieSessionFactoryConfig('ibjas45u3$@#$++slkjf__2
 
 gnome_json = JSON(adapters=(
     (datetime.datetime, json_date_adapter),
-    (datetime.date, json_date_adapter)
+    (datetime.date, json_date_adapter),
+    (uuid.UUID, lambda obj, request: str(obj))
 ))
 
 

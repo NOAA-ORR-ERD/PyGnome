@@ -621,11 +621,105 @@ ModalFormView.prototype = {
             $(_this).trigger(ModalFormView.SAVE_BUTTON_CLICKED);
         });
 
+        $(this.formContainerEl).on('click', '.btn-next', this.goToNextStep);
+        $(this.formContainerEl).on('click', '.btn-prev', this.goToPreviousStep);
+
         $(this.formContainerEl).on('submit', 'form', function(event) {
             event.preventDefault();
             _this.doAjaxFormSubmit(this);
             return false;
         });
+    },
+
+    getFirstStepWithError: function() {
+        var form = $(this.formContainerEl).find('form');
+        var step = 1;
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var errorDiv = $('div.control-group.error').first();
+        var stepDiv = errorDiv.closest('div.step');
+
+        if (stepDiv) {
+            step = stepDiv.attr('data-step');
+        }
+
+        return step;
+    },
+
+    previousStepExists: function(stepNum) {
+        var form = $(this.formContainerEl).find('form');
+        return form.find('div[data-step="' + (stepNum - 1) + '"]').length > 0;
+    },
+
+    nextStepExists: function(stepNum) {
+        stepNum = parseInt(stepNum);
+        var form = $(this.formContainerEl).find('form');
+        return form.find('div[data-step="' + (stepNum + 1) + '"]').length > 0;
+    },
+
+    goToStep: function(stepNum) {
+        var form = $(this.formContainerEl).find('form');
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var stepDiv = form.find('div.step[data-step="' + stepNum + '"]');
+
+        if (stepDiv.length == 0) {
+            return;
+        }
+
+        var otherSteps = form.find('div.step');
+        otherSteps.addClass('hidden');
+        otherSteps.removeClass('active');
+        stepDiv.removeClass('hidden');
+        stepDiv.addClass('active');
+
+        var prevButton = $(this.formContainerEl).find('.btn-prev');
+        var nextButton = $(this.formContainerEl).find('.btn-next');
+        var saveButton = $(this.formContainerEl).find('.btn-primary');
+
+        if (this.previousStepExists(stepNum)) {
+            prevButton.removeClass('hidden');
+        } else {
+            prevButton.addClass('hidden');
+        }
+
+        if (this.nextStepExists(stepNum)) {
+            nextButton.removeClass('hidden');
+            saveButton.addClass('hidden');
+        } else {
+            nextButton.addClass('hidden');
+            saveButton.removeClass('hidden');
+        }
+    },
+    
+    goToNextStep: function(event) {
+        var form = $(this.formContainerEl).find('form');
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var activeStep = form.find('div.step.active');
+        var currentStep = parseInt(activeStep.attr('data-step'));
+        this.goToStep(currentStep + 1);
+    },
+    
+    goToPreviousStep: function(event) {
+        var form = $(this.formContainerEl).find('form');
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var activeStep = form.find('div.step.active');
+        var currentStep = parseInt(activeStep.attr('data-step'));
+        this.goToStep(currentStep - 1);
     },
 
     showForm: function(urlKey, id) {
@@ -647,6 +741,11 @@ ModalFormView.prototype = {
         var container = $(this.formContainerEl);
         container.html(html);
         container.find('div.modal').modal();
+
+        var stepWithError = this.getFirstStepWithError();
+        if (stepWithError) {
+            this.goToStep(stepWithError);
+        }
     },
 
     clearForm: function() {
@@ -672,8 +771,6 @@ ModalFormView.prototype = {
     },
 
     handleAjaxSuccess: function(data, textStatus, xhr) {
-        console.log({data:data, textStatus:textStatus, xhr:xhr})
-
         if ('form_html' in data) {
             this.reloadForm(data.form_html);
         } else {
