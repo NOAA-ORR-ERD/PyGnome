@@ -74,10 +74,10 @@ class LeadingZeroIntegerWidget(LeadingZeroNumberWidget):
     cast_to = int
 
 
-class AddMoverForm(Form):
-    MOVER_CONSTANT_WIND = 'constant_wind'
-    MOVER_VARIABLE_WIND = 'variable_wind'
+MOVER_CONSTANT_WIND = 'constant_wind'
+MOVER_VARIABLE_WIND = 'variable_wind'
 
+class AddMoverForm(Form):
     mover_type = SelectField('Type', choices=(
         (MOVER_CONSTANT_WIND, 'Winds - Constant'),
         (MOVER_VARIABLE_WIND, 'Winds - Variable')
@@ -133,17 +133,17 @@ class WindMoverForm(Form):
 
 
 class ConstantWindMoverForm(WindMoverForm):
-    type = HiddenField(default="variable_wind")
+    type = HiddenField(default=MOVER_CONSTANT_WIND)
 
 
 class VariableWindMoverForm(WindMoverForm):
-    type = HiddenField(default="variable_wind")
+    type = HiddenField(default=MOVER_VARIABLE_WIND)
     date = DateTimeField('Date', widget=DatePickerWidget(),
                          format="%m/%d/%Y",
                          validators=[Required()],
                          default=datetime.date.today())
     hour = IntegerField(widget=LeadingZeroIntegerWidget(),
-                        validators=[NumberRange(min=0, max=20)],
+                        validators=[NumberRange(min=0, max=24)],
                         default=lambda: datetime.datetime.now().hour)
     minute = IntegerField(widget=LeadingZeroIntegerWidget(),
                           validators=[NumberRange(min=0, max=60)],

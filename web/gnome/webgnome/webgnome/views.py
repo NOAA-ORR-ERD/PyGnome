@@ -1,10 +1,16 @@
 from functools import wraps
-from pyramid.httpexceptions import HTTPFound
+from pyramid.httpexceptions import HTTPFound, HTTPNotFound
 from pyramid.renderers import render
 from pyramid.view import view_config
 
 from mock_model import ModelManager
-from forms import AddMoverForm, VariableWindMoverForm, ConstantWindMoverForm
+from forms import (
+    AddMoverForm,
+    VariableWindMoverForm,
+    ConstantWindMoverForm,
+    MOVER_VARIABLE_WIND,
+    MOVER_CONSTANT_WIND
+)
 
 
 MODEL_ID_SESSION_KEY = 'model_id'
@@ -63,6 +69,7 @@ def show_model(request):
             data['warning'] = MISSING_MODEL_ERROR
 
     data['model'] = model
+    data['show_menu_above_map'] = 'map_menu' in request.GET
 
     return data
 
@@ -127,7 +134,6 @@ def edit_variable_wind_mover(request, model):
     form = VariableWindMoverForm(request.POST or None, **opts)
 
     if request.method == 'POST' and form.validate():
-        print form.data
         if model.has_mover_with_id(mover_id):
             model.update_mover(mover_id, form.data)
             message = _make_message('success',
@@ -202,8 +208,8 @@ def add_mover(request, model, type=None):
     data = {}
 
     mover_routes = {
-        AddMoverForm.MOVER_VARIABLE_WIND: 'add_variable_wind_mover',
-        AddMoverForm.MOVER_CONSTANT_WIND: 'add_constant_wind_mover'
+        MOVER_VARIABLE_WIND: 'add_variable_wind_mover',
+        MOVER_CONSTANT_WIND: 'add_constant_wind_mover'
     }
 
     if request.method == 'POST' and form.validate():
@@ -221,6 +227,21 @@ def add_mover(request, model, type=None):
     return data
 
 
+@view_config(route_name='delete_mover', renderer='gnome_json', request_method='POST')
+@json_require_model
+def delete_mover(request, model):
+    mover_id = request.POST.get('mover_id', None)
+
+    if mover_id is None or model.has_mover_with_id(mover_id) is False:
+        raise HTTPNotFound
+
+    model.delete_mover(mover_id)
+
+    return {
+        'message': _make_message('success', 'Mover deleted.')
+    }
+
+
 @view_config(route_name='get_tree', renderer='gnome_json')
 @json_require_model
 def get_tree(request, model):
@@ -230,15 +251,12 @@ def get_tree(request, model):
 
     def get_value_title(name, value, max_chars=8):
         """
-        Return a title string that uses `name` and `value`.
-
-        The string will be such that it is "{name}: {value}" if `value` is less
-        than `max_chars`, else "{name}: {short_value} ..."
+        Return a title string that uses `name` and `value`, with value shortened
+        if it's longer than `max_chars`.
         """
         value = str(value)
-        short_value = value if len(value) <= max_chars else value[:max_chars]
-        ellipsis = '' if len(value) <= max_chars else '...'
-        return '%s: %s %s' % (name, short_value, ellipsis)
+        value = value if len(value) <= max_chars else '%s ...' % value[:max_chars]
+        return '%s: %s' % (name, value)
 
     for setting in model.get_settings():
         settings['children'].append({
@@ -259,7 +277,7 @@ def get_tree(request, model):
     for id, mover in model.get_movers().items():
          movers['children'].append({
             'key': id,
-            'title': get_value_title('ID', id),
+            'title': model.get_mover_title(mover),
             'type': mover.type
         })
 

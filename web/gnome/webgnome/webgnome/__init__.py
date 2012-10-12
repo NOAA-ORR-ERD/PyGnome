@@ -27,6 +27,7 @@ def main(global_config, **settings):
     config.add_route('show_model', '/')
     config.add_route('run_model', '/model/run')
     config.add_route('add_mover', '/model/mover/add')
+    config.add_route('delete_mover', '/model/mover/delete')
     config.add_route('add_constant_wind_mover', '/model/mover/constant_wind/add')
     config.add_route('add_variable_wind_mover', '/model/mover/variable_wind/add')
     config.add_route('edit_constant_wind_mover', '/model/mover/constant_wind/edit/{id}')

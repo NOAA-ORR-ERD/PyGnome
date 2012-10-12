@@ -191,6 +191,7 @@ MapView.prototype = {
     initialize: function() {
         // Only have to do this once.
         this.makeImagesClickable();
+        $(this).trigger(MapView.INIT_FINISHED);
         return this;
     },
 
@@ -340,6 +341,7 @@ function TreeView(opts) {
 }
 
 TreeView.ITEM_ACTIVATED = 'gnome:treeItemActivated';
+TreeView.ITEM_DOUBLE_CLICKED = 'gnome:treeItemDoubleClicked';
 
 TreeView.prototype = {
     initialize: function() {
@@ -354,6 +356,9 @@ TreeView.prototype = {
                 // isReloading is true if status was read from existing cookies.
                 // isError is only used in Ajax mode
                 this.reactivate();
+            },
+            onDblClick: function(node, event) {
+                $(_this).trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
             },
             initAjax: {
                 url: '/tree'
@@ -453,7 +458,7 @@ function AnimationControlView(opts) {
     this.controls = [
         this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
         this.pauseButtonEl, this.moveButtonEl, this.fullscreenButtonEl,
-        this.resizeButtonEl
+        this.zoomInButtonEl, this.zoomOutButtonEl, this.resizeButtonEl
     ];
 
     return this;
@@ -749,11 +754,7 @@ ModalFormView.prototype = {
         this.goToStep(currentStep - 1);
     },
 
-    showForm: function(urlKey, type, id) {
-        var _this = this;
-        var rootUrl = this.rootApiUrls[urlKey];
-        var url = id && type ? rootUrl + '/' + type + '/edit/' + id : rootUrl + '/add';
-
+    showForm: function(url) {
         $.ajax({
             type: 'GET',
             url: url,
@@ -900,6 +901,7 @@ MapController.prototype = {
         $(this.formView).bind(ModalFormView.SUBMIT_SUCCESS, this.formSubmitted);
 
         $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
+        $(this.treeView).bind(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
         $(this.treeControlView).bind(
             TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
@@ -1076,22 +1078,18 @@ MapController.prototype = {
         this.treeControlView.enableControls();
     },
 
-    showFormForActiveTreeItem: function(opts) {
-        opts = $.extend({
-            editing: false
-        }, opts);
-
-        console.log(opts)
-
-        var node = this.treeView.getActiveItem();
+    getUrlForTreeItem: function(node, mode) {
         var urlKey = null;
-        var id = null;
-        var type = null;
+        var url = null;
 
         // TODO: Only activate 'Add item' button when a root node is selected.
         if (node === null) {
             console.log('Failed to get active node');
-            return;
+            return false;
+        }
+
+        if (node.data.key == 'setting' || node.data.key == 'spill') {
+            return false;
         }
 
         // If this is a top-level node, then its `data.key` value will match a
@@ -1103,27 +1101,57 @@ MapController.prototype = {
             urlKey = node.data.key;
         } else if (node.parent.data.key in this.rootApiUrls) {
             urlKey = node.parent.data.key;
-
-            if (opts.editing) {
-                id = node.data.key;
-                type = node.data.type;
-            }
         }
 
-        console.log(node.data.key)
-        console.log(urlKey, id, type)
+        if (!urlKey) {
+            return;
+        }
 
-        if (urlKey) {
-            this.formView.showForm(urlKey, type, id);
+        var rootUrl = this.rootApiUrls[urlKey];
+
+        if (!rootUrl) {
+            return false;
+        }
+
+        switch (mode) {
+            case 'add':
+                url = rootUrl + '/add';
+                break;
+            case 'edit':
+                url = rootUrl + '/' + node.data.type + '/' + mode + '/' + node.data.key;
+                break;
+            case 'delete':
+                url = rootUrl + '/' + mode;
+        }
+
+        return url;
+    },
+
+    showFormForActiveTreeItem: function(mode) {
+        var node = this.treeView.getActiveItem();
+        var url = this.getUrlForTreeItem(node, mode);
+
+        if (url) {
+            this.formView.showForm(url);
         }
     },
 
     addButtonClicked: function(event) {
-        this.showFormForActiveTreeItem();
+        this.showFormForActiveTreeItem('add');
+    },
+
+    treeItemDoubleClicked: function(event, node) {
+        if (node.data.key in this.rootApiUrls) {
+            // A root item
+            this.showFormForActiveTreeItem('add');
+        } else {
+            // A child item
+            this.showFormForActiveTreeItem('edit');
+        }
     },
 
     settingsButtonClicked: function(event) {
-        this.showFormForActiveTreeItem({ editing: true });
+        this.showFormForActiveTreeItem('edit');
     },
 
     saveForm: function() {
@@ -1131,7 +1159,29 @@ MapController.prototype = {
     },
 
     removeButtonClicked: function(event) {
-        console.log(event.data.key);
+        var node = this.treeView.getActiveItem();
+        var url = this.getUrlForTreeItem(node, 'delete');
+        var _this = this;
+
+        if (!node.data.key) {
+            return;
+        }
+
+        if (confirm('Remove mover?') == false) {
+            return;
+        }
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: "mover_id=" + node.data.key,
+            success: function(event, data) {
+                _this.treeView.reload();
+            },
+            error: function() {
+                alert('Could not remove item.')
+            }
+        });
     },
 
     receivedMessage: function(event, message) {

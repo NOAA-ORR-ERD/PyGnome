@@ -105,6 +105,27 @@ class MockModel(object):
             return True
         return False
 
+    def delete_mover(self, mover_id):
+        mover_id = self.get_uuid(mover_id)
+        if mover_id in self.movers:
+            del self.movers[mover_id]
+
+    def get_mover_title(self, mover):
+        """
+        Return an appropriate title for `mover`.
+        TODO: This is a stub method that belongs on a "Mover" class.
+        """
+        abbrev = 'kt'
+        if mover.speed_type == 'miles':
+            abbrev = 'mi/hr'
+        elif mover.speed_type == 'meters':
+            abbrev = 'mt/sec'
+
+        return '%s: %s %s %s' % (
+            mover.type.replace('_', ' ').title(),
+            mover.speed, abbrev, mover.direction
+        )
+
     def run(self):
         frames_glob = os.path.join(
             os.path.dirname(__file__), 'static', 'img', 'test_frames', '*.jpg')

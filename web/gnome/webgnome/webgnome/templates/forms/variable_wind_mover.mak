@@ -15,10 +15,21 @@
             <div data-step="1" class="step active">
                 ${ defs.form_control(form.date) }
 
-                <div class="control-group">
-                    <label class="control-label" for="hour">Time (24 hour)</label>
+                <div class="control-group ${ 'error' if form.hour.errors or form.minute.errors else ''}">
+                    <label class="control-label"
+                           for="hour">Time (24 hour)</label>
                     <div class="controls">
                         ${ form.hour } : ${ form.minute }
+                        % if form.hour.errors:
+                            <span class="help">
+                            ${ form.hour.errors[0] }
+                            </span>
+                        % endif
+                        % if form.minute.errors:
+                            <span class="help">
+                            ${ form.minute.errors[0] }
+                            </span>
+                        % endif
                     </div>
                 </div>
 

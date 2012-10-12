@@ -64,12 +64,14 @@
               <strong>Error!</strong> <span class="message">${ error if error else '' }</span>
           </div>         
       </div>
-      <div class="btn-toolbar">
+    </div>
+
+    <div class="btn-toolbar">
           <div class="btn-group">
-              <a class="btn disabled" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
+              <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
           </div>
           <div class="btn-group">
-              <a class="btn disabled" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
+              <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
           </div>
           <div class="btn-group">
             <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
@@ -83,9 +85,8 @@
             <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
             <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
         </div>
-      </div>
-
     </div>
+
     <div id="map">
         <img class="frame active" data-position="0" src="/static/img/placeholder.gif">
     </div>
