@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 from datetime import datetime, timedelta
 
 import gnome
@@ -27,12 +28,15 @@ class Model(object):
         Initializes model attributes. 
         """
         self.uncertain_on = False # sets whether uncertainty is on or not.
-        
-        self.reset() # initializes everything to nothing.
-        
+
+        self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
+        self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
+
         ## Various run-time parameters for output
-        self.output_types = []# ["image"] # default output type -- there could be others (netcdf, etc)
+        self.output_types = [] # default to no output type -- there could be: "image", "netcdf", etc)
         self.image_dir = '.'
+
+        self.reset() # initializes everything to nothing.
         
     def reset(self):
         """
@@ -44,8 +48,6 @@ class Model(object):
         self.movers = []
         self.spills = []
 
-        self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
-        self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
         self._current_time_step = 0
 
         
@@ -61,7 +63,7 @@ class Model(object):
         self._current_time_step = 0
         for spill in self.spills:
             spill.reset()
-        ## fixme: do the movers need re-setting?
+        ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
 
     ### Assorted properties
     @property
@@ -102,7 +104,7 @@ class Model(object):
         if duration < self._duration: # only need to rewind if shorter than it was...
             self.rewind()
         self._duration = duration
-        num_time_steps = self._duration.total_seconds() // self.time_step
+        self._num_time_steps = self._duration.total_seconds() // self.time_step
         
     @property
     def map(self):
@@ -149,7 +151,7 @@ class Model(object):
         """
         self.model_time = self._start_time + timedelta(seconds=self._current_time_step*self.time_step)
         for spill in self.spills:
-            spill.release_elements(self.model_time)
+            spill.prepare_for_model_step(self.model_time, self.time_step, self.uncertain_on)
             self.map.refloat_elements(spill)
         for mover in self.movers:
             #loop through each spill and pass it in.
@@ -175,8 +177,8 @@ class Model(object):
         write the output of the current time step to whatever output
         methods have been selected
         """
-        for ouput_method in self.output_types:
-            if ouput_method == "image":
+        for output_method in self.output_types:
+            if output_method == "image":
                 self.write_image()
             else:
                 raise ValueError("%s output type not supported"%output_method)
@@ -185,10 +187,14 @@ class Model(object):
         """
         render the map image, according to current parameters
         """
-        if render:
-            filename = os.path.join(output_dir, 'map%05i.png'%self._current_time_step)
-            self.output_map.draw_elements(self.spills, filename)
-            return filename
+        filename = os.path.join(self.image_dir, 'map%05i.png'%self._current_time_step)
+        if self.output_map is None:
+            # create the output map
+            self.output_map = gnome.utilities.map_canvas.Palette_MapCanvas(self.output_bmp_size)
+            
+            
+        self.output_map.draw_elements(self.spills, filename)
+        return filename
 
     def step(self):
         """

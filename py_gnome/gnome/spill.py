@@ -35,6 +35,9 @@ class Spill(object):
     def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0)):
         
         self.num_LEs = num_LEs
+        self.is_uncertain = False # is this an uncertainty spill?
+        
+        
         self._data_arrays = {}
         
         self._data_arrays['positions'] = np.zeros((num_LEs, 3),
@@ -81,6 +84,14 @@ class Spill(object):
                     
         self._data_arrays[data_name] = array
 
+    def prepare_for_model_step(self, current_time, time_step=None, uncertain_on=None):
+        """
+        Do whatever needs to be done at the beginning of a time step:
+        
+        In this case nothing.
+        """
+        return None
+
     def __str__(self):
         msg = ["gnome.spill.Spill(num_LEs=%i)\n"%self.num_LEs]
         msg.append("spill LE attributes: %s"%self._data_arrays.keys())
@@ -116,13 +127,20 @@ class PointReleaseSpill(Spill):
         self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
                                                   dtype = basic_types.windage_type)
         self.reset()
-
-    def release_elements(self, current_time):
+    
+    def prepare_for_model_step(self, current_time, time_step=None, uncertain_on=None):
         """
+        Do whatever needs to be done at the beginning of a time step:
+        
+        In this case:
+        
         Release the LEs -- i.e. change their status to in_water
         if the current time is greater than or equal to the release time
         
         :param current_time: datetime object for current time
+        :param time_step: the time step, in seconds
+        :param uncertain_on: Boolean flag indicating whether uncertainty is on in the model
+
         """
         if current_time >= self.release_time:
             self['positions'][:] = self.start_position
@@ -137,19 +155,4 @@ class PointReleaseSpill(Spill):
         self['status_codes'][:] = basic_types.oil_status.not_released
         
 
-## fixme -- is there a need for this, or should we use a flag in the regular
-##          version instead?
-class PointReleaseSpillUncert(PointReleaseSpill):
-    """
-    The "uncertainty" version of a Floating Spill
-    """  
-    def __init__ (self, *args, **kwargs):
-        """
-        same __init__ as the FloatingSpill
-        """
-        FloatingSpill.___init__(self, *args, **kwargs)
-        
-        # what other parameters do we need here?
-        # stuff for Uncetainty storage...
-        
         
