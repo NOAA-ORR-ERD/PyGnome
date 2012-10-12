@@ -46,7 +46,7 @@ def make_map(bna_filename, png_filename, image_size = (500, 500), format='RGB'):
     canvas.save(png_filename, "PNG")
 
         
-class MapCanvas:
+class MapCanvas(object):
     """
     A class to hold and generate a map for GNOME
     
@@ -62,6 +62,8 @@ class MapCanvas:
     #lake_color       = (0, 128, 255) # blue
     lake_color       = background_color
     land_color       = (255, 204, 153)
+    element_color    = (0, 0, 0)
+    uncert_element_color = (255, 0, 0)
 
     def __init__(self, size, projection=projections.FlatEarthProjection, mode='RGB'):
         """
@@ -70,10 +72,11 @@ class MapCanvas:
         size: (width, height) tuple
         
         """
+        print "init-ing an RGB mapcanvas"
         self.image = Image.new(mode, size, color=self.background_color)
-        self.projection = projection
+        self.projection = projection(((-180,-85),(180, 85)), size) # BB will be re-set
     
-    def draw_land(self, polygons, BB=None):
+    def draw_land(self, polygons=None, BB=None):
         """
         Draws the map to the internal image.
         
@@ -81,12 +84,17 @@ class MapCanvas:
         
         polygons is a geometry.polygons object, holding the land polygons
         BB is the bounding box (in lat, long) of the resulting image
-           if BB is not provided, the bounding box will be determined from the land polygons
+           if BB == 'keep' the current scaling, etc is used
+           if BB is None, the bounding box will be determined from the input polygons
         
         """
-        # find the bounding box:
-        BB = polygons.bounding_box
-        self.projection = self.projection(BB, self.image.size)
+        if BB is None:
+            # find the bounding box from the polygons
+            BB = polygons.bounding_box
+            print "setting the scale from the polygons"
+            self.projection.set_scale(BB, self.image.size)
+        elif BB <> 'keep': # if it's keep, don't change the scale
+            self.projection.set_scale(BB, self.image.size)
         # project the data:
         polygons.TransformData(self.projection.to_pixel_2D)
         
@@ -100,6 +108,7 @@ class MapCanvas:
                 # don't draw the spillable area polygon
                 continue
             elif p.metadata[2] == "2": #this is a lake
+                
                 poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
                 drawer.polygon(poly, fill=self.lake_color)
             else:
@@ -107,19 +116,29 @@ class MapCanvas:
                 drawer.polygon(poly, fill=self.land_color)
         return None
     
-    def draw_particles(self, spills, filename):
+    def draw_elements(self, spills, filename):
+        """
+        Draws the individual elements
+        
+        :param spills: a list of spill object to draw
+        :param filename: the filename to output the final image to
+        
+        Makes a copy of the base map, then draw the LEs on top of it
+        """
+        # this way can use a pixel access object -- but numpy probably better anyway
+        img = self.image.copy().load() # gives a pixel access object
         img = self.image.copy()
+        drawer = ImageDraw.Draw(img)
+        
         for spill in spills:
-            rgbt = (0,0,0)
-            if spill.uncertain:
-                rgbt = (255,0,0)
-            pra = spill.npra['p']
-            for i in xrange(0, len(pra)):
-                xy = self.to_pixel((pra[i]['p_long'], pra[i]['p_lat']))
-                try:
-                    img.putpixel(xy, rgbt)
-                except: # fixme! what exception are we catching?
-                    pass
+            if spill.is_uncertain:
+                color = self.uncert_element_color
+            else:
+                color = self.element_color
+            positions = spill['positions']
+            pixel_pos = self.projection.to_pixel(positions, asint=True)
+            for point in pixel_pos:
+                drawer.point(point, fill=color)
         img.save(filename)
     
     def save(self, filename, type="PNG"):
@@ -136,23 +155,22 @@ class MapCanvas:
 
 class Palette_MapCanvas(MapCanvas):
     """
-    a version of the map canvas that uses a palleted image:
+    a version of the map canvas that uses a paletted image:
     256 colors only.
-    
     """
     
     def __init__(self, size, projection=projections.FlatEarthProjection):
         """
         create a new map image from scratch -- specifying the size:
         
-        size: (width, height) tuple
+        :param size: (width, height) tuple
         
         """
         self.image = Image.new('P', size, color=0)
         drawer = ImageDraw.Draw(self.image) # couldn't find a better way to initilize the colors right.
         drawer.rectangle(((0,0), size), fill=self.background_color)
         
-        self.projection = projection
+        self.projection = projection(((-180,-85),(180, 85)), size) # BB will be re-set
 
     def as_array(self):
         """
@@ -183,7 +201,7 @@ class BW_MapCanvas(MapCanvas):
         
         """
         self.image = Image.new('L', size, color=self.background_color)
-        self.projection = projection
+        self.projection = projection(((-180,-85),(180, 85)), size) # BB will be re-set
 
     def as_array(self):
         """
@@ -196,6 +214,43 @@ class BW_MapCanvas(MapCanvas):
         #   (PIL uses the reverse convention)
         return np.ascontiguousarray(np.asarray(self.image, dtype=np.uint8).T)
 
+
+class GNOME_renderer(Palette_MapCanvas):
+    """
+    a map rendrer specifically for the WebGNOME use
+    
+    this may not be the best stucture, but I wanted to not break the existing API...
+    """
+    
+    def __init__(self, map_file=None, projection=projections.FlatEarthProjection):
+        """
+        create a GNOME renderer
+        
+        if a file name is given, the base map is drawn from that BNA file
+        
+        """
+        
+        if map_file is not None:
+            self.land_polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
+        
+        self.image = Image.new('P', size, color=0)
+        drawer = ImageDraw.Draw(self.image) # couldn't find a better way to initilize the colors right.
+        drawer.rectangle(((0,0), size), fill=self.background_color)
+        
+        self.projection = projection
+
+        
+        self.image = Image.new(mode, size, color=self.background_color)
+        self.projection = projection
+
+    def reset_view(self, size, viewport):
+        """
+        sets the image view -- how big the image is, and what is in view
+        
+        """
+        pass
+        
+    
     
 
 #if __name__ == "__main__":
