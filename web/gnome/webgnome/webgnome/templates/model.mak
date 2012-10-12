@@ -10,7 +10,7 @@
         <li class="dropdown">
             <a id="file-drop" href="javascript:" role="button" class="dropdown-toggle" data-toggle="dropdown">Model<b class="caret"></b></a>
             <ul class="dropdown-menu" role="menu" aria-labelledby="file-drop">
-                <li><a tabindex="-1" href="javascript:">Start New</a></li>
+                <li><a tabindex="-1" id="menu-new" href="javascript:">New</a></li>
                 <li><a tabindex="-1" href="javascript:">Load from file</a></li>
                 <li><a tabindex="-1" href="javascript:">Save</a></li>
                 <li class="divider"></li>
@@ -20,9 +20,9 @@
         <li class="dropdown">
             <a id="run-drop" href="javascript:" role="button" class="dropdown-toggle" data-toggle="dropdown">Run<b class="caret"></b></a>
             <ul class="dropdown-menu" role="menu" aria-labelledby="run-drop">
-                <li><a tabindex="-1" href="javascript:">Run</a></li>
-                <li><a tabindex="-1" href="javascript:">Step</a></li>
-                <li><a tabindex="-1" href="javascript:">Run Until...</a></li>
+                <li><a tabindex="-1" id="menu-run" href="javascript:">Run</a></li>
+                <li><a tabindex="-1" id="menu-step" href="javascript:">Step</a></li>
+                <li><a tabindex="-1" id="menu-run-until" href="javascript:">Run Until...</a></li>
             </ul>
         </li>
         <li class="dropdown">

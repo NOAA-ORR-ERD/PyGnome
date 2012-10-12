@@ -26,7 +26,7 @@ def show_model(request):
     """
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
-    model, created = settings.running_models.get_or_create(model_id)
+    model, created = settings.Model.get_or_create(model_id)
     data = {}
 
     if created:
@@ -40,6 +40,28 @@ def show_model(request):
     data['show_menu_above_map'] = 'map_menu' in request.GET
 
     return data
+
+
+@view_config(route_name='create_model', renderer='gnome_json')
+def create_model(request):
+    """
+    Create a new model for the user. Delete the user's current model if one exists.
+    """
+    settings = request.registry.settings
+    model_id = request.session.get(settings.model_session_key, None)
+    confirm = request.POST.get('confirm_new', None)
+
+    if model_id and confirm:
+        settings.Model.delete(model_id)
+
+    model = settings.Model.create()
+    request.session[settings.model_session_key] = model.id
+    message = _make_message('success', 'Created a new model.')
+
+    return {
+        'model_id': model.id,
+        'message': message
+    }
 
 
 @view_config(route_name='run_model', renderer='gnome_json')

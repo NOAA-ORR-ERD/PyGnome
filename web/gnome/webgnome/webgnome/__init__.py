@@ -22,11 +22,12 @@ gnome_json = JSON(adapters=(
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
-    settings['running_models'] = ModelManager()
+    settings['Model'] = ModelManager()
     config = Configurator(settings=settings, session_factory=session_factory)
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('get_tree', '/tree')
     config.add_route('show_model', '/')
+    config.add_route('create_model', '/model/create')
     config.add_route('run_model', '/model/run')
     config.add_route('add_mover', '/model/mover/add')
     config.add_route('delete_mover', '/model/mover/delete')

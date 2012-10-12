@@ -4,13 +4,24 @@ import os
 import uuid
 
 
+class DoesNotExist(Exception):
+    pass
+
+
 class ModelManager(object):
     """
     An object that manages a pool of in-memory `py_gnome.model.Model` instances
     in a dictionary.
     """
+    DoesNotExist = DoesNotExist
+
     def __init__(self):
         self.running_models = {}
+
+    def create(self):
+        model = MockModel()
+        self.running_models[model.id] = model
+        return model
 
     def get_or_create(self, model_id):
         """
@@ -25,28 +36,24 @@ class ModelManager(object):
             model = self.running_models.get(model_id, None)
 
         if model is None:
-            model = MockModel()
-            self.running_models[model.id] = model
+            model = self.create()
             created = True
 
         return model, created
 
     def get(self, model_id):
-        model = self.running_models.get(model_id, None)
-        return model
+        if not model_id in self.running_models:
+            raise self.DoesNotExist
+        return self.running_models.get(model_id)
 
     def add(self, model_id, model):
         self.running_models[model_id] = model
 
-    def remove(self, model_id):
-        if model_id in self.running_models:
-            self.running_models.pop(model_id)
+    def delete(self, model_id):
+        self.running_models.pop(model_id, None)
 
     def exists(self, model_id):
-        exists = False
-        if model_id:
-            exists = model_id in self.running_models
-        return exists
+        return model_id in self.running_models
 
 
 class MockModel(object):

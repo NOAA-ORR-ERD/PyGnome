@@ -1,3 +1,12 @@
+// map.js: The WebGNOME JavaScript application.
+
+
+function handleAjaxError(xhr, textStatus, errorThrown) {
+    alert('Could not connect to server.');
+    console.log(xhr, textStatus, errorThrown);
+}
+
+
 function MapModel(opts) {
     // Optionally specify the current frame the user is in.
     this.frame = opts.frame == undefined ? 0 : opts.frame;
@@ -442,7 +451,7 @@ TreeControlView.prototype = {
 };
 
 
-function AnimationControlView(opts) {
+function MapControlView(opts) {
     this.sliderEl = opts.sliderEl;
     this.playButtonEl = opts.playButtonEl;
     this.pauseButtonEl = opts.pauseButtonEl;
@@ -464,60 +473,61 @@ function AnimationControlView(opts) {
     return this;
 }
 
-// Events for `AnimationControlView`
-AnimationControlView.PLAY_BUTTON_CLICKED = "gnome:playButtonClicked";
-AnimationControlView.PAUSE_BUTTON_CLICKED = "gnome:pauseButtonClicked";
-AnimationControlView.BACK_BUTTON_CLICKED = "gnome:backButtonClicked";
-AnimationControlView.FORWARD_BUTTON_CLICKED = "gnome:forwardButtonClicked";
-AnimationControlView.ZOOM_IN_BUTTON_CLICKED = "gnome:zoomInButtonClicked";
-AnimationControlView.ZOOM_OUT_BUTTON_CLICKED = "gnome:zoomOutButtonClicked";
-AnimationControlView.MOVE_BUTTON_CLICKED = "gnome:moveButtonClicked";
-AnimationControlView.FULLSCREEN_BUTTON_CLICKED = "gnome:fullscreenButtonClicked";
-AnimationControlView.RESIZE_BUTTON_CLICKED = "gnome:resizeButtonClicked";
-AnimationControlView.SLIDER_CHANGED = "gnome:sliderChanged";
+
+// Events for `mapControlView`
+MapControlView.PLAY_BUTTON_CLICKED = "gnome:playButtonClicked";
+MapControlView.PAUSE_BUTTON_CLICKED = "gnome:pauseButtonClicked";
+MapControlView.BACK_BUTTON_CLICKED = "gnome:backButtonClicked";
+MapControlView.FORWARD_BUTTON_CLICKED = "gnome:forwardButtonClicked";
+MapControlView.ZOOM_IN_BUTTON_CLICKED = "gnome:zoomInButtonClicked";
+MapControlView.ZOOM_OUT_BUTTON_CLICKED = "gnome:zoomOutButtonClicked";
+MapControlView.MOVE_BUTTON_CLICKED = "gnome:moveButtonClicked";
+MapControlView.FULLSCREEN_BUTTON_CLICKED = "gnome:fullscreenButtonClicked";
+MapControlView.RESIZE_BUTTON_CLICKED = "gnome:resizeButtonClicked";
+MapControlView.SLIDER_CHANGED = "gnome:sliderChanged";
 
 // Statuses
-AnimationControlView.STATUS_STOPPED = 0;
-AnimationControlView.STATUS_PLAYING = 1;
-AnimationControlView.STATUS_PAUSED = 2;
-AnimationControlView.STATUS_BACK = 3;
-AnimationControlView.STATUS_FORWARD = 4;
-AnimationControlView.STATUS_ZOOMING_IN = 5;
-AnimationControlView.STATUS_ZOOMING_OUT = 6;
+MapControlView.STATUS_STOPPED = 0;
+MapControlView.STATUS_PLAYING = 1;
+MapControlView.STATUS_PAUSED = 2;
+MapControlView.STATUS_BACK = 3;
+MapControlView.STATUS_FORWARD = 4;
+MapControlView.STATUS_ZOOMING_IN = 5;
+MapControlView.STATUS_ZOOMING_OUT = 6;
 
-AnimationControlView.prototype = {
+MapControlView.prototype = {
     initialize: function() {
         var _this = this;
-        this.status = AnimationControlView.STATUS_STOPPED;
+        this.status = MapControlView.STATUS_STOPPED;
 
         $(this.pauseButtonEl).hide();
         $(this.resizeButtonEl).hide();
 
         $(this.sliderEl).slider({
             start: function(event, ui) {
-                $(_this).trigger(AnimationControlView.PAUSE_BUTTON_CLICKED);
+                $(_this).trigger(MapControlView.PAUSE_BUTTON_CLICKED);
             },
             change: function(event, ui) {
-                $(_this).trigger(AnimationControlView.SLIDER_CHANGED, ui.value);
+                $(_this).trigger(MapControlView.SLIDER_CHANGED, ui.value);
             },
             disabled: true
         });
 
         $(this.pauseButtonEl).click(function() {
-            if (_this.status === AnimationControlView.STATUS_PLAYING) {
-                $(_this).trigger(AnimationControlView.PAUSE_BUTTON_CLICKED);
+            if (_this.status === MapControlView.STATUS_PLAYING) {
+                $(_this).trigger(MapControlView.PAUSE_BUTTON_CLICKED);
             }
         });
 
         var clickEvents = [
-            [this.playButtonEl, AnimationControlView.PLAY_BUTTON_CLICKED],
-            [this.backButtonEl, AnimationControlView.BACK_BUTTON_CLICKED],
-            [this.forwardButtonEl, AnimationControlView.FORWARD_BUTTON_CLICKED],
-            [this.zoomInButtonEl, AnimationControlView.ZOOM_IN_BUTTON_CLICKED],
-            [this.zoomOutButtonEl, AnimationControlView.ZOOM_OUT_BUTTON_CLICKED],
-            [this.moveButtonEl, AnimationControlView.MOVE_BUTTON_CLICKED],
-            [this.fullscreenButtonEl, AnimationControlView.FULLSCREEN_BUTTON_CLICKED],
-            [this.resizeButtonEl, AnimationControlView.RESIZE_BUTTON_CLICKED]
+            [this.playButtonEl, MapControlView.PLAY_BUTTON_CLICKED],
+            [this.backButtonEl, MapControlView.BACK_BUTTON_CLICKED],
+            [this.forwardButtonEl, MapControlView.FORWARD_BUTTON_CLICKED],
+            [this.zoomInButtonEl, MapControlView.ZOOM_IN_BUTTON_CLICKED],
+            [this.zoomOutButtonEl, MapControlView.ZOOM_OUT_BUTTON_CLICKED],
+            [this.moveButtonEl, MapControlView.MOVE_BUTTON_CLICKED],
+            [this.fullscreenButtonEl, MapControlView.FULLSCREEN_BUTTON_CLICKED],
+            [this.resizeButtonEl, MapControlView.RESIZE_BUTTON_CLICKED]
         ];
 
         _.each(_.object(clickEvents), function(customEvent, element) {
@@ -530,35 +540,35 @@ AnimationControlView.prototype = {
     },
 
     setStopped: function() {
-        this.status = AnimationControlView.STATUS_STOPPED;
+        this.status = MapControlView.STATUS_STOPPED;
     },
 
     setPlaying: function() {
-        this.status = AnimationControlView.STATUS_PLAYING;
+        this.status = MapControlView.STATUS_PLAYING;
         $(this.playButtonEl).hide();
         $(this.pauseButtonEl).show();
     },
 
     setPaused: function() {
-        this.status = AnimationControlView.STATUS_PAUSED;
+        this.status = MapControlView.STATUS_PAUSED;
         $(this.pauseButtonEl).hide();
         $(this.playButtonEl).show();
     },
 
     setForward: function() {
-        this.status = AnimationControlView.STATUS_FORWARD;
+        this.status = MapControlView.STATUS_FORWARD;
     },
 
     setBack: function() {
-        this.status = AnimationControlView.STATUS_BACK;
+        this.status = MapControlView.STATUS_BACK;
     },
 
     setZoomingIn: function() {
-        this.status = AnimationControlView.STATUS_ZOOMING_IN;
+        this.status = MapControlView.STATUS_ZOOMING_IN;
     },
 
     setZoomingOut: function() {
-        this.status = AnimationControlView.STATUS_ZOOMING_OUT;
+        this.status = MapControlView.STATUS_ZOOMING_OUT;
     },
 
     setFrameCount: function(frameCount) {
@@ -584,31 +594,31 @@ AnimationControlView.prototype = {
     },
 
     isPlaying: function() {
-        return this.status === AnimationControlView.STATUS_PLAYING;
+        return this.status === MapControlView.STATUS_PLAYING;
     },
 
     isStopped: function() {
-        return this.status === AnimationControlView.STATUS_STOPPED;
+        return this.status === MapControlView.STATUS_STOPPED;
     },
 
     isPaused: function() {
-        return this.status === AnimationControlView.STATUS_PAUSED;
+        return this.status === MapControlView.STATUS_PAUSED;
     },
 
     isForward: function() {
-        return this.status === AnimationControlView.STATUS_PLAYING;
+        return this.status === MapControlView.STATUS_PLAYING;
     },
 
     isBack: function() {
-        return this.status === AnimationControlView.STATUS_BACK;
+        return this.status === MapControlView.STATUS_BACK;
     },
 
     isZoomingIn: function() {
-        return this.status === AnimationControlView.STATUS_ZOOMING_IN;
+        return this.status === MapControlView.STATUS_ZOOMING_IN;
     },
 
     isZoomingOut: function() {
-        return this.status === AnimationControlView.STATUS_ZOOMING_OUT;
+        return this.status === MapControlView.STATUS_ZOOMING_OUT;
     },
 
     enableControls: function() {
@@ -759,7 +769,7 @@ ModalFormView.prototype = {
             type: 'GET',
             url: url,
             success: this.handleAjaxSuccess,
-            error: this.handleAjaxError
+            error: handleAjaxError
         });
     },
 
@@ -797,7 +807,7 @@ ModalFormView.prototype = {
             data: $(form).serialize(),
             url: $(form).attr('action'),
             success: this.handleAjaxSuccess,
-            error: this.handleAjaxError
+            error: handleAjaxError
         });
     },
 
@@ -829,10 +839,29 @@ ModalFormView.prototype = {
             }
         }
     },
-    
-    handleAjaxError: function(xhr, textStatus, errorThrown) {
-        alert('Could not connect to server.');
-        console.log(xhr, textStatus, errorThrown);
+};
+
+
+function MenuView(opts) {
+    this.modelItemEl = opts.modelItemEl;
+    this.newItemEl = opts.newItemEl;
+    this.runItemEl = opts.runItemEl;
+    this.stepItemEl = opts.stepItemEl;
+    this.runUntilItemEl = opts.runUntilItemEl;   
+}
+
+
+MenuView.NEW_ITEM_CLICKED = "gnome:newMenuItemClicked";
+
+
+MenuView.prototype = {
+    initialize: function() {
+        var _this = this;
+
+        $(this.newItemEl).click(function(event) {
+            $(_this.modelItemEl).dropdown('toggle');
+            $(_this).trigger(MenuView.NEW_ITEM_CLICKED);
+        });
     }
 };
 
@@ -842,10 +871,19 @@ function MapController(opts) {
 
     // TODO: Obtain from server via template variable passed into controller.
     this.rootApiUrls = {
+        model: "/model",
         setting: '/model/setting',
         mover: '/model/mover',
         spill: '/model/spill'
     };
+    
+    this.menuView = new MenuView({
+        modelItemEl: "#file-drop",
+        newItemEl: "#menu-new",
+        runItemEl: "#menu-run",
+        stepItemEl: "#menu-step",
+        runUntilItemEl: "#mnu-run-until"
+    });
 
     this.formView = new ModalFormView({
         formContainerEl: opts.formContainerEl,
@@ -870,7 +908,7 @@ function MapController(opts) {
         activeFrameClass: 'active'
     });
 
-    this.animationControlView = new AnimationControlView({
+    this.mapControlView = new MapControlView({
         sliderEl: "#slider",
         playButtonEl: "#play-button",
         pauseButtonEl: "#pause-button",
@@ -910,24 +948,24 @@ MapController.prototype = {
         $(this.treeControlView).bind(
             TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
 
-        $(this.animationControlView).bind(
-            AnimationControlView.PLAY_BUTTON_CLICKED, this.play);
-        $(this.animationControlView).bind(
-            AnimationControlView.PAUSE_BUTTON_CLICKED, this.pause);
-        $(this.animationControlView).bind(
-            AnimationControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
-        $(this.animationControlView).bind(
-            AnimationControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
-        $(this.animationControlView).bind(
-            AnimationControlView.SLIDER_CHANGED, this.sliderChanged);
-        $(this.animationControlView).bind(
-            AnimationControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
-        $(this.animationControlView).bind(
-            AnimationControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
-        $(this.animationControlView).bind(
-            AnimationControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
-        $(this.animationControlView).bind(
-            AnimationControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
+        $(this.mapControlView).bind(
+            MapControlView.PLAY_BUTTON_CLICKED, this.play);
+        $(this.mapControlView).bind(
+            MapControlView.PAUSE_BUTTON_CLICKED, this.pause);
+        $(this.mapControlView).bind(
+            MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
+        $(this.mapControlView).bind(
+            MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
+        $(this.mapControlView).bind(
+            MapControlView.SLIDER_CHANGED, this.sliderChanged);
+        $(this.mapControlView).bind(
+            MapControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
+        $(this.mapControlView).bind(
+            MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
+        $(this.mapControlView).bind(
+            MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
+        $(this.mapControlView).bind(
+            MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
 
         $(this.mapModel).bind(MapModel.RUN_FINISHED, this.restart);
         $(this.mapModel).bind(MapModel.RUN_FAILED, this.runFailed);
@@ -938,14 +976,17 @@ MapController.prototype = {
         $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
         $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
         $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
+
+        $(this.menuView).bind(MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
     },
 
     initializeViews: function() {
         this.formView.initialize();
         this.treeControlView.initialize();
         this.treeView.initialize();
-        this.animationControlView.initialize();
+        this.mapControlView.initialize();
         this.mapView.initialize();
+        this.menuView.initialize();
     },
 
     mapInitFinished: function() {
@@ -954,19 +995,40 @@ MapController.prototype = {
         this.mapModel.setBoundingBox(bbox);
     },
 
+    newMenuItemClicked: function() {
+        var _this = this;
+
+        if (!confirm("Reset model?")) {
+            return;
+        }
+
+        $.ajax({
+            url: this.rootApiUrls.model + "/create",
+            data: "confirm=1",
+            type: "POST",
+            success: function(data) {
+                if ('message' in data) {
+                    _this.displayMessage(data.message);
+                }
+                _this.treeView.reload();
+            },
+            error: handleAjaxError
+        });
+    },
+
     play: function(event) {
-        if (this.animationControlView.isPaused()) {
-            this.animationControlView.setPlaying();
+        if (this.mapControlView.isPaused()) {
+            this.mapControlView.setPlaying();
             this.mapView.play();
         } else {
-            this.animationControlView.disableControls();
-            this.animationControlView.setPlaying();
+            this.mapControlView.disableControls();
+            this.mapControlView.setPlaying();
             this.mapModel.run();
         }
     },
 
     pause: function(event) {
-        this.animationControlView.setPaused();
+        this.mapControlView.setPaused();
         this.mapView.pause();
     },
 
@@ -975,7 +1037,7 @@ MapController.prototype = {
             return;
         }
 
-        this.animationControlView.setZoomingIn();
+        this.mapControlView.setZoomingIn();
         this.mapView.makeActiveImageClickable();
         this.mapView.makeActiveImageSelectable();
         this.mapView.setZoomingInCursor();
@@ -986,7 +1048,7 @@ MapController.prototype = {
             return;
         }
 
-        this.animationControlView.setZoomingOut();
+        this.mapControlView.setZoomingOut();
         this.mapView.makeActiveImageClickable();
         this.mapView.setZoomingOutCursor();
     },
@@ -1006,19 +1068,19 @@ MapController.prototype = {
     },
 
     refreshFinished: function(event) {
-        this.animationControlView.enableControls();
-        this.animationControlView.setFrameCount(this.mapView.getFrameCount());
-        if (this.animationControlView.isPlaying()) {
+        this.mapControlView.enableControls();
+        this.mapControlView.setFrameCount(this.mapView.getFrameCount());
+        if (this.mapControlView.isPlaying()) {
             this.mapView.play();
         }
     },
 
     stopAnimation: function(event) {
-        this.animationControlView.setStopped();
+        this.mapControlView.setStopped();
     },
 
     zoomIn: function(event, startPosition, endPosition) {
-        this.animationControlView.setStopped();
+        this.mapControlView.setStopped();
 
         if (endPosition) {
             this.mapModel.zoomFromRect(
@@ -1050,8 +1112,8 @@ MapController.prototype = {
 
     frameChanged: function(event) {
         var timestamp = this.mapModel.getTimestampForFrame(this.mapView.currentFrame);
-        this.animationControlView.setCurrentFrame(this.mapView.currentFrame);
-        this.animationControlView.setTime(timestamp);
+        this.mapControlView.setCurrentFrame(this.mapView.currentFrame);
+        this.mapControlView.setTime(timestamp);
     },
 
     jumpToFirstFrame: function(event) {
@@ -1061,16 +1123,16 @@ MapController.prototype = {
     jumpToLastFrame: function(event) {
         var lastFrame = this.mapView.getFrameCount();
         this.mapView.setCurrentFrame(lastFrame);
-        this.animationControlView.setCurrentFrame(lastFrame);
+        this.mapControlView.setCurrentFrame(lastFrame);
     },
 
     useFullscreen: function(event) {
-        this.animationControlView.switchToFullscreen();
+        this.mapControlView.switchToFullscreen();
         $(this.sidebarEl).hide('slow');
     },
 
     disableFullscreen: function(event) {
-        this.animationControlView.switchToNormalScreen();
+        this.mapControlView.switchToNormalScreen();
         $(this.sidebarEl).show('slow');
     },
 

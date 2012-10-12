@@ -26,7 +26,11 @@ def json_require_model(f):
     def inner(request, *args, **kwargs):
         settings = request.registry.settings
         model_id = request.session.get(settings.model_session_key, None)
-        model = settings.running_models.get(model_id)
+
+        try:
+            model = settings.Model.get(model_id)
+        except settings.Model.DoesNotExist:
+            model = None
 
         if model is None:
             return {
