@@ -1,7 +1,8 @@
 <%namespace name="defs" file="../defs.mak"/>
 
 <div class="modal hide fade" id="constant-wind-mover-modal" tabindex="-1"
-     role="dialog" aria-labelledby="modal-label" aria-hidden="true">
+     data-backdrop="static" role="dialog" aria-labelledby="modal-label"
+     aria-hidden="true">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"
                 aria-hidden="true">×
