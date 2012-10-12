@@ -5,6 +5,7 @@ from pyramid.config import Configurator
 from pyramid.renderers import JSON
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
 
+from mock_model import ModelManager
 from util import json_date_adapter
 
 
@@ -21,6 +22,7 @@ gnome_json = JSON(adapters=(
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
+    settings['running_models'] = ModelManager()
     config = Configurator(settings=settings, session_factory=session_factory)
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('get_tree', '/tree')
