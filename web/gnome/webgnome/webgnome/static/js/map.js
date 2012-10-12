@@ -74,10 +74,10 @@ MapModel.prototype = {
     },
 
     handleFailedRun: function(data) {
-        if ('errorMessage' in data) {
-            this.error = data.errorMessage;
+        if ('message' in data && data.message.type == 'error') {
+            this.error = data.message;
         } else {
-            this.error = 'The model failed to run. Please try again.'
+            this.error = {text: 'The model failed to run. Please try again.'}
         }
         $(this).trigger(MapModel.RUN_FAILED);
     },
@@ -90,10 +90,10 @@ MapModel.prototype = {
             return;
         }
 
-        opts = $.extend(opts, {
+        opts = $.extend({
             zoomLevel: this.zoomLevel,
             zoomDirection: MapModel.ZOOM_NONE
-        });
+        }, opts);
 
         var isInvalid = function(obj) {
             return obj === undefined || obj === null || typeof(obj) != "object";
@@ -109,7 +109,7 @@ MapModel.prototype = {
             url: MapModel.RUN_URL,
             data: opts,
             success: function(data) {
-                if ('errorMessage' in data) {
+                if ('message' in data) {
                     _this.handleFailedRun(data);
                     return false;
                 }
@@ -191,6 +191,7 @@ MapView.prototype = {
     initialize: function() {
         // Only have to do this once.
         this.makeImagesClickable();
+        $(this).trigger(MapView.INIT_FINISHED);
         return this;
     },
 
@@ -340,6 +341,7 @@ function TreeView(opts) {
 }
 
 TreeView.ITEM_ACTIVATED = 'gnome:treeItemActivated';
+TreeView.ITEM_DOUBLE_CLICKED = 'gnome:treeItemDoubleClicked';
 
 TreeView.prototype = {
     initialize: function() {
@@ -355,7 +357,12 @@ TreeView.prototype = {
                 // isError is only used in Ajax mode
                 this.reactivate();
             },
-
+            onDblClick: function(node, event) {
+                $(_this).trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
+            },
+            initAjax: {
+                url: '/tree'
+            },
             persist: true
         });
 
@@ -364,6 +371,29 @@ TreeView.prototype = {
 
     getActiveItem: function() {
         return this.tree.dynatree("getActiveNode");
+    },
+
+    hasItem: function(data) {
+        return this.tree.dynatree('getTree').selectKey(data.id) != null;
+    },
+
+    addItem: function(data, parent) {
+        if (!'id' in data || !'type' in data) {
+            alert('An error occurred. Try refreshing the page.');
+            console.log(data);
+        }
+
+        var rootNode = this.tree.dynatree('getTree').selectKey(data.parent);
+        rootNode.addChild({
+            title: data.id,
+            key: data.id,
+            parent: parent,
+            type: data.type
+        });
+    },
+
+    reload: function() {
+        this.tree.dynatree('getTree').reload();
     }
 };
 
@@ -428,7 +458,7 @@ function AnimationControlView(opts) {
     this.controls = [
         this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
         this.pauseButtonEl, this.moveButtonEl, this.fullscreenButtonEl,
-        this.resizeButtonEl
+        this.zoomInButtonEl, this.zoomOutButtonEl, this.resizeButtonEl
     ];
 
     return this;
@@ -605,6 +635,8 @@ function ModalFormView(opts) {
 
 ModalFormView.SAVE_BUTTON_CLICKED = 'gnome:formSaveButtonClicked';
 
+ModalFormView.SUBMIT_SUCCESS = 'gnome:formSubmitSuccess';
+
 // These events will fire if the server included a message in the JSON response
 // containing the rendered HTML of a submitted form. They are not fired for
 // regular form validation errors, which appear as HTML markup.
@@ -621,6 +653,9 @@ ModalFormView.prototype = {
             $(_this).trigger(ModalFormView.SAVE_BUTTON_CLICKED);
         });
 
+        $(this.formContainerEl).on('click', '.btn-next', this.goToNextStep);
+        $(this.formContainerEl).on('click', '.btn-prev', this.goToPreviousStep);
+
         $(this.formContainerEl).on('submit', 'form', function(event) {
             event.preventDefault();
             _this.doAjaxFormSubmit(this);
@@ -628,12 +663,98 @@ ModalFormView.prototype = {
         });
     },
 
-    showForm: function(urlKey, id) {
-        var _this = this;
-        var rootUrl = this.rootApiUrls[urlKey];
-        // TODO: We don't yet have a way of getting IDs for `TreeView` items.
-        var url = id === undefined ? rootUrl + '/add' : '/edit/' + id;
+    getFirstStepWithError: function() {
+        var form = $(this.formContainerEl).find('form');
+        var step = 1;
 
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var errorDiv = $('div.control-group.error').first();
+        var stepDiv = errorDiv.closest('div.step');
+
+        if (stepDiv) {
+            step = stepDiv.attr('data-step');
+        }
+
+        return step;
+    },
+
+    previousStepExists: function(stepNum) {
+        var form = $(this.formContainerEl).find('form');
+        return form.find('div[data-step="' + (stepNum - 1) + '"]').length > 0;
+    },
+
+    nextStepExists: function(stepNum) {
+        stepNum = parseInt(stepNum);
+        var form = $(this.formContainerEl).find('form');
+        return form.find('div[data-step="' + (stepNum + 1) + '"]').length > 0;
+    },
+
+    goToStep: function(stepNum) {
+        var form = $(this.formContainerEl).find('form');
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var stepDiv = form.find('div.step[data-step="' + stepNum + '"]');
+
+        if (stepDiv.length == 0) {
+            return;
+        }
+
+        var otherSteps = form.find('div.step');
+        otherSteps.addClass('hidden');
+        otherSteps.removeClass('active');
+        stepDiv.removeClass('hidden');
+        stepDiv.addClass('active');
+
+        var prevButton = $(this.formContainerEl).find('.btn-prev');
+        var nextButton = $(this.formContainerEl).find('.btn-next');
+        var saveButton = $(this.formContainerEl).find('.btn-primary');
+
+        if (this.previousStepExists(stepNum)) {
+            prevButton.removeClass('hidden');
+        } else {
+            prevButton.addClass('hidden');
+        }
+
+        if (this.nextStepExists(stepNum)) {
+            nextButton.removeClass('hidden');
+            saveButton.addClass('hidden');
+        } else {
+            nextButton.addClass('hidden');
+            saveButton.removeClass('hidden');
+        }
+    },
+    
+    goToNextStep: function(event) {
+        var form = $(this.formContainerEl).find('form');
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var activeStep = form.find('div.step.active');
+        var currentStep = parseInt(activeStep.attr('data-step'));
+        this.goToStep(currentStep + 1);
+    },
+    
+    goToPreviousStep: function(event) {
+        var form = $(this.formContainerEl).find('form');
+
+        if (!form.hasClass('multistep')) {
+            return;
+        }
+
+        var activeStep = form.find('div.step.active');
+        var currentStep = parseInt(activeStep.attr('data-step'));
+        this.goToStep(currentStep - 1);
+    },
+
+    showForm: function(url) {
         $.ajax({
             type: 'GET',
             url: url,
@@ -647,6 +768,15 @@ ModalFormView.prototype = {
         var container = $(this.formContainerEl);
         container.html(html);
         container.find('div.modal').modal();
+        container.find('.date').datepicker({
+            changeMonth: true,
+            changeYear: true
+        });
+
+        var stepWithError = this.getFirstStepWithError();
+        if (stepWithError) {
+            this.goToStep(stepWithError);
+        }
     },
 
     clearForm: function() {
@@ -672,22 +802,31 @@ ModalFormView.prototype = {
     },
 
     handleAjaxSuccess: function(data, textStatus, xhr) {
-        console.log({data:data, textStatus:textStatus, xhr:xhr})
-
         if ('form_html' in data) {
             this.reloadForm(data.form_html);
         } else {
+            $(this).trigger(ModalFormView.SUBMIT_SUCCESS, data);
             this.clearForm();
         }
 
-        if ('successMessage' in data) {
-            $(this).trigger(ModalFormView.FORM_SUCCESS, data.successMessage);
-        }
-        if ('warningMessage' in data) {
-            $(this).trigger(ModalFormView.FORM_WARNING, data.warningMessage);
-        }
-        if ('errorMessage' in data) {
-            $(this).trigger(ModalFormView.FORM_ERROR, data.errorMessage);
+        if ('message' in data) {
+            var messageEvent;
+
+            switch (data.message.type) {
+                case 'success':
+                    messageEvent = ModalFormView.FORM_SUCCESS;
+                    break;
+                case 'error':
+                    messageEvent = ModalFormView.FORM_ERROR;
+                    break;
+                case 'warning':
+                    messageEvent = ModalFormView.FORM_WARNING;
+                    break;
+            }
+
+            if (messageEvent) {
+                $(this).trigger(messageEvent, data.message);
+            }
         }
     },
     
@@ -703,9 +842,9 @@ function MapController(opts) {
 
     // TODO: Obtain from server via template variable passed into controller.
     this.rootApiUrls = {
-        settings: '/model/setting',
-        movers: '/model/mover',
-        spills: '/model/spill'
+        setting: '/model/setting',
+        mover: '/model/mover',
+        spill: '/model/spill'
     };
 
     this.formView = new ModalFormView({
@@ -756,11 +895,13 @@ function MapController(opts) {
 MapController.prototype = {
     setupEventHandlers: function() {
         $(this.formView).bind(ModalFormView.SAVE_BUTTON_CLICKED, this.saveForm);
-        $(this.formView).bind(ModalFormView.FORM_WARNING, this.displayMessage);
-        $(this.formView).bind(ModalFormView.FORM_SUCCESS, this.displayMessage);
-        $(this.formView).bind(ModalFormView.FORM_ERROR, this.displayMessage);
+        $(this.formView).bind(ModalFormView.FORM_WARNING, this.receivedMessage);
+        $(this.formView).bind(ModalFormView.FORM_SUCCESS, this.receivedMessage);
+        $(this.formView).bind(ModalFormView.FORM_ERROR, this.receivedMessage);
+        $(this.formView).bind(ModalFormView.SUBMIT_SUCCESS, this.formSubmitted);
 
         $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
+        $(this.treeView).bind(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
         $(this.treeControlView).bind(
             TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
@@ -861,7 +1002,7 @@ MapController.prototype = {
     },
 
     runFailed: function(event) {
-        alert(this.mapModel.error);
+        alert(this.mapModel.error.text);
     },
 
     refreshFinished: function(event) {
@@ -937,19 +1078,80 @@ MapController.prototype = {
         this.treeControlView.enableControls();
     },
 
-    addButtonClicked: function(event) {
-        var node = this.treeView.getActiveItem();
+    getUrlForTreeItem: function(node, mode) {
         var urlKey = null;
+        var url = null;
 
+        // TODO: Only activate 'Add item' button when a root node is selected.
+        if (node === null) {
+            console.log('Failed to get active node');
+            return false;
+        }
+
+        if (node.data.key == 'setting' || node.data.key == 'spill') {
+            return false;
+        }
+
+        // If this is a top-level node, then its `data.key` value will match a
+        // URL in `this.rootApiUrl`. Otherwise it's a child node and its parent
+        // (in `node.parent` will have a `key` value  set to 'setting', 'spill'
+        // or 'mover' and `node` will have a `data.type` value specific to its
+        // server-side representation, e.g. 'constant_wind'.
         if (node.data.key in this.rootApiUrls) {
             urlKey = node.data.key;
         } else if (node.parent.data.key in this.rootApiUrls) {
             urlKey = node.parent.data.key;
         }
 
-        if (urlKey) {
-            this.formView.showForm(urlKey);
+        if (!urlKey) {
+            return;
         }
+
+        var rootUrl = this.rootApiUrls[urlKey];
+
+        if (!rootUrl) {
+            return false;
+        }
+
+        switch (mode) {
+            case 'add':
+                url = rootUrl + '/add';
+                break;
+            case 'edit':
+                url = rootUrl + '/' + node.data.type + '/' + mode + '/' + node.data.key;
+                break;
+            case 'delete':
+                url = rootUrl + '/' + mode;
+        }
+
+        return url;
+    },
+
+    showFormForActiveTreeItem: function(mode) {
+        var node = this.treeView.getActiveItem();
+        var url = this.getUrlForTreeItem(node, mode);
+
+        if (url) {
+            this.formView.showForm(url);
+        }
+    },
+
+    addButtonClicked: function(event) {
+        this.showFormForActiveTreeItem('add');
+    },
+
+    treeItemDoubleClicked: function(event, node) {
+        if (node.data.key in this.rootApiUrls) {
+            // A root item
+            this.showFormForActiveTreeItem('add');
+        } else {
+            // A child item
+            this.showFormForActiveTreeItem('edit');
+        }
+    },
+
+    settingsButtonClicked: function(event) {
+        this.showFormForActiveTreeItem('edit');
     },
 
     saveForm: function() {
@@ -957,35 +1159,56 @@ MapController.prototype = {
     },
 
     removeButtonClicked: function(event) {
-        console.log(event.data.key);
-    },
+        var node = this.treeView.getActiveItem();
+        var url = this.getUrlForTreeItem(node, 'delete');
+        var _this = this;
 
-    settingsButtonClicked: function(event) {
-        console.log(event.data.key);
-    },
-
-    displayMessage: function(event, message) {
-        var alertDiv;
-
-        switch(event.type) {
-            case ModalFormView.FORM_SUCCESS:
-                alertDiv = $('div .alert-success');
-                break;
-            case ModalFormView.FORM_ERROR:
-                alertDiv = $('div .alert-error');
-                break;
-            case ModalFormView.FORM_WARNING:
-                alertDiv = $('div .alert-warning');
-                break;
-            default:
-                alertDiv = null;
-                break;
+        if (!node.data.key) {
+            return;
         }
 
-        if (message && alertDiv) {
-            alertDiv.find('span.message').text(message);
+        if (confirm('Remove mover?') == false) {
+            return;
+        }
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: "mover_id=" + node.data.key,
+            success: function(event, data) {
+                _this.treeView.reload();
+            },
+            error: function() {
+                alert('Could not remove item.')
+            }
+        });
+    },
+
+    receivedMessage: function(event, message) {
+        if (message) {
+            this.displayMessage(message);
+        }
+    },
+
+    displayMessage: function(message) {
+        if (!'type' in message || !'text' in message)  {
+            return;
+        }
+
+        var alertDiv = $('div .alert-' + message.type);
+
+        if (message.text && alertDiv) {
+            alertDiv.find('span.message').text(message.text);
             alertDiv.removeClass('hidden');
         }
+    },
+
+    formSubmitted: function(event, data) {
+        if ('message' in data) {
+            this.displayMessage(data.message);
+        }
+
+        this.treeView.reload();
     }
 };
 

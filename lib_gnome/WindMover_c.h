@@ -76,8 +76,7 @@ public:
 	void				SetIsConstantWind (Boolean isConstantWind) { fIsConstantWind = isConstantWind; }
 	OSErr				GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
-	OSErr				get_move(int, unsigned long, unsigned long, char *, char *, char *, double, double, char*);
-	OSErr				get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref_ra, WorldPoint3D* wp, double* wind_ra);
+	OSErr				get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref_ra, WorldPoint3D* wp, double* wind_ra, int spillType);
 };
 
 #undef TOSSMTimeValue
