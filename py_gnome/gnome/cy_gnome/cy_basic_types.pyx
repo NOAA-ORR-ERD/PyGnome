@@ -39,6 +39,13 @@ disp_status = enum(dont_disperse = DONT_DISPERSE,
                    have_removed = HAVE_REMOVED)
 
 """
+SpillType {FORECAST_LE = 1, UNCERTAINTY_LE = 2};
+"""
+spill_type = enum(forecast = FORECAST_LE,
+                  uncertainty = UNCERTAINTY_LE,)
+                
+
+"""
 Contains enum type for the contents of a data file. For instance,
 a standard wind file would contain magnitude and direction info
 file_contains.magnitude_direction = 5

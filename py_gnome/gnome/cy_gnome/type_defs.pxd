@@ -89,12 +89,17 @@ cdef extern from "TypeDefs.h":
     ctypedef TimeValuePair **TimeValuePairH
     ctypedef TimeValuePair *TimeValuePairP 
 
-    ctypedef enum:
+    # would be good to figure out how to call enum by type??
+    ctypedef enum LEStatus: 
         OILSTAT_NOTRELEASED = 0
         OILSTAT_INWATER = 2
         OILSTAT_ONLAND
         OILSTAT_OFFMAPS = 7
         OILSTAT_EVAPORATED = 10 
+    
+    ctypedef enum LEType:
+        FORECAST_LE = 1
+        UNCERTAINTY_LE = 2
     
     ctypedef enum:
         DONT_DISPERSE 
