@@ -78,12 +78,3 @@ date_rec           = np.dtype([('year', np.short),
                                ('dayOfWeek', np.short),], align=True)
 
 status_code_type = np.int16 # does it matter, as long as it's an int type???
-
-"""
-WindageRec is defined for a spill. It is defined as a range in percent, so if the windage for a spill
-is between 1% to 4% and it persists for 15mins, this should be defined as: windageA = 0.01, windageB = 0.04,
-persistence = 0.25    (fraction of an hour)
-"""
-windage = np.ndtype(('windageA',np.double),
-                    ('windageB',np.double),
-                    ('persistence',np.double), align=True)
