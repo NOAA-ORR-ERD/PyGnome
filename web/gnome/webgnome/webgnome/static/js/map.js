@@ -1,3 +1,12 @@
+// map.js: The WebGNOME JavaScript application.
+
+
+function handleAjaxError(xhr, textStatus, errorThrown) {
+    alert('Could not connect to server.');
+    console.log(xhr, textStatus, errorThrown);
+}
+
+
 function MapModel(opts) {
     // Optionally specify the current frame the user is in.
     this.frame = opts.frame == undefined ? 0 : opts.frame;
@@ -77,7 +86,7 @@ MapModel.prototype = {
         if ('message' in data && data.message.type == 'error') {
             this.error = data.message;
         } else {
-            this.error = 'The model failed to run. Please try again.'
+            this.error = {text: 'The model failed to run. Please try again.'}
         }
         $(this).trigger(MapModel.RUN_FAILED);
     },
@@ -90,10 +99,10 @@ MapModel.prototype = {
             return;
         }
 
-        opts = $.extend(opts, {
+        opts = $.extend({
             zoomLevel: this.zoomLevel,
             zoomDirection: MapModel.ZOOM_NONE
-        });
+        }, opts);
 
         var isInvalid = function(obj) {
             return obj === undefined || obj === null || typeof(obj) != "object";
@@ -109,7 +118,7 @@ MapModel.prototype = {
             url: MapModel.RUN_URL,
             data: opts,
             success: function(data) {
-                if ('errorMessage' in data) {
+                if ('message' in data) {
                     _this.handleFailedRun(data);
                     return false;
                 }
@@ -191,6 +200,7 @@ MapView.prototype = {
     initialize: function() {
         // Only have to do this once.
         this.makeImagesClickable();
+        $(this).trigger(MapView.INIT_FINISHED);
         return this;
     },
 
@@ -340,6 +350,7 @@ function TreeView(opts) {
 }
 
 TreeView.ITEM_ACTIVATED = 'gnome:treeItemActivated';
+TreeView.ITEM_DOUBLE_CLICKED = 'gnome:treeItemDoubleClicked';
 
 TreeView.prototype = {
     initialize: function() {
@@ -355,7 +366,12 @@ TreeView.prototype = {
                 // isError is only used in Ajax mode
                 this.reactivate();
             },
-
+            onDblClick: function(node, event) {
+                $(_this).trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
+            },
+            initAjax: {
+                url: '/tree'
+            },
             persist: true
         });
 
@@ -370,17 +386,23 @@ TreeView.prototype = {
         return this.tree.dynatree('getTree').selectKey(data.id) != null;
     },
 
-    addItem: function(data) {
-        if (!'type' in data) {
+    addItem: function(data, parent) {
+        if (!'id' in data || !'type' in data) {
             alert('An error occurred. Try refreshing the page.');
             console.log(data);
         }
 
-        var rootNode = this.tree.dynatree('getTree').selectKey(data.type);
+        var rootNode = this.tree.dynatree('getTree').selectKey(data.parent);
         rootNode.addChild({
             title: data.id,
-            key: data.id
+            key: data.id,
+            parent: parent,
+            type: data.type
         });
+    },
+
+    reload: function() {
+        this.tree.dynatree('getTree').reload();
     }
 };
 
@@ -429,7 +451,7 @@ TreeControlView.prototype = {
 };
 
 
-function AnimationControlView(opts) {
+function MapControlView(opts) {
     this.sliderEl = opts.sliderEl;
     this.playButtonEl = opts.playButtonEl;
     this.pauseButtonEl = opts.pauseButtonEl;
@@ -445,66 +467,67 @@ function AnimationControlView(opts) {
     this.controls = [
         this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
         this.pauseButtonEl, this.moveButtonEl, this.fullscreenButtonEl,
-        this.resizeButtonEl
+        this.zoomInButtonEl, this.zoomOutButtonEl, this.resizeButtonEl
     ];
 
     return this;
 }
 
-// Events for `AnimationControlView`
-AnimationControlView.PLAY_BUTTON_CLICKED = "gnome:playButtonClicked";
-AnimationControlView.PAUSE_BUTTON_CLICKED = "gnome:pauseButtonClicked";
-AnimationControlView.BACK_BUTTON_CLICKED = "gnome:backButtonClicked";
-AnimationControlView.FORWARD_BUTTON_CLICKED = "gnome:forwardButtonClicked";
-AnimationControlView.ZOOM_IN_BUTTON_CLICKED = "gnome:zoomInButtonClicked";
-AnimationControlView.ZOOM_OUT_BUTTON_CLICKED = "gnome:zoomOutButtonClicked";
-AnimationControlView.MOVE_BUTTON_CLICKED = "gnome:moveButtonClicked";
-AnimationControlView.FULLSCREEN_BUTTON_CLICKED = "gnome:fullscreenButtonClicked";
-AnimationControlView.RESIZE_BUTTON_CLICKED = "gnome:resizeButtonClicked";
-AnimationControlView.SLIDER_CHANGED = "gnome:sliderChanged";
+
+// Events for `mapControlView`
+MapControlView.PLAY_BUTTON_CLICKED = "gnome:playButtonClicked";
+MapControlView.PAUSE_BUTTON_CLICKED = "gnome:pauseButtonClicked";
+MapControlView.BACK_BUTTON_CLICKED = "gnome:backButtonClicked";
+MapControlView.FORWARD_BUTTON_CLICKED = "gnome:forwardButtonClicked";
+MapControlView.ZOOM_IN_BUTTON_CLICKED = "gnome:zoomInButtonClicked";
+MapControlView.ZOOM_OUT_BUTTON_CLICKED = "gnome:zoomOutButtonClicked";
+MapControlView.MOVE_BUTTON_CLICKED = "gnome:moveButtonClicked";
+MapControlView.FULLSCREEN_BUTTON_CLICKED = "gnome:fullscreenButtonClicked";
+MapControlView.RESIZE_BUTTON_CLICKED = "gnome:resizeButtonClicked";
+MapControlView.SLIDER_CHANGED = "gnome:sliderChanged";
 
 // Statuses
-AnimationControlView.STATUS_STOPPED = 0;
-AnimationControlView.STATUS_PLAYING = 1;
-AnimationControlView.STATUS_PAUSED = 2;
-AnimationControlView.STATUS_BACK = 3;
-AnimationControlView.STATUS_FORWARD = 4;
-AnimationControlView.STATUS_ZOOMING_IN = 5;
-AnimationControlView.STATUS_ZOOMING_OUT = 6;
+MapControlView.STATUS_STOPPED = 0;
+MapControlView.STATUS_PLAYING = 1;
+MapControlView.STATUS_PAUSED = 2;
+MapControlView.STATUS_BACK = 3;
+MapControlView.STATUS_FORWARD = 4;
+MapControlView.STATUS_ZOOMING_IN = 5;
+MapControlView.STATUS_ZOOMING_OUT = 6;
 
-AnimationControlView.prototype = {
+MapControlView.prototype = {
     initialize: function() {
         var _this = this;
-        this.status = AnimationControlView.STATUS_STOPPED;
+        this.status = MapControlView.STATUS_STOPPED;
 
         $(this.pauseButtonEl).hide();
         $(this.resizeButtonEl).hide();
 
         $(this.sliderEl).slider({
             start: function(event, ui) {
-                $(_this).trigger(AnimationControlView.PAUSE_BUTTON_CLICKED);
+                $(_this).trigger(MapControlView.PAUSE_BUTTON_CLICKED);
             },
             change: function(event, ui) {
-                $(_this).trigger(AnimationControlView.SLIDER_CHANGED, ui.value);
+                $(_this).trigger(MapControlView.SLIDER_CHANGED, ui.value);
             },
             disabled: true
         });
 
         $(this.pauseButtonEl).click(function() {
-            if (_this.status === AnimationControlView.STATUS_PLAYING) {
-                $(_this).trigger(AnimationControlView.PAUSE_BUTTON_CLICKED);
+            if (_this.status === MapControlView.STATUS_PLAYING) {
+                $(_this).trigger(MapControlView.PAUSE_BUTTON_CLICKED);
             }
         });
 
         var clickEvents = [
-            [this.playButtonEl, AnimationControlView.PLAY_BUTTON_CLICKED],
-            [this.backButtonEl, AnimationControlView.BACK_BUTTON_CLICKED],
-            [this.forwardButtonEl, AnimationControlView.FORWARD_BUTTON_CLICKED],
-            [this.zoomInButtonEl, AnimationControlView.ZOOM_IN_BUTTON_CLICKED],
-            [this.zoomOutButtonEl, AnimationControlView.ZOOM_OUT_BUTTON_CLICKED],
-            [this.moveButtonEl, AnimationControlView.MOVE_BUTTON_CLICKED],
-            [this.fullscreenButtonEl, AnimationControlView.FULLSCREEN_BUTTON_CLICKED],
-            [this.resizeButtonEl, AnimationControlView.RESIZE_BUTTON_CLICKED]
+            [this.playButtonEl, MapControlView.PLAY_BUTTON_CLICKED],
+            [this.backButtonEl, MapControlView.BACK_BUTTON_CLICKED],
+            [this.forwardButtonEl, MapControlView.FORWARD_BUTTON_CLICKED],
+            [this.zoomInButtonEl, MapControlView.ZOOM_IN_BUTTON_CLICKED],
+            [this.zoomOutButtonEl, MapControlView.ZOOM_OUT_BUTTON_CLICKED],
+            [this.moveButtonEl, MapControlView.MOVE_BUTTON_CLICKED],
+            [this.fullscreenButtonEl, MapControlView.FULLSCREEN_BUTTON_CLICKED],
+            [this.resizeButtonEl, MapControlView.RESIZE_BUTTON_CLICKED]
         ];
 
         _.each(_.object(clickEvents), function(customEvent, element) {
@@ -517,35 +540,35 @@ AnimationControlView.prototype = {
     },
 
     setStopped: function() {
-        this.status = AnimationControlView.STATUS_STOPPED;
+        this.status = MapControlView.STATUS_STOPPED;
     },
 
     setPlaying: function() {
-        this.status = AnimationControlView.STATUS_PLAYING;
+        this.status = MapControlView.STATUS_PLAYING;
         $(this.playButtonEl).hide();
         $(this.pauseButtonEl).show();
     },
 
     setPaused: function() {
-        this.status = AnimationControlView.STATUS_PAUSED;
+        this.status = MapControlView.STATUS_PAUSED;
         $(this.pauseButtonEl).hide();
         $(this.playButtonEl).show();
     },
 
     setForward: function() {
-        this.status = AnimationControlView.STATUS_FORWARD;
+        this.status = MapControlView.STATUS_FORWARD;
     },
 
     setBack: function() {
-        this.status = AnimationControlView.STATUS_BACK;
+        this.status = MapControlView.STATUS_BACK;
     },
 
     setZoomingIn: function() {
-        this.status = AnimationControlView.STATUS_ZOOMING_IN;
+        this.status = MapControlView.STATUS_ZOOMING_IN;
     },
 
     setZoomingOut: function() {
-        this.status = AnimationControlView.STATUS_ZOOMING_OUT;
+        this.status = MapControlView.STATUS_ZOOMING_OUT;
     },
 
     setFrameCount: function(frameCount) {
@@ -571,31 +594,31 @@ AnimationControlView.prototype = {
     },
 
     isPlaying: function() {
-        return this.status === AnimationControlView.STATUS_PLAYING;
+        return this.status === MapControlView.STATUS_PLAYING;
     },
 
     isStopped: function() {
-        return this.status === AnimationControlView.STATUS_STOPPED;
+        return this.status === MapControlView.STATUS_STOPPED;
     },
 
     isPaused: function() {
-        return this.status === AnimationControlView.STATUS_PAUSED;
+        return this.status === MapControlView.STATUS_PAUSED;
     },
 
     isForward: function() {
-        return this.status === AnimationControlView.STATUS_PLAYING;
+        return this.status === MapControlView.STATUS_PLAYING;
     },
 
     isBack: function() {
-        return this.status === AnimationControlView.STATUS_BACK;
+        return this.status === MapControlView.STATUS_BACK;
     },
 
     isZoomingIn: function() {
-        return this.status === AnimationControlView.STATUS_ZOOMING_IN;
+        return this.status === MapControlView.STATUS_ZOOMING_IN;
     },
 
     isZoomingOut: function() {
-        return this.status === AnimationControlView.STATUS_ZOOMING_OUT;
+        return this.status === MapControlView.STATUS_ZOOMING_OUT;
     },
 
     enableControls: function() {
@@ -741,16 +764,12 @@ ModalFormView.prototype = {
         this.goToStep(currentStep - 1);
     },
 
-    showForm: function(urlKey, id) {
-        var _this = this;
-        var rootUrl = this.rootApiUrls[urlKey];
-        var url = id ? rootUrl + '/edit/' + id : rootUrl + '/add';
-
+    showForm: function(url) {
         $.ajax({
             type: 'GET',
             url: url,
             success: this.handleAjaxSuccess,
-            error: this.handleAjaxError
+            error: handleAjaxError
         });
     },
 
@@ -759,6 +778,10 @@ ModalFormView.prototype = {
         var container = $(this.formContainerEl);
         container.html(html);
         container.find('div.modal').modal();
+        container.find('.date').datepicker({
+            changeMonth: true,
+            changeYear: true
+        });
 
         var stepWithError = this.getFirstStepWithError();
         if (stepWithError) {
@@ -784,7 +807,7 @@ ModalFormView.prototype = {
             data: $(form).serialize(),
             url: $(form).attr('action'),
             success: this.handleAjaxSuccess,
-            error: this.handleAjaxError
+            error: handleAjaxError
         });
     },
 
@@ -816,10 +839,29 @@ ModalFormView.prototype = {
             }
         }
     },
-    
-    handleAjaxError: function(xhr, textStatus, errorThrown) {
-        alert('Could not connect to server.');
-        console.log(xhr, textStatus, errorThrown);
+};
+
+
+function MenuView(opts) {
+    this.modelItemEl = opts.modelItemEl;
+    this.newItemEl = opts.newItemEl;
+    this.runItemEl = opts.runItemEl;
+    this.stepItemEl = opts.stepItemEl;
+    this.runUntilItemEl = opts.runUntilItemEl;   
+}
+
+
+MenuView.NEW_ITEM_CLICKED = "gnome:newMenuItemClicked";
+
+
+MenuView.prototype = {
+    initialize: function() {
+        var _this = this;
+
+        $(this.newItemEl).click(function(event) {
+            $(_this.modelItemEl).dropdown('toggle');
+            $(_this).trigger(MenuView.NEW_ITEM_CLICKED);
+        });
     }
 };
 
@@ -829,10 +871,19 @@ function MapController(opts) {
 
     // TODO: Obtain from server via template variable passed into controller.
     this.rootApiUrls = {
+        model: "/model",
         setting: '/model/setting',
         mover: '/model/mover',
         spill: '/model/spill'
     };
+    
+    this.menuView = new MenuView({
+        modelItemEl: "#file-drop",
+        newItemEl: "#menu-new",
+        runItemEl: "#menu-run",
+        stepItemEl: "#menu-step",
+        runUntilItemEl: "#mnu-run-until"
+    });
 
     this.formView = new ModalFormView({
         formContainerEl: opts.formContainerEl,
@@ -857,7 +908,7 @@ function MapController(opts) {
         activeFrameClass: 'active'
     });
 
-    this.animationControlView = new AnimationControlView({
+    this.mapControlView = new MapControlView({
         sliderEl: "#slider",
         playButtonEl: "#play-button",
         pauseButtonEl: "#pause-button",
@@ -888,6 +939,7 @@ MapController.prototype = {
         $(this.formView).bind(ModalFormView.SUBMIT_SUCCESS, this.formSubmitted);
 
         $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
+        $(this.treeView).bind(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
         $(this.treeControlView).bind(
             TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
@@ -896,24 +948,24 @@ MapController.prototype = {
         $(this.treeControlView).bind(
             TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
 
-        $(this.animationControlView).bind(
-            AnimationControlView.PLAY_BUTTON_CLICKED, this.play);
-        $(this.animationControlView).bind(
-            AnimationControlView.PAUSE_BUTTON_CLICKED, this.pause);
-        $(this.animationControlView).bind(
-            AnimationControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
-        $(this.animationControlView).bind(
-            AnimationControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
-        $(this.animationControlView).bind(
-            AnimationControlView.SLIDER_CHANGED, this.sliderChanged);
-        $(this.animationControlView).bind(
-            AnimationControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
-        $(this.animationControlView).bind(
-            AnimationControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
-        $(this.animationControlView).bind(
-            AnimationControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
-        $(this.animationControlView).bind(
-            AnimationControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
+        $(this.mapControlView).bind(
+            MapControlView.PLAY_BUTTON_CLICKED, this.play);
+        $(this.mapControlView).bind(
+            MapControlView.PAUSE_BUTTON_CLICKED, this.pause);
+        $(this.mapControlView).bind(
+            MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
+        $(this.mapControlView).bind(
+            MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
+        $(this.mapControlView).bind(
+            MapControlView.SLIDER_CHANGED, this.sliderChanged);
+        $(this.mapControlView).bind(
+            MapControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
+        $(this.mapControlView).bind(
+            MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
+        $(this.mapControlView).bind(
+            MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
+        $(this.mapControlView).bind(
+            MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
 
         $(this.mapModel).bind(MapModel.RUN_FINISHED, this.restart);
         $(this.mapModel).bind(MapModel.RUN_FAILED, this.runFailed);
@@ -924,14 +976,17 @@ MapController.prototype = {
         $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
         $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
         $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
+
+        $(this.menuView).bind(MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
     },
 
     initializeViews: function() {
         this.formView.initialize();
         this.treeControlView.initialize();
         this.treeView.initialize();
-        this.animationControlView.initialize();
+        this.mapControlView.initialize();
         this.mapView.initialize();
+        this.menuView.initialize();
     },
 
     mapInitFinished: function() {
@@ -940,19 +995,40 @@ MapController.prototype = {
         this.mapModel.setBoundingBox(bbox);
     },
 
+    newMenuItemClicked: function() {
+        var _this = this;
+
+        if (!confirm("Reset model?")) {
+            return;
+        }
+
+        $.ajax({
+            url: this.rootApiUrls.model + "/create",
+            data: "confirm=1",
+            type: "POST",
+            success: function(data) {
+                if ('message' in data) {
+                    _this.displayMessage(data.message);
+                }
+                _this.treeView.reload();
+            },
+            error: handleAjaxError
+        });
+    },
+
     play: function(event) {
-        if (this.animationControlView.isPaused()) {
-            this.animationControlView.setPlaying();
+        if (this.mapControlView.isPaused()) {
+            this.mapControlView.setPlaying();
             this.mapView.play();
         } else {
-            this.animationControlView.disableControls();
-            this.animationControlView.setPlaying();
+            this.mapControlView.disableControls();
+            this.mapControlView.setPlaying();
             this.mapModel.run();
         }
     },
 
     pause: function(event) {
-        this.animationControlView.setPaused();
+        this.mapControlView.setPaused();
         this.mapView.pause();
     },
 
@@ -961,7 +1037,7 @@ MapController.prototype = {
             return;
         }
 
-        this.animationControlView.setZoomingIn();
+        this.mapControlView.setZoomingIn();
         this.mapView.makeActiveImageClickable();
         this.mapView.makeActiveImageSelectable();
         this.mapView.setZoomingInCursor();
@@ -972,7 +1048,7 @@ MapController.prototype = {
             return;
         }
 
-        this.animationControlView.setZoomingOut();
+        this.mapControlView.setZoomingOut();
         this.mapView.makeActiveImageClickable();
         this.mapView.setZoomingOutCursor();
     },
@@ -992,19 +1068,19 @@ MapController.prototype = {
     },
 
     refreshFinished: function(event) {
-        this.animationControlView.enableControls();
-        this.animationControlView.setFrameCount(this.mapView.getFrameCount());
-        if (this.animationControlView.isPlaying()) {
+        this.mapControlView.enableControls();
+        this.mapControlView.setFrameCount(this.mapView.getFrameCount());
+        if (this.mapControlView.isPlaying()) {
             this.mapView.play();
         }
     },
 
     stopAnimation: function(event) {
-        this.animationControlView.setStopped();
+        this.mapControlView.setStopped();
     },
 
     zoomIn: function(event, startPosition, endPosition) {
-        this.animationControlView.setStopped();
+        this.mapControlView.setStopped();
 
         if (endPosition) {
             this.mapModel.zoomFromRect(
@@ -1036,8 +1112,8 @@ MapController.prototype = {
 
     frameChanged: function(event) {
         var timestamp = this.mapModel.getTimestampForFrame(this.mapView.currentFrame);
-        this.animationControlView.setCurrentFrame(this.mapView.currentFrame);
-        this.animationControlView.setTime(timestamp);
+        this.mapControlView.setCurrentFrame(this.mapView.currentFrame);
+        this.mapControlView.setTime(timestamp);
     },
 
     jumpToFirstFrame: function(event) {
@@ -1047,16 +1123,16 @@ MapController.prototype = {
     jumpToLastFrame: function(event) {
         var lastFrame = this.mapView.getFrameCount();
         this.mapView.setCurrentFrame(lastFrame);
-        this.animationControlView.setCurrentFrame(lastFrame);
+        this.mapControlView.setCurrentFrame(lastFrame);
     },
 
     useFullscreen: function(event) {
-        this.animationControlView.switchToFullscreen();
+        this.mapControlView.switchToFullscreen();
         $(this.sidebarEl).hide('slow');
     },
 
     disableFullscreen: function(event) {
-        this.animationControlView.switchToNormalScreen();
+        this.mapControlView.switchToNormalScreen();
         $(this.sidebarEl).show('slow');
     },
 
@@ -1064,41 +1140,80 @@ MapController.prototype = {
         this.treeControlView.enableControls();
     },
 
-    showFormForActiveTreeItem: function() {
-        var node = this.treeView.getActiveItem();
+    getUrlForTreeItem: function(node, mode) {
         var urlKey = null;
-        var id = null;
+        var url = null;
 
         // TODO: Only activate 'Add item' button when a root node is selected.
         if (node === null) {
+            console.log('Failed to get active node');
+            return false;
+        }
+
+        if (node.data.key == 'setting' || node.data.key == 'spill') {
+            return false;
+        }
+
+        // If this is a top-level node, then its `data.key` value will match a
+        // URL in `this.rootApiUrl`. Otherwise it's a child node and its parent
+        // (in `node.parent` will have a `key` value  set to 'setting', 'spill'
+        // or 'mover' and `node` will have a `data.type` value specific to its
+        // server-side representation, e.g. 'constant_wind'.
+        if (node.data.key in this.rootApiUrls) {
+            urlKey = node.data.key;
+        } else if (node.parent.data.key in this.rootApiUrls) {
+            urlKey = node.parent.data.key;
+        }
+
+        if (!urlKey) {
             return;
         }
 
-        if (node.data.key in this.rootApiUrls) {
-            console.log(node)
-            urlKey = node.data.key;
-        } else if (node.parent.data.key in this.rootApiUrls) {
-            // TODO: Should we pass the name of the parent node in as a data
-            // value on the <li> item that created tihs node on page load?
-            // Otherwise we can't support more than one depth of nodes under
-            // a parent node.
-            urlKey = node.parent.data.key;
-            id = node.data.key;
+        var rootUrl = this.rootApiUrls[urlKey];
+
+        if (!rootUrl) {
+            return false;
         }
 
-        console.log(urlKey, id);
+        switch (mode) {
+            case 'add':
+                url = rootUrl + '/add';
+                break;
+            case 'edit':
+                url = rootUrl + '/' + node.data.type + '/' + mode + '/' + node.data.key;
+                break;
+            case 'delete':
+                url = rootUrl + '/' + mode;
+        }
 
-        if (urlKey) {
-            this.formView.showForm(urlKey, id);
+        return url;
+    },
+
+    showFormForActiveTreeItem: function(mode) {
+        var node = this.treeView.getActiveItem();
+        var url = this.getUrlForTreeItem(node, mode);
+
+        if (url) {
+            this.formView.showForm(url);
         }
     },
 
     addButtonClicked: function(event) {
-        this.showFormForActiveTreeItem();
+        this.showFormForActiveTreeItem('add');
+    },
+
+    treeItemDoubleClicked: function(event, node) {
+        if (node.data.key in this.rootApiUrls) {
+            // A root item
+            this.showFormForActiveTreeItem('add');
+        } else {
+            // A child item
+            this.showFormForActiveTreeItem('edit');
+        }
     },
 
     settingsButtonClicked: function(event) {
-        this.showFormForActiveTreeItem();
+        this.showFormForActiveTreeItem('edit');
     },
 
     saveForm: function() {
@@ -1106,7 +1221,29 @@ MapController.prototype = {
     },
 
     removeButtonClicked: function(event) {
-        console.log(event.data.key);
+        var node = this.treeView.getActiveItem();
+        var url = this.getUrlForTreeItem(node, 'delete');
+        var _this = this;
+
+        if (!node.data.key) {
+            return;
+        }
+
+        if (confirm('Remove mover?') == false) {
+            return;
+        }
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: "mover_id=" + node.data.key,
+            success: function(event, data) {
+                _this.treeView.reload();
+            },
+            error: function() {
+                alert('Could not remove item.')
+            }
+        });
     },
 
     receivedMessage: function(event, message) {
@@ -1132,9 +1269,8 @@ MapController.prototype = {
         if ('message' in data) {
             this.displayMessage(data.message);
         }
-        if (!this.treeView.hasItem(data)) {
-            this.treeView.addItem(data);
-        }
+
+        this.treeView.reload();
     }
 };
 

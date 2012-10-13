@@ -414,91 +414,16 @@ OSErr WindMover_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 	return err;
 }
 
-// JS: Will probably delete this since uncertainty will be done differently,  but leave commented for now
-//OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *wind_ra, double f_sigma_2, double f_sigma_theta, char *uncertain_ra) {	
-//
-//	TimeValuePairH time_val_hdl = 0;
-//	
-//	if(!uncertain_ra) {
-//		cout << "uncertainty values not provided! returning.\n";
-//		return 1;
-//	}
-//
-//	if(!wp_ra) {
-//		cout << "worldpoints array not provided! returning.\n";
-//		return 1;
-//	}
-//	
-//	
-//	this->fSigma2 = f_sigma_2;
-//	this->fSigmaTheta = f_sigma_theta;
-//	this->tap_offset = 0;
-//
-//	try {
-//		this->fWindUncertaintyList = (LEWindUncertainRecH)_NewHandle(sizeof(LEWindUncertainRec)*n);
-//		memcpy(*fWindUncertaintyList, uncertain_ra, sizeof(LEWindUncertainRec)*n);
-//		this->fLESetSizes = (LONGH)_NewHandle(sizeof(long));
-//		DEREFH(this->fLESetSizes)[0] = 0;
-//	} catch(...) {
-//		cout << "cannot create uncertainty handle in windmover::get_move. returning.\n";
-//		if(this->fWindUncertaintyList)
-//			_DisposeHandle((Handle)this->fWindUncertaintyList);
-//		return 1;
-//	}
-//	
-//	this->PrepareForModelStep(model_time, step_len, false);
-//	
-//	WorldPoint3D delta;
-//	WorldPoint3D *ref;
-//	WorldPoint3D *wp;
-//	double *windages;
-//	ref = (WorldPoint3D*)ref_ra;
-//	wp = (WorldPoint3D*)wp_ra;
-//	windages = (double*)wind_ra;
-//	
-//	for (int i = 0; i < n; i++) {
-//		LERec rec;
-//		rec.p = ref[i].p;
-//		rec.z = ref[i].z;
-//		rec.windage = windages[i];
-//		
-//		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
-//		
-//		wp[i].p.pLat += delta.p.pLat / 1000000;
-//		wp[i].p.pLong += delta.p.pLong / 1000000;
-//		wp[i].z += delta.z;
-//	}
-//	if(this->fLESetSizes)
-//		_DisposeHandle((Handle)this->fLESetSizes);
-//	if(this->fWindUncertaintyList)
-//		_DisposeHandle((Handle)this->fWindUncertaintyList);
-//	return noErr;
-//}
-
-
-
-/* JS 10/8/12: Updated get_move so the input arguments are not char * 
- * The second get_move method above may get deleted once we do uncertainty differently
- * NOTE: Some of the input arrays (ref, windages) should be const since you don't want the method to change them;
- * however, haven't gotten const to work well with cython yet so just be careful when changing the input data
- * Inputs:
-	int n,						Total number of LEs
-	unsigned long model_time,	current time
-	unsigned long step_len,		length of time step
-	WorldPoint3D* ref,			pointer to array containing LE positions
-	WorldPoint3D* delta,		pointer to array which will contain delta after the move
-	double* LE_windages,		pointer to windage array
-	int* LE_status,				pointer to array containing status of each LE
-	LEType LE_type				an enum type that is one of the following {FORECAST_LE = 1, UNCERTAINTY_LE = 2, nextOne = 4}
- */
-OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* LE_windage, short* LE_status, short LE_type) {	
+// JS 10/8/12: Updated so the input arguments are not char * 
+// The second get_move method above may get deleted once we do uncertainty differently
+// NOTE: Some of the input arrays (ref, windages) should be const since you don't want the method to change them;
+// however, haven't gotten const to work well with cython yet so just be careful when changing the input data
+OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, int spillType) {	
+		
 	if(!delta) {
 		cout << "worldpoints array not provided! returning.\n";
 		return 1;
-	}
-	
-	this->tap_offset = 0;	// what is this for?
-	this->PrepareForModelStep(model_time, step_len, false);
+	}	
 	
 	LERec* prec;
 	LERec rec;
@@ -522,7 +447,7 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 		rec.p.pLat *= 1000000;	// really only need this for the latitude
 		//rec.p.pLong*= 1000000;
 
-		delta[i] = GetMove(model_time, step_len, 0, i, prec, LE_type);
+		delta[i] = GetMove(model_time, step_len, 0, i, prec, spillType);
 		
 		delta[i].p.pLat /= 1000000;
 		delta[i].p.pLong /= 1000000;

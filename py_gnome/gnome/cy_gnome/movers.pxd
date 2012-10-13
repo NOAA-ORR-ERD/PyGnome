@@ -47,8 +47,6 @@ cdef extern from "WindMover_c.h":
         VelocityRec fConstantValue
         LEWindUncertainRec **fWindUncertaintyList
         long **fLESetSizes
-        #OSErr get_move(int, unsigned long, unsigned long, WorldPoint3D *, WorldPoint3D *, double *)
-        #OSErr get_move(int, unsigned long, unsigned long, WorldPoint3D*, WorldPoint3D*, double*, short*, short)
         OSErr get_move(int, unsigned long, unsigned long, WorldPoint3D*, WorldPoint3D*, double*, short*, short)
         void SetTimeDep(OSSMTimeValue_c *)
         # ARE FOLLOWING USED IN CYTHON??

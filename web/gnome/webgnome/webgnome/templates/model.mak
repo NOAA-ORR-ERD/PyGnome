@@ -10,7 +10,7 @@
         <li class="dropdown">
             <a id="file-drop" href="javascript:" role="button" class="dropdown-toggle" data-toggle="dropdown">Model<b class="caret"></b></a>
             <ul class="dropdown-menu" role="menu" aria-labelledby="file-drop">
-                <li><a tabindex="-1" href="javascript:">Start New</a></li>
+                <li><a tabindex="-1" id="menu-new" href="javascript:">New</a></li>
                 <li><a tabindex="-1" href="javascript:">Load from file</a></li>
                 <li><a tabindex="-1" href="javascript:">Save</a></li>
                 <li class="divider"></li>
@@ -20,9 +20,9 @@
         <li class="dropdown">
             <a id="run-drop" href="javascript:" role="button" class="dropdown-toggle" data-toggle="dropdown">Run<b class="caret"></b></a>
             <ul class="dropdown-menu" role="menu" aria-labelledby="run-drop">
-                <li><a tabindex="-1" href="javascript:">Run</a></li>
-                <li><a tabindex="-1" href="javascript:">Step</a></li>
-                <li><a tabindex="-1" href="javascript:">Run Until...</a></li>
+                <li><a tabindex="-1" id="menu-run" href="javascript:">Run</a></li>
+                <li><a tabindex="-1" id="menu-step" href="javascript:">Step</a></li>
+                <li><a tabindex="-1" id="menu-run-until" href="javascript:">Run Until...</a></li>
             </ul>
         </li>
         <li class="dropdown">
@@ -45,40 +45,7 @@
         </div>
       </div>
     </div>
-    <div id="tree">
-        <ul id="tree-list">
-            <li id="setting" title="Model Settings">
-                Model Settings
-                <ul>
-                    % for setting in model.get_settings():
-                        <li id="${setting['name']}">${setting['name']}
-                            : ${setting['value']}</li>
-                    % endfor
-
-                    <% map = model.get_map() %>
-                    % if map:
-                        <li id="${ map['name'] }">${map['name']}</li>
-                    % endif
-                </ul>
-            </li>
-            <li id="mover" title="Movers">
-                Movers
-                <ul>
-                    % for id in model.get_movers().keys():
-                        <li id="${ id }">${ id }}</li>
-                    % endfor
-                </ul>
-            </li>
-            <li id="spill" title="Spills">
-                Spills
-                <ul>
-                    % for spill in model.get_spills():
-                        <li id="${ spill['id'] }">${spill['name']}</li>
-                    % endfor
-                </ul>
-            </li>
-        </ul>
-    </div>
+    <div id="tree"> </div>
 </%block>
 
 <%block name="content">
@@ -97,12 +64,14 @@
               <strong>Error!</strong> <span class="message">${ error if error else '' }</span>
           </div>         
       </div>
-      <div class="btn-toolbar">
+    </div>
+
+    <div class="btn-toolbar">
           <div class="btn-group">
-              <a class="btn disabled" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
+              <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
           </div>
           <div class="btn-group">
-              <a class="btn disabled" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
+              <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
           </div>
           <div class="btn-group">
             <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
@@ -116,9 +85,8 @@
             <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
             <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
         </div>
-      </div>
-
     </div>
+
     <div id="map">
         <img class="frame active" data-position="0" src="/static/img/placeholder.gif">
     </div>
