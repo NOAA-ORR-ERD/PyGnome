@@ -242,7 +242,7 @@ enum { OSSM_L0 = 1, OSSM_L1 = 2, OSSM_L2 = 3, OSSM_L3 = 4, OSSM_L4 = 5, OSSM_L5 
 	OSSM_L6 = 7, OSSM_L7 = 8, OSSM_L8 = 9, OSSM_L9 = 10, OSSM_LL = 11, 
 	OSSM_W0 = 12, OSSM_W1 = 13, OSSM_W2 = 14, OSSM_W3 = 15, OSSM_WW = 16};
 
-enum { OILSTAT_NOTRELEASED = 0, OILSTAT_INWATER = 2, OILSTAT_ONLAND = 3,
+enum LEStatus { OILSTAT_NOTRELEASED = 0, OILSTAT_INWATER = 2, OILSTAT_ONLAND = 3,
 	OILSTAT_OFFMAPS = 7, OILSTAT_EVAPORATED = 10};
 //JLM note: on why these number are what they are
 // OILSTAT_INAIR (which was 1) meant evaporated, and got confused with the 
@@ -325,7 +325,7 @@ enum { // moved TModel defines to TModel.cpp // JLM
 
 enum {DONT_DISPERSE, DISPERSE, HAVE_DISPERSED, DISPERSE_NAT, HAVE_DISPERSED_NAT, EVAPORATE, HAVE_EVAPORATED, REMOVE, HAVE_REMOVED};	// LE dispersion status
 
-enum {FORECAST_LE = 1, UNCERTAINTY_LE = 2, nextOne = 4};
+enum LEType {FORECAST_LE = 1, UNCERTAINTY_LE = 2, nextOne = 4};
 ///// CONSTANTS /////////////////////////////////////////////////////////////////
 
 #ifdef MAC
