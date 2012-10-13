@@ -418,7 +418,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 // The second get_move method above may get deleted once we do uncertainty differently
 // NOTE: Some of the input arrays (ref, windages) should be const since you don't want the method to change them;
 // however, haven't gotten const to work well with cython yet so just be careful when changing the input data
-OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, int spillType) {	
+OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, short spillType) {	
 		
 	if(!delta) {
 		cout << "worldpoints array not provided! returning.\n";
@@ -441,7 +441,7 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 		}
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
-		rec.windage = LE_windage[i];	// define the windage for the current LE
+		rec.windage = windages[i];	// define the windage for the current LE
 
 		// let's do the multiply by 1000000 here - this is what gnome expects
 		rec.p.pLat *= 1000000;	// really only need this for the latitude
