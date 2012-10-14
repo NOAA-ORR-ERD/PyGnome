@@ -5,7 +5,7 @@ import numpy as nmp
 
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from movers cimport WindMover_c
-from type_defs cimport WorldPoint3D, LEWindUncertainRec
+from type_defs cimport WorldPoint3D, LEWindUncertainRec, LEStatus, LEType, OSErr
 
 cdef class CyWindMover:
 
@@ -35,7 +35,7 @@ cdef class CyWindMover:
                  np.ndarray[WorldPoint3D, ndim=1] delta,
                  np.ndarray[np.npy_double] windages,
                  np.ndarray[np.npy_int16] LE_status,
-                 LE_type):
+                 LEType spill_type):
         """
         .. function:: get_move(self,
                  model_time,
@@ -60,17 +60,27 @@ cdef class CyWindMover:
         :param LE_type:
         :returns: none
         """
+        cdef OSErr err
         N = len(ref_points) # set a data type?
         
         # modifies delta in place
-        self.mover.get_move(N,
-                            model_time,
-                            step_len,
-                            &ref_points[0],
-                            &delta[0],
-                            &windages[0],
-                            <short *>&LE_status[0],
-                            LE_type)
+        print LE_status
+        err = self.mover.get_move(N,
+                                  model_time,
+                                  step_len,
+                                  &ref_points[0],
+                                  &delta[0],
+                                  &windages[0],
+                                  <LEStatus *>&LE_status[0],
+                                  spill_type)
+        if err == 1:
+            raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
+        
+        """
+        Can probably raise this error before calling the C++ code - but the C++ also throwing this error
+        """
+        if err == 2:
+            raise ValueError("The value for spill type can only be 'forecast' or 'uncertainty' - you've chosen: " + str(spill_type))
         
 
     def set_constant_wind(self,windU,windV):
@@ -87,5 +97,4 @@ cdef class CyWindMover:
         self.mover.SetTimeDep(ossm.time_dep)
         self.mover.fIsConstantWind = 0
         return True
-        
        

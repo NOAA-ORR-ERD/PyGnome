@@ -47,11 +47,10 @@ cdef extern from "WindMover_c.h":
         VelocityRec fConstantValue
         LEWindUncertainRec **fWindUncertaintyList
         long **fLESetSizes
-        OSErr get_move(int, unsigned long, unsigned long, WorldPoint3D*, WorldPoint3D*, double*, short*, short)
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, LEStatus* LE_status, short spillType)
         void SetTimeDep(OSSMTimeValue_c *)
         # ARE FOLLOWING USED IN CYTHON??
-        OSErr GetTimeValue(Seconds& , VelocityRec *)
-        OSErr PrepareForModelStep(Seconds&, Seconds&, bool)
+        OSErr PrepareForModelStep(Seconds&, Seconds&, bool)	# currently this happens in C++ get_move command
         
 cdef extern from "CATSMover_c.h":
     ctypedef struct TCM_OPTIMZE:

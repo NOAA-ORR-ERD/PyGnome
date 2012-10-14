@@ -57,6 +57,10 @@ Define units for velocity. In C++, these are #defined as
 #define kKnots           1
 #define kMetersPerSec    2
 #define kMilesPerHour    3
+
+TODO: In C++, these are user_units which are coupled with the GUI and the display.
+Leave it in here for now - but the OSSMTimeValue_c and the cy_ossm_time always assumes
+the units of the data are in meters_per_sec
 """
 velocity_units = enum(knots=1, meters_per_sec=2, miles_per_hour=3)
 
