@@ -4,6 +4,8 @@ cimport numpy as np
 import numpy as nmp
 
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
+from gnome import basic_types
+
 from movers cimport WindMover_c
 from type_defs cimport WorldPoint3D, LEWindUncertainRec, LEStatus, LEType, OSErr
 
@@ -34,7 +36,7 @@ cdef class CyWindMover:
                  np.ndarray[WorldPoint3D, ndim=1] ref_points,
                  np.ndarray[WorldPoint3D, ndim=1] delta,
                  np.ndarray[np.npy_double] windages,
-                 np.ndarray[np.npy_int16] LE_status,
+                 np.ndarray[np.npy_int16] LE_status,    # TODO: would be nice if we could define this as LEStatus type
                  LEType spill_type):
         """
         .. function:: get_move(self,
