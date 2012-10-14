@@ -36,15 +36,13 @@ def test_init_bad_path():
         
 def test_init_no_units():
     """
-    Test exceptions during __init__
-    - correct path but no units 
+    Test __init__
+    - correct path but no user units 
+    Updated so the user units default to meters_per_sec unless specified in the file
     """
-    try:
-        file = r"SampleData/WindDataFromGnome.WND"
-        ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.file_contains.magnitude_direction)
-    except ValueError as e:
-        print(e)
-        assert True
+    file = r"SampleData/WindDataFromGnome.WND"
+    ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.file_contains.magnitude_direction)
+    assert ossmT2.user_units == basic_types.velocity_units.meters_per_sec
  
 def test_init_missing_info():
     """
@@ -71,13 +69,9 @@ class TestTimeSeriesInit():
    tval['value'][1]=(2,3)
    
    def test_init_no_units(self):
-       """ timeseries requires units """
-       try:
-           ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval)
-       except ValueError as e:
-           print(e)
-           assert True
-           
+       """ timeseries defaults user_units to meters_per_sec """
+       ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval)
+       assert ossm.user_units == basic_types.velocity_units.meters_per_sec
 
    def test_init_time_series(self):
        """
@@ -85,7 +79,7 @@ class TestTimeSeriesInit():
        array containing time_value_pair data
        It then reads it back to make sure data was set correctly
        """
-       ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval, units=basic_types.velocity_units.knots)
+       ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval)
        t_val = ossm.time_series
        
        np.testing.assert_array_equal(t_val, self.tval, 
@@ -93,7 +87,7 @@ class TestTimeSeriesInit():
                                      0)
        
    def test_get_time_value(self):
-       ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval, units=basic_types.velocity_units.knots)
+       ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval)
        
        actual = np.array(self.tval['value'], dtype=basic_types.velocity_rec)
        time = np.array(self.tval['time'], dtype=basic_types.seconds)
@@ -113,8 +107,7 @@ class TestGetTimeValues():
     # sample data generated and stored via Gnome GUI
     file = r"SampleData/WindDataFromGnome.WND"
     ossmT = cy_ossm_time.CyOSSMTime(path=file,
-                                      file_contains=basic_types.file_contains.magnitude_direction,
-                                      units=basic_types.velocity_units.knots)
+                                      file_contains=basic_types.file_contains.magnitude_direction)
     
     
     
@@ -158,8 +151,7 @@ class TestReadFileWithConstantWind():
     """
     file = r"SampleData/WindDataFromGnomeConstantWind.WND"
     ossmT = cy_ossm_time.CyOSSMTime(path=file,
-                                      file_contains=basic_types.file_contains.magnitude_direction,
-                                      units=basic_types.velocity_units.knots)
+                                      file_contains=basic_types.file_contains.magnitude_direction)
     
     def test_get_time_value(self):
         """Test get_time_values method. It gets the time value pair for the constant wind

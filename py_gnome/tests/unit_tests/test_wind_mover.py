@@ -36,13 +36,10 @@ class Common():
     num_le = 4  # test on 4 LEs
     ref  =  np.zeros((num_le,), dtype=basic_types.world_point)   # LEs - initial locations
     wind =  np.zeros((num_le,), dtype=np.double) # windage
+    status = np.empty((num_le,), dtype=basic_types.status_code_type)
     const_wind = np.zeros((1,), dtype=basic_types.velocity_rec) # constant wind
-    #uncertain_ra = np.empty((4,), dtype=basic_types.wind_uncertain_rec)    # one uncertain rec per le
-
-    f_sigma_theta = 1  # ?? 
-    f_sigma_vel   = 1  # ??
     
-    time_step = 1
+    time_step = 60
     
     def __init__(self):
         self.model_time = greenwich.gwtm('01/01/1970 11:00:00').time_seconds
@@ -55,7 +52,8 @@ class Common():
         self.wind[:] = 1./100.
         # Straight south wind... 100! meters per second
         self.const_wind['u'] = 50  # meters per second?
-        self.const_wind['v'] = 100 # 
+        self.const_wind['v'] = 100 #
+        self.status[:] = basic_types.oil_status.in_water 
 
 class ConstantWind(Common):
     """
@@ -76,7 +74,8 @@ class ConstantWind(Common):
                          self.ref,
                          self.delta,
                          self.wind,
-                         )
+                         self.status,
+                         basic_types.spill_type.forecast)
               
 class ConstantWindWithOSSM(Common):
     """
@@ -95,8 +94,7 @@ class ConstantWindWithOSSM(Common):
         time_val = np.empty((1,), dtype=basic_types.time_value_pair)
         time_val['time'] = 0   # should not matter
         time_val['value']= self.const_wind
-        self.ossm = cy_ossm_time.CyOSSMTime(timeseries=time_val,
-                                        units=basic_types.velocity_units.meters_per_sec)
+        self.ossm = cy_ossm_time.CyOSSMTime(timeseries=time_val)
         self.wm.set_ossm(self.ossm)
         
     def test_move(self):
@@ -105,10 +103,9 @@ class ConstantWindWithOSSM(Common):
                          self.ref,
                          self.delta,
                          self.wind,
-                         )
+                         self.status,
+                         basic_types.spill_type.forecast)
         
-        
-
 class TestConstantWind():
     cw = ConstantWind()
     cw.test_move()
@@ -166,8 +163,7 @@ class TestVariableWind():
     # CyOSSMTime needs the same scope as CyWindMover because CyWindMover uses the C++
     # pointer defined in CyOSSMTime.time_dep. This must be defined for the scope
     # of CyWindMover 
-    ossm = cy_ossm_time.CyOSSMTime(timeseries=time_val,
-                                    units=basic_types.velocity_units.knots)
+    ossm = cy_ossm_time.CyOSSMTime(timeseries=time_val)
     wm.set_ossm(ossm)
         
     def test_move(self):
@@ -178,8 +174,29 @@ class TestVariableWind():
                              self.cm.ref,
                              self.delta,
                              self.cm.wind,
+                             self.cm.status,
+                             basic_types.spill_type.forecast
                              )
             print self.delta
             assert np.all(self.delta['lat'] != 0)
             assert np.all(self.delta['long'] == 0)
             assert np.all(self.delta['z'] == 0)
+
+def test_LE_not_in_water():
+    """
+    Tests get_move returns 0 for LE's that have a status different from in_water
+    """
+    wm = cy_wind_mover.CyWindMover()
+    cm = Common()
+    delta = np.zeros((cm.num_le,), dtype=basic_types.world_point)
+    cm.status[:] = 0
+    wm.get_move(cm.model_time,
+                cm.time_step, 
+                cm.ref,
+                delta,
+                cm.wind,
+                cm.status,
+                basic_types.spill_type.forecast)
+    assert np.all(delta['lat'] == 0)
+    assert np.all(delta['long'] == 0)
+    assert np.all(delta['z'] == 0)
