@@ -61,7 +61,7 @@ world_point = np.dtype([('long', world_point_type),
 ## fixme -- I could be put in the wind_mover code...
 ##   it seems they are only relevent to the wind mover.
 
-windage_type = np.float64
+windage_type = np.float64   # What is this??
 
 seconds = np.uint32 # model time is going to be given in seconds
 
@@ -77,4 +77,6 @@ date_rec           = np.dtype([('year', np.short),
                                ('second', np.short), 
                                ('dayOfWeek', np.short),], align=True)
 
-status_code_type = np.int16 # does it matter, as long as it's an int type???
+# In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
+# this is also consistent with the definition in type_defs.pxd .. just keeping things consistent
+status_code_type = np.short 
