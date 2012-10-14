@@ -64,7 +64,6 @@ cdef class CyWindMover:
         N = len(ref_points) # set a data type?
         
         # modifies delta in place
-        print LE_status
         err = self.mover.get_move(N,
                                   model_time,
                                   step_len,

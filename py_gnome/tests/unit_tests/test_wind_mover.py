@@ -144,6 +144,7 @@ class TestConstantWind():
                                    "get_time_value is not within a tolerance of "+str(tol), 0)
         np.testing.assert_allclose(self.cw.delta['long'], actual['long'], tol, tol, 
                                    "get_time_value is not within a tolerance of "+str(tol), 0)
+        
     
 class TestVariableWind():
     """
@@ -200,3 +201,24 @@ def test_LE_not_in_water():
     assert np.all(delta['lat'] == 0)
     assert np.all(delta['long'] == 0)
     assert np.all(delta['z'] == 0)
+    
+def test_z_greater_than_0():
+    """
+    If z > 0, then the particle is below the surface and the wind does not act on it. As such, the get_move
+    should return 0 for delta
+    """
+    cw = ConstantWind()
+    cw.ref['z'][:2] = 2 # particles 0,1 are not on the surface    
+    delta = np.zeros((cw.num_le,), dtype=basic_types.world_point)
+    
+    cw.test_move()
+    
+    assert np.all(cw.delta['lat'][0:2] == 0)
+    assert np.all(cw.delta['long'][0:2] == 0)
+    assert np.all(cw.delta['z'][0:2] == 0)
+    
+    # for particles in water, there is a non zero delta
+    assert np.all(cw.delta['lat'][2:] != 0)
+    assert np.all(cw.delta['long'][2:] != 0)
+    assert np.all(cw.delta['z'][2:] == 0)
+    
