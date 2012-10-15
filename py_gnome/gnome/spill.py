@@ -14,7 +14,7 @@ This is the "magic" class -- it handles the smart allocation of arrays, etc.
 import numpy as np
 
 from gnome import basic_types
-
+from gnome.utilities import rand    # not to confuse with python random module
 
 class Spill(object):
     """
@@ -32,11 +32,10 @@ class Spill(object):
     positions = Spill['positions'] : returns a (num_LEs, 3) array of world_point_types
     """
     
-    def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0)):
+    def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0), spill_type=basic_types.spill_type.forecast):
         
         self.num_LEs = num_LEs
-        self.is_uncertain = False # is this an uncertainty spill?
-        
+        self.spill_type = spill_type    # could be forcast or uncertainty
         
         self._data_arrays = {}
         
@@ -49,8 +48,10 @@ class Spill(object):
         self._data_arrays['status_codes'] = ( np.zeros((num_LEs,),
                                                        dtype=basic_types.status_code_type)
                                              )
-        self._data_arrays['status_codes'][:] = basic_types.oil_status.in_water             
-
+        self._data_arrays['status_codes'][:] = basic_types.oil_status.in_water
+        
+        self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
+                                                  dtype = basic_types.windage_type)             
  
     def __getitem__(self, data_name):
         """
@@ -105,18 +106,27 @@ class PointReleaseSpill(Spill):
     non-weathering particles
 
     """
-    def __init__(self, num_LEs, start_position, release_time, windage=(0.01, 0.04)):
+    def __init__(self, num_LEs, start_position, release_time, windage=(0.01, 0.04, -1, 900)):
         """
         :param num_LEs: number of LEs used for this spill
         :param start_position: location the LEs are released (long, lat, z) (floating point)
         :param release_time: time the LEs are released (datetime object)
-        :param windage: the windage range of the LEs (min, max) -- default is (0.01, 0.04) --1% to 4%
+        :param windage: the windage range of the LEs (min, max, persistence, step_length). 
+        Default is (0.01, 0.04, -1, 900) from 1% to 4%. The -1 means the persistence is infinite so it is only set 
+        at the beginning of the model run and not updated at each time step. The last parameter is the step size 
+        of the simulation. The default is 15mins.
         """
         Spill.__init__(self, num_LEs)
 
         self.release_time = release_time
         self.start_position = start_position
-        self.windage = windage
+        self.windage_range  = windage[0:2]
+        self.windage_persist= windage[2]
+        self.model_step_len = windage[3]    # step size used to update windages
+
+        if windage[2] <= 0:
+            # if it is anything less than 0, treat it as -1 flag
+            self.update_windage()
 
         self.__init_LEs()
 
@@ -124,8 +134,6 @@ class PointReleaseSpill(Spill):
         """
         called internally to initialize the data arrays needed
         """
-        self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
-                                                  dtype = basic_types.windage_type)
         self.reset()
     
     def prepare_for_model_step(self, current_time, time_step=None, uncertain_on=None):
@@ -145,7 +153,18 @@ class PointReleaseSpill(Spill):
         if current_time >= self.release_time:
             self['positions'][:] = self.start_position
             self['status_codes'][:] = basic_types.oil_status.in_water
+            
+        if self.windage_persist > 0:
+            self.update_windage()
         return None
+
+    def update_windage(self):
+        """
+        Update windage for each LE for each time step
+        May want to cythonize this to speed it up
+        """
+        for le in range(0,self.num_LEs):
+            self['windages'][le] = rand.random_with_persistance(self.windage_range[0], self.windage_range[1], self.windage_persist, self.model_step_len)
 
     def reset(self):
         """
