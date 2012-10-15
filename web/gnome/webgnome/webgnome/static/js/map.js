@@ -1,7 +1,19 @@
 // map.js: The WebGNOME JavaScript application.
 (function() {
 
+    // Generic AJAX error handler.
+    // Retry on error if the request specified tryCount.
     function handleAjaxError(xhr, textStatus, errorThrown) {
+        if (textStatus == 'timeout') {
+            this.tryCount++;
+            if (this.tryCount <= this.retryLimit) {
+                //try again
+                $.ajax(this);
+                return;
+            }
+            return;
+        }
+
         alert('Could not connect to server.');
         console.log(xhr, textStatus, errorThrown);
     }
@@ -567,15 +579,7 @@
     }
 
     ModalFormView.SAVE_BUTTON_CLICKED = 'gnome:formSaveButtonClicked';
-
-    ModalFormView.SUBMIT_SUCCESS = 'gnome:formSubmitSuccess';
-
-    // These events will fire if the server included a message in the JSON response
-    // containing the rendered HTML of a submitted form. They are not fired for
-    // regular form validation errors, which appear as HTML markup.
-    ModalFormView.FORM_SUCCESS = 'gnome:formSuccess';
-    ModalFormView.FORM_WARNING = 'gnome:formWarning';
-    ModalFormView.FORM_ERROR = 'gnome:formError';
+    ModalFormView.FORM_SUBMITTED = 'gnome:formSubmitted';
 
     ModalFormView.prototype = {
 
@@ -591,7 +595,7 @@
 
             $(this.formContainerEl).on('submit', 'form', function(event) {
                 event.preventDefault();
-                _this.doAjaxFormSubmit(this);
+                $(_this).trigger(ModalFormView.FORM_SUBMITTED, [this]);
                 return false;
             });
         },
@@ -687,15 +691,6 @@
             this.goToStep(currentStep - 1);
         },
 
-        showForm: function(url) {
-            $.ajax({
-                type: 'GET',
-                url: url,
-                success: this.handleAjaxSuccess,
-                error: handleAjaxError
-            });
-        },
-
         reloadForm: function(html) {
             this.clearForm();
             var container = $(this.formContainerEl);
@@ -720,48 +715,7 @@
         submitForm: function() {
             $(this.formContainerEl + ' form').submit();
             this.clearForm();
-        },
-
-        doAjaxFormSubmit: function(form) {
-            var _this = this;
-
-            $.ajax({
-                type: 'POST',
-                data: $(form).serialize(),
-                url: $(form).attr('action'),
-                success: this.handleAjaxSuccess,
-                error: handleAjaxError
-            });
-        },
-
-        handleAjaxSuccess: function(data, textStatus, xhr) {
-            if ('form_html' in data) {
-                this.reloadForm(data.form_html);
-            } else {
-                $(this).trigger(ModalFormView.SUBMIT_SUCCESS, data);
-                this.clearForm();
-            }
-
-            if ('message' in data) {
-                var messageEvent;
-
-                switch (data.message.type) {
-                    case 'success':
-                        messageEvent = ModalFormView.FORM_SUCCESS;
-                        break;
-                    case 'error':
-                        messageEvent = ModalFormView.FORM_ERROR;
-                        break;
-                    case 'warning':
-                        messageEvent = ModalFormView.FORM_WARNING;
-                        break;
-                }
-
-                if (messageEvent) {
-                    $(this).trigger(messageEvent, data.message);
-                }
-            }
-        },
+        }
     };
 
 
@@ -857,10 +811,7 @@
     MapController.prototype = {
         setupEventHandlers: function() {
             $(this.formView).bind(ModalFormView.SAVE_BUTTON_CLICKED, this.saveForm);
-            $(this.formView).bind(ModalFormView.FORM_WARNING, this.receivedMessage);
-            $(this.formView).bind(ModalFormView.FORM_SUCCESS, this.receivedMessage);
-            $(this.formView).bind(ModalFormView.FORM_ERROR, this.receivedMessage);
-            $(this.formView).bind(ModalFormView.SUBMIT_SUCCESS, this.formSubmitted);
+            $(this.formView).bind(ModalFormView.FORM_SUBMITTED, this.formSubmitted);
 
             $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
             $(this.treeView).bind(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
@@ -927,6 +878,8 @@
                 url: this.rootApiUrls.model + "/create",
                 data: "confirm=1",
                 type: "POST",
+                tryCount: 0,
+                retryLimit: 3,
                 success: function(data) {
                     if ('message' in data) {
                         _this.displayMessage(data.message);
@@ -1111,7 +1064,7 @@
             var url = this.getUrlForTreeItem(node, mode);
 
             if (url) {
-                this.formView.showForm(url);
+                this.showForm(url);
             }
         },
 
@@ -1153,6 +1106,8 @@
             $.ajax({
                 type: "POST",
                 url: url,
+                tryCount: 0,
+                retryLimit: 3,
                 data: "mover_id=" + node.data.key,
                 success: function(event, data) {
                     _this.treeView.reload();
@@ -1161,12 +1116,6 @@
                     alert('Could not remove item.')
                 }
             });
-        },
-
-        receivedMessage: function(event, message) {
-            if (message) {
-                this.displayMessage(message);
-            }
         },
 
         displayMessage: function(message) {
@@ -1182,12 +1131,40 @@
             }
         },
 
-        formSubmitted: function(event, data) {
-            if ('message' in data) {
-                this.displayMessage(data.message);
+        showForm: function(url) {
+            $.ajax({
+                type: 'GET',
+                url: url,
+                tryCount: 0,
+                retryLimit: 3,
+                success: this.submitSuccess,
+                error: handleAjaxError
+            });
+        },
+
+        formSubmitted: function(event, form) {
+            $.ajax({
+                type: 'POST',
+                tryCount: 0,
+                retryLimit: 3,
+                data: $(form).serialize(),
+                url: $(form).attr('action'),
+                success: this.submitSuccess,
+                error: handleAjaxError
+            });
+        },
+
+        submitSuccess: function(data, textStatus, xhr) {
+            if ('form_html' in data) {
+                this.formView.reloadForm(data.form_html);
+            } else {
+                this.treeView.reload();
+                this.formView.clearForm();
             }
 
-            this.treeView.reload();
+             if ('message' in data) {
+                this.displayMessage(data.message);
+            }
         },
 
         handleFailedModelRun: function(data) {
@@ -1226,6 +1203,8 @@
                 type: 'POST',
                 url: this.rootApiUrls.model + '/run',
                 data: opts,
+                tryCount: 0,
+                retryLimit: 3,
                 success: function(data) {
                     if ('message' in data) {
                         _this.handleFailedModelRun(data);
