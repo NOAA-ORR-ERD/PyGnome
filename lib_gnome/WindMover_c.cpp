@@ -282,7 +282,7 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, Boolean isUncer
 	return err;
 }
 #else
-
+// code goes here, don't need isUncertain since this only gets called if uncertain...
 OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, Boolean isUncertain) { return 0; }
 
 #endif	// AH 06/20/2012 (this does not affect stand alone behavior.
