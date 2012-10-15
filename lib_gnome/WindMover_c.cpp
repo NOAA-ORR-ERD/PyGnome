@@ -33,8 +33,6 @@
 #include "TMap.h"
 #endif
 
-// Seconds gTapWindOffsetInSeconds = 0;	minus AH 06/20/2012
-
 using std::cout;
 
 WindMover_c::WindMover_c () { 
@@ -58,13 +56,14 @@ WindMover_c::WindMover_c () {
 	bSubsurfaceActive = false;
 	fGamma = 1.;
 	
+	bIsFirstStep = false;
 	fIsConstantWind = false;
 	fConstantValue.u = fConstantValue.v = 0.0;
 	
 	memset(&fWindBarbRect,0,sizeof(fWindBarbRect)); 
 	bShowWindBarb = true;
-	tap_offset = 0; // AH 06/20/2012
 }
+
 WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 {
 	if(!name || !name[0]) this->SetClassName("Variable Wind"); // JLM , a default useful in the wizard
@@ -88,13 +87,15 @@ WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 	bSubsurfaceActive = false;
 	fGamma = 1.;
 	
+	bIsFirstStep = false;
+
 	fIsConstantWind = false;
 	fConstantValue.u = fConstantValue.v = 0.0;
 	
 	memset(&fWindBarbRect,0,sizeof(fWindBarbRect)); 
 	bShowWindBarb = true;
-	tap_offset = 0;		// AH 06/20/2012
 }
+
 void rndv(float *rndv1,float *rndv2)
 {
 	float cosArg = 2 * PI * GetRandomFloat(0.0,1.0);
@@ -209,13 +210,14 @@ errHandler:
 }
 
 
-OSErr WindMover_c::UpdateUncertainty(void)
+OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, Boolean isUncertain)
 {
 	OSErr err = noErr;
 	long i,n;
 	Boolean needToReInit = false;
-	Seconds elapsedTime =  model->GetModelTime() - model->GetStartTime();
-	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
+	//Seconds elapsedTime =  model->GetModelTime() - model->GetStartTime();
+	//Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
+	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && isUncertain;
 	// JLM, this is elapsedTime >= fUncertainStartTime because elapsedTime is the value at the start of the step
 	
 	if(!bAddUncertainty)
@@ -233,6 +235,7 @@ OSErr WindMover_c::UpdateUncertainty(void)
 		needToReInit = true;
 	}
 	
+#ifndef pyGNOME
 	if(fLESetSizes)
 	{	// check the LE sets are still the same, JLM 9/18/98
 		TLEList *list;
@@ -255,6 +258,7 @@ OSErr WindMover_c::UpdateUncertainty(void)
 		}
 		
 	}
+#endif
 	
 	
 	// question JLM, should fSigma2 change only when the duration value is exceeded ??
@@ -278,7 +282,7 @@ OSErr WindMover_c::UpdateUncertainty(void)
 }
 #else
 
-OSErr WindMover_c::UpdateUncertainty(void) { return 0; }
+OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, Boolean isUncertain) { return 0; }
 
 #endif	// AH 06/20/2012 (this does not affect stand alone behavior.
 
@@ -289,8 +293,6 @@ OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	double norm;
 	LEWindUncertainRec unrec;
 	OSErr err = 0;
-	
-	Boolean useOldCode = false; //OptionKeyDown(); // code goes here, take this out
 	
 	if(!fWindUncertaintyList || !fLESetSizes) 
 		return 0; // this is our clue to not add uncertainty
@@ -303,7 +305,7 @@ OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	w=norm;
 	s = w*w-fSigma2;
 	
-	if(s >0)
+	if(s > 0)
 	{
 		sqs = sqrt(s);
 		m = sqrt(sqs); 
@@ -311,18 +313,10 @@ OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	else
 	{
 		sqs = 0;
-		// code goes here, check this
-		if(useOldCode) 
-			m = sqrt(w); // old incorrect code
-		else 
-			m = 0; // new code
+		m = 0; // new code
 	}
 	
-	// code goes here
-	if(useOldCode) 
-		s = w-sqs;  // old incorrect code 
-	else
-		s = sqrt(w-sqs); // new code
+	s = sqrt(w-sqs); // new code
 	
 	x = unrec.randCos*s + m;
 	
@@ -366,19 +360,32 @@ void WindMover_c::DeleteTimeDep()
 		timeDep = nil;
 	}
 }
+
 OSErr WindMover_c::PrepareForModelRun()
 {
+	bIsFirstStep = true;
+	this->DisposeUncertainty();
 	return noErr;
 }
 
 OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	OSErr err = 0;
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
 	if (uncertain)
-		err = this->UpdateUncertainty();
-	err = this -> GetTimeValue (model_time + this->tap_offset,&this->current_time_value);	// AH 07/16/2012
+	{
+		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
+		err = this->UpdateUncertainty(elapsed_time,uncertain);
+	}
+	err = this -> GetTimeValue (model_time,&this->current_time_value);	// AH 07/16/2012
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
 	return err;
+}
+
+void WindMover_c::ModelStepIsDone()
+{
+	bIsFirstStep = false;
 }
 
 OSErr WindMover_c::CheckStartTime (Seconds time)
@@ -439,8 +446,6 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 
 	WorldPoint3D zero_delta ={0,0,0.};
 
-	this->PrepareForModelStep(model_time, step_len, false);
-
 	for (int i = 0; i < n; i++) {
 
 		// only operate on LE if the status is in water
@@ -464,10 +469,6 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 	}
 	return noErr;
 }
-
-// ..
-
-
 
 WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {

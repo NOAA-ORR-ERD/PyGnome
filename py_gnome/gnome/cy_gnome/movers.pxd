@@ -83,8 +83,7 @@ cdef extern from "CATSMover_c.h":
         OSErr           ComputeVelocityScale(Seconds&)
         void        SetTimeDep(OSSMTimeValue_c *time_dep)
         void        ModelStepIsDone()
-        OSErr        get_move(int, unsigned long, unsigned long, char *, char *, char *)
-        OSErr        get_move(int, unsigned long, unsigned long, char *, char *)
+        OSErr        get_move(int, unsigned long, unsigned long, char *, char *, int)
 
 cdef extern from "NetCDFMover_c.h":
     
