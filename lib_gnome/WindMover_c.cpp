@@ -236,6 +236,7 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, Boolean isUncer
 	}
 	
 #ifndef pyGNOME
+	// code goes here, will need to pass this info in from pyGNOME - maybe just allocate in prepareformodelrun...
 	if(fLESetSizes)
 	{	// check the LE sets are still the same, JLM 9/18/98
 		TLEList *list;
