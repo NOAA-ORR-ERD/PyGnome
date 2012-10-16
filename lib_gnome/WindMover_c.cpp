@@ -171,6 +171,7 @@ void WindMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 
 OSErr WindMover_c::AllocateUncertainty()
 {
+	//code goes here, need to allocate for python based on input
 	long i,j,n,numrec;
 	TLEList *list;
 	LEWindUncertainRecH h;
@@ -179,17 +180,7 @@ OSErr WindMover_c::AllocateUncertainty()
 	
 	this->DisposeUncertainty(); // get rid of any old values
 	if(!LESetsList)return noErr;
-	
-	// code goes here, fMaxSpeed is unused !!!  JLM 9/29/98
-	//if(timeDep)
-	//{
-	// may notbe called after user changes the wind speed.
-	// this object should protect itself.
-	//fMaxSpeed=timeDep->GetMaxValue(); 
-	//if(fMaxSpeed == -1)fMaxSpeed = 30;
-	//}
-	
-	
+		
 	n = LESetsList->GetItemCount();
 	if(!(fLESetSizes = (LONGH)_NewHandle(sizeof(long)*n)))goto errHandler;
 	
@@ -426,7 +417,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 // The second get_move method above may get deleted once we do uncertainty differently
 // NOTE: Some of the input arrays (ref, windages) should be const since you don't want the method to change them;
 // however, haven't gotten const to work well with cython yet so just be careful when changing the input data
-OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType) {
+OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID) {
 		
 	// JS Ques: Is this required? Could cy/python invoke this method without well defined numpy arrays?
 	if(!delta || !ref || !windages) {
@@ -463,7 +454,7 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 		rec.p.pLat *= 1000000;	// really only need this for the latitude
 		//rec.p.pLong*= 1000000;
 
-		delta[i] = GetMove(model_time, step_len, 0, i, prec, spillType);
+		delta[i] = GetMove(model_time, step_len, spill_ID, i, prec, spillType);
 		
 		delta[i].p.pLat /= 1000000;
 		delta[i].p.pLong /= 1000000;

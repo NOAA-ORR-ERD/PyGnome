@@ -62,7 +62,7 @@ void Random_c::ModelStepIsDone()
 }
 
 
-OSErr Random_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType) {	
+OSErr Random_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID) {	
 	
 	// JS Ques: Is this required? Could cy/python invoke this method without well defined numpy arrays?
 	if(!delta || !ref) {
@@ -102,7 +102,7 @@ OSErr Random_c::get_move(int n, unsigned long model_time, unsigned long step_len
 		rec.p.pLat *= 1000000;	// really only need this for the latitude
 		//rec.p.pLong*= 1000000;
 		
-		delta[i] = this->GetMove(model_time, step_len, 0, i, prec, spillType);
+		delta[i] = this->GetMove(model_time, step_len, spill_ID, i, prec, spillType);
 		
 		delta[i].p.pLat /= 1000000;
 		delta[i].p.pLong /= 1000000;

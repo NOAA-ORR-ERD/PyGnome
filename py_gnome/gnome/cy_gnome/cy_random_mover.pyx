@@ -22,11 +22,11 @@ cdef class Cy_random_mover:
         self.mover.fUncertaintyFactor = 2
         self.mover.fDiffusionCoefficient = diffusion_coefficient
 
-    def get_move(self, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_points, np.ndarray[WorldPoint3D, ndim=1] delta, np.ndarray[np.npy_int16] LE_status, LEType spill_type):
+    def get_move(self, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_points, np.ndarray[WorldPoint3D, ndim=1] delta, np.ndarray[np.npy_int16] LE_status, LEType spill_type, long spill_ID):
         cdef OSErr err
         N = len(ref_points) # set a data type?
             
-        err = self.mover.get_move(N, model_time, step_len, &ref_points[0], &delta[0], <short *>&LE_status[0], spill_type)
+        err = self.mover.get_move(N, model_time, step_len, &ref_points[0], &delta[0], <short *>&LE_status[0], spill_type, spill_ID)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
         
