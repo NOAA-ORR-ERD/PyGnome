@@ -47,7 +47,7 @@ cdef extern from "WindMover_c.h":
         VelocityRec fConstantValue
         LEWindUncertainRec **fWindUncertaintyList
         long **fLESetSizes
-        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, LEStatus* LE_status, short spillType)
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType)
         void SetTimeDep(OSSMTimeValue_c *)
         # ARE FOLLOWING USED IN CYTHON??
         OSErr PrepareForModelStep(Seconds&, Seconds&, bool)	# currently this happens in C++ get_move command
