@@ -303,94 +303,50 @@ void CATSMover_c::ModelStepIsDone()
 	memset(&fOptimize,0,sizeof(fOptimize));
 }
 
+OSErr CATSMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType) {	
 
-OSErr CATSMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra) {	
-	
-	if(!uncertain_ra) {
-		cout << "uncertainty values not provided! returning.\n";
+	if(!delta || !ref) {
+		//cout << "worldpoints array not provided! returning.\n";
 		return 1;
 	}
 	
-	if(!wp_ra) {
-		cout << "worldpoints array not provided! returning.\n";
-		return 1;
+	// For LEType spillType, check to make sure it is within the valid values
+	if( spillType < FORECAST_LE || spillType > UNCERTAINTY_LE)
+	{
+		// cout << "Invalid spillType.\n";
+		return 2;
 	}
 	
-	try {
-		this->fUncertaintyListH = (LEUncertainRecH)_NewHandle(sizeof(LEUncertainRec)*n);
-		memcpy(*this->fUncertaintyListH, uncertain_ra, sizeof(LEUncertainRec)*n);
-		this->fLESetSizesH = (LONGH)_NewHandle(sizeof(long));
-		DEREFH(this->fLESetSizesH)[0] = 0;
-	} catch(...) {
-		cout << "cannot create uncertainty handle in windmover::get_move. returning.\n";
-		if(this->fUncertaintyListH)
-			_DisposeHandle((Handle)this->fUncertaintyListH);
-		return 1;
-	}
+	LERec* prec;
+	LERec rec;
+	prec = &rec;
 	
-	this->PrepareForModelStep(model_time, step_len, false);
-
-	WorldPoint3D delta;
-	WorldPoint3D *ref;
-	WorldPoint3D *wp;
-	ref = (WorldPoint3D*)ref_ra;
-	wp = (WorldPoint3D*)wp_ra;
-	
+	WorldPoint3D zero_delta ={0,0,0.};
 	
 	for (int i = 0; i < n; i++) {
-		LERec rec;
+		
+		// only operate on LE if the status is in water
+		if( LE_status[i] != OILSTAT_INWATER)
+		{
+			delta[i] = zero_delta;
+			continue;
+		}
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
-		
-		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
-		
-		wp[i].p.pLat += delta.p.pLat / 1000000;
-		wp[i].p.pLong += delta.p.pLong / 1000000;
-		wp[i].z += delta.z;
-	}
 
-	if(this->fLESetSizesH)
-		_DisposeHandle((Handle)this->fLESetSizesH);
-	if(this->fUncertaintyListH)
-		_DisposeHandle((Handle)this->fUncertaintyListH);
-	this->ModelStepIsDone();
+		// let's do the multiply by 1000000 here - this is what gnome expects
+		rec.p.pLat *= 1000000;	
+		rec.p.pLong*= 1000000;
+		
+		delta[i] = GetMove(model_time, step_len, 0, i, prec, spillType);
+		
+		delta[i].p.pLat /= 1000000;
+		delta[i].p.pLong /= 1000000;
+	}
+	
 	return noErr;
 }
 
-
-OSErr CATSMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra) {	
-
-	if(!wp_ra) {
-		cout << "worldpoints array not provided! returning.\n";
-		return 1;
-	}
-	
-	this->PrepareForModelStep(model_time, step_len, false);
-
-	WorldPoint3D delta;
-	WorldPoint3D *wp;
-	WorldPoint3D *ref;
-	
-	ref = (WorldPoint3D*)ref_ra;
-	wp = (WorldPoint3D*)wp_ra;
-	
-	for (int i = 0; i < n; i++) {
-		LERec rec;
-		rec.p = ref[i].p;
-		rec.z = ref[i].z;
-		
-		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
-		
-		wp[i].p.pLat += delta.p.pLat / 1000000;
-		wp[i].p.pLong += delta.p.pLong / 1000000;
-		wp[i].z += delta.z;
-	}
-	
-	this->ModelStepIsDone();
-	return noErr;
-}
-
-// ..
 WorldPoint3D CATSMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	Boolean useEddyUncertainty = false;	

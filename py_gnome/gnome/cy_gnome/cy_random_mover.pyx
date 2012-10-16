@@ -22,24 +22,18 @@ cdef class Cy_random_mover:
         self.mover.fUncertaintyFactor = 2
         self.mover.fDiffusionCoefficient = diffusion_coefficient
 
-    #for now there is no difference between the two functions    
-    def get_move_uncertain(self, n, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra):
-        cdef:
-            char *world_points
-         
-        N = len(wp_ra)
-        ref_points = ref_ra.data
-        world_points = wp_ra.data
-
-        self.mover.get_move(N, model_time, step_len, ref_points, world_points)
-
-    def get_move(self, n, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_ra, np.ndarray[WorldPoint3D, ndim=1] wp_ra):
-        cdef:
-            char *world_points
+    def get_move(self, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_points, np.ndarray[WorldPoint3D, ndim=1] delta, np.ndarray[np.npy_int16] LE_status, LEType spill_type):
+        cdef OSErr err
+        N = len(ref_points) # set a data type?
             
-        N = len(wp_ra)
-        ref_points = ref_ra.data
-        world_points = wp_ra.data
-
-        self.mover.get_move(N, model_time, step_len, ref_points, world_points)
+        err = self.mover.get_move(N, model_time, step_len, &ref_points[0], &delta[0], <short *>&LE_status[0], spill_type)
+        if err == 1:
+            raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
+        
+        """
+        Can probably raise this error before calling the C++ code - but the C++ also throwing this error
+        """
+        if err == 2:
+            raise ValueError("The value for spill type can only be 'forecast' or 'uncertainty' - you've chosen: " + str(spill_type))
+        
 
