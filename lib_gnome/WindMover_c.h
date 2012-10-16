@@ -36,6 +36,8 @@ public:
 	double fMaxAngle;
 	double fSigma2;				// time dependent std for speed
 	double fSigmaTheta; 		// time dependent std for angle
+	Boolean bIsFirstStep;
+	Seconds fModelStartTime;
 	
 	Boolean fIsConstantWind;
 	VelocityRec fConstantValue;
@@ -49,7 +51,6 @@ public:
 	Rect fWindBarbRect;
 	Boolean bShowWindBarb;
 	
-	Seconds tap_offset;		// AH 06/20/2012
 	VelocityRec	current_time_value;		// AH 07/16/2012
 	
 	WindMover_c (TMap *owner, char* name);
@@ -64,10 +65,11 @@ public:
 	virtual void		DisposeUncertainty ();
 	virtual OSErr		AddUncertainty(long setIndex,long leIndex,VelocityRec *v);
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
-	virtual OSErr		UpdateUncertainty(void);
+	virtual OSErr		UpdateUncertainty(const Seconds& elapsedTime,Boolean isUncertain);
 
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
+	virtual void		ModelStepIsDone();
 	virtual WorldPoint3D GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep); 
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
