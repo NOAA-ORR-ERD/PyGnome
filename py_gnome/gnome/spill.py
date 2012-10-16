@@ -106,7 +106,7 @@ class PointReleaseSpill(Spill):
     non-weathering particles
 
     """
-    def __init__(self, num_LEs, start_position, release_time, windage=(0.01, 0.04, -1, 900)):
+    def __init__(self, num_LEs, start_position, release_time, windage=(0.01, 0.04), persist=900):
         """
         :param num_LEs: number of LEs used for this spill
         :param start_position: location the LEs are released (long, lat, z) (floating point)
@@ -121,10 +121,9 @@ class PointReleaseSpill(Spill):
         self.release_time = release_time
         self.start_position = start_position
         self.windage_range  = windage[0:2]
-        self.windage_persist= windage[2]
-        self.model_step_len = windage[3]    # step size used to update windages
+        self.windage_persist= persist
 
-        if windage[2] <= 0:
+        if persist <= 0:
             # if it is anything less than 0, treat it as -1 flag
             self.update_windage()
 
@@ -155,16 +154,16 @@ class PointReleaseSpill(Spill):
             self['status_codes'][:] = basic_types.oil_status.in_water
             
         if self.windage_persist > 0:
-            self.update_windage()
+            self.update_windage(time_step)
         return None
 
-    def update_windage(self):
+    def update_windage(self,time_step):
         """
         Update windage for each LE for each time step
         May want to cythonize this to speed it up
         """
         for le in range(0,self.num_LEs):
-            self['windages'][le] = rand.random_with_persistance(self.windage_range[0], self.windage_range[1], self.windage_persist, self.model_step_len)
+            self['windages'][le] = rand.random_with_persistance(self.windage_range[0], self.windage_range[1], self.windage_persist, time_step)
 
     def reset(self):
         """
