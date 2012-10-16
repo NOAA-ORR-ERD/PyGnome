@@ -814,15 +814,6 @@ OSErr TModel::WriteRunSpillOutputFileHeader(BFPB *bfpb,Seconds outputStep,char* 
 	 
 	}*/ // minus AH 06/20/2012
 	
-	TWindMover *wm = model->GetWindMover(false);	// AH 06/12/12
-	if(wm && wm->tap_offset != 0) {
-		Secs2DateString2 (fDialogVariables.startTime + wm->tap_offset, s);
-		sprintf(text, "  Wind start time: %s", s);
-		strcat(text,IBMNEWLINESTRING);
-		strcat(buffer,text); text[0] = 0;
-		
-	}
-
 	////////////////
 
 	strcpy(text, "  Run duration: ");
@@ -4563,13 +4554,12 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	long len;
 	double runDurationInHrs;
 	double timeStepInMinutes = GetTimeStep()/60,outputStepInMinutes = GetOutputStep()/60;
-	Seconds startTime,windStartTime;
+	Seconds startTime;
 	Seconds saveOutputStep;
 	Boolean saveBool,savebSaveRunBarLEs;
 	long tempOutputDirID; 
 	long dirID;
 	char leFilePath[256] = "";
-	Boolean haveSeparateWindStartTime = false;
 	WindageRec windageInfo;
 	
 	// write any errors to a "Errors.txt" file in the output directory
@@ -4824,21 +4814,6 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 
 	/////////////////////////////////////////////////
 
-	// New 2/14/01, JLM, allow the wind to be offset from the tides to support TAP extended outlook
-	// this parameter is optional
-	haveSeparateWindStartTime = false;
-	message->GetParameterString("windStartTime",str,256);
-	if(str[0]) {// this parameter is optional
-		err = message->GetParameterAsSeconds("windStartTime",&windStartTime);
-		if(err) {
-			hadError = TRUE;
-			printError("Bad windStartTime parameter");
-		}
-		else
-			haveSeparateWindStartTime = true;
-	}
-	
-	
 	/////////////////////////////////////////////////
 	
 	if(hadError)
@@ -4872,18 +4847,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 
 	// check that we have winds for the time period
 	// check that we have a diffusion mover
-	if(haveSeparateWindStartTime) {
-		// JLM 2/14/01 this trick should work for Marc's extended TAP runs, but we should talk about this to see how to best implement a more flexible offset scheme.
-		model->GetWindMover(false)->tap_offset = windStartTime - startTime; // AH 06/12/12
-	}
-	/*
-	if(haveSeparateWindStartTime) {
-		gTapWindOffsetInSeconds = windStartTime - startTime; // JLM 2/14/01 this trick should work for Marc's extended TAP runs, but we should talk about this to see how to best implement a more flexible offset scheme.
-	}
-	else
-		gTapWindOffsetInSeconds = 0;
-	*/ // minus AH 06/20/2012
-	
+
 	// create and open the output file
 	memset(&gRunSpillForecastFile,0,sizeof(gRunSpillForecastFile));
 	if(outputPath[0]) {
@@ -4949,7 +4913,7 @@ OSErr TModel::HandleCreateSpillMessage(TModelMessage *message)
 	double timeStepInMinutes = GetTimeStep()/60,outputStepInMinutes = GetOutputStep()/60;
 	long numLEs;
 	WorldPoint startRelPos,endRelPos;
-	Seconds startRelTime,endRelTime,windStartTime;
+	Seconds startRelTime,endRelTime;
 	Seconds saveOutputStep;
 	Boolean saveBool,savebSaveRunBarLEs;
 	long tempOutputDirID; 
@@ -5246,7 +5210,7 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	double timeStepInMinutes = GetTimeStep()/60,outputStepInMinutes = GetOutputStep()/60;
 	long numLEs;
 	WorldPoint startRelPos,endRelPos;
-	Seconds startRelTime,endRelTime,windStartTime;
+	Seconds startRelTime,endRelTime;
 	Seconds saveOutputStep;
 	Boolean saveBool,savebSaveRunBarLEs;
 	long tempOutputDirID; 
@@ -5257,7 +5221,6 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	char leFilePath[256] = "";
 	Boolean bUseLEsFromFile = false;
 	Boolean bEverythingSetAsDesiredByHand = false;
-	Boolean haveSeparateWindStartTime = false;
 	Boolean runBackwards = false;
 	WindageRec windageInfo;
 	
@@ -5622,21 +5585,6 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	/////////////////////////////////////////////////
 	/////////////////////////////////////////////////
 
-	// New 2/14/01, JLM, allow the wind to be offset from the tides to support TAP extended outlook
-	// this parameter is optional
-	haveSeparateWindStartTime = false;
-	message->GetParameterString("windStartTime",str,256);
-	if(str[0]) {// this parameter is optional
-		err = message->GetParameterAsSeconds("windStartTime",&windStartTime);
-		if(err) {
-			hadError = TRUE;
-			printError("Bad windStartTime parameter");
-		}
-		else
-			haveSeparateWindStartTime = true;
-	}
-	
-	
 	/////////////////////////////////////////////////
 	
 	if(hadError)
@@ -5756,19 +5704,6 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 
 	// check that we have winds for the time period
 	// check that we have a diffusion mover
-	/*
-	 if(haveSeparateWindStartTime) {
-	 gTapWindOffsetInSeconds = windStartTime - startRelTime; // JLM 2/14/01 this trick should work for Marc's extended TAP runs, but we should talk about this to see how to best implement a more flexible offset scheme.
-	 }
-	 else
-	 gTapWindOffsetInSeconds = 0;
-	*/ // minus AH 06/20/2012
-	
-	if(haveSeparateWindStartTime) {
-		// JLM 2/14/01 this trick should work for Marc's extended TAP runs, but we should talk about this to see how to best implement a more flexible offset scheme.
-		model->GetWindMover(false)->tap_offset = windStartTime - startRelTime; // AH 06/12/12
-	}
-	
 
 	
 	// create and open the output file

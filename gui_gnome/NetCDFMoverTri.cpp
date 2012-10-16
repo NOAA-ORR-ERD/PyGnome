@@ -546,7 +546,7 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 			}
 			else
 			{
-				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,isCCW);	 
+				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 				//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 				if (err) goto done;
 	 			goto depths;

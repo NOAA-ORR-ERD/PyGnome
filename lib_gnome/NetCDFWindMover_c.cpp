@@ -244,14 +244,17 @@ Boolean NetCDFWindMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 }
 OSErr NetCDFWindMover_c::PrepareForModelRun()
 {
-	return noErr;
+	return WindMover_c::PrepareForModelRun();
 }
 
 OSErr NetCDFWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
 	OSErr err = 0;
 	if(uncertain) // AH 04/16/12;
-		err = this->UpdateUncertainty();
+	{
+		Seconds elapsed_time = model_time - fModelStartTime;
+		err = this->UpdateUncertainty(elapsed_time,uncertain);
+	}
 	
 	char errmsg[256];
 	
