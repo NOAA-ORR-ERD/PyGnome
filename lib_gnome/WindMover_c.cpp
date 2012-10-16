@@ -426,7 +426,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 // The second get_move method above may get deleted once we do uncertainty differently
 // NOTE: Some of the input arrays (ref, windages) should be const since you don't want the method to change them;
 // however, haven't gotten const to work well with cython yet so just be careful when changing the input data
-OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, LEStatus* LE_status, LEType spillType) {	
+OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType) {
 		
 	// JS Ques: Is this required? Could cy/python invoke this method without well defined numpy arrays?
 	if(!delta || !ref || !windages) {

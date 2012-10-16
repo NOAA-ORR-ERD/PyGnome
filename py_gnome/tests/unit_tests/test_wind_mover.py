@@ -69,6 +69,7 @@ class ConstantWind(Common):
     
     def test_move(self):
         """ forecast move """
+        self.wm.prepare_for_model_step(self.model_time, self.time_step, False)
         self.wm.get_move(self.model_time,
                          self.time_step, 
                          self.ref,
@@ -98,6 +99,7 @@ class ConstantWindWithOSSM(Common):
         self.wm.set_ossm(self.ossm)
         
     def test_move(self):
+        self.wm.prepare_for_model_step(self.model_time, self.time_step, False)
         self.wm.get_move(self.model_time,
                          self.time_step, 
                          self.ref,
@@ -111,6 +113,7 @@ class TestConstantWind():
     cw.test_move()
     
     cww_ossm = ConstantWindWithOSSM()
+    
     cww_ossm.test_move()
     
     def test_constant_wind(self):
@@ -170,6 +173,7 @@ class TestVariableWind():
     def test_move(self):
         for x in range(0,3):
             vary_time = x*1800
+            self.wm.prepare_for_model_step(self.cm.model_time + vary_time, self.cm.time_step, False)
             self.wm.get_move(self.cm.model_time + vary_time,
                              self.cm.time_step, 
                              self.cm.ref,
@@ -191,6 +195,7 @@ def test_LE_not_in_water():
     cm = Common()
     delta = np.zeros((cm.num_le,), dtype=basic_types.world_point)
     cm.status[:] = 0
+    wm.prepare_for_model_step(cm.model_time, cm.time_step, False)
     wm.get_move(cm.model_time,
                 cm.time_step, 
                 cm.ref,
