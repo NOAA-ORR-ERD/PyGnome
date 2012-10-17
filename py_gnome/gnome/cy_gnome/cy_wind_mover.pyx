@@ -30,6 +30,24 @@ cdef class CyWindMover:
         self.mover.fConstantValue.v = 0
     
 
+    def prepare_for_model_step(self, model_time, step_len, uncertain):
+        """
+        .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
+        
+        prepares the mover for time step, calls the underlying C++ mover objects PrepareForModelStep(..)
+        
+        :param model_time: 
+        :param step_len:
+        :param uncertain: bool flag determines whether to apply uncertainty or not
+        """
+        cdef OSErr err
+        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain)
+        if err != 0:
+            """
+            For now just raise an OSError - until the types of possible errors are defined and enumerated
+            """
+            raise OSError("WindMover_c.PreareForModelStep returned an error.")
+
     def get_move(self,
                  model_time,
                  step_len,
@@ -37,7 +55,8 @@ cdef class CyWindMover:
                  np.ndarray[WorldPoint3D, ndim=1] delta,
                  np.ndarray[np.npy_double] windages,
                  np.ndarray[np.npy_int16] LE_status,    # TODO: would be nice if we could define this as LEStatus type
-                 LEType spill_type):
+                 LEType spill_type,
+                 long spill_ID):
         """
         .. function:: get_move(self,
                  model_time,
@@ -46,7 +65,8 @@ cdef class CyWindMover:
                  np.ndarray[WorldPoint3D, ndim=1] delta,
                  np.ndarray[np.npy_double] windages,
                  np.ndarray[np.npy_int16] LE_status,
-                 LE_type)
+                 LE_type,
+                 spill_ID)
                  
         The cython wind mover's private get move method. It invokes the underlying C++ WindMover_c.get_move(...)
         
@@ -72,8 +92,9 @@ cdef class CyWindMover:
                                   &ref_points[0],
                                   &delta[0],
                                   &windages[0],
-                                  <LEStatus *>&LE_status[0],
-                                  spill_type)
+                                  <short *>&LE_status[0],
+                                  spill_type,
+                                  spill_ID)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
         

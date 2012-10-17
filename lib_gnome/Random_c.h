@@ -38,7 +38,7 @@ public:
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	
 	
-			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra);
+	OSErr				get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID);
 };
 
 #undef TMap

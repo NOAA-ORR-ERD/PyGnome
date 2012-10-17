@@ -34,7 +34,7 @@ cdef class CyOSSMTime:
         :param timeseries: numpy array containing time series data in time_value_pair structure as defined in type_defs
         If both are given, it will read data from the file
         
-        If timeseries are given, the input data is always assumed to be in meters_per_sec
+        If timeseries are given, the data is always assumed to be in meters_per_sec
         """
         if path is None and timeseries is None:
             raise ValueError("Object needs either a path to the time series file or timeseries")   # TODO: check error
@@ -44,7 +44,7 @@ cdef class CyOSSMTime:
                 raise ValueError('Unknown file contents - need a valid basic_types.file_contains.* value')
             
             if os.path.exists(path):
-                self._read_time_values(path, file_contains, basic_types.velocity_units.meters_per_sec)
+                self._read_time_values(path, file_contains, -1) # user_units should be read from the file
             else:
                 raise IOError("No such file: " + path)
         else:
@@ -52,8 +52,7 @@ cdef class CyOSSMTime:
                 raise ValueError("timeseries cannot be None")
             
             self._set_time_value_handle(timeseries)
-            self.time_dep.SetUserUnits(basic_types.velocity_units.meters_per_sec)  # always default to meters_per_sec
-            
+            self.time_dep.SetUserUnits(-1)  # default is undefined for now. UserUnits are only given in data file right now            
     
     @property
     def user_units(self):
@@ -89,7 +88,7 @@ cdef class CyOSSMTime:
         return vel_rec
     
        
-    def _read_time_values(self, path, file_contains, units=-1):
+    def _read_time_values(self, path, file_contains, user_units=-1):
         """
             Format for the data file. This is an enum type in C++
             defined below. These are defined in cy_basic_types such that python can see them
@@ -108,7 +107,7 @@ cdef class CyOSSMTime:
                 
             Make this private since the constructor will likely call this when object is instantiated
         """        
-        err = self.time_dep.ReadTimeValues(path, file_contains, units)
+        err = self.time_dep.ReadTimeValues(path, file_contains, user_units)
         if err == 1:
             # TODO: need to define error codes in C++ and raise other exceptions
             raise ValueError("User Units not found in file and user units not provided as input")
