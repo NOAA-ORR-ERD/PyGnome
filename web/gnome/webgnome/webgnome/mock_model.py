@@ -4,8 +4,7 @@ import os
 import uuid
 
 
-class DoesNotExist(Exception):
-    pass
+
 
 
 class ModelManager(object):
@@ -13,7 +12,8 @@ class ModelManager(object):
     An object that manages a pool of in-memory `py_gnome.model.Model` instances
     in a dictionary.
     """
-    DoesNotExist = DoesNotExist
+    class DoesNotExist(Exception):
+        pass
 
     def __init__(self):
         self.running_models = {}
@@ -64,6 +64,9 @@ class MockModel(object):
         self.id = uuid.uuid4()
         self.movers = {}
         self.spills = {}
+        self.start_time = None
+        self.time_steps = []
+        self.is_running = False
 
     def get_movers(self):
         return self.movers
@@ -133,17 +136,26 @@ class MockModel(object):
             mover.speed, abbrev, mover.direction
         )
 
+    def get_next_step(self):
+        try:
+            return self.step_generator.next()
+        except StopIteration:
+            self.is_running = False
+        return None
+
     def run(self):
+        self.is_running = True
+
         frames_glob = os.path.join(
             os.path.dirname(__file__), 'static', 'img', 'test_frames', '*.jpg')
-        images = glob.glob(frames_glob)
 
-        # Mock out some timestamps until we accept this input from the user.
-        two_weeks_ago = datetime.datetime.now() - datetime.timedelta(weeks=4)
+        self.images = glob.glob(frames_glob)
 
-        timestamps = [two_weeks_ago + datetime.timedelta(days=day_num)
-                      for day_num in range(len(images))]
+        self.timestamps = [self.start_time + datetime.timedelta(days=day_num)
+                           for day_num in range(len(self.images))]
 
-        return [
-            dict(url=image.split('webgnome')[-1], timestamp=timestamps[i])
-            for i, image in enumerate(images)]
+        self.step_generator = (
+            dict(url=image.split('webgnome')[-1], timestamp=self.timestamps[i],
+                 step_number=i) for i, image in enumerate(self.images))
+
+        return True
