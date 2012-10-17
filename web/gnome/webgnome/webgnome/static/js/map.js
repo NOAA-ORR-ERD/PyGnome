@@ -19,98 +19,134 @@
     }
 
 
-    function MapModel(opts) {
-        // Optionally specify the current frame the user is in.
-        this.frame = opts.frame == undefined ? 0 : opts.frame;
+    function Model(opts) {
+        this.url = opts.url;
 
-        // Optionally specify the zoom level of the map.
-        this.zoomLevel = opts.zoomLevel == undefined ? 4 : opts.zoomLevel;
+        // Optionally specify the zoom level.
+        this.zoomLevel = opts.zoomLevel === undefined ? 4 : opts.zoomLevel;
 
-        this.data = null;
-
-        // If true, `MapModel` will request a new set of frames from the server
+        // If true, `Model` will request a new set of frames from the server
         // when the user runs the model.
         this.dirty = true;
+
+        this.timeSteps = [];
     }
 
-    MapModel.ZOOM_IN = 'zoom_in';
-    MapModel.ZOOM_OUT = 'zoom_out';
-    MapModel.ZOOM_NONE = 'zoom_none';
+    Model.ZOOM_IN = 'zoom_in';
+    Model.ZOOM_OUT = 'zoom_out';
+    Model.ZOOM_NONE = 'zoom_none';
 
+    // Events
+    Model.RUN_FINISHED = 'gnome:modelRunFinished';
+    Model.NEXT_TIME_STEP_READY = 'gnome:nextTimeStepReady';
 
-    MapModel.prototype = {
-        getRect: function(rect) {
-            var newStartPosition, newEndPosition;
+    Model.prototype = {
+        getTimeStepByIndex: function(stepNum) {
+            var timeStep = this.timeSteps[stepNum];
 
-            // Do a shallow object copy, so we don't modify the original.
-            if (rect.end.x > rect.start.x || rect.end.y > rect.start.y) {
-                newStartPosition = $.extend({}, rect.start);
-                newEndPosition = $.extend({}, rect.end);
-            } else {
-                newStartPosition = $.extend({}, rect.end);
-                newEndPosition = $.extend({}, rect.start);
+            if (timeStep) {
+                var date = new Date(Date.parse(timeStep.timestamp));
+                if (date) {
+                    timeStep.timestamp = date.toUTCString();
+                }
             }
 
-            return {start: newStartPosition, end: newEndPosition};
-        },
-
-        // Adjust a selection rectangle so that it fits within the bounding box.
-        getAdjustedRect: function(rect) {
-            var adjustedRect = this.getRect(rect);
-
-            // TOOD: This looks wrong. Add tests.
-            if (adjustedRect.start.x > this.bbox[0].x) {
-                adjustedRect.start.x = this.bbox[0].x;
-            }
-            if (adjustedRect.start.y < this.bbox[0].y) {
-                adjustedRect.start.y = this.bbox[0].y;
-            }
-
-            if (adjustedRect.end.x < this.bbox[1].x) {
-                adjustedRect.end.x = this.bbox[1].x;
-            }
-            if (adjustedRect.end.y > this.bbox[1].y) {
-                adjustedRect.end.y = this.bbox[1].y;
-            }
-
-            return adjustedRect;
-        },
-
-        isPositionInsideMap: function(position) {
-            return (position.x > this.bbox[0].x && position.x < this.bbox[1].x
-                && position.y > this.bbox[0].y && position.y < this.bbox[1].y);
-        },
-
-        isRectInsideMap: function(rect) {
-            var _rect = this.getRect(rect);
-
-            return this.isPositionInsideMap(_rect.start) &&
-                this.isPositionInsideMap(_rect.end);
-        },
-
-        getFrames: function() {
-            if (this.data === undefined) {
-                return null;
-            } else {
-                return this.data.result;
-            }
-        },
-
-        getTimestampForFrame: function(frameNum) {
-            var timestamp = this.data.result[frameNum].timestamp;
-            var date = new Date(Date.parse(timestamp));
-            if (date) {
-                return date.toUTCString();
-            }
-            return null;
+            return timeStep;
         },
 
         hasData: function() {
             return this.data != null;
         },
 
-        setBoundingBox: function(bbox) {
-            this.bbox = bbox;
+        hasTimeStep: function(timeStep) {
+            return this.timeSteps[timeStep.step_number] == timeStep;
+        },
+
+        addTimeStep: function(timeStep) {
+            this.timeSteps.push(timeStep);
+        },
+
+        run: function(opts) {
+            var _this = this;
+
+            if (this.dirty === false) {
+                this.getNextTimeStep();
+                return;
+            }
+
+            opts = $.extend({
+                zoomLevel: this.zoomLevel,
+                zoomDirection: Model.ZOOM_NONE,
+                timeStep: null
+            }, opts);
+
+            var isInvalid = function(obj) {
+                return obj === undefined || obj === null || typeof(obj) != "object";
+            };
+
+            if ((opts.zoomLevel != this.zoomLevel) &&
+                (isInvalid(opts.rect) && isInvalid(opts.point))) {
+                alert("Invalid zoom level. Please try again.");
+                console.log(opts);
+            }
+
+            this.expectedTimeSteps = [];
+
+            $.ajax({
+                type: 'POST',
+                url: this.url + '/run',
+                data: opts,
+                tryCount: 0,
+                retryLimit: 3,
+                success: function(data) {
+                    _this.expectedTimeSteps = data.expected_time_steps;
+                    $(_this).trigger(Model.RUN_FINISHED, data);
+                },
+                error: handleAjaxError
+            });
+        },
+
+        // Retrieve `message` from `data` if it exists, and annotate it with
+        // an `error` value set to true if the message is an error type.
+        parseMessage: function(data) {
+            var message;
+            if (_.has(data, 'message')) {
+                message = data.message;
+                if (data.message.type == 'error') {
+                    message.error = true;
+                }
+
+                return message;
+            }
+
+            return null;
+        },
+
+        getNextTimeStep: function() {
+            var _this = this;
+             $.ajax({
+                type: "GET",
+                url: this.url + '/next_step',
+                success: function(data) {
+                    _this.addTimeStep(data.time_step);
+                    $(_this).trigger(Model.NEXT_TIME_STEP_READY, data.time_step);
+                },
+                error: handleAjaxError
+            });
+        },
+
+        hasNextTimeStep: function(stepNum) {
+            return this.expectedTimeSteps[stepNum+1] !== undefined;
+        },
+
+        zoomFromPoint: function(point, direction) {
+            this.dirty = true;
+            this.run({point: point, zoom: direction});
+        },
+
+        zoomFromRect: function(rect, direction) {
+            this.dirty = true;
+            this.run({rect: rect, zoom: direction});
         }
     };
 
@@ -119,11 +155,10 @@
         this.mapEl = opts.mapEl;
         this.frameClass = opts.frameClass;
         this.activeFrameClass = opts.activeFrameClass;
-        this.currentFrame = 0;
+        this.currentStep = 0;
     }
 
     // `MapView` events
-    MapView.INIT_FINISHED = 'gnome:mapInitFinished';
     MapView.DRAGGING_FINISHED = 'gnome:draggingFinished';
     MapView.REFRESH_FINISHED = 'gnome:refreshFinished';
     MapView.PLAYING_FINISHED = 'gnome:playingFinished';
@@ -133,10 +168,36 @@
 
     MapView.prototype = {
         initialize: function() {
-            // Only have to do this once.
             this.makeImagesClickable();
-            $(this).trigger(MapView.INIT_FINISHED);
+            this.setupCycle();
             return this;
+        },
+
+        setupCycle: function() {
+            var _this = this;
+            this.cycle = $(this.mapEl).cycle({
+                slideResize: true,
+                containerResize: false,
+                width: '100%',
+                nowrap: true,
+                speed: 1,
+                timeout: 1,
+                delay: 0,
+                end: function(opts) {
+                    _this.pause();
+                    var image = _this.getActiveImage();
+                    _this.currentStep = image.attr('data-position');
+                    $(_this).trigger(MapView.PLAYING_FINISHED);
+                },
+                before: function(currSlideElement, nextSlideElement, options, forwardFlag) {
+                    $(currSlideElement).removeClass('active');
+                    $(nextSlideElement).addClass('active');
+                },
+                after: function(currSlideElement, nextSlideElement, options, forwardFlag) {
+                    _this.currentStep++;
+                    $(_this).trigger(MapView.FRAME_CHANGED);
+                }
+            });
         },
 
         makeImagesClickable: function() {
@@ -173,55 +234,39 @@
         },
 
         getActiveImage: function() {
-            return $(this.mapEl + " > img.active")
+            return $(this.mapEl + " > img.active");
         },
 
-        // Refresh the map from a new set of rendered images.
-        refresh: function(frames) {
-            var _this = this;
+        addTimeStep: function(timeStep) {
+            var img = $('<img>').attr({
+                'class': 'frame',
+                'data-position': timeStep.step_number,
+                src: timeStep.url
+            });
 
-            $(this.mapEl).empty();
+            var $map = $(this.mapEl);
+
+            img.appendTo($map);
+
+            if ($map.find('img').length == 1) {
+                $map.show();
+                return;
+            }
+
+            this.cycle.cycle('stop');
+            this.setupCycle();
+            this.cycle.cycle(timeStep.step_number);
+        },
+
+        // Clear out the current frames.
+        clear: function() {
+            this.cycle.cycle('pause');
             $(this.mapEl).hide();
+            $(this.mapEl).empty();
+        },
 
-            $.each(frames, function(index) {
-                var img = $('<img>').attr({
-                    class: 'frame',
-                    'data-position': index,
-                    src: this.url
-                });
-
-                img.appendTo($(_this.mapEl));
-            });
-
-            this.cycle = $(this.mapEl).cycle({
-                slideResize: true,
-                containerResize: false,
-                width: '100%',
-                fit: 1,
-                nowrap: true,
-                speed: 1,
-                timeout: 1,
-                delay: 300,
-                end: function(opts) {
-                    _this.pause();
-                    var image = _this.getActiveImage();
-                    _this.currentFrame = image.attr('data-position');
-                    $(_this).trigger(MapView.PLAYING_FINISHED);
-                },
-                before: function(currSlideElement, nextSlideElement, options, forwardFlag) {
-                    $(currSlideElement).removeClass('active');
-                    $(nextSlideElement).addClass('active');
-                },
-                after: function(currSlideElement, nextSlideElement, options, forwardFlag) {
-                    _this.currentFrame = $(nextSlideElement).attr('data-position');
-                    $(_this).trigger(MapView.FRAME_CHANGED);
-                }
-            });
-
-            this.cycle.cycle('pause')
-            $(this.mapEl).show();
-
-            $(this).trigger(MapView.REFRESH_FINISHED);
+        playFrom: function(stepNum) {
+            this.cycle.cycle(stepNum);
         },
 
         play: function() {
@@ -239,7 +284,7 @@
 
         getSize: function() {
             var image = this.getActiveImage();
-            return {height: image.height(), width: image.width()}
+            return {height: image.height(), width: image.width()};
         },
 
         getPosition: function() {
@@ -260,8 +305,8 @@
             return $(this.mapEl).find('img').length - 1;
         },
 
-        setCurrentFrame: function(frameNum) {
-            this.cycle.cycle(frameNum);
+        setTimeStep: function(stepNum) {
+            this.cycle.cycle(stepNum);
         },
 
         setZoomingInCursor: function() {
@@ -275,12 +320,64 @@
         setRegularCursor: function() {
             $(this.mapEl).removeClass('zooming-out');
             $(this.mapEl).removeClass('zooming-in');
-        }
+        },
+        
+         getRect: function(rect) {
+            var newStartPosition, newEndPosition;
+
+            // Do a shallow object copy, so we don't modify the original.
+            if (rect.end.x > rect.start.x || rect.end.y > rect.start.y) {
+                newStartPosition = $.extend({}, rect.start);
+                newEndPosition = $.extend({}, rect.end);
+            } else {
+                newStartPosition = $.extend({}, rect.end);
+                newEndPosition = $.extend({}, rect.start);
+            }
+
+            return {start: newStartPosition, end: newEndPosition};
+        },
+
+        // Adjust a selection rectangle so that it fits within the bounding box.
+        getAdjustedRect: function(rect) {
+            var adjustedRect = this.getRect(rect);
+            var bbox = this.getBoundingBox();
+
+            // TOOD: This looks wrong. Add tests.
+            if (adjustedRect.start.x > this.bbox[0].x) {
+                adjustedRect.start.x = this.bbox[0].x;
+            }
+            if (adjustedRect.start.y < this.bbox[0].y) {
+                adjustedRect.start.y = this.bbox[0].y;
+            }
+
+            if (adjustedRect.end.x < this.bbox[1].x) {
+                adjustedRect.end.x = this.bbox[1].x;
+            }
+            if (adjustedRect.end.y > this.bbox[1].y) {
+                adjustedRect.end.y = this.bbox[1].y;
+            }
+
+            return adjustedRect;
+        },
+
+        isPositionInsideMap: function(position) {
+            var bbox = this.getBoundingBox();
+            return (position.x > this.bbox[0].x && position.x < this.bbox[1].x
+                && position.y > this.bbox[0].y && position.y < this.bbox[1].y);
+        },
+
+        isRectInsideMap: function(rect) {
+            var _rect = this.getRect(rect);
+
+            return this.isPositionInsideMap(_rect.start) &&
+                this.isPositionInsideMap(_rect.end);
+        },       
     };
 
 
     function TreeView(opts) {
         this.treeEl = opts.treeEl;
+        this.url = opts.url;
         return this;
     }
 
@@ -305,7 +402,7 @@
                     $(_this).trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
                 },
                 initAjax: {
-                    url: '/tree'
+                    url: _this.url
                 },
                 persist: true
             });
@@ -318,11 +415,11 @@
         },
 
         hasItem: function(data) {
-            return this.tree.dynatree('getTree').selectKey(data.id) != null;
+            return this.tree.dynatree('getTree').selectKey(data.id) !== null;
         },
 
         addItem: function(data, parent) {
-            if (!'id' in data || !'type' in data) {
+            if (!_.has(data, 'id') || !_.has(data, 'type')) {
                 alert('An error occurred. Try refreshing the page.');
                 console.log(data);
             }
@@ -346,6 +443,7 @@
         this.addButtonEl = opts.addButtonEl;
         this.removeButtonEl = opts.removeButtonEl;
         this.settingsButtonEl = opts.settingsButtonEl;
+        this.url = opts.url;
 
         // Controls that require the user to select an item in the TreeView.
         this.itemControls = [this.removeButtonEl, this.settingsButtonEl];
@@ -363,7 +461,7 @@
             var clickEvents = [
                 [this.addButtonEl, TreeControlView.ADD_BUTTON_CLICKED],
                 [this.removeButtonEl, TreeControlView.REMOVE_BUTTON_CLICKED],
-                [this.settingsButtonEl, TreeControlView.SETTINGS_BUTTON_CLICKED],
+                [this.settingsButtonEl, TreeControlView.SETTINGS_BUTTON_CLICKED]
             ];
 
             _.each(_.object(clickEvents), function(customEvent, element) {
@@ -382,11 +480,12 @@
             _.each(this.itemControls, function(buttonEl) {
                 $(buttonEl).addClass('disabled');
             });
-        },
+        }
     };
 
 
     function MapControlView(opts) {
+        this.containerEl = opts.containerEl;
         this.sliderEl = opts.sliderEl;
         this.playButtonEl = opts.playButtonEl;
         this.pauseButtonEl = opts.pauseButtonEl;
@@ -506,16 +605,16 @@
             this.status = MapControlView.STATUS_ZOOMING_OUT;
         },
 
-        setFrameCount: function(frameCount) {
-            $(this.sliderEl).slider('option', 'max', frameCount);
-        },
-
-        setCurrentFrame: function(frameNum) {
-            $(this.sliderEl).slider('value', frameNum);
+        setTimeStep: function(stepNum) {
+            $(this.sliderEl).slider('value', stepNum);
         },
 
         setTime: function(time) {
             $(this.timeEl).text(time);
+        },
+
+        setTimeSteps: function(timeSteps) {
+            $(this.sliderEl).slider('option', 'max', timeSteps.length);
         },
 
         switchToFullscreen: function() {
@@ -568,6 +667,29 @@
             _.each(this.controls, function(item) {
                 $(item).removeClass('enabled');
             });
+        },
+
+        getTimeStep: function() {
+            $(this.sliderEl).slider('value');
+        },
+
+        reset: function() {
+            this.disableControls();
+            this.setStopped();
+            $(this.sliderEl).slider('values', null);
+        },
+
+        reload: function() {
+            $.ajax({
+                type: "GET",
+                url: this.url,
+                success: this.handleReloadSuccess,
+                error: handleAjaxError
+            });
+        },
+
+        handleReloadSuccess: function(data) {
+            $(this.containerEl).html(data.result);
         }
     };
 
@@ -624,7 +746,7 @@
         },
 
         nextStepExists: function(stepNum) {
-            stepNum = parseInt(stepNum);
+            stepNum = parseInt(stepNum, 10);
             var form = $(this.formContainerEl).find('form');
             return form.find('div[data-step="' + (stepNum + 1) + '"]').length > 0;
         },
@@ -638,7 +760,7 @@
 
             var stepDiv = form.find('div.step[data-step="' + stepNum + '"]');
 
-            if (stepDiv.length == 0) {
+            if (stepDiv.length === 0) {
                 return;
             }
 
@@ -675,7 +797,7 @@
             }
 
             var activeStep = form.find('div.step.active');
-            var currentStep = parseInt(activeStep.attr('data-step'));
+            var currentStep = parseInt(activeStep.attr('data-step'), 10);
             this.goToStep(currentStep + 1);
         },
 
@@ -687,7 +809,7 @@
             }
 
             var activeStep = form.find('div.step.active');
-            var currentStep = parseInt(activeStep.attr('data-step'));
+            var currentStep = parseInt(activeStep.attr('data-step'), 10);
             this.goToStep(currentStep - 1);
         },
 
@@ -749,9 +871,11 @@
         // TODO: Obtain from server via template variable passed into controller.
         this.rootApiUrls = {
             model: "/model",
+            timeSteps: '/model/time_steps',
             setting: '/model/setting',
             mover: '/model/mover',
-            spill: '/model/spill'
+            spill: '/model/spill',
+            tree: '/tree'
         };
 
         this.menuView = new MenuView({
@@ -770,7 +894,8 @@
         this.sidebarEl = opts.sidebarEl;
 
         this.treeView = new TreeView({
-            treeEl: "#tree"
+            treeEl: "#tree",
+            url: this.rootApiUrls.tree
         });
 
         this.treeControlView = new TreeControlView({
@@ -796,10 +921,11 @@
             moveButtonEl: "#move-button",
             fullscreenButtonEl: "#fullscreen-button",
             resizeButtonEl: "#resize-button",
-            timeEl: "#time"
+            timeEl: "#time",
+            url: this.rootApiUrls.timeSteps
         });
 
-        this.mapModel = new MapModel({});
+        this.model = new Model({url: this.rootApiUrls.model});
 
         this.setupEventHandlers();
         this.initializeViews();
@@ -810,6 +936,9 @@
 
     MapController.prototype = {
         setupEventHandlers: function() {
+            $(this.model).bind(Model.RUN_FINISHED, this.modelRunSuccess);
+            $(this.model).bind(Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+
             $(this.formView).bind(ModalFormView.SAVE_BUTTON_CLICKED, this.saveForm);
             $(this.formView).bind(ModalFormView.FORM_SUBMITTED, this.formSubmitted);
 
@@ -842,8 +971,6 @@
             $(this.mapControlView).bind(
                 MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
 
-            $(this.mapView).bind(MapView.INIT_FINISHED, this.mapInitFinished);
-            $(this.mapView).bind(MapView.REFRESH_FINISHED, this.refreshFinished);
             $(this.mapView).bind(MapView.PLAYING_FINISHED, this.stopAnimation);
             $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
             $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
@@ -859,12 +986,6 @@
             this.mapControlView.initialize();
             this.mapView.initialize();
             this.menuView.initialize();
-        },
-
-        mapInitFinished: function() {
-            // XXX: Get bbox from the server?
-            var bbox = this.mapView.getBoundingBox();
-            this.mapModel.setBoundingBox(bbox);
         },
 
         newMenuItemClicked: function() {
@@ -891,13 +1012,30 @@
         },
 
         play: function(event) {
-            if (this.mapControlView.isPaused()) {
-                this.mapControlView.setPlaying();
-                this.mapView.play();
-            } else {
+            var stepNum = this.mapControlView.getTimeStep() || 0;
+            var timeStep = this.model.getTimeStepByIndex(stepNum);
+            var opts = timeStep ? {timeStep: timeStep} : {};
+
+            if (this.model.dirty)  {
+                this.mapView.clear();
+                this.mapControlView.reset();
+                this.model.run(opts);
+                return;
+            }
+
+            if (this.mapControlView.isPlaying()) {
+                // We'll turn them back on when we call `mapView.playFrom()`
+                // or after getting back a response from `model.run()`.
                 this.mapControlView.disableControls();
-                this.mapControlView.setPlaying();
-                this.runModel();
+            }
+
+            this.mapControlView.setPlaying();
+
+            if (this.model.hasTimeStep(timeStep)) {
+                this.mapControlView.enableControls();
+                this.mapView.playFrom(stepNum);
+            } else {
+                this.model.run(opts);
             }
         },
 
@@ -907,7 +1045,7 @@
         },
 
         enableZoomIn: function(event) {
-            if (this.mapModel.hasData() === false) {
+            if (this.model.hasData() === false) {
                 return;
             }
 
@@ -918,34 +1056,13 @@
         },
 
         enableZoomOut: function(event) {
-            if (this.mapModel.hasData() === false) {
+            if (this.model.hasData() === false) {
                 return;
             }
 
             this.mapControlView.setZoomingOut();
             this.mapView.makeActiveImageClickable();
             this.mapView.setZoomingOutCursor();
-        },
-
-        restart: function() {
-            var frames = this.mapModel.getFrames();
-
-            if (frames === null) {
-                this.mapView.restart();
-                return;
-            }
-            this.mapView.refresh(frames);
-        },
-
-        runFailed: function(event) {
-        },
-
-        refreshFinished: function(event) {
-            this.mapControlView.enableControls();
-            this.mapControlView.setFrameCount(this.mapView.getFrameCount());
-            if (this.mapControlView.isPlaying()) {
-                this.mapView.play();
-            }
         },
 
         stopAnimation: function(event) {
@@ -956,12 +1073,19 @@
             this.mapControlView.setStopped();
 
             if (endPosition) {
-                this.zoomFromRect(
-                    {start: startPosition, end: endPosition},
-                    MapModel.ZOOM_IN
-                );
+                var rect = {start: startPosition, end: endPosition};
+                var isInsideMap = this.mapView.isRectInsideMap(rect);
+
+                // If we are at zoom level 0 and there is no map portion outside of
+                // the visible area, then adjust the coordinates of the selected
+                // rectangle to the on-screen pixel bounds.
+                if (!isInsideMap && this.model.zoomLevel === 0) {
+                    rect = this.mapView.getAdjustedRect(rect);
+                }
+
+                this.zoomFromRect(rect, Model.ZOOM_IN);
             } else {
-                this.zoomFromPoint(startPosition, MapModel.ZOOM_OUT);
+                this.zoomFromPoint(startPosition, Model.ZOOM_IN);
             }
 
             this.mapView.setRegularCursor();
@@ -969,31 +1093,42 @@
 
         zoomOut: function(event, point) {
             this.zoomFromPoint(
-                point, MapModel.ZOOM_OUT
+                point, Model.ZOOM_OUT
             );
             this.mapView.setRegularCursor();
         },
 
-        sliderChanged: function(event, newFrame) {
-            if (newFrame != this.mapView.currentFrame) {
-                this.mapView.setCurrentFrame(newFrame);
+        sliderChanged: function(event, newStepNum) {
+            if (newStepNum != this.mapView.currentStep) {
+                this.mapView.setTimeStep(newStepNum);
+                this.mapControlView.setTimeStep(newStepNum);
+
+                var timeStep = this.model.getTimeStepByIndex(
+                    this.mapView.currentStep);
+                this.mapControlView.setTime(timeStep.timestamp);
             }
         },
 
         frameChanged: function(event) {
-            var timestamp = this.mapModel.getTimestampForFrame(this.mapView.currentFrame);
-            this.mapControlView.setCurrentFrame(this.mapView.currentFrame);
-            this.mapControlView.setTime(timestamp);
+            this.mapControlView.setTimeStep(this.mapView.currentStep);
+
+            var timeStep = this.model.getTimeStepByIndex(
+                this.mapView.currentStep);
+            this.mapControlView.setTime(timeStep.timestamp);
+
+            if (this.model.hasNextTimeStep(this.mapView.currentStep)) {
+                this.model.getNextTimeStep();
+            }
         },
 
         jumpToFirstFrame: function(event) {
-            this.mapView.setCurrentFrame(0);
+            this.mapView.setTimeStep(0);
         },
 
         jumpToLastFrame: function(event) {
             var lastFrame = this.mapView.getFrameCount();
-            this.mapView.setCurrentFrame(lastFrame);
-            this.mapControlView.setCurrentFrame(lastFrame);
+            this.mapView.setTimeStep(lastFrame);
+            this.mapControlView.setTimeStep(lastFrame);
         },
 
         useFullscreen: function(event) {
@@ -1036,7 +1171,7 @@
             }
 
             if (!urlKey) {
-                return;
+                return false;
             }
 
             var rootUrl = this.rootApiUrls[urlKey];
@@ -1099,7 +1234,7 @@
                 return;
             }
 
-            if (confirm('Remove mover?') == false) {
+            if (confirm('Remove mover?') === false) {
                 return;
             }
 
@@ -1113,14 +1248,14 @@
                     _this.treeView.reload();
                 },
                 error: function() {
-                    alert('Could not remove item.')
+                    alert('Could not remove item.');
                 }
             });
         },
 
         displayMessage: function(message) {
-            if (!'type' in message || !'text' in message) {
-                return;
+            if (!_.has(message, 'type') || !_.has(message, 'text')) {
+                return false;
             }
 
             var alertDiv = $('div .alert-' + message.type);
@@ -1129,6 +1264,8 @@
                 alertDiv.find('span.message').text(message.text);
                 alertDiv.removeClass('hidden');
             }
+
+            return true;
         },
 
         showForm: function(url) {
@@ -1167,84 +1304,46 @@
             }
         },
 
-        handleFailedModelRun: function(data) {
-            if ('message' in data && data.message.type == 'error') {
-                this.error = data.message;
-            } else {
-                this.error = {text: 'The model failed to run. Please try again.'}
-            }
+        modelRunSuccess: function(event, data) {
+            var message = this.model.parseMessage(data);
 
-            alert(this.mapModel.error.text);
-        },
+            if (message) {
+                this.displayMessage(message);
 
-        runModel: function(opts) {
-            var _this = this;
-
-            if (this.dirty === false) {
-                this.restart();
-                return;
-            }
-
-            opts = $.extend({
-                zoomLevel: this.mapModel.zoomLevel,
-                zoomDirection: MapModel.ZOOM_NONE
-            }, opts);
-
-            var isInvalid = function(obj) {
-                return obj === undefined || obj === null || typeof(obj) != "object";
-            };
-
-            if ((opts.zoomLevel != this.mapModel.zoomLevel) &&
-                (isInvalid(opts.rect) && isInvalid(opts.point))) {
-                alert("Could not zoom. Please try again.");
-            }
-
-            $.ajax({
-                type: 'POST',
-                url: this.rootApiUrls.model + '/run',
-                data: opts,
-                tryCount: 0,
-                retryLimit: 3,
-                success: function(data) {
-                    if ('message' in data) {
-                        _this.handleFailedModelRun(data);
-                        return false;
-                    }
-                    _this.mapModel.dirty = false;
-                    _this.mapModel.data = data;
-                    _this.restart();
-                    return false;
-                },
-                error: function(data) {
-                    _this.handleFailedModelRun(data);
+                if (message.error) {
                     return false;
                 }
-            });
-        },
-
-        zoomFromPoint: function(point, direction) {
-            this.dirty = true;
-            this.runModel({point: point, zoom: direction});
-        },
-
-        zoomFromRect: function(rect, direction) {
-            var isInsideMap = this.mapModel.isRectInsideMap(rect);
-
-            // If we are at zoom level 0 and there is no map portion outside of
-            // the visible area, then adjust the coordinates of the selected
-            // rectangle to the on-screen pixel bound.
-            if (!isInsideMap && this.mapModel.zoomLevel === 0) {
-                rect = this.mapModel.getAdjustedRect(rect);
             }
 
-            this.dirty = true;
-            this.runModel({rect: rect, zoom: direction});
+            if (this.model.dirty === true) {
+                this.mapControlView.reload();
+            }
+
+            this.model.dirty = false;
+            this.mapControlView.setTimeSteps(data.expected_time_steps);
+            this.mapControlView.enableControls();
+            this.model.getNextTimeStep();
+            return true;
+        },
+
+        nextTimeStepReady: function(event, step) {
+            this.mapView.addTimeStep(step);
+
+            if (step.step_number == 0) {
+                this.model.getNextTimeStep();
+            }
         }
     };
 
 
-    // Export `MapController`
-    window.noaa.erd.gnome.MapController = MapController;
+    // Export symbols.
+    var gnome = window.noaa.erd.gnome;
+    gnome.MapController = MapController;
+    gnome.MapView = MapView;
+    gnome.TreeView = TreeView;
+    gnome.Model = Model;
+    gnome.TreeControlView = TreeControlView;
+    gnome.MapControlView = MapControlView;
 
 
     // Wait until the placeholder image has loaded before loading controls.
@@ -1256,3 +1355,4 @@
         });
     });
 })();
+
