@@ -49,7 +49,7 @@ OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seco
 	if (uncertain)
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;
-		err = this->UpdateUncertainty(elapsed_time,uncertain);
+		err = this->UpdateUncertainty(elapsed_time);
 	}
 
 	

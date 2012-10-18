@@ -42,6 +42,8 @@ public:
 	OSSMTimeValue_c (TMover *theOwner);
 	OSSMTimeValue_c (TMover *theOwner,TimeValuePairH tvals,short userUnits);
 	OSSMTimeValue_c ();
+	virtual				   ~OSSMTimeValue_c () { Dispose (); }
+
 	virtual ClassID 		GetClassID () { return TYPE_OSSMTIMEVALUES; }
 	virtual Boolean			IAm(ClassID id) { if(id==TYPE_OSSMTIMEVALUES) return TRUE; return TimeValue_c::IAm(id); }
 	
