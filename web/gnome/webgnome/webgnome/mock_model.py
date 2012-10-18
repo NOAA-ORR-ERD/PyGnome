@@ -138,7 +138,10 @@ class MockModel(object):
 
     def get_next_step(self):
         try:
-            return self.step_generator.next()
+            step = self.step_generator.next()
+            self.time_steps.append(step)
+            self.current_step = len(self.time_steps) - 1
+            return step
         except StopIteration:
             self.is_running = False
         return None

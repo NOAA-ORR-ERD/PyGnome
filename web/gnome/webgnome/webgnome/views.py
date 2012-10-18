@@ -1,3 +1,4 @@
+import json
 import datetime
 
 from pyramid.httpexceptions import HTTPFound, HTTPNotFound
@@ -12,7 +13,7 @@ from forms import (
     MOVER_CONSTANT_WIND
 )
 
-from util import json_require_model
+from util import json_require_model, json_encoder
 
 
 def _make_message(type, text):
@@ -47,6 +48,12 @@ def show_model(request):
                               'available. We created a new one for you.'
     data['model'] = model
     data['show_menu_above_map'] = 'map_menu' in request.GET
+
+    if model.time_steps:
+        data['generated_time_steps'] = json.dumps(model.time_steps,
+                                                  default=json_encoder)
+        data['expected_time_steps'] = json.dumps(model.timestamps,
+                                                 default=json_encoder)
 
     return data
 
