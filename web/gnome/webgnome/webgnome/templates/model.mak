@@ -88,15 +88,10 @@
     </div>
 
     <div id="map">
-##        % if model.time_steps:
-##            % for step in model.time_steps:
-##                <img class="frame ${'active' if step['step_number'] == model.current_step else 'hidden'}"
-##                    src="${step['url']}" data-position="${step['step_number']}"/>
-##            % endfor
-##        % else:
-##            <img class="frame active" data-position="0" src="/static/img/placeholder.gif">
-##        % endif
-          <img class="frame active" data-position="0" src="/static/img/placeholder.gif">
+    </div>
+
+    <div id="placeholder" class="hidden">
+        <img class="frame active" src="/static/img/placeholder.gif">
     </div>
 
     ## A div that we'll add rendered modal forms into.
@@ -115,10 +110,12 @@
         $('#map').imagesLoaded(function() {
             new window.noaa.erd.gnome.MapController({
                 mapEl: '#map',
+                mapPlaceholderEl: '#placeholder',
                 sidebarEl: '#sidebar',
                 formContainerEl: '#modal-container',
-                generatedTimeSteps: ${generated_time_steps or 'null' | n},
-                expectedTimeSteps: ${expected_time_steps or 'null' | n}
+                generatedTimeSteps: ${generated_time_steps_json or 'null' | n},
+                expectedTimeSteps: ${expected_time_steps_json or 'null' | n},
+                startFromTimeStep: ${model.current_step}
             });
         });
     </script>

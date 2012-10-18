@@ -67,6 +67,7 @@ class MockModel(object):
         self.start_time = None
         self.time_steps = []
         self.is_running = False
+        self.current_step = 0
 
     def get_movers(self):
         return self.movers
@@ -140,13 +141,17 @@ class MockModel(object):
         try:
             step = self.step_generator.next()
             self.time_steps.append(step)
-            self.current_step = len(self.time_steps) - 1
+            self.current_step = step['step_number']
             return step
         except StopIteration:
             self.is_running = False
+            self.current_step = 0
         return None
 
     def run(self):
+        if self.is_running:
+            return True
+
         self.is_running = True
 
         frames_glob = os.path.join(
