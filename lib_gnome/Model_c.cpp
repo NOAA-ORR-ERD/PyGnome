@@ -802,6 +802,7 @@ OSErr Model_c::TellMoversPrepareForStep()
 	TMover *thisMover;
 	OSErr err = 0;
 	// loop through all maps except universal map
+	Boolean isUncertain = this->IsUncertain();
 	if (!mapList) return -3;	// special error for a hard exit
 	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) {
 		mapList->GetListItem((Ptr)&map, i);
@@ -809,7 +810,7 @@ OSErr Model_c::TellMoversPrepareForStep()
 		{
 			map -> moverList -> GetListItem ((Ptr) &thisMover, k);	// 04/16/12 AH:
 			// if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;	// minus AH 07/10/2012
-			if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetTimeStep(), true)) return err;	// AH 07/10/2012
+			if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetTimeStep(), isUncertain)) return err;	// AH 07/10/2012
 		}
 	}
 	
@@ -818,7 +819,7 @@ OSErr Model_c::TellMoversPrepareForStep()
 	{
 		uMap -> moverList -> GetListItem ((Ptr) &thisMover, k);
 	//	if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;	// minus AH 07/10/2012
-		if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetTimeStep(), true)) return err;	// AH 07/10/2012
+		if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetTimeStep(), isUncertain)) return err;	// AH 07/10/2012
 		
 	}
 	return err;

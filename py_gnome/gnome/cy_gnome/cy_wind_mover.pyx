@@ -55,7 +55,8 @@ cdef class CyWindMover:
                  np.ndarray[WorldPoint3D, ndim=1] delta,
                  np.ndarray[np.npy_double] windages,
                  np.ndarray[np.npy_int16] LE_status,    # TODO: would be nice if we could define this as LEStatus type
-                 LEType spill_type):
+                 LEType spill_type,
+                 long spill_ID):
         """
         .. function:: get_move(self,
                  model_time,
@@ -64,7 +65,8 @@ cdef class CyWindMover:
                  np.ndarray[WorldPoint3D, ndim=1] delta,
                  np.ndarray[np.npy_double] windages,
                  np.ndarray[np.npy_int16] LE_status,
-                 LE_type)
+                 LE_type,
+                 spill_ID)
                  
         The cython wind mover's private get move method. It invokes the underlying C++ WindMover_c.get_move(...)
         
@@ -91,7 +93,8 @@ cdef class CyWindMover:
                                   &delta[0],
                                   &windages[0],
                                   <short *>&LE_status[0],
-                                  spill_type)
+                                  spill_type,
+                                  spill_ID)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
         

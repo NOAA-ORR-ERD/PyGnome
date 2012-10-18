@@ -74,7 +74,7 @@ public:
 	virtual	OSErr		ReadTopology(char* path, TMap **newMap);
 
 	
-			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType);
+			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID);
 
 };
 

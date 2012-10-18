@@ -1,3 +1,6 @@
+import json
+import datetime
+
 from pyramid.httpexceptions import HTTPFound, HTTPNotFound
 from pyramid.renderers import render
 from pyramid.view import view_config
@@ -10,7 +13,14 @@ from forms import (
     MOVER_CONSTANT_WIND
 )
 
-from util import json_require_model
+from util import json_require_model, json_encoder
+
+
+def _make_message(type, text):
+    """
+    Create a "message" dictionary suitable to be returned in a JSON response.
+    """
+    return dict(mesage=dict(type=type, text=text))
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -38,6 +48,12 @@ def show_model(request):
                               'available. We created a new one for you.'
     data['model'] = model
     data['show_menu_above_map'] = 'map_menu' in request.GET
+
+    if model.time_steps:
+        data['generated_time_steps'] = json.dumps(model.time_steps,
+                                                  default=json_encoder)
+        data['expected_time_steps'] = json.dumps(model.timestamps,
+                                                 default=json_encoder)
 
     return data
 
@@ -71,16 +87,28 @@ def run_model(request, model):
     Run the user's current model and return a JSON object containing the result
     of the run.
     """
+    # TODO: Accept this value from the user as a model setting.
+    two_weeks_ago = datetime.datetime.now() - datetime.timedelta(weeks=4)
+    model.start_time = two_weeks_ago
+    data = {}
+
+    try:
+        data['running'] = model.run()
+        data['expected_time_steps'] = model.timestamps
+    except RuntimeError:
+        # TODO: Use an application-specific exception.
+        data['running'] = False
+        data['message'] = _make_message('error', 'Model failed to run.')
+
+    return data
+
+
+@view_config(route_name='get_next_step', renderer='gnome_json')
+@json_require_model
+def get_next_step(request, model):
     return {
-        'result': model.run()
+        'time_step': model.get_next_step()
     }
-
-
-def _make_message(type, text):
-    """
-    Create a "message" dictionary suitable to be returned in a JSON response.
-    """
-    return dict(mesage=dict(type=type, text=text))
 
 
 @view_config(route_name='edit_constant_wind_mover', renderer='gnome_json')
@@ -88,7 +116,7 @@ def _make_message(type, text):
 def edit_constant_wind_mover(request, model):
     mover_id = request.matchdict['id']
     mover = model.get_mover(mover_id)
-    opts = { 'obj': mover } if mover else {}
+    opts = {'obj': mover} if mover else {}
     form = ConstantWindMoverForm(request.POST or None, **opts)
 
     if request.method == 'POST' and form.validate():
@@ -112,7 +140,7 @@ def edit_constant_wind_mover(request, model):
             'edit_constant_wind_mover', id=mover_id)
     })
 
-    return { 'form_html': html }
+    return {'form_html': html}
 
 
 @view_config(route_name='edit_variable_wind_mover', renderer='gnome_json')
@@ -143,7 +171,7 @@ def edit_variable_wind_mover(request, model):
         'action_url': request.route_url('edit_variable_wind_mover', id=mover_id)
     })
 
-    return { 'form_html': html }
+    return {'form_html': html}
 
 
 @view_config(route_name='add_constant_wind_mover', renderer='gnome_json')
@@ -164,7 +192,7 @@ def add_constant_wind_mover(request, model):
         'action_url': request.route_url('add_constant_wind_mover')
     })
 
-    return { 'form_html': html }
+    return {'form_html': html}
 
 
 @view_config(route_name='add_variable_wind_mover', renderer='gnome_json')
@@ -235,9 +263,9 @@ def delete_mover(request, model):
 @view_config(route_name='get_tree', renderer='gnome_json')
 @json_require_model
 def get_tree(request, model):
-    settings = { 'title': 'Model Settings', 'key': 'setting', 'children': [], }
-    movers = { 'title': 'Movers', 'key': 'mover', 'children': [] }
-    spills = { 'title': 'Spills', 'key': 'spill', 'children': [] }
+    settings = {'title': 'Model Settings', 'key': 'setting', 'children': []}
+    movers = {'title': 'Movers', 'key': 'mover', 'children': []}
+    spills = {'title': 'Spills', 'key': 'spill', 'children': []}
 
     def get_value_title(name, value, max_chars=8):
         """
@@ -265,7 +293,7 @@ def get_tree(request, model):
         })
 
     for id, mover in model.get_movers().items():
-         movers['children'].append({
+        movers['children'].append({
             'key': id,
             'title': model.get_mover_title(mover),
             'type': mover.type

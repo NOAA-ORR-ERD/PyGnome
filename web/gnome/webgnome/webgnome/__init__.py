@@ -25,9 +25,13 @@ def main(global_config, **settings):
     settings['Model'] = ModelManager()
     config = Configurator(settings=settings, session_factory=session_factory)
     config.add_static_view('static', 'static', cache_max_age=3600)
+    config.add_renderer('gnome_json', gnome_json)
+
     config.add_route('get_tree', '/tree')
     config.add_route('show_model', '/')
     config.add_route('create_model', '/model/create')
+    config.add_route('get_time_steps', '/model/time_steps')
+    config.add_route('get_next_step', '/model/next_step')
     config.add_route('run_model', '/model/run')
     config.add_route('add_mover', '/model/mover/add')
     config.add_route('delete_mover', '/model/mover/delete')
@@ -35,6 +39,6 @@ def main(global_config, **settings):
     config.add_route('add_variable_wind_mover', '/model/mover/variable_wind/add')
     config.add_route('edit_constant_wind_mover', '/model/mover/constant_wind/edit/{id}')
     config.add_route('edit_variable_wind_mover', '/model/mover/variable_wind/edit/{id}')
-    config.add_renderer('gnome_json', gnome_json)
+
     config.scan()
     return config.make_wsgi_app()

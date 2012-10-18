@@ -96,6 +96,15 @@ WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 	bShowWindBarb = true;
 }
 
+void WindMover_c::Dispose()
+{
+	DeleteTimeDep ();
+	
+	this->DisposeUncertainty();
+	
+	Mover_c::Dispose ();
+}
+
 void rndv(float *rndv1,float *rndv2)
 {
 	float cosArg = 2 * PI * GetRandomFloat(0.0,1.0);
@@ -167,29 +176,45 @@ void WindMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 }
 
 
+OSErr WindMover_c::allocate_uncertainty(int n, long* LESetsSizesList, long* spillIDs) // send in number of uncertainty LE sets, number of LEs in each set, spillIDs - uncertainty only
+{
+	//need to allocate for python based on input
+	long i,j,numrec;
+	OSErr err=0;
+	
+	this->DisposeUncertainty(); // get rid of any old values
+	
+	if (n==0) return 0;	// no uncertainty so nothing to do
+	
+	if(!(fLESetSizes = (LONGH)_NewHandle(sizeof(long)*n)))goto errHandler;
+	
+	for (i = 0,numrec=0; i < n ; i++) {
+		(*fLESetSizes)[i]=numrec;	// this stores index into the fWindUncertaintyList
+		numrec += LESetsSizesList[i];
+	}
+	if(!(fWindUncertaintyList = 
+		 (LEWindUncertainRecH)_NewHandle(sizeof(LEWindUncertainRec)*numrec)))goto errHandler;
+	
+	return noErr;
+errHandler:
+	this->DisposeUncertainty(); // get rid of any values allocated
+	TechError("TWindMover_c::allocate_uncertainty()", "_NewHandle()", 0);
+	return memFullErr;
+}
+
 #ifndef pyGNOME
 
 OSErr WindMover_c::AllocateUncertainty()
 {
+	//code goes here, need to allocate for python based on input
 	long i,j,n,numrec;
 	TLEList *list;
-	LEWindUncertainRecH h;
 	OSErr err=0;
 	CMyList	*LESetsList = model->LESetsList;
 	
 	this->DisposeUncertainty(); // get rid of any old values
 	if(!LESetsList)return noErr;
-	
-	// code goes here, fMaxSpeed is unused !!!  JLM 9/29/98
-	//if(timeDep)
-	//{
-	// may notbe called after user changes the wind speed.
-	// this object should protect itself.
-	//fMaxSpeed=timeDep->GetMaxValue(); 
-	//if(fMaxSpeed == -1)fMaxSpeed = 30;
-	//}
-	
-	
+		
 	n = LESetsList->GetItemCount();
 	if(!(fLESetSizes = (LONGH)_NewHandle(sizeof(long)*n)))goto errHandler;
 	
@@ -208,16 +233,18 @@ errHandler:
 	TechError("TWindMover::AllocateUncertainty()", "_NewHandle()", 0);
 	return memFullErr;
 }
+#else
+OSErr WindMover_c::AllocateUncertainty(){return 0;}
+#endif
 
-
-OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, Boolean isUncertain)
+OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime)
 {
 	OSErr err = noErr;
 	long i,n;
 	Boolean needToReInit = false;
 	//Seconds elapsedTime =  model->GetModelTime() - model->GetStartTime();
 	//Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
-	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && isUncertain;
+	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime);
 	// JLM, this is elapsedTime >= fUncertainStartTime because elapsedTime is the value at the start of the step
 	
 	if(!bAddUncertainty)
@@ -259,6 +286,8 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, Boolean isUncer
 		}
 		
 	}
+#else
+	if (needToReInit==true) {err = -1; return err;}	// code goes here, will need to add some sort of error checks for python
 #endif
 	
 	
@@ -281,11 +310,11 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, Boolean isUncer
 	}
 	return err;
 }
-#else
+//#else
 // code goes here, don't need isUncertain since this only gets called if uncertain...
-OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, Boolean isUncertain) { return 0; }
+//OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime) { return 0; }
 
-#endif	// AH 06/20/2012 (this does not affect stand alone behavior.
+//#endif	// AH 06/20/2012 (this does not affect stand alone behavior.
 
 OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVel)
 {
@@ -377,7 +406,7 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds&
 	if (uncertain)
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
-		err = this->UpdateUncertainty(elapsed_time,uncertain);
+		err = this->UpdateUncertainty(elapsed_time);
 	}
 	err = this -> GetTimeValue (model_time,&this->current_time_value);	// AH 07/16/2012
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
@@ -426,7 +455,7 @@ OSErr WindMover_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 // The second get_move method above may get deleted once we do uncertainty differently
 // NOTE: Some of the input arrays (ref, windages) should be const since you don't want the method to change them;
 // however, haven't gotten const to work well with cython yet so just be careful when changing the input data
-OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType) {
+OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID) {
 		
 	// JS Ques: Is this required? Could cy/python invoke this method without well defined numpy arrays?
 	if(!delta || !ref || !windages) {
@@ -463,7 +492,7 @@ OSErr WindMover_c::get_move(int n, unsigned long model_time, unsigned long step_
 		rec.p.pLat *= 1000000;	// really only need this for the latitude
 		//rec.p.pLong*= 1000000;
 
-		delta[i] = GetMove(model_time, step_len, 0, i, prec, spillType);
+		delta[i] = GetMove(model_time, step_len, spill_ID, i, prec, spillType);
 		
 		delta[i].p.pLat /= 1000000;
 		delta[i].p.pLong /= 1000000;
