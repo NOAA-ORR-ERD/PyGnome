@@ -56,7 +56,7 @@ cdef class CyWindMover:
                  np.ndarray[np.npy_double] windages,
                  np.ndarray[np.npy_int16] LE_status,    # TODO: would be nice if we could define this as LEStatus type
                  LEType spill_type,
-                 long spill_ID):
+                 spill_ID):
         """
         .. function:: get_move(self,
                  model_time,
