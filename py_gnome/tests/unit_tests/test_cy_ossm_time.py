@@ -68,11 +68,6 @@ class TestTimeSeriesInit():
    tval['time'][1] = 1
    tval['value'][1]=(2,3)
    
-   def test_init_no_units(self):
-       """ timeseries defaults user_units to undefined """
-       ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval)
-       assert ossm.user_units == basic_types.velocity_units.undefined
-
    def test_init_time_series(self):
        """
        Sets the time series in OSSMTimeValue_c equal to the externally supplied numpy
