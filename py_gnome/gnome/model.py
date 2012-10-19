@@ -14,15 +14,7 @@ class Model(object):
     """ 
     PyGNOME Model Class
     
-    Functionality:
-#        - Wind Movers (in the process of adding variable wind)
-#        - Diffusion Mover
-#        - CATS Mover (shio tides or constant flow, scaled to ref pos.)
-#        - Continuous Spill
-#        - Refloating
     """
-    output_bmp_size = 1048576 #(1MB)
-
     def __init__(self):
         """ 
         Initializes model attributes. 
@@ -34,7 +26,7 @@ class Model(object):
 
         ## Various run-time parameters for output
         self.output_types = [] # default to no output type -- there could be: "image", "netcdf", etc)
-        self.image_dir = '.'
+        self.images_dir = '.'
 
         self.reset() # initializes everything to nothing.
         
@@ -48,7 +40,7 @@ class Model(object):
         self.movers = []
         self.spills = []
 
-        self._current_time_step = 0
+        self._current_time_step = -1
 
         
         self.time_step = timedelta(minutes=15).total_seconds()
@@ -60,7 +52,7 @@ class Model(object):
         """
         resets the model to the beginning (start_time)
         """
-        self._current_time_step = 0
+        self._current_time_step = -1 # start at -1 -- it get incremented first.
         for spill in self.spills:
             spill.reset()
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
@@ -135,6 +127,7 @@ class Model(object):
         return new_mover 
    
     def add_spill(self, spill):
+        #fixme: where should we check if a spill is in a valic location on the map?
         """
         add a spill to the model
         
@@ -184,16 +177,26 @@ class Model(object):
                 raise ValueError("%s output type not supported"%output_method)
     
     def write_image(self):
+        ##fixme: put this in an "Output" class?
         """
         render the map image, according to current parameters
         """
-        filename = os.path.join(self.image_dir, 'map%05i.png'%self._current_time_step)
         if self.output_map is None:
-            # create the output map
-            self.output_map = gnome.utilities.map_canvas.Palette_MapCanvas(self.output_bmp_size)
-            
-        for spill in spills:
-            self.output_map.draw_elements(spills, filename)
+            raise ValueError("You must have an ouput map to use the image output")
+        if self.current_time_step == 0:
+            self.output_map.draw_background()
+            print "writing backround map"
+            self.output_map.save_background(os.path.join(self.images_dir, "background_map.png"))
+
+        filename = os.path.join(self.images_dir, 'foreground_%05i.png'%self._current_time_step)
+
+        self.output_map.create_foreground_image()
+        for spill in self.spills:
+            print "drawing elements"
+            print spill['positions']
+            self.output_map.draw_elements(spill)
+        self.output_map.save_foreground(filename)
+
         return filename
 
     def step(self):
@@ -209,7 +212,6 @@ class Model(object):
         self._current_time_step += 1
         self.setup_time_step()
         self.move_elements()
-        self.write_output()
         return True
     
     def __iter__(self):
@@ -223,10 +225,13 @@ class Model(object):
 
     def next(self):
         """
-        compute the next model step
-        
-        This method here to satisfy Python's iterator protocol
+        (This method here to satisfy Python's iterator and generator protocols)
+
+        Compute the next model step
+
+        Return the step number
         """
+        
         if not self.step():
             raise StopIteration
         return self.current_time_step
@@ -234,15 +239,20 @@ class Model(object):
                 
     def next_image(self):
         """
-        compute the next model step
+        compute the next model step, render an image, and return info about the
+        step rendered
         
-        This method here to satisfy Python's interator protocal
         """
+        print "in next_image"
         if not self.step():
             raise StopIteration
-        return (self.current_time_step, url, timestamp)
+        filename = self.write_image()
+        return (self.current_time_step, filename, "a timestamp")
 
     def full_run_and_output(self):
+        """
+        Do a full run of the model, outputting whatever has been set.
+        """
         raise NotImplmentedError
         
 

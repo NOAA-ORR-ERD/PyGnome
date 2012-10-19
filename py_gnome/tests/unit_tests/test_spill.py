@@ -125,26 +125,83 @@ def test_point_release():
                                  start_position = (28.5, -128.3, 0),
                                  release_time=rel_time,
                                  )
-    
+    time_step = 15*60 # seconds
     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.not_released)
 
-    sp.prepare_for_model_step(rel_time - datetime.timedelta(seconds=1) )# one second before release time
+    sp.prepare_for_model_step(rel_time - datetime.timedelta(seconds=1), time_step)# one second before release time
     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.not_released )
     
-    sp.prepare_for_model_step(rel_time)
+    sp.prepare_for_model_step(rel_time, time_step)
     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.in_water )
+
 
 def test_point_reset():
     rel_time = datetime.datetime(2012, 8, 20, 13)
+    time_step = 15*60 # seconds
     sp = spill.PointReleaseSpill(num_LEs = 10,
                                  start_position = (28.5, -128.3, 0),
                                  release_time=rel_time,
                                  )
     
-    sp.prepare_for_model_step(rel_time)
+    sp.prepare_for_model_step(rel_time, time_step)
     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.in_water )
+
     sp.reset()
     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.not_released)
+
+def test_multi_points():
+
+    start_position = [ (28.5, -128.3, 0),
+                       (28.6, -128.4, 0),
+                       (28.7, -128.5, 0)]
+
+    rel_time = datetime.datetime(2012, 8, 20, 13)
+    time_step = 15*60 # seconds
+    sp = spill.PointReleaseSpill(num_LEs = len(start_position),
+                                 start_position = start_position,
+                                 release_time=rel_time,
+                                 )
+    
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.not_released)
+    assert np.array_equal(start_position, sp['positions'])
+
+    sp.prepare_for_model_step(rel_time, time_step)
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.in_water )
+    assert np.array_equal(start_position, sp['positions'])
+
+    sp.reset()
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.not_released)
+    assert np.array_equal(start_position, sp['positions'])
+
+def test_stay_moved():
+
+    start_position = np.array( [ (28.5, -128.3, 0),
+                                 (28.6, -128.4, 0),
+                                 (28.7, -128.5, 0),
+                                ]
+                              )
+
+    rel_time = datetime.datetime(2012, 8, 20, 13)
+    time_step = 15*60 # seconds
+    sp = spill.PointReleaseSpill(num_LEs = len(start_position),
+                                 start_position = start_position,
+                                 release_time=rel_time,
+                                 )
+    
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.not_released)
+    assert np.array_equal(start_position, sp['positions'])
+
+    sp.prepare_for_model_step(rel_time, time_step)
+    assert np.alltrue( sp['status_codes'] == basic_types.oil_status.in_water )
+    assert np.array_equal(start_position, sp['positions'])
+
+    # now move them:
+    sp['positions'] += 0.2
+    assert np.array_equal(start_position + 0.2, sp['positions'])
+
+    # make sure they stay moved:
+    sp.prepare_for_model_step(rel_time + datetime.timedelta(seconds=time_step), time_step)
+    assert np.array_equal(start_position + 0.2, sp['positions'])
 
     
 

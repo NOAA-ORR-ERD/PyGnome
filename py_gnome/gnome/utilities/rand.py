@@ -30,8 +30,6 @@ def random_with_persistance(low, high, persistence, step_len):
     
     if persistence > 0:
         orig = high - low
-        print "persistence: " + str(persistence)
-        print "step_len: " + str(step_len)
         range = orig * sqrt( persistence/step_len)
         mean = (high + low)/2.
         
