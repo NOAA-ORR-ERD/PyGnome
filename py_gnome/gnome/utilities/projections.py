@@ -6,7 +6,7 @@ Module to hold classes and supporting code for projections used in GNOME.
 Only:
 
   * no projection
-  * geo-projection (jsut scaling to pixels)
+  * geo-projection (just scaling to pixels)
   * a simple "flat earth" projection for 
 
 Also a bit of code for scaling lat-long to meters, etc.
@@ -100,10 +100,9 @@ class GeoProjection(object):
     
     def set_scale(self, bounding_box, image_size):
         """
-        set (or reset) the scaling, etc of the projection
+        set (or reset) the scaling, etc. of the projection
         
-        This should be called whenever the bounding box of the map,
-        or the size of the image is changed
+        This should be called whenever the view, bounding box, or size of image is changed.
         """
         
         bounding_box = np.asarray(bounding_box, dtype=np.float64)
@@ -276,7 +275,7 @@ class FlatEarthProjection(GeoProjection):
         
         Code from Brian Zelenke
         
-        NOTE: performance could be improved a lot here is need be (lots of data copies)
+        NOTE: performance could be improved a lot here if need be (lots of data copies)
         
         """
         # EarthRadius = 6371010.0 # Value I"ve looked up
@@ -312,15 +311,18 @@ class FlatEarthProjection(GeoProjection):
         self.center = np.mean(bounding_box, axis=0)
         self.offset = np.array((image_size), dtype=np.float64) / 2
         
+
         lon_scale = np.cos(np.deg2rad(self.center[1]))
         # compute BB to fit image
         h = bounding_box[1,1] -	 bounding_box[0,1]
         # width scaled to longitude
-        w = lon_scale * (bounding_box[1,0] - bounding_box[0,0])
+        w = (bounding_box[1,0] - bounding_box[0,0]) * lon_scale
+        
         if w/h > image_size[0] / image_size[1]:
             s = image_size[0] / w
+            self.scale = (s*lon_scale, -s)
         else:
             s = image_size[1] / h
-        self.scale = (lon_scale*s, -s)
+            self.scale = (s*lon_scale, -s)
         
 

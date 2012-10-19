@@ -101,15 +101,16 @@ def test_simple_run_with_map():
     
     # test iterator:
     for step in model:
-        print "just ran time step: %s"%model.current_time_step
+        print "just ran time step: %s"%step
 
     # reset and run again:
     model.reset()
     # test iterator:
     for step in model:
-        print "just ran time step: %s"%model.current_time_step
+        print "just ran time step: %s"%step
         
     assert True
+
     
     
     
