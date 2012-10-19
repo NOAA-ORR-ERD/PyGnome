@@ -78,15 +78,15 @@ class SimpleMover(object):
         in_water_mask =  (status_codes == basic_types.oil_status.in_water)
                 
         # compute the move
-        delta = np.zeros((in_water_mask.sum(), 3), dtype = basic_types.mover_type)
+        # delta = np.zeros((in_water_mask.sum(), 3), dtype = basic_types.mover_type)
 
-        delta[:] = self.velocity * time_step
+        # delta[:] = self.velocity * time_step
+        delta = np.zeros_like(positions)
 
+        delta[in_water_mask] = self.velocity * time_step
 
         # scale for projection
-        # fixme -- move this to a utility function???
-        #          i.e. all movers should use the same projection -- rather than doing it themselves.
-        delta = proj.meters_to_latlon(delta, positions[in_water_mask]) # just the lat-lon...
+        delta = proj.meters_to_latlon(delta, positions) # just the lat-lon...
         
         return delta
         

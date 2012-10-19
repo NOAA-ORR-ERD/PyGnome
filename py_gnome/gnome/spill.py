@@ -135,7 +135,7 @@ class PointReleaseSpill(Spill):
         """
         self.reset()
     
-    def prepare_for_model_step(self, current_time, time_step=None, uncertain_on=None):
+    def prepare_for_model_step(self, current_time, time_step, uncertain_on=False):
         """
         Do whatever needs to be done at the beginning of a time step:
         
@@ -149,21 +149,25 @@ class PointReleaseSpill(Spill):
         :param uncertain_on: Boolean flag indicating whether uncertainty is on in the model
 
         """
-        if current_time >= self.release_time:
-            self['positions'][:] = self.start_position
+        if current_time >= self.release_time and not self.released:
             self['status_codes'][:] = basic_types.oil_status.in_water
+            self.released = True
             
         if self.windage_persist > 0:
             self.update_windage(time_step)
+        
         return None
 
-    def update_windage(self,time_step):
+    def update_windage(self, time_step):
         """
         Update windage for each LE for each time step
         May want to cythonize this to speed it up
         """
-        for le in range(0,self.num_LEs):
-            self['windages'][le] = rand.random_with_persistance(self.windage_range[0], self.windage_range[1], self.windage_persist, time_step)
+        for le in range(0, self.num_LEs):
+            self['windages'][le] = rand.random_with_persistance(self.windage_range[0],
+                                                                self.windage_range[1],
+                                                                self.windage_persist,
+                                                                time_step)
 
     def reset(self):
         """
@@ -171,6 +175,6 @@ class PointReleaseSpill(Spill):
         """
         self['positions'][:] = self.start_position
         self['status_codes'][:] = basic_types.oil_status.not_released
-        
+        self.released = False
 
         
