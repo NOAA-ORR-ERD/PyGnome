@@ -253,7 +253,7 @@ OSErr NetCDFWindMover_c::PrepareForModelStep(const Seconds& model_time, const Se
 	if(uncertain) // AH 04/16/12;
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;
-		err = this->UpdateUncertainty(elapsed_time,uncertain);
+		err = this->UpdateUncertainty(elapsed_time);
 	}
 	
 	char errmsg[256];

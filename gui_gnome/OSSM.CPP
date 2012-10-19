@@ -367,7 +367,7 @@ OSErr DeleteItem()
 		item = model->GetNthListItem(n, 0, &style, s);
 		if (item.owner && CHOICEALERT(M76, 0, FALSE))
 			if (!item.owner->DeleteItem(item)) {
-				item.owner->Dispose();
+				//item.owner->Dispose();	// do we need to do this? Dispose is being called twice...
 				delete item.owner;
 				model->NewDirtNotification();// JLM
 			}

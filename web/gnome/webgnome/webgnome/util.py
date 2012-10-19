@@ -1,17 +1,44 @@
 """
 util.py: Utility function for the webgnome package.
 """
+import datetime
 from functools import wraps
+
+
+def encode_json_date(obj):
+    """
+    Render a `datetime.datetime` or `datetime.date` object using the
+    `isoformat()` function, so it can be properly serialized to JSON notation.
+    """
+    if isinstance(obj, datetime.datetime) or isinstance(obj, datetime.date):
+        return obj.isoformat()
+
+
+def json_encoder(obj):
+    """
+    A custom JSON encoder that handles `datetime.datetime` and `datetime.date`
+    values, with a fallback to using the `str()` representation of an object.
+
+    Raises `TypeError` if the object was not of the above types and could not
+    be converted to a string.
+    """
+    date_str = encode_json_date(obj)
+
+    if date_str:
+        return date_str
+    elif hasattr(obj, '__str__'):
+        return str(obj)
+    else:
+        raise TypeError(
+            "Could not convert object of type %s into JSON" % (type(obj)))
 
 
 def json_date_adapter(obj, request):
     """
-    Render a `datetime.datetime` or `datetime.date` object using the
-    `isoformat()` function, so it can be properly serialized to JSON notation.
-
-    TODO: Move to a `utils` module.
+    A wrapper around `json_date_encoder` so that it may be used in a custom
+    JSON adapter for a Pyramid renderer.
     """
-    return obj.isoformat()
+    return encode_json_date(obj)
 
 
 def json_require_model(f):

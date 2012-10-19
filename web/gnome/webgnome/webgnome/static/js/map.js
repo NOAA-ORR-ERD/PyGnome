@@ -21,15 +21,18 @@
 
     function Model(opts) {
         this.url = opts.url;
+        this.currentTimeStep = opts.currentTimeStep || 0;
+        this.timeSteps = opts.timeSteps || [];
+        this.expectedTimeSteps = opts.expectedTimeSteps || [];
+        this.startFromTimeStep = opts.startFromTimeStep || 0;
 
         // Optionally specify the zoom level.
         this.zoomLevel = opts.zoomLevel === undefined ? 4 : opts.zoomLevel;
 
         // If true, `Model` will request a new set of frames from the server
-        // when the user runs the model.
-        this.dirty = true;
-
-        this.timeSteps = [];
+        // when the user runs the model. Assume we don't need to get new frames
+        // for a model that is running (i.e., one which has time steps).
+        this.dirty = this.timeSteps.length == 0;
     }
 
     Model.ZOOM_IN = 'zoom_in';
@@ -37,6 +40,7 @@
     Model.ZOOM_NONE = 'zoom_none';
 
     // Events
+    Model.RUN_BEGAN = 'gnome:modelRunBegan';
     Model.RUN_FINISHED = 'gnome:modelRunFinished';
     Model.NEXT_TIME_STEP_READY = 'gnome:nextTimeStepReady';
 
@@ -62,6 +66,14 @@
             return this.timeSteps[timeStep.step_number] == timeStep;
         },
 
+        hasTimeStepWithIndex: function(stepNum) {
+            return this.timeSteps[stepNum] !== undefined;
+        },
+
+        serverHasTimeStepWithIndex: function(stepNum) {
+            return this.expectedTimeSteps[stepNum] !== undefined;
+        },
+
         addTimeStep: function(timeStep) {
             this.timeSteps.push(timeStep);
         },
@@ -69,16 +81,19 @@
         run: function(opts) {
             var _this = this;
 
-            if (this.dirty === false) {
-                this.getNextTimeStep();
-                return;
-            }
-
             opts = $.extend({
                 zoomLevel: this.zoomLevel,
                 zoomDirection: Model.ZOOM_NONE,
-                timeStep: null
+                startFromTimeStep: null
             }, opts);
+
+            this.startFromTimeStep = opts.startFromTimeStep;
+
+            if (this.dirty === false && this.startFromTimeStep &&
+                    this.hasTimeStepWithIndex(this.startFromTimeStep)) {
+                $(_this).trigger(Model.RUN_BEGAN);
+                return;
+            }
 
             var isInvalid = function(obj) {
                 return obj === undefined || obj === null || typeof(obj) != "object";
@@ -100,7 +115,7 @@
                 retryLimit: 3,
                 success: function(data) {
                     _this.expectedTimeSteps = data.expected_time_steps;
-                    $(_this).trigger(Model.RUN_FINISHED, data);
+                    $(_this).trigger(Model.RUN_BEGAN, data);
                 },
                 error: handleAjaxError
             });
@@ -110,6 +125,11 @@
         // an `error` value set to true if the message is an error type.
         parseMessage: function(data) {
             var message;
+
+            if (data === null || data === undefined) {
+                return;
+            }
+
             if (_.has(data, 'message')) {
                 message = data.message;
                 if (data.message.type == 'error') {
@@ -122,21 +142,50 @@
             return null;
         },
 
-        getNextTimeStep: function() {
+        setTimeStep: function(newStepNum) {
+            this.currentTimeStep = newStepNum;
+            $(this).trigger(
+                Model.NEXT_TIME_STEP_READY, this.timeSteps[this.currentTimeStep]);
+        },
+
+        getNextTimeStep: function(startFromBeginning) {
+            var currStepNum, nextStepNum;
+
+            if (this.startFromTimeStep) {
+                currStepNum = this.startFromTimeStep;
+                this.startFromTimeStep = null;
+            } else {
+                currStepNum = this.currentTimeStep;
+            }
+
+            nextStepNum = startFromBeginning ? currStepNum : currStepNum + 1;
+
+            // There are no more time steps left in the model run.
+            if (!this.serverHasTimeStepWithIndex(nextStepNum)) {
+                this.dirty = false;
+                $(this).trigger(Model.RUN_FINISHED);
+                return;
+            }
+
+            // The time step has already been generated and we have it.
+            if (this.hasTimeStepWithIndex(nextStepNum)) {
+                this.setTimeStep(nextStepNum);
+                return;
+            }
+
             var _this = this;
+
+             // Request the next step from the server.
              $.ajax({
+                async: false,
                 type: "GET",
                 url: this.url + '/next_step',
                 success: function(data) {
                     _this.addTimeStep(data.time_step);
-                    $(_this).trigger(Model.NEXT_TIME_STEP_READY, data.time_step);
+                    _this.setTimeStep(data.time_step.step_number);
                 },
                 error: handleAjaxError
             });
-        },
-
-        hasNextTimeStep: function(stepNum) {
-            return this.expectedTimeSteps[stepNum+1] !== undefined;
         },
 
         zoomFromPoint: function(point, direction) {
@@ -147,6 +196,20 @@
         zoomFromRect: function(rect, direction) {
             this.dirty = true;
             this.run({rect: rect, zoom: direction});
+        },
+
+        // Reset the current time step to 0.
+        reset: function() {
+            this.currentTimeStep = 0;
+            this.startFromTimeStep = null;
+        },
+
+        // Clear all time setp data. Used when creating a new model.
+        clearData: function() {
+            this.reset();
+            this.timeSteps = [];
+            this.expectedTimeSteps = [];
+            this.startFromTimeStep =  0;
         }
     };
 
@@ -155,8 +218,13 @@
         this.mapEl = opts.mapEl;
         this.frameClass = opts.frameClass;
         this.activeFrameClass = opts.activeFrameClass;
+        this.placeholderEl = opts.placeholderEl;
         this.currentStep = 0;
     }
+
+    MapView.PAUSED = 1;
+    MapView.STOPPED = 2;
+    MapView.PLAYING = 3;
 
     // `MapView` events
     MapView.DRAGGING_FINISHED = 'gnome:draggingFinished';
@@ -165,39 +233,45 @@
     MapView.FRAME_CHANGED = 'gnome:frameChanged';
     MapView.MAP_WAS_CLICKED = 'gnome:mapWasClicked';
 
-
     MapView.prototype = {
         initialize: function() {
+            this.createPlaceholderCopy();
             this.makeImagesClickable();
-            this.setupCycle();
+            this.status = MapView.STOPPED;
             return this;
         },
 
-        setupCycle: function() {
-            var _this = this;
-            this.cycle = $(this.mapEl).cycle({
-                slideResize: true,
-                containerResize: false,
-                width: '100%',
-                nowrap: true,
-                speed: 1,
-                timeout: 1,
-                delay: 0,
-                end: function(opts) {
-                    _this.pause();
-                    var image = _this.getActiveImage();
-                    _this.currentStep = image.attr('data-position');
-                    $(_this).trigger(MapView.PLAYING_FINISHED);
-                },
-                before: function(currSlideElement, nextSlideElement, options, forwardFlag) {
-                    $(currSlideElement).removeClass('active');
-                    $(nextSlideElement).addClass('active');
-                },
-                after: function(currSlideElement, nextSlideElement, options, forwardFlag) {
-                    _this.currentStep++;
-                    $(_this).trigger(MapView.FRAME_CHANGED);
-                }
-            });
+        isPaused: function() {
+            return this.status === MapView.PAUSED;
+        },
+
+        isStopped: function() {
+            return this.status === MapView.STOPPED;
+        },
+
+        isPlaying: function() {
+            return this.status === MapView.PLAYING;
+        },
+
+        setPaused: function() {
+            this.status = MapView.PAUSED;
+        },
+
+        setStopped: function() {
+            this.status = MapView.STOPPED;
+        },
+
+        setPlaying: function() {
+            this.status = MapView.PLAYING;
+        },
+
+        createPlaceholderCopy: function() {
+            this.placeholderCopy = $(this.placeholderEl).find('img').clone()
+                .appendTo($(this.mapEl)).show();
+        },
+
+        removePlaceholderCopy: function() {
+            this.placeholderCopy.remove();
         },
 
         makeImagesClickable: function() {
@@ -237,49 +311,85 @@
             return $(this.mapEl + " > img.active");
         },
 
-        addTimeStep: function(timeStep) {
+        getImageForTimeStep: function(stepNum) {
+            return $('img[data-position="' + (stepNum) + '"]');
+        },
+
+        // Set `stepNum` as the current time step and display an image if one
+        // exists.
+        setTimeStep: function(stepNum) {
+            var nextStep = stepNum === 0 ? 0 : stepNum - 1;
+            var nextImage = this.getImageForTimeStep(stepNum);
+            var otherImages = $(this.mapEl).find('img').not(nextImage);
+
+            // Hide all other images in the map div.
+            otherImages.css('display', 'none');
+            otherImages.removeClass('active');
+
+            if (nextImage.length == 0) {
+                alert("An animation error occurred. Please refresh.");
+            }
+
+            nextImage.css('display', 'block');
+            this.currentStep = stepNum;
+        },
+
+        // Advance to time step `stepNum` and trigger FRAME_CHANGED to continue
+        // forwad animation.
+        advanceTimeStep: function(stepNum) {
+            var map = $(this.mapEl);
+            var _this = this;
+
+            // Show the map div if this is the first image of the run.
+            if (map.find('img').length == 1) {
+                map.show();
+            }
+
+            setTimeout(function() {
+                if (_this.isPaused()) {
+                    return;
+                }
+                _this.setTimeStep(stepNum);
+                $(_this).trigger(MapView.FRAME_CHANGED);
+            }, 300);
+        },
+
+        addImageForTimeStep: function(timeStep) {
+            var _this = this;
+            var map = $(this.mapEl);
+
             var img = $('<img>').attr({
                 'class': 'frame',
                 'data-position': timeStep.step_number,
                 src: timeStep.url
+            }).css('display', 'none');
+
+            img.appendTo(map);
+
+            $(img).imagesLoaded(function() {
+                _this.advanceTimeStep(timeStep.step_number);
             });
+        },
 
-            var $map = $(this.mapEl);
+        addTimeStep: function(timeStep) {
+            var imageExists = this.getImageForTimeStep(timeStep.step_number).length;
 
-            img.appendTo($map);
-
-            if ($map.find('img').length == 1) {
-                $map.show();
-                return;
+            if (timeStep.step_number === 0 && this.placeholderCopy) {
+                this.removePlaceholderCopy();
             }
 
-            this.cycle.cycle('stop');
-            this.setupCycle();
-            this.cycle.cycle(timeStep.step_number);
+            // We must be playing a cached model run because the image already
+            // exists. In all other cases the image should NOT exist.
+            if (imageExists) {
+                this.advanceTimeStep(timeStep.step_number);
+            } else {
+                this.addImageForTimeStep(timeStep);
+            }
         },
 
         // Clear out the current frames.
         clear: function() {
-            this.cycle.cycle('pause');
-            $(this.mapEl).hide();
             $(this.mapEl).empty();
-        },
-
-        playFrom: function(stepNum) {
-            this.cycle.cycle(stepNum);
-        },
-
-        play: function() {
-            this.cycle.cycle('resume');
-        },
-
-        pause: function() {
-            this.cycle.cycle('pause');
-        },
-
-        restart: function() {
-            this.cycle.cycle(0);
-            this.cycle.cycle('resume');
         },
 
         getSize: function() {
@@ -305,7 +415,7 @@
             return $(this.mapEl).find('img').length - 1;
         },
 
-        setTimeStep: function(stepNum) {
+        __old__setTimeStep: function(stepNum) {
             this.cycle.cycle(stepNum);
         },
 
@@ -575,6 +685,8 @@
 
         setStopped: function() {
             this.status = MapControlView.STATUS_STOPPED;
+            $(this.pauseButtonEl).hide();
+            $(this.playButtonEl).show();
         },
 
         setPlaying: function() {
@@ -906,6 +1018,7 @@
 
         this.mapView = new MapView({
             mapEl: opts.mapEl,
+            placeholderEl: opts.mapPlaceholderEl,
             frameClass: 'frame',
             activeFrameClass: 'active'
         });
@@ -925,7 +1038,11 @@
             url: this.rootApiUrls.timeSteps
         });
 
-        this.model = new Model({url: this.rootApiUrls.model});
+        this.model = new Model({
+            url: this.rootApiUrls.model,
+            timeSteps: opts.generatedTimeSteps,
+            expectedTimeSteps: opts.expectedTimeSteps
+        });
 
         this.setupEventHandlers();
         this.initializeViews();
@@ -936,7 +1053,8 @@
 
     MapController.prototype = {
         setupEventHandlers: function() {
-            $(this.model).bind(Model.RUN_FINISHED, this.modelRunSuccess);
+            $(this.model).bind(Model.RUN_BEGAN, this.modelRunBegan);
+            $(this.model).bind(Model.RUN_FINISHED, this.modelRunFinished);
             $(this.model).bind(Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
 
             $(this.formView).bind(ModalFormView.SAVE_BUTTON_CLICKED, this.saveForm);
@@ -1005,43 +1123,40 @@
                     if ('message' in data) {
                         _this.displayMessage(data.message);
                     }
+                    _this.model.clearData();
                     _this.treeView.reload();
+                    _this.mapView.clear();
+                    _this.mapView.createPlaceholderCopy();
+                    _this.mapView.setStopped();
+                    _this.mapControlView.setStopped();
                 },
                 error: handleAjaxError
             });
         },
 
         play: function(event) {
-            var stepNum = this.mapControlView.getTimeStep() || 0;
-            var timeStep = this.model.getTimeStepByIndex(stepNum);
-            var opts = timeStep ? {timeStep: timeStep} : {};
+            var stepNum = this.mapView.currentStep;
+            var opts = this.mapControlView.isPaused() ? {startFromTimeStep: stepNum} : {};
 
             if (this.model.dirty)  {
-                this.mapView.clear();
                 this.mapControlView.reset();
-                this.model.run(opts);
-                return;
             }
 
-            if (this.mapControlView.isPlaying()) {
-                // We'll turn them back on when we call `mapView.playFrom()`
-                // or after getting back a response from `model.run()`.
-                this.mapControlView.disableControls();
+            if (this.mapControlView.isStopped()) {
+                this.model.reset();
             }
 
+            this.mapView.setPlaying();
             this.mapControlView.setPlaying();
-
-            if (this.model.hasTimeStep(timeStep)) {
-                this.mapControlView.enableControls();
-                this.mapView.playFrom(stepNum);
-            } else {
-                this.model.run(opts);
-            }
+            this.mapControlView.disableControls();
+            this.model.run(opts);
         },
 
         pause: function(event) {
+            // TODO: Should the mapView have a reference to mapControlView,
+            // or is that the path of darkness?
             this.mapControlView.setPaused();
-            this.mapView.pause();
+            this.mapView.setPaused();
         },
 
         enableZoomIn: function(event) {
@@ -1110,25 +1225,35 @@
         },
 
         frameChanged: function(event) {
-            this.mapControlView.setTimeStep(this.mapView.currentStep);
+            var stepNum = this.mapView.currentStep;
+            this.mapControlView.setTimeStep(stepNum);
 
-            var timeStep = this.model.getTimeStepByIndex(
-                this.mapView.currentStep);
+            var timeStep = this.model.getTimeStepByIndex(stepNum);
             this.mapControlView.setTime(timeStep.timestamp);
-
-            if (this.model.hasNextTimeStep(this.mapView.currentStep)) {
-                this.model.getNextTimeStep();
-            }
+            this.model.getNextTimeStep(false);
         },
 
+        // Jump to the first frame of the animation (0).
         jumpToFirstFrame: function(event) {
+            this.model.setTimeStep(0);
+            this.mapControlView.setPaused();
+            this.mapControlView.setTimeStep(0);
+            this.mapView.setPaused();
             this.mapView.setTimeStep(0);
         },
 
+        // Jump to the last LOADED frame of the animation. This will stop at
+        // whatever frame was the last received from the server.
+        //
+        // TODO: This should probably do something fancier, like block and load
+        // all of the remaining frames if they don't exist, until the end.
         jumpToLastFrame: function(event) {
             var lastFrame = this.mapView.getFrameCount();
-            this.mapView.setTimeStep(lastFrame);
+            this.model.setTimeStep(lastFrame);
+            this.mapControlView.setPaused();
             this.mapControlView.setTimeStep(lastFrame);
+            this.mapView.setPaused();
+            this.mapView.setTimeStep(lastFrame);
         },
 
         useFullscreen: function(event) {
@@ -1304,7 +1429,7 @@
             }
         },
 
-        modelRunSuccess: function(event, data) {
+        modelRunBegan: function(event, data) {
             var message = this.model.parseMessage(data);
 
             if (message) {
@@ -1319,19 +1444,20 @@
                 this.mapControlView.reload();
             }
 
-            this.model.dirty = false;
-            this.mapControlView.setTimeSteps(data.expected_time_steps);
+            this.mapControlView.setTimeSteps(this.model.expectedTimeSteps);
             this.mapControlView.enableControls();
-            this.model.getNextTimeStep();
+            this.model.getNextTimeStep(true);
             return true;
+        },
+
+        modelRunFinished: function(event) {
+            console.log('stopped')
+            this.mapControlView.setStopped();
+            this.mapView.setStopped();
         },
 
         nextTimeStepReady: function(event, step) {
             this.mapView.addTimeStep(step);
-
-            if (step.step_number == 0) {
-                this.model.getNextTimeStep();
-            }
         }
     };
 
@@ -1344,15 +1470,5 @@
     gnome.Model = Model;
     gnome.TreeControlView = TreeControlView;
     gnome.MapControlView = MapControlView;
-
-
-    // Wait until the placeholder image has loaded before loading controls.
-    $('#map').imagesLoaded(function() {
-        new MapController({
-            mapEl: '#map',
-            sidebarEl: '#sidebar',
-            'formContainerEl': '#modal-container'
-        });
-    });
 })();
 

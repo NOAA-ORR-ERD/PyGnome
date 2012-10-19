@@ -51,17 +51,17 @@
 <%block name="content">
     <div class="container">
       <div class="messages">
-          <div class="alert alert-success ${ '' if success else 'hidden'}">
+          <div class="alert alert-success ${'' if success else 'hidden'}">
               <button type="button" class="close" data-dismiss="alert">× </button>
-              <span class='message'>${ success if success else '' }</span>
+              <span class='message'>${success if success else ''}</span>
           </div>
-          <div class="alert alert-warning ${ '' if warning else 'hidden'}">
+          <div class="alert alert-warning ${'' if warning else 'hidden'}">
               <button type="button" class="close" data-dismiss="alert">× </button>
-              <strong>Warning!</strong> <span class="message">${ warning if warning else '' }</span>
+              <strong>Warning!</strong> <span class="message">${warning if warning else ''}</span>
           </div>
-           <div class="alert alert-error ${ '' if error else 'hidden'}">
+           <div class="alert alert-error ${'' if error else 'hidden'}">
               <button type="button" class="close" data-dismiss="alert">× </button>
-              <strong>Error!</strong> <span class="message">${ error if error else '' }</span>
+              <strong>Error!</strong> <span class="message">${error if error else ''}</span>
           </div>         
       </div>
     </div>
@@ -88,7 +88,10 @@
     </div>
 
     <div id="map">
-        <img class="frame active" data-position="0" src="/static/img/placeholder.gif">
+    </div>
+
+    <div id="placeholder" class="hidden">
+        <img class="frame active" src="/static/img/placeholder.gif">
     </div>
 
     ## A div that we'll add rendered modal forms into.
@@ -102,4 +105,18 @@
     <script src="/static/js/jquery.dynatree.min.js"></script>
     <script src="/static/js/underscore-min.js"></script>
     <script src="/static/js/map.js"></script>
+
+    <script type="text/javascript">
+        $('#map').imagesLoaded(function() {
+            new window.noaa.erd.gnome.MapController({
+                mapEl: '#map',
+                mapPlaceholderEl: '#placeholder',
+                sidebarEl: '#sidebar',
+                formContainerEl: '#modal-container',
+                generatedTimeSteps: ${generated_time_steps_json or 'null' | n},
+                expectedTimeSteps: ${expected_time_steps_json or 'null' | n},
+                startFromTimeStep: ${model.current_step}
+            });
+        });
+    </script>
 </%block>

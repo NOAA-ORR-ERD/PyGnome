@@ -1,0 +1,12 @@
+python-cjson==1.0.5
+pyramid==1.4a1
+nose==1.2.1
+netCDF4==1.0
+numpy==1.6.2
+scipy==0.10.1
+WTForms==1.0.2
+waitress==0.8.1
+
+# In addition, the pyGnome library is required. Its requirements include
+# scipy, numpy and netCDF4, which is the reason they are listed here.
+

@@ -6547,7 +6547,7 @@ Boolean GetPositionAfterNextStep(WorldPoint3D wp,Seconds timeStep, WorldPoint3D 
 				moversAffectPoint = true; // we moved this LE
 				//thisMove = thisMover -> GetMove (timeStep,0,0,wp,FORECAST_LE);
 				//thisMove = thisMover -> GetMove (model->GetStartTime(), model->GetEndTime(), model->GetModelTime(), timeStep,0,0,&theLE,FORECAST_LE);	// AH 07/10/2012
-				thisMove = thisMover -> GetMove (model->GetModelTime(), timeStep,0,0,&theLE,FORECAST_LE);	// AH 07/10/2012
+				thisMove = thisMover -> GetMove (model->GetModelTime(), timeStep,0,0,&theLE,FORECAST_LE);	// no uncertainty included here
 				//movedPoint.pLat  += thisMove.pLat;
 				//movedPoint.pLong += thisMove.pLong;
 				movedPoint.p.pLat  += thisMove.p.pLat;
@@ -6564,7 +6564,7 @@ Boolean GetPositionAfterNextStep(WorldPoint3D wp,Seconds timeStep, WorldPoint3D 
 				moversAffectPoint = true; // we moved this LE
 				//thisMove = thisMover -> GetMove (timeStep,0,0,wp,FORECAST_LE);
 				//thisMove = thisMover -> GetMove (model->GetStartTime(), model->GetEndTime(), model->GetModelTime(), timeStep,0,0,&theLE,FORECAST_LE);	// AH 07/10/2012
-				thisMove = thisMover -> GetMove (model->GetModelTime(), timeStep,0,0,&theLE,FORECAST_LE);	// AH 07/10/2012
+				thisMove = thisMover -> GetMove (model->GetModelTime(), timeStep,0,0,&theLE,FORECAST_LE);	// no uncertainty included here
 				movedPoint.p.pLat  += thisMove.p.pLat;
 				movedPoint.p.pLong += thisMove.p.pLong;
 				movedPoint.z += thisMove.z;
