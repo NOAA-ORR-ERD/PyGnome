@@ -50,10 +50,10 @@ def show_model(request):
     data['show_menu_above_map'] = 'map_menu' in request.GET
 
     if model.time_steps:
-        data['generated_time_steps'] = json.dumps(model.time_steps,
-                                                  default=json_encoder)
-        data['expected_time_steps'] = json.dumps(model.timestamps,
-                                                 default=json_encoder)
+        data['generated_time_steps_json'] = json.dumps(model.time_steps,
+                                                       default=json_encoder)
+        data['expected_time_steps_json'] = json.dumps(model.timestamps,
+                                                      default=json_encoder)
 
     return data
 
