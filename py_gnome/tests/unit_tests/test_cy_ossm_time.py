@@ -34,15 +34,15 @@ def test_init_bad_path():
         print(e)
         assert True
         
-def test_init_no_units():
+def test_init_units():
     """
     Test __init__
-    - correct path but no user units 
-    Updated so the user units default to meters_per_sec unless specified in the file
+    - correct path 
+    Updated so the user units are read from file
     """
     file = r"SampleData/WindDataFromGnome.WND"
     ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.file_contains.magnitude_direction)
-    assert ossmT2.user_units == basic_types.velocity_units.meters_per_sec
+    assert ossmT2.user_units == basic_types.velocity_units.knots
  
 def test_init_missing_info():
     """
@@ -68,11 +68,6 @@ class TestTimeSeriesInit():
    tval['time'][1] = 1
    tval['value'][1]=(2,3)
    
-   def test_init_no_units(self):
-       """ timeseries defaults user_units to meters_per_sec """
-       ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval)
-       assert ossm.user_units == basic_types.velocity_units.meters_per_sec
-
    def test_init_time_series(self):
        """
        Sets the time series in OSSMTimeValue_c equal to the externally supplied numpy

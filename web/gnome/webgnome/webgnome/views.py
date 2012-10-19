@@ -86,8 +86,18 @@ def run_model(request, model):
     """
     Run the user's current model and return a JSON object containing the result
     of the run.
+
+    A `startAtTimeStep` POST value will attempt to generate (or return the
+    cached) time steps until `startAtTimeStep` and set the model's `current_step`
+    to `startAtTimeStep`, so that when the user asks for the next step, the
+    model returns `startAtTimeStep` + 1.
+
+    A `runUntilTimeStep` POST value will set the `run_until_step` value in the
+    model and raise a `StopIteration` exception during the call to
+    `model.get_next_step()` at that step.
     """
-    # TODO: Accept this value from the user as a model setting.
+    # TODO: Accept this value from the user as a setting and require it to run.
+    # TODO: Parse POST values.
     two_weeks_ago = datetime.datetime.now() - datetime.timedelta(weeks=4)
     model.start_time = two_weeks_ago
     data = {}

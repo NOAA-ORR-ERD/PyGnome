@@ -46,31 +46,29 @@
 
     Model.prototype = {
         getTimeStepByIndex: function(stepNum) {
-            var timeStep = this.timeSteps[stepNum];
+            return this.timeSteps[stepNum];
+        },
 
-            if (timeStep) {
-                var date = new Date(Date.parse(timeStep.timestamp));
+        getTimestampForStep: function(stepNum) {
+            var timestamp = this.expectedTimeSteps[stepNum];
+            if (timestamp) {
+                var date = new Date(Date.parse(timestamp));
                 if (date) {
-                    timeStep.timestamp = date.toUTCString();
+                    timestamp = date.toUTCString();
                 }
             }
-
-            return timeStep;
+            return timestamp;
         },
 
         hasData: function() {
-            return this.data != null;
+            return this.expectedTimeSteps.length > 0;
         },
 
-        hasTimeStep: function(timeStep) {
-            return this.timeSteps[timeStep.step_number] == timeStep;
-        },
-
-        hasTimeStepWithIndex: function(stepNum) {
+        hasCachedTimeStep: function(stepNum) {
             return this.timeSteps[stepNum] !== undefined;
         },
 
-        serverHasTimeStepWithIndex: function(stepNum) {
+        serverHasTimeStep: function(stepNum) {
             return this.expectedTimeSteps[stepNum] !== undefined;
         },
 
@@ -84,15 +82,24 @@
             opts = $.extend({
                 zoomLevel: this.zoomLevel,
                 zoomDirection: Model.ZOOM_NONE,
-                startFromTimeStep: null
+                startFromTimeStep: null,
+                runUntilTimeStep: null
             }, opts);
 
             this.startFromTimeStep = opts.startFromTimeStep;
+            this.runUntilTimeStep = opts.runUntilTimeStep;
 
-            if (this.dirty === false && this.startFromTimeStep &&
-                    this.hasTimeStepWithIndex(this.startFromTimeStep)) {
-                $(_this).trigger(Model.RUN_BEGAN);
-                return;
+            if (this.dirty === false) {
+                if ((this.startFromTimeStep &&
+                        this.hasCachedTimeStep(this.startFromTimeStep)) ||
+                    (this.runUntilTimeStep &&
+                        this.hasCachedTimeStep(this.runUntilTimeStep))) {
+
+                    // We have the time steps needed and assume that any in-
+                    // between are also loaded.
+                    $(_this).trigger(Model.RUN_BEGAN);
+                    return;
+                }
             }
 
             var isInvalid = function(obj) {
@@ -114,6 +121,7 @@
                 tryCount: 0,
                 retryLimit: 3,
                 success: function(data) {
+                    _this.dirty = false;
                     _this.expectedTimeSteps = data.expected_time_steps;
                     $(_this).trigger(Model.RUN_BEGAN, data);
                 },
@@ -161,14 +169,13 @@
             nextStepNum = startFromBeginning ? currStepNum : currStepNum + 1;
 
             // There are no more time steps left in the model run.
-            if (!this.serverHasTimeStepWithIndex(nextStepNum)) {
-                this.dirty = false;
+            if (!this.serverHasTimeStep(nextStepNum)) {
                 $(this).trigger(Model.RUN_FINISHED);
                 return;
             }
 
             // The time step has already been generated and we have it.
-            if (this.hasTimeStepWithIndex(nextStepNum)) {
+            if (this.hasCachedTimeStep(nextStepNum)) {
                 this.setTimeStep(nextStepNum);
                 return;
             }
@@ -219,7 +226,7 @@
         this.frameClass = opts.frameClass;
         this.activeFrameClass = opts.activeFrameClass;
         this.placeholderEl = opts.placeholderEl;
-        this.currentStep = 0;
+        this.currentTimeStep = 0;
     }
 
     MapView.PAUSED = 1;
@@ -315,27 +322,32 @@
             return $('img[data-position="' + (stepNum) + '"]');
         },
 
+        timeStepIsLoaded: function(stepNum) {
+            var step = this.getImageForTimeStep(stepNum);
+            return step && step.length;
+        },
+
         // Set `stepNum` as the current time step and display an image if one
         // exists.
         setTimeStep: function(stepNum) {
-            var nextStep = stepNum === 0 ? 0 : stepNum - 1;
             var nextImage = this.getImageForTimeStep(stepNum);
             var otherImages = $(this.mapEl).find('img').not(nextImage);
 
             // Hide all other images in the map div.
             otherImages.css('display', 'none');
-            otherImages.removeClass('active');
+            otherImages.removeClass(this.activeFrameClass);
 
             if (nextImage.length == 0) {
                 alert("An animation error occurred. Please refresh.");
             }
 
+            nextImage.addClass(this.activeFrameClass);
             nextImage.css('display', 'block');
-            this.currentStep = stepNum;
+            this.currentTimeStep = stepNum;
         },
 
         // Advance to time step `stepNum` and trigger FRAME_CHANGED to continue
-        // forwad animation.
+        // forward animation.
         advanceTimeStep: function(stepNum) {
             var map = $(this.mapEl);
             var _this = this;
@@ -351,7 +363,7 @@
                 }
                 _this.setTimeStep(stepNum);
                 $(_this).trigger(MapView.FRAME_CHANGED);
-            }, 300);
+            }, 150);
         },
 
         addImageForTimeStep: function(timeStep) {
@@ -415,10 +427,6 @@
             return $(this.mapEl).find('img').length - 1;
         },
 
-        __old__setTimeStep: function(stepNum) {
-            this.cycle.cycle(stepNum);
-        },
-
         setZoomingInCursor: function() {
             $(this.mapEl).addClass('zooming-in');
         },
@@ -453,18 +461,18 @@
             var bbox = this.getBoundingBox();
 
             // TOOD: This looks wrong. Add tests.
-            if (adjustedRect.start.x > this.bbox[0].x) {
-                adjustedRect.start.x = this.bbox[0].x;
+            if (adjustedRect.start.x > bbox[0].x) {
+                adjustedRect.start.x = bbox[0].x;
             }
-            if (adjustedRect.start.y < this.bbox[0].y) {
-                adjustedRect.start.y = this.bbox[0].y;
+            if (adjustedRect.start.y < bbox[0].y) {
+                adjustedRect.start.y = bbox[0].y;
             }
 
-            if (adjustedRect.end.x < this.bbox[1].x) {
-                adjustedRect.end.x = this.bbox[1].x;
+            if (adjustedRect.end.x < bbox[1].x) {
+                adjustedRect.end.x = bbox[1].x;
             }
-            if (adjustedRect.end.y > this.bbox[1].y) {
-                adjustedRect.end.y = this.bbox[1].y;
+            if (adjustedRect.end.y > bbox[1].y) {
+                adjustedRect.end.y = bbox[1].y;
             }
 
             return adjustedRect;
@@ -472,8 +480,8 @@
 
         isPositionInsideMap: function(position) {
             var bbox = this.getBoundingBox();
-            return (position.x > this.bbox[0].x && position.x < this.bbox[1].x
-                && position.y > this.bbox[0].y && position.y < this.bbox[1].y);
+            return (position.x > bbox[0].x && position.x < bbox[1].x
+                && position.y > bbox[0].y && position.y < bbox[1].y);
         },
 
         isRectInsideMap: function(rect) {
@@ -576,7 +584,11 @@
 
             _.each(_.object(clickEvents), function(customEvent, element) {
                 $(element).click(function(event) {
+                    if ($(_this).hasClass('disabled')) {
+                        return false;
+                    }
                     $(_this).trigger(customEvent);
+                    return;
                 });
             });
         },
@@ -608,14 +620,20 @@
         this.resizeButtonEl = opts.resizeButtonEl;
         this.timeEl = opts.timeEl;
 
+        // Controls whose state, either enabled or disabled, is related to whether
+        // or not an animation is playing. The resize and full screen buttons
+        // are intentionally excluded.
         this.controls = [
             this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
-            this.pauseButtonEl, this.moveButtonEl, this.fullscreenButtonEl,
-            this.zoomInButtonEl, this.zoomOutButtonEl, this.resizeButtonEl
+            this.pauseButtonEl, this.moveButtonEl, this.zoomInButtonEl,
+            this.zoomOutButtonEl
         ];
 
         return this;
     }
+    
+    MapControlView.ON = true
+    MapControlView.OFF = false
 
 
     // Events for `mapControlView`
@@ -629,6 +647,7 @@
     MapControlView.FULLSCREEN_BUTTON_CLICKED = "gnome:fullscreenButtonClicked";
     MapControlView.RESIZE_BUTTON_CLICKED = "gnome:resizeButtonClicked";
     MapControlView.SLIDER_CHANGED = "gnome:sliderChanged";
+    MapControlView.SLIDER_MOVED = "gnome:sliderMoved";
 
     // Statuses
     MapControlView.STATUS_STOPPED = 0;
@@ -654,10 +673,16 @@
                 change: function(event, ui) {
                     $(_this).trigger(MapControlView.SLIDER_CHANGED, ui.value);
                 },
+                slide: function(event, ui) {
+                    $(_this).trigger(MapControlView.SLIDER_MOVED, ui.value);
+                },
                 disabled: true
             });
 
             $(this.pauseButtonEl).click(function() {
+                if ($(_this.pauseButtonEl).hasClass('disabled')) {
+                    return false;
+                }
                 if (_this.status === MapControlView.STATUS_PLAYING) {
                     $(_this).trigger(MapControlView.PAUSE_BUTTON_CLICKED);
                 }
@@ -674,9 +699,13 @@
                 [this.resizeButtonEl, MapControlView.RESIZE_BUTTON_CLICKED]
             ];
 
-            _.each(_.object(clickEvents), function(customEvent, element) {
-                $(element).click(function(event) {
+            _.each(_.object(clickEvents), function(customEvent, button) {
+                $(button).click(function(event) {
+                    if ($(button).hasClass('disabled')) {
+                        return false;
+                    }
                     $(_this).trigger(customEvent);
+                    return;
                 });
             });
 
@@ -767,18 +796,47 @@
             return this.status === MapControlView.STATUS_ZOOMING_OUT;
         },
 
-        enableControls: function() {
-            $(this.sliderEl).slider('option', 'disabled', false);
-            _.each(this.controls, function(buttonEl) {
-                $(buttonEl).removeClass('disabled');
-            });
+        // Toggle the slider. `toggleOn` should be either `MapControlView.ON`
+        // or `MapControlView.OFF`.
+        toggleSlider: function(toggle) {
+            var value = toggle !== MapControlView.ON;
+            $(this.sliderEl).slider('option', 'disabled', value);
         },
 
-        disableControls: function() {
-            $(this.sliderEl).slider('option', 'disabled', true);
-            _.each(this.controls, function(item) {
-                $(item).removeClass('enabled');
-            });
+        // Toggle a control. `toggleOn` should be either `MapControlView.ON`
+        // or `MapControlView.OFF`.
+        toggleControl: function(buttonEl, toggle) {
+            if (toggle === MapControlView.ON) {
+                $(buttonEl).removeClass('disabled');
+            } else {
+                $(buttonEl).addClass('disabled');
+            }
+        },
+
+        toggleControls: function(controls, toggle) {
+            var _this = this;
+
+            if (controls) {
+                if (_.indexOf(controls, this.sliderEl)) {
+                    this.toggleSlider(MapControlView.ON);
+                }
+                _.each(_.without(controls, this.sliderEl), function(button) {
+                    _this.toggleControl(button, toggle)
+                });
+            } else {
+                this.toggleSlider(toggle);
+                _.each(this.controls, function(button) {
+                    _this.toggleControl(button, toggle)
+                });
+            }
+        },
+
+        enableControls: function(controls) {
+            this.toggleControls(controls, MapControlView.ON);
+        },
+
+        disableControls: function(controls) {
+            this.toggleControls(controls, MapControlView.OFF);
         },
 
         getTimeStep: function() {
@@ -954,24 +1012,39 @@
 
 
     function MenuView(opts) {
-        this.modelItemEl = opts.modelItemEl;
+        // Top-level drop-downs
+        this.modelDropdownEl = opts.modelDropdownEl;
+        this.runDropdownEl = opts.runDropdownEl;
+        this.helpDropdownEl = opts.hepDropdownEl;
+
         this.newItemEl = opts.newItemEl;
         this.runItemEl = opts.runItemEl;
         this.stepItemEl = opts.stepItemEl;
         this.runUntilItemEl = opts.runUntilItemEl;
     }
 
-
     MenuView.NEW_ITEM_CLICKED = "gnome:newMenuItemClicked";
-
+    MenuView.RUN_ITEM_CLICKED = "gnome:runMenuItemClicked";
+    MenuView.RUN_UNTIL_ITEM_CLICKED = "gnome:runUntilMenuItemClicked";
 
     MenuView.prototype = {
         initialize: function() {
             var _this = this;
 
+            // TODO: Initialize these events from a data structure.
             $(this.newItemEl).click(function(event) {
-                $(_this.modelItemEl).dropdown('toggle');
+                $(_this.modelDropdownEl).dropdown('toggle');
                 $(_this).trigger(MenuView.NEW_ITEM_CLICKED);
+            });
+
+            $(this.runItemEl).click(function(event) {
+                $(_this.runDropdownEl).dropdown('toggle');
+                $(_this).trigger(MenuView.RUN_ITEM_CLICKED);
+            });
+
+            $(this.runUntilItemEl).click(function(event) {
+                $(_this.runDropdownEl).dropdown('toggle');
+                $(_this).trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
             });
         }
     };
@@ -991,11 +1064,13 @@
         };
 
         this.menuView = new MenuView({
-            modelItemEl: "#file-drop",
+            modelDropDownEl: "#file-drop",
+            runDropdownEl: "#run-drop",
+            helpDropdownEl: "#help-drop",
             newItemEl: "#menu-new",
             runItemEl: "#menu-run",
             stepItemEl: "#menu-step",
-            runUntilItemEl: "#mnu-run-until"
+            runUntilItemEl: "#menu-run-until"
         });
 
         this.formView = new ModalFormView({
@@ -1071,15 +1146,17 @@
                 TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
 
             $(this.mapControlView).bind(
-                MapControlView.PLAY_BUTTON_CLICKED, this.play);
+                MapControlView.PLAY_BUTTON_CLICKED, this.playButtonClicked);
             $(this.mapControlView).bind(
-                MapControlView.PAUSE_BUTTON_CLICKED, this.pause);
+                MapControlView.PAUSE_BUTTON_CLICKED, this.pauseButtonClicked);
             $(this.mapControlView).bind(
                 MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
             $(this.mapControlView).bind(
                 MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
             $(this.mapControlView).bind(
                 MapControlView.SLIDER_CHANGED, this.sliderChanged);
+             $(this.mapControlView).bind(
+                MapControlView.SLIDER_MOVED, this.sliderMoved);
             $(this.mapControlView).bind(
                 MapControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
             $(this.mapControlView).bind(
@@ -1094,7 +1171,12 @@
             $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
             $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
 
-            $(this.menuView).bind(MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
+            $(this.menuView).bind(
+                MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
+            $(this.menuView).bind(
+                MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
+            $(this.menuView).bind(
+                MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
         },
 
         initializeViews: function() {
@@ -1104,6 +1186,17 @@
             this.mapControlView.initialize();
             this.mapView.initialize();
             this.menuView.initialize();
+        },
+
+        runMenuItemClicked: function(event) {
+            var stepNum = this.mapView.currentTimeStep;
+            var opts = this.mapControlView.isPaused() ? {startFromTimeStep: stepNum} : {};
+            this.play(opts);
+        },
+
+        runUntilMenuItemClicked: function(event) {
+            // TODO: Show a modal form here to get the date.
+            alert('run until');
         },
 
         newMenuItemClicked: function() {
@@ -1134,11 +1227,8 @@
             });
         },
 
-        play: function(event) {
-            var stepNum = this.mapView.currentStep;
-            var opts = this.mapControlView.isPaused() ? {startFromTimeStep: stepNum} : {};
-
-            if (this.model.dirty)  {
+        play: function(opts) {
+             if (this.model.dirty)  {
                 this.mapControlView.reset();
             }
 
@@ -1152,11 +1242,21 @@
             this.model.run(opts);
         },
 
-        pause: function(event) {
-            // TODO: Should the mapView have a reference to mapControlView,
-            // or is that the path of darkness?
+        pause: function() {
+            // TODO: Should the mapView have a reference to mapControlView?
             this.mapControlView.setPaused();
             this.mapView.setPaused();
+            this.mapControlView.enableControls();
+        },
+
+        playButtonClicked: function(event) {
+            var stepNum = this.mapView.currentTimeStep;
+            var opts = this.mapControlView.isPaused() ? {startFromTimeStep: stepNum} : {};
+            this.play(opts);
+        },
+
+        pauseButtonClicked: function(event) {
+            this.pause();
         },
 
         enableZoomIn: function(event) {
@@ -1185,7 +1285,7 @@
         },
 
         zoomIn: function(event, startPosition, endPosition) {
-            this.mapControlView.setStopped();
+            this.setTimeStep(0);
 
             if (endPosition) {
                 var rect = {start: startPosition, end: endPosition};
@@ -1198,48 +1298,92 @@
                     rect = this.mapView.getAdjustedRect(rect);
                 }
 
-                this.zoomFromRect(rect, Model.ZOOM_IN);
+                this.model.zoomFromRect(rect, Model.ZOOM_IN);
             } else {
-                this.zoomFromPoint(startPosition, Model.ZOOM_IN);
+                this.model.zoomFromPoint(startPosition, Model.ZOOM_IN);
             }
 
             this.mapView.setRegularCursor();
         },
 
         zoomOut: function(event, point) {
-            this.zoomFromPoint(
-                point, Model.ZOOM_OUT
-            );
+            this.setTimeStep(0);
+            this.model.zoomFromPoint(point, Model.ZOOM_OUT);
             this.mapView.setRegularCursor();
         },
 
-        sliderChanged: function(event, newStepNum) {
-            if (newStepNum != this.mapView.currentStep) {
-                this.mapView.setTimeStep(newStepNum);
-                this.mapControlView.setTimeStep(newStepNum);
-
-                var timeStep = this.model.getTimeStepByIndex(
-                    this.mapView.currentStep);
-                this.mapControlView.setTime(timeStep.timestamp);
+        sliderMoved: function(event, stepNum) {
+            var timestamp = this.model.getTimestampForStep(stepNum);
+            if (timestamp) {
+                this.mapControlView.setTime(timestamp);
+            } else {
+                alert("Time step does not exist.");
+                console.log("Step number: ", stepNum, "Model timestamps: ",
+                            this.model.expectedTimeSteps);
             }
         },
 
-        frameChanged: function(event) {
-            var stepNum = this.mapView.currentStep;
-            this.mapControlView.setTimeStep(stepNum);
+        sliderChanged: function(event, newStepNum) {
+            // If the model is dirty, we need to run until the new time step.
+            if (this.model.dirty) {
+                if (confirm("You have changed settings. Re-run the model now?")) {
+                    this.play({
+                        startFromTimeStep: this.mapView.currentTimeStep,
+                        runUntilTimeStep: newStepNum
+                    });
+                } else {
+                    this.pause();
+                }
+                return;
+            }
 
-            var timeStep = this.model.getTimeStepByIndex(stepNum);
-            this.mapControlView.setTime(timeStep.timestamp);
-            this.model.getNextTimeStep(false);
+            if (newStepNum == this.mapView.currentTimeStep) {
+                return;
+            }
+
+            // If the model and map view have the time step, display it.
+            if (this.model.hasCachedTimeStep(newStepNum) &&
+                this.mapView.timeStepIsLoaded(newStepNum)) {
+
+                var timestamp = this.model.getTimestampForStep(newStepNum);
+                this.mapControlView.setTime(timestamp);
+                this.mapView.setTimeStep(newStepNum);
+                this.mapControlView.setTimeStep(newStepNum);
+                this.mapControlView.setTime(timestamp);
+                return;
+            }
+
+            // Otherwise, we need to run until the new time step.
+            this.play({
+                startFromTimeStep: this.mapView.currentTimeStep,
+                runUntilTimeStep: newStepNum
+            });
         },
 
-        // Jump to the first frame of the animation (0).
-        jumpToFirstFrame: function(event) {
-            this.model.setTimeStep(0);
+        frameChanged: function(event) {
+            this.mapControlView.setTimeStep(this.mapView.currentTimeStep);
+            this.mapControlView.setTime(
+                this.model.getTimestampForStep(this.mapView.currentTimeStep));
+            this.model.getNextTimeStep(false);
+
+            if (this.model.runUntilTimeStep &&
+                this.mapView.currentTimeStep == this.model.runUntilTimeStep) {
+
+                this.pause();
+            }
+        },
+
+        // Set the model and all controls to `stepNum`.
+        setTimeStep: function(stepNum) {
+            this.model.setTimeStep(stepNum);
             this.mapControlView.setPaused();
-            this.mapControlView.setTimeStep(0);
+            this.mapControlView.setTimeStep(stepNum);
             this.mapView.setPaused();
-            this.mapView.setTimeStep(0);
+            this.mapView.setTimeStep(stepNum);
+        },
+
+        jumpToFirstFrame: function(event) {
+            this.setTimeStep(0);
         },
 
         // Jump to the last LOADED frame of the animation. This will stop at
@@ -1249,11 +1393,7 @@
         // all of the remaining frames if they don't exist, until the end.
         jumpToLastFrame: function(event) {
             var lastFrame = this.mapView.getFrameCount();
-            this.model.setTimeStep(lastFrame);
-            this.mapControlView.setPaused();
-            this.mapControlView.setTimeStep(lastFrame);
-            this.mapView.setPaused();
-            this.mapView.setTimeStep(lastFrame);
+            this.setTimeStep(lastFrame);
         },
 
         useFullscreen: function(event) {
@@ -1445,15 +1585,19 @@
             }
 
             this.mapControlView.setTimeSteps(this.model.expectedTimeSteps);
-            this.mapControlView.enableControls();
+            this.mapControlView.enableControls([this.mapControlView.pauseButtonEl]);
             this.model.getNextTimeStep(true);
             return true;
         },
 
-        modelRunFinished: function(event) {
-            console.log('stopped')
+        stop: function() {
             this.mapControlView.setStopped();
             this.mapView.setStopped();
+            this.mapControlView.enableControls();
+        },
+
+        modelRunFinished: function(event) {
+            this.stop();
         },
 
         nextTimeStepReady: function(event, step) {

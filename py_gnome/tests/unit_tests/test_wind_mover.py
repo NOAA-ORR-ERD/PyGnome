@@ -76,7 +76,8 @@ class ConstantWind(Common):
                          self.delta,
                          self.wind,
                          self.status,
-                         basic_types.spill_type.forecast)
+                         basic_types.spill_type.forecast,
+                         0)
               
 class ConstantWindWithOSSM(Common):
     """
@@ -106,7 +107,8 @@ class ConstantWindWithOSSM(Common):
                          self.delta,
                          self.wind,
                          self.status,
-                         basic_types.spill_type.forecast)
+                         basic_types.spill_type.forecast,
+                         0)
         
 class TestConstantWind():
     cw = ConstantWind()
@@ -180,8 +182,8 @@ class TestVariableWind():
                              self.delta,
                              self.cm.wind,
                              self.cm.status,
-                             basic_types.spill_type.forecast
-                             )
+                             basic_types.spill_type.forecast,
+                             0)
             print self.delta
             assert np.all(self.delta['lat'] != 0)
             assert np.all(self.delta['long'] == 0)
@@ -202,7 +204,8 @@ def test_LE_not_in_water():
                 delta,
                 cm.wind,
                 cm.status,
-                basic_types.spill_type.forecast)
+                basic_types.spill_type.forecast,
+                0)
     assert np.all(delta['lat'] == 0)
     assert np.all(delta['long'] == 0)
     assert np.all(delta['z'] == 0)
