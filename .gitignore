@@ -14,3 +14,6 @@ py_gnome/build/**/*
 py_gnome/gnome.utilities.egg-info/*
 py_gnome/pyGnome.egg-info/*
 py_gnome/gnome/pyGnome.egg-info/*
+
+# ignore built documention in WebGNOME
+web/gnome/webgnome/doc/_build/*

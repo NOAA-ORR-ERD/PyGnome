@@ -33,6 +33,7 @@ def main(global_config, **settings):
     config.add_route('get_time_steps', '/model/time_steps')
     config.add_route('get_next_step', '/model/next_step')
     config.add_route('run_model', '/model/run')
+    config.add_route('run_model_until', '/model/run_until')
     config.add_route('add_mover', '/model/mover/add')
     config.add_route('delete_mover', '/model/mover/delete')
     config.add_route('add_constant_wind_mover', '/model/mover/constant_wind/add')

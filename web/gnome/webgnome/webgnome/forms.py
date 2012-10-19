@@ -150,3 +150,8 @@ class VariableWindMoverForm(WindMoverForm):
                           default=lambda: datetime.datetime.now().minute)
     auto_increment_time_by = IntegerField('Auto-increment time by')
 
+
+class RunModelUntilForm(Form):
+    run_until = DateTimeField('Date', widget=DatePickerWidget(),
+                              format="%m/%d/%Y",
+                              validators=[Required()])

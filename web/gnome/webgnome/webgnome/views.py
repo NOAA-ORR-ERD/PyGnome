@@ -9,6 +9,7 @@ from forms import (
     AddMoverForm,
     VariableWindMoverForm,
     ConstantWindMoverForm,
+    RunModelUntilForm,
     MOVER_VARIABLE_WIND,
     MOVER_CONSTANT_WIND
 )
@@ -109,6 +110,30 @@ def run_model(request, model):
         # TODO: Use an application-specific exception.
         data['running'] = False
         data['message'] = _make_message('error', 'Model failed to run.')
+
+    return data
+
+
+@view_config(route_name='run_model_until', renderer='gnome_json')
+@json_require_model
+def run_model_until(request, model):
+    """
+    An AJAX form view that renders `RunModelUntilForm` and validates its input.
+    """
+    form = RunModelUntilForm(request.POST)
+    data = {}
+
+    if request.method == 'POST' and form.validate():
+        model.set_run_until(form.run_until)
+        return {'run_until': form.run_until.data}
+
+    context = {
+        'form': form,
+        'action_url': request.route_url('run_model_until')
+    }
+
+    data['form_html'] = render(
+        'webgnome:templates/forms/run_model_until.mak', context)
 
     return data
 
