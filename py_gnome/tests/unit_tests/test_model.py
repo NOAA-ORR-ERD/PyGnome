@@ -138,7 +138,7 @@ def test_simple_run_with_image_output():
                                       refloat_halflife=6*3600, #seconds
                                      )
     # the image output map
-    map = gnome.utilities.map_canvas.MapCanvas((15, 10))
+    map = gnome.utilities.map_canvas.MapCanvas((150, 100))
     polygons = haz_files.ReadBNA("SampleData/MapBounds_2Spillable2Islands2Lakes.bna", "PolygonSet")
     map.set_land(polygons)
     model.output_map = map
@@ -148,8 +148,9 @@ def test_simple_run_with_image_output():
 
     N = 10 # a line of ten points
     start_points = np.zeros((N, 3) , dtype=np.float64)
-    start_points[:,0] = np.linspace(-126.1, -127.1, N)
+    start_points[:,0] = np.linspace(-127.1, -126.1, N)
     start_points[:,1] = np.linspace( 47.93, 48.05, N)
+    #print start_points
     spill = gnome.spill.PointReleaseSpill(num_LEs=10,
                                           start_position = start_points,
                                           release_time = start_time,
@@ -157,20 +158,21 @@ def test_simple_run_with_image_output():
     
     model.add_spill(spill)
     model.start_time = spill.release_time
-    image_info = model.next_image()
-    
-    # while True:
-    #     print "calling next_image"
-    #     try:
-    #         image_info = model.next_image()
-    #         print image_info
-    #     except StopIteration:
-    #         print "Done with the model run"
-    #         break
+    #image_info = model.next_image()
 
-    assert False
+    while True:
+         print "calling next_image"
+         try:
+             image_info = model.next_image()
+             print image_info
+         except StopIteration:
+             print "Done with the model run"
+             break
+
+    assert True
     
-    
+# if __name__ == "__main__":
+#     test_simple_run_with_image_output()
     
     
     

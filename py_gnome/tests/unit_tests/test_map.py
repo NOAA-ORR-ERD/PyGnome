@@ -462,6 +462,19 @@ class Test_full_move:
 
         assert np.array_equal( spill['status_codes'][3:], ( basic_types.oil_status.on_land,
                                                             ) )
-        
+
+# from gnome import land_check
+# class Test_land_check():
+#     """
+#     tests of the core land_check code
+
+#     there really should be some!
+
+#     """
+
+
+# if __name__ == "__main__":
+#     tester = Test_land_check()
+#     tester.test_infinite_loop()
 
         

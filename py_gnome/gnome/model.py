@@ -160,7 +160,6 @@ class Model(object):
         for mover in self.movers:
             for spill in self.spills:
                 delta = mover.get_move(spill, self.time_step, self.model_time)
-                #delta_uncertain = mover.get_move(self.time_step, spill, uncertain=True)
                 spill['next_positions'] += delta
         for spill in self.spills:
             self.map.beach_elements(spill)
@@ -185,15 +184,14 @@ class Model(object):
             raise ValueError("You must have an ouput map to use the image output")
         if self.current_time_step == 0:
             self.output_map.draw_background()
-            print "writing backround map"
             self.output_map.save_background(os.path.join(self.images_dir, "background_map.png"))
 
         filename = os.path.join(self.images_dir, 'foreground_%05i.png'%self._current_time_step)
 
         self.output_map.create_foreground_image()
         for spill in self.spills:
-            print "drawing elements"
-            print spill['positions']
+            #print "drawing elements"
+            #print spill['positions']
             self.output_map.draw_elements(spill)
         self.output_map.save_foreground(filename)
 
@@ -204,14 +202,13 @@ class Model(object):
         Steps the model forward in time. Needs testing for hindcasting.
                 
         """
-        
-        # print  "step called: time step:", self.time_step
-        
+                
         if self._current_time_step >= self._num_time_steps:
             return False
         self._current_time_step += 1
         self.setup_time_step()
         self.move_elements()
+
         return True
     
     def __iter__(self):
@@ -243,7 +240,6 @@ class Model(object):
         step rendered
         
         """
-        print "in next_image"
         if not self.step():
             raise StopIteration
         filename = self.write_image()

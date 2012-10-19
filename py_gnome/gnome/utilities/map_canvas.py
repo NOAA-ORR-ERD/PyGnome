@@ -147,7 +147,6 @@ class MapCanvas(object):
         :param spill: a spill object to draw
         """
 
-        print "drawing elements"
 
         if spill.spill_type==basic_types.spill_type.uncertainty:
             color = self.colors['uncert_LE']
@@ -163,7 +162,6 @@ class MapCanvas(object):
                               (pixel_pos[:,1] > 1) &
                               (pixel_pos[:,0] < (self.image_size[0]-2) ) &
                               (pixel_pos[:,1] < (self.image_size[1]-2) ) ]
-        print "drawing elements at:", pixel_pos
         # draw the four pixels for the LE
         #note: long-lat backwards for array (vs image)  
         arr[(pixel_pos[:,1]-0.5).astype(np.int32), (pixel_pos[:,0]-0.5).astype(np.int32)] = color
