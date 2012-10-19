@@ -22,7 +22,8 @@ public:
 	char				className [kMaxNameLen];
 	UNIQUEID			fUniqueID;
 	
-
+						//ClassID_c ();
+	virtual			   ~ClassID_c () { Dispose (); }
 	virtual ClassID 	GetClassID 	() { return TYPE_UNDENTIFIED; }
 	virtual Boolean		IAm(ClassID id) { return FALSE; }
 	void				GetClassName (char* theName) { strcpy (theName, className); }	// sohail

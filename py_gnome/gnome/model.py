@@ -192,8 +192,8 @@ class Model(object):
             # create the output map
             self.output_map = gnome.utilities.map_canvas.Palette_MapCanvas(self.output_bmp_size)
             
-            
-        self.output_map.draw_elements(self.spills, filename)
+        for spill in spills:
+            self.output_map.draw_elements(spills, filename)
         return filename
 
     def step(self):
@@ -220,8 +220,19 @@ class Model(object):
         """
         self.rewind()
         return self
-                
+
     def next(self):
+        """
+        compute the next model step
+        
+        This method here to satisfy Python's iterator protocol
+        """
+        if not self.step():
+            raise StopIteration
+        return self.current_time_step
+
+                
+    def next_image(self):
         """
         compute the next model step
         
@@ -229,7 +240,10 @@ class Model(object):
         """
         if not self.step():
             raise StopIteration
-        return self.current_time_step
+        return (self.current_time_step, url, timestamp)
 
+    def full_run_and_output(self):
+        raise NotImplmentedError
+        
 
         

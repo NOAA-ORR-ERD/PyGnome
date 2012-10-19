@@ -20,29 +20,6 @@ from gnome.utilities import map_canvas
 
 
 ##fixme: these two should maybe be in their own test file -- for testing map_canvas.
-def test_map_island_color():
-    '''
-    Test the creation of a color map with an island inset.
-    '''
-    polygons = haz_files.ReadBNA("SampleData/MapBounds_Island.bna", "PolygonSet")
-    m = map_canvas.Palette_MapCanvas( (500,500) )
-    m.draw_land(polygons)
-    m.save('Color_LandMap.png') #Write the result to the present working directory as a PNG image file.
-    assert True
-
-    #assert False #Force this test to fail so that NOSE will print output to the command window.
-
-def test_map_island_monochrome():
-    '''
-    Test the creation of a black and white map with an island inset.
-    '''
-    polygons = haz_files.ReadBNA("SampleData/MapBounds_Island.bna", "PolygonSet")
-    m = map_canvas.BW_MapCanvas( (500,500) )
-    m.draw_land(polygons)
-    m.save('BW_LandMap.png') #Write the result to the present working directory as a PNG image file.
-    assert True
-
-    #assert False #Force this test to fail so that NOSE will print output to the command window.
 
 ### tests of depricated code -- port to new map code?
 #def test_map_in_water():

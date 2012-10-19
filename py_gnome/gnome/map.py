@@ -520,12 +520,10 @@ class MapFromBNA(RasterMap):
         h = int(raster_size / w)
 
         canvas = map_canvas.BW_MapCanvas( (w, h) )
-        canvas.draw_land(just_land)
-        canvas.save("Failedtest.png")
+        canvas.set_land(just_land)
+        canvas.draw_background()
+        #canvas.save_background("raster_map_test.png")
 
-        # uncomment for diagnostics
-        # canvas.save("TestLandWaterMap.png")
-        
         ## get the bitmap as a numpy array:
         bitmap_array = canvas.as_array()
         
