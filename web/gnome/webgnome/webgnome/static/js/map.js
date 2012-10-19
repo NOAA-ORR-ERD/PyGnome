@@ -867,7 +867,7 @@
     function ModalFormView(opts) {
         _.bindAll(this);
         this.formContainerEl = opts.formContainerEl;
-        this.rootApiUrls = opts.rootApiUrls;
+        this.urls = opts.urls;
     }
 
     ModalFormView.SAVE_BUTTON_CLICKED = 'gnome:formSaveButtonClicked';
@@ -1054,9 +1054,10 @@
         _.bindAll(this);
 
         // TODO: Obtain from server via template variable passed into controller.
-        this.rootApiUrls = {
+        this.urls = {
             model: "/model",
             timeSteps: '/model/time_steps',
+            runUntil: '/model/run_until',
             setting: '/model/setting',
             mover: '/model/mover',
             spill: '/model/spill',
@@ -1075,14 +1076,14 @@
 
         this.formView = new ModalFormView({
             formContainerEl: opts.formContainerEl,
-            rootApiUrls: this.rootApiUrls
+            urls: this.urls
         });
 
         this.sidebarEl = opts.sidebarEl;
 
         this.treeView = new TreeView({
             treeEl: "#tree",
-            url: this.rootApiUrls.tree
+            url: this.urls.tree
         });
 
         this.treeControlView = new TreeControlView({
@@ -1110,11 +1111,11 @@
             fullscreenButtonEl: "#fullscreen-button",
             resizeButtonEl: "#resize-button",
             timeEl: "#time",
-            url: this.rootApiUrls.timeSteps
+            url: this.urls.timeSteps
         });
 
         this.model = new Model({
-            url: this.rootApiUrls.model,
+            url: this.urls.model,
             timeSteps: opts.generatedTimeSteps,
             expectedTimeSteps: opts.expectedTimeSteps
         });
@@ -1195,8 +1196,7 @@
         },
 
         runUntilMenuItemClicked: function(event) {
-            // TODO: Show a modal form here to get the date.
-            alert('run until');
+            this.showForm(this.urls.runUntil);
         },
 
         newMenuItemClicked: function() {
@@ -1207,7 +1207,7 @@
             }
 
             $.ajax({
-                url: this.rootApiUrls.model + "/create",
+                url: this.urls.model + "/create",
                 data: "confirm=1",
                 type: "POST",
                 tryCount: 0,
@@ -1429,9 +1429,9 @@
             // (in `node.parent` will have a `key` value  set to 'setting', 'spill'
             // or 'mover' and `node` will have a `data.type` value specific to its
             // server-side representation, e.g. 'constant_wind'.
-            if (node.data.key in this.rootApiUrls) {
+            if (node.data.key in this.urls) {
                 urlKey = node.data.key;
-            } else if (node.parent.data.key in this.rootApiUrls) {
+            } else if (node.parent.data.key in this.urls) {
                 urlKey = node.parent.data.key;
             }
 
@@ -1439,7 +1439,7 @@
                 return false;
             }
 
-            var rootUrl = this.rootApiUrls[urlKey];
+            var rootUrl = this.urls[urlKey];
 
             if (!rootUrl) {
                 return false;
@@ -1473,7 +1473,7 @@
         },
 
         treeItemDoubleClicked: function(event, node) {
-            if (node.data.key in this.rootApiUrls) {
+            if (node.data.key in this.urls) {
                 // A root item
                 this.showFormForActiveTreeItem('add');
             } else {

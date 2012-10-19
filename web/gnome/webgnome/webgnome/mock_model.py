@@ -68,6 +68,7 @@ class MockModel(object):
         self.time_steps = []
         self.is_running = False
         self.current_step = 0
+        self.run_until = None
 
     def get_movers(self):
         return self.movers
@@ -147,6 +148,9 @@ class MockModel(object):
             self.is_running = False
             self.current_step = 0
         return None
+
+    def set_run_until(self, run_until):
+        self.run_until = run_until
 
     def run(self):
         if self.is_running:
