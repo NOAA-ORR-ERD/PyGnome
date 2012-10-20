@@ -346,7 +346,6 @@ class RasterMap(GnomeMap):
         
         # transform to pixel coords:
         # NOTE: must be integers!
-        # should this be a copy?
         start_pos_pixel = self.projection.to_pixel(start_pos, asint=True)
         next_pos_pixel  = self.projection.to_pixel(next_pos, asint=True)
         
@@ -376,8 +375,8 @@ class RasterMap(GnomeMap):
         #np.save("test_raster_map", raster_map)
 
         ## critical that these be integers!
-        positions = np.asarray(positions, dtype=np.int32)
-        end_positions = np.asarray(end_positions, dtype=np.int32)
+        if (not np.issubdtype(positions.dtype, int) ) or (not np.issubdtype(positions.dtype, int) ):
+            raise ValueError("position arrays must be integer type")
         for i in xrange(len(positions)):
             pts = land_check.find_first_pixel(raster_map,
                                               positions[i],
@@ -388,9 +387,9 @@ class RasterMap(GnomeMap):
                 positions[i, :] = end_positions[i, :]
             if pts is not None:
                 last_water_positions[i, :2] = pts[0]
-                positions[i] = pts[1]
+                end_positions[i] = pts[1]
                 status_codes[i] = oil_status.on_land
-        
+
         return None
 
     
