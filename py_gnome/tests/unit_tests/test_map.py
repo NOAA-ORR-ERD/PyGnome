@@ -332,8 +332,6 @@ class Test_full_move:
  
         map.beach_elements(spill)
         
-        print "after moving:", spill['next_positions'][0]
-
         assert np.array_equal( spill['next_positions'][0], (10.0, 5.0, 0.0) )
         assert np.array_equal( spill['last_water_positions'][0], (9.0, 5.0, 0.0) )
         assert spill['status_codes'][0] == basic_types.oil_status.on_land

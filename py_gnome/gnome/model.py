@@ -157,13 +157,25 @@ class Model(object):
             -- calls the beaching code to beach the elements that need beaching.
             -- sets the new position
         """
+
+        # Set up next_position
+        for spill in self.spills:
+            spill['next_positions'][:] = spill['positions']
+
         for mover in self.movers:
             for spill in self.spills:
                 delta = mover.get_move(spill, self.time_step, self.model_time)
                 spill['next_positions'] += delta
+                # print "in move loop"
+                # print "pos:", spill['positions']
+                # print "next_pos:", spill['next_positions']
         for spill in self.spills:
             self.map.beach_elements(spill)
-        # the final move to the new postions
+            # print "in map loop"
+            # print "pos:", spill['positions']
+            # print "next_pos:", spill['next_positions']
+
+        # the final move to the new positions
         for spill in self.spills:
             spill['positions'][:] = spill['next_positions']
 
