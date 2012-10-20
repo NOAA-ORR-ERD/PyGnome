@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Latest Revision: Mar 26
+
+Tests of the map code.
 
 Designed to be run with py.test
 
@@ -331,7 +332,9 @@ class Test_full_move:
  
         map.beach_elements(spill)
         
-        assert np.array_equal( spill['positions'][0], (10.0, 5.0, 0.0) )
+        print "after moving:", spill['next_positions'][0]
+
+        assert np.array_equal( spill['next_positions'][0], (10.0, 5.0, 0.0) )
         assert np.array_equal( spill['last_water_positions'][0], (9.0, 5.0, 0.0) )
         assert spill['status_codes'][0] == basic_types.oil_status.on_land
         
@@ -364,7 +367,7 @@ class Test_full_move:
                                               ),  dtype=np.float64) 
         map.beach_elements(spill)
 
-        assert np.array_equal( spill['positions'], ( (10.0,  5.0, 0.0),
+        assert np.array_equal( spill['next_positions'], ( (10.0,  5.0, 0.0),
                                                      (10.0, 5.0, 0.0),
                                                      (10.0, 5.0, 0.0),
                                                      (10.0, 4.0, 0.0),
@@ -409,7 +412,7 @@ class Test_full_move:
  
         map.beach_elements(spill)
 
-        assert np.array_equal( spill['positions'], ( ( 9.0, 5.0, 0.0),
+        assert np.array_equal( spill['next_positions'], ( ( 9.0, 5.0, 0.0),
                                                      (11.0, 5.0, 0.0),
                                                      ( 9.0, 9.0, 0.0),
                                                      (10.0, 4.0, 0.0),
@@ -451,7 +454,7 @@ class Test_full_move:
         
         map.beach_elements(spill)
         
-        assert np.array_equal( spill['positions'], ( ( 15.0, 5.0, 0.0),
+        assert np.array_equal( spill['next_positions'], ( ( 15.0, 5.0, 0.0),
                                                      ( 5.0, 5.0, 0.0),
                                                      ( 5.0, 15.0, 0.0),
                                                      (10.0, 5.0, 0.0),
@@ -463,6 +466,8 @@ class Test_full_move:
         assert np.array_equal( spill['status_codes'][3:], ( basic_types.oil_status.on_land,
                                                             ) )
 
+
+
 # from gnome import land_check
 # class Test_land_check():
 #     """
@@ -473,8 +478,10 @@ class Test_full_move:
 #     """
 
 
-# if __name__ == "__main__":
-#     tester = Test_land_check()
-#     tester.test_infinite_loop()
+if __name__ == "__main__":
+     tester = Test_full_move()
+     tester.test_land_cross()
+
+
 
         

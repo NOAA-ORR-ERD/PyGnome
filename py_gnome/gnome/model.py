@@ -163,6 +163,9 @@ class Model(object):
                 spill['next_positions'] += delta
         for spill in self.spills:
             self.map.beach_elements(spill)
+        # the final move to the new postions
+        for spill in self.spills:
+            spill['positions'][:] = spill['next_positions']
 
     def write_output(self):
         """
