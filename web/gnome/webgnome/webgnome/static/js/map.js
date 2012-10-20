@@ -1,13 +1,16 @@
 // map.js: The WebGNOME JavaScript application.
+
 (function() {
 
-    // Generic AJAX error handler.
-    // Retry on error if the request specified tryCount.
+    /*
+     Generic AJAX error handler.
+     Retry on error if the request specified tryCount.
+     */
     function handleAjaxError(xhr, textStatus, errorThrown) {
         if (textStatus == 'timeout') {
             this.tryCount++;
             if (this.tryCount <= this.retryLimit) {
-                //try again
+                // Retry count is below the limit, so try the request again.
                 $.ajax(this);
                 return;
             }
@@ -19,16 +22,24 @@
     }
 
 
+    /*
+     `Model` represents the user's actively-running model on the server. The
+     object is responsible for requesting time stap data from the server and
+     broadcasting events to notify listeners when new data is available.
+     */
     function Model(opts) {
         this.url = opts.url;
         this.currentTimeStep = opts.currentTimeStep || 0;
+        // The time step data we've received from the server. This array grows
+        // with each step the user takes through the model run.
         this.timeSteps = opts.timeSteps || [];
+        // An array of timestamps, one for each step we expect the server to
+        // make, passed back when we initiate a model run.
         this.expectedTimeSteps = opts.expectedTimeSteps || [];
+        // When running the model, start from this time step.
         this.startFromTimeStep = opts.startFromTimeStep || 0;
-
         // Optionally specify the zoom level.
         this.zoomLevel = opts.zoomLevel === undefined ? 4 : opts.zoomLevel;
-
         // If true, `Model` will request a new set of frames from the server
         // when the user runs the model. Assume we don't need to get new frames
         // for a model that is running (i.e., one which has time steps).
@@ -39,7 +50,7 @@
     Model.ZOOM_OUT = 'zoom_out';
     Model.ZOOM_NONE = 'zoom_none';
 
-    // Events
+    // `Model` events
     Model.RUN_BEGAN = 'gnome:modelRunBegan';
     Model.RUN_FINISHED = 'gnome:modelRunFinished';
     Model.NEXT_TIME_STEP_READY = 'gnome:nextTimeStepReady';
@@ -64,18 +75,52 @@
             return this.expectedTimeSteps.length > 0;
         },
 
+        /*
+         Return true if the model has time step data for the step numbered
+         `stepNum`.
+         */
         hasCachedTimeStep: function(stepNum) {
             return this.timeSteps[stepNum] !== undefined;
         },
 
+        /*
+         Return true if the server gave us a time step for step number `stepNum`.
+         */
         serverHasTimeStep: function(stepNum) {
             return this.expectedTimeSteps[stepNum] !== undefined;
         },
 
+        /*
+         Add `timeStep` to the internal array of time steps returned by the server.
+         */
         addTimeStep: function(timeStep) {
             this.timeSteps.push(timeStep);
         },
 
+        /*
+         Run the model.
+
+         Makes an AJAX request to the Pyramid layer to initiate a model run.
+         Receives back an array of timestamps, one for each step the server
+         expects to generate on subsequent requests.
+
+         Options:
+            - `zoomLevel`: the user's chosen zoom level
+            - `zoomDirection`: if the user is zooming, `Model.ZOOM_IN`,
+                `Model.ZOOM_OUT`, otherwise `Model.ZOOM_NONE` (the default)
+            - `startFromTimeStep`: the time step to start the model run at. This
+                is used during cached runs, when the user chooses a time step,
+                say with the slider, and runs the model, but the user has not
+                changed any values (i.e., the model is not `dirty`) and the
+                model already has time step data in its internal arra.
+            - `runUntilTimeStep`: the time step to stop running. This value is
+                passed to the server-side model and running will stop after the
+                client requests the step with this number.
+
+         Events:
+            - Triggers `Model.RUN_BEGAN` after the run begins (i.e., the AJAX
+            request was successful).
+         */
         run: function(opts) {
             var _this = this;
 
@@ -97,7 +142,8 @@
 
                     // We have the time steps needed and assume that any in-
                     // between are also loaded.
-                    $(_this).trigger(Model.RUN_BEGAN);
+                    this.isFirstStep = true;
+                    $(this).trigger(Model.RUN_BEGAN);
                     return;
                 }
             }
@@ -122,6 +168,7 @@
                 retryLimit: 3,
                 success: function(data) {
                     _this.dirty = false;
+                    _this.isFirstStep = true;
                     _this.expectedTimeSteps = data.expected_time_steps;
                     $(_this).trigger(Model.RUN_BEGAN, data);
                 },
@@ -129,13 +176,16 @@
             });
         },
 
-        // Retrieve `message` from `data` if it exists, and annotate it with
-        // an `error` value set to true if the message is an error type.
+        /*
+         Retrieve a message object from the object `data` if the `message` key
+         exists, annotate the message object ith an `error` value set to true
+         if the message is an error type, and return the message object.
+         */
         parseMessage: function(data) {
             var message;
 
             if (data === null || data === undefined) {
-                return;
+                return false;
             }
 
             if (_.has(data, 'message')) {
@@ -147,17 +197,34 @@
                 return message;
             }
 
-            return null;
+            return false;
         },
 
+        /*
+         Set the current time step to `newStepNum`.
+         Assumes that the internal timesteps array has the new time step object.
+
+         Triggers:
+            - `Model.NEXT_TIME_STEP_READY` with the time step object for the new
+                step.
+         */
         setTimeStep: function(newStepNum) {
             this.currentTimeStep = newStepNum;
             $(this).trigger(
                 Model.NEXT_TIME_STEP_READY, this.timeSteps[this.currentTimeStep]);
         },
 
-        getNextTimeStep: function(startFromBeginning) {
+        /*
+         Makes a request to the server for the next time step and if successful,
+         adds the time step to the internal array of time step data and sets
+         the current time step to the new time step.
+
+         Triggers:
+            - `Model.RUN_FINISHED` if the server has no more time steps to run.
+        */
+        getNextTimeStep: function() {
             var currStepNum, nextStepNum;
+            var _this = this;
 
             if (this.startFromTimeStep) {
                 currStepNum = this.startFromTimeStep;
@@ -166,10 +233,10 @@
                 currStepNum = this.currentTimeStep;
             }
 
-            nextStepNum = startFromBeginning ? currStepNum : currStepNum + 1;
+            // If this is step 0 and we don't have it yet, then request step 0.
+            nextStepNum = this.hasData() ? currStepNum + 1 : currStepNum;
 
-            // There are no more time steps left in the model run.
-            if (!this.serverHasTimeStep(nextStepNum)) {
+            if (this.serverHasTimeStep(nextStepNum) === false) {
                 $(this).trigger(Model.RUN_FINISHED);
                 return;
             }
@@ -179,8 +246,6 @@
                 this.setTimeStep(nextStepNum);
                 return;
             }
-
-            var _this = this;
 
              // Request the next step from the server.
              $.ajax({
@@ -195,23 +260,43 @@
             });
         },
 
+        /*
+         Zoom the map from `point` in direction `direction`.
+
+         Options:
+            - `point`: an x, y coordinate, where the user clicked the map
+            - `direction`: either `Model.ZOOM_IN` or `Model.ZOOM_OUT`
+         */
         zoomFromPoint: function(point, direction) {
             this.dirty = true;
             this.run({point: point, zoom: direction});
         },
 
+        /*
+         Zoom the map from a rectangle `rect` in direction `direction`.
+
+         Options:
+            - `rect`: a rectangle consisting of two (x, y) coordinates that the
+                user selected for the zoom operation. TODO: This should be
+                constrained to the aspect ratio of the background image.
+            - `direction`: either `Model.ZOOM_IN` or `Model.ZOOM_OUT`
+         */
         zoomFromRect: function(rect, direction) {
             this.dirty = true;
             this.run({rect: rect, zoom: direction});
         },
 
-        // Reset the current time step to 0.
+        /*
+         Reset the current time step to 0.
+        */
         reset: function() {
             this.currentTimeStep = 0;
             this.startFromTimeStep = null;
         },
 
-        // Clear all time setp data. Used when creating a new model.
+        /*
+         Clear all time step data. Used when creating a new server-side model.
+        */
         clearData: function() {
             this.reset();
             this.timeSteps = [];
@@ -221,6 +306,10 @@
     };
 
 
+    /*
+     `MapView` represents the visual map and is reponsible for animating frames
+     for each time step rendered by the server
+     */
     function MapView(opts) {
         this.mapEl = opts.mapEl;
         this.frameClass = opts.frameClass;
@@ -755,7 +844,7 @@
         },
 
         setTimeSteps: function(timeSteps) {
-            $(this.sliderEl).slider('option', 'max', timeSteps.length);
+            $(this.sliderEl).slider('option', 'max', timeSteps.length - 1);
         },
 
         switchToFullscreen: function() {
