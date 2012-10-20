@@ -138,8 +138,8 @@ def test_simple_run_with_image_output():
                                       refloat_halflife=6*3600, #seconds
                                      )
     # the image output map
-    map = gnome.utilities.map_canvas.MapCanvas((150, 100))
-    polygons = haz_files.ReadBNA("SampleData/MapBounds_2Spillable2Islands2Lakes.bna", "PolygonSet")
+    map = gnome.utilities.map_canvas.MapCanvas((400, 300))
+    polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
     map.set_land(polygons)
     model.output_map = map
     
