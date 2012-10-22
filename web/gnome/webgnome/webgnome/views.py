@@ -99,6 +99,7 @@ def run_model(request, model):
     """
     # TODO: Accept this value from the user as a setting and require it to run.
     # TODO: Parse POST values.
+
     two_weeks_ago = datetime.datetime.now() - datetime.timedelta(weeks=4)
     model.start_time = two_weeks_ago
     data = {}
@@ -124,8 +125,9 @@ def run_model_until(request, model):
     data = {}
 
     if request.method == 'POST' and form.validate():
-        model.set_run_until(form.run_until)
-        return {'run_until': form.run_until.data}
+        date = form.get_datetime()
+        model.set_run_until(date)
+        return {'run_until': date}
 
     context = {
         'form': form,
@@ -157,8 +159,8 @@ def edit_constant_wind_mover(request, model):
     if request.method == 'POST' and form.validate():
         if model.has_mover_with_id(mover_id):
             model.update_mover(mover_id, form.data)
-            message = _make_message('success',
-                                    'Updated constant wind mover successfully.')
+            message = _make_message(
+                'success', 'Updated constant wind mover successfully.')
         else:
             mover_id = model.add_mover(form.data)
             message = _make_message('warning',
@@ -189,8 +191,8 @@ def edit_variable_wind_mover(request, model):
     if request.method == 'POST' and form.validate():
         if model.has_mover_with_id(mover_id):
             model.update_mover(mover_id, form.data)
-            message = _make_message('success',
-                                    'Updated variable wind mover successfully.')
+            message = _make_message(
+                'success', 'Updated variable wind mover successfully.')
         else:
             mover_id = model.add_mover(form.data)
             message = _make_message('warning',
@@ -203,7 +205,8 @@ def edit_variable_wind_mover(request, model):
 
     html = render('webgnome:templates/forms/variable_wind_mover.mak', {
         'form': form,
-        'action_url': request.route_url('edit_variable_wind_mover', id=mover_id)
+        'action_url': request.route_url('edit_variable_wind_mover',
+                                        id=mover_id)
     })
 
     return {'form_html': html}
@@ -342,5 +345,4 @@ def get_tree(request, model):
         })
 
     return [settings, movers, spills]
-
 

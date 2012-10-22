@@ -10,49 +10,31 @@
         <h3 id="modal-label">Variable Wind Mover</h3>
     </div>
     <div class="modal-body">
-        <form action="${ action_url }" class="form-horizontal multistep" method="POST">
-            ${ form.type }
+        <form action="${action_url}" class="form-horizontal multistep" method="POST">
+            ${form.type}
             <div data-step="1" class="step active">
-                ${ defs.form_control(form.date) }
-
-                <div class="control-group ${ 'error' if form.hour.errors or form.minute.errors else ''}">
-                    <label class="control-label"
-                           for="hour">Time (24 hour)</label>
-                    <div class="controls">
-                        ${ form.hour } : ${ form.minute }
-                        % if form.hour.errors:
-                            <span class="help">
-                            ${ form.hour.errors[0] }
-                            </span>
-                        % endif
-                        % if form.minute.errors:
-                            <span class="help">
-                            ${ form.minute.errors[0] }
-                            </span>
-                        % endif
-                    </div>
-                </div>
-
-                ${ defs.form_control(form.direction, 'Enter degrees true or text (e.g., "NNW").') }
-                ${ defs.form_control(form.speed) }
-                ${ defs.form_control(form.speed_type) }
+                ${defs.form_control(form.date)}
+                ${defs.time_control(form, "Time (24 hour)")}
+                ${defs.form_control(form.direction, 'Enter degrees true or text (e.g., "NNW").')}
+                ${defs.form_control(form.speed)}
+                ${defs.form_control(form.speed_type)}
             </div>
 
             <div data-step="2" class="hidden step">
                 <fieldset>
                     <legend>Settings</legend>
-                    ${ defs.form_control(form.is_active) }
+                    ${defs.form_control(form.is_active)}
                 </fieldset>
             </div>
 
             <div data-step="3" class="hidden step">
                 <fieldset>
                     <legend>Uncertainty</legend>
-                    ${ defs.form_control(form.start_time, "hours") }
-                    ${ defs.form_control(form.duration, "hours") }
-                    ${ defs.form_control(form.speed_scale) }
-                    ${ defs.form_control(form.total_angle_scale) }
-                    ${ defs.form_control(form.total_angle_scale_type) }
+                    ${defs.form_control(form.start_time, "hours")}
+                    ${defs.form_control(form.duration, "hours")}
+                    ${defs.form_control(form.speed_scale)}
+                    ${defs.form_control(form.total_angle_scale)}
+                    ${defs.form_control(form.total_angle_scale_type)}
                 </fieldset>
             </div>
         </form>

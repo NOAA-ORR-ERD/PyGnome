@@ -132,26 +132,42 @@ class WindMoverForm(Form):
     )
 
 
-class ConstantWindMoverForm(WindMoverForm):
-    type = HiddenField(default=MOVER_CONSTANT_WIND)
-
-
-class VariableWindMoverForm(WindMoverForm):
-    type = HiddenField(default=MOVER_VARIABLE_WIND)
+class DateTimeForm(Form):
     date = DateTimeField('Date', widget=DatePickerWidget(),
-                         format="%m/%d/%Y",
-                         validators=[Required()],
-                         default=datetime.date.today())
+                     format="%m/%d/%Y",
+                     validators=[Required()],
+                     default=datetime.date.today())
     hour = IntegerField(widget=LeadingZeroIntegerWidget(),
                         validators=[NumberRange(min=0, max=24)],
                         default=lambda: datetime.datetime.now().hour)
     minute = IntegerField(widget=LeadingZeroIntegerWidget(),
                           validators=[NumberRange(min=0, max=60)],
                           default=lambda: datetime.datetime.now().minute)
+
+    def get_datetime(self):
+        """
+        Return a `datetime.datetime` value set to time `self.hour`:`self.minute`
+        if the user specified those values, else 00:00.
+        """
+        date = self.date.data
+
+        return datetime.datetime(
+            year=date.year,
+            month=date.month,
+            day=date.day,
+            hour=self.hour.data,
+            minute=self.minute.data)
+
+
+class ConstantWindMoverForm(WindMoverForm):
+    type = HiddenField(default=MOVER_CONSTANT_WIND)
+
+
+class VariableWindMoverForm(WindMoverForm, DateTimeForm):
+    type = HiddenField(default=MOVER_VARIABLE_WIND)
     auto_increment_time_by = IntegerField('Auto-increment time by')
 
 
-class RunModelUntilForm(Form):
-    run_until = DateTimeField('Date', widget=DatePickerWidget(),
-                              format="%m/%d/%Y",
-                              validators=[Required()])
+class RunModelUntilForm(DateTimeForm):
+    pass
+

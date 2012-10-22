@@ -24,7 +24,7 @@
 
     /*
      `Model` represents the user's actively-running model on the server. The
-     object is responsible for requesting time stap data from the server and
+     object is responsible for requesting time step data from the server and
      broadcasting events to notify listeners when new data is available.
      */
     function Model(opts) {
@@ -43,7 +43,7 @@
         // If true, `Model` will request a new set of frames from the server
         // when the user runs the model. Assume we don't need to get new frames
         // for a model that is running (i.e., one which has time steps).
-        this.dirty = this.timeSteps.length == 0;
+        this.dirty = this.timeSteps.length === 0;
     }
 
     Model.ZOOM_IN = 'zoom_in';
@@ -177,9 +177,9 @@
         },
 
         /*
-         Retrieve a message object from the object `data` if the `message` key
-         exists, annotate the message object ith an `error` value set to true
-         if the message is an error type, and return the message object.
+         * Retrieve a message object from the object `data` if the `message` key
+         * exists, annotate the message object ith an `error` value set to true
+         * if the message is an error type, and return the message object.
          */
         parseMessage: function(data) {
             var message;
@@ -303,7 +303,7 @@
             this.expectedTimeSteps = [];
             this.startFromTimeStep =  0;
         }
-    };
+    });
 
 
     /*
@@ -362,8 +362,8 @@
         },
 
         createPlaceholderCopy: function() {
-            this.placeholderCopy = $(this.placeholderEl).find('img').clone()
-                .appendTo($(this.mapEl)).show();
+            this.placeholderCopy = $(this.placeholderEl).find(
+                    'img').clone().appendTo($(this.mapEl)).show();
         },
 
         removePlaceholderCopy: function() {
@@ -426,7 +426,7 @@
             otherImages.css('display', 'none');
             otherImages.removeClass(this.activeFrameClass);
 
-            if (nextImage.length == 0) {
+            if (nextImage.length === 0) {
                 alert("An animation error occurred. Please refresh.");
             }
 
@@ -569,8 +569,8 @@
 
         isPositionInsideMap: function(position) {
             var bbox = this.getBoundingBox();
-            return (position.x > bbox[0].x && position.x < bbox[1].x
-                && position.y > bbox[0].y && position.y < bbox[1].y);
+            return (position.x > bbox[0].x && position.x < bbox[1].x &&
+                    position.y > bbox[0].y && position.y < bbox[1].y);
         },
 
         isRectInsideMap: function(rect) {
@@ -578,7 +578,7 @@
 
             return this.isPositionInsideMap(_rect.start) &&
                 this.isPositionInsideMap(_rect.end);
-        },       
+        }
     };
 
 
@@ -677,10 +677,11 @@
                         return false;
                     }
                     $(_this).trigger(customEvent);
-                    return;
+                    return true;
                 });
             });
         },
+
         enableControls: function() {
             _.each(this.itemControls, function(buttonEl) {
                 $(buttonEl).removeClass('disabled');
@@ -721,8 +722,8 @@
         return this;
     }
     
-    MapControlView.ON = true
-    MapControlView.OFF = false
+    MapControlView.ON = true;
+    MapControlView.OFF = false;
 
 
     // Events for `mapControlView`
@@ -775,6 +776,7 @@
                 if (_this.status === MapControlView.STATUS_PLAYING) {
                     $(_this).trigger(MapControlView.PAUSE_BUTTON_CLICKED);
                 }
+                return true;
             });
 
             var clickEvents = [
@@ -794,7 +796,7 @@
                         return false;
                     }
                     $(_this).trigger(customEvent);
-                    return;
+                    return true;
                 });
             });
 
@@ -910,12 +912,12 @@
                     this.toggleSlider(MapControlView.ON);
                 }
                 _.each(_.without(controls, this.sliderEl), function(button) {
-                    _this.toggleControl(button, toggle)
+                    _this.toggleControl(button, toggle);
                 });
             } else {
                 this.toggleSlider(toggle);
                 _.each(this.controls, function(button) {
-                    _this.toggleControl(button, toggle)
+                    _this.toggleControl(button, toggle);
                 });
             }
         },
@@ -986,7 +988,7 @@
             var step = 1;
 
             if (!form.hasClass('multistep')) {
-                return;
+                return null;
             }
 
             var errorDiv = $('div.control-group.error').first();
@@ -1499,6 +1501,10 @@
             this.treeControlView.enableControls();
         },
 
+        /*
+         * Get the URL path for the currently-selected item in the tree. The URL 
+         * is looked up in `this.urls`.
+         */
         getUrlForTreeItem: function(node, mode) {
             var urlKey = null;
             var url = null;
@@ -1513,11 +1519,12 @@
                 return false;
             }
 
-            // If this is a top-level node, then its `data.key` value will match a
-            // URL in `this.rootApiUrl`. Otherwise it's a child node and its parent
-            // (in `node.parent` will have a `key` value  set to 'setting', 'spill'
-            // or 'mover' and `node` will have a `data.type` value specific to its
-            // server-side representation, e.g. 'constant_wind'.
+            // If this is a top-level node, then its `data.key` value will
+            // match a URL in `this.urls`. Otherwise it's a child node and its
+            // parent (in `node.parent` will have a `key` value  set to
+            // 'setting', 'spill' or 'mover' and `node` will have a `data.type`
+            // value specific to its server-side representation, e.g.
+            // 'constant_wind'.
             if (node.data.key in this.urls) {
                 urlKey = node.data.key;
             } else if (node.parent.data.key in this.urls) {
@@ -1543,6 +1550,11 @@
                     break;
                 case 'delete':
                     url = rootUrl + '/' + mode;
+                    break;
+                default:
+                    // Default to the add URL.
+                    url = rootUrl + '/add';
+                    break;
             }
 
             return url;

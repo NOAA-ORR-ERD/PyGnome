@@ -10,8 +10,9 @@
         <h3 id="modal-label">Run Until</h3>
     </div>
     <div class="modal-body">
-        <form action="${ action_url }" class="form-horizontal" method="POST">
-            ${ defs.form_control(form.run_until) }
+        <form action="${action_url}" class="form-horizontal" method="POST">
+            ${defs.form_control(form.date)}
+            ${defs.time_control(form, "Stop time (24 hour):")}
         </form>
     </div>
     <div class="modal-footer">
