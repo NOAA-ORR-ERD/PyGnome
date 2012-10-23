@@ -104,7 +104,8 @@
     <script src='/static/js/jquery.cookie.js' type="text/javascript"></script>
     <script src="/static/js/jquery.dynatree.min.js"></script>
     <script src="/static/js/underscore-min.js"></script>
-    <script src="/static/js/map.js"></script>
+    <script src="/static/js/backbone-min.js"></script>
+    <script src="/static/js/gnome.js"></script>
 
     <script type="text/javascript">
         $('#map').imagesLoaded(function() {
