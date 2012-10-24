@@ -248,8 +248,6 @@ class RasterMap(GnomeMap):
         return chrmgph
 
     def _in_water_pixel(self, coord):
-        print "in _in_water_pixel"
-        print coord
         try:
             return not (self.bitmap[coord[0], coord[1]] & self.land_flag)
         except IndexError:
@@ -347,17 +345,16 @@ class RasterMap(GnomeMap):
         
         
         # transform to pixel coords:
-        # should this be a copy?
-        start_pos_pixel = self.projection.to_pixel(start_pos)
-        next_pos_pixel  = self.projection.to_pixel(next_pos)
+        # NOTE: must be integers!
+        start_pos_pixel = self.projection.to_pixel(start_pos, asint=True)
+        next_pos_pixel  = self.projection.to_pixel(next_pos, asint=True)
         
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
         # only check the ones that aren't already beached?
         self.check_land(self.bitmap, start_pos_pixel, next_pos_pixel, status_codes, last_water_positions)
-        
+
         #transform the points back to lat-long.
-        ##fixme -- only transform those that were changed -- no need to introduce rounding error otherwise
         beached = ( status_codes == oil_status.on_land )
         next_pos[beached, :2]= self.projection.to_lat_long(next_pos_pixel[beached])
         last_water_positions[beached, :2] = self.projection.to_lat_long(last_water_positions[beached,:2])
@@ -374,6 +371,12 @@ class RasterMap(GnomeMap):
         """
         ##fixme -- this needs to be ported to Cython!
 
+        #print "saving_raster_map:"
+        #np.save("test_raster_map", raster_map)
+
+        ## critical that these be integers!
+        if (not np.issubdtype(positions.dtype, int) ) or (not np.issubdtype(positions.dtype, int) ):
+            raise ValueError("position arrays must be integer type")
         for i in xrange(len(positions)):
             pts = land_check.find_first_pixel(raster_map,
                                               positions[i],
@@ -384,11 +387,10 @@ class RasterMap(GnomeMap):
                 positions[i, :] = end_positions[i, :]
             if pts is not None:
                 last_water_positions[i, :2] = pts[0]
-                positions[i] = pts[1]
+                end_positions[i] = pts[1]
                 status_codes[i] = oil_status.on_land
-        
-        return None
 
+        return None
 
     
     def allowable_spill_position(self, coord):

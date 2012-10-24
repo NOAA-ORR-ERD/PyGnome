@@ -6,6 +6,8 @@ test code for the simple_mover class
 designed to be run with py.test
 """
 
+##fixme: add test for some LEs being not-released, off_map, etc...
+
 import numpy as np
 
 from gnome import spill

@@ -59,6 +59,7 @@ class MapCanvas(object):
                   ('land',        (255, 204, 153) ),
                   ('LE',          (  0,   0,   0) ),
                   ('uncert_LE',   (255,   0,   0) ),
+                  ('map_bounds',  (175, 175, 175) ),
                   ]
 
     colors  = dict( [(i[1][0], i[0]) for i in enumerate(colors_rgb)] )
@@ -120,8 +121,9 @@ class MapCanvas(object):
         #fixme: should we make sure to draw the lakes after the land???
         for p in polygons:
             if p.metadata[1].strip().lower() == "map bounds":
-                #Don't draw the map bounds polygon
-                continue
+                #Draw the map bounds polygon
+                poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
+                drawer.polygon(poly, outline=self.colors['map_bounds'])
             elif p.metadata[1].strip().lower() == "spillablearea":
                 # don't draw the spillable area polygon
                 continue
@@ -145,6 +147,7 @@ class MapCanvas(object):
         :param spill: a spill object to draw
         """
 
+
         if spill.spill_type==basic_types.spill_type.uncertainty:
             color = self.colors['uncert_LE']
         else:
@@ -159,7 +162,6 @@ class MapCanvas(object):
                               (pixel_pos[:,1] > 1) &
                               (pixel_pos[:,0] < (self.image_size[0]-2) ) &
                               (pixel_pos[:,1] < (self.image_size[1]-2) ) ]
-
         # draw the four pixels for the LE
         #note: long-lat backwards for array (vs image)  
         arr[(pixel_pos[:,1]-0.5).astype(np.int32), (pixel_pos[:,0]-0.5).astype(np.int32)] = color
@@ -191,6 +193,7 @@ class BW_MapCanvas(MapCanvas):
                   ('land',        1 ),
                   ('LE',          255 ),
                   ('uncert_LE',   255 ),
+                  ('map_bounds',  0 ),
                   ]
 
     colors  = dict( colors_BW )
