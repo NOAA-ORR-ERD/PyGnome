@@ -115,15 +115,36 @@ if sys.platform == "darwin":
 
 elif sys.platform == "win32":
     
-    
-    compile_args = ['/W0',]
-    link_args = ['/DEFAULTLIB:MSVCRT.lib',
-                 '/NODEFAULTLIB:LIBCMT.lib',
-                ] 
+    compile_args = ['/W0','/MT']
+   
+    # NOTE: This used to work with the runtime libraries
+    #       that were part of lib_gnomeDLL, however, that is currently broken.
+    #       The updates below was a try at forcing the same libs as the working version
+    #       in CythonProj/ .. still working on this issue
+    #link_args = ['DEFAULTLIB:MSVCRT.lib',
+    #             '/NODEFAULTLIB:LIBCMT.lib'
+    #             ]
+
+    link_args = ['/VERBOSE:LIB',
+                 '/DEFAULTLIB:kernel32.lib',
+                 '/DEFAULTLIB:user32.lib',
+                 '/DEFAULTLIB:gdi32.lib', 
+                 '/DEFAULTLIB:winspool.lib', 
+                 '/DEFAULTLIB:comdlg32.lib', 
+                 '/DEFAULTLIB:advapi32.lib', 
+                 '/DEFAULTLIB:shell32.lib',
+                 '/DEFAULTLIB:ole32.lib', 
+                 '/DEFAULTLIB:oleaut32.lib', 
+                 '/DEFAULTLIB:uuid.lib',
+                 '/DEFAULTLIB:odbc32.lib',
+                 '/DEFAULTLIB:odbccp32.lib',
+                 '/DEFAULTLIB:libcpmt.lib',
+                 '/DEFAULTLIB:LIBCMT.lib',
+                 ]
     # let's build C++ here
     sys.path.append(".\gnome\DLL")   # need this for linking to work properly
     proj = '..\project_files\lib_gnomeDLL\lib_gnomeDLL.vcproj'
-    config = '/p:configuration=debug' 
+    config = '/p:configuration=release' 
     platform = '/p:platform=Win32'
     call(['msbuild',proj,'/t:'+target,config,platform])
 
@@ -148,6 +169,7 @@ for mod_name in extension_names:
                                  language="c++",
                                  define_macros = macros,
                                  extra_compile_args=compile_args,
+   	                             extra_link_args=link_args,
                                  libraries = lib,
                                  library_dirs = libdirs,
                                  include_dirs=[CPP_CODE_DIR,
