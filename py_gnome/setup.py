@@ -115,7 +115,7 @@ if sys.platform == "darwin":
 
 elif sys.platform == "win32":
     
-    compile_args = ['/W0','/MT']
+    compile_args = ['/W0','/MD']
    
     # NOTE: This used to work with the runtime libraries
     #       that were part of lib_gnomeDLL, however, that is currently broken.
@@ -126,20 +126,20 @@ elif sys.platform == "win32":
     #             ]
 
     link_args = ['/VERBOSE:LIB',
-                 '/DEFAULTLIB:kernel32.lib',
-                 '/DEFAULTLIB:user32.lib',
-                 '/DEFAULTLIB:gdi32.lib', 
-                 '/DEFAULTLIB:winspool.lib', 
-                 '/DEFAULTLIB:comdlg32.lib', 
-                 '/DEFAULTLIB:advapi32.lib', 
-                 '/DEFAULTLIB:shell32.lib',
-                 '/DEFAULTLIB:ole32.lib', 
-                 '/DEFAULTLIB:oleaut32.lib', 
-                 '/DEFAULTLIB:uuid.lib',
-                 '/DEFAULTLIB:odbc32.lib',
-                 '/DEFAULTLIB:odbccp32.lib',
-                 '/DEFAULTLIB:libcpmt.lib',
-                 '/DEFAULTLIB:LIBCMT.lib',
+                 #'/DEFAULTLIB:kernel32.lib',
+                 #'/DEFAULTLIB:user32.lib',
+                 #'/DEFAULTLIB:gdi32.lib', 
+                 #'/DEFAULTLIB:winspool.lib', 
+                 #'/DEFAULTLIB:comdlg32.lib', 
+                 #'/DEFAULTLIB:advapi32.lib', 
+                 #'/DEFAULTLIB:shell32.lib',
+                 #'/DEFAULTLIB:ole32.lib', 
+                 #'/DEFAULTLIB:oleaut32.lib', 
+                 #'/DEFAULTLIB:uuid.lib',
+                 #'/DEFAULTLIB:odbc32.lib',
+                 #'/DEFAULTLIB:odbccp32.lib',
+                 #'/DEFAULTLIB:libcpmt.lib',
+                 #'/DEFAULTLIB:LIBCMT.lib',
                  ]
     # let's build C++ here
     sys.path.append(".\gnome\DLL")   # need this for linking to work properly
