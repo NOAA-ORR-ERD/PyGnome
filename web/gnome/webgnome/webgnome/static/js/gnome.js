@@ -1,22 +1,34 @@
 // gnome.js: The WebGNOME JavaScript application.
+"use strict";
+
+
+// Aliases.
+var log = window.noaa.erd.util.log;
+var handleAjaxError = window.noaa.erd.util.handleAjaxError;
+
 
 /*
- Generic AJAX error handler.
- Retry on error if the request specified tryCount.
+ * Retrieve a message object from the object `data` if the `message` key
+ * exists, annotate the message object ith an `error` value set to true
+ * if the message is an error type, and return the message object.
  */
-window.noaa.erd.gnome.handleAjaxError  = function(xhr, textStatus, errorThrown) {
-    if (textStatus == 'timeout') {
-        this.tryCount++;
-        if (this.tryCount <= this.retryLimit) {
-            // Retry count is below the limit, so try the request again.
-            $.ajax(this);
-            return;
-        }
-        return;
+var parseMessage = function(data) {
+    var message;
+
+    if (data === null || data === undefined) {
+        return false;
     }
 
-    alert('Could not connect to server.');
-    console.log(xhr, textStatus, errorThrown);
+    if (_.has(data, 'message')) {
+        message = data.message;
+        if (data.message.type == 'error') {
+            message.error = true;
+        }
+
+        return message;
+    }
+
+    return false;
 };
 
 
@@ -84,11 +96,11 @@ var Model = Backbone.Collection.extend({
     /*
      Handle a successful request to the server to start the model run.
      Events:
-        - Triggers `Model.MESSAGE_RECEIVED` if the server sent a message.
-        - Triggers `Model.RUN_BEGAN` unless we received an error message.
+     - Triggers `MESSAGE_RECEIVED` if the server sent a message.
+     - Triggers `Model.RUN_BEGAN` unless we received an error message.
      */
     runBegan: function(data) {
-        var message = this.parseMessage(data);
+        var message = parseMessage(data);
 
         if (message) {
             this.trigger(Model.MESSAGE_RECEIVED, message);
@@ -100,7 +112,7 @@ var Model = Backbone.Collection.extend({
 
         this.dirty = false;
         this.isFirstStep = true;
-        this.expectedTimeSteps = data.expected_time_steps; 
+        this.expectedTimeSteps = data.expected_time_steps;
         this.trigger(Model.RUN_BEGAN, data);
         return true;
     },
@@ -149,7 +161,7 @@ var Model = Backbone.Collection.extend({
                 // We have the time steps needed and assume that any in-
                 // between are also loaded.
                 this.isFirstStep = true;
-                $(this).trigger(Model.RUN_BEGAN);
+                this.trigger(Model.RUN_BEGAN);
                 return;
             }
         }
@@ -162,7 +174,7 @@ var Model = Backbone.Collection.extend({
         // `opts.point`.
         if (opts.zoomLevel != this.zoomLevel &&
             isInvalid(opts.rect) && isInvalid(opts.point)) {
-            alert("Invalid zoom level. Please try again.");
+            window.alert("Invalid zoom level. Please try again.");
             return;
         }
 
@@ -175,49 +187,36 @@ var Model = Backbone.Collection.extend({
             tryCount: 0,
             retryLimit: 3,
             success: this.runBegan,
-            error: window.noaa.erd.gnome.handleAjaxError
+            error: handleAjaxError
         });
     },
 
     /*
-     * Retrieve a message object from the object `data` if the `message` key
-     * exists, annotate the message object ith an `error` value set to true
-     * if the message is an error type, and return the message object.
+     Return the `TimeStemp` object whose ID matches `self.currentTimeStep`.
      */
-    parseMessage: function(data) {
-        var message;
-
-        if (data === null || data === undefined) {
-            return false;
-        }
-
-        if (_.has(data, 'message')) {
-            message = data.message;
-            if (data.message.type == 'error') {
-                message.error = true;
-            }
-
-            return message;
-        }
-
-        return false;
+    getCurrentTimeStep: function() {
+        return this.get(this.currentTimeStep);
     },
 
     /*
      Set the current time step to `newStepNum`.
      Assumes that the internal timesteps array has the new time step object.
-
-     Triggers:
-     - `Model.NEXT_TIME_STEP_READY` with the time step object for the new
-     step.
      */
     addTimeStep: function(timeStepJson) {
-        console.log('wtf')
         var timeStep = new TimeStep(timeStepJson);
         this.add(timeStep);
-        this.currentTimeStep = timeStep.get('step_number');
-        console.log('add time step', this.models, this.currentTimeStep, this.get(this.currentTimeStep));
-        this.trigger(Model.NEXT_TIME_STEP_READY, this.get(this.currentTimeStep));
+        this.setCurrentTimeStep(timeStep.id);
+    },
+
+    /*
+     Set the current time step to `stepId`.
+
+     Triggers:
+     - `Model.NEXT_TIME_STEP_READY` with the time step object for the new step.
+     */
+    setCurrentTimeStep: function(stepId) {
+        this.currentTimeStep = stepId;
+        this.trigger(Model.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
     },
 
     /*
@@ -241,13 +240,13 @@ var Model = Backbone.Collection.extend({
         nextStepNum = this.hasData() ? currStepNum + 1 : currStepNum;
 
         if (this.serverHasTimeStep(nextStepNum) === false) {
-            $(this).trigger(Model.RUN_FINISHED);
+            this.trigger(Model.RUN_FINISHED);
             return;
         }
 
         // The time step has already been generated and we have it.
         if (this.hasCachedTimeStep(nextStepNum)) {
-            this.setTimeStep(nextStepNum);
+            this.setCurrentTimeStep(nextStepNum);
             return;
         }
 
@@ -261,7 +260,7 @@ var Model = Backbone.Collection.extend({
             success: function(data) {
                 _this.addTimeStep(data.time_step);
             },
-            error: window.noaa.erd.gnome.handleAjaxError
+            error: handleAjaxError
         });
     },
 
@@ -316,10 +315,48 @@ var Model = Backbone.Collection.extend({
     ZOOM_NONE: 'zoom_none',
 
     // Class events
-    MESSAGE_RECEIVED: 'model:messageReceived',
     RUN_BEGAN: 'model:modelRunBegan',
     RUN_FINISHED: 'model:modelRunFinished',
-    NEXT_TIME_STEP_READY: 'model:nextTimeStepReady'
+    NEXT_TIME_STEP_READY: 'model:nextTimeStepReady',
+    MESSAGE_RECEIVED: 'model:messageReceived'
+});
+
+
+var AjaxForm = Backbone.Model.extend({
+    /*
+     Parse out a `message` from the server and, if found, alert listeners.
+     */
+    parse: function(response) {
+        var message = parseMessage(response);
+        if (message) {
+            this.trigger(AjaxForm.MESSAGE_RECEIVED, message);
+        }
+        return response;
+    },
+
+    /*
+     Submit using `opts` and refresh this `AjaxForm` from the response JSON.
+     The assumption here is that `data` and `url` have been provided in `opts`
+     and we're just passing them along to the `fetch()` method.
+     */
+    submit: function(opts) {
+        var options = $.extend(opts, {
+            type: 'POST',
+            tryCount: 0,
+            retryLimit: 3,
+            error: handleAjaxError
+        });
+
+        this.fetch(options);
+    }
+}, {
+    // Events
+    MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
+});
+
+
+var AjaxFormCollection = Backbone.Collection.extend({
+    model: AjaxForm
 });
 
 
@@ -327,8 +364,11 @@ var Model = Backbone.Collection.extend({
  `MessageView` is responsible for displaying messages sent from the server.
  */
 var MessageView = Backbone.View.extend({
-    initialize: function(opts) {
-        opts.model.on(Model.MESSAGE_RECEIVED, this.displayMessage);
+    initialize: function() {
+        this.options.model.on(
+            Model.MESSAGE_RECEIVED, this.displayMessage);
+        this.options.ajaxForm.on(
+            AjaxForm.MESSAGE_RECEIVED, this.displayMessage);
     },
 
     displayMessage: function(message) {
@@ -344,7 +384,7 @@ var MessageView = Backbone.View.extend({
         }
 
         return true;
-    },
+    }
 });
 
 
@@ -450,7 +490,7 @@ MapView.prototype = {
     },
 
     getImageForTimeStep: function(stepNum) {
-        return $('img[data-position="' + (stepNum) + '"]');
+        return $('img[data-id="' + (stepNum) + '"]');
     },
 
     timeStepIsLoaded: function(stepNum) {
@@ -469,7 +509,7 @@ MapView.prototype = {
         otherImages.removeClass(this.activeFrameClass);
 
         if (nextImage.length === 0) {
-            alert("An animation error occurred. Please refresh.");
+            window.alert("An animation error occurred. Please refresh.");
         }
 
         nextImage.addClass(this.activeFrameClass);
@@ -503,28 +543,28 @@ MapView.prototype = {
 
         var img = $('<img>').attr({
             'class': 'frame',
-            'data-position': timeStep.step_number,
-            src: timeStep.url
+            'data-id': timeStep.id,
+            src: timeStep.get('url')
         }).css('display', 'none');
 
         img.appendTo(map);
 
         $(img).imagesLoaded(function() {
-            _this.advanceTimeStep(timeStep.step_number);
+            _this.advanceTimeStep(timeStep.id);
         });
     },
 
     addTimeStep: function(timeStep) {
-        var imageExists = this.getImageForTimeStep(timeStep.step_number).length;
+        var imageExists = this.getImageForTimeStep(timeStep.id).length;
 
-        if (timeStep.step_number === 0 && this.placeholderCopy) {
+        if (timeStep.id === 0 && this.placeholderCopy) {
             this.removePlaceholderCopy();
         }
 
         // We must be playing a cached model run because the image already
         // exists. In all other cases the image should NOT exist.
         if (imageExists) {
-            this.advanceTimeStep(timeStep.step_number);
+            this.advanceTimeStep(timeStep.id);
         } else {
             this.addImageForTimeStep(timeStep);
         }
@@ -624,22 +664,16 @@ MapView.prototype = {
 };
 
 
-function TreeView(opts) {
-    this.treeEl = opts.treeEl;
-    this.url = opts.url;
-    return this;
-}
-
-TreeView.ITEM_ACTIVATED = 'gnome:treeItemActivated';
-TreeView.ITEM_DOUBLE_CLICKED = 'gnome:treeItemDoubleClicked';
-
-TreeView.prototype = {
+var TreeView = Backbone.View.extend({
     initialize: function() {
+        _.bindAll(this);
         var _this = this;
+        this.treeEl = this.options.treeEl;
+        this.url = this.options.url;
 
         this.tree = $(this.treeEl).dynatree({
             onActivate: function(node) {
-                $(_this).trigger(TreeView.ITEM_ACTIVATED, node);
+                _this.trigger(TreeView.ITEM_ACTIVATED, node);
             },
             onPostInit: function(isReloading, isError) {
                 // Fire events for a tree that was reloaded from cookies.
@@ -648,7 +682,7 @@ TreeView.prototype = {
                 this.reactivate();
             },
             onDblClick: function(node, event) {
-                $(_this).trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
+                _this.trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
             },
             initAjax: {
                 url: _this.url
@@ -656,7 +690,22 @@ TreeView.prototype = {
             persist: true
         });
 
-        return this;
+        this.options.ajaxForm.on('change', this.ajaxFormChanged);
+    },
+
+    /*
+     An event handler called when an `AjaxForm` in `this.forms` changes.
+
+     If a form was submitted successfully, we need to reload the tree view in
+     case new items were added.
+     */
+    ajaxFormChanged: function(ajaxForm) {
+        var formHtml = ajaxForm.get('form_html');
+
+        // This field will be null on a successful submit.
+        if (!formHtml) {
+            this.reload();
+        }
     },
 
     getActiveItem: function() {
@@ -667,25 +716,13 @@ TreeView.prototype = {
         return this.tree.dynatree('getTree').selectKey(data.id) !== null;
     },
 
-    addItem: function(data, parent) {
-        if (!_.has(data, 'id') || !_.has(data, 'type')) {
-            alert('An error occurred. Try refreshing the page.');
-            console.log(data);
-        }
-
-        var rootNode = this.tree.dynatree('getTree').selectKey(data.parent);
-        rootNode.addChild({
-            title: data.id,
-            key: data.id,
-            parent: parent,
-            type: data.type
-        });
-    },
-
     reload: function() {
         this.tree.dynatree('getTree').reload();
     }
-};
+}, {
+    ITEM_ACTIVATED: 'gnome:treeItemActivated',
+    ITEM_DOUBLE_CLICKED: 'gnome:treeItemDoubleClicked'
+});
 
 
 function TreeControlView(opts) {
@@ -740,6 +777,7 @@ TreeControlView.prototype = {
 
 var MapControlView = Backbone.View.extend({
     initialize: function() {
+        _.bindAll(this);
         var _this = this;
         this.containerEl = this.options.containerEl;
         this.sliderEl = this.options.sliderEl;
@@ -762,7 +800,7 @@ var MapControlView = Backbone.View.extend({
             this.pauseButtonEl, this.moveButtonEl, this.zoomInButtonEl,
             this.zoomOutButtonEl
         ];
-        
+
         this.status = MapControlView.STATUS_STOPPED;
 
         $(this.pauseButtonEl).hide();
@@ -799,7 +837,7 @@ var MapControlView = Backbone.View.extend({
                 return true;
             });
         });
-        
+
         this.model = this.options.model;
         this.model.on(Model.RUN_BEGAN, this.runBegan);
 
@@ -827,14 +865,13 @@ var MapControlView = Backbone.View.extend({
         }
         return true;
     },
-    
+
     runBegan: function() {
-         if (this.model.dirty === true) {
+        if (this.model.dirty === true) {
             this.reload();
         }
 
         this.setTimeSteps(this.model.expectedTimeSteps);
-        this.enableControls([this.pauseButtonEl]);
     },
 
     setStopped: function() {
@@ -938,12 +975,24 @@ var MapControlView = Backbone.View.extend({
         }
     },
 
+    /*
+     Enable or disable specified controls.
+
+     If `this.sliderEl` is present in `controls`, use the `this.toggleSlider`
+     function to toggle it.
+
+     If `controls` is empty, apply `toggle` to all controls in `this.controls`.
+
+     Options:
+     - `controls`: an array of HTML elements to toggle
+     - `toggle`: either `MapControlView.OFF` or `MapControlView.ON`.
+     */
     toggleControls: function(controls, toggle) {
         var _this = this;
 
-        if (controls) {
-            if (_.indexOf(controls, this.sliderEl)) {
-                this.toggleSlider(MapControlView.ON);
+        if (controls && controls.length) {
+            if (_.contains(controls, this.sliderEl)) {
+                this.toggleSlider(toggle);
             }
             _.each(_.without(controls, this.sliderEl), function(button) {
                 _this.toggleControl(button, toggle);
@@ -979,7 +1028,7 @@ var MapControlView = Backbone.View.extend({
             type: "GET",
             url: this.url,
             success: this.handleReloadSuccess,
-            error: window.noaa.erd.gnome.handleAjaxError
+            error: handleAjaxError
         });
     },
 
@@ -1013,88 +1062,90 @@ var MapControlView = Backbone.View.extend({
     STATUS_ZOOMING_IN: 5,
     STATUS_ZOOMING_OUT: 6
 });
-   
 
 
-function ModalFormView(opts) {
-    _.bindAll(this);
-    this.formContainerEl = opts.formContainerEl;
-    this.urls = opts.urls;
-}
-
-ModalFormView.SAVE_BUTTON_CLICKED = 'gnome:formSaveButtonClicked';
-ModalFormView.FORM_SUBMITTED = 'gnome:formSubmitted';
-
-ModalFormView.prototype = {
-
+var ModalFormView = Backbone.View.extend({
     initialize: function() {
-        var _this = this;
+        this.$container = $(this.options.formContainerEl);
+        this.ajaxForm = this.options.ajaxForm;
 
-        $(this.formContainerEl).on('click', '.btn-primary', function(event) {
-            $(_this).trigger(ModalFormView.SAVE_BUTTON_CLICKED);
-        });
+        _.bindAll(this);
 
-        $(this.formContainerEl).on('click', '.btn-next', this.goToNextStep);
-        $(this.formContainerEl).on('click', '.btn-prev', this.goToPreviousStep);
+        this.$container.on('click', '.btn-primary', this.submit);
+        this.$container.on('click', '.btn-next', this.goToNextStep);
+        this.$container.on('click', '.btn-prev', this.goToPreviousStep);
 
-        $(this.formContainerEl).on('submit', 'form', function(event) {
-            event.preventDefault();
-            $(_this).trigger(ModalFormView.FORM_SUBMITTED, [this]);
-            return false;
-        });
+        this.ajaxForm.on('change', this.ajaxFormChanged);
+    },
+
+    ajaxFormChanged: function(ajaxForm) {
+        var formHtml = ajaxForm.get('form_html');
+        this.clear();
+        if (formHtml) {
+            this.refresh(formHtml);
+        }
+    },
+
+    getForm: function() {
+        return this.$container.find('form');
+    },
+
+    getModal: function() {
+        return this.$container.find('div.modal');
     },
 
     getFirstStepWithError: function() {
-        var form = $(this.formContainerEl).find('form');
         var step = 1;
 
-        if (!form.hasClass('multistep')) {
+        if (!this.getForm().hasClass('multistep')) {
             return null;
         }
 
         var errorDiv = $('div.control-group.error').first();
         var stepDiv = errorDiv.closest('div.step');
 
-        if (stepDiv) {
+        if (stepDiv === false) {
             step = stepDiv.attr('data-step');
         }
 
         return step;
     },
 
+    getStep: function(stepNum) {
+        return this.getForm().find('div[data-step="' + stepNum  + '"]').length > 0;
+    },
+
     previousStepExists: function(stepNum) {
-        var form = $(this.formContainerEl).find('form');
-        return form.find('div[data-step="' + (stepNum - 1) + '"]').length > 0;
+       return this.getStep(stepNum - 1);
     },
 
     nextStepExists: function(stepNum) {
         stepNum = parseInt(stepNum, 10);
-        var form = $(this.formContainerEl).find('form');
-        return form.find('div[data-step="' + (stepNum + 1) + '"]').length > 0;
+        return this.getStep(stepNum + 1);
     },
 
     goToStep: function(stepNum) {
-        var form = $(this.formContainerEl).find('form');
+        var $form = this.getForm();
 
-        if (!form.hasClass('multistep')) {
+        if (!$form.hasClass('multistep')) {
             return;
         }
 
-        var stepDiv = form.find('div.step[data-step="' + stepNum + '"]');
+        var stepDiv = $form.find('div.step[data-step="' + stepNum + '"]');
 
         if (stepDiv.length === 0) {
             return;
         }
 
-        var otherSteps = form.find('div.step');
+        var otherSteps = $form.find('div.step');
         otherSteps.addClass('hidden');
         otherSteps.removeClass('active');
         stepDiv.removeClass('hidden');
         stepDiv.addClass('active');
 
-        var prevButton = $(this.formContainerEl).find('.btn-prev');
-        var nextButton = $(this.formContainerEl).find('.btn-next');
-        var saveButton = $(this.formContainerEl).find('.btn-primary');
+        var prevButton = this.$container.find('.btn-prev');
+        var nextButton = this.$container.find('.btn-next');
+        var saveButton = this.$container.find('.btn-primary');
 
         if (this.previousStepExists(stepNum)) {
             prevButton.removeClass('hidden');
@@ -1112,35 +1163,43 @@ ModalFormView.prototype = {
     },
 
     goToNextStep: function(event) {
-        var form = $(this.formContainerEl).find('form');
+        var $form = this.getForm();
 
-        if (!form.hasClass('multistep')) {
+        if (!$form.hasClass('multistep')) {
             return;
         }
 
-        var activeStep = form.find('div.step.active');
+        var activeStep = $form.find('div.step.active');
         var currentStep = parseInt(activeStep.attr('data-step'), 10);
         this.goToStep(currentStep + 1);
     },
 
     goToPreviousStep: function(event) {
-        var form = $(this.formContainerEl).find('form');
+        var $form = this.getForm();
 
-        if (!form.hasClass('multistep')) {
+        if (!$form.hasClass('multistep')) {
             return;
         }
 
-        var activeStep = form.find('div.step.active');
+        var activeStep = $form.find('div.step.active');
         var currentStep = parseInt(activeStep.attr('data-step'), 10);
         this.goToStep(currentStep - 1);
     },
 
-    reloadForm: function(html) {
-        this.clearForm();
-        var container = $(this.formContainerEl);
-        container.html(html);
-        container.find('div.modal').modal();
-        container.find('.date').datepicker({
+    submit: function(event) {
+        event.preventDefault();
+        var $form = this.getForm();
+        this.ajaxForm.submit({
+            data: $form.serialize(),
+            url: $form.attr('action')
+        });
+        return false;
+    },
+
+    refresh: function(html) {
+        this.$container.html(html);
+        this.getModal().modal();
+        this.$container.find('.date').datepicker({
             changeMonth: true,
             changeYear: true
         });
@@ -1151,16 +1210,11 @@ ModalFormView.prototype = {
         }
     },
 
-    clearForm: function() {
-        $(this.formContainerEl + ' div.modal').modal('hide');
-        $(this.formContainerEl).empty();
+    clear: function() {
+        this.getModal().modal('hide');
+        this.$container.empty();
     },
-
-    submitForm: function() {
-        $(this.formContainerEl + ' form').submit();
-        this.clearForm();
-    }
-};
+});
 
 
 function MenuView(opts) {
@@ -1203,22 +1257,30 @@ MenuView.prototype = {
 
 
 function MapController(opts) {
+    var _this = this;
     _.bindAll(this);
 
-    // TODO: Obtain from server via template variable passed into controller.
-    this.urls = {
-        model: "/model",
-        timeSteps: '/model/time_steps',
-        runUntil: '/model/run_until',
-        setting: '/model/setting',
-        mover: '/model/mover',
-        spill: '/model/spill',
-        tree: '/tree'
-    };
+    this.apiRoot = "/model";
 
     this.model = new Model(opts.generatedTimeSteps, {
-        url: this.urls.model,
+        url: this.apiRoot,
         expectedTimeSteps: opts.expectedTimeSteps
+    });
+
+    this.formTypes = [
+         'run_until',
+         'setting',
+         'mover',
+         'spill'
+    ];
+
+    this.ajaxForm = new AjaxForm({
+        url: _this.apiRoot
+    });
+
+    this.formView = new ModalFormView({
+        formContainerEl: opts.formContainerEl,
+        ajaxForm: this.ajaxForm
     });
 
     this.menuView = new MenuView({
@@ -1231,16 +1293,12 @@ function MapController(opts) {
         runUntilItemEl: "#menu-run-until"
     });
 
-    this.formView = new ModalFormView({
-        formContainerEl: opts.formContainerEl,
-        urls: this.urls
-    });
-
     this.sidebarEl = opts.sidebarEl;
 
     this.treeView = new TreeView({
         treeEl: "#tree",
-        url: this.urls.tree
+        url: "/tree",
+        ajaxForm: this.ajaxForm
     });
 
     this.treeControlView = new TreeControlView({
@@ -1268,8 +1326,13 @@ function MapController(opts) {
         fullscreenButtonEl: "#fullscreen-button",
         resizeButtonEl: "#resize-button",
         timeEl: "#time",
-        url: this.urls.timeSteps,
+        url: this.apiRoot + '/time_steps',
         model: this.model
+    });
+
+    this.messageView = new MessageView({
+        model: this.model,
+        ajaxForm: this.ajaxForm
     });
 
     this.setupEventHandlers();
@@ -1283,63 +1346,44 @@ MapController.prototype = {
     setupEventHandlers: function() {
         this.model.on(Model.RUN_BEGAN, this.modelRunBegan);
         this.model.on(Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+        this.model.on(Model.RUN_FINISHED, this.modelRunFinished);
 
-        $(this.model).bind(Model.RUN_FINISHED, this.modelRunFinished);
+        this.treeView.on(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
+        this.treeView.bind(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
-        $(this.formView).bind(ModalFormView.SAVE_BUTTON_CLICKED, this.saveForm);
-        $(this.formView).bind(ModalFormView.FORM_SUBMITTED, this.formSubmitted);
+        $(this.treeControlView).bind(TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
+        $(this.treeControlView).bind(TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
+        $(this.treeControlView).bind(TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
 
-        $(this.treeView).bind(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
-        $(this.treeView).bind(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
-
-        $(this.treeControlView).bind(
-            TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
-        $(this.treeControlView).bind(
-            TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
-        $(this.treeControlView).bind(
-            TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
-
-        $(this.mapControlView).bind(
-            MapControlView.PLAY_BUTTON_CLICKED, this.playButtonClicked);
-        $(this.mapControlView).bind(
-            MapControlView.PAUSE_BUTTON_CLICKED, this.pauseButtonClicked);
-        $(this.mapControlView).bind(
-            MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
-        $(this.mapControlView).bind(
-            MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
-        $(this.mapControlView).bind(
-            MapControlView.SLIDER_CHANGED, this.sliderChanged);
-        $(this.mapControlView).bind(
-            MapControlView.SLIDER_MOVED, this.sliderMoved);
-        $(this.mapControlView).bind(
-            MapControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
-        $(this.mapControlView).bind(
-            MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
-        $(this.mapControlView).bind(
-            MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
-        $(this.mapControlView).bind(
-            MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
+        this.mapControlView.on(MapControlView.PLAY_BUTTON_CLICKED, this.playButtonClicked);
+        this.mapControlView.on(MapControlView.PAUSE_BUTTON_CLICKED, this.pauseButtonClicked);
+        this.mapControlView.on(MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
+        this.mapControlView.on(MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
+        this.mapControlView.on(MapControlView.SLIDER_CHANGED, this.sliderChanged);
+        this.mapControlView.on(MapControlView.SLIDER_MOVED, this.sliderMoved);
+        this.mapControlView.on(MapControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
+        this.mapControlView.on(MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
+        this.mapControlView.on(MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
+        this.mapControlView.on(MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
 
         $(this.mapView).bind(MapView.PLAYING_FINISHED, this.stopAnimation);
         $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
         $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
         $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
 
-        $(this.menuView).bind(
-            MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
-        $(this.menuView).bind(
-            MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
-        $(this.menuView).bind(
-            MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
+        $(this.menuView).bind(MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
+        $(this.menuView).bind(MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
+        $(this.menuView).bind(MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
     },
 
     initializeViews: function() {
-        this.formView.initialize();
         this.treeControlView.initialize();
-        this.treeView.initialize();
-        this.mapControlView.initialize();
         this.mapView.initialize();
         this.menuView.initialize();
+    },
+
+    isValidFormType: function(formType) {
+        return _.contains(this.formTypes, formType);
     },
 
     runMenuItemClicked: function(event) {
@@ -1349,13 +1393,11 @@ MapController.prototype = {
     },
 
     runUntilMenuItemClicked: function(event) {
-        this.showForm(this.urls.runUntil);
+        this.showForm('run_until');
     },
 
     newMenuItemClicked: function() {
-        var _this = this;
-
-        if (!confirm("Reset model?")) {
+        if (!window.confirm("Reset model?")) {
             return;
         }
 
@@ -1365,19 +1407,25 @@ MapController.prototype = {
             type: "POST",
             tryCount: 0,
             retryLimit: 3,
-            success: function(data) {
-                if ('message' in data) {
-                    _this.displayMessage(data.message);
-                }
-                _this.model.clearData();
-                _this.treeView.reload();
-                _this.mapView.clear();
-                _this.mapView.createPlaceholderCopy();
-                _this.mapView.setStopped();
-                _this.mapControlView.setStopped();
-            },
-            error: window.noaa.erd.gnome.handleAjaxError
+            success: this.createNewModelSuccess,
+            error: handleAjaxError
         });
+    },
+
+    /*
+     Handle a successful request to the server to create a new model for the
+     user.
+     */
+    createNewModelSuccess: function(data) {
+        if ('message' in data) {
+            this.displayMessage(data.message);
+        }
+        this.model.clearData();
+        this.treeView.reload();
+        this.mapView.clear();
+        this.mapView.createPlaceholderCopy();
+        this.mapView.setStopped();
+        this.mapControlView.setStopped();
     },
 
     play: function(opts) {
@@ -1396,7 +1444,6 @@ MapController.prototype = {
     },
 
     pause: function() {
-        // TODO: Should the mapView have a reference to mapControlView?
         this.mapControlView.setPaused();
         this.mapView.setPaused();
         this.mapControlView.enableControls();
@@ -1470,8 +1517,8 @@ MapController.prototype = {
         if (timestamp) {
             this.mapControlView.setTime(timestamp);
         } else {
-            alert("Time step does not exist.");
-            console.log("Step number: ", stepNum, "Model timestamps: ",
+            window.alert("Time step does not exist.");
+            log("Step number: ", stepNum, "Model timestamps: ",
                 this.model.expectedTimeSteps);
         }
     },
@@ -1479,7 +1526,7 @@ MapController.prototype = {
     sliderChanged: function(event, newStepNum) {
         // If the model is dirty, we need to run until the new time step.
         if (this.model.dirty) {
-            if (confirm("You have changed settings. Re-run the model now?")) {
+            if (window.confirm("You have changed settings. Re-run the model now?")) {
                 this.play({
                     startFromTimeStep: this.mapView.currentTimeStep,
                     runUntilTimeStep: newStepNum
@@ -1517,18 +1564,16 @@ MapController.prototype = {
         this.mapControlView.setTimeStep(this.mapView.currentTimeStep);
         this.mapControlView.setTime(
             this.model.getTimestampForStep(this.mapView.currentTimeStep));
-        this.model.getNextTimeStep(false);
 
         if (this.model.runUntilTimeStep &&
             this.mapView.currentTimeStep == this.model.runUntilTimeStep) {
-
             this.pause();
         }
     },
 
     // Set the model and all controls to `stepNum`.
     setTimeStep: function(stepNum) {
-        this.model.setTimeStep(stepNum);
+        this.model.setCurrentTimeStep(stepNum);
         this.mapControlView.setPaused();
         this.mapControlView.setTimeStep(stepNum);
         this.mapView.setPaused();
@@ -1564,161 +1609,118 @@ MapController.prototype = {
     },
 
     /*
-     * Get the URL path for the currently-selected item in the tree. The URL 
-     * is looked up in `this.urls`.
+     Look up an `AjaxForm` by its form type.
+
+     Options:
+        - `formTypeData`: an object with the key `formType` and optional key
+            `itemId` which is the ID of the node.
+        - `mode`: a string descirbing the form mode: 'add', 'edit' or 'delete'
+            if applicable, else null.
+
+     The `form.fetch()` operation will trigger a 'change' event that other
+     objects are listening for.
      */
-    getUrlForTreeItem: function(node, mode) {
-        var urlKey = null;
-        var url = null;
+    showForm: function(formTypeData, mode) {
+        mode = mode ? ('/' + mode) : '';
+        var itemId = formTypeData.itemId ? ('/' + formTypeData.itemId) : '';
+        var subType = formTypeData.subType ? ('/' + formTypeData.subType) : '';
 
-        // TODO: Only activate 'Add item' button when a root node is selected.
-        if (node === null) {
-            console.log('Failed to get active node');
-            return false;
+        if ('mode' === 'add') {
+            itemId = '';
         }
 
-        if (node.data.key == 'setting' || node.data.key == 'spill') {
-            return false;
-        }
-
-        // If this is a top-level node, then its `data.key` value will
-        // match a URL in `this.urls`. Otherwise it's a child node and its
-        // parent (in `node.parent` will have a `key` value  set to
-        // 'setting', 'spill' or 'mover' and `node` will have a `data.type`
-        // value specific to its server-side representation, e.g.
-        // 'constant_wind'.
-        if (node.data.key in this.urls) {
-            urlKey = node.data.key;
-        } else if (node.parent.data.key in this.urls) {
-            urlKey = node.parent.data.key;
-        }
-
-        if (!urlKey) {
-            return false;
-        }
-
-        var rootUrl = this.urls[urlKey];
-
-        if (!rootUrl) {
-            return false;
-        }
-
-        switch (mode) {
-            case 'add':
-                url = rootUrl + '/add';
-                break;
-            case 'edit':
-                url = rootUrl + '/' + node.data.type + '/' + mode + '/' + node.data.key;
-                break;
-            case 'delete':
-                url = rootUrl + '/' + mode;
-                break;
-            default:
-                // Default to the add URL.
-                url = rootUrl + '/add';
-                break;
-        }
-
-        return url;
+        this.ajaxForm.fetch({
+            url: this.ajaxForm.get('url') +
+                '/' + formTypeData.type + subType + mode + itemId
+        });
     },
 
+    /*
+     Get the `AjaxForm` type applicable to the tree item `node`. E.g., 'mover'.
+
+     Returns an object with the key `type` set to a string describing the form
+     type and `id` set to the ID value of the node item, if one existed, or
+     null if it didn't. The case where ID would be null is a top-level item like
+     the 'mover' item which represents a form type and is designed to open the
+     Add Mover form.
+     */
+    getFormTypeForTreeItem: function(node) {
+        var formType = null;
+        var typeData = null;
+
+        if (node === null) {
+            log('Failed to get active node');
+            return false;
+        }
+
+        if (this.isValidFormType(node.data.type)) {
+            formType = node.data.type;
+        }
+
+        if (formType) {
+            typeData = {
+                type: formType,
+                subType: node.data.subType,
+                itemId: node.data.id,
+            };
+        }
+
+        return typeData;
+    },
+
+    /*
+     Find the `AjaxForm` type for the selected tree item and display it.
+     */
     showFormForActiveTreeItem: function(mode) {
         var node = this.treeView.getActiveItem();
-        var url = this.getUrlForTreeItem(node, mode);
+        var formTypeData = this.getFormTypeForTreeItem(node);
 
-        if (url) {
-            this.showForm(url);
+        if (formTypeData === null) {
+            return;
         }
-    },
 
-    addButtonClicked: function(event) {
+        this.showForm(formTypeData, mode);
+    },
+    
+    addButtonClicked: function(node) {
         this.showFormForActiveTreeItem('add');
     },
 
-    treeItemDoubleClicked: function(event, node) {
-        if (node.data.key in this.urls) {
-            // A root item
-            this.showFormForActiveTreeItem('add');
-        } else {
-            // A child item
+    treeItemDoubleClicked: function(node) {
+        if (node.data.id) {
             this.showFormForActiveTreeItem('edit');
+        } else {
+            this.showFormForActiveTreeItem('add');
         }
     },
 
-    settingsButtonClicked: function(event) {
+    settingsButtonClicked: function(node) {
         this.showFormForActiveTreeItem('edit');
-    },
-
-    saveForm: function() {
-        this.formView.submitForm();
     },
 
     removeButtonClicked: function(event) {
         var node = this.treeView.getActiveItem();
-        var url = this.getUrlForTreeItem(node, 'delete');
-        var _this = this;
+        var formTypeData = this.getFormTypeForTreeItem(node);
 
-        if (!node.data.key) {
+        if (formTypeData === null) {
             return;
         }
 
-        if (confirm('Remove mover?') === false) {
+        if (window.confirm('Remove mover?') === false) {
             return;
         }
 
-        $.ajax({
-            type: "POST",
-            url: url,
-            tryCount: 0,
-            retryLimit: 3,
-            data: "mover_id=" + node.data.key,
-            success: function(event, data) {
-                _this.treeView.reload();
-            },
+        this.ajaxForm.submit({
+            url: this.ajaxForm.get('url') + '/' + formTypeData.type + '/delete',
+            data: "mover_id=" + node.data.id,
             error: function() {
-                alert('Could not remove item.');
+                window.alert('Could not remove item.');
             }
         });
     },
 
-    showForm: function(url) {
-        $.ajax({
-            type: 'GET',
-            url: url,
-            tryCount: 0,
-            retryLimit: 3,
-            success: this.submitSuccess,
-            error: window.noaa.erd.gnome.handleAjaxError
-        });
-    },
-
-    formSubmitted: function(event, form) {
-        $.ajax({
-            type: 'POST',
-            tryCount: 0,
-            retryLimit: 3,
-            data: $(form).serialize(),
-            url: $(form).attr('action'),
-            success: this.submitSuccess,
-            error: window.noaa.erd.gnome.handleAjaxError
-        });
-    },
-
-    submitSuccess: function(data, textStatus, xhr) {
-        if ('form_html' in data) {
-            this.formView.reloadForm(data.form_html);
-        } else {
-            this.treeView.reload();
-            this.formView.clearForm();
-        }
-
-        if ('message' in data) {
-            this.displayMessage(data.message);
-        }
-    },
-
-    modelRunBegan: function(event, data) {
-        this.model.getNextTimeStep(true);
+    modelRunBegan: function(data) {
+        this.model.getNextTimeStep();
         return true;
     },
 
@@ -1728,12 +1730,13 @@ MapController.prototype = {
         this.mapControlView.enableControls();
     },
 
-    modelRunFinished: function(event) {
+    modelRunFinished: function() {
         this.stop();
     },
 
-    nextTimeStepReady: function(event, step) {
-        this.mapView.addTimeStep(step);
+    nextTimeStepReady: function(step) {
+        this.mapControlView.enableControls([this.mapControlView.pauseButtonEl]);
+        this.mapView.addTimeStep(this.model.getCurrentTimeStep());
     }
 };
 
@@ -1745,5 +1748,4 @@ window.noaa.erd.gnome.Router = Backbone.Router.extend({
 });
 
 window.noaa.erd.gnome.MapController = MapController;
-    
 

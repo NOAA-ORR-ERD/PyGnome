@@ -59,6 +59,7 @@
 <script src="/static/js/jquery-ui-1.8.24.custom.min.js"></script>
 <script src="/static/js/bootstrap.min.js"></script>
 <script src="/static/js/namespace.js"></script>
+<script src="/static/js/util.js"></script>
 <%block name="javascript"> </%block>
 </body>
 </html>

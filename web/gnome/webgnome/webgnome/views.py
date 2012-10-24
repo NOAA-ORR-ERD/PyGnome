@@ -43,7 +43,6 @@ def show_model(request):
     if created:
         request.session[settings.model_session_key] = model.id
 
-        # A model with ID `model_id` did not exist, so we created a new one.
         if model_id:
             data['warning'] = 'The model you were working on is no longer ' \
                               'available. We created a new one for you.'
@@ -127,7 +126,7 @@ def run_model_until(request, model):
     if request.method == 'POST' and form.validate():
         date = form.get_datetime()
         model.set_run_until(date)
-        return {'run_until': date}
+        return {'run_until': date, 'form_html': None}
 
     context = {
         'form': form,
@@ -168,7 +167,8 @@ def edit_constant_wind_mover(request, model):
                                     'a new constant wind mover to the model.')
         return {
             'id': mover_id,
-            'message': message
+            'message': message,
+            'form_html': None
         }
 
     html = render('webgnome:templates/forms/constant_wind_mover.mak', {
@@ -200,7 +200,8 @@ def edit_variable_wind_mover(request, model):
                                     'a new variable wind mover to the model.')
         return {
             'id': mover_id,
-            'message': message
+            'message': message,
+            'form_html': None
         }
 
     html = render('webgnome:templates/forms/variable_wind_mover.mak', {
@@ -222,7 +223,8 @@ def add_constant_wind_mover(request, model):
             'id': model.add_mover(form.data),
             'type': 'mover',
             'message': _make_message(
-                'success', 'Added a variable wind mover to the model.')
+                'success', 'Added a variable wind mover to the model.'),
+            'form_html': None
         }
 
     html = render('webgnome:templates/forms/constant_wind_mover.mak', {
@@ -243,7 +245,8 @@ def add_variable_wind_mover(request, model):
             'id': model.add_mover(form.data),
             'type': 'mover',
             'message': _make_message(
-                'success', 'Added a variable wind mover to the model.')
+                'success', 'Added a variable wind mover to the model.'),
+            'form_html': None
         }
 
     context = {
@@ -301,9 +304,9 @@ def delete_mover(request, model):
 @view_config(route_name='get_tree', renderer='gnome_json')
 @json_require_model
 def get_tree(request, model):
-    settings = {'title': 'Model Settings', 'key': 'setting', 'children': []}
-    movers = {'title': 'Movers', 'key': 'mover', 'children': []}
-    spills = {'title': 'Spills', 'key': 'spill', 'children': []}
+    settings = {'title': 'Model Settings', 'type': 'setting', 'children': []}
+    movers = {'title': 'Movers', 'type': 'mover', 'children': []}
+    spills = {'title': 'Spills', 'type': 'spill', 'children': []}
 
     def get_value_title(name, value, max_chars=8):
         """
@@ -316,32 +319,34 @@ def get_tree(request, model):
 
     for setting in model.get_settings():
         settings['children'].append({
-            'key': setting.name,
+            'type': 'setting',
+            'subType': setting.name,
             'title': get_value_title(setting.name, setting.value),
-            'type': 'setting'
         })
 
     map = model.get_map()
 
     if map:
         settings['children'].append({
-            'key': 'map',
+            'type': 'setting',
+            'subType': 'map',
             'title': get_value_title('Map', map.name),
-            'type': 'setting'
         })
 
     for id, mover in model.get_movers().items():
         movers['children'].append({
-            'key': id,
+            'type': 'mover',
+            'subType': mover.type,
+            'id': id,
             'title': model.get_mover_title(mover),
-            'type': mover.type
         })
 
     for id, spill in model.get_spills().items():
         spills['children'].append({
-            'key': id,
+            'type': 'spill',
+            'subType': spill.type,
+            'id': id,
             'title': get_value_title('ID', id),
-            'type': spill.type
         })
 
     return [settings, movers, spills]
