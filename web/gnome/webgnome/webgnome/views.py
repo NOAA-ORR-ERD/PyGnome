@@ -145,10 +145,8 @@ def run_model_until(request, model):
 @view_config(route_name='get_next_step', renderer='gnome_json')
 @json_require_model
 def get_next_step(request, model):
-    step = model.get_next_step()
-    print step, model.time_steps
     return {
-        'time_step': step
+        'time_step': model.get_next_step()
     }
 
 

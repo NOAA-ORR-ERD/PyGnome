@@ -532,9 +532,10 @@ var MapView = Backbone.View.extend({
         var _this = this;
         $(this.mapEl).on('click', 'img', function(event) {
             if ($(this).data('clickEnabled')) {
-                $(_this).trigger(
-                    MapView.MAP_WAS_CLICKED,
-                    {x: event.pageX, y: event.pageY});
+                _this.trigger(MapView.MAP_WAS_CLICKED, {
+                    x: event.pageX,
+                    y: event.pageY
+                });
             }
         });
     },
@@ -553,9 +554,10 @@ var MapView = Backbone.View.extend({
             },
             stop: function(event) {
                 if (!$(this).selectable('option', 'disabled')) {
-                    $(_this).trigger(
-                        MapView.DRAGGING_FINISHED,
-                        [_this.startPosition, {x: event.pageX, y: event.pageY}]);
+                    _this.trigger(MapView.DRAGGING_FINISHED, [
+                        _this.startPosition,
+                        {x: event.pageX, y: event.pageY}
+                    ]);
                 }
             }
         });
@@ -1583,7 +1585,9 @@ var AppView = Backbone.View.extend({
     },
 
     zoomIn: function(startPosition, endPosition) {
-        this.model.setCurrentTimeStep(0);
+        this.mapView.setPaused();
+        this.mapControlView.setPaused();
+        this.model.rewind();
 
         if (endPosition) {
             var rect = {start: startPosition, end: endPosition};
@@ -1605,7 +1609,9 @@ var AppView = Backbone.View.extend({
     },
 
     zoomOut: function(point) {
-        this.model.setCurrentTimeStep(0);
+        this.model.rewind();
+        this.mapView.setPaused();
+        this.mapControlView.setPaused();
         this.model.zoomFromPoint(point, Model.ZOOM_OUT);
         this.mapView.setRegularCursor();
     },
