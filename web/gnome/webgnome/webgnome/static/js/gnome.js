@@ -121,7 +121,8 @@ var Model = Backbone.Collection.extend({
         var timestamp;
 
         if (this.serverHasTimeStep(stepNum)) {
-            timestamp = this.expectedTimeSteps[stepNum];
+            timestamp = getUTCStringForTimestamp(
+                this.expectedTimeSteps[stepNum]);
         }
 
         return timestamp;
