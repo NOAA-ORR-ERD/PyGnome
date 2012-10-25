@@ -62,7 +62,7 @@
            <div class="alert alert-error ${'' if error else 'hidden'}">
               <button type="button" class="close" data-dismiss="alert">× </button>
               <strong>Error!</strong> <span class="message">${error if error else ''}</span>
-          </div>         
+          </div>
       </div>
     </div>
 

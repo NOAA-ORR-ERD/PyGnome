@@ -54,7 +54,7 @@ var TimeStep = Backbone.Model.extend({
     get: function(attr) {
         var value = Backbone.Model.prototype.get.call(this, attr);
 
-        if (attr === 'timestep') {
+        if (attr === 'timestamp') {
             value = getUTCStringForTimestamp(value);
         }
 

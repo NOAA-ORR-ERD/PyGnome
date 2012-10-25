@@ -225,8 +225,6 @@ def add_constant_wind_mover(request, model):
         return {
             'id': model.add_mover(form.data),
             'type': 'mover',
-            'message': _make_message(
-                'success', 'Added a variable wind mover to the model.'),
             'form_html': None
         }
 
@@ -247,8 +245,6 @@ def add_variable_wind_mover(request, model):
         return {
             'id': model.add_mover(form.data),
             'type': 'mover',
-            'message': _make_message(
-                'success', 'Added a variable wind mover to the model.'),
             'form_html': None
         }
 
@@ -300,7 +296,7 @@ def delete_mover(request, model):
     model.delete_mover(mover_id)
 
     return {
-        'message': _make_message('success', 'Mover deleted.')
+        'success': True
     }
 
 
