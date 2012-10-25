@@ -640,3 +640,8 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader (char *path)
 done:
 	return err;
 }
+
+OSSMTimeValue_c::~OSSMTimeValue_c () 
+{ 
+	Dispose (); 
+}

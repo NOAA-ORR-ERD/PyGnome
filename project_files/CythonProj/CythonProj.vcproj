@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="lib_gnomeDLL"
-	ProjectGUID="{A3C1BD3F-11C7-49D5-8371-9F7A512D4A15}"
-	RootNamespace="lib_gnomeDLL"
+	Name="CythonProj"
+	ProjectGUID="{1F29991D-D694-41E5-9800-14E9F4252359}"
+	RootNamespace="CythonProj"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -41,11 +41,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\lib_gnome"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LIB_GNOMEDLL_EXPORTS;pyGNOME;ibmpyGNOME"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CYTHONPROJ_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="2"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -61,7 +60,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="..\..\py_gnome\gnome\cy_gnome\$(ProjectName).dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -116,9 +114,9 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\lib_gnome"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LIB_GNOMEDLL_EXPORTS;pyGNOME;ibmpyGNOME"
-				RuntimeLibrary="2"
+				AdditionalIncludeDirectories="C:\Python27\include;..\..\lib_gnome;C:\Python27\Lib\site-packages\numpy\core\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CYTHONPROJ_EXPORTS;pyGNOME;ibmpyGNOME"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -136,9 +134,10 @@
 			<Tool
 				Name="VCLinkerTool"
 				ShowProgress="2"
-				OutputFile="..\..\py_gnome\gnome\cy_gnome\$(ProjectName).dll"
+				OutputFile="..\..\py_gnome\gnome\cy_gnome\cy_ossm_time.pyd"
 				LinkIncremental="1"
-				IgnoreDefaultLibraryNames=""
+				AdditionalLibraryDirectories="C:\Python27\libs\"
+				IgnoreAllDefaultLibraries="false"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -169,6 +168,10 @@
 		</Configuration>
 	</Configurations>
 	<References>
+		<ProjectReference
+			ReferencedProjectIdentifier="{A3C1BD3F-11C7-49D5-8371-9F7A512D4A15}"
+			RelativePathToProject="..\lib_gnomeDLL\lib_gnomeDLL.vcproj"
+		/>
 	</References>
 	<Files>
 		<Filter
@@ -177,115 +180,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\lib_gnome\CATSMover_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\ClassID_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\CMYLIST.CPP"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\CompFunctions.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\CurrentMover_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\DagTree.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\DagTreeIO.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\GEOMETR2.CPP"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\GEOMETRY.CPP"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\MemUtils.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\Mover_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\MYRANDOM.CPP"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\OSSMTimeValue_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\OUTILS.CPP"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\Random_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\RectGridVeL_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\RectUtils.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\Replacements.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\ShioCurrent1.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\ShioCurrent2.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\ShioHeight.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\ShioTimeValue_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\StringFunctions.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\TimeValue_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\TimeValuesIO.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\TriGridVel3D_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\TriGridVel_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\WindMover_c.cpp"
+				RelativePath="..\..\py_gnome\gnome\cy_gnome\cy_ossm_time.cpp"
 				>
 			</File>
 		</Filter>
