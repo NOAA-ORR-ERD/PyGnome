@@ -109,14 +109,14 @@
 
     <script type="text/javascript">
         $('#map').imagesLoaded(function() {
-            new window.noaa.erd.gnome.MapController({
+            new window.noaa.erd.gnome.AppView({
                 mapEl: '#map',
                 mapPlaceholderEl: '#placeholder',
                 sidebarEl: '#sidebar',
                 formContainerEl: '#modal-container',
-                generatedTimeSteps: ${generated_time_steps_json or 'null' | n},
-                expectedTimeSteps: ${expected_time_steps_json or 'null' | n},
-                startFromTimeStep: ${model.current_step}
+                generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
+                expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
+                currentTimeStep: ${model.current_step}
             });
         });
     </script>

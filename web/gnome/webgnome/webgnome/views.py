@@ -21,7 +21,7 @@ def _make_message(type, text):
     """
     Create a "message" dictionary suitable to be returned in a JSON response.
     """
-    return dict(mesage=dict(type=type, text=text))
+    return dict(type=type, text=text)
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -69,13 +69,16 @@ def create_model(request):
 
     if model_id and confirm:
         settings.Model.delete(model_id)
-
-    model = settings.Model.create()
-    request.session[settings.model_session_key] = model.id
-    message = _make_message('success', 'Created a new model.')
+        model = settings.Model.create()
+        model_id = model.id
+        request.session[settings.model_session_key] = model.id
+        message = _make_message('success', 'Created a new model.')
+    else:
+        message = _make_message('error', 'Could not create a new model. '
+                                         'Invalid data was received.')
 
     return {
-        'model_id': model.id,
+        'model_id': model_id,
         'message': message
     }
 
@@ -142,8 +145,10 @@ def run_model_until(request, model):
 @view_config(route_name='get_next_step', renderer='gnome_json')
 @json_require_model
 def get_next_step(request, model):
+    step = model.get_next_step()
+    print step, model.time_steps
     return {
-        'time_step': model.get_next_step()
+        'time_step': step
     }
 
 
@@ -320,7 +325,7 @@ def get_tree(request, model):
     for setting in model.get_settings():
         settings['children'].append({
             'type': 'setting',
-            'subType': setting.name,
+            'subtype': setting.name,
             'title': get_value_title(setting.name, setting.value),
         })
 
@@ -329,14 +334,14 @@ def get_tree(request, model):
     if map:
         settings['children'].append({
             'type': 'setting',
-            'subType': 'map',
+            'subtype': 'map',
             'title': get_value_title('Map', map.name),
         })
 
     for id, mover in model.get_movers().items():
         movers['children'].append({
             'type': 'mover',
-            'subType': mover.type,
+            'subtype': mover.type,
             'id': id,
             'title': model.get_mover_title(mover),
         })
@@ -344,7 +349,7 @@ def get_tree(request, model):
     for id, spill in model.get_spills().items():
         spills['children'].append({
             'type': 'spill',
-            'subType': spill.type,
+            'subtype': spill.type,
             'id': id,
             'title': get_value_title('ID', id),
         })

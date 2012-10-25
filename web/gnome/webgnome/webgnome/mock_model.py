@@ -157,6 +157,7 @@ class MockModel(object):
             return True
 
         self.is_running = True
+        self.time_steps = []
 
         frames_glob = os.path.join(
             os.path.dirname(__file__), 'static', 'img', 'test_frames', '*.jpg')

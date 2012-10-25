@@ -21,7 +21,8 @@ var parseMessage = function(data) {
 
     if (_.has(data, 'message')) {
         message = data.message;
-        if (data.message.type == 'error') {
+
+        if (data.message.type === 'error') {
             message.error = true;
         }
 
@@ -33,10 +34,33 @@ var parseMessage = function(data) {
 
 
 /*
+ Return a UTC date string for `timestamp`, which should be in an format
+ acceptable to `Date.parse`.
+ */
+var getUTCStringForTimestamp = function(timestamp) {
+    var date = new Date(Date.parse(timestamp));
+    if (date) {
+        timestamp = date.toUTCString();
+    }
+    return timestamp;
+}
+
+
+/*
  `TimeStep` represents a single time step of the user's actively-running
  model on the server.
  */
-var TimeStep = Backbone.Model.extend({});
+var TimeStep = Backbone.Model.extend({
+    get: function(attr) {
+        var value = Backbone.Model.prototype.get.call(this, attr);
+
+        if (attr === 'timestep') {
+            value = getUTCStringForTimestamp(value);
+        }
+
+        return value;
+    }
+});
 
 
 /*
@@ -50,28 +74,23 @@ var Model = Backbone.Collection.extend({
         _.bindAll(this);
         this.url = opts.url;
         this.currentTimeStep = opts.currentTimeStep || 0;
+        this.nextTimeStep = this.currentTimeStep ? this.currentTimeStep + 1 : 0;
         // An array of timestamps, one for each step we expect the server to
         // make, passed back when we initiate a model run.
         this.expectedTimeSteps = opts.expectedTimeSteps || [];
-        // When running the model, start from this time step.
-        this.startFromTimeStep = opts.startFromTimeStep || 0;
         // Optionally specify the zoom level.
         this.zoomLevel = opts.zoomLevel === undefined ? 4 : opts.zoomLevel;
         // If true, `Model` will request a new set of time steps from the server
         // on the next run. Assume we want to do this by default (i.e., at
         // construction time) if there are no time steps.
-        this.dirty = this.length === 0;
-    },
+        this.dirty = timeSteps.length === 0;
 
-    getTimestampForStep: function(stepNum) {
-        var timestamp = this.expectedTimeSteps[stepNum];
-        if (timestamp) {
-            var date = new Date(Date.parse(timestamp));
-            if (date) {
-                timestamp = date.toUTCString();
-            }
+        // When initializing the model at the last time step of a generated
+        // series, rewind to the beginning so the user can play the series
+        // again.
+        if (this.currentTimeStep === timeSteps.length -1) {
+            this.rewind();
         }
-        return timestamp;
     },
 
     hasData: function() {
@@ -94,85 +113,61 @@ var Model = Backbone.Collection.extend({
     },
 
     /*
+     Return the timestamp the server returned for the expected step `stepNum`.
+     Unlike `this.getTimeStep()`, this function may be called for steps that
+     the model has not yet received from the server.
+     */
+    getTimestampForExpectedStep: function(stepNum) {
+        var timestamp;
+
+        if (this.serverHasTimeStep(stepNum)) {
+            timestamp = this.expectedTimeSteps[stepNum];
+        }
+
+        return timestamp;
+    },
+
+    /*
      Handle a successful request to the server to start the model run.
      Events:
-     - Triggers `MESSAGE_RECEIVED` if the server sent a message.
-     - Triggers `Model.RUN_BEGAN` unless we received an error message.
+     
+     - Triggers:
+        - `Model.MESSAGE_RECEIVED` if the server sent a message.
+        - `Model.RUN_BEGAN` unless we received an error message.
      */
-    runBegan: function(data) {
+    runSuccess: function(data) {
         var message = parseMessage(data);
 
         if (message) {
             this.trigger(Model.MESSAGE_RECEIVED, message);
 
             if (message.error) {
+                this.trigger(Model.RUN_ERROR);
                 return false;
             }
         }
 
         this.dirty = false;
-        this.isFirstStep = true;
         this.expectedTimeSteps = data.expected_time_steps;
         this.trigger(Model.RUN_BEGAN, data);
+        this.getNextTimeStep();
         return true;
     },
 
     /*
-     Run the model.
-
-     Makes an AJAX request to the server to initiate a model run.
+     Helper that performs an AJAX request to start ("run") the model.
+     
      Receives back an array of timestamps, one for each step the server
      expects to generate on subsequent requests.
-
-     Options:
-     - `zoomLevel`: the user's chosen zoom level
-     - `zoomDirection`: if the user is zooming, `Model.ZOOM_IN`,
-     `Model.ZOOM_OUT`, otherwise `Model.ZOOM_NONE` (the default)
-     - `startFromTimeStep`: the time step to start the model run at. This
-     is used during cached runs, when the user chooses a time step,
-     say with the slider, and runs the model, but the user has not
-     changed any values (i.e., the model is not `dirty`) and the
-     model already has time step data in its internal arra.
-     - `runUntilTimeStep`: the time step to stop running. This value is
-     passed to the server-side model and running will stop after the
-     client requests the step with this number.
-
-     Events:
-     - Triggers `Model.RUN_BEGAN` after the run begins (i.e., the AJAX
-     request was successful).
      */
-    run: function(opts) {
-        opts = $.extend({
-            zoomLevel: this.zoomLevel,
-            zoomDirection: Model.ZOOM_NONE,
-            startFromTimeStep: null,
-            runUntilTimeStep: null
-        }, opts);
-
-        this.startFromTimeStep = opts.startFromTimeStep;
-        this.runUntilTimeStep = opts.runUntilTimeStep;
-
-        if (this.dirty === false) {
-            if ((this.startFromTimeStep &&
-                this.hasCachedTimeStep(this.startFromTimeStep)) ||
-                (this.runUntilTimeStep &&
-                    this.hasCachedTimeStep(this.runUntilTimeStep))) {
-
-                // We have the time steps needed and assume that any in-
-                // between are also loaded.
-                this.isFirstStep = true;
-                this.trigger(Model.RUN_BEGAN);
-                return;
-            }
-        }
-
+    doRun: function(opts) {
         var isInvalid = function(obj) {
-            return obj === undefined || obj === null || typeof(obj) != "object";
+            return obj === undefined || obj === null || typeof(obj) !== "object";
         };
 
         // Abort if we were asked to zoom without a valid `opts.rect` or
         // `opts.point`.
-        if (opts.zoomLevel != this.zoomLevel &&
+        if (opts.zoomLevel !== this.zoomLevel &&
             isInvalid(opts.rect) && isInvalid(opts.point)) {
             window.alert("Invalid zoom level. Please try again.");
             return;
@@ -186,9 +181,46 @@ var Model = Backbone.Collection.extend({
             data: opts,
             tryCount: 0,
             retryLimit: 3,
-            success: this.runBegan,
+            success: this.runSuccess,
             error: handleAjaxError
-        });
+        });       
+    },
+
+    /*
+     Run the model.
+     
+     If the model is dirty, make an AJAX request to the server to initiate a
+     model run. Otherwise request the next time step.
+
+     Options:
+     - `zoomLevel`: the user's chosen zoom level
+     - `zoomDirection`: if the user is zooming, `Model.ZOOM_IN`,
+         `Model.ZOOM_OUT`, otherwise `Model.ZOOM_NONE` (the default)
+     - `runUntilTimeStep`: the time step to stop running. This value is
+         passed to the server-side model and running will stop after the
+         client requests the step with this number.
+     */
+    run: function(opts) {
+        var options = $.extend({}, {
+            zoomLevel: this.zoomLevel,
+            zoomDirection: Model.ZOOM_NONE,
+            runUntilTimeStep: this.runUntilTimeStep
+        }, opts);
+
+        var needToGetRunUntilStep = false;
+
+        if (options.runUntilTimeStep) {
+            this.runUntilTimeStep = options.runUntilTimeStep;
+            needToGetRunUntilStep = options.runUntilTimeStep &&
+                !this.hasCachedTimeStep(options.runUntilTimeStep);
+        }
+
+        if (this.dirty || needToGetRunUntilStep) {
+            this.doRun(options);
+            return;
+        }
+
+        this.getNextTimeStep();
     },
 
     /*
@@ -209,14 +241,24 @@ var Model = Backbone.Collection.extend({
     },
 
     /*
-     Set the current time step to `stepId`.
+     Set the current time step to `stepNum`.
 
      Triggers:
      - `Model.NEXT_TIME_STEP_READY` with the time step object for the new step.
+     - `Model.RUN_FINISHED` if this was the step chosen to run until
      */
-    setCurrentTimeStep: function(stepId) {
-        this.currentTimeStep = stepId;
-        this.trigger(Model.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
+    setCurrentTimeStep: function(stepNum) {
+        this.currentTimeStep = stepNum;
+        this.nextTimeStep = stepNum + 1;
+
+         if (this.runUntilTimeStep &&
+                this.currentTimeStep === this.runUntilTimeStep) {
+             this.trigger(Model.RUN_FINISHED);
+             this.runUntilTimeStep = null;
+             return;
+         }
+
+         this.trigger(Model.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
     },
 
     /*
@@ -226,27 +268,15 @@ var Model = Backbone.Collection.extend({
      - `Model.RUN_FINISHED` if the server has no more time steps to run.
      */
     getNextTimeStep: function() {
-        var currStepNum, nextStepNum;
-        var _this = this;
-
-        if (this.startFromTimeStep) {
-            currStepNum = this.startFromTimeStep;
-            this.startFromTimeStep = null;
-        } else {
-            currStepNum = this.currentTimeStep;
-        }
-
-        // If this is step 0 and we don't have it yet, then we're requesting step 0.
-        nextStepNum = this.hasData() ? currStepNum + 1 : currStepNum;
-
-        if (this.serverHasTimeStep(nextStepNum) === false) {
+        if (!this.serverHasTimeStep(this.nextTimeStep)) {
+            this.rewind();
             this.trigger(Model.RUN_FINISHED);
             return;
         }
 
         // The time step has already been generated and we have it.
-        if (this.hasCachedTimeStep(nextStepNum)) {
-            this.setCurrentTimeStep(nextStepNum);
+        if (this.hasCachedTimeStep(this.nextTimeStep)) {
+            this.setCurrentTimeStep(this.nextTimeStep);
             return;
         }
 
@@ -257,12 +287,30 @@ var Model = Backbone.Collection.extend({
             async: false,
             type: "GET",
             url: this.url + '/next_step',
-            success: function(data) {
-                _this.addTimeStep(data.time_step);
-            },
+            success: this.timeStepRequestSuccess,
             error: handleAjaxError
         });
     },
+
+    timeStepRequestSuccess: function(data) {
+        var message = parseMessage(data);
+
+        if (message) {
+            this.trigger(Model.MESSAGE_RECEIVED, message);
+
+            if (message.error) {
+                this.trigger(Model.RUN_ERROR);
+                return;
+            }
+        }
+
+        if (!data.time_step) {
+            this.trigger(Model.RUN_ERROR);
+            return;
+        }
+
+        this.addTimeStep(data.time_step);
+   },
 
     /*
      Zoom the map from `point` in direction `direction`.
@@ -291,23 +339,57 @@ var Model = Backbone.Collection.extend({
     },
 
     /*
-     Reset the current time step to 0.
+     Set the current time step to 0.
      */
-    resetCurrentTimeStep: function() {
+    rewind: function() {
         this.currentTimeStep = 0;
-        this.startFromTimeStep = null;
+        this.nextTimeStep = 0;
     },
 
     /*
      Clear all time step data. Used when creating a new server-side model.
      */
     clearData: function() {
-        this.resetCurrentTimeStep();
-        this.reset([]);
+        this.rewind();
         this.timeSteps = [];
         this.expectedTimeSteps = [];
-        this.startFromTimeStep = 0;
-    }
+    },
+
+    /*
+     Request a new model. This destroys the current model.
+     */
+    create: function() {
+        $.ajax({
+            url: this.url + "/create",
+            data: "confirm_new=1",
+            type: "POST",
+            tryCount: 0,
+            retryLimit: 3,
+            success: this.createSuccess,
+            error: handleAjaxError
+        });
+    },
+
+     /*
+     Handle a successful request to the server to create a new model.
+     */
+    createSuccess: function(data) {
+        var message = parseMessage(data);
+
+        if (message) {
+            this.trigger(Model.MESSAGE_RECEIVED, message);
+
+            if (message.error) {
+                // TODO: Separate error event?
+                this.trigger(Model.RUN_ERROR);
+                return;
+            }
+        }
+
+        this.clearData();
+        this.dirty = true;
+        this.trigger(Model.CREATED);
+    },
 }, {
     // Class constants
     ZOOM_IN: 'zoom_in',
@@ -315,8 +397,10 @@ var Model = Backbone.Collection.extend({
     ZOOM_NONE: 'zoom_none',
 
     // Class events
+    CREATED: 'model:Created',
     RUN_BEGAN: 'model:modelRunBegan',
     RUN_FINISHED: 'model:modelRunFinished',
+    RUN_ERROR: 'model:runError',
     NEXT_TIME_STEP_READY: 'model:nextTimeStepReady',
     MESSAGE_RECEIVED: 'model:messageReceived'
 });
@@ -340,7 +424,7 @@ var AjaxForm = Backbone.Model.extend({
      and we're just passing them along to the `fetch()` method.
      */
     submit: function(opts) {
-        var options = $.extend(opts, {
+        var options = $.extend({}, opts, {
             type: 'POST',
             tryCount: 0,
             retryLimit: 3,
@@ -392,31 +476,23 @@ var MessageView = Backbone.View.extend({
  `MapView` represents the visual map and is reponsible for animating frames
  for each time step rendered by the server
  */
-function MapView(opts) {
-    this.mapEl = opts.mapEl;
-    this.frameClass = opts.frameClass;
-    this.activeFrameClass = opts.activeFrameClass;
-    this.placeholderEl = opts.placeholderEl;
-    this.currentTimeStep = 0;
-}
-
-MapView.PAUSED = 1;
-MapView.STOPPED = 2;
-MapView.PLAYING = 3;
-
-// `MapView` events
-MapView.DRAGGING_FINISHED = 'gnome:draggingFinished';
-MapView.REFRESH_FINISHED = 'gnome:refreshFinished';
-MapView.PLAYING_FINISHED = 'gnome:playingFinished';
-MapView.FRAME_CHANGED = 'gnome:frameChanged';
-MapView.MAP_WAS_CLICKED = 'gnome:mapWasClicked';
-
-MapView.prototype = {
+var MapView = Backbone.View.extend({
     initialize: function() {
+        _.bindAll(this);
+        this.mapEl = this.options.mapEl;
+        this.frameClass = this.options.frameClass;
+        this.activeFrameClass = this.options.activeFrameClass;
+        this.placeholderEl = this.options.placeholderEl;
+
         this.createPlaceholderCopy();
         this.makeImagesClickable();
         this.status = MapView.STOPPED;
-        return this;
+
+        this.model = this.options.model;
+        this.model.on(Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+        this.model.on(Model.RUN_ERROR, this.modelRunError);
+        this.model.on(Model.RUN_FINISHED, this.modelRunFinished);
+        this.model.on(Model.CREATED, this.modelCreated);
     },
 
     isPaused: function() {
@@ -498,43 +574,36 @@ MapView.prototype = {
         return step && step.length;
     },
 
-    // Set `stepNum` as the current time step and display an image if one
-    // exists.
-    setTimeStep: function(stepNum) {
-        var nextImage = this.getImageForTimeStep(stepNum);
-        var otherImages = $(this.mapEl).find('img').not(nextImage);
+    /*
+     Show the image for time step with ID `stepNum`.
+
+     Triggers:
+        - `MapView.FRAME_CHANGED` after the image has loaded.
+     */
+    showImageForTimeStep: function(stepNum) {
+        var map = $(this.mapEl);
+
+        // Show the map div if this is the first image of the run.
+        if (map.find('img').length === 1) {
+            map.show();
+        }
+
+        var stepImage = this.getImageForTimeStep(stepNum);
+        var otherImages = $(this.mapEl).find('img').not(stepImage);
 
         // Hide all other images in the map div.
         otherImages.css('display', 'none');
         otherImages.removeClass(this.activeFrameClass);
 
-        if (nextImage.length === 0) {
+        // The image isn't loaded.
+        if (stepImage.length === 0) {
             window.alert("An animation error occurred. Please refresh.");
         }
 
-        nextImage.addClass(this.activeFrameClass);
-        nextImage.css('display', 'block');
-        this.currentTimeStep = stepNum;
-    },
+        stepImage.addClass(this.activeFrameClass);
+        stepImage.css('display', 'block');
 
-    // Advance to time step `stepNum` and trigger FRAME_CHANGED to continue
-    // forward animation.
-    advanceTimeStep: function(stepNum) {
-        var map = $(this.mapEl);
-        var _this = this;
-
-        // Show the map div if this is the first image of the run.
-        if (map.find('img').length == 1) {
-            map.show();
-        }
-
-        setTimeout(function() {
-            if (_this.isPaused()) {
-                return;
-            }
-            _this.setTimeStep(stepNum);
-            $(_this).trigger(MapView.FRAME_CHANGED);
-        }, 150);
+        this.trigger(MapView.FRAME_CHANGED);
     },
 
     addImageForTimeStep: function(timeStep) {
@@ -550,24 +619,25 @@ MapView.prototype = {
         img.appendTo(map);
 
         $(img).imagesLoaded(function() {
-            _this.advanceTimeStep(timeStep.id);
+            setTimeout(_this.showImageForTimeStep, 150, [timeStep.id]);
         });
     },
 
     addTimeStep: function(timeStep) {
-        var imageExists = this.getImageForTimeStep(timeStep.id).length;
-
         if (timeStep.id === 0 && this.placeholderCopy) {
             this.removePlaceholderCopy();
         }
 
+        var imageExists = this.getImageForTimeStep(timeStep.id).length;
+
         // We must be playing a cached model run because the image already
         // exists. In all other cases the image should NOT exist.
         if (imageExists) {
-            this.advanceTimeStep(timeStep.id);
-        } else {
-            this.addImageForTimeStep(timeStep);
+            setTimeout(this.showImageForTimeStep, 150, [timeStep.id]);
+            return;
         }
+
+        this.addImageForTimeStep(timeStep);
     },
 
     // Clear out the current frames.
@@ -592,10 +662,6 @@ MapView.prototype = {
             {x: pos.left, y: pos.top},
             {x: pos.left + size.width, y: pos.top + size.height}
         ];
-    },
-
-    getFrameCount: function() {
-        return $(this.mapEl).find('img').length - 1;
     },
 
     setZoomingInCursor: function() {
@@ -660,18 +726,56 @@ MapView.prototype = {
 
         return this.isPositionInsideMap(_rect.start) &&
             this.isPositionInsideMap(_rect.end);
+    },
+
+    nextTimeStepReady: function() {
+        this.addTimeStep(this.model.getCurrentTimeStep());
+    },
+
+    modelRunError: function() {
+        this.setStopped();
+    },
+
+    modelRunFinished: function() {
+        this.setStopped();
+    },
+
+    modelCreated: function() {
+        this.clear();
+        this.createPlaceholderCopy();
+        this.setStopped();
     }
-};
+}, {
+    // Statuses
+    PAUSED: 1,
+    STOPPED: 2,
+    PLAYING: 3,
+
+    // Events
+    DRAGGING_FINISHED: 'mapView:draggingFinished',
+    REFRESH_FINISHED: 'mapView:refreshFinished',
+    PLAYING_FINISHED: 'mapView:playingFinished',
+    FRAME_CHANGED: 'mapView:frameChanged',
+    MAP_WAS_CLICKED: 'mapView:mapWasClicked'
+});
 
 
 var TreeView = Backbone.View.extend({
     initialize: function() {
         _.bindAll(this);
-        var _this = this;
         this.treeEl = this.options.treeEl;
         this.url = this.options.url;
+        this.tree = this.setupDynatree();
 
-        this.tree = $(this.treeEl).dynatree({
+        // Event handlers
+        this.options.ajaxForm.on('change', this.ajaxFormChanged);
+        this.options.model.on(Model.CREATED, this.reload);
+    },
+
+    setupDynatree: function() {
+        var _this = this;
+
+        return $(this.treeEl).dynatree({
             onActivate: function(node) {
                 _this.trigger(TreeView.ITEM_ACTIVATED, node);
             },
@@ -689,8 +793,6 @@ var TreeView = Backbone.View.extend({
             },
             persist: true
         });
-
-        this.options.ajaxForm.on('change', this.ajaxFormChanged);
     },
 
     /*
@@ -725,25 +827,24 @@ var TreeView = Backbone.View.extend({
 });
 
 
-function TreeControlView(opts) {
-    this.addButtonEl = opts.addButtonEl;
-    this.removeButtonEl = opts.removeButtonEl;
-    this.settingsButtonEl = opts.settingsButtonEl;
-    this.url = opts.url;
-
-    // Controls that require the user to select an item in the TreeView.
-    this.itemControls = [this.removeButtonEl, this.settingsButtonEl];
-}
-
-TreeControlView.ADD_BUTTON_CLICKED = 'gnome:addItemButtonClicked';
-TreeControlView.REMOVE_BUTTON_CLICKED = 'gnome:removeItemButtonClicked';
-TreeControlView.SETTINGS_BUTTON_CLICKED = 'gnome:itemSettingsButtonClicked';
-
-TreeControlView.prototype = {
+var TreeControlView = Backbone.View.extend({
     initialize: function() {
-        var _this = this;
-        this.disableControls();
+        _.bindAll(this);
+        this.addButtonEl = this.options.addButtonEl;
+        this.removeButtonEl = this.options.removeButtonEl;
+        this.settingsButtonEl = this.options.settingsButtonEl;
+        this.url = this.options.url;
 
+        // Controls that require the user to select an item in the TreeView.
+        this.itemControls = [this.removeButtonEl, this.settingsButtonEl];
+        this.disableControls();
+        this.setupClickEvents();
+
+        this.options.treeView.on(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
+    },
+
+    setupClickEvents: function() {
+        var _this = this;
         var clickEvents = [
             [this.addButtonEl, TreeControlView.ADD_BUTTON_CLICKED],
             [this.removeButtonEl, TreeControlView.REMOVE_BUTTON_CLICKED],
@@ -755,10 +856,14 @@ TreeControlView.prototype = {
                 if ($(_this).hasClass('disabled')) {
                     return false;
                 }
-                $(_this).trigger(customEvent);
+                _this.trigger(customEvent);
                 return true;
             });
         });
+    },
+
+    treeItemActivated: function() {
+        this.enableControls();
     },
 
     enableControls: function() {
@@ -772,13 +877,17 @@ TreeControlView.prototype = {
             $(buttonEl).addClass('disabled');
         });
     }
-};
+}, {
+    // Events
+    ADD_BUTTON_CLICKED: 'gnome:addItemButtonClicked',
+    REMOVE_BUTTON_CLICKED: 'gnome:removeItemButtonClicked',
+    SETTINGS_BUTTON_CLICKED: 'gnome:itemSettingsButtonClicked'
+});
 
 
 var MapControlView = Backbone.View.extend({
     initialize: function() {
         _.bindAll(this);
-        var _this = this;
         this.containerEl = this.options.containerEl;
         this.sliderEl = this.options.sliderEl;
         this.playButtonEl = this.options.playButtonEl;
@@ -791,6 +900,7 @@ var MapControlView = Backbone.View.extend({
         this.fullscreenButtonEl = this.options.fullscreenButtonEl;
         this.resizeButtonEl = this.options.resizeButtonEl;
         this.timeEl = this.options.timeEl;
+        this.mapView = this.options.mapView;
 
         // Controls whose state, either enabled or disabled, is related to whether
         // or not an animation is playing. The resize and full screen buttons
@@ -813,7 +923,23 @@ var MapControlView = Backbone.View.extend({
             disabled: true
         });
 
-        $(this.pauseButtonEl).click(this.pauseButtonClicked);
+        if (this.model.expectedTimeSteps.length) {
+            this.setTimeSteps(this.model.expectedTimeSteps);
+        }
+
+        this.setupClickEvents();
+
+        this.model = this.options.model;
+        this.model.on(Model.RUN_BEGAN, this.runBegan);
+        this.model.on(Model.RUN_ERROR, this.modelRunError);
+        this.model.on(Model.RUN_FINISHED, this.modelRunFinished);
+        this.model.on(Model.CREATED, this.modelCreated);
+
+        this.options.mapView.on(MapView.FRAME_CHANGED, this.mapViewFrameChanged);
+    },
+
+    setupClickEvents: function() {
+        var _this = this;
 
         var clickEvents = [
             [this.playButtonEl, MapControlView.PLAY_BUTTON_CLICKED],
@@ -823,7 +949,8 @@ var MapControlView = Backbone.View.extend({
             [this.zoomOutButtonEl, MapControlView.ZOOM_OUT_BUTTON_CLICKED],
             [this.moveButtonEl, MapControlView.MOVE_BUTTON_CLICKED],
             [this.fullscreenButtonEl, MapControlView.FULLSCREEN_BUTTON_CLICKED],
-            [this.resizeButtonEl, MapControlView.RESIZE_BUTTON_CLICKED]
+            [this.resizeButtonEl, MapControlView.RESIZE_BUTTON_CLICKED],
+            [this.pauseButtonEl, MapControlView.PAUSE_BUTTON_CLICKED]
         ];
 
         // TODO: This probably leaks memory, so do something else here, like
@@ -837,11 +964,6 @@ var MapControlView = Backbone.View.extend({
                 return true;
             });
         });
-
-        this.model = this.options.model;
-        this.model.on(Model.RUN_BEGAN, this.runBegan);
-
-        return this;
     },
 
     sliderStarted: function(event, ui) {
@@ -853,25 +975,48 @@ var MapControlView = Backbone.View.extend({
     },
 
     sliderMoved: function(event, ui) {
+        var timestamp = this.model.getTimestampForExpectedStep(ui.value);
+
+        if (timestamp) {
+            this.setTime(timestamp);
+        } else {
+            log('Slider changed to invalid time step: ' + ui.value);
+            return false;
+        }
+
         this.trigger(MapControlView.SLIDER_MOVED, ui.value);
     },
 
-    pauseButtonClicked: function(event) {
-        if ($(this.pauseButtonEl).hasClass('disabled')) {
-            return false;
-        }
-        if (this.status === MapControlView.STATUS_PLAYING) {
-            this.trigger(MapControlView.PAUSE_BUTTON_CLICKED);
-        }
-        return true;
-    },
-
     runBegan: function() {
-        if (this.model.dirty === true) {
-            this.reload();
+        if (this.model.dirty) {
+            // TODO: Is this really what we want to do here?
+            this.reset();
         }
 
         this.setTimeSteps(this.model.expectedTimeSteps);
+    },
+
+    mapViewFrameChanged: function() {
+        var timeStep = this.model.getCurrentTimeStep();
+        this.setTimeStep(timeStep.id);
+        this.setTime(timeStep.get('timestamp'));
+    },
+
+    stop: function() {
+        this.setStopped();
+        this.enableControls();
+    },
+
+    modelRunError: function() {
+        this.stop();
+    },
+
+    modelRunFinished: function() {
+        this.stop();
+    },
+
+    modelCreated: function() {
+        this.reset();
     },
 
     setStopped: function() {
@@ -882,8 +1027,8 @@ var MapControlView = Backbone.View.extend({
 
     setPlaying: function() {
         this.status = MapControlView.STATUS_PLAYING;
-        $(this.playButtonEl).hide();
         $(this.pauseButtonEl).show();
+        $(this.playButtonEl).hide();
     },
 
     setPaused: function() {
@@ -970,9 +1115,10 @@ var MapControlView = Backbone.View.extend({
     toggleControl: function(buttonEl, toggle) {
         if (toggle === MapControlView.ON) {
             $(buttonEl).removeClass('disabled');
-        } else {
-            $(buttonEl).addClass('disabled');
+            return;
         }
+
+        $(buttonEl).addClass('disabled');
     },
 
     /*
@@ -997,12 +1143,13 @@ var MapControlView = Backbone.View.extend({
             _.each(_.without(controls, this.sliderEl), function(button) {
                 _this.toggleControl(button, toggle);
             });
-        } else {
-            this.toggleSlider(toggle);
-            _.each(this.controls, function(button) {
-                _this.toggleControl(button, toggle);
-            });
+            return;
         }
+
+        this.toggleSlider(toggle);
+        _.each(this.controls, function(button) {
+            _this.toggleControl(button, toggle);
+        });
     },
 
     enableControls: function(controls) {
@@ -1018,22 +1165,12 @@ var MapControlView = Backbone.View.extend({
     },
 
     reset: function() {
+        this.setTime('00:00');
         this.disableControls();
         this.setStopped();
+        this.setTimeStep(0);
         $(this.sliderEl).slider('values', null);
-    },
-
-    reload: function() {
-        $.ajax({
-            type: "GET",
-            url: this.url,
-            success: this.handleReloadSuccess,
-            error: handleAjaxError
-        });
-    },
-
-    handleReloadSuccess: function(data) {
-        $(this.containerEl).html(data.result);
+        this.enableControls([this.playButtonEl]);
     }
 }, {
     // Constants
@@ -1156,10 +1293,11 @@ var ModalFormView = Backbone.View.extend({
         if (this.nextStepExists(stepNum)) {
             nextButton.removeClass('hidden');
             saveButton.addClass('hidden');
-        } else {
-            nextButton.addClass('hidden');
-            saveButton.removeClass('hidden');
+            return;
         }
+
+        nextButton.addClass('hidden');
+        saveButton.removeClass('hidden');
     },
 
     goToNextStep: function(event) {
@@ -1217,146 +1355,150 @@ var ModalFormView = Backbone.View.extend({
 });
 
 
-function MenuView(opts) {
-    // Top-level drop-downs
-    this.modelDropdownEl = opts.modelDropdownEl;
-    this.runDropdownEl = opts.runDropdownEl;
-    this.helpDropdownEl = opts.hepDropdownEl;
+var MenuView = Backbone.View.extend({
+    initialize: function() {
+        _.bindAll(this);
+        // Top-level drop-downs
+        this.modelDropdownEl = this.options.modelDropdownEl;
+        this.runDropdownEl = this.options.runDropdownEl;
+        this.helpDropdownEl = this.options.helpDropdownEl;
 
-    this.newItemEl = opts.newItemEl;
-    this.runItemEl = opts.runItemEl;
-    this.stepItemEl = opts.stepItemEl;
-    this.runUntilItemEl = opts.runUntilItemEl;
-}
+        // Drop-down children
+        this.newItemEl = this.options.newItemEl;
+        this.runItemEl = this.options.runItemEl;
+        this.stepItemEl = this.options.stepItemEl;
+        this.runUntilItemEl = this.options.runUntilItemEl;
 
-MenuView.NEW_ITEM_CLICKED = "gnome:newMenuItemClicked";
-MenuView.RUN_ITEM_CLICKED = "gnome:runMenuItemClicked";
-MenuView.RUN_UNTIL_ITEM_CLICKED = "gnome:runUntilMenuItemClicked";
+        $(this.newItemEl).click(this.newItemClicked);
+        $(this.runItemEl).click(this.runItemClicked);
+        $(this.runUntilItemEl).click(this.runUntilItemClicked);
+    },
 
-MenuView.prototype = {
+    newItemClicked: function(event) {
+        $(this.modelDropdownEl).dropdown('toggle');
+        this.trigger(MenuView.NEW_ITEM_CLICKED);
+    },
+
+    runItemClicked: function(event) {
+        $(this.runDropdownEl).dropdown('toggle');
+        this.trigger(MenuView.RUN_ITEM_CLICKED);
+    },
+
+    runUntilItemClicked: function(event) {
+        $(this.runDropdownEl).dropdown('toggle');
+        this.trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
+    }
+}, {
+    // Events
+    NEW_ITEM_CLICKED: "gnome:newMenuItemClicked",
+    RUN_ITEM_CLICKED: "gnome:runMenuItemClicked",
+    RUN_UNTIL_ITEM_CLICKED: "gnome:runUntilMenuItemClicked"
+});
+
+
+/*
+ Acts as a controller, listening on delegate views for events that influence
+ model state and coordinating any necessary changes.
+ */
+var AppView = Backbone.View.extend({
     initialize: function() {
         var _this = this;
+        _.bindAll(this);
 
-        // TODO: Initialize these events from a data structure.
-        $(this.newItemEl).click(function(event) {
-            $(_this.modelDropdownEl).dropdown('toggle');
-            $(_this).trigger(MenuView.NEW_ITEM_CLICKED);
+        this.apiRoot = "/model";
+
+        this.model = new Model(this.options.generatedTimeSteps, {
+            url: this.apiRoot,
+            expectedTimeSteps: this.options.expectedTimeSteps,
+            currentTimeStep: this.options.currentTimeStep
         });
 
-        $(this.runItemEl).click(function(event) {
-            $(_this.runDropdownEl).dropdown('toggle');
-            $(_this).trigger(MenuView.RUN_ITEM_CLICKED);
+        this.formTypes = [
+            'run_until',
+            'setting',
+            'mover',
+            'spill'
+        ];
+
+        this.ajaxForm = new AjaxForm({
+            url: _this.apiRoot
         });
 
-        $(this.runUntilItemEl).click(function(event) {
-            $(_this.runDropdownEl).dropdown('toggle');
-            $(_this).trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
+        this.formView = new ModalFormView({
+            formContainerEl: this.options.formContainerEl,
+            ajaxForm: this.ajaxForm
         });
-    }
-};
 
+        this.menuView = new MenuView({
+            modelDropDownEl: "#file-drop",
+            runDropdownEl: "#run-drop",
+            helpDropdownEl: "#help-drop",
+            newItemEl: "#menu-new",
+            runItemEl: "#menu-run",
+            stepItemEl: "#menu-step",
+            runUntilItemEl: "#menu-run-until"
+        });
 
-function MapController(opts) {
-    var _this = this;
-    _.bindAll(this);
+        this.sidebarEl = this.options.sidebarEl;
 
-    this.apiRoot = "/model";
+        this.treeView = new TreeView({
+            treeEl: "#tree",
+            url: "/tree",
+            ajaxForm: this.ajaxForm,
+            model: this.model
+        });
 
-    this.model = new Model(opts.generatedTimeSteps, {
-        url: this.apiRoot,
-        expectedTimeSteps: opts.expectedTimeSteps
-    });
+        this.treeControlView = new TreeControlView({
+            addButtonEl: "#add-button",
+            removeButtonEl: "#remove-button",
+            settingsButtonEl: "#settings-button",
+            treeView: this.treeView
+        });
 
-    this.formTypes = [
-         'run_until',
-         'setting',
-         'mover',
-         'spill'
-    ];
+        this.mapView = new MapView({
+            mapEl: this.options.mapEl,
+            placeholderEl: this.options.mapPlaceholderEl,
+            frameClass: 'frame',
+            activeFrameClass: 'active',
+            model: this.model
+        });
 
-    this.ajaxForm = new AjaxForm({
-        url: _this.apiRoot
-    });
+        this.mapControlView = new MapControlView({
+            sliderEl: "#slider",
+            playButtonEl: "#play-button",
+            pauseButtonEl: "#pause-button",
+            backButtonEl: "#back-button",
+            forwardButtonEl: "#forward-button",
+            zoomInButtonEl: "#zoom-in-button",
+            zoomOutButtonEl: "#zoom-out-button",
+            moveButtonEl: "#move-button",
+            fullscreenButtonEl: "#fullscreen-button",
+            resizeButtonEl: "#resize-button",
+            timeEl: "#time",
+            url: this.apiRoot + '/time_steps',
+            model: this.model,
+            mapView: this.mapView
+        });
 
-    this.formView = new ModalFormView({
-        formContainerEl: opts.formContainerEl,
-        ajaxForm: this.ajaxForm
-    });
+        this.messageView = new MessageView({
+            model: this.model,
+            ajaxForm: this.ajaxForm
+        });
 
-    this.menuView = new MenuView({
-        modelDropDownEl: "#file-drop",
-        runDropdownEl: "#run-drop",
-        helpDropdownEl: "#help-drop",
-        newItemEl: "#menu-new",
-        runItemEl: "#menu-run",
-        stepItemEl: "#menu-step",
-        runUntilItemEl: "#menu-run-until"
-    });
+        this.setupEventHandlers();
+    },
 
-    this.sidebarEl = opts.sidebarEl;
-
-    this.treeView = new TreeView({
-        treeEl: "#tree",
-        url: "/tree",
-        ajaxForm: this.ajaxForm
-    });
-
-    this.treeControlView = new TreeControlView({
-        addButtonEl: "#add-button",
-        removeButtonEl: "#remove-button",
-        settingsButtonEl: "#settings-button"
-    });
-
-    this.mapView = new MapView({
-        mapEl: opts.mapEl,
-        placeholderEl: opts.mapPlaceholderEl,
-        frameClass: 'frame',
-        activeFrameClass: 'active'
-    });
-
-    this.mapControlView = new MapControlView({
-        sliderEl: "#slider",
-        playButtonEl: "#play-button",
-        pauseButtonEl: "#pause-button",
-        backButtonEl: "#back-button",
-        forwardButtonEl: "#forward-button",
-        zoomInButtonEl: "#zoom-in-button",
-        zoomOutButtonEl: "#zoom-out-button",
-        moveButtonEl: "#move-button",
-        fullscreenButtonEl: "#fullscreen-button",
-        resizeButtonEl: "#resize-button",
-        timeEl: "#time",
-        url: this.apiRoot + '/time_steps',
-        model: this.model
-    });
-
-    this.messageView = new MessageView({
-        model: this.model,
-        ajaxForm: this.ajaxForm
-    });
-
-    this.setupEventHandlers();
-    this.initializeViews();
-
-    return this;
-}
-
-
-MapController.prototype = {
     setupEventHandlers: function() {
-        this.model.on(Model.RUN_BEGAN, this.modelRunBegan);
-        this.model.on(Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
-        this.model.on(Model.RUN_FINISHED, this.modelRunFinished);
+        this.model.on(Model.RUN_ERROR, this.modelRunError);
 
-        this.treeView.on(TreeView.ITEM_ACTIVATED, this.treeItemActivated);
-        this.treeView.bind(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
+        this.treeView.on(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
-        $(this.treeControlView).bind(TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
-        $(this.treeControlView).bind(TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
-        $(this.treeControlView).bind(TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
+        this.treeControlView.on(TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
+        this.treeControlView.on(TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
+        this.treeControlView.on(TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
 
         this.mapControlView.on(MapControlView.PLAY_BUTTON_CLICKED, this.playButtonClicked);
-        this.mapControlView.on(MapControlView.PAUSE_BUTTON_CLICKED, this.pauseButtonClicked);
+        this.mapControlView.on(MapControlView.PAUSE_BUTTON_CLICKED, this.pause);
         this.mapControlView.on(MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
         this.mapControlView.on(MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
         this.mapControlView.on(MapControlView.SLIDER_CHANGED, this.sliderChanged);
@@ -1366,34 +1508,33 @@ MapController.prototype = {
         this.mapControlView.on(MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
         this.mapControlView.on(MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
 
-        $(this.mapView).bind(MapView.PLAYING_FINISHED, this.stopAnimation);
-        $(this.mapView).bind(MapView.DRAGGING_FINISHED, this.zoomIn);
-        $(this.mapView).bind(MapView.FRAME_CHANGED, this.frameChanged);
-        $(this.mapView).bind(MapView.MAP_WAS_CLICKED, this.zoomOut);
+        this.mapView.on(MapView.PLAYING_FINISHED, this.stopAnimation);
+        this.mapView.on(MapView.DRAGGING_FINISHED, this.zoomIn);
+        this.mapView.on(MapView.FRAME_CHANGED, this.frameChanged);
+        this.mapView.on(MapView.MAP_WAS_CLICKED, this.zoomOut);
 
-        $(this.menuView).bind(MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
-        $(this.menuView).bind(MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
-        $(this.menuView).bind(MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
+        this.menuView.on(MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
+        this.menuView.on(MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
+        this.menuView.on(MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
     },
 
-    initializeViews: function() {
-        this.treeControlView.initialize();
-        this.mapView.initialize();
-        this.menuView.initialize();
+    modelRunError: function() {
+        this.messageView.displayMessage({
+            type: 'error',
+            text: 'Model run failed.'
+        });
     },
 
     isValidFormType: function(formType) {
         return _.contains(this.formTypes, formType);
     },
 
-    runMenuItemClicked: function(event) {
-        var stepNum = this.mapView.currentTimeStep;
-        var opts = this.mapControlView.isPaused() ? {startFromTimeStep: stepNum} : {};
-        this.play(opts);
+    runMenuItemClicked: function() {
+        this.play({});
     },
 
-    runUntilMenuItemClicked: function(event) {
-        this.showForm('run_until');
+    runUntilMenuItemClicked: function() {
+        this.fetchForm({type: 'run_until'});
     },
 
     newMenuItemClicked: function() {
@@ -1401,65 +1542,22 @@ MapController.prototype = {
             return;
         }
 
-        $.ajax({
-            url: this.urls.model + "/create",
-            data: "confirm=1",
-            type: "POST",
-            tryCount: 0,
-            retryLimit: 3,
-            success: this.createNewModelSuccess,
-            error: handleAjaxError
-        });
-    },
-
-    /*
-     Handle a successful request to the server to create a new model for the
-     user.
-     */
-    createNewModelSuccess: function(data) {
-        if ('message' in data) {
-            this.displayMessage(data.message);
-        }
-        this.model.clearData();
-        this.treeView.reload();
-        this.mapView.clear();
-        this.mapView.createPlaceholderCopy();
-        this.mapView.setStopped();
-        this.mapControlView.setStopped();
+        this.model.create();
     },
 
     play: function(opts) {
-        if (this.model.dirty) {
-            this.mapControlView.reset();
-        }
-
-        if (this.mapControlView.isStopped()) {
-            this.model.resetCurrentTimeStep();
-        }
-
-        this.mapView.setPlaying();
-        this.mapControlView.setPlaying();
         this.mapControlView.disableControls();
+        this.mapControlView.enableControls([this.mapControlView.pauseButtonEl]);
+        this.mapControlView.setPlaying();
+        this.mapView.setPlaying();
         this.model.run(opts);
     },
 
-    pause: function() {
-        this.mapControlView.setPaused();
-        this.mapView.setPaused();
-        this.mapControlView.enableControls();
+    playButtonClicked: function() {
+        this.play({});
     },
 
-    playButtonClicked: function(event) {
-        var stepNum = this.mapView.currentTimeStep;
-        var opts = this.mapControlView.isPaused() ? {startFromTimeStep: stepNum} : {};
-        this.play(opts);
-    },
-
-    pauseButtonClicked: function(event) {
-        this.pause();
-    },
-
-    enableZoomIn: function(event) {
+    enableZoomIn: function() {
         if (this.model.hasData() === false) {
             return;
         }
@@ -1470,7 +1568,7 @@ MapController.prototype = {
         this.mapView.setZoomingInCursor();
     },
 
-    enableZoomOut: function(event) {
+    enableZoomOut: function() {
         if (this.model.hasData() === false) {
             return;
         }
@@ -1480,12 +1578,12 @@ MapController.prototype = {
         this.mapView.setZoomingOutCursor();
     },
 
-    stopAnimation: function(event) {
+    stopAnimation: function() {
         this.mapControlView.setStopped();
     },
 
-    zoomIn: function(event, startPosition, endPosition) {
-        this.setTimeStep(0);
+    zoomIn: function(startPosition, endPosition) {
+        this.model.setCurrentTimeStep(0);
 
         if (endPosition) {
             var rect = {start: startPosition, end: endPosition};
@@ -1506,82 +1604,47 @@ MapController.prototype = {
         this.mapView.setRegularCursor();
     },
 
-    zoomOut: function(event, point) {
-        this.setTimeStep(0);
+    zoomOut: function(point) {
+        this.model.setCurrentTimeStep(0);
         this.model.zoomFromPoint(point, Model.ZOOM_OUT);
         this.mapView.setRegularCursor();
     },
 
-    sliderMoved: function(event, stepNum) {
-        var timestamp = this.model.getTimestampForStep(stepNum);
-        if (timestamp) {
-            this.mapControlView.setTime(timestamp);
-        } else {
-            window.alert("Time step does not exist.");
-            log("Step number: ", stepNum, "Model timestamps: ",
-                this.model.expectedTimeSteps);
-        }
+    pause: function() {
+        this.mapView.setPaused();
+        this.mapControlView.setPaused();
+        this.mapControlView.enableControls();
     },
 
-    sliderChanged: function(event, newStepNum) {
-        // If the model is dirty, we need to run until the new time step.
-        if (this.model.dirty) {
-            if (window.confirm("You have changed settings. Re-run the model now?")) {
-                this.play({
-                    startFromTimeStep: this.mapView.currentTimeStep,
-                    runUntilTimeStep: newStepNum
-                });
-            } else {
-                this.pause();
-            }
-            return;
-        }
-
-        if (newStepNum == this.mapView.currentTimeStep) {
+    sliderChanged: function(newStepNum) {
+        // We're advancing in an animation, so ignore the change. Otherwise
+        // the user just dragged the slider to a new position.
+        if (newStepNum === this.model.currentTimeStep) {
             return;
         }
 
         // If the model and map view have the time step, display it.
         if (this.model.hasCachedTimeStep(newStepNum) &&
-            this.mapView.timeStepIsLoaded(newStepNum)) {
-
-            var timestamp = this.model.getTimestampForStep(newStepNum);
-            this.mapControlView.setTime(timestamp);
-            this.mapView.setTimeStep(newStepNum);
-            this.mapControlView.setTimeStep(newStepNum);
-            this.mapControlView.setTime(timestamp);
+                this.mapView.timeStepIsLoaded(newStepNum)) {
+            this.model.setCurrentTimeStep(newStepNum);
             return;
         }
 
         // Otherwise, we need to run until the new time step.
         this.play({
-            startFromTimeStep: this.mapView.currentTimeStep,
             runUntilTimeStep: newStepNum
         });
     },
 
-    frameChanged: function(event) {
-        this.mapControlView.setTimeStep(this.mapView.currentTimeStep);
-        this.mapControlView.setTime(
-            this.model.getTimestampForStep(this.mapView.currentTimeStep));
-
-        if (this.model.runUntilTimeStep &&
-            this.mapView.currentTimeStep == this.model.runUntilTimeStep) {
-            this.pause();
+    frameChanged: function() {
+        if (this.mapView.isPaused() || this.mapView.isStopped()) {
+            return;
         }
+        this.model.getNextTimeStep();
     },
 
-    // Set the model and all controls to `stepNum`.
-    setTimeStep: function(stepNum) {
-        this.model.setCurrentTimeStep(stepNum);
-        this.mapControlView.setPaused();
-        this.mapControlView.setTimeStep(stepNum);
-        this.mapView.setPaused();
-        this.mapView.setTimeStep(stepNum);
-    },
-
-    jumpToFirstFrame: function(event) {
-        this.setTimeStep(0);
+    jumpToFirstFrame: function() {
+        this.model.setCurrentTimeStep(0);
     },
 
     // Jump to the last LOADED frame of the animation. This will stop at
@@ -1589,41 +1652,38 @@ MapController.prototype = {
     //
     // TODO: This should probably do something fancier, like block and load
     // all of the remaining frames if they don't exist, until the end.
-    jumpToLastFrame: function(event) {
-        var lastFrame = this.mapView.getFrameCount();
-        this.setTimeStep(lastFrame);
+    jumpToLastFrame: function() {
+        var lastFrame = this.model.length - 1;
+        this.model.setCurrentTimeStep(lastFrame);
     },
 
-    useFullscreen: function(event) {
+    useFullscreen: function() {
         this.mapControlView.switchToFullscreen();
         $(this.sidebarEl).hide('slow');
     },
 
-    disableFullscreen: function(event) {
+    disableFullscreen: function() {
         this.mapControlView.switchToNormalScreen();
         $(this.sidebarEl).show('slow');
     },
 
-    treeItemActivated: function(event) {
-        this.treeControlView.enableControls();
-    },
-
     /*
-     Look up an `AjaxForm` by its form type.
+     Fetch an `AjaxForm` based on `formTypeData`.
 
      Options:
-        - `formTypeData`: an object with the key `formType` and optional key
-            `itemId` which is the ID of the node.
+        - `formTypeData`: an object with the key `type`, e.g., 'mover' and
+            optional keys `itemId` which is the ID of the node and `subtype` which
+            is the form subtype, e.g., 'constant_wind_mover'.
         - `mode`: a string descirbing the form mode: 'add', 'edit' or 'delete'
             if applicable, else null.
 
      The `form.fetch()` operation will trigger a 'change' event that other
      objects are listening for.
      */
-    showForm: function(formTypeData, mode) {
+    fetchForm: function(formTypeData, mode) {
         mode = mode ? ('/' + mode) : '';
         var itemId = formTypeData.itemId ? ('/' + formTypeData.itemId) : '';
-        var subType = formTypeData.subType ? ('/' + formTypeData.subType) : '';
+        var subtype = formTypeData.subtype ? ('/' + formTypeData.subtype) : '';
 
         if ('mode' === 'add') {
             itemId = '';
@@ -1631,7 +1691,7 @@ MapController.prototype = {
 
         this.ajaxForm.fetch({
             url: this.ajaxForm.get('url') +
-                '/' + formTypeData.type + subType + mode + itemId
+                '/' + formTypeData.type + subtype + mode + itemId
         });
     },
 
@@ -1660,8 +1720,8 @@ MapController.prototype = {
         if (formType) {
             typeData = {
                 type: formType,
-                subType: node.data.subType,
-                itemId: node.data.id,
+                subtype: node.data.subtype,
+                itemId: node.data.id
             };
         }
 
@@ -1669,9 +1729,9 @@ MapController.prototype = {
     },
 
     /*
-     Find the `AjaxForm` type for the selected tree item and display it.
+     Fetch the `AjaxForm` for the active tree item.
      */
-    showFormForActiveTreeItem: function(mode) {
+    fetchFormForActiveTreeItem: function(mode) {
         var node = this.treeView.getActiveItem();
         var formTypeData = this.getFormTypeForTreeItem(node);
 
@@ -1679,23 +1739,24 @@ MapController.prototype = {
             return;
         }
 
-        this.showForm(formTypeData, mode);
+        this.fetchForm(formTypeData, mode);
     },
     
     addButtonClicked: function(node) {
-        this.showFormForActiveTreeItem('add');
+        this.fetchFormForActiveTreeItem('add');
     },
 
     treeItemDoubleClicked: function(node) {
         if (node.data.id) {
-            this.showFormForActiveTreeItem('edit');
-        } else {
-            this.showFormForActiveTreeItem('add');
+            this.fetchFormForActiveTreeItem('edit');
+            return;
         }
+
+        this.fetchFormForActiveTreeItem('add');
     },
 
     settingsButtonClicked: function(node) {
-        this.showFormForActiveTreeItem('edit');
+        this.fetchFormForActiveTreeItem('edit');
     },
 
     removeButtonClicked: function(event) {
@@ -1717,35 +1778,9 @@ MapController.prototype = {
                 window.alert('Could not remove item.');
             }
         });
-    },
-
-    modelRunBegan: function(data) {
-        this.model.getNextTimeStep();
-        return true;
-    },
-
-    stop: function() {
-        this.mapControlView.setStopped();
-        this.mapView.setStopped();
-        this.mapControlView.enableControls();
-    },
-
-    modelRunFinished: function() {
-        this.stop();
-    },
-
-    nextTimeStepReady: function(step) {
-        this.mapControlView.enableControls([this.mapControlView.pauseButtonEl]);
-        this.mapView.addTimeStep(this.model.getCurrentTimeStep());
     }
-};
-
-
-/*
- The `Router` initializes all views and handles application routing.
- */
-window.noaa.erd.gnome.Router = Backbone.Router.extend({
 });
 
-window.noaa.erd.gnome.MapController = MapController;
+
+window.noaa.erd.gnome.AppView = AppView;
 
