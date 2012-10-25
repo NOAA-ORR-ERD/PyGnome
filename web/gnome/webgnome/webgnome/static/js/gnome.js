@@ -415,6 +415,10 @@ var AjaxForm = Backbone.Model.extend({
         if (message) {
             this.trigger(AjaxForm.MESSAGE_RECEIVED, message);
         }
+
+        // Store a value that changes on every request to the server, so we
+        // always fire Backbone's 'change' event for `AjaxForm`.
+        response.receivedOn = new Date().getTime();
         return response;
     },
 
@@ -1697,7 +1701,7 @@ var AppView = Backbone.View.extend({
 
         this.ajaxForm.fetch({
             url: this.ajaxForm.get('url') +
-                '/' + formTypeData.type + subtype + mode + itemId
+                '/' + formTypeData.type + subtype + mode + itemId,
         });
     },
 
