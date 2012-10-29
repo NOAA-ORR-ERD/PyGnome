@@ -5,7 +5,7 @@ import numpy as np
 from type_defs cimport *
 from movers cimport Random_c
 
-cdef class Cy_random_mover:
+cdef class CyRandomMover:
 
     cdef Random_c *mover
 
@@ -15,14 +15,63 @@ cdef class Cy_random_mover:
     def __dealloc__(self):
         del self.mover
         
-    def __init__(self, diffusion_coefficient):
-        self.mover.bUseDepthDependent = 0                
-        self.mover.fOptimize.isOptimizedForStep = 0
-        self.mover.fOptimize.isFirstStep = 1           
-        self.mover.fUncertaintyFactor = 2
-        self.mover.fDiffusionCoefficient = diffusion_coefficient
+    def __init__(self, diffusion_coef=100000):
+        """
+        Default diffusion_coef = 100,000 [cm**2/sec]
+        """
+        self.mover.fDiffusionCoefficient = diffusion_coef
+        
+        
+    def prepare_for_model_step(self, model_time, step_len, uncertain):
+        """
+        .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
+        
+        prepares the mover for time step, calls the underlying C++ mover objects PrepareForModelStep(..)
+        
+        :param model_time: current model time. Not used by Random_mover.
+        :param step_len: length of the time step over which the get move will be computed
+        :param uncertain: bool flag determines whether to apply uncertainty or not - again, not used by mover
+        """
+        cdef OSErr err
+        print model_time
+        print step_len
+        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain)
+        if err != 0:
+            """
+            For now just raise an OSError - until the types of possible errors are defined and enumerated
+            """
+            raise OSError("Random_c.PreareForModelStep returned an error.")
 
-    def get_move(self, model_time, step_len, np.ndarray[WorldPoint3D, ndim=1] ref_points, np.ndarray[WorldPoint3D, ndim=1] delta, np.ndarray[np.npy_int16] LE_status, LEType spill_type, long spill_ID):
+    def get_move(self, 
+                 model_time, 
+                 step_len, 
+                 np.ndarray[WorldPoint3D, ndim=1] ref_points, 
+                 np.ndarray[WorldPoint3D, ndim=1] delta, 
+                 np.ndarray[np.npy_int16] LE_status, 
+                 LEType spill_type, 
+                 long spill_ID):
+        """
+        .. function:: get_move(self,
+                 model_time,
+                 step_len,
+                 np.ndarray[WorldPoint3D, ndim=1] ref_points,
+                 np.ndarray[WorldPoint3D, ndim=1] delta,
+                 np.ndarray[np.npy_int16] LE_status,
+                 LE_type,
+                 spill_ID)
+                 
+        Invokes the underlying C++ Random_c.get_move(...)
+        
+        :param model_time: current model time
+        :param step_len: step length over which delta is computed
+        :param ref_points: current locations of LE particles
+        :type ref_points: numpy array of WorldPoint3D
+        :param delta: the change in position of each particle over step_len
+        :type delta: numpy array of WorldPoint3D
+        :param le_status: status of each particle - movement is only on particles in water
+        :param spill_type: LEType defining whether spill is forecast or uncertain 
+        :returns: none
+        """
         cdef OSErr err
         N = len(ref_points) # set a data type?
             
@@ -37,3 +86,5 @@ cdef class Cy_random_mover:
             raise ValueError("The value for spill type can only be 'forecast' or 'uncertainty' - you've chosen: " + str(spill_type))
         
 
+        # JS Ques: Should we call this from within get_move instead of calling it from cython?
+        self.mover.ModelStepIsDone()

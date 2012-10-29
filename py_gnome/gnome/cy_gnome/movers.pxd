@@ -18,7 +18,7 @@ cdef extern from "GridVel_c.h":
 
 
 # TODO: pre-processor directive for cython, but what is its purpose?
-# comment for now so it doesn't give compile time errors
+# comment for now so it doesn't give compile time errors - not sure LELIST_c is used anywhere either
 #IF not HEADERS.count("_LIST_"):
 #    DEF HEADERS = HEADERS +  ["_LE_LIST_"]
 cdef extern from "LEList_c.h":
@@ -43,47 +43,59 @@ cdef extern from "CurrentMover_c.h":
 
 cdef extern from "WindMover_c.h":
     cdef cppclass WindMover_c:
+        WindMover_c() except +
         Boolean fIsConstantWind
         VelocityRec fConstantValue
+        double fDuration
         LEWindUncertainRec **fWindUncertaintyList
         long **fLESetSizes
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID)
         void SetTimeDep(OSSMTimeValue_c *)
-        # ARE FOLLOWING USED IN CYTHON??
-        OSErr PrepareForModelStep(Seconds&, Seconds&, bool)	# currently this happens in C++ get_move command
+        OSErr PrepareForModelStep(Seconds&, Seconds&, bool)
+        
+cdef extern from "Random_c.h":
+    cdef cppclass Random_c:
+        Random_c() except +
+        Boolean bUseDepthDependent
+        double fDiffusionCoefficient
+        double fUncertaintyFactor
+        
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+        OSErr PrepareForModelStep(Seconds&, Seconds&, bool)
+        void ModelStepIsDone()
         
 cdef extern from "CATSMover_c.h":
-    ctypedef struct TCM_OPTIMZE:
-        Boolean isOptimizedForStep
-        Boolean isFirstStep
-        double  value
-        
-    cdef cppclass CATSMover_c(CurrentMover_c):
-        WorldPoint         refP                
-        GridVel_c        *fGrid    
-        long             refZ                     
-        short             scaleType                 
-        double             scaleValue             
-        char             scaleOtherFile[32]
-        double             refScale
-        Boolean         bRefPointOpen
-        Boolean            bUncertaintyPointOpen
-        Boolean         bTimeFileOpen
-        Boolean            bTimeFileActive
-        Boolean         bShowGrid
-        Boolean         bShowArrows
-        double             arrowScale
-        OSSMTimeValue_c *timeDep
-        double            fEddyDiffusion    
-        double            fEddyV0
-        TCM_OPTIMZE     fOptimize
-        WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
-        int             ReadTopology(char* path, Map_c **newMap)
-        void            SetRefPosition (WorldPoint p, long z)
-        OSErr           ComputeVelocityScale(Seconds&)
-        void        SetTimeDep(OSSMTimeValue_c *time_dep)
-        void        ModelStepIsDone()
-        OSErr 		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+   ctypedef struct TCM_OPTIMZE:
+       Boolean isOptimizedForStep
+       Boolean isFirstStep
+       double  value
+       
+   cdef cppclass CATSMover_c(CurrentMover_c):
+       WorldPoint         refP                
+       GridVel_c        *fGrid    
+       long             refZ                     
+       short             scaleType                 
+       double             scaleValue             
+       char             scaleOtherFile[32]
+       double             refScale
+       Boolean         bRefPointOpen
+       Boolean            bUncertaintyPointOpen
+       Boolean         bTimeFileOpen
+       Boolean            bTimeFileActive
+       Boolean         bShowGrid
+       Boolean         bShowArrows
+       double             arrowScale
+       OSSMTimeValue_c *timeDep
+       double            fEddyDiffusion    
+       double            fEddyV0
+       TCM_OPTIMZE     fOptimize
+       WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
+       int             ReadTopology(char* path, Map_c **newMap)
+       void            SetRefPosition (WorldPoint p, long z)
+       OSErr           ComputeVelocityScale(Seconds&)
+       void        SetTimeDep(OSSMTimeValue_c *time_dep)
+       void        ModelStepIsDone()
+       OSErr 		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
 
 cdef extern from "NetCDFMover_c.h":
     
@@ -136,14 +148,3 @@ cdef extern from "NetCDFMover_c.h":
         void                 DisposeAllLoadedData()
         OSErr        get_move(int, unsigned long, unsigned long, char *, char *, char *)
         OSErr        get_move(int, unsigned long, unsigned long, char *, char *)
-        
-cdef extern from "Random_c.h":
-    cdef cppclass Random_c:
-        Boolean bUseDepthDependent
-        double fDiffusionCoefficient
-        double fUncertaintyFactor
-        TR_OPTIMZE fOptimize
-        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
-        WorldPoint3D GetMove (Seconds timeStep, long setIndex, long leIndex, LERec *theLE, LETYPE leType)
-        OSErr PrepareForModelStep(Seconds&, Seconds&, bool)
-        void ModelStepIsDone()
