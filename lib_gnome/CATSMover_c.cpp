@@ -719,7 +719,7 @@ done:
 	return err;
 }
 
-void CATSMover_c::SetTimeDep(OSSMTimeValue_c *newTimeDep)
+void CATSMover_c::SetTimeDep(TOSSMTimeValue *newTimeDep)
 {
 	timeDep = newTimeDep;
 }

@@ -43,7 +43,7 @@ OSErr GridWindMover_c::PrepareForModelRun()
 	return WindMover_c::PrepareForModelRun();
 }
 
-OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
+OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, double* LESetsSizesList)
 {
 	OSErr err = 0;
 	if (uncertain)

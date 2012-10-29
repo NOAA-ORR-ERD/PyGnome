@@ -157,7 +157,7 @@ void WindMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 }
 
 
-OSErr WindMover_c::allocate_uncertainty(int n, long* LESetsSizesList, long* spillIDs) // send in number of uncertainty LE sets (or use all but 0 for forecast sets?), number of LEs in each set, spillIDs - uncertainty only
+OSErr WindMover_c::allocate_uncertainty(int n, double* LESetsSizesList, long* spillIDs) // send in number of uncertainty LE sets (or use all but 0 for forecast sets?), number of LEs in each set, spillIDs - uncertainty only
 {
 	//need to allocate for python based on input
 	long i,j,numrec;
@@ -183,7 +183,7 @@ errHandler:
 	return memFullErr;
 }
 
-OSErr WindMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)	// only passing in uncertainty list information
+OSErr WindMover_c::AllocateUncertainty(int numLESets, double* LESetsSizesList)	// only passing in uncertainty list information
 {
 	//code goes here, need to allocate for python based on input
 	long i,j,n,numrec=0;
@@ -216,7 +216,7 @@ errHandler:
 }
 
 
-OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList)
+OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, double* LESetsSizesList)
 {
 	OSErr err = noErr;
 	long i,n;
@@ -373,7 +373,7 @@ OSErr WindMover_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
+OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, double* LESetsSizesList)
 {
 	//cout << "model_time: " << model_time << ", time_step: " << time_step << std::endl;
 

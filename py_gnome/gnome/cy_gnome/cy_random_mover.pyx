@@ -35,7 +35,7 @@ cdef class CyRandomMover:
         cdef OSErr err
         print model_time
         print step_len
-        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain)
+        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, 0, NULL)
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
