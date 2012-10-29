@@ -21,7 +21,7 @@ def _make_message(type, text):
     """
     Create a "message" dictionary suitable to be returned in a JSON response.
     """
-    return dict(mesage=dict(type=type, text=text))
+    return dict(type=type, text=text)
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -43,7 +43,6 @@ def show_model(request):
     if created:
         request.session[settings.model_session_key] = model.id
 
-        # A model with ID `model_id` did not exist, so we created a new one.
         if model_id:
             data['warning'] = 'The model you were working on is no longer ' \
                               'available. We created a new one for you.'
@@ -70,13 +69,16 @@ def create_model(request):
 
     if model_id and confirm:
         settings.Model.delete(model_id)
-
-    model = settings.Model.create()
-    request.session[settings.model_session_key] = model.id
-    message = _make_message('success', 'Created a new model.')
+        model = settings.Model.create()
+        model_id = model.id
+        request.session[settings.model_session_key] = model.id
+        message = _make_message('success', 'Created a new model.')
+    else:
+        message = _make_message('error', 'Could not create a new model. '
+                                         'Invalid data was received.')
 
     return {
-        'model_id': model.id,
+        'model_id': model_id,
         'message': message
     }
 
@@ -99,6 +101,7 @@ def run_model(request, model):
     """
     # TODO: Accept this value from the user as a setting and require it to run.
     # TODO: Parse POST values.
+
     two_weeks_ago = datetime.datetime.now() - datetime.timedelta(weeks=4)
     model.start_time = two_weeks_ago
     data = {}
@@ -124,8 +127,9 @@ def run_model_until(request, model):
     data = {}
 
     if request.method == 'POST' and form.validate():
-        model.set_run_until(form.run_until)
-        return {'run_until': form.run_until.data}
+        date = form.get_datetime()
+        model.set_run_until(date)
+        return {'run_until': date, 'form_html': None}
 
     context = {
         'form': form,
@@ -157,8 +161,8 @@ def edit_constant_wind_mover(request, model):
     if request.method == 'POST' and form.validate():
         if model.has_mover_with_id(mover_id):
             model.update_mover(mover_id, form.data)
-            message = _make_message('success',
-                                    'Updated constant wind mover successfully.')
+            message = _make_message(
+                'success', 'Updated constant wind mover successfully.')
         else:
             mover_id = model.add_mover(form.data)
             message = _make_message('warning',
@@ -166,7 +170,8 @@ def edit_constant_wind_mover(request, model):
                                     'a new constant wind mover to the model.')
         return {
             'id': mover_id,
-            'message': message
+            'message': message,
+            'form_html': None
         }
 
     html = render('webgnome:templates/forms/constant_wind_mover.mak', {
@@ -189,8 +194,8 @@ def edit_variable_wind_mover(request, model):
     if request.method == 'POST' and form.validate():
         if model.has_mover_with_id(mover_id):
             model.update_mover(mover_id, form.data)
-            message = _make_message('success',
-                                    'Updated variable wind mover successfully.')
+            message = _make_message(
+                'success', 'Updated variable wind mover successfully.')
         else:
             mover_id = model.add_mover(form.data)
             message = _make_message('warning',
@@ -198,12 +203,14 @@ def edit_variable_wind_mover(request, model):
                                     'a new variable wind mover to the model.')
         return {
             'id': mover_id,
-            'message': message
+            'message': message,
+            'form_html': None
         }
 
     html = render('webgnome:templates/forms/variable_wind_mover.mak', {
         'form': form,
-        'action_url': request.route_url('edit_variable_wind_mover', id=mover_id)
+        'action_url': request.route_url('edit_variable_wind_mover',
+                                        id=mover_id)
     })
 
     return {'form_html': html}
@@ -218,8 +225,7 @@ def add_constant_wind_mover(request, model):
         return {
             'id': model.add_mover(form.data),
             'type': 'mover',
-            'message': _make_message(
-                'success', 'Added a variable wind mover to the model.')
+            'form_html': None
         }
 
     html = render('webgnome:templates/forms/constant_wind_mover.mak', {
@@ -239,8 +245,7 @@ def add_variable_wind_mover(request, model):
         return {
             'id': model.add_mover(form.data),
             'type': 'mover',
-            'message': _make_message(
-                'success', 'Added a variable wind mover to the model.')
+            'form_html': None
         }
 
     context = {
@@ -291,16 +296,16 @@ def delete_mover(request, model):
     model.delete_mover(mover_id)
 
     return {
-        'message': _make_message('success', 'Mover deleted.')
+        'success': True
     }
 
 
 @view_config(route_name='get_tree', renderer='gnome_json')
 @json_require_model
 def get_tree(request, model):
-    settings = {'title': 'Model Settings', 'key': 'setting', 'children': []}
-    movers = {'title': 'Movers', 'key': 'mover', 'children': []}
-    spills = {'title': 'Spills', 'key': 'spill', 'children': []}
+    settings = {'title': 'Model Settings', 'type': 'setting', 'children': []}
+    movers = {'title': 'Movers', 'type': 'mover', 'children': []}
+    spills = {'title': 'Spills', 'type': 'spill', 'children': []}
 
     def get_value_title(name, value, max_chars=8):
         """
@@ -313,34 +318,35 @@ def get_tree(request, model):
 
     for setting in model.get_settings():
         settings['children'].append({
-            'key': setting.name,
+            'type': 'setting',
+            'subtype': setting.name,
             'title': get_value_title(setting.name, setting.value),
-            'type': 'setting'
         })
 
     map = model.get_map()
 
     if map:
         settings['children'].append({
-            'key': 'map',
+            'type': 'setting',
+            'subtype': 'map',
             'title': get_value_title('Map', map.name),
-            'type': 'setting'
         })
 
     for id, mover in model.get_movers().items():
         movers['children'].append({
-            'key': id,
+            'type': 'mover',
+            'subtype': mover.type,
+            'id': id,
             'title': model.get_mover_title(mover),
-            'type': mover.type
         })
 
     for id, spill in model.get_spills().items():
         spills['children'].append({
-            'key': id,
+            'type': 'spill',
+            'subtype': spill.type,
+            'id': id,
             'title': get_value_title('ID', id),
-            'type': spill.type
         })
 
     return [settings, movers, spills]
-
 
