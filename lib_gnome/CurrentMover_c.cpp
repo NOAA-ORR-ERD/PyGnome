@@ -192,7 +192,7 @@ OSErr CurrentMover_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr CurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr CurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
 {
 	OSErr err = 0;
 	if (uncertain)

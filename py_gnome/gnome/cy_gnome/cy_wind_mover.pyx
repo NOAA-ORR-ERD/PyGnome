@@ -41,7 +41,26 @@ cdef class CyWindMover:
         :param uncertain: bool flag determines whether to apply uncertainty or not
         """
         cdef OSErr err
-        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain)
+        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, 0, NULL)
+        if err != 0:
+            """
+            For now just raise an OSError - until the types of possible errors are defined and enumerated
+            """
+            raise OSError("WindMover_c.PreareForModelStep returned an error.")
+
+    def prepare_for_model_step_uncertain(self, model_time, step_len, uncertain, numSets, np.ndarray[np.npy_int] setSizes):
+        """
+        .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
+        
+        prepares the mover for time step, calls the underlying C++ mover objects PrepareForModelStep(..)
+        
+        :param model_time: 
+        :param step_len:
+        :param uncertain: bool flag determines whether to apply uncertainty or not
+        """
+        cdef OSErr err
+        numSets = len(setSizes) 
+        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, numSets, <int *>&setSizes[0])
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated

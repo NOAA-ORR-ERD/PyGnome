@@ -8,7 +8,7 @@ designed to be run with py.test
 
 import numpy as np
 #from math import sin,cos,pi
-#from random import random
+#from random import randomimport ctypes
 
 
 from gnome import basic_types
@@ -69,7 +69,8 @@ class ConstantWind(Common):
     
     def test_move(self):
         """ forecast move """
-        self.wm.prepare_for_model_step(self.model_time, self.time_step, False)
+ 
+        self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, False, 0, np.zeros(1,dtype=np.int))
         self.wm.get_move(self.model_time,
                          self.time_step, 
                          self.ref,
@@ -100,6 +101,7 @@ class ConstantWindWithOSSM(Common):
         self.wm.set_ossm(self.ossm)
         
     def test_move(self):
+
         self.wm.prepare_for_model_step(self.model_time, self.time_step, False)
         self.wm.get_move(self.model_time,
                          self.time_step, 

@@ -186,7 +186,7 @@ OSErr NetCDFMover_c::PrepareForModelRun()
 
 #endif
 
-OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
 {
 	long timeDataInterval;
 	OSErr err=0;
@@ -1107,8 +1107,6 @@ OSErr NetCDFMover_c::get_move(int n, unsigned long model_time, unsigned long ste
 		return 1;
 	}
 	
-	this->PrepareForModelStep(model_time, step_len, false);
-
 	WorldPoint3D delta;
 	WorldPoint3D *ref;
 	WorldPoint3D *wp;
@@ -1132,7 +1130,6 @@ OSErr NetCDFMover_c::get_move(int n, unsigned long model_time, unsigned long ste
 		_DisposeHandle((Handle)this->fLESetSizesH);
 	if(this->fUncertaintyListH)
 		_DisposeHandle((Handle)this->fUncertaintyListH);
-	this->ModelStepIsDone();
 	return noErr;
 }
 
@@ -1144,8 +1141,6 @@ OSErr NetCDFMover_c::get_move(int n, unsigned long model_time, unsigned long ste
 		return 1;
 	}
 	
-
-	this->PrepareForModelStep(model_time, step_len, false);
 
 	WorldPoint3D delta;
 	WorldPoint3D *wp;
@@ -1166,7 +1161,6 @@ OSErr NetCDFMover_c::get_move(int n, unsigned long model_time, unsigned long ste
 		wp[i].z += delta.z;
 	}
 	
-	this->ModelStepIsDone();
 	return noErr;
 }
 

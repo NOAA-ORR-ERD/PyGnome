@@ -797,20 +797,59 @@ OSErr Model_c::TellMoversPrepareForRun()
 
 OSErr Model_c::TellMoversPrepareForStep()
 {
-	long i,j,k, d,n;
+	long i,j,k, d,n, numLESets, numUncertaintySets=0, numrec=0;
 	TMap *map;
 	TMover *thisMover;
-	OSErr err = 0;
+	TLEList *list;
+	OSErr err=0;
+	long *LESetsSizesList = 0;
+
+	
 	// loop through all maps except universal map
 	Boolean isUncertain = this->IsUncertain();
 	if (!mapList) return -3;	// special error for a hard exit
+	
+	if (isUncertain)
+	{
+		numLESets = LESetsList->GetItemCount();
+		// could skip this loop and divide numLESets by 2
+		for (i = 0; i < numLESets ; i++) {
+			LESetsList->GetListItem((Ptr)&list, i);
+			if(list->GetLEType()==UNCERTAINTY_LE) // JLM 9/10/98
+			{
+				numUncertaintySets++;
+			}
+		}
+		if (numUncertaintySets > 0)  
+		{
+			try
+			{
+				LESetsSizesList = new long[numUncertaintySets];
+			}
+			catch (...)
+			{
+				TechError("Model_c::TellMoversPrepareForStep()", "new int()", 0); return -1;
+			}
+			
+		}
+		for (i = 0; i < numLESets ; i++) {
+			//(*fLESetSizes)[i]=numrec;
+			LESetsList->GetListItem((Ptr)&list, i);
+			if(list->GetLEType()==UNCERTAINTY_LE) // JLM 9/10/98
+			{
+				numrec = list->GetLECount();
+				LESetsSizesList[i] = numrec;
+			}
+		}
+	}
+	
 	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) {
 		mapList->GetListItem((Ptr)&map, i);
 		for (k = 0, d = map -> moverList -> GetItemCount (); k < d; k++)
 		{
 			map -> moverList -> GetListItem ((Ptr) &thisMover, k);	// 04/16/12 AH:
 			// if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;	// minus AH 07/10/2012
-			if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetTimeStep(), isUncertain)) return err;	// AH 07/10/2012
+			if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetTimeStep(), isUncertain, numUncertaintySets, LESetsSizesList)) return err;	// AH 07/10/2012
 		}
 	}
 	
@@ -819,9 +858,10 @@ OSErr Model_c::TellMoversPrepareForStep()
 	{
 		uMap -> moverList -> GetListItem ((Ptr) &thisMover, k);
 	//	if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetStartTime(), this->GetTimeStep(), true)) return err;	// minus AH 07/10/2012
-		if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetTimeStep(), isUncertain)) return err;	// AH 07/10/2012
+		if (err = thisMover->PrepareForModelStep(this->GetModelTime(), this->GetTimeStep(), isUncertain, numUncertaintySets, LESetsSizesList)) return err;	// AH 07/10/2012
 		
 	}
+	if (LESetsSizesList)  {delete [] LESetsSizesList; LESetsSizesList = 0;}
 	return err;
 }
 
@@ -830,6 +870,7 @@ void Model_c::TellMoversStepIsDone()
 	long i,j,k, d,n;
 	TMap *map;
 	TMover *thisMover;
+	
 	// loop through all maps except universal map
 	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) {
 		mapList->GetListItem((Ptr)&map, i);

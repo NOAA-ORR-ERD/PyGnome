@@ -2878,7 +2878,7 @@ OSErr TModel::SaveOutputSeriesFiles(Seconds oldTime,Boolean excludeRunBarFile)
 
 OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmapping, vector< pair<bool, bool> > **dmapping, vector< pair<int, int> > **imapping) {
 	
-	int i, n, j, m, k, N, q, M;
+	int i, n, j, m, k, N, q, M, uncertaintyIndex = 0;
 	int num_spills, num_maps;
 	WorldPoint3D dp;
 	TMap *t_map;
@@ -2958,7 +2958,8 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 						try	{
 							(*pmapping)[k].push_back(le_ptr);
 							(*dmapping)[k].push_back(pair<bool, bool>(selected_disperse, should_disperse));
-							(*imapping)[k].push_back(pair<int, int>(i, j));
+							//(*imapping)[k].push_back(pair<int, int>(i, j));
+							(*imapping)[k].push_back(pair<int, int>(uncertaintyIndex, j));
 							(*delta)[k].push_back(dp);
 							tmapping[k].push_back(type);
 						} catch(...) {
@@ -2971,6 +2972,7 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 				}
 			}
 		}
+		if (type == UNCERTAINTY_LE) uncertaintyIndex++;
 	}
 
 	for (i = 0, n = uMap->moverList->GetItemCount();i <n; i++) {
