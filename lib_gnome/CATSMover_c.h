@@ -59,7 +59,7 @@ public:
 	void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
 	void				GetRefPosition (WorldPoint *p, long *z) { (*p) = refP; (*z) = refZ; }
 	virtual WorldRect GetGridBounds(){return fGrid->GetBounds();}	
-	void				SetTimeDep (TOSSMTimeValue *newTimeDep) { timeDep = newTimeDep; }
+	void				SetTimeDep (TOSSMTimeValue *newTimeDep);
 	TOSSMTimeValue		*GetTimeDep () { return (timeDep); }
 	void				DeleteTimeDep ();
 	VelocityRec			GetPatValue (WorldPoint3D p);

@@ -32,11 +32,22 @@ extern Model_c *model;
 
 using std::cout;
 
+Random_c::Random_c () : Mover_c()
+{
+	Init();
+}
+
 Random_c::Random_c (TMap *owner, char *name) : Mover_c (owner, name)
+{
+	Init();
+	SetClassName (name);
+}
+
+// Initialize local variables the same way for all constructors
+void Random_c::Init()
 {
 	fDiffusionCoefficient = 100000; //  cm**2/sec 
 	memset(&fOptimize,0,sizeof(fOptimize));
-	SetClassName (name);
 	fUncertaintyFactor = 2;		// default uncertainty mult-factor
 	bUseDepthDependent = false;
 }
@@ -92,11 +103,6 @@ OSErr Random_c::get_move(int n, unsigned long model_time, unsigned long step_len
 		}
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
-		
-		LERec rec;
-		rec.p = ref[i].p;
-		rec.z = ref[i].z;
-		
 		
 		// let's do the multiply by 1000000 here - this is what gnome expects
 		rec.p.pLat *= 1000000;	// really only need this for the latitude

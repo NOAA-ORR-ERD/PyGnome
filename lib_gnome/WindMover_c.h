@@ -28,6 +28,7 @@ class GNOMEDLL_API WindMover_c : virtual public Mover_c {
 protected:
 	LONGH				fLESetSizes;		// cumulative total num le's in each set
 	LEWindUncertainRecH	fWindUncertaintyList;
+	void				Init();	// initializes local variables to defaults - called by constructor
 	
 public:
 	double fSpeedScale;
@@ -55,7 +56,7 @@ public:
 	
 	WindMover_c (TMap *owner, char* name);
 	WindMover_c ();
-	virtual			   ~WindMover_c () { Dispose (); }
+	virtual			   ~WindMover_c ();	// move to cpp file for debugging
 	virtual void		Dispose ();
 
 	virtual ClassID 	GetClassID () { return TYPE_WINDMOVER; }

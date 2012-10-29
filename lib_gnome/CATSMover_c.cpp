@@ -718,3 +718,8 @@ done:
 	}
 	return err;
 }
+
+void CATSMover_c::SetTimeDep(OSSMTimeValue_c *newTimeDep)
+{
+	timeDep = newTimeDep;
+}

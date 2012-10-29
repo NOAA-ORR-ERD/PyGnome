@@ -35,40 +35,21 @@
 
 using std::cout;
 
-WindMover_c::WindMover_c () { 
-	
-	timeDep = nil;
-	
-	fUncertainStartTime = 0;
-	fDuration = 3*3600; // 3 hours
-	
-	fWindUncertaintyList = 0;
-	fLESetSizes = 0;
-	
-	fSpeedScale = 2;
-	fAngleScale = .4;
-	fMaxSpeed = 30; //mps
-	fMaxAngle = 60; //degrees
-	fSigma2 =0;
-	fSigmaTheta =  0; 
-	//conversion = 1.0;// JLM , I think this field should be removed
-	bUncertaintyPointOpen=false;
-	bSubsurfaceActive = false;
-	fGamma = 1.;
-	
-	bIsFirstStep = false;
-	fIsConstantWind = false;
-	fConstantValue.u = fConstantValue.v = 0.0;
-	
-	memset(&fWindBarbRect,0,sizeof(fWindBarbRect)); 
-	bShowWindBarb = true;
+WindMover_c::WindMover_c() : Mover_c()
+{
+	Init();
 }
 
 WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 {
 	if(!name || !name[0]) this->SetClassName("Variable Wind"); // JLM , a default useful in the wizard
+	Init();	// initialize the local vars
+}
+
+void WindMover_c::Init()
+{
 	timeDep = nil;
-	
+
 	fUncertainStartTime = 0;
 	fDuration = 3*3600; // 3 hours
 	
@@ -400,6 +381,8 @@ OSErr WindMover_c::PrepareForModelRun()
 
 OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
 {
+	//cout << "model_time: " << model_time << ", time_step: " << time_step << std::endl;
+
 	OSErr err = 0;
 	if (bIsFirstStep)
 		fModelStartTime = model_time;
@@ -585,4 +568,9 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,lo
 void WindMover_c::SetTimeDep (TOSSMTimeValue *newTimeDep) 
 { 
 	timeDep = newTimeDep;
+}
+
+WindMover_c::~WindMover_c()
+{
+	 Dispose ();
 }
