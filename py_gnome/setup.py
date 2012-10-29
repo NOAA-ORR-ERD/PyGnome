@@ -43,7 +43,7 @@ extension_names = [
 #                   'cy_netcdf_mover',
                    'cy_ossm_time',
                    'cy_date_time',
-#                   'cy_random_mover',
+                   'cy_random_mover',
                    ]
 
 cpp_files = [ 
@@ -125,7 +125,8 @@ elif sys.platform == "win32":
     #             '/NODEFAULTLIB:LIBCMT.lib'
     #             ]
 
-    link_args = ['/VERBOSE:LIB',
+    link_args = [
+                 #'/VERBOSE:LIB',               # shows library search path
                  #'/DEFAULTLIB:kernel32.lib',
                  #'/DEFAULTLIB:user32.lib',
                  #'/DEFAULTLIB:gdi32.lib', 
@@ -143,7 +144,7 @@ elif sys.platform == "win32":
                  ]
     # let's build C++ here
     sys.path.append(".\gnome\DLL")   # need this for linking to work properly
-    proj = '..\project_files\lib_gnomeDLL\lib_gnomeDLL.vcproj'
+    proj = '..\project_files\lib_gnomeDLL\lib_gnomeDLL.sln'
     config = '/p:configuration=release' 
     platform = '/p:platform=Win32'
     call(['msbuild',proj,'/t:'+target,config,platform])

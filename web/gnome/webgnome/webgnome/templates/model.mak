@@ -62,7 +62,7 @@
            <div class="alert alert-error ${'' if error else 'hidden'}">
               <button type="button" class="close" data-dismiss="alert">× </button>
               <strong>Error!</strong> <span class="message">${error if error else ''}</span>
-          </div>         
+          </div>
       </div>
     </div>
 
@@ -104,18 +104,19 @@
     <script src='/static/js/jquery.cookie.js' type="text/javascript"></script>
     <script src="/static/js/jquery.dynatree.min.js"></script>
     <script src="/static/js/underscore-min.js"></script>
-    <script src="/static/js/map.js"></script>
+    <script src="/static/js/backbone-min.js"></script>
+    <script src="/static/js/gnome.js"></script>
 
     <script type="text/javascript">
         $('#map').imagesLoaded(function() {
-            new window.noaa.erd.gnome.MapController({
+            new window.noaa.erd.gnome.AppView({
                 mapEl: '#map',
                 mapPlaceholderEl: '#placeholder',
                 sidebarEl: '#sidebar',
                 formContainerEl: '#modal-container',
-                generatedTimeSteps: ${generated_time_steps_json or 'null' | n},
-                expectedTimeSteps: ${expected_time_steps_json or 'null' | n},
-                startFromTimeStep: ${model.current_step}
+                generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
+                expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
+                currentTimeStep: ${model.current_step}
             });
         });
     </script>

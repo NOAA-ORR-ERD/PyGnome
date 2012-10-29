@@ -148,7 +148,7 @@ class MapCanvas(object):
         """
 
 
-        if spill.spill_type==basic_types.spill_type.uncertainty:
+        if spill.is_uncertain:
             color = self.colors['uncert_LE']
         else:
             color = self.colors['LE']

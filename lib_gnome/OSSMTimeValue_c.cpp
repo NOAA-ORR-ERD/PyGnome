@@ -26,7 +26,7 @@
 
 using namespace std;
 
-OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(NULL)
+OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(nil)
 { 
 	fileName[0]=0;
 	timeValues = 0;

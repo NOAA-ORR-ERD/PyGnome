@@ -32,10 +32,10 @@ class Spill(object):
     positions = Spill['positions'] : returns a (num_LEs, 3) array of world_point_types
     """
     
-    def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0), spill_type=basic_types.spill_type.forecast):
+    def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0), uncertain=False):
         
         self.num_LEs = num_LEs
-        self.spill_type = spill_type    # could be forcast or uncertainty
+        self.is_uncertain = False   # uncertainty spill - same information as basic_types.spill_type
         
         self._data_arrays = {}
         
