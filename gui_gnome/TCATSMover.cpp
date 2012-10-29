@@ -1817,6 +1817,31 @@ TCurrentMover *CreateAndInitLocationFileCurrentsMover (TMap *owner, char* givenP
 		err = newTriCurMover->TextRead(path,newMap); // outside users may supply their own map
 		if(err) goto Error;	
 	}
+	else if (IsCATS3DFile(path))
+	{
+		TCATSMover3D *newTCATSMover3D = new TCATSMover3D(owner, fileName);
+		if (!newTCATSMover3D)
+		{ 
+			TechError("CreateAndInitCurrentsMover()", "new newTCATSMover3D()", 0);
+			return 0;
+		}
+		newMover = newTCATSMover3D;
+		
+		grid = new TTriGridVel3D;
+		if (grid)
+		{
+			WorldRect mapBounds = voidWorldRect;
+			err = newTCATSMover3D->InitMover(grid, WorldRectCenter(mapBounds));
+			if(err) goto Error;
+			
+			err = newTCATSMover3D->TextRead(path,newMap); // outside users must supply their own map
+			if(err) goto Error;	
+			if (*newMap) mapBounds = (*newMap)->GetMapBounds();
+			else mapBounds = (newTCATSMover3D->moverMap)->GetMapBounds();
+			newTCATSMover3D->SetRefPosition(WorldRectCenter(mapBounds),0.);
+			// if refP not in grid should set it inside a triangle
+		}
+	}
 	else if (IsGridCurTimeFile(path,&selectedUnits))
 	{
 		GridCurMover *newGridCurMover = new GridCurMover(owner, fileName);

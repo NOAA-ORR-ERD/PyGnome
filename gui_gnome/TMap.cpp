@@ -316,39 +316,40 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 				{
 					if (IsNetCDFFile(netcdfFilePath,&gridType) || IsNetCDFPathsFile(netcdfFilePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 					{
-						NetCDFWindMover *newMover=nil;
+						NetCDFWindMover *newWindMover=nil;
 						
 						if (gridType == CURVILINEAR)
 						{
-							newMover = new NetCDFWindMoverCurv(dynamic_cast<TMap *>(this),moverName);
+							newWindMover = new NetCDFWindMoverCurv(dynamic_cast<TMap *>(this),moverName);
 							TMap *newMap = 0;
-							err =  (dynamic_cast<NetCDFWindMoverCurv *>(newMover)) -> TextRead(netcdfFilePath,&newMap);
+							err =  (dynamic_cast<NetCDFWindMoverCurv *>(newWindMover)) -> TextRead(netcdfFilePath,&newMap);
 						}
 						else
 						{
-							newMover = new NetCDFWindMover(dynamic_cast<TMap *>(this),moverName);
-							err = newMover -> TextRead(netcdfFilePath);
+							newWindMover = new NetCDFWindMover(dynamic_cast<TMap *>(this),moverName);
+							err = newWindMover -> TextRead(netcdfFilePath);
 						}
-						//if(!err) err = NetCDFWindSettingsDialog(newMover,this,true,mapWindow);
+						//if(!err) err = NetCDFWindSettingsDialog(newWindMover,this,true,mapWindow);
 						//if (!err && this == model -> uMap){
-						//ChangeCurrentView(AddWRectBorders(newMover->GetGridBounds(), 10), TRUE, TRUE);	// so wind loaded on the universal map can be found
+						//ChangeCurrentView(AddWRectBorders(newWindMover->GetGridBounds(), 10), TRUE, TRUE);	// so wind loaded on the universal map can be found
 						//}
 						/////////////////
 						if (!err && isNetCDFPathsFile) /// JLM 5/3/10
 						{
 							char errmsg[256];
-							err = newMover->ReadInputFileNames(fileNamesPath);
-							if(!err) newMover->DisposeAllLoadedData();
-							if(!err) err = newMover->SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
+							err = newWindMover->ReadInputFileNames(fileNamesPath);
+							if(!err) newWindMover->DisposeAllLoadedData();
+							if(!err) err = newWindMover->SetInterval(errmsg, model->GetModelTime());	// AH 07/17/2012
 							
 						}
 						///////////////////
 						if(err) {
 							// it has already been added to the map's list,we need to get rid of it
-							this -> DropMover(newMover); 
-							newMover->Dispose(); delete newMover;  newMover = 0;
+							this -> DropMover(newWindMover); 
+							newWindMover->Dispose(); delete newWindMover;  newWindMover = 0;
 						}			
-						return err;
+						//return err;
+						mover = newWindMover;
 					}
 				}
 			}
@@ -359,6 +360,12 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 		{	// the cats mover needs a file and so is a special case
 			//mover = new TCATSMover(this, moverName);
 			mover = CreateAndInitCatsCurrentsMover (dynamic_cast<TMap *>(this),false,path,moverName);
+			needToInitMover = false;
+		}
+		else if(!strcmpnocase(typeName,"Cats3D")) 
+		{	// the cats mover needs a file and so is a special case
+			//mover = new TCATSMover(this, moverName);
+			mover = CreateAndInitCurrentsMover (dynamic_cast<TMap *>(this),false,path,moverName,&newMap);
 			needToInitMover = false;
 		}
 		else if(!strcmpnocase(typeName,"GridCur"))  //might work to just use Cats
@@ -461,8 +468,26 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 		////////////// 
 		if(mover) 
 		{
-			if(needToInitMover) mover->InitMover();
-			this->AddMover(mover, 0);
+			if (!newMap)
+			{
+				if(needToInitMover) mover->InitMover();
+				this->AddMover(mover, 0);
+			}
+			else
+			{
+				Boolean	timeFileChanged = false;
+				//newMap->SetClassName(mapName);	// name must match location/command file name to be able to add other movers
+				err = model -> AddMap(newMap, 0);
+				if (!err) err = AddMoverToMap(newMap, timeFileChanged, mover);
+				//if (!err) err = ((PtCurMap*)newMap)->MakeBitmaps();
+				if (!err) mover->SetMoverMap(newMap);
+				if(err) 
+				{
+					newMap->Dispose(); delete newMap; newMap = 0; 
+					mover->Dispose(); delete mover; mover = 0;
+					//return -1; 
+				}
+			}
 		}
 		else if(newMover)
 		{
