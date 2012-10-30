@@ -3,6 +3,7 @@ from gnome import movers
 from gnome import basic_types, spill
 from gnome.utilities import time_utils 
 from gnome import greenwich
+from gnome.utilities import projections
 
 import numpy as np
 
@@ -26,7 +27,7 @@ class TestWindMover():
    """
    num_le = 5
    start_pos = np.zeros((num_le,3), dtype=basic_types.world_point_type)
-   start_pos += (3.,3.,0.)
+   start_pos += (3.,6.,0.)
    rel_time = datetime.datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
    #model_time = basic_types.dt_to_epoch(rel_time)    # TODO: should this happen in mover or in model?
    model_time_sec = time_utils.date_to_sec(rel_time) + 1
@@ -48,12 +49,29 @@ class TestWindMover():
        self.wm.prepare_for_model_step(self.model_time_sec, self.time_step, self.pSpill.is_uncertain)
        
        delta = self.wm.get_move(self.pSpill, self.time_step, self.model_time_sec)
-       print delta
+       
+       # expected move
+       exp = np.zeros( (self.pSpill.num_LEs, 3) )
+       exp[:,0] = self.pSpill['windages']*self.time_val[0]['value']['u']*self.time_step # 'u'
+       exp[:,1] = self.pSpill['windages']*self.time_val[0]['value']['v']*self.time_step # 'v'
+       
+       xform = projections.FlatEarthProjection.meters_to_latlon(exp, self.pSpill['positions'])
+       
+       actual = np.zeros((len(exp),), dtype=basic_types.world_point)
+       actual ['lat'] = xform[:, 1]
+       actual ['long'] = xform[:, 0]
+       
+       tol = 1e-8
+       print "C++ lat: " + "\t" + str(delta['lat'])
+       print "check lat: " + "\t" + str(actual['lat'])
+       print "C++ long: " + "\t" + str(delta['long'])
+       print "check long: " + "\t" + str(actual['long'])
+       np.testing.assert_allclose(delta['lat'], actual['lat'], tol, tol,
+                                   "get_time_value is not within a tolerance of " + str(tol), 0)
+       np.testing.assert_allclose(delta['long'], actual['long'], tol, tol,
+                                   "get_time_value is not within a tolerance of "+str(tol), 0)
        
        
 if __name__=="__main__":
     tw = TestWindMover()
     tw.test_get_move()
-    
-   
-   

@@ -36,6 +36,7 @@ class Spill(object):
         
         self.num_LEs = num_LEs
         self.is_uncertain = False   # uncertainty spill - same information as basic_types.spill_type
+        self.is_active = True       # sets whether the spill is active or not
         
         self._data_arrays = {}
         
@@ -106,17 +107,17 @@ class PointReleaseSpill(Spill):
     non-weathering particles
 
     """
-    def __init__(self, num_LEs, start_position, release_time, windage=(0.01, 0.04), persist=900):
+    def __init__(self, num_LEs, start_position, release_time, windage=(0.01, 0.04), persist=900, uncertain=False):
         """
         :param num_LEs: number of LEs used for this spill
         :param start_position: location the LEs are released (long, lat, z) (floating point)
         :param release_time: time the LEs are released (datetime object)
-        :param windage: the windage range of the LEs (min, max, persistence, step_length). 
-        Default is (0.01, 0.04, -1, 900) from 1% to 4%. The -1 means the persistence is infinite so it is only set 
-        at the beginning of the model run and not updated at each time step. The last parameter is the step size 
-        of the simulation. The default is 15mins.
+        :param windage: the windage range of the LEs (min, max). Default is (0.01, 0.04) from 1% to 4%.
+        :param persist: Default is 900s, so windage is updated every 900 sec.
+        The -1 means the persistence is infinite so it is only set at the beginning of the run.
+        :param uncertain: flag determines whether spill is uncertain or not
         """
-        Spill.__init__(self, num_LEs)
+        Spill.__init__(self, num_LEs, uncertain=uncertain)
 
         self.release_time = release_time
         self.start_position = start_position
