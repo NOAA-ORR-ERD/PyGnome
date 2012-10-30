@@ -68,6 +68,7 @@ class WindMover(CyWindMover, PyMovers):
         :type wind_vel: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         :param wind_file: path to a long wind file from which to read wind data
         :param wind_duraton: only used in case of variable wind. Default is 3 hours
+        :param is_active: flag defines whether mover is active or not
         """
         if( wind_vel == None and wind_file == None):
             raise ValueError("Either provide wind_vel or a valid long wind_file")
