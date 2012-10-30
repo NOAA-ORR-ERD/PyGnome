@@ -29,6 +29,8 @@ class TestWindMover():
    start_pos += (3.,3.,0.)
    rel_time = datetime.datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
    #model_time = basic_types.dt_to_epoch(rel_time)    # TODO: should this happen in mover or in model?
+   model_time_sec = time_utils.date_to_sec(rel_time) + 1
+   model_time = time_utils.sec_to_date(model_time_sec)
    time_step = 15*60 # seconds
    
    pSpill = spill.PointReleaseSpill(num_le, start_pos, rel_time, persist=-1)
@@ -42,13 +44,11 @@ class TestWindMover():
    def test_get_move(self):
        """
        """
-       #delta = np.zeros_like(self.start_pos)
-#       print self.pSpill.is_uncertain
-       self.pSpill.prepare_for_model_step()
-       self.wm.prepare_for_model_step(self.model_time, self.time_step, self.pSpill.is_uncertain)
-       delta = self.wm.get_move(self.pSpill, self.time_step, self.model_time)
+       self.pSpill.prepare_for_model_step(self.model_time, self.time_step, self.pSpill.is_uncertain)
+       self.wm.prepare_for_model_step(self.model_time_sec, self.time_step, self.pSpill.is_uncertain)
        
-       print delta 
+       delta = self.wm.get_move(self.pSpill, self.time_step, self.model_time_sec)
+       print delta
        
        
 if __name__=="__main__":
