@@ -125,7 +125,7 @@ class PointReleaseSpill(Spill):
 
         if persist <= 0:
             # if it is anything less than 0, treat it as -1 flag
-            self.update_windage()
+            self.update_windage(0)
 
         self.__init_LEs()
 

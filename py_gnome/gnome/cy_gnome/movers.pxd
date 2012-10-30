@@ -5,6 +5,7 @@ Declare the C++ mover classes from lib_gnome
 from type_defs cimport *
 from utils cimport OSSMTimeValue_c
 
+from libcpp cimport bool
 
 """
 Following are used by some of the methods of the movers
