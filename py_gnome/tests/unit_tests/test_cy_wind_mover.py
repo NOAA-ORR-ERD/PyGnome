@@ -38,7 +38,7 @@ class Common():
     wind =  np.zeros((num_le,), dtype=np.double) # windage
     status = np.empty((num_le,), dtype=basic_types.status_code_type)
     const_wind = np.zeros((1,), dtype=basic_types.velocity_rec) # constant wind
-    setSizes = np.zeros((1,), dtype=np.double)
+    setSizes = np.zeros((1,), dtype=np.int)
     
     time_step = 60
     
@@ -71,7 +71,7 @@ class ConstantWind(Common):
     def test_move(self):
         """ forecast move """
  
-        #self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, False, 0, np.zeros(1,dtype=np.double))
+        #self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, False, 0, np.zeros(1,dtype=np.int))
         self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, False, 0, self.setSizes)
         self.wm.get_move(self.model_time,
                          self.time_step, 

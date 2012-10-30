@@ -449,14 +449,14 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	
 	/////////////////////////////////////////////////
 	// ask for a scale factor
-	if (isHydrologyFile && unitsIfKnownInAdvance != -2) 
+	//if (isHydrologyFile && unitsIfKnownInAdvance != -2) 
+	if (isHydrologyFile)
 	{
-		// if not known from wizard message
-		//if (this->fScaleFactor==0)
+		if (err = ReadHydrologyHeader(path)) goto done;
+
+		if (unitsIfKnownInAdvance != -2) 
 		{
-			//err = GetScaleFactorFromUser("Enter scale factor for hydrology file : ", &conversionFactor);
-			//if (err)	goto done;	// user cancelled or error
-			if (err = ReadHydrologyHeader(path)) goto done;
+			// if not known from wizard message
 			this->fScaleFactor = conversionFactor;
 		}
 	}

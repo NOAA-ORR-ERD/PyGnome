@@ -247,7 +247,7 @@ OSErr NetCDFWindMover_c::PrepareForModelRun()
 	return WindMover_c::PrepareForModelRun();
 }
 
-OSErr NetCDFWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, double* LESetsSizesList)
+OSErr NetCDFWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;
 	if(uncertain) // AH 04/16/12;

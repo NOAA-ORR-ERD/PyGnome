@@ -44,7 +44,7 @@ public:
 	PtCurFileInfoH	fInputFilesHdl;
 	
 	virtual OSErr 		PrepareForModelRun(); 
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, double* LESetsSizesList);
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList);
 	virtual void 		ModelStepIsDone();
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	virtual long 		GetVelocityIndex(WorldPoint p);

@@ -49,7 +49,7 @@ cdef class CyWindMover:
             """
             raise OSError("WindMover_c.PreareForModelStep returned an error.")
 
-    def prepare_for_model_step_uncertain(self, model_time, step_len, uncertain, numSets, np.ndarray[np.npy_double] setSizes):
+    def prepare_for_model_step_uncertain(self, model_time, step_len, uncertain, numSets, np.ndarray[np.npy_int] setSizes):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
         
@@ -61,7 +61,7 @@ cdef class CyWindMover:
         """
         cdef OSErr err
         numSets = len(setSizes) 
-        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, numSets, &setSizes[0])
+        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, numSets, <int *>&setSizes[0])
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
