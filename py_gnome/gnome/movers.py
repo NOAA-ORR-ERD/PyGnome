@@ -7,13 +7,15 @@ from gnome import basic_types
 import numpy as np
 
 class PyMovers():
-    def organize_spill(self, spill):
+    
+    def __init__(self, is_active=True):
+        self.is_active = is_active  # all movers need this flag
+    
+    def prepare_data_for_get_move(self, spill):
         """
         organizes the spill object into inputs for get_move(...)
         
         :param spill: spill is an instance of the gnome.spill.Spill class
-        :param time_step: time_step in seconds
-        :param model_time: current model time as a datetime instance
         """
         # Get the data:
         try:
@@ -34,6 +36,7 @@ class PyMovers():
         self.positions = np.reshape(self.positions, (len(self.positions),))
         
         self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
+        
         
 """
 Wind_mover.py
@@ -56,7 +59,7 @@ class WindMover(CyWindMover, PyMovers):
     
     PyMovers sets everything up that is common to all movers
     """
-    def __init__(self, wind_vel=None, wind_file=None, wind_duration=10800):
+    def __init__(self, wind_vel=None, wind_file=None, wind_duration=10800, is_active=True):
         """
         Should this object take as input an CyOSSMTime object or constant wind velocity.
         If so, then something outside (model?) maintains the CyOSSMTime object
@@ -85,11 +88,13 @@ class WindMover(CyWindMover, PyMovers):
             
         CyWindMover.__init__(self, wind_duration=wind_duration)
         CyWindMover.set_ossm(self, self.ossm)
+        PyMovers.__init__(self, is_active=is_active)
         
     
-    def get_move(self, spill, time_step, model_time_seconds):
-        PyMovers.organize_spill(self, spill)
-        
+    def get_move(self, model_time_seconds, time_step, spill):
+        """
+        """
+        PyMovers.prepare_data_for_get_move(self, spill)
         try:
             windage = spill['windages']
         except:
