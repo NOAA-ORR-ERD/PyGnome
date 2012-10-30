@@ -4,9 +4,10 @@ All movers (CyWindMover, RandomMover) will need to extract info from spill objec
 Put this code and any other code common to all movers here
 """
 from gnome import basic_types
+import numpy as np
 
 class PyMovers():
-    def organize_inputs(self, spill, time_step, model_time):
+    def organize_spill(self, spill):
         """
         organizes the spill object into inputs for get_move(...)
         
@@ -28,9 +29,11 @@ class PyMovers():
         except KeyError, err:
             raise ValueError("The spill does not have the required data arrays\n"+err.message)
         
-        self.model_time_seconds = basic_types.dt_to_epoch(model_time)    # TODO: should this happen in mover or in model?      
-        self.positions = position.view(dtype = basic_types.world_point)
-        self.delta = np.zeros_like(positions)
+        # Array is not the same size, change view and reshape
+        self.positions = self.positions.view(dtype=basic_types.world_point)
+        self.positions = np.reshape(self.positions, (len(self.positions),))
+        
+        self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
         
 """
 Wind_mover.py
@@ -42,12 +45,10 @@ But PyMovers really just has some functions to capture
 common functionality of all Movers. Should we inherit from PyMovers
 or just declare it and use it locally in methods like get_move(..)
 """
-import numpy as np
-
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 
-class WindMover(PyMovers):
+class WindMover(CyWindMover, PyMovers):
     """
     WindMover class
     
@@ -55,7 +56,7 @@ class WindMover(PyMovers):
     
     PyMovers sets everything up that is common to all movers
     """
-    def __init__(self, wind_vel=None, wind_file=None, wind_duration=10800, uncertain=False):
+    def __init__(self, wind_vel=None, wind_file=None, wind_duration=10800):
         """
         Should this object take as input an CyOSSMTime object or constant wind velocity.
         If so, then something outside (model?) maintains the CyOSSMTime object
@@ -64,7 +65,6 @@ class WindMover(PyMovers):
         :type wind_vel: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         :param wind_file: path to a long wind file from which to read wind data
         :param wind_duraton: only used in case of variable wind. Default is 3 hours
-        :param uncertain: Is uncertainty on or off?
         """
         if( wind_vel == None and wind_file == None):
             raise ValueError("Either provide wind_vel or a valid long wind_file")
@@ -78,29 +78,33 @@ class WindMover(PyMovers):
             except AttributeError as err:
                 raise AttributeError("wind_vel is not a numpy array. " + err.message)
             
-            self.ossm_time = CyOSSMTime(timeseries=wind_vel)
+            self.ossm = CyOSSMTime(timeseries=wind_vel)
             
         else:
-            self.ossm_time = CyOSSMTime(path=wind_file)
+            self.ossm = CyOSSMTime(path=wind_file)
             
-        self.cy_wm = CyWindMover(wind_duration=wind_duration)
-        self.cy_wm.set_ossm(self.ossm_time)
+        #self.cy_wm = CyWindMover(wind_duration=wind_duration)
+        #self.cy_wm.set_ossm(self.ossm_time)
+        CyWindMover.__init__(self)
+        CyWindMover.set_ossm(self, self.ossm)
         
-    def get_move(self, spill, time_step, model_time):
-        PyMovers.organize_inputs(self, spill, time_step, model_time)
+        
+    
+    def get_move(self, spill, time_step, model_time_seconds):
+        PyMovers.organize_spill(self, spill)
         
         try:
             windage = spill['windages']
         except:
             raise ValueError("The spill does not have the required data arrays\n"+err.message)
         
-        sel.cy_wm.get_move(self.model_time_seconds,
-                             time_step, 
-                             self.positions,
-                             self.delta,
-                             windage,
-                             self.status_codes,
-                             self.spill_type,
-                             0)
-        
-        return delta
+        CyWindMover.get_move( self,
+                              model_time_seconds,
+                              time_step, 
+                              self.positions,
+                              self.delta,
+                              windage,
+                              self.status_codes,
+                              self.spill_type,
+                              0)
+        return self.delta
