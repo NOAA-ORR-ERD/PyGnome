@@ -91,7 +91,7 @@ class WindMover(CyWindMover, PyMovers):
         PyMovers.__init__(self, is_active=is_active)
         
     
-    def get_move(self, model_time_seconds, time_step, spill):
+    def get_move(self, spill, time_step, model_time_seconds):
         """
         """
         PyMovers.prepare_data_for_get_move(self, spill)
