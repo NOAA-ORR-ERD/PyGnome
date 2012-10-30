@@ -59,7 +59,9 @@ class WindMover(CyWindMover, PyMovers):
     
     PyMovers sets everything up that is common to all movers
     """
-    def __init__(self, wind_vel=None, wind_file=None, wind_duration=10800, is_active=True):
+    def __init__(self, wind_vel=None, wind_file=None, uncertain_duration=10800, is_active=True,
+                 uncertain_speed_scale=2, uncertain_max_speed=30, 
+                 uncertain_angle_scale=0.4, uncertain_max_angle=60):
         """
         Should this object take as input an CyOSSMTime object or constant wind velocity.
         If so, then something outside (model?) maintains the CyOSSMTime object
@@ -87,7 +89,9 @@ class WindMover(CyWindMover, PyMovers):
         else:
             self.ossm = CyOSSMTime(path=wind_file)
             
-        CyWindMover.__init__(self, wind_duration=wind_duration)
+        CyWindMover.__init__(self, uncertain_duration=uncertain_duration, 
+                             uncertain_speed_scale=uncertain_speed_scale, uncertain_max_speed=uncertain_max_speed, 
+                             uncertain_angle_scale=uncertain_angle_scale, uncertain_max_angle=uncertain_max_angle)
         CyWindMover.set_ossm(self, self.ossm)
         PyMovers.__init__(self, is_active=is_active)
         
