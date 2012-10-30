@@ -52,7 +52,7 @@ class WindMover(CyWindMover, PyMovers):
     """
     WindMover class
     
-    the real work is done by the CyWindMover object which is a member of WindMover
+    the real work is done by the CyWindMover object from which CyWindMover derives
     
     PyMovers sets everything up that is common to all movers
     """
@@ -78,16 +78,13 @@ class WindMover(CyWindMover, PyMovers):
             except AttributeError as err:
                 raise AttributeError("wind_vel is not a numpy array. " + err.message)
             
-            self.ossm = CyOSSMTime(timeseries=wind_vel)
+            self.ossm = CyOSSMTime(timeseries=wind_vel) # this has same scope as CyWindMover object
             
         else:
             self.ossm = CyOSSMTime(path=wind_file)
             
-        #self.cy_wm = CyWindMover(wind_duration=wind_duration)
-        #self.cy_wm.set_ossm(self.ossm_time)
-        CyWindMover.__init__(self)
+        CyWindMover.__init__(self, wind_duration=wind_duration)
         CyWindMover.set_ossm(self, self.ossm)
-        
         
     
     def get_move(self, spill, time_step, model_time_seconds):
