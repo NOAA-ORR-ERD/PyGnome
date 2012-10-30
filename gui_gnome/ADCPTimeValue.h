@@ -27,8 +27,8 @@ public:
 	virtual OSErr 			BecomeClone(ADCPTimeValue *clone);
 	
 	virtual OSErr			InitTimeFunc ();
+	//virtual OSErr			ReadTimeValues_old (char *path, short format, short unitsIfKnownInAdvance);
 	virtual OSErr			ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance);
-	virtual OSErr			ReadTimeValues2 (char *path, short format, short unitsIfKnownInAdvance);
 	OSErr					ReadMetaDataFile (char *path);
 	//OSErr 			ReadHydrologyHeader (char *path);
 	virtual ClassID 		GetClassID () { return TYPE_ADCPTIMEVALUES; }

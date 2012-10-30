@@ -475,7 +475,7 @@ ADCPTimeValue*	ADCPMover_c::AddADCP(OSErr *err)
 		*err = timeValObj->InitTimeFunc();
 		if(*err) {delete timeValObj; timeValObj = nil; return nil;}  
 		
-		*err = timeValObj->ReadTimeValues2 (path, M19REALREAL, unitsIfKnownInAdvance);
+		*err = timeValObj->ReadTimeValues (path, M19REALREAL, unitsIfKnownInAdvance);
 		if(*err) { delete timeValObj; timeValObj = nil; return nil;}
 		timeValObj->SetTimeFileName(fileName);
 		//return timeValObj;

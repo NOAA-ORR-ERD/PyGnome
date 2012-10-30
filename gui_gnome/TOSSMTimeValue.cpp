@@ -11,9 +11,9 @@
 #include "MemUtils.h"
 #include "CROSS.H"
 
-Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP);
-Boolean IsHydrologyFile(char* path);
-Boolean IsOSSMTideFile(char* path,short *selectedUnitsP);
+//Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP);
+//Boolean IsHydrologyFile(char* path);
+//Boolean IsOSSMTideFile(char* path,short *selectedUnitsP);
 
 TOSSMTimeValue::TOSSMTimeValue(TMover *theOwner,TimeValuePairH tvals,short userUnits) : TTimeValue(theOwner) 
 { 
