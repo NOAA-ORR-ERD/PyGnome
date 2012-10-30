@@ -11,7 +11,7 @@ import numpy as np
 from gnome import basic_types
 from gnome.utilities import time_utils
 
-class TestCy_date_time():
+class TestCyDateTime():
     target = cy_date_time.Cy_date_time()
     now =  datetime.datetime.now()
 
@@ -25,13 +25,13 @@ class TestCy_date_time():
     daterec['dayOfWeek'] = now.weekday() # Gnome 
  
     # use this time for testing
-    pySec = time_utils.dateToSeconds_noDst(now)
+    pySec = time_utils.date_to_sec(now)
 
-    def SecondsToDateFromPyGnome(self, seconds):
+    def sec_to_timestruct_from_pyGnome(self, seconds):
         '''
         py_gnome uses this to convert time back to date
         '''
-        pyDate = time_utils.secondsToDate_noDst(self.pySec)
+        pyDate = time_utils.sec_to_timestruct(self.pySec)
         date = np.empty((1,), dtype=basic_types.date_rec)
         date['year'] = pyDate.tm_year
         date['month'] = pyDate.tm_mon
@@ -42,7 +42,7 @@ class TestCy_date_time():
         date['dayOfWeek'] = pyDate.tm_wday
         return date
 
-    def test_DateToSeconds(self):
+    def test_date_to_sec(self):
         '''
         Test DateToSeconds Gnome function. 
         Note the tm_dst = 0 before comparing against Python results
@@ -51,7 +51,7 @@ class TestCy_date_time():
         print "pySec - sec: " + str(self.pySec - sec)
         assert self.pySec == sec
 
-    def test_SecondsToDate(self):
+    def test_sec_to_timestruct(self):
         '''
         Test Gnome's reverse conversion back to Date
         '''
@@ -59,7 +59,7 @@ class TestCy_date_time():
         date = self.target.SecondsToDate(self.pySec)
 
         # let's also get the date from pyGnome function
-        pyDate = self.SecondsToDateFromPyGnome(self.pySec)
+        pyDate = self.sec_to_timestruct_from_pyGnome(self.pySec)
 
         # check assertions for everything except dayOfWeek - this doesn't match
         # however, I don't believe this is used anywhere
@@ -74,8 +74,20 @@ class TestCy_date_time():
             if field != 'dayOfWeek':
                 print field + ":" + str(date[field]) + " " + str(self.daterec[field][0])
                 assert date[field] == self.daterec[field][0]
+                
+    def test_sec_to_date(self):
+        """
+        Uses time_utils.secondsToDate_noDST to 
+        convert the time in seconds back to a datetime object and make
+        """
+        tgt = time_utils.round_time( dt=self.now, roundTo=1)
+        act = time_utils.sec_to_date(self.pySec)
+        print "expected: " + str(tgt)
+        print "actual: " + str(act)
+        assert tgt == act
 
 if __name__=="__main__":
     a = TestCyDateTime()
-    a.test_DateToSeconds()
-    a.test_SecondsToDate()
+    a.test_date_to_sec()
+    a.test_sec_to_timestruct()
+    a.test_sec_to_date()
