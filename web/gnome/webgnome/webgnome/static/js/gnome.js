@@ -1313,6 +1313,7 @@ var ModalFormView = Backbone.View.extend({
     },
 
     show: function() {
+        $('div.modal').modal('hide');
         this.$el.modal();
     },
 
@@ -1361,7 +1362,6 @@ var ModalFormView = Backbone.View.extend({
 
     goToStep: function(stepNum) {
         var $form = this.getForm();
-        log($form)
 
         if (!$form.hasClass('multistep')) {
             return;
@@ -1378,8 +1378,6 @@ var ModalFormView = Backbone.View.extend({
         otherStepDivs.removeClass('active');
         stepDiv.removeClass('hidden');
         stepDiv.addClass('active');
-
-        log(stepDiv)
 
         var prevButton = this.$container.find('.btn-prev');
         var nextButton = this.$container.find('.btn-next');
@@ -1487,7 +1485,6 @@ var AddMoverFormView = Backbone.View.extend({
     },
 
     show: function() {
-        log('WTF')
         this.$el.modal();
     },
 
@@ -1498,7 +1495,7 @@ var AddMoverFormView = Backbone.View.extend({
     submit: function(event) {
         event.preventDefault();
         var $form = this.getForm();
-        var moverType = $form.find('input[name=mover_type]').val();
+        var moverType = $form.find('select[name="mover_type"]').val();
 
         if (moverType) {
             this.trigger(AddMoverFormView.MOVER_CHOSEN, moverType);
@@ -1612,10 +1609,12 @@ var AppView = Backbone.View.extend({
             });
         });
 
-        this.formViews['add_mover'] = new AddMoverFormView({
-            el: $('#add_mover_form'),
+        this.addMoverFormView = new AddMoverFormView({
+            el: $('#add_mover'),
             formContainerEl: this.options.formContainerEl
         });
+
+        this.formViews['add_mover'] = this.addMoverFormView;
 
         this.menuView = new MenuView({
             modelDropDownEl: "#file-drop",
@@ -1704,6 +1703,8 @@ var AppView = Backbone.View.extend({
         this.menuView.on(MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
         this.menuView.on(MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
         this.menuView.on(MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
+
+        this.addMoverFormView.on(AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
     },
 
     modelRunError: function() {
@@ -1918,6 +1919,17 @@ var AppView = Backbone.View.extend({
                 window.alert('Could not remove item.');
             }
         });
+    },
+
+    moverChosen: function(moverType) {
+        var formView = this.formViews[moverType];
+        log(formView, moverType, this.formViews)
+
+        if (formView === undefined) {
+            return;
+        }
+
+        formView.show();
     }
 });
 

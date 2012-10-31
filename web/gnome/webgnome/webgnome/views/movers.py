@@ -86,8 +86,10 @@ def add_constant_wind_mover(request, model):
     form = ConstantWindMoverForm(request.POST)
 
     if request.method == 'POST' and form.validate():
+        mover = None
+        # TODO: Create wind mover here.
         return {
-            'id': model.add_mover(form.data),
+            'id': model.add_mover(mover),
             'type': 'mover',
             'form_html': None
         }

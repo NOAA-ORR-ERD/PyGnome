@@ -88,8 +88,8 @@ class LeadingZeroIntegerWidget(LeadingZeroNumberWidget):
     cast_to = int
 
 
-MOVER_CONSTANT_WIND = 'constant_wind'
-MOVER_VARIABLE_WIND = 'variable_wind'
+MOVER_CONSTANT_WIND = 'constant_wind_mover'
+MOVER_VARIABLE_WIND = 'variable_wind_mover'
 
 
 class AddMoverForm(Form):
