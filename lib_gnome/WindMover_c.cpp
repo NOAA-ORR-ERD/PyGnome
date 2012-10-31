@@ -79,8 +79,13 @@ void WindMover_c::Init()
 
 void WindMover_c::Dispose()
 {
+#ifndef pyGNOME
+	// When invoked from python/cython, it OSSMTimeValue_c object is managed by cython
+	// and cython also tries to delete it when the object goes out of scope. Since it tries
+	// to delete an object that has already been deleted, it crashes. For pyGnome, let python/cython
+	// manage memory for this object.
 	DeleteTimeDep ();
-	
+#endif
 	this->DisposeUncertainty();
 	
 	Mover_c::Dispose ();
