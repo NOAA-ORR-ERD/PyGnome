@@ -35,7 +35,7 @@ def find_first_pixel(grid, pt1, pt2, draw=False):
     
     param: grid  -- a numpy integer array -- the raster were'e working with
            zero eveywhere there is not considered a "hit"
-    param: pt1 -- the start point -- an interger (i,j) tuple     
+    param: pt1 -- the start point -- an integer (i,j) tuple     
     param: pt2 -- the end point   -- an integer (i,j) tuple     
     param: draw [False] -- should the line be drawn to the grid?
     
