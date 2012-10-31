@@ -19,7 +19,9 @@ cdef class CyWindMover:
     def __dealloc__(self):
         del self.mover
     
-    def __init__(self, wind_duration=10800):
+    def __init__(self, uncertain_duration=10800, 
+                 uncertain_speed_scale=2, uncertain_max_speed=30, 
+                 uncertain_angle_scale=0.4, uncertain_max_angle=60):
         """
         initialize a constant wind mover
         
@@ -28,7 +30,11 @@ cdef class CyWindMover:
         self.mover.fIsConstantWind  = 0  # don't assume wind is constant
         self.mover.fConstantValue.u = 0
         self.mover.fConstantValue.v = 0
-        self.mover.fDuration = wind_duration
+        self.mover.fDuration = uncertain_duration
+        self.mover.fSpeedScale = uncertain_speed_scale
+        self.mover.fMaxSpeed = uncertain_max_speed
+        self.mover.fAngleScale = uncertain_angle_scale
+        self.mover.fMaxAngle = uncertain_max_angle
     
 
     def prepare_for_model_step(self, model_time, step_len, uncertain):

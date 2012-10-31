@@ -94,8 +94,13 @@
         <img class="frame active" src="/static/img/placeholder.gif">
     </div>
 
-    ## A div that we'll add rendered modal forms into.
-    <div id="modal-container"></div>
+    <div id="modal-container">
+      <%include file="forms/run_model_until.mak" args="form=run_model_until_form, action_url=run_model_until_form_url"/>
+      <%include file="forms/model_settings.mak" args="form=settings_form, action_url=settings_form_url"/>
+      <%include file="forms/add_mover.mak" args="form=add_mover_form, action_url=add_mover_form_url"/>
+      <%include file="forms/constant_wind_mover.mak" args="form=constant_wind_form, action_url=constant_wind_form_url"/>
+      <%include file="forms/variable_wind_mover.mak" args="form=variable_wind_form, action_url=variable_wind_form_url"/>
+    </div>
 </%block>
 
 <%block name="javascript">
@@ -116,7 +121,8 @@
                 formContainerEl: '#modal-container',
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
-                currentTimeStep: ${model.current_step}
+                currentTimeStep: ${model.current_time_step},
+                formUrls: ${form_urls | n}
             });
         });
     </script>

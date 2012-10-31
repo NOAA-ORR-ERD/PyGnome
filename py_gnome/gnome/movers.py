@@ -7,13 +7,15 @@ from gnome import basic_types
 import numpy as np
 
 class PyMovers():
-    def organize_spill(self, spill):
+    
+    def __init__(self, is_active=True):
+        self.is_active = is_active  # all movers need this flag
+    
+    def prepare_data_for_get_move(self, spill):
         """
         organizes the spill object into inputs for get_move(...)
         
         :param spill: spill is an instance of the gnome.spill.Spill class
-        :param time_step: time_step in seconds
-        :param model_time: current model time as a datetime instance
         """
         # Get the data:
         try:
@@ -34,6 +36,7 @@ class PyMovers():
         self.positions = np.reshape(self.positions, (len(self.positions),))
         
         self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
+        
         
 """
 Wind_mover.py
@@ -56,7 +59,9 @@ class WindMover(CyWindMover, PyMovers):
     
     PyMovers sets everything up that is common to all movers
     """
-    def __init__(self, wind_vel=None, wind_file=None, wind_duration=10800):
+    def __init__(self, wind_vel=None, wind_file=None, uncertain_duration=10800, is_active=True,
+                 uncertain_speed_scale=2, uncertain_max_speed=30, 
+                 uncertain_angle_scale=0.4, uncertain_max_angle=60):
         """
         Should this object take as input an CyOSSMTime object or constant wind velocity.
         If so, then something outside (model?) maintains the CyOSSMTime object
@@ -65,6 +70,7 @@ class WindMover(CyWindMover, PyMovers):
         :type wind_vel: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         :param wind_file: path to a long wind file from which to read wind data
         :param wind_duraton: only used in case of variable wind. Default is 3 hours
+        :param is_active: flag defines whether mover is active or not
         """
         if( wind_vel == None and wind_file == None):
             raise ValueError("Either provide wind_vel or a valid long wind_file")
@@ -83,13 +89,17 @@ class WindMover(CyWindMover, PyMovers):
         else:
             self.ossm = CyOSSMTime(path=wind_file)
             
-        CyWindMover.__init__(self, wind_duration=wind_duration)
+        CyWindMover.__init__(self, uncertain_duration=uncertain_duration, 
+                             uncertain_speed_scale=uncertain_speed_scale, uncertain_max_speed=uncertain_max_speed, 
+                             uncertain_angle_scale=uncertain_angle_scale, uncertain_max_angle=uncertain_max_angle)
         CyWindMover.set_ossm(self, self.ossm)
+        PyMovers.__init__(self, is_active=is_active)
         
     
     def get_move(self, spill, time_step, model_time_seconds):
-        PyMovers.organize_spill(self, spill)
-        
+        """
+        """
+        PyMovers.prepare_data_for_get_move(self, spill)
         try:
             windage = spill['windages']
         except:

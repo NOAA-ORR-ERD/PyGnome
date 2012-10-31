@@ -81,7 +81,7 @@ class TestCyDateTime():
         convert the time in seconds back to a datetime object and make
         """
         tgt = time_utils.round_time( dt=self.now, roundTo=1)
-        act = time_utils.sec_to_date(self.pySec)
+        act = time_utils.round_time( time_utils.sec_to_date(self.pySec), roundTo=1)
         print "expected: " + str(tgt)
         print "actual: " + str(act)
         assert tgt == act

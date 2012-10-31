@@ -4,7 +4,7 @@ import os
 import uuid
 
 
-
+from gnome.model import Model
 
 
 class ModelManager(object):
@@ -19,7 +19,12 @@ class ModelManager(object):
         self.running_models = {}
 
     def create(self):
-        model = MockModel()
+        model = Model()
+
+        # Patch the object with an empty `time_steps` array for the time being.
+        # TODO: Add output caching.
+        model.time_steps = []
+
         self.running_models[model.id] = model
         return model
 

@@ -1,6 +1,7 @@
 <%namespace name="defs" file="../defs.mak"/>
+<%page args="form, action_url"/>
 
-<div class="modal hide fade" id="constant-wind-mover-modal" tabindex="-1"
+<div class="modal hide fade" id="constant_wind_mover" tabindex="-1"
      data-backdrop="static" role="dialog" aria-labelledby="modal-label"
      aria-hidden="true">
     <div class="modal-header">
