@@ -61,7 +61,7 @@ OSErr GridCurMover_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr GridCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
+OSErr GridCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	long timeDataInterval;
 	OSErr err=0;

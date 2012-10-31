@@ -29,7 +29,7 @@ OSErr ComponentMover_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
+OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 
 {
 	char errmsg[256];
