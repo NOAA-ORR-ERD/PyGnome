@@ -57,7 +57,7 @@ OSErr Random_c::PrepareForModelRun()
 	this -> fOptimize.isFirstStep = true;
 	return noErr;
 }
-OSErr Random_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
+OSErr Random_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	this -> fOptimize.isOptimizedForStep = true;
 	this -> fOptimize.value = sqrt(6.*(fDiffusionCoefficient/10000.)*time_step)/METERSPERDEGREELAT; // in deg lat

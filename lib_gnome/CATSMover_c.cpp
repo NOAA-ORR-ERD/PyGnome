@@ -280,7 +280,7 @@ OSErr CATSMover_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr CATSMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
+OSErr CATSMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err =0;
 	if (err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain, numLESets, LESetsSizesList)) 

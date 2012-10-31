@@ -43,7 +43,7 @@ public:
 	virtual void		DisposeUncertainty ();
 	
 	virtual OSErr 		PrepareForModelRun(); 
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, long* LESetsSizesList); 
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	
 	//temp fix
 	virtual WorldRect GetGridBounds(){WorldRect theWorld = { -360000000, -90000000, 360000000, 90000000 }; return theWorld;}	

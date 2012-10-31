@@ -61,6 +61,7 @@ cdef class CyWindMover:
         """
         cdef OSErr err
         numSets = len(setSizes) 
+
         err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, numSets, <int *>&setSizes[0])
         if err != 0:
             """

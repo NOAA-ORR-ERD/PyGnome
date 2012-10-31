@@ -68,7 +68,7 @@ public:
 	CompoundMover_c () {}
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep);
 	virtual OSErr 		PrepareForModelRun(); 
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, long* LESetsSizesList); 
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	virtual void 		ModelStepIsDone();
 	
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);

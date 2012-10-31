@@ -802,7 +802,7 @@ OSErr Model_c::TellMoversPrepareForStep()
 	TMover *thisMover;
 	TLEList *list;
 	OSErr err=0;
-	long *LESetsSizesList = 0;
+	int *LESetsSizesList = 0;
 
 	
 	// loop through all maps except universal map
@@ -824,7 +824,7 @@ OSErr Model_c::TellMoversPrepareForStep()
 		{
 			try
 			{
-				LESetsSizesList = new long[numUncertaintySets];
+				LESetsSizesList = new int[numUncertaintySets];
 			}
 			catch (...)
 			{
@@ -832,13 +832,22 @@ OSErr Model_c::TellMoversPrepareForStep()
 			}
 			
 		}
-		for (i = 0; i < numLESets ; i++) {
+		for (i = 0, j=0; i < numLESets ; i++) {
 			//(*fLESetSizes)[i]=numrec;
 			LESetsList->GetListItem((Ptr)&list, i);
 			if(list->GetLEType()==UNCERTAINTY_LE) // JLM 9/10/98
 			{
-				numrec = list->GetLECount();
-				LESetsSizesList[i] = numrec;
+				if (j<numUncertaintySets)
+				{
+					numrec = list->GetLECount();
+					LESetsSizesList[j] = numrec;
+					j++;
+				}
+				else { 
+					printError("numUncertaintySets out of bounds");
+					break;
+				}
+
 			}
 		}
 	}

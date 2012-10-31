@@ -186,7 +186,7 @@ errHandler:
 OSErr WindMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)	// only passing in uncertainty list information
 {
 	//code goes here, need to allocate for python based on input
-	long i,j,n,numrec=0;
+	long i,j,numrec=0;
 	//TLEList *list;
 	OSErr err=0;
 	//CMyList	*LESetsList = model->LESetsList;
@@ -199,7 +199,7 @@ OSErr WindMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)	// o
 	
 	if(!(fLESetSizes = (LONGH)_NewHandle(sizeof(long)*numLESets)))goto errHandler;
 	
-	for (i = 0,numrec=0; i < n ; i++) {
+	for (i = 0,numrec=0; i < numLESets ; i++) {
 		(*fLESetSizes)[i]=numrec;	// this is really storing an index to the fWindUncertaintyList
 		//LESetsList->GetListItem((Ptr)&list, i);
 		//if(list->GetLEType()==UNCERTAINTY_LE) // JLM 9/10/98
@@ -219,7 +219,7 @@ errHandler:
 OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = noErr;
-	long i,n;
+	long i;
 	Boolean needToReInit = false;
 	//Seconds elapsedTime =  model->GetModelTime() - model->GetStartTime();
 	//Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
@@ -251,7 +251,7 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, 
 		if(numLESets != i) needToReInit = true;
 		else
 		{
-			for (i = 0,numrec=0; i < n ; i++) {
+			for (i = 0,numrec=0; i < numLESets ; i++) {
 				if(numrec != (*fLESetSizes)[i])
 				{
 					needToReInit = true;
@@ -375,8 +375,6 @@ OSErr WindMover_c::PrepareForModelRun()
 
 OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
-	//cout << "model_time: " << model_time << ", time_step: " << time_step << std::endl;
-
 	OSErr err = 0;
 	if (bIsFirstStep)
 		fModelStartTime = model_time;

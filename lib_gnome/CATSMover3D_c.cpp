@@ -179,7 +179,7 @@ OSErr CATSMover3D_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr CATSMover3D_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
+OSErr CATSMover3D_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 
 {
 	OSErr err =0;
