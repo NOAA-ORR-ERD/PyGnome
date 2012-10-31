@@ -21,6 +21,12 @@ cdef class CyRandomMover:
         """
         self.mover.fDiffusionCoefficient = diffusion_coef
         
+    def prepare_for_model_run(self):
+        """
+        .. function::prepare_for_model_run
+        
+        """
+        self.mover.PrepareForModelRun()
         
     def prepare_for_model_step(self, model_time, step_len, uncertain):
         """
