@@ -1,16 +1,31 @@
-"""
-Base class for python wrappers around cython movers
-All movers (CyWindMover, RandomMover) will need to extract info from spill object.
-Put this code and any other code common to all movers here
-"""
-from gnome import basic_types
 import numpy as np
 
-class PyMovers():
-    
+from gnome import basic_types
+from gnome.cy_gnome.cy_wind_mover import CyWindMover
+from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+
+
+class PyMovers(object):
+    """
+    Base class for python wrappers around cython movers
+    All movers (CyWindMover, RandomMover) will need to extract info from spill object.
+    Put this code and any other code common to all movers here
+    """
     def __init__(self, is_active=True):
         self.is_active = is_active  # all movers need this flag
-    
+
+    @property
+    def id(self):
+        """
+        Return an ID value for this mover.
+
+        This method uses Python's builtin `id()` function to identify the
+        object. Override it for more exotic forms of identification.
+
+        :return: the integer ID returned by id() for this object
+        """
+        return id(self)
+
     def prepare_data_for_get_move(self, spill):
         """
         organizes the spill object into inputs for get_move(...)
@@ -36,31 +51,20 @@ class PyMovers():
         self.positions = np.reshape(self.positions, (len(self.positions),))
         
         self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
-        
-        
-"""
-Wind_mover.py
 
-Python wrapper around the Cython wind_mover module
-This inherits CyWindMover as well as PyMovers.
 
-But PyMovers really just has some functions to capture
-common functionality of all Movers. Should we inherit from PyMovers
-or just declare it and use it locally in methods like get_move(..)
-"""
-from gnome.cy_gnome.cy_wind_mover import CyWindMover
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
-
-class WindMover(CyWindMover, PyMovers):
+class WindMover(PyMovers, CyWindMover):
     """
-    WindMover class
+    WindMover is a Python wrapper around the Cython wind_mover module.
+    This inherits CyWindMover as well as PyMovers.
     
-    the real work is done by the CyWindMover object from which CyWindMover derives
-    
-    PyMovers sets everything up that is common to all movers
+    The real work is done by the CyWindMover object from which CyWindMover
+    derives.
+
+    PyMovers sets everything up that is common to all movers.
     """
     def __init__(self, wind_vel=None, wind_file=None, uncertain_duration=10800, is_active=True,
-                 uncertain_speed_scale=2, uncertain_max_speed=30, 
+                 uncertain_speed_scale=2, uncertain_max_speed=30,
                  uncertain_angle_scale=0.4, uncertain_max_angle=60):
         """
         Should this object take as input an CyOSSMTime object or constant wind velocity.
@@ -94,12 +98,19 @@ class WindMover(CyWindMover, PyMovers):
                              uncertain_angle_scale=uncertain_angle_scale, uncertain_max_angle=uncertain_max_angle)
         CyWindMover.set_ossm(self, self.ossm)
         PyMovers.__init__(self, is_active=is_active)
-        
-    
+
+    def __repr__(self):
+        """
+        Return a string representation of this `WindMover`.
+
+        TODO: We probably want to include more information.
+        """
+        return 'Wind Mover'
+
     def get_move(self, spill, time_step, model_time_seconds):
         """
         """
-        PyMovers.prepare_data_for_get_move(self, spill)
+        self.prepare_data_for_get_move(spill)
         try:
             windage = spill['windages']
         except:
