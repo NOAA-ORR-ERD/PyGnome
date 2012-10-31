@@ -127,7 +127,7 @@ OSErr TriCurMover_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
 {
 	long timeDataInterval;
 	OSErr err=0;

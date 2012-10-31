@@ -109,7 +109,7 @@ OSErr CompoundMover_c::PrepareForModelRun()
 	}
 	return noErr;
 }
-OSErr CompoundMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr CompoundMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
 
 {
 	char errmsg[256];
@@ -124,8 +124,7 @@ OSErr CompoundMover_c::PrepareForModelStep(const Seconds& model_time, const Seco
 	TMover *mover;
 	for (i = 0, n = moverList->GetItemCount() ; i < n ; i++) {
 		moverList->GetListItem((Ptr)&mover, i);
-		err = mover->PrepareForModelStep(model_time, time_step, uncertain);	// AH 07/10/2012
-		if (err) goto done;
+		err = mover->PrepareForModelStep(model_time, time_step, uncertain, numLESets, LESetsSizesList);	
 	}
 	
 	/*if (model_time == start_time)	// first step

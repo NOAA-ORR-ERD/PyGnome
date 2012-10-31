@@ -29,13 +29,13 @@ OSErr ComponentMover_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
 
 {
 	char errmsg[256];
 	OSErr err = 0;
 
-	err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain); // note: this calls UpdateUncertainty()	// AH 07/10/2012
+	err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain, numLESets, LESetsSizesList); // note: this calls UpdateUncertainty()	// AH 07/10/2012
 	
 	errmsg[0]=0;
 	

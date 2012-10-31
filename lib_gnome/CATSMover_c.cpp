@@ -280,10 +280,10 @@ OSErr CATSMover_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr CATSMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr CATSMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
 {
 	OSErr err =0;
-	if (err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain)) 
+	if (err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain, numLESets, LESetsSizesList)) 
 		return err; // note: this calls UpdateUncertainty()
 	
 	err = this -> ComputeVelocityScale(model_time);	// AH 07/10/2012
@@ -717,4 +717,9 @@ done:
 		//if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
 	}
 	return err;
+}
+
+void CATSMover_c::SetTimeDep(TOSSMTimeValue *newTimeDep)
+{
+	timeDep = newTimeDep;
 }

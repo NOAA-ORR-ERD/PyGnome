@@ -38,7 +38,7 @@ OSErr Random3D_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr Random3D_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr Random3D_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
 {
 	this -> fOptimize.isOptimizedForStep = true;
 	this -> fOptimize.value = sqrt(6*(fDiffusionCoefficient/10000)*time_step)/METERSPERDEGREELAT; // in deg lat

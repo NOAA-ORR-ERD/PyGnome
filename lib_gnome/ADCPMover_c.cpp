@@ -177,10 +177,10 @@ OSErr ADCPMover_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr ADCPMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr ADCPMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, long* LESetsSizesList)
 {
 	OSErr err =0;
-	if (err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain)) 
+	if (err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain, numLESets, LESetsSizesList)) 
 		return err; // note: this calls UpdateUncertainty()
 	
 	err = this -> ComputeVelocityScale(model_time);	// AH 07/10/2012
@@ -475,7 +475,7 @@ ADCPTimeValue*	ADCPMover_c::AddADCP(OSErr *err)
 		*err = timeValObj->InitTimeFunc();
 		if(*err) {delete timeValObj; timeValObj = nil; return nil;}  
 		
-		*err = timeValObj->ReadTimeValues2 (path, M19REALREAL, unitsIfKnownInAdvance);
+		*err = timeValObj->ReadTimeValues (path, M19REALREAL, unitsIfKnownInAdvance);
 		if(*err) { delete timeValObj; timeValObj = nil; return nil;}
 		timeValObj->SetTimeFileName(fileName);
 		//return timeValObj;

@@ -60,7 +60,7 @@ public:
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);	
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelRun(); 
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 04/16/12
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, long* LESetsSizesList); 
 	virtual void 		ModelStepIsDone();
 	
 };

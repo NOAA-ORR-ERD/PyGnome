@@ -683,8 +683,8 @@ void TellPlayersAboutNewDirt(void);
 
 //--
 
-ADCPTimeValue* LoadADCPTimeValue(TMover *theOwner,short unitsIfKnownInAdvance);
-ADCPTimeValue* CreateADCPTimeValue(TMover *theOwner,char* path, char* shortFileName, short unitsIfKnownInAdvance); //JLM
+//ADCPTimeValue* LoadADCPTimeValue(TMover *theOwner,short unitsIfKnownInAdvance);
+//ADCPTimeValue* CreateADCPTimeValue(TMover *theOwner,char* path, char* shortFileName, short unitsIfKnownInAdvance); //JLM
 
 void StartReadWriteSequence(char *procName);
 OSErr WriteValue(BFPB *bfpb, char *data, short length, Boolean swap);

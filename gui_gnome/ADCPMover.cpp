@@ -1528,7 +1528,7 @@ OSErr ADCPMover::TextRead(char *path)
 	 err = timeDep->InitTimeFunc();
 	 if(err) {delete timeDep; timeDep = nil; return err;}  
 	 
-	 err = timeDep->ReadTimeValues2 (path, M19REALREAL, unitsIfKnownInAdvance);
+	 err = timeDep->ReadTimeValues (path, M19REALREAL, unitsIfKnownInAdvance);
 	 if(err) { delete timeDep; timeDep = nil; return err;}
 	 //return timeValObj;
 	 }	*/
@@ -1543,7 +1543,7 @@ OSErr ADCPMover::TextRead(char *path)
 		err = timeValObj->InitTimeFunc();
 		if(err) {delete timeValObj; timeValObj = nil; return err;}  
 		
-		err = timeValObj->ReadTimeValues2 (path, M19REALREAL, unitsIfKnownInAdvance);
+		err = timeValObj->ReadTimeValues (path, M19REALREAL, unitsIfKnownInAdvance);
 		if(err) { delete timeValObj; timeValObj = nil; return err;}
 		//return timeValObj;
 		dynamic_cast<ADCPMover *>(this)->AddTimeDep(timeValObj,0);

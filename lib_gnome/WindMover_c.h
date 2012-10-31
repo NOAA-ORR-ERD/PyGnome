@@ -28,6 +28,7 @@ class GNOMEDLL_API WindMover_c : virtual public Mover_c {
 protected:
 	LONGH				fLESetSizes;		// cumulative total num le's in each set
 	LEWindUncertainRecH	fWindUncertaintyList;
+	void				Init();	// initializes local variables to defaults - called by constructor
 	
 public:
 	double fSpeedScale;
@@ -55,23 +56,23 @@ public:
 	
 	WindMover_c (TMap *owner, char* name);
 	WindMover_c ();
-	virtual			   ~WindMover_c () { Dispose (); }
+	virtual			   ~WindMover_c ();	// move to cpp file for debugging
 	virtual void		Dispose ();
 
 	virtual ClassID 	GetClassID () { return TYPE_WINDMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_WINDMOVER) return TRUE; return Mover_c::IAm(id); }
 	
 //#ifndef pyGNOME
-	virtual OSErr		AllocateUncertainty ();
+	virtual OSErr		AllocateUncertainty (int numLESets, int* LESetsSizesList);
 //#endif
 	
 	virtual void		DisposeUncertainty ();
 	virtual OSErr		AddUncertainty(long setIndex,long leIndex,VelocityRec *v);
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
-	virtual OSErr		UpdateUncertainty(const Seconds& elapsedTime);
+	virtual OSErr		UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList);
 
 	virtual OSErr 		PrepareForModelRun(); 
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	virtual void		ModelStepIsDone();
 	virtual WorldPoint3D GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 	void				SetTimeDep (TOSSMTimeValue *newTimeDep); 
@@ -82,7 +83,7 @@ public:
 	OSErr				GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
 	OSErr				get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windage, short* LE_status, LEType spillType, long spillID);
-	OSErr				allocate_uncertainty(int n, long* LESetsSizesList, long* spillIDs); // send in number of uncertainty LE sets, number of LEs in each set, spillIDs - uncertainty only
+	OSErr				allocate_uncertainty(int n, int* LESetsSizesList, long* spillIDs); // send in number of uncertainty LE sets, number of LEs in each set, spillIDs - uncertainty only
 };
 
 #undef TOSSMTimeValue

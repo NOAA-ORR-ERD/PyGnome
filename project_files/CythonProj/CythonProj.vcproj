@@ -41,7 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CYTHONPROJ_EXPORTS"
+				AdditionalIncludeDirectories="C:\Python27\include;..\..\lib_gnome;C:\Python27\Lib\site-packages\numpy\core\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;CYTHONPROJ_EXPORTS;pyGNOME;ibmpyGNOME"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -60,6 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="..\..\py_gnome\gnome\cy_gnome\cy_random_mover.pyd"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -116,7 +118,7 @@
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="C:\Python27\include;..\..\lib_gnome;C:\Python27\Lib\site-packages\numpy\core\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;CYTHONPROJ_EXPORTS;pyGNOME;ibmpyGNOME"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -134,7 +136,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				ShowProgress="2"
-				OutputFile="..\..\py_gnome\gnome\cy_gnome\cy_ossm_time.pyd"
+				OutputFile="..\..\py_gnome\gnome\cy_gnome\cy_random_mover.pyd"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="C:\Python27\libs\"
 				IgnoreAllDefaultLibraries="false"
@@ -180,7 +182,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\py_gnome\gnome\cy_gnome\cy_ossm_time.cpp"
+				RelativePath="..\..\py_gnome\gnome\cy_gnome\cy_random_mover.cpp"
 				>
 			</File>
 		</Filter>
