@@ -76,7 +76,7 @@ OSErr TriCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *vel
 	double u,v,lengthS,alpha,beta,v0;
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
+	//err = this -> UpdateUncertainty();
 	if(err) return err;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
@@ -124,7 +124,7 @@ OSErr TriCurMover_c::PrepareForModelRun()
 		(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;	
 		(dynamic_cast<TTriGridVel3D*>(fGrid))->ClearOutputHandles();
 	}
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 
 OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
@@ -135,6 +135,7 @@ OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Second
 	
 	errmsg[0]=0;
 		
+	//err = this -> UpdateUncertainty();
 	/*if (model_time == start_time)	// first step
 	{
 		PtCurMap* ptCurMap = GetPtCurMap();
@@ -152,6 +153,13 @@ OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Second
 	
 	if(err) goto done;
 	
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
+	if (uncertain)
+	{
+		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
+		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
+	}
 	fIsOptimizedForStep = true;
 	
 done:
@@ -168,6 +176,7 @@ done:
 void TriCurMover_c::ModelStepIsDone()
 {
 	fIsOptimizedForStep = false;
+	bIsFirstStep = false;
 }
 
 

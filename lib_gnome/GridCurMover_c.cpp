@@ -17,8 +17,8 @@ OSErr GridCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *ve
 	double u,v,lengthS,alpha,beta,v0;
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
-	if(err) return err;
+	//err = this -> UpdateUncertainty();
+	//if(err) return err;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
 	
@@ -58,7 +58,7 @@ OSErr GridCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *ve
 }
 OSErr GridCurMover_c::PrepareForModelRun()
 {
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 
 OSErr GridCurMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
@@ -75,6 +75,15 @@ OSErr GridCurMover_c::PrepareForModelStep(const Seconds& model_time, const Secon
 	
 	if(err) goto done;
 	
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
+
+	if (uncertain)
+	{
+		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
+		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
+	}
+
 	fOptimize.isOptimizedForStep = true;	// don't  use CATS eddy diffusion stuff, follow ptcur
 	//fOptimize.value = sqrt(6*(fEddyDiffusion/10000)/model->GetTimeStep()); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
 	//fOptimize.isFirstStep = (model->GetModelTime() == model->GetStartTime());
@@ -93,6 +102,7 @@ done:
 void GridCurMover_c::ModelStepIsDone()
 {
 	fOptimize.isOptimizedForStep = false;
+	bIsFirstStep = false;
 }
 
 

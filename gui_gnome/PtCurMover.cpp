@@ -412,7 +412,7 @@ OSErr PtCurMover::PrepareForModelRun()
 		if (fGrid->GetClassID()==TYPE_TRIGRIDVEL3D)	// I think this will always be 3D, but maybe old SAV files...
 			((TTriGridVel3D*)fGrid)->ClearOutputHandles();
 	}
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 
 OSErr PtCurMover::PrepareForModelStep(const Seconds& model_time,const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
@@ -452,6 +452,14 @@ OSErr PtCurMover::PrepareForModelStep(const Seconds& model_time,const Seconds& t
 	
 	if(err) goto done;
 	
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
+
+	if (uncertain)
+	{
+		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
+		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
+	}
 	fIsOptimizedForStep = true;
 	
 done:
