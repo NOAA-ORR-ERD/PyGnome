@@ -20,26 +20,28 @@ gnome_json = JSON(adapters=(
 
 
 def main(global_config, **settings):
-    """ This function returns a Pyramid WSGI application.
+    """
+    This function returns a Pyramid WSGI application.
     """
     settings['Model'] = ModelManager()
     config = Configurator(settings=settings, session_factory=session_factory)
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_renderer('gnome_json', gnome_json)
 
-    config.add_route('get_tree', '/tree')
     config.add_route('show_model', '/')
     config.add_route('create_model', '/model/create')
     config.add_route('get_time_steps', '/model/time_steps')
     config.add_route('get_next_step', '/model/next_step')
+    config.add_route('get_tree', '/tree')
     config.add_route('run_model', '/model/run')
     config.add_route('run_model_until', '/model/run_until')
-    config.add_route('add_mover', '/model/mover/add')
+    config.add_route('model_settings', '/model/settings')
+
     config.add_route('delete_mover', '/model/mover/delete')
-    config.add_route('add_constant_wind_mover', '/model/mover/constant_wind/add')
-    config.add_route('add_variable_wind_mover', '/model/mover/variable_wind/add')
-    config.add_route('edit_constant_wind_mover', '/model/mover/constant_wind/edit/{id}')
-    config.add_route('edit_variable_wind_mover', '/model/mover/variable_wind/edit/{id}')
+    config.add_route('add_constant_wind_mover', '/model/mover/constant_wind')
+    config.add_route('add_variable_wind_mover', '/model/mover/variable_wind')
+    config.add_route('edit_constant_wind_mover', '/model/mover/constant_wind/{id}')
+    config.add_route('edit_variable_wind_mover', '/model/mover/variable_wind/{id}')
 
     config.scan()
     return config.make_wsgi_app()

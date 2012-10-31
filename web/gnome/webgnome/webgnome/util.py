@@ -71,3 +71,9 @@ def json_require_model(f):
     return inner
 
 
+def make_message(type, text):
+    """
+    Create a "message" dictionary suitable to be returned in a JSON response.
+    """
+    return dict(type=type, text=text)
+

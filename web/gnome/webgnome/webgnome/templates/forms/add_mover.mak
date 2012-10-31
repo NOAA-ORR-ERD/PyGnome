@@ -1,6 +1,7 @@
 <%namespace name="defs" file="../defs.mak"/>
+<%page args="form"/>
 
-<div class="modal hide fade" id="constant-wind-mover-modal" tabindex="-1"
+<div class="modal hide fade" id="add_mover" tabindex="-1"
      data-backdrop="static" role="dialog" aria-labelledby="modal-label"
      aria-hidden="true">
     <div class="modal-header">
@@ -10,8 +11,8 @@
         <h3 id="modal-label">Add Mover</h3>
     </div>
     <div class="modal-body">
-        <form action="${ action_url }" class="form-horizontal" method="POST">
-            ${ defs.form_control(form.mover_type) }
+        <form action="" class="form-horizontal" method="POST">
+            ${defs.form_control(form.mover_type)}
         </form>
     </div>
     <div class="modal-footer">

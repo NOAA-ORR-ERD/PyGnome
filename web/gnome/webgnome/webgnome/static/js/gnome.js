@@ -7,10 +7,12 @@ var log = window.noaa.erd.util.log;
 var handleAjaxError = window.noaa.erd.util.handleAjaxError;
 
 
+
+
 /*
- * Retrieve a message object from the object `data` if the `message` key
- * exists, annotate the message object ith an `error` value set to true
- * if the message is an error type, and return the message object.
+  Retrieve a message object from the object `data` if the `message` key
+  exists, annotate the message object ith an `error` value set to true
+  if the message is an error type, and return the message object.
  */
 var parseMessage = function(data) {
     var message;
@@ -43,7 +45,7 @@ var getUTCStringForTimestamp = function(timestamp) {
         timestamp = date.toUTCString();
     }
     return timestamp;
-}
+};
 
 
 /*
@@ -121,8 +123,7 @@ var Model = Backbone.Collection.extend({
         var timestamp;
 
         if (this.serverHasTimeStep(stepNum)) {
-            timestamp = getUTCStringForTimestamp(
-                this.expectedTimeSteps[stepNum]);
+            timestamp = getUTCStringForTimestamp(this.expectedTimeSteps[stepNum]);
         }
 
         return timestamp;
@@ -131,7 +132,7 @@ var Model = Backbone.Collection.extend({
     /*
      Handle a successful request to the server to start the model run.
      Events:
-     
+
      - Triggers:
         - `Model.MESSAGE_RECEIVED` if the server sent a message.
         - `Model.RUN_BEGAN` unless we received an error message.
@@ -157,7 +158,7 @@ var Model = Backbone.Collection.extend({
 
     /*
      Helper that performs an AJAX request to start ("run") the model.
-     
+
      Receives back an array of timestamps, one for each step the server
      expects to generate on subsequent requests.
      */
@@ -189,7 +190,7 @@ var Model = Backbone.Collection.extend({
 
     /*
      Run the model.
-     
+
      If the model is dirty, make an AJAX request to the server to initiate a
      model run. Otherwise request the next time step.
 
@@ -225,7 +226,7 @@ var Model = Backbone.Collection.extend({
     },
 
     /*
-     Return the `TimeStemp` object whose ID matches `self.currentTimeStep`.
+     Return the `TimeStep` object whose ID matches `self.currentTimeStep`.
      */
     getCurrentTimeStep: function() {
         return this.get(this.currentTimeStep);
@@ -233,7 +234,6 @@ var Model = Backbone.Collection.extend({
 
     /*
      Set the current time step to `newStepNum`.
-     Assumes that the internal timesteps array has the new time step object.
      */
     addTimeStep: function(timeStepJson) {
         var timeStep = new TimeStep(timeStepJson);
@@ -283,8 +283,8 @@ var Model = Backbone.Collection.extend({
 
         // Request the next step from the server.
         $.ajax({
-            // Block until finished, so this and subsequent
-            // requests come back in order.
+            // Block until finished, so this and subsequent requests come
+            // back in order.
             async: false,
             type: "GET",
             url: this.url + '/next_step',
@@ -390,7 +390,7 @@ var Model = Backbone.Collection.extend({
         this.clearData();
         this.dirty = true;
         this.trigger(Model.CREATED);
-    },
+    }
 }, {
     // Class constants
     ZOOM_IN: 'zoom_in',
@@ -407,9 +407,34 @@ var Model = Backbone.Collection.extend({
 });
 
 
-var AjaxForm = Backbone.Model.extend({
+/*
+ `AjaxForm` is a helper object that handles requesting rendered form HTML from
+ the server and posting submitted forms. Form HTML, including error output, is
+ rendered on the server. By convention, if a form submission returns `form_html`
+ then the form contains errors and should be displayed again. Otherwise, we
+ assume that submission succeeded.
+
+ This object handles the GET and POST requests made when a user clicks on a
+ control, typically using one of the control views (e.g., `TreeControlView`),
+ that displays a form, or when the user submits a form. The form HTML is
+ displayed in a modal view using `ModalFormView`.
+ */
+var AjaxForm = function(opts) {
+    _.bindAll(this);
+    this.url = opts.url;
+    this.collection = opts.collection;
+
+    // Mix Backbone.js event methods into `AjaxForm`.
+    _.extend(this, Backbone.Events);
+};
+
+// Events
+AjaxForm.MESSAGE_RECEIVED = 'ajaxForm:messageReceived';
+AjaxForm.CHANGED = 'ajaxForm:changed';
+
+AjaxForm.prototype = {
     /*
-     Parse out a `message` from the server and, if found, alert listeners.
+     Refresh this form from the server's JSON response.
      */
     parse: function(response) {
         var message = parseMessage(response);
@@ -417,46 +442,68 @@ var AjaxForm = Backbone.Model.extend({
             this.trigger(AjaxForm.MESSAGE_RECEIVED, message);
         }
 
-        // Store a value that changes on every request to the server, so we
-        // always fire Backbone's 'change' event for `AjaxForm`.
-        response.receivedOn = new Date().getTime();
-        return response;
+        if (_.has(response, 'form_html')) {
+            this.form_html = response.form_html;
+            this.trigger(AjaxForm.CHANGED, this);
+            this.collection.trigger(AjaxForm.CHANGED, this);
+        }
     },
 
     /*
-     Submit using `opts` and refresh this `AjaxForm` from the response JSON.
-     The assumption here is that `data` and `url` have been provided in `opts`
-     and we're just passing them along to the `fetch()` method.
+     Make an AJAX request for this `AjaxForm`, merging `opts` into the options
+     object passed to $.ajax. By default, this method uses a GET operation.
      */
-    submit: function(opts) {
-        var options = $.extend({}, opts, {
-            type: 'POST',
+    makeRequest: function(opts) {
+        var options = $.extend({}, opts || {}, {
+            url: this.url,
             tryCount: 0,
             retryLimit: 3,
+            success: this.parse,
             error: handleAjaxError
         });
 
-        this.fetch(options);
+        if (options.id) {
+            options.url = options.url + '/' + options.id;
+        }
+
+        $.ajax(options);
+    },
+
+    /*
+     Get the HTML for this form.
+     */
+    get: function(opts) {
+        var options = $.extend({}, opts || {}, {
+            type: 'GET'
+        });
+        this.makeRequest(options);
+    },
+
+    /*
+     Submit using `opts` and refresh this `AjaxForm` from JSON in the response.
+     The assumption here is that `data` and `url` have been provided in `opts`
+     and we're just passing them along to the `makeRequest()` method.
+     */
+    submit: function(opts) {
+         var options = $.extend({}, opts, {
+            type: 'POST'
+        });
+
+        this.makeRequest(options);
     }
-}, {
-    // Events
-    MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
-});
-
-
-var AjaxFormCollection = Backbone.Collection.extend({
-    model: AjaxForm
-});
+};
 
 
 /*
- `MessageView` is responsible for displaying messages sent from the server.
+ `MessageView` is responsible for displaying messages sent back from the server
+ during AJAX form submissions. These are non-form error conditions, usually,
+ but can also be success messages.
  */
 var MessageView = Backbone.View.extend({
     initialize: function() {
         this.options.model.on(
             Model.MESSAGE_RECEIVED, this.displayMessage);
-        this.options.ajaxForm.on(
+        this.options.ajaxForms.on(
             AjaxForm.MESSAGE_RECEIVED, this.displayMessage);
     },
 
@@ -767,6 +814,11 @@ var MapView = Backbone.View.extend({
 });
 
 
+/*
+ `TreeView` is a representation of the user's current model displayed as a tree
+ of items that the user may click or double-click on to display add/edit forms
+ for model settings, movers and spills.
+ */
 var TreeView = Backbone.View.extend({
     initialize: function() {
         _.bindAll(this);
@@ -775,7 +827,7 @@ var TreeView = Backbone.View.extend({
         this.tree = this.setupDynatree();
 
         // Event handlers
-        this.options.ajaxForm.on('change', this.ajaxFormChanged);
+        this.options.ajaxForms.on(AjaxForm.CHANGED, this.ajaxFormChanged);
         this.options.model.on(Model.CREATED, this.reload);
     },
 
@@ -809,7 +861,7 @@ var TreeView = Backbone.View.extend({
      case new items were added.
      */
     ajaxFormChanged: function(ajaxForm) {
-        var formHtml = ajaxForm.get('form_html');
+        var formHtml = ajaxForm.form_html;
 
         // This field will be null on a successful submit.
         if (!formHtml) {
@@ -834,6 +886,11 @@ var TreeView = Backbone.View.extend({
 });
 
 
+/*
+ `TreeControlView` is a button bar that sits above the tree view and allows
+ the user to add, edit and remove settings values, movers and spills using
+ button clicks.
+ */
 var TreeControlView = Backbone.View.extend({
     initialize: function() {
         _.bindAll(this);
@@ -892,6 +949,11 @@ var TreeControlView = Backbone.View.extend({
 });
 
 
+/*
+ `MapControlView` is a button toolbar that sits above the map and allows the
+ user to stop, start, skip to the end, skip to the beginning, and scrub between
+ frames of an animation generated during a model run.
+ */
 var MapControlView = Backbone.View.extend({
     initialize: function() {
         _.bindAll(this);
@@ -1208,34 +1270,63 @@ var MapControlView = Backbone.View.extend({
 });
 
 
+/*
+ `ModalFormView` is responsible for displaying HTML forms retrieved
+ from and submitted to the server using an `AjaxForm object. `ModalFormView`
+ displays an HTML form in a modal "window" over the page using the rendered HTML
+ returned by the server. It listens to 'change'events on a bound `AjaxForm` and
+ refreshes itself when that event fires.
+
+ The view is designed to handle multi-step forms implemented purely in
+ JavaScript (and HTML) using data- properties on DOM elements. The server
+ returns one rendered form, but may split its content into several <div>s, each
+ with a `data-step` property. If a form is structured this way, the user of the
+ JavaScript application will see it as a multi-step form with "next," "back"
+ and (at the end) a "save" or "create" button (the label is given by the server,
+ but whatever it is, this is the button that signals final submission of the
+ form).
+
+ Submitting a form from `ModalFormView` serializes the form HTML and sends it to
+ a bound `AjaxForm` model object, which then handles settings up the AJAX
+ request for a POST.
+ */
 var ModalFormView = Backbone.View.extend({
     initialize: function() {
+        _.bindAll(this);
         this.$container = $(this.options.formContainerEl);
         this.ajaxForm = this.options.ajaxForm;
+        this.ajaxForm.on(AjaxForm.CHANGED, this.ajaxFormChanged);
 
-        _.bindAll(this);
-
-        this.$container.on('click', '.btn-primary', this.submit);
-        this.$container.on('click', '.btn-next', this.goToNextStep);
-        this.$container.on('click', '.btn-prev', this.goToPreviousStep);
-
-        this.ajaxForm.on('change', this.ajaxFormChanged);
+        // Bind listeners to the container, using `on()`, so they persist.
+        this.id = '#' + this.$el.attr('id');
+        this.$container.on('click', this.id + ' .btn-primary', this.submit);
+        this.$container.on('click', this.id + ' .btn-next', this.goToNextStep);
+        this.$container.on('click', this.id + ' .btn-prev', this.goToPreviousStep);
     },
 
     ajaxFormChanged: function(ajaxForm) {
-        var formHtml = ajaxForm.get('form_html');
-        this.clear();
+        var formHtml = ajaxForm.form_html;
         if (formHtml) {
             this.refresh(formHtml);
+            this.show();
         }
     },
 
-    getForm: function() {
-        return this.$container.find('form');
+    show: function() {
+        this.$el.modal();
     },
 
-    getModal: function() {
-        return this.$container.find('div.modal');
+    /*
+     Reload this form's HTML by initiating an AJAX request via this view's
+     bound `AjaxForm`. If the request is successful, this `ModelFormView` will
+     fire its `ajaxFormChanged` event handler.
+     */
+    reload: function(id) {
+        this.ajaxForm.get({id: id});
+    },
+
+    getForm: function() {
+        return this.$el.find('form');
     },
 
     getFirstStepWithError: function() {
@@ -1270,6 +1361,7 @@ var ModalFormView = Backbone.View.extend({
 
     goToStep: function(stepNum) {
         var $form = this.getForm();
+        log($form)
 
         if (!$form.hasClass('multistep')) {
             return;
@@ -1281,11 +1373,13 @@ var ModalFormView = Backbone.View.extend({
             return;
         }
 
-        var otherSteps = $form.find('div.step');
-        otherSteps.addClass('hidden');
-        otherSteps.removeClass('active');
+        var otherStepDivs = $form.find('div.step');
+        otherStepDivs.addClass('hidden');
+        otherStepDivs.removeClass('active');
         stepDiv.removeClass('hidden');
         stepDiv.addClass('active');
+
+        log(stepDiv)
 
         var prevButton = this.$container.find('.btn-prev');
         var nextButton = this.$container.find('.btn-next');
@@ -1307,15 +1401,15 @@ var ModalFormView = Backbone.View.extend({
         saveButton.removeClass('hidden');
     },
 
-    goToNextStep: function(event) {
+    goToNextStep: function() {
         var $form = this.getForm();
 
         if (!$form.hasClass('multistep')) {
             return;
         }
 
-        var activeStep = $form.find('div.step.active');
-        var currentStep = parseInt(activeStep.attr('data-step'), 10);
+        var activeStepDiv = $form.find('div.step.active');
+        var currentStep = parseInt(activeStepDiv.attr('data-step'), 10);
         this.goToStep(currentStep + 1);
     },
 
@@ -1341,10 +1435,17 @@ var ModalFormView = Backbone.View.extend({
         return false;
     },
 
+    /*
+     Replace this form with the form in `html`, an HTML string rendered by the
+     server. Recreate any jQuery UI datepickers on the form if necessary.
+     If there is an error in the form, load the step with errors.
+     */
     refresh: function(html) {
-        this.$container.html(html);
-        this.getModal().modal();
-        this.$container.find('.date').datepicker({
+        this.clear();
+        this.$el = $(html);
+        this.$el.prependTo(this.$container);
+
+        this.$el.find('.date').datepicker({
             changeMonth: true,
             changeYear: true
         });
@@ -1355,13 +1456,70 @@ var ModalFormView = Backbone.View.extend({
         }
     },
 
-    clear: function() {
-        this.getModal().modal('hide');
-        this.$container.empty();
+    hide: function() {
+        this.$el.modal('hide');
     },
+
+    clear: function() {
+        this.hide();
+        $(this.id).empty().remove();
+    }
 });
 
 
+/*
+ This is a non-AJAX-enabled modal form object to support the "add mover" form,
+ which just allows the user to choose a type of mover to add (i.e., another
+ form to display).
+ */
+var AddMoverFormView = Backbone.View.extend({
+    initialize: function() {
+        _.bindAll(this);
+        this.$container = $(this.options.formContainerEl);
+
+        // Bind listeners to the container, using `on()`, so they persist.
+        this.id = '#' + this.$el.attr('id');
+        this.$container.on('click', this.id + ' .btn-primary', this.submit);
+    },
+
+    getForm: function() {
+        return this.$el.find('form');
+    },
+
+    show: function() {
+        log('WTF')
+        this.$el.modal();
+    },
+
+    hide: function() {
+        this.$el.modal('hide');
+    },
+
+    submit: function(event) {
+        event.preventDefault();
+        var $form = this.getForm();
+        var moverType = $form.find('input[name=mover_type]').val();
+
+        if (moverType) {
+            this.trigger(AddMoverFormView.MOVER_CHOSEN, moverType);
+        }
+
+        return false;
+    }
+}, {
+    // Events
+    MOVER_CHOSEN: 'addMoverFormView:moverChosen'
+});
+
+
+/*
+ `MenuView` handles the drop-down menus on the top of the page. The object
+ listens for click events on menu items and fires specialized events, like
+  RUN_ITEM_CLICKED, which an `AppView` object listens for.
+
+  Most of these functions exist elsewhere in the application and `AppView`
+  calls the appropriate method for whatever functionality the user invoked.
+ */
 var MenuView = Backbone.View.extend({
     initialize: function() {
         _.bindAll(this);
@@ -1404,8 +1562,14 @@ var MenuView = Backbone.View.extend({
 
 
 /*
- Acts as a controller, listening on delegate views for events that influence
- model state and coordinating any necessary changes.
+ `AppView` acts as a controller, listening to delegate views and models for
+ events and coordinating any necessary changes.
+
+ As a design principle, `AppView` should only handle events triggered by models
+ and views that *require* coordination. Otherwise, views should listen directly
+ to a specific model (or another view) and handle updating themselves without
+ assistance from `AppView`. This convention is in-progress and could be better
+ enforced.
  */
 var AppView = Backbone.View.extend({
     initialize: function() {
@@ -1414,26 +1578,43 @@ var AppView = Backbone.View.extend({
 
         this.apiRoot = "/model";
 
+        // Initialize the model with any previously-generated time step data the
+        // server had available.
         this.model = new Model(this.options.generatedTimeSteps, {
             url: this.apiRoot,
             expectedTimeSteps: this.options.expectedTimeSteps,
             currentTimeStep: this.options.currentTimeStep
         });
 
-        this.formTypes = [
-            'run_until',
-            'setting',
-            'mover',
-            'spill'
-        ];
+        // An object holding all of our `AjaxForm` instances, keyed to the name
+        // of the form as passed by the server in `this.options.formUrls`.
+        this.forms = {};
+        _.extend(this.forms, Backbone.Events);
 
-        this.ajaxForm = new AjaxForm({
-            url: _this.apiRoot
+        // An object holding all of the `ModelFormView` instances, keyed to the
+        // name of the form as passed by the server.
+        this.formViews = {};
+
+
+        // Create an `AjaxForm` and bind it to a `ModalFormView` for each form
+        // URL the server gave us.
+        _.each(this.options.formUrls, function(url, name) {
+            _this.forms[name] = new AjaxForm({
+                url: url,
+                collection: _this.forms
+            });
+
+            _this.formViews[name] = new ModalFormView({
+                ajaxForm: _this.forms[name],
+                // AJAX forms use this name as their HTML ID.
+                el: $('#' + name),
+                formContainerEl: _this.options.formContainerEl
+            });
         });
 
-        this.formView = new ModalFormView({
-            formContainerEl: this.options.formContainerEl,
-            ajaxForm: this.ajaxForm
+        this.formViews['add_mover'] = new AddMoverFormView({
+            el: $('#add_mover_form'),
+            formContainerEl: this.options.formContainerEl
         });
 
         this.menuView = new MenuView({
@@ -1451,7 +1632,7 @@ var AppView = Backbone.View.extend({
         this.treeView = new TreeView({
             treeEl: "#tree",
             url: "/tree",
-            ajaxForm: this.ajaxForm,
+            ajaxForms: this.forms,
             model: this.model
         });
 
@@ -1489,7 +1670,7 @@ var AppView = Backbone.View.extend({
 
         this.messageView = new MessageView({
             model: this.model,
-            ajaxForm: this.ajaxForm
+            ajaxForms: this.forms
         });
 
         this.setupEventHandlers();
@@ -1658,11 +1839,13 @@ var AppView = Backbone.View.extend({
         this.model.setCurrentTimeStep(0);
     },
 
-    // Jump to the last LOADED frame of the animation. This will stop at
-    // whatever frame was the last received from the server.
-    //
-    // TODO: This should probably do something fancier, like block and load
-    // all of the remaining frames if they don't exist, until the end.
+    /*
+     Jump to the last LOADED frame of the animation. This will stop at
+     whatever frame was the last received from the server.
+
+     TODO: This should probably do something fancier, like block and load
+     all of the remaining frames if they don't exist, until the end.
+     */
     jumpToLastFrame: function() {
         var lastFrame = this.model.length - 1;
         this.model.setCurrentTimeStep(lastFrame);
@@ -1679,98 +1862,44 @@ var AppView = Backbone.View.extend({
     },
 
     /*
-     Fetch an `AjaxForm` based on `formTypeData`.
+     Show the `ModalFormView` for the active tree item.
 
-     Options:
-        - `formTypeData`: an object with the key `type`, e.g., 'mover' and
-            optional keys `itemId` which is the ID of the node and `subtype` which
-            is the form subtype, e.g., 'constant_wind_mover'.
-        - `mode`: a string descirbing the form mode: 'add', 'edit' or 'delete'
-            if applicable, else null.
+     If showing an add form, display the `ModalFormView` for the active node.
 
-     The `form.fetch()` operation will trigger a 'change' event that other
-     objects are listening for.
+     If showing an edit form, perform a `fetch` using the `AjaxForm` for the
+     selected node first, which will trigger the bound `ModalFormView` to display.
+
+     The distinction of "add" versus "edit" is made on whether or not the node
+     has an `id` property with a non-null value.
      */
-    fetchForm: function(formTypeData, mode) {
-        mode = mode ? ('/' + mode) : '';
-        var itemId = formTypeData.itemId ? ('/' + formTypeData.itemId) : '';
-        var subtype = formTypeData.subtype ? ('/' + formTypeData.subtype) : '';
-
-        if ('mode' === 'add') {
-            itemId = '';
-        }
-
-        this.ajaxForm.fetch({
-            url: this.ajaxForm.get('url') +
-                '/' + formTypeData.type + subtype + mode + itemId,
-        });
-    },
-
-    /*
-     Get the `AjaxForm` type applicable to the tree item `node`. E.g., 'mover'.
-
-     Returns an object with the key `type` set to a string describing the form
-     type and `id` set to the ID value of the node item, if one existed, or
-     null if it didn't. The case where ID would be null is a top-level item like
-     the 'mover' item which represents a form type and is designed to open the
-     Add Mover form.
-     */
-    getFormTypeForTreeItem: function(node) {
-        var formType = null;
-        var typeData = null;
-
-        if (node === null) {
-            log('Failed to get active node');
-            return false;
-        }
-
-        if (this.isValidFormType(node.data.type)) {
-            formType = node.data.type;
-        }
-
-        if (formType) {
-            typeData = {
-                type: formType,
-                subtype: node.data.subtype,
-                itemId: node.data.id
-            };
-        }
-
-        return typeData;
-    },
-
-    /*
-     Fetch the `AjaxForm` for the active tree item.
-     */
-    fetchFormForActiveTreeItem: function(mode) {
+    showFormForActiveTreeItem: function() {
         var node = this.treeView.getActiveItem();
-        var formTypeData = this.getFormTypeForTreeItem(node);
+        var formView = this.formViews[node.data.type];
 
-        if (formTypeData === null) {
+        if (formView === undefined) {
             return;
         }
 
-        this.fetchForm(formTypeData, mode);
+        if (node.data.id) {
+            formView.reload(node.data.id);
+        } else {
+            formView.show();
+        }
     },
-    
-    addButtonClicked: function(node) {
-        this.fetchFormForActiveTreeItem('add');
+
+    addButtonClicked: function() {
+        this.showFormForActiveTreeItem();
     },
 
     treeItemDoubleClicked: function(node) {
-        if (node.data.id) {
-            this.fetchFormForActiveTreeItem('edit');
-            return;
-        }
-
-        this.fetchFormForActiveTreeItem('add');
+        this.showFormForActiveTreeItem();
     },
 
-    settingsButtonClicked: function(node) {
-        this.fetchFormForActiveTreeItem('edit');
+    settingsButtonClicked: function() {
+        this.showFormForActiveTreeItem();
     },
 
-    removeButtonClicked: function(event) {
+    removeButtonClicked: function() {
         var node = this.treeView.getActiveItem();
         var formTypeData = this.getFormTypeForTreeItem(node);
 
@@ -1778,7 +1907,7 @@ var AppView = Backbone.View.extend({
             return;
         }
 
-        if (window.confirm('Remove mover?') === false) {
+        if (window.confirm('Remove ' + formTypeData.type + '?') === false) {
             return;
         }
 

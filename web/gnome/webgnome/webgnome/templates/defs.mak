@@ -6,9 +6,15 @@
     % endif
 </%def>
 
-<%def name="form_control(field, help_text=None)">
+<%def name="form_control(field, help_text=None, label=None)">
     <div class="control-group ${'error' if field.errors else ''}">
-        <label class="control-label">${field.label.text}</label>
+        <label class="control-label">
+            % if label:
+                ${label}
+            % else:
+                ${field.label.text}
+            % endif
+        </label>
 
         <div class="controls">
             ${field}
