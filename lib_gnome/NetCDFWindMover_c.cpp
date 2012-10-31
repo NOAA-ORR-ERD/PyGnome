@@ -247,13 +247,13 @@ OSErr NetCDFWindMover_c::PrepareForModelRun()
 	return WindMover_c::PrepareForModelRun();
 }
 
-OSErr NetCDFWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr NetCDFWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;
 	if(uncertain) // AH 04/16/12;
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;
-		err = this->UpdateUncertainty(elapsed_time);
+		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
 	}
 	
 	char errmsg[256];

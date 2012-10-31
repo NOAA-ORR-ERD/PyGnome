@@ -1,5 +1,7 @@
 # Declare C++ structures defined in lib_gnome header files
 # that maybe used by cython
+from libcpp cimport bool
+
 cdef extern from "Basics.h":
     ctypedef struct DateTimeRec:
         short year

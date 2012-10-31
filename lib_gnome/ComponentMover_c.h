@@ -66,7 +66,7 @@ public:
 	char 				windMoverName [64]; 	// file to match at refP
 	
 	virtual OSErr 		PrepareForModelRun(); 
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	virtual void 		ModelStepIsDone();
 	OSErr				SetOptimizeVariables (char *errmsg);
 	OSErr				CalculateAveragedWindsHdl(char *errmsg);

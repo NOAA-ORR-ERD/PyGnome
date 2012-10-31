@@ -19,7 +19,9 @@ cdef class CyWindMover:
     def __dealloc__(self):
         del self.mover
     
-    def __init__(self):
+    def __init__(self, uncertain_duration=10800, 
+                 uncertain_speed_scale=2, uncertain_max_speed=30, 
+                 uncertain_angle_scale=0.4, uncertain_max_angle=60):
         """
         initialize a constant wind mover
         
@@ -28,9 +30,32 @@ cdef class CyWindMover:
         self.mover.fIsConstantWind  = 0  # don't assume wind is constant
         self.mover.fConstantValue.u = 0
         self.mover.fConstantValue.v = 0
+        self.mover.fDuration = uncertain_duration
+        self.mover.fSpeedScale = uncertain_speed_scale
+        self.mover.fMaxSpeed = uncertain_max_speed
+        self.mover.fAngleScale = uncertain_angle_scale
+        self.mover.fMaxAngle = uncertain_max_angle
     
 
     def prepare_for_model_step(self, model_time, step_len, uncertain):
+        """
+        .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
+        
+        prepares the mover for time step, calls the underlying C++ mover objects PrepareForModelStep(..)
+        
+        :param model_time: current model time.
+        :param step_len: length of the time step over which the get move will be computed
+        :param uncertain: bool flag determines whether to apply uncertainty or not
+        """
+        cdef OSErr err
+        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, 0, NULL)
+        if err != 0:
+            """
+            For now just raise an OSError - until the types of possible errors are defined and enumerated
+            """
+            raise OSError("WindMover_c.PreareForModelStep returned an error.")
+
+    def prepare_for_model_step_uncertain(self, model_time, step_len, uncertain, numSets, np.ndarray[np.npy_int] setSizes):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
         
@@ -41,7 +66,9 @@ cdef class CyWindMover:
         :param uncertain: bool flag determines whether to apply uncertainty or not
         """
         cdef OSErr err
-        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain)
+        numSets = len(setSizes) 
+
+        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, numSets, <int *>&setSizes[0])
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
@@ -68,18 +95,18 @@ cdef class CyWindMover:
                  LE_type,
                  spill_ID)
                  
-        The cython wind mover's private get move method. It invokes the underlying C++ WindMover_c.get_move(...)
+        Invokes the underlying C++ WindMover_c.get_move(...)
         
-        :param model_time: 
-        :param step_len:
-        :param ref_points:
-        :type ref_points:        
-        :param delta:
-        :type delta:
-        :param LE_windage:
-        :type LE_windage:
-        :param le_status:
-        :param LE_type:
+        :param model_time: current model time
+        :param step_len: step length over which delta is computed
+        :param ref_points: current locations of LE particles
+        :type ref_points: numpy array of WorldPoint3D
+        :param delta: the change in position of each particle over step_len
+        :type delta: numpy array of WorldPoint3D
+        :param LE_windage: windage to be applied to each particle
+        :type LE_windage: numpy array of numpy.npy_int16
+        :param le_status: status of each particle - movement is only on particles in water
+        :param spill_type: LEType defining whether spill is forecast or uncertain 
         :returns: none
         """
         cdef OSErr err

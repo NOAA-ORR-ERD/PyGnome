@@ -9,7 +9,7 @@ assorted utilities for working with time and datetime
 import datetime
 import time
 
-def dateToSeconds_noDst(date_time):
+def date_to_sec(date_time):
     """
     :param date_time: python datetime object 
     Takes the tuple and forces tm_isdst=0, then calls time.mktime to convert to seconds
@@ -19,8 +19,24 @@ def dateToSeconds_noDst(date_time):
     temp = list(date_time.timetuple())
     temp[-1] = 0 
     return time.mktime(temp)
-   
-def secondsToDate_noDst(seconds):
+
+def sec_to_date(seconds):
+    """
+    :param seconds: time in seconds
+    Takes the time and converts it back to datetime object.  
+    
+    It invokes time_utils.sec_to_timestruct(...), which it then
+    converts back to datetime object. It keeps time to seconds accuracy,
+    so upto the tm_sec field. tm_isdst = 0. Does not account for DST
+    
+    Note: Functionality broken up into time_utils.sec_to_timestruct(...) to test
+    that it works in the same way as the lib_gnome C++ cython wrapper 
+    """   
+    t = sec_to_timestruct(seconds)
+    dt = datetime.datetime(*t[:7])
+    return dt 
+    
+def sec_to_timestruct(seconds):
     """
     :param seconds: time in seconds
     Takes the time and converts it back using localtime()

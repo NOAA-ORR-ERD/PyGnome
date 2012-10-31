@@ -105,8 +105,8 @@ OSErr ADCPMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	float rand1,rand2;
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
-	if(err) return err;
+	//err = this -> UpdateUncertainty();
+	//if(err) return err;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
 	
@@ -174,13 +174,13 @@ OSErr ADCPMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 OSErr ADCPMover_c::PrepareForModelRun()
 {
 	this -> fOptimize.isFirstStep = true;
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 
-OSErr ADCPMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr ADCPMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err =0;
-	if (err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain)) 
+	if (err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain, numLESets, LESetsSizesList)) 
 		return err; // note: this calls UpdateUncertainty()
 	
 	err = this -> ComputeVelocityScale(model_time);	// AH 07/10/2012
@@ -198,6 +198,7 @@ void ADCPMover_c::ModelStepIsDone()
 {
 	this -> fOptimize.isFirstStep = false;
 	memset(&fOptimize,0,sizeof(fOptimize));
+	bIsFirstStep = false;
 }
 
 
@@ -475,7 +476,7 @@ ADCPTimeValue*	ADCPMover_c::AddADCP(OSErr *err)
 		*err = timeValObj->InitTimeFunc();
 		if(*err) {delete timeValObj; timeValObj = nil; return nil;}  
 		
-		*err = timeValObj->ReadTimeValues2 (path, M19REALREAL, unitsIfKnownInAdvance);
+		*err = timeValObj->ReadTimeValues (path, M19REALREAL, unitsIfKnownInAdvance);
 		if(*err) { delete timeValObj; timeValObj = nil; return nil;}
 		timeValObj->SetTimeFileName(fileName);
 		//return timeValObj;

@@ -25,6 +25,8 @@ class GNOMEDLL_API CurrentMover_c : virtual public Mover_c {
 public:
 	LONGH			fLESetSizesH;			// cumulative total num le's in each set
 	LEUncertainRecH	fUncertaintyListH;		// list of uncertain factors list elements of type LEUncertainRec
+	Boolean bIsFirstStep;
+	Seconds fModelStartTime;
 	
 public:
 	double			fDownCurUncertainty;	
@@ -38,12 +40,12 @@ public:
 	CurrentMover_c (TMap *owner, char *name);
 	CurrentMover_c () {}
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
-	virtual OSErr		UpdateUncertainty(void);
-	virtual OSErr		AllocateUncertainty ();
+	virtual OSErr		UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList);
+	virtual OSErr		AllocateUncertainty (int numLESets, int* LESetsSizesList);
 	virtual void		DisposeUncertainty ();
 	
 	virtual OSErr 		PrepareForModelRun(); 
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	
 	//temp fix
 	virtual WorldRect GetGridBounds(){WorldRect theWorld = { -360000000, -90000000, 360000000, 90000000 }; return theWorld;}	

@@ -31,7 +31,7 @@ class TRandom : public TMover
 		virtual ClassID 	GetClassID () { return TYPE_RANDOMMOVER; }
 		virtual Boolean		IAm(ClassID id) { if(id==TYPE_RANDOMMOVER) return TRUE; return TMover::IAm(id); }
 		
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); // AH 07/10/2012
 		virtual OSErr 		PrepareForModelRun(); 
 	
 		virtual void 		ModelStepIsDone();
@@ -100,7 +100,7 @@ class TRandomCATSMover : public TRandomMover
 		VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty);//JLM 5/12/99
 		virtual WorldPoint3D	GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 		virtual OSErr 		PrepareForModelRun(); 
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList);
 	
 		virtual void 		ModelStepIsDone();
 
@@ -166,7 +166,7 @@ class TRandomGridMover : public TRandomMover
 		void 					ClearLoadedData(LoadedData * dataPtr);
 		
 		virtual OSErr 		PrepareForModelRun(); 
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList);
 	
 		virtual void 		ModelStepIsDone();
 		virtual WorldPoint3D 	GetMove (const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);

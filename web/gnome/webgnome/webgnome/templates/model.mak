@@ -62,7 +62,7 @@
            <div class="alert alert-error ${'' if error else 'hidden'}">
               <button type="button" class="close" data-dismiss="alert">× </button>
               <strong>Error!</strong> <span class="message">${error if error else ''}</span>
-          </div>         
+          </div>
       </div>
     </div>
 
@@ -94,8 +94,13 @@
         <img class="frame active" src="/static/img/placeholder.gif">
     </div>
 
-    ## A div that we'll add rendered modal forms into.
-    <div id="modal-container"></div>
+    <div id="modal-container">
+      <%include file="forms/run_model_until.mak" args="form=run_model_until_form, action_url=run_model_until_form_url"/>
+      <%include file="forms/model_settings.mak" args="form=settings_form, action_url=settings_form_url"/>
+      <%include file="forms/add_mover.mak" args="form=add_mover_form, action_url=add_mover_form_url"/>
+      <%include file="forms/constant_wind_mover.mak" args="form=constant_wind_form, action_url=constant_wind_form_url"/>
+      <%include file="forms/variable_wind_mover.mak" args="form=variable_wind_form, action_url=variable_wind_form_url"/>
+    </div>
 </%block>
 
 <%block name="javascript">
@@ -104,18 +109,20 @@
     <script src='/static/js/jquery.cookie.js' type="text/javascript"></script>
     <script src="/static/js/jquery.dynatree.min.js"></script>
     <script src="/static/js/underscore-min.js"></script>
-    <script src="/static/js/map.js"></script>
+    <script src="/static/js/backbone-min.js"></script>
+    <script src="/static/js/gnome.js"></script>
 
     <script type="text/javascript">
         $('#map').imagesLoaded(function() {
-            new window.noaa.erd.gnome.MapController({
+            new window.noaa.erd.gnome.AppView({
                 mapEl: '#map',
                 mapPlaceholderEl: '#placeholder',
                 sidebarEl: '#sidebar',
                 formContainerEl: '#modal-container',
-                generatedTimeSteps: ${generated_time_steps_json or 'null' | n},
-                expectedTimeSteps: ${expected_time_steps_json or 'null' | n},
-                startFromTimeStep: ${model.current_step}
+                generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
+                expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
+                currentTimeStep: ${model.current_time_step},
+                formUrls: ${form_urls | n}
             });
         });
     </script>

@@ -4,7 +4,7 @@ import os
 import uuid
 
 
-
+from gnome.model import Model
 
 
 class ModelManager(object):
@@ -19,7 +19,12 @@ class ModelManager(object):
         self.running_models = {}
 
     def create(self):
-        model = MockModel()
+        model = Model()
+
+        # Patch the object with an empty `time_steps` array for the time being.
+        # TODO: Add output caching.
+        model.time_steps = []
+
         self.running_models[model.id] = model
         return model
 
@@ -142,7 +147,7 @@ class MockModel(object):
         try:
             step = self.step_generator.next()
             self.time_steps.append(step)
-            self.current_step = step['step_number']
+            self.current_step = step['id']
             return step
         except StopIteration:
             self.is_running = False
@@ -157,6 +162,7 @@ class MockModel(object):
             return True
 
         self.is_running = True
+        self.time_steps = []
 
         frames_glob = os.path.join(
             os.path.dirname(__file__), 'static', 'img', 'test_frames', '*.jpg')
@@ -168,6 +174,6 @@ class MockModel(object):
 
         self.step_generator = (
             dict(url=image.split('webgnome')[-1], timestamp=self.timestamps[i],
-                 step_number=i) for i, image in enumerate(self.images))
+                 id=i) for i, image in enumerate(self.images))
 
         return True

@@ -35,40 +35,21 @@
 
 using std::cout;
 
-WindMover_c::WindMover_c () { 
-	
-	timeDep = nil;
-	
-	fUncertainStartTime = 0;
-	fDuration = 3*3600; // 3 hours
-	
-	fWindUncertaintyList = 0;
-	fLESetSizes = 0;
-	
-	fSpeedScale = 2;
-	fAngleScale = .4;
-	fMaxSpeed = 30; //mps
-	fMaxAngle = 60; //degrees
-	fSigma2 =0;
-	fSigmaTheta =  0; 
-	//conversion = 1.0;// JLM , I think this field should be removed
-	bUncertaintyPointOpen=false;
-	bSubsurfaceActive = false;
-	fGamma = 1.;
-	
-	bIsFirstStep = false;
-	fIsConstantWind = false;
-	fConstantValue.u = fConstantValue.v = 0.0;
-	
-	memset(&fWindBarbRect,0,sizeof(fWindBarbRect)); 
-	bShowWindBarb = true;
+WindMover_c::WindMover_c() : Mover_c()
+{
+	Init();
 }
 
 WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 {
 	if(!name || !name[0]) this->SetClassName("Variable Wind"); // JLM , a default useful in the wizard
+	Init();	// initialize the local vars
+}
+
+void WindMover_c::Init()
+{
 	timeDep = nil;
-	
+
 	fUncertainStartTime = 0;
 	fDuration = 3*3600; // 3 hours
 	
@@ -98,8 +79,13 @@ WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 
 void WindMover_c::Dispose()
 {
+#ifndef pyGNOME
+	// When invoked from python/cython, it OSSMTimeValue_c object is managed by cython
+	// and cython also tries to delete it when the object goes out of scope. Since it tries
+	// to delete an object that has already been deleted, it crashes. For pyGnome, let python/cython
+	// manage memory for this object.
 	DeleteTimeDep ();
-	
+#endif
 	this->DisposeUncertainty();
 	
 	Mover_c::Dispose ();
@@ -176,20 +162,19 @@ void WindMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 }
 
 
-OSErr WindMover_c::allocate_uncertainty(int n, long* LESetsSizesList, long* spillIDs) // send in number of uncertainty LE sets, number of LEs in each set, spillIDs - uncertainty only
+OSErr WindMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)	// only passing in uncertainty list information
 {
-	//need to allocate for python based on input
-	long i,j,numrec;
+	long i,j,numrec=0;
 	OSErr err=0;
 	
 	this->DisposeUncertainty(); // get rid of any old values
+		
+	if (numLESets == 0) return -1;	// shouldn't happen - if we get here there should be an uncertainty set
 	
-	if (n==0) return 0;	// no uncertainty so nothing to do
+	if(!(fLESetSizes = (LONGH)_NewHandle(sizeof(long)*numLESets)))goto errHandler;
 	
-	if(!(fLESetSizes = (LONGH)_NewHandle(sizeof(long)*n)))goto errHandler;
-	
-	for (i = 0,numrec=0; i < n ; i++) {
-		(*fLESetSizes)[i]=numrec;	// this stores index into the fWindUncertaintyList
+	for (i = 0,numrec=0; i < numLESets ; i++) {
+		(*fLESetSizes)[i]=numrec;	// this is really storing an index to the fWindUncertaintyList
 		numrec += LESetsSizesList[i];
 	}
 	if(!(fWindUncertaintyList = 
@@ -198,51 +183,16 @@ OSErr WindMover_c::allocate_uncertainty(int n, long* LESetsSizesList, long* spil
 	return noErr;
 errHandler:
 	this->DisposeUncertainty(); // get rid of any values allocated
-	TechError("TWindMover_c::allocate_uncertainty()", "_NewHandle()", 0);
+	TechError("TWindMover_c::AllocateUncertainty()", "_NewHandle()", 0);
 	return memFullErr;
 }
 
-#ifndef pyGNOME
 
-OSErr WindMover_c::AllocateUncertainty()
-{
-	//code goes here, need to allocate for python based on input
-	long i,j,n,numrec;
-	TLEList *list;
-	OSErr err=0;
-	CMyList	*LESetsList = model->LESetsList;
-	
-	this->DisposeUncertainty(); // get rid of any old values
-	if(!LESetsList)return noErr;
-		
-	n = LESetsList->GetItemCount();
-	if(!(fLESetSizes = (LONGH)_NewHandle(sizeof(long)*n)))goto errHandler;
-	
-	for (i = 0,numrec=0; i < n ; i++) {
-		(*fLESetSizes)[i]=numrec;
-		LESetsList->GetListItem((Ptr)&list, i);
-		if(list->GetLEType()==UNCERTAINTY_LE) // JLM 9/10/98
-			numrec += list->GetLECount();
-	}
-	if(!(fWindUncertaintyList = 
-		 (LEWindUncertainRecH)_NewHandle(sizeof(LEWindUncertainRec)*numrec)))goto errHandler;
-	
-	return noErr;
-errHandler:
-	this->DisposeUncertainty(); // get rid of any values allocated
-	TechError("TWindMover::AllocateUncertainty()", "_NewHandle()", 0);
-	return memFullErr;
-}
-#else
-OSErr WindMover_c::AllocateUncertainty(){return 0;}
-#endif
-
-OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime)
+OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = noErr;
-	long i,n;
+	long i;
 	Boolean needToReInit = false;
-	//Seconds elapsedTime =  model->GetModelTime() - model->GetStartTime();
 	//Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
 	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime);
 	// JLM, this is elapsedTime >= fUncertainStartTime because elapsedTime is the value at the start of the step
@@ -262,33 +212,24 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime)
 		needToReInit = true;
 	}
 	
-#ifndef pyGNOME
-	// code goes here, will need to pass this info in from pyGNOME - maybe just allocate in prepareformodelrun...
 	if(fLESetSizes)
 	{	// check the LE sets are still the same, JLM 9/18/98
-		TLEList *list;
 		long numrec;
-		n = model->LESetsList->GetItemCount();
 		i = _GetHandleSize((Handle)fLESetSizes)/sizeof(long);
-		if(n != i) needToReInit = true;
+		if(numLESets != i) needToReInit = true;
 		else
 		{
-			for (i = 0,numrec=0; i < n ; i++) {
+			for (i = 0,numrec=0; i < numLESets ; i++) {
 				if(numrec != (*fLESetSizes)[i])
 				{
 					needToReInit = true;
 					break;
 				}
-				model->LESetsList->GetListItem((Ptr)&list, i);
-				if(list->GetLEType()==UNCERTAINTY_LE) // JLM 9/10/98
-					numrec += list->GetLECount();
+				numrec += LESetsSizesList[i];
 			}
 		}
 		
 	}
-#else
-	if (needToReInit==true) {err = -1; return err;}	// code goes here, will need to add some sort of error checks for python
-#endif
 	
 	
 	// question JLM, should fSigma2 change only when the duration value is exceeded ??
@@ -300,7 +241,7 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime)
 	
 	if(needToReInit)
 	{
-		err = this->AllocateUncertainty();
+		err = this->AllocateUncertainty(numLESets,LESetsSizesList);
 		if(!err) this->UpdateUncertaintyValues(elapsedTime);
 		if(err) return err;
 	}
@@ -310,11 +251,6 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime)
 	}
 	return err;
 }
-//#else
-// code goes here, don't need isUncertain since this only gets called if uncertain...
-//OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime) { return 0; }
-
-//#endif	// AH 06/20/2012 (this does not affect stand alone behavior.
 
 OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVel)
 {
@@ -398,7 +334,7 @@ OSErr WindMover_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;
 	if (bIsFirstStep)
@@ -406,7 +342,7 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds&
 	if (uncertain)
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
-		err = this->UpdateUncertainty(elapsed_time);
+		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
 	}
 	err = this -> GetTimeValue (model_time,&this->current_time_value);	// AH 07/16/2012
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");
@@ -585,4 +521,9 @@ WorldPoint3D WindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,lo
 void WindMover_c::SetTimeDep (TOSSMTimeValue *newTimeDep) 
 { 
 	timeDep = newTimeDep;
+}
+
+WindMover_c::~WindMover_c()
+{
+	 Dispose ();
 }

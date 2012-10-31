@@ -46,7 +46,7 @@ public:
 	virtual float		GetArrowDepth(){return 0.;}
 	virtual LongPointHdl	GetPointsHdl(){return nil;}
 	virtual OSErr 		PrepareForModelRun() { return noErr; } 
-	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool) { return noErr; } // AH 07/10/2012
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList) { return noErr; } // AH 07/10/2012
 
 	virtual OSErr		UpdateUncertainty(void);
 	void				GetMoverName (char *name) { GetClassName (name); }

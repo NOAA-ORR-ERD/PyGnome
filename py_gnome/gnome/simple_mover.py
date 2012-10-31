@@ -24,7 +24,6 @@ class SimpleMover(object):
     
     (not all that different than a constant wind mover, now that I think about it)    
     """
-
     def __init__(self, velocity):
         """
         simple_mover (velocity)
@@ -37,6 +36,18 @@ class SimpleMover(object):
         self.velocity = np.asarray( velocity,
                                     dtype = basic_types.mover_type, # use this, to be compatible with whatever we are using for location
                                     ).reshape((3,))
+
+    def __repr__(self):
+        return 'Simple mover'
+
+    @property
+    def id(self):
+        """
+        Return an ID value for this mover.
+
+        :return: an integer ID value for this mover
+        """
+        return id(self)
         
     def prepare_for_model_step(self, model_time, time_step, uncertain_on):
         """

@@ -12,9 +12,9 @@
 #include "TShioTimeValue.h"
 #include "EditWindsDialog.h"
 
-Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP);
-Boolean IsOSSMTideFile(char* path,short *selectedUnitsP);
-Boolean IsHydrologyFile(char* path);
+//Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP);
+//Boolean IsOSSMTideFile(char* path,short *selectedUnitsP);
+//Boolean IsHydrologyFile(char* path);
 
 
 ADCPTimeValue::ADCPTimeValue(TMover *theOwner,TimeValuePairH3D tvals,short userUnits) : TTimeValue(theOwner) 
@@ -410,7 +410,7 @@ done:
 	
 }
 
-OSErr ADCPTimeValue::ReadTimeValues2 (char *path, short format, short unitsIfKnownInAdvance)
+OSErr ADCPTimeValue::ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance)
 {
 	long i, j, numDataLines;
 	OSErr err = 0;
@@ -452,7 +452,7 @@ OSErr ADCPTimeValue::ReadTimeValues2 (char *path, short format, short unitsIfKno
 		//strcat(binPath,"_bin01.dat");	// will need to put this together and loop through all bins
 		//if (!IsBinDataFile(binPath)) return -1;
 		if (err = ReadFileContents(TERMINATED,0, 0,binPath, 0, 0, &f))
-		{ TechError("ADCPTimeValue::ReadTimeValues2()", "ReadFileContents()", 0); goto done; }
+		{ TechError("ADCPTimeValue::ReadTimeValues()", "ReadFileContents()", 0); goto done; }
 		
 		numLines = NumLinesInText(*f);
 		
@@ -473,7 +473,7 @@ OSErr ADCPTimeValue::ReadTimeValues2 (char *path, short format, short unitsIfKno
 			//timeValues = (TimeValuePairH3D)_NewHandle(numDataLines * sizeof(TimeValuePair3D));
 			timeValues = (TimeValuePairH3D)_NewHandleClear(fNumBins * numDataLines * sizeof(TimeValuePair3D));
 			if (!timeValues)
-			{ err = -1; TechError("ADCPTimeValue::ReadTimeValues2()", "_NewHandle()", 0); return err; }
+			{ err = -1; TechError("ADCPTimeValue::ReadTimeValues()", "_NewHandle()", 0); return err; }
 		}
 		else
 		{
@@ -617,7 +617,7 @@ done:
 	return err;
 	
 }
-OSErr ADCPTimeValue::ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance)
+/*OSErr ADCPTimeValue::ReadTimeValues_old (char *path, short format, short unitsIfKnownInAdvance)
 {
 	char s[512], value1S[256], value2S[256];
 	long i,numValues,numLines,numScanned;
@@ -813,10 +813,10 @@ OSErr ADCPTimeValue::ReadTimeValues (char *path, short format, short unitsIfKnow
 done:
 	if(f) {DisposeHandle((Handle)f); f = 0;}
 	if(err &&timeValues)  {DisposeHandle((Handle)timeValues); timeValues = 0;}
-	
+
 	return err;
 	
-}
+}*/	
 
 OSErr ADCPTimeValue::CheckAndPassOnMessage(TModelMessage *message)
 {	
@@ -1011,24 +1011,11 @@ Boolean ADCPTimeValue::FunctionEnabled(ListItem item, short buttonID)
 
 /////////////////////////////////////////////////
 
-ADCPTimeValue* CreateADCPTimeValue(TMover *theOwner,char* path, char* shortFileName, short unitsIfKnownInAdvance)
+/*ADCPTimeValue* CreateADCPTimeValue(TMover *theOwner,char* path, char* shortFileName, short unitsIfKnownInAdvance)
 {
 	char tempStr[256];
 	OSErr err = 0;
 	
-	/*if(IsShioFile(path))
-	 {
-	 TShioTimeValue *timeValObj = new TShioTimeValue(theOwner);
-	 if (!timeValObj)
-	 { TechError("LoadADCPTimeValue()", "new TShioTimeValue()", 0); return nil; }
-	 
-	 err = timeValObj->InitTimeFunc();
-	 if(err) {delete timeValObj; timeValObj = nil; return nil;}  
-	 err = timeValObj->ReadTimeValues (path, M19REALREAL, unitsIfKnownInAdvance);
-	 if(err) { delete timeValObj; timeValObj = nil; return nil;}
-	 return timeValObj;
-	 }*/
-	//else if (IsTimeFile(path) || IsHydrologyFile(path) || IsOSSMTideFile(path, &unitsIfKnownInAdvance))
 	if (IsADCPFile(path))
 	{
 		ADCPTimeValue *timeValObj = new ADCPTimeValue(theOwner);
@@ -1039,7 +1026,7 @@ ADCPTimeValue* CreateADCPTimeValue(TMover *theOwner,char* path, char* shortFileN
 		err = timeValObj->InitTimeFunc();
 		if(err) {delete timeValObj; timeValObj = nil; return nil;}  
 		
-		err = timeValObj->ReadTimeValues (path, M19REALREAL, unitsIfKnownInAdvance);
+		err = timeValObj->ReadTimeValues_old (path, M19REALREAL, unitsIfKnownInAdvance);
 		if(err) { delete timeValObj; timeValObj = nil; return nil;}
 		return timeValObj;
 	}	
@@ -1051,9 +1038,9 @@ ADCPTimeValue* CreateADCPTimeValue(TMover *theOwner,char* path, char* shortFileN
 	}
 	
 	return nil;
-}
+}*/
 
-ADCPTimeValue* LoadADCPTimeValue(TMover *theOwner, short unitsIfKnownInAdvance)
+/*ADCPTimeValue* LoadADCPTimeValue(TMover *theOwner, short unitsIfKnownInAdvance)
 {
 	char path[256],shortFileName[256];
 	char tempStr[256];
@@ -1091,9 +1078,8 @@ ADCPTimeValue* LoadADCPTimeValue(TMover *theOwner, short unitsIfKnownInAdvance)
 #endif
 #endif	
 	
-	//	return  CreateADCPTimeValue(theOwner,path,shortFileName,kUndefined);	// ask user for units 
 	return  CreateADCPTimeValue(theOwner,path,shortFileName,unitsIfKnownInAdvance);	// ask user for units 
-}
+}*/
 
 /////////////////////////////////////////////////
 

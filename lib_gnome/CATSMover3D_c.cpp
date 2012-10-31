@@ -179,11 +179,11 @@ OSErr CATSMover3D_c::PrepareForModelRun()
 	return noErr;
 }
 
-OSErr CATSMover3D_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr CATSMover3D_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 
 {
 	OSErr err =0;
-	CurrentMover_c::PrepareForModelStep(model_time,time_step, uncertain); // note: this calls UpdateUncertainty()	// AH 07/10/2012
+	CurrentMover_c::PrepareForModelStep(model_time,time_step, uncertain, numLESets, LESetsSizesList); // note: this calls UpdateUncertainty()	
 	
 	err = this -> ComputeVelocityScale(model_time);	// AH 07/10/2012
 	

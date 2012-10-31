@@ -21,21 +21,22 @@ void ComponentMover_c::ModelStepIsDone()
 {
 	this -> fOptimize.isFirstStep = false;
 	memset(&fOptimize,0,sizeof(fOptimize));
+	bIsFirstStep = false;
 }
 
 OSErr ComponentMover_c::PrepareForModelRun()
 {
 	this -> fOptimize.isFirstStep = true;
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 
-OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 
 {
 	char errmsg[256];
 	OSErr err = 0;
 
-	err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain); // note: this calls UpdateUncertainty()	// AH 07/10/2012
+	err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain, numLESets, LESetsSizesList); // note: this calls UpdateUncertainty()	// AH 07/10/2012
 	
 	errmsg[0]=0;
 	
@@ -537,8 +538,8 @@ OSErr ComponentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *
 	
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
-	if(err) return err;
+	//err = this -> UpdateUncertainty();
+	//if(err) return err;
 	
 	
 	if(!fUncertaintyListH || !fLESetSizesH) 

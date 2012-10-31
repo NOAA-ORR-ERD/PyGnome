@@ -23,6 +23,10 @@ from wtforms.validators import (
 
 
 class DatePickerWidget(TextInput):
+    """
+    A widget that assigns itself a CSS class needed to render a jQuery UI
+    date picker.
+    """
     def __call__(self, field, **kwargs):
         kwargs['class']  = 'date'
         return super(DatePickerWidget, self).__call__(field, **kwargs)
@@ -37,6 +41,15 @@ class LeadingZeroNumberWidget(TextInput):
 
             class IntegerLeadingZeroWidget(LeadingZeroNumberWidget):
                 cast_to = int
+
+    The result for, e.g. an `IntegerLeadingZeroWidget`:
+
+            User input: 1
+            Result of calling the widget: 01
+
+    This widget is used primarily to adjust user input so that it may be fed
+    directly into a `datetime.datetime` or `datetime.date` constructor for, e.g.,
+    an hour or minute value.
     """
     def cast_to(self, number):
         raise NotImplementedError
@@ -44,6 +57,7 @@ class LeadingZeroNumberWidget(TextInput):
     def cast(self, number):
         """
         Try to use the class's `cast_to` value to cast `number`.
+
         Return the casted value if it worked; otherwise return None.
         """
         try:
@@ -74,10 +88,16 @@ class LeadingZeroIntegerWidget(LeadingZeroNumberWidget):
     cast_to = int
 
 
-MOVER_CONSTANT_WIND = 'constant_wind'
-MOVER_VARIABLE_WIND = 'variable_wind'
+MOVER_CONSTANT_WIND = 'constant_wind_mover'
+MOVER_VARIABLE_WIND = 'variable_wind_mover'
+
 
 class AddMoverForm(Form):
+    """
+    The initial form used in a multi-step process for adding a mover to the
+    user's running model. This step asks the user to choose the type of mover
+    to add.
+    """
     mover_type = SelectField('Type', choices=(
         (MOVER_CONSTANT_WIND, 'Winds - Constant'),
         (MOVER_VARIABLE_WIND, 'Winds - Variable')
@@ -86,7 +106,7 @@ class AddMoverForm(Form):
 
 class WindMoverForm(Form):
     """
-    A form class containing fields common to `VariableWindMoverForm` and
+    A form base class containing fields common to `VariableWindMoverForm` and
     `ConstantWindMoverForm`
     """
     SPEED_KNOTS = 'knots'
@@ -132,26 +152,71 @@ class WindMoverForm(Form):
     )
 
 
-class ConstantWindMoverForm(WindMoverForm):
-    type = HiddenField(default=MOVER_CONSTANT_WIND)
-
-
-class VariableWindMoverForm(WindMoverForm):
-    type = HiddenField(default=MOVER_VARIABLE_WIND)
+class DateTimeForm(Form):
+    """
+    A form base class that has a `date` field and two fields to choose hour
+    and minute. Taken together, the values can be passed into a
+    `datetime.datetime` constructor.
+    """
     date = DateTimeField('Date', widget=DatePickerWidget(),
-                         format="%m/%d/%Y",
-                         validators=[Required()],
-                         default=datetime.date.today())
+                     format="%m/%d/%Y",
+                     validators=[Required()],
+                     default=datetime.date.today())
     hour = IntegerField(widget=LeadingZeroIntegerWidget(),
                         validators=[NumberRange(min=0, max=24)],
                         default=lambda: datetime.datetime.now().hour)
     minute = IntegerField(widget=LeadingZeroIntegerWidget(),
                           validators=[NumberRange(min=0, max=60)],
                           default=lambda: datetime.datetime.now().minute)
+
+    def get_datetime(self):
+        """
+        Return a `datetime.datetime` value set to time `self.hour`:`self.minute`
+        if the user specified those values, else 00:00.
+        """
+        date = self.date.data
+
+        return datetime.datetime(
+            year=date.year,
+            month=date.month,
+            day=date.day,
+            hour=self.hour.data,
+            minute=self.minute.data)
+
+
+class ConstantWindMoverForm(WindMoverForm):
+    """
+    A form for adding a constant wind mover to the user's running model.
+    """
+    type = HiddenField(default=MOVER_CONSTANT_WIND)
+
+
+class VariableWindMoverForm(WindMoverForm, DateTimeForm):
+    """
+    A form for adding a variable wind mover to the user's running model.
+    """
+    type = HiddenField(default=MOVER_VARIABLE_WIND)
     auto_increment_time_by = IntegerField('Auto-increment time by')
 
 
-class RunModelUntilForm(Form):
-    run_until = DateTimeField('Date', widget=DatePickerWidget(),
-                              format="%m/%d/%Y",
-                              validators=[Required()])
+class RunModelUntilForm(DateTimeForm):
+    """
+    A form for submitting a step that the user wishes to run his or her model
+    until.
+    """
+    pass
+
+
+class ModelSettingsForm(DateTimeForm):
+    """
+    A form for adding and editing model-related settings.
+    """
+    duration_days = IntegerField(default=1, validators=[NumberRange(min=0)])
+    duration_hours = IntegerField(default=0, validators=[NumberRange(min=0)])
+    include_minimum_regret = BooleanField(
+        label="Include the Minimum Regret (Uncertainty) Solution",
+        default=False)
+    show_currents = BooleanField(label="Show Currents", default=False)
+    computation_time_step = FloatField("Computation Time Step:", default=0.1)
+    prevent_land_jumping = BooleanField("Prevent Land Jumping", default=True)
+    run_backwards = BooleanField("Run Backwards", default=False)

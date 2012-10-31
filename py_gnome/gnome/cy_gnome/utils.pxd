@@ -2,6 +2,7 @@
 lib_gnome utils
 """
 from type_defs cimport *
+from libcpp cimport bool
 
 """
 MemUtils functions available from lib_gnome 

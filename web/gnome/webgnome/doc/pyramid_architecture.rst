@@ -5,7 +5,7 @@ A high-level overview of the architecture of the Python/Pyramid layer of
 WebGNOME.
 
 .. contents:: `Table of contents`
-   :depth: 1
+   :depth: 2
 
 
 Summary of Request Flow

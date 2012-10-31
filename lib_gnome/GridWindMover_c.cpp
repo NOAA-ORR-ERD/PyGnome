@@ -43,13 +43,13 @@ OSErr GridWindMover_c::PrepareForModelRun()
 	return WindMover_c::PrepareForModelRun();
 }
 
-OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;
 	if (uncertain)
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;
-		err = this->UpdateUncertainty(elapsed_time);
+		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
 	}
 
 	

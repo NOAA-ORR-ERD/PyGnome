@@ -59,7 +59,7 @@ class PtCurMover : virtual public PtCurMover_c,  public TCurrentMover
 		virtual OSErr 		DeleteItem (ListItem item);
 		virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	// AH 07/17/2012
 		virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
-		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool); // AH 07/10/2012
+		virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList);
 		virtual OSErr 		PrepareForModelRun(); 
 		virtual OSErr 		SettingsDialog();
 

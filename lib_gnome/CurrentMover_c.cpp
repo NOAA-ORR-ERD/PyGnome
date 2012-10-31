@@ -85,29 +85,20 @@ void CurrentMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 	}	
 }
 
-#ifdef pyGNOME
-OSErr CurrentMover_c::AllocateUncertainty(void) { return 0; }
-#else
-OSErr CurrentMover_c::AllocateUncertainty()
+OSErr CurrentMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)	// only passing in uncertainty list information
 {
-	long i,j,n,numrec;
-	//TOLEList *list; AH 04/12/2012: This should be the more basic list type. (Every time we call on AppendItem() we're passing TLELists, not TOLELists. Please correct me if I'm wrong here.)
-	TLEList *list;
-	LEUncertainRecH h;
+	long i,j,numrec=0;
 	OSErr err=0;
-	CMyList	*LESetsList = model->LESetsList;
 	
 	this->DisposeUncertainty(); // get rid of any old values
-	if(!LESetsList)return noErr;
 	
-	n = LESetsList->GetItemCount();
-	if(!(fLESetSizesH = (LONGH)_NewHandle(sizeof(long)*n)))goto errHandler;
+	if (numLESets == 0) return -1;	// shouldn't happen - if we get here there should be an uncertainty set
 	
-	for (i = 0,numrec=0; i < n ; i++) {
+	if(!(fLESetSizesH = (LONGH)_NewHandle(sizeof(long)*numLESets)))goto errHandler;
+	
+	for (i = 0,numrec=0; i < numLESets ; i++) {
 		(*fLESetSizesH)[i]=numrec;
-		LESetsList->GetListItem((Ptr)&list, i);
-		if(list->GetLEType()==UNCERTAINTY_LE) // JLM 9/10/98
-			numrec += list->GetLECount();
+		numrec += LESetsSizesList[i];
 	}
 	if(!(fUncertaintyListH = 
 		 (LEUncertainRecH)_NewHandle(sizeof(LEUncertainRec)*numrec)))goto errHandler;
@@ -118,20 +109,15 @@ errHandler:
 	TechError("TCurrentMover::AllocateUncertainty()", "_NewHandle()", 0);
 	return memFullErr;
 }
-#endif
 
-#ifdef pyGNOME
-OSErr CurrentMover_c::UpdateUncertainty(void) { return 0; }
-#else
-OSErr CurrentMover_c::UpdateUncertainty(void)
+OSErr CurrentMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = noErr;
-	long i,n;
+	long i;
 	Boolean needToReInit = false;
-	Seconds elapsedTime =  model->GetModelTime() - model->GetStartTime();
 	
-	
-	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
+	//Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
+	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime);
 	// JLM, this is elapsedTime >= fUncertainStartTime because elapsedTime is the value at the start of the step
 	
 	if(!bAddUncertainty)
@@ -153,20 +139,17 @@ OSErr CurrentMover_c::UpdateUncertainty(void)
 	{	// check the LE sets are still the same, JLM 9/18/98
 		TLEList *list;
 		long numrec;
-		n = model->LESetsList->GetItemCount();
 		i = _GetHandleSize((Handle)fLESetSizesH)/sizeof(long);
-		if(n != i) needToReInit = true;
+		if(numLESets != i) needToReInit = true;
 		else
 		{
-			for (i = 0,numrec=0; i < n ; i++) {
+			for (i = 0,numrec=0; i < numLESets ; i++) {
 				if(numrec != (*fLESetSizesH)[i])
 				{
 					needToReInit = true;
 					break;
 				}
-				model->LESetsList->GetListItem((Ptr)&list, i);
-				if(list->GetLEType()==UNCERTAINTY_LE) // JLM 9/10/98
-					numrec += list->GetLECount();
+				numrec += LESetsSizesList[i];
 			}
 		}
 		
@@ -174,7 +157,7 @@ OSErr CurrentMover_c::UpdateUncertainty(void)
 	
 	if(needToReInit)
 	{
-		err = this->AllocateUncertainty();
+		err = this->AllocateUncertainty(numLESets,LESetsSizesList);
 		if(!err) this->UpdateUncertaintyValues(elapsedTime);
 		if(err) return err;
 	}
@@ -185,18 +168,24 @@ OSErr CurrentMover_c::UpdateUncertainty(void)
 	
 	return err;
 }
-#endif
 
 OSErr CurrentMover_c::PrepareForModelRun()
 {
+	bIsFirstStep = true;
+	this->DisposeUncertainty();
 	return noErr;
 }
 
-OSErr CurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain)
+OSErr CurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
 	if (uncertain)
-		err = this->UpdateUncertainty();
+	{
+		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
+		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
+	}
 	if (err) printError("An error occurred in TCurrentMover::PrepareForModelStep");
 	return err;
 }

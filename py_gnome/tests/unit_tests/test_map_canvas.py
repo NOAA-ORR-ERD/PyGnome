@@ -113,7 +113,7 @@ def test_render_elements():
     lon = random.uniform(min_lon, max_lon, (N,))
     lat = random.uniform(min_lat, max_lat, (N,))
 
-    spill = gnome.spill.Spill(num_LEs=N, spill_type=basic_types.spill_type.uncertainty)
+    spill = gnome.spill.Spill(num_LEs=N, uncertain=True)
     spill['positions'][:,0] = lon
     spill['positions'][:,1] = lat
 
