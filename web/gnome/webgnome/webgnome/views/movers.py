@@ -96,10 +96,7 @@ def add_constant_wind_mover(request, model):
         time_val = numpy.zeros((1,), dtype=basic_types.time_value_pair)
         time_val['time'][0] = 0  # since it is just constant, just give it 0 time
         time_val['value'][0] = (0., 100.)
-
         mover = movers.WindMover(wind_vel=time_val)
-        # Patch mover with an ID.
-        mover.id = id(mover)
 
         return {
             'id': model.add_mover(mover),
@@ -122,7 +119,9 @@ def add_variable_wind_mover(request, model):
 
     if request.method == 'POST' and form.validate():
         # TODO: Use VariableWindMover class when ready.
-        mover = simple_mover.SimpleMover(velocity= (1.0, 10.0, 0.0) )
+        
+        mover = simple_mover.SimpleMover(velocity=(1.0, 10.0, 0.0))
+
         return {
             'id': model.add_mover(mover),
             'type': 'mover',

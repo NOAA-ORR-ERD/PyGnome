@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from gnome.movers import WindMover
 
 
 class NavigationTree(object):
@@ -6,6 +7,12 @@ class NavigationTree(object):
     An object that renders a JSON representation of a `py_gnome.model.Model`
     used to initialize a navigation tree widget in the JavaScript app.
     """
+
+    # A map of form types (string identifiers of forms) to `py_gnome` classes.
+    form_types = {
+        WindMover: 'wind_mover'
+    }
+
     def __init__(self, model):
         self.model = model
 
@@ -37,37 +44,44 @@ class NavigationTree(object):
         value = value if len(value) <= max_chars else '%s ...' % value[:max_chars]
         return '%s: %s' % (name, value)
 
+    def _get_form_type_for_obj(self, obj):
+        """
+        Return a string identifier of the form type for `obj` if its class is
+        in `self.form_types`, else None.
+        """
+        return self.form_types.get(obj.__class__, None)
+
     def render(self):
         """
         Return an ordered list of tree elements, suitable for JSON serialization.
         """
-        settings = {'title': 'Model Settings', 'type': 'settings', 'children': []}
-        movers = {'title': 'Movers', 'type': 'add_mover', 'children': []}
-        spills = {'title': 'Spills', 'type': 'add_spill', 'children': []}
+        settings = {'title': 'Model Settings', 'form_type': 'settings', 'children': []}
+        movers = {'title': 'Movers', 'form_type': 'add_mover', 'children': []}
+        spills = {'title': 'Spills', 'form_type': 'add_spill', 'children': []}
 
         for name, value in self._get_model_settings().items():
             settings['children'].append({
-                'type': 'settings',
+                'form_type': 'settings',
                 'title': self._get_value_title(name, value),
             })
 
         # If we had a map, we would set its ID value here, whatever that value
         # ends up being.
         settings['children'].append({
-            'type': 'map',
+            'form_type': 'map',
             'title': 'Map: None'
         })
 
         for mover in self.model.movers:
             movers['children'].append({
-                'type': mover.name,
+                'form_type': self._get_form_type_for_obj(mover),
                 'id': mover.id,
                 'title': str(mover)
             })
 
         for spill in self.model.spills:
             spills['children'].append({
-                'type': spill.name,
+                'form_type': self._get_form_type_for_obj(spill),
                 'id': spill.id,
                 'title': self._get_value_title('ID', id),
             })

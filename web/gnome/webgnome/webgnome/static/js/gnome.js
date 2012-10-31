@@ -1875,7 +1875,7 @@ var AppView = Backbone.View.extend({
      */
     showFormForActiveTreeItem: function() {
         var node = this.treeView.getActiveItem();
-        var formView = this.formViews[node.data.type];
+        var formView = this.formViews[node.data.form_type];
 
         if (formView === undefined) {
             return;
@@ -1904,18 +1904,18 @@ var AppView = Backbone.View.extend({
         var node = this.treeView.getActiveItem();
         log(node)
 
-        if (!node.data.type || !node.data.id) {
+        if (!node.data.form_type || !node.data.id) {
             return;
         }
 
-        var type = node.data.type.replace('_', ' ');
+        var type = node.data.form_type.replace('_', ' ');
 
         if (window.confirm('Remove ' + type + '?') === false) {
             return;
         }
 
         this.ajaxForm.submit({
-            url: this.ajaxForm.get('url') + '/' + node.data.type + '/delete',
+            url: this.ajaxForm.get('url') + '/' + node.data.form_type + '/delete',
             data: "mover_id=" + node.data.id,
             error: function() {
                 window.alert('Could not remove item.');
