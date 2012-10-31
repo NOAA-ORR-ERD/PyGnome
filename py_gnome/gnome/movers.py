@@ -5,7 +5,7 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 
 
-class PyMovers(object):
+class PyMover(object):
     """
     Base class for python wrappers around cython movers
     All movers (CyWindMover, RandomMover) will need to extract info from spill object.
@@ -53,15 +53,15 @@ class PyMovers(object):
         self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
 
 
-class WindMover(PyMovers, CyWindMover):
+class WindMover(PyMover, CyWindMover):
     """
     WindMover is a Python wrapper around the Cython wind_mover module.
-    This inherits CyWindMover as well as PyMovers.
+    This inherits CyWindMover as well as PyMover.
     
     The real work is done by the CyWindMover object from which CyWindMover
     derives.
 
-    PyMovers sets everything up that is common to all movers.
+    PyMover sets everything up that is common to all movers.
     """
     def __init__(self, wind_vel=None, wind_file=None, uncertain_duration=10800, is_active=True,
                  uncertain_speed_scale=2, uncertain_max_speed=30,
@@ -97,7 +97,7 @@ class WindMover(PyMovers, CyWindMover):
                              uncertain_speed_scale=uncertain_speed_scale, uncertain_max_speed=uncertain_max_speed, 
                              uncertain_angle_scale=uncertain_angle_scale, uncertain_max_angle=uncertain_max_angle)
         CyWindMover.set_ossm(self, self.ossm)
-        PyMovers.__init__(self, is_active=is_active)
+        PyMover.__init__(self, is_active=is_active)
 
     def __repr__(self):
         """
