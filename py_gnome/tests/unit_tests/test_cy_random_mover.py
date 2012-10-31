@@ -39,6 +39,9 @@ def test_move():
     cm = Common()
     rm = cy_random_mover.CyRandomMover(diffusion_coef=100000)
     delta = np.zeros((cm.num_le,), dtype=basic_types.world_point)
+    
+    rm.prepare_for_model_run()
+    
     rm.prepare_for_model_step(cm.model_time, cm.time_step, False)
     rm.get_move( cm.model_time,
                  cm.time_step, 
