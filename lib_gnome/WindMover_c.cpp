@@ -157,53 +157,20 @@ void WindMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 }
 
 
-OSErr WindMover_c::allocate_uncertainty(int n, int* LESetsSizesList, long* spillIDs) // send in number of uncertainty LE sets (or use all but 0 for forecast sets?), number of LEs in each set, spillIDs - uncertainty only
-{
-	//need to allocate for python based on input
-	long i,j,numrec;
-	OSErr err=0;
-	
-	this->DisposeUncertainty(); // get rid of any old values
-	
-	if (n==0) return 0;	// no uncertainty so nothing to do
-	
-	if(!(fLESetSizes = (LONGH)_NewHandle(sizeof(long)*n)))goto errHandler;
-	
-	for (i = 0,numrec=0; i < n ; i++) {
-		(*fLESetSizes)[i]=numrec;	// this stores index into the fWindUncertaintyList
-		numrec += LESetsSizesList[i];
-	}
-	if(!(fWindUncertaintyList = 
-		 (LEWindUncertainRecH)_NewHandle(sizeof(LEWindUncertainRec)*numrec)))goto errHandler;
-	
-	return noErr;
-errHandler:
-	this->DisposeUncertainty(); // get rid of any values allocated
-	TechError("TWindMover_c::allocate_uncertainty()", "_NewHandle()", 0);
-	return memFullErr;
-}
-
 OSErr WindMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)	// only passing in uncertainty list information
 {
-	//code goes here, need to allocate for python based on input
 	long i,j,numrec=0;
-	//TLEList *list;
 	OSErr err=0;
-	//CMyList	*LESetsList = model->LESetsList;
 	
 	this->DisposeUncertainty(); // get rid of any old values
-	//if(!LESetsList)return noErr;
 		
-	//n = LESetsList->GetItemCount();
 	if (numLESets == 0) return -1;	// shouldn't happen - if we get here there should be an uncertainty set
 	
 	if(!(fLESetSizes = (LONGH)_NewHandle(sizeof(long)*numLESets)))goto errHandler;
 	
 	for (i = 0,numrec=0; i < numLESets ; i++) {
 		(*fLESetSizes)[i]=numrec;	// this is really storing an index to the fWindUncertaintyList
-		//LESetsList->GetListItem((Ptr)&list, i);
-		//if(list->GetLEType()==UNCERTAINTY_LE) // JLM 9/10/98
-			numrec += LESetsSizesList[i];
+		numrec += LESetsSizesList[i];
 	}
 	if(!(fWindUncertaintyList = 
 		 (LEWindUncertainRecH)_NewHandle(sizeof(LEWindUncertainRec)*numrec)))goto errHandler;
@@ -221,7 +188,6 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, 
 	OSErr err = noErr;
 	long i;
 	Boolean needToReInit = false;
-	//Seconds elapsedTime =  model->GetModelTime() - model->GetStartTime();
 	//Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
 	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime);
 	// JLM, this is elapsedTime >= fUncertainStartTime because elapsedTime is the value at the start of the step
@@ -241,12 +207,9 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, 
 		needToReInit = true;
 	}
 	
-	// code goes here, will need to pass this info in from pyGNOME - maybe just allocate in prepareformodelrun...
 	if(fLESetSizes)
 	{	// check the LE sets are still the same, JLM 9/18/98
-		TLEList *list;
 		long numrec;
-		//n = model->LESetsList->GetItemCount();
 		i = _GetHandleSize((Handle)fLESetSizes)/sizeof(long);
 		if(numLESets != i) needToReInit = true;
 		else
@@ -257,9 +220,7 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, 
 					needToReInit = true;
 					break;
 				}
-				//model->LESetsList->GetListItem((Ptr)&list, i);
-				//if(list->GetLEType()==UNCERTAINTY_LE) // JLM 9/10/98
-					numrec += LESetsSizesList[i];
+				numrec += LESetsSizesList[i];
 			}
 		}
 		
@@ -285,11 +246,6 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, 
 	}
 	return err;
 }
-//#else
-// code goes here, don't need isUncertain since this only gets called if uncertain...
-//OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime) { return 0; }
-
-//#endif	// AH 06/20/2012 (this does not affect stand alone behavior.
 
 OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVel)
 {

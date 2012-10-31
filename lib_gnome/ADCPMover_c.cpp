@@ -105,8 +105,8 @@ OSErr ADCPMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	float rand1,rand2;
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
-	if(err) return err;
+	//err = this -> UpdateUncertainty();
+	//if(err) return err;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
 	
@@ -174,7 +174,7 @@ OSErr ADCPMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 OSErr ADCPMover_c::PrepareForModelRun()
 {
 	this -> fOptimize.isFirstStep = true;
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 
 OSErr ADCPMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
@@ -198,6 +198,7 @@ void ADCPMover_c::ModelStepIsDone()
 {
 	this -> fOptimize.isFirstStep = false;
 	memset(&fOptimize,0,sizeof(fOptimize));
+	bIsFirstStep = false;
 }
 
 

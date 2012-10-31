@@ -209,8 +209,8 @@ OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	float rand1,rand2;
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
-	if(err) return err;
+	//err = this -> UpdateUncertainty();
+	//if(err) return err;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
 	
@@ -277,7 +277,7 @@ OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 OSErr CATSMover_c::PrepareForModelRun()
 {
 	this -> fOptimize.isFirstStep = true;
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 
 OSErr CATSMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
@@ -301,6 +301,7 @@ void CATSMover_c::ModelStepIsDone()
 {
 	this -> fOptimize.isFirstStep = false;
 	memset(&fOptimize,0,sizeof(fOptimize));
+	bIsFirstStep = false;
 }
 
 OSErr CATSMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID) {	

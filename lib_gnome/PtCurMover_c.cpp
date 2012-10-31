@@ -67,8 +67,8 @@ OSErr PtCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *velo
 	double u,v,lengthS,alpha,beta,v0;
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
-	if(err) return err;
+	//err = this -> UpdateUncertainty();
+	//if(err) return err;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
 	
@@ -110,6 +110,7 @@ OSErr PtCurMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *velo
 void PtCurMover_c::ModelStepIsDone()
 {
 	fIsOptimizedForStep = false;
+	bIsFirstStep = false;
 }
 
 void PtCurMover_c::DisposeLoadedData(LoadedData *dataPtr)
