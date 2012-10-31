@@ -1,7 +1,6 @@
 import json
 import datetime
 
-from collections import OrderedDict
 from pyramid.renderers import render
 from pyramid.view import view_config
 
@@ -14,6 +13,7 @@ from ..forms import (
 )
 
 from ..util import json_require_model, make_message, json_encoder
+from ..navigation_tree import NavigationTree
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -176,25 +176,6 @@ def model_settings(request, model):
     }
 
 
-def _get_model_settings(model):
-    """
-    Return a dict of values containing each setting in `model` that the client
-    should be able to read and change.
-    """
-    settings_attrs = [
-        'start_time',
-        'duration'
-    ]
-
-    settings = OrderedDict()
-
-    for attr in settings_attrs:
-        if hasattr(model, attr):
-            settings[attr] = getattr(model, attr)
-
-    return settings
-
-
 @view_config(route_name='get_tree', renderer='gnome_json')
 @json_require_model
 def get_tree(request, model):
@@ -202,45 +183,6 @@ def get_tree(request, model):
     Return a JSON representation of the current state of the model, to be used
     to create a tree view of the model in the JavaScript application.
     """
-    settings = {'title': 'Model Settings', 'type': 'settings', 'children': []}
-    movers = {'title': 'Movers', 'type': 'add_mover', 'children': []}
-    spills = {'title': 'Spills', 'type': 'add_spill', 'children': []}
+    navigation_tree = NavigationTree(model)
+    return navigation_tree.render()
 
-    def get_value_title(name, value, max_chars=8):
-        """
-        Return a title string that combines `name` and `value`, with value
-        shortened if it is longer than `max_chars`.
-        """
-        name = name.replace('_', ' ').title()
-        value = (str(value)).title()
-        value = value if len(value) <= max_chars else '%s ...' % value[:max_chars]
-        return '%s: %s' % (name, value)
-
-    for name, value in _get_model_settings(model).items():
-        settings['children'].append({
-            'type': 'settings',
-            'title': get_value_title(name, value),
-        })
-
-    # If we had a map, we would set its ID value here, whatever that value
-    # ends up being.
-    settings['children'].append({
-        'type': 'map',
-        'title': 'Map: None'
-    })
-
-    for mover in model.movers:
-        movers['children'].append({
-            'type': mover.name,
-            'id': mover.id,
-            'title': str(mover)
-        })
-
-    for spill in model.spills:
-        spills['children'].append({
-            'type': spill.name,
-            'id': spill.id,
-            'title': get_value_title('ID', id),
-        })
-
-    return [settings, movers, spills]

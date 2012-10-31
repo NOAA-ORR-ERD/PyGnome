@@ -1,14 +1,16 @@
+import numpy
+
+from gnome import simple_mover, movers
+
 from pyramid.httpexceptions import HTTPFound, HTTPNotFound
 from pyramid.renderers import render
 from pyramid.view import view_config
 
+from gnome import basic_types
 
 from ..forms import (
-    AddMoverForm,
     VariableWindMoverForm,
-    ConstantWindMoverForm,
-    MOVER_VARIABLE_WIND,
-    MOVER_CONSTANT_WIND
+    ConstantWindMoverForm
 )
 
 from ..util import json_require_model, make_message
@@ -19,12 +21,14 @@ from ..util import json_require_model, make_message
 def edit_constant_wind_mover(request, model):
     mover_id = request.matchdict['id']
     mover = model.get_mover(mover_id)
-    opts = {'obj': mover} if mover else {}
+    # TODO: Use when real mover class is available.
+    # opts = {'obj': mover} if mover else {}
+    opts = {}
     form = ConstantWindMoverForm(request.POST or None, **opts)
 
     if request.method == 'POST' and form.validate():
         if model.has_mover_with_id(mover_id):
-            model.update_mover(mover_id, form.data)
+            # TODO: Update the mover with settings in POST.
             message = make_message(
                 'success', 'Updated constant wind mover successfully.')
         else:
@@ -52,12 +56,14 @@ def edit_constant_wind_mover(request, model):
 def edit_variable_wind_mover(request, model):
     mover_id = request.matchdict['id']
     mover = model.get_mover(mover_id)
-    opts = {'obj': mover} if mover else {}
+    # TODO: Use when real mover class is available.
+    # opts = {'obj': mover} if mover else {}
+    opts = {}
     form = VariableWindMoverForm(request.POST or None, **opts)
 
     if request.method == 'POST' and form.validate():
         if model.has_mover_with_id(mover_id):
-            model.update_mover(mover_id, form.data)
+            # TODO: Update the mover with settings in POST.
             message = make_message(
                 'success', 'Updated variable wind mover successfully.')
         else:
@@ -86,8 +92,15 @@ def add_constant_wind_mover(request, model):
     form = ConstantWindMoverForm(request.POST)
 
     if request.method == 'POST' and form.validate():
-        mover = None
-        # TODO: Create wind mover here.
+        # TODO: Use ConstantWindMover class when ready.
+        time_val = numpy.zeros((1,), dtype=basic_types.time_value_pair)
+        time_val['time'][0] = 0  # since it is just constant, just give it 0 time
+        time_val['value'][0] = (0., 100.)
+
+        mover = movers.WindMover(wind_vel=time_val)
+        # Patch mover with an ID.
+        mover.id = id(mover)
+
         return {
             'id': model.add_mover(mover),
             'type': 'mover',
@@ -108,8 +121,10 @@ def add_variable_wind_mover(request, model):
     form = VariableWindMoverForm(request.POST)
 
     if request.method == 'POST' and form.validate():
+        # TODO: Use VariableWindMover class when ready.
+        mover = simple_mover.SimpleMover(velocity= (1.0, 10.0, 0.0) )
         return {
-            'id': model.add_mover(form.data),
+            'id': model.add_mover(mover),
             'type': 'mover',
             'form_html': None
         }

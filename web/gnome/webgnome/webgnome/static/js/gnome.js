@@ -7,8 +7,6 @@ var log = window.noaa.erd.util.log;
 var handleAjaxError = window.noaa.erd.util.handleAjaxError;
 
 
-
-
 /*
   Retrieve a message object from the object `data` if the `message` key
   exists, annotate the message object ith an `error` value set to true
@@ -36,7 +34,7 @@ var parseMessage = function(data) {
 
 
 /*
- Return a UTC date string for `timestamp`, which should be in an format
+ Return a UTC date string for `timestamp`, which should be in a format
  acceptable to `Date.parse`.
  */
 var getUTCStringForTimestamp = function(timestamp) {
@@ -1297,7 +1295,8 @@ var ModalFormView = Backbone.View.extend({
         this.ajaxForm = this.options.ajaxForm;
         this.ajaxForm.on(AjaxForm.CHANGED, this.ajaxFormChanged);
 
-        // Bind listeners to the container, using `on()`, so they persist.
+        // Bind listeners to the container, using `on()`, so they persist if
+        // the underlying form elements are replaced.
         this.id = '#' + this.$el.attr('id');
         this.$container.on('click', this.id + ' .btn-primary', this.submit);
         this.$container.on('click', this.id + ' .btn-next', this.goToNextStep);
@@ -1430,6 +1429,7 @@ var ModalFormView = Backbone.View.extend({
             data: $form.serialize(),
             url: $form.attr('action')
         });
+        this.hide();
         return false;
     },
 
@@ -1902,18 +1902,20 @@ var AppView = Backbone.View.extend({
 
     removeButtonClicked: function() {
         var node = this.treeView.getActiveItem();
-        var formTypeData = this.getFormTypeForTreeItem(node);
+        log(node)
 
-        if (formTypeData === null) {
+        if (!node.data.type || !node.data.id) {
             return;
         }
 
-        if (window.confirm('Remove ' + formTypeData.type + '?') === false) {
+        var type = node.data.type.replace('_', ' ');
+
+        if (window.confirm('Remove ' + type + '?') === false) {
             return;
         }
 
         this.ajaxForm.submit({
-            url: this.ajaxForm.get('url') + '/' + formTypeData.type + '/delete',
+            url: this.ajaxForm.get('url') + '/' + node.data.type + '/delete',
             data: "mover_id=" + node.data.id,
             error: function() {
                 window.alert('Could not remove item.');
