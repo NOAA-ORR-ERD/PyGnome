@@ -25,6 +25,14 @@ webgnome Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`navigation_tree` Module
+-----------------------------
+
+.. automodule:: webgnome.navigation_tree
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`tests` Module
 -------------------
 
@@ -41,11 +49,10 @@ webgnome Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`views` Module
--------------------
+Subpackages
+-----------
 
-.. automodule:: webgnome.views
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. toctree::
+
+    webgnome.views
 

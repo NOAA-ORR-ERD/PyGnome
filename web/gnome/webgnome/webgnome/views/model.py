@@ -21,10 +21,10 @@ def show_model(request):
     """
     Show the current user's model.
 
-    Get an existing `py_gnome.model.Model` using the `model_id` field in the
-    user's session or create a new one.
+    Get an existing :class:`gnome.model.Model` using the ``model_id`` field in
+    the user's session or create a new one.
 
-    If `model_id` was found in the user's session but the model did not exist,
+    If ``model_id`` was found in the user's session but the model did not exist,
     warn the user and suggest that they reload from a save file.
     """
     settings = request.registry.settings
@@ -126,7 +126,8 @@ def run_model(request, model):
 @json_require_model
 def run_model_until(request, model):
     """
-    An AJAX form view that renders a `RunModelUntilForm` and validates its input.
+    An AJAX form view that renders a :class:`webgnome.forms.RunModelUntilForm`
+    and validates its input.
     """
     form = RunModelUntilForm(request.POST)
     data = {}
