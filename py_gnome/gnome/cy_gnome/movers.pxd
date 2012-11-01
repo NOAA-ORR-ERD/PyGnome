@@ -48,11 +48,9 @@ cdef extern from "WindMover_c.h":
         Boolean fIsConstantWind
         VelocityRec fConstantValue
         double fDuration
-        
+        double fUncertainStartTime
         double fSpeedScale
         double fAngleScale
-        double fMaxSpeed
-        double fMaxAngle
         
         LEWindUncertainRec **fWindUncertaintyList
         long **fLESetSizes
