@@ -1759,7 +1759,6 @@ the user just dragged the slider to a new position.</p>             </td>       
 
     <span class="nx">removeButtonClicked</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
         <span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">treeView</span><span class="p">.</span><span class="nx">getActiveItem</span><span class="p">();</span>
-        <span class="nx">log</span><span class="p">(</span><span class="nx">node</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">form_type</span> <span class="o">||</span> <span class="o">!</span><span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
             <span class="k">return</span><span class="p">;</span>
@@ -1782,7 +1781,6 @@ the user just dragged the slider to a new position.</p>             </td>       
 
     <span class="nx">moverChosen</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">moverType</span><span class="p">)</span> <span class="p">{</span>
         <span class="kd">var</span> <span class="nx">formView</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">[</span><span class="nx">moverType</span><span class="p">];</span>
-        <span class="nx">log</span><span class="p">(</span><span class="nx">formView</span><span class="p">,</span> <span class="nx">moverType</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="nx">formView</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">)</span> <span class="p">{</span>
             <span class="k">return</span><span class="p">;</span>

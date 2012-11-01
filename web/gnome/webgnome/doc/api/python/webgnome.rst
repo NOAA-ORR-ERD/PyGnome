@@ -17,10 +17,10 @@ webgnome Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`mock_model` Module
-------------------------
+:mod:`model_manager` Module
+---------------------------
 
-.. automodule:: webgnome.mock_model
+.. automodule:: webgnome.model_manager
     :members:
     :undoc-members:
     :show-inheritance:
