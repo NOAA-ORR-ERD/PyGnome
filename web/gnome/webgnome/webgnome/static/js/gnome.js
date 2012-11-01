@@ -1902,7 +1902,6 @@ var AppView = Backbone.View.extend({
 
     removeButtonClicked: function() {
         var node = this.treeView.getActiveItem();
-        log(node)
 
         if (!node.data.form_type || !node.data.id) {
             return;
@@ -1925,7 +1924,6 @@ var AppView = Backbone.View.extend({
 
     moverChosen: function(moverType) {
         var formView = this.formViews[moverType];
-        log(formView, moverType, this.formViews)
 
         if (formView === undefined) {
             return;

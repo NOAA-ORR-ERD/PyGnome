@@ -103,7 +103,7 @@ def create_model(request):
 @json_require_model
 def run_model(request, model):
     """
-    Starts a run of the user's current model and return a JSON object
+    Start a run of the user's current model and return a JSON object
     containing the first time step.
     """
     # TODO: Accept this value from the user as a setting and require it to run.
@@ -126,8 +126,8 @@ def run_model(request, model):
 @json_require_model
 def run_model_until(request, model):
     """
-    An AJAX form view that renders a :class:`webgnome.forms.RunModelUntilForm`
-    and validates its input.
+    Render a :class:`webgnome.forms.RunModelUntilForm` for the user's current
+    model on GET and validate form input on POST.
     """
     form = RunModelUntilForm(request.POST)
     data = {}
