@@ -4,11 +4,11 @@ from gnome.movers import WindMover
 
 class NavigationTree(object):
     """
-    An object that renders a JSON representation of a `py_gnome.model.Model`
+    An object that renders a JSON representation of a ``gnome.model.Model``
     used to initialize a navigation tree widget in the JavaScript app.
     """
 
-    # A map of form types (string identifiers of forms) to `py_gnome` classes.
+    # A map of form types (string identifiers of forms) to `gnome` classes.
     form_types = {
         WindMover: 'wind_mover'
     }
@@ -36,8 +36,8 @@ class NavigationTree(object):
 
     def _get_value_title(self, name, value, max_chars=8):
         """
-        Return a title string that combines `name` and `value`, with value
-        shortened if it is longer than `max_chars`.
+        Return a title string that combines ``name`` and ``value``, with value
+        shortened if it is longer than ``max_chars``.
         """
         name = name.replace('_', ' ').title()
         value = (str(value)).title()
@@ -46,8 +46,8 @@ class NavigationTree(object):
 
     def _get_form_type_for_obj(self, obj):
         """
-        Return a string identifier of the form type for `obj` if its class is
-        in `self.form_types`, else None.
+        Return a string identifier of the form type for ``obj`` if its class is
+        in ``self.form_types``, else None.
         """
         return self.form_types.get(obj.__class__, None)
 
