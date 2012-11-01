@@ -48,15 +48,14 @@ cdef extern from "WindMover_c.h":
         Boolean fIsConstantWind
         VelocityRec fConstantValue
         double fDuration
-        
+        double fUncertainStartTime
         double fSpeedScale
         double fAngleScale
-        double fMaxSpeed
-        double fMaxAngle
         
         LEWindUncertainRec **fWindUncertaintyList
         long **fLESetSizes
         
+        OSErr PrepareForModelRun()
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID)
         void SetTimeDep(OSSMTimeValue_c *)
         # ARE FOLLOWING USED IN CYTHON??
@@ -153,7 +152,7 @@ cdef extern from "Random_c.h":
         double fDiffusionCoefficient
         double fUncertaintyFactor
         TR_OPTIMZE fOptimize
+        OSErr PrepareForModelRun()
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
-        WorldPoint3D GetMove (Seconds timeStep, long setIndex, long leIndex, LERec *theLE, LETYPE leType)
         OSErr PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)
         void ModelStepIsDone()
