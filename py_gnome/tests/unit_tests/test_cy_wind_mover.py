@@ -71,15 +71,15 @@ class ConstantWind(Common):
     def test_move(self):
         """ forecast move """
  
-        #self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, False, 0, np.zeros(1,dtype=np.int))
-        self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, True, 1, self.setSizes)
+        self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, False, 1, self.setSizes)
+        #self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, True, 1, self.setSizes)
         self.wm.get_move(self.model_time,
                          self.time_step, 
                          self.ref,
                          self.delta,
                          self.wind,
                          self.status,
-                         basic_types.spill_type.uncertainty,
+                         basic_types.spill_type.forecast,
                          0)
               
 class ConstantWindWithOSSM(Common):
