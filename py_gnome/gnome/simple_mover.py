@@ -49,7 +49,13 @@ class SimpleMover(object):
         """
         return id(self)
         
-    def prepare_for_model_step(self, model_time, time_step, uncertain_on):
+    def prepare_for_model_run(self):
+        """
+        called at the beginning of model run for movers to initialize as required 
+        """
+        pass
+    
+    def prepare_for_model_step(self, model_time, time_step, uncertain_spills_count=0, uncertain_spills_size=None):
         """
         Called at the beginning of each time step -- so the mover has a chance to prepare itself.
         
@@ -101,5 +107,10 @@ class SimpleMover(object):
         
         return delta
         
-
+    def model_step_is_done(self):
+        """
+        Model step is complete - mover has been called by all entities that use it for current step.
+        Mover can now reset any internal state it needs at the end of the step
+        """
+        pass
         
