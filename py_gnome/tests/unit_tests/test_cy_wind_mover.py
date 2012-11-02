@@ -7,14 +7,12 @@ designed to be run with py.test
 """
 
 import numpy as np
-#from math import sin,cos,pi
-#from random import randomimport ctypes
-
+import datetime
 
 from gnome import basic_types
 from gnome.cy_gnome import cy_wind_mover
 from gnome.cy_gnome import cy_ossm_time
-from gnome import greenwich
+from gnome.utilities import time_utils 
 
 from gnome.utilities import projections
 
@@ -43,14 +41,15 @@ class Common():
     time_step = 60
     
     def __init__(self):
-        self.model_time = greenwich.gwtm('01/01/1970 11:00:00').time_seconds
+        time = datetime.datetime(2012, 8, 20, 13)
+        self.model_time = time_utils.date_to_sec( time)
         ################
         # init. arrays #
         ################
         self.ref[:] = 1.
         self.ref[:]['z'] = 0 # particles will not move via wind if z>0
     
-        self.wind[:] = 1./100.
+        self.wind[:] = [1./100.,2./100.,3./100.,4./100.]
         # Straight south wind... 100! meters per second
         self.const_wind['u'] = 50  # meters per second?
         self.const_wind['v'] = 100 #
@@ -235,3 +234,8 @@ def test_z_greater_than_0():
     assert np.all(cw.delta['long'][2:] != 0)
     assert np.all(cw.delta['z'][2:] == 0)
     
+    
+if __name__=="__main__":
+    cw= TestConstantWind()
+    cw.test_constant_wind()
+    cw.test_move_value()

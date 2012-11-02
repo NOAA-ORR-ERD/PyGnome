@@ -31,7 +31,6 @@ class Spill(object):
       
     positions = Spill['positions'] : returns a (num_LEs, 3) array of world_point_types
     """
-    
     def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0), uncertain=False):
         
         self.num_LEs = num_LEs
@@ -53,7 +52,7 @@ class Spill(object):
         
         self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
                                                   dtype = basic_types.windage_type)             
- 
+
     def __getitem__(self, data_name):
         """
         The basic way to access data for the LEs
@@ -93,6 +92,18 @@ class Spill(object):
         In this case nothing.
         """
         return None
+
+    @property
+    def id(self):
+        """
+        Return an ID value for this spill.
+
+        This method uses Python's builtin `id()` function to identify the
+        object. Override it for more exotic forms of identification.
+
+        :return: the integer ID returned by id() for this object
+        """
+        return id(self)
 
     def __str__(self):
         msg = ["gnome.spill.Spill(num_LEs=%i)\n"%self.num_LEs]

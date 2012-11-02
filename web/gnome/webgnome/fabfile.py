@@ -2,7 +2,7 @@ import os
 from fabric import api
 
 
-def build_docs():
+def docs():
     base_path = os.path.dirname(os.path.realpath(__file__))
     docs_dir = os.path.join(base_path, 'doc')
     python_docs_dir = os.path.join(docs_dir, 'api', 'python')
@@ -11,7 +11,7 @@ def build_docs():
     js_dir = os.path.join(project_dir, 'static', 'js')
 
     # Auto-generate Python API docs first.
-    api.local('sphinx-apidoc %s -o %s' % (project_dir, python_docs_dir))
+    api.local('sphinx-apidoc -f %s -o %s' % (project_dir, python_docs_dir))
 
     with api.lcd(docs_dir):
         api.local('make html')

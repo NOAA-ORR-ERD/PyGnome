@@ -7,8 +7,6 @@ var log = window.noaa.erd.util.log;
 var handleAjaxError = window.noaa.erd.util.handleAjaxError;
 
 
-
-
 /*
   Retrieve a message object from the object `data` if the `message` key
   exists, annotate the message object ith an `error` value set to true
@@ -36,7 +34,7 @@ var parseMessage = function(data) {
 
 
 /*
- Return a UTC date string for `timestamp`, which should be in an format
+ Return a UTC date string for `timestamp`, which should be in a format
  acceptable to `Date.parse`.
  */
 var getUTCStringForTimestamp = function(timestamp) {
@@ -1297,7 +1295,8 @@ var ModalFormView = Backbone.View.extend({
         this.ajaxForm = this.options.ajaxForm;
         this.ajaxForm.on(AjaxForm.CHANGED, this.ajaxFormChanged);
 
-        // Bind listeners to the container, using `on()`, so they persist.
+        // Bind listeners to the container, using `on()`, so they persist if
+        // the underlying form elements are replaced.
         this.id = '#' + this.$el.attr('id');
         this.$container.on('click', this.id + ' .btn-primary', this.submit);
         this.$container.on('click', this.id + ' .btn-next', this.goToNextStep);
@@ -1313,6 +1312,7 @@ var ModalFormView = Backbone.View.extend({
     },
 
     show: function() {
+        $('div.modal').modal('hide');
         this.$el.modal();
     },
 
@@ -1361,7 +1361,6 @@ var ModalFormView = Backbone.View.extend({
 
     goToStep: function(stepNum) {
         var $form = this.getForm();
-        log($form)
 
         if (!$form.hasClass('multistep')) {
             return;
@@ -1378,8 +1377,6 @@ var ModalFormView = Backbone.View.extend({
         otherStepDivs.removeClass('active');
         stepDiv.removeClass('hidden');
         stepDiv.addClass('active');
-
-        log(stepDiv)
 
         var prevButton = this.$container.find('.btn-prev');
         var nextButton = this.$container.find('.btn-next');
@@ -1432,6 +1429,7 @@ var ModalFormView = Backbone.View.extend({
             data: $form.serialize(),
             url: $form.attr('action')
         });
+        this.hide();
         return false;
     },
 
@@ -1487,7 +1485,6 @@ var AddMoverFormView = Backbone.View.extend({
     },
 
     show: function() {
-        log('WTF')
         this.$el.modal();
     },
 
@@ -1498,7 +1495,7 @@ var AddMoverFormView = Backbone.View.extend({
     submit: function(event) {
         event.preventDefault();
         var $form = this.getForm();
-        var moverType = $form.find('input[name=mover_type]').val();
+        var moverType = $form.find('select[name="mover_type"]').val();
 
         if (moverType) {
             this.trigger(AddMoverFormView.MOVER_CHOSEN, moverType);
@@ -1612,10 +1609,12 @@ var AppView = Backbone.View.extend({
             });
         });
 
-        this.formViews['add_mover'] = new AddMoverFormView({
-            el: $('#add_mover_form'),
+        this.addMoverFormView = new AddMoverFormView({
+            el: $('#add_mover'),
             formContainerEl: this.options.formContainerEl
         });
+
+        this.formViews['add_mover'] = this.addMoverFormView;
 
         this.menuView = new MenuView({
             modelDropDownEl: "#file-drop",
@@ -1704,6 +1703,8 @@ var AppView = Backbone.View.extend({
         this.menuView.on(MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
         this.menuView.on(MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
         this.menuView.on(MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
+
+        this.addMoverFormView.on(AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
     },
 
     modelRunError: function() {
@@ -1874,7 +1875,7 @@ var AppView = Backbone.View.extend({
      */
     showFormForActiveTreeItem: function() {
         var node = this.treeView.getActiveItem();
-        var formView = this.formViews[node.data.type];
+        var formView = this.formViews[node.data.form_type];
 
         if (formView === undefined) {
             return;
@@ -1901,23 +1902,34 @@ var AppView = Backbone.View.extend({
 
     removeButtonClicked: function() {
         var node = this.treeView.getActiveItem();
-        var formTypeData = this.getFormTypeForTreeItem(node);
 
-        if (formTypeData === null) {
+        if (!node.data.form_type || !node.data.id) {
             return;
         }
 
-        if (window.confirm('Remove ' + formTypeData.type + '?') === false) {
+        var type = node.data.form_type.replace('_', ' ');
+
+        if (window.confirm('Remove ' + type + '?') === false) {
             return;
         }
 
         this.ajaxForm.submit({
-            url: this.ajaxForm.get('url') + '/' + formTypeData.type + '/delete',
+            url: this.ajaxForm.get('url') + '/' + node.data.form_type + '/delete',
             data: "mover_id=" + node.data.id,
             error: function() {
                 window.alert('Could not remove item.');
             }
         });
+    },
+
+    moverChosen: function(moverType) {
+        var formView = this.formViews[moverType];
+
+        if (formView === undefined) {
+            return;
+        }
+
+        formView.show();
     }
 });
 

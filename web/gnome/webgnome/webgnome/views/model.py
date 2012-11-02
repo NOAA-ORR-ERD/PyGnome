@@ -1,7 +1,6 @@
 import json
 import datetime
 
-from collections import OrderedDict
 from pyramid.renderers import render
 from pyramid.view import view_config
 
@@ -14,6 +13,7 @@ from ..forms import (
 )
 
 from ..util import json_require_model, make_message, json_encoder
+from ..navigation_tree import NavigationTree
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -21,10 +21,10 @@ def show_model(request):
     """
     Show the current user's model.
 
-    Get an existing `py_gnome.model.Model` using the `model_id` field in the
-    user's session or create a new one.
+    Get an existing :class:`gnome.model.Model` using the ``model_id`` field in
+    the user's session or create a new one.
 
-    If `model_id` was found in the user's session but the model did not exist,
+    If ``model_id`` was found in the user's session but the model did not exist,
     warn the user and suggest that they reload from a save file.
     """
     settings = request.registry.settings
@@ -103,7 +103,7 @@ def create_model(request):
 @json_require_model
 def run_model(request, model):
     """
-    Starts a run of the user's current model and return a JSON object
+    Start a run of the user's current model and return a JSON object
     containing the first time step.
     """
     # TODO: Accept this value from the user as a setting and require it to run.
@@ -126,7 +126,8 @@ def run_model(request, model):
 @json_require_model
 def run_model_until(request, model):
     """
-    An AJAX form view that renders a `RunModelUntilForm` and validates its input.
+    Render a :class:`webgnome.forms.RunModelUntilForm` for the user's current
+    model on GET and validate form input on POST.
     """
     form = RunModelUntilForm(request.POST)
     data = {}
@@ -176,25 +177,6 @@ def model_settings(request, model):
     }
 
 
-def _get_model_settings(model):
-    """
-    Return a dict of values containing each setting in `model` that the client
-    should be able to read and change.
-    """
-    settings_attrs = [
-        'start_time',
-        'duration'
-    ]
-
-    settings = OrderedDict()
-
-    for attr in settings_attrs:
-        if hasattr(model, attr):
-            settings[attr] = getattr(model, attr)
-
-    return settings
-
-
 @view_config(route_name='get_tree', renderer='gnome_json')
 @json_require_model
 def get_tree(request, model):
@@ -202,45 +184,6 @@ def get_tree(request, model):
     Return a JSON representation of the current state of the model, to be used
     to create a tree view of the model in the JavaScript application.
     """
-    settings = {'title': 'Model Settings', 'type': 'settings', 'children': []}
-    movers = {'title': 'Movers', 'type': 'add_mover', 'children': []}
-    spills = {'title': 'Spills', 'type': 'add_spill', 'children': []}
+    navigation_tree = NavigationTree(model)
+    return navigation_tree.render()
 
-    def get_value_title(name, value, max_chars=8):
-        """
-        Return a title string that combines `name` and `value`, with value
-        shortened if it is longer than `max_chars`.
-        """
-        name = name.replace('_', ' ').title()
-        value = (str(value)).title()
-        value = value if len(value) <= max_chars else '%s ...' % value[:max_chars]
-        return '%s: %s' % (name, value)
-
-    for name, value in _get_model_settings(model).items():
-        settings['children'].append({
-            'type': 'settings',
-            'title': get_value_title(name, value),
-        })
-
-    # If we had a map, we would set its ID value here, whatever that value
-    # ends up being.
-    settings['children'].append({
-        'type': 'map',
-        'title': 'Map: None'
-    })
-
-    for mover in model.movers:
-        movers['children'].append({
-            'type': mover.name,
-            'id': mover.id,
-            'title': str(mover)
-        })
-
-    for spill in model.spills:
-        spills['children'].append({
-            'type': spill.name,
-            'id': spill.id,
-            'title': get_value_title('ID', id),
-        })
-
-    return [settings, movers, spills]

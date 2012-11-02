@@ -5,7 +5,7 @@ from pyramid.config import Configurator
 from pyramid.renderers import JSON
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
 
-from mock_model import ModelManager
+from model_manager import ModelManager
 from util import json_date_adapter
 
 

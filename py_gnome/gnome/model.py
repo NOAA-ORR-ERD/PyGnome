@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-
 import os
 from datetime import datetime, timedelta
+from collections import OrderedDict
 
 import gnome
 
@@ -29,7 +29,7 @@ class Model(object):
         self.images_dir = '.'
 
         self.reset() # initializes everything to nothing.
-        
+
     def reset(self):
         """
         Resets model to defaults -- Caution -- clears all movers, etc.
@@ -37,8 +37,8 @@ class Model(object):
         """
         self.output_map = None
         self.map = None
-        self.movers = []
-        self.spills = []
+        self._movers = OrderedDict()
+        self._spills = OrderedDict()
 
         self._current_time_step = -1
 
@@ -58,6 +58,33 @@ class Model(object):
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
 
     ### Assorted properties
+    @property
+    def id(self):
+        """
+        Return an ID value for this model.
+
+        :return: an integer ID value for this model
+        """
+        return id(self)
+
+    @property
+    def movers(self):
+        """
+        Return a list of the movers added to this model, in order of insertion.
+
+        :return: a list of movers
+        """
+        return self._movers.values()
+
+    @property
+    def spills(self):
+        """
+        Return a list of the spills added to this model, in order of insertion.
+
+        :return: a list of spills
+        """
+        return self._spills.values()
+
     @property
     def start_time(self):
         return self._start_time
@@ -110,20 +137,21 @@ class Model(object):
         """
         add a new mover to the model -- at the end of the stack
         """
-        self.movers.append(mover)
+        self._movers[mover.id] = mover
+        return mover.id
 
-    def remove_mover(self, mover):
+    def remove_mover(self, mover_id):
         """
         remove the passed-in mover from the mover list
         """
-        self.movers.remove(mover)
+        if mover_id in self._movers:
+            del self._movers[mover_id]
 
-    def replace_mover(self, old_mover, new_mover):
+    def replace_mover(self, mover_id, new_mover):
         """
         replace a given mover with a new one
         """
-        i = self.movers.index(old_mover)
-        self.movers[i] = new_mover
+        self._movers[mover_id] = new_mover
         return new_mover 
    
     def add_spill(self, spill):
@@ -134,7 +162,7 @@ class Model(object):
         :param spill: an instance of the gnome.Spill class
         
         """
-        self.spills.append(spill)
+        self._spills[spill.id] = spill
 
     def setup_time_step(self):
         """

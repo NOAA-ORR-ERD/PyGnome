@@ -19,11 +19,18 @@ cdef class CyWindMover:
     def __dealloc__(self):
         del self.mover
     
-    def __init__(self, uncertain_duration=10800, 
-                 uncertain_speed_scale=2, uncertain_max_speed=30, 
-                 uncertain_angle_scale=0.4, uncertain_max_angle=60):
+    def __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
+                 uncertain_speed_scale=2, uncertain_angle_scale=0.4):
         """
+        .. function:: __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
+                 uncertain_speed_scale=2, uncertain_angle_scale=0.4)
+        
         initialize a constant wind mover
+        
+        :param uncertain_duation: time in seconds after which the uncertainty values are updated
+        :param uncertain_time_delay: wait this long after model_start_time to turn on uncertainty
+        :param uncertain_speed_scale: used in uncertainty computation
+        :param uncertain_angle_scale: used in uncertainty computation
         
         constant_wind_value is a tuple of values: (u, v)
         """
@@ -31,12 +38,17 @@ cdef class CyWindMover:
         self.mover.fConstantValue.u = 0
         self.mover.fConstantValue.v = 0
         self.mover.fDuration = uncertain_duration
+        self.mover.fUncertainStartTime = uncertain_time_delay
         self.mover.fSpeedScale = uncertain_speed_scale
-        self.mover.fMaxSpeed = uncertain_max_speed
         self.mover.fAngleScale = uncertain_angle_scale
-        self.mover.fMaxAngle = uncertain_max_angle
-    
-
+        
+    def prepare_for_model_run(self):
+        """
+        .. function::prepare_for_model_run
+        
+        """
+        self.mover.PrepareForModelRun()
+        
     def prepare_for_model_step(self, model_time, step_len, uncertain):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
