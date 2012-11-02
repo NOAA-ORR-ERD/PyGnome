@@ -36,7 +36,7 @@ class Common():
     wind =  np.zeros((num_le,), dtype=np.double) # windage
     status = np.empty((num_le,), dtype=basic_types.status_code_type)
     const_wind = np.zeros((1,), dtype=basic_types.velocity_rec) # constant wind
-    setSizes = np.zeros((1,), dtype=np.int)
+    setSizes = np.zeros((1,), dtype=np.int) # number of LEs in 1 uncertainty spill - simple test
     
     time_step = 60
     
@@ -53,8 +53,8 @@ class Common():
         # Straight south wind... 100! meters per second
         self.const_wind['u'] = 50  # meters per second?
         self.const_wind['v'] = 100 #
-        self.status[:] = basic_types.oil_status.in_water 
-        self.setSizes[:] = self.num_le
+        self.status[:] = basic_types.oil_status.in_water
+        self.setSizes[0] = self.num_le 
 
 class ConstantWind(Common):
     """
@@ -66,13 +66,12 @@ class ConstantWind(Common):
     def __init__(self):
         Common.__init__(self)
         self.delta = np.zeros((self.num_le,), dtype=basic_types.world_point)
+        self.u_delta = np.zeros((self.num_le,), dtype=basic_types.world_point)
         self.wm.set_constant_wind(self.const_wind['u'], self.const_wind['v'])
     
     def test_move(self):
         """ forecast move """
- 
-        self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, False, 1, self.setSizes)
-        #self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, True, 1, self.setSizes)
+        self.wm.prepare_for_model_step(self.model_time, self.time_step)
         self.wm.get_move(self.model_time,
                          self.time_step, 
                          self.ref,
@@ -81,7 +80,19 @@ class ConstantWind(Common):
                          self.status,
                          basic_types.spill_type.forecast,
                          0)
-              
+        
+    def test_move_uncertain(self):
+       """ uncertain LEs """
+       self.wm.prepare_for_model_step(self.model_time, self.time_step, len(self.setSizes), self.setSizes)
+       self.wm.get_move(self.model_time,
+                        self.time_step, 
+                        self.ref,
+                        self.u_delta,
+                        self.wind,
+                        self.status,
+                        basic_types.spill_type.forecast,
+                        0)
+        
 class ConstantWindWithOSSM(Common):
     """
     This defines the OSSMTimeValue_c object using the CyOSSMTime class, then uses the set_ossm method of
@@ -95,6 +106,7 @@ class ConstantWindWithOSSM(Common):
     def __init__(self):
         Common.__init__(self)
         self.delta = np.zeros((self.num_le,), dtype=basic_types.world_point)
+        self.u_delta = np.zeros((self.num_le,), dtype=basic_types.world_point)
         
         time_val = np.empty((1,), dtype=basic_types.time_value_pair)
         time_val['time'] = 0   # should not matter
@@ -104,7 +116,7 @@ class ConstantWindWithOSSM(Common):
         
     def test_move(self):
 
-        self.wm.prepare_for_model_step(self.model_time, self.time_step, False)
+        self.wm.prepare_for_model_step(self.model_time, self.time_step)
         self.wm.get_move(self.model_time,
                          self.time_step, 
                          self.ref,
@@ -113,6 +125,18 @@ class ConstantWindWithOSSM(Common):
                          self.status,
                          basic_types.spill_type.forecast,
                          0)
+        
+    def test_move_uncertain(self):
+       """ uncertain LEs """
+       self.wm.prepare_for_model_step(self.model_time, self.time_step, len(self.setSizes), self.setSizes)
+       self.wm.get_move(self.model_time,
+                        self.time_step, 
+                        self.ref,
+                        self.u_delta,
+                        self.wind,
+                        self.status,
+                        basic_types.spill_type.forecast,
+                        0)
         
 class TestConstantWind():
     cw = ConstantWind()
@@ -153,7 +177,24 @@ class TestConstantWind():
                                    "get_time_value is not within a tolerance of "+str(tol), 0)
         np.testing.assert_allclose(self.cw.delta['long'], actual['long'], tol, tol, 
                                    "get_time_value is not within a tolerance of "+str(tol), 0)
-        
+    
+    def test_move_uncertain(self):
+       self.cw.test_move_uncertain()
+       self.cww_ossm.test_move_uncertain()
+       print "=================================================="
+       print " Check move for uncertain LEs (test_move_uncertain)  "
+       print "--- ConstandWind ------"
+       print "Forecast LEs delta: " 
+       print self.cw.delta
+       print "Uncertain LEs delta: "
+       print self.cw.u_delta
+       print "--- ConstandWind with OSSM ------"
+       print "Forecast LEs delta: "
+       print self.cww_ossm.delta
+       print "Uncertain LEs delta: "
+       print self.cww_ossm.u_delta
+       assert np.all(self.cw.delta != self.cw.u_delta)
+       assert np.all(self.cww_ossm.delta != self.cww_ossm.u_delta)
     
 class TestVariableWind():
     """
@@ -179,7 +220,7 @@ class TestVariableWind():
     def test_move(self):
         for x in range(0,3):
             vary_time = x*1800
-            self.wm.prepare_for_model_step(self.cm.model_time + vary_time, self.cm.time_step, False)
+            self.wm.prepare_for_model_step(self.cm.model_time + vary_time, self.cm.time_step)
             self.wm.get_move(self.cm.model_time + vary_time,
                              self.cm.time_step, 
                              self.cm.ref,
@@ -201,7 +242,7 @@ def test_LE_not_in_water():
     cm = Common()
     delta = np.zeros((cm.num_le,), dtype=basic_types.world_point)
     cm.status[:] = 0
-    wm.prepare_for_model_step(cm.model_time, cm.time_step, False)
+    wm.prepare_for_model_step(cm.model_time, cm.time_step)
     wm.get_move(cm.model_time,
                 cm.time_step, 
                 cm.ref,
@@ -239,3 +280,4 @@ if __name__=="__main__":
     cw= TestConstantWind()
     cw.test_constant_wind()
     cw.test_move_value()
+    cw.test_move_uncertain()
