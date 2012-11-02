@@ -122,7 +122,7 @@
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                 currentTimeStep: ${model.current_time_step},
-                formUrls: ${form_urls | n}
+                forms: ${form_urls | n}
             });
         });
     </script>

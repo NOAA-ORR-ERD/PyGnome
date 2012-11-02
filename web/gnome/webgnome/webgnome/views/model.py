@@ -1,5 +1,6 @@
 import json
 import datetime
+import gnome.model
 
 from pyramid.renderers import render
 from pyramid.view import view_config
@@ -12,8 +13,90 @@ from ..forms import (
     VariableWindMoverForm
 )
 
-from ..util import json_require_model, make_message, json_encoder
-from ..navigation_tree import NavigationTree
+from webgnome.form_view import FormView
+from webgnome.navigation_tree import NavigationTree
+from webgnome.util import json_require_model, make_message, json_encoder
+
+
+class ModelFormView(FormView):
+    """
+    Form routes for :class:`gnome.model.Model`.
+    """
+    wrapped_class = gnome.model.Model
+
+    CREATE = 'create_model'
+    RUN_UNTIL = 'run_model_until'
+    SETTINGS = 'model_settings'
+
+    @view_config(route_name=CREATE, renderer='gnome_json')
+    def create_model(self):
+        """
+        Create a new model for the user. Delete the user's current model if one
+        exists.
+        """
+        settings = self.request.registry.settings
+        model_id = self.request.session.get(settings.model_session_key, None)
+        confirm = self.request.POST.get('confirm_new', None)
+
+        if model_id and confirm:
+            settings.Model.delete(model_id)
+            model = settings.Model.create()
+            model_id = model.id
+            self.request.session[settings.model_session_key] = model.id
+            message = make_message('success', 'Created a new model.')
+        else:
+            message = make_message('error', 'Could not create a new model. '
+                                             'Invalid data was received.')
+
+        return {
+            'model_id': model_id,
+            'message': message
+        }
+
+    @view_config(route_name=RUN_UNTIL, renderer='gnome_json')
+    @json_require_model
+    def run_model_until(self, model):
+        """
+        Render a :class:`webgnome.forms.RunModelUntilForm` for the user's
+        current model on GET and validate form input on POST.
+        """
+        form = RunModelUntilForm(self.request.POST)
+        data = {}
+
+        if self.request.method == 'POST' and form.validate():
+            date = form.get_datetime()
+            model.set_run_until(date)
+            return {'run_until': date, 'form_html': None}
+
+        context = {
+            'form': form,
+            'action_url': self.request.route_url(self.RUN_UNTIL)
+        }
+
+        data['form_html'] = render(
+            'webgnome:templates/forms/run_model_until.mak', context)
+
+        return data
+
+    @view_config(route_name='model_settings', renderer='gnome_json')
+    @json_require_model
+    def model_settings(self, model):
+        form = ModelSettingsForm(self.request.POST)
+
+        if self.request.method == 'POST' and form.validate():
+            return {
+                'form_html': None
+            }
+
+        context = {
+            'form': form,
+            'action_url': self.request.route_url(self.SETTINGS)
+        }
+
+        return {
+            'form_html': render(
+                'webgnome:templates/forms/model_settings.mak', context)
+        }
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -21,11 +104,11 @@ def show_model(request):
     """
     Show the current user's model.
 
-    Get an existing :class:`gnome.model.Model` using the ``model_id`` field in
-    the user's session or create a new one.
+    Get an existing :class:`gnome.model.Model` using the ``model_id`` field
+    in the user's session or create a new one.
 
-    If ``model_id`` was found in the user's session but the model did not exist,
-    warn the user and suggest that they reload from a save file.
+    If ``model_id`` was found in the user's session but the model did not
+    exist, warn the user and suggest that they reload from a save file.
     """
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
@@ -74,31 +157,6 @@ def show_model(request):
     return data
 
 
-@view_config(route_name='create_model', renderer='gnome_json')
-def create_model(request):
-    """
-    Create a new model for the user. Delete the user's current model if one exists.
-    """
-    settings = request.registry.settings
-    model_id = request.session.get(settings.model_session_key, None)
-    confirm = request.POST.get('confirm_new', None)
-
-    if model_id and confirm:
-        settings.Model.delete(model_id)
-        model = settings.Model.create()
-        model_id = model.id
-        request.session[settings.model_session_key] = model.id
-        message = make_message('success', 'Created a new model.')
-    else:
-        message = make_message('error', 'Could not create a new model. '
-                                         'Invalid data was received.')
-
-    return {
-        'model_id': model_id,
-        'message': message
-    }
-
-
 @view_config(route_name='run_model', renderer='gnome_json')
 @json_require_model
 def run_model(request, model):
@@ -122,58 +180,14 @@ def run_model(request, model):
     return data
 
 
-@view_config(route_name='run_model_until', renderer='gnome_json')
-@json_require_model
-def run_model_until(request, model):
-    """
-    Render a :class:`webgnome.forms.RunModelUntilForm` for the user's current
-    model on GET and validate form input on POST.
-    """
-    form = RunModelUntilForm(request.POST)
-    data = {}
-
-    if request.method == 'POST' and form.validate():
-        date = form.get_datetime()
-        model.set_run_until(date)
-        return {'run_until': date, 'form_html': None}
-
-    context = {
-        'form': form,
-        'action_url': request.route_url('run_model_until')
-    }
-
-    data['form_html'] = render(
-        'webgnome:templates/forms/run_model_until.mak', context)
-
-    return data
-
-
 @view_config(route_name='get_next_step', renderer='gnome_json')
 @json_require_model
 def get_next_step(request, model):
+    """
+    Generate the next step of a model run and return the result.
+    """
     return {
         'time_step': model.get_next_step()
-    }
-
-
-@view_config(route_name='model_settings', renderer='gnome_json')
-@json_require_model
-def model_settings(request, model):
-    form = ModelSettingsForm(request.POST)
-
-    if request.method == 'POST' and form.validate():
-        return {
-            'form_html': None
-        }
-
-    context = {
-        'form': form,
-        'action_url': request.route_url('model_settings')
-    }
-
-    return {
-        'form_html': render(
-            'webgnome:templates/forms/model_settings.mak', context)
     }
 
 
@@ -184,6 +198,4 @@ def get_tree(request, model):
     Return a JSON representation of the current state of the model, to be used
     to create a tree view of the model in the JavaScript application.
     """
-    navigation_tree = NavigationTree(model)
-    return navigation_tree.render()
-
+    return NavigationTree(request, model).render()

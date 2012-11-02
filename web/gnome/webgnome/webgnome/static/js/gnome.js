@@ -1467,8 +1467,8 @@ var ModalFormView = Backbone.View.extend({
 
 /*
  This is a non-AJAX-enabled modal form object to support the "add mover" form,
- which just allows the user to choose a type of mover to add (i.e., another
- form to display).
+ which asks the user to choose a type of mover to add. We then use the selection
+ to disply another, more-specific form.
  */
 var AddMoverFormView = Backbone.View.extend({
     initialize: function() {
@@ -1595,26 +1595,28 @@ var AppView = Backbone.View.extend({
 
         // Create an `AjaxForm` and bind it to a `ModalFormView` for each form
         // URL the server gave us.
-        _.each(this.options.formUrls, function(url, name) {
-            _this.forms[name] = new AjaxForm({
+        _.each(this.options.forms, function(url, id) {
+            _this.forms[id] = new AjaxForm({
                 url: url,
                 collection: _this.forms
             });
 
-            _this.formViews[name] = new ModalFormView({
-                ajaxForm: _this.forms[name],
-                // AJAX forms use this name as their HTML ID.
-                el: $('#' + name),
+            _this.formViews[id] = new ModalFormView({
+                ajaxForm: _this.forms[id],
+                el: $('#' + id),
                 formContainerEl: _this.options.formContainerEl
             });
         });
 
+        // The Add Mover form is special. We use it to decide which mover form
+        // to show the user. It does not POST to the server, so we create it
+        // manually and later add an event handler.
         this.addMoverFormView = new AddMoverFormView({
             el: $('#add_mover'),
             formContainerEl: this.options.formContainerEl
         });
 
-        this.formViews['add_mover'] = this.addMoverFormView;
+        this.formViews.add_mover = this.addMoverFormView;
 
         this.menuView = new MenuView({
             modelDropDownEl: "#file-drop",
@@ -1875,7 +1877,7 @@ var AppView = Backbone.View.extend({
      */
     showFormForActiveTreeItem: function() {
         var node = this.treeView.getActiveItem();
-        var formView = this.formViews[node.data.form_type];
+        var formView = this.formViews[node.data.form_id];
 
         if (formView === undefined) {
             return;
@@ -1903,18 +1905,18 @@ var AppView = Backbone.View.extend({
     removeButtonClicked: function() {
         var node = this.treeView.getActiveItem();
 
-        if (!node.data.form_type || !node.data.id) {
+        if (!node.data.form_id || !node.data.id) {
             return;
         }
 
-        var type = node.data.form_type.replace('_', ' ');
+        var type = node.data.form_id.replace('_', ' ');
 
         if (window.confirm('Remove ' + type + '?') === false) {
             return;
         }
 
         this.ajaxForm.submit({
-            url: this.ajaxForm.get('url') + '/' + node.data.form_type + '/delete',
+            url: this.ajaxForm.get('url') + '/' + node.data.form_id + '/delete',
             data: "mover_id=" + node.data.id,
             error: function() {
                 window.alert('Could not remove item.');
