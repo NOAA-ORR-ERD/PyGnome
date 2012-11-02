@@ -95,12 +95,21 @@ class WindMover(PyMover, CyWindMover):
         else:
             self.ossm = CyOSSMTime(path=wind_file)
             
+        if len(wind_vel) == 1:
+            self.constant_wind = True
+        else:
+            self.constant_wind = False
+        
         CyWindMover.__init__(self, uncertain_duration=uncertain_duration, 
                              uncertain_time_delay=uncertain_time_delay, 
                              uncertain_speed_scale=uncertain_speed_scale,  
                              uncertain_angle_scale=uncertain_angle_scale)
         CyWindMover.set_ossm(self, self.ossm)
         PyMover.__init__(self, is_active=is_active)
+
+    @property
+    def is_constant(self):
+        return self.constant_wind
 
     def __repr__(self):
         """
