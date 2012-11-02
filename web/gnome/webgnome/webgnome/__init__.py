@@ -5,7 +5,7 @@ from pyramid.config import Configurator
 from pyramid.renderers import JSON
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
 
-from mock_model import ModelManager
+from model_manager import ModelManager
 from util import json_date_adapter
 
 
@@ -36,8 +36,11 @@ def main(global_config, **settings):
     config.add_route('run_model', '/model/run')
     config.add_route('run_model_until', '/model/run_until')
     config.add_route('model_settings', '/model/settings')
+    config.add_route('model_map', '/model/map')
 
     config.add_route('delete_mover', '/model/mover/delete')
+    config.add_route('add_wind_mover', '/model/mover/wind')
+    config.add_route('edit_wind_mover', '/model/mover/wind/{id}')
     config.add_route('add_constant_wind_mover', '/model/mover/constant_wind')
     config.add_route('add_variable_wind_mover', '/model/mover/variable_wind')
     config.add_route('edit_constant_wind_mover', '/model/mover/constant_wind/{id}')

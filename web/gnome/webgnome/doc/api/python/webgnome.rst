@@ -17,10 +17,18 @@ webgnome Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`mock_model` Module
-------------------------
+:mod:`model_manager` Module
+---------------------------
 
-.. automodule:: webgnome.mock_model
+.. automodule:: webgnome.model_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`navigation_tree` Module
+-----------------------------
+
+.. automodule:: webgnome.navigation_tree
     :members:
     :undoc-members:
     :show-inheritance:
@@ -41,11 +49,10 @@ webgnome Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`views` Module
--------------------
+Subpackages
+-----------
 
-.. automodule:: webgnome.views
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. toctree::
+
+    webgnome.views
 

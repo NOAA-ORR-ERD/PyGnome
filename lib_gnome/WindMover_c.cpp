@@ -69,6 +69,7 @@ void WindMover_c::Init()
 	fGamma = 1.;
 	
 	bIsFirstStep = false;
+	fModelStartTime = 0;
 
 	fIsConstantWind = false;
 	fConstantValue.u = fConstantValue.v = 0.0;

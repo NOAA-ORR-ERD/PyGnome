@@ -293,6 +293,10 @@ OSErr TCurrentMover::Read(BFPB *bfpb)
 	if (version>1)
 		if (err = ReadMacValue(bfpb,&bIAmPartOfACompoundMover)) return err;
 	
+	// code goes here, either add bIsFirstStep and fModelStartTime or set them here
+	bIsFirstStep = false;
+	fModelStartTime = model->GetStartTime();
+
 	return err;
 }
 

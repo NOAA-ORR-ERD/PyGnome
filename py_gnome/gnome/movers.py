@@ -64,17 +64,19 @@ class WindMover(PyMover, CyWindMover):
     PyMover sets everything up that is common to all movers.
     """
     def __init__(self, wind_vel=None, wind_file=None, uncertain_duration=10800, is_active=True,
-                 uncertain_speed_scale=2, uncertain_max_speed=30,
-                 uncertain_angle_scale=0.4, uncertain_max_angle=60):
+                 uncertain_time_delay=0, uncertain_speed_scale=2, uncertain_angle_scale=0.4):
         """
-        Should this object take as input an CyOSSMTime object or constant wind velocity.
-        If so, then something outside (model?) maintains the CyOSSMTime object
+        Initializes a wind mover object. It requires a numpy array containing 
+        gnome.basic_types.time_value_pair which defines the wind velocity
         
-        :param wind_vel: numpy array containing time_value_pair
+        :param wind_vel: (Required) numpy array containing time_value_pair
         :type wind_vel: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         :param wind_file: path to a long wind file from which to read wind data
-        :param wind_duraton: only used in case of variable wind. Default is 3 hours
+        :param uncertain_duraton=10800: only used in case of uncertain wind. Default is 3 hours
         :param is_active: flag defines whether mover is active or not
+        :param uncertain_time_delay=0: wait this long after model_start_time to turn on uncertainty
+        :param uncertain_speed_scale=2: used in uncertainty computation
+        :param uncertain_angle_scale=0.4: used in uncertainty computation
         """
         if( wind_vel == None and wind_file == None):
             raise ValueError("Either provide wind_vel or a valid long wind_file")
@@ -93,11 +95,21 @@ class WindMover(PyMover, CyWindMover):
         else:
             self.ossm = CyOSSMTime(path=wind_file)
             
+        if len(wind_vel) == 1:
+            self.constant_wind = True
+        else:
+            self.constant_wind = False
+        
         CyWindMover.__init__(self, uncertain_duration=uncertain_duration, 
-                             uncertain_speed_scale=uncertain_speed_scale, uncertain_max_speed=uncertain_max_speed, 
-                             uncertain_angle_scale=uncertain_angle_scale, uncertain_max_angle=uncertain_max_angle)
+                             uncertain_time_delay=uncertain_time_delay, 
+                             uncertain_speed_scale=uncertain_speed_scale,  
+                             uncertain_angle_scale=uncertain_angle_scale)
         CyWindMover.set_ossm(self, self.ossm)
         PyMover.__init__(self, is_active=is_active)
+
+    @property
+    def is_constant(self):
+        return self.constant_wind
 
     def __repr__(self):
         """

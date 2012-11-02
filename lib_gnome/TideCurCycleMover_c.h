@@ -41,7 +41,7 @@ public:
 	short fPatternStartPoint;	// maxflood, maxebb, etc
 	float fTimeAlpha;
 	char fTopFilePath[kMaxNameLen];
-	Seconds model_start_time;	// for the diagnostic case - no time file look at the patterns in the file that have no absolute time associated with them
+	//Seconds model_start_time;	// for the diagnostic case - no time file look at the patterns in the file that have no absolute time associated with them
 	
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	
@@ -57,7 +57,7 @@ public:
 	virtual double		GetEndUVelocity(long index);
 	virtual double		GetEndVVelocity(long index);
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
-	virtual OSErr       ComputeVelocityScale(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time);
+	virtual OSErr       ComputeVelocityScale(const Seconds& model_time);
 	
 	Boolean 			IsDryTriangle(long index1, long index2, long index3, float timeAlpha);
 	Boolean 			IsDryTri(long triIndex);

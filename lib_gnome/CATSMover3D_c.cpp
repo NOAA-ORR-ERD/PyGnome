@@ -243,7 +243,7 @@ void CATSMover3D_c::ModelStepIsDone()
  
  if(!this -> fOptimize.isOptimizedForStep && this->scaleType == SCALE_OTHERGRID) 
  {	// we need to update refScale
- this -> ComputeVelocityScale();
+ this -> ComputeVelocityScale(model_time);
  }
  
  // get and apply our time file scale factor
