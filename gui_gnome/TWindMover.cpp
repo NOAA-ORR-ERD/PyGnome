@@ -755,6 +755,10 @@ OSErr TWindMover::Read(BFPB *bfpb)
 		if (err = ReadMacValue(bfpb, &fGamma)) return err;
 	}
 	
+	// code goes here, either add bIsFirstStep and fModelStartTime or set them here
+	bIsFirstStep = false;
+	fModelStartTime = model->GetStartTime();
+	
 	if (err = ReadMacValue(bfpb, &bTimeFileOpen)) return err;
 	
 	if (err = ReadMacValue(bfpb, &haveTimeDep)) return err;
