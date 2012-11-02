@@ -967,7 +967,7 @@ void DrawNoSectPolyRecursive (CMap *theMap, PolyObjectHdl MapPolyHdl, DrawSpecRe
 			{
 				if (PlotCount > 2)			/* polygon must contain more than 2 line-to points */
 				{
-					if (drawSettings -> bErase || drawSettings -> fillCode == kNoFillCode)
+					if (drawSettings -> bErase || (drawSettings -> fillCode == kNoFillCode && drawSettings -> backColorInd == kWaterColorInd))
 						ErasePoly (PolyHdl);
 	
 					if (drawSettings -> fillCode == kPaintFillCode)

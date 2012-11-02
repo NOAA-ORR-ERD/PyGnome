@@ -61,11 +61,18 @@ public:
 	void 					GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
 	virtual float		GetArrowDepth() {return fVar.arrowDepth;}
 	
+	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList);
+	virtual OSErr 		PrepareForModelRun(); 
 	virtual void 		ModelStepIsDone();
 	
 	void 					DisposeLoadedData(LoadedData * dataPtr);	
 	void 					ClearLoadedData(LoadedData * dataPtr);
 	
+	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	// AH 07/17/2012
+	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
+	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
+	OSErr 				ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
+	OSErr 				ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataHdl,Boolean setStartTime);	// AH 07/17/2012
 
 };
 

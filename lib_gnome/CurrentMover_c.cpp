@@ -41,6 +41,9 @@ CurrentMover_c::CurrentMover_c (TMap *owner, char *name) : Mover_c(owner, name)
 	
 	bIAmPartOfACompoundMover = false;
 	bIAmA3DMover = false;
+	
+	bIsFirstStep = false;
+	fModelStartTime = 0;
 }
 
 

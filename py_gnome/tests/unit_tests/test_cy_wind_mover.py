@@ -54,6 +54,7 @@ class Common():
         self.const_wind['u'] = 50  # meters per second?
         self.const_wind['v'] = 100 #
         self.status[:] = basic_types.oil_status.in_water 
+        self.setSizes[:] = self.num_le
 
 class ConstantWind(Common):
     """
@@ -70,8 +71,8 @@ class ConstantWind(Common):
     def test_move(self):
         """ forecast move """
  
-        #self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, False, 0, np.zeros(1,dtype=np.int))
-        self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, False, 0, self.setSizes)
+        self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, False, 1, self.setSizes)
+        #self.wm.prepare_for_model_step_uncertain(self.model_time, self.time_step, True, 1, self.setSizes)
         self.wm.get_move(self.model_time,
                          self.time_step, 
                          self.ref,
