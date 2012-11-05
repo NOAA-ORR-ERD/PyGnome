@@ -682,6 +682,7 @@ TWindMover* Model_c::GetWindMover(Boolean createIfDoesNotExist)
 	TWindMover *mover = nil;
 	// for now don't get the spatially varying wind movers 2/27/03
 	//mover = (TWindMover*)this->GetMover(TYPE_WINDMOVER);
+	
 	mover = dynamic_cast<TWindMover *>(this->GetMover("Variable Wind"));
 	if (!mover) mover = dynamic_cast<TWindMover *>(this->GetMover("Constant Wind"));
 	if(!mover && createIfDoesNotExist)
