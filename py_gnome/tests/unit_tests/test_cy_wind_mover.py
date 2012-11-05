@@ -90,7 +90,7 @@ class ConstantWind(Common):
                         self.u_delta,
                         self.wind,
                         self.status,
-                        basic_types.spill_type.forecast,
+                        basic_types.spill_type.uncertainty,
                         0)
         
 class ConstantWindWithOSSM(Common):
@@ -135,7 +135,7 @@ class ConstantWindWithOSSM(Common):
                         self.u_delta,
                         self.wind,
                         self.status,
-                        basic_types.spill_type.forecast,
+                        basic_types.spill_type.uncertainty,
                         0)
         
 class TestConstantWind():
