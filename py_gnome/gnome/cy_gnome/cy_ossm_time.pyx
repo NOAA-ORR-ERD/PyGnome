@@ -54,15 +54,21 @@ cdef class CyOSSMTime:
             self._set_time_value_handle(timeseries)
             self.time_dep.SetUserUnits(-1)  # default is undefined for now. UserUnits are only given in data file right now            
     
-    @property
-    def user_units(self):
-        """returns units for the time series"""
-        return self.time_dep.GetUserUnits()
+    property user_units:
+        def __get__(self):
+            """returns units for the time series"""
+            return self.time_dep.GetUserUnits()
     
-    @property
-    def time_series(self):
-        """returns the time series stored in the OSSMTimeValue_c object. It returns a memcpy of it."""
-        return self._get_time_value_handle()
+    property time_series:
+        #def time_series(self):
+        def __get__(self):
+            """returns the time series stored in the OSSMTimeValue_c object. It returns a memcpy of it."""
+            return self._get_time_value_handle()
+        
+        
+        #def time_series(self, cnp.ndarray[TimeValuePair, ndim=1] value):
+        def __set__(self, value):
+            self._set_time_value_handle(value)
     
     def get_time_value(self, modelTime):
         """

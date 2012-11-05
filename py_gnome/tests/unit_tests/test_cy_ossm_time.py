@@ -138,7 +138,28 @@ class TestGetTimeValues():
             self.ossmT._set_time_value_handle(None)
         except TypeError:
             assert True
+            
+    def test_time_series(self):
+        """
+        test setting the time_series using time_series property
+        """
+        t_val = self.ossmT.time_series
+        for i in range(0,len(t_val)):
+            # need to learn how to do following in 1 line of code
+            print t_val['value'][i]
+            t_val['value']['u'][i] = t_val['value']['u'][i] + 2
+            t_val['value']['v'][i] = t_val['value']['v'][i] + 2
+            print t_val['value'][i] 
         
+        self.ossmT.time_series = t_val
+        new_val = self.ossmT.time_series
+        tol = 1e-10
+        np.testing.assert_allclose(t_val['time'], new_val['time'], tol, tol, 
+                                  "get_time_value is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(t_val['value']['u'], new_val['value']['u'], tol, tol, 
+                                  "get_time_value is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(t_val['value']['v'], new_val['value']['v'], tol, tol, 
+                                  "get_time_value is not within a tolerance of "+str(tol), 0)
         
 class TestReadFileWithConstantWind():
     """
