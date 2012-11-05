@@ -85,7 +85,7 @@ class Spill(object):
                     
         self._data_arrays[data_name] = array
 
-    def prepare_for_model_step(self, current_time, time_step=None, uncertain_on=None):
+    def prepare_for_model_step(self, current_time, time_step=None):
         """
         Do whatever needs to be done at the beginning of a time step:
         
@@ -147,7 +147,7 @@ class PointReleaseSpill(Spill):
         """
         self.reset()
     
-    def prepare_for_model_step(self, current_time, time_step, uncertain_on=False):
+    def prepare_for_model_step(self, current_time, time_step):
         """
         Do whatever needs to be done at the beginning of a time step:
         
@@ -158,7 +158,6 @@ class PointReleaseSpill(Spill):
         
         :param current_time: datetime object for current time
         :param time_step: the time step, in seconds
-        :param uncertain_on: Boolean flag indicating whether uncertainty is on in the model
 
         """
         if current_time >= self.release_time and not self.released:
