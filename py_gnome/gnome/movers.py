@@ -30,11 +30,11 @@ class PyMover(object):
         """
         return id(self)
 
-    def model_time_seconds(self, model_time):
+    def datetime_to_seconds(self, model_time):
         """
-        put the time conversion call here.
+        put the time conversion call here - incase we decide to change it, it only updates here
         """
-        self.model_time = time_utils.date_to_sec(model_time)
+        return time_utils.date_to_sec(model_time)
         
     def prepare_for_model_run(self):
         """
@@ -51,7 +51,7 @@ class PyMover(object):
         mover's prepare_for_model_step. The 'mover' is a member of this class, but it is
         instantiated by the derived class. 
         """
-        self.model_time_seconds(model_time_datetime)
+        self.model_time = self.datetime_to_seconds(model_time_datetime)
         if uncertain_spills_count < 0:
             raise ValueError("The uncertain_spills_count cannot be less than 0")
         elif uncertain_spills_count == 0:
@@ -77,7 +77,7 @@ class PyMover(object):
         :param spill: spill is an instance of the gnome.spill.Spill class
         :param model_time_datetime: model time as a date time object
         """
-        self.model_time_seconds(model_time_datetime)
+        self.model_time = self.datetime_to_seconds(model_time_datetime)
         
         # Get the data:
         try:
@@ -156,6 +156,20 @@ class WindMover(PyMover):
     @property
     def is_constant(self):
         return self.constant_wind
+
+    @property
+    def wind_vel(self):
+        return self.ossm.time_series
+    
+    #===========================================================================
+    # @wind_vel.setter
+    # def wind_vel(self, value):
+    #    self.ossm.time_series = value
+    #===========================================================================
+
+    def get_time_value(self, datetime):
+        time_sec = self.datetime_to_seconds(datetime)
+        return self.ossm.get_time_value(time_sec)
 
     def __repr__(self):
         """
