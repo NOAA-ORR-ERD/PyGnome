@@ -5,4 +5,10 @@ __init__.py for the gnome package
 
 """
 
-#import basic_types # make sure it's imported, for the C++ lib
+# a few imports so that the basic stuff is there
+
+from . import model
+from . import spill
+from . import map
+
+
