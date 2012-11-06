@@ -20,11 +20,10 @@ def test_exceptions():
         movers.RandomMover(diffusion_coef=0)
 
 
-class TestWindMover():
+class TestRandomMover():
     """
-    gnome.WindMover() test
+    gnome.RandomMover() test
 
-    TODO: Move it to separate file
     """
     num_le = 5
     start_pos = np.zeros((num_le,3), dtype=basic_types.world_point_type)
@@ -65,7 +64,6 @@ class TestWindMover():
             
         print delta
         print "------"
-        print len(basic_types.world_point)
         deltaV = delta.view(dtype=np.double).reshape(-1,3)
         print deltaV
         print "------"
@@ -79,6 +77,6 @@ class TestWindMover():
         assert self.mover.diffusion_coef == 200000 
        
 if __name__=="__main__":
-    tw = TestWindMover()
+    tw = TestRandomMover()
     tw.test_get_move()
     tw.test_change_diffusion_coef()
