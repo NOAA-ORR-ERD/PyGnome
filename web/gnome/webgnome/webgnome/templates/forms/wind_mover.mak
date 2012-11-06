@@ -1,18 +1,17 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="form, action_url"/>
+<%page args="form, action_url, form_id='wind_mover'"/>
 
-<div class="modal hide fade" id="variable_wind_mover" tabindex="-1"
+<div class="modal hide fade" id="${form_id}" tabindex="-1"
      role="dialog" aria-labelledby="modal-label" aria-hidden="true"
      data-backdrop="static">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"
                 aria-hidden="true">×
         </button>
-        <h3 id="modal-label">Variable Wind Mover</h3>
+        <h3 id="modal-label">Wind Mover</h3>
     </div>
     <div class="modal-body">
         <form action="${action_url}" class="form-horizontal multistep" method="POST">
-            ${form.type}
             <div data-step="1" class="step active">
                 ${defs.form_control(form.date)}
                 ${defs.time_control(form, "Time (24 hour)")}
