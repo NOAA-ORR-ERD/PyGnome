@@ -109,39 +109,39 @@ class WindMover(PyMover):
 
     PyMover sets everything up that is common to all movers.
     """
-    def __init__(self, wind_vel=None, wind_file=None, uncertain_duration=10800, is_active=True,
+    def __init__(self, timeseries=None, file=None, uncertain_duration=10800, is_active=True,
                  uncertain_time_delay=0, uncertain_speed_scale=2, uncertain_angle_scale=0.4):
         """
         Initializes a wind mover object. It requires a numpy array containing 
         gnome.basic_types.time_value_pair which defines the wind velocity
         
-        :param wind_vel: (Required) numpy array containing time_value_pair
-        :type wind_vel: numpy.ndarray[basic_types.time_value_pair, ndim=1]
-        :param wind_file: path to a long wind file from which to read wind data
+        :param timeseries: (Required) numpy array containing time_value_pair
+        :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
+        :param file: path to a long wind file from which to read wind data
         :param uncertain_duraton=10800: only used in case of uncertain wind. Default is 3 hours
         :param is_active: flag defines whether mover is active or not
         :param uncertain_time_delay=0: wait this long after model_start_time to turn on uncertainty
         :param uncertain_speed_scale=2: used in uncertainty computation
         :param uncertain_angle_scale=0.4: used in uncertainty computation
         """
-        if( wind_vel == None and wind_file == None):
-            raise ValueError("Either provide wind_vel or a valid long wind_file")
+        if( timeseries == None and file == None):
+            raise ValueError("Either provide timeseries or a valid long file")
         
-        if( wind_vel != None):
+        if( timeseries != None):
             try:
-                if( wind_vel.dtype is not basic_types.time_value_pair):
+                if( timeseries.dtype is not basic_types.time_value_pair):
                     # Should this be 'is' or '==' - both work in this case. There is only one instance of basic_types.time_value_pair 
-                    raise ValueError("wind_vel must be a numpy array containing basic_types.time_value_pair dtype")
+                    raise ValueError("timeseries must be a numpy array containing basic_types.time_value_pair dtype")
             
             except AttributeError as err:
-                raise AttributeError("wind_vel is not a numpy array. " + err.message)
+                raise AttributeError("timeseries is not a numpy array. " + err.message)
             
-            self.ossm = CyOSSMTime(timeseries=wind_vel) # this has same scope as CyWindMover object
+            self.ossm = CyOSSMTime(timeseries=timeseries) # this has same scope as CyWindMover object
             
         else:
-            self.ossm = CyOSSMTime(path=wind_file)
+            self.ossm = CyOSSMTime(path=file)
         
-        if len(wind_vel) == 1:
+        if len(timeseries) == 1:
             self.constant_wind = True
         else:
             self.constant_wind = False
@@ -158,14 +158,12 @@ class WindMover(PyMover):
         return self.constant_wind
 
     @property
-    def wind_vel(self):
-        return self.ossm.time_series
+    def timeseries(self):
+        return self.ossm.timeseries
     
-    #===========================================================================
-    # @wind_vel.setter
-    # def wind_vel(self, value):
-    #    self.ossm.time_series = value
-    #===========================================================================
+    @timeseries.setter
+    def timeseries(self, value):
+       self.ossm.timeseries = value
 
     def get_time_value(self, datetime):
         time_sec = self.datetime_to_seconds(datetime)

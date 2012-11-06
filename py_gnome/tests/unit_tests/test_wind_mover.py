@@ -19,7 +19,7 @@ def test_exceptions():
     with pytest.raises(ValueError):
         movers.WindMover()
         wind_vel = np.zeros((1,), basic_types.velocity_rec)
-        movers.WindMover(wind_vel=wind_vel)
+        movers.WindMover(timeseries=wind_vel)
 
 
 class TestWindMover():
@@ -32,7 +32,6 @@ class TestWindMover():
     start_pos = np.zeros((num_le,3), dtype=basic_types.world_point_type)
     start_pos += (3.,6.,0.)
     rel_time = datetime.datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
-    #model_time = basic_types.dt_to_epoch(rel_time)    # TODO: should this happen in mover or in model?
     model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
     time_step = 15*60 # seconds
 
@@ -42,7 +41,7 @@ class TestWindMover():
     time_val['time'][0] = 0  # since it is just constant, just give it 0 time
     time_val['value'][0] = (0., 100.)
 
-    wm = movers.WindMover(wind_vel=time_val)
+    wm = movers.WindMover(timeseries=time_val)
 
     def test_string_representation_matches_repr_method(self):
         assert repr(self.wm) == 'Wind Mover'
@@ -65,6 +64,8 @@ class TestWindMover():
         for ix in range(0,2):
             curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
             print "Time step [sec]: " + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
+            print "WindMover.time_series C++:" + str(self.wm.timeseries)
+            print "WindMover.get_time_value C++:" + str( self.wm.get_time_value(curr_time))
             delta[ix] = self.wm.get_move(self.pSpill, self.time_step, curr_time)
             
             actual[ix] = self._expected_move()
@@ -76,15 +77,23 @@ class TestWindMover():
         print "C++ delta-long: ";  print str(delta['long'])
         print "Expected delta-long: ";print str(actual['long'])
         np.testing.assert_allclose(delta['lat'], actual['lat'], tol, tol,
-                                   "get_time_value is not within a tolerance of " + str(tol), 0)
+                                  "get_time_value is not within a tolerance of " + str(tol), 0)
         np.testing.assert_allclose(delta['long'], actual['long'], tol, tol,
-                               "get_time_value is not within a tolerance of "+str(tol), 0)
+                              "get_time_value is not within a tolerance of "+str(tol), 0)
        
+    def test_update_wind_vel(self):
+        self.time_val['value'][0] = (10., 50.)
+        self.wm.timeseries = self.time_val   # update time series
+        #print "Check updated timeseries in C++" + str(self.wm.timeseries)
+        #print "WindMover.get_time_value C++:" + str( self.wm.get_time_value(self.model_time))
+        self.test_get_move()
+    
     def _expected_move(self):
         """
         Put the expected move logic in separate private method
         """
         # expected move
+        print "wind_vel used for check:" + str( self.time_val[0]['value'])
         exp = np.zeros( (self.pSpill.num_LEs, 3) )
         exp[:,0] = self.pSpill['windages']*self.time_val[0]['value']['u']*self.time_step # 'u'
         exp[:,1] = self.pSpill['windages']*self.time_val[0]['value']['v']*self.time_step # 'v'
@@ -97,8 +106,8 @@ class TestWindMover():
         
         return actual
         
-        
        
 if __name__=="__main__":
     tw = TestWindMover()
     tw.test_get_move()
+    tw.test_update_wind_vel()
