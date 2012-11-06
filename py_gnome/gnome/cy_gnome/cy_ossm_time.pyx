@@ -59,14 +59,11 @@ cdef class CyOSSMTime:
             """returns units for the time series"""
             return self.time_dep.GetUserUnits()
     
-    property time_series:
-        #def time_series(self):
+    property timeseries:
         def __get__(self):
             """returns the time series stored in the OSSMTimeValue_c object. It returns a memcpy of it."""
             return self._get_time_value_handle()
         
-        
-        #def time_series(self, cnp.ndarray[TimeValuePair, ndim=1] value):
         def __set__(self, value):
             self._set_time_value_handle(value)
     

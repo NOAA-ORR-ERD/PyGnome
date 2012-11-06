@@ -68,14 +68,14 @@ class TestTimeSeriesInit():
    tval['time'][1] = 1
    tval['value'][1]=(2,3)
    
-   def test_init_time_series(self):
+   def test_init_timeseries(self):
        """
        Sets the time series in OSSMTimeValue_c equal to the externally supplied numpy
        array containing time_value_pair data
        It then reads it back to make sure data was set correctly
        """
        ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval)
-       t_val = ossm.time_series
+       t_val = ossm.timeseries
        
        np.testing.assert_array_equal(t_val, self.tval, 
                                      "CyOSSMTime.get_time_value did not return expected numpy array", 
@@ -115,7 +115,7 @@ class TestGetTimeValues():
         get_time_value for times in the time series.          
         """
         # Let's see what is stored in the Handle to expected result
-        t_val = self.ossmT.time_series 
+        t_val = self.ossmT.timeseries 
         #print t_val
         #assert False
         
@@ -139,11 +139,11 @@ class TestGetTimeValues():
         except TypeError:
             assert True
             
-    def test_time_series(self):
+    def test_timeseries(self):
         """
-        test setting the time_series using time_series property
+        test setting the timeseries using timeseries property
         """
-        t_val = self.ossmT.time_series
+        t_val = self.ossmT.timeseries
         for i in range(0,len(t_val)):
             # need to learn how to do following in 1 line of code
             print t_val['value'][i]
@@ -151,8 +151,8 @@ class TestGetTimeValues():
             t_val['value']['v'][i] = t_val['value']['v'][i] + 2
             print t_val['value'][i] 
         
-        self.ossmT.time_series = t_val
-        new_val = self.ossmT.time_series
+        self.ossmT.timeseries = t_val
+        new_val = self.ossmT.timeseries
         tol = 1e-10
         np.testing.assert_allclose(t_val['time'], new_val['time'], tol, tol, 
                                   "get_time_value is not within a tolerance of "+str(tol), 0)
@@ -177,7 +177,7 @@ class TestReadFileWithConstantWind():
         Since wind is constant, the value should be unchanged          
         """
         # Let's see what is stored in the Handle to expected result
-        t_val = self.ossmT.time_series 
+        t_val = self.ossmT.timeseries 
         
         actual = np.array(t_val['value'], dtype=basic_types.velocity_rec)
         time = np.array(t_val['time']+(0, 100), dtype=basic_types.seconds)
