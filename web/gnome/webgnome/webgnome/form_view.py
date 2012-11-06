@@ -3,7 +3,32 @@ form_view.py: A class-based view for form views that wrap other classes.
 """
 
 
-_registry = {}
+_form_views = {}
+
+
+
+def get_obj_class(obj):
+    return obj if type(obj) == type else obj.__class__
+
+
+def get_form_view(obj):
+    obj_class = get_obj_class(obj)
+    return _form_views.get(obj_class, None)
+
+
+def get_form_container_id(obj, form_name=None):
+    """
+    Get the container ID for ``obj`` if a :class:`FormViewBase` subclass
+    was declared that wraps ``obj``.
+    """
+    form_view = get_form_view(obj)
+    obj_class = get_obj_class(obj)
+
+    if form_view and obj_class == form_view.wrapped_class:
+        form_id = form_view._get_form_container_id(obj, form_name)
+
+        if form_id:
+            return form_id
 
 
 class FormViewMetaclass(type):
@@ -13,15 +38,15 @@ class FormViewMetaclass(type):
 
         wrapped_class = dct['wrapped_class']
 
-        if wrapped_class in _registry:
+        if wrapped_class in _form_views:
             raise RuntimeError(
                 "Form view already defined for %s" % wrapped_class)
 
         instance = super(FormViewMetaclass, mcs).__new__(mcs, name, bases, dct)
 
         if wrapped_class:
-            # Add this object to the registry of form view classes.
-            _registry[wrapped_class] = instance
+            # Add this object to the dict of form view classes.
+            _form_views[wrapped_class] = instance
 
         return instance
 
@@ -54,9 +79,9 @@ class FormViewBase(object):
         return '%s_%s' % (cls.wrapped_class.__name__, append_with)
 
     @classmethod
-    def _get_form_id_for_object(cls, obj, form_name=None):
+    def _get_form_container_id(cls, obj, form_name=None):
         """
-        Return a unique form ID for ``obj``.
+        Return a unique form container ID for ``obj``.
 
         If ``obj`` has the class of ``self.wrapped_class`, then use "create"
         (or ``form_name`` if specified) as the form name.
@@ -73,28 +98,4 @@ class FormViewBase(object):
                 form_name if form_name else 'update' , obj.id)
 
         return cls._get_form_id(form_name)
-
-    @classmethod
-    def get_obj_class(cls, obj):
-        return obj if type(obj) == type else obj.__class__
-
-    @classmethod
-    def get_form_view(cls, obj):
-        obj_class = cls.get_obj_class(obj)
-        return _registry.get(obj_class, None)
-
-    @classmethod
-    def get_form_id(cls, obj, form_name=None):
-        """
-        Iterate over the registry of all :class:`FormView` classes and ask
-        each one for a form ID for ``obj``, ending if a form ID is found.
-        """
-        form_view = cls.get_form_view(obj)
-        obj_class = cls.get_obj_class(obj)
-
-        if form_view and obj_class == form_view.wrapped_class:
-            form_id = form_view._get_form_id_for_object(obj, form_name)
-
-            if form_id:
-                return form_id
 

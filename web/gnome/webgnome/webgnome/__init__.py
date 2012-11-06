@@ -38,7 +38,7 @@ def main(global_config, **settings):
     config.add_route('run_model_until', '/model/run_until')
     config.add_route('model_settings', '/model/settings')
     config.add_route('model_map', '/model/map')
-    config.add_route('add_mover', '/model/mover')
+    config.add_route('create_mover', '/model/mover')
     config.add_route('delete_mover', '/model/mover/delete')
     config.add_route('create_wind_mover', '/model/mover/wind')
     config.add_route('update_wind_mover', '/model/mover/wind/{id}')
