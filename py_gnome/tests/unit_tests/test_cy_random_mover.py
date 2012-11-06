@@ -52,7 +52,8 @@ def test_move():
                  0)
     
     print delta
-    assert False
+    assert np.all(delta['lat'] != 0)
+    assert np.all(delta['long'] != 0)
     
 if __name__ == "__main__":
     """

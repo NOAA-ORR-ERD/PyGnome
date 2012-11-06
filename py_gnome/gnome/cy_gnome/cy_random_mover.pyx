@@ -39,8 +39,6 @@ cdef class CyRandomMover:
         :param uncertain: bool flag determines whether to apply uncertainty or not - again, not used by mover
         """
         cdef OSErr err
-        print model_time
-        print step_len
         err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, 0, NULL)
         if err != 0:
             """
