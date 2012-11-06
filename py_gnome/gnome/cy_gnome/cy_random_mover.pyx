@@ -19,7 +19,17 @@ cdef class CyRandomMover:
         """
         Default diffusion_coef = 100,000 [cm**2/sec]
         """
+        if diffusion_coef <= 0:
+            raise ValueError("CyRandomMover must have a value greater than or equal to 0 for diffusion_coef")
+        
         self.mover.fDiffusionCoefficient = diffusion_coef
+    
+    property diffusion_coef:
+        def __get__(self):
+            return self.mover.fDiffusionCoefficient
+        
+        def __set__(self, value):
+            self.mover.fDiffusionCoefficient = value
         
     def prepare_for_model_run(self):
         """
@@ -28,7 +38,7 @@ cdef class CyRandomMover:
         """
         self.mover.PrepareForModelRun()
         
-    def prepare_for_model_step(self, model_time, step_len, uncertain):
+    def prepare_for_model_step(self, model_time, step_len):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
         
@@ -36,10 +46,9 @@ cdef class CyRandomMover:
         
         :param model_time: current model time. Not used by Random_mover.
         :param step_len: length of the time step over which the get move will be computed
-        :param uncertain: bool flag determines whether to apply uncertainty or not - again, not used by mover
         """
         cdef OSErr err
-        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, 0, NULL)
+        err = self.mover.PrepareForModelStep(model_time, step_len, False, 0, NULL)  # random mover does not use last 3 inputs
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated

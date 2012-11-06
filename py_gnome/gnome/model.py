@@ -196,10 +196,16 @@ class Model(object):
             
         self._uncertain_spills = OrderedDict()
         if self.uncertain:
+            self._uncertain_spill_id_map = []   # a list mapping the order in which list is added to it's unique 'id'
             for spill in self.spills:
                 uSpill = copy.deepcopy(spill)
                 uSpill.is_uncertain = True
                 self._uncertain_spills[uSpill.id] = uSpill   # should spill ID get updated? Does this effect how movers applies uncertainty?
+                
+                if self._uncertain_spill_id_map.count(uSpill.id) != 0:
+                    raise ValueError("An uncertain spill with this id has been defined. spill.id should be unique")
+                 
+                self._uncertain_spill_id_map.append(uSpill.id)
             
 
     
@@ -242,9 +248,13 @@ class Model(object):
             for spill in spills:
                 spill['next_positions'][:] = spill['positions']
     
+            uncertain_spill_number = -1 # only used by get_move for uncertain spills
             for mover in self.movers:
                 for spill in spills:
-                    delta = mover.get_move(spill, self.time_step, self.model_time)
+                    if spill.is_uncertain:
+                        uncertain_spill_number = self._uncertain_spill_id_map.index((spill.id))
+                        
+                    delta = mover.get_move(spill, self.time_step, self.model_time, uncertain_spill_number)  # spill ID that get_move expects
                     spill['next_positions'] += delta
                     # print "in move loop"
                     # print "pos:", spill['positions']

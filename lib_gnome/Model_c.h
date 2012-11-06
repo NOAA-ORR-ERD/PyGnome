@@ -85,7 +85,7 @@ public:
 	char 		fSnapShotFileName[256];
 	
 	Boolean bHindcast, writeNC, ncSnapshot;
-	int ncID, ncID_C, stepsCount, currentStep;
+	int ncID, ncID_C, stepsCount, currentStep, outputStepsCount;
 	map<string, int> ncVarIDs, ncDimIDs, ncVarIDs_C, ncDimIDs_C;
 	char ncPath[256], ncPathConfidence[256];
 	
@@ -122,6 +122,7 @@ public:
 	Seconds 			GetRunDuration () { return modelTime - fDialogVariables.startTime; }		// zero-based current time
 	 TMover*				GetMover(char* moverName);
 	 TMover*				GetMover(ClassID desiredClassID);
+	TMover*				GetMoverExact(ClassID desiredClassID);
 	 TMap*				GetMap(char* mapName);
 	 TMap*				GetMap(ClassID desiredClassID);
 	 TLEList*			GetMirroredLEList(TLEList* owner);

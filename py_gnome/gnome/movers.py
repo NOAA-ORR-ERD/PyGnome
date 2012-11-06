@@ -4,7 +4,7 @@ from gnome.utilities import time_utils
 from gnome import basic_types
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
-
+from gnome.cy_gnome.cy_random_mover import CyRandomMover
 
 class PyMover(object):
     """
@@ -54,20 +54,14 @@ class PyMover(object):
         self.model_time = self.datetime_to_seconds(model_time_datetime)
         if uncertain_spills_count < 0:
             raise ValueError("The uncertain_spills_count cannot be less than 0")
-        elif uncertain_spills_count == 0:
+        elif uncertain_spills_count > 0:
             """" preparing for a certainty spill """
-            self.spill_type = basic_types.spill_type.forecast
-        else:
-            self.spill_type = basic_types.spill_type.uncertainty
-            
             if uncertain_spills_size is None:
-                raise ValueError("uncertain_spills_size is invalid for the input uncertain_spills_count")
+                raise ValueError("uncertain_spills_size cannot be None if uncertain_spills_count is greater than 0")
             
             if len(uncertain_spills_size) != uncertain_spills_count:
                 raise ValueError("uncertain_spills_size needs an entry for each of the uncertain spills")
         
-        # TODO: would be nice to save self.uncertain_spills_size for each step and check the spills.num_LEs match
-        # when get_move is called. 
         self.mover.prepare_for_model_step(self.model_time, time_step, uncertain_spills_count, uncertain_spills_size)
 
     def prepare_data_for_get_move(self, spill, model_time_datetime):
@@ -83,6 +77,11 @@ class PyMover(object):
         try:
             self.positions      = spill['positions']
             self.status_codes   = spill['status_codes']
+            
+            if spill.is_uncertain:
+                self.spill_type = basic_types.spill_type.uncertainty
+            else:
+                self.spill_type = basic_types.spill_type.forecast
             
             # make sure prepare_for_model_step was setup correctly for an uncertainty spill
             if self.spill_type is basic_types.spill_type.forecast:
@@ -177,8 +176,12 @@ class WindMover(PyMover):
         """
         return 'Wind Mover'
 
-    def get_move(self, spill, time_step, model_time_datetime):
+    def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
         """
+        :param spill: spill object
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as date time object
+        :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
         """
         self.prepare_data_for_get_move(spill, model_time_datetime)
         try:
@@ -193,5 +196,62 @@ class WindMover(PyMover):
                               windage,
                               self.status_codes,
                               self.spill_type,
-                              0)
+                              uncertain_spill_number)
         return self.delta
+
+
+class RandomMover(PyMover):
+    """
+    Python wrapper around the Cython CyRandomMover module.
+    
+    The real work is done by the cython object.
+
+    PyMover sets everything up that is common to all movers.
+    """
+    def __init__(self, diffusion_coef=100000, is_active=True):
+        """
+        Initialize
+        """
+        self.mover = CyRandomMover(diffusion_coef=diffusion_coef)
+    
+    @property
+    def diffusion_coef(self):
+        return self.mover.diffusion_coef
+    
+    @diffusion_coef.setter
+    def diffusion_coef(self, value):
+        self.mover.diffusion_coef = value
+        
+    def __repr__(self):
+        """
+        Return a string representation of this `WindMover`.
+
+        TODO: We probably want to include more information.
+        """
+        return 'Random Mover'
+
+    def prepare_for_model_step(self, model_time_datetime, time_step, uncertain_spills_count=0, uncertain_spills_size=None):
+        """
+        Random mover does not use uncertainty for anything during prepare_for_model_step(...)
+        """
+        model_time = PyMover.datetime_to_seconds(self, model_time_datetime)
+        self.mover.prepare_for_model_step(model_time, time_step)
+    
+    def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
+        """
+        :param spill: spill object
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as date time object
+        :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
+        """
+        self.prepare_data_for_get_move(spill, model_time_datetime)
+        
+        self.mover.get_move(  self.model_time,
+                              time_step, 
+                              self.positions,
+                              self.delta,
+                              self.status_codes,
+                              self.spill_type,
+                              uncertain_spill_number)
+        return self.delta
+    
