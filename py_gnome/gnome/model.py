@@ -8,6 +8,8 @@ import gnome
 from gnome import greenwich
 
 from gnome.utilities.time_utils import round_time
+import numpy as np
+import copy
 
 class Model(object):
     
@@ -19,7 +21,7 @@ class Model(object):
         """ 
         Initializes model attributes. 
         """
-        self.uncertain_on = False # sets whether uncertainty is on or not.
+        self._uncertain = False # sets whether uncertainty is on or not.
 
         self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
         self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
@@ -39,6 +41,7 @@ class Model(object):
         self.map = None
         self._movers = OrderedDict()
         self._spills = OrderedDict()
+        self._uncertain_spills = OrderedDict()
 
         self._current_time_step = -1
 
@@ -58,6 +61,19 @@ class Model(object):
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
 
     ### Assorted properties
+    @property
+    def uncertain(self):
+        return self._uncertain
+    
+    @uncertain.setter
+    def uncertain(self, uncertain_value):
+        """
+        only if uncertainty switch is toggled, then restart model
+        """
+        if self._uncertain != uncertain_value:
+            self._uncertain = uncertain_value
+            self.rewind()   
+    
     @property
     def id(self):
         """
@@ -85,6 +101,10 @@ class Model(object):
         """
         return self._spills.values()
 
+    @property
+    def uncertain_spills(self):
+        return self._uncertain_spills.values()
+        
     @property
     def start_time(self):
         return self._start_time
@@ -163,7 +183,26 @@ class Model(object):
         
         """
         self._spills[spill.id] = spill
+        
+        
+    def setup_model_run(self):
+        """
+        Sets up each mover for the model run
+        
+        Currently, only movers need to initialize at the beginning of the run
+        """
+        for mover in self.movers:
+            mover.prepare_for_model_run()
+            
+        self._uncertain_spills = OrderedDict()
+        if self.uncertain:
+            for spill in self.spills:
+                uSpill = copy.deepcopy(spill)
+                uSpill.is_uncertain = True
+                self._uncertain_spills[uSpill.id] = uSpill   # should spill ID get updated? Does this effect how movers applies uncertainty?
+            
 
+    
     def setup_time_step(self):
         """
         sets up everything for the current time_step:
@@ -171,13 +210,26 @@ class Model(object):
         releases elements, refloats, prepares the movers, etc.
         """
         self.model_time = self._start_time + timedelta(seconds=self._current_time_step*self.time_step)
+        
         for spill in self.spills:
-            spill.prepare_for_model_step(self.model_time, self.time_step, self.uncertain_on)
-            self.map.refloat_elements(spill)
+            spill.prepare_for_model_step(self.model_time, self.time_step)
+        
+        # if model is uncertain, update following defaults
+        num_uSpills = 0
+        uSpill_size = None
+        if self.uncertain:
+            num_uSpills = len(self.uncertain_spills)
+            uSpill_size = np.zeros((num_uSpills,), dtype=np.int)
+            
+            for i in range(0, num_uSpills):
+                self.uncertain_spills[i].prepare_for_model_step(self.model_time, self.time_step)
+                uSpill_size[i] = spill.num_LEs
+        
+        # initialize movers differently if model uncertainty is on
         for mover in self.movers:
-            #loop through each spill and pass it in.
-            mover.prepare_for_model_step(self.model_time, self.time_step, self.uncertain_on)
-
+            mover.prepare_for_model_step(self.model_time, self.time_step, num_uSpills, uSpill_size)
+                
+                
     def move_elements(self):
         """ 
         Moves elements: loops through all the movers. and moves the elements
@@ -185,28 +237,36 @@ class Model(object):
             -- calls the beaching code to beach the elements that need beaching.
             -- sets the new position
         """
-
-        # Set up next_position
-        for spill in self.spills:
-            spill['next_positions'][:] = spill['positions']
-
-        for mover in self.movers:
-            for spill in self.spills:
-                delta = mover.get_move(spill, self.time_step, self.model_time)
-                spill['next_positions'] += delta
-                # print "in move loop"
+        for spills in (self.spills,self.uncertain_spills):
+            
+            for spill in spills:
+                spill['next_positions'][:] = spill['positions']
+    
+            for mover in self.movers:
+                for spill in spills:
+                    delta = mover.get_move(spill, self.time_step, self.model_time)
+                    spill['next_positions'] += delta
+                    # print "in move loop"
+                    # print "pos:", spill['positions']
+                    # print "next_pos:", spill['next_positions']
+            for spill in spills:
+                self.map.beach_elements(spill)
+                # print "in map loop"
                 # print "pos:", spill['positions']
                 # print "next_pos:", spill['next_positions']
-        for spill in self.spills:
-            self.map.beach_elements(spill)
-            # print "in map loop"
-            # print "pos:", spill['positions']
-            # print "next_pos:", spill['next_positions']
+    
+            # the final move to the new positions
+            for spill in spills:
+                spill['positions'][:] = spill['next_positions']
+        
 
-        # the final move to the new positions
-        for spill in self.spills:
-            spill['positions'][:] = spill['next_positions']
-
+    def step_is_done(self):
+        """
+        loop through movers and call model_step_is_done
+        """
+        for mover in self.movers:
+            mover.model_step_is_done()
+    
     def write_output(self):
         """
         write the output of the current time step to whatever output
@@ -248,9 +308,14 @@ class Model(object):
                 
         if self._current_time_step >= self._num_time_steps:
             return False
+        
+        if self._current_time_step == -1:
+            self.setup_model_run()
+        
         self._current_time_step += 1
         self.setup_time_step()
         self.move_elements()
+        self.step_is_done()
 
         return True
     
