@@ -4,7 +4,7 @@ from gnome.utilities import time_utils
 from gnome import basic_types
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
-
+from gnome.cy_gnome.cy_random_mover import CyRandomMover
 
 class PyMover(object):
     """
@@ -179,6 +179,7 @@ class WindMover(PyMover):
 
     def get_move(self, spill, time_step, model_time_datetime):
         """
+        TODO: Currently, spill_id is 0. This needs to be updated!
         """
         self.prepare_data_for_get_move(spill, model_time_datetime)
         try:
@@ -195,3 +196,63 @@ class WindMover(PyMover):
                               self.spill_type,
                               0)
         return self.delta
+
+
+class RandomMover(PyMover):
+    """
+    Python wrapper around the Cython CyRandomMover module.
+    
+    The real work is done by the cython object.
+
+    PyMover sets everything up that is common to all movers.
+    """
+    def __init__(self, diffusion_coef=100000, is_active=True):
+        """
+        Initialize
+        """
+        self.mover = CyRandomMover(diffusion_coef=diffusion_coef)
+    
+    @property
+    def diffusion_coef(self):
+        return self.mover.diffusion_coef
+    
+    @diffusion_coef.setter
+    def diffusion_coef(self, value):
+        self.mover.diffusion_coef = value
+        
+    def __repr__(self):
+        """
+        Return a string representation of this `WindMover`.
+
+        TODO: We probably want to include more information.
+        """
+        return 'Random Mover'
+
+    def prepare_for_model_step(self, model_time_datetime, time_step, uncertain_spills_count=0, uncertain_spills_size=None):
+        """
+        This mover only needs to know if spill is uncertain or not; however, it has the same signature as movers that require
+        this info. Perhaps it is best to put the uncertain flag in the prepare_for_model_step
+        """
+        model_time = PyMover.datetime_to_seconds(self, model_time_datetime)
+        if uncertain_spills_count != 0:
+            self.spill_type = basic_types.spill_type.uncertain
+            self.mover.prepare_for_model_step(model_time, time_step, uncertain=True)
+        else:
+            self.spill_type = basic_types.spill_type.forecast
+            self.mover.prepare_for_model_step(model_time, time_step, uncertain=False)
+    
+    def get_move(self, spill, time_step, model_time_datetime):
+        """
+        TODO: Currently, spill_id is 0. This needs to be updated!
+        """
+        self.prepare_data_for_get_move(spill, model_time_datetime)
+        
+        self.mover.get_move(  self.model_time,
+                              time_step, 
+                              self.positions,
+                              self.delta,
+                              self.status_codes,
+                              self.spill_type,
+                              0)
+        return self.delta
+    

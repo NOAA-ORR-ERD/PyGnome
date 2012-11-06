@@ -19,7 +19,17 @@ cdef class CyRandomMover:
         """
         Default diffusion_coef = 100,000 [cm**2/sec]
         """
+        if diffusion_coef <= 0:
+            raise ValueError("CyRandomMover must have a value greater than or equal to 0 for diffusion_coef")
+        
         self.mover.fDiffusionCoefficient = diffusion_coef
+    
+    property diffusion_coef:
+        def __get__(self):
+            return self.mover.fDiffusionCoefficient
+        
+        def __set__(self, value):
+            self.mover.fDiffusionCoefficient = value
         
     def prepare_for_model_run(self):
         """
@@ -28,7 +38,7 @@ cdef class CyRandomMover:
         """
         self.mover.PrepareForModelRun()
         
-    def prepare_for_model_step(self, model_time, step_len, uncertain):
+    def prepare_for_model_step(self, model_time, step_len, uncertain=False):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
         
