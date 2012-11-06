@@ -183,7 +183,7 @@ var Model = Backbone.Collection.extend({
             retryLimit: 3,
             success: this.runSuccess,
             error: handleAjaxError
-        });       
+        });
     },
 
     /*
@@ -1583,40 +1583,42 @@ var AppView = Backbone.View.extend({
             currentTimeStep: this.options.currentTimeStep
         });
 
+        this.addMoverFormView = new AddMoverFormView({
+            el: $('#' + this.options.addMoverFormId),
+            formContainerEl: this.options.formContainerEl
+        });
+
+        // All of the `ModelFormView` instances, keyed to form ID.
+        this.formViews = {};
+        this.formViews[this.options.addMoverFormId] = this.addMoverFormView;
+
         // An object holding all of our `AjaxForm` instances, keyed to the name
         // of the form as passed by the server in `this.options.formUrls`.
         this.forms = {};
         _.extend(this.forms, Backbone.Events);
 
-        // An object holding all of the `ModelFormView` instances, keyed to the
-        // name of the form as passed by the server.
-        this.formViews = {};
+        // Create an `AjaxForm` and bind it to a `ModalFormView` for each modal
+        // form on the page, other than the Add Mover form, which we handled.
+        _.each($('div.modal'), function(modalDiv) {
+            var $div = $(modalDiv);
+            var $form = $div.find('form');
+            var modalFormId = $div.attr('id');
 
+            if (modalFormId === _this.options.addMoverFormId) {
+                return;
+            }
 
-        // Create an `AjaxForm` and bind it to a `ModalFormView` for each form
-        // URL the server gave us.
-        _.each(this.options.forms, function(url, id) {
-            _this.forms[id] = new AjaxForm({
-                url: url,
+            _this.forms[modalFormId] = new AjaxForm({
+                url: $form.attr('action'),
                 collection: _this.forms
             });
 
-            _this.formViews[id] = new ModalFormView({
-                ajaxForm: _this.forms[id],
-                el: $('#' + id),
+            _this.formViews[modalFormId] = new ModalFormView({
+                ajaxForm: _this.forms[modalFormId],
+                el: $('#' + modalFormId),
                 formContainerEl: _this.options.formContainerEl
             });
         });
-
-        // The Add Mover form is special. We use it to decide which mover form
-        // to show the user. It does not POST to the server, so we create it
-        // manually and later add an event handler.
-        this.addMoverFormView = new AddMoverFormView({
-            el: $('#add_mover'),
-            formContainerEl: this.options.formContainerEl
-        });
-
-        this.formViews.add_mover = this.addMoverFormView;
 
         this.menuView = new MenuView({
             modelDropDownEl: "#file-drop",
@@ -1864,6 +1866,21 @@ var AppView = Backbone.View.extend({
         $(this.sidebarEl).show('slow');
     },
 
+    showFormForNode: function(node) {
+        var formView = this.formViews[node.data.form_id];
+        log(formView, node.data)
+
+        if (formView === undefined) {
+            return;
+        }
+
+        if (node.data.id) {
+            formView.reload(node.data.id);
+        } else {
+            formView.show();
+        }
+    },
+
     /*
      Show the `ModalFormView` for the active tree item.
 
@@ -1877,17 +1894,7 @@ var AppView = Backbone.View.extend({
      */
     showFormForActiveTreeItem: function() {
         var node = this.treeView.getActiveItem();
-        var formView = this.formViews[node.data.form_id];
-
-        if (formView === undefined) {
-            return;
-        }
-
-        if (node.data.id) {
-            formView.reload(node.data.id);
-        } else {
-            formView.show();
-        }
+        this.showFormForNode(node);
     },
 
     addButtonClicked: function() {
@@ -1895,7 +1902,7 @@ var AppView = Backbone.View.extend({
     },
 
     treeItemDoubleClicked: function(node) {
-        this.showFormForActiveTreeItem();
+        this.showFormForNode(node);
     },
 
     settingsButtonClicked: function() {

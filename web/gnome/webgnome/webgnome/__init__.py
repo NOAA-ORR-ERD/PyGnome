@@ -29,6 +29,7 @@ def main(global_config, **settings):
     config.add_renderer('gnome_json', gnome_json)
 
     config.add_route('show_model', '/')
+    config.add_route('model_forms', 'model/forms')
     config.add_route('create_model', '/model/create')
     config.add_route('get_time_steps', '/model/time_steps')
     config.add_route('get_next_step', '/model/next_step')
@@ -37,14 +38,10 @@ def main(global_config, **settings):
     config.add_route('run_model_until', '/model/run_until')
     config.add_route('model_settings', '/model/settings')
     config.add_route('model_map', '/model/map')
-
+    config.add_route('add_mover', '/model/mover')
     config.add_route('delete_mover', '/model/mover/delete')
-    config.add_route('add_wind_mover', '/model/mover/wind')
-    config.add_route('edit_wind_mover', '/model/mover/wind/{id}')
-    config.add_route('add_constant_wind_mover', '/model/mover/constant_wind')
-    config.add_route('add_variable_wind_mover', '/model/mover/variable_wind')
-    config.add_route('edit_constant_wind_mover', '/model/mover/constant_wind/{id}')
-    config.add_route('edit_variable_wind_mover', '/model/mover/variable_wind/{id}')
+    config.add_route('create_wind_mover', '/model/mover/wind')
+    config.add_route('update_wind_mover', '/model/mover/wind/{id}')
 
     config.scan()
     return config.make_wsgi_app()

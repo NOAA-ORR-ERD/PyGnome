@@ -1,54 +1,59 @@
-from webgnome.form_view import FormView
+from webgnome.form_view import FormViewBase
 
 from base import UnitTestBase
 
 
 class TestObject(object):
-    x = 1
+    id = 1
 
 
 class TestObject2(object):
-    y = 1
+    id = 1
 
 
-class TestFormView(FormView):
+class TestFormView(FormViewBase):
     wrapped_class = TestObject
-
-    route_1 = 'get_form_1'
-    route_2 = 'get_form_2'
-
-    def _get_route_for_object(self, obj):
-        if obj.x == 1:
-            return self.route_1
-        else:
-            return self.route_2
-
-
-class TestFormView2(FormView):
-    pass
 
 
 class FormViewTests(UnitTestBase):
-    def test_form_view_gets_route_for_object(self):
+    def test_form_view_gets_form_id_for_object_class(self):
+        request = self.get_request()
+        TestFormView(request)
+
+        self.assertEqual(FormViewBase.get_form_id(TestObject), 'TestObject_create')
+
+    def test_form_view_gets_form_id_for_object_instance(self):
         obj = TestObject()
         request = self.get_request()
         TestFormView(request)
 
         self.assertEqual(
-            FormView.get_route_for_object(obj), TestFormView.route_1)
+            FormViewBase.get_form_id(obj), 'TestObject_update_1')
 
-        obj.x = 2
+        obj.id = 2
 
         self.assertEqual(
-            FormView.get_route_for_object(obj), TestFormView.route_2)
+            FormViewBase.get_form_id(obj), 'TestObject_update_2')
 
     def test_form_view_ignores_objects_of_wrong_type(self):
         obj = TestObject2()
         request = self.get_request()
         TestFormView(request)
 
-        self.assertEqual(FormView.get_route_for_object(obj), None)
+        self.assertEqual(FormViewBase.get_form_id(obj), None)
 
-    def test_form_view_requires_wrapped_class(self):
+    def test_form_view_uses_form_name_if_given(self):
+        obj = TestObject()
         request = self.get_request()
-        self.assertRaises(AttributeError, TestFormView2, request)
+        TestFormView(request)
+
+        self.assertEqual(
+            FormViewBase.get_form_id(obj, 'delete'), 'TestObject_delete_1')
+
+    def test_form_view_requires_wrapped_class_attr(self):
+        def fail():
+            # Trying to define this class will fail.
+            class TestFormView2(FormViewBase):
+                pass
+
+        self.assertRaises(AttributeError, fail)

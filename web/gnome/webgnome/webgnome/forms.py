@@ -11,7 +11,8 @@ from wtforms import (
     FloatField,
     BooleanField,
     TextField,
-    HiddenField
+    HiddenField,
+    ValidationError
 )
 
 from wtforms.widgets import TextInput
@@ -88,70 +89,6 @@ class LeadingZeroIntegerWidget(LeadingZeroNumberWidget):
     cast_to = int
 
 
-MOVER_CONSTANT_WIND = 'constant_wind_mover'
-MOVER_VARIABLE_WIND = 'variable_wind_mover'
-
-
-class AddMoverForm(Form):
-    """
-    The initial form used in a multi-step process for adding a mover to the
-    user's running model. This step asks the user to choose the type of mover
-    to add.
-    """
-    mover_type = SelectField('Type', choices=(
-        (MOVER_CONSTANT_WIND, 'Winds - Constant'),
-        (MOVER_VARIABLE_WIND, 'Winds - Variable')
-    ))
-
-
-class WindMoverForm(Form):
-    """
-    A form base class containing fields common to `VariableWindMoverForm` and
-    `ConstantWindMoverForm`
-    """
-    SPEED_KNOTS = 'knots'
-    SPEED_METERS = 'meters'
-    SPEED_MILES = 'miles'
-
-    SPEED_CHOICES = (
-        (SPEED_KNOTS, 'Knots'),
-        (SPEED_METERS, 'Meters / sec'),
-        (SPEED_MILES, 'Miles / hour')
-    )
-
-    SCALE_RADIANS = 'rad'
-    SCALE_DEGREES = 'deg'
-
-    SCALE_CHOICES = (
-        (SCALE_RADIANS, 'rad'),
-        (SCALE_DEGREES, 'deg')
-    )
-
-    speed = IntegerField('Speed', default=0, validators=[NumberRange(min=0)])
-    speed_type = SelectField(
-        choices=SPEED_CHOICES,
-        validators=[Required()]
-    )
-    direction = TextField(
-        'Wind direction is from',
-        default='S',
-        validators=[Required()]
-    )
-
-    is_active = BooleanField('Active', default=True)
-    start_time = IntegerField('Start Time', default=0, validators=[NumberRange(min=0)])
-    duration = IntegerField('Duration', default=3, validators=[NumberRange(min=0)])
-    speed_scale = IntegerField('Speed Scale', default=2,
-                               validators=[NumberRange(min=0)])
-    total_angle_scale = FloatField('Total Angle Scale', default=0.4,
-                                   validators=[NumberRange(min=0)])
-    total_angle_scale_type = SelectField(
-        default=SCALE_RADIANS,
-        choices=SCALE_CHOICES,
-        validators=[Required()]
-    )
-
-
 class DateTimeForm(Form):
     """
     A form base class that has a `date` field and two fields to choose hour
@@ -184,25 +121,99 @@ class DateTimeForm(Form):
             minute=self.minute.data)
 
 
-class ConstantWindMoverForm(WindMoverForm):
-    """
-    A form for adding a constant wind mover to the user's running model.
-    """
-    type = HiddenField(default=MOVER_CONSTANT_WIND)
+
+MOVER_WIND = 'wind_mover'
 
 
-class VariableWindMoverForm(WindMoverForm, DateTimeForm):
+class AddMoverForm(Form):
     """
-    A form for adding a variable wind mover to the user's running model.
+    The initial form used in a multi-step process for adding a mover to the
+    user's running model. This step asks the user to choose the type of mover
+    to add.
     """
-    type = HiddenField(default=MOVER_VARIABLE_WIND)
+    mover_type = SelectField('Type', choices=(
+        (MOVER_WIND, 'Winds'),
+    ))
+
+
+class DeleteMoverForm(Form):
+    """
+    Delete mover with ``mover_id``. Validates that a mover with that ID exists
+    in ``self.model``.
+
+    This is a hidden form submitted via AJAX by the JavaScript client.
+    """
+    mover_id = IntegerField()
+
+    def __init__(self, model, *args, **kwargs):
+        self.model = model
+        super(DeleteMoverForm, self).__init__(*args, **kwargs)
+
+    def mover_id_validate(self, field):
+        mover_id = field.data
+
+        if mover_id is None or self.model.has_mover_with_id(mover_id) is False:
+            raise ValidationError('Mover with that ID does not exist')
+
+
+class WindMoverForm(DateTimeForm):
+    """
+    A form class representing a :class:`gnome.mover.WindMover` object.
+
+    This form is used for both "variable" and "constant" wind movers, the
+    difference being the number of time series values entered.
+    """
+    SPEED_KNOTS = 'knots'
+    SPEED_METERS = 'meters'
+    SPEED_MILES = 'miles'
+
+    SPEED_CHOICES = (
+        (SPEED_KNOTS, 'Knots'),
+        (SPEED_METERS, 'Meters / sec'),
+        (SPEED_MILES, 'Miles / hour')
+    )
+
+    SCALE_RADIANS = 'rad'
+    SCALE_DEGREES = 'deg'
+
+    SCALE_CHOICES = (
+        (SCALE_RADIANS, 'rad'),
+        (SCALE_DEGREES, 'deg')
+    )
+
     auto_increment_time_by = IntegerField('Auto-increment time by')
+    speed = IntegerField('Speed', default=0, validators=[NumberRange(min=0)])
+    speed_type = SelectField(
+        choices=SPEED_CHOICES,
+        validators=[Required()]
+    )
+    direction = TextField(
+        'Wind direction is from',
+        default='S',
+        validators=[Required()]
+    )
+
+    is_active = BooleanField('Active', default=True)
+    start_time = IntegerField('Start Time', default=0, validators=[NumberRange(min=0)])
+    duration = IntegerField('Duration', default=3, validators=[NumberRange(min=0)])
+    speed_scale = IntegerField('Speed Scale', default=2,
+                               validators=[NumberRange(min=0)])
+    total_angle_scale = FloatField('Total Angle Scale', default=0.4,
+                                   validators=[NumberRange(min=0)])
+    total_angle_scale_type = SelectField(
+        default=SCALE_RADIANS,
+        choices=SCALE_CHOICES,
+        validators=[Required()]
+    )
 
 
 class RunModelUntilForm(DateTimeForm):
     """
     A form for submitting a step that the user wishes to run his or her model
     until.
+
+    TODO: This form should validate that the given date and time value are
+    a valid time step in the model.
     """
     pass
 
