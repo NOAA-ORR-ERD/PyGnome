@@ -26,6 +26,7 @@ Boolean gDispersedOilVersion = FALSE;
 Model_c::Model_c(Seconds start)
 {
 	stepsCount = 0;
+	outputStepsCount = 0;
 	ncSnapshot = false;
 	writeNC = false;
 	fDrawMovement = 0;//JLM
