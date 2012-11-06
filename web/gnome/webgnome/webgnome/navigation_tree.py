@@ -1,6 +1,7 @@
 from collections import OrderedDict
+from webgnome.forms import DeleteMoverForm, DeleteSpillForm
 
-from webgnome.form_view import FormView
+from webgnome.object_form import ObjectForm
 
 
 class NavigationTree(object):
@@ -40,35 +41,15 @@ class NavigationTree(object):
         value = value if len(value) <= max_chars else '%s ...' % value[:max_chars]
         return '%s: %s' % (name, value)
 
-    def _get_route_name_for_obj(self, obj):
-        """
-        Return a form view route for ``obj``.
-        """
-        return FormView.get_route_for_object(obj)
-
     def render(self):
         """
         Return an ordered list of tree elements for ``self.model``, suitable
         for JSON serialization.
 
-        Nodes are given a ``form_id`` value that corresponds to two things:
-
-            - In the client, ``form_id`` represents an HTLM form
-            - On the server, ``form_id`` corresponds to a route name for the
-              view that handles GET and POST requests for the form
-
-        This value is used by the client to detect which form is appropriate to
-        display for user actions on an item in the tree.
-
-        The reason that ``form_id`` also corresponds to a route name, and not
-        just a form ID, is slightly dubious from a design perspective. This is
-        so the JavaScript app can create URLs for delete requests. Constructing
-        delete URLs is based on the convention that for a given node, the delete
-        URL will be a string of the format:
-
-            "/``node.data.form_id``.``node.data.id``"
-
-        Where ``node.data.id`` is the ID of the object to delete.
+        Nodes are given a ``form_id`` value that points to a form rendered in
+        the client. The client uses this value to display a form for the item
+        when appropriate (i.e., when the user clicks on an "Add" or "Edit"
+        button).
         """
         settings = {
             'title': 'Model Settings',
@@ -82,6 +63,7 @@ class NavigationTree(object):
             'children': []
         }
 
+        # XXX: Hard-coded form ID. FormView class does not exist yet.
         spills = {
             'title': 'Spills',
             'form_id': 'add_spill',
@@ -90,11 +72,12 @@ class NavigationTree(object):
 
         for name, value in self._get_model_settings().items():
             settings['children'].append({
+                # All settings use the model update form.
                 'form_id': 'model_settings',
                 'title': self._get_value_title(name, value),
             })
 
-        # TODO: Handle a real map.
+        # XXX: Hard-coded form ID. FormView class does not exist yet.
         settings['children'].append({
             'form_id': 'model_map',
             'title': 'Map: None'
@@ -102,15 +85,17 @@ class NavigationTree(object):
 
         for mover in self.model.movers:
             movers['children'].append({
-                'form_id': self._get_route_name_for_obj(mover),
-                'id': mover.id,
+                'form_id': ObjectForm.get_id(mover),
+                'delete_form_id': DeleteMoverForm.get_id(mover),
+                'object_id': mover.id,
                 'title': str(mover)
             })
 
         for spill in self.model.spills:
             spills['children'].append({
-                'form_id': self._get_route_name_for_obj(spill),
-                'id': spill.id,
+                'form_id': ObjectForm.get_id(spill),
+                'delete_form_id': DeleteSpillForm.get_id(spill),
+                'object_id': spill.id,
                 'title': str(spill),
             })
 

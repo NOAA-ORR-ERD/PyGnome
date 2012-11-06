@@ -5,6 +5,8 @@ import datetime
 import inspect
 from functools import wraps
 
+from object_form import object_form_classes
+
 
 def make_message(type, text):
     """
@@ -104,3 +106,13 @@ def json_require_model(f):
             return f(request, model, *args, **kwargs)
         wrapper = inner_fn
     return wrapper
+
+
+def get_obj_class(obj):
+    return obj if type(obj) == type else obj.__class__
+
+
+def get_object_form(obj):
+    obj_class = get_obj_class(obj)
+    return object_form_classes.get(obj_class, None)
+

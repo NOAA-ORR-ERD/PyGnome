@@ -95,11 +95,7 @@
     </div>
 
     <div id="modal-container">
-      <%include file="forms/run_model_until.mak" args="form=run_model_until_form, action_url=run_model_until_form_url"/>
-      <%include file="forms/model_settings.mak" args="form=settings_form, action_url=settings_form_url"/>
-      <%include file="forms/add_mover.mak" args="form=add_mover_form, action_url=add_mover_form_url"/>
-      <%include file="forms/constant_wind_mover.mak" args="form=constant_wind_form, action_url=constant_wind_form_url"/>
-      <%include file="forms/variable_wind_mover.mak" args="form=variable_wind_form, action_url=variable_wind_form_url"/>
+        ${model_form_html | n}
     </div>
 </%block>
 
@@ -122,7 +118,8 @@
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                 currentTimeStep: ${model.current_time_step},
-                forms: ${form_urls | n}
+                runModelUntilFormUrl: "${run_model_until_form_url}",
+                addMoverFormId: "${add_mover_form_id}"
             });
         });
     </script>

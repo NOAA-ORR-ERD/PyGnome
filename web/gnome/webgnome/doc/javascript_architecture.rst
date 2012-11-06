@@ -11,7 +11,7 @@ WebGNOME.
 Summary
 --------
 
-The WebGNOME JavaScript application uses a hybrid architecture that uses AJAX
+The WebGNOME JavaScript application employs a hybrid architecture that uses AJAX
 requests for "view partials" for form markup rendering and submission, and
 Backbone.js models and views for animation controls.
 

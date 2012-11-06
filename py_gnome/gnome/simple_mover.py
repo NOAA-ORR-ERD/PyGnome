@@ -68,7 +68,7 @@ class SimpleMover(object):
         """
         pass
 
-    def get_move(self, spill, time_step, model_time):
+    def get_move(self, spill, time_step, model_time, uncertain_spill_number=0):
         """
         moves the particles defined in the spill object
         
@@ -79,6 +79,7 @@ class SimpleMover(object):
             positions
             status_code
         data arrays.
+        :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
         
         :returns delta: Nx3 numpy array of movement -- in (long, lat, meters) units
         

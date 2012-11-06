@@ -19,9 +19,20 @@ class ModelManager(object):
     def create(self):
         model = Model()
 
-        # Patch the object with an empty `time_steps` array for the time being.
-        # TODO: Add output caching.
+        # Patch the object with an empty ``time_steps`` array for the time being.
+        # TODO: Add output caching in the model.
         model.time_steps = []
+
+        def has_mover_with_id(model, mover_id):
+            """
+            Return True if the model has a mover with the ID ``mover_id``.
+
+            TODO: The manager patches :class:`gnome.model.Model` with this method,
+            but the method should belong to that class.
+            """
+            return int(mover_id) in model._movers
+
+        setattr(model.__class__, 'has_mover_with_id', has_mover_with_id)
 
         self.running_models[model.id] = model
         return model

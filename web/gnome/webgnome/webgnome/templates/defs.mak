@@ -6,6 +6,15 @@
     % endif
 </%def>
 
+<%def name="get_form_id(obj)">
+    <%
+        from webgnome.form_view import FormViewBase
+        form_id = FormViewBase.get_form_id(obj)
+    %>
+
+    ${form_id}
+</%def>
+
 <%def name="form_control(field, help_text=None, label=None)">
     <div class="control-group ${'error' if field.errors else ''}">
         <label class="control-label">

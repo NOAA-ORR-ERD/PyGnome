@@ -9,6 +9,7 @@ from gnome import greenwich
 
 from gnome.utilities.time_utils import round_time
 import numpy as np
+import copy
 
 class Model(object):
     
@@ -20,7 +21,7 @@ class Model(object):
         """ 
         Initializes model attributes. 
         """
-        self.uncertain = False # sets whether uncertainty is on or not.
+        self._uncertain = False # sets whether uncertainty is on or not.
 
         self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
         self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
@@ -60,6 +61,19 @@ class Model(object):
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
 
     ### Assorted properties
+    @property
+    def uncertain(self):
+        return self._uncertain
+    
+    @uncertain.setter
+    def uncertain(self, uncertain_value):
+        """
+        only if uncertainty switch is toggled, then restart model
+        """
+        if self._uncertain != uncertain_value:
+            self._uncertain = uncertain_value
+            self.rewind()   
+    
     @property
     def id(self):
         """
@@ -170,11 +184,7 @@ class Model(object):
         """
         self._spills[spill.id] = spill
         
-        if self.uncertain:
-            uSpill = spill
-            uSpill.is_uncertain = True
-            self._uncertain_spills[spill.id] = uSpill   # should spill ID get updated? Does this effect how movers applies uncertainty?
-
+        
     def setup_model_run(self):
         """
         Sets up each mover for the model run
@@ -183,6 +193,21 @@ class Model(object):
         """
         for mover in self.movers:
             mover.prepare_for_model_run()
+            
+        self._uncertain_spills = OrderedDict()
+        if self.uncertain:
+            self._uncertain_spill_id_map = []   # a list mapping the order in which list is added to it's unique 'id'
+            for spill in self.spills:
+                uSpill = copy.deepcopy(spill)
+                uSpill.is_uncertain = True
+                self._uncertain_spills[uSpill.id] = uSpill   # should spill ID get updated? Does this effect how movers applies uncertainty?
+                
+                if self._uncertain_spill_id_map.count(uSpill.id) != 0:
+                    raise ValueError("An uncertain spill with this id has been defined. spill.id should be unique")
+                 
+                self._uncertain_spill_id_map.append(uSpill.id)
+            
+
     
     def setup_time_step(self):
         """
@@ -202,8 +227,8 @@ class Model(object):
             num_uSpills = len(self.uncertain_spills)
             uSpill_size = np.zeros((num_uSpills,), dtype=np.int)
             
-            for i, spill in self.uncertain_spills:
-                spill.prepare_for_model_step(self.model_time, self.time_step)
+            for i in range(0, num_uSpills):
+                self.uncertain_spills[i].prepare_for_model_step(self.model_time, self.time_step)
                 uSpill_size[i] = spill.num_LEs
         
         # initialize movers differently if model uncertainty is on
@@ -218,51 +243,32 @@ class Model(object):
             -- calls the beaching code to beach the elements that need beaching.
             -- sets the new position
         """
-        # TODO: move following logic to private method, so we're not duplicating code for uncertain spills
-        # Set up next_position
-        for spill in self.spills:
-            spill['next_positions'][:] = spill['positions']
-
-        for mover in self.movers:
-            for spill in self.spills:
-                delta = mover.get_move(spill, self.time_step, self.model_time)
-                spill['next_positions'] += delta
-                # print "in move loop"
-                # print "pos:", spill['positions']
-                # print "next_pos:", spill['next_positions']
-        for spill in self.spills:
-            self.map.beach_elements(spill)
-            # print "in map loop"
-            # print "pos:", spill['positions']
-            # print "next_pos:", spill['next_positions']
-
-        # the final move to the new positions
-        for spill in self.spills:
-            spill['positions'][:] = spill['next_positions']
-        
-        # repeat above for uncertain spills
-        if self.uncertain:
-            # Set up next_position
-            for spill in self.uncertain_spills:
+        for spills in (self.spills,self.uncertain_spills):
+            
+            for spill in spills:
                 spill['next_positions'][:] = spill['positions']
     
+            uncertain_spill_number = -1 # only used by get_move for uncertain spills
             for mover in self.movers:
-                for spill in self.spills:
-                    delta = mover.get_move(spill, self.time_step, self.model_time)
+                for spill in spills:
+                    if spill.is_uncertain:
+                        uncertain_spill_number = self._uncertain_spill_id_map.index((spill.id))
+                        
+                    delta = mover.get_move(spill, self.time_step, self.model_time, uncertain_spill_number)  # spill ID that get_move expects
                     spill['next_positions'] += delta
                     # print "in move loop"
                     # print "pos:", spill['positions']
                     # print "next_pos:", spill['next_positions']
-            for spill in self.uncertain_spill:
+            for spill in spills:
                 self.map.beach_elements(spill)
                 # print "in map loop"
                 # print "pos:", spill['positions']
                 # print "next_pos:", spill['next_positions']
     
             # the final move to the new positions
-            for spill in self.uncertain_spills:
+            for spill in spills:
                 spill['positions'][:] = spill['next_positions']
-
+        
 
     def step_is_done(self):
         """

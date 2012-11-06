@@ -1,114 +1,76 @@
 """
 forms.py: Forms for the webgnome package.
 """
-import datetime
+import gnome.movers
 
 from wtforms import (
     Form,
     SelectField,
-    DateTimeField,
     IntegerField,
     FloatField,
     BooleanField,
     TextField,
-    HiddenField
+    ValidationError
 )
-
-from wtforms.widgets import TextInput
 
 from wtforms.validators import (
     Required,
     NumberRange
 )
 
+from object_form import ObjectForm
+from form_base import AutoIdForm, DateTimeForm
 
-class DatePickerWidget(TextInput):
+
+class DeleteMoverForm(AutoIdForm):
     """
-    A widget that assigns itself a CSS class needed to render a jQuery UI
-    date picker.
+    Delete mover with ``mover_id``. Validates that a mover with that ID exists
+    in ``self.model``.
+
+    This is a hidden form submitted via AJAX by the JavaScript client.
     """
-    def __call__(self, field, **kwargs):
-        kwargs['class']  = 'date'
-        return super(DatePickerWidget, self).__call__(field, **kwargs)
+    mover_id = IntegerField()
+
+    def __init__(self, model, *args, **kwargs):
+        self.model = model
+        super(DeleteMoverForm, self).__init__(*args, **kwargs)
+
+    def mover_id_validate(self, field):
+        mover_id = field.data
+
+        if mover_id is None or self.model.has_mover_with_id(mover_id) is False:
+            raise ValidationError('Mover with that ID does not exist')
 
 
-class LeadingZeroNumberWidget(TextInput):
+class DeleteSpillForm(AutoIdForm):
     """
-    A widget that will pad single-digit numbers with leading zeroes.
+    Delete spill with ``spill_id``. Validates that a spill with that ID exists
+    in ``self.model``.
 
-    To use, create a subclass and provide the class variable `cast_to`, which
-    should be a callable used to cast the field's value, e.g.:
-
-            class IntegerLeadingZeroWidget(LeadingZeroNumberWidget):
-                cast_to = int
-
-    The result for, e.g. an `IntegerLeadingZeroWidget`:
-
-            User input: 1
-            Result of calling the widget: 01
-
-    This widget is used primarily to adjust user input so that it may be fed
-    directly into a `datetime.datetime` or `datetime.date` constructor for, e.g.,
-    an hour or minute value.
+    This is a hidden form submitted via AJAX by the JavaScript client.
     """
-    def cast_to(self, number):
-        raise NotImplementedError
+    spill_id = IntegerField()
 
-    def cast(self, number):
-        """
-        Try to use the class's `cast_to` value to cast `number`.
+    def __init__(self, model, *args, **kwargs):
+        self.model = model
+        super(DeleteSpillForm, self).__init__(*args, **kwargs)
 
-        Return the casted value if it worked; otherwise return None.
-        """
-        try:
-            number = self.cast_to(number)
-        except TypeError:
-            # Not a suitable value.
-            return None
-        return number
+    def spill_id_validate(self, field):
+        spill_id = field.data
 
-    def __call__(self, field, **kwargs):
-        if 'value' not in kwargs:
-            kwargs['value'] = field._value()
-
-        # The value must be cast to a data type than works with "%02d" first.
-        safe_value = self.cast(kwargs['value'])
-        if safe_value:
-            kwargs['value'] = "%02d" % safe_value
-
-        return super(LeadingZeroNumberWidget, self).__call__(field, **kwargs)
+        if spill_id is None or self.model.has_spill_with_id(spill_id) is False:
+            raise ValidationError('Spill with that ID does not exist')
 
 
-
-class LeadingZeroFloatWidget(LeadingZeroNumberWidget):
-    cast_to = float
-
-
-class LeadingZeroIntegerWidget(LeadingZeroNumberWidget):
-    cast_to = int
-
-
-MOVER_CONSTANT_WIND = 'constant_wind_mover'
-MOVER_VARIABLE_WIND = 'variable_wind_mover'
-
-
-class AddMoverForm(Form):
+class WindMoverForm(ObjectForm, DateTimeForm):
     """
-    The initial form used in a multi-step process for adding a mover to the
-    user's running model. This step asks the user to choose the type of mover
-    to add.
-    """
-    mover_type = SelectField('Type', choices=(
-        (MOVER_CONSTANT_WIND, 'Winds - Constant'),
-        (MOVER_VARIABLE_WIND, 'Winds - Variable')
-    ))
+    A form class representing a :class:`gnome.mover.WindMover` object.
 
+    This form is used for both "variable" and "constant" wind movers, the
+    difference being the number of time series values entered.
+    """
+    wrapped_class = gnome.movers.WindMover
 
-class WindMoverForm(Form):
-    """
-    A form base class containing fields common to `VariableWindMoverForm` and
-    `ConstantWindMoverForm`
-    """
     SPEED_KNOTS = 'knots'
     SPEED_METERS = 'meters'
     SPEED_MILES = 'miles'
@@ -127,6 +89,7 @@ class WindMoverForm(Form):
         (SCALE_DEGREES, 'deg')
     )
 
+    auto_increment_time_by = IntegerField('Auto-increment time by')
     speed = IntegerField('Speed', default=0, validators=[NumberRange(min=0)])
     speed_type = SelectField(
         choices=SPEED_CHOICES,
@@ -152,57 +115,24 @@ class WindMoverForm(Form):
     )
 
 
-class DateTimeForm(Form):
+class AddMoverForm(Form):
     """
-    A form base class that has a `date` field and two fields to choose hour
-    and minute. Taken together, the values can be passed into a
-    `datetime.datetime` constructor.
+    The initial form used in a multi-step process for adding a mover to the
+    user's running model. This step asks the user to choose the type of mover
+    to add.
     """
-    date = DateTimeField('Date', widget=DatePickerWidget(),
-                     format="%m/%d/%Y",
-                     validators=[Required()],
-                     default=datetime.date.today())
-    hour = IntegerField(widget=LeadingZeroIntegerWidget(),
-                        validators=[NumberRange(min=0, max=24)],
-                        default=lambda: datetime.datetime.now().hour)
-    minute = IntegerField(widget=LeadingZeroIntegerWidget(),
-                          validators=[NumberRange(min=0, max=60)],
-                          default=lambda: datetime.datetime.now().minute)
-
-    def get_datetime(self):
-        """
-        Return a `datetime.datetime` value set to time `self.hour`:`self.minute`
-        if the user specified those values, else 00:00.
-        """
-        date = self.date.data
-
-        return datetime.datetime(
-            year=date.year,
-            month=date.month,
-            day=date.day,
-            hour=self.hour.data,
-            minute=self.minute.data)
-
-
-class ConstantWindMoverForm(WindMoverForm):
-    """
-    A form for adding a constant wind mover to the user's running model.
-    """
-    type = HiddenField(default=MOVER_CONSTANT_WIND)
-
-
-class VariableWindMoverForm(WindMoverForm, DateTimeForm):
-    """
-    A form for adding a variable wind mover to the user's running model.
-    """
-    type = HiddenField(default=MOVER_VARIABLE_WIND)
-    auto_increment_time_by = IntegerField('Auto-increment time by')
+    mover_type = SelectField('Type', choices=(
+        (WindMoverForm.get_id(), 'Winds'),
+    ))
 
 
 class RunModelUntilForm(DateTimeForm):
     """
     A form for submitting a step that the user wishes to run his or her model
     until.
+
+    TODO: This form should validate that the given date and time value are
+    a valid time step in the model.
     """
     pass
 

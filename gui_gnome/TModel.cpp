@@ -84,6 +84,7 @@ Boolean EqualTModelDialogVariables(TModelDialogVariables* var1,TModelDialogVaria
 TModel::TModel(Seconds start)
 {
 	stepsCount = 0;
+	outputStepsCount = 0;
 	ncSnapshot = false;
 	writeNC = false;
 	fDrawMovement = 0;//JLM
@@ -2758,6 +2759,43 @@ OSErr TModel::SaveOutputSeriesFiles(Seconds oldTime,Boolean excludeRunBarFile)
 		}
 	}
 	/////////////////////////////////////////////////
+	if (writeNC)
+	{
+		if(bTimeZero) {
+			NetCDFStore::Create(this->ncPath, true, &this->ncID);
+			NetCDFStore::Define(this, false, &this->ncVarIDs, &this->ncDimIDs);
+			NetCDFStore::Capture(this, false, &this->ncVarIDs, &this->ncDimIDs);
+			if(this->IsUncertain()) {
+				NetCDFStore::Create(this->ncPathConfidence, true, &this->ncID_C);
+				NetCDFStore::Define(this, true, &this->ncVarIDs_C, &this->ncDimIDs_C);
+				NetCDFStore::Capture(this, true, &this->ncVarIDs_C, &this->ncDimIDs_C);
+			}
+		}
+		
+		
+		//if (oldTime != fDialogVariables.startTime)
+		else
+		{
+			//nowIndex = (modelTime - fDialogVariables.startTime) / fOutputTimeStep;
+			//oldIndex = (oldTime - fDialogVariables.startTime)   / fOutputTimeStep;
+			nowIndex = (timeSinceModelStart) / fOutputTimeStep;
+			oldIndex = (previousTimeSinceModelStart)   / fOutputTimeStep;
+			if(nowIndex > oldIndex/* || bTimeZero*/)
+			{
+				if(this->writeNC) {
+					NetCDFStore::Capture(this, false, &this->ncVarIDs, &this->ncDimIDs);
+					if(this->IsUncertain())
+						NetCDFStore::Capture(this, true, &this->ncVarIDs, &this->ncDimIDs);
+				}
+				// we should return error
+				/*if(err)
+				{ 	// since we are supposed to be saving files, this seems like an error worth stopping for
+					return err; 
+				}*/
+			}
+		}
+	}
+	/////////////////////////////////////////////////
 	if (bMakeMovie)
 	{	// JLM, I think movies should use the same outputTimeStep as the saved LEs for TAT
 		//if (oldTime != fDialogVariables.startTime)
@@ -3481,7 +3519,7 @@ OSErr TModel::Step ()
 		ResetAllRandomSeeds(); 
 		//
 		
-		if(this->writeNC) {
+		/*if(this->writeNC) {
 			NetCDFStore::Create(this->ncPath, true, &this->ncID);
 			NetCDFStore::Define(this, false, &this->ncVarIDs, &this->ncDimIDs);
 			NetCDFStore::Capture(this, false, &this->ncVarIDs, &this->ncDimIDs);
@@ -3490,7 +3528,7 @@ OSErr TModel::Step ()
 				NetCDFStore::Define(this, true, &this->ncVarIDs_C, &this->ncDimIDs_C);
 				NetCDFStore::Capture(this, true, &this->ncVarIDs_C, &this->ncDimIDs_C);
 			}
-		}
+		}*/
 		
 		err = this->FirstStepUserInputChecks();
 		if(err) goto ResetPort;
@@ -3920,11 +3958,11 @@ OSErr TModel::Step ()
 
 	
 	this->currentStep++;
-	if(this->writeNC) {
+	/*if(this->writeNC) {
 		NetCDFStore::Capture(this, false, &this->ncVarIDs, &this->ncDimIDs);
 		if(this->IsUncertain())
 			NetCDFStore::Capture(this, true, &this->ncVarIDs, &this->ncDimIDs);
-	}
+	}*/
 	
 	
 	if(!gSuppressDrawing)
@@ -5127,7 +5165,25 @@ OSErr TModel::HandleCreateSpillMessage(TModelMessage *message)
 		}
 	}
 	
+	if (!bUseLEsFromFile)
+	{	// do some error checking
+		Boolean bWantEndRelPosition = (!EqualWPoints(startRelPos,endRelPos));
+		if(!IsWaterPoint(startRelPos)) {
+			printError("The release start position must be in the water."); 
+			goto done;}
 	
+		if(!IsAllowableSpillPoint(startRelPos)){
+			printError("This map has not been set up for spills in the area of your release start position.");
+			goto done;}
+	
+		if(bWantEndRelPosition && !IsWaterPoint(endRelPos)) {
+			printError("The release end position must be in the water."); 
+		goto done;}
+		
+		if(bWantEndRelPosition && !IsAllowableSpillPoint(endRelPos)){				
+			printError("This map has not been set up for spills in the area of your release end position."); 
+			goto done;}
+	}
 	
 	// set the spill
 	if(!bUseLEsFromFile)  // JLM 2/13/01
@@ -5637,6 +5693,28 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	
 	saveOutputStep = this -> GetOutputStep();
 	this -> SetOutputStep((long)(outputStepInMinutes*60)); // convert to seconds
+	
+
+	if (!bUseLEsFromFile && !bEverythingSetAsDesiredByHand)
+	{	// do some error checking
+		Boolean bWantEndRelPosition = (!EqualWPoints(startRelPos,endRelPos));
+		if(!IsWaterPoint(startRelPos)) {
+			printError("The release start position must be in the water."); 
+			goto done;}
+		
+		if(!IsAllowableSpillPoint(startRelPos)){
+			printError("This map has not been set up for spills in the area of your release start position.");
+			goto done;}
+		
+		if(bWantEndRelPosition && !IsWaterPoint(endRelPos)) {
+			printError("The release end position must be in the water."); 
+			goto done;}
+		
+		if(bWantEndRelPosition && !IsAllowableSpillPoint(endRelPos)){				
+			printError("This map has not been set up for spills in the area of your release end position."); 
+			goto done;}
+	}
+	
 	
 	// set the spill
 	if(!bUseLEsFromFile && !bEverythingSetAsDesiredByHand)  // JLM 2/13/01
@@ -7147,7 +7225,10 @@ OSErr TModel::Run (Seconds stopTime)
 	this->currentStep = 0;
 	this->stepsCount =	ceil((float)fDialogVariables.duration / 
 							 fDialogVariables.computeTimeStep);
+	this->outputStepsCount =	ceil((float)fDialogVariables.duration / 
+							 this->GetOutputStep());
 	this->stepsCount++;
+	this->outputStepsCount++;
 	if(bHindcast || this->modelTime > this->GetStartTime())
 		this->writeNC = false;
 	
