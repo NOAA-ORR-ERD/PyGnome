@@ -176,9 +176,12 @@ class WindMover(PyMover):
         """
         return 'Wind Mover'
 
-    def get_move(self, spill, time_step, model_time_datetime):
+    def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
         """
-        TODO: Currently, spill_id is 0. This needs to be updated!
+        :param spill: spill object
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as date time object
+        :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
         """
         self.prepare_data_for_get_move(spill, model_time_datetime)
         try:
@@ -193,7 +196,7 @@ class WindMover(PyMover):
                               windage,
                               self.status_codes,
                               self.spill_type,
-                              0)
+                              uncertain_spill_number)
         return self.delta
 
 
@@ -234,9 +237,12 @@ class RandomMover(PyMover):
         model_time = PyMover.datetime_to_seconds(self, model_time_datetime)
         self.mover.prepare_for_model_step(model_time, time_step)
     
-    def get_move(self, spill, time_step, model_time_datetime):
+    def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
         """
-        TODO: Currently, spill_id is 0. This needs to be updated!
+        :param spill: spill object
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as date time object
+        :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
         """
         self.prepare_data_for_get_move(spill, model_time_datetime)
         
@@ -246,6 +252,6 @@ class RandomMover(PyMover):
                               self.delta,
                               self.status_codes,
                               self.spill_type,
-                              0)
+                              uncertain_spill_number)
         return self.delta
     

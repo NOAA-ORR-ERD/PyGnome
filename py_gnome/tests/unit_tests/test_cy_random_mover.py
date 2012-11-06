@@ -67,17 +67,27 @@ class TestRandom():
         assert np.all(self.delta['lat'] != 0)
         assert np.all(self.delta['long'] != 0)
         
+    def test_zero_coef(self):
+        """
+        ensure no move for 0 diffusion coefficient 
+        """
+        self.rm.diffusion_coef = 0
+        new_delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
+        self.move(new_delta)
+        self.rm.diffusion_coef = 100000        
+        assert np.all(new_delta.view(dtype=np.double).reshape(1,-1) == 0)
+        
     def test_update_coef(self):
         """
         For now just test that the move is different from original move
         """
-        self.rm.diffusion_coef = 200000
-        assert self.rm.diffusion_coef == 200000 
+        self.rm.diffusion_coef = 10
+        assert self.rm.diffusion_coef == 10 
         
         new_delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(new_delta)
-        print new_delta
         print self.delta
+        print new_delta
         assert np.all(self.delta['lat'] != new_delta['lat'])
         assert np.all(self.delta['long'] != new_delta['long'])
         
