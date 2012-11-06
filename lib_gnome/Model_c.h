@@ -85,7 +85,7 @@ public:
 	char 		fSnapShotFileName[256];
 	
 	Boolean bHindcast, writeNC, ncSnapshot;
-	int ncID, ncID_C, stepsCount, currentStep;
+	int ncID, ncID_C, stepsCount, currentStep, outputStepsCount;
 	map<string, int> ncVarIDs, ncDimIDs, ncVarIDs_C, ncDimIDs_C;
 	char ncPath[256], ncPathConfidence[256];
 	

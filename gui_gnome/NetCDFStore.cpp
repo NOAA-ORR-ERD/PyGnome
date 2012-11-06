@@ -227,7 +227,8 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	else
 		ncID = model->ncID_C;
 	
-    ncErr = nc_def_dim(ncID, "time", model->stepsCount, tTime);
+   // ncErr = nc_def_dim(ncID, "time", model->stepsCount, tTime);
+    ncErr = nc_def_dim(ncID, "time", model->outputStepsCount, tTime);
     if(!CheckNC(ncErr)) return false; // handle error. 
 
 	ncErr = nc_def_dim(ncID, "data", NC_UNLIMITED, tData);
