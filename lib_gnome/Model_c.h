@@ -122,6 +122,7 @@ public:
 	Seconds 			GetRunDuration () { return modelTime - fDialogVariables.startTime; }		// zero-based current time
 	 TMover*				GetMover(char* moverName);
 	 TMover*				GetMover(ClassID desiredClassID);
+	TMover*				GetMoverExact(ClassID desiredClassID);
 	 TMap*				GetMap(char* mapName);
 	 TMap*				GetMap(ClassID desiredClassID);
 	 TLEList*			GetMirroredLEList(TLEList* owner);

@@ -215,7 +215,7 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 	}
 	else if(message->IsMessage(M_CREATEMOVER,ourName)) 
 	{
-		char moverName[kMaxNameLen];
+		char moverName[kMaxNameLen]="";
 		char typeName[64];
 		char path[256];
 		char msg[512];
@@ -232,6 +232,7 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 		if(!strcmpnocase(typeName,"Random")) mover = new TRandom(dynamic_cast<TMap *>(this), moverName);
 		else if(!strcmpnocase(typeName,"Wind")) 
 		{
+			//if (!moverName[0]) strcpy(moverName,"Variable Wind");
 			TWindMover *newWindMover = new TWindMover(dynamic_cast<TMap *>(this), moverName);
 			
 			if (!newWindMover)  err = memFullErr;
