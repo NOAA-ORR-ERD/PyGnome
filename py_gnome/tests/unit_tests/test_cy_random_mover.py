@@ -52,7 +52,7 @@ class TestRandom():
     def move(self, delta): 
         self.rm.prepare_for_model_run()
         
-        self.rm.prepare_for_model_step(self.cm.model_time, self.cm.time_step, False)
+        self.rm.prepare_for_model_step(self.cm.model_time, self.cm.time_step)
         self.rm.get_move( self.cm.model_time,
                           self.cm.time_step, 
                           self.cm.ref,
