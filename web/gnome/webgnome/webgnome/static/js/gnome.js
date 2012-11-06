@@ -1933,6 +1933,7 @@ var AppView = Backbone.View.extend({
 
     moverChosen: function(moverType) {
         var formView = this.formViews[moverType];
+        log(this.formViews)
 
         if (formView === undefined) {
             return;
