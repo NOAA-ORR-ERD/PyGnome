@@ -54,20 +54,14 @@ class PyMover(object):
         self.model_time = self.datetime_to_seconds(model_time_datetime)
         if uncertain_spills_count < 0:
             raise ValueError("The uncertain_spills_count cannot be less than 0")
-        elif uncertain_spills_count == 0:
+        elif uncertain_spills_count > 0:
             """" preparing for a certainty spill """
-            self.spill_type = basic_types.spill_type.forecast
-        else:
-            self.spill_type = basic_types.spill_type.uncertainty
-            
             if uncertain_spills_size is None:
-                raise ValueError("uncertain_spills_size is invalid for the input uncertain_spills_count")
+                raise ValueError("uncertain_spills_size cannot be None if uncertain_spills_count is greater than 0")
             
             if len(uncertain_spills_size) != uncertain_spills_count:
                 raise ValueError("uncertain_spills_size needs an entry for each of the uncertain spills")
         
-        # TODO: would be nice to save self.uncertain_spills_size for each step and check the spills.num_LEs match
-        # when get_move is called. 
         self.mover.prepare_for_model_step(self.model_time, time_step, uncertain_spills_count, uncertain_spills_size)
 
     def prepare_data_for_get_move(self, spill, model_time_datetime):
@@ -83,6 +77,11 @@ class PyMover(object):
         try:
             self.positions      = spill['positions']
             self.status_codes   = spill['status_codes']
+            
+            if spill.is_uncertain:
+                self.spill_type = basic_types.spill_type.uncertainty
+            else:
+                self.spill_type = basic_types.spill_type.forecast
             
             # make sure prepare_for_model_step was setup correctly for an uncertainty spill
             if self.spill_type is basic_types.spill_type.forecast:
@@ -230,16 +229,10 @@ class RandomMover(PyMover):
 
     def prepare_for_model_step(self, model_time_datetime, time_step, uncertain_spills_count=0, uncertain_spills_size=None):
         """
-        This mover only needs to know if spill is uncertain or not; however, it has the same signature as movers that require
-        this info. Perhaps it is best to put the uncertain flag in the prepare_for_model_step
+        Random mover does not use uncertainty for anything during prepare_for_model_step(...)
         """
         model_time = PyMover.datetime_to_seconds(self, model_time_datetime)
-        if uncertain_spills_count != 0:
-            self.spill_type = basic_types.spill_type.uncertain
-            self.mover.prepare_for_model_step(model_time, time_step, uncertain=True)
-        else:
-            self.spill_type = basic_types.spill_type.forecast
-            self.mover.prepare_for_model_step(model_time, time_step, uncertain=False)
+        self.mover.prepare_for_model_step(model_time, time_step)
     
     def get_move(self, spill, time_step, model_time_datetime):
         """
