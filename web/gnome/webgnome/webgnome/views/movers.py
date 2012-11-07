@@ -5,8 +5,8 @@ import gnome.basic_types
 from pyramid.renderers import render
 from pyramid.view import view_config
 
-from webgnome.forms import AddMoverForm, DeleteMoverForm, WindMoverForm
 from webgnome import util
+from webgnome.forms.movers import AddMoverForm, DeleteMoverForm, WindMoverForm
 
 
 # A map of :mod:`gnome` objects to route names, for use looking up the route
@@ -122,12 +122,12 @@ def update_wind_mover(request, model):
 
 def _create_wind_mover_post(model, form):
     # TODO: Validate form input.
-    time_val = numpy.zeros((1,), dtype=gnome.basic_types.time_value_pair)
+    time_series = numpy.zeros((1,), dtype=gnome.basic_types.datetime_value_pair)
 
     # Since it is just constant, just give it 0 time
-    time_val['time'][0] = 0
-    time_val['value'][0] = (0., 100.)
-    mover = gnome.movers.WindMover(timeseries=time_val)
+    time_series['time'][0] = 0
+    time_series['value'][0] = (0., 100.)
+    mover = gnome.movers.WindMover(timeseries=time_series)
 
     return {
         'id': model.add_mover(mover),

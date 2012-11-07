@@ -4,8 +4,8 @@
 <%include file="forms/wind_mover.mak" args="form=wind_mover_form, action_url=wind_mover_form_url"/>
 
 % for url, form in mover_update_forms:
-    <% import webgnome.forms %>
-    % if form.__class__ == webgnome.forms.WindMoverForm:
+    <% from webgnome.forms import movers %>
+    % if form.__class__ == movers.WindMoverForm:
         <%include file="forms/wind_mover.mak" args="form=form, action_url=url"/>
     % endif
 % endfor

@@ -1,5 +1,4 @@
-from webgnome import form_view
-
+from webgnome.forms.object_form import ObjectForm, get_object_form
 from base import UnitTestBase
 
 
@@ -11,49 +10,42 @@ class TestObject2(object):
     id = 1
 
 
-class TestFormView(form_view.FormViewBase):
+class TestObjectForm(ObjectForm):
     wrapped_class = TestObject
 
 
-class FormViewTests(UnitTestBase):
-    def test_form_view_gets_form_id_for_object_class(self):
-        request = self.get_request()
-        TestFormView(request)
+class ObjectFormTests(UnitTestBase):
+    def test_get_object_form_returns_form_class_for_wrapped_class(self):
+        TestObjectForm()
+        self.assertEqual(get_object_form(TestObject), TestObjectForm)
 
-        self.assertEqual(form_view.get_form_container_id(TestObject), 'TestObject_create')
-
-    def test_form_view_gets_form_id_for_object_instance(self):
+    def test_get_object_form_returns_form_class_for_wrapped_class_instance(self):
+        TestObjectForm()
         obj = TestObject()
-        request = self.get_request()
-        TestFormView(request)
+        self.assertEqual(get_object_form(obj), TestObjectForm)
 
-        self.assertEqual(
-            form_view.get_form_container_id(obj), 'TestObject_update_1')
+    def test_get_object_form_returns_none_for_objects_without_an_object_form(self):
+        obj = TestObject2()
+        self.assertEqual(get_object_form(obj), None)
+
+    def test_get_id_returns_form_id_for_wrapped_class_by_default(self):
+        TestObjectForm()
+        form_id = get_object_form(TestObject).get_id()
+        self.assertEqual(form_id, 'TestObjectForm')
+
+    def test_get_id_returns_id_for_object_instance(self):
+        obj = TestObject()
+        form_id = get_object_form(obj).get_id(obj)
+        self.assertEqual(form_id, 'TestObjectForm_1')
 
         obj.id = 2
+        form_id = get_object_form(obj).get_id(obj)
+        self.assertEqual(form_id, 'TestObjectForm_2')
 
-        self.assertEqual(
-            form_view.get_form_container_id(obj), 'TestObject_update_2')
-
-    def test_form_view_ignores_objects_of_wrong_type(self):
-        obj = TestObject2()
-        request = self.get_request()
-        TestFormView(request)
-
-        self.assertEqual(form_view.get_form_container_id(obj), None)
-
-    def test_form_view_uses_form_name_if_given(self):
-        obj = TestObject()
-        request = self.get_request()
-        TestFormView(request)
-
-        self.assertEqual(
-            form_view.get_form_container_id(obj, 'delete'), 'TestObject_delete_1')
-
-    def test_form_view_requires_wrapped_class_attr(self):
+    def test_object_form_requires_wrapped_class_attr(self):
         def fail():
             # Trying to define this class will fail.
-            class TestFormView2(form_view.FormViewBase):
+            class BadObjectForm(ObjectForm):
                 pass
 
         self.assertRaises(AttributeError, fail)

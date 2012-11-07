@@ -1,13 +1,18 @@
 """
 object_form.py: A :class:`wtforms.Form` subclass that wraps an object.
 """
-from wtforms import Form
-
-from form_base import AutoIdForm
 from wtforms.form import FormMeta
 
+from webgnome import util
+from base import AutoIdForm
 
-object_form_classes = {}
+
+_object_form_classes = {}
+
+
+def get_object_form(obj):
+    obj_class = util.get_obj_class(obj)
+    return _object_form_classes.get(obj_class, None)
 
 
 class ObjectFormMetaclass(FormMeta):
@@ -26,7 +31,7 @@ class ObjectFormMetaclass(FormMeta):
 
         wrapped_class = dct['wrapped_class']
 
-        if wrapped_class in object_form_classes:
+        if wrapped_class in _object_form_classes:
             raise RuntimeError(
                 "Form view already defined for %s" % wrapped_class)
 
@@ -35,7 +40,7 @@ class ObjectFormMetaclass(FormMeta):
 
         if wrapped_class:
             # Register this object form class as handling ``wrapped_class``.
-            object_form_classes[wrapped_class] = instance
+            _object_form_classes[wrapped_class] = instance
 
         return instance
 
@@ -44,8 +49,8 @@ class ObjectForm(AutoIdForm):
     """
     A form that "wraps" a class.
 
-    An :class:`ObjectForm` subclass may be looked up for an object instance
-    at runtime.
+    An :class:`ObjectForm` subclass that may be looked up by ``wrapped_class``
+    or an instance of ``wrapped_class`` at runtime.
     """
     wrapped_class = None
     __metaclass__ = ObjectFormMetaclass

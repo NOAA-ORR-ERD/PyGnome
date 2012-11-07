@@ -4,16 +4,16 @@ import datetime
 from pyramid.renderers import render
 from pyramid.view import view_config
 
-from webgnome.forms import (
-    RunModelUntilForm,
-    ModelSettingsForm,
+from webgnome.forms.movers import (
     AddMoverForm,
     WindMoverForm,
     DeleteMoverForm
 )
 
-from webgnome import util
+from webgnome.forms.model import RunModelUntilForm, ModelSettingsForm
+from webgnome.forms import object_form
 from webgnome.navigation_tree import NavigationTree
+from webgnome import util
 from webgnome.views import movers
 
 
@@ -50,7 +50,7 @@ def model_forms(request, model):
             continue
 
         update_route = routes.get('update', None)
-        update_form = util.get_object_form(mover)
+        update_form = object_form.get_object_form(mover)
 
         if update_route and update_form:
             update_url = request.route_url(update_route, id=mover.id)
@@ -138,6 +138,7 @@ def model_settings(request, model):
     form = ModelSettingsForm(request.POST)
 
     if request.method == 'POST' and form.validate():
+
         return {
             'form_html': None
         }
