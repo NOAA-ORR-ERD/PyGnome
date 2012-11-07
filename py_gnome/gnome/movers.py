@@ -128,19 +128,21 @@ class WindMover(PyMover):
         
         if( timeseries != None):
             try:
-                if( timeseries.dtype is not basic_types.time_value_pair):
+                if( timeseries.dtype is not basic_types.datetime_value_pair):
                     # Should this be 'is' or '==' - both work in this case. There is only one instance of basic_types.time_value_pair 
-                    raise ValueError("timeseries must be a numpy array containing basic_types.time_value_pair dtype")
+                    raise ValueError("timeseries must be a numpy array containing basic_types.datetime_value_pair dtype")
             
             except AttributeError as err:
                 raise AttributeError("timeseries is not a numpy array. " + err.message)
             
-            self.ossm = CyOSSMTime(timeseries=timeseries) # this has same scope as CyWindMover object
+            # convert datetime_value_pair to time_value_pair
+            time_value_pair = self._datetime_value_to_time_value(timeseries)
+            self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             
         else:
-            self.ossm = CyOSSMTime(path=file)
+            self.ossm = CyOSSMTime(path=file,file_contains=basic_types.file_contains.magnitude_direction)
         
-        if len(timeseries) == 1:
+        if len(self.timeseries) == 1:
             self.constant_wind = True
         else:
             self.constant_wind = False
@@ -158,12 +160,41 @@ class WindMover(PyMover):
 
     @property
     def timeseries(self):
-        return self.ossm.timeseries
+        datetimeval = self._time_value_to_datetime_value(self.ossm.timeseries)
+        return datetimeval
     
     @timeseries.setter
-    def timeseries(self, value):
-       self.ossm.timeseries = value
+    def timeseries(self, datetime_value):
+        timeval = self._datetime_value_to_time_value(datetime_value)
+        self.ossm.timeseries = timeval
 
+    def _datetime_value_to_time_value(self, datetime_value_pair):
+        """
+        convert the datetime_value_pair array to a time_value_pair array
+        """
+        timeval = np.zeros((len(datetime_value_pair),), dtype=basic_types.time_value_pair)
+        timeval['value'] = datetime_value_pair['value']
+        ix = 0  # index into array
+        for val in datetime_value_pair['time'].astype(object):
+            timeval['time'][ix] = time_utils.date_to_sec( val)
+            ix += 1
+            
+        return timeval
+        
+    def _time_value_to_datetime_value(self, time_value_pair):
+        """
+        convert the time_value_pair array to a datetime_value_pair array
+        """
+        datetimeval = np.zeros((len(time_value_pair),), dtype=basic_types.datetime_value_pair)
+        datetimeval['value'] = time_value_pair['value']
+        ix = 0  # index into array
+        for val in time_value_pair['time']:
+            date = time_utils.round_time(time_utils.sec_to_date(val), roundTo=1)
+            datetimeval['time'][ix] = np.datetime64(date.isoformat())
+            ix += 1
+            
+        return datetimeval
+    
     def get_time_value(self, datetime):
         time_sec = self.datetime_to_seconds(datetime)
         return self.ossm.get_time_value(time_sec)
