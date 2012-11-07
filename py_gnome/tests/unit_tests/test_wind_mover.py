@@ -7,8 +7,7 @@ from gnome.utilities import projections
 
 import numpy as np
 
-import datetime
-from datetime import timedelta
+from datetime import timedelta, datetime
 import pytest
 
 
@@ -21,6 +20,32 @@ def test_exceptions():
         wind_vel = np.zeros((1,), basic_types.velocity_rec)
         movers.WindMover(timeseries=wind_vel)
 
+def test_read_file_init():
+    """
+    initialize from a long wind file
+    """
+    file = r"SampleData/WindDataFromGnome.WND"
+    wm = movers.WindMover(file=file)
+    assert True
+
+def test_timeseries():
+    """
+    initialize from timeseries and update value
+    """
+    now = time_utils.round_time( datetime.now(), roundTo=1)   # WindMover rounds data to 1 sec
+    val = np.zeros((2,), dtype=basic_types.datetime_value_pair)
+    val['time'] = np.datetime64(now.isoformat())
+    val['time'][1] = val['time'][1].astype(object) + timedelta(hours=3)
+    
+    val['value']['u'] = (0,100)
+    val['value']['v'] = (50,10)
+          
+    wm  = movers.WindMover(timeseries=val)
+    print val
+    print "------------"
+    print wm.timeseries
+    np.testing.assert_equal(wm.timeseries['time'], val['time'], "time provided during initialization does not match the time in WindMover.timeseries")
+    np.testing.assert_equal(wm.timeseries['value'], val['value'], "velocity_rec returned by WindMover.timeseries is not the same as what was input during initialization")
 
 class TestWindMover():
     """
@@ -31,14 +56,14 @@ class TestWindMover():
     num_le = 5
     start_pos = np.zeros((num_le,3), dtype=basic_types.world_point_type)
     start_pos += (3.,6.,0.)
-    rel_time = datetime.datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
+    rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
     model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
     time_step = 15*60 # seconds
 
     pSpill = spill.PointReleaseSpill(num_le, start_pos, rel_time, persist=-1)
 
-    time_val = np.zeros((1,), dtype=basic_types.time_value_pair)
-    time_val['time'][0] = 0  # since it is just constant, just give it 0 time
+    time_val = np.zeros((1,), dtype=basic_types.datetime_value_pair)
+    time_val['time'][0] = np.datetime64( rel_time.isoformat() )
     time_val['value'][0] = (0., 100.)
 
     wm = movers.WindMover(timeseries=time_val)
@@ -84,8 +109,6 @@ class TestWindMover():
     def test_update_wind_vel(self):
         self.time_val['value'][0] = (10., 50.)
         self.wm.timeseries = self.time_val   # update time series
-        #print "Check updated timeseries in C++" + str(self.wm.timeseries)
-        #print "WindMover.get_time_value C++:" + str( self.wm.get_time_value(self.model_time))
         self.test_get_move()
     
     def _expected_move(self):
