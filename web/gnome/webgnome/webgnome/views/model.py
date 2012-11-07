@@ -17,21 +17,22 @@ from webgnome.navigation_tree import NavigationTree
 from webgnome.views import movers
 
 
-@view_config(route_name='model_forms', renderer='model_forms.mak')
+@view_config(route_name='model_forms', renderer='gnome_json')
+@util.json_require_model
 def model_forms(request, model):
     """
     A partial view that renders all of the add and edit forms for ``model``,
     including settings, movers and spills.
     """
-    data = {
+    context = {
         'run_model_until_form': RunModelUntilForm(),
         'run_model_until_form_url': request.route_url('run_model_until'),
         'settings_form': ModelSettingsForm(),
         'settings_form_url': request.route_url('model_settings'),
         'add_mover_form': AddMoverForm(),
-        'add_mover_form_id': 'add_mover',
         'wind_mover_form': WindMoverForm(),
         'wind_mover_form_url': request.route_url('create_wind_mover'),
+        'form_view_container_id': 'modal-container',
         'mover_update_forms': [],
         'mover_delete_forms': []
     }
@@ -40,21 +41,27 @@ def model_forms(request, model):
     for mover in model.movers:
         delete_form = DeleteMoverForm(model, obj=mover)
         delete_url = request.route_url('delete_mover')
-        data['mover_delete_forms'].append(
+        context['mover_delete_forms'].append(
             (delete_url, delete_form))
 
-        update_route = movers.form_routes.get(mover.__class__, None)
+        routes = movers.form_routes.get(mover.__class__, None)
+
+        if not routes:
+            continue
+
+        update_route = routes.get('update', None)
         update_form = util.get_object_form(mover)
 
         if update_route and update_form:
-            update_url = request.route_url(update_route, mover.id)
-            data['mover_update_forms'].append(
+            update_url = request.route_url(update_route, id=mover.id)
+            context['mover_update_forms'].append(
                 (update_url, update_form(obj=mover)))
 
         # TODO: Spill forms.
 
-    return data
-
+    return {
+        'html': render('model_forms.mak', context, request)
+    }
 
 @view_config(route_name='show_model', renderer='model.mak')
 def show_model(request):
@@ -80,14 +87,14 @@ def show_model(request):
                               'available. We created a new one for you.'
 
     data['model'] = model
-    data['model_form_html'] = render(
-        'model_forms.mak', model_forms(request, model), request)
+    data['model_form_html'] = model_forms(request)['html']
 
      # TODO: Remove this after we decide on where to put the drop-down menu.
     data['show_menu_above_map'] = 'map_menu' in request.GET
 
     # These values are needed to initialize the JavaScript app.
-    data['add_mover_form_id'] = 'add_mover'
+    data['add_mover_form_id'] = AddMoverForm.get_id()
+    data['model_forms_url'] = request.route_url('model_forms')
     data['run_model_until_form_url'] = request.route_url('run_model_until')
 
     if model.time_steps:

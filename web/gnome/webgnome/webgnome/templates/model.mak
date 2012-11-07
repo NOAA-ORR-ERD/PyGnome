@@ -111,15 +111,16 @@
     <script type="text/javascript">
         $('#map').imagesLoaded(function() {
             new window.noaa.erd.gnome.AppView({
-                mapEl: '#map',
-                mapPlaceholderEl: '#placeholder',
-                sidebarEl: '#sidebar',
-                formContainerEl: '#modal-container',
+                mapId: 'map',
+                mapPlaceholderId: 'placeholder',
+                sidebarId: 'sidebar',
+                formContainerId: 'modal-container',
+                addMoverFormId: "${add_mover_form_id}",
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                 currentTimeStep: ${model.current_time_step},
                 runModelUntilFormUrl: "${run_model_until_form_url}",
-                addMoverFormId: "${add_mover_form_id}"
+                formsUrl: "${model_forms_url}"
             });
         });
     </script>
