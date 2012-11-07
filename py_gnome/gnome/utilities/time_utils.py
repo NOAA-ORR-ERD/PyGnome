@@ -29,7 +29,7 @@ def date_to_sec(date_time):
         temp[-1] = 0 
         t_array[li] = time.mktime(temp)
         
-    return ( len(t_array)==1 and t_array[0] or t_array )
+    return ( len(t_array)==1 and t_array[0].astype(object) or t_array )
         
 
 def sec_to_date(seconds):
@@ -51,7 +51,7 @@ def sec_to_date(seconds):
     for li in range(len(t_array)):    
         t = sec_to_timestruct(t_array[li])
         d_array[li] = datetime.datetime(*t[:7])
-    return ( len(d_array)==1 and d_array[0] or d_array )
+    return ( len(d_array)==1 and d_array[0].astype(object) or d_array )
     
 def sec_to_timestruct(seconds):
     """
@@ -98,7 +98,7 @@ def round_time(dt=None, roundTo=60):
        # // is a floor division, not a comment on following line:
        dt[li] = date + datetime.timedelta(0,rounding-seconds,-date.microsecond)
    
-   return ( len(dt)==1 and dt[0] or dt )
+   return ( len(dt)==1 and dt[0].astype(object) or dt )
 
 
 if __name__ == "__main__":

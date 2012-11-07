@@ -27,8 +27,10 @@ def test_scalar_input():
     """
     x = datetime.now()
     xn = _convert(x)
-    assert np.isscalar(xn)
-    assert time_utils.round_time(x, roundTo=1) == time_utils.round_time(xn, roundTo=1)
+    assert type(xn) == datetime
+    x = time_utils.round_time(x, roundTo=1)
+    assert type(x) == datetime 
+    assert x == time_utils.round_time(xn, roundTo=1)
     
 def test_datetime_array():
     """
