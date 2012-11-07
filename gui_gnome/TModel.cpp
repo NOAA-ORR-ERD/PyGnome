@@ -5165,7 +5165,25 @@ OSErr TModel::HandleCreateSpillMessage(TModelMessage *message)
 		}
 	}
 	
+	if (!bUseLEsFromFile)
+	{	// do some error checking
+		Boolean bWantEndRelPosition = (!EqualWPoints(startRelPos,endRelPos));
+		if(!IsWaterPoint(startRelPos)) {
+			printError("The release start position must be in the water."); 
+			goto done;}
 	
+		if(!IsAllowableSpillPoint(startRelPos)){
+			printError("This map has not been set up for spills in the area of your release start position.");
+			goto done;}
+	
+		if(bWantEndRelPosition && !IsWaterPoint(endRelPos)) {
+			printError("The release end position must be in the water."); 
+		goto done;}
+		
+		if(bWantEndRelPosition && !IsAllowableSpillPoint(endRelPos)){				
+			printError("This map has not been set up for spills in the area of your release end position."); 
+			goto done;}
+	}
 	
 	// set the spill
 	if(!bUseLEsFromFile)  // JLM 2/13/01
@@ -5675,6 +5693,28 @@ OSErr TModel::HandleRunSpillMessage(TModelMessage *message)
 	
 	saveOutputStep = this -> GetOutputStep();
 	this -> SetOutputStep((long)(outputStepInMinutes*60)); // convert to seconds
+	
+
+	if (!bUseLEsFromFile && !bEverythingSetAsDesiredByHand)
+	{	// do some error checking
+		Boolean bWantEndRelPosition = (!EqualWPoints(startRelPos,endRelPos));
+		if(!IsWaterPoint(startRelPos)) {
+			printError("The release start position must be in the water."); 
+			goto done;}
+		
+		if(!IsAllowableSpillPoint(startRelPos)){
+			printError("This map has not been set up for spills in the area of your release start position.");
+			goto done;}
+		
+		if(bWantEndRelPosition && !IsWaterPoint(endRelPos)) {
+			printError("The release end position must be in the water."); 
+			goto done;}
+		
+		if(bWantEndRelPosition && !IsAllowableSpillPoint(endRelPos)){				
+			printError("This map has not been set up for spills in the area of your release end position."); 
+			goto done;}
+	}
+	
 	
 	// set the spill
 	if(!bUseLEsFromFile && !bEverythingSetAsDesiredByHand)  // JLM 2/13/01

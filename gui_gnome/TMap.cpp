@@ -232,7 +232,6 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 		if(!strcmpnocase(typeName,"Random")) mover = new TRandom(dynamic_cast<TMap *>(this), moverName);
 		else if(!strcmpnocase(typeName,"Wind")) 
 		{
-			//if (!moverName[0]) strcpy(moverName,"Variable Wind");
 			TWindMover *newWindMover = new TWindMover(dynamic_cast<TMap *>(this), moverName);
 			
 			if (!newWindMover)  err = memFullErr;
