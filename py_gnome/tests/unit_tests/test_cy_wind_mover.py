@@ -166,7 +166,7 @@ class TestConstantWind():
         
         
         ref = self.cw.ref.view(dtype=basic_types.world_point_type).reshape((-1,3))
-        xform = projections.FlatEarthProjection.meters_to_latlon( delta, ref)
+        xform = projections.FlatEarthProjection.meters_to_lonlat( delta, ref)
         
         actual = np.zeros((self.cw.num_le,), dtype=basic_types.world_point)
         actual ['lat'] = xform[:,1]
