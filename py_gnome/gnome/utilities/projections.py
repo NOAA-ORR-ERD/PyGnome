@@ -66,7 +66,7 @@ class NoProjection(object):
             return np.asarray(coords)
 
 
-    def to_lat_long(self, coords):
+    def to_lonlat(self, coords):
         """
         returns the same coords, but as a np.array of float64 , if they aren't already
         """
@@ -188,10 +188,10 @@ class GeoProjection(object):
             return coords
 
     
-    def to_lat_long(self, coords):
+    def to_lonlat(self, coords):
         ## note: untested!
         """
-        converts pixel coords to lat-long coords
+        converts pixel coords to long-lat coords
         
         param: coords  - an array of pixel coordinates (usually integer type)
            NX2: ( (long1, lat1),
@@ -203,7 +203,7 @@ class GeoProjection(object):
         
         NOTE: there is not depth in input -- pixels are always 2-d!
         
-        Note that  to_lat_long( to_pixel (coords) ) != coords, due to rounding.
+        Note that  to_lonlat( to_pixel (coords) ) != coords, due to rounding.
         If the input is integers, a 0.5 is added to "shift" the location to mid-pixel.
         returns:  the pixel coords as a similar Nx2 array of floating point x,y coordinates
         (using the y = 0 at the top, and y increasing down)
@@ -234,7 +234,7 @@ class FlatEarthProjection(GeoProjection):
     """
     
     @staticmethod
-    def meters_to_latlon(meters, ref_positions):
+    def meters_to_lonlat(meters, ref_positions):
         """
         Converts from delta meters to delta latitude-longitude, using the Flat-Earth projection.
         

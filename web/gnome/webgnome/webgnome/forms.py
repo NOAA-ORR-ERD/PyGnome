@@ -115,7 +115,7 @@ class WindMoverForm(ObjectForm, DateTimeForm):
     )
 
 
-class AddMoverForm(Form):
+class AddMoverForm(AutoIdForm):
     """
     The initial form used in a multi-step process for adding a mover to the
     user's running model. This step asks the user to choose the type of mover
@@ -137,7 +137,7 @@ class RunModelUntilForm(DateTimeForm):
     pass
 
 
-class ModelSettingsForm(DateTimeForm):
+class ModelSettingsForm(AutoIdForm, DateTimeForm):
     """
     A form for adding and editing model-related settings.
     """

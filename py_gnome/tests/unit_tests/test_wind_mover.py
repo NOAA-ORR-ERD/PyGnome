@@ -64,7 +64,7 @@ class TestWindMover():
 
     time_val = np.zeros((1,), dtype=basic_types.datetime_value_pair)
     time_val['time'][0] = np.datetime64( rel_time.isoformat() )
-    time_val['value'][0] = (0., 100.)
+    time_val['value'][0] = (5., 100.)
 
     wm = movers.WindMover(timeseries=time_val)
 
@@ -83,29 +83,26 @@ class TestWindMover():
         self.wm.prepare_for_model_step(self.model_time, self.time_step)
 
         # make sure clean up is happening fine
-        delta = np.zeros((2,self.pSpill.num_LEs), dtype=basic_types.world_point)
-        delta = np.zeros((2,self.pSpill.num_LEs), dtype=basic_types.world_point)
-        actual =np.zeros((2,self.pSpill.num_LEs), dtype=basic_types.world_point) 
-        for ix in range(0,2):
+        #delta = np.zeros((self.pSpill.num_LEs,3), dtype=basic_types.world_point)
+        #actual =np.zeros((2,self.pSpill.num_LEs), dtype=basic_types.world_point) 
+        for ix in range(1):
             curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
-            print "Time step [sec]: " + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
-            print "WindMover.time_series C++:" + str(self.wm.timeseries)
-            print "WindMover.get_time_value C++:" + str( self.wm.get_time_value(curr_time))
-            delta[ix] = self.wm.get_move(self.pSpill, self.time_step, curr_time)
+            delta = self.wm.get_move(self.pSpill, self.time_step, curr_time)
+            actual = self._expected_move()
             
-            actual[ix] = self._expected_move()
+            # the results should be independent of model time
+            tol = 1e-8
+            np.testing.assert_allclose(delta, actual, tol, tol,
+                                       "WindMover.get_move() is not within a tolerance of " + str(tol), 0)
             
-        # the results should be independent of model time
-        tol = 1e-8
-        print "C++ delta-lat: ";   print str(delta['lat'])
-        print "Expected delta-lat: "; print str(actual['lat'])
-        print "C++ delta-long: ";  print str(delta['long'])
-        print "Expected delta-long: ";print str(actual['long'])
-        np.testing.assert_allclose(delta['lat'], actual['lat'], tol, tol,
-                                  "get_time_value is not within a tolerance of " + str(tol), 0)
-        np.testing.assert_allclose(delta['long'], actual['long'], tol, tol,
-                              "get_time_value is not within a tolerance of "+str(tol), 0)
-       
+            print "Time step [sec]: \t\t" + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
+            print "WindMover.get_time_value C++:\t" + str( self.wm.get_time_value(curr_time))
+            print "wind_vel for _expected_move:\t" + str( self.time_val[0]['value'])
+            print "C++ delta-long: " + "\t\t" +  str(delta[0])
+            print "Expected delta-long: "+ "\t\t" + str(actual[0])
+            print "C++ delta-lat  : " + "\t\t" + str(delta[1])
+            print "Expected delta-lat: "+ "\t\t" + str(actual[1])
+                   
     def test_update_wind_vel(self):
         self.time_val['value'][0] = (10., 50.)
         self.wm.timeseries = self.time_val   # update time series
@@ -116,18 +113,13 @@ class TestWindMover():
         Put the expected move logic in separate private method
         """
         # expected move
-        print "wind_vel used for check:" + str( self.time_val[0]['value'])
         exp = np.zeros( (self.pSpill.num_LEs, 3) )
         exp[:,0] = self.pSpill['windages']*self.time_val[0]['value']['u']*self.time_step # 'u'
         exp[:,1] = self.pSpill['windages']*self.time_val[0]['value']['v']*self.time_step # 'v'
 
-        xform = projections.FlatEarthProjection.meters_to_latlon(exp, self.pSpill['positions'])
-
-        actual = np.zeros((len(exp),), dtype=basic_types.world_point)
-        actual ['lat'] = xform[:, 1]
-        actual ['long'] = xform[:, 0]
+        xform = projections.FlatEarthProjection.meters_to_lonlat(exp, self.pSpill['positions'])
         
-        return actual
+        return xform
         
        
 if __name__=="__main__":

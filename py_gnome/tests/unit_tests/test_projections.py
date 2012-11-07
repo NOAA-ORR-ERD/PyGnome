@@ -93,7 +93,7 @@ class Test_GeoProjection():
                               ) )
         # first test without rounding
         proj_coords = self.proj.to_pixel(coords, asint=False)
-        back_coords = self.proj.to_lat_long(proj_coords)
+        back_coords = self.proj.to_lonlat(proj_coords)
         print coords
         print proj_coords
         print repr(back_coords)
@@ -101,7 +101,7 @@ class Test_GeoProjection():
         
         # now with the pixel rounding
         proj_coords = self.proj.to_pixel(coords, asint=True)
-        back_coords = self.proj.to_lat_long(proj_coords)
+        back_coords = self.proj.to_lonlat(proj_coords)
         print coords
         print proj_coords
         print repr(back_coords)
@@ -176,7 +176,7 @@ class Test_FlatEarthProjection():
                               ) )
         # first test without rounding
         proj_coords = self.proj.to_pixel(coords, asint=False)
-        back_coords = self.proj.to_lat_long(proj_coords)
+        back_coords = self.proj.to_lonlat(proj_coords)
         print coords
         print proj_coords
         print repr(back_coords)
@@ -184,7 +184,7 @@ class Test_FlatEarthProjection():
         
         # now with the pixel rounding
         proj_coords = self.proj.to_pixel(coords, asint=True)
-        back_coords = self.proj.to_lat_long(proj_coords)
+        back_coords = self.proj.to_lonlat(proj_coords)
         print coords
         print proj_coords
         print repr(back_coords)
@@ -193,20 +193,20 @@ class Test_FlatEarthProjection():
         tol = 1. / self.proj.scale[0] / 1.5 # should be about 1/2 pixel
         assert np.allclose(coords[:,:2], back_coords, rtol = 1e-100, atol=tol) # rtol tiny so it really doesn't matter
 
-## tests for meters_to_latlon
-m2l = projections.FlatEarthProjection.meters_to_latlon
+## tests for meters_to_lonlat
+m2l = projections.FlatEarthProjection.meters_to_lonlat
 METERS_PER_DEGREE_GNOME = 111119.9994764
-def test_meters_to_latlon():
+def test_meters_to_lonlat():
     """ distance at equator """        
     assert np.allclose( m2l( (METERS_PER_DEGREE, METERS_PER_DEGREE_GNOME, 0.0), (0.0, 0.0, 0.0) ),
                            (1.0, 1.0, 0.0) )
      
-def test_meters_to_latlon2():
+def test_meters_to_lonlat2():
     """ distance at 60 deg north (1/2) """
     assert np.allclose( m2l( (METERS_PER_DEGREE_GNOME, METERS_PER_DEGREE_GNOME, 4.5), (0.0, 60.0, 0.0) ),
                            (2.0, 1.0, 4.5) )
      
-def test_meters_to_latlon3():
+def test_meters_to_lonlat3():
     """ distance at 90 deg north: it should get very large!"""
 
     dlonlat = m2l( (METERS_PER_DEGREE_GNOME, METERS_PER_DEGREE_GNOME, 0.0), (30.0, 90.0, 0.0) )

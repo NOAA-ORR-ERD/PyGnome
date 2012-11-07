@@ -228,7 +228,8 @@ class WindMover(PyMover):
                               self.status_codes,
                               self.spill_type,
                               uncertain_spill_number)
-        return self.delta
+        #return self.delta
+        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
 
 class RandomMover(PyMover):
@@ -284,5 +285,6 @@ class RandomMover(PyMover):
                               self.status_codes,
                               self.spill_type,
                               uncertain_spill_number)
-        return self.delta
-    
+        #return self.delta
+        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+        
