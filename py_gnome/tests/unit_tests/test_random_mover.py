@@ -1,14 +1,19 @@
-from gnome import movers
+"""
+unittests for random mover
 
-from gnome import basic_types, spill
-from gnome.utilities import time_utils 
-from gnome import greenwich
-from gnome.utilities import projections
+designed to be run with py.test
+"""
+import datetime
 
 import numpy as np
 
-import datetime
-from datetime import timedelta
+import gnome
+from gnome import movers
+from gnome import basic_types, spill
+from gnome.utilities import time_utils 
+from gnome.utilities import projections
+
+
 import pytest
 
 
@@ -48,7 +53,7 @@ class TestRandomMover():
 
     def test_get_move(self):
         """
-        Test the get_move(...) results in WindMover match the expected delta
+        Test the get_move(...) results in RandomMover
         """
         self.pSpill.prepare_for_model_step(self.model_time, self.time_step)
         self.mover.prepare_for_model_step(self.model_time, self.time_step)
@@ -75,6 +80,34 @@ class TestRandomMover():
         self.mover.diffusion_coef = 200000
         print self.mover.diffusion_coef
         assert self.mover.diffusion_coef == 200000 
+
+
+class Test_variance:
+    num_le = 10
+    start_time = datetime.datetime(2012,11,10,0)
+    time_step = 360 #seconds -- 6 minutes
+    spill = gnome.spill.PointReleaseSpill(num_le, (0.0,0.0,0.0), start_time)
+
+    def test_variance1(self):
+        """
+        After a few timesteps the variance of the particle positions should be
+        similar to the computed value: var = Dt
+        """
+        self.spill.reset()
+
+        rand = movers.RandomMover(diffusion_coef=100000)
+
+        model_time = self.start_time
+        for i in range(100):# run for ten steps
+            model_time += datetime.timedelta(seconds=self.time_step)
+            print model_time
+            rand.prepare_for_model_step(model_time, self.time_step)
+            delta = rand.get_move(self.spill, self.time_step, model_time)
+            print "delta:", delta
+            self.spill['positions'] += delta.view(dtype=basic_types.world_point_type).reshape((-1,3))
+
+        assert False
+
        
 if __name__=="__main__":
     tw = TestRandomMover()
