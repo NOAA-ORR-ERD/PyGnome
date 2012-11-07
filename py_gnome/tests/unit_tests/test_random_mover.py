@@ -61,7 +61,6 @@ class TestRandomMover():
         # make sure clean up is happening fine
         num_steps = 4
         delta = np.zeros((num_steps,self.pSpill.num_LEs), dtype=basic_types.world_point)
-        delta = np.zeros((num_steps,self.pSpill.num_LEs), dtype=basic_types.world_point) 
         for ix in range(0,num_steps):
             curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
             print "Time step [sec]: " + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
@@ -101,6 +100,7 @@ class Test_variance:
         for i in range(100):# run for ten steps
             model_time += datetime.timedelta(seconds=self.time_step)
             print model_time
+            self.spill.prepare_for_model_step(model_time, self.time_step)
             rand.prepare_for_model_step(model_time, self.time_step)
             delta = rand.get_move(self.spill, self.time_step, model_time)
             print "delta:", delta
