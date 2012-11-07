@@ -139,14 +139,14 @@ class AutoIdForm(Form):
         """
         Get an ID for this form that combines the form's class name and ``obj``.
         """
+        object_id = ''
+
         if obj:
             if hasattr(obj, 'id') and obj.id:
                 object_id = obj.id
             else:
                 object_id = id(obj)
 
-            form_name = '%s_%s' % ('update', object_id)
-        else:
-            form_name = 'create'
+            object_id = '_%s' % object_id
 
-        return '%s_%s' % (cls.__name__, form_name)
+        return '%s%s' % (cls.__name__, object_id)

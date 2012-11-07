@@ -1,7 +1,12 @@
 from collections import OrderedDict
-from webgnome.forms import DeleteMoverForm, DeleteSpillForm
 
-from webgnome.object_form import ObjectForm
+from webgnome.forms import (
+    DeleteMoverForm,
+    DeleteSpillForm,
+    AddMoverForm,
+    ModelSettingsForm
+)
+from webgnome import util
 
 
 class NavigationTree(object):
@@ -53,13 +58,13 @@ class NavigationTree(object):
         """
         settings = {
             'title': 'Model Settings',
-            'form_id': 'model_settings',
+            'form_id': ModelSettingsForm.get_id(),
             'children': []
         }
 
         movers = {
             'title': 'Movers',
-            'form_id': 'add_mover',
+            'form_id': AddMoverForm.get_id(),
             'children': []
         }
 
@@ -73,7 +78,7 @@ class NavigationTree(object):
         for name, value in self._get_model_settings().items():
             settings['children'].append({
                 # All settings use the model update form.
-                'form_id': 'model_settings',
+                'form_id': ModelSettingsForm.get_id(),
                 'title': self._get_value_title(name, value),
             })
 
@@ -85,7 +90,7 @@ class NavigationTree(object):
 
         for mover in self.model.movers:
             movers['children'].append({
-                'form_id': ObjectForm.get_id(mover),
+                'form_id': util.get_object_form(mover).get_id(mover),
                 'delete_form_id': DeleteMoverForm.get_id(mover),
                 'object_id': mover.id,
                 'title': str(mover)
@@ -93,7 +98,7 @@ class NavigationTree(object):
 
         for spill in self.model.spills:
             spills['children'].append({
-                'form_id': ObjectForm.get_id(spill),
+                'form_id': util.get_object_form(spill).get_id(spill),
                 'delete_form_id': DeleteSpillForm.get_id(spill),
                 'object_id': spill.id,
                 'title': str(spill),

@@ -1268,11 +1268,39 @@ var MapControlView = Backbone.View.extend({
 });
 
 
+var ModalFormViewContainer = Backbone.View.extend({
+    initialize: function() {
+        _.bindAll(this);
+        this.options.ajaxForms.on(AjaxForm.CHANGED, this.refresh);
+    },
+
+    refresh: function() {
+        var _this = this;
+
+        $.ajax({
+            type: 'GET',
+            url: this.options.url,
+            tryCount: 0,
+            retryLimit: 3,
+            success: function(data) {
+                if (_.has(data, 'html')) {
+                    _this.$el.html(data.html);
+                    _this.trigger(ModalFormViewContainer.REFRESHED);
+                }
+            },
+            error: handleAjaxError
+        });
+    }
+}, {
+    REFRESHED: 'modalFormViewContainer:refreshed'
+});
+
+
 /*
  `ModalFormView` is responsible for displaying HTML forms retrieved
  from and submitted to the server using an `AjaxForm object. `ModalFormView`
  displays an HTML form in a modal "window" over the page using the rendered HTML
- returned by the server. It listens to 'change'events on a bound `AjaxForm` and
+ returned by the server. It listens to 'change' events on a bound `AjaxForm` and
  refreshes itself when that event fires.
 
  The view is designed to handle multi-step forms implemented purely in
@@ -1575,6 +1603,8 @@ var AppView = Backbone.View.extend({
 
         this.apiRoot = "/model";
 
+        this.setupForms();
+
         // Initialize the model with any previously-generated time step data the
         // server had available.
         this.model = new Model(this.options.generatedTimeSteps, {
@@ -1583,44 +1613,8 @@ var AppView = Backbone.View.extend({
             currentTimeStep: this.options.currentTimeStep
         });
 
-        this.addMoverFormView = new AddMoverFormView({
-            el: $('#' + this.options.addMoverFormId),
-            formContainerEl: this.options.formContainerEl
-        });
-
-        // All of the `ModelFormView` instances, keyed to form ID.
-        this.formViews = {};
-        this.formViews[this.options.addMoverFormId] = this.addMoverFormView;
-
-        // An object holding all of our `AjaxForm` instances, keyed to the name
-        // of the form as passed by the server in `this.options.formUrls`.
-        this.forms = {};
-        _.extend(this.forms, Backbone.Events);
-
-        // Create an `AjaxForm` and bind it to a `ModalFormView` for each modal
-        // form on the page, other than the Add Mover form, which we handled.
-        _.each($('div.modal'), function(modalDiv) {
-            var $div = $(modalDiv);
-            var $form = $div.find('form');
-            var modalFormId = $div.attr('id');
-
-            if (modalFormId === _this.options.addMoverFormId) {
-                return;
-            }
-
-            _this.forms[modalFormId] = new AjaxForm({
-                url: $form.attr('action'),
-                collection: _this.forms
-            });
-
-            _this.formViews[modalFormId] = new ModalFormView({
-                ajaxForm: _this.forms[modalFormId],
-                el: $('#' + modalFormId),
-                formContainerEl: _this.options.formContainerEl
-            });
-        });
-
         this.menuView = new MenuView({
+            // XXX: Hard-coded IDs
             modelDropDownEl: "#file-drop",
             runDropdownEl: "#run-drop",
             helpDropdownEl: "#help-drop",
@@ -1630,9 +1624,10 @@ var AppView = Backbone.View.extend({
             runUntilItemEl: "#menu-run-until"
         });
 
-        this.sidebarEl = this.options.sidebarEl;
+        this.sidebarEl = '#' + this.options.sidebarId;
 
         this.treeView = new TreeView({
+            // XXX: Hard-coded URL, HTML ID
             treeEl: "#tree",
             url: "/tree",
             ajaxForms: this.forms,
@@ -1640,6 +1635,7 @@ var AppView = Backbone.View.extend({
         });
 
         this.treeControlView = new TreeControlView({
+            // XXX: Hard-coded IDs
             addButtonEl: "#add-button",
             removeButtonEl: "#remove-button",
             settingsButtonEl: "#settings-button",
@@ -1647,14 +1643,15 @@ var AppView = Backbone.View.extend({
         });
 
         this.mapView = new MapView({
-            mapEl: this.options.mapEl,
-            placeholderEl: this.options.mapPlaceholderEl,
+            mapEl: '#' + this.options.mapId,
+            placeholderEl: '#' + this.options.mapPlaceholderId,
             frameClass: 'frame',
             activeFrameClass: 'active',
             model: this.model
         });
 
         this.mapControlView = new MapControlView({
+            // XXX: Hard-coded IDs. Does it even matter?
             sliderEl: "#slider",
             playButtonEl: "#play-button",
             pauseButtonEl: "#pause-button",
@@ -1666,6 +1663,7 @@ var AppView = Backbone.View.extend({
             fullscreenButtonEl: "#fullscreen-button",
             resizeButtonEl: "#resize-button",
             timeEl: "#time",
+            // XXX: Partially hard-coded URL. Examine this practice.
             url: this.apiRoot + '/time_steps',
             model: this.model,
             mapView: this.mapView
@@ -1681,8 +1679,8 @@ var AppView = Backbone.View.extend({
 
     setupEventHandlers: function() {
         this.model.on(Model.RUN_ERROR, this.modelRunError);
-
         this.treeView.on(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
+        this.modalFormViewContainer.on(ModalFormViewContainer.REFRESHED, this.setupForms);
 
         this.treeControlView.on(TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
         this.treeControlView.on(TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
@@ -1709,6 +1707,53 @@ var AppView = Backbone.View.extend({
         this.menuView.on(MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
 
         this.addMoverFormView.on(AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+    },
+
+    setupForms: function() {
+        var _this = this;
+
+        // `AjaxForm` instances, keyed to form ID.
+        this.forms = {};
+        _.extend(this.forms, Backbone.Events);
+
+         // `ModelFormView` instances, keyed to form ID.
+        this.formViews = {};
+
+        this.modalFormViewContainer = new ModalFormViewContainer({
+            el: $('#' + this.options.formContainerId),
+            ajaxForms: this.forms,
+            url: this.options.formsUrl
+        });
+
+        this.addMoverFormView = new AddMoverFormView({
+            el: $('#' + this.options.addMoverFormId),
+            formContainerEl: '#' + this.options.formContainerId
+        });
+
+        this.formViews[this.options.addMoverFormId] = this.addMoverFormView;
+
+        // Create an `AjaxForm` and bind it to a `ModalFormView` for each modal
+        // form on the page, other than the Add Mover form, which we handled.
+        _.each($('div.modal'), function(modalDiv) {
+            var $div = $(modalDiv);
+            var $form = $div.find('form');
+            var modalFormId = $div.attr('id');
+
+            if (modalFormId === _this.options.addMoverFormId) {
+                return;
+            }
+
+            _this.forms[modalFormId] = new AjaxForm({
+                url: $form.attr('action'),
+                collection: _this.forms
+            });
+
+            _this.formViews[modalFormId] = new ModalFormView({
+                ajaxForm: _this.forms[modalFormId],
+                el: $('#' + modalFormId),
+                formContainerEl: '#' + _this.options.formContainerId
+            });
+        });
     },
 
     modelRunError: function() {
@@ -1868,7 +1913,6 @@ var AppView = Backbone.View.extend({
 
     showFormForNode: function(node) {
         var formView = this.formViews[node.data.form_id];
-        log(formView, node.data)
 
         if (formView === undefined) {
             return;
@@ -1933,7 +1977,6 @@ var AppView = Backbone.View.extend({
 
     moverChosen: function(moverType) {
         var formView = this.formViews[moverType];
-        log(this.formViews)
 
         if (formView === undefined) {
             return;
