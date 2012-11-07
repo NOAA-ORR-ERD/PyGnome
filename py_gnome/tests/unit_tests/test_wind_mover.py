@@ -117,7 +117,7 @@ class TestWindMover():
         exp[:,0] = self.pSpill['windages']*self.time_val[0]['value']['u']*self.time_step # 'u'
         exp[:,1] = self.pSpill['windages']*self.time_val[0]['value']['v']*self.time_step # 'v'
 
-        xform = projections.FlatEarthProjection.meters_to_latlon(exp, self.pSpill['positions'])
+        xform = projections.FlatEarthProjection.meters_to_lonlat(exp, self.pSpill['positions'])
         
         return xform
         

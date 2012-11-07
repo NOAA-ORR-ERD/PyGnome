@@ -104,7 +104,7 @@ class SimpleMover(object):
         delta[in_water_mask] = self.velocity * time_step
 
         # scale for projection
-        delta = proj.meters_to_latlon(delta, positions) # just the lat-lon...
+        delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
         
         return delta
         
