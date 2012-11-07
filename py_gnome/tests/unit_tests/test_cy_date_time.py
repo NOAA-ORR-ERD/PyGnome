@@ -5,15 +5,50 @@ just a python script right now
 """
 
 from gnome.cy_gnome import cy_date_time
-import datetime
+from datetime import datetime
 import time
 import numpy as np
 from gnome import basic_types
 from gnome.utilities import time_utils
 
+def _convert(x):
+    """
+    helper method for the next 4 tests
+    """
+    y = time_utils.date_to_sec(x)
+    xn= time_utils.sec_to_date(y)
+    return xn
+
+def test_scalar_input():
+    """
+    test time_utils conversion return a scalar if that is what the user input
+    
+    always returns a numpy object
+    """
+    x = datetime.now()
+    xn = _convert(x)
+    assert np.isscalar(xn)
+    assert time_utils.round_time(x, roundTo=1) == time_utils.round_time(xn, roundTo=1)
+    
+def test_datetime_array():
+    """
+    test time_utils conversion works for python datetime object
+    """
+    x = np.zeros((3,), dtype=datetime)
+    xn = _convert(x)
+    assert np.all( time_utils.round_time(x, roundTo=1) == time_utils.round_time(xn, roundTo=1))
+
+def test_numpy_array():
+    """
+    time_utils works for numpy datetime object
+    """
+    x = np.zeros((3,), dtype=np.datetime64)
+    xn = _convert(x)
+    assert np.all( time_utils.round_time(x, roundTo=1) == time_utils.round_time(xn, roundTo=1))
+
 class TestCyDateTime():
     target = cy_date_time.Cy_date_time()
-    now =  datetime.datetime.now()
+    now =  datetime.now()
 
     daterec = np.empty((1,), dtype=basic_types.date_rec)
     daterec['year'] = now.year
