@@ -50,22 +50,6 @@ class TestRandomMover():
 
     def test_id_matches_builtin_id(self):
         assert id(self.mover) == self.mover.id
-
-    def test_get_move(self):
-        """
-        Test the get_move(...) results in RandomMover
-        It doesn't check the results, only calls get_move twice
-        """
-        self.pSpill.prepare_for_model_step(self.model_time, self.time_step)
-        self.mover.prepare_for_model_step(self.model_time, self.time_step)
-
-        # make sure clean up is happening fine
-        for ix in range(2):
-            curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
-            print "Time step [sec]: " + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
-            delta = self.mover.get_move(self.pSpill, self.time_step, curr_time)
-            
-        assert True
        
     def test_change_diffusion_coef(self):
         self.mover.diffusion_coef = 200000
@@ -104,7 +88,7 @@ def test_variance1(start_loc, time_step):
         rand.prepare_for_model_step(model_time, time_step)
         delta = rand.get_move(spill, time_step, model_time)
         #print "delta:", delta
-        spill['positions'] += delta.view(dtype=basic_types.world_point_type).reshape((-1,3))
+        spill['positions'] += delta
         #print spill['positions']
     # compute the variances:
     # convert to meters
