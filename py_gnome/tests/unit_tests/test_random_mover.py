@@ -101,11 +101,16 @@ class Test_variance:
         for i in range(100):# run for ten steps
             model_time += datetime.timedelta(seconds=self.time_step)
             print model_time
+            self.spill.prepare_for_model_step(model_time, self.time_step)
             rand.prepare_for_model_step(model_time, self.time_step)
             delta = rand.get_move(self.spill, self.time_step, model_time)
-            print "delta:", delta
+            #print "delta:", delta
             self.spill['positions'] += delta.view(dtype=basic_types.world_point_type).reshape((-1,3))
-
+            print self.spill['positions']
+        # compute the variances:
+        var = np.var(self.spill['positions'], axis=0)
+        print "variances:", var
+        
         assert False
 
        
