@@ -97,15 +97,15 @@ class Test_variance:
         rand = movers.RandomMover(diffusion_coef=100000)
 
         model_time = self.start_time
-        for i in range(100):# run for ten steps
+        for i in range(1):# run for ten steps
             model_time += datetime.timedelta(seconds=self.time_step)
             print model_time
             self.spill.prepare_for_model_step(model_time, self.time_step)
             rand.prepare_for_model_step(model_time, self.time_step)
             delta = rand.get_move(self.spill, self.time_step, model_time)
             print "delta:", delta
-            self.spill['positions'] += delta.view(dtype=basic_types.world_point_type).reshape((-1,3))
-
+            self.spill['positions'] += delta
+            
         assert False
 
        
