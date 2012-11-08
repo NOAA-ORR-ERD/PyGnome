@@ -42,6 +42,35 @@ cdef class CyWindMover:
         self.mover.fSpeedScale = uncertain_speed_scale
         self.mover.fAngleScale = uncertain_angle_scale
         
+    property uncertain_duration:
+    def __get__(self):
+        return self.mover.fDuration
+    
+    def __set__(self,value):
+        self.mover.fDuration = value
+    
+    property uncertain_time_delay:
+    def __get__(self):
+        return self.mover.fUncertainStartTime
+    
+    def __set__(self, value):
+        self.mover.fUncertainStartTime = value
+    
+    property uncertain_speed_scale:
+    def __get__(self):
+        return self.mover.fSpeedScale
+    
+    def __set__(self, value):
+        self.mover.fSpeedScale = value
+    
+    property uncertain_angle_scale:
+    def __get__(self):
+        return self.mover.fAngleScale
+    
+    def __set__(self, value):
+        self.mover.fAngleScale = value
+        
+    
     def prepare_for_model_run(self):
         """
         .. function::prepare_for_model_run

@@ -174,6 +174,38 @@ class WindMover(PyMover):
     def timeseries(self, datetime_value):
         timeval = self._datetime_value_to_time_value(datetime_value)
         self.ossm.timeseries = timeval
+        
+    @property
+    def uncertain_duration(self):
+        return self.mover.uncertain_duration
+    
+    @uncertain_duration.setter
+    def uncertain_duration(self, value):
+        self.mover.uncertain_duration = value
+    
+    @property
+    def uncertain_time_delay(self):
+        return self.mover.uncertain_time_delay
+    
+    @uncertain_time_delay.setter
+    def uncertain_time_delay(self, value):
+        self.mover.uncertain_time_delay = value
+        
+    @property 
+    def uncertain_speed_scale(self):
+        return self.mover.uncertain_speed_scale
+    
+    @uncertain_speed_scale.setter
+    def uncertain_speed_scale(self, value):
+        self.mover.uncertain_speed_scale = value
+        
+    @property
+    def uncertain_angle_scale(self):
+        return self.mover.uncertain_angle_scale
+    
+    @uncertain_angle_scale.setter
+    def uncertain_angle_scale(self, value):
+        self.uncertain_angle_scale = value
 
     def _datetime_value_to_time_value(self, datetime_value_pair):
         """
@@ -181,10 +213,7 @@ class WindMover(PyMover):
         """
         timeval = np.zeros((len(datetime_value_pair),), dtype=basic_types.time_value_pair)
         timeval['value'] = datetime_value_pair['value']
-        ix = 0  # index into array
-        for val in datetime_value_pair['time'].astype(object):
-            timeval['time'][ix] = time_utils.date_to_sec( val)
-            ix += 1
+        timeval['time'] = time_utils.date_to_sec(datetime_value_pair['time'])
             
         return timeval
         
@@ -194,11 +223,7 @@ class WindMover(PyMover):
         """
         datetimeval = np.zeros((len(time_value_pair),), dtype=basic_types.datetime_value_pair)
         datetimeval['value'] = time_value_pair['value']
-        ix = 0  # index into array
-        for val in time_value_pair['time']:
-            date = time_utils.round_time(time_utils.sec_to_date(val), roundTo=1)
-            datetimeval['time'][ix] = np.datetime64(date.isoformat())
-            ix += 1
+        datetimeval['time'] = time_utils.sec_to_date(time_value_pair['time'])
             
         return datetimeval
     
