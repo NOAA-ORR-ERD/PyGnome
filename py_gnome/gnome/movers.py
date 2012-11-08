@@ -98,6 +98,13 @@ class PyMover(object):
         
         self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
 
+    def model_step_is_done(self):
+        """
+        This method gets called by the model when afer everything else is done
+        in a time step put any code need for clean-up, etc in here in
+        subclassed movers.
+        """
+        pass
 
 class WindMover(PyMover):
     """

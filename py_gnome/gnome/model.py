@@ -361,7 +361,7 @@ class Model(object):
         if not self.step():
             raise StopIteration
         filename = self.write_image()
-        return (self.current_time_step, filename, "a timestamp")
+        return (self.current_time_step, filename, self.model_time.isoformat())
 
     def full_run_and_output(self):
         """
