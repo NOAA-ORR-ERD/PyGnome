@@ -33,18 +33,18 @@ def test_timeseries():
     initialize from timeseries and update value
     """
     now = time_utils.round_time( datetime.now(), roundTo=1)   # WindMover rounds data to 1 sec
-    val = np.zeros((2,), dtype=basic_types.datetime_value_pair)
-    val['time'] = np.datetime64(now.isoformat())
-    val['time'][1] = val['time'][1].astype(object) + timedelta(hours=3)
+    val = np.zeros((5,), dtype=basic_types.datetime_value_pair)
+    val['time'] = [datetime(2012,11,06,20,10,i) for i in range(5)]
     
-    val['value']['u'] = (0,100)
-    val['value']['v'] = (50,10)
+    val['value']['u'] = [i for i in range(0,10,2)]
+    val['value']['v'] = [i for i in range(10,20,2)]
           
     wm  = movers.WindMover(timeseries=val)
-    print val
+    print time_utils.round_time(val, roundTo=1)
     print "------------"
-    print wm.timeseries
-    np.testing.assert_equal(wm.timeseries['time'], val['time'], "time provided during initialization does not match the time in WindMover.timeseries")
+    print time_utils.round_time(wm.timeseries['time'], roundTo=1)
+    np.testing.assert_equal(time_utils.round_time(wm.timeseries['time'], roundTo=1), 
+                           time_utils.round_time(val['time'], roundTo=1), "time provided during initialization does not match the time in WindMover.timeseries")
     np.testing.assert_equal(wm.timeseries['value'], val['value'], "velocity_rec returned by WindMover.timeseries is not the same as what was input during initialization")
 
 class TestWindMover():
