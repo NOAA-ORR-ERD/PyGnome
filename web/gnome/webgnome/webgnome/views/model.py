@@ -1,6 +1,13 @@
 import json
 import datetime
+import gnome.map
+import gnome.utilities.map_canvas
+import shutil
+import os
 
+from gnome.utilities.file_tools import haz_files
+
+from pyramid.httpexceptions import HTTPNotFound
 from pyramid.renderers import render
 from pyramid.view import view_config
 
@@ -116,9 +123,11 @@ def create_model(request):
     model_id = request.session.get(settings.model_session_key, None)
     confirm = request.POST.get('confirm_new', None)
 
-    if model_id and confirm:
-        settings.Model.delete(model_id)
+    if confirm:
+        if model_id:
+            settings.Model.delete(model_id)
         model = settings.Model.create()
+        model.images_dir = request.registry.settings['images_dir']
         model_id = model.id
         request.session[settings.model_session_key] = model.id
         message = util.make_message('success', 'Created a new model.')
@@ -136,8 +145,24 @@ def create_model(request):
 @util.json_require_model
 def model_settings(request, model):
     form = ModelSettingsForm(request.POST)
+    data = {}
 
     if request.method == 'POST' and form.validate():
+        date = form.date.data
+
+        model.time_step = form.computation_time_step.data
+
+        model.start_time = datetime.datetime(
+            day=date.day, month=date.month, year=date.year,
+            hour=form.hour.data, minute=form.minute.data,
+            second=0)
+
+        model.duration = datetime.timedelta(
+                days=form.duration_days.data, hours=form.duration_hours.data)
+
+        model.uncertain = form.include_minimum_regret.data
+
+        # TODO: show_currents, prevent_land_jumping, run_backwards
 
         return {
             'form_html': None
@@ -154,6 +179,44 @@ def model_settings(request, model):
     }
 
 
+def _get_timestamps(model):
+    """
+    TODO: Move into ``gnome.model.Model``?
+    """
+    timestamps = []
+
+    # XXX: Why is _num_time_steps a float? Is this ok?
+    for step_num in range(1, int(model._num_time_steps) + 1):
+        delta = datetime.timedelta(seconds=step_num * model.time_step)
+        dt = model.start_time + delta
+        timestamps.append(dt.isoformat())
+
+    return timestamps
+
+
+def _get_time_step(model, timestamps):
+    step = None
+
+    try:
+        # TODO: ``timestamp`` should be a real timestamp.
+        curr_step, filename, timestamp = model.next_image()
+
+        # FIXME: Timestamp should never be None. Off by one error?
+        timestamp = timestamps[curr_step] if curr_step < len(
+                timestamps) else None
+
+        if timestamp:
+            step = {
+                'id': curr_step,
+                'url': filename,
+                'timestamp': timestamp
+            }
+    except StopIteration:
+        pass
+
+    return step
+
+
 @view_config(route_name='run_model', renderer='gnome_json')
 @util.json_require_model
 def run_model(request, model):
@@ -161,18 +224,36 @@ def run_model(request, model):
     Start a run of the user's current model and return a JSON object
     containing the first time step.
     """
-    # TODO: Accept this value from the user as a setting and require it to run.
-    two_weeks_ago = datetime.datetime.now() - datetime.timedelta(weeks=4)
-    model.start_time = two_weeks_ago
     data = {}
 
-    try:
-        data['running'] = model.run()
-        data['expected_time_steps'] = model.timestamps
-    except RuntimeError:
-        # TODO: Use an application-specific exception.
-        data['running'] = False
-        data['message'] = util.make_message('error', 'Model failed to run.')
+    # TODO: This should probably be on the model (except for isoformat()).
+    timestamps = _get_timestamps(model)
+    data['expected_time_steps'] = timestamps
+
+    # TODO: Set separately in map configuration view
+    map_file = os.path.join(
+        request.registry.settings['project_root'],
+        'sample_data', 'MapBounds_Island.bna')
+
+    # the land-water map
+    model.map = gnome.map.MapFromBNA(
+        map_file, refloat_halflife=6 * 3600)
+
+    canvas = gnome.utilities.map_canvas.MapCanvas((400, 300))
+    polygons = haz_files.ReadBNA(map_file, "PolygonSet")
+    canvas.set_land(polygons)
+    model.output_map = canvas
+
+    # TODO for py_gnome: The model should make this path available.
+    data['background_image'] = os.path.join(
+        request.registry.settings['images_dir'], 'background_map.png')
+
+    first_step = _get_time_step(model, timestamps)
+
+    if not first_step:
+        return {}
+
+    data['step'] = first_step
 
     return data
 
@@ -209,8 +290,14 @@ def get_next_step(request, model):
     """
     Generate the next step of a model run and return the result.
     """
+    timestamps = _get_timestamps(model)
+    step = _get_time_step(model, timestamps)
+
+    if not step:
+        raise HTTPNotFound
+
     return {
-        'time_step': model.get_next_step()
+        'time_step': step
     }
 
 

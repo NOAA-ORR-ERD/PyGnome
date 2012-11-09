@@ -15,50 +15,66 @@ The WebGNOME JavaScript application uses two approaches for managing UI
 elements. The first is AJAX requests for "view partials," which are server-side
 API endpoints (known as "views" in Pyramid) that render HTML that the JavaScript
 application then inserts into the DOM. The second is the Backbone.js pattern of
-client-side ``View`` objects that listen to ``Model`` objects and refresh
-themselves when the model changes.
+client-side ``View`` objects that listen to client-side ``Model`` objects and
+refresh themselves when these models change.
+
+
+High-level Goals
+----------------
+
+- Keep as little state about the model in the browser as possible.
+
+- Restrict the use of hard-coded API URLs in JavaScript. URLs should be passed
+  into the application from the server.
+
+- Always request model data from the server before displaying it. In-app changes
+  do not change an intermediary client-side model which then persists to the
+  server, as is usual in Backbone.js applications; they change the server-side
+  model directly via form submissions and displays refresh from AJAX calls to the
+  server.
+
+- Render forms on the server ("view partials") and return via AJAX calls. Forms
+  are not rendered by client-side templates in the browser, though we may use
+  lightweight client-side validation in addition to server-side validation.
+
+- Backbone.js models and views are used to render read-only data.
+
+
+Server-side View Partials
+-------------------------
 
 The JavaScript application uses view partials for all form-handling code. Forms
 are submitted via AJAX requests to the server, rendered in the server, and sent
 back to the JavaScript application if there are errors. A Backbone.js ``View``
 called the ``ModalFormView`` is responsible for displaying the form HTML
 returned by the server in a modal display. Form submissions immediately change
-the value of settings on the user's server-side model.
-
-The application uses Backbone.js models and views for animation controls. The
-convention used in the application is that only form submissions may change the
-underlying :class:`gnome.model.Model` object, so Backbone.js ``Model`` objects
-are used in a read-only way: i.e., these models are not "saved" back to the
-server, but typically refresh when the model changes after a form submission.
-
-"Running" the model sets up a chain of animations driven by the client by which
-the client requests the next available image, displays it, and requests another
-image, until the server reports that there are no more images remaining.
-
-A client-side ``TimeStep`` model receives data about individual time steps
-during the run. A ``Model`` object acts as a collection of ``TimeSteps`` and is
-bound to animation controls, such as the slider, which update when the ``Model``
-changes (e.g. new ``TimeStep`` objects are added), and allow the user to start
-and stop a "run" of the model.
+the value of settings on the user's server-side :class:`gnome.model.Model`.
 
 
-Goals
------
+Backbone.js Models and Views
+----------------------------
 
-- Keep as little state about the model in the browser as possible.
+The application uses Backbone.js client-side models and views for animation
+controls. The convention used in the application is that only form submissions
+may change the underlying :class:`gnome.model.Model` object, so Backbone.js
+``Model`` objects are used in a read-only way: i.e., these "models" are not
+saved back to the server, but typically refresh when the
+:class:`gnome.model.Model` changes after a form submission.
 
-- Restrict the JavaScript app from direct knowledge of URLs. URLs should be
-  passed into the application from the server. This is a work in progress.
 
-- Always request model data from the server before displaying it (i.e., in-app
-  changes do not change a local model which persists; they change the server-side
-  model and displays refresh from AJAX calls to the server).
+Running the Model
+-----------------
 
-- Render forms on the server ("view partials") and return via AJAX calls. Forms
-  are not rendered by client- side templates in the browser, though we may use
-  lightweight client-side validation in addition to server-side validation.
+"Running" the :class:`gnome.model.Model` sets up a chain of animations driven
+by the client by which the client requests the next available image, displays
+it, and requests another image, until the server reports that there are no more
+images remaining.
 
-- Backbone.js models and views are used to render read-only data.
+A client-side ``TimeStep`` Backbone.js model receives data about individual
+time steps during the run. A ``Model`` object acts as a collection of
+``TimeSteps`` and is bound to animation controls, such as the slider, which
+update when the Backbone.js changes (e.g. new ``TimeStep`` objects are added),
+and allow the user to start and stop a "run" of the :class:`gnome.model.Model`.
 
 
 The Navigation Tree

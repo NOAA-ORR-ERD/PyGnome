@@ -9,10 +9,18 @@ tests Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`form_view_tests` Module
------------------------------
+:mod:`model_view_tests` Module
+------------------------------
 
-.. automodule:: webgnome.tests.form_view_tests
+.. automodule:: webgnome.tests.model_view_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`object_form_tests` Module
+-------------------------------
+
+.. automodule:: webgnome.tests.object_form_tests
     :members:
     :undoc-members:
     :show-inheritance:

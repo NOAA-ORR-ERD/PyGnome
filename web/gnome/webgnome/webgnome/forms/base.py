@@ -83,8 +83,10 @@ class DateTimeForm(Form):
     and minute. Taken together, the values can be passed into a
     `datetime.datetime` constructor.
     """
+    DATE_FORMAT = "%m/%d/%Y"
+
     date = DateTimeField('Date', widget=DatePickerWidget(),
-                     format="%m/%d/%Y",
+                     format=DATE_FORMAT,
                      validators=[Required()],
                      default=datetime.date.today())
     hour = IntegerField(widget=LeadingZeroIntegerWidget(),

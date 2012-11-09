@@ -6,24 +6,28 @@ import unittest
 
 from pyramid import testing
 from paste.deploy.loadwsgi import appconfig
+from webtest import TestApp
+
+from webgnome import main
 
 
-class FunctionalTestBase(unittest.TestCase):
-   def setUp(self):
-        from webgnome import main
-        app = main({})
-        from webtest import TestApp
+class GnomeTestCase(unittest.TestCase):
+    def get_settings(self, config_file='../../development.ini'):
+        dirname = os.path.dirname(__file__)
+        return appconfig('config:%s' % config_file, relative_to=dirname)
+
+
+class FunctionalTestBase(GnomeTestCase):
+    def setUp(self):
+        settings = self.get_settings()
+        app = main(None, **settings)
         self.testapp = TestApp(app)
 
 
-class UnitTestBase(unittest.TestCase):
+class UnitTestBase(GnomeTestCase):
     def setUp(self):
         self.config = testing.setUp()
-
-        # Application settings. TODO: Use ``test.ini`` file?
-        cwd = os.getcwd()
-        self.settings = appconfig(
-            'config:../../development.ini', relative_to=cwd)
+        self.settings = self.get_settings()
 
     def tearDown(self):
         testing.tearDown()
@@ -33,5 +37,3 @@ class UnitTestBase(unittest.TestCase):
 
     def get_resource(self, *args, **kwargs):
         return testing.DummyResource(*args, **kwargs)
-
-

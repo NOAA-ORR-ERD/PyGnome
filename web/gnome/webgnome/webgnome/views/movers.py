@@ -100,6 +100,7 @@ def _update_wind_mover_post(model, mover_id, form):
         'form_html': None
     }
 
+
 @view_config(route_name='update_wind_mover', renderer='gnome_json')
 @util.json_require_model
 def update_wind_mover(request, model):
