@@ -19,5 +19,6 @@ py_gnome/gnome/pyGnome.egg-info/*
 # ignore built documention in WebGNOME
 web/gnome/webgnome/doc/_build/*
 
-# ignore test images in WebGNOME
+# ignore generated images in WebGNOME
 web/gnome/webgnome/webgnome/static/img/test_images/*
+web/gnome/webgnome/webgnome/static/img/model_images/*
