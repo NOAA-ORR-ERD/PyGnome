@@ -20,12 +20,54 @@ def test_exceptions():
         wind_vel = np.zeros((1,), basic_types.velocity_rec)
         movers.WindMover(timeseries=wind_vel)
 
+def test_init():
+    """
+    test setting the properties of the object
+    """
+    file = r"SampleData/WindDataFromGnome.WND"
+    wm = movers.WindMover(file=file, uncertain_duration=1, is_active=False,
+                 uncertain_time_delay=2, uncertain_speed_scale=3, uncertain_angle_scale=4)
+    assert wm.is_active == False
+    assert wm.uncertain_duration == 1
+    assert wm.uncertain_time_delay == 2
+    assert wm.uncertain_speed_scale == 3
+    assert wm.uncertain_angle_scale == 4
+
+
+def test_properties():
+    """
+    test setting the properties of the object
+    """
+    file = r"SampleData/WindDataFromGnome.WND"
+    wm = movers.WindMover(file=file)
+    
+    wm.uncertain_duration = 1
+    wm.uncertain_time_delay = 2
+    wm.uncertain_speed_scale = 3
+    wm.uncertain_angle_scale = 4
+    
+    assert wm.uncertain_duration == 1
+    assert wm.uncertain_time_delay == 2
+    assert wm.uncertain_speed_scale == 3
+    assert wm.uncertain_angle_scale == 4
+
+def _defaults(wm):
+    """
+    checks the default properties of the WindMover object as given in the input are as expected
+    """
+    assert wm.is_active == True
+    assert wm.uncertain_duration == 10800
+    assert wm.uncertain_time_delay == 0
+    assert wm.uncertain_speed_scale == 2
+    assert wm.uncertain_angle_scale == 0.4
+
 def test_read_file_init():
     """
     initialize from a long wind file
     """
     file = r"SampleData/WindDataFromGnome.WND"
     wm = movers.WindMover(file=file)
+    _defaults(wm)   # check defaults set correctly
     assert True
 
 def test_timeseries():
@@ -40,12 +82,15 @@ def test_timeseries():
     val['value']['v'] = [i for i in range(10,20,2)]
           
     wm  = movers.WindMover(timeseries=val)
+    _defaults(wm)   # also check defaults
+    
     print time_utils.round_time(val, roundTo=1)
     print "------------"
     print time_utils.round_time(wm.timeseries['time'], roundTo=1)
     np.testing.assert_equal(time_utils.round_time(wm.timeseries['time'], roundTo=1), 
                            time_utils.round_time(val['time'], roundTo=1), "time provided during initialization does not match the time in WindMover.timeseries")
     np.testing.assert_equal(wm.timeseries['value'], val['value'], "velocity_rec returned by WindMover.timeseries is not the same as what was input during initialization")
+    
 
 class TestWindMover():
     """

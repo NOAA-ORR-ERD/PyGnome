@@ -205,7 +205,7 @@ class WindMover(PyMover):
     
     @uncertain_angle_scale.setter
     def uncertain_angle_scale(self, value):
-        self.uncertain_angle_scale = value
+        self.mover.uncertain_angle_scale = value
 
     def _datetime_value_to_time_value(self, datetime_value_pair):
         """
