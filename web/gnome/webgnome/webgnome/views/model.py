@@ -203,16 +203,19 @@ def _get_timestamps(model):
     return timestamps
 
 
-def _get_time_step(model, timestamps):
+def _get_time_step(request, model, timestamps):
     step = None
 
     try:
         # TODO: next_image() should return a real timestamp.
         curr_step, filename, timestamp = model.next_image()
+        path_parts = filename.split(os.path.sep)
+        image_url = request.static_url(
+                'webgnome:static/img/%s/%s' % (model.id, path_parts[-1]))
 
         step = {
             'id': curr_step,
-            'url': filename,
+            'url': image_url,
             'timestamp': timestamps[curr_step]
         }
     except StopIteration:
@@ -248,11 +251,10 @@ def run_model(request, model):
     canvas.set_land(polygons)
     model.output_map = canvas
 
-    # TODO for py_gnome: The model should make this path available.
-    data['background_image'] = os.path.join(
-        request.registry.settings['images_dir'], 'background_map.png')
+    data['background_image'] = request.static_url(
+        'webgnome:static/img/%s/%s' % (model.id, 'background_map.png'))
 
-    first_step = _get_time_step(model, timestamps)
+    first_step = _get_time_step(request, model, timestamps)
 
     if not first_step:
         return {}
@@ -295,7 +297,7 @@ def get_next_step(request, model):
     Generate the next step of a model run and return the result.
     """
     timestamps = _get_timestamps(model)
-    step = _get_time_step(model, timestamps)
+    step = _get_time_step(request, model, timestamps)
 
     if not step:
         raise HTTPNotFound
