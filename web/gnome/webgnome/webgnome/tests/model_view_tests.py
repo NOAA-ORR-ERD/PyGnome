@@ -62,7 +62,8 @@ class ModelViewTests(FunctionalTestBase):
         # Duration of 1 day (24*60*60)/ time step of 15 minutes in secs. (900)
         self.assertEqual(len(json_resp['expected_time_steps']), 96)
         self.assertEqual(
-                json_resp['expected_time_steps'][0], start_date.isoformat())
+                json_resp['expected_time_steps'][0],
+                (start_date + self.fifteen_minutes).isoformat())
 
     def test_run_model_returns_correct_background_image(self):
         start_date = datetime.datetime(year=2012, month=1, day=1, hour=1,
@@ -112,5 +113,5 @@ class ModelViewTests(FunctionalTestBase):
 
             # Compensate for the time added by the model on step 0.
             step_multiplier = step_num + 1
-            expected_time = start_date + (self.fifteen_minutes * step_multiplier)
+            expected_time = start_date + self.fifteen_minutes * step_multiplier
             self.assertEqual(step['timestamp'], expected_time.isoformat())
