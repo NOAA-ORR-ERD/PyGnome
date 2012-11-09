@@ -28,6 +28,7 @@ def test_start_time():
     
     st = datetime(2012, 8, 12, 13)
     model.start_time = st
+    
     assert model.current_time_step == -1
     assert model.start_time == st
 
@@ -128,7 +129,6 @@ def test_simple_run_with_image_output():
     start_time = datetime(2012, 9, 15, 12, 0)
     
     model = gnome.model.Model()
-    model.images_dir = images_dir
     model.duration = timedelta(hours=1)
 
     mapfile = "SampleData/MapBounds_Island.bna"
@@ -148,8 +148,8 @@ def test_simple_run_with_image_output():
 
     N = 10 # a line of ten points
     start_points = np.zeros((N, 3) , dtype=np.float64)
-    start_points[:,0] = np.linspace(-127.1, -126.1, N)
-    start_points[:,1] = np.linspace( 47.93, 48.05, N)
+    start_points[:,0] = np.linspace(-127.1, -126.5, N)
+    start_points[:,1] = np.linspace( 47.93, 48.1, N)
     #print start_points
     spill = gnome.spill.PointReleaseSpill(num_LEs=10,
                                           start_position = start_points,
@@ -160,19 +160,22 @@ def test_simple_run_with_image_output():
     model.start_time = spill.release_time
     #image_info = model.next_image()
 
+    num_steps_output = 0
     while True:
          print "calling next_image"
          try:
-             image_info = model.next_image()
+             image_info = model.next_image(images_dir)
+             num_steps_output += 1
              print image_info
          except StopIteration:
              print "Done with the model run"
              break
 
-    assert True
+    assert num_steps_ouput == (model.duration / model.time_step)
+
     
-# if __name__ == "__main__":
-#      test_simple_run_with_image_output()
+if __name__ == "__main__":
+  test_simple_run_with_image_output()
     
     
     
