@@ -126,8 +126,14 @@ def create_model(request):
     if confirm:
         if model_id:
             settings.Model.delete(model_id)
+
         model = settings.Model.create()
-        model.images_dir = request.registry.settings['images_dir']
+        model.images_dir = os.path.join(
+            request.registry.settings['images_dir'], str(model.id))
+
+        if not os.path.isdir(model.images_dir):
+            os.mkdir(model.images_dir)
+
         model_id = model.id
         request.session[settings.model_session_key] = model.id
         message = util.make_message('success', 'Created a new model.')
@@ -186,9 +192,12 @@ def _get_timestamps(model):
     timestamps = []
 
     # XXX: Why is _num_time_steps a float? Is this ok?
-    for step_num in range(1, int(model._num_time_steps) + 1):
-        delta = datetime.timedelta(seconds=step_num * model.time_step)
-        dt = model.start_time + delta
+    for step_num in range(int(model._num_time_steps) + 1):
+        if step_num == 0:
+            dt = model.start_time
+        else:
+            delta = datetime.timedelta(seconds=step_num * model.time_step)
+            dt = model.start_time + delta
         timestamps.append(dt.isoformat())
 
     return timestamps
@@ -198,19 +207,14 @@ def _get_time_step(model, timestamps):
     step = None
 
     try:
-        # TODO: ``timestamp`` should be a real timestamp.
+        # TODO: next_image() should return a real timestamp.
         curr_step, filename, timestamp = model.next_image()
 
-        # FIXME: Timestamp should never be None. Off by one error?
-        timestamp = timestamps[curr_step] if curr_step < len(
-                timestamps) else None
-
-        if timestamp:
-            step = {
-                'id': curr_step,
-                'url': filename,
-                'timestamp': timestamp
-            }
+        step = {
+            'id': curr_step,
+            'url': filename,
+            'timestamp': timestamps[curr_step]
+        }
     except StopIteration:
         pass
 

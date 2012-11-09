@@ -30,7 +30,7 @@ def main(global_config, **settings):
     settings['package_root'] = os.path.abspath(os.path.dirname(__file__))
     settings['project_root'] = os.path.dirname(settings['package_root'])
     settings['images_dir'] = os.path.join(
-        settings['project_root'], settings['images_dir'])
+        settings['package_root'], 'static', 'img', settings['images_dir'])
 
     # Create the output directory if it does not exist.
     if not os.path.isdir(settings['images_dir']):

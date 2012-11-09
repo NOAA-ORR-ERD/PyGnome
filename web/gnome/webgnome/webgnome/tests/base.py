@@ -2,6 +2,7 @@
 base.py: Base classes for different types of tests.
 """
 import os
+import shutil
 import unittest
 
 from pyramid import testing
@@ -12,16 +13,26 @@ from webgnome import main
 
 
 class GnomeTestCase(unittest.TestCase):
-    def get_settings(self, config_file='../../development.ini'):
+    def get_settings(self, config_file='../../test.ini'):
         dirname = os.path.dirname(__file__)
         return appconfig('config:%s' % config_file, relative_to=dirname)
 
 
 class FunctionalTestBase(GnomeTestCase):
     def setUp(self):
-        settings = self.get_settings()
-        app = main(None, **settings)
+        self.settings = self.get_settings()
+        app = main(None, **self.settings)
         self.testapp = TestApp(app)
+
+    def tearDown(self):
+        """
+        Clean up any images the model generated after running tests.
+        """
+        project_root = os.path.abspath(
+            os.path.dirname(os.path.dirname(__file__)))
+        test_images_dir = os.path.join(
+            project_root, 'static', self.settings['images_dir'])
+        shutil.rmtree(test_images_dir, ignore_errors=True)
 
 
 class UnitTestBase(GnomeTestCase):
