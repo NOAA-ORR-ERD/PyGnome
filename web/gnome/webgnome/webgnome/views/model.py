@@ -70,6 +70,7 @@ def model_forms(request, model):
         'html': render('model_forms.mak', context, request)
     }
 
+
 @view_config(route_name='show_model', renderer='model.mak')
 def show_model(request):
     """
@@ -84,7 +85,8 @@ def show_model(request):
     """
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
-    model, created = settings.Model.get_or_create(model_id)
+    model, created = settings.Model.get_or_create(
+        model_id, images_dir=request.registry.settings['model_images_dir'])
     data = {}
 
     if created:
@@ -127,13 +129,8 @@ def create_model(request):
         if model_id:
             settings.Model.delete(model_id)
 
-        model = settings.Model.create()
-        model.images_dir = os.path.join(
-            request.registry.settings['images_dir'], str(model.id))
-
-        if not os.path.isdir(model.images_dir):
-            os.mkdir(model.images_dir)
-
+        model = settings.Model.create(
+            images_dir=request.registry.settings['model_images_dir'])
         model_id = model.id
         request.session[settings.model_session_key] = model.id
         message = util.make_message('success', 'Created a new model.')
@@ -198,7 +195,7 @@ def _get_timestamps(model):
         else:
             delta = datetime.timedelta(seconds=step_num * model.time_step)
             dt = model.start_time + delta
-        timestamps.append(dt.isoformat())
+        timestamps.append(dt)
 
     return timestamps
 
@@ -208,11 +205,13 @@ def _get_time_step(request, model, timestamps):
 
     try:
         # TODO: next_image() should return a real timestamp.
-        curr_step, filename, timestamp = model.next_image()
-        path_parts = filename.split(os.path.sep)
+        curr_step, file_path, timestamp = model.next_image()
+        filename = file_path.split(os.path.sep)[-1]
         image_url = request.static_url(
-                'webgnome:static/img/%s/%s' % (model.id, path_parts[-1]))
-
+                'webgnome:static/%s/%s/%s' % (
+                    request.registry.settings['model_images_url_path'],
+                    model.id,
+                    filename))
         step = {
             'id': curr_step,
             'url': image_url,
@@ -233,7 +232,7 @@ def run_model(request, model):
     """
     data = {}
 
-    # TODO: This should probably be on the model (except for isoformat()).
+    # TODO: This should probably be on the model.
     timestamps = _get_timestamps(model)
     data['expected_time_steps'] = timestamps
 

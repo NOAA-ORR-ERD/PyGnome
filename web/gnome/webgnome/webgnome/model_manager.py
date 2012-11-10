@@ -1,6 +1,7 @@
 """
 model_manager.py: Manage a pool of running models.
 """
+import os
 
 from gnome.model import Model
 
@@ -16,7 +17,7 @@ class ModelManager(object):
     def __init__(self):
         self.running_models = {}
 
-    def create(self):
+    def create(self, images_dir):
         model = Model()
 
         # Patch the object with an empty ``time_steps`` array for the time being.
@@ -34,10 +35,15 @@ class ModelManager(object):
 
         setattr(model.__class__, 'has_mover_with_id', has_mover_with_id)
 
+        model.images_dir = os.path.join(images_dir, str(model.id))
+
+        if not os.path.isdir(model.images_dir):
+            os.mkdir(model.images_dir)
+
         self.running_models[model.id] = model
         return model
 
-    def get_or_create(self, model_id):
+    def get_or_create(self, model_id, images_dir):
         """
         Return a running :class:`gnome.model.Model` instance if the user has a
         valid ``model_id`` key in his or her session. Otherwise, create a new
@@ -50,7 +56,7 @@ class ModelManager(object):
             model = self.running_models.get(model_id, None)
 
         if model is None:
-            model = self.create()
+            model = self.create(images_dir)
             created = True
 
         return model, created
