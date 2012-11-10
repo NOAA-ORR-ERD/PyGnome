@@ -260,6 +260,38 @@ class FlatEarthProjection(GeoProjection):
         return delta_lon_lat
 
     @staticmethod
+    def lonlat_to_meters(lon_lat, ref_positions):
+        """
+        Converts from delta longitude-latitude to delta meters, using the
+        Flat-Earth projection. This shold be a reversal of meters_to_latlon.
+        
+        This function mainly used for testing
+
+        :param lon_lat: NX3 numpy array of (dlon, dlat, dz) distances in meters (dz is passed through untouched)
+        :param ref_positions: NX3, numpy array of (lon,lat,z) reference positions in degrees (Only lat is used here)
+
+        :returns delta_meters: Nx3 numpy array of (delta-x, delta-y, delta-z) triples
+
+        NOTE: the input is in units of longitude and latitude, but they are relative -- no absolute -- so 0
+              means zero distance, not on the equator
+
+        dy = dlon / 8.9992801e-06
+
+        dx = dlat / ( 8.9992801e-06 * cos(ref_lat) ) 
+
+        (based on previous GNOME value: and/or average radius of the earth of 6366706.989  m)
+
+        """
+        #make a copy -- don't change input
+        delta_meters = np.array(lon_lat, dtype=np.float64).reshape(-1, 3)
+        # reference is possible for reference positions
+        ref_positions = np.asarray(ref_positions, dtype=np.float64).reshape(-1, 3)
+
+        delta_meters[:,:2] /= 8.9992801e-06
+        delta_meters[:,0] *= np.cos(np.deg2rad(ref_positions[:,1]))
+        return delta_meters
+
+    @staticmethod
     def geodesic_sphere(lon, lat, distance, bearing):
         """
         Given a start point, initial bearing, and distance, returns the

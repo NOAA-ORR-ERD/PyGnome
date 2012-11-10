@@ -50,22 +50,6 @@ class TestRandomMover():
 
     def test_id_matches_builtin_id(self):
         assert id(self.mover) == self.mover.id
-
-    def test_get_move(self):
-        """
-        Test the get_move(...) results in RandomMover
-        It doesn't check the results, only calls get_move twice
-        """
-        self.pSpill.prepare_for_model_step(self.model_time, self.time_step)
-        self.mover.prepare_for_model_step(self.model_time, self.time_step)
-
-        # make sure clean up is happening fine
-        for ix in range(2):
-            curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
-            print "Time step [sec]: " + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
-            delta = self.mover.get_move(self.pSpill, self.time_step, curr_time)
-            
-        assert True
        
     def test_change_diffusion_coef(self):
         self.mover.diffusion_coef = 200000
@@ -73,32 +57,47 @@ class TestRandomMover():
         assert self.mover.diffusion_coef == 200000 
 
 
-class Test_variance:
-    num_le = 10
+start_locs = [(0.0,0.0,0.0),
+              (30.0, 30.0, 30.0),
+              (-45.0, -60.0, 30.0),
+              ]
+
+timesteps = [36, 360, 3600]
+
+test_cases = [(loc, step) for loc in start_locs for step in timesteps]
+
+@pytest.mark.parametrize( ("start_loc","time_step"), test_cases)
+def test_variance1(start_loc, time_step):
+    """
+    After a few timesteps the variance of the particle positions should be
+    similar to the computed value: var = Dt
+    """
+    num_le = 1000
     start_time = datetime.datetime(2012,11,10,0)
-    time_step = 360 #seconds -- 6 minutes
-    spill = gnome.spill.PointReleaseSpill(num_le, (0.0,0.0,0.0), start_time)
+    spill = gnome.spill.PointReleaseSpill(num_le, start_loc, start_time)
+    D = 100000
+    num_steps = 10
+    spill.reset()
 
-    def test_variance1(self):
-        """
-        After a few timesteps the variance of the particle positions should be
-        similar to the computed value: var = Dt
-        """
-        self.spill.reset()
+    rand = movers.RandomMover(diffusion_coef=D)
 
-        rand = movers.RandomMover(diffusion_coef=100000)
+    model_time = start_time
+    for i in range(num_steps):
+        model_time += datetime.timedelta(seconds=time_step)
+        spill.prepare_for_model_step(model_time, time_step)
+        rand.prepare_for_model_step(model_time, time_step)
+        delta = rand.get_move(spill, time_step, model_time)
+        #print "delta:", delta
+        spill['positions'] += delta
+        #print spill['positions']
+    # compute the variances:
+    # convert to meters
+    pos = projections.FlatEarthProjection.lonlat_to_meters(spill['positions'], start_loc)
+    var = np.var(pos, axis=0)
 
-        model_time = self.start_time
-        for i in range(1):# run for ten steps
-            model_time += datetime.timedelta(seconds=self.time_step)
-            print model_time
-            self.spill.prepare_for_model_step(model_time, self.time_step)
-            rand.prepare_for_model_step(model_time, self.time_step)
-            delta = rand.get_move(self.spill, self.time_step, model_time)
-            print "delta:", delta
-            self.spill['positions'] += delta
-            
-        assert False
+    expected = 2.0 * (D * 1e-4) * num_steps * time_step # D converted to meters^s/s
+
+    assert np.allclose(var, (expected, expected, 0.0), rtol= 0.1 )
 
        
 if __name__=="__main__":

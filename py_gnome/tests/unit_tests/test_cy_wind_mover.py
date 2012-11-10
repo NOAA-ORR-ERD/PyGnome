@@ -19,7 +19,23 @@ from gnome.utilities import projections
 
 def test_init(): # can we create a wind_mover?
     wm = cy_wind_mover.CyWindMover()
-    assert True
+    assert wm.uncertain_duration == 10800
+    assert wm.uncertain_time_delay == 0
+    assert wm.uncertain_speed_scale == 2
+    assert wm.uncertain_angle_scale == 0.4
+    
+def test_properties():
+    wm = cy_wind_mover.CyWindMover()
+    
+    wm.uncertain_duration = 1
+    wm.uncertain_time_delay = 2
+    wm.uncertain_speed_scale = 3
+    wm.uncertain_angle_scale = 4
+    
+    assert wm.uncertain_duration == 1
+    assert wm.uncertain_time_delay == 2
+    assert wm.uncertain_speed_scale == 3
+    assert wm.uncertain_angle_scale == 4
 
 class Common():
     """

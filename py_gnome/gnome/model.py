@@ -26,10 +26,6 @@ class Model(object):
         self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
         self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
 
-        ## Various run-time parameters for output
-        self.output_types = [] # default to no output type -- there could be: "image", "netcdf", etc)
-        self.images_dir = '.'
-
         self.reset() # initializes everything to nothing.
 
     def reset(self):
@@ -37,25 +33,26 @@ class Model(object):
         Resets model to defaults -- Caution -- clears all movers, etc.
         
         """
+
+
         self.output_map = None
         self.map = None
         self._movers = OrderedDict()
         self._spills = OrderedDict()
         self._uncertain_spills = OrderedDict()
-
-        self._current_time_step = -1
-
         
+        self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
         self.time_step = timedelta(minutes=15).total_seconds()
 
-        
         self.uncertain = False
+        self.rewind()
         
     def rewind(self):
         """
         resets the model to the beginning (start_time)
         """
-        self._current_time_step = -1 # start at -1 -- it get incremented first.
+        self._current_time_step = -1 # start at -1
+        self.model_time = self._start_time
         for spill in self.spills:
             spill.reset()
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
@@ -244,7 +241,6 @@ class Model(object):
             -- sets the new position
         """
         for spills in (self.spills,self.uncertain_spills):
-            
             for spill in spills:
                 spill['next_positions'][:] = spill['positions']
     
@@ -277,34 +273,37 @@ class Model(object):
         for mover in self.movers:
             mover.model_step_is_done()
     
-    def write_output(self):
-        """
-        write the output of the current time step to whatever output
-        methods have been selected
-        """
-        for output_method in self.output_types:
-            if output_method == "image":
-                self.write_image()
-            else:
-                raise ValueError("%s output type not supported"%output_method)
-    
-    def write_image(self):
+    # def write_output(self):
+    #     """
+    #     write the output of the current time step to whatever output
+    #     methods have been selected
+    #     """
+    #     for output_method in self.output_types:
+    #         if output_method == "image":
+    #             self.write_image()
+    #         else:
+    #             raise ValueError("%s output type not supported"%output_method)
+    #     return (self.current_time_step, filename, self.model_time.isoformat())
+
+    def write_image(self, images_dir):
         ##fixme: put this in an "Output" class?
         """
         render the map image, according to current parameters
+
+        :param images_dir: directory to write the image to.
+
         """
         if self.output_map is None:
             raise ValueError("You must have an ouput map to use the image output")
         if self.current_time_step == 0:
             self.output_map.draw_background()
-            self.output_map.save_background(os.path.join(self.images_dir, "background_map.png"))
+            self.output_map.save_background(os.path.join(images_dir, "background_map.png"))
 
-        filename = os.path.join(self.images_dir, 'foreground_%05i.png'%self._current_time_step)
+        filename = os.path.join(images_dir, 'foreground_%05i.png'%self._current_time_step)
 
         self.output_map.create_foreground_image()
+
         for spill in self.spills:
-            #print "drawing elements"
-            #print spill['positions']
             self.output_map.draw_elements(spill)
         self.output_map.save_foreground(filename)
 
@@ -315,18 +314,16 @@ class Model(object):
         Steps the model forward in time. Needs testing for hindcasting.
                 
         """
-                
-        if self._current_time_step >= self._num_time_steps:
+        self._current_time_step += 1        
+        if self._current_time_step > self._num_time_steps:
             return False
         
-        if self._current_time_step == -1:
-            self.setup_model_run()
-        
-        self._current_time_step += 1
-        self.setup_time_step()
-        self.move_elements()
-        self.step_is_done()
-
+        if self._current_time_step == 0:
+            self.setup_model_run() # that's all we need to do for the zeroth time step
+        else:    
+            self.setup_time_step()
+            self.move_elements()
+            self.step_is_done()
         return True
     
     def __iter__(self):
@@ -352,22 +349,30 @@ class Model(object):
         return self.current_time_step
 
                 
-    def next_image(self):
+    def next_image(self, images_dir):
         """
         compute the next model step, render an image, and return info about the
         step rendered
         
         """
+        # write out the zeroth image:
         if not self.step():
             raise StopIteration
-        filename = self.write_image()
-        return (self.current_time_step, filename, "a timestamp")
+        filename = self.write_image(images_dir)
+        return (self.current_time_step, filename, self.model_time.isoformat())
 
-    def full_run_and_output(self):
+    def full_run_with_image_output(self, output_dir):
         """
-        Do a full run of the model, outputting whatever has been set.
+        Do a full run of the model, outputting an image per time step.
         """
-        raise NotImplmentedError
         
+        # run the model
+        while True:
+            try:
+                image_info = model.next_image()
+            except StopIteration:
+                print "Done with the model run"
+                break
+
 
         

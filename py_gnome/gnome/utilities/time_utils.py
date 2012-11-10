@@ -8,21 +8,34 @@ assorted utilities for working with time and datetime
 
 import datetime
 import time
+import numpy
 
 def date_to_sec(date_time):
     """
-    :param date_time: python datetime object 
-    Takes the tuple and forces tm_isdst=0, then calls time.mktime to convert to seconds
+    :param date_time: Either a python datetime object or a numpy array of dtype=datetime or dtype=numpy.datetime64
+    :returns: either an array containing the time in seconds or just the date in seconds if only 1 input 
+    
+    For each date, it makes timetuple and forces tm_isdst=0, then calls time.mktime to convert to seconds
     Consistent with Gnome, it does not account for daylight savings time.
+    
     The epoch is as defined in python: Jan 1, 1970
     """
-    temp = list(date_time.timetuple())
-    temp[-1] = 0 
-    return time.mktime(temp)
+    d_array = numpy.asarray(date_time, dtype=numpy.datetime64).reshape(-1)
+    t_array = numpy.zeros(numpy.shape(d_array), dtype=numpy.uint32)
+    
+    for li in range(len(d_array)):
+        date = d_array[li].astype(object)
+        temp = list(date.timetuple())
+        temp[-1] = 0 
+        t_array[li] = time.mktime(temp)
+        
+    return ( len(t_array)==1 and t_array[0].astype(object) or t_array )
+        
 
 def sec_to_date(seconds):
     """
-    :param seconds: time in seconds
+    :param seconds: Either time in seconds or a numpy array of containing time in seconds
+    
     Takes the time and converts it back to datetime object.  
     
     It invokes time_utils.sec_to_timestruct(...), which it then
@@ -32,13 +45,22 @@ def sec_to_date(seconds):
     Note: Functionality broken up into time_utils.sec_to_timestruct(...) to test
     that it works in the same way as the lib_gnome C++ cython wrapper 
     """   
-    t = sec_to_timestruct(seconds)
-    dt = datetime.datetime(*t[:7])
-    return dt 
+    t_array = numpy.asarray(seconds, dtype=numpy.uint32).reshape(-1)
+    d_array = numpy.zeros(numpy.shape(t_array), dtype=numpy.datetime64)
+    
+    for li in range(len(t_array)):    
+        t = sec_to_timestruct(t_array[li])
+        d_array[li] = datetime.datetime(*t[:7])
+    return ( len(d_array)==1 and d_array[0].astype(object) or d_array )
     
 def sec_to_timestruct(seconds):
     """
     :param seconds: time in seconds
+    
+    This doesn't operate on a numpy array. This was separeted as a way to explicitly 
+    check that we get the same results as the C++ gnome code. It is unlikely to be called from
+    pyGnome
+    
     Takes the time and converts it back using localtime()
     If tm_dst = 1 (by default), then subtract 1 hour and set this flag to 0
     Returns a time.struct_time
@@ -52,9 +74,12 @@ def sec_to_timestruct(seconds):
     
 def round_time(dt=None, roundTo=60):
    """
-   Round a datetime object to any time laps in seconds
-   :param dt: datetime.datetime object, default now.
+   Round a datetime object or numpy array to any time laps in seconds
+   
+   :param dt: datetime.datetime object or numpy array of datetime objects, default now.
    :param roundTo: Closest number of seconds to round to, default 1 minute.
+   
+   :returns: either an array with rounded values or just a single value if only 1 value was input
 
    Author: Thierry Husson 2012 - Use it as you want but don't blame me.
    
@@ -62,11 +87,18 @@ def round_time(dt=None, roundTo=60):
    """
    if dt == None :
        dt = datetime.datetime.now()
-   seconds = (dt - dt.min).seconds
-   # // is a floor division, not a comment on following line:
-   rounding = (seconds+roundTo/2) // roundTo * roundTo
-   return dt + datetime.timedelta(0,rounding-seconds,-dt.microsecond)
+   
+   dt = numpy.asarray(dt, dtype=numpy.datetime64).reshape(-1)
 
+   
+   for li in range(len(dt)):
+       date = dt[li].astype(object)
+       seconds = (date - date.min).seconds
+       rounding= (seconds+roundTo/2) // roundTo * roundTo
+       # // is a floor division, not a comment on following line:
+       dt[li] = date + datetime.timedelta(0,rounding-seconds,-date.microsecond)
+   
+   return ( len(dt)==1 and dt[0].astype(object) or dt )
 
 
 if __name__ == "__main__":

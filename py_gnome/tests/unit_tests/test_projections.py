@@ -4,6 +4,7 @@
 """
 tests of the gnome.utilities.projections module
 """
+import pytest
 import numpy as np
 from gnome.utilities import projections
 
@@ -210,6 +211,54 @@ def test_meters_to_lonlat3():
 
     dlonlat = m2l( (METERS_PER_DEGREE_GNOME, METERS_PER_DEGREE_GNOME, 0.0), (30.0, 90.0, 0.0) )
     assert dlonlat[0,0] > 1e16  # somewhat arbitrary...it should be infinity, but apparently not with fp rounding
+
+## tests for lonlat_to_meters
+l2m = projections.FlatEarthProjection.lonlat_to_meters
+METERS_PER_DEGREE_GNOME = 111119.9994764
+def test_meters_to_latlon():
+    """ distance at equator """
+    assert np.allclose( l2m( (1.0, 1.0, 0.0), (0.0, 0.0, 0.0) ),
+                        (METERS_PER_DEGREE, METERS_PER_DEGREE_GNOME, 0.0) )
+       
+def test_meters_to_latlon2():
+    """ distance at 60 deg north (1/2) """
+    assert np.allclose( l2m( (2.0, 1.0, 4.5), (0.0, 60.0, 0.0) ),
+                        (METERS_PER_DEGREE_GNOME, METERS_PER_DEGREE_GNOME, 4.5) )
+     
+def test_meters_to_latlon3():
+    """ distance at 90 deg north: it should get very small!"""
+
+    delta_meters = l2m( (0.01, 1.0, 0.0), (30.0, 90.0, 0.0) )
+    print delta_meters
+    assert delta_meters[0][0] <= 1e-13 # should be zero -- but with floating point...
+    assert np.allclose(delta_meters[0][1], METERS_PER_DEGREE_GNOME)
+
+##Some tests for the round-trip -- meters to lon-lat and back
+
+d_lonlat = [(1.0, 1.0, 0),
+            (10.0, -10.0, 0),
+            (-2.0, -10.0, 0),
+           ]
+
+refs     = [(0.0,  0.0, 0.0),
+            (0.0, 30.0, 0.0),
+            (0.0, -30.0, 0.0),
+            (0.0, 60.0, 0.0),
+            (0.0, -60.0, 0.0),
+            (0.0, 90.0, 0.0),
+            ]
+
+examples = [ (l,r) for l in d_lonlat for r in refs ]
+
+@pytest.mark.parametrize( ("d_lonlat", "ref"), examples )
+def test_round_trip(d_lonlat, ref):
+    #d_lonlat = (1.0, 1.0, 0)
+    #ref = (0.0, 0.0, 0.0)
+    assert np.allclose( d_lonlat, m2l( l2m( d_lonlat, ref ), ref ))
+
+@pytest.mark.parametrize( ("d_meters", "ref"), examples )
+def test_round_trip_reverse(d_meters, ref):
+    assert np.allclose( d_meters, l2m( m2l( d_meters, ref ), ref ))
 
 
 ##################################################
