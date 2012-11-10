@@ -14,11 +14,11 @@ ul.dynatree-container {
     background-image: none;
 }
 
-span.dynatree-node a {
+.dynatree-node a {
     font-size: 9pt;
 }
 
-ul#tree-list {
+#tree-list {
     display: none;
 }
 
@@ -30,7 +30,7 @@ div.nav-collapse > div.btn-toolbar {
     margin-right: 40px;
 }
 
-div#slider {
+#slider {
     width: 150px;
     margin-right: 15px;
     margin-left: 15px;
@@ -40,7 +40,7 @@ div#slider {
     top: 15px;
 }
 
-div#slider-container {
+#slider-container {
     width: 150px;
     cursor: default;
     color: #333;
@@ -48,11 +48,11 @@ div#slider-container {
     background-color: whiteSmoke;
 }
 
-div#sidebar-toolbar {
+#sidebar-toolbar {
     display: inline;
 }
 
-span#time {
+#time {
     position: relative;
     top: -5px;
     vertical-align: top;
@@ -79,7 +79,15 @@ legend {
     line-height: 20px;
 }
 
-input#hour,
-input#minute {
+#hour,
+#minute {
     width: 20px;
+}
+
+img.frame {
+    z-index: 100;
+}
+
+img.background {
+    z-index: 10;
 }

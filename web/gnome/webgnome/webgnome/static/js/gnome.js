@@ -157,8 +157,8 @@ var Model = Backbone.Collection.extend({
     /*
      Helper that performs an AJAX request to start ("run") the model.
 
-     Receives back an array of timestamps, one for each step the server
-     expects to generate on subsequent requests.
+     Receives back the background image for the map and an array of timestamps,
+     one for each step the server expects to generate on subsequent requests.
      */
     doRun: function(opts) {
         var isInvalid = function(obj) {
@@ -540,6 +540,7 @@ var MapView = Backbone.View.extend({
 
         this.model = this.options.model;
         this.model.on(Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+        this.model.on(Model.RUN_BEGAN, this.modelRunBegan);
         this.model.on(Model.RUN_ERROR, this.modelRunError);
         this.model.on(Model.RUN_FINISHED, this.modelRunFinished);
         this.model.on(Model.CREATED, this.modelCreated);
@@ -641,7 +642,7 @@ var MapView = Backbone.View.extend({
         }
 
         var stepImage = this.getImageForTimeStep(stepNum);
-        var otherImages = $(this.mapEl).find('img').not(stepImage);
+        var otherImages = $(this.mapEl).find('img').not(stepImage).not('.background');
 
         // Hide all other images in the map div.
         otherImages.css('display', 'none');
@@ -671,21 +672,17 @@ var MapView = Backbone.View.extend({
         img.appendTo(map);
 
         $(img).imagesLoaded(function() {
-            setTimeout(_this.showImageForTimeStep, 150, [timeStep.id]);
+            window.setTimeout(_this.showImageForTimeStep, 150, [timeStep.id]);
         });
     },
 
     addTimeStep: function(timeStep) {
-        if (timeStep.id === 0 && this.placeholderCopy) {
-            this.removePlaceholderCopy();
-        }
-
         var imageExists = this.getImageForTimeStep(timeStep.id).length;
 
         // We must be playing a cached model run because the image already
         // exists. In all other cases the image should NOT exist.
         if (imageExists) {
-            setTimeout(this.showImageForTimeStep, 150, [timeStep.id]);
+            window.setTimeout(this.showImageForTimeStep, 150, [timeStep.id]);
             return;
         }
 
@@ -694,7 +691,7 @@ var MapView = Backbone.View.extend({
 
     // Clear out the current frames.
     clear: function() {
-        $(this.mapEl).empty();
+        $(this.mapEl).not('.background').empty();
     },
 
     getSize: function() {
@@ -782,6 +779,23 @@ var MapView = Backbone.View.extend({
 
     nextTimeStepReady: function() {
         this.addTimeStep(this.model.getCurrentTimeStep());
+    },
+
+    modelRunBegan: function(data) {
+        if (this.placeholderCopy.length) {
+            this.removePlaceholderCopy();
+        }
+
+        var map = $(this.mapEl);
+
+        map.find('.background').remove();
+
+        var img = $('<img>').attr({
+            'class': 'background',
+            src: data.background_image
+        });
+
+        img.appendTo(map);
     },
 
     modelRunError: function() {
@@ -1627,7 +1641,7 @@ var AppView = Backbone.View.extend({
         this.sidebarEl = '#' + this.options.sidebarId;
 
         this.treeView = new TreeView({
-            // XXX: Hard-coded URL, HTML ID
+            // XXX: Hard-coded URL, ID.
             treeEl: "#tree",
             url: "/tree",
             ajaxForms: this.forms,
@@ -1651,7 +1665,7 @@ var AppView = Backbone.View.extend({
         });
 
         this.mapControlView = new MapControlView({
-            // XXX: Hard-coded IDs. Does it even matter?
+            // XXX: Hard-coded IDs.
             sliderEl: "#slider",
             playButtonEl: "#play-button",
             pauseButtonEl: "#pause-button",
@@ -1663,7 +1677,7 @@ var AppView = Backbone.View.extend({
             fullscreenButtonEl: "#fullscreen-button",
             resizeButtonEl: "#resize-button",
             timeEl: "#time",
-            // XXX: Partially hard-coded URL. Examine this practice.
+            // XXX: Partially hard-coded URL.
             url: this.apiRoot + '/time_steps',
             model: this.model,
             mapView: this.mapView

@@ -70,8 +70,8 @@ class ModelViewTests(FunctionalTestBase):
         resp, model_id = self.run_model(date=start_date)
         json_resp = json.loads(resp.body)
 
-        expected_url = \
-            'http://localhost/static/img/%s/background_map.png' % model_id
+        expected_url = 'http://localhost/static/img/test_model_images/' + \
+            '%s/background_map.png' % model_id
         self.assertEqual(json_resp['background_image'], expected_url)
 
     def test_run_model_returns_correct_first_step(self):

@@ -253,7 +253,10 @@ def run_model(request, model):
     model.output_map = canvas
 
     data['background_image'] = request.static_url(
-        'webgnome:static/img/%s/%s' % (model.id, 'background_map.png'))
+        'webgnome:static/%s/%s/%s' % (
+        request.registry.settings['model_images_url_path'],
+        model.id,
+        'background_map.png'))
 
     first_step = _get_time_step(request, model)
 
