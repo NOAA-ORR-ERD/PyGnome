@@ -85,8 +85,7 @@ def show_model(request):
     """
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
-    model, created = settings.Model.get_or_create(
-        model_id, images_dir=request.registry.settings['model_images_dir'])
+    model, created = settings.Model.get_or_create(model_id)
     data = {}
 
     if created:
@@ -129,8 +128,7 @@ def create_model(request):
         if model_id:
             settings.Model.delete(model_id)
 
-        model = settings.Model.create(
-            images_dir=request.registry.settings['model_images_dir'])
+        model = settings.Model.create()
         model_id = model.id
         request.session[settings.model_session_key] = model.id
         message = util.make_message('success', 'Created a new model.')
@@ -200,12 +198,16 @@ def _get_timestamps(model):
     return timestamps
 
 
-def _get_time_step(request, model, timestamps):
+def _get_time_step(request, model):
     step = None
+    images_dir = os.path.join(
+        request.registry.settings['model_images_dir'], str(model.id))
+
+    if not os.path.exists(images_dir):
+        os.mkdir(images_dir)
 
     try:
-        # TODO: next_image() should return a real timestamp.
-        curr_step, file_path, timestamp = model.next_image()
+        curr_step, file_path, timestamp = model.next_image(images_dir)
         filename = file_path.split(os.path.sep)[-1]
         image_url = request.static_url(
                 'webgnome:static/%s/%s/%s' % (
@@ -215,7 +217,7 @@ def _get_time_step(request, model, timestamps):
         step = {
             'id': curr_step,
             'url': image_url,
-            'timestamp': timestamps[curr_step]
+            'timestamp': timestamp
         }
     except StopIteration:
         pass
@@ -253,7 +255,7 @@ def run_model(request, model):
     data['background_image'] = request.static_url(
         'webgnome:static/img/%s/%s' % (model.id, 'background_map.png'))
 
-    first_step = _get_time_step(request, model, timestamps)
+    first_step = _get_time_step(request, model)
 
     if not first_step:
         return {}
@@ -295,8 +297,7 @@ def get_next_step(request, model):
     """
     Generate the next step of a model run and return the result.
     """
-    timestamps = _get_timestamps(model)
-    step = _get_time_step(request, model, timestamps)
+    step = _get_time_step(request, model)
 
     if not step:
         raise HTTPNotFound
