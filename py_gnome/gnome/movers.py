@@ -6,18 +6,20 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 
-class PyMover(object):
+class Mover(object):
     """
-    Base class for python wrappers around cython movers
-    All movers (CyWindMover, RandomMover) will need to extract info from spill object.
-    Put this code and any other code common to all movers here
+    Base class from which all Python movers can inherit
     
-    Base class assumes any derived class will instantiate a 'mover' object that
-    has methods like: prepare_for_model_run, prepare_for_model_step,
+    It defines the interface for a Python mover. The model expects the methods defined here. 
+    The get_move(...) method needs to be implemented by the derived class.  
     """
-    def __init__(self, is_active=True):
-        self.is_active = is_active  # all movers need this flag
-
+    def __init__(self, **kwargs):
+        """
+        During init, it defaults is_active = True
+        """
+        self.is_active = True
+        super(Mover,self).__init__(**kwargs)
+        
     @property
     def id(self):
         """
@@ -29,12 +31,66 @@ class PyMover(object):
         :return: the integer ID returned by id() for this object
         """
         return id(self)
-
+    
     def datetime_to_seconds(self, model_time):
         """
         put the time conversion call here - incase we decide to change it, it only updates here
         """
         return time_utils.date_to_sec(model_time)
+        
+    def prepare_for_model_run(self):
+        """
+        override method in derived class if the mover needs to perform any actions at beginning of model run 
+        """
+        pass
+
+    def prepare_for_model_step(self, model_time_datetime, time_step,
+                               uncertain_spills_count=0, uncertain_spills_size=None):
+        """
+        default implementation of prepare_for_model_step(...)
+        
+        It checks the inputs for uncertainty spills are valid. 
+        """
+        self.model_time = self.datetime_to_seconds(model_time_datetime)
+        if uncertain_spills_count < 0:
+            raise ValueError("The uncertain_spills_count cannot be less than 0")
+        elif uncertain_spills_count > 0:
+            """" preparing for a certainty spill """
+            if uncertain_spills_size is None:
+                raise ValueError("uncertain_spills_size cannot be None if uncertain_spills_count is greater than 0")
+            
+            if len(uncertain_spills_size) != uncertain_spills_count:
+                raise ValueError("uncertain_spills_size needs an entry for each of the uncertain spills")
+            
+            
+    def get_move(self, spill, time_step, model_time, uncertain_spill_number=0):
+        """
+        Not implemented in base class. 
+        
+        Each class that derives from Mover object must implement it's own get_move
+        """
+        raise NotImplementedError("Each mover that derives from Mover base class must implement get_move(...)")
+    
+    def model_step_is_done(self):
+        """
+        This method gets called by the model when after everything else is done
+        in a time step. Put any code need for clean-up, etc in here in subclassed movers.
+        """
+        pass 
+
+
+class CyMover(Mover):
+    """
+    Base class for python wrappers around cython movers
+    All movers (CyWindMover, CyRandomMover) will need to extract info from spill object.
+    Put this code and any other code common to all movers here
+    
+    Base class assumes any derived class will instantiate a 'mover' object that
+    has methods like: prepare_for_model_run, prepare_for_model_step,
+    """
+    def __init__(self, is_active=True, **kwargs):
+        super(CyMover,self).__init__(**kwargs)
+        self.is_active = is_active
         
     def prepare_for_model_run(self):
         """
@@ -51,22 +107,13 @@ class PyMover(object):
         mover's prepare_for_model_step. The 'mover' is a member of this class, but it is
         instantiated by the derived class. 
         """
-        self.model_time = self.datetime_to_seconds(model_time_datetime)
-        if uncertain_spills_count < 0:
-            raise ValueError("The uncertain_spills_count cannot be less than 0")
-        elif uncertain_spills_count > 0:
-            """" preparing for a certainty spill """
-            if uncertain_spills_size is None:
-                raise ValueError("uncertain_spills_size cannot be None if uncertain_spills_count is greater than 0")
-            
-            if len(uncertain_spills_size) != uncertain_spills_count:
-                raise ValueError("uncertain_spills_size needs an entry for each of the uncertain spills")
-        
+        super(CyMover,self).prepare_for_model_step(model_time_datetime, time_step, uncertain_spills_count, uncertain_spills_size)
+        #Mover.prepare_for_model_step(self, model_time_datetime, time_step, uncertain_spills_count, uncertain_spills_size)
         self.mover.prepare_for_model_step(self.model_time, time_step, uncertain_spills_count, uncertain_spills_size)
 
     def prepare_data_for_get_move(self, spill, model_time_datetime):
         """
-        organizes the spill object into inputs for get_move(...)
+        organizes the spill object into inputs for calling with Cython wrapper's get_move(...)
         
         :param spill: spill is an instance of the gnome.spill.Spill class
         :param model_time_datetime: model time as a date time object
@@ -95,7 +142,6 @@ class PyMover(object):
         # Array is not the same size, change view and reshape
         self.positions = self.positions.view(dtype=basic_types.world_point)
         self.positions = np.reshape(self.positions, (len(self.positions),))
-        
         self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
 
     def model_step_is_done(self):
@@ -104,16 +150,16 @@ class PyMover(object):
         in a time step put any code need for clean-up, etc in here in
         subclassed movers.
         """
-        pass
-
-class WindMover(PyMover):
+        self.mover.model_step_is_done()
+    
+class WindMover(CyMover):
     """
     WindMover is a Python wrapper around the Cython wind_mover module.
-    This inherits CyWindMover as well as PyMover.
+    This inherits from CyMover and self.mover references CyWindMover 
     
     The real work is done by the CyWindMover object.
 
-    PyMover sets everything up that is common to all movers.
+    CyMover sets everything up that is common to all movers.
     """
     def __init__(self, timeseries=None, file=None, uncertain_duration=10800, is_active=True,
                  uncertain_time_delay=0, uncertain_speed_scale=2, uncertain_angle_scale=0.4):
@@ -149,21 +195,13 @@ class WindMover(PyMover):
         else:
             self.ossm = CyOSSMTime(path=file,file_contains=basic_types.file_contains.magnitude_direction)
         
-        if len(self.timeseries) == 1:
-            self.constant_wind = True
-        else:
-            self.constant_wind = False
-        
         self.mover = CyWindMover(uncertain_duration=uncertain_duration, 
                                  uncertain_time_delay=uncertain_time_delay, 
                                  uncertain_speed_scale=uncertain_speed_scale,  
                                  uncertain_angle_scale=uncertain_angle_scale)
         self.mover.set_ossm(self.ossm)
-        PyMover.__init__(self, is_active=is_active)
-
-    @property
-    def is_constant(self):
-        return self.constant_wind
+        super(WindMover,self).__init__(is_active=is_active)
+        #CyMover.__init__(self, is_active=is_active)
 
     @property
     def timeseries(self):
@@ -263,20 +301,20 @@ class WindMover(PyMover):
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
-
-class RandomMover(PyMover):
+class RandomMover(CyMover):
     """
     Python wrapper around the Cython CyRandomMover module.
     
     The real work is done by the cython object.
 
-    PyMover sets everything up that is common to all movers.
+    CyMover sets everything up that is common to all movers.
     """
     def __init__(self, diffusion_coef=100000, is_active=True):
         """
         Initialize
         """
         self.mover = CyRandomMover(diffusion_coef=diffusion_coef)
+        super(RandomMover,self).__init__(is_active=is_active)
     
     @property
     def diffusion_coef(self):
@@ -295,11 +333,16 @@ class RandomMover(PyMover):
         return 'Random Mover'
 
     def prepare_for_model_step(self, model_time_datetime, time_step, uncertain_spills_count=0, uncertain_spills_size=None):
-        """
-        Random mover does not use uncertainty for anything during prepare_for_model_step(...)
-        """
-        model_time = PyMover.datetime_to_seconds(self, model_time_datetime)
-        self.mover.prepare_for_model_step(model_time, time_step)
+       """
+       Random mover does not use uncertainty for anything during prepare_for_model_step(...)
+       
+       This method does not call super().prepare_for_model_step() .. it over-rides the base class method.
+       It does however call the Mover.prepare_for_model_step() base class method
+       
+       """
+       Mover.prepare_for_model_step(self, model_time_datetime, time_step, uncertain_spills_count, uncertain_spills_size)
+       model_time = super(RandomMover,self).datetime_to_seconds(model_time_datetime)
+       self.mover.prepare_for_model_step(model_time, time_step)
     
     def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
         """
