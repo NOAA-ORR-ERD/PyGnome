@@ -11,11 +11,14 @@
         <h3 id="modal-label">Wind Mover</h3>
     </div>
     <div class="modal-body">
-        <form action="${action_url}" class="form-horizontal multistep" method="POST">
+        <form action="${action_url}" id="wind_mover"
+              class="form-horizontal multistep" method="POST">
             <div data-step="1" class="step active">
                 ${defs.form_control(form.date)}
                 ${defs.time_control(form, "Time (24 hour)")}
-                ${defs.form_control(form.direction, 'Enter degrees true or text (e.g., "NNW").')}
+                ${defs.form_control(form.direction,
+                                    'Select "Degrees true" to enter degrees')}
+                ${defs.form_control(form.direction_degrees, hidden=True)}
                 ${defs.form_control(form.speed)}
                 ${defs.form_control(form.speed_type)}
             </div>
@@ -45,5 +48,25 @@
         <button class="btn btn-next">Next</button>
         <button class="btn btn-primary hidden">Save</button>
     </div>
+
+    <script type="text/javascript">
+            % if form:
+                // Inline event handler to hide or show the direction degrees input.
+                $(document).ready(function() {
+                    var formEl = "#${form.id}";
+                    $(formEl).on('change', '#direction', function(event) {
+                        var selected_direction = $(this).val();
+                        var degreesControl = $(formEl).find(
+                                '#direction_degrees').closest('.control-group');
+
+                        if (selected_direction === 'Degrees true') {
+                            degreesControl.removeClass('hidden');
+                        } else {
+                            degreesControl.addClass('hidden');
+                        }
+                    });
+                });
+            % endif
+    </script>
 </div>
 

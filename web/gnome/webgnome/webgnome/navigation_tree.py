@@ -86,8 +86,13 @@ class NavigationTree(object):
         })
 
         for mover in self.model.movers:
+            form = get_object_form(mover)
+
+            if not form:
+                continue
+
             movers['children'].append({
-                'form_id': get_object_form(mover).get_id(mover),
+                'form_id': form.get_id(mover),
                 'delete_form_id': DeleteMoverForm.get_id(mover),
                 'object_id': mover.id,
                 'title': str(mover)

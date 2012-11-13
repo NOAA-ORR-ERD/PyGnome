@@ -244,20 +244,32 @@ var Model = Backbone.Collection.extend({
 
      Triggers:
      - `Model.NEXT_TIME_STEP_READY` with the time step object for the new step.
-     - `Model.RUN_FINISHED` if this was the step chosen to run until
+     - `Model.RUN_FINISHED` if the model has run until `this.runUntilTimeStep`.
      */
     setCurrentTimeStep: function(stepNum) {
         this.currentTimeStep = stepNum;
         this.nextTimeStep = stepNum + 1;
 
-         if (this.runUntilTimeStep &&
-                this.currentTimeStep === this.runUntilTimeStep) {
-             this.trigger(Model.RUN_FINISHED);
-             this.runUntilTimeStep = null;
-             return;
+        if (this.currentTimeStep === this.runUntilTimeStep ||
+                this.currentTimeStep === _.last(this.expectedTimeSteps)) {
+            this.trigger(Model.RUN_FINISHED);
+            this.runUntilTimeStep = null;
+            return;
          }
 
          this.trigger(Model.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
+    },
+
+     /*
+     Finish the current run.
+
+     Triggers:
+     - `Model.RUN_FINISHED`
+     */
+    finishRun: function() {
+        this.rewind();
+        this.runUntilTimeStep = null;
+        this.trigger(Model.RUN_FINISHED);
     },
 
     /*
@@ -268,8 +280,7 @@ var Model = Backbone.Collection.extend({
      */
     getNextTimeStep: function() {
         if (!this.serverHasTimeStep(this.nextTimeStep)) {
-            this.rewind();
-            this.trigger(Model.RUN_FINISHED);
+            this.finishRun();
             return;
         }
 
@@ -281,13 +292,10 @@ var Model = Backbone.Collection.extend({
 
         // Request the next step from the server.
         $.ajax({
-            // Block until finished, so this and subsequent requests come
-            // back in order.
-            async: false,
             type: "GET",
             url: this.url + '/next_step',
             success: this.timeStepRequestSuccess,
-            error: handleAjaxError
+            error: this.timeStepRequestFailure
         });
     },
 
@@ -309,6 +317,13 @@ var Model = Backbone.Collection.extend({
         }
 
         this.addTimeStep(data.time_step);
+   },
+
+   timeStepRequestFailure: function(xhr, textStatus, errorThrown) {
+       if (xhr.status === 404) {
+           // TODO: Maybe we shouldn't return 404 when finished? Seems wrong.
+           this.finishRun();
+       }
    },
 
     /*
@@ -429,6 +444,7 @@ var AjaxForm = function(opts) {
 // Events
 AjaxForm.MESSAGE_RECEIVED = 'ajaxForm:messageReceived';
 AjaxForm.CHANGED = 'ajaxForm:changed';
+AjaxForm.SUCCESS = 'ajaxForm:success';
 
 AjaxForm.prototype = {
     /*
@@ -443,7 +459,8 @@ AjaxForm.prototype = {
         if (_.has(response, 'form_html')) {
             this.form_html = response.form_html;
             this.trigger(AjaxForm.CHANGED, this);
-            this.collection.trigger(AjaxForm.CHANGED, this);
+        } else {
+            this.trigger(AjaxForm.SUCCESS, this);
         }
     },
 
@@ -493,6 +510,44 @@ AjaxForm.prototype = {
 
 
 /*
+ A collection of `AjaxForm` instances.
+
+ Listen for SUBMIT_SUCCESS and SUBMIT_ERROR events on all instances and
+ rebroadcast them.
+ */
+var AjaxFormCollection = function() {
+    _.bindAll(this);
+    _.extend(this, Backbone.Events);
+    this.forms = {};
+};
+
+
+AjaxFormCollection.prototype = {
+    add: function(id, formOpts) {
+        var _this = this;
+
+        if (!_.has(formOpts, 'collection')) {
+            formOpts.collection = this;
+        }
+
+        this.forms[id] = new AjaxForm(formOpts);
+
+        this.forms[id].on(AjaxForm.CHANGED,  function() {
+            _this.trigger(AjaxForm.CHANGED);
+        });
+
+        this.forms[id].on(AjaxForm.SUCCESS,  function() {
+            _this.trigger(AjaxForm.SUCCESS);
+        });
+    },
+
+    get: function(id) {
+        return this.forms[id];
+    },
+};
+
+
+/*
  `MessageView` is responsible for displaying messages sent back from the server
  during AJAX form submissions. These are non-form error conditions, usually,
  but can also be success messages.
@@ -533,10 +588,13 @@ var MapView = Backbone.View.extend({
         this.frameClass = this.options.frameClass;
         this.activeFrameClass = this.options.activeFrameClass;
         this.placeholderEl = this.options.placeholderEl;
+        this.backgroundImageUrl = this.options.backgroundImageUrl;
 
         this.createPlaceholderCopy();
         this.makeImagesClickable();
         this.status = MapView.STOPPED;
+
+        this.$map = $(this.mapEl);
 
         this.model = this.options.model;
         this.model.on(Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
@@ -544,6 +602,14 @@ var MapView = Backbone.View.extend({
         this.model.on(Model.RUN_ERROR, this.modelRunError);
         this.model.on(Model.RUN_FINISHED, this.modelRunFinished);
         this.model.on(Model.CREATED, this.modelCreated);
+
+        if (this.backgroundImageUrl) {
+            this.loadMapFromUrl(this.backgroundImageUrl);
+        }
+
+        if (this.model.hasCachedTimeStep(this.model.getCurrentTimeStep())) {
+            this.nextTimeStepReady();
+        }
     },
 
     isPaused: function() {
@@ -634,15 +700,13 @@ var MapView = Backbone.View.extend({
         - `MapView.FRAME_CHANGED` after the image has loaded.
      */
     showImageForTimeStep: function(stepNum) {
-        var map = $(this.mapEl);
-
         // Show the map div if this is the first image of the run.
-        if (map.find('img').length === 1) {
-            map.show();
+        if (this.$map.find('img').length === 1) {
+            this.$map.show();
         }
 
         var stepImage = this.getImageForTimeStep(stepNum);
-        var otherImages = $(this.mapEl).find('img').not(stepImage).not('.background');
+        var otherImages = this.$map.find('img').not(stepImage).not('.background');
 
         // Hide all other images in the map div.
         otherImages.css('display', 'none');
@@ -781,7 +845,7 @@ var MapView = Backbone.View.extend({
         this.addTimeStep(this.model.getCurrentTimeStep());
     },
 
-    modelRunBegan: function(data) {
+    loadMapFromUrl: function(url) {
         if (this.placeholderCopy.length) {
             this.removePlaceholderCopy();
         }
@@ -792,10 +856,14 @@ var MapView = Backbone.View.extend({
 
         var img = $('<img>').attr({
             'class': 'background',
-            src: data.background_image
+            src: url
         });
 
         img.appendTo(map);
+    },
+
+    modelRunBegan: function(data) {
+        this.loadMapFromUrl(data.background_image);
     },
 
     modelRunError: function() {
@@ -839,7 +907,7 @@ var TreeView = Backbone.View.extend({
         this.tree = this.setupDynatree();
 
         // Event handlers
-        this.options.ajaxForms.on(AjaxForm.CHANGED, this.ajaxFormChanged);
+        this.options.ajaxForms.on(AjaxForm.SUCCESS, this.ajaxFormSuccess);
         this.options.model.on(Model.CREATED, this.reload);
     },
 
@@ -867,18 +935,11 @@ var TreeView = Backbone.View.extend({
     },
 
     /*
-     An event handler called when an `AjaxForm` in `this.forms` changes.
-
-     If a form was submitted successfully, we need to reload the tree view in
-     case new items were added.
+     Reload the tree view in case new items were added in an `AjaxForm` submit.
+     Called when an `AjaxForm` submits successfully.
      */
-    ajaxFormChanged: function(ajaxForm) {
-        var formHtml = ajaxForm.form_html;
-
-        // This field will be null on a successful submit.
-        if (!formHtml) {
-            this.reload();
-        }
+    ajaxFormSuccess: function(ajaxForm) {
+        this.reload();
     },
 
     getActiveItem: function() {
@@ -1061,7 +1122,7 @@ var MapControlView = Backbone.View.extend({
         if (timestamp) {
             this.setTime(timestamp);
         } else {
-            log('Slider changed to invalid time step: ' + ui.value);
+            console.log('Slider changed to invalid time step: ' + ui.value);
             return false;
         }
 
@@ -1093,6 +1154,7 @@ var MapControlView = Backbone.View.extend({
     },
 
     modelRunFinished: function() {
+        this.disableControls();
         this.stop();
     },
 
@@ -1285,9 +1347,15 @@ var MapControlView = Backbone.View.extend({
 var ModalFormViewContainer = Backbone.View.extend({
     initialize: function() {
         _.bindAll(this);
-        this.options.ajaxForms.on(AjaxForm.CHANGED, this.refresh);
+        this.options.ajaxForms.on(AjaxForm.SUCCESS, this.refresh);
     },
 
+    /*
+     Refresh all forms from the server.
+
+     Called when any `AjaxForm` on the page has a successful submit, in case
+     additional forms should appear for new items.
+     */
     refresh: function() {
         var _this = this;
 
@@ -1337,7 +1405,7 @@ var ModalFormView = Backbone.View.extend({
         this.ajaxForm = this.options.ajaxForm;
         this.ajaxForm.on(AjaxForm.CHANGED, this.ajaxFormChanged);
 
-        // Bind listeners to the container, using `on()`, so they persist if
+        // Bind listeners to the form container using `on()`, so they persist if
         // the underlying form elements are replaced.
         this.id = '#' + this.$el.attr('id');
         this.$container.on('click', this.id + ' .btn-primary', this.submit);
@@ -1354,6 +1422,7 @@ var ModalFormView = Backbone.View.extend({
     },
 
     show: function() {
+        // Hide any other visible modals.
         $('div.modal').modal('hide');
         this.$el.modal();
     },
@@ -1482,8 +1551,9 @@ var ModalFormView = Backbone.View.extend({
      */
     refresh: function(html) {
         this.clear();
-        this.$el = $(html);
-        this.$el.prependTo(this.$container);
+        var $html = $(html);
+        $html.appendTo(this.$container);
+        this.$el = $('#' + $html.attr('id'));
 
         this.$el.find('.date').datepicker({
             changeMonth: true,
@@ -1502,7 +1572,8 @@ var ModalFormView = Backbone.View.extend({
 
     clear: function() {
         this.hide();
-        $(this.id).empty().remove();
+        this.$el.empty();
+        this.$el.remove();
     }
 });
 
@@ -1612,7 +1683,6 @@ var MenuView = Backbone.View.extend({
  */
 var AppView = Backbone.View.extend({
     initialize: function() {
-        var _this = this;
         _.bindAll(this);
 
         this.apiRoot = "/model";
@@ -1659,6 +1729,7 @@ var AppView = Backbone.View.extend({
         this.mapView = new MapView({
             mapEl: '#' + this.options.mapId,
             placeholderEl: '#' + this.options.mapPlaceholderId,
+            backgroundImageUrl: this.options.backgroundImageUrl,
             frameClass: 'frame',
             activeFrameClass: 'active',
             model: this.model
@@ -1727,8 +1798,7 @@ var AppView = Backbone.View.extend({
         var _this = this;
 
         // `AjaxForm` instances, keyed to form ID.
-        this.forms = {};
-        _.extend(this.forms, Backbone.Events);
+        this.forms = new AjaxFormCollection();
 
          // `ModelFormView` instances, keyed to form ID.
         this.formViews = {};
@@ -1757,13 +1827,12 @@ var AppView = Backbone.View.extend({
                 return;
             }
 
-            _this.forms[modalFormId] = new AjaxForm({
-                url: $form.attr('action'),
-                collection: _this.forms
+            _this.forms.add(modalFormId, {
+                url: $form.attr('action')
             });
 
             _this.formViews[modalFormId] = new ModalFormView({
-                ajaxForm: _this.forms[modalFormId],
+                ajaxForm: _this.forms.get(modalFormId),
                 el: $('#' + modalFormId),
                 formContainerEl: '#' + _this.options.formContainerId
             });
@@ -1873,8 +1942,7 @@ var AppView = Backbone.View.extend({
     },
 
     sliderChanged: function(newStepNum) {
-        // We're advancing in an animation, so ignore the change. Otherwise
-        // the user just dragged the slider to a new position.
+        // No need to do anything if the slider is on the current time step.
         if (newStepNum === this.model.currentTimeStep) {
             return;
         }

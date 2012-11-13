@@ -118,6 +118,7 @@
                 addMoverFormId: "${add_mover_form_id}",
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
+                backgroundImageUrl: "${background_image_url or '' | n}",
                 currentTimeStep: ${model.current_time_step},
                 runModelUntilFormUrl: "${run_model_until_form_url}",
                 formsUrl: "${model_forms_url}"

@@ -84,10 +84,22 @@ legend {
     width: 20px;
 }
 
-img.frame {
-    z-index: 100;
+#map {
+    position: relative;
 }
 
-img.background {
+#map img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    float: left;
+    display: inline-block;
+}
+
+.frame {
+    z-index: 1000;
+}
+
+.background {
     z-index: 10;
 }

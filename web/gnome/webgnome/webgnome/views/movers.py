@@ -127,7 +127,7 @@ def _create_wind_mover_post(model, form):
 
     # Since it is just constant, just give it 0 time
     time_series['time'][0] = 0
-    time_series['value'][0] = (0., 100.)
+    time_series['value'][0] = (form.get_direction(), form.speed.data)
     mover = gnome.movers.WindMover(timeseries=time_series)
 
     return {

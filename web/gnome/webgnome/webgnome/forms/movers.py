@@ -1,4 +1,6 @@
+import copy
 import gnome.movers
+import math
 
 from wtforms import (
     SelectField,
@@ -24,6 +26,27 @@ class WindMoverForm(ObjectForm, DateTimeForm):
     """
     wrapped_class = gnome.movers.WindMover
 
+    DIRECTION_CUSTOM = 'Custom'
+
+    DIRECTIONS = [
+        "N",
+        "NNE",
+        "NE",
+        "ENE",
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW"
+    ]
+
     SPEED_KNOTS = 'knots'
     SPEED_METERS = 'meters'
     SPEED_MILES = 'miles'
@@ -48,11 +71,13 @@ class WindMoverForm(ObjectForm, DateTimeForm):
         choices=SPEED_CHOICES,
         validators=[Required()]
     )
-    direction = TextField(
-        'Wind direction is from',
-        default='S',
-        validators=[Required()]
-    )
+
+    direction = SelectField(
+        'Wind direction is from', default='S',
+        choices=[(d, d) for d in ['Degrees true'] + DIRECTIONS],
+        validators=[Required()])
+
+    direction_degrees = IntegerField(validators=[NumberRange(min=0, max=360)])
 
     is_active = BooleanField('Active', default=True)
     start_time = IntegerField('Start Time', default=0, validators=[NumberRange(min=0)])
@@ -66,6 +91,16 @@ class WindMoverForm(ObjectForm, DateTimeForm):
         choices=SCALE_CHOICES,
         validators=[Required()]
     )
+
+    def get_direction(self):
+        """
+        Convert user input for direction into a direction radian.
+        """
+        if self.direction.data == self.DIRECTION_CUSTOM:
+            direction = self.direction_custom.data
+            return direction * math.pi / 180
+        else:
+            return self.DIRECTIONS.index(self.direction.data) * math.pi /  8
 
 
 class AddMoverForm(AutoIdForm):
