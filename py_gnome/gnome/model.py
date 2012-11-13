@@ -314,16 +314,16 @@ class Model(object):
         Steps the model forward in time. Needs testing for hindcasting.
                 
         """
-        self._current_time_step += 1        
-        if self._current_time_step > self._num_time_steps:
+        if self._current_time_step >= self._num_time_steps:
             return False
         
-        if self._current_time_step == 0:
+        if self._current_time_step == -1:
             self.setup_model_run() # that's all we need to do for the zeroth time step
         else:    
             self.setup_time_step()
             self.move_elements()
             self.step_is_done()
+        self._current_time_step += 1        
         return True
     
     def __iter__(self):
@@ -353,7 +353,7 @@ class Model(object):
         """
         compute the next model step, render an image, and return info about the
         step rendered
-        
+        :param images_dir: directory to write the image too.
         """
         # write out the zeroth image:
         if not self.step():

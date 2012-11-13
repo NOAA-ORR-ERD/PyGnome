@@ -55,7 +55,13 @@ class TestRandomMover():
         self.mover.diffusion_coef = 200000
         print self.mover.diffusion_coef
         assert self.mover.diffusion_coef == 200000 
-
+        
+    def test_prepare_for_model_step(self):
+        """
+        Simply tests the method executes without exceptions
+        """
+        self.mover.prepare_for_model_step(self.model_time, self.time_step)
+        assert True
 
 start_locs = [(0.0,0.0,0.0),
               (30.0, 30.0, 30.0),
@@ -102,5 +108,5 @@ def test_variance1(start_loc, time_step):
        
 if __name__=="__main__":
     tw = TestRandomMover()
-    tw.test_get_move()
+    tw.test_prepare_for_model_step()
     tw.test_change_diffusion_coef()

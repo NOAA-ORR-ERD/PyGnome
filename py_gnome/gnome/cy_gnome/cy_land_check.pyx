@@ -17,6 +17,9 @@ def overlap_grid(int m, int n, pt1, pt2):
     
     returns True is both points are all the way to the left, right top or bottom of the grid
 
+    This version calls the cdef version -- jsut so we do'nt ahve to do teh tuple unpacking
+    of the points in the cdef version
+
     """
     cdef int x1 = pt1[0]
     cdef int y1 = pt1[1]
@@ -24,17 +27,6 @@ def overlap_grid(int m, int n, pt1, pt2):
     cdef int y2 = pt2[1]
 
     return c_overlap_grid(m, n, x1, y1, x2, y2)
-
-    # if x1 < 0 and x2 < 0: # both left
-    #     return False
-    # elif y1 < 0 and y2 < 0: # both below 
-    #     return False
-    # elif x1 >= m and x2 >= m: # both right
-    #     return False 
-    # elif y1 >= n and y2 >= n: # both above
-    #     return False
-    # else:
-    #     return True
 
 cdef int c_overlap_grid(int m, int n, int x1, int y1, int x2, int y2):
     """

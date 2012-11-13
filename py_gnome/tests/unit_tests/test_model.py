@@ -171,7 +171,7 @@ def test_simple_run_with_image_output():
              print "Done with the model run"
              break
 
-    assert num_steps_ouput == (model.duration / model.time_step)
+    assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
 
     
 if __name__ == "__main__":
