@@ -144,13 +144,13 @@ class CyMover(Mover):
         self.positions = np.reshape(self.positions, (len(self.positions),))
         self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
 
-    def model_step_is_done(self):
-        """
-        This method gets called by the model when afer everything else is done
-        in a time step put any code need for clean-up, etc in here in
-        subclassed movers.
-        """
-        self.mover.model_step_is_done()
+    # def model_step_is_done(self):
+    #     """
+    #     This method gets called by the model when afer everything else is done
+    #     in a time step put any code need for clean-up, etc in here in
+    #     subclassed movers.
+    #     """
+    #     self.mover.model_step_is_done()
     
 class WindMover(CyMover):
     """
@@ -184,7 +184,7 @@ class WindMover(CyMover):
                 #if( timeseries.dtype is not basic_types.datetime_value_pair):
                 if( timeseries.dtype is not basic_types.datetime_r_theta):
                     # Should this be 'is' or '==' - both work in this case. There is only one instance of basic_types.time_value_pair 
-                    raise ValueError("timeseries must be a numpy array containing basic_types.datetime_value_pair dtype")
+                    raise ValueError("timeseries must be a numpy array containing basic_types.datetime_r_theta dtype")
             
             except AttributeError as err:
                 raise AttributeError("timeseries is not a numpy array. " + err.message)
@@ -250,7 +250,7 @@ class WindMover(CyMover):
         """
         convert the datetime_value_pair array to a time_value_pair array
         """
-        timeval = np.zeros((len(datetime_value_pair),), dtype=basic_types.time_value_pair)
+        timeval = np.zeros((len(datetime_r_theta),), dtype=basic_types.time_value_pair)
         timeval['time'] = time_utils.date_to_sec(datetime_r_theta['time'])
         #timeval['value'] = datetime_value_pair['value']
         uv = transforms.r_theta_to_uv(datetime_r_theta['value'])
@@ -310,6 +310,15 @@ class WindMover(CyMover):
                               uncertain_spill_number)
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+
+    # def model_step_is_done(self):
+    #     """
+    #     This method gets called by the model when afer everything else is done
+    #     in a time step put any code need for clean-up, etc in here in
+    #     subclassed movers.
+    #     """
+    #     self.mover.model_step_is_done()
+
 
 class RandomMover(CyMover):
     """
