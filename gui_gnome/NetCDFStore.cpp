@@ -35,6 +35,7 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
     CMyList* LESetsList;
     list<LERecP> tLEsContainer;
     NetCDFStore* netStore;
+	char errStr[256];
     
     netStore = new NetCDFStore();
     tLEsContainer = list<LERecP>();
@@ -55,9 +56,12 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 						tLEsContainer.push_back(&(INDEXH(thisLEList->LEHandle, j)));
 					}
 					catch(...) {
-						cerr << "We are unable to allocate the memory required to perform this task.\n";
-						cerr << "The run will continue, notwithstanding.\n";
-						cerr << "(Timestep " << model->currentStep << ")\n";
+						strcpy(errStr,"We are unable to allocate the memory required to perform this task.\n");
+						strcat(errStr,"The run will continue, notwithstanding.");
+						printError(errStr);
+						//cerr << "We are unable to allocate the memory required to perform this task.\n";
+						//cerr << "The run will continue, notwithstanding.\n";
+						//cerr << "(Timestep " << model->currentStep << ")\n";
 						return false;
 					}
 				}
@@ -72,9 +76,12 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 							tLEsContainer.push_back(&(INDEXH(thisLEList->LEHandle, j)));
 						}
 						catch(...) {
-							cerr << "We are unable to allocate the memory required to perform this task.\n";
-							cerr << "The run will continue, notwithstanding.\n";
-							cerr << "(Timestep " << model->currentStep << ")\n";
+							strcpy(errStr,"We are unable to allocate the memory required to perform this task.\n");
+							strcat(errStr,"The run will continue, notwithstanding.");
+							printError(errStr);
+							//cerr << "We are unable to allocate the memory required to perform this task.\n";
+							//cerr << "The run will continue, notwithstanding.\n";
+							//cerr << "(Timestep " << model->currentStep << ")\n";
 							return false;
 						}
 					}
@@ -102,9 +109,12 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 		netStore->id = new long[c];	
 	}
 	catch(std::bad_alloc) {
-		cerr << "We are unable to allocate the memory required to perform this task.\n";
-		cerr << "The run will continue, notwithstanding.\n";
-		cerr << "(Timestep " << model->currentStep << ")\n";
+		strcpy(errStr,"We are unable to allocate the memory required to perform this task.\n");
+		strcat(errStr,"The run will continue, notwithstanding.");
+		printError(errStr);
+		//cerr << "We are unable to allocate the memory required to perform this task.\n";
+		//cerr << "The run will continue, notwithstanding.\n";
+		//cerr << "(Timestep " << model->currentStep << ")\n";
 		return false;
 	}
 
@@ -214,7 +224,7 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 // ++ Dimensions:
 
 #define VAR_DIMS    1
-#define NUM_VARs    9
+#define NUM_VARs    10
 	
 	*ncDimIDs = map<string, int>();	
 	*ncVarIDs = map<string, int>();
@@ -291,7 +301,7 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
     ncErr = nc_def_var(ncID, "flag", NC_BYTE, VAR_DIMS, tData, varIDs);
     if(!CheckNC(ncErr)) return false; // handle error.
 
-    (*ncVarIDs)["Status"] = *varIDs;
+    (*ncVarIDs)["Flag"] = *varIDs;
     ++varIDs;
 
      ncErr = nc_def_var(ncID, "status", NC_INT, VAR_DIMS, tData, varIDs);
@@ -668,24 +678,37 @@ bool NetCDFStore::fClose(int ncID) {
 
 bool NetCDFStore::CheckNC(int ncErr) {
     
+	char errStr[256];
     if(ncErr != NC_NOERR) {
         switch(ncErr) {
 
             case NC_ENOMEM:
-					cerr << "We are unable to allocate the memory required to perform this task.\n";
-					cerr << "The run will continue, notwithstanding. (Exception caught in write mode.)\n";
+					strcpy(errStr,"We are unable to allocate the memory required to perform this task.\n");
+					strcat(errStr,"The run will continue, notwithstanding. (Exception caught in write mode.)");
+					printError(errStr);
+					//cerr << "We are unable to allocate the memory required to perform this task.\n";
+					//cerr << "The run will continue, notwithstanding. (Exception caught in write mode.)\n";
 					return false;
             case NC_EBADID:
-					cerr << "Error: NC_EBADID.\n";
-					cerr << "We will attempt to continue the run.\n";
+					strcpy(errStr,"Error: NC_EBADID.\n");
+					strcat(errStr,"We will attempt to continue the run.");
+					printError(errStr);
+					//cerr << "Error: NC_EBADID.\n";
+					//cerr << "We will attempt to continue the run.\n";
                     return false;
             case NC_EINVALCOORDS:
-					cerr << "Error: NC_EINVALCOORDS.\n";
-					cerr << "We will attempt to continue the run.\n";
+					strcpy(errStr,"Error: NC_EINVALCOORDS.\n");
+					strcat(errStr,"We will attempt to continue the run.");
+					printError(errStr);
+					//cerr << "Error: NC_EINVALCOORDS.\n";
+					//cerr << "We will attempt to continue the run.\n";
                     return false;
             case NC_EINDEFINE:
-					cerr << "Error: NC_EINDEFINE.\n";
-					cerr << "We will attempt to continue the run.\n";
+					strcpy(errStr,"Error: NC_EINDEFINE.\n");
+					strcat(errStr,"We will attempt to continue the run.");
+					printError(errStr);
+					//cerr << "Error: NC_EINDEFINE.\n";
+					//cerr << "We will attempt to continue the run.\n";
                     return false;
             default:
                 // ..
