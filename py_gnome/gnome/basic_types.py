@@ -80,4 +80,7 @@ date_rec           = np.dtype([('year', np.short),
 
 # In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
 # this is also consistent with the definition in type_defs.pxd .. just keeping things consistent
-status_code_type = np.short 
+status_code_type = np.short
+
+datetime_r_theta = np.dtype([('time', np.datetime64), 
+                             ('value',np.double,(2,))], align=True) 

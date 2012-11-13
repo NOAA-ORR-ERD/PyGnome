@@ -1,6 +1,6 @@
 import numpy as np
 
-from gnome.utilities import time_utils
+from gnome.utilities import time_utils, transforms
 from gnome import basic_types
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
@@ -181,7 +181,8 @@ class WindMover(CyMover):
         
         if( timeseries != None):
             try:
-                if( timeseries.dtype is not basic_types.datetime_value_pair):
+                #if( timeseries.dtype is not basic_types.datetime_value_pair):
+                if( timeseries.dtype is not basic_types.datetime_r_theta):
                     # Should this be 'is' or '==' - both work in this case. There is only one instance of basic_types.time_value_pair 
                     raise ValueError("timeseries must be a numpy array containing basic_types.datetime_value_pair dtype")
             
@@ -189,7 +190,7 @@ class WindMover(CyMover):
                 raise AttributeError("timeseries is not a numpy array. " + err.message)
             
             # convert datetime_value_pair to time_value_pair
-            time_value_pair = self._datetime_value_to_time_value(timeseries)
+            time_value_pair = self._datetime_r_theta_to_time_value(timeseries)
             self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             
         else:
@@ -205,12 +206,12 @@ class WindMover(CyMover):
 
     @property
     def timeseries(self):
-        datetimeval = self._time_value_to_datetime_value(self.ossm.timeseries)
+        datetimeval = self._time_value_to_datetime_r_theta(self.ossm.timeseries)
         return datetimeval
     
     @timeseries.setter
     def timeseries(self, datetime_value):
-        timeval = self._datetime_value_to_time_value(datetime_value)
+        timeval = self._datetime_r_theta_to_time_value(datetime_value)
         self.ossm.timeseries = timeval
         
     @property
@@ -245,29 +246,38 @@ class WindMover(CyMover):
     def uncertain_angle_scale(self, value):
         self.mover.uncertain_angle_scale = value
 
-    def _datetime_value_to_time_value(self, datetime_value_pair):
+    def _datetime_r_theta_to_time_value(self, datetime_r_theta):
         """
         convert the datetime_value_pair array to a time_value_pair array
         """
         timeval = np.zeros((len(datetime_value_pair),), dtype=basic_types.time_value_pair)
-        timeval['value'] = datetime_value_pair['value']
-        timeval['time'] = time_utils.date_to_sec(datetime_value_pair['time'])
-            
+        timeval['time'] = time_utils.date_to_sec(datetime_r_theta['time'])
+        #timeval['value'] = datetime_value_pair['value']
+        uv = transforms.r_theta_to_uv(datetime_r_theta['value'])
+        timeval['value']['u'] = uv[:,0]
+        timeval['value']['v'] = uv[:,1]
         return timeval
         
-    def _time_value_to_datetime_value(self, time_value_pair):
+    def _time_value_to_datetime_r_theta(self, time_value_pair):
         """
         convert the time_value_pair array to a datetime_value_pair array
         """
-        datetimeval = np.zeros((len(time_value_pair),), dtype=basic_types.datetime_value_pair)
-        datetimeval['value'] = time_value_pair['value']
+        #datetimeval = np.zeros((len(time_value_pair),), dtype=basic_types.datetime_value_pair)
+        #datetimeval['value'] = time_value_pair['value']
+        datetimeval = np.zeros((len(time_value_pair),), dtype=basic_types.datetime_r_theta)
         datetimeval['time'] = time_utils.sec_to_date(time_value_pair['time'])
-            
+        
+        # remove following three after reworking the time_value_pair array
+        uv = np.zeros((len(time_value_pair),2), dtype=np.double)
+        uv[:,0] = time_value_pair['value']['u']
+        uv[:,1] = time_value_pair['value']['v']
+        
+        datetimeval['value'] = transforms.uv_to_r_theta(uv)
         return datetimeval
     
     def get_time_value(self, datetime):
         time_sec = self.datetime_to_seconds(datetime)
-        return self.ossm.get_time_value(time_sec)
+        return self.ossm.get_time_value(time_sec).view(dtype=np.double).reshape(-1,len(basic_types.velocity_rec))
 
     def __repr__(self):
         """

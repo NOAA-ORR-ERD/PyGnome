@@ -70,6 +70,27 @@ def test_read_file_init():
     _defaults(wm)   # check defaults set correctly
     assert True
 
+def test_get_time_value():
+    """
+    Initialize from timeseries and test the get_time_value method 
+    """
+    now = time_utils.round_time( datetime.now(), roundTo=1)   # WindMover rounds data to 1 sec
+    val = np.zeros((5,), dtype=basic_types.datetime_value_pair)
+    val['time'] = [datetime(2012,11,06,20,10,i) for i in range(5)]
+    
+    val['value']['u'] = [i for i in range(0,10,2)]
+    val['value']['v'] = [i for i in range(10,20,2)]
+          
+    wm  = movers.WindMover(timeseries=val)
+    _defaults(wm)   # also check defaults
+    
+    # check get_time_value()
+    gtime_val = wm.get_time_value(val['time'])
+    np.testing.assert_equal(gtime_val[:,0], val['value']['u'], 
+                            "velocity array returned by WindMover.get_time_value is not as expected")
+    np.testing.assert_equal(gtime_val[:,1], val['value']['v'], 
+                            "velocity array returned by WindMover.get_time_value is not as expected")
+
 def test_timeseries():
     """
     initialize from timeseries and update value
@@ -84,6 +105,8 @@ def test_timeseries():
     wm  = movers.WindMover(timeseries=val)
     _defaults(wm)   # also check defaults
     
+    # Test timeseries ..
+    print "------------"
     print time_utils.round_time(val, roundTo=1)
     print "------------"
     print time_utils.round_time(wm.timeseries['time'], roundTo=1)
@@ -168,6 +191,7 @@ class TestWindMover():
         
        
 if __name__=="__main__":
+    #test_timeseries()
     tw = TestWindMover()
     tw.test_get_move()
     tw.test_update_wind_vel()
