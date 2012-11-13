@@ -99,6 +99,12 @@ cdef class CyWindMover:
             """
             raise OSError("WindMover_c.PreareForModelStep returned an error.")
 
+    def model_step_is_done(self):
+        """
+        invoke C++ model step is done functionality
+        """
+        self.mover.ModelStepIsDone()
+
     def get_move(self,
                  model_time,
                  step_len,
