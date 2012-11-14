@@ -6197,8 +6197,6 @@ OSErr TModel::CheckAndPassOnMessage(TModelMessage *message)
 					//TCurrentMover *newMover = CreateAndInitCurrentsMover (model->uMap,false,path,"ptcurfile",&newMap);	// already have path
 					if (newMover)
 					{
-						//PtCurMover *ptCurMover = dynamic_cast<PtCurMover*>(newMover);
-				
 						if(newMover)
 						{
 							//Boolean timeFileChanged = false;

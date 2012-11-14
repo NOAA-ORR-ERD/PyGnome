@@ -804,9 +804,20 @@ depths:
 		{	// works okay for simple grid except for far right column (need to extend depths similar to lat/lon)
 			// if land use zero, if water use point next to it?
 			ptIndex = INDEXH(fVerdatToNetCDFH,i);
-			iIndex = ptIndex/(fNumCols+1);
-			jIndex = ptIndex%(fNumCols+1);
+			if (bIsCOOPSWaterMask)
+			{
+				iIndex = ptIndex/(fNumCols);
+				jIndex = ptIndex%(fNumCols);
+			}
+			else {
+				iIndex = ptIndex/(fNumCols+1);
+				jIndex = ptIndex%(fNumCols+1);
+			}
+
+			//iIndex = ptIndex/(fNumCols+1);
+			//jIndex = ptIndex%(fNumCols+1);
 			if (iIndex>0 && jIndex<fNumCols)
+			//if (iIndex>0 && jIndex<fNumCols)
 				ptIndex = (iIndex-1)*(fNumCols)+jIndex;
 			else
 				ptIndex = -1;
@@ -831,7 +842,8 @@ depths:
 			//INDEXH(totalDepthsH,i) = depth_vals[ptIndex];
 			INDEXH(totalDepthsH,i) = INDEXH(fDepthsH,ptIndex);
 		}
-		((TTriGridVel3D*)fGrid)->SetDepths(totalDepthsH);
+		if (!bIsCOOPSWaterMask)	// code goes here, figure out how to handle depths in this case
+			((TTriGridVel3D*)fGrid)->SetDepths(totalDepthsH);
 	}
 	
 done:
