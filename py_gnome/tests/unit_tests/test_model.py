@@ -28,6 +28,7 @@ def test_start_time():
     
     st = datetime(2012, 8, 12, 13)
     model.start_time = st
+    
     assert model.current_time_step == -1
     assert model.start_time == st
 
@@ -128,7 +129,6 @@ def test_simple_run_with_image_output():
     start_time = datetime(2012, 9, 15, 12, 0)
     
     model = gnome.model.Model()
-    model.images_dir = images_dir
     model.duration = timedelta(hours=1)
 
     mapfile = "SampleData/MapBounds_Island.bna"
@@ -148,8 +148,8 @@ def test_simple_run_with_image_output():
 
     N = 10 # a line of ten points
     start_points = np.zeros((N, 3) , dtype=np.float64)
-    start_points[:,0] = np.linspace(-127.1, -126.1, N)
-    start_points[:,1] = np.linspace( 47.93, 48.05, N)
+    start_points[:,0] = np.linspace(-127.1, -126.5, N)
+    start_points[:,1] = np.linspace( 47.93, 48.1, N)
     #print start_points
     spill = gnome.spill.PointReleaseSpill(num_LEs=10,
                                           start_position = start_points,
@@ -160,19 +160,64 @@ def test_simple_run_with_image_output():
     model.start_time = spill.release_time
     #image_info = model.next_image()
 
+    num_steps_output = 0
     while True:
          print "calling next_image"
          try:
-             image_info = model.next_image()
+             image_info = model.next_image(images_dir)
+             num_steps_output += 1
              print image_info
          except StopIteration:
              print "Done with the model run"
              break
 
-    assert True
+    assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+
+
+def test_all_movers():
+    """
+    a test that tests that all the movers at least can be run
+
+    add new ones as they come along!
+    """
+
+    start_time = datetime(2012, 1, 1, 0, 0)
     
-# if __name__ == "__main__":
-#      test_simple_run_with_image_output()
+    model = gnome.model.Model()
+    model.duration = timedelta(hours=12)
+    model.time_step = timedelta(hours = 1)
+    model.start_time = start_time
+
+    # a spill
+    model.add_spill(gnome.spill.PointReleaseSpill(num_LEs=10,
+                                          start_position = (0.0, 0.0, 0.0),
+                                          release_time = start_time,
+                                          ) )
+
+    # the land-water map
+    model.map = gnome.map.GnomeMap() # the simpleset of maps
+    
+    # simplemover
+    model.add_mover( gnome.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0)) )
+
+    # random mover
+    model.add_mover( gnome.movers.RandomMover(diffusion_coef=100000) )
+
+    # wind mover
+    series = np.array( (start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_r_theta ).reshape((1,))
+    model.add_mover( gnome.movers.WindMover(timeseries=series) )
+  
+    
+    # run the model all the way...
+    num_steps_output = 0
+    for step in model:
+        num_steps_output += 1
+        print "running step:", step
+
+    assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+    
+if __name__ == "__main__":
+    test_all_movers()
     
     
     

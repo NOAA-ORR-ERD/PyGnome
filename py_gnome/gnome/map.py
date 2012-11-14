@@ -316,8 +316,8 @@ class RasterMap(GnomeMap):
 #
 #        # put the data back in the arrays
 #        beached_mask =  ( status_codes == oil_status.on_land )
-#        end_positions[beached_mask] = self.projection.to_lat_long(end_positions_px[beached_mask])
-#        last_water_positions[beached_mask] = self.projection.to_lat_long(last_water_positions_px[beached_mask])
+#        end_positions[beached_mask] = self.projection.to_lonlat(end_positions_px[beached_mask])
+#        last_water_positions[beached_mask] = self.projection.to_lonlat(last_water_positions_px[beached_mask])
 #        
 #        return None
 #                                          
@@ -356,8 +356,8 @@ class RasterMap(GnomeMap):
 
         #transform the points back to lat-long.
         beached = ( status_codes == oil_status.on_land )
-        next_pos[beached, :2]= self.projection.to_lat_long(next_pos_pixel[beached])
-        last_water_positions[beached, :2] = self.projection.to_lat_long(last_water_positions[beached,:2])
+        next_pos[beached, :2]= self.projection.to_lonlat(next_pos_pixel[beached])
+        last_water_positions[beached, :2] = self.projection.to_lonlat(last_water_positions[beached,:2])
 
         ##fixme -- add off-map check here
 

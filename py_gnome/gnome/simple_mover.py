@@ -11,12 +11,13 @@ can be, for testing and demonstration purposes
 import numpy as np
 
 from gnome import basic_types
+from gnome.movers import Mover
 
 ## this allows for this to be changed in the future.
 from gnome.utilities.projections import FlatEarthProjection as proj
 
 
-class SimpleMover(object):
+class SimpleMover(Mover):
     """
     simple_mover
     
@@ -39,34 +40,6 @@ class SimpleMover(object):
 
     def __repr__(self):
         return 'Simple mover'
-
-    @property
-    def id(self):
-        """
-        Return an ID value for this mover.
-
-        :return: an integer ID value for this mover
-        """
-        return id(self)
-        
-    def prepare_for_model_run(self):
-        """
-        called at the beginning of model run for movers to initialize as required 
-        """
-        pass
-    
-    def prepare_for_model_step(self, model_time, time_step, uncertain_spills_count=0, uncertain_spills_size=None):
-        """
-        Called at the beginning of each time step -- so the mover has a chance to prepare itself.
-        
-        This one is a no-op
-        
-        :param model_time: the time of this time step: datetime object
-        :param time_step: model time_step in seconds
-        :param uncertain_on: is uncertainty on  (bool) ?
-        
-        """
-        pass
 
     def get_move(self, spill, time_step, model_time, uncertain_spill_number=0):
         """
@@ -104,14 +77,6 @@ class SimpleMover(object):
         delta[in_water_mask] = self.velocity * time_step
 
         # scale for projection
-        delta = proj.meters_to_latlon(delta, positions) # just the lat-lon...
+        delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
         
         return delta
-        
-    def model_step_is_done(self):
-        """
-        Model step is complete - mover has been called by all entities that use it for current step.
-        Mover can now reset any internal state it needs at the end of the step
-        """
-        pass
-        

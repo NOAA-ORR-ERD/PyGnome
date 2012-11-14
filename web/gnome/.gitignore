@@ -1,0 +1,7 @@
+# these paths are created when you create a python virtualenv
+# over the web/gnome path
+include
+man
+bin
+lib
+.Python

@@ -1,22 +1,28 @@
 ### Mako defs.
 
+## Make a unique ID using ``form.id`` and ``id``.
+<%def name="uid(id, form)">
+    <% return "%s_%s" % (id, form.id) %>
+</%def>
+
 <%def name="is_active(url)">
     % if request.path == url:
         active
     % endif
 </%def>
 
-<%def name="get_form_id(obj)">
-    <%
-        from webgnome.form_view import FormViewBase
-        form_id = FormViewBase.get_form_id(obj)
-    %>
-
-    ${form_id}
-</%def>
-
-<%def name="form_control(field, help_text=None, label=None)">
-    <div class="control-group ${'error' if field.errors else ''}">
+<%def name="form_control(field, help_text=None, label=None, hidden=False,
+                         extra_classes=None)">
+    <div class="control-group  ${'error' if field.errors else ''}
+                % if hidden and not field.errors:
+                    hidden
+                % endif
+                % if extra_classes:
+                    % for cls in extra_classes:
+                        ${cls}
+                    % endfor
+                % endif
+                ">
         <label class="control-label">
             % if label:
                 ${label}
@@ -48,14 +54,14 @@
         <div class="controls">
         ${form.hour} : ${form.minute}
             % if form.hour.errors:
-                    <span class="help">
-                    ${form.hour.errors[0]}
-                    </span>
+                <span class="help">
+                ${form.hour.errors[0]}
+                </span>
             % endif
             % if form.minute.errors:
-                    <span class="help">
-                    ${form.minute.errors[0]}
-                    </span>
+                <span class="help">
+                ${form.minute.errors[0]}
+                </span>
             % endif
         </div>
     </div>

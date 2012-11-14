@@ -5,8 +5,8 @@ import gnome.basic_types
 from pyramid.renderers import render
 from pyramid.view import view_config
 
-from webgnome.forms import AddMoverForm, DeleteMoverForm, WindMoverForm
 from webgnome import util
+from webgnome.forms.movers import AddMoverForm, DeleteMoverForm, WindMoverForm
 
 
 # A map of :mod:`gnome` objects to route names, for use looking up the route
@@ -86,7 +86,7 @@ def delete_mover(request, model):
 
 def _update_wind_mover_post(model, mover_id, form):
     if model.has_mover_with_id(mover_id):
-        # TODO: Update the mover with settings in POST.
+        # TODO: Does WTForms update the object directly?
         message = util.make_message(
             'success', 'Updated variable wind mover successfully.')
     else:
@@ -100,14 +100,14 @@ def _update_wind_mover_post(model, mover_id, form):
         'form_html': None
     }
 
+
 @view_config(route_name='update_wind_mover', renderer='gnome_json')
 @util.json_require_model
 def update_wind_mover(request, model):
     mover_id = request.matchdict['id']
-    # TODO: Use when real mover class is available.
-    # opts = {'obj': mover} if mover else {}
-    opts = {}
-    form = WindMoverForm(request.POST or None, **opts)
+    mover = model.get_mover(mover_id)
+    opts = {'obj': mover} if mover else {}
+    form = WindMoverForm( request.POST or None, **opts)
 
     if request.method == 'POST' and form.validate():
         return _update_wind_mover_post(model, mover_id, form)
@@ -121,13 +121,21 @@ def update_wind_mover(request, model):
 
 
 def _create_wind_mover_post(model, form):
-    # TODO: Validate form input.
-    time_val = numpy.zeros((1,), dtype=gnome.basic_types.time_value_pair)
+    direction = form.get_direction_degree()
 
-    # Since it is just constant, just give it 0 time
-    time_val['time'][0] = 0
-    time_val['value'][0] = (0., 100.)
-    mover = gnome.movers.WindMover(timeseries=time_val)
+    if not direction:
+        return {
+            'form_html': None,
+            'message': util.make_message('error',
+                'Could not create wind mover. Invalid direction given.')
+        }
+
+    time_series = numpy.zeros((1,), dtype=gnome.basic_types.datetime_r_theta)
+
+    # TODO: Also support variable wind.
+    time_series['time'][0] = 0
+    time_series['value'][0] = (direction, form.speed.data)
+    mover = gnome.movers.WindMover(timeseries=time_series)
 
     return {
         'id': model.add_mover(mover),

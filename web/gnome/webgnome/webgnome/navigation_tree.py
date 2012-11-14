@@ -1,7 +1,9 @@
 from collections import OrderedDict
-from webgnome.forms import DeleteMoverForm, DeleteSpillForm
 
-from webgnome.object_form import ObjectForm
+from webgnome.forms.model import ModelSettingsForm
+from webgnome.forms.movers import AddMoverForm, DeleteMoverForm
+from webgnome.forms.object_form import get_object_form
+from webgnome.forms.spills import DeleteSpillForm
 
 
 class NavigationTree(object):
@@ -53,19 +55,22 @@ class NavigationTree(object):
         """
         settings = {
             'title': 'Model Settings',
-            'form_id': 'model_settings',
+            'key': ModelSettingsForm.get_id(),
+            'form_id': ModelSettingsForm.get_id(),
             'children': []
         }
 
         movers = {
             'title': 'Movers',
-            'form_id': 'add_mover',
+            'key': AddMoverForm.get_id(),
+            'form_id': AddMoverForm.get_id(),
             'children': []
         }
 
         # XXX: Hard-coded form ID. FormView class does not exist yet.
         spills = {
             'title': 'Spills',
+            'key': 'add_spill',
             'form_id': 'add_spill',
             'children': []
         }
@@ -73,19 +78,27 @@ class NavigationTree(object):
         for name, value in self._get_model_settings().items():
             settings['children'].append({
                 # All settings use the model update form.
-                'form_id': 'model_settings',
+                'key': ModelSettingsForm.get_id(),
+                'form_id': ModelSettingsForm.get_id(),
                 'title': self._get_value_title(name, value),
             })
 
         # XXX: Hard-coded form ID. FormView class does not exist yet.
         settings['children'].append({
+            'key': 'model_map',
             'form_id': 'model_map',
             'title': 'Map: None'
         })
 
         for mover in self.model.movers:
+            form = get_object_form(mover)
+
+            if not form:
+                continue
+
             movers['children'].append({
-                'form_id': ObjectForm.get_id(mover),
+                'key': form.get_id(mover),
+                'form_id': form.get_id(mover),
                 'delete_form_id': DeleteMoverForm.get_id(mover),
                 'object_id': mover.id,
                 'title': str(mover)
@@ -93,7 +106,8 @@ class NavigationTree(object):
 
         for spill in self.model.spills:
             spills['children'].append({
-                'form_id': ObjectForm.get_id(spill),
+                'key': get_object_form(spill).get_id(spill),
+                'form_id': get_object_form(spill).get_id(spill),
                 'delete_form_id': DeleteSpillForm.get_id(spill),
                 'object_id': spill.id,
                 'title': str(spill),

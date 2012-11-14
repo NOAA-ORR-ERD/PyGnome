@@ -83,8 +83,10 @@ class DateTimeForm(Form):
     and minute. Taken together, the values can be passed into a
     `datetime.datetime` constructor.
     """
+    DATE_FORMAT = "%m/%d/%Y"
+
     date = DateTimeField('Date', widget=DatePickerWidget(),
-                     format="%m/%d/%Y",
+                     format=DATE_FORMAT,
                      validators=[Required()],
                      default=datetime.date.today())
     hour = IntegerField(widget=LeadingZeroIntegerWidget(),
@@ -139,14 +141,14 @@ class AutoIdForm(Form):
         """
         Get an ID for this form that combines the form's class name and ``obj``.
         """
+        object_id = ''
+
         if obj:
             if hasattr(obj, 'id') and obj.id:
                 object_id = obj.id
             else:
                 object_id = id(obj)
 
-            form_name = '%s_%s' % ('update', object_id)
-        else:
-            form_name = 'create'
+            object_id = '_%s' % object_id
 
-        return '%s_%s' % (cls.__name__, form_name)
+        return '%s%s' % (cls.__name__, object_id)

@@ -1,4 +1,5 @@
 import datetime
+import os
 import uuid
 
 from pyramid.config import Configurator
@@ -24,6 +25,17 @@ def main(global_config, **settings):
     This function returns a Pyramid WSGI application.
     """
     settings['Model'] = ModelManager()
+
+    settings['package_root'] = os.path.abspath(os.path.dirname(__file__))
+    settings['project_root'] = os.path.dirname(settings['package_root'])
+    settings['model_images_url_path'] = 'img/%s' % settings['model_images_dir']
+    settings['model_images_dir'] = os.path.join(
+        settings['package_root'], 'static', 'img', settings['model_images_dir'])
+
+    # Create the output directory if it does not exist.
+    if not os.path.isdir(settings['model_images_dir']):
+        os.mkdir(settings['model_images_dir'])
+
     config = Configurator(settings=settings, session_factory=session_factory)
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_renderer('gnome_json', gnome_json)

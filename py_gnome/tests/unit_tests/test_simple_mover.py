@@ -24,7 +24,7 @@ def test_basic_move():
     delta = mover.get_move(sp, time_step = 100.0, model_time=None)
 
     expected = np.zeros_like(delta)
-    expected = proj.meters_to_latlon((100.0, 1000.0, 0.0), (0.0, 0.0, 0.0))
+    expected = proj.meters_to_lonlat((100.0, 1000.0, 0.0), (0.0, 0.0, 0.0))
     assert np.alltrue(delta == expected)
     
 def test_north():
@@ -37,7 +37,7 @@ def test_north():
     delta = mover.get_move(sp, time_step = 100.0, model_time=None)
     
     expected = np.zeros_like(delta)
-    expected = proj.meters_to_latlon((0.0, 1000.0, 0.0), (0.0, 0.0, 0.0))
+    expected = proj.meters_to_lonlat((0.0, 1000.0, 0.0), (0.0, 0.0, 0.0))
     assert np.alltrue(delta == expected)
     
     

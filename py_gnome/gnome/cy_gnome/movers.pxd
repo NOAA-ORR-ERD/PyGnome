@@ -60,6 +60,7 @@ cdef extern from "WindMover_c.h":
         void SetTimeDep(OSSMTimeValue_c *)
         # ARE FOLLOWING USED IN CYTHON??
         OSErr PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)	# currently this happens in C++ get_move command
+        void ModelStepIsDone()
         
 cdef extern from "CATSMover_c.h":
    ctypedef struct TCM_OPTIMZE:
