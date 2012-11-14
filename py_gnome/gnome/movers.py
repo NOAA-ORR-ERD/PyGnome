@@ -253,7 +253,7 @@ class WindMover(CyMover):
         timeval = np.zeros((len(datetime_r_theta),), dtype=basic_types.time_value_pair)
         timeval['time'] = time_utils.date_to_sec(datetime_r_theta['time'])
         #timeval['value'] = datetime_value_pair['value']
-        uv = transforms.r_theta_to_uv(datetime_r_theta['value'])
+        uv = transforms.r_theta_to_uv_wind(datetime_r_theta['value'])
         timeval['value']['u'] = uv[:,0]
         timeval['value']['v'] = uv[:,1]
         return timeval
@@ -272,7 +272,7 @@ class WindMover(CyMover):
         uv[:,0] = time_value_pair['value']['u']
         uv[:,1] = time_value_pair['value']['v']
         
-        datetimeval['value'] = transforms.uv_to_r_theta(uv)
+        datetimeval['value'] = transforms.uv_to_r_theta_wind(uv)
         return datetimeval
     
     def get_time_value(self, datetime):
