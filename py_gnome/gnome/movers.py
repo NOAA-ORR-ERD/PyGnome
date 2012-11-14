@@ -161,7 +161,11 @@ class WindMover(CyMover):
 
     CyMover sets everything up that is common to all movers.
     """
-    def __init__(self, timeseries=None, file=None, uncertain_duration=10800, is_active=True,
+    def __init__(self, 
+                 timeseries=None, 
+                 data_format=basic_types.data_format.magnitude_direction,
+                 file=None, 
+                 uncertain_duration=10800, is_active=True,
                  uncertain_time_delay=0, uncertain_speed_scale=2, uncertain_angle_scale=0.4):
         """
         Initializes a wind mover object. It requires a numpy array containing 
@@ -194,7 +198,7 @@ class WindMover(CyMover):
             self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             
         else:
-            self.ossm = CyOSSMTime(path=file,file_contains=basic_types.file_contains.magnitude_direction)
+            self.ossm = CyOSSMTime(path=file,file_contains=data_format)
         
         self.mover = CyWindMover(uncertain_duration=uncertain_duration, 
                                  uncertain_time_delay=uncertain_time_delay, 
@@ -318,7 +322,6 @@ class WindMover(CyMover):
     #     subclassed movers.
     #     """
     #     self.mover.model_step_is_done()
-
 
 class RandomMover(CyMover):
     """
