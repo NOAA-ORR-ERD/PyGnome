@@ -173,9 +173,51 @@ def test_simple_run_with_image_output():
 
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
 
+
+def test_all_movers():
+    """
+    a test that tests that all the movers at least can be run
+
+    add new ones as they come along!
+    """
+
+    start_time = datetime(2012, 1, 1, 0, 0)
+    
+    model = gnome.model.Model()
+    model.duration = timedelta(hours=12)
+    model.time_step = timedelta(hours = 1)
+    model.start_time = start_time
+
+    # a spill
+    model.add_spill(gnome.spill.PointReleaseSpill(num_LEs=10,
+                                          start_position = (0.0, 0.0, 0.0),
+                                          release_time = start_time,
+                                          ) )
+
+    # the land-water map
+    model.map = gnome.map.GnomeMap() # the simpleset of maps
+    
+    # simplemover
+    model.add_mover( gnome.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0)) )
+
+    # random mover
+    model.add_mover( gnome.movers.RandomMover(diffusion_coef=100000) )
+
+    # wind mover
+    series = np.array( (start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_r_theta ).reshape((1,))
+    model.add_mover( gnome.movers.WindMover(timeseries=series) )
+  
+    
+    # run the model all the way...
+    num_steps_output = 0
+    for step in model:
+        num_steps_output += 1
+        print "running step:", step
+
+    assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
     
 if __name__ == "__main__":
-  test_simple_run_with_image_output()
+    test_all_movers()
     
     
     

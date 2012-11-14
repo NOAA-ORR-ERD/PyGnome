@@ -311,15 +311,6 @@ class WindMover(CyMover):
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
-    # def model_step_is_done(self):
-    #     """
-    #     This method gets called by the model when afer everything else is done
-    #     in a time step put any code need for clean-up, etc in here in
-    #     subclassed movers.
-    #     """
-    #     self.mover.model_step_is_done()
-
-
 class RandomMover(CyMover):
     """
     Python wrapper around the Cython CyRandomMover module.

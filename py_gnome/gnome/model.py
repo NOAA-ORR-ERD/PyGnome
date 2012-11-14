@@ -123,7 +123,7 @@ class Model(object):
         """
         try: 
             self._time_step = time_step.total_seconds()
-        except AttributeError: # not a timedelta object...
+        except AttributeError: # not a timedelta object -- assume it's in seconds.
             self._time_step = int(time_step)
         self._num_time_steps = self._duration.total_seconds() // self._time_step
         self.rewind()
@@ -131,11 +131,11 @@ class Model(object):
     @property
     def current_time_step(self):
         return self._current_time_step
-    ## add setter her to compute model_time.
     @current_time_step.setter
     def current_time_step(self, step):
         self.model_time = self._start_time + timedelta(seconds=step*self.time_step)
         self._current_time_step = step
+
     @property
     def duration(self):
         return self._duration
