@@ -1,7 +1,19 @@
+import gnome.spill
+
 from wtforms import IntegerField
 from wtforms import ValidationError
 
 from base import AutoIdForm
+from object_form import ObjectForm
+
+
+class SpillForm(ObjectForm):
+    """
+    A form wrapping gnome.spill.PointReleaseSpill.
+
+    TODO: What fields do we need?
+    """
+    wrapped_class = gnome.spill.PointReleaseSpill
 
 
 class DeleteSpillForm(AutoIdForm):

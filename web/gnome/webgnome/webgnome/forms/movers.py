@@ -1,4 +1,6 @@
+import copy
 import gnome.movers
+import math
 
 from wtforms import (
     SelectField,
@@ -9,7 +11,7 @@ from wtforms import (
     ValidationError
 )
 
-from wtforms.validators import Required, NumberRange
+from wtforms.validators import Required, NumberRange, Optional
 
 from base import AutoIdForm, DateTimeForm
 from object_form import ObjectForm
@@ -23,6 +25,27 @@ class WindMoverForm(ObjectForm, DateTimeForm):
     difference being the number of time series values entered.
     """
     wrapped_class = gnome.movers.WindMover
+
+    DIRECTION_CUSTOM = 'Custom'
+
+    DIRECTIONS = [
+        "N",
+        "NNE",
+        "NE",
+        "ENE",
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW"
+    ]
 
     SPEED_KNOTS = 'knots'
     SPEED_METERS = 'meters'
@@ -48,11 +71,14 @@ class WindMoverForm(ObjectForm, DateTimeForm):
         choices=SPEED_CHOICES,
         validators=[Required()]
     )
-    direction = TextField(
-        'Wind direction is from',
-        default='S',
-        validators=[Required()]
-    )
+
+    direction = SelectField(
+        'Wind direction is from', default='S',
+        choices=[(d, d) for d in ['Degrees true'] + DIRECTIONS],
+        validators=[Required()])
+
+    direction_degrees = IntegerField(
+        validators=[Optional(), NumberRange(min=0,  max=360)])
 
     is_active = BooleanField('Active', default=True)
     start_time = IntegerField('Start Time', default=0, validators=[NumberRange(min=0)])
@@ -66,6 +92,16 @@ class WindMoverForm(ObjectForm, DateTimeForm):
         choices=SCALE_CHOICES,
         validators=[Required()]
     )
+
+    def get_direction_degree(self):
+        """
+        Convert user input for direction into degree.
+        """
+        if self.direction.data == self.DIRECTION_CUSTOM:
+            return self.direction_custom.data
+        elif self.direction.data in self.DIRECTIONS:
+            idx = self.DIRECTIONS.index(self.direction.data)
+            return (360.0 / 16) * idx
 
 
 class AddMoverForm(AutoIdForm):
