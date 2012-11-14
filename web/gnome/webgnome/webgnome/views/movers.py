@@ -86,7 +86,7 @@ def delete_mover(request, model):
 
 def _update_wind_mover_post(model, mover_id, form):
     if model.has_mover_with_id(mover_id):
-        # TODO: Update the mover with settings in POST.
+        # TODO: Does WTForms update the object directly?
         message = util.make_message(
             'success', 'Updated variable wind mover successfully.')
     else:
@@ -105,10 +105,9 @@ def _update_wind_mover_post(model, mover_id, form):
 @util.json_require_model
 def update_wind_mover(request, model):
     mover_id = request.matchdict['id']
-    # TODO: Use when real mover class is available.
-    # opts = {'obj': mover} if mover else {}
-    opts = {}
-    form = WindMoverForm(request.POST or None, **opts)
+    mover = model.get_mover(mover_id)
+    opts = {'obj': mover} if mover else {}
+    form = WindMoverForm( request.POST or None, **opts)
 
     if request.method == 'POST' and form.validate():
         return _update_wind_mover_post(model, mover_id, form)
@@ -122,12 +121,20 @@ def update_wind_mover(request, model):
 
 
 def _create_wind_mover_post(model, form):
-    # TODO: Validate form input.
-    time_series = numpy.zeros((1,), dtype=gnome.basic_types.datetime_value_pair)
+    direction = form.get_direction_degree()
 
-    # Since it is just constant, just give it 0 time
+    if not direction:
+        return {
+            'form_html': None,
+            'message': util.make_message('error',
+                'Could not create wind mover. Invalid direction given.')
+        }
+
+    time_series = numpy.zeros((1,), dtype=gnome.basic_types.datetime_r_theta)
+
+    # TODO: Also support variable wind.
     time_series['time'][0] = 0
-    time_series['value'][0] = (form.get_direction(), form.speed.data)
+    time_series['value'][0] = (direction, form.speed.data)
     mover = gnome.movers.WindMover(timeseries=time_series)
 
     return {

@@ -100,6 +100,7 @@
 </%block>
 
 <%block name="javascript">
+    <script src='/static/js/mousetrap.min.js' type="text/javascript"></script>
     <script src='/static/js/jquery.imagesloaded.min.js' type="text/javascript"></script>
     <script src='/static/js/jquery.cycle.all.latest.js' type="text/javascript"></script>
     <script src='/static/js/jquery.cookie.js' type="text/javascript"></script>

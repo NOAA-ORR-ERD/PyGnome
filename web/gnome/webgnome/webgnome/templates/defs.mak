@@ -1,5 +1,10 @@
 ### Mako defs.
 
+## Make a unique ID using ``form.id`` and ``id``.
+<%def name="uid(id, form)">
+    <% return "%s_%s" % (id, form.id) %>
+</%def>
+
 <%def name="is_active(url)">
     % if request.path == url:
         active
@@ -10,7 +15,7 @@
                          extra_classes=None)">
     <div class="control-group  ${'error' if field.errors else ''}
                 % if hidden and not field.errors:
-                    'hidden'
+                    hidden
                 % endif
                 % if extra_classes:
                     % for cls in extra_classes:

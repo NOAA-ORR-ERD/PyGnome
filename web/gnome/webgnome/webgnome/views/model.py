@@ -261,12 +261,12 @@ def run_model(request, model):
         r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
         model.add_mover(r_mover)
 
-        series = numpy.zeros((5,), dtype=gnome.basic_types .datetime_value_pair)
-        series[0] = (start_time, (-10, -10) )
-        series[1] = (start_time + datetime.timedelta(hours=18), (-10, 0) )
-        series[2] = (start_time + datetime.timedelta(hours=30), (-10, 10) )
-        series[3] = (start_time + datetime.timedelta(hours=42), (  0, 10) )
-        series[4] = (start_time + datetime.timedelta(hours=54), ( 10, 10) )
+        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_r_theta)
+        series[0] = (start_time, (10, 180) )
+        series[1] = (start_time + datetime.timedelta(hours=18), (10, 200))
+        series[2] = (start_time + datetime.timedelta(hours=30), (20, 10))
+        series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
+        series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
 
         w_mover = gnome.movers.WindMover(timeseries=series)
         model.add_mover(w_mover)

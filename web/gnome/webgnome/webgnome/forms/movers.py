@@ -11,7 +11,7 @@ from wtforms import (
     ValidationError
 )
 
-from wtforms.validators import Required, NumberRange
+from wtforms.validators import Required, NumberRange, Optional
 
 from base import AutoIdForm, DateTimeForm
 from object_form import ObjectForm
@@ -77,7 +77,8 @@ class WindMoverForm(ObjectForm, DateTimeForm):
         choices=[(d, d) for d in ['Degrees true'] + DIRECTIONS],
         validators=[Required()])
 
-    direction_degrees = IntegerField(validators=[NumberRange(min=0, max=360)])
+    direction_degrees = IntegerField(
+        validators=[Optional(), NumberRange(min=0,  max=360)])
 
     is_active = BooleanField('Active', default=True)
     start_time = IntegerField('Start Time', default=0, validators=[NumberRange(min=0)])
@@ -92,15 +93,15 @@ class WindMoverForm(ObjectForm, DateTimeForm):
         validators=[Required()]
     )
 
-    def get_direction(self):
+    def get_direction_degree(self):
         """
-        Convert user input for direction into a direction radian.
+        Convert user input for direction into degree.
         """
         if self.direction.data == self.DIRECTION_CUSTOM:
-            direction = self.direction_custom.data
-            return direction * math.pi / 180
-        else:
-            return self.DIRECTIONS.index(self.direction.data) * math.pi /  8
+            return self.direction_custom.data
+        elif self.direction.data in self.DIRECTIONS:
+            idx = self.DIRECTIONS.index(self.direction.data)
+            return (360.0 / 16) * idx
 
 
 class AddMoverForm(AutoIdForm):

@@ -456,7 +456,7 @@ AjaxForm.prototype = {
             this.trigger(AjaxForm.MESSAGE_RECEIVED, message);
         }
 
-        if (_.has(response, 'form_html')) {
+        if (_.has(response, 'form_html') && response.form_html) {
             this.form_html = response.form_html;
             this.trigger(AjaxForm.CHANGED, this);
         } else {
@@ -523,26 +523,33 @@ var AjaxFormCollection = function() {
 
 
 AjaxFormCollection.prototype = {
-    add: function(id, formOpts) {
+    add: function(formOpts) {
         var _this = this;
 
         if (!_.has(formOpts, 'collection')) {
             formOpts.collection = this;
         }
 
-        this.forms[id] = new AjaxForm(formOpts);
+        this.forms[formOpts.id] = new AjaxForm(formOpts);
 
-        this.forms[id].on(AjaxForm.CHANGED,  function() {
-            _this.trigger(AjaxForm.CHANGED);
+        this.forms[formOpts.id].on(AjaxForm.CHANGED,  function(ajaxForm) {
+            _this.trigger(AjaxForm.CHANGED, ajaxForm);
         });
 
-        this.forms[id].on(AjaxForm.SUCCESS,  function() {
-            _this.trigger(AjaxForm.SUCCESS);
+        this.forms[formOpts.id].on(AjaxForm.SUCCESS,  function(ajaxForm) {
+            _this.trigger(AjaxForm.SUCCESS, ajaxForm);
         });
     },
 
     get: function(id) {
         return this.forms[id];
+    },
+
+    deleteAll: function() {
+        var _this = this;
+        _.each(this.forms, function(form, key) {
+            delete _this.forms[key];
+        });
     },
 };
 
@@ -939,15 +946,12 @@ var TreeView = Backbone.View.extend({
      Called when an `AjaxForm` submits successfully.
      */
     ajaxFormSuccess: function(ajaxForm) {
+        log('tree view success')
         this.reload();
     },
 
     getActiveItem: function() {
         return this.tree.dynatree("getActiveNode");
-    },
-
-    hasItem: function(data) {
-        return this.tree.dynatree('getTree').selectKey(data.id) !== null;
     },
 
     reload: function() {
@@ -1404,13 +1408,18 @@ var ModalFormView = Backbone.View.extend({
         this.$container = $(this.options.formContainerEl);
         this.ajaxForm = this.options.ajaxForm;
         this.ajaxForm.on(AjaxForm.CHANGED, this.ajaxFormChanged);
-
-        // Bind listeners to the form container using `on()`, so they persist if
-        // the underlying form elements are replaced.
+        this.setupEventHandlers();
+    },
+    
+    /*
+     Bind listeners to the form container using `on()`, so they persist if
+     the underlying form elements are replaced.   
+     */
+    setupEventHandlers: function() {
         this.id = '#' + this.$el.attr('id');
         this.$container.on('click', this.id + ' .btn-primary', this.submit);
         this.$container.on('click', this.id + ' .btn-next', this.goToNextStep);
-        this.$container.on('click', this.id + ' .btn-prev', this.goToPreviousStep);
+        this.$container.on('click', this.id + ' .btn-prev', this.goToPreviousStep);       
     },
 
     ajaxFormChanged: function(ajaxForm) {
@@ -1421,8 +1430,10 @@ var ModalFormView = Backbone.View.extend({
         }
     },
 
+    /*
+     Hide any other visible modals and show this one.
+     */
     show: function() {
-        // Hide any other visible modals.
         $('div.modal').modal('hide');
         this.$el.modal();
     },
@@ -1438,6 +1449,19 @@ var ModalFormView = Backbone.View.extend({
 
     getForm: function() {
         return this.$el.find('form');
+    },
+
+    getFirstTabWithError: function() {
+        if (this.getForm().find('.nav-tabs').length === 0) {
+            return null;
+        }
+
+        var errorDiv = $('div.control-group.error').first();
+        var tabDiv = errorDiv.closest('.tab-pane');
+
+        if (tabDiv.length) {
+            return tabDiv.attr('id');
+        }
     },
 
     getFirstStepWithError: function() {
@@ -1550,7 +1574,7 @@ var ModalFormView = Backbone.View.extend({
      If there is an error in the form, load the step with errors.
      */
     refresh: function(html) {
-        this.clear();
+        this.remove();
         var $html = $(html);
         $html.appendTo(this.$container);
         this.$el = $('#' + $html.attr('id'));
@@ -1564,16 +1588,26 @@ var ModalFormView = Backbone.View.extend({
         if (stepWithError) {
             this.goToStep(stepWithError);
         }
+
+        var tabWithError = this.getFirstTabWithError();
+        if (tabWithError) {
+            $('a[href="#' + tabWithError + '"]').tab('show');
+        }
+
+        this.setupEventHandlers();
     },
 
     hide: function() {
         this.$el.modal('hide');
     },
 
-    clear: function() {
+    remove: function() {
         this.hide();
         this.$el.empty();
         this.$el.remove();
+        this.$container.off('click', this.id + ' .btn-primary', this.submit);
+        this.$container.off('click', this.id + ' .btn-next', this.goToNextStep);
+        this.$container.off('click', this.id + ' .btn-prev', this.goToPreviousStep);
     }
 });
 
@@ -1699,7 +1733,7 @@ var AppView = Backbone.View.extend({
 
         this.menuView = new MenuView({
             // XXX: Hard-coded IDs
-            modelDropDownEl: "#file-drop",
+            modelDropdownEl: "#file-drop",
             runDropdownEl: "#run-drop",
             helpDropdownEl: "#help-drop",
             newItemEl: "#menu-new",
@@ -1760,12 +1794,13 @@ var AppView = Backbone.View.extend({
         });
 
         this.setupEventHandlers();
+        this.setupKeyboardHandlers();
     },
 
     setupEventHandlers: function() {
         this.model.on(Model.RUN_ERROR, this.modelRunError);
         this.treeView.on(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
-        this.modalFormViewContainer.on(ModalFormViewContainer.REFRESHED, this.setupForms);
+        this.modalFormViewContainer.on(ModalFormViewContainer.REFRESHED, this.refreshForms);
 
         this.treeControlView.on(TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
         this.treeControlView.on(TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
@@ -1794,20 +1829,56 @@ var AppView = Backbone.View.extend({
         this.addMoverFormView.on(AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
     },
 
-    setupForms: function() {
+    setupKeyboardHandlers: function() {
         var _this = this;
 
-        // `AjaxForm` instances, keyed to form ID.
-        this.forms = new AjaxFormCollection();
-
-         // `ModelFormView` instances, keyed to form ID.
-        this.formViews = {};
-
-        this.modalFormViewContainer = new ModalFormViewContainer({
-            el: $('#' + this.options.formContainerId),
-            ajaxForms: this.forms,
-            url: this.options.formsUrl
+        Mousetrap.bind('n o', function() {
+            log('new model');
+            _this.newMenuItemClicked();
         });
+
+        Mousetrap.bind('n m', function() {
+            log('new mover');
+            _this.showFormWithId('AddMoverForm');
+        });
+
+        Mousetrap.bind('n w', function() {
+            log('new wind mover');
+            _this.showFormWithId('WindMoverForm');
+        });
+
+        Mousetrap.bind('s f', function() {
+            log('save form')
+            var visibleSaveButton = $('.modal[aria-hidden=false] .btn-primary');
+            if (visibleSaveButton) {
+                log(visibleSaveButton.length)
+                visibleSaveButton.click();
+            }
+        });
+    },
+
+    destroyForms: function() {
+        var _this = this;
+
+        if (this.forms) {
+            this.forms.deleteAll();
+        }
+
+        if (this.formViews) {
+            _.each(this.formViews, function(formView, key) {
+                formView.remove();
+                delete _this.formViews[key];
+            });
+        }
+    },
+
+    refreshForms: function() {
+        this.destroyForms();
+        this.addForms();
+    },
+
+    addForms: function() {
+        var _this = this;
 
         this.addMoverFormView = new AddMoverFormView({
             el: $('#' + this.options.addMoverFormId),
@@ -1827,7 +1898,8 @@ var AppView = Backbone.View.extend({
                 return;
             }
 
-            _this.forms.add(modalFormId, {
+            _this.forms.add({
+                id: modalFormId,
                 url: $form.attr('action')
             });
 
@@ -1837,6 +1909,22 @@ var AppView = Backbone.View.extend({
                 formContainerEl: '#' + _this.options.formContainerId
             });
         });
+    },
+
+    setupForms: function() {
+        // `AjaxForm` instances, keyed to form ID.
+        this.forms = new AjaxFormCollection();
+
+         // `ModelFormView` instances, keyed to form ID.
+        this.formViews = {};
+
+        this.modalFormViewContainer = new ModalFormViewContainer({
+            el: $('#' + this.options.formContainerId),
+            ajaxForms: this.forms,
+            url: this.options.formsUrl
+        });
+        
+        this.addForms();
     },
 
     modelRunError: function() {
@@ -1991,6 +2079,16 @@ var AppView = Backbone.View.extend({
     disableFullscreen: function() {
         this.mapControlView.switchToNormalScreen();
         $(this.sidebarEl).show('slow');
+    },
+
+    showFormWithId: function(formId) {
+        var formView = this.formViews[formId];
+
+        if (formView === undefined) {
+            return;
+        }
+
+        formView.show();
     },
 
     showFormForNode: function(node) {
