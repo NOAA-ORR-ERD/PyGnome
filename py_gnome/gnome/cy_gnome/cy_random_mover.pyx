@@ -99,5 +99,8 @@ cdef class CyRandomMover:
             raise ValueError("The value for spill type can only be 'forecast' or 'uncertainty' - you've chosen: " + str(spill_type))
         
 
-        # JS Ques: Should we call this from within get_move instead of calling it from cython?
+    def model_step_is_done(self):
+        """
+        invoke C++ model step is done functionality
+        """
         self.mover.ModelStepIsDone()

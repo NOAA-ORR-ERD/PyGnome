@@ -51,7 +51,7 @@ class Model(object):
         """
         resets the model to the beginning (start_time)
         """
-        self._current_time_step = -1 # start at -1
+        self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
         for spill in self.spills:
             spill.reset()
@@ -123,7 +123,7 @@ class Model(object):
         """
         try: 
             self._time_step = time_step.total_seconds()
-        except AttributeError: # not a timedelta object...
+        except AttributeError: # not a timedelta object -- assume it's in seconds.
             self._time_step = int(time_step)
         self._num_time_steps = self._duration.total_seconds() // self._time_step
         self.rewind()
@@ -131,6 +131,10 @@ class Model(object):
     @property
     def current_time_step(self):
         return self._current_time_step
+    @current_time_step.setter
+    def current_time_step(self, step):
+        self.model_time = self._start_time + timedelta(seconds=step*self.time_step)
+        self._current_time_step = step
 
     @property
     def duration(self):
@@ -212,7 +216,7 @@ class Model(object):
         
         releases elements, refloats, prepares the movers, etc.
         """
-        self.model_time = self._start_time + timedelta(seconds=self._current_time_step*self.time_step)
+        #self.model_time = self._start_time + timedelta(seconds=self.current_time_step*self.time_step)
         
         for spill in self.spills:
             spill.prepare_for_model_step(self.model_time, self.time_step)
@@ -299,7 +303,7 @@ class Model(object):
             self.output_map.draw_background()
             self.output_map.save_background(os.path.join(images_dir, "background_map.png"))
 
-        filename = os.path.join(images_dir, 'foreground_%05i.png'%self._current_time_step)
+        filename = os.path.join(images_dir, 'foreground_%05i.png'%self.current_time_step)
 
         self.output_map.create_foreground_image()
 
@@ -314,16 +318,16 @@ class Model(object):
         Steps the model forward in time. Needs testing for hindcasting.
                 
         """
-        if self._current_time_step >= self._num_time_steps:
+        if self.current_time_step >= self._num_time_steps:
             return False
         
-        if self._current_time_step == -1:
+        if self.current_time_step == -1:
             self.setup_model_run() # that's all we need to do for the zeroth time step
         else:    
             self.setup_time_step()
             self.move_elements()
             self.step_is_done()
-        self._current_time_step += 1        
+        self.current_time_step += 1        
         return True
     
     def __iter__(self):
