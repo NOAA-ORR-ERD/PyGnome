@@ -180,14 +180,14 @@ class WindMover(CyMover):
         :param uncertain_speed_scale=2: used in uncertainty computation
         :param uncertain_angle_scale=0.4: used in uncertainty computation
         """
-        if( timeseries == None and file == None):
+        if( timeseries is None and file is None):
             raise ValueError("Either provide timeseries or a valid long file")
         
-        if( timeseries != None):
+        if( timeseries is not None):
             try:
                 if( timeseries.dtype is not basic_types.datetime_value_2d):
                     # Should this be 'is' or '==' - both work in this case. There is only one instance of basic_types.time_value_pair 
-                    raise ValueError("timeseries must be a numpy array containing basic_types.datetime_r_theta dtype")
+                    raise ValueError("timeseries must be a numpy array containing basic_types.datetime_value_2d dtype")
             
             except AttributeError as err:
                 raise AttributeError("timeseries is not a numpy array. " + err.message)
