@@ -161,7 +161,11 @@ class WindMover(CyMover):
 
     CyMover sets everything up that is common to all movers.
     """
-    def __init__(self, timeseries=None, file=None, uncertain_duration=10800, is_active=True,
+    def __init__(self, 
+                 timeseries=None, 
+                 data_format=basic_types.data_format.magnitude_direction,
+                 file=None, 
+                 uncertain_duration=10800, is_active=True,
                  uncertain_time_delay=0, uncertain_speed_scale=2, uncertain_angle_scale=0.4):
         """
         Initializes a wind mover object. It requires a numpy array containing 
@@ -194,7 +198,7 @@ class WindMover(CyMover):
             self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             
         else:
-            self.ossm = CyOSSMTime(path=file,file_contains=basic_types.file_contains.magnitude_direction)
+            self.ossm = CyOSSMTime(path=file,file_contains=data_format)
         
         self.mover = CyWindMover(uncertain_duration=uncertain_duration, 
                                  uncertain_time_delay=uncertain_time_delay, 
@@ -253,7 +257,7 @@ class WindMover(CyMover):
         timeval = np.zeros((len(datetime_r_theta),), dtype=basic_types.time_value_pair)
         timeval['time'] = time_utils.date_to_sec(datetime_r_theta['time'])
         #timeval['value'] = datetime_value_pair['value']
-        uv = transforms.r_theta_to_uv(datetime_r_theta['value'])
+        uv = transforms.r_theta_to_uv_wind(datetime_r_theta['value'])
         timeval['value']['u'] = uv[:,0]
         timeval['value']['v'] = uv[:,1]
         return timeval
@@ -272,7 +276,7 @@ class WindMover(CyMover):
         uv[:,0] = time_value_pair['value']['u']
         uv[:,1] = time_value_pair['value']['v']
         
-        datetimeval['value'] = transforms.uv_to_r_theta(uv)
+        datetimeval['value'] = transforms.uv_to_r_theta_wind(uv)
         return datetimeval
     
     def get_time_value(self, datetime):
@@ -310,6 +314,7 @@ class WindMover(CyMover):
                               uncertain_spill_number)
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+
 
 class RandomMover(CyMover):
     """
