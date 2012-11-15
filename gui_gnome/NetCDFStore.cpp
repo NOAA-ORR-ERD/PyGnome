@@ -560,7 +560,7 @@ bool NetCDFStore::Write(TModel* model, bool threeMovement, bool uncertain) {
 		ncID = model->ncID_C;
 
     // Check coordinates..
-    if((*lastCoord).size() == 0 || model->ncSnapshot || model->modelTime == model->GetStartTime()) {
+    if((*lastCoord).size() == 0 || model->ncSnapshot || (!model->bHindcast && model->modelTime == model->GetStartTime()) || (model->bHindcast && model->modelTime == model->GetEndTime())) {
         (*lastCoord)["Time"] = 0;
         (*lastCoord)["Particle_Count"] = 0;
         (*lastCoord)["Longitude"] = 0;
