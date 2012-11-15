@@ -185,16 +185,19 @@ class WindMover(CyMover):
         
         if( timeseries != None):
             try:
-                #if( timeseries.dtype is not basic_types.datetime_value_pair):
-                if( timeseries.dtype is not basic_types.datetime_r_theta):
+                if( timeseries.dtype is not basic_types.datetime_value_2d):
                     # Should this be 'is' or '==' - both work in this case. There is only one instance of basic_types.time_value_pair 
                     raise ValueError("timeseries must be a numpy array containing basic_types.datetime_r_theta dtype")
             
             except AttributeError as err:
                 raise AttributeError("timeseries is not a numpy array. " + err.message)
             
-            # convert datetime_value_pair to time_value_pair
-            time_value_pair = self._datetime_r_theta_to_time_value(timeseries)
+            # convert datetime_value_2d to time_value_pair
+            if data_format == basic_types.data_format.magnitude_direction:
+                time_value_pair = self._datetime_r_theta_to_time_value(timeseries)
+            elif data_format == basic_types.data_format.wind_uv:
+                time_value_pair = self._datetime_uv_to_time_value(timeseries)
+                
             self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             
         else:
@@ -206,7 +209,6 @@ class WindMover(CyMover):
                                  uncertain_angle_scale=uncertain_angle_scale)
         self.mover.set_ossm(self.ossm)
         super(WindMover,self).__init__(is_active=is_active)
-        #CyMover.__init__(self, is_active=is_active)
 
     @property
     def timeseries(self):
@@ -214,8 +216,8 @@ class WindMover(CyMover):
         return datetimeval
     
     @timeseries.setter
-    def timeseries(self, datetime_value):
-        timeval = self._datetime_r_theta_to_time_value(datetime_value)
+    def timeseries(self, datetime_value_2d):
+        timeval = self._datetime_r_theta_to_time_value(datetime_value_2d)
         self.ossm.timeseries = timeval
         
     @property
@@ -250,13 +252,22 @@ class WindMover(CyMover):
     def uncertain_angle_scale(self, value):
         self.mover.uncertain_angle_scale = value
 
+    def _datetime_uv_to_time_value(self, datetime_value_2d):
+        """
+        converts the datetime_value_2d array to a time_value_pair array
+        """
+        timeval = np.zeros((len(datetime_value_2d),), dtype=basic_types.time_value_pair)
+        timeval['time'] = time_utils.date_to_sec(datetime_value_2d['time'])
+        timeval['value']['u'] = datetime_value_2d['value'][:,0]
+        timeval['value']['v'] = datetime_value_2d['value'][:,1]
+        return timeval
+
     def _datetime_r_theta_to_time_value(self, datetime_r_theta):
         """
-        convert the datetime_value_pair array to a time_value_pair array
+        convert the datetime_value_2d array to a time_value_pair array
         """
         timeval = np.zeros((len(datetime_r_theta),), dtype=basic_types.time_value_pair)
         timeval['time'] = time_utils.date_to_sec(datetime_r_theta['time'])
-        #timeval['value'] = datetime_value_pair['value']
         uv = transforms.r_theta_to_uv_wind(datetime_r_theta['value'])
         timeval['value']['u'] = uv[:,0]
         timeval['value']['v'] = uv[:,1]
@@ -264,11 +275,9 @@ class WindMover(CyMover):
         
     def _time_value_to_datetime_r_theta(self, time_value_pair):
         """
-        convert the time_value_pair array to a datetime_value_pair array
+        convert the time_value_pair array to a datetime_value_2d array
         """
-        #datetimeval = np.zeros((len(time_value_pair),), dtype=basic_types.datetime_value_pair)
-        #datetimeval['value'] = time_value_pair['value']
-        datetimeval = np.zeros((len(time_value_pair),), dtype=basic_types.datetime_r_theta)
+        datetimeval = np.zeros((len(time_value_pair),), dtype=basic_types.datetime_value_2d)
         datetimeval['time'] = time_utils.sec_to_date(time_value_pair['time'])
         
         # remove following three after reworking the time_value_pair array
@@ -312,7 +321,6 @@ class WindMover(CyMover):
                               self.status_codes,
                               self.spill_type,
                               uncertain_spill_number)
-        #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
 
