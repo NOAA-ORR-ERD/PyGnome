@@ -3140,7 +3140,8 @@ void Map3D_c::ResetMaskValues(LONGH maskH,long landBlockToMerge,long landBlockTo
 	}
 }
 
-OSErr Map3D_c::NumberIslands(LONGH *islandNumberH, DOUBLEH landMaskH,LONGH landWaterInfo, long numRows, long  numCols, long *numIslands) 
+// pull this code of the class
+OSErr Map3D_c::NumberIslands(LONGH *islandNumberH, DOUBLEH landMaskH,LONGH landWaterInfo, long numRows, long numCols, long *numIslands) 
 {
 	OSErr err = 0;
 	long numRows_ext = numRows+1, numCols_ext = numCols+1;

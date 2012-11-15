@@ -7,8 +7,6 @@ var log = window.noaa.erd.util.log;
 var handleAjaxError = window.noaa.erd.util.handleAjaxError;
 
 
-
-
 /*
   Retrieve a message object from the object `data` if the `message` key
   exists, annotate the message object ith an `error` value set to true
@@ -36,7 +34,7 @@ var parseMessage = function(data) {
 
 
 /*
- Return a UTC date string for `timestamp`, which should be in an format
+ Return a UTC date string for `timestamp`, which should be in a format
  acceptable to `Date.parse`.
  */
 var getUTCStringForTimestamp = function(timestamp) {
@@ -159,8 +157,8 @@ var Model = Backbone.Collection.extend({
     /*
      Helper that performs an AJAX request to start ("run") the model.
 
-     Receives back an array of timestamps, one for each step the server
-     expects to generate on subsequent requests.
+     Receives back the background image for the map and an array of timestamps,
+     one for each step the server expects to generate on subsequent requests.
      */
     doRun: function(opts) {
         var isInvalid = function(obj) {
@@ -185,7 +183,7 @@ var Model = Backbone.Collection.extend({
             retryLimit: 3,
             success: this.runSuccess,
             error: handleAjaxError
-        });       
+        });
     },
 
     /*
@@ -246,20 +244,32 @@ var Model = Backbone.Collection.extend({
 
      Triggers:
      - `Model.NEXT_TIME_STEP_READY` with the time step object for the new step.
-     - `Model.RUN_FINISHED` if this was the step chosen to run until
+     - `Model.RUN_FINISHED` if the model has run until `this.runUntilTimeStep`.
      */
     setCurrentTimeStep: function(stepNum) {
         this.currentTimeStep = stepNum;
         this.nextTimeStep = stepNum + 1;
 
-         if (this.runUntilTimeStep &&
-                this.currentTimeStep === this.runUntilTimeStep) {
-             this.trigger(Model.RUN_FINISHED);
-             this.runUntilTimeStep = null;
-             return;
+        if (this.currentTimeStep === this.runUntilTimeStep ||
+                this.currentTimeStep === _.last(this.expectedTimeSteps)) {
+            this.trigger(Model.RUN_FINISHED);
+            this.runUntilTimeStep = null;
+            return;
          }
 
          this.trigger(Model.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
+    },
+
+     /*
+     Finish the current run.
+
+     Triggers:
+     - `Model.RUN_FINISHED`
+     */
+    finishRun: function() {
+        this.rewind();
+        this.runUntilTimeStep = null;
+        this.trigger(Model.RUN_FINISHED);
     },
 
     /*
@@ -270,8 +280,7 @@ var Model = Backbone.Collection.extend({
      */
     getNextTimeStep: function() {
         if (!this.serverHasTimeStep(this.nextTimeStep)) {
-            this.rewind();
-            this.trigger(Model.RUN_FINISHED);
+            this.finishRun();
             return;
         }
 
@@ -283,13 +292,10 @@ var Model = Backbone.Collection.extend({
 
         // Request the next step from the server.
         $.ajax({
-            // Block until finished, so this and subsequent requests come
-            // back in order.
-            async: false,
             type: "GET",
             url: this.url + '/next_step',
             success: this.timeStepRequestSuccess,
-            error: handleAjaxError
+            error: this.timeStepRequestFailure
         });
     },
 
@@ -311,6 +317,13 @@ var Model = Backbone.Collection.extend({
         }
 
         this.addTimeStep(data.time_step);
+   },
+
+   timeStepRequestFailure: function(xhr, textStatus, errorThrown) {
+       if (xhr.status === 404) {
+           // TODO: Maybe we shouldn't return 404 when finished? Seems wrong.
+           this.finishRun();
+       }
    },
 
     /*
@@ -431,6 +444,7 @@ var AjaxForm = function(opts) {
 // Events
 AjaxForm.MESSAGE_RECEIVED = 'ajaxForm:messageReceived';
 AjaxForm.CHANGED = 'ajaxForm:changed';
+AjaxForm.SUCCESS = 'ajaxForm:success';
 
 AjaxForm.prototype = {
     /*
@@ -442,10 +456,11 @@ AjaxForm.prototype = {
             this.trigger(AjaxForm.MESSAGE_RECEIVED, message);
         }
 
-        if (_.has(response, 'form_html')) {
+        if (_.has(response, 'form_html') && response.form_html) {
             this.form_html = response.form_html;
             this.trigger(AjaxForm.CHANGED, this);
-            this.collection.trigger(AjaxForm.CHANGED, this);
+        } else {
+            this.trigger(AjaxForm.SUCCESS, this);
         }
     },
 
@@ -495,6 +510,51 @@ AjaxForm.prototype = {
 
 
 /*
+ A collection of `AjaxForm` instances.
+
+ Listen for SUBMIT_SUCCESS and SUBMIT_ERROR events on all instances and
+ rebroadcast them.
+ */
+var AjaxFormCollection = function() {
+    _.bindAll(this);
+    _.extend(this, Backbone.Events);
+    this.forms = {};
+};
+
+
+AjaxFormCollection.prototype = {
+    add: function(formOpts) {
+        var _this = this;
+
+        if (!_.has(formOpts, 'collection')) {
+            formOpts.collection = this;
+        }
+
+        this.forms[formOpts.id] = new AjaxForm(formOpts);
+
+        this.forms[formOpts.id].on(AjaxForm.CHANGED,  function(ajaxForm) {
+            _this.trigger(AjaxForm.CHANGED, ajaxForm);
+        });
+
+        this.forms[formOpts.id].on(AjaxForm.SUCCESS,  function(ajaxForm) {
+            _this.trigger(AjaxForm.SUCCESS, ajaxForm);
+        });
+    },
+
+    get: function(id) {
+        return this.forms[id];
+    },
+
+    deleteAll: function() {
+        var _this = this;
+        _.each(this.forms, function(form, key) {
+            delete _this.forms[key];
+        });
+    },
+};
+
+
+/*
  `MessageView` is responsible for displaying messages sent back from the server
  during AJAX form submissions. These are non-form error conditions, usually,
  but can also be success messages.
@@ -535,16 +595,28 @@ var MapView = Backbone.View.extend({
         this.frameClass = this.options.frameClass;
         this.activeFrameClass = this.options.activeFrameClass;
         this.placeholderEl = this.options.placeholderEl;
+        this.backgroundImageUrl = this.options.backgroundImageUrl;
 
         this.createPlaceholderCopy();
         this.makeImagesClickable();
         this.status = MapView.STOPPED;
 
+        this.$map = $(this.mapEl);
+
         this.model = this.options.model;
         this.model.on(Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+        this.model.on(Model.RUN_BEGAN, this.modelRunBegan);
         this.model.on(Model.RUN_ERROR, this.modelRunError);
         this.model.on(Model.RUN_FINISHED, this.modelRunFinished);
         this.model.on(Model.CREATED, this.modelCreated);
+
+        if (this.backgroundImageUrl) {
+            this.loadMapFromUrl(this.backgroundImageUrl);
+        }
+
+        if (this.model.hasCachedTimeStep(this.model.getCurrentTimeStep())) {
+            this.nextTimeStepReady();
+        }
     },
 
     isPaused: function() {
@@ -635,15 +707,13 @@ var MapView = Backbone.View.extend({
         - `MapView.FRAME_CHANGED` after the image has loaded.
      */
     showImageForTimeStep: function(stepNum) {
-        var map = $(this.mapEl);
-
         // Show the map div if this is the first image of the run.
-        if (map.find('img').length === 1) {
-            map.show();
+        if (this.$map.find('img').length === 1) {
+            this.$map.show();
         }
 
         var stepImage = this.getImageForTimeStep(stepNum);
-        var otherImages = $(this.mapEl).find('img').not(stepImage);
+        var otherImages = this.$map.find('img').not(stepImage).not('.background');
 
         // Hide all other images in the map div.
         otherImages.css('display', 'none');
@@ -673,21 +743,17 @@ var MapView = Backbone.View.extend({
         img.appendTo(map);
 
         $(img).imagesLoaded(function() {
-            setTimeout(_this.showImageForTimeStep, 150, [timeStep.id]);
+            window.setTimeout(_this.showImageForTimeStep, 150, [timeStep.id]);
         });
     },
 
     addTimeStep: function(timeStep) {
-        if (timeStep.id === 0 && this.placeholderCopy) {
-            this.removePlaceholderCopy();
-        }
-
         var imageExists = this.getImageForTimeStep(timeStep.id).length;
 
         // We must be playing a cached model run because the image already
         // exists. In all other cases the image should NOT exist.
         if (imageExists) {
-            setTimeout(this.showImageForTimeStep, 150, [timeStep.id]);
+            window.setTimeout(this.showImageForTimeStep, 150, [timeStep.id]);
             return;
         }
 
@@ -696,7 +762,7 @@ var MapView = Backbone.View.extend({
 
     // Clear out the current frames.
     clear: function() {
-        $(this.mapEl).empty();
+        $(this.mapEl).not('.background').empty();
     },
 
     getSize: function() {
@@ -786,6 +852,27 @@ var MapView = Backbone.View.extend({
         this.addTimeStep(this.model.getCurrentTimeStep());
     },
 
+    loadMapFromUrl: function(url) {
+        if (this.placeholderCopy.length) {
+            this.removePlaceholderCopy();
+        }
+
+        var map = $(this.mapEl);
+
+        map.find('.background').remove();
+
+        var img = $('<img>').attr({
+            'class': 'background',
+            src: url
+        });
+
+        img.appendTo(map);
+    },
+
+    modelRunBegan: function(data) {
+        this.loadMapFromUrl(data.background_image);
+    },
+
     modelRunError: function() {
         this.setStopped();
     },
@@ -827,7 +914,7 @@ var TreeView = Backbone.View.extend({
         this.tree = this.setupDynatree();
 
         // Event handlers
-        this.options.ajaxForms.on(AjaxForm.CHANGED, this.ajaxFormChanged);
+        this.options.ajaxForms.on(AjaxForm.SUCCESS, this.ajaxFormSuccess);
         this.options.model.on(Model.CREATED, this.reload);
     },
 
@@ -855,26 +942,16 @@ var TreeView = Backbone.View.extend({
     },
 
     /*
-     An event handler called when an `AjaxForm` in `this.forms` changes.
-
-     If a form was submitted successfully, we need to reload the tree view in
-     case new items were added.
+     Reload the tree view in case new items were added in an `AjaxForm` submit.
+     Called when an `AjaxForm` submits successfully.
      */
-    ajaxFormChanged: function(ajaxForm) {
-        var formHtml = ajaxForm.form_html;
-
-        // This field will be null on a successful submit.
-        if (!formHtml) {
-            this.reload();
-        }
+    ajaxFormSuccess: function(ajaxForm) {
+        log('tree view success')
+        this.reload();
     },
 
     getActiveItem: function() {
         return this.tree.dynatree("getActiveNode");
-    },
-
-    hasItem: function(data) {
-        return this.tree.dynatree('getTree').selectKey(data.id) !== null;
     },
 
     reload: function() {
@@ -1049,7 +1126,7 @@ var MapControlView = Backbone.View.extend({
         if (timestamp) {
             this.setTime(timestamp);
         } else {
-            log('Slider changed to invalid time step: ' + ui.value);
+            console.log('Slider changed to invalid time step: ' + ui.value);
             return false;
         }
 
@@ -1081,6 +1158,7 @@ var MapControlView = Backbone.View.extend({
     },
 
     modelRunFinished: function() {
+        this.disableControls();
         this.stop();
     },
 
@@ -1270,11 +1348,45 @@ var MapControlView = Backbone.View.extend({
 });
 
 
+var ModalFormViewContainer = Backbone.View.extend({
+    initialize: function() {
+        _.bindAll(this);
+        this.options.ajaxForms.on(AjaxForm.SUCCESS, this.refresh);
+    },
+
+    /*
+     Refresh all forms from the server.
+
+     Called when any `AjaxForm` on the page has a successful submit, in case
+     additional forms should appear for new items.
+     */
+    refresh: function() {
+        var _this = this;
+
+        $.ajax({
+            type: 'GET',
+            url: this.options.url,
+            tryCount: 0,
+            retryLimit: 3,
+            success: function(data) {
+                if (_.has(data, 'html')) {
+                    _this.$el.html(data.html);
+                    _this.trigger(ModalFormViewContainer.REFRESHED);
+                }
+            },
+            error: handleAjaxError
+        });
+    }
+}, {
+    REFRESHED: 'modalFormViewContainer:refreshed'
+});
+
+
 /*
  `ModalFormView` is responsible for displaying HTML forms retrieved
  from and submitted to the server using an `AjaxForm object. `ModalFormView`
  displays an HTML form in a modal "window" over the page using the rendered HTML
- returned by the server. It listens to 'change'events on a bound `AjaxForm` and
+ returned by the server. It listens to 'change' events on a bound `AjaxForm` and
  refreshes itself when that event fires.
 
  The view is designed to handle multi-step forms implemented purely in
@@ -1296,12 +1408,18 @@ var ModalFormView = Backbone.View.extend({
         this.$container = $(this.options.formContainerEl);
         this.ajaxForm = this.options.ajaxForm;
         this.ajaxForm.on(AjaxForm.CHANGED, this.ajaxFormChanged);
-
-        // Bind listeners to the container, using `on()`, so they persist.
+        this.setupEventHandlers();
+    },
+    
+    /*
+     Bind listeners to the form container using `on()`, so they persist if
+     the underlying form elements are replaced.   
+     */
+    setupEventHandlers: function() {
         this.id = '#' + this.$el.attr('id');
         this.$container.on('click', this.id + ' .btn-primary', this.submit);
         this.$container.on('click', this.id + ' .btn-next', this.goToNextStep);
-        this.$container.on('click', this.id + ' .btn-prev', this.goToPreviousStep);
+        this.$container.on('click', this.id + ' .btn-prev', this.goToPreviousStep);       
     },
 
     ajaxFormChanged: function(ajaxForm) {
@@ -1312,7 +1430,11 @@ var ModalFormView = Backbone.View.extend({
         }
     },
 
+    /*
+     Hide any other visible modals and show this one.
+     */
     show: function() {
+        $('div.modal').modal('hide');
         this.$el.modal();
     },
 
@@ -1327,6 +1449,19 @@ var ModalFormView = Backbone.View.extend({
 
     getForm: function() {
         return this.$el.find('form');
+    },
+
+    getFirstTabWithError: function() {
+        if (this.getForm().find('.nav-tabs').length === 0) {
+            return null;
+        }
+
+        var errorDiv = $('div.control-group.error').first();
+        var tabDiv = errorDiv.closest('.tab-pane');
+
+        if (tabDiv.length) {
+            return tabDiv.attr('id');
+        }
     },
 
     getFirstStepWithError: function() {
@@ -1361,7 +1496,6 @@ var ModalFormView = Backbone.View.extend({
 
     goToStep: function(stepNum) {
         var $form = this.getForm();
-        log($form)
 
         if (!$form.hasClass('multistep')) {
             return;
@@ -1378,8 +1512,6 @@ var ModalFormView = Backbone.View.extend({
         otherStepDivs.removeClass('active');
         stepDiv.removeClass('hidden');
         stepDiv.addClass('active');
-
-        log(stepDiv)
 
         var prevButton = this.$container.find('.btn-prev');
         var nextButton = this.$container.find('.btn-next');
@@ -1432,6 +1564,7 @@ var ModalFormView = Backbone.View.extend({
             data: $form.serialize(),
             url: $form.attr('action')
         });
+        this.hide();
         return false;
     },
 
@@ -1441,9 +1574,10 @@ var ModalFormView = Backbone.View.extend({
      If there is an error in the form, load the step with errors.
      */
     refresh: function(html) {
-        this.clear();
-        this.$el = $(html);
-        this.$el.prependTo(this.$container);
+        this.remove();
+        var $html = $(html);
+        $html.appendTo(this.$container);
+        this.$el = $('#' + $html.attr('id'));
 
         this.$el.find('.date').datepicker({
             changeMonth: true,
@@ -1454,23 +1588,34 @@ var ModalFormView = Backbone.View.extend({
         if (stepWithError) {
             this.goToStep(stepWithError);
         }
+
+        var tabWithError = this.getFirstTabWithError();
+        if (tabWithError) {
+            $('a[href="#' + tabWithError + '"]').tab('show');
+        }
+
+        this.setupEventHandlers();
     },
 
     hide: function() {
         this.$el.modal('hide');
     },
 
-    clear: function() {
+    remove: function() {
         this.hide();
-        $(this.id).empty().remove();
+        this.$el.empty();
+        this.$el.remove();
+        this.$container.off('click', this.id + ' .btn-primary', this.submit);
+        this.$container.off('click', this.id + ' .btn-next', this.goToNextStep);
+        this.$container.off('click', this.id + ' .btn-prev', this.goToPreviousStep);
     }
 });
 
 
 /*
  This is a non-AJAX-enabled modal form object to support the "add mover" form,
- which just allows the user to choose a type of mover to add (i.e., another
- form to display).
+ which asks the user to choose a type of mover to add. We then use the selection
+ to disply another, more-specific form.
  */
 var AddMoverFormView = Backbone.View.extend({
     initialize: function() {
@@ -1487,7 +1632,6 @@ var AddMoverFormView = Backbone.View.extend({
     },
 
     show: function() {
-        log('WTF')
         this.$el.modal();
     },
 
@@ -1498,7 +1642,7 @@ var AddMoverFormView = Backbone.View.extend({
     submit: function(event) {
         event.preventDefault();
         var $form = this.getForm();
-        var moverType = $form.find('input[name=mover_type]').val();
+        var moverType = $form.find('select[name="mover_type"]').val();
 
         if (moverType) {
             this.trigger(AddMoverFormView.MOVER_CHOSEN, moverType);
@@ -1573,10 +1717,11 @@ var MenuView = Backbone.View.extend({
  */
 var AppView = Backbone.View.extend({
     initialize: function() {
-        var _this = this;
         _.bindAll(this);
 
         this.apiRoot = "/model";
+
+        this.setupForms();
 
         // Initialize the model with any previously-generated time step data the
         // server had available.
@@ -1586,39 +1731,9 @@ var AppView = Backbone.View.extend({
             currentTimeStep: this.options.currentTimeStep
         });
 
-        // An object holding all of our `AjaxForm` instances, keyed to the name
-        // of the form as passed by the server in `this.options.formUrls`.
-        this.forms = {};
-        _.extend(this.forms, Backbone.Events);
-
-        // An object holding all of the `ModelFormView` instances, keyed to the
-        // name of the form as passed by the server.
-        this.formViews = {};
-
-
-        // Create an `AjaxForm` and bind it to a `ModalFormView` for each form
-        // URL the server gave us.
-        _.each(this.options.formUrls, function(url, name) {
-            _this.forms[name] = new AjaxForm({
-                url: url,
-                collection: _this.forms
-            });
-
-            _this.formViews[name] = new ModalFormView({
-                ajaxForm: _this.forms[name],
-                // AJAX forms use this name as their HTML ID.
-                el: $('#' + name),
-                formContainerEl: _this.options.formContainerEl
-            });
-        });
-
-        this.formViews['add_mover'] = new AddMoverFormView({
-            el: $('#add_mover_form'),
-            formContainerEl: this.options.formContainerEl
-        });
-
         this.menuView = new MenuView({
-            modelDropDownEl: "#file-drop",
+            // XXX: Hard-coded IDs
+            modelDropdownEl: "#file-drop",
             runDropdownEl: "#run-drop",
             helpDropdownEl: "#help-drop",
             newItemEl: "#menu-new",
@@ -1627,9 +1742,10 @@ var AppView = Backbone.View.extend({
             runUntilItemEl: "#menu-run-until"
         });
 
-        this.sidebarEl = this.options.sidebarEl;
+        this.sidebarEl = '#' + this.options.sidebarId;
 
         this.treeView = new TreeView({
+            // XXX: Hard-coded URL, ID.
             treeEl: "#tree",
             url: "/tree",
             ajaxForms: this.forms,
@@ -1637,6 +1753,7 @@ var AppView = Backbone.View.extend({
         });
 
         this.treeControlView = new TreeControlView({
+            // XXX: Hard-coded IDs
             addButtonEl: "#add-button",
             removeButtonEl: "#remove-button",
             settingsButtonEl: "#settings-button",
@@ -1644,14 +1761,16 @@ var AppView = Backbone.View.extend({
         });
 
         this.mapView = new MapView({
-            mapEl: this.options.mapEl,
-            placeholderEl: this.options.mapPlaceholderEl,
+            mapEl: '#' + this.options.mapId,
+            placeholderEl: '#' + this.options.mapPlaceholderId,
+            backgroundImageUrl: this.options.backgroundImageUrl,
             frameClass: 'frame',
             activeFrameClass: 'active',
             model: this.model
         });
 
         this.mapControlView = new MapControlView({
+            // XXX: Hard-coded IDs.
             sliderEl: "#slider",
             playButtonEl: "#play-button",
             pauseButtonEl: "#pause-button",
@@ -1663,6 +1782,7 @@ var AppView = Backbone.View.extend({
             fullscreenButtonEl: "#fullscreen-button",
             resizeButtonEl: "#resize-button",
             timeEl: "#time",
+            // XXX: Partially hard-coded URL.
             url: this.apiRoot + '/time_steps',
             model: this.model,
             mapView: this.mapView
@@ -1674,12 +1794,13 @@ var AppView = Backbone.View.extend({
         });
 
         this.setupEventHandlers();
+        this.setupKeyboardHandlers();
     },
 
     setupEventHandlers: function() {
         this.model.on(Model.RUN_ERROR, this.modelRunError);
-
         this.treeView.on(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
+        this.modalFormViewContainer.on(ModalFormViewContainer.REFRESHED, this.refreshForms);
 
         this.treeControlView.on(TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
         this.treeControlView.on(TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
@@ -1704,6 +1825,106 @@ var AppView = Backbone.View.extend({
         this.menuView.on(MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
         this.menuView.on(MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
         this.menuView.on(MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
+
+        this.addMoverFormView.on(AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+    },
+
+    setupKeyboardHandlers: function() {
+        var _this = this;
+
+        Mousetrap.bind('n o', function() {
+            log('new model');
+            _this.newMenuItemClicked();
+        });
+
+        Mousetrap.bind('n m', function() {
+            log('new mover');
+            _this.showFormWithId('AddMoverForm');
+        });
+
+        Mousetrap.bind('n w', function() {
+            log('new wind mover');
+            _this.showFormWithId('WindMoverForm');
+        });
+
+        Mousetrap.bind('s f', function() {
+            log('save form')
+            var visibleSaveButton = $('.modal[aria-hidden=false] .btn-primary');
+            if (visibleSaveButton) {
+                log(visibleSaveButton.length)
+                visibleSaveButton.click();
+            }
+        });
+    },
+
+    destroyForms: function() {
+        var _this = this;
+
+        if (this.forms) {
+            this.forms.deleteAll();
+        }
+
+        if (this.formViews) {
+            _.each(this.formViews, function(formView, key) {
+                formView.remove();
+                delete _this.formViews[key];
+            });
+        }
+    },
+
+    refreshForms: function() {
+        this.destroyForms();
+        this.addForms();
+    },
+
+    addForms: function() {
+        var _this = this;
+
+        this.addMoverFormView = new AddMoverFormView({
+            el: $('#' + this.options.addMoverFormId),
+            formContainerEl: '#' + this.options.formContainerId
+        });
+
+        this.formViews[this.options.addMoverFormId] = this.addMoverFormView;
+
+        // Create an `AjaxForm` and bind it to a `ModalFormView` for each modal
+        // form on the page, other than the Add Mover form, which we handled.
+        _.each($('div.modal'), function(modalDiv) {
+            var $div = $(modalDiv);
+            var $form = $div.find('form');
+            var modalFormId = $div.attr('id');
+
+            if (modalFormId === _this.options.addMoverFormId) {
+                return;
+            }
+
+            _this.forms.add({
+                id: modalFormId,
+                url: $form.attr('action')
+            });
+
+            _this.formViews[modalFormId] = new ModalFormView({
+                ajaxForm: _this.forms.get(modalFormId),
+                el: $('#' + modalFormId),
+                formContainerEl: '#' + _this.options.formContainerId
+            });
+        });
+    },
+
+    setupForms: function() {
+        // `AjaxForm` instances, keyed to form ID.
+        this.forms = new AjaxFormCollection();
+
+         // `ModelFormView` instances, keyed to form ID.
+        this.formViews = {};
+
+        this.modalFormViewContainer = new ModalFormViewContainer({
+            el: $('#' + this.options.formContainerId),
+            ajaxForms: this.forms,
+            url: this.options.formsUrl
+        });
+        
+        this.addForms();
     },
 
     modelRunError: function() {
@@ -1809,8 +2030,7 @@ var AppView = Backbone.View.extend({
     },
 
     sliderChanged: function(newStepNum) {
-        // We're advancing in an animation, so ignore the change. Otherwise
-        // the user just dragged the slider to a new position.
+        // No need to do anything if the slider is on the current time step.
         if (newStepNum === this.model.currentTimeStep) {
             return;
         }
@@ -1861,6 +2081,30 @@ var AppView = Backbone.View.extend({
         $(this.sidebarEl).show('slow');
     },
 
+    showFormWithId: function(formId) {
+        var formView = this.formViews[formId];
+
+        if (formView === undefined) {
+            return;
+        }
+
+        formView.show();
+    },
+
+    showFormForNode: function(node) {
+        var formView = this.formViews[node.data.form_id];
+
+        if (formView === undefined) {
+            return;
+        }
+
+        if (node.data.id) {
+            formView.reload(node.data.id);
+        } else {
+            formView.show();
+        }
+    },
+
     /*
      Show the `ModalFormView` for the active tree item.
 
@@ -1874,17 +2118,7 @@ var AppView = Backbone.View.extend({
      */
     showFormForActiveTreeItem: function() {
         var node = this.treeView.getActiveItem();
-        var formView = this.formViews[node.data.type];
-
-        if (formView === undefined) {
-            return;
-        }
-
-        if (node.data.id) {
-            formView.reload(node.data.id);
-        } else {
-            formView.show();
-        }
+        this.showFormForNode(node);
     },
 
     addButtonClicked: function() {
@@ -1892,7 +2126,7 @@ var AppView = Backbone.View.extend({
     },
 
     treeItemDoubleClicked: function(node) {
-        this.showFormForActiveTreeItem();
+        this.showFormForNode(node);
     },
 
     settingsButtonClicked: function() {
@@ -1901,23 +2135,34 @@ var AppView = Backbone.View.extend({
 
     removeButtonClicked: function() {
         var node = this.treeView.getActiveItem();
-        var formTypeData = this.getFormTypeForTreeItem(node);
 
-        if (formTypeData === null) {
+        if (!node.data.form_id || !node.data.id) {
             return;
         }
 
-        if (window.confirm('Remove ' + formTypeData.type + '?') === false) {
+        var type = node.data.form_id.replace('_', ' ');
+
+        if (window.confirm('Remove ' + type + '?') === false) {
             return;
         }
 
         this.ajaxForm.submit({
-            url: this.ajaxForm.get('url') + '/' + formTypeData.type + '/delete',
+            url: this.ajaxForm.get('url') + '/' + node.data.form_id + '/delete',
             data: "mover_id=" + node.data.id,
             error: function() {
                 window.alert('Could not remove item.');
             }
         });
+    },
+
+    moverChosen: function(moverType) {
+        var formView = this.formViews[moverType];
+
+        if (formView === undefined) {
+            return;
+        }
+
+        formView.show();
     }
 });
 

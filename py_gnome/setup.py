@@ -44,6 +44,7 @@ extension_names = [
                    'cy_ossm_time',
                    'cy_date_time',
                    'cy_random_mover',
+                   'cy_land_check'
                    ]
 
 cpp_files = [ 

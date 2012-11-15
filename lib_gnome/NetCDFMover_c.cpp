@@ -109,8 +109,8 @@ OSErr NetCDFMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *vel
 	double u,v,lengthS,alpha,beta,v0;
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
-	if(err) return err;
+	//err = this -> UpdateUncertainty();
+	//if(err) return err;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
 	
@@ -181,7 +181,7 @@ OSErr NetCDFMover_c::PrepareForModelRun()
 				(dynamic_cast<TTriGridVel3D*>(fGrid))->ClearOutputHandles();
 		}
 	}
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 
 #endif
@@ -225,6 +225,14 @@ OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& model_time, const Second
 	
 	if (err) goto done;
 	
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
+
+	if (uncertain)
+	{
+		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
+		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
+	}
 	fIsOptimizedForStep = true;
 	
 done:
@@ -1023,6 +1031,7 @@ done:
 void NetCDFMover_c::ModelStepIsDone()
 {
 	fIsOptimizedForStep = false;
+	bIsFirstStep = false;
 }
 
 

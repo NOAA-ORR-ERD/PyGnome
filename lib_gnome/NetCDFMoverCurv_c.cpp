@@ -102,12 +102,13 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	Seconds startTime, endTime, time = model->GetModelTime();
 	double timeAlpha, depthAlpha;
 	float topDepth, bottomDepth, totalDepth = 0.;
-	long index;
+	long index = 0;
 	LongPoint indices;
 	
 	long ptIndex1,ptIndex2,ptIndex3; 
 	InterpolationVal interpolationVal;
 	long depthIndex1,depthIndex2;	// default to -1?
+	
 	
 	// maybe should set interval right after reading the file...
 	// then wouldn't have to do it here
@@ -121,12 +122,22 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	{
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
 		if (bIsCOOPSWaterMask)
-		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+		{
+			//code goes here, put in interpolation
+			interpolationVal = fGrid -> GetInterpolationValues(wp.p);
+			if (interpolationVal.ptIndex1<0) return false;
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+		}
 		else
-		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+			index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 		if (index < 0) return 0;
 		indices = this->GetVelocityIndices(wp.p);
 	}
+	else return 0;
 	totalDepth = GetTotalDepth(wp.p,index);
 	GetDepthIndices(index,fVar.arrowDepth,totalDepth,&depthIndex1,&depthIndex2);
 	if (depthIndex1==UNASSIGNEDINDEX && depthIndex2==UNASSIGNEDINDEX)
@@ -273,12 +284,18 @@ WorldPoint3D NetCDFMoverCurv_c::GetMove(const Seconds& model_time, Seconds timeS
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
 		if (bIsCOOPSWaterMask)
 		{
-			index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
 			interpolationVal = fGrid -> GetInterpolationValues(refPoint);
+			if (interpolationVal.ptIndex1<0) return deltaPoint;
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
 		}
 		else
 		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	}
+	if (index < 0) return deltaPoint;
 	
 	totalDepth = GetTotalDepth(refPoint,index);
 	if (index>=0)
@@ -436,7 +453,10 @@ float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 	if (fVar.gridType == SIGMA_ROMS)
 	{
 		//if (triNum < 0) useTriNum = false;
-		err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
+		if (bIsCOOPSWaterMask)
+			err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols);
+		else 
+			err = ((TTriGridVel*)fGrid)->GetRectCornersFromTriIndexOrPoint(&index1, &index2, &index3, &index4, refPoint, triNum, useTriNum, fVerdatToNetCDFH, fNumCols+1);
 		
 		//if (err) return 0;
 		if (err) return -1;
@@ -754,15 +774,15 @@ void NetCDFMoverCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 }
 
 
-long NetCDFMoverCurv_c::CheckSurroundingPoints(LONGH maskH, long row, long col) 
+long NetCDFMoverCurv_c::CheckSurroundingPoints(LONGH maskH, long numRows, long  numCols, long row, long col) 
 {
 	long i, j, iStart, iEnd, jStart, jEnd, lowestLandIndex = 0;
 	long neighbor;
 	
 	iStart = (row > 0) ? row - 1 : 0;
 	jStart = (col > 0) ? col - 1 : 0;
-	iEnd = (row < fNumRows - 1) ? row + 1 : fNumRows - 1;
-	jEnd = (col < fNumCols - 1) ? col + 1 : fNumCols - 1;
+	iEnd = (row < numRows - 1) ? row + 1 : numRows - 1;
+	jEnd = (col < numCols - 1) ? col + 1 : numCols - 1;
 	// don't allow diagonals for now,they could be separate small islands 
 	/*for (i = iStart; i< iEnd+1; i++)
 	 {
@@ -777,29 +797,29 @@ long NetCDFMoverCurv_c::CheckSurroundingPoints(LONGH maskH, long row, long col)
 	for (i = iStart; i< iEnd+1; i++)
 	{
 		if (i==row) continue;
-		neighbor = INDEXH(maskH, i*fNumCols + col);
+		neighbor = INDEXH(maskH, i*numCols + col);
 		if (neighbor >= 3 && neighbor < lowestLandIndex)
 			lowestLandIndex = neighbor;
 	}
 	for (j = jStart; j< jEnd+1; j++)
 	{	
 		if (j==col) continue;
-		neighbor = INDEXH(maskH, row*fNumCols + j);
+		neighbor = INDEXH(maskH, row*numCols + j);
 		if (neighbor >= 3 && neighbor < lowestLandIndex)
 			lowestLandIndex = neighbor;
 	}
 	return lowestLandIndex;
 }
 
-Boolean NetCDFMoverCurv_c::ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long row, long col) 
+Boolean NetCDFMoverCurv_c::ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long numRows, long  numCols, long row, long col) 
 {
 	long i, j, iStart, iEnd, jStart, jEnd, lowestLandIndex = 0;
 	long neighbor;
 	
 	iStart = (row > 0) ? row - 1 : 0;
 	jStart = (col > 0) ? col - 1 : 0;
-	iEnd = (row < fNumRows - 1) ? row + 1 : fNumRows - 1;
-	jEnd = (col < fNumCols - 1) ? col + 1 : fNumCols - 1;
+	iEnd = (row < numRows - 1) ? row + 1 : numRows - 1;
+	jEnd = (col < numCols - 1) ? col + 1 : numCols - 1;
 	/*for (i = iStart; i < iEnd+1; i++)
 	 {
 	 for (j = jStart; j < jEnd+1; j++)
@@ -813,30 +833,30 @@ Boolean NetCDFMoverCurv_c::ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocity
 	for (i = iStart; i < iEnd+1; i++)
 	{
 		if (i==row) continue;
-		neighbor = INDEXH(maskH, i*fNumCols + col);
+		neighbor = INDEXH(maskH, i*numCols + col);
 		//if (neighbor >= 3 || (INDEXH(velocityH,i*fNumCols+j).u==fFillValue && INDEXH(velocityH,i*fNumCols+j).v==fFillValue)) return true;
-		if (neighbor >= 3 || (INDEXH(velocityH,i*fNumCols+col).u==fFillValue && INDEXH(velocityH,i*fNumCols+col).v==fFillValue)) return true;
+		if (neighbor >= 3 || (INDEXH(velocityH,i*numCols+col).u==fFillValue && INDEXH(velocityH,i*numCols+col).v==fFillValue)) return true;
 	}
 	for (j = jStart; j< jEnd+1; j++)
 	{	
 		if (j==col) continue;
-		neighbor = INDEXH(maskH, row*fNumCols + j);
+		neighbor = INDEXH(maskH, row*numCols + j);
 		//if (neighbor >= 3 || (INDEXH(velocityH,i*fNumCols+j).u==fFillValue && INDEXH(velocityH,i*fNumCols+j).v==fFillValue)) return true;
-		if (neighbor >= 3 || (INDEXH(velocityH,row*fNumCols+j).u==fFillValue && INDEXH(velocityH,row*fNumCols+j).v==fFillValue)) return true;
+		if (neighbor >= 3 || (INDEXH(velocityH,row*numCols+j).u==fFillValue && INDEXH(velocityH,row*numCols+j).v==fFillValue)) return true;
 	}
 	return false;
 }
 
-Boolean NetCDFMoverCurv_c::InteriorLandPoint(LONGH maskH, long row, long col) 
+Boolean NetCDFMoverCurv_c::InteriorLandPoint(LONGH maskH, long numRows, long numCols, long row, long col) 
 {
 	long i, j, iStart, iEnd, jStart, jEnd;
 	long neighbor;
-	long fNumRows_ext = fNumRows+1, fNumCols_ext = fNumCols+1;
+	long numRows_ext = numRows+1, numCols_ext = numCols+1;
 	
 	iStart = (row > 0) ? row - 1 : 0;
 	jStart = (col > 0) ? col - 1 : 0;
-	iEnd = (row < fNumRows_ext - 1) ? row + 1 : fNumRows_ext - 1;
-	jEnd = (col < fNumCols_ext - 1) ? col + 1 : fNumCols_ext - 1;
+	iEnd = (row < numRows_ext - 1) ? row + 1 : numRows_ext - 1;
+	jEnd = (col < numCols_ext - 1) ? col + 1 : numCols_ext - 1;
 	/*for (i = iStart; i < iEnd+1; i++)
 	 {
 	 if (i==row) continue;
@@ -859,7 +879,7 @@ Boolean NetCDFMoverCurv_c::InteriorLandPoint(LONGH maskH, long row, long col)
 		for (j = jStart; j< jEnd; j++)
 		{	
 			if (i==row && j==col) continue;
-			neighbor = INDEXH(maskH, i*fNumCols_ext + j);
+			neighbor = INDEXH(maskH, i*numCols_ext + j);
 			if (neighbor < 3 /*&& neighbor != -1*/)	// water point
 				return false;
 			//if (row==1 && INDEXH(maskH,j)==1) return false;
@@ -868,22 +888,22 @@ Boolean NetCDFMoverCurv_c::InteriorLandPoint(LONGH maskH, long row, long col)
 	return true;
 }
 
-Boolean NetCDFMoverCurv_c::ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPolyNum, long row, long col) 
+Boolean NetCDFMoverCurv_c::ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPolyNum, long numRows, long numCols, long row, long col) 
 {
 	long iStart, iEnd, jStart, jEnd, lowestLandIndex = 0;
 	long i, j, neighbor, landPolyNum;
-	long fNumRows_ext = fNumRows+1, fNumCols_ext = fNumCols+1;
+	long numRows_ext = numRows+1, numCols_ext = numCols+1;
 	
 	iStart = (row > 0) ? row - 1 : 0;
 	jStart = (col > 0) ? col - 1 : 0;
-	iEnd = (row < fNumRows_ext - 1) ? row + 1 : fNumRows_ext - 1;
-	jEnd = (col < fNumCols_ext - 1) ? col + 1 : fNumCols_ext - 1;
+	iEnd = (row < numRows_ext - 1) ? row + 1 : numRows_ext - 1;
+	jEnd = (col < numCols_ext - 1) ? col + 1 : numCols_ext - 1;
 	
-	landPolyNum = INDEXH(maskH, row*fNumCols_ext + col);
+	landPolyNum = INDEXH(maskH, row*numCols_ext + col);
 	for (i = iStart; i< iEnd+1; i++)
 	{
 		if (i==row) continue;
-		neighbor = INDEXH(maskH, i*fNumCols_ext + col);
+		neighbor = INDEXH(maskH, i*numCols_ext + col);
 		if (neighbor >= 3 && neighbor < landPolyNum) 
 		{
 			*lowerPolyNum = neighbor;
@@ -893,7 +913,7 @@ Boolean NetCDFMoverCurv_c::ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPol
 	for (j = jStart; j< jEnd+1; j++)
 	{	
 		if (j==col) continue;
-		neighbor = INDEXH(maskH, row*fNumCols_ext + j);
+		neighbor = INDEXH(maskH, row*numCols_ext + j);
 		if (neighbor >= 3 && neighbor < landPolyNum) 
 		{
 			*lowerPolyNum = neighbor;
@@ -917,62 +937,62 @@ Boolean NetCDFMoverCurv_c::ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPol
 	return false;
 }
 
-void NetCDFMoverCurv_c::ResetMaskValues(LONGH maskH,long landBlockToMerge,long landBlockToJoin)
+void NetCDFMoverCurv_c::ResetMaskValues(LONGH maskH,long landBlockToMerge,long landBlockToJoin,long numRows,long numCols)
 {	// merges adjoining land blocks and then renumbers any higher numbered land blocks
 	long i,j,val;
-	long fNumRows_ext = fNumRows+1, fNumCols_ext = fNumCols+1;
+	long numRows_ext = numRows+1, numCols_ext = numCols+1;
 	
-	for (i=0;i<fNumRows_ext;i++)
+	for (i=0;i<numRows_ext;i++)
 	{
-		for (j=0;j<fNumCols_ext;j++)
+		for (j=0;j<numCols_ext;j++)
 		{	
-			val = INDEXH(maskH,i*fNumCols_ext+j);
-			if (val==landBlockToMerge) INDEXH(maskH,i*fNumCols_ext+j) = landBlockToJoin;
-			if (val>landBlockToMerge) INDEXH(maskH,i*fNumCols_ext+j) -= 1;
+			val = INDEXH(maskH,i*numCols_ext+j);
+			if (val==landBlockToMerge) INDEXH(maskH,i*numCols_ext+j) = landBlockToJoin;
+			if (val>landBlockToMerge) INDEXH(maskH,i*numCols_ext+j) -= 1;
 		}
 	}
 }
 
-OSErr NetCDFMoverCurv_c::NumberIslands(LONGH *islandNumberH, VelocityFH velocityH,LONGH landWaterInfo, long *numIslands) 
+OSErr NetCDFMoverCurv_c::NumberIslands(LONGH *islandNumberH, VelocityFH velocityH,LONGH landWaterInfo, long numRows, long  numCols, long *numIslands) 
 {
 	OSErr err = 0;
-	long fNumRows_ext = fNumRows+1, fNumCols_ext = fNumCols+1;
-	long nv = fNumRows * fNumCols, nv_ext = fNumRows_ext*fNumCols_ext;
+	long numRows_ext = numRows+1, numCols_ext = numCols+1;
+	long nv = numRows * numCols, nv_ext = numRows_ext*numCols_ext;
 	long i, j, n, landPolyNum = 1, lowestSurroundingNum = 0;
 	long islandNum, maxIslandNum=3;
-	LONGH maskH = (LONGH)_NewHandleClear(fNumRows * fNumCols * sizeof(long));
+	LONGH maskH = (LONGH)_NewHandleClear(numRows * numCols * sizeof(long));
 	LONGH maskH2 = (LONGH)_NewHandleClear(nv_ext * sizeof(long));
 	*islandNumberH = 0;
 	
 	if (!maskH || !maskH2) {err = memFullErr; goto done;}
 	// use surface velocity values at time zero
-	for (i=0;i<fNumRows;i++)
+	for (i=0;i<numRows;i++)
 	{
-		for (j=0;j<fNumCols;j++)
+		for (j=0;j<numCols;j++)
 		{
-			if (INDEXH(landWaterInfo,i*fNumCols+j) == -1)// 1 water, -1 land
+			if (INDEXH(landWaterInfo,i*numCols+j) == -1)// 1 water, -1 land
 			{
-				if (i==0 || i==fNumRows-1 || j==0 || j==fNumCols-1)
+				if (i==0 || i==numRows-1 || j==0 || j==numCols-1)
 				{
-					INDEXH(maskH,i*fNumCols+j) = 3;	// set outer boundary to 3
+					INDEXH(maskH,i*numCols+j) = 3;	// set outer boundary to 3
 				}
 				else
 				{
 					if (landPolyNum==1)
 					{	// Land point
-						INDEXH(maskH,i*fNumCols+j) = landPolyNum+3;
+						INDEXH(maskH,i*numCols+j) = landPolyNum+3;
 						landPolyNum+=3;
 					}
 					else
 					{
 						// check for nearest land poly number
-						if (lowestSurroundingNum = CheckSurroundingPoints(maskH,i,j)>=3)
+						if (lowestSurroundingNum = CheckSurroundingPoints(maskH,numRows,numCols,i,j)>=3)
 						{
-							INDEXH(maskH,i*fNumCols+j) = lowestSurroundingNum;
+							INDEXH(maskH,i*numCols+j) = lowestSurroundingNum;
 						}
 						else
 						{
-							INDEXH(maskH,i*fNumCols+j) = landPolyNum;
+							INDEXH(maskH,i*numCols+j) = landPolyNum;
 							landPolyNum += 1;
 						}
 					}
@@ -980,46 +1000,46 @@ OSErr NetCDFMoverCurv_c::NumberIslands(LONGH *islandNumberH, VelocityFH velocity
 			}
 			else
 			{
-				if (i==0 || i==fNumRows-1 || j==0 || j==fNumCols-1)
-					INDEXH(maskH,i*fNumCols+j) = 1;	// Open water boundary
-				else if (ThereIsAdjacentLand2(maskH,velocityH,i,j))
-					INDEXH(maskH,i*fNumCols+j) = 2;	// Water boundary, not open water
+				if (i==0 || i==numRows-1 || j==0 || j==numCols-1)
+					INDEXH(maskH,i*numCols+j) = 1;	// Open water boundary
+				else if (ThereIsAdjacentLand2(maskH,velocityH,numRows,numCols,i,j))
+					INDEXH(maskH,i*numCols+j) = 2;	// Water boundary, not open water
 				else
-					INDEXH(maskH,i*fNumCols+j) = 0;	// Interior water point
+					INDEXH(maskH,i*numCols+j) = 0;	// Interior water point
 			}
 		}
 	}
 	// extend grid by one row/col up/right since velocities correspond to lower left corner of a grid box
-	for (i=0;i<fNumRows_ext;i++)
+	for (i=0;i<numRows_ext;i++)
 	{
-		for (j=0;j<fNumCols_ext;j++)
+		for (j=0;j<numCols_ext;j++)
 		{
 			if (i==0) 
 			{
-				if (j!=fNumCols)
+				if (j!=numCols)
 					INDEXH(maskH2,j) = INDEXH(maskH,j);	// flag for extra boundary point
 				else
 					INDEXH(maskH2,j) = INDEXH(maskH,j-1);	
 				
 			}
-			else if (i!=0 && j==fNumCols) 
-				INDEXH(maskH2,i*fNumCols_ext+fNumCols) = INDEXH(maskH,(i-1)*fNumCols+fNumCols-1);
+			else if (i!=0 && j==numCols) 
+				INDEXH(maskH2,i*numCols_ext+numCols) = INDEXH(maskH,(i-1)*numCols+numCols-1);
 			else 
 			{	
-				INDEXH(maskH2,i*fNumCols_ext+j) = INDEXH(maskH,(i-1)*fNumCols+j);
+				INDEXH(maskH2,i*numCols_ext+j) = INDEXH(maskH,(i-1)*numCols+j);
 			}
 		}
 	}
 	
 	// set original top/right boundaries to interior water points 
 	// probably don't need to do this since we aren't paying attention to water types anymore
-	for (j=1;j<fNumCols_ext-1;j++)	 
+	for (j=1;j<numCols_ext-1;j++)	 
 	{
-		if (INDEXH(maskH2,fNumCols_ext+j)==1) INDEXH(maskH2,fNumCols_ext+j) = 2;
+		if (INDEXH(maskH2,numCols_ext+j)==1) INDEXH(maskH2,numCols_ext+j) = 2;
 	}
-	for (i=1;i<fNumRows_ext-1;i++)
+	for (i=1;i<numRows_ext-1;i++)
 	{
-		if (INDEXH(maskH2,i*fNumCols_ext+fNumCols-1)==1) INDEXH(maskH2,i*fNumCols_ext+fNumCols-1) = 2;
+		if (INDEXH(maskH2,i*numCols_ext+numCols-1)==1) INDEXH(maskH2,i*numCols_ext+numCols-1) = 2;
 	}
 	// now merge any contiguous land blocks (max of landPolyNum)
 	// as soon as find one, all others of that number change, and every higher landpoint changes
@@ -1027,29 +1047,29 @@ OSErr NetCDFMoverCurv_c::NumberIslands(LONGH *islandNumberH, VelocityFH velocity
 startLoop:
 	{
 		long lowerPolyNum = 0;
-		for (i=0;i<fNumRows_ext;i++)
+		for (i=0;i<numRows_ext;i++)
 		{
-			for (j=0;j<fNumCols_ext;j++)
+			for (j=0;j<numCols_ext;j++)
 			{
-				if (INDEXH(maskH2,i*fNumCols_ext+j) < 3) continue;	// water point
-				if (ThereIsALowerLandNeighbor(maskH2,&lowerPolyNum,i,j))
+				if (INDEXH(maskH2,i*numCols_ext+j) < 3) continue;	// water point
+				if (ThereIsALowerLandNeighbor(maskH2,&lowerPolyNum,numRows,numCols,i,j))
 				{
-					ResetMaskValues(maskH2,INDEXH(maskH2,i*fNumCols_ext+j),lowerPolyNum);
+					ResetMaskValues(maskH2,INDEXH(maskH2,i*numCols_ext+j),lowerPolyNum,numRows,numCols);
 					goto startLoop;
 				}
-				if ((i==0 || i==fNumRows_ext-1 || j==0 || j==fNumCols_ext-1) && INDEXH(maskH2,i*fNumCols_ext+j)>3)
+				if ((i==0 || i==numRows_ext-1 || j==0 || j==numCols_ext-1) && INDEXH(maskH2,i*numCols_ext+j)>3)
 				{	// shouldn't get here
-					ResetMaskValues(maskH2,INDEXH(maskH2,i*fNumCols_ext+j),3);
+					ResetMaskValues(maskH2,INDEXH(maskH2,i*numCols_ext+j),3,numRows,numCols);
 					goto startLoop;
 				}
 			}
 		}
 	}
-	for (i=0;i<fNumRows_ext;i++)
+	for (i=0;i<numRows_ext;i++)
 	{
-		for (j=0;j<fNumCols_ext;j++)
+		for (j=0;j<numCols_ext;j++)
 		{	// note, the numbers start at 3
-			islandNum = INDEXH(maskH2,i*fNumCols_ext+j);
+			islandNum = INDEXH(maskH2,i*numCols_ext+j);
 			if (islandNum < 3) continue;	// water point
 			if (islandNum > maxIslandNum) maxIslandNum = islandNum;
 		}
@@ -1468,7 +1488,7 @@ OSErr NetCDFMoverCurv_c::ReorderPoints(VelocityFH velocityH, TMap **newMap, char
 	DisplayMessage("NEXTMESSAGETEMP");
 	DisplayMessage("Numbering Islands");
 	MySpinCursor(); // JLM 8/4/99
-	err = NumberIslands(&maskH2, velocityH, landWaterInfo, &numIslands);	// numbers start at 3 (outer boundary)
+	err = NumberIslands(&maskH2, velocityH, landWaterInfo, fNumRows, fNumCols, &numIslands);	// numbers start at 3 (outer boundary)
 	MySpinCursor(); // JLM 8/4/99
 	if (err) goto done;
 	for (i=0;i<ntri;i++)
@@ -2148,6 +2168,8 @@ OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSMask(VelocityFH velocityH, TMap **new
 	float fDepth1, fLat1, fLong1;
 	long index1=0;
 	
+	long maxJIndex=0, minJIndex=100, maxIIndex=0, minIIndex = 100;
+
 	errmsg[0]=0;
 	*newMap = 0;
 
@@ -2158,6 +2180,12 @@ OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSMask(VelocityFH velocityH, TMap **new
 	long iIndex, jIndex, index; 
 	long triIndex1, triIndex2, waterCellNum=0;
 	long ptIndex = 0, cellNum = 0;
+
+	long currentIsland=0, islandNum, nBoundaryPts=0, nEndPts=0, waterStartPoint;
+	long nSegs, segNum = 0, numIslands, rectIndex; 
+	long currentIndex,startIndex; 
+	long diag = 1;
+	Boolean foundPt = false, isOdd;
 	
 	LONGH landWaterInfo = (LONGH)_NewHandleClear(nCells * sizeof(long));
 	LONGH maskH2 = (LONGH)_NewHandleClear(nv * sizeof(long));
@@ -2171,6 +2199,13 @@ OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSMask(VelocityFH velocityH, TMap **new
 	VelocityFH velH = 0;
 	DAGTreeStruct tree;
 	WorldRect triBounds;
+	
+	LONGH boundaryPtsH = 0;
+	LONGH boundaryEndPtsH = 0;
+	LONGH waterBoundaryPtsH = 0;
+	Boolean** segUsed = 0;
+	SegInfoHdl segList = 0;
+	LONGH flagH = 0;
 	
 	TTriGridVel *triGrid = nil;
 	tree.treeHdl = 0;
@@ -2475,7 +2510,209 @@ OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSMask(VelocityFH velocityH, TMap **new
 	_SetHandleSize((Handle)tree.treeHdl,tree.numBranches*sizeof(DAG));
 	/////////////////////////////////////////////////
 	
+	/////////////////////////////////////////////////
+	if (this -> moverMap != model -> uMap) goto setFields;	// don't try to create a map
+	/////////////////////////////////////////////////
+	// go through topo look for -1, and list corresponding boundary sides
+	// then reorder as contiguous boundary segments - need to group boundary rects by islands
+	// will need a new field for list of boundary points since there can be duplicates, can't just order and list segment endpoints
+	
+	nSegs = 2*ntri; //number of -1's in topo
+	boundaryPtsH = (LONGH)_NewHandleClear(nv * sizeof(**boundaryPtsH));
+	boundaryEndPtsH = (LONGH)_NewHandleClear(nv * sizeof(**boundaryEndPtsH));
+	waterBoundaryPtsH = (LONGH)_NewHandleClear(nv * sizeof(**waterBoundaryPtsH));
+	flagH = (LONGH)_NewHandleClear(nv * sizeof(**flagH));
+	segUsed = (Boolean**)_NewHandleClear(nSegs * sizeof(Boolean));
+	segList = (SegInfoHdl)_NewHandleClear(nSegs * sizeof(**segList));
+	// first go through rectangles and group by island
+	// do this before making dagtree, 
+	DisplayMessage("NEXTMESSAGETEMP");
+	DisplayMessage("Numbering Islands");
+	MySpinCursor(); // JLM 8/4/99
+	err = NumberIslands(&maskH2, velocityH, landWaterInfo, fNumRows_minus1, fNumCols_minus1, &numIslands);	// numbers start at 3 (outer boundary)
+	MySpinCursor(); // JLM 8/4/99
+	if (err) goto done;
+	for (i=0;i<ntri;i++)
+	{
+		if ((i+1)%2==0) isOdd = 0; else isOdd = 1;
+		// the middle neighbor triangle is always the other half of the rectangle so can't be land or outside the map
+		// odd - left/top, even - bottom/right the 1-2 segment is top/bot, the 2-3 segment is right/left
+		if ((*topo)[i].adjTri1 == -1)
+		{
+			// add segment pt 2 - pt 3 to list, need points, triNum and whether it's L/W boundary (boundary num)
+			(*segList)[segNum].pt1 = (*topo)[i].vertex2;
+			(*segList)[segNum].pt2 = (*topo)[i].vertex3;
+			// check which land block this segment borders and mark the island
+			if (isOdd) 
+			{
+				// check left rectangle for L/W border 
+				rectIndex = INDEXH(verdatPtsH,(*topo)[i].vertex3);	// to get back into original grid for L/W info - use maskH2
+				iIndex = rectIndex/fNumCols;
+				jIndex = rectIndex%fNumCols;
+				if (iIndex>maxIIndex) maxIIndex = iIndex;
+				if (jIndex>maxJIndex) maxJIndex = jIndex;
+				if (iIndex<minIIndex) minIIndex = iIndex;
+				if (jIndex<minJIndex) minJIndex = jIndex;
+				if (jIndex>0 && INDEXH(maskH2,iIndex*fNumCols + jIndex-1)>=3)
+				{
+					(*segList)[segNum].isWater = 0;
+					(*segList)[segNum].islandNumber = INDEXH(maskH2,iIndex*fNumCols + jIndex-1);	
+				}
+				else
+				{
+					(*segList)[segNum].isWater = 1;
+					(*segList)[segNum].islandNumber = 1;	
+				}
+			}
+			else 
+			{	
+				// check right rectangle for L/W border convert back to row/col
+				rectIndex = INDEXH(verdatPtsH,(*topo)[i].vertex1);
+				iIndex = rectIndex/fNumCols;
+				jIndex = rectIndex%fNumCols;
+				//if (jIndex<fNumCols && INDEXH(maskH2,iIndex*fNumCols + jIndex+1)>=3)
+				if (jIndex<fNumCols_minus1 && INDEXH(maskH2,iIndex*fNumCols + jIndex+1)>=3)
+				{
+					(*segList)[segNum].isWater = 0;
+					//(*segList)[segNum].islandNumber = INDEXH(maskH2,iIndex*fNumCols + jIndex+1);	
+					(*segList)[segNum].islandNumber = INDEXH(maskH2,iIndex*fNumCols + jIndex+1);	
+				}
+				else
+				{
+					(*segList)[segNum].isWater = 1;
+					(*segList)[segNum].islandNumber = 1;	
+				}
+			}
+			segNum++;
+		}
+		
+		if ((*topo)[i].adjTri3 == -1)
+		{
+			// add segment pt 1 - pt 2 to list
+			// odd top, even bottom
+			(*segList)[segNum].pt1 = (*topo)[i].vertex1;
+			(*segList)[segNum].pt2 = (*topo)[i].vertex2;
+			// check which land block this segment borders and mark the island
+			if (isOdd) 
+			{
+				// check top rectangle for L/W border
+				rectIndex = INDEXH(verdatPtsH,(*topo)[i].vertex3);	// to get back into original grid for L/W info - use maskH2
+				iIndex = rectIndex/fNumCols;
+				jIndex = rectIndex%fNumCols;
+				if (iIndex>0 && INDEXH(maskH2,(iIndex-1)*fNumCols + jIndex)>=3)
+				{
+					(*segList)[segNum].isWater = 0;
+					(*segList)[segNum].islandNumber = INDEXH(maskH2,(iIndex-1)*fNumCols + jIndex);
+				}
+				else
+				{
+					(*segList)[segNum].isWater = 1;
+					(*segList)[segNum].islandNumber = 1;
+				}
+			}
+			else 
+			{
+				// check bottom rectangle for L/W border
+				rectIndex = INDEXH(verdatPtsH,(*topo)[i].vertex1);
+				iIndex = rectIndex/fNumCols;
+				jIndex = rectIndex%fNumCols;
+				//if (iIndex<fNumRows && INDEXH(maskH2,(iIndex+1)*fNumCols + jIndex)>=3)
+				if (iIndex<fNumRows_minus1 && INDEXH(maskH2,(iIndex+1)*fNumCols + jIndex)>=3)
+				{
+					(*segList)[segNum].isWater = 0;
+					//(*segList)[segNum].islandNumber = INDEXH(maskH2,(iIndex+1)*fNumCols + jIndex);		// this should be the neighbor's value
+					(*segList)[segNum].islandNumber = INDEXH(maskH2,(iIndex+1)*fNumCols + jIndex);		// this should be the neighbor's value
+				}
+				else
+				{
+					(*segList)[segNum].isWater = 1;
+					(*segList)[segNum].islandNumber = 1;		
+				}
+			}
+			segNum++;
+		}
+	}
+	nSegs = segNum;
+	_SetHandleSize((Handle)segList,nSegs*sizeof(**segList));
+	_SetHandleSize((Handle)segUsed,nSegs*sizeof(**segUsed));
+	// go through list of segments, and make list of boundary segments
+	// as segment is taken mark so only use each once
+	// get a starting point, add the first and second to the list
+	islandNum = 3;
+findnewstartpoint:
+	if (islandNum > numIslands) 
+	{
+		_SetHandleSize((Handle)boundaryPtsH,nBoundaryPts*sizeof(**boundaryPtsH));
+		_SetHandleSize((Handle)waterBoundaryPtsH,nBoundaryPts*sizeof(**waterBoundaryPtsH));
+		_SetHandleSize((Handle)boundaryEndPtsH,nEndPts*sizeof(**boundaryEndPtsH));
+		goto setFields;	// off by 2 - 0,1,2 are water cells, 3 and up are land
+	}
+	foundPt = false;
+	for (i=0;i<nSegs;i++)
+	{
+		if ((*segUsed)[i]) continue;
+		waterStartPoint = nBoundaryPts;
+		(*boundaryPtsH)[nBoundaryPts++] = (*segList)[i].pt1;
+		(*flagH)[(*segList)[i].pt1] = 1;
+		(*waterBoundaryPtsH)[nBoundaryPts] = (*segList)[i].isWater+1;
+		(*boundaryPtsH)[nBoundaryPts++] = (*segList)[i].pt2;
+		(*flagH)[(*segList)[i].pt2] = 1;
+		currentIndex = (*segList)[i].pt2;
+		startIndex = (*segList)[i].pt1;
+		currentIsland = (*segList)[i].islandNumber;	
+		foundPt = true;
+		(*segUsed)[i] = true;
+		break;
+	}
+	if (!foundPt)
+	{
+		printNote("Lost trying to set boundaries");
+		// clean up handles and set grid without a map
+		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
+		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
+		if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH = 0;}
+		goto setFields;
+	}
+	
+findnextpoint:
+	for (i=0;i<nSegs;i++)
+	{
+		// look for second point of the previous selected segment, add the second to point list
+		if ((*segUsed)[i]) continue;
+		if ((*segList)[i].islandNumber > 3 && (*segList)[i].islandNumber != currentIsland) continue;
+		if ((*segList)[i].islandNumber > 3 && currentIsland <= 3) continue;
+		index = (*segList)[i].pt1;
+		if (index == currentIndex)	// found next point
+		{
+			currentIndex = (*segList)[i].pt2;
+			(*segUsed)[i] = true;
+			if (currentIndex == startIndex) // completed a segment
+			{
+				islandNum++;
+				(*boundaryEndPtsH)[nEndPts++] = nBoundaryPts-1;
+				(*waterBoundaryPtsH)[waterStartPoint] = (*segList)[i].isWater+1;	// need to deal with this
+				goto findnewstartpoint;
+			}
+			else
+			{
+				(*boundaryPtsH)[nBoundaryPts] = (*segList)[i].pt2;
+				(*flagH)[(*segList)[i].pt2] = 1;
+				(*waterBoundaryPtsH)[nBoundaryPts] = (*segList)[i].isWater+1;
+				nBoundaryPts++;
+				goto findnextpoint;
+			}
+		}
+	}
+	// shouldn't get here unless there's a problem...
+	_SetHandleSize((Handle)boundaryPtsH,nBoundaryPts*sizeof(**boundaryPtsH));
+	_SetHandleSize((Handle)waterBoundaryPtsH,nBoundaryPts*sizeof(**waterBoundaryPtsH));
+	_SetHandleSize((Handle)boundaryEndPtsH,nEndPts*sizeof(**boundaryEndPtsH));
+	
+setFields:	
+	
 	fVerdatToNetCDFH = verdatPtsH;
+	
+	//fVerdatToNetCDFH = verdatPtsH;
 	
 	/////////////////////////////////////////////////
 	
@@ -2501,6 +2738,24 @@ OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSMask(VelocityFH velocityH, TMap **new
 	triGrid -> SetDagTree(dagTree);
 	//triGrid -> SetDepths(totalDepthH);	// used by PtCurMap to check vertical movement
 	
+	if (waterBoundaryPtsH && this -> moverMap == model -> uMap)	// maybe assume rectangle grids will have map?
+	{
+		PtCurMap *map = CreateAndInitPtCurMap(fVar.pathName,triBounds); // the map bounds are the same as the grid bounds
+		if (!map) {err=-1; goto done;}
+		// maybe move up and have the map read in the boundary information
+		map->SetBoundarySegs(boundaryEndPtsH);	
+		map->SetWaterBoundaries(waterBoundaryPtsH);
+		map->SetBoundaryPoints(boundaryPtsH);
+		
+		*newMap = map;
+	}
+	else
+	{
+		if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH=0;}
+		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH=0;}
+		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH=0;}
+	}
+	
 	pts = 0;	// because fGrid is now responsible for it
 	topo = 0; // because fGrid is now responsible for it
 	velH = 0; // because fGrid is now responsible for it
@@ -2512,6 +2767,9 @@ done:
 	if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
 	if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
 	if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+	if (segUsed) {DisposeHandle((Handle)segUsed); segUsed = 0;}
+	if (segList) {DisposeHandle((Handle)segList); segList = 0;}
+	if (flagH) {DisposeHandle((Handle)flagH); flagH = 0;}
 	
 	if(err)
 	{
@@ -2534,9 +2792,13 @@ done:
 		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
 		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
 		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
+
+		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
+		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
+		if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH = 0;}
 	}
 
-
+	
 
 
 	return err;	

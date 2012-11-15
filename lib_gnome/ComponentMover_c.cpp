@@ -21,12 +21,13 @@ void ComponentMover_c::ModelStepIsDone()
 {
 	this -> fOptimize.isFirstStep = false;
 	memset(&fOptimize,0,sizeof(fOptimize));
+	bIsFirstStep = false;
 }
 
 OSErr ComponentMover_c::PrepareForModelRun()
 {
 	this -> fOptimize.isFirstStep = true;
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 
 OSErr ComponentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
@@ -158,6 +159,7 @@ OSErr ComponentMover_c::CalculateAveragedWindsHdl(char *errmsg)
 		{
 			mover =  (TMover*) (model->GetWindMover(false));	// see if there is a wind at all and use it
 			if (!mover) {
+				strcpy(windMoverName, "");	// clear out any value
 				strcpy(errmsg,"There is no wind time file associated with the component mover");
 				//printError("There is no wind time file associated with the component mover");
 				return -1;
@@ -383,7 +385,13 @@ OSErr ComponentMover_c::SetOptimizeVariables (char *errmsg)
 					//printError("There is no wind time file associated with the component mover");
 					return -1;
 				}*/
-				if (mover) strcpy(windMoverName, mover->className);	// link the wind to the component mover
+				if (mover) 
+				{
+					strcpy(windMoverName, mover->className);	// link the wind to the component mover
+					dynamic_cast<TWindMover *>(mover)-> GetTimeValue (model -> modelTime, &wVel);	// minus AH 07/10/2012
+				}
+				else strcpy(windMoverName, "");	// clear out any value
+
 			}
 			// alert code goes here if mover is not found
 		}
@@ -537,8 +545,8 @@ OSErr ComponentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *
 	
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
-	if(err) return err;
+	//err = this -> UpdateUncertainty();
+	//if(err) return err;
 	
 	
 	if(!fUncertaintyListH || !fLESetSizesH) 

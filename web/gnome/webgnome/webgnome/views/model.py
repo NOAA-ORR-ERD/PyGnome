@@ -1,31 +1,88 @@
 import json
 import datetime
+import gnome.basic_types
+import gnome.map
+import gnome.utilities.map_canvas
+import numpy
+import os
 
-from collections import OrderedDict
+from gnome.utilities.file_tools import haz_files
+
+from pyramid.httpexceptions import HTTPNotFound
 from pyramid.renderers import render
 from pyramid.view import view_config
 
-from ..forms import (
-    RunModelUntilForm,
-    ModelSettingsForm,
+from webgnome.forms.movers import (
     AddMoverForm,
-    ConstantWindMoverForm,
-    VariableWindMoverForm
+    WindMoverForm,
+    DeleteMoverForm
 )
 
-from ..util import json_require_model, make_message, json_encoder
+from webgnome.forms.model import RunModelUntilForm, ModelSettingsForm
+from webgnome.forms import object_form
+from webgnome.navigation_tree import NavigationTree
+from webgnome import util
+from webgnome.views import movers
+
+
+@view_config(route_name='model_forms', renderer='gnome_json')
+@util.json_require_model
+def model_forms(request, model):
+    """
+    A partial view that renders all of the add and edit forms for ``model``,
+    including settings, movers and spills.
+    """
+    context = {
+        'run_model_until_form': RunModelUntilForm(),
+        'run_model_until_form_url': request.route_url('run_model_until'),
+        'settings_form': ModelSettingsForm(),
+        'settings_form_url': request.route_url('model_settings'),
+        'add_mover_form': AddMoverForm(),
+        'wind_mover_form': WindMoverForm(),
+        'wind_mover_form_url': request.route_url('create_wind_mover'),
+        'form_view_container_id': 'modal-container',
+        'mover_update_forms': [],
+        'mover_delete_forms': []
+    }
+
+    # The template will render a delete and edit form for each mover instance.
+    for mover in model.movers:
+        delete_form = DeleteMoverForm(model, obj=mover)
+        delete_url = request.route_url('delete_mover')
+        context['mover_delete_forms'].append(
+            (delete_url, delete_form))
+
+        routes = movers.form_routes.get(mover.__class__, None)
+
+        if not routes:
+            continue
+
+        update_route = routes.get('update', None)
+        update_form = object_form.get_object_form(mover)
+
+        if update_route and update_form:
+            update_url = request.route_url(update_route, id=mover.id)
+            context['mover_update_forms'].append(
+                (update_url, update_form(obj=mover)))
+
+        # TODO: Spill forms.
+
+    return {
+        'html': render('model_forms.mak', context, request)
+    }
 
 
 @view_config(route_name='show_model', renderer='model.mak')
 def show_model(request):
     """
-    Show the current user's model.
+    The entry-point for the web application. Load all forms and data
+    needed to show a model.
 
-    Get an existing `py_gnome.model.Model` using the `model_id` field in the
-    user's session or create a new one.
+    Get an existing :class:`gnome.model.Model` using the ``model_id`` field
+    in the user's session or create a new one.
 
-    If `model_id` was found in the user's session but the model did not exist,
-    warn the user and suggest that they reload from a save file.
+    If ``model_id`` was found in the user's session but the model did not
+    exist, warn the user and suggest that they reload from a save file.
     """
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
@@ -37,39 +94,24 @@ def show_model(request):
         if model_id:
             data['warning'] = 'The model you were working on is no longer ' \
                               'available. We created a new one for you.'
-    data['model'] = model
 
-    # TODO: Remove this after we decide on where to put the drop-down menu.
+    data['model'] = model
+    data['model_form_html'] = model_forms(request)['html']
+
+     # TODO: Remove this after we decide on where to put the drop-down menu.
     data['show_menu_above_map'] = 'map_menu' in request.GET
 
-    form_urls = {
-        'run_until': request.route_url('run_model_until'),
-        'settings': request.route_url('model_settings'),
-        'constant_wind_mover': request.route_url('add_constant_wind_mover'),
-        'variable_wind_mover': request.route_url('add_variable_wind_mover')
-    }
-
-    data['run_model_until_form'] = RunModelUntilForm()
-    data['run_model_until_form_url'] = form_urls['run_until']
-
-    data['settings_form'] = ModelSettingsForm()
-    data['settings_form_url'] = form_urls['settings']
-
-    data['add_mover_form'] = AddMoverForm()
-
-    data['constant_wind_form'] = ConstantWindMoverForm()
-    data['constant_wind_form_url'] = form_urls['constant_wind_mover']
-
-    data['variable_wind_form'] = VariableWindMoverForm()
-    data['variable_wind_form_url'] = form_urls['variable_wind_mover']
-
-    data['form_urls'] = json.dumps(form_urls)
+    data['add_mover_form_id'] = AddMoverForm.get_id()
+    data['model_forms_url'] = request.route_url('model_forms')
+    data['run_model_until_form_url'] = request.route_url('run_model_until')
 
     if model.time_steps:
-        data['generated_time_steps_json'] = json.dumps(model.time_steps,
-                                                       default=json_encoder)
-        data['expected_time_steps_json'] = json.dumps(model.timestamps,
-                                                      default=json_encoder)
+        data['background_image_url'] = _get_model_image_url(
+            request, model, 'background_map.png')
+        data['generated_time_steps_json'] = json.dumps(
+            model.time_steps, default=util.json_encoder)
+        data['expected_time_steps_json'] = json.dumps(
+            model.timestamps, default=util.json_encoder)
 
     return data
 
@@ -77,21 +119,24 @@ def show_model(request):
 @view_config(route_name='create_model', renderer='gnome_json')
 def create_model(request):
     """
-    Create a new model for the user. Delete the user's current model if one exists.
+    Create a new model for the user. Delete the user's current model if one
+    exists.
     """
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
     confirm = request.POST.get('confirm_new', None)
 
-    if model_id and confirm:
-        settings.Model.delete(model_id)
+    if confirm:
+        if model_id:
+            settings.Model.delete(model_id)
+
         model = settings.Model.create()
         model_id = model.id
         request.session[settings.model_session_key] = model.id
-        message = make_message('success', 'Created a new model.')
+        message = util.make_message('success', 'Created a new model.')
     else:
-        message = make_message('error', 'Could not create a new model. '
-                                         'Invalid data was received.')
+        message = util.make_message('error', 'Could not create a new model. '
+                                             'Invalid data was received.')
 
     return {
         'model_id': model_id,
@@ -99,34 +144,167 @@ def create_model(request):
     }
 
 
-@view_config(route_name='run_model', renderer='gnome_json')
-@json_require_model
-def run_model(request, model):
-    """
-    Starts a run of the user's current model and return a JSON object
-    containing the first time step.
-    """
-    # TODO: Accept this value from the user as a setting and require it to run.
-    two_weeks_ago = datetime.datetime.now() - datetime.timedelta(weeks=4)
-    model.start_time = two_weeks_ago
+@view_config(route_name='model_settings', renderer='gnome_json')
+@util.json_require_model
+def model_settings(request, model):
+    form = ModelSettingsForm(request.POST)
     data = {}
 
+    if request.method == 'POST' and form.validate():
+        date = form.date.data
+
+        model.time_step = form.computation_time_step.data
+
+        model.start_time = datetime.datetime(
+            day=date.day, month=date.month, year=date.year,
+            hour=form.hour.data, minute=form.minute.data,
+            second=0)
+
+        model.duration = datetime.timedelta(
+                days=form.duration_days.data, hours=form.duration_hours.data)
+
+        model.uncertain = form.include_minimum_regret.data
+
+        # TODO: show_currents, prevent_land_jumping, run_backwards
+
+        return {
+            'form_html': None
+        }
+
+    context = {
+        'form': form,
+        'action_url': request.route_url('model_settings')
+    }
+
+    return {
+        'form_html': render(
+            'webgnome:templates/forms/model_settings.mak', context)
+    }
+
+
+def _get_model_image_url(request, model, filename):
+    return request.static_url('webgnome:static/%s/%s/%s' % (
+        request.registry.settings['model_images_url_path'],
+        model.id,
+        filename))
+
+
+def _get_timestamps(model):
+    """
+    TODO: Move into ``gnome.model.Model``?
+    """
+    timestamps = []
+
+    # XXX: Why is _num_time_steps a float? Is this ok?
+    for step_num in range(int(model._num_time_steps) + 1):
+        if step_num == 0:
+            dt = model.start_time
+        else:
+            delta = datetime.timedelta(seconds=step_num * model.time_step)
+            dt = model.start_time + delta
+        timestamps.append(dt)
+
+    return timestamps
+
+
+def _get_time_step(request, model):
+    step = None
+    images_dir = os.path.join(
+        request.registry.settings['model_images_dir'], str(model.id))
+
+    if not os.path.exists(images_dir):
+        os.mkdir(images_dir)
+
     try:
-        data['running'] = model.run()
-        data['expected_time_steps'] = model.timestamps
-    except RuntimeError:
-        # TODO: Use an application-specific exception.
-        data['running'] = False
-        data['message'] = make_message('error', 'Model failed to run.')
+        curr_step, file_path, timestamp = model.next_image(images_dir)
+        filename = file_path.split(os.path.sep)[-1]
+        image_url = _get_model_image_url(request, model, filename)
+
+        step = {
+            'id': curr_step,
+            'url': image_url,
+            'timestamp': timestamp
+        }
+    except StopIteration:
+        pass
+
+    return step
+
+
+@view_config(route_name='run_model', renderer='gnome_json')
+@util.json_require_model
+def run_model(request, model):
+    """
+    Start a run of the user's current model and return a JSON object
+    containing the first time step.
+    """
+    data = {}
+
+    # TODO: This should probably be a method on the model.
+    timestamps = _get_timestamps(model)
+    data['expected_time_steps'] = timestamps
+    model.timestamps = timestamps
+    model.time_step = 3600/4
+
+    # TODO: Set separately in spill view.
+    if not model.spills:
+        spill = gnome.spill.PointReleaseSpill(
+            num_LEs=1000,
+            start_position=(-72.419992, 41.202120, 0.0),
+            release_time=model.start_time)
+
+        model.add_spill(spill)
+
+    if not model.movers:
+        start_time = model.start_time
+
+        r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
+        model.add_mover(r_mover)
+
+        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_r_theta)
+        series[0] = (start_time, (10, 180) )
+        series[1] = (start_time + datetime.timedelta(hours=18), (10, 200))
+        series[2] = (start_time + datetime.timedelta(hours=30), (20, 10))
+        series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
+        series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
+
+        w_mover = gnome.movers.WindMover(timeseries=series)
+        model.add_mover(w_mover)
+
+
+    # TODO: Set separately in map configuration form/view.
+    map_file = os.path.join(
+        request.registry.settings['project_root'],
+        'sample_data', 'LongIslandSoundMap.BNA')
+
+    # the land-water map
+    model.map = gnome.map.MapFromBNA(
+        map_file, refloat_halflife=6 * 3600)
+
+    canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
+    polygons = haz_files.ReadBNA(map_file, "PolygonSet")
+    canvas.set_land(polygons)
+    model.output_map = canvas
+
+    data['background_image'] = _get_model_image_url(
+        request, model, 'background_map.png')
+
+    first_step = _get_time_step(request, model)
+
+    if not first_step:
+        return {}
+
+    data['step'] = first_step
 
     return data
 
 
 @view_config(route_name='run_model_until', renderer='gnome_json')
-@json_require_model
+@util.json_require_model
 def run_model_until(request, model):
     """
-    An AJAX form view that renders a `RunModelUntilForm` and validates its input.
+    Render a :class:`webgnome.forms.RunModelUntilForm` for the user's
+    current model on GET and validate form input on POST.
     """
     form = RunModelUntilForm(request.POST)
     data = {}
@@ -148,99 +326,31 @@ def run_model_until(request, model):
 
 
 @view_config(route_name='get_next_step', renderer='gnome_json')
-@json_require_model
+@util.json_require_model
 def get_next_step(request, model):
-    return {
-        'time_step': model.get_next_step()
-    }
+    """
+    Generate the next step of a model run and return the result.
+    """
+    step = _get_time_step(request, model)
 
+    if not step:
+        raise HTTPNotFound
 
-@view_config(route_name='model_settings', renderer='gnome_json')
-@json_require_model
-def model_settings(request, model):
-    form = ModelSettingsForm(request.POST)
-
-    if request.method == 'POST' and form.validate():
-        return {
-            'form_html': None
-        }
-
-    context = {
-        'form': form,
-        'action_url': request.route_url('model_settings')
-    }
+    model.time_steps.append(step)
 
     return {
-        'form_html': render(
-            'webgnome:templates/forms/model_settings.mak', context)
+        'time_step': step
     }
-
-
-def _get_model_settings(model):
-    """
-    Return a dict of values containing each setting in `model` that the client
-    should be able to read and change.
-    """
-    settings_attrs = [
-        'start_time',
-        'duration'
-    ]
-
-    settings = OrderedDict()
-
-    for attr in settings_attrs:
-        if hasattr(model, attr):
-            settings[attr] = getattr(model, attr)
-
-    return settings
 
 
 @view_config(route_name='get_tree', renderer='gnome_json')
-@json_require_model
+@util.json_require_model
 def get_tree(request, model):
     """
     Return a JSON representation of the current state of the model, to be used
     to create a tree view of the model in the JavaScript application.
     """
-    settings = {'title': 'Model Settings', 'type': 'settings', 'children': []}
-    movers = {'title': 'Movers', 'type': 'add_mover', 'children': []}
-    spills = {'title': 'Spills', 'type': 'add_spill', 'children': []}
+    return NavigationTree(request, model).render()
 
-    def get_value_title(name, value, max_chars=8):
-        """
-        Return a title string that combines `name` and `value`, with value
-        shortened if it is longer than `max_chars`.
-        """
-        name = name.replace('_', ' ').title()
-        value = (str(value)).title()
-        value = value if len(value) <= max_chars else '%s ...' % value[:max_chars]
-        return '%s: %s' % (name, value)
 
-    for name, value in _get_model_settings(model).items():
-        settings['children'].append({
-            'type': 'settings',
-            'title': get_value_title(name, value),
-        })
 
-    # If we had a map, we would set its ID value here, whatever that value
-    # ends up being.
-    settings['children'].append({
-        'type': 'map',
-        'title': 'Map: None'
-    })
-
-    for mover in model.movers:
-        movers['children'].append({
-            'type': mover.name,
-            'id': mover.id,
-            'title': str(mover)
-        })
-
-    for spill in model.spills:
-        spills['children'].append({
-            'type': spill.name,
-            'id': spill.id,
-            'title': get_value_title('ID', id),
-        })
-
-    return [settings, movers, spills]

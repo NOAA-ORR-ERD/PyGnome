@@ -31,7 +31,6 @@ class Spill(object):
       
     positions = Spill['positions'] : returns a (num_LEs, 3) array of world_point_types
     """
-    
     def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0), uncertain=False):
         
         self.num_LEs = num_LEs
@@ -53,7 +52,7 @@ class Spill(object):
         
         self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
                                                   dtype = basic_types.windage_type)             
- 
+
     def __getitem__(self, data_name):
         """
         The basic way to access data for the LEs
@@ -86,13 +85,25 @@ class Spill(object):
                     
         self._data_arrays[data_name] = array
 
-    def prepare_for_model_step(self, current_time, time_step=None, uncertain_on=None):
+    def prepare_for_model_step(self, current_time, time_step=None):
         """
         Do whatever needs to be done at the beginning of a time step:
         
         In this case nothing.
         """
         return None
+
+    @property
+    def id(self):
+        """
+        Return an ID value for this spill.
+
+        This method uses Python's builtin `id()` function to identify the
+        object. Override it for more exotic forms of identification.
+
+        :return: the integer ID returned by id() for this object
+        """
+        return id(self)
 
     def __str__(self):
         msg = ["gnome.spill.Spill(num_LEs=%i)\n"%self.num_LEs]
@@ -136,7 +147,7 @@ class PointReleaseSpill(Spill):
         """
         self.reset()
     
-    def prepare_for_model_step(self, current_time, time_step, uncertain_on=False):
+    def prepare_for_model_step(self, current_time, time_step):
         """
         Do whatever needs to be done at the beginning of a time step:
         
@@ -147,7 +158,6 @@ class PointReleaseSpill(Spill):
         
         :param current_time: datetime object for current time
         :param time_step: the time step, in seconds
-        :param uncertain_on: Boolean flag indicating whether uncertainty is on in the model
 
         """
         if current_time >= self.release_time and not self.released:

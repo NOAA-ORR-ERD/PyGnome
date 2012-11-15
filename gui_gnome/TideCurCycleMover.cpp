@@ -873,7 +873,8 @@ void TideCurCycleMover::Draw(Rect r, WorldRect view)
 				// Calculate the time weight factor
 				if (fTimeAlpha==-1)
 				{
-					Seconds relTime = time - model->GetStartTime();
+					//Seconds relTime = time - model->GetStartTime();
+					Seconds relTime = time - fModelStartTime;
 					startTime = (*fTimeHdl)[fStartData.timeIndex];
 					endTime = (*fTimeHdl)[fEndData.timeIndex];
 					//timeAlpha = (endTime - time)/(double)(endTime - startTime);
@@ -1192,10 +1193,10 @@ OSErr TideCurCycleMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
 	if (status != NC_NOERR) 
 	{
-		timeUnits = 0;	// files should always have this info
+		/*timeUnits = 0;	// files should always have this info
 		timeConversion = 3600.;		// default is hours
-		startTime2 = model->GetStartTime();	// default to model start time
-		//err = -1; goto done;
+		startTime2 = model->GetStartTime();	// default to model start time*/
+		err = -1; goto done;
 	}
 	else
 	{
@@ -1315,7 +1316,7 @@ OSErr TideCurCycleMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 	if (status != NC_NOERR) {err = -1; goto done;}
 	fTimeHdl = (Seconds**)_NewHandleClear(recs*sizeof(Seconds));
 	if (!fTimeHdl) {err = memFullErr; goto done;}
-	startTime = model->GetStartTime();
+	startTime = model->GetStartTime();	// shouldn't need this, the time values are relative to whatever the model time is
 	for (i=0;i<recs;i++)
 	{
 		Seconds newTime;
@@ -1324,13 +1325,18 @@ OSErr TideCurCycleMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 		//status = nc_get_var1_float(ncid, recid, &timeIndex, &timeVal);	// recid is the dimension id not the variable id
 		status = nc_get_var1_float(ncid, timeid, &timeIndex, &timeVal);
 		if (status != NC_NOERR) {strcpy(errmsg,"Error reading times from NetCDF file"); err = -1; goto done;}
-		//newTime = RoundDateSeconds(round(startTime2+timeVal*timeConversion));
+
+		/*//newTime = RoundDateSeconds(round(startTime2+timeVal*timeConversion));
 		newTime = RoundDateSeconds(round(startTime+timeVal*timeConversion));
 		//INDEXH(fTimeHdl,i) = newTime;	// which start time where?
 		//if (i==0) startTime = newTime;
 		INDEXH(fTimeHdl,i) = newTime - startTime;	// which start time where?
 		//INDEXH(fTimeHdl,i) = startTime2+timeVal*timeConversion;	// which start time where?
-		//if (i==0) startTime = startTime2+timeVal*timeConversion;
+		//if (i==0) startTime = startTime2+timeVal*timeConversion;*/
+		
+		newTime = (Seconds)(round(timeVal*timeConversion));
+		INDEXH(fTimeHdl,i) = newTime;
+		
 	}
 	/*if (model->GetStartTime() != startTime || model->GetModelTime()!=model->GetStartTime())
 	 {
@@ -1344,9 +1350,9 @@ OSErr TideCurCycleMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
-	err = this -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
+	//err = this -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
 	
-	if(err) goto done;
+	//if(err) goto done;
 	
 	if (!bndry_indices || !bndry_nums || !bndry_type) {err = memFullErr; goto done;}
 	//ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 

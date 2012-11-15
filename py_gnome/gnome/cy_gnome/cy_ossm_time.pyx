@@ -41,7 +41,7 @@ cdef class CyOSSMTime:
         
         if path is not None:
             if file_contains is None:
-                raise ValueError('Unknown file contents - need a valid basic_types.file_contains.* value')
+                raise ValueError('Unknown file contents - need a valid basic_types.data_format.* value')
             
             if os.path.exists(path):
                 self._read_time_values(path, file_contains, -1) # user_units should be read from the file
@@ -54,15 +54,18 @@ cdef class CyOSSMTime:
             self._set_time_value_handle(timeseries)
             self.time_dep.SetUserUnits(-1)  # default is undefined for now. UserUnits are only given in data file right now            
     
-    @property
-    def user_units(self):
-        """returns units for the time series"""
-        return self.time_dep.GetUserUnits()
+    property user_units:
+        def __get__(self):
+            """returns units for the time series"""
+            return self.time_dep.GetUserUnits()
     
-    @property
-    def time_series(self):
-        """returns the time series stored in the OSSMTimeValue_c object. It returns a memcpy of it."""
-        return self._get_time_value_handle()
+    property timeseries:
+        def __get__(self):
+            """returns the time series stored in the OSSMTimeValue_c object. It returns a memcpy of it."""
+            return self._get_time_value_handle()
+        
+        def __set__(self, value):
+            self._set_time_value_handle(value)
     
     def get_time_value(self, modelTime):
         """

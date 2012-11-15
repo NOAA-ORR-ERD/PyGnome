@@ -95,15 +95,12 @@
     </div>
 
     <div id="modal-container">
-      <%include file="forms/run_model_until.mak" args="form=run_model_until_form, action_url=run_model_until_form_url"/>
-      <%include file="forms/model_settings.mak" args="form=settings_form, action_url=settings_form_url"/>
-      <%include file="forms/add_mover.mak" args="form=add_mover_form, action_url=add_mover_form_url"/>
-      <%include file="forms/constant_wind_mover.mak" args="form=constant_wind_form, action_url=constant_wind_form_url"/>
-      <%include file="forms/variable_wind_mover.mak" args="form=variable_wind_form, action_url=variable_wind_form_url"/>
+        ${model_form_html | n}
     </div>
 </%block>
 
 <%block name="javascript">
+    <script src='/static/js/mousetrap.min.js' type="text/javascript"></script>
     <script src='/static/js/jquery.imagesloaded.min.js' type="text/javascript"></script>
     <script src='/static/js/jquery.cycle.all.latest.js' type="text/javascript"></script>
     <script src='/static/js/jquery.cookie.js' type="text/javascript"></script>
@@ -115,14 +112,17 @@
     <script type="text/javascript">
         $('#map').imagesLoaded(function() {
             new window.noaa.erd.gnome.AppView({
-                mapEl: '#map',
-                mapPlaceholderEl: '#placeholder',
-                sidebarEl: '#sidebar',
-                formContainerEl: '#modal-container',
+                mapId: 'map',
+                mapPlaceholderId: 'placeholder',
+                sidebarId: 'sidebar',
+                formContainerId: 'modal-container',
+                addMoverFormId: "${add_mover_form_id}",
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
+                backgroundImageUrl: "${background_image_url or '' | n}",
                 currentTimeStep: ${model.current_time_step},
-                formUrls: ${form_urls | n}
+                runModelUntilFormUrl: "${run_model_until_form_url}",
+                formsUrl: "${model_forms_url}"
             });
         });
     </script>

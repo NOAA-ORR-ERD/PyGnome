@@ -19,11 +19,18 @@ cdef class CyWindMover:
     def __dealloc__(self):
         del self.mover
     
-    def __init__(self, uncertain_duration=10800, 
-                 uncertain_speed_scale=2, uncertain_max_speed=30, 
-                 uncertain_angle_scale=0.4, uncertain_max_angle=60):
+    def __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
+                 uncertain_speed_scale=2, uncertain_angle_scale=0.4):
         """
+        .. function:: __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
+                 uncertain_speed_scale=2, uncertain_angle_scale=0.4)
+        
         initialize a constant wind mover
+        
+        :param uncertain_duation: time in seconds after which the uncertainty values are updated
+        :param uncertain_time_delay: wait this long after model_start_time to turn on uncertainty
+        :param uncertain_speed_scale: used in uncertainty computation
+        :param uncertain_angle_scale: used in uncertainty computation
         
         constant_wind_value is a tuple of values: (u, v)
         """
@@ -31,13 +38,47 @@ cdef class CyWindMover:
         self.mover.fConstantValue.u = 0
         self.mover.fConstantValue.v = 0
         self.mover.fDuration = uncertain_duration
+        self.mover.fUncertainStartTime = uncertain_time_delay
         self.mover.fSpeedScale = uncertain_speed_scale
-        self.mover.fMaxSpeed = uncertain_max_speed
         self.mover.fAngleScale = uncertain_angle_scale
-        self.mover.fMaxAngle = uncertain_max_angle
+        
+    property uncertain_duration:
+        def __get__(self):
+            return self.mover.fDuration
+        
+        def __set__(self,value):
+            self.mover.fDuration = value
     
-
-    def prepare_for_model_step(self, model_time, step_len, uncertain):
+    property uncertain_time_delay:
+        def __get__(self):
+            return self.mover.fUncertainStartTime
+        
+        def __set__(self, value):
+            self.mover.fUncertainStartTime = value
+    
+    property uncertain_speed_scale:
+        def __get__(self):
+            return self.mover.fSpeedScale
+        
+        def __set__(self, value):
+            self.mover.fSpeedScale = value
+    
+    property uncertain_angle_scale:
+        def __get__(self):
+            return self.mover.fAngleScale
+        
+        def __set__(self, value):
+            self.mover.fAngleScale = value
+        
+    
+    def prepare_for_model_run(self):
+        """
+        .. function::prepare_for_model_run
+        
+        """
+        self.mover.PrepareForModelRun()
+        
+    def prepare_for_model_step(self, model_time, step_len, numSets=0, np.ndarray[np.npy_int] setSizes=None):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
         
@@ -45,35 +86,24 @@ cdef class CyWindMover:
         
         :param model_time: current model time.
         :param step_len: length of the time step over which the get move will be computed
-        :param uncertain: bool flag determines whether to apply uncertainty or not
         """
         cdef OSErr err
-        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, 0, NULL)
+        if numSets == 0:
+            err = self.mover.PrepareForModelStep(model_time, step_len, False, 0, NULL)
+        else:
+            err = self.mover.PrepareForModelStep(model_time, step_len, True, numSets, <int *>&setSizes[0])
+            
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
             """
             raise OSError("WindMover_c.PreareForModelStep returned an error.")
 
-    def prepare_for_model_step_uncertain(self, model_time, step_len, uncertain, numSets, np.ndarray[np.npy_int] setSizes):
+    def model_step_is_done(self):
         """
-        .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
-        
-        prepares the mover for time step, calls the underlying C++ mover objects PrepareForModelStep(..)
-        
-        :param model_time: 
-        :param step_len:
-        :param uncertain: bool flag determines whether to apply uncertainty or not
+        invoke C++ model step is done functionality
         """
-        cdef OSErr err
-        numSets = len(setSizes) 
-
-        err = self.mover.PrepareForModelStep(model_time, step_len, uncertain, numSets, <int *>&setSizes[0])
-        if err != 0:
-            """
-            For now just raise an OSError - until the types of possible errors are defined and enumerated
-            """
-            raise OSError("WindMover_c.PreareForModelStep returned an error.")
+        self.mover.ModelStepIsDone()
 
     def get_move(self,
                  model_time,

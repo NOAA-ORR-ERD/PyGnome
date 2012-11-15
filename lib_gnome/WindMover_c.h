@@ -62,10 +62,7 @@ public:
 	virtual ClassID 	GetClassID () { return TYPE_WINDMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_WINDMOVER) return TRUE; return Mover_c::IAm(id); }
 	
-//#ifndef pyGNOME
 	virtual OSErr		AllocateUncertainty (int numLESets, int* LESetsSizesList);
-//#endif
-	
 	virtual void		DisposeUncertainty ();
 	virtual OSErr		AddUncertainty(long setIndex,long leIndex,VelocityRec *v);
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
@@ -83,7 +80,6 @@ public:
 	OSErr				GetTimeValue(const Seconds& current_time, VelocityRec *value);
 	OSErr				CheckStartTime(Seconds time);
 	OSErr				get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windage, short* LE_status, LEType spillType, long spillID);
-	OSErr				allocate_uncertainty(int n, int* LESetsSizesList, long* spillIDs); // send in number of uncertainty LE sets, number of LEs in each set, spillIDs - uncertainty only
 };
 
 #undef TOSSMTimeValue

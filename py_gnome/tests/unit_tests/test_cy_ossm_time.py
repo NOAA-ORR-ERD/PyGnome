@@ -29,7 +29,7 @@ def test_init_bad_path():
     """
     try:
         file = r"SampleData/WindDataFromGnome.WNDX"
-        ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.file_contains.magnitude_direction)
+        ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.data_format.magnitude_direction)
     except IOError as e:
         print(e)
         assert True
@@ -41,7 +41,7 @@ def test_init_units():
     Updated so the user units are read from file
     """
     file = r"SampleData/WindDataFromGnome.WND"
-    ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.file_contains.magnitude_direction)
+    ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.data_format.magnitude_direction)
     assert ossmT2.user_units == basic_types.velocity_units.knots
  
 def test_init_missing_info():
@@ -68,14 +68,14 @@ class TestTimeSeriesInit():
    tval['time'][1] = 1
    tval['value'][1]=(2,3)
    
-   def test_init_time_series(self):
+   def test_init_timeseries(self):
        """
        Sets the time series in OSSMTimeValue_c equal to the externally supplied numpy
        array containing time_value_pair data
        It then reads it back to make sure data was set correctly
        """
        ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval)
-       t_val = ossm.time_series
+       t_val = ossm.timeseries
        
        np.testing.assert_array_equal(t_val, self.tval, 
                                      "CyOSSMTime.get_time_value did not return expected numpy array", 
@@ -87,11 +87,12 @@ class TestTimeSeriesInit():
        actual = np.array(self.tval['value'], dtype=basic_types.velocity_rec)
        time = np.array(self.tval['time'], dtype=basic_types.seconds)
        vel_rec = ossm.get_time_value(time)
+       print vel_rec
        tol = 1e-6
        np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, 
-                                  "get_time_value is not within a tolerance of "+str(tol), 0)
+                                 "get_time_value is not within a tolerance of "+str(tol), 0)
        np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, 
-                                  "get_time_value is not within a tolerance of "+str(tol), 0)
+                                 "get_time_value is not within a tolerance of "+str(tol), 0)
         
        
         
@@ -102,7 +103,7 @@ class TestGetTimeValues():
     # sample data generated and stored via Gnome GUI
     file = r"SampleData/WindDataFromGnome.WND"
     ossmT = cy_ossm_time.CyOSSMTime(path=file,
-                                      file_contains=basic_types.file_contains.magnitude_direction)
+                                      file_contains=basic_types.data_format.magnitude_direction)
     
     
     
@@ -115,7 +116,7 @@ class TestGetTimeValues():
         get_time_value for times in the time series.          
         """
         # Let's see what is stored in the Handle to expected result
-        t_val = self.ossmT.time_series 
+        t_val = self.ossmT.timeseries 
         #print t_val
         #assert False
         
@@ -138,7 +139,28 @@ class TestGetTimeValues():
             self.ossmT._set_time_value_handle(None)
         except TypeError:
             assert True
+            
+    def test_timeseries(self):
+        """
+        test setting the timeseries using timeseries property
+        """
+        t_val = self.ossmT.timeseries
+        for i in range(0,len(t_val)):
+            # need to learn how to do following in 1 line of code
+            print t_val['value'][i]
+            t_val['value']['u'][i] = t_val['value']['u'][i] + 2
+            t_val['value']['v'][i] = t_val['value']['v'][i] + 2
+            print t_val['value'][i] 
         
+        self.ossmT.timeseries = t_val
+        new_val = self.ossmT.timeseries
+        tol = 1e-10
+        np.testing.assert_allclose(t_val['time'], new_val['time'], tol, tol, 
+                                  "get_time_value is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(t_val['value']['u'], new_val['value']['u'], tol, tol, 
+                                  "get_time_value is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(t_val['value']['v'], new_val['value']['v'], tol, tol, 
+                                  "get_time_value is not within a tolerance of "+str(tol), 0)
         
 class TestReadFileWithConstantWind():
     """
@@ -146,7 +168,7 @@ class TestReadFileWithConstantWind():
     """
     file = r"SampleData/WindDataFromGnomeConstantWind.WND"
     ossmT = cy_ossm_time.CyOSSMTime(path=file,
-                                      file_contains=basic_types.file_contains.magnitude_direction)
+                                      file_contains=basic_types.data_format.magnitude_direction)
     
     def test_get_time_value(self):
         """Test get_time_values method. It gets the time value pair for the constant wind
@@ -156,7 +178,7 @@ class TestReadFileWithConstantWind():
         Since wind is constant, the value should be unchanged          
         """
         # Let's see what is stored in the Handle to expected result
-        t_val = self.ossmT.time_series 
+        t_val = self.ossmT.timeseries 
         
         actual = np.array(t_val['value'], dtype=basic_types.velocity_rec)
         time = np.array(t_val['time']+(0, 100), dtype=basic_types.seconds)
@@ -170,3 +192,8 @@ class TestReadFileWithConstantWind():
                                       "get_time_value is not within a tolerance of "+str(tol), 0)
             np.testing.assert_allclose(vel['v'], actual['v'], tol, tol, 
                                       "get_time_value is not within a tolerance of "+str(tol), 0)
+
+if __name__ == "__main__":
+    tt = TestTimeSeriesInit()
+    tt.test_init_timeseries()
+    tt.test_get_time_value()

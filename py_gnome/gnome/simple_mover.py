@@ -11,12 +11,13 @@ can be, for testing and demonstration purposes
 import numpy as np
 
 from gnome import basic_types
+from gnome.movers import Mover
 
 ## this allows for this to be changed in the future.
 from gnome.utilities.projections import FlatEarthProjection as proj
 
 
-class SimpleMover(object):
+class SimpleMover(Mover):
     """
     simple_mover
     
@@ -24,7 +25,6 @@ class SimpleMover(object):
     
     (not all that different than a constant wind mover, now that I think about it)    
     """
-
     def __init__(self, velocity):
         """
         simple_mover (velocity)
@@ -37,21 +37,11 @@ class SimpleMover(object):
         self.velocity = np.asarray( velocity,
                                     dtype = basic_types.mover_type, # use this, to be compatible with whatever we are using for location
                                     ).reshape((3,))
-        
-    def prepare_for_model_step(self, model_time, time_step, uncertain_on):
-        """
-        Called at the beginning of each time step -- so the mover has a chance to prepare itself.
-        
-        This one is a no-op
-        
-        :param model_time: the time of this time step: datetime object
-        :param time_step: model time_step in seconds
-        :param uncertain_on: is uncertainty on  (bool) ?
-        
-        """
-        pass
 
-    def get_move(self, spill, time_step, model_time):
+    def __repr__(self):
+        return 'Simple mover'
+
+    def get_move(self, spill, time_step, model_time, uncertain_spill_number=0):
         """
         moves the particles defined in the spill object
         
@@ -62,6 +52,7 @@ class SimpleMover(object):
             positions
             status_code
         data arrays.
+        :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
         
         :returns delta: Nx3 numpy array of movement -- in (long, lat, meters) units
         
@@ -86,9 +77,6 @@ class SimpleMover(object):
         delta[in_water_mask] = self.velocity * time_step
 
         # scale for projection
-        delta = proj.meters_to_latlon(delta, positions) # just the lat-lon...
+        delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
         
         return delta
-        
-
-        

@@ -26,6 +26,7 @@ Boolean gDispersedOilVersion = FALSE;
 Model_c::Model_c(Seconds start)
 {
 	stepsCount = 0;
+	outputStepsCount = 0;
 	ncSnapshot = false;
 	writeNC = false;
 	fDrawMovement = 0;//JLM
@@ -626,6 +627,37 @@ TMover* Model_c::GetMover(ClassID desiredClassID)
 	return nil;
 }
 
+TMover* Model_c::GetMoverExact(ClassID desiredClassID)
+{
+	// only return exact matches, not subclasses
+	TMover *thisMover = nil;
+	TMap *map;
+	long i,n,k,d;
+	ClassID classID;
+	
+	// universal movers
+	for (k = 0, d = this->uMap->moverList->GetItemCount (); k < d; k++)
+	{
+		this->uMap->moverList -> GetListItem ((Ptr) &thisMover, k);
+		classID = thisMover -> GetClassID ();
+		if(classID == desiredClassID) return thisMover;
+	}
+	
+	// movers that belong to a map
+	for (i = 0, n = mapList->GetItemCount() ; i < n ; i++) {
+		mapList->GetListItem((Ptr)&map, i);
+		for (k = 0, d = map -> moverList -> GetItemCount (); k < d; k++)
+		{
+			map -> moverList -> GetListItem ((Ptr) &thisMover, k);
+			classID = thisMover -> GetClassID ();
+			if(classID == desiredClassID) return thisMover;
+		}
+	}
+	
+	return nil;
+}
+
+
 TCurrentMover* Model_c::GetPossible3DCurrentMover()
 {// this is for CDOG and really only NetCDF files are allowed, at this point triangular grids
 	TMover *thisMover = nil;
@@ -680,10 +712,15 @@ TWindMover* Model_c::GetWindMover(Boolean createIfDoesNotExist)
 {	
 	char moverName[kMaxNameLen];
 	TWindMover *mover = nil;
-	// for now don't get the spatially varying wind movers 2/27/03
-	//mover = (TWindMover*)this->GetMover(TYPE_WINDMOVER);
-	mover = dynamic_cast<TWindMover *>(this->GetMover("Variable Wind"));
-	if (!mover) mover = dynamic_cast<TWindMover *>(this->GetMover("Constant Wind"));
+	// for now don't get the spatially varying wind movers 2/27/03, if we want to use GetMover
+	mover = (TWindMover*)this->GetMoverExact(TYPE_WINDMOVER);
+	
+	// this doesn't allow user to set a filename
+	//mover = dynamic_cast<TWindMover *>(this->GetMover("Variable Wind"));
+	//if (!mover) mover = dynamic_cast<TWindMover *>(this->GetMover("Constant Wind"));
+
+	
+	
 	if(!mover && createIfDoesNotExist)
 	{ // create one and add it to the universal movers
 		TOSSMTimeValue *timeFile = nil;

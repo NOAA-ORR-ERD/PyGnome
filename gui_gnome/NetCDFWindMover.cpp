@@ -1694,7 +1694,9 @@ OSErr NetCDFWindMover::TextRead(char *path)
 		if (true)	// maybe use NOAA.ver here?
 		{
 			short buttonSelected;
-			buttonSelected  = MULTICHOICEALERT(1688,"Do you want to reset the model start time to the first time in the file?",FALSE);
+			if(!gCommandFileRun)	// also may want to skip for location files...
+				buttonSelected  = MULTICHOICEALERT(1688,"Do you want to reset the model start time to the first time in the file?",FALSE);
+			else buttonSelected = 1;	// TAP user doesn't want to see any dialogs, always reset (or maybe never reset? or send message to errorlog?)
 			switch(buttonSelected){
 				case 1: // reset model start time
 					//bTopFile = true;

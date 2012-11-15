@@ -215,7 +215,7 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 	}
 	else if(message->IsMessage(M_CREATEMOVER,ourName)) 
 	{
-		char moverName[kMaxNameLen];
+		char moverName[kMaxNameLen]="";
 		char typeName[64];
 		char path[256];
 		char msg[512];

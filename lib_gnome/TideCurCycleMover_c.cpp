@@ -27,7 +27,7 @@ LongPointHdl TideCurCycleMover_c::GetPointsHdl()
 	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
 }
 
-OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time)
+OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& model_time)
 {	// this function computes and sets this->refScale
 	// returns Error when the refScale is not defined
 	// or in allowable range.  
@@ -47,8 +47,7 @@ OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& start_time, const
 	long index = -1; 
 	Seconds startTime,endTime;
 	
-	//Seconds time = model->GetModelTime(); AH 07/09/2012
-	Seconds time = model_time;	// AH 07/09/2012
+	//Seconds time = model_time;	// AH 07/09/2012
 	
 	InterpolationVal interpolationVal;
 	VelocityRec scaledPatVelocity;
@@ -66,7 +65,8 @@ OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& start_time, const
 	this->refScale = 1;
 	return 0;
 	// probably don't need this code	
-	switch (scaleType) {
+	
+	/*switch (scaleType) {
 		case SCALE_NONE: this->refScale = 1; return noErr;
 		case SCALE_CONSTANT:
 			if(!this -> fOptimize.isOptimizedForStep) 
@@ -162,7 +162,7 @@ OSErr TideCurCycleMover_c::ComputeVelocityScale(const Seconds& start_time, const
 	}
 	
 	this->refScale = 0;
-	return -1;
+	return -1;*/
 }
 
 OSErr TideCurCycleMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *velocity,double timeStep,Boolean useEddyUncertainty)
@@ -171,8 +171,8 @@ OSErr TideCurCycleMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRe
 	double u,v,lengthS,alpha,beta,v0;
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
-	if(err) return err;
+	//err = this -> UpdateUncertainty();
+	//if(err) return err;
 	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
 	
@@ -213,7 +213,7 @@ OSErr TideCurCycleMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRe
 OSErr TideCurCycleMover_c::PrepareForModelRun()
 {
 	fOptimize.isFirstStep = true;
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
@@ -223,14 +223,21 @@ OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const 
 	
 	errmsg[0]=0;
 
-	if (fOptimize.isFirstStep) model_start_time = model_time;
+	//if (fOptimize.isFirstStep) model_start_time = model_time;	// use fModelStartTime in current mover
 
 	//check to see that the time interval is loaded and set if necessary
 	if (!bActive) return noErr;
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
 	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 	
 	if(err) goto done;
 	
+	if (uncertain)
+	{
+		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
+		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
+	}
 	fOptimize.isOptimizedForStep = true;	// don't  use CATS eddy diffusion stuff, follow ptcur
 	//fOptimize.value = sqrt(6*(fEddyDiffusion/10000)/model->GetTimeStep()); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
 	//fOptimize.isFirstStep = (model->GetModelTime() == model->GetStartTime());
@@ -250,6 +257,7 @@ void TideCurCycleMover_c::ModelStepIsDone()
 {
 	fOptimize.isFirstStep = false;
 	fOptimize.isOptimizedForStep = false;
+	bIsFirstStep = false;
 }
 
 
@@ -486,7 +494,8 @@ WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& model_time, Seconds tim
 		// Calculate the time weight factor
 		if (fTimeAlpha==-1)
 		{
-			Seconds relTime = time - model->GetStartTime();
+			//Seconds relTime = time - model->GetStartTime();
+			Seconds relTime = time - fModelStartTime;
 			startTime = (*fTimeHdl)[fStartData.timeIndex];
 			endTime = (*fTimeHdl)[fEndData.timeIndex];
 			//timeAlpha = (endTime - time)/(double)(endTime - startTime);
@@ -724,7 +733,12 @@ Boolean TideCurCycleMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosti
 		// Calculate the time weight factor
 		if(fTimeAlpha==-1)
 		{
-			Seconds relTime = time - model->GetStartTime();
+			//Seconds relTime = time - model->GetStartTime();
+			Seconds relTime; 
+			if (fModelStartTime==0)	// prepareformodelstep hasn't been called yet, just show the first data set
+				relTime = (*fTimeHdl)[0];
+			else 
+				relTime = time - fModelStartTime;
 			startTime = (*fTimeHdl)[fStartData.timeIndex];
 			endTime = (*fTimeHdl)[fEndData.timeIndex];
 			//timeAlpha = (endTime - time)/(double)(endTime - startTime);
@@ -1093,7 +1107,11 @@ Boolean TideCurCycleMover_c::CheckInterval(long &timeDataInterval, const Seconds
 		float  numSegmentsPerFloodEbb = numTimes/4.;
 		if (!timeFile || !bTimeFileActive)
 		{
-			time = time - model->GetStartTime();
+			//time = time - model->GetStartTime();
+			if (fModelStartTime==0)	// haven't called prepareformodelstep yet, so get the first (or could set it...)
+				time = (*fTimeHdl)[0];
+			else
+				time = time - fModelStartTime;
 			fTimeAlpha = -1;
 			// what used to be here
 			if(fStartData.timeIndex!=UNASSIGNEDINDEX && fEndData.timeIndex!=UNASSIGNEDINDEX)

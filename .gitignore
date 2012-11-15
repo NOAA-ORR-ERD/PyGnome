@@ -9,7 +9,8 @@ node_modules
 *.idea
 *.ropeproject
 
-# ignore binaries generated during build 
+# ignore binaries generated during build
+*.egg-info
 py_gnome/build/**/*
 py_gnome/gnome.utilities.egg-info/*
 py_gnome/pyGnome.egg-info/*
@@ -17,3 +18,7 @@ py_gnome/gnome/pyGnome.egg-info/*
 
 # ignore built documention in WebGNOME
 web/gnome/webgnome/doc/_build/*
+
+# ignore generated images in WebGNOME
+web/gnome/webgnome/webgnome/static/img/test_images/*
+web/gnome/webgnome/webgnome/static/img/model_images/*

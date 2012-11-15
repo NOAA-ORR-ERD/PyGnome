@@ -53,8 +53,8 @@ OSErr CompoundMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *p
 	
 	OSErr err = 0;
 	
-	err = this -> UpdateUncertainty();
-	if(err) return err;
+	//err = this -> UpdateUncertainty();
+	//if(err) return err;
 	
 	
 	if(!fUncertaintyListH || !fLESetSizesH) 
@@ -95,6 +95,7 @@ void CompoundMover_c::ModelStepIsDone()
 		moverList->GetListItem((Ptr)&mover, i);
 		mover->ModelStepIsDone();
 	}
+	bIsFirstStep = false;
 	
 }
 OSErr CompoundMover_c::PrepareForModelRun()
@@ -107,7 +108,7 @@ OSErr CompoundMover_c::PrepareForModelRun()
 		//if (fGrid->GetClassID()==TYPE_TRIGRIDVEL3D)
 		//((TTriGridVel3D*)fGrid)->ClearOutputHandles();	// this gets done by the individual movers
 	}
-	return noErr;
+	return CurrentMover_c::PrepareForModelRun();
 }
 OSErr CompoundMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 
