@@ -1,29 +1,60 @@
 from gnome.utilities.transforms import *
 import numpy as np
-
+import random
 import pytest
 
 def test_exceptions():
     with pytest.raises(ValueError):
-        r_theta_to_uv(np.array([0, 0]))
-        r_theta_to_uv(np.array([-1, 0]))
-        r_theta_to_uv(np.array([1, -1]))
-        r_theta_to_uv(np.array([1, 361]))
-        
-def test_r_theta_to_uv():
-    x=np.zeros((4,2), dtype=np.double)
-    x[:,0]=[i for i in range(1,9,2)]
-    x[:,1]=[i for i in range(0,270,70)]
-    rq = uv_to_r_theta( r_theta_to_uv(x))
+        r_theta_to_uv_wind(np.array([0, 0]))
+        r_theta_to_uv_wind(np.array([-1, 0]))
+        r_theta_to_uv_wind(np.array([1, -1]))
+        r_theta_to_uv_wind(np.array([1, 361]))
+    
+
+rq = np.array( [(1, 0),(1,90),(1,180),(1,270)], dtype=np.float64)
+uv = np.array( [(0,-1),(-1,0),(0,  1),(1,  0)], dtype=np.float64)
+    
+def test_r_theta_to_uv_wind():
+    uv_out = r_theta_to_uv_wind(rq)
+    print uv_out
+    print uv
+    assert np.all( uv_out == uv)
+    
+    
+def test_uv_to_r_theta_wind():
+    rq_out = uv_to_r_theta_wind(uv)
+    print rq_out
     print rq
-    print x
-    #assert np.all( x[:,0] == rq[:,0])    # not sure why this fails?
-    np.allclose(rq, x, 1e-14, 1e-14)
+    assert np.all( rq_out == rq)
     
+def test_wind_inverse():
+    """
+    randomly generates an (r,theta) and applies the transform to convert to (u,v), then back to (r,theta).
+    It checks the result is accurate to within 10-10 tolerance
+    """
+    rq = np.array([(random.uniform(0,1), random.uniform(0,360))], dtype=np.float64)
+    rq_out = uv_to_r_theta_wind( r_theta_to_uv_wind(rq))
+    print rq
+    print rq_out
+    assert np.allclose(rq, rq_out, 1e-10, 1e-10)
     
-def test_uv_to_r_theta():
-    x=np.zeros((4,2), dtype=np.double)
-    x[:,0]=[1,0,-1,0]
-    x[:,1]=[0,1,0,-1]
-    uv = r_theta_to_uv(uv_to_r_theta(x))
-    np.allclose(uv, x, 1e-14, 1e-14)
+rq_c = np.array( [(1, 0),(np.sqrt(2),45),(1,90),(1,180),(1,270)], dtype=np.float64)
+uv_c = np.array( [(0, 1),         (1, 1),(1, 0),(0, -1),(-1, 0)], dtype=np.float64)
+def test_r_theta_to_uv_current():
+    uv_out = r_theta_to_uv_current(rq_c)
+    assert np.all( uv_out == uv_c )
+    
+def test_uv_to_r_theta_current():
+    rq_out = uv_to_r_theta_current(uv_c)
+    assert np.all( rq_out == rq_c )
+    
+def test_current_inverse():
+    """
+    randomly generates an (r,theta) and applies the transform to convert to (u,v), then back to (r,theta).
+    It checks the result is accurate to within 10-10 tolerance
+    """
+    rq = np.array([(random.uniform(0,1), random.uniform(0,360))], dtype=np.float64)
+    rq_out = uv_to_r_theta_current( r_theta_to_uv_current(rq))
+    print rq
+    print rq_out
+    assert np.allclose(rq, rq_out, 1e-10, 1e-10)
