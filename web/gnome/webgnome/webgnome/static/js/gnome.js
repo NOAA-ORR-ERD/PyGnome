@@ -1352,6 +1352,7 @@ var ModalFormViewContainer = Backbone.View.extend({
     initialize: function() {
         _.bindAll(this);
         this.options.ajaxForms.on(AjaxForm.SUCCESS, this.refresh);
+        this.formViews = {};
     },
 
     /*
@@ -1375,6 +1376,40 @@ var ModalFormViewContainer = Backbone.View.extend({
                 }
             },
             error: handleAjaxError
+        });
+    },
+
+    formIdChanged: function(newId, oldId) {
+        this.formViews[newId] = this.formViews[oldId];
+        delete this.formViews[oldId];
+    },
+
+    add: function(opts, obj) {
+        if (typeof opts === "number" || typeof opts === "string") {
+            this.formViews[opts] = obj;
+            return;
+        }
+
+        if (typeof opts === "object" &&
+                (_.has(opts, 'id') && opts.id)) {
+            var view = new ModalFormView(opts);
+            this.formViews[opts.id] = view;
+            view.on(ModalFormView.ID_CHANGED, this.formIdChanged);
+            return;
+        }
+
+        throw "Must pass ID and object or an options object.";
+    },
+
+    get: function(formId) {
+        return this.formViews[formId];
+    },
+
+    deleteAll: function() {
+        var _this = this;
+         _.each(this.formViews, function(formView, key) {
+            formView.remove();
+            delete _this.formViews[key];
         });
     }
 }, {
@@ -1574,11 +1609,14 @@ var ModalFormView = Backbone.View.extend({
      If there is an error in the form, load the step with errors.
      */
     refresh: function(html) {
+        var oldId = this.$el.attr('id');
+
         this.remove();
+
         var $html = $(html);
         $html.appendTo(this.$container);
-        this.$el = $('#' + $html.attr('id'));
 
+        this.$el = $('#' + $html.attr('id'));
         this.$el.find('.date').datepicker({
             changeMonth: true,
             changeYear: true
@@ -1595,6 +1633,11 @@ var ModalFormView = Backbone.View.extend({
         }
 
         this.setupEventHandlers();
+
+        var newId = this.$el.attr('id');
+        if (oldId !== newId) {
+            this.trigger(ModalFormView.ID_CHANGED, newId, oldId);
+        }
     },
 
     hide: function() {
@@ -1609,6 +1652,8 @@ var ModalFormView = Backbone.View.extend({
         this.$container.off('click', this.id + ' .btn-next', this.goToNextStep);
         this.$container.off('click', this.id + ' .btn-prev', this.goToPreviousStep);
     }
+}, {
+    ID_CHANGED: 'modalFormView:idChanged'
 });
 
 
@@ -1800,7 +1845,7 @@ var AppView = Backbone.View.extend({
     setupEventHandlers: function() {
         this.model.on(Model.RUN_ERROR, this.modelRunError);
         this.treeView.on(TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
-        this.modalFormViewContainer.on(ModalFormViewContainer.REFRESHED, this.refreshForms);
+        this.formViews.on(ModalFormViewContainer.REFRESHED, this.refreshForms);
 
         this.treeControlView.on(TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
         this.treeControlView.on(TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
@@ -1832,6 +1877,20 @@ var AppView = Backbone.View.extend({
     setupKeyboardHandlers: function() {
         var _this = this;
 
+        Mousetrap.bind('space', function() {
+            log('toggle playing')
+            if (_this.mapControlView.isPlaying()) {
+                _this.pause();
+            } else {
+                _this.play({});
+            }
+        });
+
+        Mousetrap.bind('o', function() {
+            log('open item');
+            _this.showFormForActiveTreeItem();
+        });
+
         Mousetrap.bind('n o', function() {
             log('new model');
             _this.newMenuItemClicked();
@@ -1851,7 +1910,6 @@ var AppView = Backbone.View.extend({
             log('save form')
             var visibleSaveButton = $('.modal[aria-hidden=false] .btn-primary');
             if (visibleSaveButton) {
-                log(visibleSaveButton.length)
                 visibleSaveButton.click();
             }
         });
@@ -1865,10 +1923,7 @@ var AppView = Backbone.View.extend({
         }
 
         if (this.formViews) {
-            _.each(this.formViews, function(formView, key) {
-                formView.remove();
-                delete _this.formViews[key];
-            });
+            this.formViews.deleteAll();
         }
     },
 
@@ -1885,7 +1940,7 @@ var AppView = Backbone.View.extend({
             formContainerEl: '#' + this.options.formContainerId
         });
 
-        this.formViews[this.options.addMoverFormId] = this.addMoverFormView;
+        this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
 
         // Create an `AjaxForm` and bind it to a `ModalFormView` for each modal
         // form on the page, other than the Add Mover form, which we handled.
@@ -1903,7 +1958,8 @@ var AppView = Backbone.View.extend({
                 url: $form.attr('action')
             });
 
-            _this.formViews[modalFormId] = new ModalFormView({
+            _this.formViews.add({
+                id: modalFormId,
                 ajaxForm: _this.forms.get(modalFormId),
                 el: $('#' + modalFormId),
                 formContainerEl: '#' + _this.options.formContainerId
@@ -1915,15 +1971,12 @@ var AppView = Backbone.View.extend({
         // `AjaxForm` instances, keyed to form ID.
         this.forms = new AjaxFormCollection();
 
-         // `ModelFormView` instances, keyed to form ID.
-        this.formViews = {};
-
-        this.modalFormViewContainer = new ModalFormViewContainer({
+        this.formViews = new ModalFormViewContainer({
             el: $('#' + this.options.formContainerId),
             ajaxForms: this.forms,
             url: this.options.formsUrl
         });
-        
+
         this.addForms();
     },
 
@@ -2082,7 +2135,7 @@ var AppView = Backbone.View.extend({
     },
 
     showFormWithId: function(formId) {
-        var formView = this.formViews[formId];
+        var formView = this.formViews.get(formId);
 
         if (formView === undefined) {
             return;
@@ -2092,7 +2145,7 @@ var AppView = Backbone.View.extend({
     },
 
     showFormForNode: function(node) {
-        var formView = this.formViews[node.data.form_id];
+        var formView = this.formViews.get(node.data.form_id);
 
         if (formView === undefined) {
             return;
@@ -2156,7 +2209,7 @@ var AppView = Backbone.View.extend({
     },
 
     moverChosen: function(moverType) {
-        var formView = this.formViews[moverType];
+        var formView = this.formViews.get(moverType);
 
         if (formView === undefined) {
             return;

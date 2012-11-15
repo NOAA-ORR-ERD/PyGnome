@@ -7,7 +7,6 @@ from wtforms import (
     IntegerField,
     FloatField,
     BooleanField,
-    TextField,
     ValidationError
 )
 

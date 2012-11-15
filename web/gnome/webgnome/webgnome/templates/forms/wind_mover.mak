@@ -36,13 +36,11 @@
                     ${defs.form_control(form.is_active)}
                 </div>
                  <div class="tab-pane" id="${uncertainty_id}">
-                    <fieldset>
-                        ${defs.form_control(form.start_time, "hours")}
-                        ${defs.form_control(form.duration, "hours")}
-                        ${defs.form_control(form.speed_scale)}
-                        ${defs.form_control(form.total_angle_scale)}
-                        ${defs.form_control(form.total_angle_scale_type)}
-                    </fieldset>
+                    ${defs.form_control(form.start_time, "hours")}
+                    ${defs.form_control(form.duration, "hours")}
+                    ${defs.form_control(form.speed_scale)}
+                    ${defs.form_control(form.total_angle_scale)}
+                    ${defs.form_control(form.total_angle_scale_type)}
                 </div>
             </div>
         </form>
