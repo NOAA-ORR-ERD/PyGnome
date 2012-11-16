@@ -128,7 +128,6 @@ Boolean NetCDFWindMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnos
 	return true;
 }
 
-//WorldPoint3D NetCDFWindMoverCurv_c::GetMove(const Seconds& start_time, const Seconds& stop_time, const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 WorldPoint3D NetCDFWindMoverCurv_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
 	WorldPoint3D	deltaPoint = {0,0,0.};
@@ -142,13 +141,8 @@ WorldPoint3D NetCDFWindMoverCurv_c::GetMove(const Seconds& model_time, Seconds t
 	OSErr err = 0;
 	char errmsg[256];
 	
-	
-	//return deltaPoint;
-	// might want to check for fFillValue and set velocity to zero - shouldn't be an issue unless we interpolate
 	if(!fIsOptimizedForStep) 
 	{
-//		err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg);	// minus AH 07/17/2012
-		//err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg, start_time, model_time); // AH 07/17/2012
 		err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 		
 		if (err) return deltaPoint;
@@ -217,7 +211,7 @@ scale:
 }
 
 // simplify for wind data - no map needed, no mask 
-OSErr NetCDFWindMoverCurv_c::ReorderPoints(VelocityFH velocityH, TMap **newMap, char* errmsg) 
+OSErr NetCDFWindMoverCurv_c::ReorderPoints(TMap **newMap, char* errmsg) 
 {
 	long i, j, n, ntri, numVerdatPts=0;
 	long fNumRows_ext = fNumRows+1, fNumCols_ext = fNumCols+1;
@@ -225,6 +219,7 @@ OSErr NetCDFWindMoverCurv_c::ReorderPoints(VelocityFH velocityH, TMap **newMap, 
 	long iIndex, jIndex, index; 
 	long triIndex1, triIndex2, waterCellNum=0;
 	long ptIndex = 0, cellNum = 0;
+	long indexOfStart = 0;
 	OSErr err = 0;
 	
 	LONGH landWaterInfo = (LONGH)_NewHandleClear(fNumRows * fNumCols * sizeof(long));
@@ -244,8 +239,11 @@ OSErr NetCDFWindMoverCurv_c::ReorderPoints(VelocityFH velocityH, TMap **newMap, 
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
 	
+	VelocityFH velocityH = 0;
 	
 	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH || !maskH2) {err = memFullErr; goto done;}
+	
+	err = ReadTimeData(indexOfStart,&velocityH,errmsg);	// try to use velocities to set grid
 	
 	for (i=0;i<fNumRows;i++)
 	{
@@ -320,7 +318,7 @@ OSErr NetCDFWindMoverCurv_c::ReorderPoints(VelocityFH velocityH, TMap **newMap, 
 	for (i=0; i<=numVerdatPts; i++)	// make a list of grid points that will be used for triangles
 	{
 		float fLong, fLat, fDepth, dLon, dLat, dLon1, dLon2, dLat1, dLat2;
-		double val, u=0., v=0.;
+		//double val, u=0., v=0.;
 		LongPoint vertex;
 		
 		if(i < numVerdatPts) 
@@ -357,8 +355,8 @@ OSErr NetCDFWindMoverCurv_c::ReorderPoints(VelocityFH velocityH, TMap **newMap, 
 				{
 					fLat = INDEXH(fVertexPtsH,(iIndex-1)*fNumCols+jIndex).pLat;
 					fLong = INDEXH(fVertexPtsH,(iIndex-1)*fNumCols+jIndex).pLong;
-					u = INDEXH(velocityH,(iIndex-1)*fNumCols+jIndex).u;
-					v = INDEXH(velocityH,(iIndex-1)*fNumCols+jIndex).v;
+					//u = INDEXH(velocityH,(iIndex-1)*fNumCols+jIndex).u;
+					//v = INDEXH(velocityH,(iIndex-1)*fNumCols+jIndex).v;
 				}
 				else
 				{
@@ -515,12 +513,10 @@ done:
 			delete fGrid;
 			fGrid = 0;
 		}
-		if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
-		if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
-		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
 		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
 		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
 	}
+	if (velocityH) {DisposeHandle((Handle)velocityH); velocityH = 0;}
 	return err;
 }
 

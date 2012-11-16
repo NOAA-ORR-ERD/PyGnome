@@ -28,7 +28,7 @@ public:
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
-	OSErr 				ReorderPoints(VelocityFH velocityH, TMap **newMap, char* errmsg); 
+	OSErr 				ReorderPoints(TMap **newMap, char* errmsg); 
 	Seconds 				GetTimeValue(long index);
 	virtual long 		GetVelocityIndex(WorldPoint wp);
 	virtual LongPoint 		GetVelocityIndices(WorldPoint wp);

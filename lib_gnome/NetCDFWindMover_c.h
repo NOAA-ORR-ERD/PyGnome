@@ -84,6 +84,7 @@ public:
 	virtual ClassID 	GetClassID () { return TYPE_NETCDFWINDMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_NETCDFWINDMOVER) return TRUE; return WindMover_c::IAm(id); }
 
+	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 };
 
 #endif

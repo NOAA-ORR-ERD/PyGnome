@@ -9,6 +9,7 @@
 
 #include "NetCDFWindMover_c.h"
 #include "CROSS.H"
+#include "netcdf.h"
 
 NetCDFWindMover_c::NetCDFWindMover_c(TMap *owner,char* name) : WindMover_c(owner, name)
 {
@@ -378,5 +379,180 @@ Seconds NetCDFWindMover_c::GetTimeValue(long index)
 	if (index<0) printError("Access violation in NetCDFWindMover::GetTimeValue()");
 	Seconds time = (*fTimeHdl)[index] + fTimeShift;
 	return time;
+}
+
+OSErr NetCDFWindMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) 
+{	
+	// regular grid wind format
+	OSErr err = 0;
+	long i,j;
+	char path[256], outPath[256]; 
+	int status, ncid, numdims, numvars, uv_ndims;
+	int wind_ucmp_id, wind_vcmp_id, sigma_id;
+	static size_t wind_index[] = {0,0,0,0};
+	static size_t wind_count[4];
+	//float *wind_uvals=0,*wind_vvals=0, fill_value = -1e+10;
+	double *wind_uvals=0,*wind_vvals=0, fill_value = -1e+10;
+	long totalNumberOfVels = fNumRows * fNumCols;
+	VelocityFH velH = 0;
+	long latlength = fNumRows;
+	long lonlength = fNumCols;
+	//float scale_factor = 1.;
+	double scale_factor = 1.;
+	Boolean bHeightIncluded = false;
+	
+	errmsg[0]=0;
+	
+	strcpy(path,fPathName);
+	if (!path || !path[0]) return -1;
+	
+	status = nc_open(path, NC_NOWRITE, &ncid);
+	//if (status != NC_NOERR) {err = -1; goto done;}
+	if (status != NC_NOERR)
+	{
+#if TARGET_API_MAC_CARBON
+		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+		status = nc_open(outPath, NC_NOWRITE, &ncid);
+#endif
+		if (status != NC_NOERR) {err = -1; goto done;}
+	}
+	status = nc_inq_ndims(ncid, &numdims);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	
+	wind_index[0] = index;	// time 
+	wind_count[0] = 1;	// take one at a time
+	
+	if (numdims>=4)
+	{	// won't be using the heights, just need to know how to read the file
+		status = nc_inq_dimid(ncid, "sigma", &sigma_id);	//3D
+		if (status != NC_NOERR) 
+		{
+			/*status = nc_inq_dimid(ncid, "height", &sigma_id);	//3D - need to check sigma values in TextRead...
+			 if (status != NC_NOERR) bHeightIncluded = false;
+			 else bHeightIncluded = true;*/
+			bHeightIncluded = false;
+		}
+		else bHeightIncluded = true;
+		// code goes here, might want to check other dimensions (lev), or just how many dimensions uv depend on
+		//status = nc_inq_dimid(ncid, "sigma", &depthid);	//3D
+		//if (status != NC_NOERR) bHeightIncluded = false;
+		//else bHeightIncluded = true;
+	}
+	
+	if (/*numdims==4*/bHeightIncluded)
+	{
+		wind_count[1] = 1;	// depth - height here, is this necessary?
+		wind_count[2] = latlength;
+		wind_count[3] = lonlength;
+	}
+	else
+	{
+		wind_count[1] = latlength;	
+		wind_count[2] = lonlength;
+	}
+	
+	//wind_uvals = new float[latlength*lonlength]; 
+	wind_uvals = new double[latlength*lonlength]; 
+	if(!wind_uvals) {TechError("NetCDFWindMover::ReadNetCDFFile()", "new[]", 0); err = memFullErr; goto done;}
+	//wind_vvals = new float[latlength*lonlength]; 
+	wind_vvals = new double[latlength*lonlength]; 
+	if(!wind_vvals) {TechError("NetCDFWindMover::ReadNetCDFFile()", "new[]", 0); err = memFullErr; goto done;}
+	
+	// code goes here, change key word to wind_u,v
+	status = nc_inq_varid(ncid, "air_u", &wind_ucmp_id);	
+	if (status != NC_NOERR) 
+	{
+		status = nc_inq_varid(ncid, "UX", &wind_ucmp_id);	// for Lucas's Pac SSH LAS server data
+		if (status != NC_NOERR) {err = -1; /*goto done;*/ goto LAS;}	// broader check for variable names coming out of LAS
+	}
+	status = nc_inq_varid(ncid, "air_v", &wind_vcmp_id);	// what if only input one at a time (u,v separate movers)?
+	if (status != NC_NOERR)
+	{
+		status = nc_inq_varid(ncid, "VY", &wind_vcmp_id);	// for Lucas's Pac SSH LAS server data
+		if (status != NC_NOERR) {err = -1; goto done;}
+	}
+	
+LAS:
+	if (err)
+	{
+		Boolean bLASStyleNames = false;
+		char uname[NC_MAX_NAME],vname[NC_MAX_NAME],varname[NC_MAX_NAME];
+		err = 0;
+		status = nc_inq_nvars(ncid, &numvars);
+		if (status != NC_NOERR) {err = -1; goto done;}
+		for (i=0;i<numvars;i++)
+		{
+			//if (i == recid) continue;
+			status = nc_inq_varname(ncid,i,varname);
+			if (status != NC_NOERR) {err = -1; goto done;}
+			if (varname[0]=='U' || varname[0]=='u' /*|| strstrnocase(varname,"EVEL")*/)	// careful here, could end up with wrong u variable (like u_curr for example)
+			{
+				wind_ucmp_id = i; bLASStyleNames = true;
+				strcpy(uname,varname);
+			}
+			if (varname[0]=='V' || varname[0]=='v' /*|| strstrnocase(varname,"NVEL")*/)
+			{
+				wind_vcmp_id = i; bLASStyleNames = true;
+				strcpy(vname,varname);
+			}
+		}
+		if (!bLASStyleNames){err = -1; goto done;}
+	}
+	
+	status = nc_inq_varndims(ncid, wind_ucmp_id, &uv_ndims);
+	if (status==NC_NOERR){if (uv_ndims < numdims && uv_ndims==3) {wind_count[1] = latlength; wind_count[2] = lonlength;}}	// could have more dimensions than are used in u,v
+	if (uv_ndims==4) {wind_count[1] = 1;wind_count[2] = latlength;wind_count[3] = lonlength;}
+	
+	
+	//status = nc_get_vara_float(ncid, wind_ucmp_id, wind_index, wind_count, wind_uvals);
+	status = nc_get_vara_double(ncid, wind_ucmp_id, wind_index, wind_count, wind_uvals);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	//status = nc_get_vara_float(ncid, wind_vcmp_id, wind_index, wind_count, wind_vvals);
+	status = nc_get_vara_double(ncid, wind_vcmp_id, wind_index, wind_count, wind_vvals);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	//status = nc_get_att_float(ncid, wind_ucmp_id, "_FillValue", &fill_value);	// should get this in text_read and store, but will have to go short to float and back
+	status = nc_get_att_double(ncid, wind_ucmp_id, "_FillValue", &fill_value);	// should get this in text_read and store, but will have to go short to float and back
+	//if (status != NC_NOERR) {status = nc_get_att_float(ncid, wind_ucmp_id, "FillValue", &fill_value); /*if (status != NC_NOERR) {err = -1; goto done;}*/}	// require fill value
+	if (status != NC_NOERR) 
+	{
+		status = nc_get_att_double(ncid, wind_ucmp_id, "FillValue", &fill_value); /*if (status != NC_NOERR) {err = -1; goto done;}}*/	// require fill value
+		if (status != NC_NOERR) {status = nc_get_att_double(ncid, wind_ucmp_id, "missing_value", &fill_value);} /*if (status != NC_NOERR) {err = -1; goto done;}*/
+	}	// require fill value
+	//if (status != NC_NOERR) {err = -1; goto done;}	// don't require fill value
+	//status = nc_get_att_float(ncid, wind_ucmp_id, "scale_factor", &scale_factor);
+	status = nc_get_att_double(ncid, wind_ucmp_id, "scale_factor", &scale_factor);
+	//if (status != NC_NOERR) {err = -1; goto done;}	// don't require scale factor
+	
+	status = nc_close(ncid);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	
+	velH = (VelocityFH)_NewHandleClear(totalNumberOfVels * sizeof(VelocityFRec));
+	if (!velH) {err = memFullErr; goto done;}
+	for (i=0;i<latlength;i++)
+	{
+		for (j=0;j<lonlength;j++)
+		{
+			if (wind_uvals[(latlength-i-1)*lonlength+j]==fill_value)	// should store in wind array and check before drawing or moving
+				wind_uvals[(latlength-i-1)*lonlength+j]=0.;
+			if (wind_vvals[(latlength-i-1)*lonlength+j]==fill_value)
+				wind_vvals[(latlength-i-1)*lonlength+j]=0.;
+			INDEXH(velH,i*lonlength+j).u = (float)wind_uvals[(latlength-i-1)*lonlength+j];
+			INDEXH(velH,i*lonlength+j).v = (float)wind_vvals[(latlength-i-1)*lonlength+j];
+		}
+	}
+	*velocityH = velH;
+	fFillValue = fill_value;
+	fWindScale = scale_factor;
+	
+done:
+	if (err)
+	{
+		strcpy(errmsg,"Error reading wind data from NetCDF file");
+		// We don't want to put up an error message here because it can lead to an infinite loop of messages.
+		if(velH) {DisposeHandle((Handle)velH); velH = 0;}
+	}
+	if (wind_uvals) delete [] wind_uvals;
+	if (wind_vvals) delete [] wind_vvals;
+	return err;
 }
 

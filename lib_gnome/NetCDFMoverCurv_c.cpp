@@ -774,7 +774,7 @@ void NetCDFMoverCurv_c::GetDepthIndices(long ptIndex, float depthAtPoint, float 
 }
 
 
-long NetCDFMoverCurv_c::CheckSurroundingPoints(LONGH maskH, long numRows, long  numCols, long row, long col) 
+long CheckSurroundingPoints(LONGH maskH, long numRows, long  numCols, long row, long col) 
 {
 	long i, j, iStart, iEnd, jStart, jEnd, lowestLandIndex = 0;
 	long neighbor;
@@ -812,7 +812,7 @@ long NetCDFMoverCurv_c::CheckSurroundingPoints(LONGH maskH, long numRows, long  
 }
 
 //Boolean NetCDFMoverCurv_c::ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long numRows, long  numCols, long row, long col) 
-Boolean NetCDFMoverCurv_c::ThereIsAdjacentLand2(LONGH maskH, DOUBLEH landmaskH, long numRows, long  numCols, long row, long col) 
+Boolean ThereIsAdjacentLand2(LONGH maskH, DOUBLEH landmaskH, long numRows, long  numCols, long row, long col) 
 {
 	long i, j, iStart, iEnd, jStart, jEnd, lowestLandIndex = 0;
 	long neighbor;
@@ -850,7 +850,7 @@ Boolean NetCDFMoverCurv_c::ThereIsAdjacentLand2(LONGH maskH, DOUBLEH landmaskH, 
 	return false;
 }
 
-Boolean NetCDFMoverCurv_c::InteriorLandPoint(LONGH maskH, long numRows, long numCols, long row, long col) 
+Boolean InteriorLandPoint(LONGH maskH, long numRows, long numCols, long row, long col) 
 {
 	long i, j, iStart, iEnd, jStart, jEnd;
 	long neighbor;
@@ -891,7 +891,7 @@ Boolean NetCDFMoverCurv_c::InteriorLandPoint(LONGH maskH, long numRows, long num
 	return true;
 }
 
-Boolean NetCDFMoverCurv_c::ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPolyNum, long numRows, long numCols, long row, long col) 
+Boolean ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPolyNum, long numRows, long numCols, long row, long col) 
 {
 	long iStart, iEnd, jStart, jEnd, lowestLandIndex = 0;
 	long i, j, neighbor, landPolyNum;
@@ -940,7 +940,7 @@ Boolean NetCDFMoverCurv_c::ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPol
 	return false;
 }
 
-void NetCDFMoverCurv_c::ResetMaskValues(LONGH maskH,long landBlockToMerge,long landBlockToJoin,long numRows,long numCols)
+void ResetMaskValues(LONGH maskH,long landBlockToMerge,long landBlockToJoin,long numRows,long numCols)
 {	// merges adjoining land blocks and then renumbers any higher numbered land blocks
 	long i,j,val;
 	long numRows_ext = numRows+1, numCols_ext = numCols+1;
@@ -957,7 +957,7 @@ void NetCDFMoverCurv_c::ResetMaskValues(LONGH maskH,long landBlockToMerge,long l
 }
 
 //OSErr NetCDFMoverCurv_c::NumberIslands(LONGH *islandNumberH, VelocityFH velocityH,LONGH landWaterInfo, long numRows, long  numCols, long *numIslands) 
-OSErr NetCDFMoverCurv_c::NumberIslands(LONGH *islandNumberH, DOUBLEH landmaskH,LONGH landWaterInfo, long numRows, long  numCols, long *numIslands) 
+OSErr NumberIslands(LONGH *islandNumberH, DOUBLEH landmaskH,LONGH landWaterInfo, long numRows, long  numCols, long *numIslands) 
 {
 	OSErr err = 0;
 	long numRows_ext = numRows+1, numCols_ext = numCols+1;
@@ -2154,12 +2154,10 @@ done:
 			delete fGrid;
 			fGrid = 0;
 		}
-		if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
-		if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
-		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
 		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
 		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
 	}
+	if (velocityH) {DisposeHandle((Handle)velocityH); velocityH = 0;}
 	return err;
 }
 

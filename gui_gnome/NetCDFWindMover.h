@@ -44,7 +44,7 @@ public:
 	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
 	
 	virtual OSErr		TextRead(char *path);
-	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
+	//virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	
 	virtual void		Draw (Rect r, WorldRect view);
 	virtual Boolean		DrawingDependsOnTime(void);
