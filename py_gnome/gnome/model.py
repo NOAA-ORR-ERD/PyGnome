@@ -53,8 +53,9 @@ class Model(object):
         """
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
-        for spill in self.spills:
-            spill.reset()
+        for spills in (self.spills,self.uncertain_spills):
+            for spill in spills: 
+                spill.reset()
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
 
     ### Assorted properties
@@ -205,7 +206,6 @@ class Model(object):
                 
                 if self._uncertain_spill_id_map.count(uSpill.id) != 0:
                     raise ValueError("An uncertain spill with this id has been defined. spill.id should be unique")
-                 
                 self._uncertain_spill_id_map.append(uSpill.id)
             
 
@@ -247,13 +247,12 @@ class Model(object):
         for spills in (self.spills,self.uncertain_spills):
             for spill in spills:
                 spill['next_positions'][:] = spill['positions']
-    
+            
             uncertain_spill_number = -1 # only used by get_move for uncertain spills
             for mover in self.movers:
                 for spill in spills:
                     if spill.is_uncertain:
                         uncertain_spill_number = self._uncertain_spill_id_map.index((spill.id))
-                        
                     delta = mover.get_move(spill, self.time_step, self.model_time, uncertain_spill_number)  # spill ID that get_move expects
                     spill['next_positions'] += delta
                     # print "in move loop"
@@ -306,11 +305,11 @@ class Model(object):
         filename = os.path.join(images_dir, 'foreground_%05i.png'%self.current_time_step)
 
         self.output_map.create_foreground_image()
-
-        for spill in self.spills:
-            self.output_map.draw_elements(spill)
+        for spills in (self.spills, self.uncertain_spills):
+            for spill in spills:
+                self.output_map.draw_elements(spill)
+            
         self.output_map.save_foreground(filename)
-
         return filename
 
     def step(self):
