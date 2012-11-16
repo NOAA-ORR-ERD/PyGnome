@@ -20,10 +20,8 @@ mover_type = np.float64
 world_point_type = np.float64
 windage_type = np.float64
 
-datetime_r_theta   = np.dtype([('time', np.datetime64), 
-                               ('value',mover_type,(2,))], align=True)
-datetime_value_pair= np.dtype([('time', np.datetime64), 
-                               ('value', mover_type,(2,))], align=True)
+datetime_value_2d = np.dtype([('time', np.datetime64), 
+                           ('value', mover_type,(2,))], align=True)
 
 #----------------------------------------------------------------
 # Mirror C++ structures, following are used by cython code

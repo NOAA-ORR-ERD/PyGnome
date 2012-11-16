@@ -204,7 +204,7 @@ def test_all_movers():
     model.add_mover( gnome.movers.RandomMover(diffusion_coef=100000) )
 
     # wind mover
-    series = np.array( (start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_r_theta ).reshape((1,))
+    series = np.array( (start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     model.add_mover( gnome.movers.WindMover(timeseries=series) )
   
     

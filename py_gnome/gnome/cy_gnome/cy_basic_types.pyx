@@ -51,7 +51,7 @@ a standard wind file would contain magnitude and direction info
 data_format.magnitude_direction = 5
 """
 data_format = enum(magnitude_direction=M19MAGNITUDEDIRECTION,
-                   cartesian_uv=M19REALREAL)
+                   wind_uv=M19REALREAL)
 
 """
 Define units for velocity. In C++, these are #defined as
