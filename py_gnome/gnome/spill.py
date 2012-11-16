@@ -174,11 +174,11 @@ class PointReleaseSpill(Spill):
         Update windage for each LE for each time step
         May want to cythonize this to speed it up
         """
-        for le in range(0, self.num_LEs):
-            self['windages'][le] = rand.random_with_persistance(self.windage_range[0],
-                                                                self.windage_range[1],
-                                                                self.windage_persist,
-                                                                time_step)
+        self['windages'][:] = rand.random_with_persistance(self.windage_range[0],
+                                                          self.windage_range[1],
+                                                          self.windage_persist,
+                                                          time_step,
+                                                          array_len=self.num_LEs)
 
     def reset(self):
         """
