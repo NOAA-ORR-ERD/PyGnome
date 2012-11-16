@@ -22,6 +22,7 @@ New features:
  
 import numpy as np
 
+import gnome
 from gnome.utilities import map_canvas
 from gnome.basic_types import world_point_type, oil_status
 
@@ -349,16 +350,21 @@ class RasterMap(GnomeMap):
         # NOTE: must be integers!
         start_pos_pixel = self.projection.to_pixel(start_pos, asint=True)
         next_pos_pixel  = self.projection.to_pixel(next_pos, asint=True)
+        last_water_pos_pixel = self.projection.to_pixel(last_water_positions, asint=True)
         
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
         # only check the ones that aren't already beached?
-        self.check_land(self.bitmap, start_pos_pixel, next_pos_pixel, status_codes, last_water_positions)
+        #print "start_pos_pixel", start_pos_pixel.flags
+        #print "next_pos_pixel", next_pos_pixel.flags
+        #print "last_water_pos_pixel", last_water_pos_pixel.flags
+        #print "status_codes", status_codes.flags
+        self.check_land(self.bitmap, start_pos_pixel, next_pos_pixel, status_codes, last_water_pos_pixel)
 
         #transform the points back to lat-long.
         beached = ( status_codes == oil_status.on_land )
         next_pos[beached, :2]= self.projection.to_lonlat(next_pos_pixel[beached])
-        last_water_positions[beached, :2] = self.projection.to_lonlat(last_water_positions[beached,:2])
+        last_water_positions[beached, :2] = self.projection.to_lonlat(last_water_pos_pixel[beached,:2])
 
         ##fixme -- add off-map check here
 
@@ -369,29 +375,13 @@ class RasterMap(GnomeMap):
                 
         status_codes, positions and last_water_positions are altered in place.
         
+        calls a Cython version: gnome.cy_gnome.cy_land_check.check_land
         """
-        ##fixme -- this needs to be ported to Cython!
-
-        #print "saving_raster_map:"
-        #np.save("test_raster_map", raster_map)
-
-        ## critical that these be integers!
-        if (not np.issubdtype(positions.dtype, int) ) or (not np.issubdtype(positions.dtype, int) ):
-            raise ValueError("position arrays must be integer type")
-        for i in xrange(len(positions)):
-            pts = land_check.find_first_pixel(raster_map,
-                                              positions[i],
-                                              end_positions[i],
-                                              )
-            if pts is None:
-                # didn't hit land -- can move the LE
-                positions[i, :] = end_positions[i, :]
-            if pts is not None:
-                last_water_positions[i, :2] = pts[0]
-                end_positions[i] = pts[1]
-                status_codes[i] = oil_status.on_land
-
-        return None
+        return gnome.cy_gnome.cy_land_check.check_land(raster_map,
+                                                       positions,
+                                                       end_positions,
+                                                       status_codes,
+                                                       last_water_positions)
 
     
     def allowable_spill_position(self, coord):

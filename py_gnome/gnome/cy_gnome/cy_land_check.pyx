@@ -5,9 +5,13 @@ have crossed land on the raster map
 
 """
 
+import cython
+
 import numpy as np
 cimport numpy as cnp
-from libc.stdint cimport int32_t, uint8_t
+from libc.stdint cimport int16_t, int32_t, uint8_t, uint32_t
+
+cimport type_defs
 
 def overlap_grid(int32_t m, int32_t n, pt1, pt2):
     """
@@ -53,9 +57,8 @@ cdef int32_t c_overlap_grid(int32_t m,
         return 1
 
 
-
-
-cdef c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2] grid,
+@cython.boundscheck(False)
+cdef c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2, mode="c"] grid,
                          int32_t m,
                          int32_t n,
                          int32_t x0,
@@ -179,158 +182,54 @@ def find_first_pixel(grid, pt1, pt2):
 
     return result
 
+## called by a method in gnome.map.RasterMap class
+from gnome.basic_types import world_point_type, oil_status
+@cython.boundscheck(False)
+def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
+               cnp.ndarray[int32_t, ndim=2] positions not None,
+               cnp.ndarray[int32_t, ndim=2] end_positions not None,
+               cnp.ndarray[int16_t, ndim=1] status_codes not None,
+               cnp.ndarray[int32_t, ndim=2] last_water_positions not None):
+#def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
+#               cnp.ndarray[int32_t, ndim=2, mode='c'] positions not None,
+#               cnp.ndarray[int32_t, ndim=2, mode='c'] end_positions not None,
+#               cnp.ndarray[int16_t, ndim=1, mode='c'] status_codes not None,
+#               cnp.ndarray[int32_t, ndim=2, mode='c'] last_water_positions not None):
 
-
-# if __name__ == "__main__":
-#     #provide a raster:
-    
-#     tests = [  [ (0,0), (9,11) ],
-#                [ (0,11), (9,0) ],
-#                [ (5,0), (5,11) ],
-#                [ (0,6), (9,6) ],
-#                [ (5,0), (6,11) ],
-#                [ (6,0), (5,11) ],
-#                [ (0,6), (9,5)  ],
-#                [ (0,6), (9,7)  ],
-#                [ (0,0), (0,11)  ],
-#                [ (0,0), (1,11)  ],
-#                [ (0,0), (2,11)  ],
-#                [ (0,0), (3,11)  ],
-#                [ (0,0), (4,11)  ],
-#                [ (0,0), (5,11)  ],
-#                [ (0,0), (6,11)  ],
-#                [ (0,0), (7,11)  ],
-#                [ (0,0), (8,11)  ],
-#                [ (9,11), (0,0)  ],
-#                [ (9,10), (0,1)  ],
-#                [ (9,9), (0,2)  ],
-#                [ (9,8), (0,3)  ],
-#                [ (9,7), (0,4)  ],
-#                [ (9, 6), (0,5)  ],
-#                [ (9, 5), (0,6)  ],
-#                [ (9, 4), (0,7)  ],
-#                [ (9, 3), (0,8)  ],
-#                [ (9, 2), (0,9)  ],
-#                [ (9, 1), (0,10)  ],
-#                [ (9,0), (0,11)  ],
-#                ]
-    
-# #    for points in tests:
-# #    
-# #        grid = np.zeros( (10, 12), dtype= np.uint8 )
-# #        pixels = draw_line( grid, *points)
-# #        print grid
-# #        print points
-# #        print pixels
-# #        if not pixels[0] == points[0] and pixels[-1] == points[1]:
-# #            raise Exceptions("end and start points not the same")
-# #        points.reverse()
-# #        grid = np.zeros( (10, 12), dtype= np.uint8 )
-# #        pixels = draw_line( grid, *points)
-# #        print grid
-# #        print points
-# #        print pixels
-# #        if not pixels[0] == points[0] and pixels[-1] == points[1]:
-# #            raise Exceptions("end and start points not the same")
-
-# ### Test the Thickline code
-# #    for points in tests:
-# #        grid = np.zeros( (10, 12), dtype= np.uint8 )
-# #        pixels = thick_line( grid, *points, line_type=2, color=1)
-# #        print grid
-# #        print points
-# ##        print pixels
-# ##        if not pixels[0] == points[0] and pixels[-1] == points[1]:
-# ##            raise Exceptions("end and start points not the same")
-# ##        points.reverse()
-# ##        grid = np.zeros( (10, 12), dtype= np.uint8 )
-# ##        pixels = draw_line( grid, *points)
-# ##        print grid
-# ##        print points
-# ##        print pixels
-# ##        if not pixels[0] == points[0] and pixels[-1] == points[1]:
-# ##            raise Exceptions("end and start points not the same")        
-# #
-# #    raise Exception("stopping")
-
-# ### create a simple example:
-# #    grid = np.zeros((9, 11), dtype=np.uint8)
-# #    # vertical line of land:
-# #    grid[4, :] = 1
-# #    
-# #    #tests:
-# #    #horizontal line
-# #    points = [(2, 4), (8,4)]
-# #    print "first hit at:", find_first_pixel(grid, points[0], points[1])
-# #    points = [(8, 4), (2,4)]
-# #    print "first hit at:", find_first_pixel(grid, points[0], points[1])
-# #    points = [(0, 0), (8,10)]
-# #    print "first hit at:", find_first_pixel(grid, points[0], points[1])
-# #    points = [(8, 10), (0, 0)]
-# #    print "first hit at:", find_first_pixel(grid, points[0], points[1])
-# #
-# #    points = [(4, 5), (0, 0)]
-# #    print "first hit at:", find_first_pixel(grid, points[0], points[1])
-# #
-# #    #diagonal line of land
-# #    grid = np.zeros((9, 9), dtype=np.uint8)
-# #
-# #    for i in range(9):
-# #        grid[i,i] = 1
-# #    points = [(0,8), (8, 0)]
-# #    print grid
-# #    print "first hit at:", find_first_pixel(grid, points[0], points[1])
-# #
-# #    # no land 
-# #    grid = np.zeros((9, 9), dtype=np.uint8)
-# #
-# #    points = [(0,8), (0, 8)]
-# #    print grid
-# #    print "first hit at:", find_first_pixel(grid, points[0], points[1])
-
-# #    draw_line( grid, (0,11), (9,0))
-# #    print grid
-# #    draw_line( grid, (5,5), (5,11))
-# #    print grid
-
-#     # test for "slipping through the corners":
-#     m = 10
-#     grid = np.zeros((m, m), dtype=np.uint8)
-#     # a diagonal line:
-#     for i in range(m):
-#         grid[i,i] = 1
-    
-#     #now loop through all the possible diagonals:
-#     for i in range(1,m):
-#         for j in range(1,m):
-# #    for i,j in ( (9, 3),):
-#             new_grid = grid.copy()
-#             #p1, p2 = (0,i), (m-1,j)
-#             p2, p1 = (0,i), (m-1,j)
-#             result = find_first_pixel(new_grid, p1, p2, draw=True, keep_going=True)
-#             draw_grid("test%i-%i.png"%(i,j), new_grid)
-#             print new_grid
-#             if result is None:
-#                 print "point fell through: %s to %s"%(p1, p2)
-#                 break
-#             else:
-#                 print "this worked!:", p1, p2, "hit at:", result
-    
-#     ## plot out ones that got through
-    
-# #    new_grid = grid.copy()            
-# #    #draw_line(new_grid, (0,6) , (9,0), draw_val=2)
-# #    print new_grid
-# #    find_first_pixel(new_grid, (0,6) , (9,0), draw=True, keep_going=True)
-# #    print new_grid
-# #    draw_grid("test1.png", new_grid)
-    
-# #    new_grid = grid.copy()            
-# #    #draw_line(new_grid, (0,0) , (9,9), draw_val=2)
-# #    find_first_pixel(new_grid, (9,0) , (0,9), draw=True, keep_going=True)
-# #    print new_grid
-# #    draw_grid("test2.png", new_grid)
-    
-    
-            
+        """
+        do the actual land-checking
+                
+        status_codes, positions and last_water_positions are altered in place.
         
+        NOTE: these are the integer versions -- having already have been projected to the raster coordinates
+
+        """
+        cdef uint32_t i, num_le
+        cdef int32_t m, n
+        num_le = positions.shape[0]
+        m = grid.shape[0]
+        n = grid.shape[1]
+
+        for i in range(num_le):
+            pts = c_find_first_pixel( grid,
+                                      m,
+                                      n,
+                                      positions[i, 0],
+                                      positions[i, 1],
+                                      end_positions[i, 0],
+                                      end_positions[i, 1],
+                                      )
+            if pts is None:
+                # didn't hit land -- can move the LE
+                positions[i, 0] = end_positions[i, 0]
+                positions[i, 1] = end_positions[i, 1]
+            if pts is not None:
+                last_water_positions[i, 0] = pts[0][0]
+                last_water_positions[i, 1] = pts[0][1]
+                end_positions[i,0] = pts[1][0]
+                end_positions[i,1] = pts[1][1]
+                # status_codes[i] = oil_status.on_land
+                status_codes[i] = type_defs.OILSTAT_ONLAND
+        return None
+
+
