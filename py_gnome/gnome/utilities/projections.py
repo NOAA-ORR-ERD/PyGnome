@@ -142,7 +142,6 @@ class GeoProjection(object):
               a point  exactly at the max of the bounding box will be considered
               outside the map
         """
-        # b = a.view(shape=(10,2),dtype='<f4')
         coords = np.asarray(coords).reshape((-1,3))
         # shift to center:
         coords = coords[:, :2] - self.center
@@ -156,7 +155,8 @@ class GeoProjection(object):
             ##      simple casting rounds toward zero
             ## we may need the negative coords to work right for locations off the grid.
             ##  (used for the raster map code)
-            return np.floor(coords, coords).astype(np.int)
+            np.floor(coords, coords)
+            return np.array(coords, np.int32) ##Assure C-contiguous
         else:
             return coords
 
@@ -183,10 +183,10 @@ class GeoProjection(object):
             ##      simple casting rounds toward zero
             ## we may need the negative coords to work right for locations off the grid.
             ##  (used for the raster map code)
-            return np.floor(coords, coords).astype(np.int)
+            np.floor(coords, coords)
+            return np.array(coords, np.int32) ##assure C-contiguous
         else:
             return coords
-
     
     def to_lonlat(self, coords):
         ## note: untested!

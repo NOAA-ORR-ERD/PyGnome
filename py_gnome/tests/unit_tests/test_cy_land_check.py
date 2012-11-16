@@ -10,10 +10,11 @@ Designed to be run with py.test
 
 """
 
+import pytest
+
 import numpy as np
 from gnome.cy_gnome import cy_land_check as land_check
-# first test the python version:
-# from gnome import land_check
+#from gnome import land_check
 
 class Test_overlap_grid():
     m = 100
@@ -70,151 +71,135 @@ class Test_overlap_grid():
         assert land_check.overlap_grid(self.m, self.n, pt1, pt2)
 
 
-# from gnome import basic_types        
-# class Test_full_move:
-#     """
-#     A test to see if the full API is working for beaching
-    
-    
-#     It should check for land-jumping and return the "last known water point" 
-#     """
-#     # a very simple raster:
-#     w, h = 20, 10
-#     raster = np.zeros((w, h), dtype=np.uint8)
-#     # a single skinny vertical line:
-#     raster[10, :] = 1
-        
-#     def test_on_map(self):
-#         map = RasterMap(refloat_halflife = 6, #hours
-#                         bitmap_array= self.raster,
-#                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
-#                         projection=projections.NoProjection(),
-#                         )
-#         # making sure the map is set up right
-#         assert map.on_map((100.0, 1.0)) is False
-#         assert map.on_map((0.0, 1.0))
+hit_examples = [( ( 5,  5), (15,  5), ( 9,  5), (10,  5) ),
+            ( (15,  5), ( 5,  5), (11,  5), (10,  5) ),
+            ( ( 0,  0), (10,  5), ( 9,  4), (10,  5) ),
+            ( (19,  0), ( 0,  9), (11,  4), (10,  4) ),
+           ]
 
-#     def test_on_land(self):
-#         map = RasterMap(refloat_halflife = 6, #hours
-#                         bitmap_array= self.raster,
-#                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
-#                         projection=projections.NoProjection(),
-#                         )
-#         assert map.on_land( (10, 3, 0) ) == 1 
-#         assert map.on_land( (9,  3, 0) ) == 0
-#         assert map.on_land( (11, 3, 0) ) == 0
-        
 
-#     def test_land_cross(self):
-#         """
-#         try a single LE that should be crossing land
-#         """
-#         map = RasterMap(refloat_halflife = 6, #hours
-#                         bitmap_array= self.raster,
-#                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
-#                         projection=projections.NoProjection(),
-#                         )
-         
-#         spill = gnome.spill.Spill(num_LEs=1)
+@pytest.mark.parametrize( ('pt1', 'pt2', 'res1', 'res2'), hit_examples )
+def test_land_cross(pt1, pt2, res1, res2):
+    """
+    try a single LE that should be crossing land
+    """
+    # a very simple raster:
+    w, h = 20, 10
+    raster = np.zeros((w, h), dtype=np.uint8)
+    # a single skinny vertical line:
+    raster[10, :] = 1
 
-#         spill['positions'] = np.array( ( ( 5.0, 5.0, 0.0), ), dtype=np.float64) 
-#         spill['next_positions'] = np.array( ( (15.0, 5.0, 0.0), ), dtype=np.float64)
-#         spill['status_codes'] = np.array( (basic_types.oil_status.in_water, ), dtype=basic_types.status_code_type)
+    #pt1 = ( 5, 5)
+    #pt2 = (15, 5)
+
  
-#         map.beach_elements(spill)
+    result = land_check.find_first_pixel(raster, pt1, pt2)
         
-#         assert np.array_equal( spill['next_positions'][0], (10.0, 5.0, 0.0) )
-#         assert np.array_equal( spill['last_water_positions'][0], (9.0, 5.0, 0.0) )
-#         assert spill['status_codes'][0] == basic_types.oil_status.on_land
-        
-#     def test_land_cross_array(self):
-#         """
-#         test a few LEs
-#         """
-#         map = RasterMap(refloat_halflife = 6, #hours
-#                         bitmap_array= self.raster,
-#                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
-#                         projection=projections.NoProjection(),
-#                         )
-        
-#         # one left to right
-#         # one right to left
-#         # one diagonal upper left to lower right
-#         # one diagonal upper right to lower left
-        
-#         spill = gnome.spill.Spill(num_LEs=4)
+    print result
+    assert result[0] == res1
+    assert result[1] == res2
 
-#         spill['positions'] = np.array( ( ( 5.0, 5.0, 0.0),
-#                                          ( 15.0, 5.0, 0.0),
-#                                          ( 0.0, 0.0, 0.0),
-#                                          (19.0, 0.0, 0.0),
-#                                          ), dtype=np.float64) 
-#         spill['next_positions'] = np.array( ( ( 15.0, 5.0, 0.0),
-#                                               (  5.0, 5.0, 0.0),
-#                                               ( 10.0, 5.0, 0.0),
-#                                               (  0.0, 9.0, 0.0 ),
-#                                               ),  dtype=np.float64) 
-#         map.beach_elements(spill)
 
-#         assert np.array_equal( spill['next_positions'], ( (10.0,  5.0, 0.0),
-#                                                      (10.0, 5.0, 0.0),
-#                                                      (10.0, 5.0, 0.0),
-#                                                      (10.0, 4.0, 0.0),
-#                                                      ) )
+no_hit_examples = [( ( 5,  5), ( 9,  5) ),
+                   ( (15,  5), (11,  5) ),
+                   ( ( 0,  0), ( 9,  9) ),
+                   ]
+
+
+@pytest.mark.parametrize( ('pt1', 'pt2'), no_hit_examples )
+def test_land_not_cross(pt1, pt2):
+    """
+    try a single LE that should be crossing land
+    """
+    # a very simple raster:
+    w, h = 20, 10
+    raster = np.zeros((w, h), dtype=np.uint8)
+    # a single skinny vertical line:
+    raster[10, :] = 1
+
+    result = land_check.find_first_pixel(raster, pt1, pt2)
         
-#         assert np.array_equal( spill['last_water_positions'], ( (9.0,  5.0, 0.0),
-#                                                                 (11.0, 5.0, 0.0),
-#                                                                 ( 9.0, 4.0, 0.0),
-#                                                                 (11.0, 4.0, 0.0),
-#                                                                 ) )
-
-#         assert np.alltrue( spill['status_codes']  ==  basic_types.oil_status.on_land )
-
-#     def test_some_cross_array(self):
-#         """
-#         test a few LEs
-#         """
-#         map = RasterMap(refloat_halflife = 6, #hours
-#                         bitmap_array= self.raster,
-#                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
-#                         projection=projections.NoProjection(),
-#                         )
+    assert result is None
         
-#         # one left to right
-#         # one right to left
-#         # diagonal that doesn't hit
-#         # diagonal that does hit
+
+diag_hit_examples = [( ( 3, 0), ( 0, 3), (2, 1), (1, 1) ),
+                    ( ( 0, 3), ( 3, 0), (1, 2), (2, 2) ),
+                    ( ( 4, 1), ( 0, 4), (3, 2), (2, 2) ),
+                    ( ( 0, 4), ( 4, 1), (2, 3), (3, 3) ),
+                    ( ( 0, 8), ( 9, 0), (3, 5), (4, 4) ),
+                    ]
+
+@pytest.mark.parametrize( ('pt1', 'pt2', 'prev_pt', 'hit_pt'), diag_hit_examples )
+def test_land_cross_diag(pt1, pt2, prev_pt, hit_pt):
+    """
+    try a single LE that should be crossing land
+    with a diagonal land line..
+    """
+    # a very simple raster:
+    w, h = 10, 10
+    raster = np.zeros((w, h), dtype=np.uint8)
+    # a single skinny digonal line part way:
+    raster[0, 0] = 1
+    raster[1, 1] = 1
+    raster[2, 2] = 1
+    raster[3, 3] = 1
+    raster[4, 4] = 1
  
-#         spill = gnome.spill.Spill(num_LEs=4)
+    result = land_check.find_first_pixel(raster, pt1, pt2)
+        
+    print pt1, pt2, prev_pt, hit_pt
+    print result
+    assert result[0] == prev_pt
+    assert result[1] == hit_pt
 
-#         spill['positions'] = np.array( ( ( 5.0, 5.0, 0.0),
-#                                          (15.0, 5.0, 0.0),
-#                                          ( 0.0, 0.0, 0.0),
-#                                          (19.0, 0.0, 0.0),
-#                                          ), dtype=np.float64) 
+diag_not_hit_examples = [ ( ( 9, 1), ( 1, 9) ),
+                          ( ( 1, 9), ( 9, 1) ),
+                        ]
 
-#         spill['next_positions'] = np.array( ( (  9.0, 5.0, 0.0),
-#                                               ( 11.0, 5.0, 0.0),
-#                                               (  9.0, 9.0, 0.0),
-#                                               (  0.0, 9.0, 0.0),
-#                                               ),  dtype=np.float64)
+@pytest.mark.parametrize( ('pt1', 'pt2'), diag_not_hit_examples )
+def test_land_not_cross_diag(pt1, pt2):
+    """
+    try a single LE that should be crossing land
+    with a diagonal land line..
+    """
+    # a very simple raster:
+    w, h = 10, 10
+    raster = np.zeros((w, h), dtype=np.uint8)
+    # a single skinny diagonal line part way:
+    raster[0, 0] = 1
+    raster[1, 1] = 1
+    raster[2, 2] = 1
+    raster[3, 3] = 1
+    raster[4, 4] = 1
  
-#         map.beach_elements(spill)
+    result = land_check.find_first_pixel(raster, pt1, pt2)
 
-#         assert np.array_equal( spill['next_positions'], ( ( 9.0, 5.0, 0.0),
-#                                                      (11.0, 5.0, 0.0),
-#                                                      ( 9.0, 9.0, 0.0),
-#                                                      (10.0, 4.0, 0.0),
-#                                                      ) )
-#         # just the beached ones
-#         assert np.array_equal( spill['last_water_positions'][3:], ( (11.0, 4.0, 0.0),
-#                                                                     ) )
+    print pt1, pt2, result
+    assert result is None
 
-#         assert np.array_equal( spill['status_codes'][3:], ( basic_types.oil_status.on_land,
-#                                                             ) )   
+points_outside_grid = [( ( -5, -5),(  25, 15), (9, 4),(10, 5)), # outside from right
+                      ] 
 
+@pytest.mark.parametrize( ('pt1', 'pt2', 'prev_pt', 'hit_pt'), points_outside_grid )
+def test_points_outside_grid(pt1, pt2, prev_pt, hit_pt):
+    """
+    try a single LE that should be crossing land
+    with points starting or ending outside grid
+    """
+    # a very simple raster:
+    w, h = 20, 10
+    raster = np.zeros((w, h), dtype=np.uint8)
+    # a single skinny vertical line:
+    raster[10, :] = 1
+ 
+    result = land_check.find_first_pixel(raster, pt1, pt2)
+        
+    print pt1, pt2, prev_pt, hit_pt
+    print result
+    assert result[0] == prev_pt
+    assert result[1] == hit_pt
 
-#     def test_outside_raster(self):
+#def test_outside_raster(self):
 #         """
 #         test LEs starting form outside the raster bounds
 #         """
@@ -259,9 +244,34 @@ class Test_overlap_grid():
 
 
 if __name__ == "__main__":
-     tester = Test_full_move()
-     tester.test_land_cross()
+    w, h = 10, 10
+    raster = np.zeros((w, h), dtype=np.uint8)
+    # a single skinny diagonal line part way:
+    raster[0, 0] = 1
+    raster[1, 1] = 1
+    raster[2, 2] = 1
+    raster[3, 3] = 1
+    raster[4, 4] = 1
+ 
+    pt1 = (0, 8)
+    pt2 = (9, 0)
 
+    print "checking:"
+    print pt1
+    print pt2
+    result = land_check.find_first_pixel(raster, pt1, pt2)
+        
+    print result
+
+    pt1 = (pt1[1], pt1[0])
+    pt2 = (pt2[1], pt2[0])
+
+    print "checking:"
+    print pt1
+    print pt2
+    result = land_check.find_first_pixel(raster, pt1, pt2)
+        
+    print result
 
 
         
