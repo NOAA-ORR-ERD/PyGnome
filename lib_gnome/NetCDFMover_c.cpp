@@ -73,10 +73,6 @@ NetCDFMover_c::NetCDFMover_c (TMap *owner, char *name) : CurrentMover_c(owner, n
 	fFillValue = -1e+34;
 	fIsNavy = false;	
 	
-	/*fOffset_u = 0.;
-	 fOffset_v = 0.;
-	 fCurScale_u = 1.;
-	 fCurScale_v = 1.;*/
 	fFileScaleFactor = 1.;	// let user set a scale factor in addition to what is in the file
 	
 	memset(&fStartData,0,sizeof(fStartData));
@@ -109,12 +105,8 @@ OSErr NetCDFMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *vel
 	double u,v,lengthS,alpha,beta,v0;
 	OSErr err = 0;
 	
-	//err = this -> UpdateUncertainty();
-	//if(err) return err;
-	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
-	
-	
+		
 	if(fUncertaintyListH && fLESetSizesH)
 	{
 		unrec=(*fUncertaintyListH)[(*fLESetSizesH)[setIndex]+leIndex];
@@ -164,10 +156,10 @@ long NetCDFMover_c::GetNumFiles()
 	return numFiles;     
 }
 
-#ifndef pyGNOME
 
 OSErr NetCDFMover_c::PrepareForModelRun()
 {
+#ifndef pyGNOME
 	if (dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERCURV) || dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERTRI))
 	{
 		//PtCurMap* ptCurMap = (PtCurMap*)moverMap;
@@ -181,10 +173,10 @@ OSErr NetCDFMover_c::PrepareForModelRun()
 				(dynamic_cast<TTriGridVel3D*>(fGrid))->ClearOutputHandles();
 		}
 	}
+#endif
 	return CurrentMover_c::PrepareForModelRun();
 }
 
-#endif
 
 OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
@@ -194,31 +186,6 @@ OSErr NetCDFMover_c::PrepareForModelStep(const Seconds& model_time, const Second
 	
 	errmsg[0]=0;
 	
-/*
-	//if (model_time == start_time)	// first step
-	if (model->GetModelTime() == model->GetStartTime())	// first step
-	{
-
-		if (dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERCURV) || dynamic_cast<NetCDFMover *>(this)->IAm(TYPE_NETCDFMOVERTRI))
-		{
-			//PtCurMap* ptCurMap = (PtCurMap*)moverMap;
-			//PtCurMap* ptCurMap = GetPtCurMap();
-			//if (ptCurMap)
-			if (moverMap->IAm(TYPE_PTCURMAP))
-			{
-				
-#ifndef pyGNOME				
-				(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth1;	
-				(dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2AtStartOfRun = (dynamic_cast<PtCurMap *>(moverMap))->fContourDepth2;
-				
-#endif	// AH 07/30/2012
-				
-				if (fGrid->GetClassID()==TYPE_TRIGRIDVEL3D)
-					(dynamic_cast<TTriGridVel3D*>(fGrid))->ClearOutputHandles();
-			}
-		}
-	}
-*/
 	if (!bActive) return noErr;
 	
 	err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
@@ -249,8 +216,7 @@ done:
 
 Boolean NetCDFMover_c::CheckInterval(long &timeDataInterval, const Seconds& model_time)
 {
-//	Seconds time =  model->GetModelTime(), startTime, endTime;	// minus AH 07/17/2012
-	Seconds time =  model_time, startTime, endTime;	// AH 07/17/2012
+	Seconds time =  model_time, startTime, endTime;	
 	
 	long i,numTimes,numFiles = GetNumFiles();
 	
@@ -259,7 +225,6 @@ Boolean NetCDFMover_c::CheckInterval(long &timeDataInterval, const Seconds& mode
 	
 	// check for constant current
 	if (numTimes==1 && !(GetNumFiles()>1)) 
-		//if (numTimes==1) 
 	{
 		timeDataInterval = -1; // some flag here
 		if(fStartData.timeIndex==0 && fStartData.dataHdl)
@@ -367,9 +332,6 @@ long NetCDFMover_c::GetNumDepthLevelsInFile()
 
 OSErr NetCDFMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) 
 {
-	// note: no need to split based on fIsNavy (since Navy variables are used for regular format) 
-	// only an issue in curvilinear case where we have server/PMEL variables and Navy variables
-	// removed the fIsNavy stuff 9/22/03 (Navy stores u,v as shorts and scales later)
 	OSErr err = 0;
 	long i,j,k;
 	char path[256], outPath[256]; 
@@ -379,7 +341,6 @@ OSErr NetCDFMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg
 	static size_t curr_index[] = {0,0,0,0};
 	static size_t curr_count[4];
 	size_t velunit_len;
-	//float *curr_uvals=0,*curr_vvals=0, fill_value;
 	double *curr_uvals=0,*curr_vvals=0, fill_value, velConversion=1.;
 	long totalNumberOfVels = fNumRows * fNumCols;
 	VelocityFH velH = 0;
@@ -387,9 +348,7 @@ OSErr NetCDFMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg
 	long lonlength = fNumCols;
 	long depthlength = fNumDepthLevels;	// code goes here, do we want all depths? maybe if movermap is a ptcur map??
 	//long depthlength = 1;	// code goes here, do we want all depths?
-	//float scale_factor = 1.;
-	double scale_factor = 1./*, scale_factor_v = 1.*/;
-	//double add_offset = 0., add_offset_v = 0.;
+	double scale_factor = 1.;
 	Boolean bDepthIncluded = false;
 	
 	errmsg[0]=0;
@@ -399,7 +358,7 @@ OSErr NetCDFMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg
 	
 	status = nc_open(path, NC_NOWRITE, &ncid);
 	//if (status != NC_NOERR) {err = -1; goto done;}
-	if (status != NC_NOERR) /*{err = -1; goto done;}*/
+	if (status != NC_NOERR) 
 	{
 #if TARGET_API_MAC_CARBON
 		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
@@ -416,21 +375,17 @@ OSErr NetCDFMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg
 		status = nc_inq_dimid(ncid, "depth", &depthid);	//3D
 		if (status != NC_NOERR) 
 		{
-			//bDepthIncluded = false;
 			status = nc_inq_dimid(ncid, "sigma", &depthid);	//3D - need to check sigma values in TextRead...
 			if (status != NC_NOERR) bDepthIncluded = false;
 			else bDepthIncluded = true;
 		}
 		else bDepthIncluded = true;
 		// code goes here, might want to check other dimensions (lev), or just how many dimensions uv depend on
-		//status = nc_inq_dimid(ncid, "sigma", &depthid);	//3D
-		//if (status != NC_NOERR) bDepthIncluded = false;
-		//else bDepthIncluded = true;
 	}
 	
 	curr_index[0] = index;	// time 
 	curr_count[0] = 1;	// take one at a time
-	//if (numdims>=4)	// should check what the dimensions are
+
 	if (bDepthIncluded)
 	{
 		if (moverMap->IAm(TYPE_PTCURMAP)) depthlength = fNumDepthLevels;
@@ -445,12 +400,8 @@ OSErr NetCDFMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* errmsg
 		curr_count[2] = lonlength;
 	}
 	
-	//curr_uvals = new double[latlength*lonlength]; 
 	curr_uvals = new double[latlength*lonlength*depthlength]; 
-	//curr_uvals = new float[latlength*lonlength]; 
 	if(!curr_uvals) {TechError("NetCDFMover::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
-	//curr_vvals = new float[latlength*lonlength]; 
-	//curr_vvals = new double[latlength*lonlength]; 
 	curr_vvals = new double[latlength*lonlength*depthlength]; 
 	if(!curr_vvals) {TechError("NetCDFMover::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
 	
@@ -516,10 +467,8 @@ LAS:
 	status = nc_inq_varndims(ncid, curr_ucmp_id, &uv_ndims);
 	if (status==NC_NOERR){if (uv_ndims < numdims && uv_ndims==3) {curr_count[1] = latlength; curr_count[2] = lonlength;}}	// could have more dimensions than are used in u,v
 	if (uv_ndims==4) {curr_count[1] = depthlength;curr_count[2] = latlength;curr_count[3] = lonlength;}
-	//status = nc_get_vara_float(ncid, curr_ucmp_id, curr_index, curr_count, curr_uvals);
 	status = nc_get_vara_double(ncid, curr_ucmp_id, curr_index, curr_count, curr_uvals);
 	if (status != NC_NOERR) {err = -1; goto done;}
-	//status = nc_get_vara_float(ncid, curr_vcmp_id, curr_index, curr_count, curr_vvals);
 	status = nc_get_vara_double(ncid, curr_vcmp_id, curr_index, curr_count, curr_vvals);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
@@ -540,38 +489,20 @@ LAS:
 	}
 	
 	
-	//status = nc_get_att_float(ncid, curr_ucmp_id, "_FillValue", &fill_value);	// should get this in text_read and store, but will have to go short to float and back
 	status = nc_get_att_double(ncid, curr_ucmp_id, "_FillValue", &fill_value);	// should get this in text_read and store, but will have to go short to float and back
 	if (status != NC_NOERR) 
 	{status = nc_get_att_double(ncid, curr_ucmp_id, "FillValue", &fill_value); 
 		if (status != NC_NOERR) {status = nc_get_att_double(ncid, curr_ucmp_id, "missing_value", &fill_value); /*if (status != NC_NOERR) {err = -1; goto done;}*/ }}	// require fill value (took this out 12.12.08)
 	
-#ifdef MAC
-	//if (fill_value==NAN)	// Miami SSH server uses NaN for fill value ?? Windows doesn't like it
-	if (isnan(fill_value))	// Miami SSH server uses NaN for fill value ?? Windows doesn't like it
-		fill_value=-99999.;
-#else
 	if (_isnan(fill_value))
 		fill_value=-99999;
-#endif
 	
-	//status = nc_get_att_float(ncid, curr_ucmp_id, "scale_factor", &scale_factor);
 	status = nc_get_att_double(ncid, curr_ucmp_id, "scale_factor", &scale_factor);
 	if (status != NC_NOERR) {/*err = -1; goto done;*/}	// don't require scale factor
-	
-	//status = nc_get_att_double(ncid, curr_vcmp_id, "scale_factor", &scale_factor_v);
-	//if (status != NC_NOERR) {/*err = -1; goto done;*/}	// don't require scale factor
-	
-	//status = nc_get_att_double(ncid, curr_ucmp_id, "add_offset", &add_offset);
-	//if (status != NC_NOERR) {/*err = -1; goto done;*/}	// don't require offset
-	
-	//status = nc_get_att_double(ncid, curr_vcmp_id, "add_offset", &add_offset_v);
-	//if (status != NC_NOERR) {/*err = -1; goto done;*/}	// don't require offset
 	
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
-	//velH = (VelocityFH)_NewHandleClear(totalNumberOfVels * sizeof(VelocityFRec));
 	velH = (VelocityFH)_NewHandleClear(totalNumberOfVels * sizeof(VelocityFRec) * depthlength);
 	if (!velH) {err = memFullErr; goto done;}
 	for (k=0;k<depthlength;k++)
@@ -580,29 +511,16 @@ LAS:
 		{
 			for (j=0;j<lonlength;j++)
 			{
-				//if (curr_uvals[(latlength-i-1)*lonlength+j]==fill_value)	// should store in current array and check before drawing or moving
-				//curr_uvals[(latlength-i-1)*lonlength+j]=0.;
-				//if (curr_vvals[(latlength-i-1)*lonlength+j]==fill_value)
-				//curr_vvals[(latlength-i-1)*lonlength+j]=0.;
-				//INDEXH(velH,i*lonlength+j).u = (float)curr_uvals[(latlength-i-1)*lonlength+j];
-				//INDEXH(velH,i*lonlength+j).v = (float)curr_vvals[(latlength-i-1)*lonlength+j];
 				if (curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)	// should store in current array and check before drawing or moving
 					curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
 				if (curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)
 					curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
-#ifdef MAC
-				if (isnan(curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
-					//if (curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==NAN)	// should store in current array and check before drawing or moving
-					curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
-				if (isnan(curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
-					//if (curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==NAN)
-					curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
-#else
+
 				if (_isnan(curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))	// should store in current array and check before drawing or moving
 					curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
 				if (_isnan(curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
 					curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
-#endif
+
 				INDEXH(velH,i*lonlength+j+k*fNumRows*fNumCols).u = (float)curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] * velConversion;
 				INDEXH(velH,i*lonlength+j+k*fNumRows*fNumCols).v = (float)curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] * velConversion;
 			}
@@ -610,11 +528,7 @@ LAS:
 	}
 	*velocityH = velH;
 	fFillValue = fill_value;
-	//if (scale_factor!=1.) fVar.curScale = scale_factor;
 	if (scale_factor!=1.) fFileScaleFactor = scale_factor;
-	//if (scale_factor!=1.) {fVar.curScale = scale_factor; fCurScale_u = scale_factor;  fCurScale_v = scale_factor_v;}
-	//else fCurScale_v = fCurScale_u = fVar.curScale;
-	//if (add_offset!=0.) {fOffset_u = add_offset; fOffset_v = add_offset_v;}
 	
 done:
 	if (err)
@@ -647,7 +561,6 @@ OSErr NetCDFMover_c::SetInterval(char *errmsg, const Seconds& model_time)
 		return 0;
 	
 	// check for constant current 
-	//if(numTimesInFile==1)	//or if(timeDataInterval==-1) 
 	if(numTimesInFile==1 && !(GetNumFiles()>1))	//or if(timeDataInterval==-1) 
 	{
 		indexOfStart = 0;
@@ -659,26 +572,15 @@ OSErr NetCDFMover_c::SetInterval(char *errmsg, const Seconds& model_time)
 		indexOfStart = 0;
 		indexOfEnd = -1;
 	}
-	/*if(timeDataInterval == 0)
-	 {	// before the first step in the file
-	 err = -1;
-	 strcpy(errmsg,"Time outside of interval being modeled");
-	 goto done;
-	 }
-	 else if(timeDataInterval == numTimesInFile) 
-	 {	// past the last information in the file
-	 err = -1;
-	 strcpy(errmsg,"Time outside of interval being modeled");
-	 goto done;
-	 }*/
+
 	if(timeDataInterval == 0 || timeDataInterval == numTimesInFile /*|| (timeDataInterval==1 && fAllowExtrapolationOfCurrentsInTime)*/)
 	{	// before the first step in the file
 		
 		if (GetNumFiles()>1)
 		{
-			if ((err = CheckAndScanFile(errmsg, model_time)) || fOverLap) goto done;	// AH 07/17/2012
+			if ((err = CheckAndScanFile(errmsg, model_time)) || fOverLap) goto done;	
 			
-			intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
+			intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	
 			
 			indexOfStart = timeDataInterval-1;
 			indexOfEnd = timeDataInterval;
@@ -761,8 +663,7 @@ done:
 
 OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 {
-//	Seconds time = model->GetModelTime(), startTime, endTime, lastEndTime, testTime, firstStartTime;	// AH 07/17/2012
-	Seconds time = model_time, startTime, endTime, lastEndTime, testTime, firstStartTime; // AH 07/17/2012
+	Seconds time = model_time, startTime, endTime, lastEndTime, testTime, firstStartTime; 
 	
 	long i,numFiles = GetNumFiles();
 	OSErr err = 0;
@@ -779,7 +680,7 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 		if (startTime<=time&&time<=endTime && !(startTime==endTime))
 		{
 			if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);	
 			
 			// code goes here, check that start/end times match
 			strcpy(fVar.pathName,(*fInputFilesHdl)[i].pathName);
@@ -803,7 +704,7 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 			 else*/
 			{
 				if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeHdl,false);	// AH 07/17/2012
+				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeHdl,false);	
 				
 				DisposeLoadedData(&fEndData);
 				strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum-1].pathName);
@@ -811,7 +712,7 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeHdl,false);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeHdl,false);	
 			
 			strcpy(fVar.pathName,(*fInputFilesHdl)[fileNum].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
@@ -832,7 +733,7 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 			else
 			{
 				if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeHdl,false);	// AH 07/17/2012
+				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeHdl,false);	
 				
 				DisposeLoadedData(&fEndData);
 				strcpy(fVar.pathName,(*fInputFilesHdl)[i-1].pathName);
@@ -840,7 +741,7 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 			}
 			fStartData.timeIndex = UNASSIGNEDINDEX;
 			if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);	// AH 07/17/2012
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeHdl,false);	
 			
 			strcpy(fVar.pathName,(*fInputFilesHdl)[i].pathName);
 			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
@@ -854,7 +755,7 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 	if (fAllowExtrapolationOfCurrentsInTime && time > lastEndTime)
 	{
 		if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-		err = ScanFileForTimes((*fInputFilesHdl)[numFiles-1].pathName,&fTimeHdl,false);	// AH 07/17/2012
+		err = ScanFileForTimes((*fInputFilesHdl)[numFiles-1].pathName,&fTimeHdl,false);	
 		
 		// code goes here, check that start/end times match
 		strcpy(fVar.pathName,(*fInputFilesHdl)[numFiles-1].pathName);
@@ -864,7 +765,7 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 	if (fAllowExtrapolationOfCurrentsInTime && time < firstStartTime)
 	{
 		if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false);	// AH 07/17/2012
+		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false);	
 		
 		// code goes here, check that start/end times match
 		strcpy(fVar.pathName,(*fInputFilesHdl)[0].pathName);
@@ -873,7 +774,6 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 	}
 	strcpy(errmsg,"Time outside of interval being modeled");
 	return -1;	
-	//return err;
 }
 
 Seconds RoundDateSeconds(Seconds timeInSeconds)
@@ -944,7 +844,6 @@ OSErr NetCDFMover_c::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setSta
 #endif
 		if (status != NC_NOERR) {err = -1; goto done;}
 	}
-	//if (status != NC_NOERR) {err = -1; goto done;}
 	
 	status = nc_inq_dimid(ncid, "time", &recid); 
 	if (status != NC_NOERR) 
@@ -960,13 +859,6 @@ OSErr NetCDFMover_c::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setSta
 	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
 	if (status != NC_NOERR) 
 	{
-		/*timeUnits = 0;	// files should always have this info
-		timeConversion = 3600.;		// default is hours
-		
-//		startTime2 = model->GetStartTime();	// default to model start time	// AH 07/17/2012
-		//startTime2 = start_time;	// AH 07/17/2012
-		startTime2 = start_time;	// use current time or make an error
-		*/
 		err = -1; goto done;
 	}
 	else
@@ -1047,13 +939,11 @@ long NetCDFMover_c::GetNumDepthLevels()
 		char path[256], outPath[256];
 		int status, ncid, sigmaid, sigmavarid;
 		size_t sigmaLength=0;
-		//if (fDepthLevelsHdl) numDepthLevels = _GetHandleSize((Handle)fDepthLevelsHdl)/sizeof(**fDepthLevelsHdl);
-		//status = nc_open(fVar.pathName, NC_NOWRITE, &ncid);
 		strcpy(path,fVar.pathName);
 		if (!path || !path[0]) return -1;
 		
 		status = nc_open(path, NC_NOWRITE, &ncid);
-		if (status != NC_NOERR) /*{err = -1; goto done;}*/
+		if (status != NC_NOERR) 
 		{
 #if TARGET_API_MAC_CARBON
 			err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
@@ -1061,7 +951,6 @@ long NetCDFMover_c::GetNumDepthLevels()
 #endif
 			if (status != NC_NOERR) {err = -1; return -1;}
 		}
-		//if (status != NC_NOERR) {/*err = -1; goto done;*/return -1;}
 		status = nc_inq_dimid(ncid, "sigma", &sigmaid); 	
 		if (status != NC_NOERR) 
 		{
@@ -1073,12 +962,7 @@ long NetCDFMover_c::GetNumDepthLevels()
 			if (status != NC_NOERR) {numDepthLevels = 1;}	// require variable to match the dimension
 			status = nc_inq_dimlen(ncid, sigmaid, &sigmaLength);
 			if (status != NC_NOERR) {numDepthLevels = 1;}	// error in file
-			//fVar.gridType = SIGMA;	// in theory we should track this on initial read...
-			//fVar.maxNumDepths = sigmaLength;
 			numDepthLevels = sigmaLength;
-			//status = nc_get_vara_float(ncid, sigmavarid, &ptIndex, &sigma_count, sigma_vals);
-			//if (status != NC_NOERR) {err = -1; goto done;}
-			// once depth is read in 
 		}
 	}
 	return numDepthLevels;     
@@ -1092,82 +976,46 @@ long NetCDFMover_c::GetNumDepths(void)
 	return numDepths;
 }
 
-OSErr NetCDFMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra) {	
-	
-	if(!uncertain_ra) {
-		cout << "uncertainty values not provided! returning.\n";
+OSErr NetCDFMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID) {	
+
+	if(!ref || !delta) {
+		//cout << "worldpoints array not provided! returning.\n";
 		return 1;
 	}
 	
-	if(!wp_ra) {
-		cout << "worldpoints array not provided! returning.\n";
-		return 1;
+
+	// For LEType spillType, check to make sure it is within the valid values
+	if( spillType < FORECAST_LE || spillType > UNCERTAINTY_LE)
+	{
+		// cout << "Invalid spillType.\n";
+		return 2;
 	}
 	
-	try {
-		this->fUncertaintyListH = (LEUncertainRecH)_NewHandle(sizeof(LEUncertainRec)*n);
-		memcpy(*this->fUncertaintyListH, uncertain_ra, sizeof(LEUncertainRec)*n);
-		this->fLESetSizesH = (LONGH)_NewHandle(sizeof(long));
-		DEREFH(this->fLESetSizesH)[0] = 0;
-	} catch(...) {
-		cout << "cannot create uncertainty handle in windmover::get_move. returning.\n";
-		if(this->fUncertaintyListH)
-			_DisposeHandle((Handle)this->fUncertaintyListH);
-		return 1;
-	}
+	LERec* prec;
+	LERec rec;
+	prec = &rec;
 	
-	WorldPoint3D delta;
-	WorldPoint3D *ref;
-	WorldPoint3D *wp;
-	ref = (WorldPoint3D*)ref_ra;
-	wp = (WorldPoint3D*)wp_ra;
-	
+	WorldPoint3D zero_delta ={0,0,0.};
 	
 	for (int i = 0; i < n; i++) {
-		LERec rec;
+		
+		// only operate on LE if the status is in water
+		if( LE_status[i] != OILSTAT_INWATER)
+		{
+			delta[i] = zero_delta;
+			continue;
+		}
 		rec.p = ref[i].p;
 		rec.z = ref[i].z;
 		
-		delta = this->GetMove(model_time, step_len, 0, i, &rec, UNCERTAINTY_LE);
+		// let's do the multiply by 1000000 here - this is what gnome expects
+		rec.p.pLat *= 1000000;	
+		rec.p.pLong*= 1000000;
 		
-		wp[i].p.pLat += delta.p.pLat / 1000000;
-		wp[i].p.pLong += delta.p.pLong / 1000000;
-		wp[i].z += delta.z;
-	}
-
-	if(this->fLESetSizesH)
-		_DisposeHandle((Handle)this->fLESetSizesH);
-	if(this->fUncertaintyListH)
-		_DisposeHandle((Handle)this->fUncertaintyListH);
-	return noErr;
-}
-
-
-OSErr NetCDFMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra) {	
-
-	if(!wp_ra) {
-		cout << "worldpoints array not provided! returning.\n";
-		return 1;
-	}
-	
-
-	WorldPoint3D delta;
-	WorldPoint3D *wp;
-	WorldPoint3D *ref;
-	
-	ref = (WorldPoint3D*)ref_ra;
-	wp = (WorldPoint3D*)wp_ra;
-	
-	for (int i = 0; i < n; i++) {
-		LERec rec;
-		rec.p = ref[i].p;
-		rec.z = ref[i].z;
+		delta[i] = GetMove(model_time, step_len, spill_ID, i, prec, spillType);
 		
-		delta = this->GetMove(model_time, step_len, 0, i, &rec, FORECAST_LE);
-		
-		wp[i].p.pLat += delta.p.pLat / 1000000;
-		wp[i].p.pLong += delta.p.pLong / 1000000;
-		wp[i].z += delta.z;
+		delta[i].p.pLat /= 1000000;
+		delta[i].p.pLong /= 1000000;
 	}
 	
 	return noErr;
@@ -1183,8 +1031,7 @@ WorldPoint3D NetCDFMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 	long index; 
 	long depthIndex1,depthIndex2;	// default to -1?
 	Seconds startTime,endTime;
-//	Seconds time = model->GetModelTime();	// minus AH 07/17/2012
-	Seconds time = model_time; // AH 07/17/2012
+	Seconds time = model_time; 
 	
 	VelocityRec scaledPatVelocity;
 	Boolean useEddyUncertainty = false;	
@@ -1194,7 +1041,7 @@ WorldPoint3D NetCDFMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 	
 	if(!fIsOptimizedForStep) 
 	{
-		err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
+		err = dynamic_cast<NetCDFMover *>(this) -> SetInterval(errmsg, model_time); 
 		
 		if (err) return deltaPoint;
 	}
@@ -1223,16 +1070,12 @@ WorldPoint3D NetCDFMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 	
 	// Check for constant current 
 	if((dynamic_cast<NetCDFMover *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMover *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
-		//if(GetNumTimesInFile()==1 && !(GetNumFiles()>1))
-		//if(GetNumTimesInFile()==1)
 	{
 		// Calculate the interpolated velocity at the point
 		if (index >= 0) 
 		{
 			if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 			{
-				//scaledPatVelocity.u = INDEXH(fStartData.dataHdl,index).u;
-				//scaledPatVelocity.v = INDEXH(fStartData.dataHdl,index).v;
 				scaledPatVelocity.u = INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u;
 				scaledPatVelocity.v = INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v;
 			}
@@ -1255,7 +1098,6 @@ WorldPoint3D NetCDFMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 			startTime = fOverLapStartTime + fTimeShift;
 		else
 			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
-		//startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
 		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 		timeAlpha = (endTime - time)/(double)(endTime - startTime);
 		
@@ -1264,8 +1106,6 @@ WorldPoint3D NetCDFMover_c::GetMove(const Seconds& model_time, Seconds timeStep,
 		{
 			if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 			{
-				//scaledPatVelocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).u;
-				//scaledPatVelocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).v;
 				scaledPatVelocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u;
 				scaledPatVelocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v;
 			}
@@ -1290,11 +1130,6 @@ scale:
 	scaledPatVelocity.v *= fVar.curScale; 
 	scaledPatVelocity.u *= fFileScaleFactor; 
 	scaledPatVelocity.v *= fFileScaleFactor; 
-	//scaledPatVelocity.u *= fCurScale_u; 
-	//scaledPatVelocity.v *= fCurScale_v; 
-	
-	//if (scaledPatVelocity.u != 0) scaledPatVelocity.u += fOffset_u; 
-	//if (scaledPatVelocity.v != 0) scaledPatVelocity.v += fOffset_v; 
 	
 	if(leType == UNCERTAINTY_LE)
 	{
@@ -1345,32 +1180,20 @@ long NetCDFMover_c::GetVelocityIndex(WorldPoint p)
 	WorldRect bounds = rectGrid->GetBounds();
 	
 	SetLRect (&gridLRect, 0, fNumRows, fNumCols, 0);
-	//SetLRect (&gridLRect, 0, fNumRows-1, fNumCols-1, 0);
 	SetLRect (&geoRect, bounds.loLong, bounds.loLat, bounds.hiLong, bounds.hiLat);	
 	GetLScaleAndOffsets (&geoRect, &gridLRect, &thisScaleRec);
 	
-	//colNum = p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset;
-	//rowNum = p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset;
-	//dColNum = p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset;
-	//dRowNum = p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset;
-	
-	//dColNum = round((p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset) -.5);
-	//dRowNum = round((p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset) -.5);
 	dColNum = (p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset) -.5;
 	dRowNum = (p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset) -.5;
-	//if (dColNum<0) dColNum = -1; if (dRowNum<0) dRowNum = -1;
-	//colNum = dColNum;
-	//rowNum = dRowNum;
+
 	colNum = round(dColNum);
 	rowNum = round(dRowNum);
 	
-	//if (colNum < 0 || colNum >= fNumCols-1 || rowNum < 0 || rowNum >= fNumRows-1)
 	if (colNum < 0 || colNum >= fNumCols || rowNum < 0 || rowNum >= fNumRows)
 		
 	{ return -1; }
 	
 	return rowNum * fNumCols + colNum;
-	//return rowNum * (fNumCols-1) + colNum;
 }
 
 LongPoint NetCDFMover_c::GetVelocityIndices(WorldPoint p) 
@@ -1391,12 +1214,9 @@ LongPoint NetCDFMover_c::GetVelocityIndices(WorldPoint p)
 	SetLRect (&geoRect, bounds.loLong, bounds.loLat, bounds.hiLong, bounds.hiLat);	
 	GetLScaleAndOffsets (&geoRect, &gridLRect, &thisScaleRec);
 	
-	//colNum = p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset;
-	//rowNum = p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset;
-	
 	dColNum = round((p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset) -.5);
 	dRowNum = round((p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset) -.5);
-	//if (dColNum<0) dColNum = -1; if (dRowNum<0) dRowNum = -1;
+
 	colNum = dColNum;
 	rowNum = dRowNum;
 	
@@ -1404,7 +1224,6 @@ LongPoint NetCDFMover_c::GetVelocityIndices(WorldPoint p)
 		
 	{ return indices; }
 	
-	//return rowNum * fNumCols + colNum;
 	indices.h = colNum;
 	indices.v = rowNum;
 	return indices;
@@ -1412,7 +1231,6 @@ LongPoint NetCDFMover_c::GetVelocityIndices(WorldPoint p)
 
 
 /////////////////////////////////////////////////
-// routines for ShowCoordinates() to recognize netcdf currents
 double NetCDFMover_c::GetStartUVelocity(long index)
 {	// 
 	double u = 0;
@@ -1485,7 +1303,6 @@ double NetCDFMover_c::GetDepthAtIndex(long depthIndex, double totalDepth)
 	{
 		sc_r = INDEXH(fDepthLevelsHdl,depthIndex);
 		Cs_r = INDEXH(fDepthLevelsHdl2,depthIndex);
-		//depth = abs(hc * (sc_r-Cs_r) + Cs_r * totalDepth);
 		depth = abs(totalDepth*(hc*sc_r+totalDepth*Cs_r))/(totalDepth+hc);
 	}
 	else
@@ -1494,6 +1311,7 @@ double NetCDFMover_c::GetDepthAtIndex(long depthIndex, double totalDepth)
 	return depth;
 }
 #ifndef pyGNOME
+// this is really a gui function...
 Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 {
 	char uStr[32],sStr[32],errmsg[256];
@@ -1537,7 +1355,6 @@ Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	}
 	
 	if(dynamic_cast<NetCDFMover *>(this)->GetNumTimesInFile()>1)
-		//&& loaded && !err)
 	{
 		if (err = this->GetStartTime(&startTime)) return false;	// should this stop us from showing any velocity?
 		if (err = this->GetEndTime(&endTime)) /*return false;*/
@@ -1552,7 +1369,7 @@ Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 		else
 			timeAlpha = (endTime - time)/(double)(endTime - startTime);	
 	}
-	//if (loaded && !err)
+
 	{	
 		index = this->GetVelocityIndex(wp.p);	// need alternative for curvilinear and triangular
 		
@@ -1565,8 +1382,6 @@ Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 			{
 				if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 				{
-					//velocity.u = this->GetStartUVelocity(index);
-					//velocity.v = this->GetStartVVelocity(index);
 					velocity.u = this->GetStartUVelocity(index+depthIndex1*fNumRows*fNumCols);
 					velocity.v = this->GetStartVVelocity(index+depthIndex1*fNumRows*fNumCols);
 				}
@@ -1580,8 +1395,6 @@ Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 			{
 				if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 				{
-					//velocity.u = timeAlpha*this->GetStartUVelocity(index) + (1-timeAlpha)*this->GetEndUVelocity(index);
-					//velocity.v = timeAlpha*this->GetStartVVelocity(index) + (1-timeAlpha)*this->GetEndVVelocity(index);
 					velocity.u = timeAlpha*this->GetStartUVelocity(index+depthIndex1*fNumRows*fNumCols) + (1-timeAlpha)*this->GetEndUVelocity(index+depthIndex1*fNumRows*fNumCols);
 					velocity.v = timeAlpha*this->GetStartVVelocity(index+depthIndex1*fNumRows*fNumCols) + (1-timeAlpha)*this->GetEndVVelocity(index+depthIndex1*fNumRows*fNumCols);
 				}
@@ -1598,20 +1411,8 @@ Boolean NetCDFMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 	
 CalcStr:
 	
-	/*if (this->fOffset_u != 0 && velocity.u!=0&& velocity.v!=0) 
-	 {
-	 velocity.u = this->fCurScale_u * velocity.u + this->fOffset_u; 
-	 velocity.v = this->fCurScale_v * velocity.v + this->fOffset_v;
-	 lengthU = lengthS = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
-	 }
-	 else
-	 {*/
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * this->fFileScaleFactor;
-	//lengthS = this->fVar.curScale * lengthU;
-	//lengthS = this->fVar.curScale * this->fFileScaleFactor* lengthU;
 	lengthS = this->fVar.curScale * lengthU;
-	//}
-	//if (this->fVar.offset != 0 && lengthS!=0) lengthS += this->fVar.offset;
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
@@ -1662,6 +1463,7 @@ float NetCDFMover_c::GetTotalDepth(WorldPoint wp, long triNum)
 #pragma unused(triNum)
 	long numDepthLevels = dynamic_cast<NetCDFMover *>(this)->GetNumDepthLevelsInFile();
 	float totalDepth = 0;
+
 	if (fDepthLevelsHdl && numDepthLevels>0) totalDepth = INDEXH(fDepthLevelsHdl,numDepthLevels-1);
 	return totalDepth;
 }
@@ -1680,27 +1482,7 @@ void NetCDFMover_c::GetDepthIndices(long ptIndex, float depthAtPoint, long *dept
 		*depthIndex2 = UNASSIGNEDINDEX;
 		return;
 	}
-	/*	switch(fVar.gridType) 
-	 {
-	 case TWO_D:	// no depth data
-	 *depthIndex1 = indexToDepthData;
-	 *depthIndex2 = UNASSIGNEDINDEX;
-	 break;
-	 case BAROTROPIC:	// values same throughout column, but limit on total depth
-	 if (depthAtPoint <= totalDepth)
-	 {
-	 *depthIndex1 = indexToDepthData;
-	 *depthIndex2 = UNASSIGNEDINDEX;
-	 }
-	 else
-	 {
-	 *depthIndex1 = UNASSIGNEDINDEX;
-	 *depthIndex2 = UNASSIGNEDINDEX;
-	 }
-	 break;
-	 case MULTILAYER: //
-	 //break;
-	 case SIGMA: // */
+
 	if (depthAtPoint <= totalDepth) // check data exists at chosen/LE depth for this point
 	{
 		long j;
@@ -1739,10 +1521,4 @@ void NetCDFMover_c::GetDepthIndices(long ptIndex, float depthAtPoint, long *dept
 		*depthIndex1 = UNASSIGNEDINDEX;
 		*depthIndex2 = UNASSIGNEDINDEX;
 	}
-	//break;
-	/*default:
-	 *depthIndex1 = UNASSIGNEDINDEX;
-	 *depthIndex2 = UNASSIGNEDINDEX;
-	 break;
-	 }*/
 }

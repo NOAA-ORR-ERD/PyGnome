@@ -53,6 +53,7 @@ def find_first_pixel(grid, pt1, pt2, draw=False):
     
     """
     # check if totally off the grid
+    # print "in python find_first_pixel"
     m, n = grid.shape
     if not overlap_grid(m, n, pt1, pt2):
         return None
@@ -74,7 +75,6 @@ def find_first_pixel(grid, pt1, pt2, draw=False):
     else:
         sy = -1
     err = dx-dy
-    
     last_pt  = pt1
     # check the first point
     if not (x0 < 0 or x0 >= m or y0 < 0 or y0 >= n):#  is the point off the grid? if so, it's not land!
@@ -98,7 +98,6 @@ def find_first_pixel(grid, pt1, pt2, draw=False):
             err = err + dx
             y0 = y0 + sy
         # check for land hit
-
         if x0 < 0 or x0 >= m or y0 < 0 or y0 >= n:# is the point off the grid? if so, it's not land!
             continue                             # note: a diagonal movement, off the grid wouldn't be a hit either
         else:
