@@ -148,7 +148,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
 	MySFReply reply;
 	Boolean bTopFile = false, fIsNavy = false;	// for now keep code around but probably don't need Navy curvilinear wind
-	VelocityFH velocityH = 0;
+	//VelocityFH velocityH = 0;
 	char outPath[256];
 	
 	if (!path || !path[0]) return 0;
@@ -353,6 +353,8 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 	
 	status = nc_inq_dim(ncid, recid, recname, &recs);
 	if (status != NC_NOERR) {err = -1; goto done;}
+	if (recs<=0) {strcpy(errmsg,"No times in file. Error opening NetCDF wind file"); err =  -1; goto done;}
+	
 	fTimeHdl = (Seconds**)_NewHandleClear(recs*sizeof(Seconds));
 	if (!fTimeHdl) {err = memFullErr; goto done;}
 	for (i=0;i<recs;i++)
@@ -435,26 +437,17 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 					 (MyDlgHookUPP)0, &reply, M38c, MakeModalFilterUPP(STDFilter));
 		if (!reply.good)/* return USERCANCEL;*/
 		{
-			if (recs>0)
+			/*if (recs>0)
 				err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
-			if(err) goto done;
-			err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+			if(err) goto done;*/
+			err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(newMap,errmsg);	
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	 		goto done;
 		}
 		else
 			strcpy(topPath, reply.fullPath);
 		
-		/*{
-		 if (recs>0)
-		 err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
-		 else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
-		 if(err) goto done;
-		 err = ReorderPoints(velocityH,newMap,errmsg);	
-		 //err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
-		 goto done;
-		 }*/
 #else
 		where = CenteredDialogUpLeft(M38c);
 		sfpgetfile(&where, "",
@@ -465,11 +458,11 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 				   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
 		if (!reply.good) 
 		{
-			if (recs>0)
+			/*if (recs>0)
 				err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
-			if(err) goto done;
-			err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+			if(err) goto done;*/
+			err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(newMap,errmsg);	
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	
 	 		/*if (err)*/ goto done;
 		}
@@ -487,11 +480,11 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 		goto done;
 	}
 	
-	if (recs>0)
+	/*if (recs>0)
 		err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 	else {strcpy(errmsg,"No times in file. Error opening NetCDF wind file"); err =  -1;}
-	if(err) goto done;
-	err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+	if(err) goto done;*/
+	err = dynamic_cast<NetCDFWindMoverCurv *>(this)->ReorderPoints(newMap,errmsg);	
 	//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	
 	
 done:
@@ -511,7 +504,7 @@ done:
 	if (lat_vals) delete [] lat_vals;
 	if (lon_vals) delete [] lon_vals;
 	if (modelTypeStr) delete [] modelTypeStr;
-	if (velocityH) {DisposeHandle((Handle)velocityH); velocityH = 0;}
+	//if (velocityH) {DisposeHandle((Handle)velocityH); velocityH = 0;}
 	return err;
 }
 

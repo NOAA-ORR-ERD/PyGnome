@@ -3480,7 +3480,7 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 				NetCDFStore::Capture(model, true, &model->ncVarIDs_C, &model->ncDimIDs_C);
 				NetCDFStore::fClose(model->ncID_C);
 			}
-			model->stepsCount = outputStepsCount;
+			model->outputStepsCount = outputStepsCount;
 			model->ncSnapshot = false;
 			break;
 		}
@@ -3495,7 +3495,15 @@ OSErr SaveAsHelper(Boolean bOnlyAdvancedSaveFile)
 			saveOutputTimeStep = model->GetOutputStep();
 			model->SetOutputStep(model->GetTimeStep());	// default to model time step??
 			if (OutputOptionsDialog(0)) return -1;	// may have to reset ?
-			model->Run(model->GetEndTime());
+			if (!(model->bHindcast)) 
+			{
+				model->Run(model->GetEndTime());
+			}
+			else
+			{
+				model->Run(model->GetStartTime());
+			}
+			//model->Run(model->GetEndTime());
 			model->writeNC = false;
 			model->SetOutputStep(saveOutputTimeStep);
 			break;

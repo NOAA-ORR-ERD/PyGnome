@@ -110,12 +110,6 @@ public:
 	virtual  long 	GetNumPointsInBoundarySeg(long segno);
 	virtual	long 	GetNumBoundaryPts(void);
 	
-	long 			CheckSurroundingPoints(LONGH maskH, long numRows, long numCols, long row, long col) ;
-	Boolean 		InteriorLandPoint(LONGH maskH, long numRows, long numCols, long row, long col); 
-	Boolean 		ThereIsAdjacentLand2(LONGH maskH, DOUBLEH landMaskH, long numRows, long numCols, long row, long col) ;
-	Boolean 		ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPolyNum, long numRows, long numCols, long row, long col) ;
-	void 			ResetMaskValues(LONGH maskH,long landBlockToMerge,long landBlockToJoin,long numRows, long numCols);
-	OSErr 			NumberIslands(LONGH *islandNumberH, DOUBLEH landMaskH,LONGH landWaterInfo,long numRows, long numCols, long *numIslands);
 	OSErr			SetUpCurvilinearGrid(char *path,DOUBLEH landMaskH, long numRows, long numCols, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, char* errmsg);	
 	OSErr			SetUpTriangleGrid2(char *path, long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors);
 	OSErr			SetUpTriangleGrid(char *path, long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts);

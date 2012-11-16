@@ -83,7 +83,7 @@ Boolean EqualTModelDialogVariables(TModelDialogVariables* var1,TModelDialogVaria
 
 TModel::TModel(Seconds start)
 {
-	stepsCount = 0;
+	//stepsCount = 0;
 	outputStepsCount = 0;
 	ncSnapshot = false;
 	writeNC = false;
@@ -4011,6 +4011,7 @@ OSErr TModel::StepBackwards ()
 	WorldPoint3D  midPt;
 	TMap *midPtBestMap = 0;
 	double distanceInKm;
+	short uncertaintyListIndex=0,listIndex=0;
 	
 #ifndef NO_GUI
 	GetPortGrafPtr(&savePort);
@@ -4139,6 +4140,12 @@ OSErr TModel::StepBackwards ()
 		LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		leType = thisLEList -> GetLEType();
 		if(leType == UNCERTAINTY_LE && !this->IsUncertain()) continue; //JLM 9/10/98
+		if(leType == UNCERTAINTY_LE)	// probably won't use uncertainty here anyway...
+		{
+			listIndex = uncertaintyListIndex++;
+			uncertaintyListIndex++;
+		}
+		else listIndex = 0;	// note this is not used for forecast LEs - maybe put in a flag to identify that
 		if(!thisLEList->IsActive()) continue;
 
 		UpdateWindage(thisLEList);
@@ -4206,7 +4213,8 @@ OSErr TModel::StepBackwards ()
 					if (!thisMover -> IsActive ()) continue; // to next mover
 				
 					//thisMove = thisMover -> GetMove (this->GetStartTime(), this->GetEndTime(), this->GetModelTime(), fDialogVariables.computeTimeStep,i,j,&thisLE,leType);	// AH 07/10/2012
-					thisMove = thisMover -> GetMove (this->GetModelTime(), fDialogVariables.computeTimeStep,i,j,&thisLE,leType);	// AH 07/10/2012
+					//thisMove = thisMover -> GetMove (this->GetModelTime(), fDialogVariables.computeTimeStep,i,j,&thisLE,leType);	// AH 07/10/2012
+					thisMove = thisMover -> GetMove (this->GetModelTime(), fDialogVariables.computeTimeStep,listIndex,j,&thisLE,leType);	
 					/*if(thisMover -> IAm(TYPE_CURRENTMOVER)) // maybe also for larvae (special LE type?)
 					{	// check if current beaches LE, and if so don't add into overall move
 						testPoint.p.pLat = currentMovedPoint.p.pLat - thisMove.p.pLat;
@@ -4249,7 +4257,8 @@ OSErr TModel::StepBackwards ()
 					if (!thisMover -> IsActive ()) continue; // to next mover
 				
 					//thisMove = thisMover -> GetMove (this->GetStartTime(), this->GetEndTime(), this->GetModelTime(), fDialogVariables.computeTimeStep,i,j,&thisLE,leType);	// AH 07/10/2012
-					thisMove = thisMover -> GetMove (this->GetModelTime(), fDialogVariables.computeTimeStep,i,j,&thisLE,leType);	// AH 07/10/2012
+					//thisMove = thisMover -> GetMove (this->GetModelTime(), fDialogVariables.computeTimeStep,i,j,&thisLE,leType);	// AH 07/10/2012
+					thisMove = thisMover -> GetMove (this->GetModelTime(), fDialogVariables.computeTimeStep,listIndex,j,&thisLE,leType);	
 					/*if(thisMover -> IAm(TYPE_CURRENTMOVER)) 
 					{	// check if current beaches LE, and if so don't add into overall move
 						testPoint.p.pLat  = currentMovedPoint.p.pLat - thisMove.p.pLat;
@@ -7221,14 +7230,12 @@ OSErr TModel::Run (Seconds stopTime)
 	OSErr err = 0;
 
 	this->currentStep = 0;
-	this->stepsCount =	ceil((float)fDialogVariables.duration / 
-							 fDialogVariables.computeTimeStep);
-	this->outputStepsCount =	ceil((float)fDialogVariables.duration / 
-							 this->GetOutputStep());
-	this->stepsCount++;
+	//this->stepsCount = ceil((float)fDialogVariables.duration / fDialogVariables.computeTimeStep);
+	this->outputStepsCount = ceil((float)fDialogVariables.duration / this->GetOutputStep());
+	//this->stepsCount++;
 	this->outputStepsCount++;
-	if(bHindcast || this->modelTime > this->GetStartTime())
-		this->writeNC = false;
+	//if(bHindcast || this->modelTime > this->GetStartTime())
+		//this->writeNC = false;
 	
 
 #ifndef NO_GUI
