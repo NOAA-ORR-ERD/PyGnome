@@ -151,7 +151,11 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
 	MySFReply reply;
 	Boolean bTopFile = false, isLandMask = true, isCoopsMask = false;
-	VelocityFH velocityH = 0;
+	//VelocityFH velocityH = 0;
+	static size_t mask_index[] = {0,0};
+	static size_t mask_count[2];
+	double *landmask = 0; 
+	DOUBLEH landmaskH=0;
 	//long numTimesInFile = 0;
 	
 	if (!path || !path[0]) return 0;
@@ -477,7 +481,7 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	
 	status = nc_inq_dim(ncid, recid, recname, &recs);
 	if (status != NC_NOERR) {err = -1; goto done;}
-	
+	if (recs <= 0) {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err = -1; goto done;}
 	fTimeHdl = (Seconds**)_NewHandleClear(recs*sizeof(Seconds));
 	if (!fTimeHdl) {err = memFullErr; goto done;}
 	for (i=0;i<recs;i++)
@@ -531,12 +535,44 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	fNumRows = latLength;
 	fNumCols = lonLength;
 	
-	status = nc_inq_varid(ncid, "mask", &mask_id);
-	if (status != NC_NOERR)	{/*err=-1; goto done;*/ isLandMask = false;}
+	/*status = nc_inq_varid(ncid, "mask", &mask_id);
+	if (status != NC_NOERR)	{isLandMask = false;}
 	
 	status = nc_inq_varid(ncid, "coops_mask", &mask_id);
-	if (status != NC_NOERR)	{/*err=-1; goto done;*/ isCoopsMask = false;}
+	if (status != NC_NOERR)	{isCoopsMask = false;}
 	else {isCoopsMask = true; bIsCOOPSWaterMask = true;}
+	*/
+
+	mask_count[0] = latLength;
+	mask_count[1] = lonLength;
+	
+	status = nc_inq_varid(ncid, "mask", &mask_id);
+	if (status != NC_NOERR)	{isLandMask = false;}
+
+	status = nc_inq_varid(ncid, "coops_mask", &mask_id);	// should only have one or the other
+	if (status != NC_NOERR)	{isCoopsMask = false;}
+	else {isCoopsMask = true; bIsCOOPSWaterMask = true;}
+	
+	if (isLandMask || isCoopsMask)
+	{	// no need to bother with the handle here...
+		// maybe should store the mask? we are using it in ReadTimeValues, do we need to?
+		landmask = new double[latLength*lonLength]; 
+		if(!landmask) {TechError("NetCDFMoverCurv::TextRead()", "new[]", 0); err = memFullErr; goto done;}
+		//mylandmask = new double[latlength*lonlength]; 
+		//if(!mylandmask) {TechError("NetCDFMoverCurv::ReoderPointsNoMask()", "new[]", 0); err = memFullErr; goto done;}
+		landmaskH = (double**)_NewHandleClear(latLength*lonLength*sizeof(double));
+		if(!landmaskH) {TechError("NetCDFMoverCurv::TextRead()", "_NewHandleClear()", 0); err = memFullErr; goto done;}
+		status = nc_get_vara_double(ncid, mask_id, mask_index, mask_count, landmask);
+		if (status != NC_NOERR) {err = -1; goto done;}
+
+		for (i=0;i<latLength;i++)
+		{
+			for (j=0;j<lonLength;j++)
+			{
+				INDEXH(landmaskH,i*lonLength+j) = landmask[(latLength-i-1)*lonLength+j];
+			}
+		}
+	}
 	
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
@@ -574,26 +610,21 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 		//if (!reply.good) return USERCANCEL;
 		if (!reply.good) /*return 0;*/
 		{
-			if (recs>0)
+			/*if (recs>0)
 				err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
-			if(err) goto done;
-			err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+			if(err) goto done;*/
+			//err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+			if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
+			else if (isCoopsMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			else err = ReorderPointsNoMask(newMap,errmsg);
+			//else err = ReorderPointsNoMask(velocityH,newMap,errmsg);
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	 		goto done;
 		}
 		else
 			strcpy(topPath, reply.fullPath);
 		
-		/*{
-		 if (recs>0)
-		 err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
-		 else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
-		 if(err) goto done;
-		 err = ReorderPoints(velocityH,newMap,errmsg);	
-		 //err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
-		 goto done;
-		 }*/
 #else
 		where = CenteredDialogUpLeft(M38c);
 		sfpgetfile(&where, "",
@@ -606,11 +637,14 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 		{
 			//numTimesInFile = this -> GetNumTimesInFile();	// use recs?
 			//if (numTimesInFile>0)
-			if (recs>0)
+			/*if (recs>0)
 				err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 			else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
-			if(err) goto done;
-			err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+			if(err) goto done;*/
+			//err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(velocityH,newMap,errmsg);	
+			if (isLandMask) err = dynamic_cast<NetCDFMoverCurv *>(this)->ReorderPoints(landmaskH,newMap,errmsg);	
+			else if (isCoopsMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+			else err = ReorderPointsNoMask(newMap,errmsg);
 			//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	 		goto done;
 			//return 0;
@@ -632,13 +666,15 @@ OSErr NetCDFMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath)
 	
 	//numTimesInFile = this -> GetNumTimesInFile();
 	//if (numTimesInFile>0)
-	if (recs>0)
+	/*if (recs>0)
 		err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);
 	else {strcpy(errmsg,"No times in file. Error opening NetCDF file"); err =  -1;}
-	if(err) goto done;
-	if (isLandMask) err = ReorderPoints(velocityH,newMap,errmsg);
-	else if (isCoopsMask) err = ReorderPointsCOOPSMask(velocityH,newMap,errmsg);
-	else err = ReorderPointsNoMask(velocityH,newMap,errmsg);
+	if(err) goto done;*/
+	//if (isLandMask) err = ReorderPoints(velocityH,newMap,errmsg);
+	if (isLandMask) err = ReorderPoints(landmaskH,newMap,errmsg);
+	else if (isCoopsMask) err = ReorderPointsCOOPSMask(landmaskH,newMap,errmsg);
+	else err = ReorderPointsNoMask(newMap,errmsg);
+	//else err = ReorderPointsNoMask(velocityH,newMap,errmsg);
 	//err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
 	
 depths:
@@ -872,7 +908,7 @@ done:
 	if (depth_vals) delete [] depth_vals;
 	if (sigma_vals) delete [] sigma_vals;
 	if (modelTypeStr) delete [] modelTypeStr;
-	if (velocityH) {DisposeHandle((Handle)velocityH); velocityH = 0;}
+	//if (velocityH) {DisposeHandle((Handle)velocityH); velocityH = 0;}
 	return err;
 }
 
@@ -1067,12 +1103,12 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 			err = memFullErr; 
 			goto done;
 		}
-		if (isLandMask)
+		/*if (isLandMask)
 		{
 			//landmask = new float[latlength*lonlength]; 
 			landmask = new double[latlength*lonlength]; 
 			if(!landmask) {TechError("GridVel::ReadNetCDFFile()", "new[]", 0); err = memFullErr; goto done;}
-		}
+		}*/
 		status = nc_inq_varid(ncid, "U", &curr_ucmp_id);
 		if (status != NC_NOERR)
 		{
@@ -1112,12 +1148,12 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 			}
 			//{err = -1; goto done;}
 		}
-		if (isLandMask)
+		/*if (isLand)
 		{
 			//status = nc_get_vara_float(ncid, mask_id, angle_index, angle_count, landmask);
 			status = nc_get_vara_double(ncid, mask_id, angle_index, angle_count, landmask);
 			if (status != NC_NOERR) {err = -1; goto done;}
-		}
+		}*/
 		status = nc_inq_varndims(ncid, curr_ucmp_id, &uv_ndims);
 		if (status==NC_NOERR){if (uv_ndims < numdims && uv_ndims==3) {curr_count[1] = latlength; curr_count[2] = lonlength;}}	// could have more dimensions than are used in u,v
 		//status = nc_get_vara_float(ncid, curr_ucmp_id, curr_index, curr_count, curr_uvals);
@@ -1212,7 +1248,7 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 					 curr_vvals[(latlength-i-1)*lonlength+j]=0.;*/
 					
 
-					if (isLandMask)
+					/*if (isLandMask)
 					{
 						if (curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value || curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)
 							curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = 0;
@@ -1236,31 +1272,12 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 						//if (landmask[(latlength-i-1)*lonlength+j]<1)	// land
 						if (landmask[(latlength-i-1)*lonlength+j]<1 || landmask[(latlength-i-1)*lonlength+j]>8)	// land
 							curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=fill_value;
-						/*else
-						 {
-						 float dLat = INDEXH(fVertexPtsH,i*fNumCols+j).pLat;
-						 float dLon = INDEXH(fVertexPtsH,i*fNumCols+j).pLong;
-						 long index = i*fNumCols+j+1;
-						 float dZ = 1.;
-						 fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index, dLon, dLat, dZ);	
-						 }*/
-						
 						//if (landmask[(latlength-i-1)*lonlength+j]<1)
 						if (landmask[(latlength-i-1)*lonlength+j]<1 || landmask[(latlength-i-1)*lonlength+j]>8)
 							curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=fill_value;
-						/*if (landmask[(i)*lonlength+(lonlength-j-1)]<1 || landmask[(i)*lonlength+(lonlength-j-1)]>8)	// land
-						 curr_uvals[(i)*lonlength+(lonlength-j-1)]=fill_value;
-						 //if (landmask[(latlength-i-1)*lonlength+j]<1)
-						 if (landmask[(i)*lonlength+(lonlength-j-1)]<1 || landmask[(i)*lonlength+(lonlength-j-1)]>8)
-						 curr_vvals[(i)*lonlength+(lonlength-j-1)]=fill_value;*/
-						/*if (landmask[(i)*lonlength+j]<1 || landmask[(i)*lonlength+j]>8)	// land
-						 curr_uvals[(i)*lonlength+j]=fill_value;
-						 //if (landmask[(latlength-i-1)*lonlength+j]<1)
-						 if (landmask[(i)*lonlength+j]<1 || landmask[(i)*lonlength+j]>8)
-						 curr_vvals[(i)*lonlength+j+k*fNumRows*fNumCols]=fill_value;*/
 					}
 					else
-					{
+					{*/
 						if (curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value || curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)
 							curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = 0;
 						// NOTE: if leave velocity as NaN need to be sure to check for it wherever velocity is used (GetMove,Draw,...)
@@ -1268,7 +1285,7 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 							curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = 0;
 						//if (curr_uvals[(latlength-i-1)*lonlength+j]==0 && curr_vvals[(latlength-i-1)*lonlength+j]==0)
 						//curr_uvals[(latlength-i-1)*lonlength+j] = curr_vvals[(latlength-i-1)*lonlength+j] = fill_value;
-					}
+					//}
 					/////////////////////////////////////////////////
 					if (bRotated)
 					{
@@ -1294,11 +1311,6 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 		}
 	}
 	*velocityH = velH;
-	//fclose(outfile);
-	//if (fIsNavy)
-	//fFillValue = fill_value_Navy;
-	//else 
-	//fFillValue = fill_value;
 	fFillValue = fill_value * velConversion;
 	
 	//if (scale_factor!=1.) fVar.curScale = scale_factor;	// hmm, this forces a reset of scale factor each time, overriding any set by hand
@@ -1327,8 +1339,7 @@ done:
 		delete [] curr_wvals; 
 		curr_wvals = 0;
 	}
-	//if (curr_uvals_Navy) delete [] curr_uvals_Navy;
-	//if (curr_vvals_Navy) delete [] curr_vvals_Navy;
+
 	if (landmask) {delete [] landmask; landmask = 0;}
 	if (angle_vals) {delete [] angle_vals; angle_vals = 0;}
 	if (velUnits) {delete [] velUnits;}
