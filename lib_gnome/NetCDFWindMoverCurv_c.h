@@ -28,16 +28,10 @@ public:
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
-	long 					CheckSurroundingPoints(LONGH maskH, long row, long col) ;
-	Boolean 				InteriorLandPoint(LONGH maskH, long row, long col); 
-	Boolean 				ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long row, long col) ;
-	Boolean 				ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPolyNum, long row, long col) ;
-	void 					ResetMaskValues(LONGH maskH,long landBlockToMerge,long landBlockToJoin);
-	OSErr 				NumberIslands(LONGH *islandNumberH, VelocityFH velocityH,LONGH landWaterInfo,long *numIslands);
 	OSErr 				ReorderPoints(VelocityFH velocityH, TMap **newMap, char* errmsg); 
 	Seconds 				GetTimeValue(long index);
 	virtual long 		GetVelocityIndex(WorldPoint wp);
-	virtual LongPoint 		GetVelocityIndices(WorldPoint wp);  /*{LongPoint lp = {-1,-1}; printError("GetVelocityIndices not defined for windmover"); return lp;}*/
+	virtual LongPoint 		GetVelocityIndices(WorldPoint wp);
 	OSErr 				GetLatLonFromIndex(long iIndex, long jIndex, WorldPoint *wp);
 	
 
