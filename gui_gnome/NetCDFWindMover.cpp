@@ -34,7 +34,6 @@ NetCDFWindMover::NetCDFWindMover(TMap *owner,char* name) : TWindMover(owner, nam
 	
 	fUserUnits = kMetersPerSec;	
 	fWindScale = 1.;
-	//fArrowScale = 1.;
 	fArrowScale = 10.;
 	fFillValue = -1e+34;
 
@@ -183,7 +182,7 @@ OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 	if (fAllowExtrapolationOfWinds && time < firstStartTime)
 	{
 		if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
-		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false); // AH 07/17/2012
+		err = ScanFileForTimes((*fInputFilesHdl)[0].pathName,&fTimeHdl,false); 
 		// code goes here, check that start/end times match
 		strcpy(fPathName,(*fInputFilesHdl)[0].pathName);
 		fOverLap = false;
@@ -191,12 +190,11 @@ OSErr NetCDFWindMover::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 	}
 	strcpy(errmsg,"Time outside of interval being modeled");
 	return -1;	
-	//return err;
 }
 
 Boolean NetCDFWindMover::CheckInterval(long &timeDataInterval, const Seconds& model_time)
 {
-	Seconds time = model_time, startTime, endTime;	// AH 07/17/2012
+	Seconds time = model_time, startTime, endTime;	
 	
 	long i,numTimes,numFiles = GetNumFiles();
 	
@@ -206,7 +204,6 @@ Boolean NetCDFWindMover::CheckInterval(long &timeDataInterval, const Seconds& mo
 	
 	// check for constant current
 	if (numTimes==1 && !(GetNumFiles()>1)) 
-		//if (numTimes==1) 
 	{
 		timeDataInterval = -1; // some flag here
 		if(fStartData.timeIndex==0 && fStartData.dataHdl)
@@ -284,7 +281,7 @@ Boolean NetCDFWindMover::CheckInterval(long &timeDataInterval, const Seconds& mo
 OSErr NetCDFWindMover::SetInterval(char *errmsg, const Seconds& model_time)
 {
 	long timeDataInterval = 0;
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
 	long numTimesInFile = this -> GetNumTimesInFile();
@@ -296,7 +293,6 @@ OSErr NetCDFWindMover::SetInterval(char *errmsg, const Seconds& model_time)
 		return 0;
 	
 	// check for constant current 
-	//if(numTimesInFile==1)	//or if(timeDataInterval==-1) 
 	if(numTimesInFile==1 && !(GetNumFiles()>1))	//or if(timeDataInterval==-1) 
 	{
 		indexOfStart = 0;
@@ -308,18 +304,7 @@ OSErr NetCDFWindMover::SetInterval(char *errmsg, const Seconds& model_time)
 		indexOfStart = 0;
 		indexOfEnd = -1;
 	}
-	/*if(timeDataInterval == 0)
-	 {	// before the first step in the file
-	 err = -1;
-	 strcpy(errmsg,"Time outside of interval being modeled");
-	 goto done;
-	 }
-	 else if(timeDataInterval == numTimesInFile) 
-	 {	// past the last information in the file
-	 err = -1;
-	 strcpy(errmsg,"Time outside of interval being modeled");
-	 goto done;
-	 }*/
+
 	if(timeDataInterval == 0 || timeDataInterval == numTimesInFile /*|| (timeDataInterval==1 && fAllowExtrapolationOfWinds)*/)
 	{	// before the first step in the file
 		
@@ -443,9 +428,8 @@ OSErr NetCDFWindMover::ReadInputFileNames(char *fileNamesPath)
 		strcpy(path,(*inputFilesHdl)[i].pathName);
 		if((*inputFilesHdl)[i].pathName[0] && FileExists(0,0,(*inputFilesHdl)[i].pathName))
 		{
-			//
 			status = nc_open(path, NC_NOWRITE, &ncid);
-			if (status != NC_NOERR) /*{err = -1; goto done;}*/
+			if (status != NC_NOERR) 
 			{
 #if TARGET_API_MAC_CARBON
 				err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
@@ -453,13 +437,10 @@ OSErr NetCDFWindMover::ReadInputFileNames(char *fileNamesPath)
 #endif
 				if (status != NC_NOERR) {err = -2; goto done;}
 			}
-			//if (status != NC_NOERR) {err = -2; goto done;}
 			
-			//status = nc_inq_unlimdim(ncid, &recid);	// issue of time not being dimension name
 			status = nc_inq_dimid(ncid, "time", &recid); 
 			if (status != NC_NOERR) 
 			{
-				//status = nc_inq_dimid(ncid, "time", &recid); 
 				status = nc_inq_unlimdim(ncid, &recid);	// maybe time is unlimited dimension
 				if (status != NC_NOERR) {err = -2; goto done;}
 			}
@@ -471,10 +452,7 @@ OSErr NetCDFWindMover::ReadInputFileNames(char *fileNamesPath)
 			status = nc_inq_attlen(ncid, timeid, "units", &t_len);
 			if (status != NC_NOERR) 
 			{
-				timeUnits = 0;	// files should always have this info
-				timeConversion = 3600.;		// default is hours
-				startTime2 = model->GetStartTime();	// default to model start time
-				/*err = -2; goto done;*/
+				err = -2; goto done;
 			}
 			else
 			{
@@ -578,7 +556,6 @@ OSErr NetCDFWindMover::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setS
 #endif
 		if (status != NC_NOERR) {err = -1; goto done;}
 	}
-	//if (status != NC_NOERR) {err = -1; goto done;}
 	
 	status = nc_inq_dimid(ncid, "time", &recid); 
 	if (status != NC_NOERR) 
@@ -594,10 +571,7 @@ OSErr NetCDFWindMover::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setS
 	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
 	if (status != NC_NOERR) 
 	{
-		timeUnits = 0;	// files should always have this info
-		timeConversion = 3600.;		// default is hours
-		startTime2 = model->GetStartTime();	// default to model start time
-		/*err = -1; goto done;*/
+		err = -1; goto done;
 	}
 	else
 	{
@@ -913,7 +887,7 @@ OSErr NetCDFWindMover::DeleteItem(ListItem item)
 }
 
 OSErr NetCDFWindMover::CheckAndPassOnMessage(TModelMessage *message)
-{	// JLM
+{	
 	
 	/*char ourName[kMaxNameLen];
 	 
@@ -1087,7 +1061,7 @@ OSErr NetCDFWindMover::Read(BFPB *bfpb)
 	if (err = ReadMacValue(bfpb, &fNumCols)) goto done;	
 	if (err = ReadMacValue(bfpb, fPathName, kMaxNameLen)) goto done;
 	ResolvePath(fPathName); // JLM 6/3/10
-	//if (!FileExists(0,0,fPathName)) {/*err=-1;*/ sprintf(msg,"The file path %s is no longer valid.",fPathName); printNote(msg); /*goto done;*/}
+
 	if (!FileExists(0,0,fPathName)) 
 	{	// allow user to put file in local directory
 		char newPath[kMaxNameLen],/*fileName[64],*/*p;
@@ -1100,7 +1074,7 @@ OSErr NetCDFWindMover::Read(BFPB *bfpb)
 			ResolvePath(fileName);
 		}
 		if (!fileName[0] || !FileExists(0,0,fileName)) 
-		{/*err=-1;*/ /*sprintf(msg,"The file path %s is no longer valid.",fPathName); printNote(msg);*/ bPathIsValid = false;/*goto done;*/}
+		{bPathIsValid = false;}
 		else
 			strcpy(fPathName,fileName);
 	}
@@ -1112,7 +1086,7 @@ OSErr NetCDFWindMover::Read(BFPB *bfpb)
 		strcat(fileName,fFileName);
 		ResolvePath(fileName);
 		if (!fileName[0] || !FileExists(0,0,fileName)) 
-		{/*err=-1;*/ /*sprintf(msg,"The file path %s is no longer valid.",fPathName); printNote(msg);*/ /*goto done;*/}
+		{bPathIsValid = false;}
 		else
 		{
 			strcpy(fPathName,fileName);
@@ -1374,14 +1348,6 @@ OSErr NetCDFWindMover::TextRead(char *path)
 		if (status != NC_NOERR) {err = -1; goto done;}
 	}
 	
-	/*status = nc_inq_unlimdim(ncid, &recid);	// if no unlimited dimension doesn't return error
-	 //if (status != NC_NOERR) {err = -1; goto done;} 
-	 if (status != NC_NOERR) 
-	 {
-	 status = nc_inq_dimid(ncid, "time", &recid); //Navy
-	 if (status != NC_NOERR) {err = -1; goto done;}
-	 }*/
-	
 	status = nc_inq_dimid(ncid, "time", &recid); //Navy
 	if (status != NC_NOERR) 
 	{
@@ -1390,18 +1356,14 @@ OSErr NetCDFWindMover::TextRead(char *path)
 	}
 	
 	status = nc_inq_varid(ncid, "time", &timeid); 
-	//if (status != NC_NOERR) {err = -1; goto done;} 
 	if (status != NC_NOERR) {status = nc_inq_varid(ncid, "TIME", &timeid);if (status != NC_NOERR) {err = -1; goto done;} /*timeid = recid;*/} 	// for Ferret files, everything is in CAPS
 	
 	/////////////////////////////////////////////////
-	//status = nc_inq_attlen(ncid, recid, "units", &t_len);	// recid is the dimension id not the variable id
+
 	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
 	if (status != NC_NOERR) 
 	{
-		timeUnits = 0;	// files should always have this info
-		timeConversion = 3600.;		// default is hours
-		startTime2 = model->GetStartTime();	// default to model start time
-		/*err = -1; goto done;*/
+		err = -1; goto done;
 	}
 	else
 	{
@@ -1409,7 +1371,6 @@ OSErr NetCDFWindMover::TextRead(char *path)
 		char unitStr[24], junk[10];
 		
 		timeUnits = new char[t_len+1];
-		//status = nc_get_att_text(ncid, recid, "units", timeUnits);
 		status = nc_get_att_text(ncid, timeid, "units", timeUnits);
 		if (status != NC_NOERR) {err = -1; goto done;} 
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
@@ -1537,9 +1498,6 @@ OSErr NetCDFWindMover::TextRead(char *path)
 					goto done;
 			}
 		}
-		//model->SetModelTime(startTime);
-		//model->SetStartTime(startTime);
-		//model->NewDirtNotification(DIRTY_RUNBAR); // must reset the runbar
 	}
 	dLat = (endLat - startLat) / (latLength - 1);
 	dLon = (endLon - startLon) / (lonLength - 1);
@@ -1572,9 +1530,7 @@ OSErr NetCDFWindMover::TextRead(char *path)
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
-	//err = this -> SetInterval(errmsg);	// if outside of time interval, let it go
-	//if(err) goto done;
-	
+
 done:
 	if (err)
 	{
