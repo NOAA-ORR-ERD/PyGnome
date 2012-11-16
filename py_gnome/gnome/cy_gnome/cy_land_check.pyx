@@ -7,10 +7,9 @@ have crossed land on the raster map
 
 import numpy as np
 cimport numpy as cnp
+from libc.stdint cimport int32_t, uint8_t
 
-
-
-def overlap_grid(int m, int n, pt1, pt2):
+def overlap_grid(int32_t m, int32_t n, pt1, pt2):
     """
     check if the line segment from pt1 to pt could overlap the grid of
     size (m,n).
@@ -21,14 +20,19 @@ def overlap_grid(int m, int n, pt1, pt2):
     of the points in the cdef version
 
     """
-    cdef int x1 = pt1[0]
-    cdef int y1 = pt1[1]
-    cdef int x2 = pt2[0]
-    cdef int y2 = pt2[1]
+    cdef int32_t x1 = pt1[0]
+    cdef int32_t y1 = pt1[1]
+    cdef int32_t x2 = pt2[0]
+    cdef int32_t y2 = pt2[1]
 
     return c_overlap_grid(m, n, x1, y1, x2, y2)
 
-cdef int c_overlap_grid(int m, int n, int x1, int y1, int x2, int y2):
+cdef int32_t c_overlap_grid(int32_t m,
+                            int32_t n,
+                            int32_t x1,
+                            int32_t y1,
+                            int32_t x2,
+                            int32_t y2):
     """
     check if the line segment from pt1 to pt could overlap the grid of
     size (m,n).
@@ -49,40 +53,26 @@ cdef int c_overlap_grid(int m, int n, int x1, int y1, int x2, int y2):
         return 1
 
 
-def find_first_pixel(grid, pt1, pt2, draw=False):
-    """
-    This finds the first non-zero pixel that is is encountered when followoing
-    a line from pt1 to pt2.
-    
-    param: grid  -- a numpy integer array -- the raster were'e working with
-           zero eveywhere there is not considered a "hit"
-    param: pt1 -- the start point -- an integer (i,j) tuple     
-    param: pt2 -- the end point   -- an integer (i,j) tuple     
-    param: draw [False] -- should the line be drawn to the grid?
-    
-    return: None if land is not hit
-            previous_pt, hit_point
-    
-    This is an adaptation of "Bresenham's line algorithm":
-    
-   (http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)
-    
-    Usually used for drawing lines in graphics.  It's been adapted to do an
-    extra check when the algorythm puts two points diagonal to each-other, so
-    as to avoid an exact match with a diagonal line of land skipping thorough.
-    If _both_ the points diagonal to the move are land, it is considered a hit.
-    
-    """
+
+
+cdef c_find_first_pixel( cnp.ndarray[uint8_t, ndim=2] grid,
+                         int32_t m,
+                         int32_t n,
+                         int32_t x0,
+                         int32_t y0,
+                         int32_t x1,
+                         int32_t y1):
+
+    cdef int32_t dx, dy, sx, sy, err, e2,
+    cdef int32_t hit_x, hit_y, prev_x, prev_y, pt1_x, pt1_y, pt2_x, pt2_y
+
     # check if totally off the grid
-    m, n = grid.shape
-    if not overlap_grid(m, n, pt1, pt2):
+    if not c_overlap_grid(m, n, x0, y0, x1, y1):
         return None
-    
-    pixels = []
-    hit_point = previous_pt = None
+
+    #pixels = []
+    #hit_point = previous_pt = None
     #Set it up to march in the right direction depending on slope.
-    x0, y0 = pt1
-    x1, y1 = pt2
 
     dx = abs(x1-x0)
     dy = abs(y1-y0) 
@@ -95,12 +85,8 @@ def find_first_pixel(grid, pt1, pt2, draw=False):
     else:
         sy = -1
     err = dx-dy
-    
-    last_pt  = pt1
     # check the first point
     if not (x0 < 0 or x0 >= m or y0 < 0 or y0 >= n):#  is the point off the grid? if so, it's not land!
-        if draw: 
-            grid[x0, y0] += 2
         ##fixme: we should never be starting on land! 
         ## should this raise an Error instead ?
         if grid[x0, y0] == 1: #we've hit "land"
@@ -109,7 +95,8 @@ def find_first_pixel(grid, pt1, pt2, draw=False):
     while True: #keep going till hit land or the final point
         if x0 == x1 and y0 == y1:
             break
-        previous_pt = (x0, y0) 
+        prev_x = x0
+        prev_y = y0
         # advance to next point
         e2 = 2*err
         if e2 > -dy:
@@ -121,213 +108,78 @@ def find_first_pixel(grid, pt1, pt2, draw=False):
         # check for land hit
 
         if x0 < 0 or x0 >= m or y0 < 0 or y0 >= n:# is the point off the grid? if so, it's not land!
+            ## fixme -- if we've moved off the grid for good, no need to keep going.
             continue                             # note: a diagonal movement, off the grid wouldn't be a hit either
         else:
             if grid[x0, y0] == 1:
-                hit_point = (x0, y0)
-                if draw:
-                    grid[x0, y0] += 2
-                return previous_pt, hit_point
+                hit_x = x0
+                hit_y = y0
+                return (prev_x, prev_y), (hit_x, hit_y)
             else:
                 if (e2 > -dy) and (e2 < dx): # there is a diagonal move -- test adjacent points also
                     ## only call it a hit if BOTH adjacent points are land.
-                    pt1 = (x0, y0-sy)
-                    pt2 = (x0-sx, y0)
-                    try:
-                        if ( (grid[pt1[0], pt1[1]] == 1) and #is the y-adjacent point on land? 
-                             (grid[pt2[0], pt2[1]] == 1)     #is the x-adjacent point on land?
+                    pt1_x = x0
+                    pt1_y = y0-sy
+                    pt2_x = x0-sx
+                    pt2_y = y0
+                    try: # replace with real check???
+                        if ( (grid[pt1_x, pt1_y] == 1) and #is the y-adjacent point on land? 
+                             (grid[pt2_x, pt2_y] == 1)     #is the x-adjacent point on land?
                             ): 
-                            hit_point = pt1 # we have to pick one -- this is arbitrary
-                            if draw:
-                                grid[hit_point[0], hit_point[1]] += 2
-                            return previous_pt, hit_point
+                            hit_x = pt1_x # we have to pick one -- this is arbitrary
+                            hit_y = pt1_y # we have to pick one -- this is arbitrary
+                            return (prev_x, prev_y), (hit_x, hit_y)
                     except IndexError:
                         pass
-            if draw:
-                grid[x0, y0] += 2
 
     # if we get here, no hit
     return None
 
-def draw_line(grid, pt1, pt2, draw_val=1):
+
+
+def find_first_pixel(grid, pt1, pt2):
     """
-    this is a version of "Bresenham's line algorithm"
+    This finds the first non-zero pixel that is is encountered when followoing
+    a line from pt1 to pt2.
     
-    This one just finds the line.
+    param: grid  -- a numpy integer array -- the raster were'e working with
+           zero eveywhere there is not considered a "hit"
+    param: pt1 -- the start point -- an integer (i,j) tuple     
+    param: pt2 -- the end point   -- an integer (i,j) tuple
     
-    it is used to draw lines on a screen, but also should tell us which pixels an LE path has crossed
+    return: None if land is not hit
+            (previous_pt, hit_point) if land is hit
+    
+    This is an adaptation of "Bresenham's line algorithm":
+    
+   (http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm)
+    
+    Usually used for drawing lines in graphics.  It's been adapted to do an
+    extra check when the algorythm puts two points diagonal to each-other, so
+    as to avoid an exact match with a diagonal line of land skipping thorough.
+    If _both_ the points diagonal to the move are land, it is considered a hit.
+    
     """
-    pixels = []
-    x0, y0 = pt1
-    x1, y1 = pt2
 
-    dx = abs(x1-x0)
-    dy = abs(y1-y0) 
-    if x0 < x1:
-        sx = 1
-    else:
-        sx = -1
-    if y0 < y1:
-        sy = 1
-    else:
-        sy = -1
-    err = dx-dy
- 
-    while True:
-        grid[x0, y0] = draw_val
-        pixels.append((x0, y0))
-        if x0 == x1 and y0 == y1:
-            break
-        e2 = 2*err
-        if e2 > -dy:
-            err = err - dy
-            x0 = x0 + sx
-        if e2 <  dx:
-            err = err + dx
-            y0 = y0 + sy 
-    return pixels
-
-
-
-# def thick_line(grid, (x_1, y_1), (x_2, y_2), line_type=0, color=1):
-#     """
-#     draws a thick line -- line_type is integer width
+    cdef int32_t m, n
+    m, n = grid.shape
     
-#     adapted from C++ code from:
-#     http://mtshome.sw3solutions.com/cppComputerGraphics.html#Line
+    cdef int32_t x1 = pt1[0]
+    cdef int32_t y1 = pt1[1]
+    cdef int32_t x2 = pt2[0]
+    cdef int32_t y2 = pt2[1]
 
-#     This turned out not to work so well, -- it needed some tweaking, and is
-#     probably not the way to go anywya -- resuscied resolutin everywhere, why do that?
-#     """ 
-    
-#     def putpixel(x, y, color):
-#         try:
-#             grid[x,y] = color
-#         except IndexError:
-#             pass
-#     x1=x_1
-#     y1=y_1
+    result = c_find_first_pixel(grid,
+                                m,
+                                n,
+                                x1,
+                                y1,
+                                x2,
+                                y2)
 
-#     x2=x_2
-#     y2=y_2
-
-#     if (x_1 > x_2):
-#         x1=x_2
-#         y1=y_2
-        
-#         x2=x_1
-#         y2=y_1
-
-#     dx = abs(x2-x1)
-#     dy = abs(y2-y1)
-#     #inc_dec = ((y2 >= y1) ?1:-1 )
-#     if y2 >= y1: 
-#         inc_dec = 1
-#     else:
-#         inc_dec = -1
-
-#     if  dx > dy :
-#         two_dy=(2*dy)
-#         two_dy_dx=(2*(dy-dx))
-#         p=((2*dy)-dx)
-
-#         x=x1
-#         y=y1
-
-#         while (x <= x2) :
-#             if(line_type==0):
-#                 putpixel(x,y,color)
-#             elif(line_type==1):
-#                 putpixel(x,y,color)
-#                 putpixel(x,(y+1),color)
-#             elif(line_type==2):
-#                 putpixel(x,(y-1),color)
-#                 putpixel(x,(y),color)
-#                 putpixel(x,(y+1),color)
-#             elif(line_type==3):
-#                 putpixel(x,(y-1),color)
-#                 putpixel(x,(y),color)
-#                 putpixel(x,(y+1),color)
-#                 putpixel(x,(y+2),color)
-#             elif(line_type==4):
-#                 putpixel(x,(y-2),color)
-#                 putpixel(x,(y-1),color)
-#                 putpixel(x,(y),color)
-#                 putpixel(x,(y+1),color)
-#                 putpixel(x,(y+2),color)
-
-#             x += 1 
-
-#             if p < 0 :
-#                 p += two_dy
-#             else:
-#                 y += inc_dec
-#                 p += two_dy_dx
-#     else:
-#         #raise NotImplementedError("can't go that way yet: %s"%( ((x_1, y_1), (x_2, y_2)), ))
-#         two_dx=(2*dx);
-#         two_dx_dy=(2*(dx-dy));
-#         p=((2*dx)-dy);
-        
-#         x=x1;
-#         y=y1;
-
-#         while( y != y2 ):
-#             if(line_type==0):
-#                 putpixel(x,y,color)
-#             elif(line_type==1):
-#                 putpixel(x,y,color)
-#                 putpixel(x,(y+1),color)
-#             elif(line_type==2):
-#                 putpixel(x,(y-1),color)
-#                 putpixel(x,(y),color)
-#                 putpixel(x,(y+1),color)
-#             elif(line_type==3):
-#                 putpixel(x,(y-1),color)
-#                 putpixel(x,(y),color)
-#                 putpixel(x,(y+1),color)
-#                 putpixel(x,(y+2),color)
-#             elif(line_type==4):
-#                 putpixel(x,(y-2),color)
-#                 putpixel(x,(y-1),color)
-#                 putpixel(x,(y),color)
-#                 putpixel(x,(y+1),color)
-#                 putpixel(x,(y+2),color)
+    return result
 
 
-#             y += inc_dec
-
-#             if p < 0 :
-#                 p += two_dx
-#             else:
-#                 x += 1
-#                 p += two_dx_dy 
-
-# def draw_grid(filename, grid):
-#     """
-#     draw a grid in large scale with PIL
-#     """
-#     from PIL import Image, ImageDraw
-    
-#     bs = 20 # block size
-
-#     colors = {0: (255,255,255),
-#               1: (255, 0, 0),
-#               2: (0, 0, 255),
-#               3: (255, 0, 255),
-#               4: (0, 255, 0),
-#               }
-#     shape = grid.shape[0]*bs , grid.shape[1] * bs
-#     im = Image.new('P', shape)
-#     draw = ImageDraw.Draw(im)
-    
-#     for i in range(grid.shape[0]):
-#         for j in range (grid.shape[1]):
-#             box =  ( (j*bs, i*bs), ((j+1)*bs, (i+1)*bs) )
-#             draw.rectangle(box, fill=colors[grid[i,j]])
-
-#     im.save(filename)
-    
 
 # if __name__ == "__main__":
 #     #provide a raster:

@@ -148,7 +148,8 @@ class GnomeMap(object):
         pass
     
         
-import land_check
+from gnome.cy_gnome import cy_land_check as land_check
+# from gnome import land_check
 
 class RasterMap(GnomeMap):
     """
@@ -381,7 +382,7 @@ class RasterMap(GnomeMap):
             pts = land_check.find_first_pixel(raster_map,
                                               positions[i],
                                               end_positions[i],
-                                              draw=False)
+                                              )
             if pts is None:
                 # didn't hit land -- can move the LE
                 positions[i, :] = end_positions[i, :]
