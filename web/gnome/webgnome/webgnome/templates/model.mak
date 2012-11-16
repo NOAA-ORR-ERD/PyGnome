@@ -1,8 +1,10 @@
 <%inherit file="base.mak"/>
 
-<%block name="css">
+<%block name="extra_head">
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
+
+    <script src="/static/js/underscore-min.js"></script>
 </%block>
 
 <%block name="navbar">
@@ -100,12 +102,13 @@
 </%block>
 
 <%block name="javascript">
+    <script src='/static/js/modal-responsive-fix.min.js' type="text/javascript"></script>
+    <script src='/static/js/touchscroll.js' type="text/javascript"></script>
     <script src='/static/js/mousetrap.min.js' type="text/javascript"></script>
     <script src='/static/js/jquery.imagesloaded.min.js' type="text/javascript"></script>
     <script src='/static/js/jquery.cycle.all.latest.js' type="text/javascript"></script>
     <script src='/static/js/jquery.cookie.js' type="text/javascript"></script>
     <script src="/static/js/jquery.dynatree.min.js"></script>
-    <script src="/static/js/underscore-min.js"></script>
     <script src="/static/js/backbone-min.js"></script>
     <script src="/static/js/gnome.js"></script>
 
@@ -124,6 +127,10 @@
                 runModelUntilFormUrl: "${run_model_until_form_url}",
                 formsUrl: "${model_forms_url}"
             });
+        });
+
+        $(document).ready(function() {
+            window.noaa.erd.util.fixModals();
         });
     </script>
 </%block>

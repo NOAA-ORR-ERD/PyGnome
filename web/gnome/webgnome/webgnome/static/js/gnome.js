@@ -7,6 +7,12 @@ var log = window.noaa.erd.util.log;
 var handleAjaxError = window.noaa.erd.util.handleAjaxError;
 
 
+// Use Django-style templates.
+_.templateSettings = {
+    interpolate: /\{\{(.+?)\}\}/g
+};
+
+
 /*
   Retrieve a message object from the object `data` if the `message` key
   exists, annotate the message object ith an `error` value set to true
@@ -88,7 +94,7 @@ var Model = Backbone.Collection.extend({
         // When initializing the model at the last time step of a generated
         // series, rewind to the beginning so the user can play the series
         // again.
-        if (this.currentTimeStep === timeSteps.length -1) {
+        if (this.isOnLastTimeStep()) {
             this.rewind();
         }
     },
@@ -258,6 +264,10 @@ var Model = Backbone.Collection.extend({
          }
 
          this.trigger(Model.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
+    },
+
+    isOnLastTimeStep: function() {
+        return this.currentTimeStep === this.length - 1;
     },
 
      /*
@@ -1633,6 +1643,7 @@ var ModalFormView = Backbone.View.extend({
         }
 
         this.setupEventHandlers();
+        window.noaa.erd.util.fixModals();
 
         var newId = this.$el.attr('id');
         if (oldId !== newId) {
@@ -1698,6 +1709,144 @@ var AddMoverFormView = Backbone.View.extend({
 }, {
     // Events
     MOVER_CHOSEN: 'addMoverFormView:moverChosen'
+});
+
+
+/*
+ `WindMoverFormView` handles the WindMover form.
+ */
+var WindMoverFormView = ModalFormView.extend({
+    initialize: function(options) {
+        this.constructor.__super__.initialize.apply(this, arguments);
+        var _this = this;
+
+        this.$timesTable = this.$el.find('.time-list');
+
+        this.$el.on('change', '.direction', function() {
+            _this.toggleDegreesInput(this);
+        });
+
+        this.$el.on('click', '.add-time', function(event) {
+            event.preventDefault();
+            _this.addTime();
+        });
+
+        this.$el.on('click', '.icon-edit', function(event) {
+            event.preventDefault();
+            _this.showEditForm(this);
+        });
+
+        // TODO: Move into function
+        this.$el.on('click', '.cancel', function(event) {
+            event.preventDefault();
+            var form = $(this).closest('.time-form');
+            form.addClass('hidden');
+            _this.clearInputs(form);
+            form.detach().appendTo('.times-list');
+            $('.add-time-form').find('.time-form').removeClass('hidden');
+        });
+
+        // TODO: Move into function
+        this.$el.on('click', '.save', function(event) {
+            event.preventDefault();
+            var $form = $(this).closest('.time-form');
+            $form.addClass('hidden');
+            // Delete the "original" form that we're replacing.
+            $form.data('form-original').detach().empty().remove();
+            $form.detach().appendTo('.times-list');
+            $('.add-time-form').find('.time-form').removeClass('hidden');
+            _this.$timesTable.append($form);
+            _this.renderTimeTable();
+        });
+
+        this.$el.on('click', '.icon-trash', function(event) {
+            event.preventDefault();
+            var $form = $(this).closest('tr').data('data-form');
+            $form.detach().empty().remove();
+            _this.renderTimeTable();
+        });
+
+    },
+
+    showEditForm: function(editIcon) {
+        var $form = $(editIcon).closest('tr').data('data-form');
+        var addFormContainer = $('.add-time-form');
+        var addTimeForm = addFormContainer.find('.time-form');
+        addTimeForm.addClass('hidden');
+        var $formCopy = $form.clone().appendTo(addFormContainer);
+        $formCopy.data('form-original', $form);
+        $formCopy.removeClass('hidden');
+    },
+
+    toggleDegreesInput: function(directionInput) {
+        var $dirInput = $(directionInput);
+        var selected_direction = $dirInput.val();
+        var $formDiv = $dirInput.closest('.time-form');
+        var $degreesControl = $formDiv.find(
+            '.direction_degrees').closest('.control-group');
+
+        if (selected_direction === 'Degrees true') {
+            $degreesControl.removeClass('hidden');
+        } else {
+            $degreesControl.addClass('hidden');
+        }
+    },
+
+    clearInputs: function(form) {
+        $(form).find(':input').each(function() {
+            $(this).val('').removeAttr('checked');
+        });
+    },
+
+    /*
+     Clone the add time form and add an item to the table of time series.
+     */
+    addTime: function() {
+        var $origForm = this.$el.find('.add-time-form').find('.time-form');
+        var $newForm = $origForm.clone(true).addClass('hidden');
+        var formId = $origForm.find(':input')[0].id;
+        var formNum = parseInt(formId.replace(/.*-(\d{1,4})-.*/m, '$1')) + 1;
+
+        // There are no edit forms, so this is the first time series.
+        if (!formNum) {
+            formNum = 0;
+        }
+
+        // Increment the IDs of the add form elements  -- it should always be
+        // the last form in the list of edit forms.
+        $origForm.find(':input').each(function() {
+            var id = $(this).attr('id');
+            if (id) {
+                id = id.replace('-' + (formNum - 1) + '-', '-' + formNum + '-');
+                $(this).attr({'name': id, 'id': id});
+            }
+        });
+
+        $newForm.find('.add-time-buttons').addClass('hidden');
+        $newForm.find('.edit-time-buttons').removeClass('hidden');
+
+        this.$timesTable.after($newForm);
+        this.renderTimeTable();
+    },
+    
+    renderTimeTable: function() {
+        var _this = this;
+        var $forms = this.$el.find('.edit-time-forms .time-form');
+
+        this.$timesTable.find('tr').not('.table-header').remove();
+
+        _.each($forms, function(form) {
+            var $form = $(form);
+            var tmpl = _.template($("#time-series-row").html());
+
+            var tr = $(tmpl({
+                date: $form.find('.date').val(),
+                time: $form.find('.hour').val() + ' : ' + $form.find('.minute').val(),
+                direction: $form.find('.direction').val(),
+                speed: $form.find('.speed').val() + ' ' + $form.find('.speed_type').val()
+            })).data('data-form', $form).appendTo(_this.$timesTable);
+        });
+    }
 });
 
 
@@ -1916,8 +2065,6 @@ var AppView = Backbone.View.extend({
     },
 
     destroyForms: function() {
-        var _this = this;
-
         if (this.forms) {
             this.forms.deleteAll();
         }
@@ -1930,6 +2077,7 @@ var AppView = Backbone.View.extend({
     refreshForms: function() {
         this.destroyForms();
         this.addForms();
+        window.noaa.erd.util.fixModals();
     },
 
     addForms: function() {
@@ -1958,12 +2106,24 @@ var AppView = Backbone.View.extend({
                 url: $form.attr('action')
             });
 
-            _this.formViews.add({
-                id: modalFormId,
-                ajaxForm: _this.forms.get(modalFormId),
-                el: $('#' + modalFormId),
-                formContainerEl: '#' + _this.options.formContainerId
-            });
+            var ajaxForm = _this.forms.get(modalFormId);
+            var formEl = $('#' + modalFormId);
+            var formContainerEl = '#' + _this.options.formContainerId;
+
+            if ($div.hasClass('wind')) {
+                _this.formViews.add(modalFormId, new WindMoverFormView({
+                    ajaxForm: ajaxForm,
+                    el: formEl,
+                    formContainerEl: formContainerEl
+                }));
+            } else {
+                _this.formViews.add({
+                    id: modalFormId,
+                    ajaxForm: ajaxForm,
+                    el: formEl,
+                    formContainerEl: formContainerEl
+                });
+            }
         });
     },
 
@@ -2012,6 +2172,11 @@ var AppView = Backbone.View.extend({
         this.mapControlView.enableControls([this.mapControlView.pauseButtonEl]);
         this.mapControlView.setPlaying();
         this.mapView.setPlaying();
+
+        if (this.model.isOnLastTimeStep()) {
+            this.model.rewind();
+        }
+
         this.model.run(opts);
     },
 

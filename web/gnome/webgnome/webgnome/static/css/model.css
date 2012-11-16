@@ -79,8 +79,8 @@ legend {
     line-height: 20px;
 }
 
-#hour,
-#minute {
+.hour,
+.minute {
     width: 20px;
 }
 
@@ -102,6 +102,11 @@ legend {
 
 .frame {
     z-index: 1000;
+}
+
+.modal.wind {
+    width: 850px;
+    margin: -395px 0 0 -425px;
 }
 
 .background {

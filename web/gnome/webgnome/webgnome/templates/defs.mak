@@ -48,11 +48,11 @@
 <%def name="time_control(form, hour_label='Time (24-hour): ', minute_label='', help_text='')">
     <div class="control-group ${'error' if form.hour.errors or form.minute.errors else ''}">
         % if hour_label:
-            <label class="control-label" for="hour">${hour_label}</label>
+            <label class="control-label">${hour_label}</label>
         % endif
 
         <div class="controls">
-        ${form.hour} : ${form.minute}
+        ${form.hour(class_='hour')} : ${form.minute(class_="minute")}
             % if help_text:
                 <span class="help-inline">${help_text}</span>
             % endif

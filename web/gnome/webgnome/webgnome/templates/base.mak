@@ -19,7 +19,7 @@
     <script src="/static/js/jquery.1.8.0.min.js"></script>
     <script src="/static/js/jquery-ui-1.8.24.custom.min.js"></script>
 
-    <%block name="css"> </%block>
+    <%block name="extra_head"> </%block>
     <link rel="shortcut icon" href="ico/favicon.ico">
 </head>
 
