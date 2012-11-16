@@ -1,8 +1,9 @@
 import json
 import datetime
+import gnome.basic_types
 import gnome.map
 import gnome.utilities.map_canvas
-import shutil
+import numpy
 import os
 
 from gnome.utilities.file_tools import haz_files
@@ -100,16 +101,17 @@ def show_model(request):
      # TODO: Remove this after we decide on where to put the drop-down menu.
     data['show_menu_above_map'] = 'map_menu' in request.GET
 
-    # These values are needed to initialize the JavaScript app.
     data['add_mover_form_id'] = AddMoverForm.get_id()
     data['model_forms_url'] = request.route_url('model_forms')
     data['run_model_until_form_url'] = request.route_url('run_model_until')
 
     if model.time_steps:
-        data['generated_time_steps_json'] = json.dumps(model.time_steps,
-                                                       default=util.json_encoder)
-        data['expected_time_steps_json'] = json.dumps(model.timestamps,
-                                                      default=util.json_encoder)
+        data['background_image_url'] = _get_model_image_url(
+            request, model, 'background_map.png')
+        data['generated_time_steps_json'] = json.dumps(
+            model.time_steps, default=util.json_encoder)
+        data['expected_time_steps_json'] = json.dumps(
+            model.timestamps, default=util.json_encoder)
 
     return data
 
@@ -180,6 +182,13 @@ def model_settings(request, model):
     }
 
 
+def _get_model_image_url(request, model, filename):
+    return request.static_url('webgnome:static/%s/%s/%s' % (
+        request.registry.settings['model_images_url_path'],
+        model.id,
+        filename))
+
+
 def _get_timestamps(model):
     """
     TODO: Move into ``gnome.model.Model``?
@@ -209,11 +218,8 @@ def _get_time_step(request, model):
     try:
         curr_step, file_path, timestamp = model.next_image(images_dir)
         filename = file_path.split(os.path.sep)[-1]
-        image_url = request.static_url(
-                'webgnome:static/%s/%s/%s' % (
-                    request.registry.settings['model_images_url_path'],
-                    model.id,
-                    filename))
+        image_url = _get_model_image_url(request, model, filename)
+
         step = {
             'id': curr_step,
             'url': image_url,
@@ -234,29 +240,54 @@ def run_model(request, model):
     """
     data = {}
 
-    # TODO: This should probably be on the model.
+    # TODO: This should probably be a method on the model.
     timestamps = _get_timestamps(model)
     data['expected_time_steps'] = timestamps
+    model.timestamps = timestamps
+    model.time_step = 3600/4
 
-    # TODO: Set separately in map configuration view
+    # TODO: Set separately in spill view.
+    if not model.spills:
+        spill = gnome.spill.PointReleaseSpill(
+            num_LEs=1000,
+            start_position=(-72.419992, 41.202120, 0.0),
+            release_time=model.start_time)
+
+        model.add_spill(spill)
+
+    if not model.movers:
+        start_time = model.start_time
+
+        r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
+        model.add_mover(r_mover)
+
+        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_r_theta)
+        series[0] = (start_time, (10, 180) )
+        series[1] = (start_time + datetime.timedelta(hours=18), (10, 200))
+        series[2] = (start_time + datetime.timedelta(hours=30), (20, 10))
+        series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
+        series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
+
+        w_mover = gnome.movers.WindMover(timeseries=series)
+        model.add_mover(w_mover)
+
+
+    # TODO: Set separately in map configuration form/view.
     map_file = os.path.join(
         request.registry.settings['project_root'],
-        'sample_data', 'MapBounds_Island.bna')
+        'sample_data', 'LongIslandSoundMap.BNA')
 
     # the land-water map
     model.map = gnome.map.MapFromBNA(
         map_file, refloat_halflife=6 * 3600)
 
-    canvas = gnome.utilities.map_canvas.MapCanvas((400, 300))
+    canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
     polygons = haz_files.ReadBNA(map_file, "PolygonSet")
     canvas.set_land(polygons)
     model.output_map = canvas
 
-    data['background_image'] = request.static_url(
-        'webgnome:static/%s/%s/%s' % (
-        request.registry.settings['model_images_url_path'],
-        model.id,
-        'background_map.png'))
+    data['background_image'] = _get_model_image_url(
+        request, model, 'background_map.png')
 
     first_step = _get_time_step(request, model)
 
@@ -304,6 +335,8 @@ def get_next_step(request, model):
 
     if not step:
         raise HTTPNotFound
+
+    model.time_steps.append(step)
 
     return {
         'time_step': step

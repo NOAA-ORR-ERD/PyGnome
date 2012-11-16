@@ -13,6 +13,12 @@
     <link href="/static/css/bootstrap-responsive.css" rel="stylesheet">
     <link href="/static/css/smoothness/jquery-ui-1.8.24.custom.css" rel="stylesheet">
     <link href="/static/css/base.css" rel="stylesheet">
+
+    ## Enable this to use Google as a CDN for jQuery instead of serving it ourselves.
+    ##<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
+    <script src="/static/js/jquery.1.8.0.min.js"></script>
+    <script src="/static/js/jquery-ui-1.8.24.custom.min.js"></script>
+
     <%block name="css"> </%block>
     <link rel="shortcut icon" href="ico/favicon.ico">
 </head>
@@ -53,10 +59,6 @@
     </div>
 </footer>
 
-## Enable this to use Google as a CDN for jQuery instead of serving it ourselves.
-##<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
-<script src="/static/js/jquery.1.8.0.min.js"></script>
-<script src="/static/js/jquery-ui-1.8.24.custom.min.js"></script>
 <script src="/static/js/bootstrap.min.js"></script>
 <script src="/static/js/namespace.js"></script>
 <script src="/static/js/util.js"></script>

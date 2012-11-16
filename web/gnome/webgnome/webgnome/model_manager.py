@@ -31,7 +31,25 @@ class ModelManager(object):
             """
             return int(mover_id) in model._movers
 
+        def get_mover(model, mover_id):
+            return model._movers.get(int(mover_id))
+
+        def has_spill_with_id(model, spill_id):
+            """
+            Return True if the model has a spill with the ID ``spill_id``.
+
+            TODO: The manager patches :class:`gnome.model.Model` with this method,
+            but the method should belong to that class.
+            """
+            return int(spill_id) in model._spills
+
+        def get_spill(model, spill_id):
+            return model._spills.get(int(spill_id))
+
         setattr(model.__class__, 'has_mover_with_id', has_mover_with_id)
+        setattr(model.__class__, 'has_spill_with_id', has_spill_with_id)
+        setattr(model.__class__, 'get_mover', get_mover)
+        setattr(model.__class__, 'get_spill', get_spill)
 
         self.running_models[model.id] = model
         return model

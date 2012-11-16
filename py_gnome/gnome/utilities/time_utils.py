@@ -85,7 +85,7 @@ def round_time(dt=None, roundTo=60):
    
    found on : http://stackoverflow.com
    """
-   if dt == None :
+   if dt is None :
        dt = datetime.datetime.now()
    
    dt = numpy.asarray(dt, dtype=numpy.datetime64).reshape(-1)

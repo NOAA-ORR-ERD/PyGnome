@@ -29,7 +29,7 @@ def test_init_bad_path():
     """
     try:
         file = r"SampleData/WindDataFromGnome.WNDX"
-        ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.file_contains.magnitude_direction)
+        ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.data_format.magnitude_direction)
     except IOError as e:
         print(e)
         assert True
@@ -41,7 +41,7 @@ def test_init_units():
     Updated so the user units are read from file
     """
     file = r"SampleData/WindDataFromGnome.WND"
-    ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.file_contains.magnitude_direction)
+    ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.data_format.magnitude_direction)
     assert ossmT2.user_units == basic_types.velocity_units.knots
  
 def test_init_missing_info():
@@ -88,14 +88,12 @@ class TestTimeSeriesInit():
        time = np.array(self.tval['time'], dtype=basic_types.seconds)
        vel_rec = ossm.get_time_value(time)
        print vel_rec
-       #========================================================================
-       # tol = 1e-6
-       # np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, 
-       #                           "get_time_value is not within a tolerance of "+str(tol), 0)
-       # np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, 
-       #                           "get_time_value is not within a tolerance of "+str(tol), 0)
-       # 
-       #========================================================================
+       tol = 1e-6
+       np.testing.assert_allclose(vel_rec['u'], actual['u'], tol, tol, 
+                                 "get_time_value is not within a tolerance of "+str(tol), 0)
+       np.testing.assert_allclose(vel_rec['v'], actual['v'], tol, tol, 
+                                 "get_time_value is not within a tolerance of "+str(tol), 0)
+        
        
         
 class TestGetTimeValues():
@@ -105,7 +103,7 @@ class TestGetTimeValues():
     # sample data generated and stored via Gnome GUI
     file = r"SampleData/WindDataFromGnome.WND"
     ossmT = cy_ossm_time.CyOSSMTime(path=file,
-                                      file_contains=basic_types.file_contains.magnitude_direction)
+                                      file_contains=basic_types.data_format.magnitude_direction)
     
     
     
@@ -170,7 +168,7 @@ class TestReadFileWithConstantWind():
     """
     file = r"SampleData/WindDataFromGnomeConstantWind.WND"
     ossmT = cy_ossm_time.CyOSSMTime(path=file,
-                                      file_contains=basic_types.file_contains.magnitude_direction)
+                                      file_contains=basic_types.data_format.magnitude_direction)
     
     def test_get_time_value(self):
         """Test get_time_values method. It gets the time value pair for the constant wind

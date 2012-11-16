@@ -39,12 +39,12 @@ public:
 	LongPointHdl		GetPointsHdl();
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
-	long 				CheckSurroundingPoints(LONGH maskH, long row, long col) ;
-	Boolean 			InteriorLandPoint(LONGH maskH, long row, long col); 
-	Boolean 			ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long row, long col) ;
-	Boolean 			ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPolyNum, long row, long col) ;
-	void 				ResetMaskValues(LONGH maskH,long landBlockToMerge,long landBlockToJoin);
-	OSErr 				NumberIslands(LONGH *islandNumberH, VelocityFH velocityH,LONGH landWaterInfo,long *numIslands);
+	long 				CheckSurroundingPoints(LONGH maskH, long numRows, long  numCols, long row, long col) ;
+	Boolean 			InteriorLandPoint(LONGH maskH, long numRows, long  numCols, long row, long col); 
+	Boolean 			ThereIsAdjacentLand2(LONGH maskH, VelocityFH velocityH, long numRows, long  numCols, long row, long col) ;
+	Boolean 			ThereIsALowerLandNeighbor(LONGH maskH, long *lowerPolyNum, long numRows, long  numCols, long row, long col) ;
+	void 				ResetMaskValues(LONGH maskH,long landBlockToMerge,long landBlockToJoin,long numRows,long numCols);
+	OSErr 				NumberIslands(LONGH *islandNumberH, VelocityFH velocityH,LONGH landWaterInfo,long numRows,long numCols,long *numIslands);
 	OSErr 				ReorderPoints(VelocityFH velocityH, TMap **newMap, char* errmsg); 
 	OSErr 				ReorderPointsNoMask(VelocityFH velocityH, TMap **newMap, char* errmsg); 
 	OSErr 				ReorderPointsCOOPSMask(VelocityFH velocityH, TMap **newMap, char* errmsg); 
