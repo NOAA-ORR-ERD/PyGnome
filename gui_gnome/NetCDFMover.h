@@ -28,9 +28,7 @@ class NetCDFMover : virtual public NetCDFMover_c,  public TCurrentMover
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
 	
-	//virtual OSErr		TextRead(char *path,TMap **newMap);
 	virtual OSErr		TextRead(char *path,TMap **newMap,char *topFilePath);
-	//OSErr 				ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH);
 	OSErr 				ReadInputFileNames(char *fileNamesPath);
 	
 	// list display methods
@@ -50,11 +48,6 @@ class NetCDFMover : virtual public NetCDFMover_c,  public TCurrentMover
 	
 	virtual OSErr 		SettingsDialog();
 	
-	OSErr					SaveAsNetCDF(char *path,double *lats, double *lons);	// for testing -  may use in CATS eventually
-	//OSErr					SaveAsVis5d(char *path,double *lats, double *lons);	// for testing 
-	//OSErr					SaveAsVis5d(double endLat, double startLon, double dLat, double dLon);	// for testing 
-	
-	//OSErr 				SetTimesForVis5d(int *timestamp, int *datestamp);
 
 };
 

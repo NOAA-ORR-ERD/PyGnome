@@ -19,11 +19,8 @@
 #include "Replacements.h"
 #endif
 
-//NetCDFMoverTri::NetCDFMoverTri (TMap *owner, char *name) : NetCDFMover(owner, name)
 NetCDFMoverTri_c::NetCDFMoverTri_c (TMap *owner, char *name) : NetCDFMoverCurv_c(owner, name)
 {
-	//fVerdatToNetCDFH = 0;	
-	//fVertexPtsH = 0;
 	fNumNodes = 0;
 	fNumEles = 0;
 	bVelocitiesOnTriangles = false;
@@ -47,7 +44,6 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	VelocityRec pt1interp = {0.,0.}, pt2interp = {0.,0.}, pt3interp = {0.,0.};
 	long index, amtOfDepthData = 0, triIndex;
 	
-	//long ptIndex1,ptIndex2,ptIndex3; 
 	long ptIndex1=-1,ptIndex2=-1,ptIndex3=-1; 
 	long pt1depthIndex1, pt1depthIndex2, pt2depthIndex1, pt2depthIndex2, pt3depthIndex1, pt3depthIndex2;
 	InterpolationVal interpolationVal;
@@ -70,9 +66,7 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	else
 	{
 		LongPoint lp;
-		//long triIndex;
 		TDagTree *dagTree = 0;
-		//TTriGridVel3D* triGrid = GetGrid3D(false);	
 		dagTree = ((dynamic_cast<TTriGridVel3D*>(fGrid))) -> GetDagTree();
 		if(!dagTree) return false;
 		lp.h = wp.p.pLong;
@@ -94,12 +88,7 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 			ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
 			ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
 		}
-		//index1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
-		//index2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
-		//index3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
-		//ptIndex1 =  (*fDepthDataInfo)[index1].indexToDepthData;
-		//ptIndex2 =  (*fDepthDataInfo)[index2].indexToDepthData;
-		//ptIndex3 =  (*fDepthDataInfo)[index3].indexToDepthData;
+
 		// probably want to extend to show the velocity at level that is being shown
 		if (fDepthDataInfo) amtOfDepthData = _GetHandleSize((Handle)fDepthDataInfo)/sizeof(**fDepthDataInfo);
 	 	if (amtOfDepthData>0)
@@ -194,21 +183,6 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 		}
 		
 		
-		// Calculate the interpolated velocity at the point
-		//if (interpolationVal.ptIndex1 >= 0) 
-		/*{
-		 velocity.u = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1).u)
-		 +interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2).u)
-		 +interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3).u );
-		 velocity.v = interpolationVal.alpha1*(INDEXH(fStartData.dataHdl,ptIndex1).v)
-		 +interpolationVal.alpha2*(INDEXH(fStartData.dataHdl,ptIndex2).v)
-		 +interpolationVal.alpha3*(INDEXH(fStartData.dataHdl,ptIndex3).v);
-		 }
-		 else	// if negative corresponds to negative ntri, set vel to zero
-		 {
-		 velocity.u = 0.;
-		 velocity.v = 0.;
-		 }*/
 	}
 	else // time varying current 
 	{
@@ -289,31 +263,12 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 		
 		
 		
-		// Calculate the interpolated velocity at the point
-		/*if (interpolationVal.ptIndex1 >= 0) 
-		 {
-		 velocity.u = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).u)
-		 +interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).u)
-		 +interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).u);
-		 velocity.v = interpolationVal.alpha1*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex1).v)
-		 +interpolationVal.alpha2*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex2).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex2).v)
-		 +interpolationVal.alpha3*(timeAlpha*INDEXH(fStartData.dataHdl,ptIndex3).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,ptIndex3).v);
-		 }
-		 else	// if negative corresponds to negative ntri, set vel to zero
-		 {
-		 velocity.u = 0.;
-		 velocity.v = 0.;
-		 }*/
 	}
-	//velocity.u *= fVar.curScale; 
-	//velocity.v *= fVar.curScale; 
 	
 	velocity.u = pt1interp.u + pt2interp.u + pt3interp.u; 
 	velocity.v = pt1interp.v + pt2interp.v + pt3interp.v; 
 	
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * fFileScaleFactor;
-	//lengthS = this->fVar.curScale * lengthU;
-	//lengthS = this->fVar.curScale * fFileScaleFactor * lengthU;
 	lengthS = this->fVar.curScale * lengthU;
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
@@ -334,7 +289,6 @@ Boolean NetCDFMoverTri_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 
 WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
-	// see PtCurMover::GetMove - will depend on what is in netcdf files and how it's stored
 	WorldPoint3D	deltaPoint = {{0,0},0.};
 	WorldPoint refPoint = (*theLE).p;	
 	double dLong, dLat;
@@ -362,9 +316,7 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 	else
 	{
 		LongPoint lp;
-		//long triIndex;
 		TDagTree *dagTree = 0;
-		//TTriGridVel3D* triGrid = GetGrid3D(false);	
 		dagTree = (dynamic_cast<TTriGridVel3D*>(fGrid)) -> GetDagTree();
 		if(!dagTree) return deltaPoint;
 		lp.h = refPoint.pLong;
@@ -403,7 +355,6 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 
 	// Check for constant current 
 	if((dynamic_cast<NetCDFMoverTri *>(this)->GetNumTimesInFile()==1 && !(dynamic_cast<NetCDFMoverTri *>(this)->GetNumFiles()>1)) || (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfCurrentsInTime))
-		//if(GetNumTimesInFile()==1)
 	{
 		// Calculate the interpolated velocity at the point
 		if (interpolationVal.ptIndex1 >= 0) 
@@ -436,7 +387,6 @@ WorldPoint3D NetCDFMoverTri_c::GetMove(const Seconds& model_time, Seconds timeSt
 			startTime = fOverLapStartTime + fTimeShift;
 		else
 			startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
-		//startTime = (*fTimeHdl)[fStartData.timeIndex] + fTimeShift;
 		endTime = (*fTimeHdl)[fEndData.timeIndex] + fTimeShift;
 		timeAlpha = (endTime - time)/(double)(endTime - startTime);
 		
@@ -533,9 +483,6 @@ VelocityRec NetCDFMoverTri_c::GetMove3D(InterpolationVal interpolationVal,float 
  		pt2depthIndex1 = ptIndex2;	pt2depthIndex2 = -1;
  		pt3depthIndex1 = ptIndex3;	pt3depthIndex2 = -1;
  	}
-	//GetDepthIndices(interpolationVal.ptIndex1,depth,&pt1depthIndex1,&pt1depthIndex2);	
-	//GetDepthIndices(interpolationVal.ptIndex2,depth,&pt2depthIndex1,&pt2depthIndex2);	
-	//GetDepthIndices(interpolationVal.ptIndex3,depth,&pt3depthIndex1,&pt3depthIndex2);	
 	
  	// the contributions from each point will default to zero if the depth indicies
 	// come back negative (ie the LE depth is out of bounds at the grid point)
@@ -673,10 +620,6 @@ VelocityRec NetCDFMoverTri_c::GetMove3D(InterpolationVal interpolationVal,float 
 }
 
 
-
-
-
-
 float NetCDFMoverTri_c::GetTotalDepth(WorldPoint refPoint, long triNum)
 {
 #pragma unused(refPoint)
@@ -725,48 +668,6 @@ void NetCDFMoverTri_c::GetDepthIndices(long ptIndex, float depthAtPoint, long *d
 			}
 			break;
 		case MULTILAYER: //
-			/*	long numDepthLevels = GetNumDepthLevelsInFile();
-			 if (depthAtPoint <= totalDepth) // check data exists at chosen/LE depth for this point
-			 {
-			 long j;
-			 for(j=0;j<numDepthLevels-1;j++)
-			 {
-			 if(INDEXH(fDepthLevelsHdl,indexToDepthData+j)<depthAtPoint &&
-			 depthAtPoint<=INDEXH(fDepthLevelsHdl,indexToDepthData+j+1))
-			 {
-			 *depthIndex1 = indexToDepthData+j;
-			 *depthIndex2 = indexToDepthData+j+1;
-			 }
-			 else if(INDEXH(fDepthLevelsHdl,indexToDepthData+j)==depthAtPoint)
-			 {
-			 *depthIndex1 = indexToDepthData+j;
-			 *depthIndex2 = UNASSIGNEDINDEX;
-			 }
-			 }
-			 if(INDEXH(fDepthLevelsHdl,indexToDepthData)==depthAtPoint)	// handles single depth case
-			 {
-			 *depthIndex1 = indexToDepthData;
-			 *depthIndex2 = UNASSIGNEDINDEX;
-			 }
-			 else if(INDEXH(fDepthLevelsHdl,indexToDepthData+numDepthLevels-1)<depthAtPoint)
-			 {
-			 *depthIndex1 = indexToDepthData+numDepthLevels-1;
-			 *depthIndex2 = UNASSIGNEDINDEX; //BOTTOM, for now just extrapolate lowest depth value (at bottom case?)
-			 }
-			 else if(INDEXH(fDepthLevelsHdl,indexToDepthData)>depthAtPoint)
-			 {
-			 *depthIndex1 = indexToDepthData;
-			 *depthIndex2 = UNASSIGNEDINDEX; //TOP, for now just extrapolate highest depth value
-			 }
-			 }
-			 else // no data at this point
-			 {
-			 *depthIndex1 = UNASSIGNEDINDEX;
-			 *depthIndex2 = UNASSIGNEDINDEX;
-			 }
-			 //if (*depthIndex1 != UNASSIGNEDINDEX) *depthIndex1 = ptIndex + (*depthIndex1)*fNumNodes;
-			 //if (*depthIndex2 != UNASSIGNEDINDEX) *depthIndex2 = ptIndex + (*depthIndex2)*fNumNodes;
-			 break;*/
 			if (depthAtPoint <= totalDepth) // check data exists at chosen/LE depth for this point
 			{	// if depths are measured from the bottom this is confusing
 				long j;
@@ -855,7 +756,6 @@ void NetCDFMoverTri_c::GetDepthIndices(long ptIndex, float depthAtPoint, long *d
 
 
 
-//OSErr NetCDFMoverTri::ReorderPoints2(TMap **newMap, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts) 
 OSErr NetCDFMoverTri_c::ReorderPoints2(TMap **newMap, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors, long ntri, Boolean isCCW) 
 {
 	OSErr err = 0;
@@ -1195,7 +1095,6 @@ done:
 	return err;
 }
 
-//OSErr NetCDFMoverTri::ReorderPoints(TMap **newMap, short *bndry_indices, short *bndry_nums, short *bndry_type, long numBoundaryPts) 
 OSErr NetCDFMoverTri_c::ReorderPoints(TMap **newMap, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts) 
 {
 	OSErr err = 0;

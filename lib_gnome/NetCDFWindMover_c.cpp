@@ -26,7 +26,6 @@ NetCDFWindMover_c::NetCDFWindMover_c(TMap *owner,char* name) : WindMover_c(owner
 	
 	fUserUnits = kMetersPerSec;	
 	fWindScale = 1.;
-	//fArrowScale = 1.;
 	fArrowScale = 10.;
 	fFillValue = -1e+34;
 	
@@ -193,7 +192,6 @@ Boolean NetCDFWindMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	if(err) return false;
 	
 	if(dynamic_cast<NetCDFWindMover *>(this)->GetNumTimesInFile()>1)
-		//&& loaded && !err)
 	{
 		if (err = this->GetStartTime(&startTime)) return false;	// should this stop us from showing any velocity?
 		if (err = this->GetEndTime(&endTime)) /*return false;*/
@@ -208,7 +206,7 @@ Boolean NetCDFWindMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 		else
 			timeAlpha = (endTime - time)/(double)(endTime - startTime);	
 	}
-	//if (loaded && !err)
+
 	{	
 		index = this->GetVelocityIndex(wp.p);	// need alternative for curvilinear and triangular
 		
@@ -236,8 +234,6 @@ Boolean NetCDFWindMover_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
 	
-	//sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s]",
-	//	this->className, uStr, sStr);
 	sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
 			this->className, uStr, sStr, fNumRows-indices.v-1, indices.h);
 	
@@ -251,7 +247,7 @@ OSErr NetCDFWindMover_c::PrepareForModelRun()
 OSErr NetCDFWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;
-	if(uncertain) // AH 04/16/12;
+	if(uncertain) 
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;
 		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
@@ -263,7 +259,7 @@ OSErr NetCDFWindMover_c::PrepareForModelStep(const Seconds& model_time, const Se
 	
 	if (!bActive) return noErr;
 	
-	err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
+	err = dynamic_cast<NetCDFWindMover *>(this) -> SetInterval(errmsg, model_time);
 	
 	if (err) goto done;	// again don't want to have error if outside time interval
 	
@@ -314,7 +310,6 @@ WorldPoint3D NetCDFWindMover_c::GetMove(const Seconds& model_time, Seconds timeS
 	// Check for constant wind 
 	if( ( dynamic_cast<NetCDFWindMover *>(this)->GetNumTimesInFile()==1 && !( dynamic_cast<NetCDFWindMover *>(this)->GetNumFiles() > 1 ) ) ||
 	   (fEndData.timeIndex == UNASSIGNEDINDEX && time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds) || (fEndData.timeIndex == UNASSIGNEDINDEX && time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationOfWinds))
-		//if(GetNumTimesInFile()==1)
 	{
 		// Calculate the interpolated velocity at the point
 		if (index >= 0) 
@@ -350,8 +345,6 @@ WorldPoint3D NetCDFWindMover_c::GetMove(const Seconds& model_time, Seconds timeS
 			windVelocity.v = 0.;
 		}
 	}
-	
-	//scale:
 	
 	windVelocity.u *= fWindScale; 
 	windVelocity.v *= fWindScale; 
@@ -391,13 +384,11 @@ OSErr NetCDFWindMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* er
 	int wind_ucmp_id, wind_vcmp_id, sigma_id;
 	static size_t wind_index[] = {0,0,0,0};
 	static size_t wind_count[4];
-	//float *wind_uvals=0,*wind_vvals=0, fill_value = -1e+10;
 	double *wind_uvals=0,*wind_vvals=0, fill_value = -1e+10;
 	long totalNumberOfVels = fNumRows * fNumCols;
 	VelocityFH velH = 0;
 	long latlength = fNumRows;
 	long lonlength = fNumCols;
-	//float scale_factor = 1.;
 	double scale_factor = 1.;
 	Boolean bHeightIncluded = false;
 	
@@ -407,7 +398,6 @@ OSErr NetCDFWindMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* er
 	if (!path || !path[0]) return -1;
 	
 	status = nc_open(path, NC_NOWRITE, &ncid);
-	//if (status != NC_NOERR) {err = -1; goto done;}
 	if (status != NC_NOERR)
 	{
 #if TARGET_API_MAC_CARBON
@@ -433,13 +423,9 @@ OSErr NetCDFWindMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* er
 			bHeightIncluded = false;
 		}
 		else bHeightIncluded = true;
-		// code goes here, might want to check other dimensions (lev), or just how many dimensions uv depend on
-		//status = nc_inq_dimid(ncid, "sigma", &depthid);	//3D
-		//if (status != NC_NOERR) bHeightIncluded = false;
-		//else bHeightIncluded = true;
 	}
 	
-	if (/*numdims==4*/bHeightIncluded)
+	if (bHeightIncluded)
 	{
 		wind_count[1] = 1;	// depth - height here, is this necessary?
 		wind_count[2] = latlength;
@@ -451,10 +437,8 @@ OSErr NetCDFWindMover_c::ReadTimeData(long index,VelocityFH *velocityH, char* er
 		wind_count[2] = lonlength;
 	}
 	
-	//wind_uvals = new float[latlength*lonlength]; 
 	wind_uvals = new double[latlength*lonlength]; 
 	if(!wind_uvals) {TechError("NetCDFWindMover::ReadNetCDFFile()", "new[]", 0); err = memFullErr; goto done;}
-	//wind_vvals = new float[latlength*lonlength]; 
 	wind_vvals = new double[latlength*lonlength]; 
 	if(!wind_vvals) {TechError("NetCDFWindMover::ReadNetCDFFile()", "new[]", 0); err = memFullErr; goto done;}
 	
@@ -504,22 +488,17 @@ LAS:
 	if (uv_ndims==4) {wind_count[1] = 1;wind_count[2] = latlength;wind_count[3] = lonlength;}
 	
 	
-	//status = nc_get_vara_float(ncid, wind_ucmp_id, wind_index, wind_count, wind_uvals);
 	status = nc_get_vara_double(ncid, wind_ucmp_id, wind_index, wind_count, wind_uvals);
 	if (status != NC_NOERR) {err = -1; goto done;}
-	//status = nc_get_vara_float(ncid, wind_vcmp_id, wind_index, wind_count, wind_vvals);
 	status = nc_get_vara_double(ncid, wind_vcmp_id, wind_index, wind_count, wind_vvals);
 	if (status != NC_NOERR) {err = -1; goto done;}
-	//status = nc_get_att_float(ncid, wind_ucmp_id, "_FillValue", &fill_value);	// should get this in text_read and store, but will have to go short to float and back
 	status = nc_get_att_double(ncid, wind_ucmp_id, "_FillValue", &fill_value);	// should get this in text_read and store, but will have to go short to float and back
-	//if (status != NC_NOERR) {status = nc_get_att_float(ncid, wind_ucmp_id, "FillValue", &fill_value); /*if (status != NC_NOERR) {err = -1; goto done;}*/}	// require fill value
 	if (status != NC_NOERR) 
 	{
 		status = nc_get_att_double(ncid, wind_ucmp_id, "FillValue", &fill_value); /*if (status != NC_NOERR) {err = -1; goto done;}}*/	// require fill value
 		if (status != NC_NOERR) {status = nc_get_att_double(ncid, wind_ucmp_id, "missing_value", &fill_value);} /*if (status != NC_NOERR) {err = -1; goto done;}*/
 	}	// require fill value
 	//if (status != NC_NOERR) {err = -1; goto done;}	// don't require fill value
-	//status = nc_get_att_float(ncid, wind_ucmp_id, "scale_factor", &scale_factor);
 	status = nc_get_att_double(ncid, wind_ucmp_id, "scale_factor", &scale_factor);
 	//if (status != NC_NOERR) {err = -1; goto done;}	// don't require scale factor
 	

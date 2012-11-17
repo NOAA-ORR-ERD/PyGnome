@@ -7,8 +7,6 @@
 #include "netcdf.h"
 #include "DagTreeIO.h"
 #include "netcdf.h"
-//#include "v5d.h"
-//#include "binio.h"
 
 
 #ifdef MAC
@@ -42,11 +40,9 @@ NetCDFMover::NetCDFMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 		fVar.crossCurUncertainty = 0.;
 		fVar.durationInHrs = 0.;
 	}
-	//fVar.uncertMinimumInMPS = .05;
 	fVar.uncertMinimumInMPS = 0.0;
 	fVar.curScale = 1.0;
 	fVar.startTimeInHrs = 0.0;
-	//fVar.durationInHrs = 24.0;
 	fVar.gridType = TWO_D; // 2D default
 	fVar.maxNumDepths = 1;	// 2D default - may always be constant for netCDF files
 	
@@ -75,10 +71,6 @@ NetCDFMover::NetCDFMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 	fFillValue = -1e+34;
 	fIsNavy = false;	
 	
-	/*fOffset_u = 0.;
-	 fOffset_v = 0.;
-	 fCurScale_u = 1.;
-	 fCurScale_v = 1.;*/
 	fFileScaleFactor = 1.;	// let user set a scale factor in addition to what is in the file
 	
 	memset(&fStartData,0,sizeof(fStartData));
@@ -162,9 +154,6 @@ void ShowHideVerticalExtrapolationDialogItems(DialogPtr dialog)
 		ShowHideDialogItem(dialog, M33EXTRAPOLATETOVALUE, extrapolateVertically); 
 		ShowHideDialogItem(dialog, M33EXTRAPOLATETOUNITSLABEL, extrapolateVertically); 
 	}
-	//ShowHideDialogItem(dialog, M33ARROWDEPTHAT, (sNetCDFDialogMover->fVar.gridType!=TWO_D || extrapolateVertically) && okToExtrapolate); 
-	//ShowHideDialogItem(dialog, M33ARROWDEPTH, (sNetCDFDialogMover->fVar.gridType!=TWO_D || extrapolateVertically) && okToExtrapolate); 
-	//ShowHideDialogItem(dialog, M33ARROWDEPTHUNITS, (sNetCDFDialogMover->fVar.gridType!=TWO_D || extrapolateVertically) && okToExtrapolate); 
 	ShowHideDialogItem(dialog, M33ARROWDEPTHAT, (sNetCDFDialogMover->fVar.gridType!=TWO_D || (extrapolateVertically && okToExtrapolate))); 
 	ShowHideDialogItem(dialog, M33ARROWDEPTH, (sNetCDFDialogMover->fVar.gridType!=TWO_D || (extrapolateVertically && okToExtrapolate)) && !showVelAtBottom); 
 	ShowHideDialogItem(dialog, M33ARROWDEPTHUNITS, (sNetCDFDialogMover->fVar.gridType!=TWO_D || (extrapolateVertically && okToExtrapolate)) && !showVelAtBottom); 
@@ -189,9 +178,8 @@ short NetCDFMoverSettingsClick(DialogPtr dialog, short itemNum, long lParam, VOI
 			TMap *map = sNetCDFDialogMover -> GetMoverMap();
 			
 			if (showBottomVel) arrowDepth = -2;	//check maxDepth>0
-			if (map /*&& map->IAm(TYPE_PTCURMAP)*/)
+			if (map)
 			{
-				//maxDepth = (dynamic_cast<PtCurMap *>(map)) -> GetMaxDepth2();	// 2D vs 3D ?
 				maxDepth = map -> GetMaxDepth2();	// 2D vs 3D ?
 				//arrowDepth = EditText2Float(dialog, M33ARROWDEPTH);
 				if (arrowDepth > maxDepth)
@@ -1493,7 +1481,6 @@ void NetCDFMover::Draw(Rect r, WorldRect view)
 		if(!loaded && !fVar.bShowGrid) return;
 		
 		if((GetNumTimesInFile()>1 || GetNumFiles()>1) && loaded && !err)
-			//if(GetNumTimesInFile()>1 && loaded && !err)
 		{
 			// Calculate the time weight factor
 			if (GetNumFiles()>1 && fOverLap)
@@ -1531,23 +1518,15 @@ void NetCDFMover::Draw(Rect r, WorldRect view)
 	dy = (boundsRect.hiLat - boundsRect.loLat) / (fNumRows - 1);
 	if (boundsRect.loLong < cmdr.loLong) startCol = (cmdr.loLong - boundsRect.loLong) / dx; else startCol = 0;
 	if (boundsRect.hiLong > cmdr.hiLong) endCol = fNumCols - (boundsRect.hiLong - cmdr.hiLong) / dx; else endCol = fNumCols;
-	//if (boundsRect.loLat < cmdr.loLat) startRow = (cmdr.loLat - boundsRect.loLat) / dy; else startRow = 0;
-	//if (boundsRect.hiLat > cmdr.hiLat) endRow = fNumRows - (boundsRect.hiLat - cmdr.hiLat) / dy; else endRow = fNumRows;
 	if (boundsRect.loLat < cmdr.loLat) endRow =  fNumRows - (cmdr.loLat - boundsRect.loLat) / dy; else endRow = fNumRows;
 	if (boundsRect.hiLat > cmdr.hiLat) startRow = (boundsRect.hiLat - cmdr.hiLat) / dy; else startRow = 0;
-	//newCATSgridRect = {startRow, startCol, endRow-1, endCol-1};
-	//MySetRect(&newCATSgridRect, startCol, startRow, endCol-1, endRow-1);
-	//MySetRect(&newCATSgridRect, startCol, endRow-1, endCol-1, startRow);
 	
-	//for (row = 0 ; row < fNumRows ; row++)
 	for (row = startRow ; row < endRow ; row++)
 	{
-		//for (col = 0 ; col < fNumCols ; col++) {
 		for (col = startCol ; col < endCol ; col++) {
 			
 			SetPt(&p, col, row);
 			wp = ScreenToWorldPoint(p, newCATSgridRect, boundsRect);
-			//wp = ScreenToWorldPoint(p, newCATSgridRect, cmdr);
 			velocity.u = velocity.v = 0.;
 			if (loaded && !err)
 			{
@@ -1557,12 +1536,9 @@ void NetCDFMover::Draw(Rect r, WorldRect view)
 				{
 					// Check for constant current 
 					if((GetNumTimesInFile()==1 && !(GetNumFiles()>1)) || timeAlpha==1)
-						//if(GetNumTimesInFile()==1)
 					{
 						if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 						{
-							//velocity.u = INDEXH(fStartData.dataHdl,index).u;
-							//velocity.v = INDEXH(fStartData.dataHdl,index).v;
 							velocity.u = INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u;
 							velocity.v = INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v;
 						}
@@ -1576,8 +1552,6 @@ void NetCDFMover::Draw(Rect r, WorldRect view)
 					{
 						if(depthIndex2==UNASSIGNEDINDEX) // surface velocity or special cases
 						{
-							//velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).u;
-							//velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).v;
 							velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index+depthIndex1*fNumRows*fNumCols).u;
 							velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index+depthIndex1*fNumRows*fNumCols).v;
 						}
@@ -1605,8 +1579,6 @@ void NetCDFMover::Draw(Rect r, WorldRect view)
 			{
 				inchesX = (velocity.u * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
 				inchesY = (velocity.v * fVar.curScale * fFileScaleFactor) / fVar.arrowScale;
-				//inchesX = (velocity.u * fCurScale_u + fOffset_u) / fVar.arrowScale;
-				//inchesY = (velocity.v * fCurScale_v + fOffset_v) / fVar.arrowScale;
 				pixX = inchesX * PixelsPerInchCurrent();
 				pixY = inchesY * PixelsPerInchCurrent();
 				p2.h = p.h + pixX;
@@ -1643,146 +1615,6 @@ OSErr MonthStrToNum(char *monthStr, short *monthNum)
 }
 
 
-#define TIMES 3
-#define LATS 5
-#define LONS 10
-// for testing - may use in CATS
-OSErr NetCDFMover::SaveAsNetCDF(char *path1,double *lats, double *lons)
-{	// not used
-	OSErr err = 0;	
-	int status, ncid, lat_dim, lon_dim, time_dim, rh_id, rh_dimids[3], old_fill_mode;
-	int i, j, k, lat_id, lon_id, time_id, reftime_id, timelen_dim, dimid[1];
-	//double rh_vals[TIMES*LATS*LONS],fillVal;
-	double *rh_vals=0,fillVal;
-	long timeInHrs;
-	double rh_range[] = {0.0, 100.0};
-	char path[] = "MacintoshHD:Users:coconnor:Projects:VeryImportant:GNOME:codeFiles:foo.nc";
-	//char path[] = "MacintoshHD:VeryImportant:GNOME:codeFiles:foo.nc";
-	char title[] = "example netCDF dataset";
-	static size_t time_index[1];
-	float lat[] = {-90, -87.5, -85, -82.5, -80};
-	float lon[] = {-180, -179, -178, -177, -176, -175, -174, -173, -172, -171};
-	static char reftime[] = {"1992 03 04 12:00"};
-	// should check if file already exists, and ask about overwriting
-	// for some reason the nc_create command gives an error, have to use nccreate with no error checking
-	//status = nc_create(path, NC_NOCLOBBER, &ncid);
-	ncid = nccreate(path,NC_CLOBBER);
-	//if (status != NC_NOERR) {err = -1; goto done;}
-	//status = nc_open(path, NC_WRITE, &ncid);
-	//if (status != NC_NOERR) {err = -1; goto done;}
-	// need to open, put into define mode? - create automatically sets up for 
-	//status = nc_redef(ncid);
-	//if (status != NC_NOERR) {err = -1; goto done;}
-	rh_vals = new double[TIMES*fNumRows*fNumCols]; 
-	if(!rh_vals) {TechError("NetCDFMover::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
-	
-	//status = nc_def_dim(ncid, "lat", 5L, &lat_dim);
-	status = nc_def_dim(ncid, "lat", fNumRows, &lat_dim);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	//status = nc_def_dim(ncid, "lon", 10L, &lon_dim);
-	status = nc_def_dim(ncid, "lon", fNumCols, &lon_dim);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	status = nc_def_dim(ncid, "time", NC_UNLIMITED, &time_dim);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	status = nc_def_dim(ncid, "timelen", 20L, &timelen_dim);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	rh_dimids[0] = time_dim;
-	rh_dimids[1] = lat_dim;
-	rh_dimids[2] = lon_dim;
-	
-	status = nc_def_var(ncid, "rh", NC_DOUBLE, 3, rh_dimids, &rh_id);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	//status = nc_set_fill(ncid, NC_NOFILL, &old_fill_mode);
-	//if (status != NC_NOERR) {err = -1; goto done;}
-	
-	status = nc_put_att_double (ncid, rh_id, "valid_range", NC_DOUBLE, 2, rh_range);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	fillVal = 1e-34;
-	status = nc_put_att_double (ncid, rh_id, "_FillValue", NC_DOUBLE, 1, &fillVal);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	dimid[0] = lat_dim;
-	status = nc_def_var (ncid, "lat", NC_DOUBLE, 1, dimid, &lat_id);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	status = nc_put_att_text (ncid, lat_id, "long_name",/* NC_CHAR,*/ strlen("latitude"), "latitude");
-	status = nc_put_att_text (ncid, lat_id, "units",/* NC_CHAR,*/ strlen("degrees_north"), "degrees_north");
-	dimid[0] = lon_dim;
-	status = nc_def_var (ncid, "lon", NC_DOUBLE, 1, dimid, &lon_id);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	status = nc_put_att_text (ncid, lon_id, "long_name",/* NC_CHAR,*/ strlen("longitude"), "longitude");
-	status = nc_put_att_text (ncid, lon_id, "units",/* NC_CHAR,*/ strlen("degrees_east"), "degrees_east");
-	dimid[0] = time_dim;
-	status = nc_def_var (ncid, "time", NC_LONG, 1, dimid, &time_id);
- 	if (status != NC_NOERR) {err = -1; goto done;}
-	status = nc_put_att_text (ncid, time_id, "long_name",/* NC_CHAR,*/ strlen("time"), "time");
-	status = nc_put_att_text (ncid, time_id, "units",/* NC_CHAR,*/ strlen("hours"), "hours");
-	dimid[0] = timelen_dim;
-	status = nc_def_var (ncid, "reftime", NC_CHAR, 1, dimid, &reftime_id);
- 	if (status != NC_NOERR) {err = -1; goto done;}
-	status = nc_put_att_text (ncid, reftime_id, "long_name",/* NC_CHAR,*/ strlen("reference time"), "reference time");
-	if (status != NC_NOERR) {err = -1; goto done;}
-	status = nc_put_att_text (ncid, reftime_id, "units",/* NC_CHAR,*/ strlen("text_time"), "text_time");
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	
-	status = nc_put_att_text (ncid, NC_GLOBAL, "title",/* NC_CHAR,*/ strlen(title), title);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	for (k=0;k<TIMES;k++)	// only have 1 or 2 times loaded, could get them from the other file
-	{
-		for (i=0; i<fNumRows; i++)
-		{
-			for (j=0; j<fNumCols; j++)
-			{
-				if (k==0) 
-				{
-					if (INDEXH(fStartData.dataHdl,(fNumRows-i-1)*fNumCols+j).u==0)	// shouldn't be changing fillVals to zero in the first place...
-						rh_vals[i*fNumCols+j] = fillVal;
-					else		
-						rh_vals[i*fNumCols+j] = INDEXH(fStartData.dataHdl,(fNumRows-i-1)*fNumCols+j).u;
-				}
-				else rh_vals[i*fNumCols+j+k*fNumRows*fNumCols] = .5*(k+1);
-			}
-		}
-	}
-	status = nc_enddef(ncid);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	// store lat 
-	status = nc_put_var_double(ncid, lat_id, lats);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	// store lon 
-	status = nc_put_var_double(ncid, lon_id, lons);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	// store time 
-	for (j=0;j<TIMES;j++)
-	{
-		time_index[0] = j;
-		timeInHrs = 6*(j+2);
-		nc_put_var1_long(ncid,time_id,time_index,&timeInHrs);
-	}
-	// store reftime 
-	status = nc_put_var_text(ncid, reftime_id, reftime);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	// store rh_vals
-	status = nc_put_var_double(ncid, rh_id, rh_vals);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-	status = nc_close(ncid);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
-done:
-	if (err)
-	{
-		printError("Error writing out netcdf file");
-	}
-	if (rh_vals) delete [] rh_vals;
-	return err;
-}
-
 OSErr NetCDFMover::TextRead(char *path, TMap **newMap, char *topFilePath) 
 {
 	// this code is for regular grids
@@ -1815,8 +1647,8 @@ OSErr NetCDFMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 	strcpy(fVar.userName, fileName);	// maybe use a name from the file
 	
 	status = nc_open(path, NC_NOWRITE, &ncid);
-	//if (status != NC_NOERR) {err = -1; goto done;}
-	if (status != NC_NOERR) /*{err = -1; goto done;}*/
+
+	if (status != NC_NOERR) 
 	{
 #if TARGET_API_MAC_CARBON
 		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
@@ -1824,13 +1656,6 @@ OSErr NetCDFMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 #endif
 		if (status != NC_NOERR) {err = -1; goto done;}
 	}
-	
-	/*status = nc_inq_unlimdim(ncid, &recid);	// issue of time not being unlimited dimension
-	 if (status != NC_NOERR) 
-	 {
-	 status = nc_inq_dimid(ncid, "time", &recid); //Navy
-	 if (status != NC_NOERR) {err = -1; goto done;}
-	 }*/
 	
 	status = nc_inq_dimid(ncid, "time", &recid); //Navy
 	if (status != NC_NOERR) 
@@ -1840,17 +1665,13 @@ OSErr NetCDFMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 	}
 	
 	status = nc_inq_varid(ncid, "time", &timeid); 
-	//if (status != NC_NOERR) {err = -1; goto done;} 
-	if (status != NC_NOERR) {status = nc_inq_varid(ncid, "TIME", &timeid);if (status != NC_NOERR) {err = -1; goto done;} /*timeid = recid;*/} 	// for Ferret files, everything is in CAPS
+	if (status != NC_NOERR) {status = nc_inq_varid(ncid, "TIME", &timeid);if (status != NC_NOERR) {err = -1; goto done;} } 	// for Ferret files, everything is in CAPS
 	/////////////////////////////////////////////////
-	//status = nc_inq_attlen(ncid, recid, "units", &t_len);	// recid is the dimension id not the variable id
+
 	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
 	if (status != NC_NOERR) 
 	{
-		timeUnits = 0;	// files should always have this info
-		timeConversion = 3600.;		// default is hours
-		startTime2 = model->GetStartTime();	// default to model start time
-		/*err = -1; goto done;*/
+		err = -1; goto done;
 	}
 	else
 	{
@@ -1858,7 +1679,6 @@ OSErr NetCDFMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 		char unitStr[24], junk[10];
 		
 		timeUnits = new char[t_len+1];
-		//status = nc_get_att_text(ncid, recid, "units", timeUnits);	// recid is the dimension id not the variable id
 		status = nc_get_att_text(ncid, timeid, "units", timeUnits);
 		if (status != NC_NOERR) {err = -1; goto done;} 
 		timeUnits[t_len] = '\0'; // moved this statement before StringSubstitute, JLM 5/2/10
@@ -2024,10 +1844,8 @@ LAS:
 	lon_vals = new double[lonLength]; 
 	if (depthLength>1) {depthLevels = new double[depthLength]; if (!depthLevels) {err = memFullErr; goto done;}}
 	if (!lat_vals || !lon_vals) {err = memFullErr; goto done;}
-	//status = nc_get_vara_double(ncid, latid, &ptIndex, &pt_count[0], lat_vals);
 	status = nc_get_vara_double(ncid, latvarid, &ptIndex, &pt_count[0], lat_vals);
 	if (status != NC_NOERR) {err=-1; goto done;}
-	//status = nc_get_vara_double(ncid, lonid, &ptIndex, &pt_count[1], lon_vals);
 	status = nc_get_vara_double(ncid, lonvarid, &ptIndex, &pt_count[1], lon_vals);
 	if (status != NC_NOERR) {err=-1; goto done;}
 	if (depthLength>1)
@@ -2047,18 +1865,15 @@ LAS:
 	
 	latIndex = 0;
 	lonIndex = 0;
-	//status = nc_get_var1_double(ncid, latid, &latIndex, &startLat);
+	
 	status = nc_get_var1_double(ncid, latvarid, &latIndex, &startLat);
 	if (status != NC_NOERR) {err=-1; goto done;}
-	//status = nc_get_var1_double(ncid, lonid, &lonIndex, &startLon);
 	status = nc_get_var1_double(ncid, lonvarid, &lonIndex, &startLon);
 	if (status != NC_NOERR) {err=-1; goto done;}
 	latIndex = latLength-1;
 	lonIndex = lonLength-1;
-	//status = nc_get_var1_double(ncid, latid, &latIndex, &endLat);
 	status = nc_get_var1_double(ncid, latvarid, &latIndex, &endLat);
 	if (status != NC_NOERR) {err=-1; goto done;}
-	//status = nc_get_var1_double(ncid, lonid, &lonIndex, &endLon);
 	status = nc_get_var1_double(ncid, lonvarid, &lonIndex, &endLon);
 	if (status != NC_NOERR) {err=-1; goto done;}
 	
@@ -2071,7 +1886,6 @@ LAS:
 		Seconds newTime;
 		// possible units are, HOURS, MINUTES, SECONDS,...
 		timeIndex = i;
-		//status = nc_get_var1_double(ncid, recid, &timeIndex, &timeVal);	// recid is the dimension id not the variable id
 		status = nc_get_var1_double(ncid, timeid, &timeIndex, &timeVal);
 		if (status != NC_NOERR) {strcpy(errmsg,"Error reading times from NetCDF file"); err = -1; goto done;}
 		newTime = RoundDateSeconds(round(startTime2+timeVal*timeConversion));
@@ -2081,51 +1895,34 @@ LAS:
 		//if (i==0) startTime = startTime2+timeVal*timeConversion + fTimeShift;	// time zone conversion
 		if (i==0) startTime = newTime;
 	}
-	//{
-	//Seconds modStTime = model->GetStartTime(), modTime = model->GetModelTime();
 	if (model->GetStartTime() != startTime || model->GetModelTime()!=model->GetStartTime())
 	{
 		if (true)	// maybe use NOAA.ver here?
 		{
 			short buttonSelected;
-			//buttonSelected  = MULTICHOICEALERT(1688,"Do you want to reset the model start time to the first time in the file?",FALSE);
-			//if(!gCommandFileErrorLogPath[0])
 			if(!gCommandFileRun)	// also may want to skip for location files...
 				buttonSelected  = MULTICHOICEALERT(1688,"Do you want to reset the model start time to the first time in the file?",FALSE);
 			else buttonSelected = 1;	// TAP user doesn't want to see any dialogs, always reset (or maybe never reset? or send message to errorlog?)
 			switch(buttonSelected){
 				case 1: // reset model start time
-					//bTopFile = true;
 					model->SetModelTime(startTime);
 					model->SetStartTime(startTime);
 					model->NewDirtNotification(DIRTY_RUNBAR); // must reset the runbar
 					break;  
 				case 3: // don't reset model start time
-					//bTopFile = false;
 					break;
 				case 4: // cancel
 					err=-1;// user cancel
 					goto done;
 			}
 		}
-		//model->SetModelTime(startTime);
-		//model->SetStartTime(startTime);
-		//model->NewDirtNotification(DIRTY_RUNBAR); // must reset the runbar
 	}
-	//}
 	dLat = (endLat - startLat) / (latLength - 1);
 	dLon = (endLon - startLon) / (lonLength - 1);
 	
 	bounds.loLat = ((startLat-dLat/2.))*1e6;
 	bounds.hiLat = ((endLat+dLat/2.))*1e6;
 	
-	/*if (bounds.loLat > bounds.hiLat)
-	 {
-	 bounds.loLat = ((endLat+dLat/2.))*1e6;
-	 bounds.hiLat = ((startLat-dLat/2.))*1e6;
-	 }*/
-	//bounds.loLat = ((startLat))*1e6;
-	//bounds.hiLat = ((endLat))*1e6;
 	if (startLon>180.)	// need to decide how to handle hawaii...
 	{
 		bounds.loLong = (((startLon-dLon/2.)-360.))*1e6;
@@ -2155,8 +1952,6 @@ LAS:
 		{
 			bounds.loLong = ((startLon-dLon/2.))*1e6;
 			bounds.hiLong = ((endLon+dLon/2.))*1e6;
-			//bounds.loLong = ((startLon))*1e6;
-			//bounds.hiLong = ((endLon))*1e6;
 		}
 	}
 	rectGrid = new TRectGridVel;
@@ -2179,8 +1974,6 @@ LAS:
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
-	//err = this -> SetInterval(errmsg);	// if going to allow user to not reset start time to file start time should ignore error here?
-	//if(err) goto done;
 	
 done:
 	if (err)
@@ -2188,7 +1981,7 @@ done:
 		if (!errmsg[0]) 
 			strcpy(errmsg,"Error opening NetCDF file");
 		printNote(errmsg);
-		//printNote("Error opening NetCDF file");
+
 		if(fGrid)
 		{
 			fGrid ->Dispose();
@@ -2198,9 +1991,7 @@ done:
 		if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
 		if (fDepthLevelsHdl) {DisposeHandle((Handle)fDepthLevelsHdl); fDepthLevelsHdl=0;}
 	}
-	//SaveAsNetCDF("junk.dat",lat_vals,lon_vals);	// just for testing
-	//SaveAsVis5d("junk.dat",lat_vals,lon_vals);	// just for testing - moved to separate MyVis5D.cpp
-	//SaveAsVis5d(endLat,startLon,dLat,dLon);	// just for testing
+
 	if (lat_vals) delete [] lat_vals;
 	if (lon_vals) delete [] lon_vals;
 	if (depthLevels) delete [] depthLevels;
@@ -2210,9 +2001,6 @@ done:
 }
 
 
-
-
-//OSErr NetCDFMover::ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH)
 OSErr NetCDFMover::ReadInputFileNames(char *fileNamesPath)
 {
 	// for netcdf files, header file just has the paths, the start and end times will be read from the files
@@ -2250,7 +2038,6 @@ OSErr NetCDFMover::ReadInputFileNames(char *fileNamesPath)
 		strcpy(path,(*inputFilesHdl)[i].pathName);
 		if((*inputFilesHdl)[i].pathName[0] && FileExists(0,0,(*inputFilesHdl)[i].pathName))
 		{
-			//
 			status = nc_open(path, NC_NOWRITE, &ncid);
 			if (status != NC_NOERR) /*{err = -1; goto done;}*/
 			{
@@ -2260,13 +2047,10 @@ OSErr NetCDFMover::ReadInputFileNames(char *fileNamesPath)
 #endif
 				if (status != NC_NOERR) {err = -2; goto done;}
 			}
-			//if (status != NC_NOERR) {err = -2; goto done;}
 			
-			//status = nc_inq_unlimdim(ncid, &recid);	// issue of time not being dimension name
 			status = nc_inq_dimid(ncid, "time", &recid); 
 			if (status != NC_NOERR) 
 			{
-				//status = nc_inq_dimid(ncid, "time", &recid); 
 				status = nc_inq_unlimdim(ncid, &recid);	// maybe time is unlimited dimension
 				if (status != NC_NOERR) {err = -2; goto done;}
 			}
@@ -2278,10 +2062,7 @@ OSErr NetCDFMover::ReadInputFileNames(char *fileNamesPath)
 			status = nc_inq_attlen(ncid, timeid, "units", &t_len);
 			if (status != NC_NOERR) 
 			{
-				timeUnits = 0;	// files should always have this info
-				timeConversion = 3600.;		// default is hours
-				startTime2 = model->GetStartTime();	// default to model start time
-				/*err = -2; goto done;*/
+				err = -2; goto done;
 			}
 			else
 			{
