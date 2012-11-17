@@ -144,8 +144,11 @@ cdef extern from "NetCDFMover_c.h":
         void                 DisposeLoadedData(LoadedData * dataPtr)
         void                 ClearLoadedData(LoadedData * dataPtr)
         void                 DisposeAllLoadedData()
-        OSErr        get_move(int, unsigned long, unsigned long, char *, char *, char *)
         OSErr        get_move(int, unsigned long, unsigned long, char *, char *)
+        OSErr 		PrepareForModelRun()
+        OSErr 		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+        OSErr 		PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)
+        void 		ModelStepIsDone()
         
 cdef extern from "Random_c.h":
     cdef cppclass Random_c:

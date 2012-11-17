@@ -17,11 +17,8 @@
 #include "CROSS.H"
 #include "DagTreeIO.h"
 
-//NetCDFMoverTri::NetCDFMoverTri (TMap *owner, char *name) : NetCDFMover(owner, name)
 NetCDFMoverTri::NetCDFMoverTri (TMap *owner, char *name) : NetCDFMoverCurv(owner, name)
 {
-	//fVerdatToNetCDFH = 0;	
-	//fVertexPtsH = 0;
 	fNumNodes = 0;
 	fNumEles = 0;
 	bVelocitiesOnTriangles = false;
@@ -29,10 +26,6 @@ NetCDFMoverTri::NetCDFMoverTri (TMap *owner, char *name) : NetCDFMoverCurv(owner
 
 void NetCDFMoverTri::Dispose ()
 {
-	//if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
-	//if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
-	
-	//NetCDFMover::Dispose ();
 	NetCDFMoverCurv::Dispose ();
 }
 
@@ -47,7 +40,6 @@ OSErr NetCDFMoverTri::Write (BFPB *bfpb)
 	WorldPointF vertex;
 	OSErr err = 0;
 	
-	//if (err = NetCDFMover::Write (bfpb)) return err;
 	if (err = NetCDFMoverCurv::Write (bfpb)) return err;
 	
 	StartReadWriteSequence("NetCDFMoverTri::Write()");
@@ -59,22 +51,6 @@ OSErr NetCDFMoverTri::Write (BFPB *bfpb)
 	if (err = WriteMacValue(bfpb, fNumEles)) goto done;
 	if (err = WriteMacValue(bfpb, bVelocitiesOnTriangles)) goto done;
 	
-	/*if (fVerdatToNetCDFH) numPoints = _GetHandleSize((Handle)fVerdatToNetCDFH)/sizeof(**fVerdatToNetCDFH);
-	 if (err = WriteMacValue(bfpb, numPoints)) goto done;
-	 for (i=0;i<numPoints;i++)
-	 {
-	 index = INDEXH(fVerdatToNetCDFH,i);
-	 if (err = WriteMacValue(bfpb, index)) goto done;
-	 }
-	 
-	 if (fVertexPtsH) numPts = _GetHandleSize((Handle)fVertexPtsH)/sizeof(**fVertexPtsH);
-	 if (err = WriteMacValue(bfpb, numPts)) goto done;
-	 for (i=0;i<numPts;i++)
-	 {
-	 vertex = INDEXH(fVertexPtsH,i);
-	 if (err = WriteMacValue(bfpb, vertex.pLat)) goto done;
-	 if (err = WriteMacValue(bfpb, vertex.pLong)) goto done;
-	 }*/
 	
 done:
 	if(err)
@@ -90,7 +66,6 @@ OSErr NetCDFMoverTri::Read(BFPB *bfpb)
 	WorldPointF vertex;
 	OSErr err = 0;
 	
-	//if (err = NetCDFMover::Read(bfpb)) return err;
 	if (err = NetCDFMoverCurv::Read(bfpb)) return err;
 	
 	StartReadWriteSequence("NetCDFMoverTri::Read()");
@@ -107,31 +82,11 @@ OSErr NetCDFMoverTri::Read(BFPB *bfpb)
 		if (err = ReadMacValue(bfpb, &bVelocitiesOnTriangles)) goto done;
 	}
 	
-	/*if (err = ReadMacValue(bfpb, &numPoints)) goto done;	
-	 fVerdatToNetCDFH = (LONGH)_NewHandleClear(sizeof(long)*numPoints);	
-	 if(!fVerdatToNetCDFH)
-	 {TechError("NetCDFMoverTri::Read()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	 for (i = 0 ; i < numPoints ; i++) {
-	 if (err = ReadMacValue(bfpb, &index)) goto done;
-	 INDEXH(fVerdatToNetCDFH, i) = index;
-	 }
-	 
-	 if (err = ReadMacValue(bfpb, &numPoints)) goto done;	
-	 fVertexPtsH = (WORLDPOINTFH)_NewHandleClear(sizeof(WorldPointF)*numPoints);	
-	 if(!fVertexPtsH)
-	 {TechError("NetCDFMoverTri::Read()", "_NewHandle()", 0); err = memFullErr; goto done;}
-	 for (i = 0 ; i < numPoints ; i++) {
-	 if (err = ReadMacValue(bfpb, &vertex.pLat)) goto done;
-	 if (err = ReadMacValue(bfpb, &vertex.pLong)) goto done;
-	 INDEXH(fVertexPtsH, i) = vertex;
-	 }*/
 	
 done:
 	if(err)
 	{
 		TechError("NetCDFMoverTri::Read(char* path)", " ", 0); 
-		//if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
-		//if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
 	}
 	return err;
 }
@@ -139,7 +94,6 @@ done:
 ///////////////////////////////////////////////////////////////////////////
 OSErr NetCDFMoverTri::CheckAndPassOnMessage(TModelMessage *message)
 {
-	//return NetCDFMover::CheckAndPassOnMessage(message); 
 	return NetCDFMoverCurv::CheckAndPassOnMessage(message); 
 }
 
@@ -158,7 +112,6 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 	WORLDPOINTFH vertexPtsH=0;
 	FLOATH totalDepthsH=0, sigmaLevelsH=0;
 	float *lat_vals=0,*lon_vals=0,*depth_vals=0, *sigma_vals=0;
-	//short *bndry_indices=0, *bndry_nums=0, *bndry_type=0;
 	long *bndry_indices=0, *bndry_nums=0, *bndry_type=0, *top_verts=0, *top_neighbors=0;
 	static size_t latIndex=0,lonIndex=0,timeIndex,ptIndex=0,bndIndex[2]={0,0};
 	static size_t pt_count, bnd_count[2], sigma_count,topIndex[2]={0,0}, top_count[2];
@@ -181,8 +134,7 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 	strcpy(fVar.userName, fileName); // maybe use a name from the file
 	
 	status = nc_open(path, NC_NOWRITE, &ncid);
-	//if (status != NC_NOERR) {err = -1; goto done;}
-	if (status != NC_NOERR) /*{err = -1; goto done;}*/
+	if (status != NC_NOERR) 
 	{
 #if TARGET_API_MAC_CARBON
 		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
@@ -190,13 +142,7 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 #endif
 		if (status != NC_NOERR) {err = -1; goto done;}
 	}
-	/*status = nc_inq_unlimdim(ncid, &recid);
-	 if (status != NC_NOERR) 
-	 //{err = -1; goto done;}
-	 {
-	 status = nc_inq_dimid(ncid, "time", &recid); //Navy
-	 if (status != NC_NOERR) {err = -1; goto done;}
-	 }*/
+
 	status = nc_inq_dimid(ncid, "time", &recid); 
 	if (status != NC_NOERR) 
 	{
@@ -207,14 +153,10 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 	status = nc_inq_varid(ncid, "time", &timeid); 
 	if (status != NC_NOERR) {err = -1; goto done;} 
 	
-	//status = nc_inq_attlen(ncid, recid, "units", &t_len);
 	status = nc_inq_attlen(ncid, timeid, "units", &t_len);
 	if (status != NC_NOERR) 
 	{
-		timeUnits = 0;	// files should always have this info
-		timeConversion = 3600.;		// default is hours
-		startTime2 = model->GetStartTime();	// default to model start time
-		//err = -1; goto done;
+		err = -1; goto done;
 	}
 	else
 	{
@@ -263,24 +205,17 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 	
 	bnd_count[0] = nbndLength;
 	bnd_count[1] = 1;
-	//bndry_indices = new short[nbndLength]; 
 	bndry_indices = new long[nbndLength]; 
-	//bndry_nums = new short[nbndLength]; 
-	//bndry_type = new short[nbndLength]; 
 	bndry_nums = new long[nbndLength]; 
 	bndry_type = new long[nbndLength]; 
 	if (!bndry_indices || !bndry_nums || !bndry_type) {err = memFullErr; goto done;}
-	//bndIndex[1] = 0;
 	bndIndex[1] = 1;	// take second point of boundary segments instead, so that water boundaries work out
-	//status = nc_get_vara_short(ncid, bndid, bndIndex, bnd_count, bndry_indices);
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_indices);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	bndIndex[1] = 2;
-	//status = nc_get_vara_short(ncid, bndid, bndIndex, bnd_count, bndry_nums);
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_nums);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	bndIndex[1] = 3;
-	//status = nc_get_vara_short(ncid, bndid, bndIndex, bnd_count, bndry_type);
 	status = nc_get_vara_long(ncid, bndid, bndIndex, bnd_count, bndry_type);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
@@ -307,8 +242,6 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 			fVar.maxNumDepths = sigmaLength;
 			sigma_vals = new float[sigmaLength];
 			if (!sigma_vals) {err = memFullErr; goto done;}
-			//sigmaLevelsH = (FLOATH)_NewHandleClear(sigmaLength*sizeof(sigmaLevelsH));
-			//if (!sigmaLevelsH) {err = memFullErr; goto done;}
 			sigma_count = sigmaLength;
 			status = nc_get_vara_float(ncid, sigmavarid, &ptIndex, &sigma_count, sigma_vals);
 			if (status != NC_NOERR) {err = -1; goto done;}
@@ -332,8 +265,6 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		fVar.maxNumDepths = sigmaLength;
 		sigma_vals = new float[sigmaLength];
 		if (!sigma_vals) {err = memFullErr; goto done;}
-		//sigmaLevelsH = (FLOATH)_NewHandleClear(sigmaLength*sizeof(sigmaLevelsH));
-		//if (!sigmaLevelsH) {err = memFullErr; goto done;}
 		sigma_count = sigmaLength;
 		status = nc_get_vara_float(ncid, sigmavarid, &ptIndex, &sigma_count, sigma_vals);
 		if (status != NC_NOERR) {err = -1; goto done;}
@@ -404,29 +335,22 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		if (true)	// maybe use NOAA.ver here?
 		{	// might want to move this so time doesn't get changed if user cancels or there is an error
 			short buttonSelected;
-			//buttonSelected  = MULTICHOICEALERT(1688,"Do you want to reset the model start time to the first time in the file?",FALSE);
-			//if(!gCommandFileErrorLogPath[0])
 			if(!gCommandFileRun)	// also may want to skip for location files...
 				buttonSelected  = MULTICHOICEALERT(1688,"Do you want to reset the model start time to the first time in the file?",FALSE);
 			else buttonSelected = 1;	// TAP user doesn't want to see any dialogs, always reset (or maybe never reset? or send message to errorlog?)
 			switch(buttonSelected){
 				case 1: // reset model start time
-					//bTopFile = true;
 					model->SetModelTime(startTime);
 					model->SetStartTime(startTime);
 					model->NewDirtNotification(DIRTY_RUNBAR); // must reset the runbar
 					break;  
 				case 3: // don't reset model start time
-					//bTopFile = false;
 					break;
 				case 4: // cancel
 					err=-1;// user cancel
 					goto done;
 			}
 		}
-		//model->SetModelTime(startTime);
-		//model->SetStartTime(startTime);
-		//model->NewDirtNotification(DIRTY_RUNBAR); // must reset the runbar
 	}
 	
 	fNumNodes = nodeLength;
@@ -487,32 +411,19 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 				{bVelocitiesOnTriangles = true;}
 			}
 			
-			// fill topology handle with data, makedagtree, boundaries
-			//err = ReorderPoints2(/*newMap,*/top_verts,top_neighbors,neleLength/*bndry_indices,bndry_nums,bndry_type,nbndLength*/);	 
-			/*err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
-			//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
-			if (err) goto done;
-			goto depths;*/
 		}
 	}
 	
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
-	//err = this -> SetInterval(errmsg);
-	//if(err) goto done;
-	
 	if (!bndry_indices || !bndry_nums || !bndry_type) {err = memFullErr; goto done;}
-	//ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
 	
 	
-	//{if (topFilePath[0]) {strcpy(fTopFilePath,topFilePath); err = ReadTopology(fTopFilePath,newMap); goto done;}}
-	//{if (topFilePath[0]) {err = ReadTopology(topFilePath,newMap); goto done;}}
 	{if (topFilePath[0]) {err = ReadTopology(topFilePath,newMap); goto depths;}}
 	// look for topology in the file
 	// for now ask for an ascii file, output from Topology save option
 	// need dialog to ask for file
-	//if (/*fIsNavy*/true)
 	if (!bTopFile)
 	{
 		short buttonSelected;
@@ -555,11 +466,6 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		else
 			strcpy(topPath, reply.fullPath);
 		
-		/*{
-		 err = ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
-		 //err = ReorderPoints(fStartData.dataHdl,newMap,errmsg);	// if u, v input separately only do this once?
-		 goto depths;
-		 }*/
 #else
 		where = CenteredDialogUpLeft(M38c);
 		sfpgetfile(&where, "",
@@ -580,7 +486,6 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 			else
 			{
 				err = dynamic_cast<NetCDFMoverTri *>(this)->ReorderPoints(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength);	 
-				//goto done;
 				if (err) goto done;	
 				goto depths;
 			}	
@@ -599,8 +504,6 @@ OSErr NetCDFMoverTri::TextRead(char *path, TMap **newMap, char *topFilePath)
 		err = ReadTopology(topPath,newMap);	// newMap here
 		if (err) goto done;
 		goto depths;
-		//goto done;
-		//SplitPathFile (s, fileName);
 	}
 	
 	if (bTopInfoInFile/*bVelocitiesOnTriangles*/)
@@ -616,9 +519,7 @@ depths:
 	{
 		for (i=0; i<fNumNodes; i++)
 		{
-			long n;
-			
-			//n = INDEXH(fVerdatToNetCDFH,i);
+			long n;			
 			n = i;
 			if (n<0 || n>= fNumNodes) {printError("indices messed up"); err=-1; goto done;}
 			INDEXH(totalDepthsH,i) = depth_vals[n] * scale_factor;
@@ -1210,8 +1111,6 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 					{
 						velocity.u = INDEXH(fStartData.dataHdl,i).u;
 						velocity.v = INDEXH(fStartData.dataHdl,i).v;
-						//velocity.u = INDEXH(fStartData.dataHdl,depthIndex1).u;
-						//velocity.v = INDEXH(fStartData.dataHdl,depthIndex1).v;
 					}
 					else 	// below surface velocity
 					{
@@ -1225,8 +1124,6 @@ void NetCDFMoverTri::Draw(Rect r, WorldRect view)
 					{
 						velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,i).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,i).u;
 						velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,i).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,i).v;
-						//velocity.u = timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex1).u;
-						//velocity.v = timeAlpha*INDEXH(fStartData.dataHdl,depthIndex1).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,depthIndex1).v;
 					}
 					else	// below surface velocity
 					{

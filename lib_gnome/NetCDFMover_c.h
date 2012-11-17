@@ -26,7 +26,6 @@
 typedef struct {
 	char		pathName[kMaxNameLen];
 	char		userName[kPtCurUserNameLen]; // user name for the file, or short file name
-	//char		userName[kMaxNameLen]; // user name for the file, or short file name - might want to allow longer names...
 	double 	alongCurUncertainty;	
 	double 	crossCurUncertainty;	
 	double 	uncertMinimumInMPS;	
@@ -34,10 +33,8 @@ typedef struct {
 	double 	startTimeInHrs;	
 	double 	durationInHrs;	
 	//
-	//long		numLandPts; // 0 if boundary velocities defined, else set boundary velocity to zero
 	long		maxNumDepths;
 	short		gridType;
-	//double	bLayerThickness;
 	//
 	Boolean 	bShowGrid;
 	Boolean 	bShowArrows;
@@ -59,7 +56,6 @@ enum {
 	I_NETCDFDURATION, 
 	I_NETCDFALONGCUR,
 	I_NETCDFCROSSCUR,
-	//I_NETCDFMINCURRENT
 };
 
 class GNOMEDLL_API NetCDFMover_c : virtual public CurrentMover_c {
@@ -72,7 +68,6 @@ public:
 	Boolean bShowDepthContours;
 	Boolean bShowDepthContourLabels;
 	TGridVel	*fGrid;	//VelocityH		grid; 
-	//PtCurTimeDataHdl fTimeDataHdl;
 	Seconds **fTimeHdl;
 	float **fDepthLevelsHdl;	// can be depth levels, sigma, or sc_r (for roms formula)
 	float **fDepthLevelsHdl2;	// Cs_r (for roms formula)
@@ -88,16 +83,11 @@ public:
 	Boolean fOverLap;
 	Seconds fOverLapStartTime;
 	PtCurFileInfoH	fInputFilesHdl;
-	//Seconds fTimeShift;		// to convert GMT to local time
 	long fTimeShift;		// to convert GMT to local time
 	Boolean fAllowExtrapolationOfCurrentsInTime;
 	Boolean fAllowVerticalExtrapolationOfCurrents;
 	float	fMaxDepthForExtrapolation;
 	Rect fLegendRect;
-	//double fOffset_u;
-	//double fOffset_v;
-	//double fCurScale_u;
-	//double fCurScale_v;
 
 #ifndef pyGNOME
 	NetCDFMover_c (TMap *owner, char *name);
@@ -129,8 +119,8 @@ public:
 	virtual double	GetDepthAtIndex(long depthIndex, double totalDepth);
 #ifndef pyGNOME
 	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
-	virtual OSErr 		PrepareForModelRun(); 
 #endif
+	virtual OSErr 		PrepareForModelRun(); 
 	float		GetTotalDepth(WorldPoint refPoint, long triNum);
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *thisLE,LETYPE leType);
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
@@ -138,23 +128,21 @@ public:
 	
 	long 					GetNumTimesInFile();
 	long 					GetNumFiles();
-	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
-	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
-	OSErr 				ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime);	// AH 07/17/2012
+	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	
+	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time);	
+	OSErr 				ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime);	
 	
-	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	// AH 07/17/2012
+	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	void 				DisposeLoadedData(LoadedData * dataPtr);	
 	void 				ClearLoadedData(LoadedData * dataPtr);
 	void 				DisposeAllLoadedData();
 	
 	virtual long 		GetNumDepthLevelsInFile();	// eventually get rid of this
-	//virtual DepthValuesSetH 	GetDepthProfileAtPoint(WorldPoint refPoint) {return nil;}
 	virtual OSErr 	GetDepthProfileAtPoint(WorldPoint refPoint, long timeIndex, DepthValuesSetH *profilesH) {*profilesH=nil; return 0;}
 	
 
-			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra, char *uncertain_ra);
-			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, char *ref_ra, char *wp_ra);
+			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID);
 
 };
 
