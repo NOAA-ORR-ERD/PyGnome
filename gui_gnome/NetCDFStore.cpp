@@ -26,28 +26,28 @@ NetCDFStore::NetCDFStore() {
 
 bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVarIDs, map<string, int> *ncDimIDs) {
     
-	if(!model->IsUncertain() && uncertain)
-		return true;
+	//if(!model->IsUncertain() && uncertain)	// this is checked on the outside...
+		//return true;
 	
     int c, i, j, n;
-    bool threeMovement;
+    //bool threeMovement;
 	TLEList* thisLEList;
     CMyList* LESetsList;
     list<LERecP> tLEsContainer;
     NetCDFStore* netStore;
 	char errStr[256];
     
-    netStore = new NetCDFStore();
+    netStore = new NetCDFStore(); // why do we need this?
     tLEsContainer = list<LERecP>();
     LESetsList = model->LESetsList;
 	
- // Grab initial positions, and store them;
+ // Grab initial positions, and store them - may want to do this on the outside and pass in the tLEsContainer
 
     for (i = 0, n = LESetsList->GetItemCount(); i < n; i++) {
 	    LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		if(!thisLEList->IsActive()) continue;
-		LETYPE typy = thisLEList->GetLEType();
-        if(uncertain && typy == UNCERTAINTY_LE && model->IsUncertain()) {
+		LETYPE type = thisLEList->GetLEType();
+        if(uncertain && type == UNCERTAINTY_LE /*&& model->IsUncertain()*/) {
 			for (j = 0, c = thisLEList->numOfLEs; j < c; j++) {
 				if(INDEXH(thisLEList->LEHandle, j).statusCode == OILSTAT_NOTRELEASED);
 				else {
@@ -67,7 +67,7 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 				}
 			}
 		}
-        else if(!uncertain && typy != UNCERTAINTY_LE) {
+        else if(!uncertain && type != UNCERTAINTY_LE) {
 			for (j = 0, c = thisLEList->numOfLEs; j < c; j++) {
 					if(INDEXH(thisLEList->LEHandle, j).statusCode == OILSTAT_NOTRELEASED);
 					else {
@@ -100,7 +100,7 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 	try {	
 		netStore->lon = new float[c];
 		netStore->lat = new float[c];
-		if(threeMovement = model->ThereIsA3DMover(&tFloat))
+		//if(threeMovement = model->ThereIsA3DMover(&tFloat))	// always output depth
 			netStore->depth = new float[c];
 		netStore->mass = new float[c];
 		netStore->age = new long[c];
@@ -129,7 +129,7 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 		netStore->lon[j] /= 1000000;
         netStore->lat[j] = tLE->p.pLat;
 		netStore->lat[j] /= 1000000;
-        if(threeMovement)
+        //if(threeMovement)
             netStore->depth[j] = tLE->z;
         netStore->mass[j] = GetLEMass(*tLE);
 		float tMass = netStore->mass[j];
@@ -149,7 +149,7 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
 		netStore->age[j] += model->modelTime - tLE->releaseTime;
 		netStore->flag[j] = 0;
 		netStore->status[j] = OILSTAT_INWATER;
-		if(threeMovement)
+		//if(threeMovement)
 			if(tLE->z > 0)
 				netStore->flag[j] += 16;
 
@@ -179,12 +179,13 @@ bool NetCDFStore::Capture(TModel* model, bool uncertain, map<string, int> *ncVar
     tLEsContainer.clear();
 	netStore->ncVarIDs = ncVarIDs;
 	netStore->ncDimIDs = ncDimIDs;
-    netStore->Write(model, threeMovement, uncertain);
+   // netStore->Write(model, threeMovement, uncertain);
+    netStore->Write(model, uncertain);
 	
 	
 	delete[] netStore->lat;
 	delete[] netStore->lon;
-	if(threeMovement)
+	//if(threeMovement)
 		delete[] netStore->depth;
 	delete[] netStore->mass;
 	delete[] netStore->flag;
@@ -214,10 +215,11 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	Seconds seconds;
 	char currentTimeStr[256], startTimeStr[256], timeStr[256];
 
-	if(!model->IsUncertain() && uncertain)
-		return true;
+	//if(!model->IsUncertain() && uncertain)
+		//return true;
 	
-    bool threeMovement;
+    //bool threeMovement;
+	// pass in model start time, outputStepsCount, and ncID - may not need uncertain
 
 // Assuming that the output format will not change.
 
@@ -276,15 +278,16 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
     ++varIDs;
 
 	float tFloat;
-    threeMovement = model->ThereIsA3DMover(&tFloat);
+    //threeMovement = model->ThereIsA3DMover(&tFloat);
 	
-	if(threeMovement) {
-		ncErr = nc_def_var(ncID, "depth", NC_FLOAT, threeMovement ? VAR_DIMS : 0, tData, varIDs);
+	//if(threeMovement) {
+		//ncErr = nc_def_var(ncID, "depth", NC_FLOAT, threeMovement ? VAR_DIMS : 0, tData, varIDs);
+		ncErr = nc_def_var(ncID, "depth", NC_FLOAT, VAR_DIMS, tData, varIDs);
 		if(!CheckNC(ncErr)) return false; // handle error.
 
 		(*ncVarIDs)["Depth"] = *varIDs;
 		++varIDs;
-	}
+	//}
 
     ncErr = nc_def_var(ncID, "mass", NC_FLOAT, VAR_DIMS, tData, varIDs);
     if(!CheckNC(ncErr)) return false; // handle error.
@@ -434,7 +437,7 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 
 	// Depth
 	
-	if(threeMovement) {
+	//if(threeMovement) {
 		tStr = "particle depth below sea surface";
 		ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Depth"], "long_name", strlen(tStr), tStr);
 		if(!CheckNC(ncErr)) return false;
@@ -447,7 +450,7 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 		ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Depth"], "axis", strlen(tStr), tStr);
 		if(!CheckNC(ncErr)) return false;
 
-	}
+	//}
 	
 	// Mass
 	
@@ -539,7 +542,8 @@ bool NetCDFStore::Read() {
     return true;
 }
 
-bool NetCDFStore::Write(TModel* model, bool threeMovement, bool uncertain) {
+//bool NetCDFStore::Write(TModel* model, bool threeMovement, bool uncertain) {
+bool NetCDFStore::Write(TModel* model, bool uncertain) {
 
     
 	short ncID, *cFlag, ncErr = 0;
@@ -553,13 +557,13 @@ bool NetCDFStore::Write(TModel* model, bool threeMovement, bool uncertain) {
 		lastCoord = &lastCoord_M;
 	else
 		lastCoord = &lastCoord_C;
-    timeStep = model->currentStep;
+    //timeStep = model->currentStep;
 	if(!uncertain)
 		ncID = model->ncID;
 	else
 		ncID = model->ncID_C;
 
-    // Check coordinates..
+    // Check coordinates.. - maybe pass in a isFirstStep to avoid the need for model
     if((*lastCoord).size() == 0 || model->ncSnapshot || (!model->bHindcast && model->modelTime == model->GetStartTime()) || (model->bHindcast && model->modelTime == model->GetEndTime())) {
         (*lastCoord)["Time"] = 0;
         (*lastCoord)["Particle_Count"] = 0;
@@ -608,7 +612,7 @@ bool NetCDFStore::Write(TModel* model, bool threeMovement, bool uncertain) {
     (*lastCoord)["Latitude"]+=j;
     if(!CheckNC(ncErr)) return false; // handle error.
     
-    if(threeMovement) {
+    //if(threeMovement) {
                 // Depths:
         tID = (*this->ncVarIDs)["Depth"];
         for(cDepth = this->depth, j = 0; ncErr == NC_NOERR && j < this->pCount; j++, cDepth++) {
@@ -617,7 +621,7 @@ bool NetCDFStore::Write(TModel* model, bool threeMovement, bool uncertain) {
         }
         (*lastCoord)["Depth"]+=j;
         if(!CheckNC(ncErr)) return false;
-    }
+    //}
 
             // Mass:
     tID = (*this->ncVarIDs)["Mass"];

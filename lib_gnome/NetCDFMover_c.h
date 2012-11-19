@@ -58,6 +58,22 @@ enum {
 	I_NETCDFCROSSCUR,
 };
 
+class TimeGridVel_c
+{
+public:
+	
+	TimeGridVel_c();
+	virtual	~TimeGridVel_c() { Dispose (); }
+	
+	//virtual OSErr TextWrite(char *path){return noErr;}
+	virtual OSErr TextRead (char *path){return noErr;}
+	//virtual OSErr Write(BFPB *bfpb)=0;
+	//virtual OSErr Read (BFPB *bfpb)=0;
+	//virtual void Draw(Rect r, WorldRect view,WorldPoint refP,double refScale,
+					 // double arrowScale,double arrowDepth, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)=0;
+	virtual void	Dispose() { return; }
+};
+
 class GNOMEDLL_API NetCDFMover_c : virtual public CurrentMover_c {
 
 public:
@@ -88,6 +104,7 @@ public:
 	Boolean fAllowVerticalExtrapolationOfCurrents;
 	float	fMaxDepthForExtrapolation;
 	Rect fLegendRect;
+	//TimeGridVel_c *netcdfGrid;
 
 #ifndef pyGNOME
 	NetCDFMover_c (TMap *owner, char *name);
