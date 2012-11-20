@@ -64,7 +64,7 @@ class WindTimeObjectForm(DateTimeForm):
     direction_degrees = IntegerField(
         validators=[Optional(), NumberRange(min=0, max=360)])
 
-    auto_increment_time_by = IntegerField('Auto-increment time by')
+    auto_increment_time_by = IntegerField('Auto-increment time by', default=6)
 
     def get_direction_degree(self):
         """
@@ -91,7 +91,6 @@ class WindMoverForm(ObjectForm):
         (SCALE_DEGREES, 'deg')
     )
 
-    add_form = FormField(WindTimeObjectForm)
     time_series = FieldList(FormField(WindTimeObjectForm), min_entries=1)
 
     is_active = BooleanField('Active', default=True)

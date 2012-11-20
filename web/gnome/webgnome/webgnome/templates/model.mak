@@ -4,7 +4,7 @@
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
 
-    <script src="/static/js/underscore-min.js"></script>
+    <script src="/static/js/underscore.js"></script>
 </%block>
 
 <%block name="navbar">
@@ -104,12 +104,13 @@
 <%block name="javascript">
     <script src='/static/js/modal-responsive-fix.min.js' type="text/javascript"></script>
     <script src='/static/js/touchscroll.js' type="text/javascript"></script>
-    <script src='/static/js/mousetrap.min.js' type="text/javascript"></script>
+    <script src='/static/js/mousetrap.js' type="text/javascript"></script>
     <script src='/static/js/jquery.imagesloaded.min.js' type="text/javascript"></script>
     <script src='/static/js/jquery.cycle.all.latest.js' type="text/javascript"></script>
     <script src='/static/js/jquery.cookie.js' type="text/javascript"></script>
     <script src="/static/js/jquery.dynatree.min.js"></script>
-    <script src="/static/js/backbone-min.js"></script>
+    <script src="/static/js/moment.js"></script>
+    <script src="/static/js/backbone.js"></script>
     <script src="/static/js/gnome.js"></script>
 
     <script type="text/javascript">

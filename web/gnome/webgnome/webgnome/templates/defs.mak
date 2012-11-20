@@ -12,7 +12,7 @@
 </%def>
 
 <%def name="form_control(field, help_text=None, label=None, hidden=False,
-                         extra_classes=None, opts=None)">
+                         extra_classes=None, use_id=False, opts=None)">
     <div class="control-group  ${'error' if field.errors else ''}
                 % if hidden and not field.errors:
                     hidden
@@ -24,15 +24,21 @@
                 % endif
                 ">
         <label class="control-label">
-            % if label:
-                ${label}
-            % else:
+            % if label is None:
                 ${field.label.text}
+            % else:
+                ${label}
             % endif
         </label>
 
         <div class="controls">
-            ${field(**opts) if opts else field}
+            <%
+                # Use blank IDs for form controls by default to avoid stomping
+                # on reusable form components.
+                if use_id is False and opts and 'id' not in opts:
+                    opts['id'] = ''
+            %>
+            ${field(**opts) if opts else field(id='')}
             % if help_text:
                 <span class="help-inline">${help_text}</span>
             % endif
@@ -52,7 +58,7 @@
         % endif
 
         <div class="controls">
-        ${form.hour(class_='hour')} : ${form.minute(class_="minute")}
+        ${form.hour(id='', class_='hour')} : ${form.minute(id='', class_="minute")}
             % if help_text:
                 <span class="help-inline">${help_text}</span>
             % endif

@@ -3,7 +3,10 @@ util.py: Utility function for the webgnome package.
 """
 import datetime
 import inspect
+import uuid
+
 from functools import wraps
+from pyramid.renderers import JSON
 
 
 def make_message(type, text):
@@ -50,6 +53,12 @@ def json_date_adapter(obj, request):
     """
     return encode_json_date(obj)
 
+
+gnome_json = JSON(adapters=(
+    (datetime.datetime, json_date_adapter),
+    (datetime.date, json_date_adapter),
+    (uuid.UUID, lambda obj, request: str(obj))
+))
 
 def get_model_from_request(request):
     """

@@ -79,6 +79,8 @@ legend {
     line-height: 20px;
 }
 
+#hour,
+#minute,
 .hour,
 .minute {
     width: 20px;
@@ -112,3 +114,59 @@ legend {
 .background {
     z-index: 10;
 }
+
+.alert {
+    max-width: 450px;
+}
+
+select, textarea,
+input[type="text"],
+input[type="password"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="date"],
+input[type="month"],
+input[type="time"],
+input[type="week"],
+input[type="number"],
+input[type="email"],
+input[type="url"],
+input[type="search"],
+input[type="tel"],
+input[type="color"],
+.uneditable-input {
+    padding: 1.5px;
+}
+
+.form-horizontal .control-group {
+    margin: 1px 0 5px 0;
+}
+
+.edit-time-forms th {
+    padding: 0 8px 8px 8px;
+}
+
+.auto_increment_by {
+    width: 40px;
+}
+
+.direction_degrees {
+    width: 100px;
+}
+
+.speed {
+    width: 100px;
+}
+
+.speed_type {
+    width: 110px;
+}
+
+select, input[type="file"] {
+    height: 25px;
+}
+
+.help-inline {
+    padding-top: 4px;
+}
+

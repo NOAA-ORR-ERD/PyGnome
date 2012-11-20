@@ -753,7 +753,7 @@ var MapView = Backbone.View.extend({
         img.appendTo(map);
 
         $(img).imagesLoaded(function() {
-            window.setTimeout(_this.showImageForTimeStep, 150, [timeStep.id]);
+            window.setTimeout(_this.showImageForTimeStep, 50, [timeStep.id]);
         });
     },
 
@@ -763,7 +763,7 @@ var MapView = Backbone.View.extend({
         // We must be playing a cached model run because the image already
         // exists. In all other cases the image should NOT exist.
         if (imageExists) {
-            window.setTimeout(this.showImageForTimeStep, 150, [timeStep.id]);
+            window.setTimeout(this.showImageForTimeStep, 50, [timeStep.id]);
             return;
         }
 
@@ -1627,9 +1627,13 @@ var ModalFormView = Backbone.View.extend({
         $html.appendTo(this.$container);
 
         this.$el = $('#' + $html.attr('id'));
-        this.$el.find('.date').datepicker({
-            changeMonth: true,
-            changeYear: true
+
+         // Setup datepickers
+        _.each(this.$el.find('.date'), function(field) {
+            $(field).datepicker({
+                changeMonth: true,
+                changeYear: true
+            });
         });
 
         var stepWithError = this.getFirstStepWithError();
@@ -1766,6 +1770,7 @@ var WindMoverFormView = ModalFormView.extend({
             _this.renderTimeTable();
         });
 
+        _this.renderTimeTable();
     },
 
     showEditForm: function(editIcon) {
@@ -1802,9 +1807,9 @@ var WindMoverFormView = ModalFormView.extend({
      Clone the add time form and add an item to the table of time series.
      */
     addTime: function() {
-        var $origForm = this.$el.find('.add-time-form').find('.time-form');
-        var $newForm = $origForm.clone(true).addClass('hidden');
-        var formId = $origForm.find(':input')[0].id;
+        var $addForm = this.$el.find('.add-time-form').find('.time-form');
+        var $newForm = $addForm.clone(true).addClass('hidden');
+        var formId = $addForm.find(':input')[0].id;
         var formNum = parseInt(formId.replace(/.*-(\d{1,4})-.*/m, '$1')) + 1;
 
         // There are no edit forms, so this is the first time series.
@@ -1812,9 +1817,18 @@ var WindMoverFormView = ModalFormView.extend({
             formNum = 0;
         }
 
-        // Increment the IDs of the add form elements  -- it should always be
+        // Select all of the options selected on the original form.
+        _.each($addForm.find('select option:selected'), function(opt) {
+            var $opt = $(opt);
+            var name = $opt.closest('select').attr('name');
+            var $newOpt = $newForm.find(
+                'select[name="' + name + '"] option[value="' + $opt.val() + '"]');
+            $newOpt.attr('selected', true);
+        });
+
+        // Increment the IDs of the add form elements -- it should always be
         // the last form in the list of edit forms.
-        $origForm.find(':input').each(function() {
+        $addForm.find(':input').each(function() {
             var id = $(this).attr('id');
             if (id) {
                 id = id.replace('-' + (formNum - 1) + '-', '-' + formNum + '-');
@@ -1827,24 +1841,68 @@ var WindMoverFormView = ModalFormView.extend({
 
         this.$timesTable.after($newForm);
         this.renderTimeTable();
+
+
+        var autoIncrementBy = $addForm.find('.auto_increment_by').val();
+
+        // Increase the date and time on the Add form if 'auto increase by'
+        // value was provided.
+        if (autoIncrementBy) {
+            var $date = $addForm.find('.date');
+            var $hour = $addForm.find('.hour');
+            var $minute = $addForm.find('.minute');
+            var time = $hour.val()  + ':' + $minute.val();
+
+            // TODO: Handle a date-parsing error here.
+            var dateTime = moment($date.val() + ' ' + time);
+            dateTime.add('hours', autoIncrementBy);
+
+            $date.val(dateTime.format("MM/DD/YYYY"));
+            $hour.val(dateTime.hours());
+            $minute.val(dateTime.minutes());
+        }
     },
     
     renderTimeTable: function() {
         var _this = this;
         var $forms = this.$el.find('.edit-time-forms .time-form');
+        var rows = [];
 
         this.$timesTable.find('tr').not('.table-header').remove();
 
         _.each($forms, function(form) {
             var $form = $(form);
             var tmpl = _.template($("#time-series-row").html());
+            var speedType = $form.find('.speed_type option:selected').val();
+            var direction = $form.find('.direction').val();
 
-            var tr = $(tmpl({
-                date: $form.find('.date').val(),
-                time: $form.find('.hour').val() + ' : ' + $form.find('.minute').val(),
-                direction: $form.find('.direction').val(),
-                speed: $form.find('.speed').val() + ' ' + $form.find('.speed_type').val()
-            })).data('data-form', $form).appendTo(_this.$timesTable);
+            if (direction === 'Degrees true') {
+                direction = $form.find('.direction_degrees').val() + ' &deg;';
+            }
+
+            var dateTime = moment(
+                $form.find('.date').val() + ' ' +
+                $form.find('.hour').val() + ':' +
+                $form.find('.minute').val());
+
+            rows.push($(tmpl({
+                date: dateTime.format('MM/DD/YYYY'),
+                time: dateTime.format('HH:mm'),
+                direction: direction,
+                speed: $form.find('.speed').val() + ' ' + speedType
+            })).data('data-form', $form));
+        });
+
+        // Sort table by date and time of each item.
+        rows = _.sortBy(rows, function($tr) {
+            var date = $tr.find('.time-series-date').text();
+            var time = $tr.find(
+                '.time-series-time').text().replace(' ', '', 'g');
+            return Date.parse(date + ' ' + time)
+        });
+
+        _.each(rows, function($row) {
+            $row.appendTo(_this.$timesTable);
         });
     }
 });
@@ -1989,6 +2047,14 @@ var AppView = Backbone.View.extend({
 
         this.setupEventHandlers();
         this.setupKeyboardHandlers();
+
+        // Setup datepickers
+        _.each($('.date'), function(field) {
+            $(field).datepicker({
+                changeMonth: true,
+                changeYear: true
+            });
+        });
     },
 
     setupEventHandlers: function() {

@@ -59,7 +59,7 @@
     </div>
 </footer>
 
-<script src="/static/js/bootstrap.min.js"></script>
+<script src="/static/js/bootstrap.js"></script>
 <script src="/static/js/namespace.js"></script>
 <script src="/static/js/util.js"></script>
 <%block name="javascript"> </%block>

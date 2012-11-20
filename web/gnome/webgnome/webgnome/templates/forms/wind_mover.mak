@@ -35,18 +35,7 @@
 
                     <div class="span6 add-time-form">
                         <div class='time-form'>
-                            ${defs.form_control(add_form.date, opts={'class_': 'date'})}
-                            ${defs.time_control(add_form, "Time (24 hour)")}
-                            ${defs.form_control(add_form.direction,
-                                                'Select "Degrees true" to enter degrees',
-                                                opts={'class_': 'direction'})}
-                            ${defs.form_control(add_form.direction_degrees,
-                                                hidden=True,
-                                                opts={'class_': 'direction_degrees'})}
-                            ${defs.form_control(add_form.speed,
-                                                opts={'class_': 'speed'})}
-                            ${defs.form_control(add_form.speed_type,
-                                                opts={'class_': 'speed_type'})}
+                            <%include file="wind_time_object_form.mak" args="form=add_form"/>
 
                             <div class="control-group add-time-buttons">
                                 <div class="controls">
@@ -84,19 +73,10 @@
                             </tbody>
                         </table>
 
-                        % for time in form.time_series[:-1]:
+                        % for time_form in form.time_series[:-1]:
                             <div class="edit-time-form time-form hidden">
-                                ${defs.form_control(time.date, {'class_': 'date'})}
-                                ${defs.time_control(time, "Time (24 hour)")}
-                                ${defs.form_control(time.direction,
-                                                    'Select "Degrees true" to enter degrees',
-                                                    {'class_': 'direction'})}
-                                ${defs.form_control(time.direction_degrees,
-                                                    hidden=True,
-                                                    opts={'class_': 'direction_degrees'})}
-                                ${defs.form_control(time.speed, {'class_': 'speed'})}
-                                ${defs.form_control(time.speed_type,
-                                                    {'class_': 'speed_type'})}
+                            <%include file="wind_time_object_form.mak"
+                                      args="form=time_form"/>
 
                                 <div class="control-group edit-time-buttons">
                                     <div class="controls">
@@ -136,10 +116,10 @@
     <!-- A template for time series item rows. -->
      <script type="text/template" id="time-series-row">
          <tr>
-             <td>{{ date }}</td>
-             <td>{{ time }}</td>
-             <td>{{ speed }}</td>
-             <td>{{ direction }}</td>
+             <td class="time-series-date">{{ date }}</td>
+             <td class="time-series-time">{{ time }}</td>
+             <td class="time-series-speed">{{ speed }}</td>
+             <td class="time-series-direction">{{ direction }}</td>
              <td><a href="#"><i class="icon-edit"></i></a>
                  <a href="#"><i class="icon-trash"></i></a>
              </td>

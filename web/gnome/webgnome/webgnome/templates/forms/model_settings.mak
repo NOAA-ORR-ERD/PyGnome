@@ -48,8 +48,6 @@
     </div>
     <div class="modal-footer">
         <button class="btn" data-dismiss="modal" aria-hidden="true"> Cancel </button>
-        <button class="btn btn-prev hidden">Previous</button>
-        <button class="btn btn-next">Next</button>
-        <button class="btn btn-primary hidden">Save</button>
+        <button class="btn btn-primary">Save</button>
     </div>
 </div>
