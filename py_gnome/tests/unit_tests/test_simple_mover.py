@@ -12,7 +12,7 @@ import numpy as np
 
 from gnome import spill
 
-from gnome import simple_mover
+from gnome.movers import simple_mover
 
 from gnome.utilities.projections import FlatEarthProjection as proj
 

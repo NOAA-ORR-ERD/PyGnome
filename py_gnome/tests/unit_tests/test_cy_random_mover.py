@@ -8,7 +8,9 @@ import numpy as np
 
 from gnome import basic_types
 from gnome.cy_gnome import cy_random_mover
-from gnome import greenwich
+from gnome.utilities import time_utils
+
+import datetime
 
 import pytest
 
@@ -37,7 +39,8 @@ class Common():
     time_step = 60
     
     def __init__(self):
-        self.model_time = greenwich.gwtm('01/01/1970 11:00:00').time_seconds
+        time = datetime.datetime(2012, 8, 20, 13)
+        self.model_time = time_utils.date_to_sec( time)
         ################
         # init. arrays #
         ################
