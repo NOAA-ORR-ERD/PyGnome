@@ -1,6 +1,7 @@
 import json
 
 from collections import OrderedDict
+from webob.multidict import MultiDict
 
 from base import FunctionalTestBase, UnitTestBase
 from webgnome.model_manager import ModelManager
@@ -52,7 +53,7 @@ class WindMoverFunctionalTests(FunctionalTestBase, WindMoverFixtures):
             ('confirm_new', True)
         ]))
 
-    def test_create_wind_mover_variable(self):
+    def test_create_wind_mover_with_multiple_time_series(self):
         data = self.create_wind_mover_data()
         hour = 1
 
@@ -69,15 +70,43 @@ class WindMoverFunctionalTests(FunctionalTestBase, WindMoverFixtures):
         self.assertEqual(json_resp['type'], 'mover')
         self.assertIsNotNone(json_resp['id'])
 
+    def test_create_wind_mover_with_one_time_series(self):
+        data = self.create_wind_mover_data()
+        data.update(
+            self.create_time_series_data(0))
 
-class WindMoverUnitTests(UnitTestBase):
-    def test_create_wind_mover(self):
+        self.create_model()
+        resp = self.testapp.post('/model/mover/wind', data)
+
+        json_resp = json.loads(resp.body)
+
+        self.assertEqual(json_resp['form_html'], None)
+        self.assertEqual(json_resp['type'], 'mover')
+        self.assertIsNotNone(json_resp['id'])
+
+
+class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
+    def get_model_request(self):
+        """
+        Get a :class:`pyramid.testing.DummyRequest` object with a model ID
+        in its session that points to running :class:`gnome.model.Model`.
+        """
         request = self.get_request()
         request.registry.settings.Model = ModelManager()
         model = request.registry.settings.Model.create()
         request.registry.settings['model_session_key'] = 'model_key'
         request.session['model_key'] = model.id
-        # TODO: Add multidict of params here I guess
-        resp = create_wind_mover(request)
-        print resp
+        return model, request
 
+    def test_create_wind_mover(self):
+        self.config.add_route('create_wind_mover', '/mover')
+
+        model, request = self.get_model_request()
+        request.method = 'POST'
+        data = self.create_wind_mover_data()
+        data.update(self.create_time_series_data(1))
+
+        request.POST = MultiDict(data)
+        resp = create_wind_mover(request)
+
+        self.assertEqual(model.movers[0].id, resp['id'])

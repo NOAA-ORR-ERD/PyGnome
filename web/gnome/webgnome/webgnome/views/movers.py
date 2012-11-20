@@ -109,13 +109,8 @@ def update_wind_mover(request, model):
     opts = {'obj': mover} if mover else {}
     form = WindMoverForm( request.POST or None, **opts)
 
-    print 'wtf'
-
     if request.method == 'POST' and form.validate():
-        print 'no errors?'
         return _update_wind_mover_post(model, mover_id, form)
-
-    print form.errors
 
     html = render('webgnome:templates/forms/wind_mover.mak', {
         'form': form,
