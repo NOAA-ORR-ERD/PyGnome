@@ -148,12 +148,12 @@ def create_model(request):
 @util.json_require_model
 def model_settings(request, model):
     form = ModelSettingsForm(request.POST)
-    data = {}
 
     if request.method == 'POST' and form.validate():
         date = form.date.data
 
-        model.time_step = form.computation_time_step.data
+        model.time_step = datetime.timedelta(
+            seconds=form.computation_time_step.data)
 
         model.start_time = datetime.datetime(
             day=date.day, month=date.month, year=date.year,
@@ -244,7 +244,7 @@ def run_model(request, model):
     timestamps = _get_timestamps(model)
     data['expected_time_steps'] = timestamps
     model.timestamps = timestamps
-    model.time_step = 3600/4
+    model.uncertain = True
 
     # TODO: Set separately in spill view.
     if not model.spills:
@@ -261,10 +261,10 @@ def run_model(request, model):
         r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
         model.add_mover(r_mover)
 
-        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_r_theta)
-        series[0] = (start_time, (10, 180) )
-        series[1] = (start_time + datetime.timedelta(hours=18), (10, 200))
-        series[2] = (start_time + datetime.timedelta(hours=30), (20, 10))
+        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
+        series[0] = (start_time, (30, 50) )
+        series[1] = (start_time + datetime.timedelta(hours=18), (30, 50))
+        series[2] = (start_time + datetime.timedelta(hours=30), (20, 25))
         series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
         series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
 
@@ -294,6 +294,7 @@ def run_model(request, model):
     if not first_step:
         return {}
 
+    model.time_steps.append(first_step)
     data['step'] = first_step
 
     return data
