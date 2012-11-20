@@ -174,6 +174,41 @@ def test_simple_run_with_image_output():
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
 
 
+def test_mover_api():
+    """
+    Test the API methods for adding and removing movers to the model.
+    """
+    start_time = datetime(2012, 1, 1, 0, 0)
+
+    model = gnome.model.Model()
+    model.duration = timedelta(hours=12)
+    model.time_step = timedelta(hours = 1)
+    model.start_time = start_time
+
+    mover_1 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    mover_2 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+
+    id_1 = model.add_mover(mover_1)
+    id_2 = model.add_mover(mover_2)
+
+    assert(model.get_mover(id_1) == mover_1)
+    assert(model.get_mover(id_2) == mover_2)
+    assert(model.get_mover('Invalid') is None)
+
+    model.remove_mover(id_1)
+    model.remove_mover(id_2)
+    assert(model.remove_mover('Invalid') is None)
+
+    assert(model.get_mover(id_1) is None)
+    assert(model.get_mover(id_2) is None)
+
+    id_1 = model.add_mover(mover_1)
+    id_2 = model.add_mover(mover_2)
+
+    model.replace_mover(id_1, mover_2)
+    model.replace_mover(id_2, mover_2)
+
+
 def test_all_movers():
     """
     a test that tests that all the movers at least can be run
