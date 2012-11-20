@@ -5,8 +5,6 @@ from collections import OrderedDict
 
 import gnome
 
-from gnome import greenwich
-
 from gnome.utilities.time_utils import round_time
 import numpy as np
 import copy

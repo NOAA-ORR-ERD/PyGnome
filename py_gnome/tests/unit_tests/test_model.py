@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import gnome.model
 import gnome.map
-import gnome.simple_mover
+from gnome import movers
 import gnome.spill
 
 def test_init():
@@ -53,7 +53,7 @@ def test_simple_run():
     model = gnome.model.Model()
     
     model.map = gnome.map.GnomeMap()
-    a_mover = gnome.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
+    a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
     
     model.add_mover(a_mover)
 
@@ -89,7 +89,7 @@ def test_simple_run_with_map():
     model.map = gnome.map.MapFromBNA( 'SampleData/MapBounds_Island.bna',
                                 refloat_halflife=6*3600, #seconds
                                 )
-    a_mover = gnome.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
+    a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
     
     model.add_mover(a_mover)
 
@@ -143,7 +143,7 @@ def test_simple_run_with_image_output():
     map.set_land(polygons)
     model.output_map = map
     
-    a_mover = gnome.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.add_mover(a_mover)
 
     N = 10 # a line of ten points
@@ -198,7 +198,7 @@ def test_all_movers():
     model.map = gnome.map.GnomeMap() # the simpleset of maps
     
     # simplemover
-    model.add_mover( gnome.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0)) )
+    model.add_mover( movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0)) )
 
     # random mover
     model.add_mover( gnome.movers.RandomMover(diffusion_coef=100000) )
