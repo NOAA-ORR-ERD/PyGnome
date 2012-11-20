@@ -1025,44 +1025,24 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 	{
 		numDepths = 1;
 		// need to check if type is float or short, if float no scale factor?
-		//curr_uvals = new float[latlength*lonlength]; 
 		curr_uvals = new double[latlength*lonlength*numDepths]; 
 		if(!curr_uvals) {TechError("GridVel::ReadNetCDFFile()", "new[]", 0); err = memFullErr; goto done;}
-		//curr_vvals = new float[latlength*lonlength]; 
 		curr_vvals = new double[latlength*lonlength*numDepths]; 
 		if(!curr_vvals) {TechError("GridVel::ReadNetCDFFile()", "new[]", 0); err = memFullErr; goto done;}
-		//curr_uvals_Navy = new short[latlength*lonlength]; 
-		//if(!curr_uvals_Navy) {TechError("GridVel::ReadNetCDFFile()", "new[]", 0); err = memFullErr; goto done;}
-		//curr_vvals_Navy = new short[latlength*lonlength]; 
-		//if(!curr_vvals_Navy) {TechError("GridVel::ReadNetCDFFile()", "new[]", 0); err = memFullErr; goto done;}
-		//angle_vals = new float[latlength*lonlength]; 
 		angle_vals = new double[latlength*lonlength]; 
 		if(!angle_vals) {TechError("GridVel::ReadNetCDFFile()", "new[]", 0); err = memFullErr; goto done;}
 		status = nc_inq_varid(ncid, "water_gridu", &curr_ucmp_id);
 		if (status != NC_NOERR) {err = -1; goto done;}
 		status = nc_inq_varid(ncid, "water_gridv", &curr_vcmp_id);	// what if only input one at a time (u,v separate movers)?
 		if (status != NC_NOERR) {err = -1; goto done;}
-		//status = nc_get_vara_short(ncid, curr_ucmp_id, curr_index, curr_count, curr_uvals_Navy);
-		//if (status != NC_NOERR) {err = -1; goto done;}
-		//status = nc_get_vara_short(ncid, curr_vcmp_id, curr_index, curr_count, curr_vvals_Navy);
-		//if (status != NC_NOERR) {err = -1; goto done;}
-		//status = nc_get_att_short(ncid, curr_ucmp_id, "_FillValue", &fill_value_Navy);
-		//if (status != NC_NOERR) {err = -1; goto done;}
-		//status = nc_get_vara_float(ncid, curr_ucmp_id, curr_index, curr_count, curr_uvals);
 		status = nc_get_vara_double(ncid, curr_ucmp_id, curr_index, curr_count, curr_uvals);
 		if (status != NC_NOERR) {err = -1; goto done;}
-		//status = nc_get_vara_float(ncid, curr_vcmp_id, curr_index, curr_count, curr_vvals);
 		status = nc_get_vara_double(ncid, curr_vcmp_id, curr_index, curr_count, curr_vvals);
 		if (status != NC_NOERR) {err = -1; goto done;}
-		//status = nc_get_att_float(ncid, curr_ucmp_id, "_FillValue", &fill_value);
 		status = nc_get_att_double(ncid, curr_ucmp_id, "_FillValue", &fill_value);
-		//if (status != NC_NOERR) {err = -1; goto done;}
-		//status = nc_get_att_float(ncid, curr_ucmp_id, "scale_factor", &scale_factor);
 		status = nc_get_att_double(ncid, curr_ucmp_id, "scale_factor", &scale_factor);
-		//if (status != NC_NOERR) {err = -1; goto done;}
 		status = nc_inq_varid(ncid, "grid_orient", &angle_id);
 		if (status != NC_NOERR) {err = -1; goto done;}
-		//status = nc_get_vara_float(ncid, angle_id, angle_index, angle_count, angle_vals);
 		status = nc_get_vara_double(ncid, angle_id, angle_index, angle_count, angle_vals);
 		if (status != NC_NOERR) {/*err = -1; goto done;*/bRotated = false;}
 	}
@@ -1070,10 +1050,8 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 	{
 		status = nc_inq_varid(ncid, "mask", &mask_id);
 		if (status != NC_NOERR)	{/*err=-1; goto done;*/ isLandMask = false;}
-		//curr_uvals = new float[latlength*lonlength]; 
 		status = nc_inq_varid(ncid, "ang", &angle_id);
 		if (status != NC_NOERR) {/*err = -1; goto done;*/bRotated = false;}
-		//status = nc_get_vara_float(ncid, angle_id, angle_index, angle_count, angle_vals);
 		else
 		{
 			angle_vals = new double[latlength*lonlength]; 
@@ -1214,18 +1192,10 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 			{
 				if (fIsNavy)
 				{
-					//if (curr_uvals_Navy[(latlength-i-1)*lonlength+j]==fill_value_Navy)
-					//curr_uvals_Navy[(latlength-i-1)*lonlength+j]=0.;
-					//if (curr_vvals_Navy[(latlength-i-1)*lonlength+j]==fill_value_Navy)
-					//curr_vvals_Navy[(latlength-i-1)*lonlength+j]=0.;
-					//u_grid = (float)curr_uvals_Navy[(latlength-i-1)*lonlength+j];
-					//v_grid = (float)curr_vvals_Navy[(latlength-i-1)*lonlength+j];
 					if (curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)
 						curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
 					if (curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)
 						curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
-					//u_grid = (float)curr_uvals[(latlength-i-1)*lonlength+j];
-					//v_grid = (float)curr_vvals[(latlength-i-1)*lonlength+j];
 					u_grid = (double)curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols];
 					v_grid = (double)curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols];
 					if (bRotated) angle = angle_vals[(latlength-i-1)*lonlength+j];
@@ -1292,8 +1262,6 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 						u_grid = (double)curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] * velConversion;
 						v_grid = (double)curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] * velConversion;
 						if (bRotated) angle = angle_vals[(latlength-i-1)*lonlength+j];
-						//INDEXH(velH,i*lonlength+j+k*fNumRows*fNumCols).u = u_grid*cos(angle*PI/180.)-v_grid*sin(angle*PI/180.);
-						//INDEXH(velH,i*lonlength+j+k*fNumRows*fNumCols).v = u_grid*sin(angle*PI/180.)+v_grid*cos(angle*PI/180.);
 						INDEXH(velH,i*lonlength+j+k*fNumRows*fNumCols).u = u_grid*cos(angle)-v_grid*sin(angle);	//in radians
 						INDEXH(velH,i*lonlength+j+k*fNumRows*fNumCols).v = u_grid*sin(angle)+v_grid*cos(angle);
 					}
@@ -1302,10 +1270,6 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 						INDEXH(velH,i*lonlength+j+k*fNumRows*fNumCols).u = curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] * velConversion;	// need units
 						INDEXH(velH,i*lonlength+j+k*fNumRows*fNumCols).v = curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] * velConversion;
 					}
-					//INDEXH(velH,i*lonlength+j).u = curr_uvals[(i)*lonlength+j] * velConversion;	// need units
-					//INDEXH(velH,i*lonlength+j).v = curr_vvals[(i)*lonlength+j] * velConversion;
-					//INDEXH(velH,i*lonlength+j).u = curr_uvals[(latlength-i-1)*lonlength+j];	// need units
-					//INDEXH(velH,i*lonlength+j).v = curr_vvals[(latlength-i-1)*lonlength+j];
 				}
 			}
 		}
@@ -1386,14 +1350,10 @@ void NetCDFMoverCurv::Draw(Rect r, WorldRect view)
 			Boolean loaded;
 			TTriGridVel* triGrid = (TTriGridVel*)fGrid;
 			
-//			err = this -> SetInterval(errmsg);	// minus AH 07/17/2012
-			//err = this -> SetInterval(errmsg, model->GetStartTime(), model->GetModelTime()); // AH 07/17/2012
-			err = this -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
+			err = this -> SetInterval(errmsg, model->GetModelTime());
 			if(err) return;
 			
-//			loaded = this -> CheckInterval(timeDataInterval);	// minus AH 07/17/2012
-			//loaded = this -> CheckInterval(timeDataInterval, model->GetStartTime(), model->GetModelTime());	 // AH 07/17/2012
-			loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	 // AH 07/17/2012
+			loaded = this -> CheckInterval(timeDataInterval, model->GetModelTime());	 
 			
 			if(!loaded) return;
 			

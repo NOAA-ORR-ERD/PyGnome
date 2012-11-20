@@ -34,7 +34,8 @@ class NetCDFStore // Houses stepwise run information for NetCDF output (and inpu
         static bool fClose(int ncID);
         static bool Open(char* inFile, int* ncID);
         static bool CheckNC(int ncErr);
-               bool Write(TModel* model, bool threeMovement, bool uncertain);
+			   //bool Write(TModel* model, bool threeMovement, bool uncertain);
+			   bool Write(TModel* model, bool uncertain);
                bool Read();
 };
 
