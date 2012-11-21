@@ -10,6 +10,8 @@ import numpy as np
 import random
 from math import sqrt
 
+
+##fixme: change this to take the windage array as input parameter, then change in place
 def random_with_persistance(low, high, persistence=0, time_step=1, array_len=1):
     """
     Used by gnome to generate a randomness between low and high, which is persistent for duration time_step

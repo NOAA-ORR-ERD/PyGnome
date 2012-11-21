@@ -183,12 +183,12 @@ class PointReleaseSpill(Spill):
                                                           time_step,
                                                           array_len=self.num_LEs)
 
-    def reset(self):
-        """
-        reset to initial conditions -- i.e. not released, and at the start position
-        """
-        self['positions'][:] = self.start_position
-        self['status_codes'][:] = basic_types.oil_status.not_released
-        self.released = False
+    # def reset(self):
+    #     """
+    #     reset to initial conditions -- i.e. not released, and at the start position
+    #     """
+    #     self['positions'][:] = self.start_position
+    #     self['status_codes'][:] = basic_types.oil_status.not_released
+    #     self.released = False
 
         
