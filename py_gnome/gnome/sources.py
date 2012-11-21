@@ -218,27 +218,39 @@ class SurfaceReleaseSpill(FloatingSpill):
         Release any new elements to be added to the SpillContainer
                 
         :param current_time: datetime object for current time
-        :param time_step: the time step, in seconds
+        :param time_step: the time step, in seconds -- this version doesn't use this
 
         :returns : None if there are no new elements released
                    a dict of arrays if there are new elements
+
+        NOTE: this version releases elements spread out along the line from
+              start_position to end_position. If the release spans multiple
+              time steps, the first will be spread out a little more, so that
+              there will be an element released at botht he start and end,
+              but no duplicate points. 
         """
 
         if current_time >= self.release_time:
             if self.num_released >= self.num_elements:
                 return None
+
             #total release time
             release_delta = (self.end_release_time - self.release_time).total_seconds()
+
             # time since release began
-            dt = max( (current_time - self.release_time).total_seconds(), 0.0 )
+            if current_time >= self.end_release_time:
+                dt = release_delta
+            else:
+                dt = max( (current_time - self.release_time).total_seconds(), 0.0)
             
             # this here in case there is less than one released per time step.
             # or if the relase time is before the model start time
-            if release_delta == 0.0:
-                num = self.num_elements - self.num_released
+            if release_delta == 0: #instantaneous release
+                num = self.num_elements - self.num_released #num_released shoudl always be 0?
             else:
                 total_num = (dt / release_delta) * self.num_elements
                 num = int(total_num - self.num_released)
+
             if num <= 0:
                 return None
 
@@ -246,27 +258,37 @@ class SurfaceReleaseSpill(FloatingSpill):
 
             arrays = self.create_new_elements(num)
 
+            print "num:", num
             #compute the position of the elements:
-            if self.start_position == self.end_position:
-                pos = self.start_position
-            else:
-                if release_delta == 0: # all released at once:
-                    x1, y1 = self.start_position[:2]
-                    x2, y2 = self.end_position[:2]
-                else:
-                    x1, y1 = self.prev_release_pos[:2]
-
-                    dx = self.end_position[0] - self.start_position[0]
-                    dy = self.end_position[1] - self.start_position[1]
-
-                    fraction = min( 1, (dt + time_step ) / release_delta )
-
-                    x2 = (fraction * dx) + self.start_position[0]
-                    y2 = (fraction * dy) + self.start_position[1]
-                    self.prev_release_pos = (x2, y2, 0.0)
-
+            if release_delta == 0: # all released at once:
+                x1, y1 = self.start_position[:2]
+                x2, y2 = self.end_position[:2]
                 arrays['positions'][:,0] = np.linspace(x1, x2, num)
                 arrays['positions'][:,1] = np.linspace(y1, y2, num)
+            else:
+                x1, y1 = self.prev_release_pos[:2]
+                print "x1, y1", x1, y1
+                dx = self.end_position[0] - self.start_position[0]
+                dy = self.end_position[1] - self.start_position[1]
+
+                print "dt, release_delta", dt, release_delta
+                fraction = min (1, dt / release_delta)
+                print "fraction", fraction
+                x2 = (fraction * dx) + self.start_position[0]
+                y2 = (fraction * dy) + self.start_position[1]
+                print "x2, y2", x2, y2
+                    
+
+                if self.prev_release_pos == self.start_position:
+                    # we want both the first and last points
+                    print "first release"
+                    arrays['positions'][:,0] = np.linspace(x1, x2, num)
+                    arrays['positions'][:,1] = np.linspace(y1, y2, num)
+                else:
+                    # we don't want to duplicate the first point.
+                    arrays['positions'][:,0] = np.linspace(x1, x2, num+1)[1:]
+                    arrays['positions'][:,1] = np.linspace(y1, y2, num+1)[1:]
+                self.prev_release_pos = (x2, y2, 0.0)
             return arrays
         else:
             return None

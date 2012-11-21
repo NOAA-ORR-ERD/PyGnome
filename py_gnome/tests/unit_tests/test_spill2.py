@@ -4,7 +4,7 @@ Tests the new spill code.
 
 import datetime
 
-# import pytest
+import pytest
 
 import numpy as np
 
@@ -241,9 +241,11 @@ class Test_SurfaceReleaseSpill():
         
         assert sp.num_released == 11
 
-    def test_cont_line_release(self):
+    def test_cont_line_release1(self):
         """
         testing a release that is releasing while moving over time
+
+        In this one it all gets released in the first time step.
         """
         sp = SurfaceReleaseSpill(num_elements = 11, # so it's easy to compute where they should be!
                                  start_position = (-128.0, 28.0, 0),
@@ -253,8 +255,7 @@ class Test_SurfaceReleaseSpill():
                                  )
         
         # first the full release over one time step
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(minutes=100),
-                                     time_step = 100 )# ten minutes
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(minutes=200) )
         
         assert arrays['positions'].shape == (11,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
@@ -263,19 +264,139 @@ class Test_SurfaceReleaseSpill():
         
         assert sp.num_released == 11
 
-        # reset
-        sp.reset()
-        # release 1/10
-        arrays = sp.release_elements(self.release_time,
-                                     time_step = 10 )# ten minutes
-        assert arrays['positions'].shape == (1,3)
+    def test_cont_line_release2(self):
+        """
+        testing a release that is releasing while moving over time
 
+        first timestep, timestep less than release-time
+        """
+        sp = SurfaceReleaseSpill(num_elements = 100, 
+                                 start_position = (-128.0, 28.0, 0),
+                                 release_time = self.release_time,
+                                 end_position = (-129.0, 29.0, 0),
+                                 end_release_time = self.release_time + datetime.timedelta(minutes=100)
+                                 )
+        
+        # release after 1/10 of release_time
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(minutes=10) )
+        
+        assert arrays['positions'].shape == (10,3)
+        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
+        assert np.array_equal( arrays['positions'][:,0], np.linspace(-128, -128.1, 10))
+        assert np.array_equal( arrays['positions'][:,1], np.linspace(28, 28.1, 10))
+        assert sp.num_released == 10
 
+        # second time step release:
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(minutes=20) )
+        
+        assert arrays['positions'].shape == (10,3)
+        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
+        assert np.array_equal( arrays['positions'][:,0], np.linspace(-128.1, -128.2, 11)[1:])
+        assert np.array_equal( arrays['positions'][:,1], np.linspace(28.1, 28.2, 11)[1:])
+        assert sp.num_released == 20
 
+    def test_cont_line_release3(self):
+        """
+        testing a release that is releasing while moving over time
 
+        making sure it's right for the full release -- mutiple elements per step
+        """
+        sp = SurfaceReleaseSpill(num_elements = 50, 
+                                 start_position = (-128.0, 28.0, 0),
+                                 release_time = self.release_time,
+                                 end_position = (-129.0, 30.0, 0),
+                                 end_release_time = self.release_time + datetime.timedelta(minutes=50)
+                                 )
+        
+        #start before release
+        time = self.release_time - datetime.timedelta(minutes=10)
+        delta_t = datetime.timedelta(minutes=10)
+        positions = np.zeros((0,3), dtype=np.float64)
+        # end after release
+        while time < self.release_time + datetime.timedelta(minutes=100):
+            arrays = sp.release_elements(time)
+            if arrays is not None:
+                positions = np.r_[positions, arrays['positions'] ]
+            time += delta_t
+        assert positions.shape == (50,3)
+        assert np.array_equal(positions[0], (-128.0, 28.0, 0) )
+        assert np.array_equal(positions[-1], (-129.0, 30.0, 0) )
+        # check if they are all close to the same line (constant slope)
+        diff = np.diff(positions[:,:2], axis=0)
+        assert np.alltrue( np.abs(np.diff ( diff[:,0] / diff[:,1] ) ) < 1e-10 )
 
+    def test_cont_line_release4(self):
+        """
+        testing a release that is releasing while moving over time
 
+        making sure it's right for the full release -- less than one elements per step
+        """
+        sp = SurfaceReleaseSpill(num_elements = 10, 
+                                 start_position = (-128.0, 28.0, 0),
+                                 release_time = self.release_time,
+                                 end_position = (-129.0, 31.0, 0),
+                                 end_release_time = self.release_time + datetime.timedelta(minutes=50)
+                                 )
+        
+        #start before release
+        time = self.release_time - datetime.timedelta(minutes=10)
+        delta_t = datetime.timedelta(minutes=2)
+        positions = np.zeros((0,3), dtype=np.float64)
+        # end after release
+        while time < self.release_time + datetime.timedelta(minutes=100):
+            arrays = sp.release_elements(time)
+            print arrays
+            if arrays is not None:
+                positions = np.r_[positions, arrays['positions'] ]
+            time += delta_t
+        assert positions.shape == (10,3)
+        assert np.array_equal(positions[0], (-128.0, 28.0, 0) )
+        assert np.array_equal(positions[-1], (-129.0, 31.0, 0) )
+        # check for monotonic 
+        assert np.alltrue(np.sign(np.diff(positions[:,:2], axis=0)) == (-1, 1) )# check monotonic 
+        # check if they are all close to the same line (constant slope)
+        diff = np.diff(positions[:,:2], axis=0)
+        assert np.alltrue( np.abs(np.diff ( diff[:,0] / diff[:,1] ) ) < 1e-10 )
 
+    positions = [( (128.0, 2.0, 0), (128.0, -2.0, 0)), # south
+                 ( (128.0, 2.0, 0), (128.0, 4.0, 0)), # north
+                 ( (128.0, 2.0, 0), (125.0, 2.0, 0)), # west
+                 ( (-128.0, 2.0, 0), (-120.0, 2.0, 0) ), # east
+                 ( (-128.0, 2.0, 0), (-120.0, 2.01, 0) ), # almost east
+                 ]
+    @pytest.mark.parametrize( ('start_position', 'end_position'), positions )
+    def test_south_line(self, start_position, end_position):
+        """
+        testing a line release to the north
+        making sure it's right for the full release -- mutiple elements per step
+        """
+        sp = SurfaceReleaseSpill(num_elements = 50, 
+                                 start_position = start_position,
+                                 release_time = self.release_time,
+                                 end_position = end_position,
+                                 end_release_time = self.release_time + datetime.timedelta(minutes=50)
+                                 )
+        
+        #start before release
+        time = self.release_time - datetime.timedelta(minutes=10)
+        delta_t = datetime.timedelta(minutes=10)
+        positions = np.zeros((0,3), dtype=np.float64)
+        # end after release
+        while time < self.release_time + datetime.timedelta(minutes=100):
+            arrays = sp.release_elements(time)
+            if arrays is not None:
+                positions = np.r_[positions, arrays['positions'] ]
+            time += delta_t
+        assert positions.shape == (50,3)
+        assert np.array_equal(positions[0], start_position )
+        assert np.array_equal(positions[-1], end_position )
+        # check if they are all close to the same line (constant slope)
+        diff = np.diff(positions[:,:2], axis=0)
+        if start_position[1] == end_position[1]:
+            #horizontal line -- infinite slope
+            assert np.alltrue( diff[:,1]  == 0 )
+        else:
+            assert np.alltrue( np.abs(np.diff ( diff[:,0] / diff[:,1] ) ) < 1e-8 )
 
     def cont_not_valid_times(self):        
         with pytest.raises(ValueError):
@@ -286,8 +407,6 @@ class Test_SurfaceReleaseSpill():
                                  )
 
 
-if __name__ == "__main__":
-    test_reset_array_types
 
 
 # def test_data_access():
