@@ -5,8 +5,6 @@ from collections import OrderedDict
 
 import gnome
 
-from gnome import greenwich
-
 from gnome.utilities.time_utils import round_time
 import numpy as np
 import copy
@@ -155,6 +153,13 @@ class Model(object):
         ## we'll want to do more here, probably
         self._map = map
 
+    def get_mover(self, mover_id):
+        """
+        Return a :class:`gnome.movers.Mover` in the ``self._movers`` dict with
+        the key ``mover_id`` if one exists.
+        """
+        return self._movers.get(mover_id, None)
+
     def add_mover(self, mover):
         """
         add a new mover to the model -- at the end of the stack
@@ -174,7 +179,14 @@ class Model(object):
         replace a given mover with a new one
         """
         self._movers[mover_id] = new_mover
-        return new_mover 
+        return new_mover
+
+    def get_spill(self, spill_id):
+        """
+        Return a :class:`gnome.spill.Spill` in the ``self._spills`` dict with
+        the key ``spill_id`` if one exists.
+        """
+        return self._spills.get(spill_id, None)
    
     def add_spill(self, spill):
         #fixme: where should we check if a spill is in a valic location on the map?

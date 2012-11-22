@@ -32,3 +32,14 @@ window.noaa.erd.util.handleAjaxError = function(xhr, textStatus, errorThrown) {
     window.alert('Could not connect to server.');
     window.noaa.erd.util.log(xhr, textStatus, errorThrown);
 };
+
+
+/*
+ Fix Bootstrap modal windows to work with responsive design and adjust width
+ based on data-width properties.
+ */
+window.noaa.erd.util.fixModals = function() {
+    var $modals = $('.modal');
+    $modals.modalResponsiveFix({debug: true});
+    $modals.touchScroll();
+};

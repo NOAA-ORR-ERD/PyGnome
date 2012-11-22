@@ -7,8 +7,9 @@ from wtforms import (
     IntegerField,
     FloatField,
     BooleanField,
-    TextField,
-    ValidationError
+    ValidationError,
+    FieldList,
+    FormField
 )
 
 from wtforms.validators import Required, NumberRange, Optional
@@ -17,15 +18,7 @@ from base import AutoIdForm, DateTimeForm
 from object_form import ObjectForm
 
 
-class WindMoverForm(ObjectForm, DateTimeForm):
-    """
-    A form class representing a :class:`gnome.mover.WindMover` object.
-
-    This form is used for both "variable" and "constant" wind movers, the
-    difference being the number of time series values entered.
-    """
-    wrapped_class = gnome.movers.WindMover
-
+class WindTimeObjectForm(DateTimeForm):
     DIRECTION_CUSTOM = 'Custom'
 
     DIRECTIONS = [
@@ -55,17 +48,8 @@ class WindMoverForm(ObjectForm, DateTimeForm):
         (SPEED_KNOTS, 'Knots'),
         (SPEED_METERS, 'Meters / sec'),
         (SPEED_MILES, 'Miles / hour')
-    )
+        )
 
-    SCALE_RADIANS = 'rad'
-    SCALE_DEGREES = 'deg'
-
-    SCALE_CHOICES = (
-        (SCALE_RADIANS, 'rad'),
-        (SCALE_DEGREES, 'deg')
-    )
-
-    auto_increment_time_by = IntegerField('Auto-increment time by')
     speed = IntegerField('Speed', default=0, validators=[NumberRange(min=0)])
     speed_type = SelectField(
         choices=SPEED_CHOICES,
@@ -78,11 +62,38 @@ class WindMoverForm(ObjectForm, DateTimeForm):
         validators=[Required()])
 
     direction_degrees = IntegerField(
-        validators=[Optional(), NumberRange(min=0,  max=360)])
+        validators=[Optional(), NumberRange(min=0, max=360)])
+
+    auto_increment_time_by = IntegerField('Auto-increment time by', default=6)
+
+    def get_direction_degree(self):
+        """
+        Convert user input for direction into degree.
+        """
+        if self.direction.data == self.DIRECTION_CUSTOM:
+            return self.direction_degrees.data
+        elif self.direction.data in self.DIRECTIONS:
+            idx = self.DIRECTIONS.index(self.direction.data)
+            return (360.0 / 16) * idx
+
+
+class WindMoverForm(ObjectForm):
+    """
+    A form class representing a :class:`gnome.mover.WindMover` object.
+    """
+    wrapped_class = gnome.movers.WindMover
+
+    SCALE_RADIANS = 'rad'
+    SCALE_DEGREES = 'deg'
+
+    SCALE_CHOICES = (
+        (SCALE_RADIANS, 'rad'),
+        (SCALE_DEGREES, 'deg')
+    )
+
+    time_series = FieldList(FormField(WindTimeObjectForm), min_entries=1)
 
     is_active = BooleanField('Active', default=True)
-    start_time = IntegerField('Start Time', default=0, validators=[NumberRange(min=0)])
-    duration = IntegerField('Duration', default=3, validators=[NumberRange(min=0)])
     speed_scale = IntegerField('Speed Scale', default=2,
                                validators=[NumberRange(min=0)])
     total_angle_scale = FloatField('Total Angle Scale', default=0.4,
@@ -93,15 +104,10 @@ class WindMoverForm(ObjectForm, DateTimeForm):
         validators=[Required()]
     )
 
-    def get_direction_degree(self):
-        """
-        Convert user input for direction into degree.
-        """
-        if self.direction.data == self.DIRECTION_CUSTOM:
-            return self.direction_custom.data
-        elif self.direction.data in self.DIRECTIONS:
-            idx = self.DIRECTIONS.index(self.direction.data)
-            return (360.0 / 16) * idx
+    start_time = IntegerField('Start Time', default=0,
+        validators=[NumberRange(min=0)])
+    duration = IntegerField('Duration', default=3,
+        validators=[NumberRange(min=0)])
 
 
 class AddMoverForm(AutoIdForm):

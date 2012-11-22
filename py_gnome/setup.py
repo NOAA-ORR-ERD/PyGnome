@@ -22,7 +22,7 @@ It needs to be imported before any other extensions (which happens in the gnome.
 from setuptools import setup # to support "develop" mode: 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
-from subprocess import call
+import subprocess 
 
 import numpy as np
 import os
@@ -32,7 +32,28 @@ if "clean" in "".join(sys.argv[1:]):
     target = 'clean'
 else:
     target = 'build'
-    
+
+
+if "cleanall" in "".join(sys.argv[1:]):
+    target = 'clean'
+    print "Deleting cython files .."
+    os.system('rm -v gnome/cy_gnome/cy_*.so')
+    os.system('rm -v gnome/cy_gnome/cy_*.pyd')
+    os.system('rm -v gnome/cy_gnome/cy_*.cpp')
+    sys.argv[1] = 'clean'   # this is what distutils understands
+else:
+    target = 'build'
+
+# only for windows
+if "debug" in "".join(sys.argv[2:]):
+    config = 'debug'
+else:
+    config = 'release'    # only used by windows
+
+sys.argv.count(config) != 0 and sys.argv.remove(config)
+#------------
+
+
 CPP_CODE_DIR = "../lib_gnome"
 
 # the cython extensions to build -- each should correspond to a *.pyx file
@@ -115,7 +136,23 @@ if sys.platform == "darwin":
     extensions.append(basic_types_ext)
 
 elif sys.platform == "win32":
-    
+   
+    # see if msbuild exists
+    # using subprocess.PIPE to supress output - not quite sure how/why it works?
+    found_msbuild = subprocess.call("where msbuild",
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+    if found_msbuild == 0:
+        msbuild = 'msbuild'
+    else:
+        msbuild = r'c:\Windows\Microsoft.NET\Framework\v3.5\msbuild.exe'
+        found_msbuild = os.path.exists( msbuild)
+        if not found_msbuild:
+            print "Could not find msbuild in system path"
+            print "Retry after adding msbuild to system path"
+            print "or try building from Visual studio prompt"
+            sys.exit(0)
+
     compile_args = ['/W0','/MD']
    
     # NOTE: This used to work with the runtime libraries
@@ -146,9 +183,8 @@ elif sys.platform == "win32":
     # let's build C++ here
     sys.path.append(".\gnome\DLL")   # need this for linking to work properly
     proj = '..\project_files\lib_gnomeDLL\lib_gnomeDLL.sln'
-    config = '/p:configuration=release' 
     platform = '/p:platform=Win32'
-    call(['msbuild',proj,'/t:'+target,config,platform])
+    subprocess.call([msbuild,proj,'/t:'+target,'/p:configuration='+config,platform])
 
     lib += ['lib_gnomeDLL']
     libdirs += ['gnome/cy_gnome']

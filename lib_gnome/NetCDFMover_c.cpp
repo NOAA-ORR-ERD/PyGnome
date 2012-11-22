@@ -548,7 +548,7 @@ done:
 OSErr NetCDFMover_c::SetInterval(char *errmsg, const Seconds& model_time)
 {
 	long timeDataInterval = 0;
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	
 	
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
