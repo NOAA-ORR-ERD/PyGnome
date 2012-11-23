@@ -40,6 +40,8 @@ if "cleanall" in "".join(sys.argv[1:]):
     os.system('rm -v gnome/cy_gnome/cy_*.so')
     os.system('rm -v gnome/cy_gnome/cy_*.pyd')
     os.system('rm -v gnome/cy_gnome/cy_*.cpp')
+    os.system('rm -rv build')
+    os.system('rm -rv pyGnome.egg-info')
     sys.argv[1] = 'clean'   # this is what distutils understands
 else:
     target = 'build'
