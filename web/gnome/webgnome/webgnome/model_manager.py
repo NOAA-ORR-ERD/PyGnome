@@ -1,7 +1,18 @@
 """
 model_manager.py: Manage a pool of running models.
 """
-from gnome.model import Model
+try:
+    from gnome.model import Model
+except:
+    # If we failed to find the model package,
+    # it could be that we are running webgnome
+    # from an in-place virtualenv.  Let's add
+    # a relative path to our py_gnome sources
+    # and see if we can import the Model.
+    # If we fail in this attempt...oh well.
+    import sys
+    sys.path.append('../../../py_gnome')
+    from gnome.model import Model
 
 
 class ModelManager(object):
