@@ -317,7 +317,7 @@ class Model(object):
         filename = os.path.join(images_dir, 'foreground_%05i.png'%self.current_time_step)
 
         self.output_map.create_foreground_image()
-        for spills in (self.spills, self.uncertain_spills):
+        for spills in (self.uncertain_spills, self.spills):
             for spill in spills:
                 self.output_map.draw_elements(spill)
             

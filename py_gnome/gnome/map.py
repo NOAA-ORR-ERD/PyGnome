@@ -355,10 +355,6 @@ class RasterMap(GnomeMap):
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
         # only check the ones that aren't already beached?
-        #print "start_pos_pixel", start_pos_pixel.flags
-        #print "next_pos_pixel", next_pos_pixel.flags
-        #print "last_water_pos_pixel", last_water_pos_pixel.flags
-        #print "status_codes", status_codes.flags
         self.check_land(self.bitmap, start_pos_pixel, next_pos_pixel, status_codes, last_water_pos_pixel)
 
         #transform the points back to lat-long.
