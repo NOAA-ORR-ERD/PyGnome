@@ -2,13 +2,11 @@ import json
 import numpy
 
 from collections import OrderedDict
-import datetime
 from webob.multidict import MultiDict
 
 from base import FunctionalTestBase, UnitTestBase
 from webgnome.model_manager import ModelManager
-from webgnome.views.movers import create_wind_mover
-from webgnome import util
+from webgnome.views.movers import create_wind_mover, update_wind_mover
 
 
 class WindMoverFixtures(object):
@@ -29,7 +27,7 @@ class WindMoverFixtures(object):
         time_series_data = []
 
         for index in xrange(num_time_series):
-            prefix = 'time_series-%s-' % index
+            prefix = 'timeseries-%s-' % index
 
             time_series = {
                 'date': '11/20/2012',
@@ -151,3 +149,22 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
         self.assertEqual(time_series[0][1][0], 180.0)
         self.assertEqual(time_series[0][1][1], 10.0)
 
+    def test_update_wind_mover_single_time_series(self):
+        self.config.add_route('create_wind_mover', '/mover')
+        self.config.add_route('update_wind_mover', '/mover/{id}')
+
+        model, request = self.get_model_request()
+        request.method = 'POST'
+        data = self.create_wind_mover_data()
+        data.update(self.create_time_series_data(1)[0])
+
+        request.POST = MultiDict(data)
+        resp = create_wind_mover(request)
+        self.assertTrue(resp['id'])
+        self.assertEqual(resp['form_html'], None)
+
+        request.method = 'GET'
+        request.POST = MultiDict()
+        request.matchdict = MultiDict({'id': resp['id']})
+        resp = update_wind_mover(request)
+        print resp['form_html']

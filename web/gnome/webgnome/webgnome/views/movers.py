@@ -107,7 +107,7 @@ def update_wind_mover(request, model):
     mover_id = request.matchdict['id']
     mover = model.get_mover(mover_id)
     opts = {'obj': mover} if mover else {}
-    form = WindMoverForm( request.POST or None, **opts)
+    form = WindMoverForm(request.POST or None, **opts)
 
     if request.method == 'POST' and form.validate():
         return _update_wind_mover_post(model, mover_id, form)
@@ -121,11 +121,11 @@ def update_wind_mover(request, model):
 
 
 def _create_wind_mover_post(model, form):
-    num_time_series = len(form.time_series)
-    time_series = numpy.zeros((num_time_series,),
+    num_timeseries = len(form.timeseries)
+    timeseries = numpy.zeros((num_timeseries,),
         dtype=gnome.basic_types.datetime_value_2d)
 
-    for idx, time_form in enumerate(form.time_series):
+    for idx, time_form in enumerate(form.timeseries):
         direction = time_form.get_direction_degree()
         datetime = time_form.get_datetime()
 
@@ -136,10 +136,10 @@ def _create_wind_mover_post(model, form):
                     'Could not create wind mover. Invalid direction given.')
             }
 
-        time_series['time'][idx] = datetime
-        time_series['value'][idx] = (direction, time_form.speed.data)
+        timeseries['time'][idx] = datetime
+        timeseries['value'][idx] = (direction, time_form.speed.data)
 
-    mover = gnome.movers.WindMover(timeseries=time_series)
+    mover = gnome.movers.WindMover(timeseries=timeseries)
 
     return {
         'id': model.add_mover(mover),

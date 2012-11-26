@@ -30,7 +30,7 @@
                 <div class="tab-pane active" id="${time_series_id}">
                     
                     <%
-                        add_form = form.time_series[-1]
+                        add_form = form.timeseries[-1]
                     %>
 
                     <div class="span6 add-time-form">
@@ -73,7 +73,7 @@
                             </tbody>
                         </table>
 
-                        % for time_form in form.time_series[:-1]:
+                        % for time_form in form.timeseries[:-1]:
                             <div class="edit-time-form time-form hidden">
                             <%include file="wind_time_object_form.mak"
                                       args="form=time_form"/>

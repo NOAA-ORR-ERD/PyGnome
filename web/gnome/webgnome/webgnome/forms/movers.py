@@ -91,7 +91,7 @@ class WindMoverForm(ObjectForm):
         (SCALE_DEGREES, 'deg')
     )
 
-    time_series = FieldList(FormField(WindTimeObjectForm), min_entries=1)
+    timeseries = FieldList(FormField(WindTimeObjectForm), min_entries=1)
 
     is_active = BooleanField('Active', default=True)
     speed_scale = IntegerField('Speed Scale', default=2,

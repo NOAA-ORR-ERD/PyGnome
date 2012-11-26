@@ -4,7 +4,7 @@
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
 
-    <script src="/static/js/underscore.js"></script>
+    <script src="/static/js/require-jquery.js"></script>
 </%block>
 
 <%block name="navbar">
@@ -102,36 +102,59 @@
 </%block>
 
 <%block name="javascript">
-    <script src='/static/js/modal-responsive-fix.min.js' type="text/javascript"></script>
-    <script src='/static/js/touchscroll.js' type="text/javascript"></script>
-    <script src='/static/js/mousetrap.js' type="text/javascript"></script>
-    <script src='/static/js/jquery.imagesloaded.min.js' type="text/javascript"></script>
-    <script src='/static/js/jquery.cycle.all.latest.js' type="text/javascript"></script>
-    <script src='/static/js/jquery.cookie.js' type="text/javascript"></script>
-    <script src="/static/js/jquery.dynatree.min.js"></script>
-    <script src="/static/js/moment.js"></script>
-    <script src="/static/js/backbone.js"></script>
-    <script src="/static/js/gnome.js"></script>
-
     <script type="text/javascript">
-        $('#map').imagesLoaded(function() {
-            new window.noaa.erd.gnome.AppView({
-                mapId: 'map',
-                mapPlaceholderId: 'placeholder',
-                sidebarId: 'sidebar',
-                formContainerId: 'modal-container',
-                addMoverFormId: "${add_mover_form_id}",
-                generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
-                expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
-                backgroundImageUrl: "${background_image_url or '' | n}",
-                currentTimeStep: ${model.current_time_step},
-                runModelUntilFormUrl: "${run_model_until_form_url}",
-                formsUrl: "${model_forms_url}"
-            });
+
+        // Configure RequireJS
+        requirejs.config({
+            baseUrl: "/static/js",
+            shim: {
+                'lib/jquery.dynatree.min': ['lib/jquery-ui-1.8.24.custom.min', 'lib/jquery.cookie'],
+                'lib/underscore': {
+                    exports: "_"
+                },
+                'lib/mousetrap': {
+                    exports: "Mousetrap"
+                }
+            }
         });
 
-        $(document).ready(function() {
-            window.noaa.erd.util.fixModals();
+        // App entry-point
+        require([
+            'jquery',
+            'lib/underscore',
+            'app_view',
+            'util',
+            'lib/jquery.imagesloaded.min',
+            'lib/modal-responsive-fix.min', // fix bootstrap modals
+            'lib/touchscroll', // to help fixing bootstrap modals
+        ], function($, _, app_view, util) {
+            "use strict";
+
+            // Use Django-style templates.
+            _.templateSettings = {
+                interpolate: /\{\{(.+?)\}\}/g
+            };
+
+            $('#map').imagesLoaded(function() {
+                new app_view.AppView({
+                    mapId: 'map',
+                    mapPlaceholderId: 'placeholder',
+                    sidebarId: 'sidebar',
+                    formContainerId: 'modal-container',
+                    addMoverFormId: "${add_mover_form_id}",
+                    generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
+                    expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
+                    backgroundImageUrl: "${background_image_url or '' | n}",
+                    currentTimeStep: ${model.current_time_step},
+                    runModelUntilFormUrl: "${run_model_until_form_url}",
+                    formsUrl: "${model_forms_url}"
+                });
+            });
+
+            $(document).ready(function() {
+                util.fixModals();
+            });
+
         });
     </script>
 </%block>
