@@ -4,10 +4,12 @@ define([
     'lib/underscore',
     'lib/backbone',
     'models',
+    'util',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree.min',
-    'lib/moment'
-], function($, _, Backbone, models) {
+    'lib/moment',
+    'lib/bootstrap'
+], function($, _, Backbone, models, util) {
 
      /*
      `MessageView` is responsible for displaying messages sent back from the server
@@ -176,7 +178,7 @@ define([
 
             // The image isn't loaded.
             if (stepImage.length === 0) {
-                window.alert("An animation error occurred. Please refresh.");
+                alert("An animation error occurred. Please refresh.");
             }
 
             stepImage.addClass(this.activeFrameClass);
@@ -198,7 +200,7 @@ define([
             img.appendTo(map);
 
             $(img).imagesLoaded(function() {
-                window.setTimeout(_this.showImageForTimeStep, 50, [timeStep.id]);
+                setTimeout(_this.showImageForTimeStep, 50, [timeStep.id]);
             });
         },
 
@@ -208,7 +210,7 @@ define([
             // We must be playing a cached model run because the image already
             // exists. In all other cases the image should NOT exist.
             if (imageExists) {
-                window.setTimeout(this.showImageForTimeStep, 50, [timeStep.id]);
+                setTimeout(this.showImageForTimeStep, 50, [timeStep.id]);
                 return;
             }
 
@@ -401,7 +403,7 @@ define([
          Called when an `AjaxForm` submits successfully.
          */
         ajaxFormSuccess: function(ajaxForm) {
-            log('tree view success')
+            util.log('tree view success')
             this.reload();
         },
 
@@ -581,7 +583,7 @@ define([
             if (timestamp) {
                 this.setTime(timestamp);
             } else {
-                console.log('Slider changed to invalid time step: ' + ui.value);
+                console.util.log('Slider changed to invalid time step: ' + ui.value);
                 return false;
             }
 
@@ -830,7 +832,7 @@ define([
                         _this.trigger(ModalFormViewContainer.REFRESHED);
                     }
                 },
-                error: handleAjaxError
+                error: util.handleAjaxError
             });
         },
 
@@ -1092,7 +1094,7 @@ define([
             }
 
             this.setupEventHandlers();
-            window.noaa.erd.util.fixModals();
+            util.fixModals();
 
             var newId = this.$el.attr('id');
             if (oldId !== newId) {

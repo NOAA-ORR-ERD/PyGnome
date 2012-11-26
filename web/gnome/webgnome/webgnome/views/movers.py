@@ -123,7 +123,7 @@ def update_wind_mover(request, model):
 def _create_wind_mover_post(model, form):
     num_timeseries = len(form.timeseries)
     timeseries = numpy.zeros((num_timeseries,),
-        dtype=gnome.basic_types.datetime_value_2d)
+        dtype=gnome.basic_types.datetime_r_theta)
 
     for idx, time_form in enumerate(form.timeseries):
         direction = time_form.get_direction_degree()

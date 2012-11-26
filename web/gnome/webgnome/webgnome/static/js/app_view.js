@@ -6,9 +6,9 @@ define([
     'lib/mousetrap',
     'models',
     'views',
-], function($, _, Backbone, Mousetrap, models, views) {
+    'util'
+], function($, _, Backbone, Mousetrap, models, views, util) {
 
-    console.log(arguments)
      /*
      `AppView` acts as a controller, listening to delegate views and models for
      events and coordinating any necessary changes.
@@ -145,7 +145,7 @@ define([
             var _this = this;
 
             Mousetrap.bind('space', function() {
-                log('toggle playing')
+                util.log('toggle playing')
                 if (_this.mapControlView.isPlaying()) {
                     _this.pause();
                 } else {
@@ -154,27 +154,27 @@ define([
             });
 
             Mousetrap.bind('o', function() {
-                log('open item');
+                util.log('open item');
                 _this.showFormForActiveTreeItem();
             });
 
             Mousetrap.bind('n o', function() {
-                log('new model');
+                util.log('new model');
                 _this.newMenuItemClicked();
             });
 
             Mousetrap.bind('n m', function() {
-                log('new mover');
+                util.log('new mover');
                 _this.showFormWithId('AddMoverForm');
             });
 
             Mousetrap.bind('n w', function() {
-                log('new wind mover');
+                util.log('new wind mover');
                 _this.showFormWithId('WindMoverForm');
             });
 
             Mousetrap.bind('s f', function() {
-                log('save form')
+                util.log('save form')
                 var visibleSaveButton = $('.modal[aria-hidden=false] .btn-primary');
                 if (visibleSaveButton) {
                     visibleSaveButton.click();
@@ -195,7 +195,7 @@ define([
         refreshForms: function() {
             this.destroyForms();
             this.addForms();
-            window.noaa.erd.util.fixModals();
+            util.fixModals();
         },
 
         addForms: function() {
@@ -278,7 +278,7 @@ define([
         },
 
         newMenuItemClicked: function() {
-            if (!window.confirm("Reset model?")) {
+            if (!confirm("Reset model?")) {
                 return;
             }
 
@@ -478,7 +478,7 @@ define([
 
             var type = node.data.form_id.replace('_', ' ');
 
-            if (window.confirm('Remove ' + type + '?') === false) {
+            if (confirm('Remove ' + type + '?') === false) {
                 return;
             }
 
@@ -486,7 +486,7 @@ define([
                 url: this.ajaxForm.get('url') + '/' + node.data.form_id + '/delete',
                 data: "mover_id=" + node.data.id,
                 error: function() {
-                    window.alert('Could not remove item.');
+                    alert('Could not remove item.');
                 }
             });
         },

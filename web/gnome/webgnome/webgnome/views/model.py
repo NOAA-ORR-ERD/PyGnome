@@ -261,7 +261,7 @@ def run_model(request, model):
         r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
         model.add_mover(r_mover)
 
-        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
+        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_r_theta)
         series[0] = (start_time, (30, 50) )
         series[1] = (start_time + datetime.timedelta(hours=18), (30, 50))
         series[2] = (start_time + datetime.timedelta(hours=30), (20, 25))
