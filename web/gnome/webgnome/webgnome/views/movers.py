@@ -1,4 +1,3 @@
-import numpy
 import gnome.movers
 import gnome.basic_types
 
@@ -85,15 +84,21 @@ def delete_mover(request, model):
 
 
 def _update_wind_mover_post(model, mover_id, form):
-    if model.has_mover_with_id(mover_id):
-        # TODO: Does WTForms update the object directly?
+    mover = model.get_mover(mover_id)
+
+    if mover:
+        mover.is_active = form.is_active.data,
+        mover.uncertain_angle_scale = form.uncertain_angle_scale.data,
+        mover.uncertain_speed_scale = form.uncertain_speed_scale.data,
+        mover.uncertain_duration = form.uncertain_duration.data,
+        mover.timeseries = form.get_timeseries_ndarray()
         message = util.make_message(
             'success', 'Updated variable wind mover successfully.')
     else:
-        mover_id = model.add_mover(form.data)
+        mover = form.create_mover()
+        mover_id = model.add_mover(mover)
         message = util.make_message(
-            'warning', 'The specified mover did not exist. Added a '
-                       'new variable wind mover to the model.')
+            'warning', 'The mover did not exist, so we created a new one.')
     return {
         'id': mover_id,
         'message': message,
@@ -121,25 +126,7 @@ def update_wind_mover(request, model):
 
 
 def _create_wind_mover_post(model, form):
-    num_timeseries = len(form.timeseries)
-    timeseries = numpy.zeros((num_timeseries,),
-        dtype=gnome.basic_types.datetime_r_theta)
-
-    for idx, time_form in enumerate(form.timeseries):
-        direction = time_form.get_direction_degree()
-        datetime = time_form.get_datetime()
-
-        if not direction:
-            return {
-                'form_html': None,
-                'message': util.make_message('error',
-                    'Could not create wind mover. Invalid direction given.')
-            }
-
-        timeseries['time'][idx] = datetime
-        timeseries['value'][idx] = (direction, time_form.speed.data)
-
-    mover = gnome.movers.WindMover(timeseries=timeseries)
+    mover = form.create_mover()
 
     return {
         'id': model.add_mover(mover),

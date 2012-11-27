@@ -113,15 +113,15 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
 
         mover = model.get_mover(resp['id'])
 
-        time_series = mover.timeseries
-        self.assertEqual(len(time_series), 1)
+        self.assertEqual(len(mover.timeseries), 1)
 
         self.assertEqual(
-            time_series[0][0],
-            numpy.datetime64('2012-11-20 00:00:00.000001'))
+            mover.timeseries[0].date,
+            numpy.datetime64('2012-11-20 00:00:00.000001').astype('object'))
 
-        self.assertEqual(time_series[0][1][0], 180.0)
-        self.assertEqual(time_series[0][1][1], 10.0)
+        self.assertEqual(mover.timeseries[0].direction, 'Degrees true')
+        self.assertEqual(mover.timeseries[0].direction_degrees, 180.0)
+        self.assertEqual(mover.timeseries[0].speed, 10.0)
 
     def test_create_wind_mover_multiple_time_series(self):
         self.config.add_route('create_wind_mover', '/mover')
@@ -137,17 +137,18 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
         resp = create_wind_mover(request)
 
         mover = model.get_mover(resp['id'])
+        self.assertEqual(len(mover.timeseries), 3)
 
-        time_series = mover.timeseries
-        self.assertEqual(len(time_series), 3)
-
-        for idx, item in enumerate(time_series):
+        for idx, item in enumerate(mover.timeseries):
             self.assertEqual(
-                time_series[idx][0],
-                numpy.datetime64('2012-11-20 0%s:00:00.000001' % idx))
+                mover.timeseries[idx].date,
+                numpy.datetime64(
+                    '2012-11-20 0%s:00:00.000001' % idx).astype('object'))
 
-        self.assertEqual(time_series[0][1][0], 180.0)
-        self.assertEqual(time_series[0][1][1], 10.0)
+        # The following values are correct, so why are they flipped?
+        self.assertEqual(mover.timeseries[0].speed, 10.0)
+        self.assertEqual(mover.timeseries[0].direction, 'Degrees true')
+        self.assertEqual(mover.timeseries[0].direction_degrees, 180.0)
 
     def test_update_wind_mover_single_time_series(self):
         self.config.add_route('create_wind_mover', '/mover')
@@ -163,8 +164,76 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
         self.assertTrue(resp['id'])
         self.assertEqual(resp['form_html'], None)
 
+        mover = model.get_mover(resp['id'])
+        self.assertEqual(len(mover.timeseries), 1)
+
+        # The update wind mover form should have timeseries data.
         request.method = 'GET'
         request.POST = MultiDict()
         request.matchdict = MultiDict({'id': resp['id']})
         resp = update_wind_mover(request)
-        print resp['form_html']
+
+        self.assertTrue(resp['form_html'].find(
+            '<input class="direction_degrees" id="" '
+            'name="timeseries-0-direction_degrees" type="text" value="180.0">'))
+
+        data = self.create_wind_mover_data()
+        for item in self.create_time_series_data(1, speed=100):
+            data.update(item)
+
+        request.method = 'POST'
+        request.POST = MultiDict(data)
+        request.matchdict = MultiDict({'id': mover.id})
+        resp = update_wind_mover(request)
+
+        self.assertEqual(resp['message']['type'], 'success')
+        self.assertEqual(resp['id'], mover.id)
+
+        mover = model.get_mover(mover.id)
+        self.assertEqual(len(mover.timeseries), 1)
+        for wind in mover.timeseries:
+            self.assertEqual(wind.speed, 100)
+
+    def test_update_wind_mover_single_time_series(self):
+        self.config.add_route('create_wind_mover', '/mover')
+        self.config.add_route('update_wind_mover', '/mover/{id}')
+
+        model, request = self.get_model_request()
+        request.method = 'POST'
+        data = self.create_wind_mover_data()
+        data.update(self.create_time_series_data(1)[0])
+
+        request.POST = MultiDict(data)
+        resp = create_wind_mover(request)
+        self.assertTrue(resp['id'])
+        self.assertEqual(resp['form_html'], None)
+
+        mover = model.get_mover(resp['id'])
+        self.assertEqual(len(mover.timeseries), 1)
+
+        # The update wind mover form should have timeseries data.
+        request.method = 'GET'
+        request.POST = MultiDict()
+        request.matchdict = MultiDict({'id': resp['id']})
+        resp = update_wind_mover(request)
+
+        self.assertTrue(resp['form_html'].find(
+            '<input class="direction_degrees" id="" '
+            'name="timeseries-0-direction_degrees" type="text" value="180.0">'))
+
+        data = self.create_wind_mover_data()
+        for item in self.create_time_series_data(3, speed=100):
+            data.update(item)
+
+        request.method = 'POST'
+        request.POST = MultiDict(data)
+        request.matchdict = MultiDict({'id': mover.id})
+        resp = update_wind_mover(request)
+
+        self.assertEqual(resp['message']['type'], 'success')
+        self.assertEqual(resp['id'], mover.id)
+
+        mover = model.get_mover(mover.id)
+        self.assertEqual(len(mover.timeseries), 3)
+        for wind in mover.timeseries:
+            self.assertEqual(wind.speed, 100)

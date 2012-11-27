@@ -1312,9 +1312,10 @@ define([
 
         renderTimeTable: function() {
             var _this = this;
-            var $forms = this.$el.find('.edit-time-forms .time-form');
+            var $forms = this.$el.find('.edit-time-forms').find('.time-form');
             var rows = [];
 
+            // Clear out any existing rows.
             this.$timesTable.find('tr').not('.table-header').remove();
 
             _.each($forms, function(form) {

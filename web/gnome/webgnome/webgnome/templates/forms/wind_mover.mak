@@ -36,6 +36,8 @@
                     <div class="span6 add-time-form">
                         <div class='time-form'>
                             <%include file="wind_time_object_form.mak" args="form=add_form"/>
+                            ${defs.form_control(form.auto_increment_time_by, "hours",
+                                opts={'class_': 'auto_increment_by'})}
 
                             <div class="control-group add-time-buttons">
                                 <div class="controls">
@@ -99,11 +101,11 @@
                     ${defs.form_control(form.is_active)}
                 </div>
                 <div class="tab-pane" id="${uncertainty_id}">
-                    ${defs.form_control(form.start_time, "hours")}
-                    ${defs.form_control(form.duration, "hours")}
-                    ${defs.form_control(form.speed_scale)}
-                    ${defs.form_control(form.total_angle_scale)}
-                    ${defs.form_control(form.total_angle_scale_type)}
+                    ${defs.form_control(form.uncertain_time_delay, "hours")}
+                    ${defs.form_control(form.uncertain_duration, "hours")}
+                    ${defs.form_control(form.uncertain_speed_scale)}
+                    ${defs.form_control(form.uncertain_angle_scale)}
+                    ${defs.form_control(form.uncertain_angle_scale_type)}
                 </div>
             </div>
         </form>

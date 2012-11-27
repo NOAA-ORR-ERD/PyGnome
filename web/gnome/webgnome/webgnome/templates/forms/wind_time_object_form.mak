@@ -3,8 +3,6 @@
 
 ${defs.form_control(form.date, opts={'class_': 'date'}, use_id=True)}
 ${defs.time_control(form, "Time (24 hour)")}
-${defs.form_control(form.auto_increment_time_by, "hours",
-                    opts={'class_': 'auto_increment_by'})}
 ${defs.form_control(form.direction, 'Select "Degrees true" to enter degrees',
                     opts={'class_': 'direction'})}
 ${defs.form_control(form.direction_degrees, hidden=True,
