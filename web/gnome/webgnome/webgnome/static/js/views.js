@@ -32,8 +32,17 @@ define([
 
             if (message.text && alertDiv) {
                 alertDiv.find('span.message').text(message.text);
+                alertDiv.fadeIn(10);
+                // The hidden class makes the div hidden on page load. After
+                // we fade out the first time, jQuery sets the display: none;
+                // value on the element directly.
                 alertDiv.removeClass('hidden');
             }
+
+            // Hide alerts automatically.
+            setTimeout(function() {
+                alertDiv.fadeOut();
+            }, 2000);
 
             return true;
         }
