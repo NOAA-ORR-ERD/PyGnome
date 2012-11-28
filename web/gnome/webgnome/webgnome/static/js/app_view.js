@@ -5,9 +5,10 @@ define([
     'lib/backbone',
     'lib/mousetrap',
     'models',
+    'forms',
     'views',
     'util'
-], function($, _, Backbone, Mousetrap, models, views, util) {
+], function($, _, Backbone, Mousetrap, models, forms, views, util) {
 
      /*
      `AppView` acts as a controller, listening to delegate views and models for
@@ -112,7 +113,7 @@ define([
         setupEventHandlers: function() {
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
-            this.formViews.on(views.ModalFormViewContainer.REFRESHED, this.refreshForms);
+            this.formViews.on(forms.ModalFormViewContainer.REFRESHED, this.refreshForms);
 
             this.treeControlView.on(views.TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
             this.treeControlView.on(views.TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
@@ -138,7 +139,7 @@ define([
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
 
-            this.addMoverFormView.on(views.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
         },
 
         setupKeyboardHandlers: function() {
@@ -201,7 +202,7 @@ define([
         addForms: function() {
             var _this = this;
 
-            this.addMoverFormView = new views.AddMoverFormView({
+            this.addMoverFormView = new forms.AddMoverFormView({
                 el: $('#' + this.options.addMoverFormId),
                 formContainerEl: '#' + this.options.formContainerId
             });
@@ -229,7 +230,7 @@ define([
                 var formContainerEl = '#' + _this.options.formContainerId;
 
                 if ($div.hasClass('wind')) {
-                    _this.formViews.add(modalFormId, new views.WindMoverFormView({
+                    _this.formViews.add(modalFormId, new forms.WindMoverFormView({
                         ajaxForm: ajaxForm,
                         el: formEl,
                         formContainerEl: formContainerEl
@@ -249,7 +250,7 @@ define([
             // `AjaxForm` instances, keyed to form ID.
             this.forms = new models.AjaxFormCollection();
 
-            this.formViews = new views.ModalFormViewContainer({
+            this.formViews = new forms.ModalFormViewContainer({
                 el: $('#' + this.options.formContainerId),
                 ajaxForms: this.forms,
                 url: this.options.formsUrl

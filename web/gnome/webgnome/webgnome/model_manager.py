@@ -101,7 +101,7 @@ class ModelProxy(util.Proxy):
         return movers
 
     def get_mover(self, mover_id):
-        mover = self._target.get_mover(mover_id)
+        mover = self._target.get_mover(int(mover_id))
         if mover:
             proxy_cls = mover_proxies.get(type(mover), None)
             return proxy_cls(mover) if proxy_cls else mover

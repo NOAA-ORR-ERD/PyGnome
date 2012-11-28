@@ -37,7 +37,7 @@ class WindForm(DateTimeForm):
         (SPEED_MILES, 'Miles / hour')
         )
 
-    speed = IntegerField('Speed', default=0, validators=[NumberRange(min=1)])
+    speed = FloatField('Speed', default=0, validators=[NumberRange(min=1)])
     speed_type = SelectField(
         choices=SPEED_CHOICES,
         validators=[Required()],
@@ -50,7 +50,7 @@ class WindForm(DateTimeForm):
                  [DIRECTION_DEGREES] + util.DirectionConverter.DIRECTIONS],
         validators=[Required()])
 
-    direction_degrees = IntegerField(
+    direction_degrees = FloatField(
         validators=[Optional(), NumberRange(min=0, max=360)])
 
     def get_direction_degree(self):
@@ -80,7 +80,7 @@ class WindMoverForm(ObjectForm):
     timeseries = FieldList(FormField(WindForm), min_entries=1)
 
     is_active = BooleanField('Active', default=True)
-    uncertain_speed_scale = IntegerField('Speed Scale', default=2,
+    uncertain_speed_scale = FloatField('Speed Scale', default=2,
                                validators=[NumberRange(min=0)])
     uncertain_angle_scale = FloatField('Total Angle Scale', default=0.4,
                                    validators=[NumberRange(min=0)])
@@ -90,24 +90,30 @@ class WindMoverForm(ObjectForm):
         validators=[Required()]
     )
 
-    uncertain_time_delay = IntegerField('Start Time', default=0,
+    uncertain_time_delay = FloatField('Start Time', default=0,
         validators=[NumberRange(min=0)])
-    uncertain_duration = IntegerField('Duration', default=3,
+    uncertain_duration = FloatField('Duration', default=3,
         validators=[NumberRange(min=0)])
 
     auto_increment_time_by = IntegerField('Auto-increment time by', default=6)
 
     def __init__(self, *args, **kwargs):
         """
-        Always include an extra field in ``timeseries`` for use as the "Add"
-        form. Do this by taking the length of timeseries values passed in from
-        an ``obj`` argument and adding one to it.
-        """
-        obj = kwargs.get('obj', None)
-        if obj and hasattr(obj, 'timeseries') and obj.timeseries:
-            self.timeseries.kwargs['min_entries'] = len(obj.timeseries) + 1
+        Include an extra field in ``timeseries`` for use as the "Add" form when
+        displaying an update form for an object. Do this by taking the length
+        of timeseries values passed in from an ``obj`` argument and adding one
+        to it.
 
+        ``timeseries.min_entries`` remains the default value if the form is
+        receiving a POST.
+        """
         super(WindMoverForm, self).__init__(*args, **kwargs)
+
+        obj = kwargs.get('obj', None)
+        formdata = args[0] if args else None
+
+        if obj and obj.timeseries and not formdata:
+            self.timeseries.append_entry()
 
     def get_timeseries_ndarray(self):
         num_timeseries = len(self.timeseries)

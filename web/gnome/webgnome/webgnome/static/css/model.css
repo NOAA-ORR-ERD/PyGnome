@@ -155,11 +155,11 @@ input[type="color"],
 }
 
 .speed {
-    width: 100px;
+    width: 90px;
 }
 
 .speed_type {
-    width: 110px;
+    width: 120px;
 }
 
 select, input[type="file"] {

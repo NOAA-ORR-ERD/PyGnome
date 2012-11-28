@@ -35,7 +35,7 @@
 
                     <div class="span6 add-time-form">
                         <div class='time-form'>
-                            <%include file="wind_time_object_form.mak" args="form=add_form"/>
+                            <%include file="wind_form.mak" args="form=add_form"/>
                             ${defs.form_control(form.auto_increment_time_by, "hours",
                                 opts={'class_': 'auto_increment_by'})}
 
@@ -75,10 +75,9 @@
                             </tbody>
                         </table>
 
-                        % for time_form in form.timeseries[:-1]:
+                        % for wind_form in form.timeseries[:-1]:
                             <div class="edit-time-form time-form hidden">
-                            <%include file="wind_time_object_form.mak"
-                                      args="form=time_form"/>
+                            <%include file="wind_form.mak" args="form=wind_form"/>
 
                                 <div class="control-group edit-time-buttons">
                                     <div class="controls">
@@ -117,7 +116,7 @@
 
     <!-- A template for time series item rows. -->
      <script type="text/template" id="time-series-row">
-         <tr>
+         <tr class="{{ error }}">
              <td class="time-series-date">{{ date }}</td>
              <td class="time-series-time">{{ time }}</td>
              <td class="time-series-speed">{{ speed }}</td>

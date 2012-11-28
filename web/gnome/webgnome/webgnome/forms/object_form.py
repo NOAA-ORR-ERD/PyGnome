@@ -10,7 +10,7 @@ from base import AutoIdForm
 _object_form_classes = {}
 
 
-def get_object_form(obj):
+def get_object_form_cls(obj):
     obj_class = util.get_obj_class(obj)
     return _object_form_classes.get(obj_class, None)
 

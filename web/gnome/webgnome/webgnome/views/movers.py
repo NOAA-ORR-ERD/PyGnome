@@ -6,12 +6,13 @@ from pyramid.view import view_config
 
 from webgnome import util
 from webgnome.forms.movers import AddMoverForm, DeleteMoverForm, WindMoverForm
+from webgnome.model_manager import WindMoverProxy
 
 
 # A map of :mod:`gnome` objects to route names, for use looking up the route
 # for an object at runtime with :func:`get_form_route`.
 form_routes = {
-    gnome.movers.WindMover: {
+    WindMoverProxy: {
         'create': 'create_wind_mover',
         'update': 'update_wind_mover',
         'delete': 'delete_mover'
@@ -114,8 +115,11 @@ def update_wind_mover(request, model):
     opts = {'obj': mover} if mover else {}
     form = WindMoverForm(request.POST or None, **opts)
 
-    if request.method == 'POST' and form.validate():
-        return _update_wind_mover_post(model, mover_id, form)
+    if request.method == 'POST':
+        if form.validate():
+            return _update_wind_mover_post(model, mover_id, form)
+        else:
+            form.timeseries.append_entry()
 
     html = render('webgnome:templates/forms/wind_mover.mak', {
         'form': form,
