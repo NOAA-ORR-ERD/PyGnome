@@ -578,7 +578,7 @@ define([
 
             if (hasErrors) {
                 alert('At least one of your time series values had errors in ' +
-                     'it. The rows with values will be marked in red.');
+                     'it. The rows with errors will be marked in red.');
             }
         }
     });
