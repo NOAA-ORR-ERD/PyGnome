@@ -1,9 +1,7 @@
 ### Mako defs.
 
 ## Make a unique ID using ``form.id`` and ``id``.
-<%def name="uid(id, form)">
-    <% return "%s_%s" % (id, form.id) %>
-</%def>
+<%def name="uid(id, form)"><% return "%s_%s" % (id, form.id) %></%def>
 
 <%def name="is_active(url)">
     % if request.path == url:
@@ -40,7 +38,7 @@
             %>
             ${field(**opts) if opts else field(id='')}
             % if help_text:
-                <span class="help-inline">${help_text}</span>
+                <span class="help-inline">${help_text | n}</span>
             % endif
              % if field.errors:
                 <span class="help-inline">

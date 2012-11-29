@@ -61,6 +61,10 @@
                         </div>
                     </div>
 
+                    <div class="compass-container span6">
+                        <div id="${defs.uid('compass', form)}" class="compass hidden"></div>
+                    </div>
+
                     <div class="span6 edit-time-forms">
                         <table class="table table-striped time-list">
                             <thead>

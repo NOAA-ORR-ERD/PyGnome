@@ -6,6 +6,7 @@ define([
     'models',
     'util',
     'lib/moment',
+    'lib/compass-ui'
 ], function($, _, Backbone, models, util) {
 
     var ModalFormViewContainer = Backbone.View.extend({
@@ -371,10 +372,17 @@ define([
      */
     var WindMoverFormView = ModalFormView.extend({
         initialize: function(options) {
+            var _this = this;
             this.constructor.__super__.initialize.apply(this, arguments);
             this.renderTimeTable();
+            this.setupCompass();
 
-            this.$container.on('change', this.id + ' .direction', this.toggleDegreesInput);
+            _.each(this.$el.find('.direction'), function(input) {
+                _this.toggleDegreesInput(input);
+            });
+
+            this.$container.on('click', this.id + ' .show-compass', this.showCompassClicked);
+            this.$container.on('change', this.id + ' .direction', this.directionChanged);
             this.$container.on('click', this.id + ' .edit-mover-name i', this.editMoverNameButtonClicked);
             this.$container.on('click', this.id + ' .save-mover-name i', this.saveMoverNameButtonClicked);
             this.$container.on('change', this.id + ' .edit-mover-name-field', this.moverNameChanged);
@@ -383,6 +391,55 @@ define([
             this.$container.on('click', this.id + ' .cancel', this.cancelButtonClicked);
             this.$container.on('click', this.id + ' .save', this.saveButtonClicked);
             this.$container.on('click', this.id + ' .delete-time', this.trashButtonClicked);
+        },
+
+        toggleCompass: function(action) {
+            var $compass = this.$el.find('.compass-container,.compass');
+            var $editForms = this.$el.find('.edit-time-forms');
+
+            if (action === undefined) {
+                 action = $compass.hasClass('hidden') ? 'show' : 'hide';
+            }
+
+            if (action === 'show') {
+                $editForms.addClass('hidden');
+                $compass.removeClass('hidden');
+                this.compass.compassUI('reset');
+            } else {
+                $editForms.removeClass('hidden');
+                $compass.addClass('hidden');
+            }
+        },
+
+        showCompassClicked: function(event) {
+            event.preventDefault();
+            this.toggleCompass();
+        },
+
+        compassChanged: function(magnitude, direction) {
+            this.compassMoved(magnitude, direction);
+            this.toggleCompass();
+        },
+
+        compassMoved: function(magnitude, direction) {
+            var $form = this.$el.find('.time-form').not('.hidden');
+            $form.find('.speed').val(magnitude.toFixed(2));
+            $form.find('.direction_degrees').val(direction.toFixed(2));
+        },
+
+        setupCompass: function() {
+            var _this = this;
+            var $compass = this.$el.find('.compass');
+
+            this.compass = $compass.compassUI({
+                'arrow-direction': 'in',
+                'move': function(magnitude, direction) {
+                    _this.compassMoved(magnitude, direction);
+                },
+                'change': function(magnitude, direction) {
+                    _this.compassChanged(magnitude, direction);
+                }
+            });
         },
 
         getTimesTable: function() {
@@ -513,6 +570,7 @@ define([
 
             this.getTimesTable().append($form);
             this.renderTimeTable();
+            this.toggleCompass('hide');
         },
 
         cancelButtonClicked: function(event) {
@@ -529,6 +587,7 @@ define([
             var $row = $(event.target).closest('tr');
             $row.removeClass('info');
             this.renderTimeTable();
+            this.toggleCompass('hide');
         },
 
         editButtonClicked: function(event) {
@@ -549,16 +608,23 @@ define([
 
             this.getTimesTable().find('tr').removeClass('info');
             $row.removeClass('error').removeClass('warning').addClass('info');
+
+            this.toggleDegreesInput($form.find('.direction_degrees'));
         },
 
-        toggleDegreesInput: function(event) {
-            var $dirInput = $(event.target);
-            var selected_direction = $dirInput.val();
-            var $formDiv = $dirInput.closest('.time-form');
+        directionChanged: function(event) {
+            var direction = $(event.target);
+            this.toggleDegreesInput(direction);
+        },
+
+        toggleDegreesInput: function(degreesInput) {
+            var $degreesInput = $(degreesInput);
+            var selectedDirection = $degreesInput.val();
+            var $formDiv = $degreesInput.closest('.time-form');
             var $degreesControl = $formDiv.find(
                 '.direction_degrees').closest('.control-group');
 
-            if (selected_direction === 'Degrees true') {
+            if (selectedDirection === 'Degrees true') {
                 $degreesControl.removeClass('hidden');
             } else {
                 $degreesControl.addClass('hidden');
