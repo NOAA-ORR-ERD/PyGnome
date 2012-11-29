@@ -116,7 +116,7 @@ legend {
 }
 
 .alert {
-    max-width: 450px;
+    max-width: 700px;
 }
 
 select, textarea,
@@ -135,7 +135,7 @@ input[type="search"],
 input[type="tel"],
 input[type="color"],
 .uneditable-input {
-    padding: 1.5px;
+    padding: 2px;
 }
 
 .form-horizontal .control-group {
@@ -155,11 +155,11 @@ input[type="color"],
 }
 
 .speed {
-    width: 100px;
+    width: 80px;
 }
 
 .speed_type {
-    width: 110px;
+    width: 120px;
 }
 
 select, input[type="file"] {
@@ -170,3 +170,21 @@ select, input[type="file"] {
     padding-top: 4px;
 }
 
+.modal-header h3 {
+    display: inline;
+}
+
+.edit-mover-name {
+    padding: 0 0 0 10px;
+}
+
+.compass-container {
+    padding: 0 0 0 45px;
+    position: relative;
+}
+
+.compass {
+    width: 300px;
+    height: 300px;
+    position: relative;
+}

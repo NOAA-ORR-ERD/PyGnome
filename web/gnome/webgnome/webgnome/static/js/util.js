@@ -1,5 +1,4 @@
 // util.js: Utility functions for the WebGNOME JavaScript application.
-"use strict";
 
 define([
     'jquery',
@@ -83,9 +82,8 @@ define([
             timestamp = date.toUTCString();
         }
         return timestamp;
-    };
-
-
+    }
+    
     return {
         log: log,
         handleAjaxError: handleAjaxError,

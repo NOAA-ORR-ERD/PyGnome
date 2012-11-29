@@ -58,12 +58,12 @@ def model_forms(request, model):
             continue
 
         update_route = routes.get('update', None)
-        update_form = object_form.get_object_form(mover)
+        update_form_cls = object_form.get_object_form_cls(mover)
 
-        if update_route and update_form:
+        if update_route and update_form_cls:
             update_url = request.route_url(update_route, id=mover.id)
-            context['mover_update_forms'].append(
-                (update_url, update_form(obj=mover)))
+            update_form = update_form_cls(obj=mover)
+            context['mover_update_forms'].append((update_url, update_form))
 
         # TODO: Spill forms.
 
@@ -261,7 +261,7 @@ def run_model(request, model):
         r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
         model.add_mover(r_mover)
 
-        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_r_theta)
+        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
         series[0] = (start_time, (30, 50) )
         series[1] = (start_time + datetime.timedelta(hours=18), (30, 50))
         series[2] = (start_time + datetime.timedelta(hours=30), (20, 25))

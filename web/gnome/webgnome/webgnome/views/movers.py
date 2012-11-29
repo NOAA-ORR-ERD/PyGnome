@@ -1,4 +1,3 @@
-import numpy
 import gnome.movers
 import gnome.basic_types
 
@@ -7,12 +6,13 @@ from pyramid.view import view_config
 
 from webgnome import util
 from webgnome.forms.movers import AddMoverForm, DeleteMoverForm, WindMoverForm
+from webgnome.model_manager import WindMoverProxy
 
 
 # A map of :mod:`gnome` objects to route names, for use looking up the route
 # for an object at runtime with :func:`get_form_route`.
 form_routes = {
-    gnome.movers.WindMover: {
+    WindMoverProxy: {
         'create': 'create_wind_mover',
         'update': 'update_wind_mover',
         'delete': 'delete_mover'
@@ -85,15 +85,17 @@ def delete_mover(request, model):
 
 
 def _update_wind_mover_post(model, mover_id, form):
-    if model.has_mover_with_id(mover_id):
-        # TODO: Does WTForms update the object directly?
+    mover = model.get_mover(mover_id)
+
+    if mover:
+        form.update(mover)
         message = util.make_message(
             'success', 'Updated variable wind mover successfully.')
     else:
-        mover_id = model.add_mover(form.data)
+        mover = form.create()
+        mover_id = model.add_mover(mover)
         message = util.make_message(
-            'warning', 'The specified mover did not exist. Added a '
-                       'new variable wind mover to the model.')
+            'warning', 'The mover did not exist, so we created a new one.')
     return {
         'id': mover_id,
         'message': message,
@@ -109,8 +111,11 @@ def update_wind_mover(request, model):
     opts = {'obj': mover} if mover else {}
     form = WindMoverForm(request.POST or None, **opts)
 
-    if request.method == 'POST' and form.validate():
-        return _update_wind_mover_post(model, mover_id, form)
+    if request.method == 'POST':
+        if form.validate():
+            return _update_wind_mover_post(model, mover_id, form)
+        else:
+            form.timeseries.append_entry()
 
     html = render('webgnome:templates/forms/wind_mover.mak', {
         'form': form,
@@ -121,25 +126,7 @@ def update_wind_mover(request, model):
 
 
 def _create_wind_mover_post(model, form):
-    num_timeseries = len(form.timeseries)
-    timeseries = numpy.zeros((num_timeseries,),
-        dtype=gnome.basic_types.datetime_r_theta)
-
-    for idx, time_form in enumerate(form.timeseries):
-        direction = time_form.get_direction_degree()
-        datetime = time_form.get_datetime()
-
-        if not direction:
-            return {
-                'form_html': None,
-                'message': util.make_message('error',
-                    'Could not create wind mover. Invalid direction given.')
-            }
-
-        timeseries['time'][idx] = datetime
-        timeseries['value'][idx] = (direction, time_form.speed.data)
-
-    mover = gnome.movers.WindMover(timeseries=timeseries)
+    mover = form.create()
 
     return {
         'id': model.add_mover(mover),
@@ -153,8 +140,11 @@ def _create_wind_mover_post(model, form):
 def create_wind_mover(request, model):
     form = WindMoverForm(request.POST)
 
-    if request.method == 'POST' and form.validate():
-        return _create_wind_mover_post(model, form)
+    if request.method == 'POST':
+        if form.validate():
+            return _create_wind_mover_post(model, form)
+        else:
+            form.timeseries.append_entry()
 
     context = {
         'form': form,

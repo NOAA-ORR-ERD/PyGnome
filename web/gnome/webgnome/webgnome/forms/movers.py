@@ -1,6 +1,6 @@
-import copy
+import gnome.basic_types
 import gnome.movers
-import math
+import numpy
 
 from wtforms import (
     SelectField,
@@ -9,36 +9,24 @@ from wtforms import (
     BooleanField,
     ValidationError,
     FieldList,
-    FormField
+    FormField,
+    StringField
 )
 
 from wtforms.validators import Required, NumberRange, Optional
 
+from webgnome.model_manager import WindMoverProxy
+from webgnome import util
 from base import AutoIdForm, DateTimeForm
 from object_form import ObjectForm
 
 
-class WindTimeObjectForm(DateTimeForm):
-    DIRECTION_CUSTOM = 'Custom'
-
-    DIRECTIONS = [
-        "N",
-        "NNE",
-        "NE",
-        "ENE",
-        "E",
-        "ESE",
-        "SE",
-        "SSE",
-        "S",
-        "SSW",
-        "SW",
-        "WSW",
-        "W",
-        "WNW",
-        "NW",
-        "NNW"
-    ]
+class WindForm(DateTimeForm):
+    """
+    A specific value in a :class:`gnome.movers.WindMover` time series.
+    Note that this class inherits the ``date``, ``hour`` and ``minute`` fields.
+    """
+    DIRECTION_DEGREES = 'Degrees true'
 
     SPEED_KNOTS = 'knots'
     SPEED_METERS = 'meters'
@@ -50,38 +38,37 @@ class WindTimeObjectForm(DateTimeForm):
         (SPEED_MILES, 'Miles / hour')
         )
 
-    speed = IntegerField('Speed', default=0, validators=[NumberRange(min=0)])
+    speed = FloatField('Speed', default=0, validators=[NumberRange(min=1)])
     speed_type = SelectField(
         choices=SPEED_CHOICES,
-        validators=[Required()]
+        validators=[Required()],
+        default=SPEED_KNOTS
     )
 
     direction = SelectField(
         'Wind direction is from', default='S',
-        choices=[(d, d) for d in ['Degrees true'] + DIRECTIONS],
+        choices=[(d, d) for d in
+                 [DIRECTION_DEGREES] + util.DirectionConverter.DIRECTIONS],
         validators=[Required()])
 
-    direction_degrees = IntegerField(
+    direction_degrees = FloatField(
         validators=[Optional(), NumberRange(min=0, max=360)])
-
-    auto_increment_time_by = IntegerField('Auto-increment time by', default=6)
 
     def get_direction_degree(self):
         """
         Convert user input for direction into degree.
         """
-        if self.direction.data == self.DIRECTION_CUSTOM:
+        if self.direction.data == self.DIRECTION_DEGREES:
             return self.direction_degrees.data
-        elif self.direction.data in self.DIRECTIONS:
-            idx = self.DIRECTIONS.index(self.direction.data)
-            return (360.0 / 16) * idx
+        else:
+            return util.DirectionConverter.get_degree(self.direction.data)
 
 
 class WindMoverForm(ObjectForm):
     """
     A form class representing a :class:`gnome.mover.WindMover` object.
     """
-    wrapped_class = gnome.movers.WindMover
+    wrapped_class = WindMoverProxy
 
     SCALE_RADIANS = 'rad'
     SCALE_DEGREES = 'deg'
@@ -91,24 +78,88 @@ class WindMoverForm(ObjectForm):
         (SCALE_DEGREES, 'deg')
     )
 
-    timeseries = FieldList(FormField(WindTimeObjectForm), min_entries=1)
+    name = StringField(default='Wind Mover', validators=[Required()])
+    timeseries = FieldList(FormField(WindForm), min_entries=1)
 
     is_active = BooleanField('Active', default=True)
-    speed_scale = IntegerField('Speed Scale', default=2,
+    uncertain_speed_scale = FloatField('Speed Scale', default=2,
                                validators=[NumberRange(min=0)])
-    total_angle_scale = FloatField('Total Angle Scale', default=0.4,
+    uncertain_angle_scale = FloatField('Total Angle Scale', default=0.4,
                                    validators=[NumberRange(min=0)])
-    total_angle_scale_type = SelectField(
+    uncertain_angle_scale_type = SelectField(
         default=SCALE_RADIANS,
         choices=SCALE_CHOICES,
         validators=[Required()]
     )
 
-    start_time = IntegerField('Start Time', default=0,
+    uncertain_time_delay = FloatField('Start Time', default=0,
         validators=[NumberRange(min=0)])
-    duration = IntegerField('Duration', default=3,
+    uncertain_duration = FloatField('Duration', default=3,
         validators=[NumberRange(min=0)])
 
+    auto_increment_time_by = IntegerField('Auto-increment time by', default=6)
+
+    def __init__(self, *args, **kwargs):
+        """
+        Include an extra field in ``timeseries`` for use as the "Add" form when
+        displaying an update form for an object. Do this by taking the length
+        of timeseries values passed in from an ``obj`` argument and adding one
+        to it.
+
+        ``timeseries.min_entries`` remains the default value if the form is
+        receiving a POST.
+        """
+        super(WindMoverForm, self).__init__(*args, **kwargs)
+
+        obj = kwargs.get('obj', None)
+        formdata = args[0] if args else None
+
+        if obj and obj.timeseries and not formdata:
+            self.timeseries.append_entry()
+
+    def get_timeseries_ndarray(self):
+        num_timeseries = len(self.timeseries)
+        timeseries = numpy.zeros((num_timeseries,),
+            dtype=gnome.basic_types.datetime_value_2d)
+
+        for idx, time_form in enumerate(self.timeseries):
+            direction = time_form.get_direction_degree()
+            datetime = time_form.get_datetime()
+            timeseries['time'][idx] = datetime
+            timeseries['value'][idx] = (time_form.speed.data, direction,)
+
+        return timeseries
+    
+    def create(self):
+        """
+        Create a new :class:`webgnome.model_manager.WindMoverProxy` using data
+        from this form.
+        """
+        mover = gnome.movers.WindMover(
+            is_active=self.is_active.data,
+            uncertain_angle_scale=self.uncertain_angle_scale.data,
+            uncertain_speed_scale=self.uncertain_speed_scale.data,
+            uncertain_duration=self.uncertain_duration.data,
+            timeseries=self.get_timeseries_ndarray())
+        
+        proxy = WindMoverProxy(mover)
+        proxy.name = self.name.data
+        
+        return proxy
+    
+    def update(self, mover):
+        """
+        Update ``mover`` using data from this form.
+        """
+        mover.is_active = self.is_active.data,
+        mover.name = self.name.data
+        mover.uncertain_angle_scale = self.uncertain_angle_scale.data,
+        mover.uncertain_speed_scale = self.uncertain_speed_scale.data,
+        mover.uncertain_duration = self.uncertain_duration.data,
+        mover.timeseries = self.get_timeseries_ndarray()
+
+        return mover
+    
 
 class AddMoverForm(AutoIdForm):
     """

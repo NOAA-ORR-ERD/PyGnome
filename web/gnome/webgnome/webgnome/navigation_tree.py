@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from webgnome.forms.model import ModelSettingsForm
 from webgnome.forms.movers import AddMoverForm, DeleteMoverForm
-from webgnome.forms.object_form import get_object_form
+from webgnome.forms.object_form import get_object_form_cls
 from webgnome.forms.spills import DeleteSpillForm
 
 
@@ -91,14 +91,16 @@ class NavigationTree(object):
         })
 
         for mover in self.model.movers:
-            form = get_object_form(mover)
+            form = get_object_form_cls(mover)
 
             if not form:
                 continue
 
+            _id = form.get_id(mover)
+
             movers['children'].append({
-                'key': form.get_id(mover),
-                'form_id': form.get_id(mover),
+                'key': _id,
+                'form_id': _id,
                 'delete_form_id': DeleteMoverForm.get_id(mover),
                 'object_id': mover.id,
                 'title': str(mover)
@@ -106,8 +108,8 @@ class NavigationTree(object):
 
         for spill in self.model.spills:
             spills['children'].append({
-                'key': get_object_form(spill).get_id(spill),
-                'form_id': get_object_form(spill).get_id(spill),
+                'key': get_object_form_cls(spill).get_id(spill),
+                'form_id': get_object_form_cls(spill).get_id(spill),
                 'delete_form_id': DeleteSpillForm.get_id(spill),
                 'object_id': spill.id,
                 'title': str(spill),
