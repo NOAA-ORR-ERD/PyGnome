@@ -4,3 +4,4 @@ PIL>=1.1.7
 Cython>=0.17.1
 Pyrex>=0.9.8.6
 pytest>=2.3.4
+sphinx
