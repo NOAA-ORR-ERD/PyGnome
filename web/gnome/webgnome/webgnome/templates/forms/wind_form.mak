@@ -26,5 +26,3 @@ ${defs.form_control(form.direction_degrees, hidden=True,
     </div>
 </div>
 
-##${defs.form_control(form.speed, opts={'class_': 'speed'})}
-##${defs.form_control(form.speed_type, opts={'class_': 'speed_type'}, label="")}

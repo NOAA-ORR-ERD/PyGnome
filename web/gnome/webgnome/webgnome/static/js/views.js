@@ -17,10 +17,14 @@ define([
      */
     var MessageView = Backbone.View.extend({
         initialize: function() {
+            _.bindAll(this);
+
             this.options.model.on(
                 models.Model.MESSAGE_RECEIVED, this.displayMessage);
             this.options.ajaxForms.on(
                 models.AjaxForm.MESSAGE_RECEIVED, this.displayMessage);
+
+            this.hideAll();
         },
 
         displayMessage: function(message) {
@@ -39,15 +43,17 @@ define([
                 alertDiv.removeClass('hidden');
             }
 
-            // Hide alerts automatically.
-            setTimeout(function() {
-                alertDiv.fadeOut();
-            }, 2000);
-
+            this.hideAll();
             return true;
+        },
+
+        // Hide alerts automatically after a timeout.
+        hideAll: function() {
+            setTimeout(function() {
+                $('.alert').fadeOut();
+            }, 2000);
         }
     });
-
 
     /*
      `MapView` represents the visual map and is reponsible for animating frames

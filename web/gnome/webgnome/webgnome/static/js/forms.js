@@ -371,147 +371,28 @@ define([
      */
     var WindMoverFormView = ModalFormView.extend({
         initialize: function(options) {
-            var _this = this;
-
             this.constructor.__super__.initialize.apply(this, arguments);
             this.renderTimeTable();
 
-            this.$container.on('change', this.id + ' .direction', function() {
-                _this.toggleDegreesInput(this);
-            });
-
-            this.$container.on('click', this.id + ' .add-time', function(event) {
-                event.preventDefault();
-                _this.addTime();
-            });
-
-            this.$container.on('click', this.id + ' .icon-edit', function(event) {
-                event.preventDefault();
-                _this.showEditForm(this);
-            });
-
-            // TODO: Move into function
-            this.$container.on('click', this.id + ' .cancel', function(event) {
-                event.preventDefault();
-                var form = $(this).closest('.time-form');
-                form.addClass('hidden');
-                _this.clearInputs(form);
-                form.detach().appendTo('.times-list');
-                $('.add-time-form').find('.time-form').removeClass('hidden');
-            });
-
-            // TODO: Move into function
-            this.$container.on('click', this.id + ' .save', function(event) {
-                event.preventDefault();
-                var $form = $(this).closest('.time-form');
-                $form.addClass('hidden');
-                // Delete the "original" form that we're replacing.
-                $form.data('form-original').detach().empty().remove();
-                $form.detach().appendTo('.times-list');
-                $('.add-time-form').find('.time-form').removeClass('hidden');
-                _this.getTimesTable().append($form);
-                _this.renderTimeTable();
-            });
-
-            this.$container.on('click', this.id + ' .icon-trash', function(event) {
-                event.preventDefault();
-                var $form = $(this).closest('tr').data('data-form');
-                $form.detach().empty().remove();
-                _this.renderTimeTable();
-            });
+            this.$container.on('change', this.id + ' .direction', this.toggleDegreesInput);
+            this.$container.on('click', this.id + ' .edit-mover-name i', this.editMoverNameButtonClicked);
+            this.$container.on('click', this.id + ' .save-mover-name i', this.saveMoverNameButtonClicked);
+            this.$container.on('change', this.id + ' .edit-mover-name-field', this.moverNameChanged);
+            this.$container.on('click', this.id + ' .add-time', this.addButtonClicked);
+            this.$container.on('click', this.id + ' .edit-time', this.editButtonClicked);
+            this.$container.on('click', this.id + ' .cancel', this.cancelButtonClicked);
+            this.$container.on('click', this.id + ' .save', this.saveButtonClicked);
+            this.$container.on('click', this.id + ' .delete-time', this.trashButtonClicked);
         },
-        
+
         getTimesTable: function() {
-            return this.$el.find('.time-list');           
-        },
-
-        showEditForm: function(editIcon) {
-            var $form = $(editIcon).closest('tr').data('data-form');
-            var addFormContainer = $('.add-time-form');
-            var addTimeForm = addFormContainer.find('.time-form');
-            addTimeForm.addClass('hidden');
-            var $formCopy = $form.clone().appendTo(addFormContainer);
-            $formCopy.data('form-original', $form);
-            $formCopy.removeClass('hidden');
-        },
-
-        toggleDegreesInput: function(directionInput) {
-            var $dirInput = $(directionInput);
-            var selected_direction = $dirInput.val();
-            var $formDiv = $dirInput.closest('.time-form');
-            var $degreesControl = $formDiv.find(
-                '.direction_degrees').closest('.control-group');
-
-            if (selected_direction === 'Degrees true') {
-                $degreesControl.removeClass('hidden');
-            } else {
-                $degreesControl.addClass('hidden');
-            }
+            return this.$el.find('.time-list');
         },
 
         clearInputs: function(form) {
             $(form).find(':input').each(function() {
                 $(this).val('').removeAttr('checked');
             });
-        },
-
-        /*
-         Clone the add time form and add an item to the table of time series.
-         */
-        addTime: function() {
-            var $addForm = this.$el.find('.add-time-form').find('.time-form');
-            var $newForm = $addForm.clone(true).addClass('hidden');
-            var formId = $addForm.find(':input')[0].id;
-            var formNum = parseInt(formId.replace(/.*-(\d{1,4})-.*/m, '$1')) + 1;
-
-            // There are no edit forms, so this is the first time series.
-            if (!formNum) {
-                formNum = 0;
-            }
-
-            // Select all of the options selected on the original form.
-            _.each($addForm.find('select option:selected'), function(opt) {
-                var $opt = $(opt);
-                var name = $opt.closest('select').attr('name');
-                var $newOpt = $newForm.find(
-                    'select[name="' + name + '"] option[value="' + $opt.val() + '"]');
-                $newOpt.attr('selected', true);
-            });
-
-            // Increment the IDs of the add form elements -- it should always be
-            // the last form in the list of edit forms.
-            $addForm.find(':input').each(function() {
-                var id = $(this).attr('id');
-                if (id) {
-                    id = id.replace('-' + (formNum - 1) + '-', '-' + formNum + '-');
-                    $(this).attr({'name': id, 'id': id});
-                }
-            });
-
-            $newForm.find('.add-time-buttons').addClass('hidden');
-            $newForm.find('.edit-time-buttons').removeClass('hidden');
-
-            this.getTimesTable().after($newForm);
-            this.renderTimeTable();
-
-            var autoIncrementBy = $addForm.find('.auto_increment_by').val();
-
-            // Increase the date and time on the Add form if 'auto increase by'
-            // value was provided.
-            if (autoIncrementBy) {
-                var $date = $addForm.find('.date');
-                var $hour = $addForm.find('.hour');
-                var $minute = $addForm.find('.minute');
-                var time = $hour.val()  + ':' + $minute.val();
-
-                // TODO: Handle a date-parsing error here.
-                var dateTime = moment($date.val() + ' ' + time);
-                dateTime.add('hours', autoIncrementBy);
-
-                $date.val(dateTime.format("MM/DD/YYYY"));
-                $hour.val(dateTime.hours());
-                $minute.val(dateTime.minutes());
-            }
         },
 
         renderTimeTable: function() {
@@ -565,8 +446,37 @@ define([
          Remove the "Add" form inputs and submit the form.
          */
         submit: function() {
-            this.$el.find('.add-time-form .time-form').empty().remove();
+            this.$el.find('.add-time-forms .time-form').empty().remove();
             WindMoverFormView.__super__.submit.apply(this, arguments);
+        },
+
+        editMoverNameButtonClicked: function(event) {
+            var $button = $(event.target);
+            var $modal = $button.closest('.modal');
+            var $editField = $modal.find('.edit-mover-name-field');
+            $editField.removeClass('hidden');
+            var $header = $modal.find('.modal-label');
+            $header.addClass('hidden');
+            $button.parent().addClass('hidden');
+            $modal.find('.save-mover-name').removeClass('hidden');
+        },
+
+        saveMoverNameButtonClicked: function(event) {
+            var $button = $(event.target);
+            var $modal = $button.closest('.modal');
+            var $editField = $modal.find('.edit-mover-name-field');
+            $editField.addClass('hidden');
+            var $header = $modal.find('.modal-label');
+            $header.removeClass('hidden');
+            $button.parent().addClass('hidden');
+            $modal.find('.edit-mover-name').removeClass('hidden');
+        },
+
+        moverNameChanged: function(event) {
+            var $input = $(event.target);
+            var $modal = $input.closest('.modal');
+            var $header = $modal.find('.modal-label').find('h3');
+            $header.text($input.val());
         },
 
         ajaxFormChanged: function() {
@@ -580,10 +490,144 @@ define([
                 alert('At least one of your time series values had errors in ' +
                      'it. The rows with errors will be marked in red.');
             }
+        },
+
+        trashButtonClicked: function(event) {
+            event.preventDefault();
+            var $form = $(event.target).closest('tr').data('data-form');
+            $form.detach().empty().remove();
+            this.renderTimeTable();
+        },
+
+        saveButtonClicked: function(event) {
+            event.preventDefault();
+            var $form = $(event.target).closest('.time-form');
+            $form.addClass('hidden');
+
+            // Delete the "original" form that we're replacing.
+            $form.data('form-original').detach().empty().remove();
+            $form.detach().appendTo('.times-list');
+
+            // Show the add form
+            $('.add-time-forms').find('.add-time-form').removeClass('hidden');
+
+            this.getTimesTable().append($form);
+            this.renderTimeTable();
+        },
+
+        cancelButtonClicked: function(event) {
+            event.preventDefault();
+            var $form = $(event.target).closest('.time-form');
+
+            $form.addClass('hidden');
+            this.clearInputs($form);
+            $form.clone().appendTo('.times-list');
+            $form.empty().remove();
+
+            $('.add-time-forms').find('.add-time-form').removeClass('hidden');
+
+            var $row = $(event.target).closest('tr');
+            $row.removeClass('info');
+            this.renderTimeTable();
+        },
+
+        editButtonClicked: function(event) {
+            event.preventDefault();
+            var $row = $(event.target).closest('tr');
+            var $form = $row.data('data-form');
+            var $addFormContainer = $('.add-time-forms');
+            var $addTimeForm = $addFormContainer.find('.add-time-form');
+
+            $addTimeForm.addClass('hidden');
+
+            // Delete any edit forms currently in view.
+            $addFormContainer.find('.edit-time-form').remove();
+
+            var $formCopy = $form.clone().appendTo($addFormContainer);
+            $formCopy.data('form-original', $form);
+            $formCopy.removeClass('hidden');
+
+            this.getTimesTable().find('tr').removeClass('info');
+            $row.removeClass('error').removeClass('warning').addClass('info');
+        },
+
+        toggleDegreesInput: function(event) {
+            var $dirInput = $(event.target);
+            var selected_direction = $dirInput.val();
+            var $formDiv = $dirInput.closest('.time-form');
+            var $degreesControl = $formDiv.find(
+                '.direction_degrees').closest('.control-group');
+
+            if (selected_direction === 'Degrees true') {
+                $degreesControl.removeClass('hidden');
+            } else {
+                $degreesControl.addClass('hidden');
+            }
+        },
+
+        /*
+         Clone the add time form and add an item to the table of time series.
+         */
+        addButtonClicked: function(event) {
+            event.preventDefault();
+            var $addForm = this.$el.find('.add-time-form');
+            var $newForm = $addForm.clone(true).addClass('hidden').removeClass(
+                'add-time-form').addClass('edit-time-form');
+            var formId = $addForm.find(':input')[0].id;
+            var formNum = parseInt(formId.replace(/.*-(\d{1,4})-.*/m, '$1')) + 1;
+
+            // There are no edit forms, so this is the first time series.
+            if (!formNum) {
+                formNum = 0;
+            }
+
+            // Select all of the options selected on the original form.
+            _.each($addForm.find('select option:selected'), function(opt) {
+                var $opt = $(opt);
+                var name = $opt.closest('select').attr('name');
+                var $newOpt = $newForm.find(
+                    'select[name="' + name + '"] option[value="' + $opt.val() + '"]');
+                $newOpt.attr('selected', true);
+            });
+
+            // Increment the IDs of the add form elements -- it should always be
+            // the last form in the list of edit forms.
+            $addForm.find(':input').each(function() {
+                var id = $(this).attr('id');
+                if (id) {
+                    id = id.replace('-' + (formNum - 1) + '-', '-' + formNum + '-');
+                    $(this).attr({'name': id, 'id': id});
+                }
+            });
+
+            $newForm.find('.add-time-buttons').addClass('hidden');
+            $newForm.find('.edit-time-buttons').removeClass('hidden');
+
+            this.getTimesTable().after($newForm);
+            this.renderTimeTable();
+
+            var autoIncrementBy = $addForm.find('.auto_increment_by').val();
+
+            // Increase the date and time on the Add form if 'auto increase by'
+            // value was provided.
+            if (autoIncrementBy) {
+                var $date = $addForm.find('.date');
+                var $hour = $addForm.find('.hour');
+                var $minute = $addForm.find('.minute');
+                var time = $hour.val()  + ':' + $minute.val();
+
+                // TODO: Handle a date-parsing error here.
+                var dateTime = moment($date.val() + ' ' + time);
+                dateTime.add('hours', autoIncrementBy);
+
+                $date.val(dateTime.format("MM/DD/YYYY"));
+                $hour.val(dateTime.hours());
+                $minute.val(dateTime.minutes());
+            }
         }
     });
 
-     return {
+    return {
         AddMoverFormView: AddMoverFormView,
         WindMoverFormView: WindMoverFormView,
         ModalFormView: ModalFormView,

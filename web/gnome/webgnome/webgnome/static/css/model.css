@@ -170,3 +170,11 @@ select, input[type="file"] {
     padding-top: 4px;
 }
 
+.modal-header h3 {
+    display: inline;
+}
+
+.edit-mover-name {
+    padding: 0 0 0 10px;
+}
+

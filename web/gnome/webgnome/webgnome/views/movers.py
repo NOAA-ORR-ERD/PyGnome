@@ -88,15 +88,11 @@ def _update_wind_mover_post(model, mover_id, form):
     mover = model.get_mover(mover_id)
 
     if mover:
-        mover.is_active = form.is_active.data,
-        mover.uncertain_angle_scale = form.uncertain_angle_scale.data,
-        mover.uncertain_speed_scale = form.uncertain_speed_scale.data,
-        mover.uncertain_duration = form.uncertain_duration.data,
-        mover.timeseries = form.get_timeseries_ndarray()
+        form.update(mover)
         message = util.make_message(
             'success', 'Updated variable wind mover successfully.')
     else:
-        mover = form.create_mover()
+        mover = form.create()
         mover_id = model.add_mover(mover)
         message = util.make_message(
             'warning', 'The mover did not exist, so we created a new one.')
@@ -130,7 +126,7 @@ def update_wind_mover(request, model):
 
 
 def _create_wind_mover_post(model, form):
-    mover = form.create_mover()
+    mover = form.create()
 
     return {
         'id': model.add_mover(mover),
@@ -144,8 +140,11 @@ def _create_wind_mover_post(model, form):
 def create_wind_mover(request, model):
     form = WindMoverForm(request.POST)
 
-    if request.method == 'POST' and form.validate():
-        return _create_wind_mover_post(model, form)
+    if request.method == 'POST':
+        if form.validate():
+            return _create_wind_mover_post(model, form)
+        else:
+            form.timeseries.append_entry()
 
     context = {
         'form': form,

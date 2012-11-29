@@ -43,6 +43,11 @@ class WindMoverProxy(util.Proxy):
     A proxy for :class:`gnome.movers.WindMover` that provides webgnome-specific
     functionality.
     """
+    def __init__(self, *args, **kwargs):
+        self.name = None
+
+        super(WindMoverProxy, self).__init__(*args, **kwargs)
+
     @property
     def timeseries(self):
         series = []
@@ -72,12 +77,9 @@ class WindMoverProxy(util.Proxy):
         a new ``__repr__`` method from :class:`util.Proxy` due to it deriving
         from ``object``.
         """
+        if self.name:
+            return self.name
         return self._target.__repr__()
-
-
-mover_proxies = {
-    WindMover: WindMoverProxy
-}
 
 
 class ModelProxy(util.Proxy):
@@ -89,22 +91,7 @@ class ModelProxy(util.Proxy):
         # Patch the object with an empty ``time_steps`` array for the time being.
         # TODO: Add output caching in the model.
         self.time_steps = []
-
         super(ModelProxy, self).__init__(*args, **kwargs)
-
-    @property
-    def movers(self):
-        movers = []
-        for mover in self._target.movers:
-            proxy_cls = mover_proxies.get(type(mover), None)
-            movers.append(proxy_cls(mover) if proxy_cls else mover)
-        return movers
-
-    def get_mover(self, mover_id):
-        mover = self._target.get_mover(int(mover_id))
-        if mover:
-            proxy_cls = mover_proxies.get(type(mover), None)
-            return proxy_cls(mover) if proxy_cls else mover
 
     def has_mover_with_id(self, mover_id):
         """
