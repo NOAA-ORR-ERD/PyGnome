@@ -120,7 +120,7 @@ class WindMoverForm(ObjectForm):
     def get_timeseries_ndarray(self):
         num_timeseries = len(self.timeseries)
         timeseries = numpy.zeros((num_timeseries,),
-            dtype=gnome.basic_types.datetime_r_theta)
+            dtype=gnome.basic_types.datetime_value_2d)
 
         for idx, time_form in enumerate(self.timeseries):
             direction = time_form.get_direction_degree()

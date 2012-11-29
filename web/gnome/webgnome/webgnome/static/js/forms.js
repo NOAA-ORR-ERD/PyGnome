@@ -401,12 +401,18 @@ define([
                  action = $compass.hasClass('hidden') ? 'show' : 'hide';
             }
 
+            // XXX: Adding and removing the 'span6' class, which is on the
+            // .edit-time-forms div by default, is a hack to remove unwanted
+            // visual space caused by a hidden div with the 'span6' class.
+            // Removing the class while the div is hidden remove the space.
             if (action === 'show') {
                 $editForms.addClass('hidden');
+                $editForms.removeClass('span6');
                 $compass.removeClass('hidden');
                 this.compass.compassUI('reset');
             } else {
                 $editForms.removeClass('hidden');
+                $editForms.addClass('span6');
                 $compass.addClass('hidden');
             }
         },

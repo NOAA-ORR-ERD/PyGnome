@@ -61,10 +61,6 @@
                         </div>
                     </div>
 
-                    <div class="compass-container span6">
-                        <div id="${defs.uid('compass', form)}" class="compass hidden"></div>
-                    </div>
-
                     <div class="span6 edit-time-forms">
                         <table class="table table-striped time-list">
                             <thead>
@@ -98,6 +94,11 @@
                         % endfor
                     </div>
                 </div>
+
+                <div class="compass-container span6">
+                    <div id="${defs.uid('compass', form)}" class="compass hidden"></div>
+                </div>
+
                 <div class="tab-pane" id="${uncertainty_id}">
                     ${defs.form_control(form.uncertain_time_delay, "hours")}
                     ${defs.form_control(form.uncertain_duration, "hours")}
