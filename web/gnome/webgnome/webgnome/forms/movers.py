@@ -26,8 +26,6 @@ class WindForm(DateTimeForm):
     A specific value in a :class:`gnome.movers.WindMover` time series.
     Note that this class inherits the ``date``, ``hour`` and ``minute`` fields.
     """
-    DIRECTION_DEGREES = 'Degrees true'
-
     SPEED_KNOTS = 'knots'
     SPEED_METERS = 'meters'
     SPEED_MILES = 'miles'
@@ -45,23 +43,35 @@ class WindForm(DateTimeForm):
         default=SPEED_KNOTS
     )
 
-    direction = SelectField(
-        'Wind direction is from', default='S',
-        choices=[(d, d) for d in
-                 [DIRECTION_DEGREES] + util.DirectionConverter.DIRECTIONS],
-        validators=[Required()])
+    direction = StringField(validators=[Required()])
 
-    direction_degrees = FloatField(
-        validators=[Optional(), NumberRange(min=0, max=360)])
+    def _validate_degrees_true(self, direction):
+        if 0 > direction > 360:
+            raise ValidationError(
+                'Direction in degrees true must be between 0 and 360.')
+
+    def _validate_cardinal_direction(self, direction):
+        if not util.DirectionConverter.is_cardinal_direction(direction):
+            raise ValidationError(
+                'A cardinal directions must be one of: %s' % ', '.join(
+                    util.DirectionConverter.DIRECTIONS))
+
+    def validate_direction(self, field):
+        try:
+            self._validate_degrees_true(float(field.data))
+        except ValueError:
+            self._validate_cardinal_direction(field.data.upper())
 
     def get_direction_degree(self):
         """
         Convert user input for direction into degree.
         """
-        if self.direction.data == self.DIRECTION_DEGREES:
-            return self.direction_degrees.data
+        direction = self.direction.data
+
+        if direction.isalpha():
+            return util.DirectionConverter.get_degree(direction)
         else:
-            return util.DirectionConverter.get_degree(self.direction.data)
+            return direction
 
 
 class WindMoverForm(ObjectForm):

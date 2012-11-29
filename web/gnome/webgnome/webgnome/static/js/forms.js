@@ -377,10 +377,6 @@ define([
             this.renderTimeTable();
             this.setupCompass();
 
-            _.each(this.$el.find('.direction'), function(input) {
-                _this.toggleDegreesInput(input);
-            });
-
             this.$container.on('click', this.id + ' .show-compass', this.showCompassClicked);
             this.$container.on('change', this.id + ' .direction', this.directionChanged);
             this.$container.on('click', this.id + ' .edit-mover-name i', this.editMoverNameButtonClicked);
@@ -403,8 +399,9 @@ define([
 
             // XXX: Adding and removing the 'span6' class, which is on the
             // .edit-time-forms div by default, is a hack to remove unwanted
-            // visual space caused by a hidden div with the 'span6' class.
-            // Removing the class while the div is hidden remove the space.
+            // visual space caused by adding the 'hidden' class to a div that
+            // has a 'span6' class. Temporarily removing the 'span6' class
+            // while the div is hidden removes the space.
             if (action === 'show') {
                 $editForms.addClass('hidden');
                 $editForms.removeClass('span6');
@@ -430,7 +427,7 @@ define([
         compassMoved: function(magnitude, direction) {
             var $form = this.$el.find('.time-form').not('.hidden');
             $form.find('.speed').val(magnitude.toFixed(2));
-            $form.find('.direction_degrees').val(direction.toFixed(2));
+            $form.find('.direction').val(direction.toFixed(2));
         },
 
         setupCompass: function() {
@@ -472,11 +469,13 @@ define([
                 var speedType = $form.find('.speed_type option:selected').val();
                 var direction = $form.find('.direction').val();
 
-                if (direction === 'Degrees true') {
-                    direction = $form.find('.direction_degrees').val() + ' &deg;';
+                if (isNaN(direction)) {
+                    direction = direction.toUpperCase();
+                } else {
+                    direction = direction + ' &deg;';
                 }
 
-                var error = $form.find('span.help').length > 0;
+                var error = $form.find('.error').length > 0;
 
                 var dateTime = moment(
                     $form.find('.date').val() + ' ' +
@@ -553,6 +552,8 @@ define([
                 alert('At least one of your time series values had errors in ' +
                      'it. The rows with errors will be marked in red.');
             }
+
+            this.setupCompass();
         },
 
         trashButtonClicked: function(event) {
@@ -614,27 +615,6 @@ define([
 
             this.getTimesTable().find('tr').removeClass('info');
             $row.removeClass('error').removeClass('warning').addClass('info');
-
-            this.toggleDegreesInput($form.find('.direction_degrees'));
-        },
-
-        directionChanged: function(event) {
-            var direction = $(event.target);
-            this.toggleDegreesInput(direction);
-        },
-
-        toggleDegreesInput: function(degreesInput) {
-            var $degreesInput = $(degreesInput);
-            var selectedDirection = $degreesInput.val();
-            var $formDiv = $degreesInput.closest('.time-form');
-            var $degreesControl = $formDiv.find(
-                '.direction_degrees').closest('.control-group');
-
-            if (selectedDirection === 'Degrees true') {
-                $degreesControl.removeClass('hidden');
-            } else {
-                $degreesControl.addClass('hidden');
-            }
         },
 
         /*

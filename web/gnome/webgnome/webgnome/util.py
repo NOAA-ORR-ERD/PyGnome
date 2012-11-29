@@ -160,6 +160,10 @@ class DirectionConverter(object):
     ]
 
     @classmethod
+    def is_cardinal_direction(cls, direction):
+        return direction in cls.DIRECTIONS
+
+    @classmethod
     def get_cardinal_name(cls, degree):
         """
         Convert an integer degree into a cardinal direction name.

@@ -26,16 +26,13 @@ class Wind(object):
     An object that represents a single wind value in a wind time series, using
     object fields so that it can be used to instantiate a form field.
     """
-    def __init__(self, date, speed, speed_type, direction_degrees):
+    def __init__(self, date, speed, speed_type, direction):
         self.date = date
         self.hour = date.hour
         self.minute = date.minute
         self.speed = speed
         self.speed_type = speed_type
-        # XXX: Hard-coded value. Can't use a constant here from WindForm due
-        # to a circular import: form.movers -> model_manager -> forms.movers
-        self.direction = 'Degrees true'
-        self.direction_degrees = direction_degrees
+        self.direction = direction
 
 
 class WindMoverProxy(util.Proxy):
@@ -56,7 +53,7 @@ class WindMoverProxy(util.Proxy):
             dt = timeseries[0].astype(object)
             series.append(
                 Wind(date=dt, speed=timeseries[1][0], speed_type='meters',
-                    direction_degrees=timeseries[1][1])
+                    direction=timeseries[1][1])
             )
 
         return series
@@ -80,6 +77,7 @@ class WindMoverProxy(util.Proxy):
         if self.name:
             return self.name
         return self._target.__repr__()
+
 
 
 class ModelProxy(util.Proxy):

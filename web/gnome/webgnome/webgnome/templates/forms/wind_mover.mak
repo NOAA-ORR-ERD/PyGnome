@@ -93,10 +93,11 @@
                             </div>
                         % endfor
                     </div>
-                </div>
 
-                <div class="compass-container span6">
-                    <div id="${defs.uid('compass', form)}" class="compass hidden"></div>
+                    <div class="compass-container span6">
+                        <div id="${defs.uid('compass', form)}"
+                             class="compass hidden"></div>
+                    </div>
                 </div>
 
                 <div class="tab-pane" id="${uncertainty_id}">
