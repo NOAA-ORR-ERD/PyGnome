@@ -172,13 +172,10 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
         # Verify that the update form has the timeseries data we submitted
         # plus an additional "Add" form with the default values.
         self.assertTrue(resp['form_html'].find(
-            '<input class="direction_degrees" id="" '
-            'name="timeseries-0-direction_degrees" '
-            'type="text" value="180.0">') > 1)
+            'name="timeseries-0-direction" type="text" value="180.0"') > 1)
 
         self.assertTrue(resp['form_html'].find(
-            '<input class="direction_degrees" id="" '
-            'name="timeseries-1-direction_degrees" type="text" value="">') > 1)
+            'name="timeseries-1-direction" type="text" value=""') > 1)
 
         # Update the wind mover with a new time series
         data = self.create_wind_mover_data()
@@ -263,11 +260,10 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
         resp = update_wind_mover(request)
 
         self.assertTrue(resp['form_html'].find(
-            'name="timeseries-0-direction" type="text" value="180.0"' > 1))
+            'name="timeseries-0-direction" type="text" value="180.0">') > 1)
 
         self.assertTrue(resp['form_html'].find(
-            '<input class="direction_degrees" id="" '
-            'name="timeseries-1-direction_degrees" type="text" value="">') > 1)
+            'name="timeseries-1-direction" type="text" value=""') > 1)
 
         # Update the wind mover with a new time series
         data = self.create_wind_mover_data()
