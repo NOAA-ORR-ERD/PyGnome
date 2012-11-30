@@ -378,7 +378,6 @@ define([
             this.setupCompass();
 
             this.$container.on('click', this.id + ' .show-compass', this.showCompassClicked);
-            this.$container.on('change', this.id + ' .direction', this.directionChanged);
             this.$container.on('click', this.id + ' .edit-mover-name i', this.editMoverNameButtonClicked);
             this.$container.on('click', this.id + ' .save-mover-name i', this.saveMoverNameButtonClicked);
             this.$container.on('change', this.id + ' .edit-mover-name-field', this.moverNameChanged);

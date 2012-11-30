@@ -13,9 +13,9 @@ from wtforms import (
     StringField
 )
 
-from wtforms.validators import Required, NumberRange, Optional
+from wtforms.validators import Required, NumberRange
 
-from webgnome.model_manager import WindMoverProxy
+from webgnome.model_manager import WebWindMover
 from webgnome import util
 from base import AutoIdForm, DateTimeForm
 from object_form import ObjectForm
@@ -78,7 +78,7 @@ class WindMoverForm(ObjectForm):
     """
     A form class representing a :class:`gnome.mover.WindMover` object.
     """
-    wrapped_class = WindMoverProxy
+    wrapped_class = WebWindMover
 
     SCALE_RADIANS = 'rad'
     SCALE_DEGREES = 'deg'
@@ -142,30 +142,25 @@ class WindMoverForm(ObjectForm):
     
     def create(self):
         """
-        Create a new :class:`webgnome.model_manager.WindMoverProxy` using data
-        from this form.
+        Create a new :class:`WebWindMover` using data from this form.
         """
-        mover = gnome.movers.WindMover(
+        return WebWindMover(
+            name=self.name.data,
             is_active=self.is_active.data,
             uncertain_angle_scale=self.uncertain_angle_scale.data,
             uncertain_speed_scale=self.uncertain_speed_scale.data,
             uncertain_duration=self.uncertain_duration.data,
             timeseries=self.get_timeseries_ndarray())
-        
-        proxy = WindMoverProxy(mover)
-        proxy.name = self.name.data
-        
-        return proxy
-    
+
     def update(self, mover):
         """
         Update ``mover`` using data from this form.
         """
-        mover.is_active = self.is_active.data,
+        mover.is_active = self.is_active.data
         mover.name = self.name.data
-        mover.uncertain_angle_scale = self.uncertain_angle_scale.data,
-        mover.uncertain_speed_scale = self.uncertain_speed_scale.data,
-        mover.uncertain_duration = self.uncertain_duration.data,
+        mover.uncertain_angle_scale = self.uncertain_angle_scale.data
+        mover.uncertain_speed_scale = self.uncertain_speed_scale.data
+        mover.uncertain_duration = self.uncertain_duration.data
         mover.timeseries = self.get_timeseries_ndarray()
 
         return mover

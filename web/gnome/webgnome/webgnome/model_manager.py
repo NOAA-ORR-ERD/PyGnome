@@ -35,21 +35,21 @@ class Wind(object):
         self.direction = direction
 
 
-class WindMoverProxy(util.Proxy):
+class WebWindMover(WindMover):
     """
-    A proxy for :class:`gnome.movers.WindMover` that provides webgnome-specific
-    functionality.
+    A subclass of :class:`gnome.movers.WindMover` that provides
+    webgnome-specific functionality.
     """
     def __init__(self, *args, **kwargs):
-        self.name = None
-
-        super(WindMoverProxy, self).__init__(*args, **kwargs)
+        name = kwargs.pop('name', 'Wind Mover')
+        self.name = name
+        super(WebWindMover, self).__init__(*args, **kwargs)
 
     @property
     def timeseries(self):
         series = []
 
-        for timeseries in self._target.timeseries:
+        for timeseries in super(WebWindMover, self).timeseries:
             dt = timeseries[0].astype(object)
             series.append(
                 Wind(date=dt, speed=timeseries[1][0], speed_type='meters',
@@ -58,38 +58,23 @@ class WindMoverProxy(util.Proxy):
 
         return series
 
-    @timeseries.setter
-    def timeseries(self, datetime_value_2d):
-        """
-        Wrap the ``timeseries`` property setter, as :class:`util.Proxy` doesn't
-        forward property setters.
-
-        XXX: The name of this variable seems out of date.
-        """
-        self._target.timeseries = datetime_value_2d
-
     def __repr__(self):
-        """
-        This method doesn't forward because :class:`WindMoverProxy` inherits
-        a new ``__repr__`` method from :class:`util.Proxy` due to it deriving
-        from ``object``.
-        """
         if self.name:
             return self.name
-        return self._target.__repr__()
+        return super(WebWindMover, self).__repr__()
 
 
-
-class ModelProxy(util.Proxy):
+class WebModel(Model):
     """
-    A proxy for :class:`gnome.model.Model` that provides webgnome-specific
+    A subclass of :class:`gnome.model.Model` that provides webgnome-specific
     functionality.
     """
     def __init__(self, *args, **kwargs):
+        super(WebModel, self).__init__()
+
         # Patch the object with an empty ``time_steps`` array for the time being.
         # TODO: Add output caching in the model.
         self.time_steps = []
-        super(ModelProxy, self).__init__(*args, **kwargs)
 
     def has_mover_with_id(self, mover_id):
         """
@@ -98,7 +83,7 @@ class ModelProxy(util.Proxy):
         TODO: The manager patches :class:`gnome.model.Model` with this method,
         but the method should belong to that class.
         """
-        return int(mover_id) in self._target._movers
+        return int(mover_id) in self._movers
 
     def has_spill_with_id(self, spill_id):
         """
@@ -107,7 +92,7 @@ class ModelProxy(util.Proxy):
         TODO: The manager patches :class:`gnome.model.Model` with this method,
         but the method should belong to that class.
         """
-        return int(spill_id) in self._target._spills
+        return int(spill_id) in self._spills
 
 
 class ModelManager(object):
@@ -122,27 +107,27 @@ class ModelManager(object):
         self.running_models = {}
 
     def create(self):
-        proxy = ModelProxy(Model())
-        self.running_models[proxy.id] = proxy
-        return proxy
+        model = WebModel()
+        self.running_models[model.id] = model
+        return model
 
     def get_or_create(self, model_id):
         """
-        Return a running :class:`ModelProxy` instance if the user has a
+        Return a running :class:`WebModel` instance if the user has a
         valid ``model_id`` key in his or her session. Otherwise, create a new
         model and return it.
         """
-        proxy = None
         created = False
+        model = None
 
         if model_id:
-            proxy = self.running_models.get(model_id, None)
+            model = self.running_models.get(model_id, None)
 
-        if proxy is None:
-            proxy = self.create()
+        if model is None:
+            model = self.create()
             created = True
 
-        return proxy, created
+        return model, created
 
     def get(self, model_id):
         if not model_id in self.running_models:
