@@ -85,7 +85,7 @@ def delete_mover(request, model):
 
 
 def _update_wind_mover_post(model, mover_id, form):
-    mover = model.get_mover(mover_id)
+    mover = model.get_mover(int(mover_id))
 
     if mover:
         form.update(mover)
@@ -107,7 +107,7 @@ def _update_wind_mover_post(model, mover_id, form):
 @util.json_require_model
 def update_wind_mover(request, model):
     mover_id = request.matchdict['id']
-    mover = model.get_mover(mover_id)
+    mover = model.get_mover(int(mover_id))
     opts = {'obj': mover} if mover else {}
     form = WindMoverForm(request.POST or None, **opts)
 

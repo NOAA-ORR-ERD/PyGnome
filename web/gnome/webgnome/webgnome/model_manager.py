@@ -58,6 +58,10 @@ class WebWindMover(WindMover):
 
         return series
 
+    @timeseries.setter
+    def timeseries(self, value):
+        return WindMover.timeseries.__set__(self, value)
+
     def __repr__(self):
         if self.name:
             return self.name
