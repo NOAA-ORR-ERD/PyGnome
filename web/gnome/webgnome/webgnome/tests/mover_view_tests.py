@@ -119,10 +119,9 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
 
         self.assertEqual(
             mover.timeseries[0].date,
-            numpy.datetime64('2012-11-20 00:00:00.000001').astype('object'))
+            numpy.datetime64('2012-11-20 00:00:00.0000').astype('object'))
 
-        self.assertEqual(mover.timeseries[0].direction, 'Degrees true')
-        self.assertEqual(mover.timeseries[0].direction_degrees, 180.0)
+        self.assertEqual(mover.timeseries[0].direction, 180.0)
         self.assertEqual(mover.timeseries[0].speed, 10.0)
 
     def test_create_wind_mover_multiple_time_series(self):
@@ -145,12 +144,11 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
             self.assertEqual(
                 mover.timeseries[idx].date,
                 numpy.datetime64(
-                    '2012-11-20 0%s:00:00.000001' % idx).astype('object'))
+                    '2012-11-20 0%s:00:00.0000' % idx).astype('object'))
 
         # The following values are correct, so why are they flipped?
         self.assertEqual(mover.timeseries[0].speed, 10.0)
-        self.assertEqual(mover.timeseries[0].direction, 'Degrees true')
-        self.assertEqual(mover.timeseries[0].direction_degrees, 180.0)
+        self.assertEqual(mover.timeseries[0].direction, 180.0)
 
     def test_update_wind_mover_single_time_series(self):
         self.config.add_route('create_wind_mover', '/mover')
@@ -265,9 +263,7 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
         resp = update_wind_mover(request)
 
         self.assertTrue(resp['form_html'].find(
-            '<input class="direction_degrees" id="" '
-            'name="timeseries-0-direction_degrees" '
-            'type="text" value="180.0">') > 1)
+            'name="timeseries-0-direction" type="text" value="180.0"' > 1))
 
         self.assertTrue(resp['form_html'].find(
             '<input class="direction_degrees" id="" '

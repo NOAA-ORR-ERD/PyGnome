@@ -372,7 +372,6 @@ define([
      */
     var WindMoverFormView = ModalFormView.extend({
         initialize: function(options) {
-            var _this = this;
             this.constructor.__super__.initialize.apply(this, arguments);
             this.renderTimeTable();
             this.setupCompass();
@@ -641,14 +640,23 @@ define([
                 $newOpt.attr('selected', true);
             });
 
-            // Increment the IDs of the add form elements -- it should always be
-            // the last form in the list of edit forms.
-            $addForm.find(':input').each(function() {
-                var id = $(this).attr('id');
-                if (id) {
-                    id = id.replace('-' + (formNum - 1) + '-', '-' + formNum + '-');
-                    $(this).attr({'name': id, 'id': id});
+            function incrementAttr(el, attrName) {
+                var $el = $(el);
+                var attr = $el.attr(attrName);
+
+                if (attr) {
+                    attr = attr.replace('-' + (formNum - 1) + '-', '-' + formNum + '-');
+                    var opts = {};
+                    opts[attrName] = attr;
+                    $el.attr(opts);
                 }
+            }
+
+            // Increment the IDs and names of the add form elements -- it
+            // should always be the last (highest #) form of the edit forms.
+            $addForm.find(':input').each(function() {
+                incrementAttr(this, 'name');
+                incrementAttr(this, 'id');
             });
 
             $newForm.find('.add-time-buttons').addClass('hidden');
