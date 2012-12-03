@@ -35,7 +35,7 @@ def test_exceptions():
         convert.to_datetime_value_2d(tv, basic_types.data_format.magnitude_direction)
         
 def test_to_time_value_pair():
-    out_tv = convert.to_time_value_pair(dtv_rq, in_data_format=basic_types.data_format.magnitude_direction)
+    out_tv = convert.to_time_value_pair(dtv_rq, in_data_format=basic_types.data_format.magnitude_direction).view(dtype=np.recarray)
     print out_tv.value.u
     print tv.value.u
     assert np.all( tv.time == tv.time)
@@ -43,7 +43,7 @@ def test_to_time_value_pair():
     assert np.allclose(tv.value.v, out_tv.value.v, 1e-10, 1e-10)
     
 def test_to_datetime_value_2d_rq():
-    out_dtval = convert.to_datetime_value_2d(tv, out_data_format=basic_types.data_format.magnitude_direction)
+    out_dtval = convert.to_datetime_value_2d(tv, out_data_format=basic_types.data_format.magnitude_direction).view(dtype=np.recarray)
     print "-----"
     print out_dtval.time
     print dtv_rq.time
@@ -54,7 +54,7 @@ def test_to_datetime_value_2d_rq():
     assert np.allclose( out_dtval.value, dtv_rq.value, 1e-10, 1e-10) 
 
 def test_to_datetime_value_2d_uv():
-    out_dtval = convert.to_datetime_value_2d(tv, out_data_format=basic_types.data_format.wind_uv)
+    out_dtval = convert.to_datetime_value_2d(tv, out_data_format=basic_types.data_format.wind_uv).view(dtype=np.recarray)
     print "-----"
     print out_dtval.time
     print dtv_uv.time
