@@ -6,7 +6,6 @@ Defines test fixtures
 The scope="module" on the fixtures ensures it is only invoked once per test module
 """
 import numpy as np
-from fixture_helpers import MagDirectionUV
 
 @pytest.fixture(scope="module")
 def invalid_rq():
