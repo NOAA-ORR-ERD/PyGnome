@@ -17,26 +17,26 @@ def invalid_rq():
     :returns: MagDirectionUV object with bad_rq values and None for uv values
     """
     bad_rq = np.array( [(0,0),(-1,0),(1,-1),(1,361)], dtype=np.float64)
-    return MagDirectionUV( bad_rq, None)
+    return {'rq': bad_rq}
 
 # use this for wind and current deterministic (r,theta)
-rq = np.array( [(1, 0),(1,45),(1,90),(1,180),(1,270)], dtype=np.float64)
+rq = np.array( [(1, 0),(1,45),(1,90),(1,120),(1,180),(1,270)], dtype=np.float64)
 
 @pytest.fixture(scope="module")
 def wind_circ():
     """
     (r,theta) setup for wind on a unit circle for 0,90,180,270 deg
     """
-    uv = np.array( [(0,-1),(-1./np.sqrt(2),-1./np.sqrt(2)),(-1,0),(0,  1),(1,  0)], dtype=np.float64)
-    return MagDirectionUV(rq,uv)
+    uv = np.array( [(0,-1),(-1./np.sqrt(2),-1./np.sqrt(2)),(-1,0),(-np.sqrt(3)/2,0.5),(0,1),(1,0)], dtype=np.float64)
+    return {'rq': rq,'uv':uv}
 
 @pytest.fixture(scope="module")
 def curr_circ():
     """
     (r,theta) setup for current on a unit circle
     """
-    uv = np.array( [(0,1),(1./np.sqrt(2),1./np.sqrt(2)),(1,0),(0,-1),(-1,0)], dtype=np.float64)
-    return MagDirectionUV(rq,uv)
+    uv = np.array( [(0,1),(1./np.sqrt(2),1./np.sqrt(2)),(1,0),(np.sqrt(3)/2,-0.5),(0,-1),(-1,0)], dtype=np.float64)
+    return {'rq': rq,'uv':uv}
     
 
 @pytest.fixture(scope="module")
@@ -48,4 +48,4 @@ def rq_rand():
     rq = np.zeros((3,2), dtype=np.float64)
     rq[:,0] = np.random.uniform(0,3,len(rq))
     rq[:,1] = np.random.uniform(0,360,len(rq))
-    return MagDirectionUV(rq,None)
+    return {'rq': rq}
