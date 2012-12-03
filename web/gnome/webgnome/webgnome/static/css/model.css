@@ -188,3 +188,11 @@ select, input[type="file"] {
     height: 300px;
     position: relative;
 }
+
+#model_additional_settings .control-label {
+    width: 210px;
+}
+
+#model_additional_settings .controls {
+    margin-left: 230px;
+}

@@ -162,15 +162,17 @@ define([
             });
 
             Mousetrap.bind('n m', function() {
+                _this.formViews.hideAll();
                 _this.showFormWithId('AddMoverForm');
             });
 
             Mousetrap.bind('n w', function() {
+                _this.formViews.hideAll();
                 _this.showFormWithId('WindMoverForm');
             });
 
             Mousetrap.bind('s f', function() {
-                var visibleSaveButton = $('.modal[aria-hidden=false] .btn-primary');
+                var visibleSaveButton = $('div.form[hidden=false] .btn-primary');
                 if (visibleSaveButton) {
                     visibleSaveButton.click();
                 }
@@ -228,8 +230,14 @@ define([
                         el: formEl,
                         formContainerEl: formContainerEl
                     }));
-                } else if($div.hasClass('modal')) {
-                    _this.formViews.add(new forms.ModalFormView({
+                } else {
+                    var formClass = forms.AjaxFormView;
+
+                    if ($div.hasClass('modal')) {
+                        formClass = forms.ModalAjaxFormView;
+                    }
+
+                    _this.formViews.add(formId, new formClass({
                         id: formId,
                         ajaxForm: ajaxForm,
                         el: formEl,
@@ -338,9 +346,9 @@ define([
                     rect = this.mapView.getAdjustedRect(rect);
                 }
 
-                this.model.zoomFromRect(rect, Model.ZOOM_IN);
+                this.model.zoomFromRect(rect, models.Model.ZOOM_IN);
             } else {
-                this.model.zoomFromPoint(startPosition, Model.ZOOM_IN);
+                this.model.zoomFromPoint(startPosition, models.Model.ZOOM_IN);
             }
 
             this.mapView.setRegularCursor();
@@ -350,7 +358,7 @@ define([
             this.model.rewind();
             this.mapView.setPaused();
             this.mapControlView.setPaused();
-            this.model.zoomFromPoint(point, Model.ZOOM_OUT);
+            this.model.zoomFromPoint(point, models.Model.ZOOM_OUT);
             this.mapView.setRegularCursor();
         },
 
@@ -432,6 +440,7 @@ define([
             if (node.data.id) {
                 formView.reload(node.data.id);
             } else {
+                this.formViews.hideAll();
                 formView.show();
             }
         },

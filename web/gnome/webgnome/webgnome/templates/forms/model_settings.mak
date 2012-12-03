@@ -1,16 +1,11 @@
 <%namespace name="defs" file="../defs.mak"/>
 <%page args="form, action_url"/>
 
-<div class="modal hide fade" id="${form.id}" tabindex="-1"
-     data-backdrop="static" role="dialog" aria-labelledby="modal-label"
-     aria-hidden="true">
-    <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"
-                aria-hidden="true">×
-        </button>
-        <h3 id="modal-label">Model Settings</h3>
+<div class="form page hidden" id="${form.id}">
+    <div class="page-header">
+        <h3>Model Settings</h3>
     </div>
-    <div class="modal-body">
+    <div class="page-body">
         <form action="${action_url}" class="form-horizontal multistep" method="POST">
 
              <ul class="nav nav-tabs">
@@ -46,8 +41,10 @@
             </div>
         </form>
     </div>
-    <div class="modal-footer">
-        <button class="btn" data-dismiss="modal" aria-hidden="true"> Cancel </button>
-        <button class="btn btn-primary">Save</button>
-    </div>
+        <div class="control-group form-buttons">
+            <div class="form-actions">
+                <button class="btn cancel"> Cancel </button>
+                <button class="btn btn-primary">Save</button>
+            </div>
+        </div>
 </div>

@@ -60,6 +60,12 @@ define([
                 formView.remove();
                 delete _this.formViews[key];
             });
+        },
+
+        hideAll: function() {
+            _.each(this.formViews, function(formView, key) {
+                formView.hide();
+            });
         }
     }, {
         REFRESHED: 'modalFormViewContainer:refreshed'
@@ -121,7 +127,6 @@ define([
             var formHtml = ajaxForm.form_html;
             if (formHtml) {
                 this.refresh(formHtml);
-                util.log(this.wasCancelled);
 
                 if (this.wasCancelled) {
                     this.wasCancelled = false;
@@ -388,6 +393,7 @@ define([
 
             if (moverType) {
                 this.trigger(AddMoverFormView.MOVER_CHOSEN, moverType);
+                this.hide();
             }
 
             return false;
@@ -698,6 +704,7 @@ define([
         AddMoverFormView: AddMoverFormView,
         WindMoverFormView: WindMoverFormView,
         AjaxFormView: AjaxFormView,
+        ModalAjaxFormView: ModalAjaxFormView,
         FormViewContainer: FormViewContainer
     };
 
