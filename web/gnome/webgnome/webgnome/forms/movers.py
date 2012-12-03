@@ -13,15 +13,14 @@ from wtforms import (
     StringField
 )
 
-from wtforms.validators import Required, NumberRange
+from wtforms.validators import Required, NumberRange, Optional
 
 from webgnome.model_manager import WebWindMover
 from webgnome import util
 from base import AutoIdForm, DateTimeForm
-from object_form import ObjectForm
 
 
-class WindForm(DateTimeForm):
+class WindForm(AutoIdForm, DateTimeForm):
     """
     A specific value in a :class:`gnome.movers.WindMover` time series.
     Note that this class inherits the ``date``, ``hour`` and ``minute`` fields.
@@ -44,6 +43,13 @@ class WindForm(DateTimeForm):
     )
 
     direction = StringField(validators=[Required()])
+
+    def __init__(self, *args, **kwargs):
+        super(WindForm, self).__init__(*args, **kwargs)
+
+        self.date.validators = [Optional()]
+        self.hour.validators = [Optional()]
+        self.minute.validators = [Optional()]
 
     def _validate_degrees_true(self, direction):
         if 0 > direction > 360:
@@ -74,12 +80,10 @@ class WindForm(DateTimeForm):
             return direction
 
 
-class WindMoverForm(ObjectForm):
+class WindMoverForm(AutoIdForm):
     """
     A form class representing a :class:`gnome.mover.WindMover` object.
     """
-    wrapped_class = WebWindMover
-
     SCALE_RADIANS = 'rad'
     SCALE_DEGREES = 'deg'
 
@@ -150,6 +154,7 @@ class WindMoverForm(ObjectForm):
             uncertain_angle_scale=self.uncertain_angle_scale.data,
             uncertain_speed_scale=self.uncertain_speed_scale.data,
             uncertain_duration=self.uncertain_duration.data,
+            uncertain_time_delay=self.uncertain_time_delay.data,
             timeseries=self.get_timeseries_ndarray())
 
     def update(self, mover):
@@ -161,6 +166,7 @@ class WindMoverForm(ObjectForm):
         mover.uncertain_angle_scale = self.uncertain_angle_scale.data
         mover.uncertain_speed_scale = self.uncertain_speed_scale.data
         mover.uncertain_duration = self.uncertain_duration.data
+        mover.uncertain_time_delay = self.uncertain_time_delay.data
         mover.timeseries = self.get_timeseries_ndarray()
 
         return mover
@@ -196,4 +202,8 @@ class DeleteMoverForm(AutoIdForm):
         if mover_id is None or self.model.has_mover_with_id(mover_id) is False:
             raise ValidationError('Mover with that ID does not exist')
 
+
+mover_form_classes = {
+    WebWindMover: WindMoverForm
+}
 

@@ -68,32 +68,34 @@
       </div>
     </div>
 
-    <div class="btn-toolbar">
-          <div class="btn-group">
-              <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
-          </div>
-          <div class="btn-group">
-              <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
-          </div>
-          <div class="btn-group">
-            <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
-            <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
-            <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
+    <div id="main-content">
+         <div class="btn-toolbar">
+              <div class="btn-group">
+                  <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
+              </div>
+              <div class="btn-group">
+                  <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
+              </div>
+              <div class="btn-group">
+                <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
+                <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
+                <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
+            </div>
+            <div class="btn-group">
+                <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
+                <div class="btn disabled" id="slider-container"><span id="time">00:00</span> <div id="slider"></div></div>
+                <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
+                <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
+                <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
+            </div>
         </div>
-        <div class="btn-group">
-            <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
-            <div class="btn disabled" id="slider-container"><span id="time">00:00</span> <div id="slider"></div></div>
-            <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
-            <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
-            <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
+
+        <div id="map">
         </div>
-    </div>
 
-    <div id="map">
-    </div>
-
-    <div id="placeholder" class="hidden">
-        <img class="frame active" src="/static/img/placeholder.gif">
+        <div id="placeholder" class="hidden">
+            <img class="frame active" src="/static/img/placeholder.gif">
+        </div>
     </div>
 
     <div id="modal-container">
@@ -125,8 +127,6 @@
             'app_view',
             'util',
             'lib/jquery.imagesloaded.min',
-            'lib/modal-responsive-fix.min', // fix bootstrap modals
-            'lib/touchscroll', // to help fixing bootstrap modals
         ], function($, _, app_view, util) {
             "use strict";
 
@@ -150,11 +150,6 @@
                     formsUrl: "${model_forms_url}"
                 });
             });
-
-            $(document).ready(function() {
-                util.fixModals();
-            });
-
         });
     </script>
 </%block>

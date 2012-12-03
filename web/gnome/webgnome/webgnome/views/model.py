@@ -19,7 +19,7 @@ from webgnome.forms.movers import (
 )
 
 from webgnome.forms.model import RunModelUntilForm, ModelSettingsForm
-from webgnome.forms import object_form
+from webgnome.forms.movers import mover_form_classes
 from webgnome.navigation_tree import NavigationTree
 from webgnome import util
 from webgnome.views import movers
@@ -58,7 +58,7 @@ def model_forms(request, model):
             continue
 
         update_route = routes.get('update', None)
-        update_form_cls = object_form.get_object_form_cls(mover)
+        update_form_cls = mover_form_classes.get(mover.__class__, None)
 
         if update_route and update_form_cls:
             update_url = request.route_url(update_route, id=mover.id)
@@ -101,7 +101,7 @@ def show_model(request):
      # TODO: Remove this after we decide on where to put the drop-down menu.
     data['show_menu_above_map'] = 'map_menu' in request.GET
 
-    data['add_mover_form_id'] = AddMoverForm.get_id()
+    data['add_mover_form_id'] = AddMoverForm().id
     data['model_forms_url'] = request.route_url('model_forms')
     data['run_model_until_form_url'] = request.route_url('run_model_until')
 

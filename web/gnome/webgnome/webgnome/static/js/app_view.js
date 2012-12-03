@@ -113,7 +113,7 @@ define([
         setupEventHandlers: function() {
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
-            this.formViews.on(forms.ModalFormViewContainer.REFRESHED, this.refreshForms);
+            this.formViews.on(forms.FormViewContainer.REFRESHED, this.refreshForms);
 
             this.treeControlView.on(views.TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
             this.treeControlView.on(views.TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
@@ -146,7 +146,6 @@ define([
             var _this = this;
 
             Mousetrap.bind('space', function() {
-                util.log('toggle playing')
                 if (_this.mapControlView.isPlaying()) {
                     _this.pause();
                 } else {
@@ -155,27 +154,22 @@ define([
             });
 
             Mousetrap.bind('o', function() {
-                util.log('open item');
                 _this.showFormForActiveTreeItem();
             });
 
             Mousetrap.bind('n o', function() {
-                util.log('new model');
                 _this.newMenuItemClicked();
             });
 
             Mousetrap.bind('n m', function() {
-                util.log('new mover');
                 _this.showFormWithId('AddMoverForm');
             });
 
             Mousetrap.bind('n w', function() {
-                util.log('new wind mover');
                 _this.showFormWithId('WindMoverForm');
             });
 
             Mousetrap.bind('s f', function() {
-                util.log('save form')
                 var visibleSaveButton = $('.modal[aria-hidden=false] .btn-primary');
                 if (visibleSaveButton) {
                     visibleSaveButton.click();
@@ -196,7 +190,6 @@ define([
         refreshForms: function() {
             this.destroyForms();
             this.addForms();
-            util.fixModals();
         },
 
         addForms: function() {
@@ -209,39 +202,39 @@ define([
 
             this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
 
-            // Create an `AjaxForm` and bind it to a `ModalFormView` for each modal
+            // Create an `AjaxForm` and bind it to a `AjaxFormView` for each modal
             // form on the page, other than the Add Mover form, which we handled.
-            _.each($('div.modal'), function(modalDiv) {
-                var $div = $(modalDiv);
+            _.each($('div.form'), function(formDiv) {
+                var $div = $(formDiv);
                 var $form = $div.find('form');
-                var modalFormId = $div.attr('id');
+                var formId = $div.attr('id');
 
-                if (modalFormId === _this.options.addMoverFormId) {
+                if (formId === _this.options.addMoverFormId) {
                     return;
                 }
 
                 _this.forms.add({
-                    id: modalFormId,
+                    id: formId,
                     url: $form.attr('action')
                 });
 
-                var ajaxForm = _this.forms.get(modalFormId);
-                var formEl = $('#' + modalFormId);
+                var ajaxForm = _this.forms.get(formId);
+                var formEl = $('#' + formId);
                 var formContainerEl = '#' + _this.options.formContainerId;
 
                 if ($div.hasClass('wind')) {
-                    _this.formViews.add(modalFormId, new forms.WindMoverFormView({
+                    _this.formViews.add(formId, new forms.WindMoverFormView({
                         ajaxForm: ajaxForm,
                         el: formEl,
                         formContainerEl: formContainerEl
                     }));
-                } else {
-                    _this.formViews.add({
-                        id: modalFormId,
+                } else if($div.hasClass('modal')) {
+                    _this.formViews.add(new forms.ModalFormView({
+                        id: formId,
                         ajaxForm: ajaxForm,
                         el: formEl,
                         formContainerEl: formContainerEl
-                    });
+                    }));
                 }
             });
         },
@@ -250,7 +243,7 @@ define([
             // `AjaxForm` instances, keyed to form ID.
             this.forms = new models.AjaxFormCollection();
 
-            this.formViews = new forms.ModalFormViewContainer({
+            this.formViews = new forms.FormViewContainer({
                 el: $('#' + this.options.formContainerId),
                 ajaxForms: this.forms,
                 url: this.options.formsUrl
@@ -284,6 +277,7 @@ define([
             }
 
             this.model.create();
+            this.refreshForms();
         },
 
         play: function(opts) {
@@ -443,12 +437,12 @@ define([
         },
 
         /*
-         Show the `ModalFormView` for the active tree item.
+         Show the `AjaxFormView` for the active tree item.
 
-         If showing an add form, display the `ModalFormView` for the active node.
+         If showing an add form, display the `AjaxFormView` for the active node.
 
          If showing an edit form, perform a `fetch` using the `AjaxForm` for the
-         selected node first, which will trigger the bound `ModalFormView` to display.
+         selected node first, which will trigger the bound `AjaxFormView` to display.
 
          The distinction of "add" versus "edit" is made on whether or not the node
          has an `id` property with a non-null value.

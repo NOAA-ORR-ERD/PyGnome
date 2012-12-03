@@ -1,11 +1,13 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="form"/>
+<%page args="form, is_variable=False"/>
 
-${defs.form_control(form.date, opts={'class_': 'date'}, use_id=True)}
-${defs.time_control(form, "Time (24 hour)")}
+%if is_variable:
+    ${defs.form_control(form.date, opts={'class_': 'date'}, use_id=True)}
+    ${defs.time_control(form, "Time (24 hour)")}
+%endif
+
 ${defs.form_control(form.direction,
-                    help_text='Enter cardinal direction or degrees true. '
-                    '<a href="javascript:" class="show-compass">Show Compass</a>',
+                    help_text='Enter cardinal direction or degrees true.',
                     opts={'class_': 'direction'})}
 
 <div class="control-group ${'error' if form.speed.errors or form.speed_type.errors else ''}">

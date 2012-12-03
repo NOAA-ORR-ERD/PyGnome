@@ -35,18 +35,6 @@ define([
         window.noaa.erd.util.log(xhr, textStatus, errorThrown);
     }
 
-
-    /*
-     Fix Bootstrap modal windows to work with responsive design and adjust width
-     based on data-width properties.
-     */
-    function fixModals() {
-        var $modals = $('.modal');
-        $modals.modalResponsiveFix({debug: true});
-        $modals.touchScroll();
-    }
-
-
     /*
       Retrieve a message object from the object `data` if the `message` key
       exists, annotate the message object ith an `error` value set to true
@@ -87,7 +75,6 @@ define([
     return {
         log: log,
         handleAjaxError: handleAjaxError,
-        fixModals: fixModals,
         parseMessage: parseMessage,
         getUTCStringForTimestamp: getUTCStringForTimestamp
     };

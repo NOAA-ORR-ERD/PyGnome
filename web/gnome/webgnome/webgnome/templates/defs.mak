@@ -1,6 +1,6 @@
 ### Mako defs.
 
-## Make a unique ID using ``form.id`` and ``id``.
+## Make a unique element ID by combining ``form.id`` and ``id``.
 <%def name="uid(id, form)"><% return "%s_%s" % (id, form.id) %></%def>
 
 <%def name="is_active(url)">
@@ -9,6 +9,7 @@
     % endif
 </%def>
 
+## Render a Bootstrap form control for ``field``.
 <%def name="form_control(field, help_text=None, label=None, hidden=False,
                          extra_classes=None, use_id=False, opts=None)">
     <div class="control-group  ${'error' if field.errors else ''}
@@ -49,6 +50,9 @@
     </div>
 </%def>
 
+## Render Bootstrap form controls for the fields on a
+## :class:`webgnome.forms.base.DateTimeForm` form.
+"""
 <%def name="time_control(form, hour_label='Time (24-hour): ', minute_label='', help_text='')">
     <div class="control-group ${'error' if form.hour.errors or form.minute.errors else ''}">
         % if hour_label:

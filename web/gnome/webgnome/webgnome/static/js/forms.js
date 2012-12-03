@@ -9,7 +9,7 @@ define([
     'lib/compass-ui'
 ], function($, _, Backbone, models, util) {
 
-    var ModalFormViewContainer = Backbone.View.extend({
+    var FormViewContainer = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
             this.options.ajaxForms.on(models.AjaxForm.SUCCESS, this.refresh);
@@ -33,7 +33,7 @@ define([
                 success: function(data) {
                     if (_.has(data, 'html')) {
                         _this.$el.html(data.html);
-                        _this.trigger(ModalFormViewContainer.REFRESHED);
+                        _this.trigger(FormViewContainer.REFRESHED);
                     }
                 },
                 error: util.handleAjaxError
@@ -45,21 +45,9 @@ define([
             delete this.formViews[oldId];
         },
 
-        add: function(opts, obj) {
-            if (typeof opts === "number" || typeof opts === "string") {
-                this.formViews[opts] = obj;
-                return;
-            }
-
-            if (typeof opts === "object" &&
-                    (_.has(opts, 'id') && opts.id)) {
-                var view = new ModalFormView(opts);
-                this.formViews[opts.id] = view;
-                view.on(ModalFormView.ID_CHANGED, this.formIdChanged);
-                return;
-            }
-
-            throw "Must pass ID and object or an options object.";
+        add: function(id, view) {
+            this.formViews[id] = view;
+            view.on(ModalAjaxFormView.ID_CHANGED, this.formIdChanged);
         },
 
         get: function(formId) {
@@ -77,10 +65,9 @@ define([
         REFRESHED: 'modalFormViewContainer:refreshed'
     });
 
-
     /*
-     `ModalFormView` is responsible for displaying HTML forms retrieved
-     from and submitted to the server using an `AjaxForm object. `ModalFormView`
+     `AjaxFormView` is responsible for displaying HTML forms retrieved
+     from and submitted to the server using an `AjaxForm object. `AjaxFormView`
      displays an HTML form in a modal "window" over the page using the rendered HTML
      returned by the server. It listens to 'change' events on a bound `AjaxForm` and
      refreshes itself when that event fires.
@@ -94,13 +81,14 @@ define([
      but whatever it is, this is the button that signals final submission of the
      form).
 
-     Submitting a form from `ModalFormView` serializes the form HTML and sends it to
+     Submitting a form from `AjaxFormView` serializes the form HTML and sends it to
      a bound `AjaxForm` model object, which then handles settings up the AJAX
      request for a POST.
      */
-    var ModalFormView = Backbone.View.extend({
+    var AjaxFormView = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
+            this.wasCancelled = false;
             this.$container = $(this.options.formContainerEl);
             this.ajaxForm = this.options.ajaxForm;
             this.ajaxForm.on(models.AjaxForm.CHANGED, this.ajaxFormChanged);
@@ -113,25 +101,46 @@ define([
          */
         setupEventHandlers: function() {
             this.id = '#' + this.$el.attr('id');
-            this.$container.on('click', this.id + ' .btn-primary', this.submit);
-            this.$container.on('click', this.id + ' .btn-next', this.goToNextStep);
-            this.$container.on('click', this.id + ' .btn-prev', this.goToPreviousStep);
+            var submit = this.id + ' .btn-primary';
+            var cancel = this.id + ' .form-buttons .cancel';
+            var next = this.id + ' .btn-next';
+            var prev = this.id + ' .btn-prev';
+
+            this.$container.off('click', submit, this.submit);
+            this.$container.off('click', cancel, this.cancel);
+            this.$container.off('click', next, this.goToNextStep);
+            this.$container.off('click', prev, this.goToPreviousStep);
+
+            this.$container.on('click', submit, this.submit);
+            this.$container.on('click', cancel, this.cancel);
+            this.$container.on('click', next, this.goToNextStep);
+            this.$container.on('click', prev, this.goToPreviousStep);
         },
 
         ajaxFormChanged: function(ajaxForm) {
             var formHtml = ajaxForm.form_html;
             if (formHtml) {
                 this.refresh(formHtml);
+                util.log(this.wasCancelled);
+
+                if (this.wasCancelled) {
+                    this.wasCancelled = false;
+                    return;
+                }
+
                 this.show();
             }
         },
 
-        /*
-         Hide any other visible modals and show this one.
-         */
         show: function() {
-            $('div.modal').modal('hide');
-            this.$el.modal();
+            util.log('Show form');
+            $('#main-content').addClass('hidden');
+            this.$el.removeClass('hidden');
+        },
+
+        hide: function() {
+            this.$el.addClass('hidden');
+            $('#main-content').removeClass('hidden');
         },
 
         /*
@@ -264,6 +273,13 @@ define([
             return false;
         },
 
+        cancel: function(event) {
+            event.preventDefault();
+            this.hide();
+            this.wasCancelled = true;
+            this.ajaxForm.get();
+        },
+
         /*
          Replace this form with the form in `html`, an HTML string rendered by the
          server. Recreate any jQuery UI datepickers on the form if necessary.
@@ -298,16 +314,11 @@ define([
             }
 
             this.setupEventHandlers();
-            util.fixModals();
 
             var newId = this.$el.attr('id');
             if (oldId !== newId) {
-                this.trigger(ModalFormView.ID_CHANGED, newId, oldId);
+                this.trigger(AjaxFormView.ID_CHANGED, newId, oldId);
             }
-        },
-
-        hide: function() {
-            this.$el.modal('hide');
         },
 
         remove: function() {
@@ -319,14 +330,34 @@ define([
             this.$container.off('click', this.id + ' .btn-prev', this.goToPreviousStep);
         }
     }, {
-        ID_CHANGED: 'modalFormView:idChanged'
+        ID_CHANGED: 'ajaxFormView:idChanged'
+    });
+
+
+    /*
+     An `AjaxFormView` subclass that displays in a modal window.
+     */
+    var ModalAjaxFormView = Backbone.View.extend({
+        /*
+         Hide any other visible modals and show this one.
+         */
+        show: function() {
+            $('div.modal').modal('hide');
+            this.$el.modal();
+        },
+
+        hide: function() {
+            this.$el.modal('hide');
+        },
+    }, {
+        ID_CHANGED: 'modalAjaxFormView:idChanged'
     });
 
 
     /*
      This is a non-AJAX-enabled modal form object to support the "add mover" form,
      which asks the user to choose a type of mover to add. We then use the selection
-     to disply another, more-specific form.
+     to display another, mover-specific form.
      */
     var AddMoverFormView = Backbone.View.extend({
         initialize: function() {
@@ -370,16 +401,15 @@ define([
     /*
      `WindMoverFormView` handles the WindMover form.
      */
-    var WindMoverFormView = ModalFormView.extend({
+    var WindMoverFormView = AjaxFormView.extend({
         initialize: function(options) {
             this.constructor.__super__.initialize.apply(this, arguments);
             this.renderTimeTable();
             this.setupCompass();
 
-            this.$container.on('click', this.id + ' .show-compass', this.showCompassClicked);
-            this.$container.on('click', this.id + ' .edit-mover-name i', this.editMoverNameButtonClicked);
-            this.$container.on('click', this.id + ' .save-mover-name i', this.saveMoverNameButtonClicked);
-            this.$container.on('change', this.id + ' .edit-mover-name-field', this.moverNameChanged);
+            this.$container.on('click', this.id + ' .edit-mover-name', this.editMoverNameClicked);
+            this.$container.on('click', this.id + ' .save-mover-name', this.saveMoverNameButtonClicked);
+            this.$container.on('change', this.id + ' input[name="name"]', this.moverNameChanged);
             this.$container.on('click', this.id + ' .add-time', this.addButtonClicked);
             this.$container.on('click', this.id + ' .edit-time', this.editButtonClicked);
             this.$container.on('click', this.id + ' .cancel', this.cancelButtonClicked);
@@ -387,39 +417,8 @@ define([
             this.$container.on('click', this.id + ' .delete-time', this.trashButtonClicked);
         },
 
-        toggleCompass: function(action) {
-            var $compass = this.$el.find('.compass-container,.compass');
-            var $editForms = this.$el.find('.edit-time-forms');
-
-            if (action === undefined) {
-                 action = $compass.hasClass('hidden') ? 'show' : 'hide';
-            }
-
-            // XXX: Adding and removing the 'span6' class, which is on the
-            // .edit-time-forms div by default, is a hack to remove unwanted
-            // visual space caused by adding the 'hidden' class to a div that
-            // has a 'span6' class. Temporarily removing the 'span6' class
-            // while the div is hidden removes the space.
-            if (action === 'show') {
-                $editForms.addClass('hidden');
-                $editForms.removeClass('span6');
-                $compass.removeClass('hidden');
-                this.compass.compassUI('reset');
-            } else {
-                $editForms.removeClass('hidden');
-                $editForms.addClass('span6');
-                $compass.addClass('hidden');
-            }
-        },
-
-        showCompassClicked: function(event) {
-            event.preventDefault();
-            this.toggleCompass();
-        },
-
         compassChanged: function(magnitude, direction) {
             this.compassMoved(magnitude, direction);
-            this.toggleCompass();
         },
 
         compassMoved: function(magnitude, direction) {
@@ -503,45 +502,50 @@ define([
         },
 
         /*
-         Remove the "Add" form inputs and submit the form.
+         Remove the add form inputs from the tab the user is currently on.
+         Remove all form inputs from the tab the user is *not* currently on.
          */
-        submit: function() {
-            this.$el.find('.add-time-forms .time-form').empty().remove();
+        submit: function(event) {
+            var $constantWind = this.$el.find('.tab-pane.constant-wind');
+            var $variableWind = this.$el.find('.tab-pane.variable-wind');
+
+            if ($variableWind.hasClass('active')) {
+                $variableWind.find('.add-time-forms .time-form').empty().remove();
+                $constantWind.find('.time-form').empty().remove();
+            } else {
+                $variableWind.find('.time-form').empty().remove();
+            }
+
             WindMoverFormView.__super__.submit.apply(this, arguments);
         },
 
-        editMoverNameButtonClicked: function(event) {
+        editMoverNameClicked: function(event) {
+            event.preventDefault();
             var $button = $(event.target);
             var $modal = $button.closest('.modal');
-            var $editField = $modal.find('.edit-mover-name-field');
-            $editField.removeClass('hidden');
-            var $header = $modal.find('.modal-label');
-            $header.addClass('hidden');
-            $button.parent().addClass('hidden');
-            $modal.find('.save-mover-name').removeClass('hidden');
+            $modal.find('.top-form').removeClass('hidden');
+            $modal.find('.modal-label').addClass('hidden');
         },
 
         saveMoverNameButtonClicked: function(event) {
+            event.preventDefault();
             var $button = $(event.target);
             var $modal = $button.closest('.modal');
-            var $editField = $modal.find('.edit-mover-name-field');
-            $editField.addClass('hidden');
-            var $header = $modal.find('.modal-label');
-            $header.removeClass('hidden');
-            $button.parent().addClass('hidden');
-            $modal.find('.edit-mover-name').removeClass('hidden');
+            $modal.find('.top-form').addClass('hidden');
+            $modal.find('.modal-label').removeClass('hidden');
         },
 
         moverNameChanged: function(event) {
             var $input = $(event.target);
             var $modal = $input.closest('.modal');
-            var $header = $modal.find('.modal-label').find('h3');
+            var $header = $modal.find('.modal-label').find('a');
             $header.text($input.val());
         },
 
         ajaxFormChanged: function() {
             WindMoverFormView.__super__.ajaxFormChanged.apply(this, arguments);
             this.renderTimeTable();
+            this.setupCompass();
 
             var hasErrors = this.$el.find(
                 '.time-list').find('tr.error').length > 0;
@@ -575,7 +579,7 @@ define([
 
             this.getTimesTable().append($form);
             this.renderTimeTable();
-            this.toggleCompass('hide');
+            this.compass.compassUI('reset');
         },
 
         cancelButtonClicked: function(event) {
@@ -592,14 +596,13 @@ define([
             var $row = $(event.target).closest('tr');
             $row.removeClass('info');
             this.renderTimeTable();
-            this.toggleCompass('hide');
         },
 
         editButtonClicked: function(event) {
             event.preventDefault();
             var $row = $(event.target).closest('tr');
             var $form = $row.data('data-form');
-            var $addFormContainer = $('.add-time-forms');
+            var $addFormContainer = $form.closest('.tab-pane').find('.add-time-forms');
             var $addTimeForm = $addFormContainer.find('.add-time-form');
 
             $addTimeForm.addClass('hidden');
@@ -620,10 +623,14 @@ define([
          */
         addButtonClicked: function(event) {
             event.preventDefault();
-            var $addForm = this.$el.find('.add-time-form');
+            var $tabPane = $(event.target).closest('.tab-pane');
+            var $addForm = $tabPane.find('.add-time-form');
             var $newForm = $addForm.clone(true).addClass('hidden').removeClass(
                 'add-time-form').addClass('edit-time-form');
-            var formId = $addForm.find(':input')[0].id;
+
+            // Grab the first timeseries-specific input field to check its
+            // numeric position. This is the second input in the form.
+            var formId = $addForm.find(':input')[1].name;
             var formNum = parseInt(formId.replace(/.*-(\d{1,4})-.*/m, '$1')) + 1;
 
             // There are no edit forms, so this is the first time series.
@@ -662,8 +669,9 @@ define([
             $newForm.find('.add-time-buttons').addClass('hidden');
             $newForm.find('.edit-time-buttons').removeClass('hidden');
 
-            this.getTimesTable().after($newForm);
+            $tabPane.find('.edit-time-forms').append($newForm);
             this.renderTimeTable();
+            this.compass.compassUI('reset');
 
             var autoIncrementBy = $addForm.find('.auto_increment_by').val();
 
@@ -689,8 +697,8 @@ define([
     return {
         AddMoverFormView: AddMoverFormView,
         WindMoverFormView: WindMoverFormView,
-        ModalFormView: ModalFormView,
-        ModalFormViewContainer: ModalFormViewContainer
+        AjaxFormView: AjaxFormView,
+        FormViewContainer: FormViewContainer
     };
 
 });
