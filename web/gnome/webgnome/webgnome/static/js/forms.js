@@ -527,24 +527,24 @@ define([
 
         editMoverNameClicked: function(event) {
             event.preventDefault();
-            var $button = $(event.target);
-            var $modal = $button.closest('.modal');
-            $modal.find('.top-form').removeClass('hidden');
-            $modal.find('.modal-label').addClass('hidden');
+            var $link = $(event.target);
+            var $form = $link.closest('.form');
+            $form.find('.top-form').removeClass('hidden');
+            $form.find('.page-header h3').addClass('hidden');
         },
 
         saveMoverNameButtonClicked: function(event) {
             event.preventDefault();
-            var $button = $(event.target);
-            var $modal = $button.closest('.modal');
-            $modal.find('.top-form').addClass('hidden');
-            $modal.find('.modal-label').removeClass('hidden');
+            var $link = $(event.target);
+            var $form = $link.closest('.form');
+            $form.find('.top-form').addClass('hidden');
+            $form.find('.page-header h3').removeClass('hidden');
         },
 
         moverNameChanged: function(event) {
             var $input = $(event.target);
-            var $modal = $input.closest('.modal');
-            var $header = $modal.find('.modal-label').find('a');
+            var form = $input.closest('.form');
+            var $header = form.find('.page-header').find('a');
             $header.text($input.val());
         },
 
@@ -578,12 +578,11 @@ define([
 
             // Delete the "original" form that we're replacing.
             $form.data('form-original').detach().empty().remove();
-            $form.detach().appendTo('.times-list');
+            $form.detach().appendTo('.edit-time-forms');
 
             // Show the add form
             $('.add-time-forms').find('.add-time-form').removeClass('hidden');
 
-            this.getTimesTable().append($form);
             this.renderTimeTable();
             this.compass.compassUI('reset');
         },

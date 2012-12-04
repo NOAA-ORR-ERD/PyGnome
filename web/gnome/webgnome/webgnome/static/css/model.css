@@ -189,10 +189,10 @@ select, input[type="file"] {
     position: relative;
 }
 
-#model_additional_settings .control-label {
+.model-settings .control-label {
     width: 210px;
 }
 
-#model_additional_settings .controls {
+.model-settings .controls {
     margin-left: 230px;
 }

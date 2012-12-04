@@ -55,8 +55,8 @@ class NavigationTree(object):
         """
         settings = {
             'title': 'Model Settings',
-            'key': ModelSettingsForm.get_id(),
-            'form_id': ModelSettingsForm.get_id(),
+            'key': ModelSettingsForm.get_id(self.model),
+            'form_id': ModelSettingsForm.get_id(self.model),
             'children': []
         }
 
@@ -78,8 +78,8 @@ class NavigationTree(object):
         for name, value in self._get_model_settings().items():
             settings['children'].append({
                 # All settings use the model update form.
-                'key': ModelSettingsForm.get_id(),
-                'form_id': ModelSettingsForm.get_id(),
+                'key': ModelSettingsForm.get_id(self.model),
+                'form_id': ModelSettingsForm.get_id(self.model),
                 'title': self._get_value_title(name, value),
             })
 

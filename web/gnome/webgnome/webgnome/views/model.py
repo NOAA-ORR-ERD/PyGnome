@@ -35,7 +35,7 @@ def model_forms(request, model):
     context = {
         'run_model_until_form': RunModelUntilForm(),
         'run_model_until_form_url': request.route_url('run_model_until'),
-        'settings_form': ModelSettingsForm(),
+        'settings_form': ModelSettingsForm(obj=model),
         'settings_form_url': request.route_url('model_settings'),
         'add_mover_form': AddMoverForm(),
         'wind_mover_form': WindMoverForm(),
@@ -143,13 +143,22 @@ def create_model(request):
         'message': message
     }
 
+def _render_model_settings(request, form):
+    context = {
+        'form': form,
+        'action_url': request.route_url('model_settings')
+    }
 
-@view_config(route_name='model_settings', renderer='gnome_json')
-@util.json_require_model
-def model_settings(request, model):
-    form = ModelSettingsForm(request.POST)
+    return {
+        'form_html': render(
+            'webgnome:templates/forms/model_settings.mak', context)
+    }
 
-    if request.method == 'POST' and form.validate():
+
+def _model_settings_post(request, model):
+    form = ModelSettingsForm(request.POST or None)
+
+    if form.validate():
         date = form.date.data
 
         model.time_step = datetime.timedelta(
@@ -161,25 +170,30 @@ def model_settings(request, model):
             second=0)
 
         model.duration = datetime.timedelta(
-                days=form.duration_days.data, hours=form.duration_hours.data)
+            days=form.duration_days.data, hours=form.duration_hours.data)
 
         model.uncertain = form.include_minimum_regret.data
 
-        # TODO: show_currents, prevent_land_jumping, run_backwards
+        # TODO: show_currents, prevent_land_jumping, run_backwards options.
 
         return {
             'form_html': None
         }
 
-    context = {
-        'form': form,
-        'action_url': request.route_url('model_settings')
-    }
+    return _render_model_settings(request, form)
 
-    return {
-        'form_html': render(
-            'webgnome:templates/forms/model_settings.mak', context)
-    }
+
+@view_config(route_name='model_settings', renderer='gnome_json')
+@util.json_require_model
+def model_settings(request, model):
+    if request.method == 'POST':
+        return _model_settings_post(request, model)
+
+    print model.start_time
+    form = ModelSettingsForm(obj=model)
+
+    return _render_model_settings(request, form)
+
 
 
 def _get_model_image_url(request, model, filename):

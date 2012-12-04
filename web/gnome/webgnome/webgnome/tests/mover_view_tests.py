@@ -168,14 +168,16 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
         request.POST = MultiDict()
         request.matchdict = MultiDict({'id': resp['id']})
         resp = update_wind_mover(request)
+        form_html = resp['form_html']
 
         # Verify that the update form has the timeseries data we submitted
         # plus an additional "Add" form with the default values.
-        self.assertTrue(resp['form_html'].find(
-            'name="timeseries-0-direction" type="text" value="180.0"') > 1)
+        self.assertIn(
+            'name="timeseries-0-direction" type="text" value="180.0"',
+            form_html)
 
-        self.assertTrue(resp['form_html'].find(
-            'name="timeseries-1-direction" type="text" value=""') > 1)
+        self.assertIn('name="timeseries-1-direction" type="text" value=""',
+            form_html)
 
         # Update the wind mover with a new time series
         data = self.create_wind_mover_data()
@@ -215,26 +217,26 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
         request.POST = MultiDict(data)
         request.matchdict = MultiDict({'id': mover.id})
         resp = update_wind_mover(request)
+        form_html = resp['form_html']
 
         # This is the speed value error
-        self.assertTrue(resp['form_html'].find(
-            '<span class="help">'
-            'Number must be greater than 1.'
-            '</span>'))
+        self.assertIn(
+            '<span class="help">Number must be greater than 1.</span>',
+            form_html.replace('\n', '').replace('  ', ''))
 
         # These are the edit forms we submitted
-        self.assertTrue(resp['form_html'].find(
-            'name="timeseries-0-speed" type="text" value="-1">') > 1)
+        self.assertIn(
+            'name="timeseries-0-speed" type="text" value="-1">', form_html)
 
-        self.assertTrue(resp['form_html'].find(
-            'name="timeseries-1-speed" type="text" value="-1">') > 1)
+        self.assertIn(
+            'name="timeseries-1-speed" type="text" value="-1">', form_html)
 
-        self.assertTrue(resp['form_html'].find(
-            'name="timeseries-2-speed" type="text" value="-1">') > 1)
+        self.assertIn(
+            'name="timeseries-2-speed" type="text" value="-1">', form_html)
 
         # This is the add form -- it should have been appended
-        self.assertTrue(resp['form_html'].find(
-            'name="timeseries-3-speed" type="text" value="0">') > 1)
+        self.assertIn(
+            'name="timeseries-3-speed" type="text" value="0">', form_html)
 
         mover = model.get_mover(mover.id)
         self.assertEqual(len(mover.timeseries), 1)
@@ -258,17 +260,20 @@ class WindMoverUnitTests(UnitTestBase, WindMoverFixtures):
         request.POST = MultiDict()
         request.matchdict = MultiDict({'id': resp['id']})
         resp = update_wind_mover(request)
+        form_html = resp['form_html']
 
-        self.assertTrue(resp['form_html'].find(
-            'name="timeseries-0-direction" type="text" value="180.0">') > 1)
+        self.assertIn(
+            'name="timeseries-0-direction" type="text" value="180.0">',
+            form_html)
 
-        self.assertTrue(resp['form_html'].find(
-            'name="timeseries-1-direction" type="text" value=""') > 1)
+        self.assertIn(
+            'name="timeseries-1-direction" type="text" value=""', form_html)
 
         # Update the wind mover with a new time series
         data = self.create_wind_mover_data()
         for item in self.create_time_series_data(3, speed=100):
             data.update(item)
+
         request.method = 'POST'
         request.POST = MultiDict(data)
         request.matchdict = MultiDict({'id': mover.id})
