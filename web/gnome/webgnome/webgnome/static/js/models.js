@@ -515,7 +515,7 @@ define([
             _.each(this.forms, function(form, key) {
                 delete _this.forms[key];
             });
-        },
+        }
     };
 
     return {

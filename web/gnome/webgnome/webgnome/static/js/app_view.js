@@ -111,6 +111,7 @@ define([
         },
 
         setupEventHandlers: function() {
+            this.model.on(models.Model.CREATED, this.newModelCreated);
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
             this.formViews.on(forms.FormViewContainer.REFRESHED, this.refreshForms);
@@ -177,6 +178,10 @@ define([
                     visibleSaveButton.click();
                 }
             });
+        },
+
+        newModelCreated: function() {
+            this.formViews.refresh();
         },
 
         destroyForms: function() {
@@ -285,7 +290,6 @@ define([
             }
 
             this.model.create();
-            this.refreshForms();
         },
 
         play: function(opts) {

@@ -19,8 +19,9 @@
             constant_id = defs.uid('constant', form)
             variable_id = defs.uid('variable', form)
             uncertainty_id = defs.uid('uncertainty', form)
-            is_constant = form.timeseries.data[0]['date']
-            is_variable = form.timeseries.data[0]['date'] is None
+            print form.timeseries.data[0]['date']
+            is_constant = form.timeseries.data[0]['date'] is None
+            is_variable = is_constant is False
         %>
 
         <ul class="nav nav-tabs">
