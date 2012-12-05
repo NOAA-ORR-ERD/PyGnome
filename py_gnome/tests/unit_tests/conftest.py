@@ -45,6 +45,9 @@ def rq_rand():
     are randomly generated: 'r' is between (0,3) and 'theta' is between (0,360)
     """
     rq = np.zeros((3,2), dtype=np.float64)
-    rq[:,0] = np.random.uniform(0,3,len(rq))
+    
+    while (np.any(rq[:,0] == 0)):   # cannot be 0 magnitude vector
+        rq[:,0] = np.random.uniform(0,len(rq),len(rq))
+        
     rq[:,1] = np.random.uniform(0,360,len(rq))
     return {'rq': rq}

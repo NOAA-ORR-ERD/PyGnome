@@ -7,6 +7,13 @@ from gnome.helpers import convert
 import pytest
 import numpy as np
 
+"""
+Define a wind_ts (wind timeseries) fixture for defining the truth (datetime, r, theta), 
+and the corresponding (datetime, u,v) and time_value_pair arrays.
+
+If this fixture is used by a different module, then move it to conftest.py
+Currently, it is only used by test_helpers_convert.py
+"""
 @pytest.fixture(scope="module")
 def wind_ts(wind_circ):
     """
