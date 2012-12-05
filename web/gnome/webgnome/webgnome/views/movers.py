@@ -84,23 +84,40 @@ def delete_mover(request, model):
     }
 
 
-def _update_wind_mover_post(model, mover_id, form):
-    mover = model.get_mover(int(mover_id))
 
-    if mover:
-        form.update(mover)
-        message = util.make_message(
-            'success', 'Updated variable wind mover successfully.')
-    else:
-        mover = form.create()
-        mover_id = model.add_mover(mover)
-        message = util.make_message(
-            'warning', 'The mover did not exist, so we created a new one.')
-    return {
-        'id': mover_id,
-        'message': message,
-        'form_html': None
-    }
+def _render_wind_mover_form(request, form, mover):
+    html = render('webgnome:templates/forms/wind_mover.mak', {
+        'form': form,
+        'action_url': request.route_url('update_wind_mover', id=mover.id)
+    })
+
+    return {'form_html': html}
+
+
+def _update_wind_mover_post(request, model, mover):
+    form = WindMoverForm(request.POST)
+
+    if form.validate():
+        if mover:
+            form.update(mover)
+            message = util.make_message(
+                'success', 'Updated variable wind mover successfully.')
+        else:
+            mover = form.create()
+            model.add_mover(mover)
+            message = util.make_message(
+                'warning', 'The mover did not exist, so we created a new one.')
+
+        return {
+            'id': mover.id,
+            'message': message,
+            'form_html': None
+        }
+
+    form.timeseries.append_entry()
+
+    return _render_wind_mover_form(request, form, mover)
+
 
 
 @view_config(route_name='update_wind_mover', renderer='gnome_json')
@@ -108,21 +125,14 @@ def _update_wind_mover_post(model, mover_id, form):
 def update_wind_mover(request, model):
     mover_id = request.matchdict['id']
     mover = model.get_mover(int(mover_id))
-    opts = {'obj': mover} if mover else {}
-    form = WindMoverForm(request.POST or None, **opts)
 
     if request.method == 'POST':
-        if form.validate():
-            return _update_wind_mover_post(model, mover_id, form)
-        else:
-            form.timeseries.append_entry()
+        return _update_wind_mover_post(request, model, mover)
 
-    html = render('webgnome:templates/forms/wind_mover.mak', {
-        'form': form,
-        'action_url': request.route_url('update_wind_mover', id=mover_id)
-    })
+    form = WindMoverForm(obj=mover)
 
-    return {'form_html': html}
+    return _render_wind_mover_form(request, form, mover)
+
 
 
 def _create_wind_mover_post(model, form):

@@ -41,8 +41,8 @@ class WebWindMover(WindMover):
     webgnome-specific functionality.
     """
     def __init__(self, *args, **kwargs):
-        name = kwargs.pop('name', 'Wind Mover')
-        self.name = name
+        self.name = kwargs.pop('name', 'Wind Mover')
+        self.is_constant = kwargs.pop('is_constant', True)
         super(WebWindMover, self).__init__(*args, **kwargs)
 
     @property

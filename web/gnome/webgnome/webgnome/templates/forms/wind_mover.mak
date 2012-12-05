@@ -19,8 +19,7 @@
             constant_id = defs.uid('constant', form)
             variable_id = defs.uid('variable', form)
             uncertainty_id = defs.uid('uncertainty', form)
-            print form.timeseries.data[0]['date']
-            is_constant = form.timeseries.data[0]['date'] is None
+            is_constant = form.instance is None or form.is_constant.data is True
             is_variable = is_constant is False
         %>
 
@@ -43,6 +42,7 @@
 
                 <div class="span6 add-time-forms">
                     <div class='time-form add-time-form'>
+                        ${form.is_constant(class_='hidden')}
                         <%include file="wind_form.mak" args="form=add_form"/>
                     </div>
                 </div>

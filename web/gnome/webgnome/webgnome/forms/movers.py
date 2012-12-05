@@ -111,6 +111,8 @@ class WindMoverForm(AutoIdForm):
     uncertain_duration = FloatField('Duration', default=3,
         validators=[NumberRange(min=0)])
 
+    is_constant = BooleanField('Is Constant', default=True)
+
     auto_increment_time_by = IntegerField('Auto-increment time by', default=6)
 
     def __init__(self, *args, **kwargs):
@@ -150,6 +152,7 @@ class WindMoverForm(AutoIdForm):
         """
         return WebWindMover(
             name=self.name.data,
+            is_constant=self.is_constant.data,
             is_active=self.is_active.data,
             uncertain_angle_scale=self.uncertain_angle_scale.data,
             uncertain_speed_scale=self.uncertain_speed_scale.data,
@@ -163,6 +166,7 @@ class WindMoverForm(AutoIdForm):
         """
         mover.is_active = self.is_active.data
         mover.name = self.name.data
+        mover.is_constant = self.is_constant.data
         mover.uncertain_angle_scale = self.uncertain_angle_scale.data
         mover.uncertain_speed_scale = self.uncertain_speed_scale.data
         mover.uncertain_duration = self.uncertain_duration.data
