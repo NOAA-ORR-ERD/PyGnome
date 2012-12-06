@@ -79,6 +79,8 @@ void SplitPathFile(CHARPTR fullPath, CHARPTR fileName);
 void my_p2cstr(void *string);
 void my_c2pstr(void *string);
 
+Seconds RoundDateSeconds(Seconds timeInSeconds);
+
 #ifndef MAC
 void GNOMEDLL_API DateToSeconds(DateTimeRec *date, unsigned long *seconds);
 void GetDateTime(unsigned long *seconds);

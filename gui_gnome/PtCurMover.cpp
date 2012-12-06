@@ -1095,7 +1095,7 @@ BadValue:
 
 
 /////////////////////////////////////////////////
-#define PTCUR_DELIM_STR " \t"
+//#define PTCUR_DELIM_STR " \t"
 
 Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts)
 {

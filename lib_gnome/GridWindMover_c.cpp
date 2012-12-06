@@ -2,42 +2,40 @@
  *  GridWindMover_c.cpp
  *  gnome
  *
- *  Created by Generic Programmer on 12/1/11.
+ *  Created by Generic Programmer on 12/5/11.
  *  Copyright 2011 __MyCompanyName__. All rights reserved.
  *
  */
 
 #include "GridWindMover_c.h"
-#include "GridWindMover.h"
-#include "GridVel.h"
 #include "CROSS.H"
+//#include "netcdf.h"
 
-long GridWindMover_c::GetVelocityIndex(WorldPoint p) 
+GridWindMover_c::GridWindMover_c(TMap *owner,char* name) : WindMover_c(owner, name)
 {
-	long rowNum, colNum;
-	VelocityRec	velocity;
+	if(!name || !name[0]) this->SetClassName("Gridded Wind");
+	else 	SetClassName (name); // short file name
 	
-	LongRect gridLRect, geoRect;
-	ScaleRec	thisScaleRec;
+	// use wind defaults for uncertainty
+	bShowGrid = false;
+	bShowArrows = false;
 	
-	TRectGridVel* rectGrid = (TRectGridVel*)fGrid;	// fNumRows, fNumCols members of GridWindMover
+	fIsOptimizedForStep = false;
 	
-	WorldRect bounds = rectGrid->GetBounds();
+	fUserUnits = kMetersPerSec;	
+	fWindScale = 1.;
+	fArrowScale = 10.;
+	//fFillValue = -1e+34;
 	
-	SetLRect (&gridLRect, 0, fNumRows, fNumCols, 0);
-	SetLRect (&geoRect, bounds.loLong, bounds.loLat, bounds.hiLong, bounds.hiLat);	
-	GetLScaleAndOffsets (&geoRect, &gridLRect, &thisScaleRec);
+	//fTimeShift = 0; // assume file is in local time
 	
-	colNum = p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset;
-	rowNum = p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset;
+	timeGrid = 0;
+	//fAllowExtrapolationInTime = false;
 	
-	if (colNum < 0 || colNum >= fNumCols || rowNum < 0 || rowNum >= fNumRows)
-		
-	{ return -1; }
-	
-	return rowNum * fNumCols + colNum;
 }
 
+
+/////////////////////////////////////////////////
 OSErr GridWindMover_c::PrepareForModelRun()
 {
 	return WindMover_c::PrepareForModelRun();
@@ -46,12 +44,11 @@ OSErr GridWindMover_c::PrepareForModelRun()
 OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;
-	if (uncertain)
+	if(uncertain) 
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;
 		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
 	}
-
 	
 	char errmsg[256];
 	
@@ -59,9 +56,11 @@ OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seco
 	
 	if (!bActive) return noErr;
 	
-	err = dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
+	if (!timeGrid) return -1;
 	
-	if (err) goto done;	// might not want to have error if outside time interval
+	err = timeGrid -> SetInterval(errmsg, model_time); 
+	
+	if (err) goto done;	// again don't want to have error if outside time interval
 	
 	fIsOptimizedForStep = true;	// is this needed?
 	
@@ -83,11 +82,57 @@ void GridWindMover_c::ModelStepIsDone()
 }
 
 
+OSErr GridWindMover_c::get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID) {	
+
+	if(!ref || !delta || !windages) {
+		//cout << "worldpoints array not provided! returning.\n";
+		return 1;
+	}
+	
+	// code goes here, windage...
+	// For LEType spillType, check to make sure it is within the valid values
+	if( spillType < FORECAST_LE || spillType > UNCERTAINTY_LE)
+	{
+		// cout << "Invalid spillType.\n";
+		return 2;
+	}
+	
+	LERec* prec;
+	LERec rec;
+	prec = &rec;
+	
+	WorldPoint3D zero_delta ={0,0,0.};
+	
+	for (int i = 0; i < n; i++) {
+		
+		// only operate on LE if the status is in water
+		if( LE_status[i] != OILSTAT_INWATER)
+		{
+			delta[i] = zero_delta;
+			continue;
+		}
+		rec.p = ref[i].p;
+		rec.z = ref[i].z;
+		rec.windage = windages[i];	// define the windage for the current LE
+		
+		// let's do the multiply by 1000000 here - this is what gnome expects
+		rec.p.pLat *= 1000000;	
+		rec.p.pLong*= 1000000;
+		
+		delta[i] = GetMove(model_time, step_len, spill_ID, i, prec, spillType);
+		
+		delta[i].p.pLat /= 1000000;
+		delta[i].p.pLong /= 1000000;
+	}
+	
+	return noErr;
+}
+
 WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
 {
-	double dLong, dLat;
-	WorldPoint3D deltaPoint ={0,0,0.};
-	WorldPoint refPoint = (*theLE).p;	
+	double 	dLong, dLat;
+	WorldPoint3D	deltaPoint ={0,0,0.};
+	WorldPoint3D refPoint;	
 	double timeAlpha;
 	long index; 
 	Seconds startTime,endTime;
@@ -101,55 +146,18 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	
 	if(!fIsOptimizedForStep) 
 	{
-		err = dynamic_cast<GridWindMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
+		err = timeGrid -> SetInterval(errmsg, model_time); // AH 07/17/2012
 		
 		if (err) return deltaPoint;
 	}
-	index = GetVelocityIndex(refPoint);  // regular grid
 	
-	// Check for constant wind 
-	if(dynamic_cast<GridWindMover *>(this)->GetNumTimesInFile()==1)
-	{
-		// Calculate the interpolated velocity at the point
-		if (index >= 0) 
-		{
-			windVelocity.u = INDEXH(fStartData.dataHdl,index).u;
-			windVelocity.v = INDEXH(fStartData.dataHdl,index).v;
-		}
-		else	// set vel to zero
-		{
-			windVelocity.u = 0.;
-			windVelocity.v = 0.;
-		}
-	}
-	else // time varying wind 
-	{
-		// Calculate the time weight factor
-		if (dynamic_cast<GridWindMover *>(this)->GetNumFiles()>1 && fOverLap)
-			startTime = fOverLapStartTime;
-		else
-			startTime = (*fTimeDataHdl)[fStartData.timeIndex].time;
-		//startTime = (*fTimeDataHdl)[fStartData.timeIndex].time;
-		endTime = (*fTimeDataHdl)[fEndData.timeIndex].time;
-		timeAlpha = (endTime - time)/(double)(endTime - startTime);
-		
-		// Calculate the interpolated velocity at the point
-		if (index >= 0) 
-		{
-			windVelocity.u = timeAlpha*INDEXH(fStartData.dataHdl,index).u + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).u;
-			windVelocity.v = timeAlpha*INDEXH(fStartData.dataHdl,index).v + (1-timeAlpha)*INDEXH(fEndData.dataHdl,index).v;
-		}
-		else	// set vel to zero
-		{
-			windVelocity.u = 0.;
-			windVelocity.v = 0.;
-		}
-	}
+	refPoint.p = (*theLE).p;	
+	refPoint.z = (*theLE).z;
+	windVelocity = timeGrid->GetScaledPatValue(model_time, refPoint);
+
+	//windVelocity.u *= fWindScale; 
+	//windVelocity.v *= fWindScale; 
 	
-	//scale:
-	
-	windVelocity.u *= fWindScale; 
-	windVelocity.v *= fWindScale; 
 	
 	if(leType == UNCERTAINTY_LE)
 	{
@@ -159,7 +167,7 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	windVelocity.u *=  (*theLE).windage;
 	windVelocity.v *=  (*theLE).windage;
 	
-	dLong = ((windVelocity.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPoint.pLat);
+	dLong = ((windVelocity.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPoint.p.pLat);
 	dLat =   (windVelocity.v / METERSPERDEGREELAT) * timeStep;
 	
 	deltaPoint.p.pLong = dLong * 1000000;
@@ -167,3 +175,6 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	
 	return deltaPoint;
 }
+
+
+

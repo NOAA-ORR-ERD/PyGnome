@@ -207,7 +207,7 @@ class TRandomGridMover : public TRandomMover
 		
 };
 //DiffusionSettingsDialog
-//OSErr	GridDiffusionSettingsDialog(GridWindMover *mover, TMap *owner,Boolean bAddMover,DialogPtr parentWindow);
+//OSErr	GridDiffusionSettingsDialog(GridWndMover *mover, TMap *owner,Boolean bAddMover,DialogPtr parentWindow);
 Boolean IsRandomGridFile(char *path,short *selectedUnits);
 
 #endif //  __RANDOMGRIDMOVER__

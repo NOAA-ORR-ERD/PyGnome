@@ -1276,7 +1276,7 @@ OSErr TCompoundMover::Read(BFPB *bfpb)
 			case TYPE_NETCDFMOVERTRI: mover = new NetCDFMoverTri(this->moverMap, ""); break;
 				//case TYPE_NETCDFWINDMOVER: mover = new NetCDFWindMover(this, ""); break;
 				//case TYPE_NETCDFWINDMOVERCURV: mover = new NetCDFWindMoverCurv(this, ""); break;
-				//case TYPE_GRIDWINDMOVER: mover = new GridWindMover(this, ""); break;
+				//case TYPE_GRIDWNDMOVER: mover = new GridWndMover(this, ""); break;
 				//case TYPE_RANDOMMOVER3D: mover = new TRandom3D(this, ""); break;
 			case TYPE_CATSMOVER3D: mover = new TCATSMover3D(this->moverMap, ""); break;
 			case TYPE_TRICURMOVER: mover = new TriCurMover(this->moverMap, ""); break;

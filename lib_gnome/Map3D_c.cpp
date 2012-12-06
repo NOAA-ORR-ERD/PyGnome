@@ -270,7 +270,7 @@ TCurrentMover* Map3D_c::Get3DCurrentMover()
 		//if (thisMover -> IAm(TYPE_CURRENTMOVER)) return ((TCurrentMover*)thisMover);	// show movement only handles currents, not wind and dispersion
 		// might want to be specific since this could allow CATSMovers...
 		if(thisMover -> IAm(TYPE_PTCURMOVER) || thisMover -> IAm(TYPE_TRICURMOVER) || thisMover -> IAm(TYPE_CATSMOVER3D)
-		   || thisMover -> IAm(TYPE_NETCDFMOVERCURV) || thisMover -> IAm(TYPE_NETCDFMOVERTRI)) return dynamic_cast<TCurrentMover*>(thisMover);
+		   || thisMover -> IAm(TYPE_NETCDFMOVERCURV) || thisMover -> IAm(TYPE_NETCDFMOVERTRI) || thisMover -> IAm(TYPE_GRIDCURRENTMOVER)) return dynamic_cast<TCurrentMover*>(thisMover);
 	}
 	return nil;
 }
