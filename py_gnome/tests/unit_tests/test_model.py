@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import gnome.model
 import gnome.map
-import gnome.simple_mover
+from gnome import movers
 import gnome.spill
 
 def test_init():
@@ -53,7 +53,7 @@ def test_simple_run():
     model = gnome.model.Model()
     
     model.map = gnome.map.GnomeMap()
-    a_mover = gnome.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
+    a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
     
     model.add_mover(a_mover)
 
@@ -89,7 +89,7 @@ def test_simple_run_with_map():
     model.map = gnome.map.MapFromBNA( 'SampleData/MapBounds_Island.bna',
                                 refloat_halflife=6*3600, #seconds
                                 )
-    a_mover = gnome.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
+    a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
     
     model.add_mover(a_mover)
 
@@ -143,7 +143,7 @@ def test_simple_run_with_image_output():
     map.set_land(polygons)
     model.output_map = map
     
-    a_mover = gnome.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.add_mover(a_mover)
 
     N = 10 # a line of ten points
@@ -174,6 +174,41 @@ def test_simple_run_with_image_output():
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
 
 
+def test_mover_api():
+    """
+    Test the API methods for adding and removing movers to the model.
+    """
+    start_time = datetime(2012, 1, 1, 0, 0)
+
+    model = gnome.model.Model()
+    model.duration = timedelta(hours=12)
+    model.time_step = timedelta(hours = 1)
+    model.start_time = start_time
+
+    mover_1 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    mover_2 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+
+    id_1 = model.add_mover(mover_1)
+    id_2 = model.add_mover(mover_2)
+
+    assert(model.get_mover(id_1) == mover_1)
+    assert(model.get_mover(id_2) == mover_2)
+    assert(model.get_mover('Invalid') is None)
+
+    model.remove_mover(id_1)
+    model.remove_mover(id_2)
+    assert(model.remove_mover('Invalid') is None)
+
+    assert(model.get_mover(id_1) is None)
+    assert(model.get_mover(id_2) is None)
+
+    id_1 = model.add_mover(mover_1)
+    id_2 = model.add_mover(mover_2)
+
+    model.replace_mover(id_1, mover_2)
+    model.replace_mover(id_2, mover_2)
+
+
 def test_all_movers():
     """
     a test that tests that all the movers at least can be run
@@ -198,7 +233,7 @@ def test_all_movers():
     model.map = gnome.map.GnomeMap() # the simpleset of maps
     
     # simplemover
-    model.add_mover( gnome.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0)) )
+    model.add_mover( movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0)) )
 
     # random mover
     model.add_mover( gnome.movers.RandomMover(diffusion_coef=100000) )

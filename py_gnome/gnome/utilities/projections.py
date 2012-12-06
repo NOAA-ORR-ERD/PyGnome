@@ -47,9 +47,9 @@ class NoProjection(object):
                          is to leave it as the same type it came in, so you can have fractional pixels
         """
         if asint:
-            return np.asarray(coords, dtype=np.int).reshape((-1,3))[:,:2]
+            return np.asarray(np.asarray(coords).reshape((-1,3))[:,:2], dtype=np.int32, order='C') # to make sure it's contiguous
         else:
-            return np.asarray(coords).reshape((-1,3))[:,:2]
+            return np.asarray(np.asarray(coords).reshape((-1,3))[:,:2], order='C') # to make sure it's contiguous
 
     def to_pixel_2D(self, coords, asint=False):
         """
@@ -61,16 +61,16 @@ class NoProjection(object):
                          is to leave it as the same type it came in, so you can have fractional pixels
         """
         if asint:
-            return np.asarray(coords, dtype=np.int)
+            return np.asarray(coords, dtype=np.int, order='C')
         else:
-            return np.asarray(coords)
+            return np.asarray(coords, order='C')
 
 
     def to_lonlat(self, coords):
         """
         returns the same coords, but as a np.array of float64 , if they aren't already
         """
-        return np.asarray(coords, dtype=np.float64)
+        return np.asarray(coords, dtype=np.float64, order='C')
 
 
 class GeoProjection(object):
@@ -155,8 +155,7 @@ class GeoProjection(object):
             ##      simple casting rounds toward zero
             ## we may need the negative coords to work right for locations off the grid.
             ##  (used for the raster map code)
-            np.floor(coords, coords)
-            return np.array(coords, np.int32) ##Assure C-contiguous
+            return np.floor(coords,coords).astype(np.int32)
         else:
             return coords
 
@@ -183,8 +182,7 @@ class GeoProjection(object):
             ##      simple casting rounds toward zero
             ## we may need the negative coords to work right for locations off the grid.
             ##  (used for the raster map code)
-            np.floor(coords, coords)
-            return np.array(coords, np.int32) ##assure C-contiguous
+            return np.floor(coords,coords).astype(np.int32)
         else:
             return coords
     

@@ -19,7 +19,7 @@ from webgnome.forms.movers import (
 )
 
 from webgnome.forms.model import RunModelUntilForm, ModelSettingsForm
-from webgnome.forms import object_form
+from webgnome.forms.movers import mover_form_classes
 from webgnome.navigation_tree import NavigationTree
 from webgnome import util
 from webgnome.views import movers
@@ -35,7 +35,7 @@ def model_forms(request, model):
     context = {
         'run_model_until_form': RunModelUntilForm(),
         'run_model_until_form_url': request.route_url('run_model_until'),
-        'settings_form': ModelSettingsForm(),
+        'settings_form': ModelSettingsForm(obj=model),
         'settings_form_url': request.route_url('model_settings'),
         'add_mover_form': AddMoverForm(),
         'wind_mover_form': WindMoverForm(),
@@ -58,12 +58,12 @@ def model_forms(request, model):
             continue
 
         update_route = routes.get('update', None)
-        update_form = object_form.get_object_form(mover)
+        update_form_cls = mover_form_classes.get(mover.__class__, None)
 
-        if update_route and update_form:
+        if update_route and update_form_cls:
             update_url = request.route_url(update_route, id=mover.id)
-            context['mover_update_forms'].append(
-                (update_url, update_form(obj=mover)))
+            update_form = update_form_cls(obj=mover)
+            context['mover_update_forms'].append((update_url, update_form))
 
         # TODO: Spill forms.
 
@@ -101,7 +101,7 @@ def show_model(request):
      # TODO: Remove this after we decide on where to put the drop-down menu.
     data['show_menu_above_map'] = 'map_menu' in request.GET
 
-    data['add_mover_form_id'] = AddMoverForm.get_id()
+    data['add_mover_form_id'] = AddMoverForm().id
     data['model_forms_url'] = request.route_url('model_forms')
     data['run_model_until_form_url'] = request.route_url('run_model_until')
 
@@ -143,34 +143,7 @@ def create_model(request):
         'message': message
     }
 
-
-@view_config(route_name='model_settings', renderer='gnome_json')
-@util.json_require_model
-def model_settings(request, model):
-    form = ModelSettingsForm(request.POST)
-    data = {}
-
-    if request.method == 'POST' and form.validate():
-        date = form.date.data
-
-        model.time_step = form.computation_time_step.data
-
-        model.start_time = datetime.datetime(
-            day=date.day, month=date.month, year=date.year,
-            hour=form.hour.data, minute=form.minute.data,
-            second=0)
-
-        model.duration = datetime.timedelta(
-                days=form.duration_days.data, hours=form.duration_hours.data)
-
-        model.uncertain = form.include_minimum_regret.data
-
-        # TODO: show_currents, prevent_land_jumping, run_backwards
-
-        return {
-            'form_html': None
-        }
-
+def _render_model_settings(request, form):
     context = {
         'form': form,
         'action_url': request.route_url('model_settings')
@@ -180,6 +153,47 @@ def model_settings(request, model):
         'form_html': render(
             'webgnome:templates/forms/model_settings.mak', context)
     }
+
+
+def _model_settings_post(request, model):
+    form = ModelSettingsForm(request.POST or None)
+
+    if form.validate():
+        date = form.date.data
+
+        model.time_step = datetime.timedelta(
+            seconds=form.computation_time_step.data)
+
+        model.start_time = datetime.datetime(
+            day=date.day, month=date.month, year=date.year,
+            hour=form.hour.data, minute=form.minute.data,
+            second=0)
+
+        model.duration = datetime.timedelta(
+            days=form.duration_days.data, hours=form.duration_hours.data)
+
+        model.uncertain = form.include_minimum_regret.data
+
+        # TODO: show_currents, prevent_land_jumping, run_backwards options.
+
+        return {
+            'form_html': None
+        }
+
+    return _render_model_settings(request, form)
+
+
+@view_config(route_name='model_settings', renderer='gnome_json')
+@util.json_require_model
+def model_settings(request, model):
+    if request.method == 'POST':
+        return _model_settings_post(request, model)
+
+    print model.start_time
+    form = ModelSettingsForm(obj=model)
+
+    return _render_model_settings(request, form)
+
 
 
 def _get_model_image_url(request, model, filename):
@@ -244,7 +258,7 @@ def run_model(request, model):
     timestamps = _get_timestamps(model)
     data['expected_time_steps'] = timestamps
     model.timestamps = timestamps
-    model.time_step = 3600/4
+    model.uncertain = True
 
     # TODO: Set separately in spill view.
     if not model.spills:
@@ -261,10 +275,10 @@ def run_model(request, model):
         r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
         model.add_mover(r_mover)
 
-        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_r_theta)
-        series[0] = (start_time, (10, 180) )
-        series[1] = (start_time + datetime.timedelta(hours=18), (10, 200))
-        series[2] = (start_time + datetime.timedelta(hours=30), (20, 10))
+        series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
+        series[0] = (start_time, (30, 50) )
+        series[1] = (start_time + datetime.timedelta(hours=18), (30, 50))
+        series[2] = (start_time + datetime.timedelta(hours=30), (20, 25))
         series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
         series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
 
@@ -294,6 +308,7 @@ def run_model(request, model):
     if not first_step:
         return {}
 
+    model.time_steps.append(first_step)
     data['step'] = first_step
 
     return data

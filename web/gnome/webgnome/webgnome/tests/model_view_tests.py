@@ -1,5 +1,4 @@
 import json
-import os
 
 from collections import OrderedDict
 import datetime
@@ -42,6 +41,24 @@ class ModelViewTests(FunctionalTestBase):
         self.assertTrue(json_resp['model_id'])
         self.post_model_settings(**model_settings)
         return self.testapp.get('/model/run'), json_resp['model_id']
+
+    def test_get_model_settings(self):
+        self.create_model()
+        self.post_model_settings(
+            date=datetime.datetime(year=1983, month=2, day=3, hour=12, minute=15),
+            duration_days=5,
+            duration_hours=10,
+            uncertain=True
+        )
+
+        resp = self.testapp.get('/model/settings')
+        json_resp = json.loads(resp.body)
+        form_html = json_resp['form_html']
+
+        self.assertIn('name="date" type="text" value="02/03/1983"', form_html)
+        self.assertIn('name="hour" type="text" value="12"', form_html)
+        self.assertIn('name="minute" type="text" value="15"', form_html)
+
 
     def test_create_model_without_existing_model_returns_new_model_id(self):
         resp = self.create_model()

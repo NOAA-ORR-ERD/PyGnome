@@ -50,7 +50,7 @@ def sec_to_date(seconds):
     
     for li in range(len(t_array)):    
         t = sec_to_timestruct(t_array[li])
-        d_array[li] = datetime.datetime(*t[:7])
+        d_array[li] = datetime.datetime(*t[:6])
     return ( len(d_array)==1 and d_array[0].astype(object) or d_array )
     
 def sec_to_timestruct(seconds):

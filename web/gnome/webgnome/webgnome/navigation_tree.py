@@ -1,8 +1,8 @@
 from collections import OrderedDict
 
 from webgnome.forms.model import ModelSettingsForm
-from webgnome.forms.movers import AddMoverForm, DeleteMoverForm
-from webgnome.forms.object_form import get_object_form
+from webgnome.forms.spills import spill_form_classes
+from webgnome.forms.movers import AddMoverForm, DeleteMoverForm, mover_form_classes
 from webgnome.forms.spills import DeleteSpillForm
 
 
@@ -55,8 +55,8 @@ class NavigationTree(object):
         """
         settings = {
             'title': 'Model Settings',
-            'key': ModelSettingsForm.get_id(),
-            'form_id': ModelSettingsForm.get_id(),
+            'key': ModelSettingsForm.get_id(self.model),
+            'form_id': ModelSettingsForm.get_id(self.model),
             'children': []
         }
 
@@ -78,8 +78,8 @@ class NavigationTree(object):
         for name, value in self._get_model_settings().items():
             settings['children'].append({
                 # All settings use the model update form.
-                'key': ModelSettingsForm.get_id(),
-                'form_id': ModelSettingsForm.get_id(),
+                'key': ModelSettingsForm.get_id(self.model),
+                'form_id': ModelSettingsForm.get_id(self.model),
                 'title': self._get_value_title(name, value),
             })
 
@@ -91,23 +91,33 @@ class NavigationTree(object):
         })
 
         for mover in self.model.movers:
-            form = get_object_form(mover)
+            form_class = mover_form_classes.get(mover.__class__, None)
 
-            if not form:
+            if not form_class:
                 continue
 
+            _id = form_class.get_id(mover)
+
             movers['children'].append({
-                'key': form.get_id(mover),
-                'form_id': form.get_id(mover),
+                'key': _id,
+                'form_id': _id,
                 'delete_form_id': DeleteMoverForm.get_id(mover),
                 'object_id': mover.id,
                 'title': str(mover)
             })
 
         for spill in self.model.spills:
+            form_class = spill_form_classes.get(spill.__class__, None)
+
+            if not form_class:
+                continue
+
+            _id = form_class.get_id(spill)
+
+
             spills['children'].append({
-                'key': get_object_form(spill).get_id(spill),
-                'form_id': get_object_form(spill).get_id(spill),
+                'key': _id,
+                'form_id': _id,
                 'delete_form_id': DeleteSpillForm.get_id(spill),
                 'object_id': spill.id,
                 'title': str(spill),

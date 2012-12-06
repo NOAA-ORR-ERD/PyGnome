@@ -42,8 +42,8 @@ date_rec           = np.dtype([('year', np.short),
                                ('second', np.short), 
                                ('dayOfWeek', np.short),], align=True)
 
-status_code_type = np.short # In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
-                            # this is also consistent with the definition in type_defs.pxd .. define it here to keep things consistent
-                            
+# In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
+# this is also consistent with the definition in type_defs.pxd .. define it here to keep things consistent
+status_code_type = np.int16
 
-
+id_type = np.uint16
