@@ -5,15 +5,13 @@ from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome import basic_types
 
 from movers cimport WindMover_c
-#from type_defs cimport WorldPoint3D, LEWindUncertainRec, LEStatus, LEType, OSErr, Seconds, VelocityRec
-from type_defs cimport * 
-
-from utils cimport OSSMTimeValue_c
+from type_defs cimport WorldPoint3D, LEWindUncertainRec, LEStatus, LEType, OSErr, Seconds, VelocityRec
 
 cdef class CyWindMover:
 
     cdef WindMover_c *mover
-
+    
+    # Let's define the following - it is only used for testing
     def __cinit__(self):
         self.mover = new WindMover_c()
         
@@ -184,36 +182,20 @@ cdef class CyWindMover:
         values
         """
         cdef cnp.ndarray[Seconds, ndim=1] modelTimeArray
-        modelTimeArray = cnp.asarray(modelTime, basic_types.seconds).reshape((-1,))
+        modelTimeArray = np.asarray(modelTime, basic_types.seconds).reshape((-1,))
          
-        #=======================================================================
-        # # velocity record passed to the methods and returned back to python
-        # cdef cnp.ndarray[VelocityRec, ndim=1] vel_rec 
-        # cdef VelocityRec * velrec
-        # 
-        # cdef unsigned int i 
-        # cdef OSErr err 
-        # 
-        # vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
-        # 
-        # for i in range( 0, modelTimeArray.size):
-        #    err = self.mover.GetTimeValue( modelTimeArray[i], &vel_rec[i])
-        #    if err != 0:
-        #        raise ValueError
-        #
-        # return vel_rec
-        #=======================================================================
+        # velocity record passed to the methods and returned back to python
+        cdef cnp.ndarray[VelocityRec, ndim=1] vel_rec 
+        cdef VelocityRec * velrec
         
-    #===========================================================================
-    # def _get_ossm(self):
-    #   """
-    #   returns a CyOSSMTime object, where the CyOSSMTime.time_dep points to the OSSMTimeValue_c member
-    #   of WindMover_c
-    #   """
-    #   cdef OSSMTimeValue_c * time_dep
-    #   time_dep = self.mover.GetTimeDep()
-    #   ossm = CyOSSMTime()
-    #   ossm.time_dep = time_dep
-    #   return ossm
-    #===========================================================================
-   
+        cdef unsigned int i 
+        cdef OSErr err 
+        
+        vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
+        
+        for i in range( 0, modelTimeArray.size):
+           err = self.mover.GetTimeValue( modelTimeArray[i], &vel_rec[i])
+           if err != 0:
+               raise ValueError
+        
+        return vel_rec
