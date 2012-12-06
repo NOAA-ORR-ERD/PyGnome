@@ -473,7 +473,7 @@ long TCATSMover::GetListLength()
 ListItem TCATSMover::GetNthListItem(long n, short indent, short *style, char *text)
 {
 	char *p, latS[20], longS[20], valStr[32];
-	ListItem item = { dynamic_cast<TCATSMover *>(this), 0, indent, 0 };
+	ListItem item = { this, 0, indent, 0 };
 	
 	if (n == 0) {
 		item.index = I_CATSNAME;
@@ -652,7 +652,7 @@ ListItem TCATSMover::GetNthListItem(long n, short indent, short *style, char *te
 					item.index = I_CATSSTARTTIME;
 					//item.bullet = BULLET_DASH;
 					item.indent++;
-					sprintf(text, "Start Time: %.2f hours",fUncertainStartTime/3600);
+					sprintf(text, "Start Time: %.2f hours",((double)fUncertainStartTime)/3600.);
 					return item;
 				}
 				
