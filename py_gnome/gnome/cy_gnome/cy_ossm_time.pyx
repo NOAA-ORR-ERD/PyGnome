@@ -36,8 +36,8 @@ cdef class CyOSSMTime:
         
         If timeseries are given, the data is always assumed to be in meters_per_sec
         """
-        if path is None and timeseries is None:
-            raise ValueError("Object needs either a path to the time series file or timeseries")   # TODO: check error
+        #if path is None and timeseries is None:
+        #    raise ValueError("Object needs either a path to the time series file or timeseries")   # TODO: check error
         
         if path is not None:
             if file_contains is None:
@@ -47,13 +47,15 @@ cdef class CyOSSMTime:
                 self._read_time_values(path, file_contains, -1) # user_units should be read from the file
             else:
                 raise IOError("No such file: " + path)
-        else:
-            if timeseries is None:
-                raise ValueError("timeseries cannot be None")
-            
+        # else:
+        #    if timeseries is None:
+        #        raise ValueError("timeseries cannot be None")
+        elif timeseries is not None:
             self._set_time_value_handle(timeseries)
             self.time_dep.SetUserUnits(-1)  # default is undefined for now. UserUnits are only given in data file right now            
-    
+        else:
+            self.time_dep.SetUserUnits(-1)  # default is undefined for now. UserUnits are only given in data file right now
+            
     property user_units:
         def __get__(self):
             """returns units for the time series"""

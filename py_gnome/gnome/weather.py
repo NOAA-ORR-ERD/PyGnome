@@ -65,7 +65,7 @@ class Wind(object):
        This timeseries are not output. eval(repr(wind)) does not work for this object and the timeseries could be long
        so only the syntax for obtaining the timeseries is given in repr
        """
-       return "Wind( timeseries=self.get_timeseries(basic_types.data_format.wind_uv), data_format=basic_types.data_format.wind_uv, is_active = %s, uncertain_duration= %s, uncertain_time_delay=%s, uncertain_speed_scale=%s, uncertain_angle_scale=%s)" \
+       return "Wind( timeseries=Wind.get_timeseries(basic_types.data_format.wind_uv), data_format=basic_types.data_format.wind_uv, is_active = %s, uncertain_duration= %s, uncertain_time_delay=%s, uncertain_speed_scale=%s, uncertain_angle_scale=%s)" \
                % (self.is_active, self.uncertain_duration, self.uncertain_time_delay, \
                   self.uncertain_speed_scale, self.uncertain_angle_scale)
     
