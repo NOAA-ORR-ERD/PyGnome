@@ -63,11 +63,10 @@ def create_mover(request, model):
              request_method='POST')
 @util.json_require_model
 def delete_mover(request, model):
-    form = DeleteMoverForm(request.POST, model)
+    form = DeleteMoverForm(request.POST, model=model)
 
     if form.validate():
-        mover_id = form.mover_id
-        model.delete_mover(mover_id)
+        model.remove_mover(form.mover_id.data)
 
         return {
             'success': True

@@ -196,8 +196,8 @@ class DeleteMoverForm(AutoIdForm):
     """
     mover_id = IntegerField()
 
-    def __init__(self, model, *args, **kwargs):
-        self.model = model
+    def __init__(self, *args, **kwargs):
+        self.model = kwargs.pop('model', None)
         super(DeleteMoverForm, self).__init__(*args, **kwargs)
 
     def mover_id_validate(self, field):

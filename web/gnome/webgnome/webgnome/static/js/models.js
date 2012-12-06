@@ -465,6 +465,7 @@ define([
          and we're just passing them along to the `makeRequest()` method.
          */
         submit: function(opts) {
+            util.log(this)
              var options = $.extend({}, opts, {
                 type: 'POST'
             });

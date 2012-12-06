@@ -47,15 +47,17 @@ def model_forms(request, model):
 
     # The template will render a delete and edit form for each mover instance.
     for mover in model.movers:
-        delete_form = DeleteMoverForm(model, obj=mover)
-        delete_url = request.route_url('delete_mover')
-        context['mover_delete_forms'].append(
-            (delete_url, delete_form))
-
         routes = movers.form_routes.get(mover.__class__, None)
 
         if not routes:
             continue
+
+        delete_route = routes.get('delete', None)
+
+        if delete_route:
+            delete_url = request.route_url(delete_route)
+            delete_form = DeleteMoverForm(model=model, obj=mover)
+            context['mover_delete_forms'].append((delete_url, delete_form))
 
         update_route = routes.get('update', None)
         update_form_cls = mover_form_classes.get(mover.__class__, None)

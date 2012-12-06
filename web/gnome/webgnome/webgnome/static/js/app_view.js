@@ -480,22 +480,28 @@ define([
         removeButtonClicked: function() {
             var node = this.treeView.getActiveItem();
 
-            if (!node.data.form_id || !node.data.id) {
+            function error() {
+                alert('Error! Could not delete ' + node.data.title + '.');
+            }
+
+            if (!node.data.form_id || !node.data.object_id) {
+                return error();
+            }
+
+            var ajaxForm = this.forms.get(node.data.delete_form_id);
+            var formView = this.formViews.get(node.data.delete_form_id);
+
+            if (!ajaxForm || !formView) {
+                return error();
+            }
+
+            if (confirm('Remove ' + node.data.title + '?') === false) {
                 return;
             }
 
-            var type = node.data.form_id.replace('_', ' ');
-
-            if (confirm('Remove ' + type + '?') === false) {
-                return;
-            }
-
-            this.ajaxForm.submit({
-                url: this.ajaxForm.get('url') + '/' + node.data.form_id + '/delete',
-                data: "mover_id=" + node.data.id,
-                error: function() {
-                    alert('Could not remove item.');
-                }
+            ajaxForm.submit({
+                data: "mover_id=" + node.data.object_id,
+                error: error
             });
         },
 
