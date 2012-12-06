@@ -428,8 +428,9 @@ Boolean TimeGridWindCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 		}
 	}
 	
-	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * fVar.fileScaleFactor;
+	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	//lengthS = this->fWindScale * lengthU;	// pass this in if there is a dialog scale factor
+	lengthS = lengthU * fVar.fileScaleFactor;	
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);

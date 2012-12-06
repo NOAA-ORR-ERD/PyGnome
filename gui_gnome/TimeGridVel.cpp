@@ -704,8 +704,8 @@ Boolean TimeGridVelRect::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr
 	
 CalcStr:
 	
-	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * fVar.fileScaleFactor;
-	//lengthS = this->fVar.curScale * lengthU; //factor from dialog box vs factor from file - this should be passed in 
+	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
+	lengthS = lengthU * fVar.fileScaleFactor; //factor from dialog box vs factor from file - this should be passed in 
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
@@ -1675,11 +1675,11 @@ Boolean TimeGridVelCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr
 		}
 	}
 	
-	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * fVar.fileScaleFactor;
+	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	//lengthS = this->fWindScale * lengthU;
 	//lengthS = this->fVar.curScale * lengthU;
 	//lengthS = this->fVar.curScale * fFileScaleFactor * lengthU;
-	//lengthS = this->fVar.curScale * lengthU;	// pass this in
+	lengthS = lengthU * fVar.fileScaleFactor;	// pass this in
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
@@ -3388,8 +3388,8 @@ Boolean TimeGridVelTri::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr,
 	velocity.u = pt1interp.u + pt2interp.u + pt3interp.u; 
 	velocity.v = pt1interp.v + pt2interp.v + pt3interp.v; 
 	
-	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v) * fVar.fileScaleFactor;
-	//lengthS = this->fVar.curScale * lengthU;
+	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
+	lengthS = lengthU * fVar.fileScaleFactor;
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
