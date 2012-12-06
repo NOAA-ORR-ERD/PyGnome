@@ -62,7 +62,7 @@ public:
 	//virtual void	Dispose() { return; }
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVEL; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVEL) return TRUE;}
+	virtual Boolean	IAm(ClassID id) { return(id==TYPE_TIMEGRIDVEL);}
 
 	virtual long 		GetVelocityIndex(WorldPoint p);
 	virtual LongPoint 	GetVelocityIndices(WorldPoint wp);
@@ -120,7 +120,7 @@ public:
 	//virtual void	Dispose() { return; }
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELRECT; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELRECT) return TRUE;}
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELRECT) return TRUE; return TimeGridVel_c::IAm(id); }
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	void 				GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2);
@@ -221,7 +221,7 @@ public:
 	//virtual void	Dispose() { return; }
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURRECT; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURRECT) return TRUE;}
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURRECT) return TRUE; return TimeGridVel_c::IAm(id); }
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	
@@ -252,7 +252,7 @@ public:
 	//virtual void	Dispose() { return; }
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURTRI; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURTRI) return TRUE;}
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURTRI) return TRUE; return TimeGridCurRect_c::IAm(id); }
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	VelocityRec 		GetScaledPatValue3D(const Seconds& model_time, InterpolationVal interpolationVal,float depth);
@@ -276,7 +276,7 @@ public:
 	//virtual void	Dispose() { return; }
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDRECT; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDRECT) return TRUE;}
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDRECT) return TRUE; return TimeGridVel_c::IAm(id); }
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	
@@ -299,7 +299,7 @@ public:
 	//virtual void	Dispose() { return; }
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDCURV; }
-	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDCURV) return TRUE;}
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDCURV) return TRUE;  return TimeGridWindRect_c::IAm(id); }
 	
 	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
 	

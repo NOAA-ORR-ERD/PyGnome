@@ -971,6 +971,7 @@ done:
 ///////////////////////////////////////////////////////////////////////////
 OSErr NetCDFMover::CheckAndPassOnMessage(TModelMessage *message)
 {
+	OSErr err = 0;
 	//return TCurrentMover::CheckAndPassOnMessage(message); 
 	/*fDownCurUncertainty = -fVar.alongCurUncertainty; 
 	fUpCurUncertainty = fVar.alongCurUncertainty; 	
@@ -979,12 +980,13 @@ OSErr NetCDFMover::CheckAndPassOnMessage(TModelMessage *message)
 	fDuration=fVar.durationInHrs*3600.; //24 hrs as seconds 
 	fUncertainStartTime = (long) (fVar.startTimeInHrs*3600.);*/
 	// code goes here, either check for messages about alongCur and crossCur here or reset in case fUp,fDown... were changed
-	TCurrentMover::CheckAndPassOnMessage(message); 
+	err = TCurrentMover::CheckAndPassOnMessage(message); 
 	fVar.alongCurUncertainty = fUpCurUncertainty; 	
 	fVar.crossCurUncertainty = fRightCurUncertainty;  
 	fVar.durationInHrs = (double)fDuration/3600.; //24 hrs as seconds 
 	fVar.startTimeInHrs = (double)fUncertainStartTime/3600.;
 	
+	return err;
 }
 
 /////////////////////////////////////////////////
