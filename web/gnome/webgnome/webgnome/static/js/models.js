@@ -400,7 +400,6 @@ define([
     var AjaxForm = function(opts) {
         _.bindAll(this);
         this.url = opts.url;
-        this.collection = opts.collection;
 
         // Mix Backbone.js event methods into `AjaxForm`.
         _.extend(this, Backbone.Events);
@@ -450,7 +449,7 @@ define([
         },
 
         /*
-         Get the HTML for this form.
+         Get the HTML for this form from the server.
          */
         get: function(opts) {
             var options = $.extend({}, opts || {}, {
@@ -465,7 +464,6 @@ define([
          and we're just passing them along to the `makeRequest()` method.
          */
         submit: function(opts) {
-            util.log(this)
              var options = $.extend({}, opts, {
                 type: 'POST'
             });

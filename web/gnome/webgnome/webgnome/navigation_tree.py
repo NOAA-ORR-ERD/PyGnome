@@ -22,7 +22,8 @@ class NavigationTree(object):
         """
         settings_attrs = [
             'start_time',
-            'duration'
+            'duration',
+            'uncertain',
         ]
 
         settings = OrderedDict()

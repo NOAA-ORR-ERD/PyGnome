@@ -174,7 +174,7 @@ def _model_settings_post(request, model):
         model.duration = datetime.timedelta(
             days=form.duration_days.data, hours=form.duration_hours.data)
 
-        model.uncertain = form.include_minimum_regret.data
+        model.uncertain = form.uncertain.data
 
         # TODO: show_currents, prevent_land_jumping, run_backwards options.
 
@@ -191,7 +191,6 @@ def model_settings(request, model):
     if request.method == 'POST':
         return _model_settings_post(request, model)
 
-    print model.start_time
     form = ModelSettingsForm(obj=model)
 
     return _render_model_settings(request, form)

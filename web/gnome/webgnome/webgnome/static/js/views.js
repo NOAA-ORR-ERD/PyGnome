@@ -56,7 +56,7 @@ define([
     });
 
     /*
-     `MapView` represents the visual map and is reponsible for animating frames
+     `MapView` represents the visual map and is responsible for animating frames
      for each time step rendered by the server
      */
     var MapView = Backbone.View.extend({
