@@ -411,6 +411,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\lib_gnome\GridCurrentMover_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GridCurrentMover_c.h"
+					>
+				</File>
+				<File
 					RelativePath="..\lib_gnome\GridVel_c.h"
 					>
 				</File>
@@ -424,6 +432,14 @@
 				</File>
 				<File
 					RelativePath="..\lib_gnome\GridWindMover_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GridWndMover_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GridWndMover_c.h"
 					>
 				</File>
 				<File
@@ -723,6 +739,22 @@
 					>
 				</File>
 				<File
+					RelativePath="..\lib_gnome\TimeGridVel_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\TimeGridVel_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\TimeGridWind_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\TimeGridWind_c.h"
+					>
+				</File>
+				<File
 					RelativePath="..\lib_gnome\TimeValue_b.h"
 					>
 				</File>
@@ -947,6 +979,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\gui_gnome\GridCurrentMover.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\GridCurrentMover.h"
+					>
+				</File>
+				<File
 					RelativePath="..\gui_gnome\GridVel.cpp"
 					>
 				</File>
@@ -960,6 +1000,14 @@
 				</File>
 				<File
 					RelativePath="..\gui_gnome\GridWindMover.h"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\GridWndMover.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\GridWndMover.h"
 					>
 				</File>
 				<File
@@ -1184,6 +1232,22 @@
 				</File>
 				<File
 					RelativePath="..\gui_gnome\TideCurCycleMover.h"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\TimeGridVel.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\TimeGridVel.h"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\TimeGridWind.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\gui_gnome\TimeGridWind.h"
 					>
 				</File>
 				<File

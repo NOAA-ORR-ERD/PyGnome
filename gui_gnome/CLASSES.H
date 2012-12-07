@@ -681,6 +681,15 @@ void TellPlayersAboutNewDirt(void);
 #include "PtCurMover_c.h"
 #include "PtCurMover.h"
 
+//++ GridCurrentMover
+
+#include "GridCurrentMover_c.h"
+#include "GridCurrentMover.h"
+
+//++ GridWindMover
+
+#include "GridWindMover_c.h"
+#include "GridWindMover.h"
 //--
 
 //ADCPTimeValue* LoadADCPTimeValue(TMover *theOwner,short unitsIfKnownInAdvance);

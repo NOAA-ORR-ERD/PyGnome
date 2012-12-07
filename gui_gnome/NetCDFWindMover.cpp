@@ -7,7 +7,7 @@
 #include "netcdf.h"
 #include "TWindMover.h"
 #include "GridCurMover.h"
-#include "GridWindMover.h"
+#include "GridWndMover.h"
 #include "Outils.h"
 #include "DagTreeIO.h"
 #include "PtCurMover.h"
