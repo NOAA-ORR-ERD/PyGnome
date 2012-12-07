@@ -215,6 +215,7 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, 
 	
 	if(fLESetSizes)
 	{	// check the LE sets are still the same, JLM 9/18/98
+		// code goes here, if LEs were added instead of needToReInit use needToReAllocate - save uncertainty if duration has not been exceeded
 		long numrec;
 		i = _GetHandleSize((Handle)fLESetSizes)/sizeof(long);
 		if(numLESets != i) needToReInit = true;

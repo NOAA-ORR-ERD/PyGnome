@@ -69,18 +69,23 @@ def test_properties():
     assert wm.uncertain_angle_scale == 4
 
 @pytest.fixture(scope="module")
-def wind_vary_mag():
+def local_test():
     """
     To del: Just used for testing .. for now
     """
-    rq = np.array( [(1, 0),(2,45)], dtype=np.float64)
-    uv = np.array( [(0,-1),(-2./np.sqrt(2),-2./np.sqrt(2))], dtype=np.float64)
+    #rq = np.array( [(1, 0),(2,45)], dtype=np.float64)
+    #uv = np.array( [(0,-1),(-2./np.sqrt(2),-2./np.sqrt(2))], dtype=np.float64)
+    from gnome.utilities import transforms
+    
+    #rq = np.array ( [(0.165254389, 160.704082), (0.468398494, 254.707767)], dtype=np.float64 )
+    rq = [(2.5957474, 39.82103051), (1.9763598, 345.46989625)]
+    uv = transforms.r_theta_to_uv_wind( rq)
     return {'rq': rq,'uv':uv}
 
 
 #@pytest.fixture(scope="module",params=['wind_vary_mag'])
 @pytest.fixture(scope="module",params=['wind_circ','rq_rand'])
-def wind(wind_circ,rq_rand,wind_vary_mag,request):
+def wind(wind_circ,rq_rand,local_test,request):
     """
     Create Wind object using the time series given by the test fixture
     'wind_circ', 'rq_rand'. 
@@ -104,11 +109,11 @@ def wind(wind_circ,rq_rand,wind_vary_mag,request):
         dtv_uv = np.zeros((len(dtv_rq),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
         dtv_uv.value = transforms.r_theta_to_uv_wind( rq_rand['rq'])
     else:
-        dtv_rq = np.zeros((len(wind_vary_mag['rq']),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
+        dtv_rq = np.zeros((len(local_test['rq']),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
         dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(len(dtv_rq))]
-        dtv_rq.value = wind_vary_mag['rq']
+        dtv_rq.value = local_test['rq']
         dtv_uv = np.zeros((len(dtv_rq),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-        dtv_uv.value= wind_vary_mag['uv']  
+        dtv_uv.value= local_test['uv']  
 
     dtv_uv.time = dtv_rq.time
 
@@ -182,15 +187,27 @@ class TestWind:
        get_rq = wind['wm'].get_timeseries(data_format=basic_types.data_format.magnitude_direction, datetime=dt).view(dtype=np.recarray)
        get_uv = wind['wm'].get_timeseries(data_format=basic_types.data_format.wind_uv, datetime=dt).view(dtype=np.recarray)
        print
-       print "-----------------"
-       print "(u,v):" + str( wind['uv'].value[:2,:])
-       print "-----------------"
-       print "u-bounds: " + str( wind['uv'].value[:2,0])
-       print "v-bounds: " + str( wind['uv'].value[:2,1])
+       print "=================================================="
+       print "(u,v):" 
+       print  str( wind['uv'].value[:2,:])
+       print
        print "get_uv: " + str(get_uv.value[0])
+       print "time: " + repr(dt)
        print "-----------------"
-       print "rq: " + str( wind['rq'].value[:2,:])
+       print "u-bounds: (" + str( min(wind['uv'].value[:2,0])) + ", " + str(max(wind['uv'].value[:2,0])) + "); computed-u: " + str( get_uv.value[0,0])
+       print "v-bounds: (" + str( min(wind['uv'].value[:2,1])) + ", " + str(max(wind['uv'].value[:2,1])) + "); computed-v: " + str( get_uv.value[0,1])
+       print "-----------------"
+       print "(r,theta): " 
+       print  str( wind['rq'].value[:2,:])
+       print
        print "get_rq: " + str(get_rq.value[0])
+       print "-----------------"
+       print "FOR INFO ONLY: INTERPOLATION IS DONE IN (u,v) SPACE"
+       print "r-bounds: (" + str( min(wind['rq'].value[:2,0])) + ", " + str(max(wind['rq'].value[:2,0])) + "); computed-r: " + str( get_rq.value[0,0])
+       print "theta-bounds: (" + str( min(wind['rq'].value[:2,1])) + ", " + str(max(wind['rq'].value[:2,1])) + "); computed-theta: " + str( get_rq.value[0,1])
+       print "-----------------"       
+       print "NOTE: This test fails at times for randomly generated (r,theta)"
+       print "      Still trying to understand how the hermite interpolation should work"
        
        assert get_uv.time[0].astype(object) == dt
        assert get_uv.value[0,0] > np.min( wind['uv'].value[:2,0]) \

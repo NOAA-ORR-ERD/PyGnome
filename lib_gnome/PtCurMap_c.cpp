@@ -415,6 +415,7 @@ TTriGridVel* PtCurMap_c::GetGrid(Boolean wantRefinedGrid)
 						{
 								triGrid = dynamic_cast<TTriGridVel3D*>(((dynamic_cast<TriCurMover *>(mover)) -> fGrid));
 						}
+
 					}
 				}
 			}

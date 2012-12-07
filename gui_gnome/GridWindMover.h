@@ -13,23 +13,20 @@
 #include "Earl.h"
 #include "TypeDefs.h"
 #include "GridWindMover_c.h"
+#include "GridWndMover_c.h"	 // for the enum - should move somewhere else...
 #include "TWindMover.h"
 
 // build off TWindMover or off TMover with a lot of WindMover carried along ??
-// for now new mover type but brought in under variable windmover
-// what about constant wind case? parallel to gridcur?
 class GridWindMover : virtual public GridWindMover_c,  public TWindMover
 {
-
+	
 public:
 	GridWindMover (TMap *owner, char* name);
 	~GridWindMover () { Dispose (); }
 	virtual void		Dispose ();
-	
-	virtual ClassID 	GetClassID () { return TYPE_GRIDWINDMOVER; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_GRIDWINDMOVER) return TRUE; return TWindMover::IAm(id); }
-	void 					DisposeLoadedData(LoadedData * dataPtr);	
-	void 					ClearLoadedData(LoadedData * dataPtr);
+
+	virtual OSErr		InitMover (TimeGridVel *grid); 
+
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb);  // read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
@@ -42,30 +39,16 @@ public:
 	//		virtual OSErr 		AddItem (ListItem item);
 	virtual OSErr		SettingsItem (ListItem item);
 	virtual OSErr 		DeleteItem (ListItem item);
-	
 	virtual OSErr 		CheckAndPassOnMessage(TModelMessage *message);
-	
-	long 				GetNumTimesInFile();
-	long				GetNumFiles();
-	//virtual OSErr		GetStartTime(Seconds *startTime);
-	//virtual OSErr		GetEndTime(Seconds *endTime);
-	
-	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	// AH 07/17/2012
-	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time); // AH 07/17/2012
-	
-	virtual OSErr		TextRead(char *path);
-	OSErr 				ReadHeaderLines(char *path, WorldRect *bounds);
-	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
-	OSErr 				ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime, const Seconds& start_time);	// AH 07/17/2012
-	OSErr 				ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile);
 	
 	virtual void		Draw (Rect r, WorldRect view);
 	virtual Boolean		DrawingDependsOnTime(void);
-	
+	virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
+		
 	
 };
 
-Boolean IsGridWindFile(char *path,short *selectedUnits);
-
+OSErr			GridWindSettingsDialog(GridWindMover *mover, TMap *owner,Boolean bAddMover,WindowPtr parentWindow);
 
 #endif
+

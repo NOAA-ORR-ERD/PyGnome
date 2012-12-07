@@ -10,6 +10,7 @@
 #endif
 /////////////////////////////////////////////////
 //#define NO_GUI	// for TAP - move to a separate make file
+//#define GUI_GNOME
 
 #include "CLASSES.h"
 
