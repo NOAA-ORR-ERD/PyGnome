@@ -518,6 +518,7 @@ define([
             this.resizeButtonEl = this.options.resizeButtonEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
+            this.model = this.options.model;
 
             // Controls whose state, either enabled or disabled, is related to whether
             // or not an animation is playing. The resize and full screen buttons
@@ -542,11 +543,11 @@ define([
 
             if (this.model.expectedTimeSteps.length) {
                 this.setTimeSteps(this.model.expectedTimeSteps);
+                this.enableControls();
             }
 
             this.setupClickEvents();
 
-            this.model = this.options.model;
             this.model.on(models.Model.RUN_BEGAN, this.runBegan);
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
             this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
@@ -570,8 +571,7 @@ define([
                 [this.pauseButtonEl, MapControlView.PAUSE_BUTTON_CLICKED]
             ];
 
-            // TODO: This probably leaks memory, so do something else here, like
-            // looking up the right `customEvent` for the element.
+            // TODO: This probably leaks memory due to closing around `button`.
             _.each(_.object(clickEvents), function(customEvent, button) {
                 $(button).click(function(event) {
                     if ($(button).hasClass('disabled')) {

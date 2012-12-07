@@ -110,6 +110,11 @@ define([
 
             this.dirty = false;
             this.expectedTimeSteps = data.expected_time_steps;
+
+            if (_.has(data, 'time_step')) {
+                this.addTimeStep(data.time_step)                ;
+            }
+
             this.trigger(Model.RUN_BEGAN, data);
             this.getNextTimeStep();
             return true;

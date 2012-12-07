@@ -286,7 +286,6 @@ def run_model(request, model):
         w_mover = gnome.movers.WindMover(timeseries=series)
         model.add_mover(w_mover)
 
-
     # TODO: Set separately in map configuration form/view.
     map_file = os.path.join(
         request.registry.settings['project_root'],
@@ -310,7 +309,7 @@ def run_model(request, model):
         return {}
 
     model.time_steps.append(first_step)
-    data['step'] = first_step
+    data['time_step'] = first_step
 
     return data
 
