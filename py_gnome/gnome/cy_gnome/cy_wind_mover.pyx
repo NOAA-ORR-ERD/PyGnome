@@ -33,7 +33,7 @@ cdef class CyWindMover:
         
         constant_wind_value is a tuple of values: (u, v)
         """
-        self.mover.fIsConstantWind  = 0  # don't assume wind is constant
+        self.mover.fIsConstantWind  = 1  # Assume wind is constant, but initialize velocity to 0.
         self.mover.fConstantValue.u = 0
         self.mover.fConstantValue.v = 0
         self.mover.fDuration = uncertain_duration
