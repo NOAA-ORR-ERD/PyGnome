@@ -6,6 +6,8 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 
+from gnome.helpers import convert
+
 class Mover(object):
     """
     Base class from which all Python movers can inherit
@@ -13,11 +15,11 @@ class Mover(object):
     It defines the interface for a Python mover. The model expects the methods defined here. 
     The get_move(...) method needs to be implemented by the derived class.  
     """
-    def __init__(self, **kwargs):
+    def __init__(self, is_active=True, **kwargs):
         """
         During init, it defaults is_active = True
         """
-        self.is_active = True
+        self._is_active = True
         super(Mover,self).__init__(**kwargs)
         
     @property
@@ -31,6 +33,15 @@ class Mover(object):
         :return: the integer ID returned by id() for this object
         """
         return id(self)
+    
+    # Methods for is_active property definition
+    def get_is_active(self):
+       return self._is_active
+    
+    def set_is_active(self, value):
+       self._is_active = value
+    
+    is_active = property(get_is_active, set_is_active)
     
     def datetime_to_seconds(self, model_time):
         """
@@ -89,8 +100,7 @@ class CyMover(Mover):
     has methods like: prepare_for_model_run, prepare_for_model_step,
     """
     def __init__(self, is_active=True, **kwargs):
-        super(CyMover,self).__init__(**kwargs)
-        self.is_active = is_active
+        super(CyMover,self).__init__(is_active=is_active,**kwargs)
         
     def prepare_for_model_run(self):
         """
@@ -161,145 +171,73 @@ class WindMover(CyMover):
 
     CyMover sets everything up that is common to all movers.
     """
-    def __init__(self, 
-                 timeseries=None, 
-                 data_format=basic_types.data_format.magnitude_direction,
-                 file=None, 
-                 uncertain_duration=10800, is_active=True,
-                 uncertain_time_delay=0, uncertain_speed_scale=2, uncertain_angle_scale=0.4):
+    def __init__(self, wind, is_active=True,
+                 uncertain_duration=10800, uncertain_time_delay=0, 
+                 uncertain_speed_scale=2., uncertain_angle_scale=0.4):
         """
-        Initializes a wind mover object. It requires a numpy array containing 
-        gnome.basic_types.time_value_pair which defines the wind velocity
+        Initializes a wind mover object. It requires a Wind object who's attributes define the wind conditions
         
-        :param timeseries: (Required) numpy array containing time_value_pair
-        :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
-        :param file: path to a long wind file from which to read wind data
-        :param uncertain_duraton=10800: only used in case of uncertain wind. Default is 3 hours
-        :param is_active: flag defines whether mover is active or not
-        :param uncertain_time_delay=0: wait this long after model_start_time to turn on uncertainty
-        :param uncertain_speed_scale=2: used in uncertainty computation
-        :param uncertain_angle_scale=0.4: used in uncertainty computation
+        :param wind: wind object
         """
-        if( timeseries is None and file is None):
-            raise ValueError("Either provide timeseries or a valid long file")
-        
-        if( timeseries is not None):
-            try:
-                if( timeseries.dtype is not basic_types.datetime_value_2d):
-                    # Should this be 'is' or '==' - both work in this case. There is only one instance of basic_types.time_value_pair 
-                    raise ValueError("timeseries must be a numpy array containing basic_types.datetime_value_2d dtype")
-            
-            except AttributeError as err:
-                raise AttributeError("timeseries is not a numpy array. " + err.message)
-            
-            # convert datetime_value_2d to time_value_pair
-            if data_format == basic_types.data_format.magnitude_direction:
-                time_value_pair = self._datetime_r_theta_to_time_value(timeseries)
-            elif data_format == basic_types.data_format.wind_uv:
-                time_value_pair = self._datetime_uv_to_time_value(timeseries)
-                
-            self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
-            
-        else:
-            self.ossm = CyOSSMTime(path=file,file_contains=data_format)
-        
+        self.wind = wind
         self.mover = CyWindMover(uncertain_duration=uncertain_duration, 
                                  uncertain_time_delay=uncertain_time_delay, 
                                  uncertain_speed_scale=uncertain_speed_scale,  
                                  uncertain_angle_scale=uncertain_angle_scale)
-        self.mover.set_ossm(self.ossm)
+        self.mover.set_ossm(self.wind.ossm)
         super(WindMover,self).__init__(is_active=is_active)
-
-    @property
-    def timeseries(self):
-        datetimeval = self._time_value_to_datetime_r_theta(self.ossm.timeseries)
-        return datetimeval
-    
-    @timeseries.setter
-    def timeseries(self, datetime_value_2d):
-        timeval = self._datetime_r_theta_to_time_value(datetime_value_2d)
-        self.ossm.timeseries = timeval
         
-    @property
-    def uncertain_duration(self):
-        return self.mover.uncertain_duration
-    
-    @uncertain_duration.setter
-    def uncertain_duration(self, value):
-        self.mover.uncertain_duration = value
-    
-    @property
-    def uncertain_time_delay(self):
-        return self.mover.uncertain_time_delay
-    
-    @uncertain_time_delay.setter
-    def uncertain_time_delay(self, value):
-        self.mover.uncertain_time_delay = value
-        
-    @property 
-    def uncertain_speed_scale(self):
-        return self.mover.uncertain_speed_scale
-    
-    @uncertain_speed_scale.setter
-    def uncertain_speed_scale(self, value):
-        self.mover.uncertain_speed_scale = value
-        
-    @property
-    def uncertain_angle_scale(self):
-        return self.mover.uncertain_angle_scale
-    
-    @uncertain_angle_scale.setter
-    def uncertain_angle_scale(self, value):
-        self.mover.uncertain_angle_scale = value
-
-    def _datetime_uv_to_time_value(self, datetime_value_2d):
-        """
-        converts the datetime_value_2d array to a time_value_pair array
-        """
-        timeval = np.zeros((len(datetime_value_2d),), dtype=basic_types.time_value_pair)
-        timeval['time'] = time_utils.date_to_sec(datetime_value_2d['time'])
-        timeval['value']['u'] = datetime_value_2d['value'][:,0]
-        timeval['value']['v'] = datetime_value_2d['value'][:,1]
-        return timeval
-
-    def _datetime_r_theta_to_time_value(self, datetime_r_theta):
-        """
-        convert the datetime_value_2d array to a time_value_pair array
-        """
-        timeval = np.zeros((len(datetime_r_theta),), dtype=basic_types.time_value_pair)
-        timeval['time'] = time_utils.date_to_sec(datetime_r_theta['time'])
-        uv = transforms.r_theta_to_uv_wind(datetime_r_theta['value'])
-        timeval['value']['u'] = uv[:,0]
-        timeval['value']['v'] = uv[:,1]
-        return timeval
-        
-    def _time_value_to_datetime_r_theta(self, time_value_pair):
-        """
-        convert the time_value_pair array to a datetime_value_2d array
-        """
-        datetimeval = np.zeros((len(time_value_pair),), dtype=basic_types.datetime_value_2d)
-        datetimeval['time'] = time_utils.sec_to_date(time_value_pair['time'])
-        
-        # remove following three after reworking the time_value_pair array
-        uv = np.zeros((len(time_value_pair),2), dtype=np.double)
-        uv[:,0] = time_value_pair['value']['u']
-        uv[:,1] = time_value_pair['value']['v']
-        
-        datetimeval['value'] = transforms.uv_to_r_theta_wind(uv)
-        return datetimeval
-    
-    def get_time_value(self, datetime):
-        time_sec = self.datetime_to_seconds(datetime)
-        return self.ossm.get_time_value(time_sec).view(dtype=np.double).reshape(-1,len(basic_types.velocity_rec))
-
     def __repr__(self):
         """
         Return a string representation of this `WindMover`.
 
         TODO: We probably want to include more information.
         """
-        return 'Wind Mover'
+        return "WindMover( wind=<wind_object>, uncertain_duration= %s, uncertain_time_delay=%s, uncertain_speed_scale=%s, uncertain_angle_scale=%s)" \
+               % (self.uncertain_duration, self.uncertain_time_delay, \
+                  self.uncertain_speed_scale, self.uncertain_angle_scale)
 
+    def __str__(self):
+        """
+        Return string representation of this object
+        """
+        info = "WindMover - current state. See 'wind' object for wind conditions: \n" + \
+               "  uncertain_duration={0.uncertain_duration}\n  uncertain_time_delay={0.uncertain_time_delay}\n  uncertain_speed_scale={0.uncertain_speed_scale}\n  uncertain_angle_scale={0.uncertain_angle_scale}".format(self.mover)
+                
+        return info
+
+    # Define properties using lambda functions: uses lambda function, which are accessible via fget/fset as follows:
+    #     WindMover.<property_name>.fget(<instance_name>)
+    #     WindMover.<property_name>.fset(<instance_name>, <value>)
+    uncertain_duration = property( lambda self: self.mover.uncertain_duration,
+                                   lambda self, val: setattr(self.mover,'uncertain_duration', val))
+    
+    uncertain_time_delay = property( lambda self: self.mover.uncertain_time_delay,
+                                     lambda self, val: setattr(self.mover,'uncertain_time_delay', val))
+    
+    uncertain_speed_scale = property( lambda self: self.mover.uncertain_speed_scale,
+                                      lambda self, val: setattr(self.mover,'uncertain_speed_scale', val))
+    
+    uncertain_angle_scale = property( lambda self: self.mover.uncertain_angle_scale,
+                                      lambda self, val: setattr(self.mover,'uncertain_angle_scale', val))
+
+    def _get_timeseries(self):
+        """
+        private method - returns the timeseries used internally by the C++ WindMover_c object.
+        This should be the same as the timeseries stored in the self.wind object
+        
+        get function for timeseries property
+        """
+        dtv = self.wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
+        tv  = convert.to_time_value_pair(dtv, basic_types.data_format.wind_uv)
+        val = self.mover.get_time_value(tv['time'])
+        tv['value']['u'] = val['u']
+        tv['value']['v'] = val['v']
+        
+        return convert.to_datetime_value_2d( tv, basic_types.data_format.wind_uv)
+    
+    timeseries = property(_get_timeseries)
+        
     def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
         """
         :param spill: spill object
