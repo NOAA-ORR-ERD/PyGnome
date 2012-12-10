@@ -32,6 +32,7 @@ cdef extern from "OSSMTimeValue_c.h":
         TimeValuePairH GetTimeValueHandle()
         short GetUserUnits()
         void  SetUserUnits(short)
+        void Dispose()
         
 cdef extern from "ShioTimeValue_c.h":
     cdef cppclass ShioTimeValue_c(OSSMTimeValue_c):

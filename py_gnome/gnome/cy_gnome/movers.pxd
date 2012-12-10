@@ -52,15 +52,14 @@ cdef extern from "WindMover_c.h":
         double fSpeedScale
         double fAngleScale
         
-        LEWindUncertainRec **fWindUncertaintyList
-        long **fLESetSizes
-        
         OSErr PrepareForModelRun()
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID)
         void SetTimeDep(OSSMTimeValue_c *)
-        # ARE FOLLOWING USED IN CYTHON??
+        OSErr GetTimeValue(Seconds &, VelocityRec *)
         OSErr PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)	# currently this happens in C++ get_move command
         void ModelStepIsDone()
+        
+        
         
 cdef extern from "CATSMover_c.h":
    ctypedef struct TCM_OPTIMZE:

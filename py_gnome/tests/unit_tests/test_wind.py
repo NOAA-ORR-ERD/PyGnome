@@ -7,7 +7,6 @@ def _defaults(wm):
     """
     checks the default properties of the Wind object as given in the input are as expected
     """
-    assert wm.is_active == True
     assert wm.uncertain_duration == 10800
     assert wm.uncertain_time_delay == 0
     assert wm.uncertain_speed_scale == 2
@@ -34,9 +33,8 @@ def test_init():
     test setting the properties of the object
     """
     file = r"SampleData/WindDataFromGnome.WND"
-    wm = weather.Wind(file=file, uncertain_duration=1, is_active=False,
+    wm = weather.Wind(file=file, uncertain_duration=1,
                  uncertain_time_delay=2, uncertain_speed_scale=3, uncertain_angle_scale=4)
-    assert wm.is_active == False
     assert wm.uncertain_duration == 1
     assert wm.uncertain_time_delay == 2
     assert wm.uncertain_speed_scale == 3
