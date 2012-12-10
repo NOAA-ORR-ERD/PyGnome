@@ -3,15 +3,6 @@ from datetime import datetime
 import numpy as np
 import pytest
 
-def _defaults(wm):
-    """
-    checks the default properties of the Wind object as given in the input are as expected
-    """
-    assert wm.uncertain_duration == 10800
-    assert wm.uncertain_time_delay == 0
-    assert wm.uncertain_speed_scale == 2
-    assert wm.uncertain_angle_scale == 0.4
-
 def test_exceptions(invalid_rq):
     """
     Test ValueError exception thrown if improper input arguments
@@ -33,12 +24,7 @@ def test_init():
     test setting the properties of the object
     """
     file = r"SampleData/WindDataFromGnome.WND"
-    wm = weather.Wind(file=file, uncertain_duration=1,
-                 uncertain_time_delay=2, uncertain_speed_scale=3, uncertain_angle_scale=4)
-    assert wm.uncertain_duration == 1
-    assert wm.uncertain_time_delay == 2
-    assert wm.uncertain_speed_scale == 3
-    assert wm.uncertain_angle_scale == 4
+    wm = weather.Wind(file=file)
 
 def test_read_file_init():
     """
@@ -46,25 +32,8 @@ def test_read_file_init():
     """
     file = r"SampleData/WindDataFromGnome.WND"
     wm = weather.Wind(file=file)
-    _defaults(wm)   # check defaults set correctly
     assert True
 
-def test_properties():
-    """
-    test setting the properties of the object
-    """
-    file = r"SampleData/WindDataFromGnome.WND"
-    wm = weather.Wind(file=file)
-    
-    wm.uncertain_duration = 1
-    wm.uncertain_time_delay = 2
-    wm.uncertain_speed_scale = 3
-    wm.uncertain_angle_scale = 4
-    
-    assert wm.uncertain_duration == 1
-    assert wm.uncertain_time_delay == 2
-    assert wm.uncertain_speed_scale == 3
-    assert wm.uncertain_angle_scale == 4
 
 @pytest.fixture(scope="module")
 def local_test():
@@ -135,7 +104,6 @@ class TestWind:
         
         Also check that init doesn't fail if timeseries given in (u,v) format
         """
-        _defaults(wind['wm'])
         weather.Wind(timeseries=wind['uv'],data_format=basic_types.data_format.wind_uv)
         assert True   
 

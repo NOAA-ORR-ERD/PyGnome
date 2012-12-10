@@ -17,8 +17,7 @@ class Wind(object):
                  timeseries=None, 
                  file=None,
                  data_format=basic_types.data_format.magnitude_direction,
-                 uncertain_duration=10800, uncertain_time_delay=0, 
-                 uncertain_speed_scale=2., uncertain_angle_scale=0.4):
+                 units=basic_types.velocity_units.meters_per_sec):
         """
         Initializes a wind object. It requires a numpy array containing 
         gnome.basic_types.datetime_value_2d which defines the wind velocity
@@ -26,15 +25,12 @@ class Wind(object):
         :param timeseries: (Required) numpy array containing time_value_pair
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         :param file: path to a long wind file from which to read wind data
-        :param uncertain_duraton=10800: only used in case of uncertain wind. Default is 3 hours
-        :param uncertain_time_delay=0: wait this long after model_start_time to turn on uncertainty
-        :param uncertain_speed_scale=2: used in uncertainty computation
-        :param uncertain_angle_scale=0.4: used in uncertainty computation
+        :param data_format: default data_format, either magnitude_direction or wind_uv
+        :type data_format: integer defined by gnome.basic_types.data_format.*
+        :param units: units for the timeseries. If 'file' is given, then units are read in from the file. 
+                      CURRENTLY, JUST A PLACE HOLDER. THIS IS NOT IMPLEMENTED YET
+        :type units: Currently, using basic_types.velocity_units.meters_per_sec .. but still working on this
         """
-        self.uncertain_duration = uncertain_duration
-        self.uncertain_time_delay = uncertain_time_delay
-        self.uncertain_speed_scale = uncertain_speed_scale
-        self.uncertain_angle_scale = uncertain_angle_scale
         
         if( timeseries is None and file is None):
             raise ValueError("Either provide timeseries or a valid long file")
@@ -62,18 +58,13 @@ class Wind(object):
        This timeseries are not output. eval(repr(wind)) does not work for this object and the timeseries could be long
        so only the syntax for obtaining the timeseries is given in repr
        """
-       return "Wind( timeseries=Wind.get_timeseries(basic_types.data_format.wind_uv), data_format=basic_types.data_format.wind_uv, uncertain_duration= %s, uncertain_time_delay=%s, uncertain_speed_scale=%s, uncertain_angle_scale=%s)" \
-               % (self.uncertain_duration, self.uncertain_time_delay, \
-                  self.uncertain_speed_scale, self.uncertain_angle_scale)
+       return "Wind( timeseries=Wind.get_timeseries(basic_types.data_format.wind_uv), data_format=basic_types.data_format.wind_uv)" \
     
     def __str__(self):
         """
         Return string representation of this object
         """
-        info = "Wind Object - current state and wind conditions: \n" + \
-               "  uncertain_duration={0.uncertain_duration}\n  uncertain_time_delay={0.uncertain_time_delay}\n  uncertain_speed_scale={0.uncertain_speed_scale}\n  uncertain_angle_scale={0.uncertain_angle_scale}".format(self)
-                
-        return info
+        return "Wind Object"
     
     @property
     def id(self):
@@ -86,6 +77,7 @@ class Wind(object):
         :return: the integer ID returned by id() for this object
         """
         return id(self)
+    
     
     def get_timeseries(self, data_format, datetime=None):
         """
