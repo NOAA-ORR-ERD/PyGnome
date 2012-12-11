@@ -3,8 +3,7 @@ module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
 from gnome import basic_types
-from gnome.helpers import convert
-from gnome.utilities import transforms, time_utils
+from gnome.utilities import transforms, time_utils, convert
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 
 import numpy as np
