@@ -97,6 +97,10 @@ def show_model(request):
             data['warning'] = 'The model you were working on is no longer ' \
                               'available. We created a new one for you.'
 
+    data['map_bounds'] = []
+    if model.map and model.map.map_bounds.any():
+        data['map_bounds'] = model.map.map_bounds.tolist()
+
     data['model'] = model
     data['model_form_html'] = model_forms(request)['html']
 

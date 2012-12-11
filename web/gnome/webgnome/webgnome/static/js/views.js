@@ -7,7 +7,7 @@ define([
     'util',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree.min',
-    'lib/bootstrap'
+    'lib/bootstrap',
 ], function($, _, Backbone, models, util) {
 
      /*
@@ -55,6 +55,11 @@ define([
         }
     });
 
+    function MapViewException(message) {
+        this.message = message;
+        this.name = "MapViewException";
+    }
+
     /*
      `MapView` represents the visual map and is responsible for animating frames
      for each time step rendered by the server
@@ -67,11 +72,11 @@ define([
             this.activeFrameClass = this.options.activeFrameClass;
             this.placeholderEl = this.options.placeholderEl;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
+            this.latLongBounds = this.options.latLongBounds;
 
             this.createPlaceholderCopy();
             this.makeImagesClickable();
             this.status = MapView.STOPPED;
-
             this.$map = $(this.mapEl);
 
             this.model = this.options.model;
@@ -356,6 +361,42 @@ define([
             this.clear();
             this.createPlaceholderCopy();
             this.setStopped();
+        },
+
+        pixelsFromCoordinates: function(point) {
+            var size = this.getSize();
+
+            if (!size.height || !size.width) {
+                throw new MapViewException('No current image size detected.');
+            }
+
+            var minLat = this.latLongBounds[0][1];
+            var minLong = this.latLongBounds[0][0];
+            var maxLat = this.latLongBounds[1][1];
+            var maxLong = this.latLongBounds[2][0];
+
+            var x = ((point.long - minLong) / (maxLong - minLong)) * size.width;
+            var y = ((point.lat - minLat) / (maxLat - minLat)) * size.height;
+
+            return {x: Math.round(x), y: Math.round(y)};
+        },
+
+        coordinatesFromPixels: function(point) {
+            var size = this.getSize();
+
+            if (!size.height || !size.width) {
+                throw new MapViewException('No current image size detected.');
+            }
+
+            var minLat = this.latLongBounds[0][1];
+            var minLong = this.latLongBounds[0][0];
+            var maxLat = this.latLongBounds[1][1];
+            var maxLong = this.latLongBounds[2][0];
+
+            var lat = (maxLat - minLat) * (point.y / size.height) + minLat;
+            var lng = (maxLong - minLong) * (point.x / size.width) + minLong;
+
+            return {lat: lat, long: lng};
         }
     }, {
         // Statuses

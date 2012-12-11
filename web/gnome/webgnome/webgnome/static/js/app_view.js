@@ -71,7 +71,8 @@ define([
                 backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                model: this.model
+                model: this.model,
+                latLongBounds: this.options.mapBounds
             });
 
             this.mapControlView = new views.MapControlView({

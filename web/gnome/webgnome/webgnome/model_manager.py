@@ -53,7 +53,7 @@ class WebWindMover(WindMover):
             dt = timeseries[0].astype(object)
             series.append(
                 Wind(date=dt, speed=timeseries[1][0], speed_type='meters',
-                    direction=timeseries[1][1])
+                     direction=timeseries[1][1])
             )
 
         return series

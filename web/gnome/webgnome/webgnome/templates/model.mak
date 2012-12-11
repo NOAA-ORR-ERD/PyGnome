@@ -126,6 +126,7 @@
                 new app_view.AppView({
                     mapId: 'map',
                     mapPlaceholderId: 'placeholder',
+                    mapBounds: ${map_bounds},
                     sidebarId: 'sidebar',
                     formContainerId: 'modal-container',
                     addMoverFormId: "${add_mover_form_id}",
