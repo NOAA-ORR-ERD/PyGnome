@@ -890,7 +890,7 @@ void TimeGridVelRect::Draw(Rect r, WorldRect view,double refScale,double arrowSc
 	RGBForeColor(&colors[BLACK]);
 }
 
-
+// for now leave this part out of the python and let the file path list be passed in
 OSErr TimeGridVel::ReadInputFileNames(char *fileNamesPath)
 {
 	// for netcdf files, header file just has the paths, the start and end times will be read from the files
@@ -925,16 +925,22 @@ OSErr TimeGridVel::ReadInputFileNames(char *fileNamesPath)
 		strcpy((*inputFilesHdl)[i].pathName,s+strlen("[FILE] "));
 		RemoveLeadingAndTrailingWhiteSpace((*inputFilesHdl)[i].pathName);
 		ResolvePathFromInputFile(fileNamesPath,(*inputFilesHdl)[i].pathName); // JLM 6/8/10
-		strcpy(path,(*inputFilesHdl)[i].pathName);
+		//strcpy(path,(*inputFilesHdl)[i].pathName);
 		if((*inputFilesHdl)[i].pathName[0] && FileExists(0,0,(*inputFilesHdl)[i].pathName))
 		{
+#if TARGET_API_MAC_CARBON
+			err = ConvertTraditionalPathToUnixPath((const char *) (*inputFilesHdl)[i].pathName, outPath, kMaxNameLen) ;
+			status = nc_open(outPath, NC_NOWRITE, &ncid);
+			strcpy((*inputFilesHdl)[i].pathName,outPath);
+#endif
+			strcpy(path,(*inputFilesHdl)[i].pathName);
 			status = nc_open(path, NC_NOWRITE, &ncid);
 			if (status != NC_NOERR) /*{err = -1; goto done;}*/
 			{
-#if TARGET_API_MAC_CARBON
-				err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-				status = nc_open(outPath, NC_NOWRITE, &ncid);
-#endif
+//#if TARGET_API_MAC_CARBON
+				//err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+				//status = nc_open(outPath, NC_NOWRITE, &ncid);
+//#endif
 				if (status != NC_NOERR) {err = -2; goto done;}
 			}
 			
@@ -2402,21 +2408,22 @@ OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath)
 	char fileName[64],s[256],topPath[256], outPath[256];
 	
 	char *modelTypeStr=0;
-	Point where;
-	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
-	MySFReply reply;
-	Boolean bTopFile = false, bTopInfoInFile = false, isCCW = true;
+	//Point where;
+	//OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
+	//MySFReply reply;
+	Boolean /*bTopFile = false, */bTopInfoInFile = false, isCCW = true;
 	
 	if (!path || !path[0]) return 0;
 	strcpy(fVar.pathName,path);
 	
 	strcpy(s,path);
-	SplitPathFile (s, fileName);
+	//SplitPathFile (s, fileName);
+	SplitPathFileName (s, fileName);
 	strcpy(fVar.userName, fileName); // maybe use a name from the file
 	
 	status = nc_open(path, NC_NOWRITE, &ncid);
 	if (status != NC_NOERR) 
-	{
+	{	
 #if TARGET_API_MAC_CARBON
 		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
 		status = nc_open(outPath, NC_NOWRITE, &ncid);
@@ -2705,7 +2712,7 @@ OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath)
 	// look for topology in the file
 	// for now ask for an ascii file, output from Topology save option
 	// need dialog to ask for file
-	if (!bTopFile)
+	/*if (!bTopFile)
 	{
 		short buttonSelected;
 		buttonSelected  = MULTICHOICEALERT(1688,"Do you have an extended topology file to load?",FALSE);
@@ -2727,9 +2734,9 @@ OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath)
 		mysfpgetfile(&where, "", -1, typeList,
 					 (MyDlgHookUPP)0, &reply, M38c, MakeModalFilterUPP(STDFilter));
 		//if (!reply.good) return USERCANCEL;
-		if (!reply.good) /*return 0;*/
+		if (!reply.good) 
 		{
-			if (bTopInfoInFile/*bVelocitiesOnTriangles*/)
+			if (bTopInfoInFile)
 			{	// code goes here, really this is topology included...
 				err = ReorderPoints2(bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength,isCCW);	 
 				//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);	 
@@ -2757,7 +2764,7 @@ OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath)
 				   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
 		if (!reply.good) 
 		{
-			if (bTopInfoInFile/*bVelocitiesOnTriangles*/)	// code goes here, really this is topology included
+			if (bTopInfoInFile)	// code goes here, really this is topology included
 			{
 				err = ReorderPoints2(bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength,isCCW);	 
 				//err = ReorderPoints2(newMap,bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength);		 
@@ -2785,7 +2792,7 @@ OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath)
 		err = (dynamic_cast<TimeGridVelTri*>(this))->ReadTopology(topPath);	// newMap here
 		if (err) goto done;
 		goto depths;
-	}
+	}*/
 	
 	if (bTopInfoInFile/*bVelocitiesOnTriangles*/)
 		err = ReorderPoints2(bndry_indices,bndry_nums,bndry_type,nbndLength,top_verts,top_neighbors,neleLength,isCCW);	 
