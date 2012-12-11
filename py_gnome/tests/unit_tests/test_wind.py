@@ -19,19 +19,16 @@ def test_exceptions(invalid_rq):
         invalid_dtv_rq['value'] = invalid_rq['rq']
         weather.Wind(timeseries=invalid_dtv_rq, data_format=basic_types.data_format.magnitude_direction)
 
-def test_init():
-    """
-    test setting the properties of the object
-    """
-    file = r"SampleData/WindDataFromGnome.WND"
-    wm = weather.Wind(file=file)
-
 def test_read_file_init():
     """
     initialize from a long wind file
     """
     file = r"SampleData/WindDataFromGnome.WND"
     wm = weather.Wind(file=file)
+    print
+    print "----------------------------------"
+    print "Units: " + str(wm.units_from_file)
+    assert wm.units_from_file == basic_types.velocity_units.knots
     assert True
 
 

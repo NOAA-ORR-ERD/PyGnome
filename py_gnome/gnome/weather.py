@@ -77,6 +77,17 @@ class Wind(object):
         """
         return id(self)
     
+    def _units_from_file(self):
+        """
+        Get the user_units read from the file. If units are not read from file, this should
+        default to -1
+        """
+        if self.ossm.user_units == -1:
+            raise ValueError("Units are not set - either data was not read from file, or file did not contain units.")
+        else:
+            return self.ossm.user_units
+        
+    units_from_file = property(_units_from_file)   
     
     def get_timeseries(self, data_format, datetime=None):
         """
