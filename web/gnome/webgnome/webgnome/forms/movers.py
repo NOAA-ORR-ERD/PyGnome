@@ -33,7 +33,7 @@ class WindForm(AutoIdForm, DateTimeForm):
         (SPEED_KNOTS, 'Knots'),
         (SPEED_METERS, 'Meters / sec'),
         (SPEED_MILES, 'Miles / hour')
-        )
+    )
 
     speed = FloatField('Speed', default=0, validators=[NumberRange(min=1)])
     speed_type = SelectField(

@@ -438,6 +438,8 @@ define([
         showFormForNode: function(node) {
             var formView = this.formViews.get(node.data.form_id);
 
+            util.log(formView, node)
+
             if (formView === undefined) {
                 return;
             }

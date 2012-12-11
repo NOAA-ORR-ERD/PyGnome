@@ -18,11 +18,81 @@ from webgnome.forms.movers import (
     DeleteMoverForm
 )
 
+from webgnome.forms.spills import DeleteSpillForm
+
 from webgnome.forms.model import RunModelUntilForm, ModelSettingsForm
 from webgnome.forms.movers import mover_form_classes
+from webgnome.model_manager import WebWindMover, WebPointReleaseSpill
 from webgnome.navigation_tree import NavigationTree
 from webgnome import util
 from webgnome.views import movers
+from webgnome.views import spills
+
+
+def _get_mover_forms(request, model):
+    """
+    Return a list of update and delete forms for the movers in ``model``.
+    """ 
+    
+    update_forms = []
+    delete_forms = []
+
+    for mover in model.movers:
+        routes = movers.form_routes.get(mover.__class__, None)
+
+        if not routes:
+            continue
+
+        delete_route = routes.get('delete', None)
+
+        if delete_route:
+            delete_url = request.route_url(delete_route)
+            delete_form = DeleteMoverForm(model=model, obj=mover)
+            delete_forms.append((delete_url, delete_form))
+
+        update_route = routes.get('update', None)
+        update_form_cls = mover_form_classes.get(mover.__class__, None)
+
+        if update_route and update_form_cls:
+            update_url = request.route_url(update_route, id=mover.id)
+            update_form = update_form_cls(obj=mover)
+            update_forms.append((update_url, update_form))
+
+    return update_forms, delete_forms
+
+
+def _get_spill_forms(request, model):
+    """
+    Return a list of update and delete forms for the spills in ``model``.
+    
+    TODO: Pretty similar to ``_get_mover_forms``.
+    """
+    update_forms = []
+    delete_forms = []
+
+    for spill in model.spills:
+        routes = spills.form_routes.get(spill.__class__, None)
+
+
+        if not routes:
+            continue
+
+        delete_route = routes.get('delete', None)
+
+        if delete_route:
+            delete_url = request.route_url(delete_route)
+            delete_form = DeleteSpillForm(model=model, obj=spill)
+            delete_forms.append((delete_url, delete_form))
+
+        update_route = routes.get('update', None)
+        update_form_cls = mover_form_classes.get(spill.__class__, None)
+
+        if update_route and update_form_cls:
+            update_url = request.route_url(update_route, id=spill.id)
+            update_form = update_form_cls(obj=spill)
+            update_forms.append((update_url, update_form))
+
+    return update_forms, delete_forms
 
 
 @view_config(route_name='model_forms', renderer='gnome_json')
@@ -41,33 +111,21 @@ def model_forms(request, model):
         'wind_mover_form': WindMoverForm(),
         'wind_mover_form_url': request.route_url('create_wind_mover'),
         'form_view_container_id': 'modal-container',
-        'mover_update_forms': [],
-        'mover_delete_forms': []
+        'spill_update_forms': [],
+        'spill_delete_forms': []
     }
 
-    # The template will render a delete and edit form for each mover instance.
-    for mover in model.movers:
-        routes = movers.form_routes.get(mover.__class__, None)
+    mover_update_forms, mover_delete_forms = _get_mover_forms(request, model)
 
-        if not routes:
-            continue
+    context['mover_update_forms'] = mover_update_forms
+    context['mover_delete_forms'] = mover_delete_forms
 
-        delete_route = routes.get('delete', None)
+    spill_update_forms, spill_delete_forms = _get_spill_forms(request, model)
+    
+    context['spill_update_forms'] = spill_update_forms
+    context['spill_delete_forms'] = spill_delete_forms
 
-        if delete_route:
-            delete_url = request.route_url(delete_route)
-            delete_form = DeleteMoverForm(model=model, obj=mover)
-            context['mover_delete_forms'].append((delete_url, delete_form))
-
-        update_route = routes.get('update', None)
-        update_form_cls = mover_form_classes.get(mover.__class__, None)
-
-        if update_route and update_form_cls:
-            update_url = request.route_url(update_route, id=mover.id)
-            update_form = update_form_cls(obj=mover)
-            context['mover_update_forms'].append((update_url, update_form))
-
-        # TODO: Spill forms.
+    print context
 
     return {
         'html': render('model_forms.mak', context, request)
@@ -267,7 +325,7 @@ def run_model(request, model):
 
     # TODO: Set separately in spill view.
     if not model.spills:
-        spill = gnome.spill.PointReleaseSpill(
+        spill = WebPointReleaseSpill(
             num_LEs=1000,
             start_position=(-72.419992, 41.202120, 0.0),
             release_time=model.start_time)
@@ -287,7 +345,7 @@ def run_model(request, model):
         series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
         series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
 
-        w_mover = gnome.movers.WindMover(timeseries=series)
+        w_mover = WebWindMover(timeseries=series)
         model.add_mover(w_mover)
 
     # TODO: Set separately in map configuration form/view.

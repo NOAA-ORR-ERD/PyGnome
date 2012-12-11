@@ -1,18 +1,31 @@
 import gnome.spill
 
-from wtforms import IntegerField
+from wtforms import IntegerField, FloatField, BooleanField
 from wtforms import ValidationError
+from wtforms.validators import Optional
 
-from base import AutoIdForm
+from webgnome.model_manager import WebPointReleaseSpill
+
+from base import AutoIdForm, DateTimeForm
 
 
-class SpillForm(AutoIdForm):
+class PointReleaseSpillForm(DateTimeForm, AutoIdForm):
     """
     A form wrapping gnome.spill.PointReleaseSpill.
-
-    TODO: What fields do we need?
     """
-    pass
+    start_position_x = FloatField()
+    start_position_y = FloatField()
+    start_position_z = FloatField(validators=Optional())
+    windage_min = FloatField(default=0.01)
+    windage_max = FloatField(default=0.04)
+    windage_persist = FloatField(default=900)
+    uncertain = BooleanField(default=False)
+    is_active = BooleanField(default=True)
+
+
+    def get_start_position(self):
+        return (self.start_position_x, self.start_position_y,
+                self.start_position_z)
 
 
 class DeleteSpillForm(AutoIdForm):
@@ -36,5 +49,6 @@ class DeleteSpillForm(AutoIdForm):
 
 
 spill_form_classes = {
-    gnome.spill.PointReleaseSpill: SpillForm
+    WebPointReleaseSpill: PointReleaseSpillForm
 }
+

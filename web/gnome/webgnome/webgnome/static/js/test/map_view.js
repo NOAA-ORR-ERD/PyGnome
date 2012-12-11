@@ -17,7 +17,7 @@ define([
     });
 
 
-    function makeMap(el, placeholderEl, isLoaded) {
+    function makeMap(el, placeholderEl) {
         return new views.MapView({
             mapEl: el || '#map-empty',
             placeholderEl: placeholderEl || '#placeholder-empty',

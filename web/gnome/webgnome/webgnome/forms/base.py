@@ -37,8 +37,8 @@ class LeadingZeroNumberWidget(TextInput):
             Result of calling the widget: 01
 
     This widget is used primarily to adjust user input so that it may be fed
-    directly into a `datetime.datetime` or `datetime.date` constructor for, e.g.,
-    an hour or minute value.
+    directly into a `datetime.datetime` or `datetime.date` constructor for,
+    e.g., an hour or minute value.
     """
     def cast_to(self, number):
         raise NotImplementedError
@@ -68,7 +68,6 @@ class LeadingZeroNumberWidget(TextInput):
         return super(LeadingZeroNumberWidget, self).__call__(field, **kwargs)
 
 
-
 class LeadingZeroFloatWidget(LeadingZeroNumberWidget):
     cast_to = float
 
@@ -85,10 +84,11 @@ class DateTimeForm(Form):
     """
     DATE_FORMAT = "%m/%d/%Y"
 
-    date = DateTimeField('Date', widget=DatePickerWidget(),
-                     format=DATE_FORMAT,
-                     validators=[Required()],
-                     default=datetime.date.today())
+    date = DateTimeField('Date',
+                         widget=DatePickerWidget(),
+                         format=DATE_FORMAT,
+                         validators=[Required()],
+                         default=datetime.date.today())
     hour = IntegerField(widget=LeadingZeroIntegerWidget(),
                         validators=[NumberRange(min=0, max=24)],
                         default=lambda: datetime.datetime.now().hour)

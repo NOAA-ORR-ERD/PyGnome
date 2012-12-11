@@ -7,6 +7,7 @@ import util
 try:
     from gnome.model import Model
     from gnome.movers import WindMover
+    from gnome.spill import PointReleaseSpill
 except ImportError:
     print 'Import error!'
     # If we failed to find the model package,
@@ -66,6 +67,16 @@ class WebWindMover(WindMover):
         if self.name:
             return self.name
         return super(WebWindMover, self).__repr__()
+
+
+class WebPointReleaseSpill(PointReleaseSpill):
+    """
+    A subclass of :class:`gnome.movers.WindMover` that provides
+    webgnome-specific functionality.
+    """
+    def __init__(self, *args, **kwargs):
+        self.name = kwargs.pop('name', 'Spill')
+        super(WebPointReleaseSpill, self).__init__(*args, **kwargs)
 
 
 class WebModel(Model):

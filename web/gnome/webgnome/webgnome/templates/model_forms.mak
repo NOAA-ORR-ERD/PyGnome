@@ -13,3 +13,14 @@
 % for url, form in mover_delete_forms:
     <%include file="forms/delete_mover.mak" args="form=form, action_url=url"/>
 % endfor
+
+% for url, form in spill_update_forms:
+    <% from webgnome.forms import spills %>
+    % if form.__class__ == spills.PointReleaseSpillForm:
+        <%include file="forms/point_release_spill.mak" args="form=form, action_url=url"/>
+    % endif
+% endfor
+
+% for url, form in spill_delete_forms:
+    <%include file="forms/delete_spill.mak" args="form=form, action_url=url"/>
+% endfor

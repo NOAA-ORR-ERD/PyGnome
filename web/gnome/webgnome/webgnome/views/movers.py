@@ -1,6 +1,3 @@
-import gnome.movers
-import gnome.basic_types
-
 from pyramid.renderers import render
 from pyramid.view import view_config
 
