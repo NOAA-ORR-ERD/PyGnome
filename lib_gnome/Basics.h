@@ -32,9 +32,11 @@
 
 #ifdef IBM
 #define DIRDELIMITER '\\'
+#define NEWDIRDELIMITER '\\'
 #define OPPOSITEDIRDELIMITER ':'
 #else
 #define DIRDELIMITER ':'
+#define NEWDIRDELIMITER '/'
 #define OPPOSITEDIRDELIMITER '\\'
 #endif
 

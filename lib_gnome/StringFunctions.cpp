@@ -1200,6 +1200,28 @@ void SplitPathFile(CHARPTR fullPath, CHARPTR fileName)
 	}
 }
 
+void SplitPathFileName(CHARPTR fullPath, CHARPTR fileName)
+{
+	char *p;
+	
+	fileName[0] = 0;
+	
+	if (p = strrchr(fullPath, NEWDIRDELIMITER)) {
+		if (p[1] == 0) { // treat final directory as file name to be retrieved
+			*p = 0;
+			SplitPathFile(fullPath, fileName);
+			return;
+		}
+		p++;
+		strcpy(fileName, p);
+		*p = 0;
+	}
+	else {
+		strcpy(fileName, fullPath);
+		fullPath[0] = 0;
+	}
+}
+
 
 
 void my_p2cstr(void *string)
