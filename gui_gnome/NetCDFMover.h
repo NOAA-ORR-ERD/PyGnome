@@ -8,7 +8,7 @@
 #include "PtCurMover.h"
 #include "PtCurMap.h"
 
-Seconds RoundDateSeconds(Seconds timeInSeconds);
+//Seconds RoundDateSeconds(Seconds timeInSeconds);
 PtCurMap* GetPtCurMap(void);
 TMap* Get3DMap(void);
 

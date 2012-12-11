@@ -14,6 +14,7 @@
 #include "TypeDefs.h"
 #include "CurrentMover_c.h"
 #include "ExportSymbols.h"
+//#include "TimeGridVel_c.h"
 
 #ifndef pyGNOME
 #include "GridVel.h"
@@ -88,6 +89,7 @@ public:
 	Boolean fAllowVerticalExtrapolationOfCurrents;
 	float	fMaxDepthForExtrapolation;
 	Rect fLegendRect;
+	//TimeGridVel_c *netcdfGrid;
 
 #ifndef pyGNOME
 	NetCDFMover_c (TMap *owner, char *name);

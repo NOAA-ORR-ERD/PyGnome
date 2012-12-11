@@ -11,7 +11,7 @@
 #include "TMover.h"
 #include "CROSS.H"
 #include "GridCurMover.h"
-#include "GridWindMover.h"
+#include "GridWndMover.h"
 #include "TideCurCycleMover.h"
 #include "EditWindsDialog.h"
 #include "NetCDFMoverCurv.h"
@@ -161,13 +161,15 @@ OSErr TMap::Read(BFPB *bfpb)
 			case TYPE_NETCDFMOVERTRI: mover = new NetCDFMoverTri(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_NETCDFWINDMOVER: mover = new NetCDFWindMover(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_NETCDFWINDMOVERCURV: mover = new NetCDFWindMoverCurv(dynamic_cast<TMap *>(this), ""); break;
-			case TYPE_GRIDWINDMOVER: mover = new GridWindMover(dynamic_cast<TMap *>(this), ""); break;
+			case TYPE_GRIDWNDMOVER: mover = new GridWndMover(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_RANDOMMOVER3D: mover = new TRandom3D(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_CATSMOVER3D: mover = new TCATSMover3D(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_TRICURMOVER: mover = new TriCurMover(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_TIDECURCYCLEMOVER: mover = new TideCurCycleMover(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_COMPOUNDMOVER: mover = new TCompoundMover(dynamic_cast<TMap *>(this), ""); break;
 			case TYPE_ADCPMOVER: mover = new ADCPMover(dynamic_cast<TMap *>(this), ""); break;
+			case TYPE_GRIDCURRENTMOVER: mover = new GridCurrentMover(dynamic_cast<TMap *>(this), ""); break;
+			case TYPE_GRIDWINDMOVER: mover = new GridWindMover(dynamic_cast<TMap *>(this), ""); break;
 			default: printError("Unrecognized mover type in TMap::Read()."); return -1;
 		}
 		if (!mover)
@@ -836,13 +838,14 @@ OSErr TMap::AddItem(ListItem item)
 							case TYPE_ADCPMOVER:
 								err = ADCPSettingsDialog (dynamic_cast<ADCPMover*>(newMover), dynamic_cast<TMap *>(this), &timeFileChanged);
 								break;
+							case TYPE_GRIDCURRENTMOVER:
 							case TYPE_NETCDFMOVER:
 							case TYPE_NETCDFMOVERCURV:
 							case TYPE_NETCDFMOVERTRI:
 							case TYPE_GRIDCURMOVER:
 							case TYPE_PTCURMOVER:
 							case TYPE_TRICURMOVER:
-								err = newMover->SettingsDialog();
+								//err = newMover->SettingsDialog();
 								break;
 							default:
 								printError("bad type in TMap::AddItem");
@@ -893,10 +896,48 @@ OSErr TMap::AddItem(ListItem item)
 					short selectedUnits;
 					Boolean isNetCDFPathsFile = false;
 					char fileNamesPath[256];
+					TimeGridVel *timeGrid = 0;
+					GridWindMover *newMover = 0;
+					//TMap **newMap = 0;
 					
 					if (err = GetWindFilePath(path)) return -1;
 					if (IsNetCDFFile(path,&gridType) || IsNetCDFPathsFile(path, &isNetCDFPathsFile, fileNamesPath, &gridType))
 					{
+#ifdef GUI_GNOME
+						if (gridType == CURVILINEAR)
+						{
+							timeGrid = new TimeGridWindCurv();
+						}
+						else
+						{
+							timeGrid = new TimeGridWindRect();
+							//timeGrid = new TimeGridVel();
+						}
+						if (timeGrid)
+						{
+							GridWindMover *newGridWindMover = new GridWindMover(dynamic_cast<TMap *>(this),"");
+							if (!newGridWindMover)
+							{ 
+								TechError("TMap::AddItem()", "new GridWindMover()", 0);
+								return 0;
+							}
+							newMover = newGridWindMover;
+							
+							err = newGridWindMover->InitMover(timeGrid);
+							//if(err) goto Error;
+							if (!err) err = timeGrid->TextRead(path,"");
+							//if(err) goto Error;
+						}
+						if(!err) err = GridWindSettingsDialog(newMover,this,true,mapWindow);
+						/////////////////
+						if (!err && isNetCDFPathsFile) /// JLM 5/3/10
+						{
+							 //char errmsg[256];
+							 err = timeGrid->ReadInputFileNames(fileNamesPath);
+							 if(!err) timeGrid->DisposeAllLoadedData();
+							 //if(!err) err = newMover->SetInterval(errmsg); // if set interval here will get error if times are not in model range
+						}
+#else
 						NetCDFWindMover *newMover=nil;
 						
 						if (gridType == CURVILINEAR)
@@ -911,9 +952,9 @@ OSErr TMap::AddItem(ListItem item)
 							err = newMover -> TextRead(path);
 						}
 						if(!err) err = NetCDFWindSettingsDialog(newMover,dynamic_cast<TMap *>(this),true,mapWindow);
-						if (!err && this == model -> uMap){
+						/*if (!err && this == model -> uMap){
 							ChangeCurrentView(AddWRectBorders(newMover->GetGridBounds(), 10), TRUE, TRUE);	// so wind loaded on the universal map can be found
-						}
+						}*/
 						/////////////////
 						if (!err && isNetCDFPathsFile) /// JLM 5/3/10
 						{
@@ -921,6 +962,10 @@ OSErr TMap::AddItem(ListItem item)
 							err = newMover->ReadInputFileNames(fileNamesPath);
 							if(!err) newMover->DisposeAllLoadedData();
 							//if(!err) err = newMover->SetInterval(errmsg); // if set interval here will get error if times are not in model range
+						}
+#endif
+						if (!err && this == model -> uMap){
+							ChangeCurrentView(AddWRectBorders(newMover->GetGridBounds(), 10), TRUE, TRUE);	// so wind loaded on the universal map can be found
 						}
 						///////////////////
 						if(err) {
@@ -932,7 +977,7 @@ OSErr TMap::AddItem(ListItem item)
 					}
 					else if (IsGridWindFile(path,&selectedUnits))	// code goes here, constant wind case
 					{
-						GridWindMover *newMover = new GridWindMover(dynamic_cast<TMap *>(this),"");
+						GridWndMover *newMover = new GridWndMover(dynamic_cast<TMap *>(this),"");
 						newMover -> fUserUnits = selectedUnits;
 						if (err = newMover -> TextRead(path))
 						{
@@ -966,6 +1011,34 @@ OSErr TMap::AddItem(ListItem item)
 						return err;
 						
 						//return WindSettingsDialog   (0, this,false,mapWindow);
+					}
+					if (timeGrid)
+					{
+						Seconds startTime = timeGrid->GetTimeValue(0);
+						if (startTime != CONSTANTWIND && (model->GetStartTime() != startTime || model->GetModelTime()!=model->GetStartTime()))
+						{
+							if (true)	// maybe use NOAA.ver here?
+							{
+								short buttonSelected;
+								//buttonSelected  = MULTICHOICEALERT(1688,"Do you want to reset the model start time to the first\n time in the file?",FALSE);
+								//if(!gCommandFileErrorLogPath[0])
+								if(!gCommandFileRun)	// also may want to skip for location files...
+									buttonSelected  = MULTICHOICEALERT(1688,"Do you want to reset the model start time to the first time in the file?",FALSE);
+								else buttonSelected = 1;	// TAP user doesn't want to see any dialogs, always reset (or maybe never reset? or send message to errorlog?)
+								switch(buttonSelected){
+									case 1: // reset model start time
+										model->SetModelTime(startTime);
+										model->SetStartTime(startTime);
+										model->NewDirtNotification(DIRTY_RUNBAR); // must reset the runbar
+										break;  
+									case 3: // don't reset model start time
+										break;
+									case 4: // cancel
+										err=-1;// user cancel
+										//goto Error;
+								}
+							}
+						}
 					}
 				}
 					

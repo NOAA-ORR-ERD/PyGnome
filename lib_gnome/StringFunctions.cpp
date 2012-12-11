@@ -1231,6 +1231,46 @@ void my_c2pstr(void *string)
 }
 
 
+Seconds RoundDateSeconds(Seconds timeInSeconds)
+{
+	double	DaysInMonth[13] = {0.0,31.0,28.0,31.0,30.0,31.0,30.0,31.0,31.0,30.0,31.0,30.0,31.0};
+	DateTimeRec date;
+	Seconds roundedTimeInSeconds;
+	// get rid of the seconds since they get garbled in the dialogs
+	SecondsToDate(timeInSeconds,&date);
+	if (date.second == 0) return timeInSeconds;
+	if (date.second > 30) 
+	{
+		if (date.minute<59) date.minute++;
+		else
+		{
+			date.minute = 0;
+			if (date.hour < 23) date.hour++;
+			else
+			{
+				if( (date.year % 4 == 0 && date.year % 100 != 0) || date.year % 400 == 0) DaysInMonth[2]=29.0;
+				date.hour = 0;
+				if (date.day < DaysInMonth[date.month]) date.day++;
+				else
+				{
+					date.day = 1;
+					if (date.month < 12) date.month++;
+					else
+					{
+						date.month = 1;
+						if (date.year>2019) {printError("Time outside of model range"); /*err=-1; goto done;*/}
+						else date.year++;
+						date.year++;
+					}
+				}
+			}
+		}
+	}
+	date.second = 0;
+	DateToSeconds(&date,&roundedTimeInSeconds);
+	return roundedTimeInSeconds;
+}
+
 
 #ifndef MAC
 

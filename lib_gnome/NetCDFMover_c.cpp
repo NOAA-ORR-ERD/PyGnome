@@ -548,7 +548,7 @@ done:
 OSErr NetCDFMover_c::SetInterval(char *errmsg, const Seconds& model_time)
 {
 	long timeDataInterval = 0;
-	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
+	Boolean intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	
 	
 	long indexOfStart = timeDataInterval-1;
 	long indexOfEnd = timeDataInterval;
@@ -776,7 +776,7 @@ OSErr NetCDFMover_c::CheckAndScanFile(char *errmsg, const Seconds& model_time)
 	return -1;	
 }
 
-Seconds RoundDateSeconds(Seconds timeInSeconds)
+/*Seconds RoundDateSeconds(Seconds timeInSeconds)
 {
 	double	DaysInMonth[13] = {0.0,31.0,28.0,31.0,30.0,31.0,30.0,31.0,31.0,30.0,31.0,30.0,31.0};
 	DateTimeRec date;
@@ -803,7 +803,7 @@ Seconds RoundDateSeconds(Seconds timeInSeconds)
 					else
 					{
 						date.month = 1;
-						if (date.year>2019) {printError("Time outside of model range"); /*err=-1; goto done;*/}
+						if (date.year>2019) {printError("Time outside of model range"); }
 						else date.year++;
 						date.year++;
 					}
@@ -814,7 +814,7 @@ Seconds RoundDateSeconds(Seconds timeInSeconds)
 	date.second = 0;
 	DateToSeconds(&date,&roundedTimeInSeconds);
 	return roundedTimeInSeconds;
-}
+}*/
 
 
 OSErr NetCDFMover_c::ScanFileForTimes(char *path,Seconds ***timeH,Boolean setStartTime)

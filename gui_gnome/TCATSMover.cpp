@@ -6,6 +6,7 @@
 #include "DagTreePD.h"
 #include "DagTreeIO.h"
 #include "CROSS.H"
+#include "GridCurrentMover.h"
 
 #ifdef MAC
 #ifdef MPW
@@ -472,7 +473,7 @@ long TCATSMover::GetListLength()
 ListItem TCATSMover::GetNthListItem(long n, short indent, short *style, char *text)
 {
 	char *p, latS[20], longS[20], valStr[32];
-	ListItem item = { dynamic_cast<TCATSMover *>(this), 0, indent, 0 };
+	ListItem item = { this, 0, indent, 0 };
 	
 	if (n == 0) {
 		item.index = I_CATSNAME;
@@ -651,7 +652,7 @@ ListItem TCATSMover::GetNthListItem(long n, short indent, short *style, char *te
 					item.index = I_CATSSTARTTIME;
 					//item.bullet = BULLET_DASH;
 					item.indent++;
-					sprintf(text, "Start Time: %.2f hours",fUncertainStartTime/3600);
+					sprintf(text, "Start Time: %.2f hours",((double)fUncertainStartTime)/3600.);
 					return item;
 				}
 				
@@ -1988,6 +1989,7 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 	MySFReply reply;
 	TCurrentMover *newMover=nil;
 	TGridVel *grid = nil;
+	TimeGridVel *timeGrid = nil;
 	OSErr err = 0;
 	Boolean isNetCDFPathsFile = false;
 	
@@ -2025,6 +2027,33 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 	
 	if (IsPtCurFile(path))
 	{
+#ifdef GUI_GNOME
+		char errmsg[256];
+		timeGrid = new TimeGridCurTri();
+		//timeGrid = new TimeGridVel();
+		if (timeGrid)
+		{
+			GridCurrentMover *newGridCurrentMover = new GridCurrentMover(owner, fileName);
+			if (!newGridCurrentMover)
+			{ 
+				TechError("CreateAndInitCurrentsMover()", "new GridCurrentMover()", 0);
+				return 0;
+			}
+			newMover = newGridCurrentMover;
+			
+			err = newGridCurrentMover->InitMover(timeGrid);
+			if(err) goto Error;
+			err = timeGrid->TextRead(path,"");
+			if(err) goto Error;
+			if (!err) /// JLM 5/3/10
+			{
+				//char errmsg[256];
+				//err = timeGrid->ReadInputFileNames(fileNamesPath);
+				timeGrid->DisposeAllLoadedData();
+				if(!err) err = timeGrid->SetInterval(errmsg,model->GetModelTime()); // if set interval here will get error if times are not in model range
+			}
+		}
+#else
 		PtCurMover *newPtCurMover = new PtCurMover(owner, fileName);
 		if (!newPtCurMover)
 		{ 
@@ -2038,6 +2067,7 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 		
 		err = newPtCurMover->TextRead(path,newMap); // outside users may supply their own map
 		if(err) goto Error;	
+#endif
 	}
 	else if (IsTriCurFile(path))
 	{
@@ -2082,7 +2112,34 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 	}
 	else if (IsGridCurTimeFile(path,&selectedUnits))
 	{
-		GridCurMover *newGridCurMover = new GridCurMover(owner, fileName);
+#ifdef GUI_GNOME
+		char errmsg[256];
+		timeGrid = new TimeGridCurRect();
+		//timeGrid = new TimeGridVel();
+		if (timeGrid)
+		{
+			GridCurrentMover *newGridCurrentMover = new GridCurrentMover(owner, fileName);
+			if (!newGridCurrentMover)
+			{ 
+				TechError("CreateAndInitCurrentsMover()", "new GridCurrentMover()", 0);
+				return 0;
+			}
+			newMover = newGridCurrentMover;
+		
+			err = newGridCurrentMover->InitMover(timeGrid);
+			if(err) goto Error;
+			err = timeGrid->TextRead(path,"");
+			if(err) goto Error;
+			if (!err /*&& isNetCDFPathsFile*/) /// JLM 5/3/10
+			{
+				//char errmsg[256];
+				//err = timeGrid->ReadInputFileNames(fileNamesPath);
+				/*if(!err)*/ timeGrid->DisposeAllLoadedData();
+				if(!err) err = timeGrid->SetInterval(errmsg,model->GetModelTime()); // if set interval here will get error if times are not in model range
+			}
+		}
+#else
+	GridCurMover *newGridCurMover = new GridCurMover(owner, fileName);
 		if (!newGridCurMover)
 		{ 
 			TechError("CreateAndInitCurrentsMover()", "new newGridCurMover()", 0);
@@ -2104,6 +2161,7 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 		if (newGridCurMover -> moverMap == model -> uMap)
 			if (! newGridCurMover->OkToAddToUniversalMap())
 				goto Error;
+#endif
 		
 	}
 	else if (IsTideCurCycleFile(path, &gridType))
@@ -2158,6 +2216,47 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 	}
 	else if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(path, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{
+#ifdef GUI_GNOME
+		if (gridType == CURVILINEAR)
+		{
+			timeGrid = new TimeGridVelCurv();
+		}
+		else if (gridType == TRIANGULAR)
+		{
+			timeGrid = new TimeGridVelTri();
+		}
+		
+		else
+		{
+			timeGrid = new TimeGridVelRect();
+			//timeGrid = new TimeGridVel();
+		}
+		if (timeGrid)
+		{
+			// code goes here, store path as unix
+			GridCurrentMover *newGridCurrentMover = new GridCurrentMover(owner, fileName);
+			if (!newGridCurrentMover)
+			{ 
+				TechError("CreateAndInitCurrentsMover()", "new GridCurrentMover()", 0);
+				return 0;
+			}
+			newMover = newGridCurrentMover;
+			
+			err = newGridCurrentMover->InitMover(timeGrid);
+			if(err) goto Error;
+			err = timeGrid->TextRead(path,"");
+			if(err) goto Error;
+		}
+		if (isNetCDFPathsFile)
+		{
+			char errmsg[256];
+			err = timeGrid->ReadInputFileNames(fileNamesPath);
+			if (err) goto Error;
+			timeGrid->DisposeAllLoadedData();
+			//err = ((NetCDFMover*)newMover)->SetInterval(errmsg);	// if set interval here will get error if times are not in model range
+			if(err) goto Error;
+		}
+#else		
 		if (gridType == CURVILINEAR)
 		{
 			NetCDFMoverCurv *newNetCDFMover = new NetCDFMoverCurv(owner, fileName);
@@ -2218,6 +2317,7 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 			//err = ((NetCDFMover*)newMover)->SetInterval(errmsg);	// if set interval here will get error if times are not in model range
 			if(err) goto Error;
 		}
+#endif
 	}
 	else
 	{ // CATS mover file
@@ -2260,6 +2360,35 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 		{
 			printError("Error reading currents file. Not a valid format.");
 			goto Error;
+		}
+	}
+	if (timeGrid)
+	{
+		Seconds startTime = timeGrid->GetTimeValue(0);
+		if (startTime != CONSTANTCURRENT && (model->GetStartTime() != startTime || model->GetModelTime()!=model->GetStartTime()))
+		{
+			if (true)	// maybe use NOAA.ver here?
+			{
+				short buttonSelected;
+				//buttonSelected  = MULTICHOICEALERT(1688,"Do you want to reset the model start time to the first\n time in the file?",FALSE);
+				//if(!gCommandFileErrorLogPath[0])
+				if(!gCommandFileRun)	// also may want to skip for location files...
+					buttonSelected  = MULTICHOICEALERT(1688,"Do you want to reset the model start time to the first time in the file?",FALSE);
+				else buttonSelected = 1;	// TAP user doesn't want to see any dialogs, always reset (or maybe never reset? or send message to errorlog?)
+				switch(buttonSelected){
+					case 1: // reset model start time
+						model->SetModelTime(startTime);
+						model->SetStartTime(startTime);
+						model->NewDirtNotification(DIRTY_RUNBAR); // must reset the runbar
+						break;  
+					case 3: // don't reset model start time
+						break;
+					case 4: // cancel
+						err=-1;// user cancel
+						goto Error;
+						//break;
+				}
+			}
 		}
 	}
 	return newMover;

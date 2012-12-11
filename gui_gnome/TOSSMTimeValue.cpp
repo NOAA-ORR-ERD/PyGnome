@@ -203,7 +203,9 @@ OSErr TOSSMTimeValue::Read(BFPB *bfpb)
 	//if (version != 1) { printSaveFileVersionError(); return -1; }
 	if (version > 2) { printSaveFileVersionError(); return -1; }
 	if (err = ReadMacValue(bfpb, fileName, kMaxNameLen)) return err;
-	if (err = ReadMacValue(bfpb, &fFileType)) return err;
+
+	// these two fields were not in older versions...
+	if (err = ReadMacValue(bfpb, &fFileType)) return err;	
 	if (err = ReadMacValue(bfpb, &fScaleFactor)) return err;
 	if (version>1)
 	{

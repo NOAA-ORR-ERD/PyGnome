@@ -3,8 +3,13 @@ util.py: Utility function for the webgnome package.
 """
 import datetime
 import inspect
-from functools import wraps
+import math
+import new
+import uuid
 
+from functools import wraps
+from pyramid.renderers import JSON
+from types import MethodType
 
 def make_message(type, text):
     """
@@ -50,6 +55,12 @@ def json_date_adapter(obj, request):
     """
     return encode_json_date(obj)
 
+
+gnome_json = JSON(adapters=(
+    (datetime.datetime, json_date_adapter),
+    (datetime.date, json_date_adapter),
+    (uuid.UUID, lambda obj, request: str(obj))
+))
 
 def get_model_from_request(request):
     """
@@ -109,3 +120,65 @@ def json_require_model(f):
 def get_obj_class(obj):
     return obj if type(obj) == type else obj.__class__
 
+
+class OrigProxy(object):
+    """
+    A proxy class that wraps a target object, forwarding calls to ``_target``.
+    Source: http://code.activestate.com/recipes/519639-true-lieberman-style-delegation-in-python/
+    """
+    def __init__(self, target):
+        self._target = target
+
+    def __getattr__(self, key):
+        target = self._target
+        f = getattr(target, key)
+        print key, type(f)
+        if isinstance(f, MethodType):
+            print f, key, target
+            # Rebind the method to the target.
+            return new.instancemethod(f.im_func, self, target.__class__)
+        else:
+            return f
+
+
+class DirectionConverter(object):
+    DIRECTIONS = [
+        "N",
+        "NNE",
+        "NE",
+        "ENE",
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW"
+    ]
+
+    @classmethod
+    def is_cardinal_direction(cls, direction):
+        return direction in cls.DIRECTIONS
+
+    @classmethod
+    def get_cardinal_name(cls, degree):
+        """
+        Convert an integer degree into a cardinal direction name.
+        """
+        idx = int(math.floor((+(degree) + 360 / 32) / (360 / 16) % 16))
+        if idx:
+            return cls.DIRECTIONS[idx]
+
+    @classmethod
+    def get_degree(cls, cardinal_direction):
+        """
+       Convert a cardinal direction name into an integer degree.
+       """
+        idx = cls.DIRECTIONS.index(cardinal_direction.upper())
+        if idx:
+            return (360.0 / 16) * idx

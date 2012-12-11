@@ -33,3 +33,16 @@ class ModelSettingsForm(AutoIdForm, DateTimeForm):
     computation_time_step = FloatField("Computation Time Step:", default=0.1)
     prevent_land_jumping = BooleanField("Prevent Land Jumping", default=True)
     run_backwards = BooleanField("Run Backwards", default=False)
+
+    def __init__(self, *args, **kwargs):
+        """
+        Set ``date``, ``hour`` and ``minute`` from the ``start_time`` field on
+        a passed in ``obj``.
+        """
+        super(ModelSettingsForm, self).__init__(*args, **kwargs)
+        obj = kwargs.get('obj', None)
+
+        if obj:
+            self.date.data = obj.start_time.date()
+            self.hour.data = obj.start_time.hour
+            self.minute.data = obj.start_time.minute

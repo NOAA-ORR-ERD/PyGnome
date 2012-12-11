@@ -1,8 +1,10 @@
 <%inherit file="base.mak"/>
 
-<%block name="css">
+<%block name="extra_head">
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
+
+    <script src="/static/js/require-jquery.js"></script>
 </%block>
 
 <%block name="navbar">
@@ -66,32 +68,34 @@
       </div>
     </div>
 
-    <div class="btn-toolbar">
-          <div class="btn-group">
-              <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
-          </div>
-          <div class="btn-group">
-              <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
-          </div>
-          <div class="btn-group">
-            <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
-            <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
-            <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
+    <div id="main-content">
+         <div class="btn-toolbar">
+              <div class="btn-group">
+                  <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
+              </div>
+              <div class="btn-group">
+                  <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
+              </div>
+              <div class="btn-group">
+                <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
+                <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
+                <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
+            </div>
+            <div class="btn-group">
+                <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
+                <div class="btn disabled" id="slider-container"><span id="time">00:00</span> <div id="slider"></div></div>
+                <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
+                <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
+                <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
+            </div>
         </div>
-        <div class="btn-group">
-            <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
-            <div class="btn disabled" id="slider-container"><span id="time">00:00</span> <div id="slider"></div></div>
-            <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
-            <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
-            <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
+
+        <div id="map">
         </div>
-    </div>
 
-    <div id="map">
-    </div>
-
-    <div id="placeholder" class="hidden">
-        <img class="frame active" src="/static/img/placeholder.gif">
+        <div id="placeholder" class="hidden">
+            <img class="frame active" src="/static/img/placeholder.gif">
+        </div>
     </div>
 
     <div id="modal-container">
@@ -100,29 +104,51 @@
 </%block>
 
 <%block name="javascript">
-    <script src='/static/js/mousetrap.min.js' type="text/javascript"></script>
-    <script src='/static/js/jquery.imagesloaded.min.js' type="text/javascript"></script>
-    <script src='/static/js/jquery.cycle.all.latest.js' type="text/javascript"></script>
-    <script src='/static/js/jquery.cookie.js' type="text/javascript"></script>
-    <script src="/static/js/jquery.dynatree.min.js"></script>
-    <script src="/static/js/underscore-min.js"></script>
-    <script src="/static/js/backbone-min.js"></script>
-    <script src="/static/js/gnome.js"></script>
-
     <script type="text/javascript">
-        $('#map').imagesLoaded(function() {
-            new window.noaa.erd.gnome.AppView({
-                mapId: 'map',
-                mapPlaceholderId: 'placeholder',
-                sidebarId: 'sidebar',
-                formContainerId: 'modal-container',
-                addMoverFormId: "${add_mover_form_id}",
-                generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
-                expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
-                backgroundImageUrl: "${background_image_url or '' | n}",
-                currentTimeStep: ${model.current_time_step},
-                runModelUntilFormUrl: "${run_model_until_form_url}",
-                formsUrl: "${model_forms_url}"
+
+        // Configure RequireJS
+        requirejs.config({
+            baseUrl: "/static/js",
+            shim: {
+                'lib/jquery.dynatree.min': ['lib/jquery-ui-1.8.24.custom.min', 'lib/jquery.cookie'],
+                'lib/underscore': {
+                    exports: "_"
+                },
+                'lib/mousetrap': {
+                    exports: "Mousetrap"
+                }
+            }
+        });
+
+        // App entry-point
+        require([
+            'jquery',
+            'lib/underscore',
+            'app_view',
+            'util',
+            'lib/jquery.imagesloaded.min',
+        ], function($, _, app_view, util) {
+            "use strict";
+
+            // Use Django-style templates.
+            _.templateSettings = {
+                interpolate: /\{\{(.+?)\}\}/g
+            };
+
+            $('#map').imagesLoaded(function() {
+                new app_view.AppView({
+                    mapId: 'map',
+                    mapPlaceholderId: 'placeholder',
+                    sidebarId: 'sidebar',
+                    formContainerId: 'modal-container',
+                    addMoverFormId: "${add_mover_form_id}",
+                    generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
+                    expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
+                    backgroundImageUrl: "${background_image_url or '' | n}",
+                    currentTimeStep: ${model.current_time_step},
+                    runModelUntilFormUrl: "${run_model_until_form_url}",
+                    formsUrl: "${model_forms_url}"
+                });
             });
         });
     </script>

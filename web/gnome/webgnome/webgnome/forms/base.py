@@ -115,11 +115,7 @@ class AutoIdForm(Form):
     """
     A form that can generate an ID for itself.
 
-    The form makes an ``id`` property available that can be used within
-    templates to automatically generate a form ID for the form instance.
-
-    The class method ``get_id`` can be used outside of a template context to
-    look up a form ID given an ``obj``.
+    The ``id`` property should be used to request an ID for a form instance.
     """
     def __init__(self, *args, **kwargs):
         """
@@ -131,15 +127,16 @@ class AutoIdForm(Form):
     @property
     def id(self):
         """
-        Return an HTML ID for this form using ``self.instance``. This property
-        is intended as a helper when using form instances within templates.
+        Return an ID for this form using ``self.instance``.
         """
         return self.get_id(self.instance)
+
 
     @classmethod
     def get_id(cls, obj=None):
         """
-        Get an ID for this form that combines the form's class name and ``obj``.
+        Get an ID for this form that combines the form's class name and
+        optionally a passed in ``obj`` if the object has an ``id`` field.
         """
         object_id = ''
 

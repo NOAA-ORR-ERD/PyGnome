@@ -710,7 +710,7 @@ OSErr TWindMover::Read(BFPB *bfpb)
 {
 	long version;
 	ClassID id;
-	Boolean haveTimeDep;
+	Boolean haveTimeDep = 0;
 	double windageA, windageB, conversion;
 	OSErr err = 0;
 	

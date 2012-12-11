@@ -2,7 +2,6 @@ from gnome import movers
 
 from gnome import basic_types, spill
 from gnome.utilities import time_utils, transforms 
-from gnome import greenwich
 from gnome.utilities import projections
 
 import numpy as np

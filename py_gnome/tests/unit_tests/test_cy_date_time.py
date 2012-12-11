@@ -30,7 +30,7 @@ def test_scalar_input():
     assert type(xn) == datetime
     x = time_utils.round_time(x, roundTo=1)
     assert type(x) == datetime 
-    assert x == time_utils.round_time(xn, roundTo=1)
+    assert x == xn
     
 def test_datetime_array():
     """
@@ -38,7 +38,7 @@ def test_datetime_array():
     """
     x = np.zeros((3,), dtype=datetime)
     xn = _convert(x)
-    assert np.all( time_utils.round_time(x, roundTo=1) == time_utils.round_time(xn, roundTo=1))
+    assert np.all( time_utils.round_time(x, roundTo=1) == xn)
 
 def test_numpy_array():
     """
@@ -46,7 +46,7 @@ def test_numpy_array():
     """
     x = np.zeros((3,), dtype=np.datetime64)
     xn = _convert(x)
-    assert np.all( time_utils.round_time(x, roundTo=1) == time_utils.round_time(xn, roundTo=1))
+    assert np.all( time_utils.round_time(x, roundTo=1) == xn)
 
 class TestCyDateTime():
     target = cy_date_time.Cy_date_time()
@@ -118,7 +118,7 @@ class TestCyDateTime():
         convert the time in seconds back to a datetime object and make
         """
         tgt = time_utils.round_time( dt=self.now, roundTo=1)
-        act = time_utils.round_time( time_utils.sec_to_date(self.pySec), roundTo=1)
+        act = time_utils.sec_to_date(self.pySec)
         print "expected: " + str(tgt)
         print "actual: " + str(act)
         assert tgt == act

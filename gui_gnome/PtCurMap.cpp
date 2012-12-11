@@ -1403,7 +1403,7 @@ OSErr PtCurMap::AddMover(TMover *theMover, short where)
 		|| !mainPtCurMoverAfter && !mainNetCDFMoverAfter && (mainNetCDFTriMoverAfter && !mainNetCDFTriMoverB4) 
 		|| !mainPtCurMoverAfter && !mainNetCDFMoverAfter && !mainNetCDFTriMoverAfter && (mainTideCurCycleMoverAfter && !mainTideCurCycleMoverB4)// huh?
 		|| !mainPtCurMoverAfter && !mainNetCDFMoverAfter && !mainNetCDFTriMoverAfter && !mainTideCurCycleMoverAfter && (mainTCATSMover3DAfter && !mainTCATSMover3DB4)// huh?
-		|| !mainPtCurMoverAfter && !mainNetCDFMoverAfter && !mainNetCDFTriMoverAfter && !mainTideCurCycleMoverAfter && !mainTCATSMover3DAfter && (mainTriCurMoverAfter && !mainTriCurMoverB4))// huh?
+	    || !mainPtCurMoverAfter && !mainNetCDFMoverAfter && !mainNetCDFTriMoverAfter && !mainTideCurCycleMoverAfter && !mainTCATSMover3DAfter && (mainTriCurMoverAfter && !mainTriCurMoverB4))// huh?
 	{ // make the bitmaps etc
 		Rect bitMapRect;
 		long bmWidth, bmHeight;

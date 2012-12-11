@@ -60,6 +60,4 @@ class GridCurMover : virtual public GridCurMover_c,  public TCATSMover
 };
 
 
-//OSErr	GridWindSettingsDialog(GridWindMover *mover, TMap *owner,Boolean bAddMover,DialogPtr parentWindow);
-
 #endif //  __GRIDCURMOVER__

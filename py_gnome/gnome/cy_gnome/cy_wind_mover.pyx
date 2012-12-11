@@ -1,18 +1,17 @@
 import cython
-from cython.operator cimport dereference as deref
-cimport numpy as np
-import numpy as nmp
-
+cimport numpy as cnp
+import numpy as np
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome import basic_types
 
 from movers cimport WindMover_c
-from type_defs cimport WorldPoint3D, LEWindUncertainRec, LEStatus, LEType, OSErr
+from type_defs cimport WorldPoint3D, LEWindUncertainRec, LEStatus, LEType, OSErr, Seconds, VelocityRec
 
 cdef class CyWindMover:
 
     cdef WindMover_c *mover
-
+    
+    # Let's define the following - it is only used for testing
     def __cinit__(self):
         self.mover = new WindMover_c()
         
@@ -34,7 +33,7 @@ cdef class CyWindMover:
         
         constant_wind_value is a tuple of values: (u, v)
         """
-        self.mover.fIsConstantWind  = 0  # don't assume wind is constant
+        self.mover.fIsConstantWind  = 1  # Assume wind is constant, but initialize velocity to 0.
         self.mover.fConstantValue.u = 0
         self.mover.fConstantValue.v = 0
         self.mover.fDuration = uncertain_duration
@@ -78,7 +77,7 @@ cdef class CyWindMover:
         """
         self.mover.PrepareForModelRun()
         
-    def prepare_for_model_step(self, model_time, step_len, numSets=0, np.ndarray[np.npy_int] setSizes=None):
+    def prepare_for_model_step(self, model_time, step_len, numSets=0, cnp.ndarray[cnp.npy_int] setSizes=None):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
         
@@ -108,20 +107,20 @@ cdef class CyWindMover:
     def get_move(self,
                  model_time,
                  step_len,
-                 np.ndarray[WorldPoint3D, ndim=1] ref_points,
-                 np.ndarray[WorldPoint3D, ndim=1] delta,
-                 np.ndarray[np.npy_double] windages,
-                 np.ndarray[np.npy_int16] LE_status,    # TODO: would be nice if we could define this as LEStatus type
+                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
+                 cnp.ndarray[WorldPoint3D, ndim=1] delta,
+                 cnp.ndarray[cnp.npy_double] windages,
+                 cnp.ndarray[cnp.npy_int16] LE_status,    # TODO: would be nice if we could define this as LEStatus type
                  LEType spill_type,
                  spill_ID):
         """
         .. function:: get_move(self,
                  model_time,
                  step_len,
-                 np.ndarray[WorldPoint3D, ndim=1] ref_points,
-                 np.ndarray[WorldPoint3D, ndim=1] delta,
-                 np.ndarray[np.npy_double] windages,
-                 np.ndarray[np.npy_int16] LE_status,
+                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points,
+                 cnp.ndarray[WorldPoint3D, ndim=1] delta,
+                 cnp.ndarray[cnp.npy_double] windages,
+                 cnp.ndarray[cnp.npy_int16] LE_status,
                  LE_type,
                  spill_ID)
                  
@@ -176,4 +175,27 @@ cdef class CyWindMover:
         self.mover.SetTimeDep(ossm.time_dep)
         self.mover.fIsConstantWind = 0
         return True
-       
+   
+    def get_time_value(self, modelTime):
+        """
+        GetTimeValue - for a specified modelTime or array of model times, it returns the wind velocity
+        values
+        """
+        cdef cnp.ndarray[Seconds, ndim=1] modelTimeArray
+        modelTimeArray = np.asarray(modelTime, basic_types.seconds).reshape((-1,))
+         
+        # velocity record passed to the methods and returned back to python
+        cdef cnp.ndarray[VelocityRec, ndim=1] vel_rec 
+        cdef VelocityRec * velrec
+        
+        cdef unsigned int i 
+        cdef OSErr err 
+        
+        vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
+        
+        for i in range( 0, modelTimeArray.size):
+           err = self.mover.GetTimeValue( modelTimeArray[i], &vel_rec[i])
+           if err != 0:
+               raise ValueError
+        
+        return vel_rec
