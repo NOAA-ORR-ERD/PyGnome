@@ -1,12 +1,11 @@
 import numpy as np
 
-from gnome.utilities import time_utils, transforms
+from gnome.utilities import time_utils, transforms, convert
 from gnome import basic_types
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 
-from gnome.helpers import convert
 
 class Mover(object):
     """
