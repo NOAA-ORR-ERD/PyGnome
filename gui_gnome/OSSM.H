@@ -10,7 +10,7 @@
 #endif
 /////////////////////////////////////////////////
 //#define NO_GUI	// for TAP - move to a separate make file
-//#define GUI_GNOME
+//#define GUI_GNOME	// turn this on to test new grid current and wind mover structure
 
 #include "CLASSES.h"
 

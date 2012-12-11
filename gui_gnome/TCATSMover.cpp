@@ -1982,7 +1982,7 @@ TCATSMover *CreateAndInitCatsCurrentsMover (TMap *owner, Boolean askForFile, cha
 
 TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char* givenPath,char* givenFileName,TMap **newMap)
 {
-	char path[256], s[256], fileName[64], fileNamesPath[256];
+	char path[256], s[256], fileName[64], fileNamesPath[256], topFilePath[256];
 	short item, gridType, selectedUnits;
 	Point where = CenteredDialogUpLeft(M38c);;
 	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
@@ -2233,7 +2233,63 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 		}
 		if (timeGrid)
 		{
+			Point where;
+			OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
+			MySFReply reply;
+			Boolean bTopFile = false;
+			topFilePath[0]=0;
+			char outPath[256];
 			// code goes here, store path as unix
+			if (gridType!=REGULAR)	// move this outside, pass the path in
+			{
+				short buttonSelected;
+				buttonSelected  = MULTICHOICEALERT(1688,"Do you have an extended topology file to load?",FALSE);
+				switch(buttonSelected){
+					case 1: // there is an extended top file
+						bTopFile = true;
+						break;  
+					case 3: // no extended top file
+						bTopFile = false;
+						break;
+					case 4: // cancel
+						//err=-1;// stay at this dialog
+						break;
+				}
+			}
+			if(bTopFile)
+			{
+#if TARGET_API_MAC_CARBON
+				mysfpgetfile(&where, "", -1, typeList,
+							 (MyDlgHookUPP)0, &reply, M38c, MakeModalFilterUPP(STDFilter));
+				if (!reply.good)
+				{
+				}
+				else
+					strcpy(topFilePath, reply.fullPath);
+				
+#else
+				where = CenteredDialogUpLeft(M38c);
+				sfpgetfile(&where, "",
+						   (FileFilterUPP)0,
+						   -1, typeList,
+						   (DlgHookUPP)0,
+						   &reply, M38c,
+						   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
+				if (!reply.good) 
+				{
+				}
+				
+				my_p2cstr(reply.fName);
+				
+#ifdef MAC
+				GetFullPath(reply.vRefNum, 0, (char *)reply.fName, topFilePath);
+#else
+				strcpy(topFilePath, reply.fName);
+#endif
+#endif		
+			}
+
+			
 			GridCurrentMover *newGridCurrentMover = new GridCurrentMover(owner, fileName);
 			if (!newGridCurrentMover)
 			{ 
@@ -2244,7 +2300,11 @@ TCurrentMover *CreateAndInitCurrentsMover (TMap *owner, Boolean askForFile, char
 			
 			err = newGridCurrentMover->InitMover(timeGrid);
 			if(err) goto Error;
-			err = timeGrid->TextRead(path,"");
+#if TARGET_API_MAC_CARBON
+			err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+			if (!err) strcpy(path,outPath);
+#endif
+			err = timeGrid->TextRead(path,topFilePath);
 			if(err) goto Error;
 		}
 		if (isNetCDFPathsFile)

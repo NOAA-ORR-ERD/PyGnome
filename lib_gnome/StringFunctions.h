@@ -75,6 +75,7 @@ void Secs2DateStringNetCDF(unsigned long seconds, CHARPTR s);
 unsigned long DateString2Secs(CHARPTR s);
 char *Date2String(DateTimeRec *time, char *s);
 void SplitPathFile(CHARPTR fullPath, CHARPTR fileName);
+void SplitPathFileName(CHARPTR fullPath, CHARPTR fileName);
 
 void my_p2cstr(void *string);
 void my_c2pstr(void *string);

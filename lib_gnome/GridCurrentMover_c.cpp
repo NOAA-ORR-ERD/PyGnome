@@ -8,8 +8,6 @@
  */
 
 #include "GridCurrentMover_c.h"
-//#include "NetCDFMover_c.h"
-//#include "netcdf.h"
 #include "CompFunctions.h"
 #include "StringFunctions.h"
 #include <math.h>
