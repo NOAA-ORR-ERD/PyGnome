@@ -17,18 +17,18 @@ from gnome.utilities import rand    # not to confuse with python random module
 
 class SpillContainer(object):
     """
-    Base class for all spills
+    Container class for all spills -- it takes care of capturing the released LEs from
+    all the spills, putting them all in a single set of arrays.
     
-    Needs to be subclassed to do anything useful
-
-    Many of the "fields" associated with a collection of LEs are optional,
+    Many of the "fields" associated with a collection of elements are optional,
     or used only by some movers, so only the ones required will be requested
     by each mover.
     
-    The data for the LEs is stored in the _data_arrays dict. They can be
-    accessed by indexing:
-      
-    positions = Spill['positions'] : returns a (num_LEs, 3) array of world_point_types
+    The data for the elements is stored in the _data_arrays dict. They can be
+    accessed by indexing. For example:
+     
+    positions = spill_contianer['positions'] : returns a (num_LEs, 3) array of world_point_types
+    
     """
     def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0), uncertain=False):
         
