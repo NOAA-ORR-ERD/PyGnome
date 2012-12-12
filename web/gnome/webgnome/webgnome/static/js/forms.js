@@ -133,7 +133,6 @@ define([
         },
 
         show: function() {
-            util.log('Show form');
             $('#main-content').addClass('hidden');
             this.$el.removeClass('hidden');
         },
