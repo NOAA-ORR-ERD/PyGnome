@@ -399,12 +399,12 @@ define([
             return {lat: lat, long: lng};
         }
     }, {
-        // Statuses
+        // Statuse constants
         PAUSED: 1,
         STOPPED: 2,
         PLAYING: 3,
 
-        // Events
+        // Event constants
         DRAGGING_FINISHED: 'mapView:draggingFinished',
         REFRESH_FINISHED: 'mapView:refreshFinished',
         PLAYING_FINISHED: 'mapView:playingFinished',
@@ -531,7 +531,7 @@ define([
             });
         }
     }, {
-        // Events
+        // Event constants 
         ADD_BUTTON_CLICKED: 'gnome:addItemButtonClicked',
         REMOVE_BUTTON_CLICKED: 'gnome:removeItemButtonClicked',
         SETTINGS_BUTTON_CLICKED: 'gnome:itemSettingsButtonClicked'
@@ -836,20 +836,20 @@ define([
         ON: true,
         OFF: false,
 
-        // Events
-        PLAY_BUTTON_CLICKED: "gnome:playButtonClicked",
-        PAUSE_BUTTON_CLICKED: "gnome:pauseButtonClicked",
-        BACK_BUTTON_CLICKED: "gnome:backButtonClicked",
-        FORWARD_BUTTON_CLICKED: "gnome:forwardButtonClicked",
-        ZOOM_IN_BUTTON_CLICKED: "gnome:zoomInButtonClicked",
-        ZOOM_OUT_BUTTON_CLICKED: "gnome:zoomOutButtonClicked",
-        MOVE_BUTTON_CLICKED: "gnome:moveButtonClicked",
-        FULLSCREEN_BUTTON_CLICKED: "gnome:fullscreenButtonClicked",
-        RESIZE_BUTTON_CLICKED: "gnome:resizeButtonClicked",
-        SLIDER_CHANGED: "gnome:sliderChanged",
-        SLIDER_MOVED: "gnome:sliderMoved",
+        // Event constants
+        PLAY_BUTTON_CLICKED: "mapControlView:playButtonClicked",
+        PAUSE_BUTTON_CLICKED: "mapControlView:pauseButtonClicked",
+        BACK_BUTTON_CLICKED: "mapControlView:backButtonClicked",
+        FORWARD_BUTTON_CLICKED: "mapControlView:forwardButtonClicked",
+        ZOOM_IN_BUTTON_CLICKED: "mapControlView:zoomInButtonClicked",
+        ZOOM_OUT_BUTTON_CLICKED: "mapControlView:zoomOutButtonClicked",
+        MOVE_BUTTON_CLICKED: "mapControlView:moveButtonClicked",
+        FULLSCREEN_BUTTON_CLICKED: "mapControlView:fullscreenButtonClicked",
+        RESIZE_BUTTON_CLICKED: "mapControlView:resizeButtonClicked",
+        SLIDER_CHANGED: "mapControlView:sliderChanged",
+        SLIDER_MOVED: "mapControlView:sliderMoved",
 
-        // Statuses
+        // Status constants
         STATUS_STOPPED: 0,
         STATUS_PLAYING: 1,
         STATUS_PAUSED: 2,
@@ -902,10 +902,10 @@ define([
             this.trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
         }
     }, {
-        // Events
-        NEW_ITEM_CLICKED: "gnome:newMenuItemClicked",
-        RUN_ITEM_CLICKED: "gnome:runMenuItemClicked",
-        RUN_UNTIL_ITEM_CLICKED: "gnome:runUntilMenuItemClicked"
+        // Event constants
+        NEW_ITEM_CLICKED: "menuView:newMenuItemClicked",
+        RUN_ITEM_CLICKED: "menuView:runMenuItemClicked",
+        RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked"
     });
 
     return {

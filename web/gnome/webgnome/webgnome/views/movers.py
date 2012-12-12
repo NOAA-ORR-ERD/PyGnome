@@ -11,7 +11,6 @@ def create_mover(request, model):
     form = AddMoverForm(request.POST)
 
     if request.method == 'POST' and form.validate():
-        # TODO: What does the client need to know at this point?
         return {
             'success': True
         }

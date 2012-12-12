@@ -104,9 +104,10 @@ def update_point_release_spill(request, model):
 
 def _create_point_release_spill_post(model, form):
     spill = form.create()
+    model.add_spill(spill)
 
     return {
-        'id': model.add_spill(spill),
+        'id': spill.id,
         'type': 'spill',
         'form_html': None
     }

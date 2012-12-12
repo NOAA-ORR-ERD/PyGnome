@@ -142,6 +142,7 @@ define([
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
 
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+            this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
         },
 
         setupKeyboardHandlers: function() {
@@ -205,6 +206,11 @@ define([
 
             this.addMoverFormView = new forms.AddMoverFormView({
                 el: $('#' + this.options.addMoverFormId),
+                formContainerEl: '#' + this.options.formContainerId
+            });
+
+            this.addSpillFormView = new forms.AddSpillFormView({
+                el: $('#' + this.options.addSpillFormId),
                 formContainerEl: '#' + this.options.formContainerId
             });
 
@@ -506,6 +512,16 @@ define([
 
         moverChosen: function(moverType) {
             var formView = this.formViews.get(moverType);
+
+            if (formView === undefined) {
+                return;
+            }
+
+            formView.show();
+        },
+
+        spillChosen: function(spillType) {
+            var formView = this.formViews.get(spillType);
 
             if (formView === undefined) {
                 return;

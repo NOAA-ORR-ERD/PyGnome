@@ -352,9 +352,6 @@ define([
         initialize: function() {
             _.bindAll(this);
             this.container = $(this.options.formContainerEl);
-
-            // Bind listeners to the container, using `on()`, so they persist.
-            this.id = '#' + this.$el.attr('id');
         },
 
         events: {
@@ -388,6 +385,51 @@ define([
     }, {
         // Events
         MOVER_CHOSEN: 'addMoverFormView:moverChosen'
+    });
+
+
+     /*
+     This is a non-AJAX-enabled modal form object to support the "add spill"
+     form, which asks the user to choose a type of spill to add. We then use the
+     selection to display another, spill-specific form.
+     */
+    var AddSpillFormView = Backbone.View.extend({
+        initialize: function() {
+            _.bindAll(this);
+            this.container = $(this.options.formContainerEl);
+        },
+
+        events: {
+            'click .btn-primary': 'submit'
+        },
+
+        getForm: function() {
+            return this.$el.find('form');
+        },
+
+        show: function() {
+            this.$el.modal();
+        },
+
+        hide: function() {
+            this.$el.modal('hide');
+        },
+
+        submit: function(event) {
+            event.preventDefault();
+            var form = this.getForm();
+            var spillType = form.find('select[name="spill_type"]').val();
+
+            if (spillType) {
+                this.trigger(AddSpillFormView.SPILL_CHOSEN, spillType);
+                this.hide();
+            }
+
+            return false;
+        }
+    }, {
+        // Event constants
+        SPILL_CHOSEN: 'addSpillFormView:spillChosen'
     });
 
 
@@ -733,6 +775,7 @@ define([
 
     return {
         AddMoverFormView: AddMoverFormView,
+        AddSpillFormView: AddSpillFormView,
         WindMoverFormView: WindMoverFormView,
         PointReleaseSpillFormView: PointReleaseSpillFormView,
         AjaxFormView: AjaxFormView,

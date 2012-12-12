@@ -130,6 +130,7 @@
                     sidebarId: 'sidebar',
                     formContainerId: 'modal-container',
                     addMoverFormId: "${add_mover_form_id}",
+                    addSpillFormId: "${add_spill_form_id}",
                     generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                     expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                     backgroundImageUrl: "${background_image_url or '' | n}",

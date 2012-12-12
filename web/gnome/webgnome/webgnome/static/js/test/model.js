@@ -50,7 +50,8 @@ define([
 
     test('getTimestampForExpectedStep should return a timestamp if step exists', function() {
         var model = makeModel(data.timeSteps, data.expectedTimeSteps);
-        console.log(model.getTimestampForExpectedStep(0));
+        console.log(model.expectedTimeSteps)
+        console.log(model.getTimestampForExpectedStep(0))
         ok(model.getTimestampForExpectedStep(0) === 'Fri, 07 Dec 2012 12:00:00 GMT');
     });
 

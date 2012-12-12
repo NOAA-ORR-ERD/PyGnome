@@ -410,7 +410,7 @@ define([
         _.extend(this, Backbone.Events);
     };
 
-    // Events
+    // Event constants
     AjaxForm.MESSAGE_RECEIVED = 'ajaxForm:messageReceived';
     AjaxForm.CHANGED = 'ajaxForm:changed';
     AjaxForm.SUCCESS = 'ajaxForm:success';
