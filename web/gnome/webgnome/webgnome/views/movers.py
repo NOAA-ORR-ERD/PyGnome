@@ -3,35 +3,6 @@ from pyramid.view import view_config
 
 from webgnome import util
 from webgnome.forms.movers import AddMoverForm, DeleteMoverForm, WindMoverForm
-from webgnome.model_manager import WebWindMover
-
-
-# A map of :mod:`gnome` objects to route names, for use looking up the route
-# for an object at runtime with :func:`get_form_route`.
-form_routes = {
-    WebWindMover: {
-        'create': 'create_wind_mover',
-        'update': 'update_wind_mover',
-        'delete': 'delete_mover'
-    },
-}
-
-
-def get_form_route(obj, route_type):
-    """
-    Find a route name for ``obj`` given the type of route.
-
-    ``route_type`` is a short-hand description like "create" or "delete" used
-    as a key in the ``form_routes`` dictionary.
-    """
-    route = None
-    form_cls = util.get_obj_class(obj)
-    routes = form_routes.get(form_cls, None)
-
-    if routes:
-        route = routes.get(route_type, None)
-
-    return route
 
 
 @view_config(route_name='create_mover', renderer='gnome_json')

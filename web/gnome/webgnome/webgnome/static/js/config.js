@@ -14,6 +14,9 @@ requirejs.config({
         },
         'lib/mousetrap': {
             exports: "Mousetrap"
+        },
+        'lib/geo': {
+            exports: "Geo"
         }
     }
 });

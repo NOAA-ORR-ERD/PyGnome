@@ -210,8 +210,8 @@ define([
 
             this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
 
-            // Create an `AjaxForm` and bind it to a `AjaxFormView` for each modal
-            // form on the page, other than the Add Mover form, which we handled.
+            // Create an `AjaxForm` and bind it to a `AjaxFormView` or subclass
+            // for each form on the page.
             _.each($('div.form'), function(formDiv) {
                 var $div = $(formDiv);
                 var $form = $div.find('form');
@@ -229,27 +229,24 @@ define([
                 var ajaxForm = _this.forms.get(formId);
                 var formEl = $('#' + formId);
                 var formContainerEl = '#' + _this.options.formContainerId;
+                var formClass;
 
                 if ($div.hasClass('wind')) {
-                    _this.formViews.add(formId, new forms.WindMoverFormView({
-                        ajaxForm: ajaxForm,
-                        el: formEl,
-                        formContainerEl: formContainerEl
-                    }));
+                    formClass = forms.WindMoverFormView;
+                } else if ($div.hasClass('spill')) {
+                    formClass = forms.PointReleaseSpillFormView;
+                } else if ($div.hasClass('modal')) {
+                    formClass = forms.ModalAjaxFormView;
                 } else {
-                    var formClass = forms.AjaxFormView;
-
-                    if ($div.hasClass('modal')) {
-                        formClass = forms.ModalAjaxFormView;
-                    }
-
-                    _this.formViews.add(formId, new formClass({
-                        id: formId,
-                        ajaxForm: ajaxForm,
-                        el: formEl,
-                        formContainerEl: formContainerEl
-                    }));
+                    formClass = forms.AjaxFormView;
                 }
+
+                _this.formViews.add(formId, new formClass({
+                    id: formId,
+                    ajaxForm: ajaxForm,
+                    el: formEl,
+                    formContainerEl: formContainerEl
+                }));
             });
         },
 

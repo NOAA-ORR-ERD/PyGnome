@@ -22,35 +22,28 @@ from webgnome.forms.spills import DeleteSpillForm
 
 from webgnome.forms.model import RunModelUntilForm, ModelSettingsForm
 from webgnome.forms.movers import mover_form_classes
+from webgnome.forms.spills import spill_form_classes
 from webgnome.model_manager import WebWindMover, WebPointReleaseSpill
 from webgnome.navigation_tree import NavigationTree
 from webgnome import util
-from webgnome.views import movers
-from webgnome.views import spills
 
 
 def _get_mover_forms(request, model):
     """
     Return a list of update and delete forms for the movers in ``model``.
     """ 
-    
     update_forms = []
     delete_forms = []
 
     for mover in model.movers:
-        routes = movers.form_routes.get(mover.__class__, None)
-
-        if not routes:
-            continue
-
-        delete_route = routes.get('delete', None)
+        delete_route = util.get_form_route(request, mover, 'delete')
+        update_route = util.get_form_route(request, mover, 'update')
 
         if delete_route:
             delete_url = request.route_url(delete_route)
             delete_form = DeleteMoverForm(model=model, obj=mover)
             delete_forms.append((delete_url, delete_form))
 
-        update_route = routes.get('update', None)
         update_form_cls = mover_form_classes.get(mover.__class__, None)
 
         if update_route and update_form_cls:
@@ -70,22 +63,18 @@ def _get_spill_forms(request, model):
     update_forms = []
     delete_forms = []
 
+    print model.spills
+
     for spill in model.spills:
-        routes = spills.form_routes.get(spill.__class__, None)
-
-
-        if not routes:
-            continue
-
-        delete_route = routes.get('delete', None)
+        delete_route = util.get_form_route(request, spill, 'delete')
+        update_route = util.get_form_route(request, spill, 'update')
 
         if delete_route:
             delete_url = request.route_url(delete_route)
             delete_form = DeleteSpillForm(model=model, obj=spill)
             delete_forms.append((delete_url, delete_form))
 
-        update_route = routes.get('update', None)
-        update_form_cls = mover_form_classes.get(spill.__class__, None)
+        update_form_cls = spill_form_classes.get(spill.__class__, None)
 
         if update_route and update_form_cls:
             update_url = request.route_url(update_route, id=spill.id)
@@ -326,6 +315,7 @@ def run_model(request, model):
     # TODO: Set separately in spill view.
     if not model.spills:
         spill = WebPointReleaseSpill(
+            name="Long Island Spill",
             num_LEs=1000,
             start_position=(-72.419992, 41.202120, 0.0),
             release_time=model.start_time)

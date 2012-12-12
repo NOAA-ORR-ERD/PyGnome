@@ -164,8 +164,8 @@ class WindMoverForm(AutoIdForm):
         """
         Update ``mover`` using data from this form.
         """
+        mover._name = self.name.data
         mover.is_active = self.is_active.data
-        mover.name = self.name.data
         mover.is_constant = self.is_constant.data
         mover.uncertain_angle_scale = self.uncertain_angle_scale.data
         mover.uncertain_speed_scale = self.uncertain_speed_scale.data
@@ -182,9 +182,12 @@ class AddMoverForm(AutoIdForm):
     user's running model. This step asks the user to choose the type of mover
     to add.
     """
-    mover_type = SelectField('Type', choices=(
-        (WindMoverForm.get_id(), 'Winds'),
-    ))
+    mover_type = SelectField(
+        'Type',
+        choices=(
+            (WindMoverForm.get_id(), 'Winds'),
+        )
+    )
 
 
 class DeleteMoverForm(AutoIdForm):

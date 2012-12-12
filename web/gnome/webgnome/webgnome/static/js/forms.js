@@ -5,9 +5,10 @@ define([
     'lib/backbone',
     'models',
     'util',
+    'lib/geo',
     'lib/moment',
     'lib/compass-ui'
-], function($, _, Backbone, models, util) {
+], function($, _, Backbone, models, util, geo) {
 
     var FormViewContainer = Backbone.View.extend({
         initialize: function() {
@@ -98,43 +99,37 @@ define([
             this.$container = $(this.options.formContainerEl);
             this.ajaxForm = this.options.ajaxForm;
             this.ajaxForm.on(models.AjaxForm.CHANGED, this.ajaxFormChanged);
-            this.setupEventHandlers();
+            this.setupDatePickers();
         },
 
-        /*
-         Bind listeners to the form container using `on()`, so they persist if
-         the underlying form elements are replaced.
-         */
-        setupEventHandlers: function() {
-            this.id = '#' + this.$el.attr('id');
-            var submit = this.id + ' .btn-primary';
-            var cancel = this.id + ' .form-buttons .cancel';
-            var next = this.id + ' .btn-next';
-            var prev = this.id + ' .btn-prev';
+        events: {
+            'click .btn-primary': 'submit',
+            'click .form-buttons .cancel': 'cancel',
+            'click .btn-next': 'goToNextStep',
+            'click .btn-prev': 'goToPreviousStep'
+        },
 
-            this.$container.off('click', submit, this.submit);
-            this.$container.off('click', cancel, this.cancel);
-            this.$container.off('click', next, this.goToNextStep);
-            this.$container.off('click', prev, this.goToPreviousStep);
-
-            this.$container.on('click', submit, this.submit);
-            this.$container.on('click', cancel, this.cancel);
-            this.$container.on('click', next, this.goToNextStep);
-            this.$container.on('click', prev, this.goToPreviousStep);
+        setupDatePickers: function() {
+            // Setup datepickers
+            _.each(this.$el.find('.date'), function(field) {
+                $(field).datepicker({
+                    changeMonth: true,
+                    changeYear: true
+                });
+            });
         },
 
         ajaxFormChanged: function(ajaxForm) {
-            var formHtml = ajaxForm.form_html;
-            if (formHtml) {
-                this.refresh(formHtml);
+            this.refresh(ajaxForm.form_html);
+            this.delegateEvents();
+            this.setupDatePickers();
 
-                if (this.wasCancelled) {
-                    this.wasCancelled = false;
-                    return;
-                }
-
-                this.show();
+            if (this.wasCancelled) {
+                this.wasCancelled = false;
+                return;
             }
+
+            this.show();
         },
 
         show: function() {
@@ -300,14 +295,6 @@ define([
 
             this.$el = $('#' + $html.attr('id'));
 
-             // Setup datepickers
-            _.each(this.$el.find('.date'), function(field) {
-                $(field).datepicker({
-                    changeMonth: true,
-                    changeYear: true
-                });
-            });
-
             var stepWithError = this.getFirstStepWithError();
             if (stepWithError) {
                 this.goToStep(stepWithError);
@@ -317,8 +304,6 @@ define([
             if (tabWithError) {
                 $('a[href="#' + tabWithError + '"]').tab('show');
             }
-
-            this.setupEventHandlers();
 
             var newId = this.$el.attr('id');
             if (oldId !== newId) {
@@ -353,7 +338,7 @@ define([
 
         hide: function() {
             this.$el.modal('hide');
-        },
+        }
     }, {
         ID_CHANGED: 'modalAjaxFormView:idChanged'
     });
@@ -413,14 +398,19 @@ define([
             this.renderTimeTable();
             this.setupCompass();
 
-            this.$container.on('click', this.id + ' .edit-mover-name', this.editMoverNameClicked);
-            this.$container.on('click', this.id + ' .save-mover-name', this.saveMoverNameButtonClicked);
-            this.$container.on('change', this.id + ' input[name="name"]', this.moverNameChanged);
-            this.$container.on('click', this.id + ' .add-time', this.addButtonClicked);
-            this.$container.on('click', this.id + ' .edit-time', this.editButtonClicked);
-            this.$container.on('click', this.id + ' .cancel', this.cancelButtonClicked);
-            this.$container.on('click', this.id + ' .save', this.saveButtonClicked);
-            this.$container.on('click', this.id + ' .delete-time', this.trashButtonClicked);
+            // Extend prototype's events with ours.
+            this.events = _.extend({}, AjaxFormView.prototype.events, this.events);
+        },
+
+        events: {
+            'click .edit-mover-name': 'editMoverNameClicked',
+            'click .save-mover-name': 'saveMoverNameButtonClicked',
+            'click input[name="name"]': 'moverNameChanged',
+            'click .add-time': 'addButtonClicked',
+            'click .edit-time': 'editButtonClicked',
+            'click .cancel': 'cancelButtonClicked',
+            'click .save': 'saveButtonClicked',
+            'click .delete-time': 'trashButtonClicked'
         },
 
         compassChanged: function(magnitude, direction) {
@@ -699,9 +689,45 @@ define([
         }
     });
 
+
+    var PointReleaseSpillFormView = AjaxFormView.extend({
+        initialize: function(options) {
+            this.constructor.__super__.initialize.apply(this, arguments);
+
+            this.$container.on('click', this.id + ' .edit-spill-name', this.editSpillNameClicked);
+            this.$container.on('click', this.id + ' .save-spill-name', this.saveSpillNameButtonClicked);
+            this.$container.on('change', this.id + ' input[name="name"]', this.spillNameChanged);
+        },
+
+        editSpillNameClicked: function(event) {
+            event.preventDefault();
+            var $link = $(event.target);
+            var $form = $link.closest('.form');
+            $form.find('.top-form').removeClass('hidden');
+            $form.find('.page-header h3').addClass('hidden');
+        },
+
+        saveSpillNameButtonClicked: function(event) {
+            event.preventDefault();
+            var $link = $(event.target);
+            var $form = $link.closest('.form');
+            $form.find('.top-form').addClass('hidden');
+            $form.find('.page-header h3').removeClass('hidden');
+        },
+
+        spillNameChanged: function(event) {
+            var $input = $(event.target);
+            var form = $input.closest('.form');
+            var $header = form.find('.page-header').find('a');
+            $header.text($input.val());
+        }
+    });
+       
+
     return {
         AddMoverFormView: AddMoverFormView,
         WindMoverFormView: WindMoverFormView,
+        PointReleaseSpillFormView: PointReleaseSpillFormView,
         AjaxFormView: AjaxFormView,
         ModalAjaxFormView: ModalAjaxFormView,
         FormViewContainer: FormViewContainer

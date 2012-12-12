@@ -42,7 +42,7 @@ class WebWindMover(WindMover):
     webgnome-specific functionality.
     """
     def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', 'Wind Mover')
+        self._name = kwargs.pop('name', 'Wind Mover')
         self.is_constant = kwargs.pop('is_constant', True)
         super(WebWindMover, self).__init__(*args, **kwargs)
 
@@ -63,9 +63,10 @@ class WebWindMover(WindMover):
     def timeseries(self, value):
         return WindMover.timeseries.__set__(self, value)
 
-    def __repr__(self):
-        if self.name:
-            return self.name
+    @property
+    def name(self):
+        if self._name:
+            return self._name
         return super(WebWindMover, self).__repr__()
 
 
@@ -75,8 +76,35 @@ class WebPointReleaseSpill(PointReleaseSpill):
     webgnome-specific functionality.
     """
     def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', 'Spill')
+        self._name = kwargs.pop('name', 'Spill')
         super(WebPointReleaseSpill, self).__init__(*args, **kwargs)
+
+    @property
+    def start_position_x(self):
+        return self.start_position[0]
+
+    @property
+    def start_position_y(self):
+        return self.start_position[1]
+
+    @property
+    def start_position_z(self):
+        return self.start_position[2]
+
+    @property
+    def windage_min(self):
+        return self.windage_range[0]
+
+    @property
+    def windage_max(self):
+        return self.windage_range[1]
+
+    @property
+    def name(self):
+        if self._name:
+            return self._name
+        return super(WebPointReleaseSpill, self).__repr__()
+
 
 
 class WebModel(Model):

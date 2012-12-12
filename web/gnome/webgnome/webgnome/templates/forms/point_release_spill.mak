@@ -19,7 +19,41 @@
         </div>
 
         <div class="page-body">
-            Test!
+
+            ${defs.form_control(form.date, label='Release Start',
+                                opts={'class_': 'date'}, use_id=True)}
+            ${defs.time_control(form, "Time (24 hour)")}
+
+            <div class="control-group
+                ${'error' if form.start_position_x.errors \
+                             or form.start_position_y.errors \
+                             or form.start_position_z.errors else ''}">
+                <label class="control-label">Start Position</label>
+
+                <div class="controls">
+                    ${form.start_position_x} ${form.start_position_y} ${form.start_position_z}
+                    % if form.start_position_x.errors:
+                            <span class="help">
+                            ${form.start_position_x.errors[0]}
+                            </span>
+                    % endif
+                    % if form.start_position_y.errors:
+                            <span class="help">
+                            ${form.start_position_y.errors[0]}
+                            </span>
+                    % endif                </div>
+                     % if form.start_position_z.errors:
+                            <span class="help">
+                            ${form.start_position_z.errors[0]}
+                            </span>
+                    % endif
+                </div>
+            </div>
+
+            ${defs.form_control(form.windage_min)}
+            ${defs.form_control(form.windage_max)}
+            ${defs.form_control(form.windage_persist)}
+            ${defs.form_control(form.is_uncertain)}
         </div>
 
         <div class="control-group form-buttons">
