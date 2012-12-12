@@ -41,7 +41,7 @@ def r_theta_to_uv_wind(r_theta):
                     Theta is in degrees between 0 and 360.
     :returns: NX2 numpy array containing the corresponding uv cartesian velocity vector
     """
-    r_theta = np.asarray(r_theta).reshape(-1,2)
+    r_theta = np.asarray(r_theta, dtype=np.float64).reshape(-1,2)
     if np.any(r_theta[:,1] > 360) or np.any(r_theta[:,1] < 0):
         raise ValueError("input angle in r_theta[:,1] must be between 0 and 360")
     
@@ -70,7 +70,7 @@ def uv_to_r_theta_wind(uv):
     :param uv: NX2 numpy array, where each row corresponds with a velocity vector 
     :returns: NX2 numpy array containing polar coordinates r_theta 
     """
-    uv = np.asarray(uv).reshape(-1,2)
+    uv = np.asarray(uv, dtype=np.float64).reshape(-1,2)
     r_theta = np.zeros_like(uv) 
     r_theta[:,0] = np.apply_along_axis(np.linalg.norm, 1, uv)
     

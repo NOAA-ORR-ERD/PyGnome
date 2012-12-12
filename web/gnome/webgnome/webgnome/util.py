@@ -78,6 +78,23 @@ def get_model_from_request(request):
     return model
 
 
+def get_form_route(request, obj, route_type):
+    """
+    Find a route name for ``obj`` given the type of route.
+
+    ``route_type`` is a short-hand description like "create" or "delete" used
+    as a key in the ``form_routes`` dictionary.
+    """
+    route = None
+    form_cls = get_obj_class(obj)
+    routes = request.registry.settings['form_routes'].get(form_cls, None)
+
+    if routes:
+        route = routes.get(route_type, None)
+
+    return route
+
+
 MISSING_MODEL_ERROR = {
     'error': True,
     'message': make_message('error', 'That model is no longer available.')

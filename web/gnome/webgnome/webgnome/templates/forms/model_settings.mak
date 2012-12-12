@@ -17,11 +17,11 @@
                     Run Duration:</label>
 
                 <div class="controls">
-                    ${form.duration_days} days and ${form.minute} hours
+                    ${form.duration_days} days and ${form.duration_hours(class_='hour')} hours
                 </div>
             </div>
 
-            ${defs.form_control(form.include_minimum_regret)}
+            ${defs.form_control(form.uncertain)}
             ${defs.form_control(form.show_currents)}
             ${defs.form_control(form.computation_time_step, "hours")}
             ${defs.form_control(form.prevent_land_jumping)}

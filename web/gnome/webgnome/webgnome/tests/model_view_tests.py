@@ -58,7 +58,9 @@ class ModelViewTests(FunctionalTestBase):
         self.assertIn('name="date" type="text" value="02/03/1983"', form_html)
         self.assertIn('name="hour" type="text" value="12"', form_html)
         self.assertIn('name="minute" type="text" value="15"', form_html)
-
+        self.assertIn('name="uncertain" type="checkbox" value="y"', form_html)
+        self.assertIn('name="duration_days" type="text" value="5"', form_html)
+        self.assertIn('name="duration_hours" type="text" value="10"', form_html)
 
     def test_create_model_without_existing_model_returns_new_model_id(self):
         resp = self.create_model()

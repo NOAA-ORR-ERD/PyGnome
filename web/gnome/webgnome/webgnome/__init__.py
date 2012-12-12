@@ -3,7 +3,7 @@ import os
 from pyramid.config import Configurator
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
 
-from model_manager import ModelManager
+from model_manager import ModelManager, WebWindMover, WebPointReleaseSpill
 from util import json_date_adapter, gnome_json
 
 
@@ -27,6 +27,22 @@ def main(global_config, **settings):
     if not os.path.isdir(settings['model_images_dir']):
         os.mkdir(settings['model_images_dir'])
 
+
+    # A map of :mod:`gnome` objects to route names, for use looking up the
+    # route for an object at runtime with :func:`webgnome.util.get_form_route`.
+    settings['form_routes'] = {
+        WebWindMover: {
+            'create': 'create_wind_mover',
+            'update': 'update_wind_mover',
+            'delete': 'delete_mover'
+        },
+         WebPointReleaseSpill: {
+            'create': 'create_point_release_spill',
+            'update': 'update_point_release_spill',
+            'delete': 'delete_spill'
+        },
+    }
+
     config = Configurator(settings=settings, session_factory=session_factory)
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_renderer('gnome_json', gnome_json)
@@ -45,6 +61,10 @@ def main(global_config, **settings):
     config.add_route('delete_mover', '/model/mover/delete')
     config.add_route('create_wind_mover', '/model/mover/wind')
     config.add_route('update_wind_mover', '/model/mover/wind/{id}')
+    config.add_route('create_spill', '/model/spill')
+    config.add_route('delete_spill', '/model/spill/delete')
+    config.add_route('create_point_release_spill', '/model/spill/point_release')
+    config.add_route('update_point_release_spill', '/model/spill/point_release/{id}')
 
     config.scan()
     return config.make_wsgi_app()

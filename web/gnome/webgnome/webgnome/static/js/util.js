@@ -71,7 +71,7 @@ define([
         }
         return timestamp;
     }
-    
+
     return {
         log: log,
         handleAjaxError: handleAjaxError,

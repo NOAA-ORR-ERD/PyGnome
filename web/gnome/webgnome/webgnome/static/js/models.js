@@ -110,6 +110,11 @@ define([
 
             this.dirty = false;
             this.expectedTimeSteps = data.expected_time_steps;
+
+            if (_.has(data, 'time_step')) {
+                this.addTimeStep(data.time_step)                ;
+            }
+
             this.trigger(Model.RUN_BEGAN, data);
             this.getNextTimeStep();
             return true;
@@ -400,7 +405,6 @@ define([
     var AjaxForm = function(opts) {
         _.bindAll(this);
         this.url = opts.url;
-        this.collection = opts.collection;
 
         // Mix Backbone.js event methods into `AjaxForm`.
         _.extend(this, Backbone.Events);
@@ -450,7 +454,7 @@ define([
         },
 
         /*
-         Get the HTML for this form.
+         Get the HTML for this form from the server.
          */
         get: function(opts) {
             var options = $.extend({}, opts || {}, {
