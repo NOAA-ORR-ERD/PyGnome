@@ -220,22 +220,6 @@ class WindMover(CyMover):
     uncertain_angle_scale = property( lambda self: self.mover.uncertain_angle_scale,
                                       lambda self, val: setattr(self.mover,'uncertain_angle_scale', val))
 
-    def _get_timeseries(self):
-        """
-        private method - returns the timeseries used internally by the C++ WindMover_c object.
-        This should be the same as the timeseries stored in the self.wind object
-        
-        get function for timeseries property
-        """
-        dtv = self.wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
-        tv  = convert.to_time_value_pair(dtv, basic_types.data_format.wind_uv)
-        val = self.mover.get_time_value(tv['time'])
-        tv['value']['u'] = val['u']
-        tv['value']['v'] = val['v']
-        
-        return convert.to_datetime_value_2d( tv, basic_types.data_format.wind_uv)
-    
-    timeseries = property(_get_timeseries)
         
     def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
         """

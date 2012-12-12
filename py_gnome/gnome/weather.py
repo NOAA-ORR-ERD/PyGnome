@@ -35,20 +35,34 @@ class Wind(object):
             raise ValueError("Either provide timeseries or a valid long file")
         
         if( timeseries is not None):
-            try:
-                if( timeseries.dtype is not basic_types.datetime_value_2d):
-                    # Both 'is' or '==' work in this case. There is only one instance of basic_types.datetime_value_2d
-                    # Maybe in future we can consider working with a list, but that's a bit more cumbersome for different dtypes
-                    raise ValueError("timeseries must be a numpy array containing basic_types.datetime_value_2d dtype")
             
-            except AttributeError as err:
-                raise AttributeError("timeseries is not a numpy array. " + err.message)
+            self._check_timeseries(timeseries)
             
             time_value_pair = convert.to_time_value_pair(timeseries, data_format)
             self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             
         else:
             self.ossm = CyOSSMTime(path=file,file_contains=data_format)
+        
+        
+    def _check_timeseries(self, timeseries):
+        try:
+            if( timeseries.dtype is not basic_types.datetime_value_2d):
+                # Both 'is' or '==' work in this case. There is only one instance of basic_types.datetime_value_2d
+                # Maybe in future we can consider working with a list, but that's a bit more cumbersome for different dtypes
+                raise ValueError("timeseries must be a numpy array containing basic_types.datetime_value_2d dtype")
+        
+        except AttributeError as err:
+            raise AttributeError("timeseries is not a numpy array. " + err.message)
+        
+        # check to make sure the time values are in ascending order
+        if np.any( timeseries['time'][np.argsort( timeseries['time'])] != timeseries['time']):
+            raise ValueError('timeseries are not in ascending order. The datetime values in the array must be in ascending order')
+        
+        # check for duplicate entries
+        unique = np.unique( timeseries)
+        if len( unique) != len(timeseries):
+            raise ValueError('timeseries must contain unique entries. Number of duplicate entries ' + str(len(timeseries)-len(unique) ) )
         
     def __repr__(self):
        """
@@ -127,6 +141,7 @@ class Wind(object):
         :param data_format: output format for the times series; as defined by basic_types.data_format.
         :type data_format: integer value defined by basic_types.data_format.* (see cy_basic_types.pyx)
         """
+        self._check_timeseries(datetime_value_2d)
         timeval = convert.to_time_value_pair(datetime_value_2d, data_format)
         self.ossm.timeseries = timeval
     

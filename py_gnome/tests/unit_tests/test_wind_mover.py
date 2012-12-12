@@ -1,7 +1,7 @@
 from gnome import movers
 
 from gnome import basic_types, spill, weather
-from gnome.utilities import time_utils, transforms 
+from gnome.utilities import time_utils, transforms, convert
 from gnome.utilities import projections
 
 import numpy as np
@@ -31,6 +31,20 @@ def _defaults(wm):
     assert wm.uncertain_speed_scale == 2
     assert wm.uncertain_angle_scale == 0.4
 
+def get_timeseries_from_cpp(windmover):
+        """
+        local method for tests - returns the timeseries used internally by the C++ WindMover_c object.
+        This should be the same as the timeseries stored in the self.wind object
+        
+        This is simply used for testing.
+        """
+        dtv = windmover.wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
+        tv  = convert.to_time_value_pair(dtv, basic_types.data_format.wind_uv)
+        val = windmover.mover.get_time_value(tv['time'])
+        tv['value']['u'] = val['u']
+        tv['value']['v'] = val['v']
+        
+        return convert.to_datetime_value_2d( tv, basic_types.data_format.wind_uv)
 
 def test_read_file_init():
     """
@@ -41,17 +55,18 @@ def test_read_file_init():
     wm = movers.WindMover(wind)
     wind_ts = wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
     _defaults(wm)   # check defaults set correctly
+    cpp_timeseries = get_timeseries_from_cpp(wm)
     print
     print "====================="
     print "WindMover timeseries [time], [u, v]: "
-    print wm.timeseries['time']
-    print wm.timeseries['value']
+    print cpp_timeseries['time']
+    print cpp_timeseries['value']
     print "---------------------"
     print "Wind timeseries [time], [u, v]: "
     print wind_ts['time']
     print wind_ts['value']
-    np.all(wm.timeseries['time'] == wind_ts['time'])
-    assert np.allclose(wm.timeseries['value'], wind_ts['value'], atol, rtol)
+    np.all(cpp_timeseries['time'] == wind_ts['time'])
+    assert np.allclose(cpp_timeseries['value'], wind_ts['value'], atol, rtol)
 
 @pytest.fixture(scope="module")
 def wind(wind_circ):
@@ -74,8 +89,9 @@ def test_timeseries_init(wind):
     """
     wm = movers.WindMover(wind['wind'])
     _defaults(wm)
-    np.all(wm.timeseries['time'] == wind['uv']['time'])
-    assert np.allclose(wm.timeseries['value'], wind['uv']['value'], atol, rtol)
+    cpp_timeseries = get_timeseries_from_cpp(wm)
+    np.all(cpp_timeseries['time'] == wind['uv']['time'])
+    assert np.allclose(cpp_timeseries['value'], wind['uv']['value'], atol, rtol)
     
 def test_update_wind(wind):
     """
@@ -84,20 +100,21 @@ def test_update_wind(wind):
     o_wind = wind['wind']           # original wind value
     wm  = movers.WindMover(o_wind)  # define wind mover
     
+    # update wind timeseries - default data_format is magnitude_direction
     t_dtv = np.zeros((3,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
     t_dtv.time = [datetime(2012,11,06,20,0+i,30) for i in range(3)]
     t_dtv.value= np.random.uniform(1,5, (3,2) )
+    o_wind.set_timeseries(t_dtv, data_format=basic_types.data_format.wind_uv)
     
-    # update wind timeseries - default data_format is magnitude_direction
-    o_wind.set_timeseries(t_dtv, data_format=basic_types.data_format.wind_uv) 
-    
-    np.all(wm.timeseries['time'] == t_dtv.time)
-    assert np.allclose(wm.timeseries['value'], t_dtv.value, atol, rtol)
+    cpp_timeseries = get_timeseries_from_cpp(wm)
+    np.all(cpp_timeseries['time'] == t_dtv.time)
+    assert np.allclose(cpp_timeseries['value'], t_dtv.value, atol, rtol)
     
     # set the wind timeseries back to test fixture values
     o_wind.set_timeseries(wind['rq'])
-    np.all(wm.timeseries['time'] == wind['uv']['time'])
-    assert np.allclose(wm.timeseries['value'], wind['uv']['value'], atol, rtol)
+    cpp_timeseries = get_timeseries_from_cpp(wm)
+    np.all(cpp_timeseries['time'] == wind['uv']['time'])
+    assert np.allclose(cpp_timeseries['value'], wind['uv']['value'], atol, rtol)
    
    
 def test_properties(wind):

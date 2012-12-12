@@ -18,6 +18,13 @@ def test_exceptions(invalid_rq):
         invalid_dtv_rq = np.zeros((len(invalid_rq['rq']),), dtype=basic_types.datetime_value_2d)
         invalid_dtv_rq['value'] = invalid_rq['rq']
         weather.Wind(timeseries=invalid_dtv_rq, data_format=basic_types.data_format.magnitude_direction)
+        
+    # exception raised if datetime values are not in ascending order
+    with pytest.raises(ValueError):
+        dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
+        dtv_rq.time[:len(dtv_rq)-1] = [datetime(2012,11,06,20,10+i,30) for i in range(len(dtv_rq)-1)]
+        dtv_rq.value = (1,0) 
+        weather.Wind(timeseries=dtv_rq)
 
 def test_read_file_init():
     """
@@ -32,24 +39,8 @@ def test_read_file_init():
     assert True
 
 
-@pytest.fixture(scope="module")
-def local_test():
-    """
-    To del: Just used for testing .. for now
-    """
-    #rq = np.array( [(1, 0),(2,45)], dtype=np.float64)
-    #uv = np.array( [(0,-1),(-2./np.sqrt(2),-2./np.sqrt(2))], dtype=np.float64)
-    from gnome.utilities import transforms
-    
-    #rq = np.array ( [(0.165254389, 160.704082), (0.468398494, 254.707767)], dtype=np.float64 )
-    rq = [(2.5957474, 39.82103051), (1.9763598, 345.46989625)]
-    uv = transforms.r_theta_to_uv_wind( rq)
-    return {'rq': rq,'uv':uv}
-
-
-#@pytest.fixture(scope="module",params=['wind_vary_mag'])
 @pytest.fixture(scope="module",params=['wind_circ','rq_rand'])
-def wind(wind_circ,rq_rand,local_test,request):
+def wind(wind_circ,rq_rand,request):
     """
     Create Wind object using the time series given by the test fixture
     'wind_circ', 'rq_rand'. 
@@ -72,12 +63,6 @@ def wind(wind_circ,rq_rand,local_test,request):
         dtv_rq.value = rq_rand['rq']
         dtv_uv = np.zeros((len(dtv_rq),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
         dtv_uv.value = transforms.r_theta_to_uv_wind( rq_rand['rq'])
-    else:
-        dtv_rq = np.zeros((len(local_test['rq']),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-        dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(len(dtv_rq))]
-        dtv_rq.value = local_test['rq']
-        dtv_uv = np.zeros((len(dtv_rq),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-        dtv_uv.value= local_test['uv']  
 
     dtv_uv.time = dtv_rq.time
 
