@@ -71,7 +71,8 @@ define([
                 backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                model: this.model
+                model: this.model,
+                latLongBounds: this.options.mapBounds
             });
 
             this.mapControlView = new views.MapControlView({
@@ -209,8 +210,8 @@ define([
 
             this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
 
-            // Create an `AjaxForm` and bind it to a `AjaxFormView` for each modal
-            // form on the page, other than the Add Mover form, which we handled.
+            // Create an `AjaxForm` and bind it to a `AjaxFormView` or subclass
+            // for each form on the page.
             _.each($('div.form'), function(formDiv) {
                 var $div = $(formDiv);
                 var $form = $div.find('form');
@@ -228,27 +229,24 @@ define([
                 var ajaxForm = _this.forms.get(formId);
                 var formEl = $('#' + formId);
                 var formContainerEl = '#' + _this.options.formContainerId;
+                var formClass;
 
                 if ($div.hasClass('wind')) {
-                    _this.formViews.add(formId, new forms.WindMoverFormView({
-                        ajaxForm: ajaxForm,
-                        el: formEl,
-                        formContainerEl: formContainerEl
-                    }));
+                    formClass = forms.WindMoverFormView;
+                } else if ($div.hasClass('spill')) {
+                    formClass = forms.PointReleaseSpillFormView;
+                } else if ($div.hasClass('modal')) {
+                    formClass = forms.ModalAjaxFormView;
                 } else {
-                    var formClass = forms.AjaxFormView;
-
-                    if ($div.hasClass('modal')) {
-                        formClass = forms.ModalAjaxFormView;
-                    }
-
-                    _this.formViews.add(formId, new formClass({
-                        id: formId,
-                        ajaxForm: ajaxForm,
-                        el: formEl,
-                        formContainerEl: formContainerEl
-                    }));
+                    formClass = forms.AjaxFormView;
                 }
+
+                _this.formViews.add(formId, new formClass({
+                    id: formId,
+                    ajaxForm: ajaxForm,
+                    el: formEl,
+                    formContainerEl: formContainerEl
+                }));
             });
         },
 
@@ -437,6 +435,8 @@ define([
         showFormForNode: function(node) {
             var formView = this.formViews.get(node.data.form_id);
 
+            util.log(formView, node)
+
             if (formView === undefined) {
                 return;
             }
@@ -480,22 +480,28 @@ define([
         removeButtonClicked: function() {
             var node = this.treeView.getActiveItem();
 
-            if (!node.data.form_id || !node.data.id) {
+            function error() {
+                alert('Error! Could not delete ' + node.data.title + '.');
+            }
+
+            if (!node.data.form_id || !node.data.object_id) {
+                return error();
+            }
+
+            var ajaxForm = this.forms.get(node.data.delete_form_id);
+            var formView = this.formViews.get(node.data.delete_form_id);
+
+            if (!ajaxForm || !formView) {
+                return error();
+            }
+
+            if (confirm('Remove ' + node.data.title + '?') === false) {
                 return;
             }
 
-            var type = node.data.form_id.replace('_', ' ');
-
-            if (confirm('Remove ' + type + '?') === false) {
-                return;
-            }
-
-            this.ajaxForm.submit({
-                url: this.ajaxForm.get('url') + '/' + node.data.form_id + '/delete',
-                data: "mover_id=" + node.data.id,
-                error: function() {
-                    alert('Could not remove item.');
-                }
+            ajaxForm.submit({
+                data: "mover_id=" + node.data.object_id,
+                error: error
             });
         },
 

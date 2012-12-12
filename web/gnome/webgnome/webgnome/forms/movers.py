@@ -33,7 +33,7 @@ class WindForm(AutoIdForm, DateTimeForm):
         (SPEED_KNOTS, 'Knots'),
         (SPEED_METERS, 'Meters / sec'),
         (SPEED_MILES, 'Miles / hour')
-        )
+    )
 
     speed = FloatField('Speed', default=0, validators=[NumberRange(min=1)])
     speed_type = SelectField(
@@ -164,8 +164,8 @@ class WindMoverForm(AutoIdForm):
         """
         Update ``mover`` using data from this form.
         """
+        mover._name = self.name.data
         mover.is_active = self.is_active.data
-        mover.name = self.name.data
         mover.is_constant = self.is_constant.data
         mover.uncertain_angle_scale = self.uncertain_angle_scale.data
         mover.uncertain_speed_scale = self.uncertain_speed_scale.data
@@ -182,9 +182,12 @@ class AddMoverForm(AutoIdForm):
     user's running model. This step asks the user to choose the type of mover
     to add.
     """
-    mover_type = SelectField('Type', choices=(
-        (WindMoverForm.get_id(), 'Winds'),
-    ))
+    mover_type = SelectField(
+        'Type',
+        choices=(
+            (WindMoverForm.get_id(), 'Winds'),
+        )
+    )
 
 
 class DeleteMoverForm(AutoIdForm):
@@ -196,8 +199,8 @@ class DeleteMoverForm(AutoIdForm):
     """
     mover_id = IntegerField()
 
-    def __init__(self, model, *args, **kwargs):
-        self.model = model
+    def __init__(self, *args, **kwargs):
+        self.model = kwargs.pop('model', None)
         super(DeleteMoverForm, self).__init__(*args, **kwargs)
 
     def mover_id_validate(self, field):

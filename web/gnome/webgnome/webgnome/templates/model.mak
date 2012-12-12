@@ -5,6 +5,7 @@
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
 
     <script src="/static/js/require-jquery.js"></script>
+    <script src="/static/js/config.js"></script>
 </%block>
 
 <%block name="navbar">
@@ -106,20 +107,6 @@
 <%block name="javascript">
     <script type="text/javascript">
 
-        // Configure RequireJS
-        requirejs.config({
-            baseUrl: "/static/js",
-            shim: {
-                'lib/jquery.dynatree.min': ['lib/jquery-ui-1.8.24.custom.min', 'lib/jquery.cookie'],
-                'lib/underscore': {
-                    exports: "_"
-                },
-                'lib/mousetrap': {
-                    exports: "Mousetrap"
-                }
-            }
-        });
-
         // App entry-point
         require([
             'jquery',
@@ -139,6 +126,7 @@
                 new app_view.AppView({
                     mapId: 'map',
                     mapPlaceholderId: 'placeholder',
+                    mapBounds: ${map_bounds},
                     sidebarId: 'sidebar',
                     formContainerId: 'modal-container',
                     addMoverFormId: "${add_mover_form_id}",
