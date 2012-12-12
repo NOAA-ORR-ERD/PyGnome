@@ -80,7 +80,7 @@ def wind(wind_circ):
     dtv_uv = np.zeros((len(dtv_rq),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
     dtv_uv.value= wind_circ['uv']
     
-    wind  = weather.Wind(timeseries=dtv_rq,data_format=basic_types.data_format.magnitude_direction)
+    wind  = weather.Wind(timeseries=dtv_rq,data_format=basic_types.data_format.magnitude_direction, units='meters per second')
     return {'wind':wind, 'rq': dtv_rq, 'uv': dtv_uv} 
     
 def test_timeseries_init(wind):
@@ -104,14 +104,14 @@ def test_update_wind(wind):
     t_dtv = np.zeros((3,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
     t_dtv.time = [datetime(2012,11,06,20,0+i,30) for i in range(3)]
     t_dtv.value= np.random.uniform(1,5, (3,2) )
-    o_wind.set_timeseries(t_dtv, data_format=basic_types.data_format.wind_uv)
+    o_wind.set_timeseries(t_dtv, units='meters per second', data_format=basic_types.data_format.wind_uv)
     
     cpp_timeseries = get_timeseries_from_cpp(wm)
     np.all(cpp_timeseries['time'] == t_dtv.time)
     assert np.allclose(cpp_timeseries['value'], t_dtv.value, atol, rtol)
     
     # set the wind timeseries back to test fixture values
-    o_wind.set_timeseries(wind['rq'])
+    o_wind.set_timeseries(wind['rq'], units='meters per second')
     cpp_timeseries = get_timeseries_from_cpp(wm)
     np.all(cpp_timeseries['time'] == wind['uv']['time'])
     assert np.allclose(cpp_timeseries['value'], wind['uv']['value'], atol, rtol)
@@ -166,7 +166,7 @@ class TestWindMover:
     time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
     time_val['time']  = np.datetime64( spill.release_time.isoformat() )
     time_val['value'] = (2., 25.)
-    wind = weather.Wind(timeseries=time_val)
+    wind = weather.Wind(timeseries=time_val, units='meters per second')
     wm = movers.WindMover(wind)
 
     def test_string_repr_no_errors(self):
@@ -205,7 +205,7 @@ class TestWindMover:
                    
     def test_update_wind_vel(self):
         self.time_val['value'] = (1., 120.) # now given as (r, theta)
-        self.wind.set_timeseries( self.time_val)
+        self.wind.set_timeseries( self.time_val, units='meters per second')
         self.test_get_move()
     
     def _expected_move(self):

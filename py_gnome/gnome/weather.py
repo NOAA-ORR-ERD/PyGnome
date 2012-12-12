@@ -16,7 +16,7 @@ class Wind(object):
                  timeseries=None, 
                  file=None,
                  data_format=basic_types.data_format.magnitude_direction,
-                 units=basic_types.velocity_units.meters_per_sec):
+                 units=None):
         """
         Initializes a wind object. It requires a numpy array containing 
         gnome.basic_types.datetime_value_2d which defines the wind velocity
@@ -28,24 +28,37 @@ class Wind(object):
         :type data_format: integer defined by gnome.basic_types.data_format.*
         :param units: units for the timeseries. If 'file' is given, then units are read in from the file. 
                       CURRENTLY, JUST A PLACE HOLDER. THIS IS NOT IMPLEMENTED YET
-        :type units: Currently, using basic_types.velocity_units.meters_per_sec .. but still working on this
+        :type units: string, for example: 'knots', 'meters per second', 'miles per hour' etc
         """
         
         if( timeseries is None and file is None):
             raise ValueError("Either provide timeseries or a valid long file")
         
         if( timeseries is not None):
+            self._check_timeseries(timeseries, units)
+            self._user_units = units
             
-            self._check_timeseries(timeseries)
+            # TODO: Unit conversion not implemented yet
             
             time_value_pair = convert.to_time_value_pair(timeseries, data_format)
             self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             
         else:
             self.ossm = CyOSSMTime(path=file,file_contains=data_format)
+            #TODO: implement correct user_units as string 
+            #self._user_units = self.ossm.user_units  # TODO: Check if C++ checks for validity of units
+            self._user_units = "to be implemented"
         
         
-    def _check_timeseries(self, timeseries):
+    def _check_timeseries(self, timeseries, units):
+        """
+        Run some checks to make sure timeseries is valid
+        """
+        if type(units) is not str:
+            raise TypeError("timeseries must include 'units' as a string")
+        
+        # TODO: Also check units are valid
+            
         try:
             if( timeseries.dtype is not basic_types.datetime_value_2d):
                 # Both 'is' or '==' work in this case. There is only one instance of basic_types.datetime_value_2d
@@ -91,19 +104,9 @@ class Wind(object):
         """
         return id(self)
     
-    def _units_from_file(self):
-        """
-        Get the user_units read from the file. If units are not read from file, this should
-        default to -1
-        """
-        if self.ossm.user_units == -1:
-            raise ValueError("Units are not set - either data was not read from file, or file did not contain units.")
-        else:
-            return self.ossm.user_units
-        
-    units_from_file = property(_units_from_file)   
+    user_units = property( lambda self: self._user_units)   
     
-    def get_timeseries(self, data_format, datetime=None):
+    def get_timeseries(self, data_format, datetime=None, units=None):
         """
         returns the timeseries in the requested format. If datetime=None, then the original timeseries
         that was entered is returned. If datetime is a list containing datetime objects, then the
@@ -118,6 +121,7 @@ class Wind(object):
         :type datetime: datetime object
         :returns: numpy array containing dtype=basic_types.datetime_value_2d. Contains user specified datetime
         and the corresponding values in user specified data_format
+        :param units: optional parameter for desired output units
         """
         if datetime is None:
             datetimeval = convert.to_datetime_value_2d(self.ossm.timeseries, data_format)
@@ -127,10 +131,14 @@ class Wind(object):
             timeval['time'] = time_utils.date_to_sec(datetime)
             timeval['value'] = self.ossm.get_time_value(timeval['time'])
             datetimeval = convert.to_datetime_value_2d(timeval, data_format)
-            
+        
+        # TODO: Unit coversion not implemented yet
+        if units is not None:
+            print "NOTE: unit conversion not implemented yet"
+        
         return datetimeval
     
-    def set_timeseries(self, datetime_value_2d, data_format=basic_types.data_format.magnitude_direction):
+    def set_timeseries(self, datetime_value_2d, units, data_format=basic_types.data_format.magnitude_direction):
         """
         sets the timeseries of the Wind object to the new value given by a numpy array. 
         The data_format for the input data defaults to 
@@ -138,10 +146,12 @@ class Wind(object):
         
         :param datetime_value_2d: timeseries of wind data defined in a numpy array
         :type datetime_value_2d: numpy array of dtype basic_types.datetime_value_2d
+        :param user_units: XXX user units
         :param data_format: output format for the times series; as defined by basic_types.data_format.
         :type data_format: integer value defined by basic_types.data_format.* (see cy_basic_types.pyx)
         """
-        self._check_timeseries(datetime_value_2d)
+        self._check_timeseries(datetime_value_2d, units)
+        # TODO: Unit coversion not implemented yet
         timeval = convert.to_time_value_pair(datetime_value_2d, data_format)
         self.ossm.timeseries = timeval
     
