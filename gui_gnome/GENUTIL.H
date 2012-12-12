@@ -10,14 +10,14 @@ extern Rect bigRect;
 ///// MISC ///////////////////////////////////////////////////////////////////////////
 
 void debugnum(CHARPTR title, long n);
-float max4(float f1, float f2, float f3, float f4);
+/*float max4(float f1, float f2, float f3, float f4);
 float min4(float f1, float f2, float f3, float f4);
 double logB(double b, double x);
 float hypotenuse(float a, float b);
-double myfabs(double x);
+double myfabs(double x);*/
 void DrawQDSegment(Point p1, Point p2);
 void SplitDMS(float n, SHORTPTR deg, SHORTPTR min, FLOATPTR sec);
-void SetSign(FLOATPTR n, short code);
+/*void SetSign(FLOATPTR n, short code);
 short ScaleToShort(long n);
 long GetRandom(long low, long high);
 float GetRandomFloat(float low, float high);
@@ -27,12 +27,12 @@ long Assoc(long key, LONGPTR table, short n);
 void SwitchShorts(SHORTPTR a, SHORTPTR b);
 void SwitchLongs(LONGPTR a, LONGPTR b);
 void SwitchStrings(CHARPTR a, CHARPTR b);
-short NumDecimals(CHARPTR str);
+short NumDecimals(CHARPTR str);*/
 long antol(CHARPTR s, short n);
 short RGBDistance(RGBColor c1, RGBColor c2);
 short ClosestMatchingColor(RGBColor color);
-Boolean EarlierThan(Seconds time1, Seconds time2);
-Boolean LaterThan(Seconds time1, Seconds time2);
+//Boolean EarlierThan(Seconds time1, Seconds time2);
+//Boolean LaterThan(Seconds time1, Seconds time2);
 
 //++ Strings
 
