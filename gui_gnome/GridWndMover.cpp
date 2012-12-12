@@ -137,7 +137,7 @@ ListItem GridWndMover::GetNthListItem(long n, short indent, short *style, char *
 				{
 					item.indent++;
 					item.index = I_GRIDWINDSTARTTIME;
-					sprintf(text, "Start Time: %.2f hours",fUncertainStartTime/3600);
+					sprintf(text, "Start Time: %.2f hours",((double)fUncertainStartTime)/3600.);
 					return item;
 				}
 				

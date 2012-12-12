@@ -36,22 +36,20 @@ public:
 	//char		fFileName[kMaxNameLen]; // short file name - might want to allow longer names
 	
 	TimeGridVel	*timeGrid;	//VelocityH		grid; 
+	
 	short fUserUnits;
-	//float fFillValue;
 	float fWindScale;
 	float fArrowScale;
-	//long fTimeShift;		// to convert GMT to local time
-	//Boolean fAllowExtrapolationInTime;
 	Boolean fIsOptimizedForStep;
 
 	GridWindMover_c (TMap *owner, char* name);
 	GridWindMover_c () {}
+	
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	virtual void 		ModelStepIsDone();
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
 
-	//virtual Boolean 	VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr);
 	virtual WorldRect GetGridBounds(){return timeGrid->GetGridBounds();}	
 	virtual ClassID 	GetClassID () { return TYPE_GRIDWINDMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_GRIDWINDMOVER) return TRUE; return WindMover_c::IAm(id); }
