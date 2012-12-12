@@ -213,9 +213,9 @@ define([
             // Create an `AjaxForm` and bind it to a `AjaxFormView` or subclass
             // for each form on the page.
             _.each($('div.form'), function(formDiv) {
-                var $div = $(formDiv);
-                var $form = $div.find('form');
-                var formId = $div.attr('id');
+                var div = $(formDiv);
+                var form = div.find('form');
+                var formId = div.attr('id');
 
                 if (formId === _this.options.addMoverFormId) {
                     return;
@@ -223,7 +223,7 @@ define([
 
                 _this.forms.add({
                     id: formId,
-                    url: $form.attr('action')
+                    url: form.attr('action')
                 });
 
                 var ajaxForm = _this.forms.get(formId);
@@ -231,11 +231,11 @@ define([
                 var formContainerEl = '#' + _this.options.formContainerId;
                 var formClass;
 
-                if ($div.hasClass('wind')) {
+                if (div.hasClass('wind')) {
                     formClass = forms.WindMoverFormView;
-                } else if ($div.hasClass('spill')) {
+                } else if (div.hasClass('spill')) {
                     formClass = forms.PointReleaseSpillFormView;
-                } else if ($div.hasClass('modal')) {
+                } else if (div.hasClass('modal')) {
                     formClass = forms.ModalAjaxFormView;
                 } else {
                     formClass = forms.AjaxFormView;
@@ -279,6 +279,7 @@ define([
         },
 
         runUntilMenuItemClicked: function() {
+            // TODO: Fix this - old code.
             this.fetchForm({type: 'run_until'});
         },
 
@@ -434,8 +435,6 @@ define([
 
         showFormForNode: function(node) {
             var formView = this.formViews.get(node.data.form_id);
-
-            util.log(formView, node)
 
             if (formView === undefined) {
                 return;

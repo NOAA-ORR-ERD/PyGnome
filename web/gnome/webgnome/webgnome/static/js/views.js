@@ -77,7 +77,7 @@ define([
             this.createPlaceholderCopy();
             this.makeImagesClickable();
             this.status = MapView.STOPPED;
-            this.$map = $(this.mapEl);
+            this.map = $(this.mapEl);
 
             this.model = this.options.model;
             this.model.on(models.Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
@@ -184,12 +184,12 @@ define([
          */
         showImageForTimeStep: function(stepNum) {
             // Show the map div if this is the first image of the run.
-            if (this.$map.find('img').length === 1) {
-                this.$map.show();
+            if (this.map.find('img').length === 1) {
+                this.map.show();
             }
 
             var stepImage = this.getImageForTimeStep(stepNum);
-            var otherImages = this.$map.find('img').not(stepImage).not('.background');
+            var otherImages = this.map.find('img').not(stepImage).not('.background');
 
             // Hide all other images in the map div.
             otherImages.css('display', 'none');

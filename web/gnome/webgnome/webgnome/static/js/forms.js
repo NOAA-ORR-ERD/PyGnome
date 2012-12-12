@@ -96,7 +96,7 @@ define([
         initialize: function() {
             _.bindAll(this);
             this.wasCancelled = false;
-            this.$container = $(this.options.formContainerEl);
+            this.container = $(this.options.formContainerEl);
             this.ajaxForm = this.options.ajaxForm;
             this.ajaxForm.on(models.AjaxForm.CHANGED, this.ajaxFormChanged);
             this.setupDatePickers();
@@ -199,27 +199,27 @@ define([
         },
 
         goToStep: function(stepNum) {
-            var $form = this.getForm();
+            var form = this.getForm();
 
-            if (!$form.hasClass('multistep')) {
+            if (!form.hasClass('multistep')) {
                 return;
             }
 
-            var stepDiv = $form.find('div.step[data-step="' + stepNum + '"]');
+            var stepDiv = form.find('div.step[data-step="' + stepNum + '"]');
 
             if (stepDiv.length === 0) {
                 return;
             }
 
-            var otherStepDivs = $form.find('div.step');
+            var otherStepDivs = form.find('div.step');
             otherStepDivs.addClass('hidden');
             otherStepDivs.removeClass('active');
             stepDiv.removeClass('hidden');
             stepDiv.addClass('active');
 
-            var prevButton = this.$container.find('.btn-prev');
-            var nextButton = this.$container.find('.btn-next');
-            var saveButton = this.$container.find('.btn-primary');
+            var prevButton = this.container.find('.btn-prev');
+            var nextButton = this.container.find('.btn-next');
+            var saveButton = this.container.find('.btn-primary');
 
             if (this.previousStepExists(stepNum)) {
                 prevButton.removeClass('hidden');
@@ -238,35 +238,35 @@ define([
         },
 
         goToNextStep: function() {
-            var $form = this.getForm();
+            var form = this.getForm();
 
-            if (!$form.hasClass('multistep')) {
+            if (!form.hasClass('multistep')) {
                 return;
             }
 
-            var activeStepDiv = $form.find('div.step.active');
+            var activeStepDiv = form.find('div.step.active');
             var currentStep = parseInt(activeStepDiv.attr('data-step'), 10);
             this.goToStep(currentStep + 1);
         },
 
         goToPreviousStep: function(event) {
-            var $form = this.getForm();
+            var form = this.getForm();
 
-            if (!$form.hasClass('multistep')) {
+            if (!form.hasClass('multistep')) {
                 return;
             }
 
-            var activeStep = $form.find('div.step.active');
+            var activeStep = form.find('div.step.active');
             var currentStep = parseInt(activeStep.attr('data-step'), 10);
             this.goToStep(currentStep - 1);
         },
 
         submit: function(event) {
             event.preventDefault();
-            var $form = this.getForm();
+            var form = this.getForm();
             this.ajaxForm.submit({
-                data: $form.serialize(),
-                url: $form.attr('action')
+                data: form.serialize(),
+                url: form.attr('action')
             });
             this.hide();
             return false;
@@ -289,10 +289,10 @@ define([
 
             this.remove();
 
-            var $html = $(html);
-            $html.appendTo(this.$container);
+            html = $(html);
+            html.appendTo(this.container);
 
-            this.$el = $('#' + $html.attr('id'));
+            this.$el = $('#' + html.attr('id'));
 
             var stepWithError = this.getFirstStepWithError();
             if (stepWithError) {
@@ -314,9 +314,9 @@ define([
             this.hide();
             this.$el.empty();
             this.$el.remove();
-            this.$container.off('click', this.id + ' .btn-primary', this.submit);
-            this.$container.off('click', this.id + ' .btn-next', this.goToNextStep);
-            this.$container.off('click', this.id + ' .btn-prev', this.goToPreviousStep);
+            this.container.off('click', this.id + ' .btn-primary', this.submit);
+            this.container.off('click', this.id + ' .btn-next', this.goToNextStep);
+            this.container.off('click', this.id + ' .btn-prev', this.goToPreviousStep);
         }
     }, {
         ID_CHANGED: 'ajaxFormView:idChanged'
@@ -351,11 +351,14 @@ define([
     var AddMoverFormView = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
-            this.$container = $(this.options.formContainerEl);
+            this.container = $(this.options.formContainerEl);
 
             // Bind listeners to the container, using `on()`, so they persist.
             this.id = '#' + this.$el.attr('id');
-            this.$container.on('click', this.id + ' .btn-primary', this.submit);
+        },
+
+        events: {
+            'click .btn-primary': 'submit'
         },
 
         getForm: function() {
@@ -372,8 +375,8 @@ define([
 
         submit: function(event) {
             event.preventDefault();
-            var $form = this.getForm();
-            var moverType = $form.find('select[name="mover_type"]').val();
+            var form = this.getForm();
+            var moverType = form.find('select[name="mover_type"]').val();
 
             if (moverType) {
                 this.trigger(AddMoverFormView.MOVER_CHOSEN, moverType);
@@ -417,16 +420,16 @@ define([
         },
 
         compassMoved: function(magnitude, direction) {
-            var $form = this.$el.find('.time-form').not('.hidden');
-            $form.find('.speed').val(magnitude.toFixed(2));
-            $form.find('.direction').val(direction.toFixed(2));
+            var form = this.$el.find('.time-form').not('.hidden');
+            form.find('.speed').val(magnitude.toFixed(2));
+            form.find('.direction').val(direction.toFixed(2));
         },
 
         setupCompass: function() {
             var _this = this;
-            var $compass = this.$el.find('.compass');
+            var compass = this.$el.find('.compass');
 
-            this.compass = $compass.compassUI({
+            this.compass = compass.compassUI({
                 'arrow-direction': 'in',
                 'move': function(magnitude, direction) {
                     _this.compassMoved(magnitude, direction);
@@ -449,17 +452,17 @@ define([
 
         renderTimeTable: function() {
             var _this = this;
-            var $forms = this.$el.find('.edit-time-forms').find('.time-form');
+            var forms = this.$el.find('.edit-time-forms').find('.time-form');
             var rows = [];
 
             // Clear out any existing rows.
             this.getTimesTable().find('tr').not('.table-header').remove();
 
-            _.each($forms, function(form) {
-                var $form = $(form);
+            _.each(forms, function(form) {
+                form = $(form);
                 var tmpl = _.template($("#time-series-row").html());
-                var speedType = $form.find('.speed_type option:selected').val();
-                var direction = $form.find('.direction').val();
+                var speedType = form.find('.speed_type option:selected').val();
+                var direction = form.find('.direction').val();
 
                 if (isNaN(direction)) {
                     direction = direction.toUpperCase();
@@ -467,32 +470,32 @@ define([
                     direction = direction + ' &deg;';
                 }
 
-                var error = $form.find('.error').length > 0;
+                var error = form.find('.error').length > 0;
 
                 var dateTime = moment(
-                    $form.find('.date').val() + ' ' +
-                    $form.find('.hour').val() + ':' +
-                    $form.find('.minute').val());
+                    form.find('.date').val() + ' ' +
+                    form.find('.hour').val() + ':' +
+                    form.find('.minute').val());
 
                 rows.push($(tmpl({
                     error: error ? 'error' : '',
                     date: dateTime.format('MM/DD/YYYY'),
                     time: dateTime.format('HH:mm'),
                     direction: direction,
-                    speed: $form.find('.speed').val() + ' ' + speedType
-                })).data('data-form', $form));
+                    speed: form.find('.speed').val() + ' ' + speedType
+                })).data('data-form', form));
             });
 
             // Sort table by date and time of each item.
-            rows = _.sortBy(rows, function($tr) {
-                var date = $tr.find('.time-series-date').text();
-                var time = $tr.find(
+            rows = _.sortBy(rows, function(tr) {
+                var date = tr.find('.time-series-date').text();
+                var time = tr.find(
                     '.time-series-time').text().replace(' ', '', 'g');
                 return Date.parse(date + ' ' + time)
             });
 
-            _.each(rows, function($row) {
-                $row.appendTo(_this.getTimesTable());
+            _.each(rows, function(row) {
+                row.appendTo(_this.getTimesTable());
             });
         },
 
@@ -501,14 +504,14 @@ define([
          Remove all form inputs from the tab the user is *not* currently on.
          */
         submit: function(event) {
-            var $constantWind = this.$el.find('.tab-pane.constant-wind');
-            var $variableWind = this.$el.find('.tab-pane.variable-wind');
+            var constantWind = this.$el.find('.tab-pane.constant-wind');
+            var variableWind = this.$el.find('.tab-pane.variable-wind');
 
-            if ($variableWind.hasClass('active')) {
-                $variableWind.find('.add-time-forms .time-form').empty().remove();
-                $constantWind.find('.time-form').empty().remove();
+            if (variableWind.hasClass('active')) {
+                variableWind.find('.add-time-forms .time-form').empty().remove();
+                constantWind.find('.time-form').empty().remove();
             } else {
-                $variableWind.find('.time-form').empty().remove();
+                variableWind.find('.time-form').empty().remove();
             }
 
             WindMoverFormView.__super__.submit.apply(this, arguments);
@@ -516,25 +519,25 @@ define([
 
         editMoverNameClicked: function(event) {
             event.preventDefault();
-            var $link = $(event.target);
-            var $form = $link.closest('.form');
-            $form.find('.top-form').removeClass('hidden');
-            $form.find('.page-header h3').addClass('hidden');
+            var link = $(event.target);
+            var form = link.closest('.form');
+            form.find('.top-form').removeClass('hidden');
+            form.find('.page-header h3').addClass('hidden');
         },
 
         saveMoverNameButtonClicked: function(event) {
             event.preventDefault();
-            var $link = $(event.target);
-            var $form = $link.closest('.form');
-            $form.find('.top-form').addClass('hidden');
-            $form.find('.page-header h3').removeClass('hidden');
+            var link = $(event.target);
+            var form = link.closest('.form');
+            form.find('.top-form').addClass('hidden');
+            form.find('.page-header h3').removeClass('hidden');
         },
 
         moverNameChanged: function(event) {
-            var $input = $(event.target);
-            var form = $input.closest('.form');
-            var $header = form.find('.page-header').find('a');
-            $header.text($input.val());
+            var input = $(event.target);
+            var form = input.closest('.form');
+            var header = form.find('.page-header').find('a');
+            header.text(input.val());
         },
 
         ajaxFormChanged: function() {
@@ -555,19 +558,19 @@ define([
 
         trashButtonClicked: function(event) {
             event.preventDefault();
-            var $form = $(event.target).closest('tr').data('data-form');
-            $form.detach().empty().remove();
+            var form = $(event.target).closest('tr').data('data-form');
+            form.detach().empty().remove();
             this.renderTimeTable();
         },
 
         saveButtonClicked: function(event) {
             event.preventDefault();
-            var $form = $(event.target).closest('.time-form');
-            $form.addClass('hidden');
+            var form = $(event.target).closest('.time-form');
+            form.addClass('hidden');
 
             // Delete the "original" form that we're replacing.
-            $form.data('form-original').detach().empty().remove();
-            $form.detach().appendTo('.edit-time-forms');
+            form.data('form-original').detach().empty().remove();
+            form.detach().appendTo('.edit-time-forms');
 
             // Show the add form
             $('.add-time-forms').find('.add-time-form').removeClass('hidden');
@@ -578,38 +581,38 @@ define([
 
         cancelButtonClicked: function(event) {
             event.preventDefault();
-            var $form = $(event.target).closest('.time-form');
+            var form = $(event.target).closest('.time-form');
 
-            $form.addClass('hidden');
-            this.clearInputs($form);
-            $form.clone().appendTo('.times-list');
-            $form.empty().remove();
+            form.addClass('hidden');
+            this.clearInputs(form);
+            form.clone().appendTo('.times-list');
+            form.empty().remove();
 
             $('.add-time-forms').find('.add-time-form').removeClass('hidden');
 
-            var $row = $(event.target).closest('tr');
-            $row.removeClass('info');
+            var row = $(event.target).closest('tr');
+            row.removeClass('info');
             this.renderTimeTable();
         },
 
         editButtonClicked: function(event) {
             event.preventDefault();
-            var $row = $(event.target).closest('tr');
-            var $form = $row.data('data-form');
-            var $addFormContainer = $form.closest('.tab-pane').find('.add-time-forms');
-            var $addTimeForm = $addFormContainer.find('.add-time-form');
+            var row = $(event.target).closest('tr');
+            var form = row.data('data-form');
+            var addFormContainer = form.closest('.tab-pane').find('.add-time-forms');
+            var addTimeForm = addFormContainer.find('.add-time-form');
 
-            $addTimeForm.addClass('hidden');
+            addTimeForm.addClass('hidden');
 
             // Delete any edit forms currently in view.
-            $addFormContainer.find('.edit-time-form').remove();
+            addFormContainer.find('.edit-time-form').remove();
 
-            var $formCopy = $form.clone().appendTo($addFormContainer);
-            $formCopy.data('form-original', $form);
-            $formCopy.removeClass('hidden');
+            var formCopy = form.clone().appendTo(addFormContainer);
+            formCopy.data('form-original', form);
+            formCopy.removeClass('hidden');
 
             this.getTimesTable().find('tr').removeClass('info');
-            $row.removeClass('error').removeClass('warning').addClass('info');
+            row.removeClass('error').removeClass('warning').addClass('info');
         },
 
         /*
@@ -617,14 +620,14 @@ define([
          */
         addButtonClicked: function(event) {
             event.preventDefault();
-            var $tabPane = $(event.target).closest('.tab-pane');
-            var $addForm = $tabPane.find('.add-time-form');
-            var $newForm = $addForm.clone(true).addClass('hidden').removeClass(
+            var tabPane = $(event.target).closest('.tab-pane');
+            var addForm = tabPane.find('.add-time-form');
+            var newForm = addForm.clone(true).addClass('hidden').removeClass(
                 'add-time-form').addClass('edit-time-form');
 
             // Grab the first timeseries-specific input field to check its
             // numeric position. This is the second input in the form.
-            var formId = $addForm.find(':input')[1].name;
+            var formId = addForm.find(':input')[1].name;
             var formNum = parseInt(formId.replace(/.*-(\d{1,4})-.*/m, '$1')) + 1;
 
             // There are no edit forms, so this is the first time series.
@@ -633,56 +636,56 @@ define([
             }
 
             // Select all of the options selected on the original form.
-            _.each($addForm.find('select option:selected'), function(opt) {
-                var $opt = $(opt);
-                var name = $opt.closest('select').attr('name');
-                var $newOpt = $newForm.find(
-                    'select[name="' + name + '"] option[value="' + $opt.val() + '"]');
-                $newOpt.attr('selected', true);
+            _.each(addForm.find('select option:selected'), function(opt) {
+                opt = $(opt);
+                var name = opt.closest('select').attr('name');
+                var newOpt = newForm.find(
+                    'select[name="' + name + '"] option[value="' + opt.val() + '"]');
+                newOpt.attr('selected', true);
             });
 
             function incrementAttr(el, attrName) {
-                var $el = $(el);
-                var attr = $el.attr(attrName);
+                el = $(el);
+                var attr = el.attr(attrName);
 
                 if (attr) {
                     attr = attr.replace('-' + (formNum - 1) + '-', '-' + formNum + '-');
                     var opts = {};
                     opts[attrName] = attr;
-                    $el.attr(opts);
+                    el.attr(opts);
                 }
             }
 
             // Increment the IDs and names of the add form elements -- it
             // should always be the last (highest #) form of the edit forms.
-            $addForm.find(':input').each(function() {
+            addForm.find(':input').each(function() {
                 incrementAttr(this, 'name');
                 incrementAttr(this, 'id');
             });
 
-            $newForm.find('.add-time-buttons').addClass('hidden');
-            $newForm.find('.edit-time-buttons').removeClass('hidden');
+            newForm.find('.add-time-buttons').addClass('hidden');
+            newForm.find('.edit-time-buttons').removeClass('hidden');
 
-            $tabPane.find('.edit-time-forms').append($newForm);
+            tabPane.find('.edit-time-forms').append(newForm);
             this.renderTimeTable();
             this.compass.compassUI('reset');
 
-            var autoIncrementBy = $addForm.find('.auto_increment_by').val();
+            var autoIncrementBy = addForm.find('.auto_increment_by').val();
 
             // Increase the date and time on the Add form if 'auto increase by'
             // value was provided.
             if (autoIncrementBy) {
-                var $date = $addForm.find('.date');
-                var $hour = $addForm.find('.hour');
-                var $minute = $addForm.find('.minute');
-                var time = $hour.val()  + ':' + $minute.val();
+                var date = addForm.find('.date');
+                var hour = addForm.find('.hour');
+                var $minute = addForm.find('.minute');
+                var time = hour.val()  + ':' + $minute.val();
 
                 // TODO: Handle a date-parsing error here.
-                var dateTime = moment($date.val() + ' ' + time);
+                var dateTime = moment(date.val() + ' ' + time);
                 dateTime.add('hours', autoIncrementBy);
 
-                $date.val(dateTime.format("MM/DD/YYYY"));
-                $hour.val(dateTime.hours());
+                date.val(dateTime.format("MM/DD/YYYY"));
+                hour.val(dateTime.hours());
                 $minute.val(dateTime.minutes());
             }
         }
@@ -690,35 +693,40 @@ define([
 
 
     var PointReleaseSpillFormView = AjaxFormView.extend({
-        initialize: function(options) {
+         initialize: function(options) {
             this.constructor.__super__.initialize.apply(this, arguments);
 
-            this.$container.on('click', this.id + ' .edit-spill-name', this.editSpillNameClicked);
-            this.$container.on('click', this.id + ' .save-spill-name', this.saveSpillNameButtonClicked);
-            this.$container.on('change', this.id + ' input[name="name"]', this.spillNameChanged);
+            // Extend prototype's events with ours.
+            this.events = _.extend({}, AjaxFormView.prototype.events, this.events);
+        },
+
+        events: {
+            'click .edit-spill-name': 'editSpillNameClicked',
+            'click .save-spill-name': 'saveSpillNameButtonClicked',
+            'change input[name="name"]': 'spillNameChanged'
         },
 
         editSpillNameClicked: function(event) {
             event.preventDefault();
-            var $link = $(event.target);
-            var $form = $link.closest('.form');
-            $form.find('.top-form').removeClass('hidden');
-            $form.find('.page-header h3').addClass('hidden');
+            var link = $(event.target);
+            var form = link.closest('.form');
+            form.find('.top-form').removeClass('hidden');
+            form.find('.page-header h3').addClass('hidden');
         },
 
         saveSpillNameButtonClicked: function(event) {
             event.preventDefault();
-            var $link = $(event.target);
-            var $form = $link.closest('.form');
-            $form.find('.top-form').addClass('hidden');
-            $form.find('.page-header h3').removeClass('hidden');
+            var link = $(event.target);
+            var form = link.closest('.form');
+            form.find('.top-form').addClass('hidden');
+            form.find('.page-header h3').removeClass('hidden');
         },
 
         spillNameChanged: function(event) {
-            var $input = $(event.target);
-            var form = $input.closest('.form');
-            var $header = form.find('.page-header').find('a');
-            $header.text($input.val());
+            var input = $(event.target);
+            var form = input.closest('.form');
+            var header = form.find('.page-header').find('a');
+            header.text(input.val());
         }
     });
        
