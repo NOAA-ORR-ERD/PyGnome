@@ -38,6 +38,7 @@ define([
             // An array of timestamps, one for each step we expect the server to
             // make, passed back when we initiate a model run.
             this.expectedTimeSteps = opts.expectedTimeSteps || [];
+            this.bounds = opts.bounds;
             // Optionally specify the zoom level.
             this.zoomLevel = opts.zoomLevel === undefined ? 4 : opts.zoomLevel;
             // If true, `Model` will request a new set of time steps from the server
@@ -109,6 +110,7 @@ define([
 
             this.dirty = false;
             this.expectedTimeSteps = data.expected_time_steps;
+            this.bounds = data.map_bounds;
 
             if (_.has(data, 'time_step')) {
                 this.addTimeStep(data.time_step)                ;

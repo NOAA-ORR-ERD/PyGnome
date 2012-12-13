@@ -31,7 +31,7 @@
                              or form.start_position_z.errors else ''}">
                 <label class="control-label">Start Position (X, Y, Z)</label>
 
-                <div class="controls">
+                <div class="controls start-coordinates">
                     ${form.start_position_x(class_='coordinate')}
                      % if form.start_position_x.errors:
                             <span class="help">

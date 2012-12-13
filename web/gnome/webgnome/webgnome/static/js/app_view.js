@@ -33,7 +33,8 @@ define([
             this.model = new models.Model(this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
-                currentTimeStep: this.options.currentTimeStep
+                currentTimeStep: this.options.currentTimeStep,
+                bounds: this.options.mapBounds || []
             });
 
             this.menuView = new views.MenuView({
@@ -71,8 +72,7 @@ define([
                 backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                model: this.model,
-                latLongBounds: this.options.mapBounds
+                model: this.model
             });
 
             this.mapControlView = new views.MapControlView({

@@ -246,7 +246,7 @@ define([
         },
 
         getSize: function() {
-            var image = this.getActiveImage();
+            var image = $('.background');
             return {height: image.height(), width: image.width()};
         },
 
@@ -345,24 +345,50 @@ define([
                 src: url
             });
 
-            background.imagesLoaded(this.createCanvas);
+            background.imagesLoaded(this.createCanvases);
             background.appendTo(map);
         },
 
-        createCanvas: function() {
+        /*
+         Create a background canvas and paint lines for all spills on the
+         page.
+
+         Create a foreground canvas and setup event handlers to capture new
+         spills added to the map. This canvas is cleared entirely during line
+         additions (as the line position changes) and when the form container
+         refreshes.
+         */
+        createCanvases: function() {
             var _this = this;
             var background = $(this.mapEl).find('.background');
 
-            var canvas = $('<canvas>').attr({
+             var backgroundCanvas = $('<canvas>').attr({
                 id: 'canvas-background',
+                height: background.height(),
+                width: background.width()
+            });
+
+            var foregroundCanvas = $('<canvas>').attr({
+                id: 'canvas-foreground',
                 class: 'drawable',
                 height: background.height(),
                 width: background.width()
             });
 
-            // TODO: Update canvas size when window changes.
+            function drawLine(ctx, start_x, start_y, end_x, end_y) {
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(start_x, start_y);
+                ctx.lineTo(end_x, end_y);
+                ctx.stroke();
+                ctx.closePath();
+                ctx.beginPath();
+                ctx.closePath();
+            }
 
-            canvas.mousedown(function(ev) {
+            // TODO: Update canvas sizes when window changes.
+
+            foregroundCanvas.mousedown(function(ev) {
                 this.pressed = true;
                 if (ev.originalEvent['layerX'] != undefined) {
                     this.x0 = ev.originalEvent.layerX;
@@ -375,7 +401,50 @@ define([
                 }
             });
 
-            canvas.mousemove(function(ev) {
+            var spillForms = $('.spill');
+            _.each(spillForms, function(form) {
+                var ctx = foregroundCanvas[0].getContext('2d');
+                var start = $(form).find('.start-coordinates');
+                var end = $(form).find('.end-coordinates');
+                var startInputs = $(start).find('.coordinate');
+                var startX, startY, startZ, endX, endY, endZ;
+                
+                startX = endX = $(startInputs[0]).val();
+                startY = endY = $(startInputs[1]).val();
+                startZ = endZ = $(startInputs[2]).val();
+
+                if (!startX || !startY) {
+                    return;
+                }
+                
+                if (end.length) {
+                    var endInputs = $(end).find('.coordinate');
+                    endX = $(endInputs[0]).val();
+                    endY = $(endInputs[1]).val();
+                    endZ = $(endInputs[2]).val();
+                }
+
+                var pixelStart = _this.pixelsFromCoordinates({
+                    lat: startY,
+                    long: startX
+                });
+
+                var pixelEnd = _this.pixelsFromCoordinates({
+                    lat: endY,
+                    long: endX
+                });
+
+                if (startX === endX && startY === endY) {
+                    pixelEnd.x += 5;
+                    pixelEnd.y += 5;
+                }
+
+                util.log(pixelEnd);
+
+                drawLine(ctx, pixelStart.x, pixelStart.y, pixelStart.x, pixelEnd.y);
+            });
+
+            foregroundCanvas.mousemove(function(ev) {
                 if (!this.pressed) {
                     return;
                 }
@@ -392,31 +461,26 @@ define([
                     ycurr = ev.originalEvent.y;
                 }
 
-                // draw a line from the center
-                ctx.lineWidth = 2;
+                // TODO: Draw a line for each spill. Redraw when changed.
                 ctx.clearRect(0, 0, this.width, this.height);
-                ctx.beginPath();
-                ctx.moveTo(this.width / 2, this.height / 2);
-                ctx.lineTo(xcurr, ycurr);
-                ctx.stroke();
-                ctx.closePath();
-
-                ctx.beginPath();
-                ctx.closePath();
+                drawLine(ctx, this.x0, this.y0, xcurr, ycurr);
             });
 
-            $(canvas).mouseup(function(ev) {
+            $(foregroundCanvas).mouseup(function(ev) {
+                var offset = $(this).offset();
+
                 if (this.pressed && this.moved) {
                     var coords = _this.coordinatesFromPixels({
-                        x: ev.clientX,
-                        y: ev.clientY
+                        x: ev.clientX - offset.left,
+                        y: ev.clientY - offset.top
                     });
-                    _this.trigger(MapView.SPILL_DRAWN, coords.lat, coords.long);
+                    _this.trigger(MapView.SPILL_DRAWN, coords.long, coords.lat);
                 }
                 this.pressed = this.moved = false;
             });
 
-            canvas.appendTo(map);
+            backgroundCanvas.appendTo(map);
+            foregroundCanvas.appendTo(map);
         },
 
         modelRunBegan: function(data) {
@@ -444,13 +508,16 @@ define([
                 throw new MapViewException('No current image size detected.');
             }
 
-            var minLat = this.latLongBounds[0][1];
-            var minLong = this.latLongBounds[0][0];
-            var maxLat = this.latLongBounds[1][1];
-            var maxLong = this.latLongBounds[2][0];
+            var minLat = this.model.bounds[0][1];
+            var minLong = this.model.bounds[0][0];
+            var maxLat = this.model.bounds[1][1];
+            var maxLong = this.model.bounds[2][0];
 
             var x = ((point.long - minLong) / (maxLong - minLong)) * size.width;
             var y = ((point.lat - minLat) / (maxLat - minLat)) * size.height;
+
+            // Adjust for different origin
+            y = -y + size.height;
 
             return {x: Math.round(x), y: Math.round(y)};
         },
@@ -462,10 +529,13 @@ define([
                 throw new MapViewException('No current image size detected.');
             }
 
-            var minLat = this.latLongBounds[0][1];
-            var minLong = this.latLongBounds[0][0];
-            var maxLat = this.latLongBounds[1][1];
-            var maxLong = this.latLongBounds[2][0];
+            var minLat = this.model.bounds[0][1];
+            var minLong = this.model.bounds[0][0];
+            var maxLat = this.model.bounds[1][1];
+            var maxLong = this.model.bounds[2][0];
+
+            // Adjust for different origin
+            point.y = -point.y + size.height;
 
             var lat = (maxLat - minLat) * (point.y / size.height) + minLat;
             var lng = (maxLong - minLong) * (point.x / size.width) + minLong;

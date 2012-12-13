@@ -104,7 +104,9 @@ legend {
 
 .drawable {
     z-index: 1025;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .frame {

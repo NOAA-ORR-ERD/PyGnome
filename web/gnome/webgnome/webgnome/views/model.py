@@ -351,6 +351,7 @@ def run_model(request, model):
 
     data['background_image'] = _get_model_image_url(
         request, model, 'background_map.png')
+    data['map_bounds'] = model.map.map_bounds.tolist()
 
     first_step = _get_time_step(request, model)
 
