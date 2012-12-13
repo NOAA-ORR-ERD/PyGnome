@@ -3,12 +3,9 @@
 #include "Cross.h"
 #include "Uncertainty.h"
 #include "GridVel.h"
-//#include "NetCDFMover.h"
 #include "GridCurrentMover.h"
 #include "DagTreeIO.h"
-//#include "netcdf.h"
 #include "TimeGridVel.h"
-//#include "TimeGridVel_c.h"
 
 
 static PopInfoRec GridCurrentMoverPopTable[] = {
@@ -783,8 +780,6 @@ OSErr GridCurrentMover::DeleteItem(ListItem item)
 	return 0;
 }
 
-#ifndef pyGNOME
-// this is really a gui function...
 Boolean GridCurrentMover::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr)
 {
 	char uStr[32],sStr[32],errmsg[256];
@@ -905,7 +900,6 @@ CalcStr:
 	*/
 	return true;
 }
-#endif
 
 Boolean GridCurrentMover::DrawingDependsOnTime(void)
 {

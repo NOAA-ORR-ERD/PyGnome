@@ -735,7 +735,7 @@ ListItem ADCPMover::GetNthListItem(long n, short indent, short *style, char *tex
 					item.index = I_ADCPSTARTTIME;
 					//item.bullet = BULLET_DASH;
 					item.indent++;
-					sprintf(text, "Start Time: %.2f hours",fUncertainStartTime/3600);
+					sprintf(text, "Start Time: %.2f hours",((double)fUncertainStartTime)/3600.);
 					return item;
 				}
 				

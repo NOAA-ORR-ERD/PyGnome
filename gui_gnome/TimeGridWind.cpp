@@ -143,15 +143,15 @@ Boolean TimeGridWindRect::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	
 	lengthU = sqrt(velocity.u * velocity.u + velocity.v * velocity.v);
 	//lengthS = this->fWindScale * lengthU;
-	lengthS = lengthU;
+	lengthS = lengthU * fVar.fileScaleFactor;
 	
 	StringWithoutTrailingZeros(uStr,lengthU,4);
 	StringWithoutTrailingZeros(sStr,lengthS,4);
 	
-	//sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
-	//this->className, uStr, sStr, fNumRows-indices.v-1, indices.h);
-	sprintf(diagnosticStr, " [unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
-			uStr, sStr, fNumRows-indices.v-1, indices.h);
+	sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
+			fVar.userName, uStr, sStr, fNumRows-indices.v-1, indices.h);
+	//sprintf(diagnosticStr, " [unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
+			//uStr, sStr, fNumRows-indices.v-1, indices.h);
 	
 	return true;
 }
@@ -436,17 +436,17 @@ Boolean TimeGridWindCurv::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticSt
 	StringWithoutTrailingZeros(sStr,lengthS,4);
 	if (indices.h >= 0 && fNumRows-indices.v-1 >=0 && indices.h < fNumCols && fNumRows-indices.v-1 < fNumRows)
 	{
-		//sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
-		//this->className, uStr, sStr, fNumRows-indices.v-1, indices.h);
-		sprintf(diagnosticStr, " [unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
-				uStr, sStr, fNumRows-indices.v-1, indices.h);
+		sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
+				fVar.fileScaleFactor, uStr, sStr, fNumRows-indices.v-1, indices.h);
+		//sprintf(diagnosticStr, " [unscaled: %s m/s, scaled: %s m/s], file indices : [%ld, %ld]",
+				//uStr, sStr, fNumRows-indices.v-1, indices.h);
 	}
 	else
 	{
-		//sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s]",
-		//this->className, uStr, sStr);
-		sprintf(diagnosticStr, " [unscaled: %s m/s, scaled: %s m/s]",
-				uStr, sStr);
+		sprintf(diagnosticStr, " [grid: %s, unscaled: %s m/s, scaled: %s m/s]",
+				fVar.fileScaleFactor, uStr, sStr);
+		//sprintf(diagnosticStr, " [unscaled: %s m/s, scaled: %s m/s]",
+				//uStr, sStr);
 	}
 	
 	return true;

@@ -4,8 +4,6 @@
 
 #include "GridCurrentMover_c.h"
 
-//#include "TimeGridVel.h"
-//#include "GridVel.h"
 
 enum {
 	I_GRIDCURRENTNAME = 0 ,

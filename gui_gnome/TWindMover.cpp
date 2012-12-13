@@ -237,7 +237,7 @@ ListItem TWindMover::GetNthListItem(long n, short indent, short *style, char *te
 				{
 					item.indent++;
 					item.index = I_WINDSTARTTIME;
-					sprintf(text, "Start Time: %.2f hours",(float)(fUncertainStartTime/3600));
+					sprintf(text, "Start Time: %.2f hours",((double)fUncertainStartTime)/3600.);
 					return item;
 				}
 				

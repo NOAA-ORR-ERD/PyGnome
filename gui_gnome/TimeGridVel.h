@@ -5,7 +5,7 @@
 #include "TimeGridVel_c.h"
 
 #include "GridVel.h"
-#include "PtCurMap.h"
+//#include "PtCurMap.h"
 #include "TWindMover.h"
 
 class TimeGridVel : virtual public TimeGridVel_c
@@ -68,7 +68,6 @@ class TimeGridVelTri : virtual public TimeGridVelTri_c, public TimeGridVelCurv
 {
 public:
 						TimeGridVelTri();
-						//TimeGridVelTri (/*TMap *owner, */char *name);
 						~TimeGridVelTri () { Dispose (); }
 	virtual void		Dispose ();
 
