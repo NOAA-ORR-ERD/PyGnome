@@ -439,8 +439,6 @@ define([
                     pixelEnd.y += 5;
                 }
 
-                util.log(pixelEnd);
-
                 drawLine(ctx, pixelStart.x, pixelStart.y, pixelStart.x, pixelEnd.y);
             });
 

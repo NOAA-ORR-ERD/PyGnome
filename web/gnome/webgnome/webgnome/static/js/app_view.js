@@ -141,9 +141,6 @@ define([
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
-
-            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
-            this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
         },
 
         setupKeyboardHandlers: function() {
@@ -204,6 +201,8 @@ define([
         refreshForms: function() {
             this.destroyForms();
             this.addForms();
+            // Ignore the local time step cache on next model run.
+            this.model.dirty = true;
         },
 
         addForms: function() {
@@ -218,6 +217,9 @@ define([
                 el: $('#' + this.options.addSpillFormId),
                 formContainerEl: '#' + this.options.formContainerId
             });
+
+            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+            this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
 
             this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
 
@@ -527,6 +529,7 @@ define([
 
         spillChosen: function(spillType, coords) {
             var formView = this.formViews.get(spillType);
+            util.log(formView, this.formViews.formViews);
 
             if (formView === undefined) {
                 return;

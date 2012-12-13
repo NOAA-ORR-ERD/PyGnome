@@ -183,6 +183,7 @@ define([
             }
 
             if (this.dirty || needToGetRunUntilStep) {
+                options['no_cache'] = true;
                 this.doRun(options);
                 return;
             }

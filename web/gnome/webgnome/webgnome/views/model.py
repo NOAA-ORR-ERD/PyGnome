@@ -335,23 +335,32 @@ def run_model(request, model):
         w_mover = WebWindMover(timeseries=series)
         model.add_mover(w_mover)
 
+
     # TODO: Set separately in map configuration form/view.
-    map_file = os.path.join(
-        request.registry.settings['project_root'],
-        'sample_data', 'LongIslandSoundMap.BNA')
+    if not model.map:
+        map_file = os.path.join(
+            request.registry.settings['project_root'],
+            'sample_data', 'LongIslandSoundMap.BNA')
 
-    # the land-water map
-    model.map = gnome.map.MapFromBNA(
-        map_file, refloat_halflife=6 * 3600)
+        # the land-water map
+        model.map = gnome.map.MapFromBNA(
+            map_file, refloat_halflife=6 * 3600)
 
-    canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
-    polygons = haz_files.ReadBNA(map_file, "PolygonSet")
-    canvas.set_land(polygons)
-    model.output_map = canvas
+        canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
+        polygons = haz_files.ReadBNA(map_file, "PolygonSet")
+        canvas.set_land(polygons)
+        model.output_map = canvas
 
     data['background_image'] = _get_model_image_url(
         request, model, 'background_map.png')
     data['map_bounds'] = model.map.map_bounds.tolist()
+
+    # Rewind the model if on the last step and the client requested it.
+    # TODO: Make a property
+    if model.current_time_step >= model._num_time_steps and \
+            request.POST.get('no_cache', False):
+        print 'rewind'
+        model.rewind()
 
     first_step = _get_time_step(request, model)
 
