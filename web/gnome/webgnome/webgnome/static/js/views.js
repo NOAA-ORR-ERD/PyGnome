@@ -213,7 +213,7 @@ define([
             var img = $('<img>').attr({
                 'class': 'frame',
                 'data-id': timeStep.id,
-                src: timeStep.get('url')
+                'src': timeStep.get('url')
             }).css('display', 'none');
 
             img.appendTo(map);
@@ -239,6 +239,10 @@ define([
         // Clear out the current frames.
         clear: function() {
             $(this.mapEl).not('.background').empty();
+        },
+
+        getBackground: function() {
+            return $(this.mapEl).find('img.background')[0];
         },
 
         getSize: function() {
@@ -334,15 +338,85 @@ define([
             }
 
             var map = $(this.mapEl);
-
             map.find('.background').remove();
 
-            var img = $('<img>').attr({
-                'class': 'background',
+            var background = $('<img>').attr({
+                class: 'background',
                 src: url
             });
 
-            img.appendTo(map);
+            background.imagesLoaded(this.createCanvas);
+            background.appendTo(map);
+        },
+
+        createCanvas: function() {
+            var _this = this;
+            var background = $(this.mapEl).find('.background');
+
+            var canvas = $('<canvas>').attr({
+                id: 'canvas-background',
+                class: 'drawable',
+                height: background.height(),
+                width: background.width()
+            });
+
+            // TODO: Update canvas size when window changes.
+
+            canvas.mousedown(function(ev) {
+                this.pressed = true;
+                if (ev.originalEvent['layerX'] != undefined) {
+                    this.x0 = ev.originalEvent.layerX;
+                    this.y0 = ev.originalEvent.layerY;
+                }
+                else {
+                    // in IE, we use this property
+                    this.x0 = ev.originalEvent.x;
+                    this.y0 = ev.originalEvent.y;
+                }
+            });
+
+            canvas.mousemove(function(ev) {
+                if (!this.pressed) {
+                    return;
+                }
+                this.moved = true;
+                var ctx = this.getContext('2d');
+                var xcurr, ycurr;
+                if (ev.originalEvent['layerX'] != undefined) {
+                    xcurr = ev.originalEvent.layerX;
+                    ycurr = ev.originalEvent.layerY;
+                }
+                else {
+                    // in IE, we use this property
+                    xcurr = ev.originalEvent.x;
+                    ycurr = ev.originalEvent.y;
+                }
+
+                // draw a line from the center
+                ctx.lineWidth = 2;
+                ctx.clearRect(0, 0, this.width, this.height);
+                ctx.beginPath();
+                ctx.moveTo(this.width / 2, this.height / 2);
+                ctx.lineTo(xcurr, ycurr);
+                ctx.stroke();
+                ctx.closePath();
+
+                ctx.beginPath();
+                ctx.closePath();
+            });
+
+            $(canvas).mouseup(function(ev) {
+                if (this.pressed && this.moved) {
+                    var coords = _this.coordinatesFromPixels({
+                        x: ev.clientX,
+                        y: ev.clientY
+                    });
+                    _this.trigger(MapView.SPILL_DRAWN, coords.lat, coords.long);
+                }
+                this.pressed = this.moved = false;
+            });
+
+            canvas.appendTo(map);
         },
 
         modelRunBegan: function(data) {
@@ -409,7 +483,8 @@ define([
         REFRESH_FINISHED: 'mapView:refreshFinished',
         PLAYING_FINISHED: 'mapView:playingFinished',
         FRAME_CHANGED: 'mapView:frameChanged',
-        MAP_WAS_CLICKED: 'mapView:mapWasClicked'
+        MAP_WAS_CLICKED: 'mapView:mapWasClicked',
+        SPILL_DRAWN: 'mapView:spillDrawn'
     });
 
 

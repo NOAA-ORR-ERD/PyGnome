@@ -102,13 +102,14 @@ legend {
     display: inline-block;
 }
 
-.frame {
-    z-index: 1000;
+.drawable {
+    z-index: 1025;
+    position: relative;
 }
 
-.modal.wind {
-    width: 850px;
-    margin: -395px 0 0 -425px;
+.frame {
+    z-index: 1000;
+    position: relative;
 }
 
 .background {

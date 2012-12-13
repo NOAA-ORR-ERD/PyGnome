@@ -136,6 +136,7 @@ define([
             this.mapView.on(views.MapView.DRAGGING_FINISHED, this.zoomIn);
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
             this.mapView.on(views.MapView.MAP_WAS_CLICKED, this.zoomOut);
+            this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
 
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
@@ -194,6 +195,10 @@ define([
             if (this.formViews) {
                 this.formViews.deleteAll();
             }
+        },
+
+        spillDrawn: function(x, y) {
+            this.addSpillFormView.show([x, y]);
         },
 
         refreshForms: function() {
@@ -520,14 +525,14 @@ define([
             formView.show();
         },
 
-        spillChosen: function(spillType) {
+        spillChosen: function(spillType, coords) {
             var formView = this.formViews.get(spillType);
 
             if (formView === undefined) {
                 return;
             }
 
-            formView.show();
+            formView.show(coords);
         }
     });
 

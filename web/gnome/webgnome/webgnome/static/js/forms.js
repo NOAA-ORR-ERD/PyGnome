@@ -407,7 +407,11 @@ define([
             return this.$el.find('form');
         },
 
-        show: function() {
+        show: function(coords) {
+            if (coords) {
+                this.coords = coords;
+            }
+
             this.$el.modal();
         },
 
@@ -421,7 +425,8 @@ define([
             var spillType = form.find('select[name="spill_type"]').val();
 
             if (spillType) {
-                this.trigger(AddSpillFormView.SPILL_CHOSEN, spillType);
+                this.trigger(AddSpillFormView.SPILL_CHOSEN, spillType, this.coords);
+                this.coords = null;
                 this.hide();
             }
 
@@ -740,6 +745,16 @@ define([
 
             // Extend prototype's events with ours.
             this.events = _.extend({}, AjaxFormView.prototype.events, this.events);
+        },
+
+        show: function(coords) {
+            AjaxFormView.prototype.show.call(this);
+
+            if (coords) {
+                var coordInputs = this.$el.find('.coordinate');
+                $(coordInputs[0]).val(coords[0]);
+                $(coordInputs[1]).val(coords[1]);
+            }
         },
 
         events: {
