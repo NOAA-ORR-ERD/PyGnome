@@ -15,7 +15,7 @@ define([
             var value = Backbone.Model.prototype.get.call(this, attr);
 
             if (attr === 'timestamp') {
-                value = util.getUTCStringForTimestamp(value);
+                value = util.formatTimestamp(value);
             }
 
             return value;
@@ -81,8 +81,7 @@ define([
             var timestamp;
 
             if (this.serverHasTimeStep(stepNum)) {
-                timestamp = util.getUTCStringForTimestamp(
-                    this.expectedTimeSteps[stepNum]);
+                timestamp = util.formatTimestamp(this.expectedTimeSteps[stepNum]);
             }
 
             return timestamp;

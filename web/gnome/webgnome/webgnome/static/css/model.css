@@ -158,6 +158,10 @@ input[type="color"],
     width: 80px;
 }
 
+.coordinate {
+    width: 62px;
+}
+
 .speed_type {
     width: 120px;
 }

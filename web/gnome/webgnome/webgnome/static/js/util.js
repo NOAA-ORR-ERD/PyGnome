@@ -2,7 +2,8 @@
 
 define([
     'jquery',
-    'lib/underscore'
+    'lib/underscore',
+    'lib/moment'
 ], function($, _) {
 
     /*
@@ -32,7 +33,7 @@ define([
         }
 
         window.alert('Could not connect to server.');
-        window.noaa.erd.util.log(xhr, textStatus, errorThrown);
+        log(xhr, textStatus, errorThrown);
     }
 
     /*
@@ -61,13 +62,14 @@ define([
     }
 
     /*
-     Return a UTC date string for `timestamp`, which should be in a format
-     acceptable to `Date.parse`.
+     Return a date string for `timestamp`.
+
+     `timestamp` which should be in a format acceptable to `Date.parse`.
      */
-    function getUTCStringForTimestamp(timestamp) {
-        var date = new Date(Date.parse(timestamp));
-        if (date) {
-            timestamp = date.toUTCString();
+    function formatTimestamp(timestamp) {
+        var date = moment(timestamp);
+        if (date.isValid()) {
+            timestamp = date.format('MM/DD/YYYY HH:mm')
         }
         return timestamp;
     }
@@ -76,7 +78,7 @@ define([
         log: log,
         handleAjaxError: handleAjaxError,
         parseMessage: parseMessage,
-        getUTCStringForTimestamp: getUTCStringForTimestamp
+        formatTimestamp: formatTimestamp
     };
 
 });
