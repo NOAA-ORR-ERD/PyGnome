@@ -332,7 +332,7 @@ def run_model(request, model):
         series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
         series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
 
-        w_mover = WebWindMover(timeseries=series)
+        w_mover = WebWindMover(timeseries=series, is_constant=False)
         model.add_mover(w_mover)
 
 

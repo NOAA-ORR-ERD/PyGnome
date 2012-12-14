@@ -219,6 +219,11 @@ define([
             img.appendTo(map);
 
             $(img).imagesLoaded(function() {
+                // TODO: Check how much time has passed after next time
+                // // step is ready. If longer than N, show the image
+                // immediately. Otherwise, set a delay and then show image.
+
+                // TODO: Make the timeout value configurable.
                 setTimeout(_this.showImageForTimeStep, 50, [timeStep.id]);
             });
         },

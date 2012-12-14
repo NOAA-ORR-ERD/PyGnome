@@ -116,6 +116,9 @@ legend {
 
 .background {
     z-index: 10;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .alert {
@@ -202,4 +205,8 @@ select, input[type="file"] {
 
 .model-settings .controls {
     margin-left: 230px;
+}
+
+.table tbody tr.info td {
+    background-color: #B5DAEC;
 }

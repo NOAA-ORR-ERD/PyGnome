@@ -292,10 +292,15 @@ define([
        },
 
        timeStepRequestFailure: function(xhr, textStatus, errorThrown) {
-           if (xhr.status === 404) {
+           if (xhr.status === 500) {
+               // TODO: Inform user of more information.
+               alert('The run failed due to a server-side error.');
+           } if (xhr.status === 404) {
                // TODO: Maybe we shouldn't return 404 when finished? Seems wrong.
-               this.finishRun();
+               alert('The model you were working with is no longer available.');
            }
+           this.finishRun();
+           util.log(xhr);
        },
 
         /*
