@@ -73,6 +73,7 @@ define([
             this.placeholderEl = this.options.placeholderEl;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
+            this.imageTimeout = this.options.imageTimeout || 10;
 
             this.createPlaceholderCopy();
             this.makeImagesClickable();
@@ -224,7 +225,9 @@ define([
                 // immediately. Otherwise, set a delay and then show image.
 
                 // TODO: Make the timeout value configurable.
-                setTimeout(_this.showImageForTimeStep, 50, [timeStep.id]);
+                setTimeout(_this.showImageForTimeStep,
+                           this.imageTimeout,
+                           [timeStep.id]);
             });
         },
 
@@ -234,7 +237,9 @@ define([
             // We must be playing a cached model run because the image already
             // exists. In all other cases the image should NOT exist.
             if (imageExists) {
-                setTimeout(this.showImageForTimeStep, 50, [timeStep.id]);
+                setTimeout(this.showImageForTimeStep,
+                           this.imageTimeout,
+                           [timeStep.id]);
                 return;
             }
 
