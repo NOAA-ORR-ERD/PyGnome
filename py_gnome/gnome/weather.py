@@ -5,6 +5,7 @@ the Wind object defines the Wind conditions for the spill
 from gnome import basic_types
 from gnome.utilities import transforms, time_utils, convert
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
+from hazpy import unit_conversion
 
 import numpy as np
 
@@ -26,9 +27,10 @@ class Wind(object):
         :param file: path to a long wind file from which to read wind data
         :param data_format: default data_format, either magnitude_direction or wind_uv
         :type data_format: integer defined by gnome.basic_types.data_format.*
-        :param units: units for the timeseries. If 'file' is given, then units are read in from the file. 
-                      CURRENTLY, JUST A PLACE HOLDER. THIS IS NOT IMPLEMENTED YET
-        :type units: string, for example: 'knots', 'meters per second', 'miles per hour' etc
+        :param units: units associated with the timeseries data. If 'file' is given, then units are read in from the file. 
+                      These units must be valid as defined in the hazpy unit_conversion module: 
+                      unit_conversion.GetUnitNames('Velocity') 
+        :type units:  string, for example: 'knot', 'meter per second', 'mile per hour' etc
         """
         
         if( timeseries is None and file is None):
@@ -36,28 +38,33 @@ class Wind(object):
         
         if( timeseries is not None):
             self._check_timeseries(timeseries, units)
-            self._user_units = units
             
-            # TODO: Unit conversion not implemented yet
-            
-            time_value_pair = convert.to_time_value_pair(timeseries, data_format)
+            timeseries['value'] = self._convert_units(timeseries['value'], data_format, units, 'meter per second')
+            time_value_pair = convert.to_time_value_pair(timeseries, data_format)   # data_format is checked during conversion
+                
             self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
-            
+            self._user_units = units
         else:
             self.ossm = CyOSSMTime(path=file,file_contains=data_format)
-            #TODO: implement correct user_units as string 
-            #self._user_units = self.ossm.user_units  # TODO: Check if C++ checks for validity of units
-            self._user_units = "to be implemented"
+            self._user_units = self.ossm.user_units
         
+    def _convert_units(self, data, data_format, from_unit, to_unit):
+        """
+        Private method to convert units for the 'value' stored in the date/time value pair
+        """
+        if from_unit != to_unit:
+            data[:,0]  = unit_conversion.convert('Velocity', from_unit, to_unit, data[:,0])
+            if data_format == basic_types.data_format.wind_uv:
+                data[:,1]  = unit_conversion.convert('Velocity', from_unit, to_unit, data[:,1])
         
+        return data
+    
     def _check_timeseries(self, timeseries, units):
         """
         Run some checks to make sure timeseries is valid
         """
         if type(units) is not str:
             raise TypeError("timeseries must include 'units' as a string")
-        
-        # TODO: Also check units are valid
             
         try:
             if( timeseries.dtype is not basic_types.datetime_value_2d):
@@ -106,7 +113,7 @@ class Wind(object):
     
     user_units = property( lambda self: self._user_units)   
     
-    def get_timeseries(self, data_format, datetime=None, units=None):
+    def get_timeseries(self, datetime=None, units=None, data_format=basic_types.data_format.magnitude_direction):
         """
         returns the timeseries in the requested format. If datetime=None, then the original timeseries
         that was entered is returned. If datetime is a list containing datetime objects, then the
@@ -115,10 +122,12 @@ class Wind(object):
         
         The output data_format is defined by the basic_types.data_format
         
+        :param datetime: [optional] datetime object or list of datetime objects for which the value is desired
+        :type datetime: datetime object
+        :param units: [optional] outputs data in these units. Default is to output data in user_units
+        :type units: string. Uses the hazpy.unit_conversion module
         :param data_format: output format for the times series; as defined by basic_types.data_format.
         :type data_format: integer value defined by basic_types.data_format.* (see cy_basic_types.pyx)
-        :param datetime: optional datetime object or list of datetime objects for which the value is desired
-        :type datetime: datetime object
         :returns: numpy array containing dtype=basic_types.datetime_value_2d. Contains user specified datetime
         and the corresponding values in user specified data_format
         :param units: optional parameter for desired output units
@@ -132,10 +141,11 @@ class Wind(object):
             timeval['value'] = self.ossm.get_time_value(timeval['time'])
             datetimeval = convert.to_datetime_value_2d(timeval, data_format)
         
-        # TODO: Unit coversion not implemented yet
         if units is not None:
-            print "NOTE: unit conversion not implemented yet"
-        
+           datetimeval['value'] = self._convert_units(datetimeval['value'], data_format, 'meter per second', units)
+        else:
+           datetimeval['value'] = self._convert_units(datetimeval['value'], data_format, 'meter per second', self.user_units)
+            
         return datetimeval
     
     def set_timeseries(self, datetime_value_2d, units, data_format=basic_types.data_format.magnitude_direction):
@@ -151,7 +161,8 @@ class Wind(object):
         :type data_format: integer value defined by basic_types.data_format.* (see cy_basic_types.pyx)
         """
         self._check_timeseries(datetime_value_2d, units)
-        # TODO: Unit coversion not implemented yet
+        datetime_value_2d['value'] = self._convert_units(datetime_value_2d['value'], data_format, units, 'meter per second')
+        
         timeval = convert.to_time_value_pair(datetime_value_2d, data_format)
         self.ossm.timeseries = timeval
     

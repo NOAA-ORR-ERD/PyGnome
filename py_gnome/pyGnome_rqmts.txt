@@ -5,3 +5,4 @@ Cython>=0.17.1
 Pyrex>=0.9.8.6
 pytest>=2.3.4
 sphinx
+-e svn+https://svn.orr.noaa.gov/svn/Hazpy/trunk#egg=Hazpy
