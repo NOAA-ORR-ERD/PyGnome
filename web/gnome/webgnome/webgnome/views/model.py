@@ -18,7 +18,7 @@ from webgnome.forms.movers import (
     DeleteMoverForm
 )
 
-from webgnome.forms.spills import DeleteSpillForm
+from webgnome.forms.spills import DeleteSpillForm, AddSpillForm, PointReleaseSpillForm
 
 from webgnome.forms.model import RunModelUntilForm, ModelSettingsForm
 from webgnome.forms.movers import mover_form_classes
@@ -63,8 +63,6 @@ def _get_spill_forms(request, model):
     update_forms = []
     delete_forms = []
 
-    print model.spills
-
     for spill in model.spills:
         delete_route = util.get_form_route(request, spill, 'delete')
         update_route = util.get_form_route(request, spill, 'update')
@@ -97,8 +95,12 @@ def model_forms(request, model):
         'settings_form': ModelSettingsForm(obj=model),
         'settings_form_url': request.route_url('model_settings'),
         'add_mover_form': AddMoverForm(),
+        'add_spill_form': AddSpillForm(),
         'wind_mover_form': WindMoverForm(),
         'wind_mover_form_url': request.route_url('create_wind_mover'),
+        'point_release_spill_form': PointReleaseSpillForm(),
+        'point_release_spill_form_url': request.route_url(
+            'create_point_release_spill'),
         'form_view_container_id': 'modal-container',
         'spill_update_forms': [],
         'spill_delete_forms': []
@@ -113,8 +115,6 @@ def model_forms(request, model):
     
     context['spill_update_forms'] = spill_update_forms
     context['spill_delete_forms'] = spill_delete_forms
-
-    print context
 
     return {
         'html': render('model_forms.mak', context, request)
@@ -150,11 +150,8 @@ def show_model(request):
 
     data['model'] = model
     data['model_form_html'] = model_forms(request)['html']
-
-     # TODO: Remove this after we decide on where to put the drop-down menu.
-    data['show_menu_above_map'] = 'map_menu' in request.GET
-
     data['add_mover_form_id'] = AddMoverForm().id
+    data['add_spill_form_id'] = AddSpillForm().id
     data['model_forms_url'] = request.route_url('model_forms')
     data['run_model_until_form_url'] = request.route_url('run_model_until')
 
@@ -335,25 +332,35 @@ def run_model(request, model):
         series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
         series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
 
-        w_mover = WebWindMover(timeseries=series)
+        w_mover = WebWindMover(timeseries=series, is_constant=False)
         model.add_mover(w_mover)
 
+
     # TODO: Set separately in map configuration form/view.
-    map_file = os.path.join(
-        request.registry.settings['project_root'],
-        'sample_data', 'LongIslandSoundMap.BNA')
+    if not model.map:
+        map_file = os.path.join(
+            request.registry.settings['project_root'],
+            'sample_data', 'LongIslandSoundMap.BNA')
 
-    # the land-water map
-    model.map = gnome.map.MapFromBNA(
-        map_file, refloat_halflife=6 * 3600)
+        # the land-water map
+        model.map = gnome.map.MapFromBNA(
+            map_file, refloat_halflife=6 * 3600)
 
-    canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
-    polygons = haz_files.ReadBNA(map_file, "PolygonSet")
-    canvas.set_land(polygons)
-    model.output_map = canvas
+        canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
+        polygons = haz_files.ReadBNA(map_file, "PolygonSet")
+        canvas.set_land(polygons)
+        model.output_map = canvas
 
     data['background_image'] = _get_model_image_url(
         request, model, 'background_map.png')
+    data['map_bounds'] = model.map.map_bounds.tolist()
+
+    # Rewind the model if on the last step and the client requested it.
+    # TODO: Make a property
+    if model.current_time_step >= model._num_time_steps and \
+            request.POST.get('no_cache', False):
+        print 'rewind'
+        model.rewind()
 
     first_step = _get_time_step(request, model)
 

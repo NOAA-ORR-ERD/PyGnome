@@ -20,6 +20,7 @@ except ImportError:
     sys.path.append('../../../py_gnome')
     from gnome.model import Model
     from gnome.movers import WindMover
+    from gnome.spill import PointReleaseSpill
 
 
 class Wind(object):

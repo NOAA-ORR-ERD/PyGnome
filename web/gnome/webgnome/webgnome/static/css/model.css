@@ -102,17 +102,23 @@ legend {
     display: inline-block;
 }
 
-.frame {
-    z-index: 1000;
+.drawable {
+    z-index: 1025;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
-.modal.wind {
-    width: 850px;
-    margin: -395px 0 0 -425px;
+.frame {
+    z-index: 1000;
+    position: relative;
 }
 
 .background {
     z-index: 10;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .alert {
@@ -158,6 +164,10 @@ input[type="color"],
     width: 80px;
 }
 
+.coordinate {
+    width: 62px;
+}
+
 .speed_type {
     width: 120px;
 }
@@ -195,4 +205,8 @@ select, input[type="file"] {
 
 .model-settings .controls {
     margin-left: 230px;
+}
+
+.table tbody tr.info td {
+    background-color: #B5DAEC;
 }

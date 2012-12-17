@@ -19,6 +19,7 @@
         </div>
 
         <div class="page-body">
+            ${defs.form_control(form.num_LEs)}
 
             ${defs.form_control(form.date, label='Release Start',
                                 opts={'class_': 'date'}, use_id=True)}
@@ -28,21 +29,23 @@
                 ${'error' if form.start_position_x.errors \
                              or form.start_position_y.errors \
                              or form.start_position_z.errors else ''}">
-                <label class="control-label">Start Position</label>
+                <label class="control-label">Start Position (X, Y, Z)</label>
 
-                <div class="controls">
-                    ${form.start_position_x} ${form.start_position_y} ${form.start_position_z}
-                    % if form.start_position_x.errors:
+                <div class="controls start-coordinates">
+                    ${form.start_position_x(class_='coordinate')}
+                     % if form.start_position_x.errors:
                             <span class="help">
                             ${form.start_position_x.errors[0]}
                             </span>
                     % endif
+                    ${form.start_position_y(class_='coordinate')}
                     % if form.start_position_y.errors:
                             <span class="help">
                             ${form.start_position_y.errors[0]}
                             </span>
-                    % endif                </div>
-                     % if form.start_position_z.errors:
+                    % endif
+                    ${form.start_position_z(class_='coordinate')}
+                    % if form.start_position_z.errors:
                             <span class="help">
                             ${form.start_position_z.errors[0]}
                             </span>

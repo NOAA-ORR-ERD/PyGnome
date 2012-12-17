@@ -4,7 +4,6 @@
 
 #include "Cross.h"
 #include "NetCDFMover.h"
-//#include "netcdf.h"
 #include "TWindMover.h"
 #include "GridCurMover.h"
 #include "GridWindMover.h"
@@ -29,8 +28,6 @@ GridWindMover::GridWindMover(TMap *owner,char* name) : TWindMover(owner, name)
 	fUserUnits = kMetersPerSec;	
 	fWindScale = 1.;
 	fArrowScale = 10.;
-
-	//fAllowExtrapolationInTime = false;
 	
 }
 
@@ -47,9 +44,6 @@ void GridWindMover::Dispose()
 	TWindMover::Dispose ();
 }
 	 	 
-
-//////////////////////////////// END OF ADDED CODE
-
 long GridWindMover::GetListLength()
 {
 	long count = 1; // wind name
@@ -182,7 +176,7 @@ ListItem GridWindMover::GetNthListItem(long n, short indent, short *style, char 
 				{
 					item.indent++;
 					item.index = I_NETCDFWINDSTARTTIME;
-					sprintf(text, "Start Time: %.2f hours",(float)(fUncertainStartTime/3600));
+					sprintf(text, "Start Time: %.2f hours",((double)fUncertainStartTime)/3600.);
 					return item;
 				}
 				
@@ -372,10 +366,6 @@ OSErr GridWindMover::Write(BFPB *bfpb)
 	if (err = WriteMacValue(bfpb, fUserUnits)) return err;
 	if (err = WriteMacValue(bfpb, fArrowScale)) return err;
 	if (err = WriteMacValue(bfpb, fWindScale)) return err;
-	//
-	//if (err = WriteMacValue(bfpb, fTimeShift)) goto done;
-	//if (err = WriteMacValue(bfpb, fAllowExtrapolationInTime)) goto done;
-	
 	////////////////
 	
 	
@@ -421,9 +411,6 @@ OSErr GridWindMover::Read(BFPB *bfpb)
 	if (err = ReadMacValue(bfpb, &fArrowScale)) return err;
 
 	if (err = ReadMacValue(bfpb, &fWindScale)) return err;
-	//
-	//if (version > 1) {if (err = ReadMacValue(bfpb, &fTimeShift)) goto done;}
-	//if (version > 1) {if (err = ReadMacValue(bfpb, &fAllowExtrapolationInTime)) goto done;}
 	
 	/////////////////
 	

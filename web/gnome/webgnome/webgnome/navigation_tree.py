@@ -67,11 +67,10 @@ class NavigationTree(object):
             'children': []
         }
 
-        # XXX: Hard-coded form ID. FormView class does not exist yet.
         spills = {
             'title': 'Spills',
-            'key': 'add_spill',
-            'form_id': 'add_spill',
+            'key': AddSpillForm.get_id(),
+            'form_id': AddSpillForm.get_id(),
             'children': []
         }
 

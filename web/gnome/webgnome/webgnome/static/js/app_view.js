@@ -33,7 +33,8 @@ define([
             this.model = new models.Model(this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
-                currentTimeStep: this.options.currentTimeStep
+                currentTimeStep: this.options.currentTimeStep,
+                bounds: this.options.mapBounds || []
             });
 
             this.menuView = new views.MenuView({
@@ -71,8 +72,7 @@ define([
                 backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                model: this.model,
-                latLongBounds: this.options.mapBounds
+                model: this.model
             });
 
             this.mapControlView = new views.MapControlView({
@@ -136,12 +136,11 @@ define([
             this.mapView.on(views.MapView.DRAGGING_FINISHED, this.zoomIn);
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
             this.mapView.on(views.MapView.MAP_WAS_CLICKED, this.zoomOut);
+            this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
 
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
-
-            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
         },
 
         setupKeyboardHandlers: function() {
@@ -195,9 +194,15 @@ define([
             }
         },
 
+        spillDrawn: function(x, y) {
+            this.addSpillFormView.show([x, y]);
+        },
+
         refreshForms: function() {
             this.destroyForms();
             this.addForms();
+            // Ignore the local time step cache on next model run.
+            this.model.dirty = true;
         },
 
         addForms: function() {
@@ -208,14 +213,22 @@ define([
                 formContainerEl: '#' + this.options.formContainerId
             });
 
+            this.addSpillFormView = new forms.AddSpillFormView({
+                el: $('#' + this.options.addSpillFormId),
+                formContainerEl: '#' + this.options.formContainerId
+            });
+
+            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+            this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
+
             this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
 
             // Create an `AjaxForm` and bind it to a `AjaxFormView` or subclass
             // for each form on the page.
             _.each($('div.form'), function(formDiv) {
-                var $div = $(formDiv);
-                var $form = $div.find('form');
-                var formId = $div.attr('id');
+                var div = $(formDiv);
+                var form = div.find('form');
+                var formId = div.attr('id');
 
                 if (formId === _this.options.addMoverFormId) {
                     return;
@@ -223,7 +236,7 @@ define([
 
                 _this.forms.add({
                     id: formId,
-                    url: $form.attr('action')
+                    url: form.attr('action')
                 });
 
                 var ajaxForm = _this.forms.get(formId);
@@ -231,11 +244,11 @@ define([
                 var formContainerEl = '#' + _this.options.formContainerId;
                 var formClass;
 
-                if ($div.hasClass('wind')) {
+                if (div.hasClass('wind')) {
                     formClass = forms.WindMoverFormView;
-                } else if ($div.hasClass('spill')) {
+                } else if (div.hasClass('spill')) {
                     formClass = forms.PointReleaseSpillFormView;
-                } else if ($div.hasClass('modal')) {
+                } else if (div.hasClass('modal')) {
                     formClass = forms.ModalAjaxFormView;
                 } else {
                     formClass = forms.AjaxFormView;
@@ -279,6 +292,7 @@ define([
         },
 
         runUntilMenuItemClicked: function() {
+            // TODO: Fix this - old code.
             this.fetchForm({type: 'run_until'});
         },
 
@@ -435,8 +449,6 @@ define([
         showFormForNode: function(node) {
             var formView = this.formViews.get(node.data.form_id);
 
-            util.log(formView, node)
-
             if (formView === undefined) {
                 return;
             }
@@ -513,6 +525,17 @@ define([
             }
 
             formView.show();
+        },
+
+        spillChosen: function(spillType, coords) {
+            var formView = this.formViews.get(spillType);
+            util.log(formView, this.formViews.formViews);
+
+            if (formView === undefined) {
+                return;
+            }
+
+            formView.show(coords);
         }
     });
 

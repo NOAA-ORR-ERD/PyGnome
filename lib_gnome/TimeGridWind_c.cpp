@@ -453,6 +453,7 @@ LAS:
 	*velocityH = velH;
 	fFillValue = fill_value;
 	//fWindScale = scale_factor;
+	fVar.fileScaleFactor = scale_factor;
 	
 done:
 	if (err)

@@ -50,8 +50,7 @@ define([
 
     test('getTimestampForExpectedStep should return a timestamp if step exists', function() {
         var model = makeModel(data.timeSteps, data.expectedTimeSteps);
-        console.log(model.getTimestampForExpectedStep(0));
-        ok(model.getTimestampForExpectedStep(0) === 'Fri, 07 Dec 2012 12:00:00 GMT');
+        ok(model.getTimestampForExpectedStep(0) === '12/07/2012 12:00');
     });
 
     test('getTimestampForExpectedStep should return undefined if step does not exist', function() {
@@ -63,11 +62,11 @@ define([
         var model = makeModel(data.timeSteps, data.expectedTimeSteps);
         var timeStep = model.getCurrentTimeStep();
         ok(timeStep.get('id') === 0);
-        ok(timeStep.get('timestamp') === 'Fri, 07 Dec 2012 12:00:00 GMT');
+        ok(timeStep.get('timestamp') === '12/07/2012 12:00');
 
         model.currentTimeStep = 1;
         timeStep = model.getCurrentTimeStep();
         ok(timeStep.get('id') === 1);
-        ok(timeStep.get('timestamp') === "Fri, 07 Dec 2012 12:15:00 GMT");
+        ok(timeStep.get('timestamp') === '12/07/2012 12:15');
     });
 });
