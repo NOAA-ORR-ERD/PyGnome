@@ -2,7 +2,7 @@
 Tests the SpillContainer class
 """
 
-import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -10,18 +10,116 @@ import numpy as np
 
 from gnome import basic_types
 from gnome.spill_container import SpillContainer
-from gnome.spill2 import Spill, SurfaceReleaseSpill
+from gnome.spill import Spill, SurfaceReleaseSpill
 
 def test_simple_init():
     sc = SpillContainer()
 
-    
-# def test_init_simple():
-#     sp = spill.Spill(num_LEs = 10)
-    
-#     assert sp['status_codes'].shape == (10,)
-#     assert sp['positions'].shape == (10,3)
-#     assert np.alltrue( sp['status_codes'] == basic_types.oil_status.in_water )
+
+## real tesing involves adding spills!
+def test_one_simple_spill():
+    start_time = datetime(2012, 1, 1, 12)
+    start_position = (23.0, -78.5, 0.0)
+    num_LEs = 100
+    sc = SpillContainer()
+    spill = SurfaceReleaseSpill(num_LEs,
+                                start_position,
+                                start_time)
+    sc.add_spill(spill)
+    sc.prepare_for_model_step(start_time)
+
+    assert sc['positions'].shape == (num_LEs, 3)
+    assert sc['last_water_positions'].shape == (num_LEs, 3)
+
+    sc.prepare_for_model_step(start_time + timedelta(hours=24) )
+
+    assert sc['positions'].shape == (num_LEs, 3)
+    assert sc['last_water_positions'].shape == (num_LEs, 3)
+
+    assert np.array_equal( sc['positions'][0], start_position )
+
+## multiple spills with different release times:
+def test_multiple_spills():
+    start_time = datetime(2012, 1, 1, 12)
+    start_time2 = datetime(2012, 1, 2, 12)
+    start_position = (23.0, -78.5, 0.0)
+    num_LEs = 100
+    sc = SpillContainer()
+    spill = SurfaceReleaseSpill(num_LEs,
+                                start_position,
+                                start_time)
+
+    spill2 = SurfaceReleaseSpill(num_LEs,
+                                start_position,
+                                start_time2)
+
+    sc.add_spill(spill)
+    sc.add_spill(spill2)
+    sc.prepare_for_model_step(start_time)
+
+    assert sc['positions'].shape == (num_LEs, 3)
+    assert sc['last_water_positions'].shape == (num_LEs, 3)
+
+    sc.prepare_for_model_step(start_time + timedelta(hours=24) )
+
+    assert sc['positions'].shape == (num_LEs*2, 3)
+    assert sc['last_water_positions'].shape == (num_LEs*2, 3)
+
+
+def test_reset():
+    start_time = datetime(2012, 1, 1, 12)
+    start_time2 = datetime(2012, 1, 2, 12)
+    start_position = (23.0, -78.5, 0.0)
+    num_LEs = 100
+    sc = SpillContainer()
+    spill = SurfaceReleaseSpill(num_LEs,
+                                start_position,
+                                start_time)
+
+    spill2 = SurfaceReleaseSpill(num_LEs,
+                                start_position,
+                                start_time2)
+
+    sc.add_spill(spill)
+    sc.add_spill(spill2)
+    sc.prepare_for_model_step(start_time)
+    sc.prepare_for_model_step(start_time + timedelta(hours=24) )
+
+    sc.reset()
+    assert spill.num_released == 0
+    assert spill2.num_released == 0
+
+def test_reset2():
+    """
+    test that extra arrays are removed on a reset
+
+    # not much of a test, really -- add more?
+    """
+    start_time = datetime(2012, 1, 1, 12)
+    start_time2 = datetime(2012, 1, 2, 12)
+    start_position = (23.0, -78.5, 0.0)
+    num_LEs = 100
+    sc = SpillContainer()
+    spill = Spill(num_LEs)
+
+    spill2 = SurfaceReleaseSpill(num_LEs,
+                                start_position,
+                                start_time2)
+
+    sc.add_spill(spill)
+    sc.add_spill(spill2)
+
+    sc.prepare_for_model_step(start_time)
+    sc.prepare_for_model_step(start_time + timedelta(hours=24) )
+
+    sc.remove_spill(spill)
+
+    sc.reset()
+    print "id of spill 2", spill2.id
+    assert spill2.num_released == 0
+
+
+
 
 
 # def test_data_access():

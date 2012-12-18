@@ -1,191 +1,314 @@
 #!/usr/bin/env python
 
 """
-spill.py
+sources.py
 
-a new implementation of the spill class(s)
+classes for various types of sources of elements for GNOME
 
-keeps all the data in separate arrays, so we only store and move around the
-data that is needed
-
-This is the "magic" class -- it handles the smart allocation of arrays, etc.
-
+these are managed by the spill class
 """
+import sys
 import numpy as np
-
 from gnome import basic_types
-from gnome.utilities import rand    # not to confuse with python random module
 
 class Spill(object):
     """
-    Base class for all spills
-    
-    Needs to be subclassed to do anything useful
+    base class for a source of elements
 
-    Many of the "fields" associated with a collection of LEs are optional,
-    or used only by some movers, so only the ones required will be requested
-    by each mover.
-    
-    The data for the LEs is stored in the _data_arrays dict. They can be
-    accessed by indexing:
-      
-    positions = Spill['positions'] : returns a (num_LEs, 3) array of world_point_types
+
+    NOTE: It's important to dereive all Spills fro this base class, as all sorts of
+          trickery to keep track of spill ids, and what instances there are of
+          derived classes, so that we can keep track of whatdata arrays are needed, etc.
+
     """
-    def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0), uncertain=False):
-        
-        self.num_LEs = num_LEs
-        self.is_uncertain = False   # uncertainty spill - same information as basic_types.spill_type
+
+    # info about the array types
+    # used to construct and expand data arrays.
+    # this specifies both what arrays are there, and their types, etc.
+    # this kept as a class atrribure so all properties are accesable everywhere.
+    # subclasses should add new particle properties to this dict
+    #             name           shape (not including first axis)       dtype         
+    _array_info = {}
+
+    __all_ids = set() # set of all the in-use ids
+    __all_subclasses = {} # keys are the instance id -- values are the subclass object
+    def __init__(self, num_elements=0):
+
+        self.num_elements = num_elements
+
         self.is_active = True       # sets whether the spill is active or not
-        
-        self._data_arrays = {}
-        
-        self._data_arrays['positions'] = np.zeros((num_LEs, 3),
-                                                  dtype=basic_types.world_point_type)
-        self._data_arrays['positions'][:,:] = initial_positions
-        self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
-        self._data_arrays['last_water_positions'] = np.zeros_like(self['positions'])
 
-        self._data_arrays['status_codes'] = ( np.zeros((num_LEs,),
-                                                       dtype=basic_types.status_code_type)
-                                             )
-        self._data_arrays['status_codes'][:] = basic_types.oil_status.in_water
-        
-        self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
-                                                  dtype = basic_types.windage_type)             
+        self.__set_id()
+        self.__all_subclasses[ id(self) ] = self.__class__
+        Spill.reset_array_types()
 
-    def __getitem__(self, data_name):
-        """
-        The basic way to access data for the LEs
-        
-        a KeyError will be raised if the data is not there
-        """
-        return self._data_arrays[data_name]
-    
-    def __setitem__(self, data_name, array):
-        """
-        sets the data item
-        
-        careful -- this needs to be compatible with the needs of any mover that uses it.
-        
-        It will be checked to at least be size-consistent with the rest of the
-        data, and type-consistent if the data array is being replaced
-        """
-        array = np.asarray(array)
-        
-        if len(array) != self.num_LEs:
-            raise ValueError("Length of new data arrays must be number of LEs in the Spill")
-                        
-        if data_name in self._data_arrays:
-            # if the array is already here, the type should match        
-            if array.dtype !=  self._data_arrays[data_name].dtype:
-                raise ValueError("new data array must be the same type")
-            # and the shape should match        
-            if array.shape !=  self._data_arrays[data_name].shape:
-                raise ValueError("new data array must be the same shape")
-                    
-        self._data_arrays[data_name] = array
+        # self._data_arrays['positions'] = np.zeros((0, 3),
+        #                                           dtype=basic_types.world_point_type)
+        # self._data_arrays['positions'][:,:] = initial_positions
+        # self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
+        # self._data_arrays['last_water_positions'] = np.zeros_like(self['positions'])
 
-    def prepare_for_model_step(self, current_time, time_step=None):
-        """
-        Do whatever needs to be done at the beginning of a time step:
+        # self._data_arrays['status_codes'] = ( np.zeros((0,),
+        #                                                dtype=basic_types.status_code_type)
+        #                                      )
+        # self._data_arrays['status_codes'][:] = basic_types.oil_status.in_water
         
-        In this case nothing.
+        # self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
+        #                                           dtype = basic_types.windage_type)
+
+    @classmethod
+    def reset_array_types(cls):
+        cls._array_info.clear()
+        for subclass in cls.__all_subclasses.values():
+            subclass.add_array_types()
+
+    @classmethod
+    def add_array_types(cls):
+        cls._array_info.update({'positions':      ( (3,), basic_types.world_point_type),
+                                'next_positions': ( (3,), basic_types.world_point_type),
+                                'last_water_positions': ( (3,), basic_types.world_point_type),
+                                'status_codes': ( (), basic_types.world_point_type),
+                                'spill_id': ( (), basic_types.id_type)
+                                })
+
+    def __set_id(self):
+        """
+        returns an id that is not already in use
+
+        inefficient, but who cares?
+        """
+        id = 1
+        while id < 65536: # just so it will eventually terminate!
+            if id not in self.__all_ids:
+                self.id = id
+                self.__all_ids.add(id)
+                break
+            else:
+                id+=1
+
+    def __del__(self):
+        """
+        called when instance is deleted:
+
+        removes its id from Spill.__all_ids and instance from Spill.__all_subclass_instances
+        """
+        self.__all_ids.remove(self.id)
+        del self.__all_subclasses[ id(self) ]
+
+    def reset(self):
+        """
+        reset the Spill to original status
+        """
+        Spill.reset_array_types()        
+
+    def release_elements(self, current_time, time_step=None):
+        """
+        probably overridden by a subclass
         """
         return None
 
-    @property
-    def id(self):
+    def create_new_elements(self, num_elements):
         """
-        Return an ID value for this spill.
+        create new arrays for the various types and 
+        return a dict of the set
 
-        This method uses Python's builtin `id()` function to identify the
-        object. Override it for more exotic forms of identification.
-
-        :return: the integer ID returned by id() for this object
+        :param num_elements: number of new elements to add
         """
-        return id(self)
+        arrays = {}
+        for name, (shape, dtype) in self._array_info.items():
+            arrays[name] = np.zeros( (num_elements,)+shape, dtype=dtype)
+        self.initialize_new_elements(arrays)
+        return arrays
 
-    def __str__(self):
-        msg = ["gnome.spill.Spill(num_LEs=%i)\n"%self.num_LEs]
-        msg.append("spill LE attributes: %s"%self._data_arrays.keys())
-        return "".join(msg)
+    def initialize_new_elements(self, arrays):
+        """
+        initilize the new elements just created
+        This is probably need to be extended by subclasses
+        """
+        arrays['spill_id'][:] = self.id
+        arrays['status_codes'][:] = basic_types.oil_status.in_water
 
-    __repr__ = __str__ # should write a better one, I suppose
-
-class PointReleaseSpill(Spill):
+class FloatingSpill(Spill):
     """
-    The simplest real spill class  --  a point release of floating
-    non-weathering particles
+    spill for floating objects
 
+    all this does is add the 'windage' parameter
     """
-    def __init__(self, num_LEs, start_position, release_time, windage=(0.01, 0.04), persist=900, uncertain=False):
-        """
-        :param num_LEs: number of LEs used for this spill
-        :param start_position: location the LEs are released (long, lat, z) (floating point)
-        :param release_time: time the LEs are released (datetime object)
-        :param windage: the windage range of the LEs (min, max). Default is (0.01, 0.04) from 1% to 4%.
-        :param persist: Default is 900s, so windage is updated every 900 sec.
-        The -1 means the persistence is infinite so it is only set at the beginning of the run.
-        :param uncertain: flag determines whether spill is uncertain or not
-        """
-        Spill.__init__(self, num_LEs, uncertain=uncertain)
+    def __init__(self,
+                 windage_range=(0.01, 0.04),
+                 windage_persist=900):
 
-        self.release_time = release_time
-        self.start_position = start_position
-        self.windage_range  = windage[0:2]
-        self.windage_persist= persist
+        super(FloatingSpill, self).__init__()
 
-        if persist <= 0:
-            # if it is anything less than 0, treat it as -1 flag
-            self.update_windage(0)
+        self.add_array_types()
 
-        self.__init_LEs()
+    @classmethod
+    def add_array_types(cls):
+        # need to get the superclasses types added too.
+        super(FloatingSpill, cls).add_array_types()
+        cls._array_info['windages'] = ( (), basic_types.windage_type )
 
-    def __init_LEs(self):
-        """
-        called internally to initialize the data arrays needed
-        """
-        self.reset()
-    
-    def prepare_for_model_step(self, current_time, time_step):
-        """
-        Do whatever needs to be done at the beginning of a time step:
-        
-        In this case:
-        
-        Release the LEs -- i.e. change their status to in_water
-        if the current time is greater than or equal to the release time
-        
-        :param current_time: datetime object for current time
-        :param time_step: the time step, in seconds
-
-        """
-        if current_time >= self.release_time and not self.released:
-            self['status_codes'][:] = basic_types.oil_status.in_water
-            self.released = True
-            
-        if self.windage_persist > 0:
-            self.update_windage(time_step)
-        
-        return None
-
-    def update_windage(self, time_step):
+    ##fixme: where does this go????
+    @classmethod
+    def update_windage(self, windages, time_step):
         """
         Update windage for each LE for each time step
         May want to cythonize this to speed it up
         """
-        self['windages'][:] = rand.random_with_persistance(self.windage_range[0],
-                                                          self.windage_range[1],
-                                                          self.windage_persist,
-                                                          time_step,
-                                                          array_len=self.num_LEs)
+        windages[:] = rand.random_with_persistance(self.windage_range[0],
+                                                           self.windage_range[1],
+                                                           self.windage_persist,
+                                                           time_step,
+                                                           array_len=len(wiindages),
+                                                           )
+
+class SurfaceReleaseSpill(FloatingSpill):
+    """
+    The simplest spill source class  --  a point release of floating
+    non-weathering particles
+
+    """
+    def __init__(self,
+                 num_elements,
+                 start_position,
+                 release_time,
+                 end_position=None,
+                 end_release_time=None,
+                 windage_range=(0.01, 0.04),
+                 windage_persist=900,
+                 ):
+        """
+        :param num_elements: total number of elements used for this spill
+        :param start_position: location the LEs are released (long, lat, z) (floating point)
+        :param release_time: time the LEs are released (datetime object)
+        :param end_position=None: optional -- for a moving source, the end position
+        :param end_release_time=None: optional -- for a release over time, the end release time
+        :param windage: the windage range of the LEs (min, max). Default is (0.01, 0.04) from 1% to 4%.
+        :param persist: Default is 900s, so windage is updated every 900 sec.
+                        The -1 means the persistence is infinite so it is only set at the beginning of the run.
+        :param uncertain: flag determines whether spill is uncertain or not
+        """
+        super(SurfaceReleaseSpill, self).__init__(windage_range, windage_persist)
+        
+        self.num_elements = num_elements
+        
+        self.release_time = release_time
+        if end_release_time is None:
+            self.end_release_time = release_time
+        else:
+            if release_time > end_release_time:
+                raise ValueError("end_release_time must be greater than release_time")
+            self.end_release_time = end_release_time
+
+        if end_position is None:
+            end_position = start_position
+        self.start_position = np.asarray(start_position, dtype=basic_types.world_point_type).reshape((3,))
+        self.end_position = np.asarray(end_position, dtype=basic_types.world_point_type).reshape((3,))
+        self.windage_range    = windage_range[0:2]
+        self.windage_persist  = windage_persist
+
+#        if windage_persist <= 0:
+#            # if it is anything less than 0, treat it as -1 flag
+#            self.update_windage(0)
+
+        self.num_released = 0
+        self.prev_release_pos = self.start_position
+
+    def initialize_new_elements(self, arrays):
+        """
+        initilize the new elements just created
+        This is probably need to be extended by subclasses
+        """
+        super(SurfaceReleaseSpill, self).initialize_new_elements(arrays)
+        arrays['positions'][:] = self.start_position
+
+    def release_elements(self, current_time, time_step=None):
+        """
+        Release any new elements to be added to the SpillContainer
+                
+        :param current_time: datetime object for current time
+        :param time_step: the time step, in seconds -- this version doesn't use this
+
+        :returns : None if there are no new elements released
+                   a dict of arrays if there are new elements
+
+        NOTE: this version releases elements spread out along the line from
+              start_position to end_position. If the release spans multiple
+              time steps, the first will be spread out a little more, so that
+              there will be an element released at botht he start and end,
+              but no duplicate points. 
+        """
+
+        if current_time >= self.release_time:
+            if self.num_released >= self.num_elements:
+                return None
+
+            #total release time
+            release_delta = (self.end_release_time - self.release_time).total_seconds()
+
+            # time since release began
+            if current_time >= self.end_release_time:
+                dt = release_delta
+            else:
+                dt = max( (current_time - self.release_time).total_seconds(), 0.0)
+            
+            # this here in case there is less than one released per time step.
+            # or if the relase time is before the model start time
+            if release_delta == 0: #instantaneous release
+                num = self.num_elements - self.num_released #num_released shoudl always be 0?
+            else:
+                total_num = (dt / release_delta) * self.num_elements
+                num = int(total_num - self.num_released)
+
+            if num <= 0:
+                return None
+
+            self.num_released += num
+
+            arrays = self.create_new_elements(num)
+
+            print "num:", num
+            #compute the position of the elements:
+            if release_delta == 0: # all released at once:
+                x1, y1 = self.start_position[:2]
+                x2, y2 = self.end_position[:2]
+                arrays['positions'][:,0] = np.linspace(x1, x2, num)
+                arrays['positions'][:,1] = np.linspace(y1, y2, num)
+            else:
+                x1, y1 = self.prev_release_pos[:2]
+                print "x1, y1", x1, y1
+                dx = self.end_position[0] - self.start_position[0]
+                dy = self.end_position[1] - self.start_position[1]
+
+                print "dt, release_delta", dt, release_delta
+                fraction = min (1, dt / release_delta)
+                print "fraction", fraction
+                x2 = (fraction * dx) + self.start_position[0]
+                y2 = (fraction * dy) + self.start_position[1]
+                print "x2, y2", x2, y2
+                    
+
+                if np.array_equal(self.prev_release_pos, self.start_position):
+                    # we want both the first and last points
+                    print "first release"
+                    arrays['positions'][:,0] = np.linspace(x1, x2, num)
+                    arrays['positions'][:,1] = np.linspace(y1, y2, num)
+                else:
+                    # we don't want to duplicate the first point.
+                    arrays['positions'][:,0] = np.linspace(x1, x2, num+1)[1:]
+                    arrays['positions'][:,1] = np.linspace(y1, y2, num+1)[1:]
+                self.prev_release_pos = (x2, y2, 0.0)
+            return arrays
+        else:
+            return None
 
     def reset(self):
-        """
-        reset to initial conditions -- i.e. not released, and at the start position
-        """
-        self['positions'][:] = self.start_position
-        self['status_codes'][:] = basic_types.oil_status.not_released
-        self.released = False
+       """
+       reset to initial conditions -- i.e. nothing released. 
+       """
+       super(SurfaceReleaseSpill, self).reset()
 
-        
+       self.num_released = 0
+       self.prev_release_pos = self.start_position
+
+

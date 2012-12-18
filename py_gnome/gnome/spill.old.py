@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+
+#
+# code from the "multiple spills" approach -- probably not needed.
+
+#
 """
 spill.py
 
@@ -9,8 +14,6 @@ keeps all the data in separate arrays, so we only store and move around the
 data that is needed
 
 This is the "magic" class -- it handles the smart allocation of arrays, etc.
-
-The spill class is mostly a container for the data arrays -- the source classes do the real work.
 
 """
 import numpy as np
