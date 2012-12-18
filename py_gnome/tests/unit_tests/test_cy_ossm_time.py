@@ -10,51 +10,23 @@ import numpy as np
 from gnome import basic_types
 
 from gnome.cy_gnome import cy_ossm_time
- 
-def test_init_no_input():
-    """
-    Test exceptions during __init__
-    - no inputs 
-    """
-    try:
-        ossmT2 = cy_ossm_time.CyOSSMTime()
-    except ValueError as e:
-        print(e)
-        assert True
-            
-def test_init_bad_path():
-    """
-    Test exceptions during __init__
-    - bad path
-    """
-    try:
-        file = r"SampleData/WindDataFromGnome.WNDX"
-        ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.data_format.magnitude_direction)
-    except IOError as e:
-        print(e)
-        assert True
-        
+import pytest
+
+def test_exceptions():
+    with pytest.raises(ValueError):
+        cy_ossm_time.CyOSSMTime()  # no inputs
+        cy_ossm_time.CyOSSMTime(path="SampleData/WindDataFromGnome.WNDX", file_contains=basic_types.data_format.magnitude_direction)    # bad path
+        cy_ossm_time.CyOSSMTime(path="SampleData/WindDataFromGnome.WND")    # insufficient input info
+        cy_ossm_time.CyOSSMTime(path="SampleData/WindDataFromGnome_BadUnits.WND", file_contains=basic_types.data_format.magnitude_direction)    # insufficient input info
+    
 def test_init_units():
     """
     Test __init__
     - correct path 
     Updated so the user units are read from file
     """
-    file = r"SampleData/WindDataFromGnome.WND"
-    ossmT2 = cy_ossm_time.CyOSSMTime(path=file, file_contains=basic_types.data_format.magnitude_direction)
-    assert ossmT2.user_units == basic_types.velocity_units.knots
- 
-def test_init_missing_info():
-    """
-    Test exceptions during __init__
-    - correct path but no file_contains 
-    """
-    try:
-        file = r"SampleData/WindDataFromGnome.WND"
-        ossmT2 = cy_ossm_time.CyOSSMTime(path=file)
-    except ValueError as e:
-        print(e)
-        assert True 
+    ossmT2 = cy_ossm_time.CyOSSMTime(path="SampleData/WindDataFromGnome.WND", file_contains=basic_types.data_format.magnitude_direction)
+    assert ossmT2.user_units == "knot"
 
 
 class TestTimeSeriesInit():
@@ -77,6 +49,7 @@ class TestTimeSeriesInit():
        ossm = cy_ossm_time.CyOSSMTime(timeseries=self.tval)
        t_val = ossm.timeseries
        
+       assert ossm.user_units == "undefined"    #for velocity this is meters per second
        np.testing.assert_array_equal(t_val, self.tval, 
                                      "CyOSSMTime.get_time_value did not return expected numpy array", 
                                      0)

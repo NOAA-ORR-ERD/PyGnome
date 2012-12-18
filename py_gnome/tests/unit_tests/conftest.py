@@ -7,6 +7,11 @@ The scope="module" on the fixtures ensures it is only invoked once per test modu
 """
 import numpy as np
 
+"""
+====================================
+Following fixtures define standard functions for generating 
+(r,theta) values and corresponding (u, v) values for testing
+"""
 @pytest.fixture(scope="module")
 def invalid_rq():
     """
@@ -44,10 +49,15 @@ def rq_rand():
     (r,theta) setup randomly generated array of length = 3. The uv = None, only (r,theta)
     are randomly generated: 'r' is between (0,3) and 'theta' is between (0,360)
     """
-    rq = np.zeros((3,2), dtype=np.float64)
+    rq = np.zeros((5,2), dtype=np.float64)
     
-    while (np.any(rq[:,0] == 0)):   # cannot be 0 magnitude vector
-        rq[:,0] = np.random.uniform(0,len(rq),len(rq))
+    # cannot be 0 magnitude vector - let's just make it from 0.5
+    rq[:,0] = np.random.uniform(.5,len(rq),len(rq))
         
     rq[:,1] = np.random.uniform(0,360,len(rq))
     return {'rq': rq}
+
+"""
+End fixtures for standard (r, theta) generation for Wind
+====================================
+"""
