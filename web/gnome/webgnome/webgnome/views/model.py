@@ -356,10 +356,8 @@ def run_model(request, model):
     data['map_bounds'] = model.map.map_bounds.tolist()
 
     # Rewind the model if on the last step and the client requested it.
-    # TODO: Make a property
     if model.current_time_step >= model._num_time_steps and \
             request.POST.get('no_cache', False):
-        print 'rewind'
         model.rewind()
 
     first_step = _get_time_step(request, model)

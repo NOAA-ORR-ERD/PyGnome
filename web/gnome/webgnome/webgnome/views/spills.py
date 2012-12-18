@@ -63,17 +63,18 @@ def _render_point_release_spill_form(request, form, spill):
     return {'form_html': html}
 
 
-def _update_point_release_spill_post(request, model, spill):
+def _update_point_release_spill_post(request, model, spill_id):
     form = PointReleaseSpillForm(request.POST)
 
     if form.validate():
+        spill = form.create()
+        model.add_spill(spill)
+
         if spill:
-            form.update(spill)
+            model.remove_spill(spill_id)
             message = util.make_message(
                 'success', 'Updated point release spill successfully.')
         else:
-            spill = form.create()
-            model.add_spill(spill)
             message = util.make_message(
                 'warning', 'The spill did not exist, so we created a new one.')
 
@@ -94,7 +95,7 @@ def update_point_release_spill(request, model):
     spill = model.get_spill(int(spill_id))
 
     if request.method == 'POST':
-        return _update_point_release_spill_post(request, model, spill)
+        return _update_point_release_spill_post(request, model, spill.id)
 
     form = PointReleaseSpillForm(obj=spill)
 

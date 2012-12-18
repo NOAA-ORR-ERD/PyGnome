@@ -114,6 +114,8 @@ define([
         setupEventHandlers: function() {
             this.model.on(models.Model.CREATED, this.newModelCreated);
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
+            this.forms.on(models.AjaxForm.SUCCESS, this.ajaxFormSuccess);
+
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
             this.formViews.on(forms.FormViewContainer.REFRESHED, this.refreshForms);
 
@@ -141,6 +143,16 @@ define([
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
+        },
+
+        /*
+         Consider the model dirty if the user saves a spill form, so we don't
+         get cached images back on the next model run.
+         */
+        ajaxFormSuccess: function(form) {
+            if (form.type && form.type === 'spill') {
+                this.model.dirty = true;
+            }
         },
 
         setupKeyboardHandlers: function() {
@@ -236,7 +248,8 @@ define([
 
                 _this.forms.add({
                     id: formId,
-                    url: form.attr('action')
+                    url: form.attr('action'),
+                    type: form.attr('data-type')
                 });
 
                 var ajaxForm = _this.forms.get(formId);

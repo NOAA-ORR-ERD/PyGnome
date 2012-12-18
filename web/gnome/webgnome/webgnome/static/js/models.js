@@ -412,6 +412,7 @@ define([
     var AjaxForm = function(opts) {
         _.bindAll(this);
         this.url = opts.url;
+        this.type = opts.type;
 
         // Mix Backbone.js event methods into `AjaxForm`.
         _.extend(this, Backbone.Events);
