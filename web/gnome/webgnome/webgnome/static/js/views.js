@@ -85,7 +85,7 @@ define([
             this.model.on(models.Model.RUN_BEGAN, this.modelRunBegan);
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
             this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.Model.CREATED, this.modelCreated);
+            this.model.on(models.Model.CREATED, this.reset);
 
             if (this.backgroundImageUrl) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
@@ -121,8 +121,8 @@ define([
         },
 
         createPlaceholderCopy: function() {
-            this.placeholderCopy = $(this.placeholderEl).find(
-                'img').clone().appendTo($(this.mapEl)).show();
+            this.placeholderCopy = $(this.placeholderEl).find('img').clone()
+                .appendTo($(this.mapEl)).removeClass('hidden').show();
         },
 
         removePlaceholderCopy: function() {
@@ -193,7 +193,7 @@ define([
             var otherImages = this.map.find('img').not(stepImage).not('.background');
 
             // Hide all other images in the map div.
-            otherImages.css('display', 'none');
+            otherImages.addClass('hidden');
             otherImages.removeClass(this.activeFrameClass);
 
             // The image isn't loaded.
@@ -202,7 +202,7 @@ define([
             }
 
             stepImage.addClass(this.activeFrameClass);
-            stepImage.css('display', 'block');
+            stepImage.removeClass('hidden');
 
             this.trigger(MapView.FRAME_CHANGED);
         },
@@ -215,7 +215,7 @@ define([
                 'class': 'frame',
                 'data-id': timeStep.id,
                 'src': timeStep.get('url')
-            }).css('display', 'none');
+            }).addClass('hidden');
 
             img.appendTo(map);
 
@@ -248,7 +248,9 @@ define([
 
         // Clear out the current frames.
         clear: function() {
-            $(this.mapEl).not('.background').empty();
+            var map = $(this.mapEl);
+            map.find('img').not('.background').remove();
+            map.find('canvas').remove();
         },
 
         getBackground: function() {
@@ -503,9 +505,11 @@ define([
             this.setStopped();
         },
 
-        modelCreated: function() {
+        reset: function() {
             this.clear();
-            this.createPlaceholderCopy();
+            if (!$(this.mapEl).find('.background').length) {
+                this.createPlaceholderCopy();
+            }
             this.setStopped();
         },
 

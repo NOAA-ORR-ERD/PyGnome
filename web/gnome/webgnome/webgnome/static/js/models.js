@@ -341,8 +341,9 @@ define([
          Clear all time step data. Used when creating a new server-side model.
          */
         clearData: function() {
+            this.dirty = true;
             this.rewind();
-            this.timeSteps = [];
+            this.reset();
             this.expectedTimeSteps = [];
         },
 

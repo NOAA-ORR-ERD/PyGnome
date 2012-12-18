@@ -129,7 +129,7 @@ define([
             this.mapControlView.on(views.MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
             this.mapControlView.on(views.MapControlView.SLIDER_CHANGED, this.sliderChanged);
             this.mapControlView.on(views.MapControlView.SLIDER_MOVED, this.sliderMoved);
-            this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
+            this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.reset);
             this.mapControlView.on(views.MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
             this.mapControlView.on(views.MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
             this.mapControlView.on(views.MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
@@ -151,7 +151,7 @@ define([
          */
         ajaxFormSuccess: function(form) {
             if (form.type && form.type === 'spill') {
-                this.model.dirty = true;
+                this.reset();
             }
         },
 
@@ -213,8 +213,6 @@ define([
         refreshForms: function() {
             this.destroyForms();
             this.addForms();
-            // Ignore the local time step cache on next model run.
-            this.model.dirty = true;
         },
 
         addForms: function() {
@@ -423,8 +421,10 @@ define([
             this.model.getNextTimeStep();
         },
 
-        jumpToFirstFrame: function() {
-            this.model.setCurrentTimeStep(0);
+        reset: function() {
+            this.mapView.clear();
+            this.model.clearData();
+            this.mapControlView.reset();
         },
 
         /*
@@ -542,7 +542,6 @@ define([
 
         spillChosen: function(spillType, coords) {
             var formView = this.formViews.get(spillType);
-            util.log(formView, this.formViews.formViews);
 
             if (formView === undefined) {
                 return;
