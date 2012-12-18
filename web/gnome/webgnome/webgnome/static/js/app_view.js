@@ -129,7 +129,7 @@ define([
             this.mapControlView.on(views.MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
             this.mapControlView.on(views.MapControlView.SLIDER_CHANGED, this.sliderChanged);
             this.mapControlView.on(views.MapControlView.SLIDER_MOVED, this.sliderMoved);
-            this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.reset);
+            this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.rewind);
             this.mapControlView.on(views.MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
             this.mapControlView.on(views.MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
             this.mapControlView.on(views.MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
@@ -151,7 +151,7 @@ define([
          */
         ajaxFormSuccess: function(form) {
             if (form.type && form.type === 'spill') {
-                this.reset();
+                this.rewind();
             }
         },
 
@@ -175,7 +175,7 @@ define([
             });
 
             Mousetrap.bind('n m', function() {
-                _this.formViews.hideAll();
+                _this.formViews.hideAll()
                 _this.showFormWithId('AddMoverForm');
             });
 
@@ -422,6 +422,12 @@ define([
         },
 
         reset: function() {
+            this.mapView.reset();
+            this.model.clearData();
+            this.mapControlView.reset();
+        },
+
+        rewind: function() {
             this.mapView.clear();
             this.model.clearData();
             this.mapControlView.reset();

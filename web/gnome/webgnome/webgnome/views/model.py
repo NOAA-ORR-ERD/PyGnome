@@ -365,10 +365,6 @@ def run_model(request, model):
         canvas.set_land(polygons)
         model.output_map = canvas
 
-    data['background_image'] = _get_model_image_url(
-        request, model, 'background_map.png')
-    data['map_bounds'] = model.map.map_bounds.tolist()
-
     # The client requested no cached images, so rewind and clear the cache.
     if request.POST.get('no_cache', False):
         model.runtime = _make_runtime()
@@ -382,6 +378,10 @@ def run_model(request, model):
 
     model.time_steps.append(first_step)
     data['time_step'] = first_step
+
+    data['background_image'] = _get_model_image_url(
+        request, model, 'background_map.png')
+    data['map_bounds'] = model.map.map_bounds.tolist()
 
     return data
 

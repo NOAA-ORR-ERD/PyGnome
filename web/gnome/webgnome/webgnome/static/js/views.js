@@ -122,7 +122,7 @@ define([
 
         createPlaceholderCopy: function() {
             this.placeholderCopy = $(this.placeholderEl).find('img').clone()
-                .appendTo($(this.mapEl)).removeClass('hidden').show();
+                .appendTo($(this.mapEl)).removeClass('hidden');
         },
 
         removePlaceholderCopy: function() {
@@ -247,9 +247,16 @@ define([
         },
 
         // Clear out the current frames.
-        clear: function() {
+        clear: function(opts) {
             var map = $(this.mapEl);
-            map.find('img').not('.background').remove();
+            opts = opts || {};
+
+            if (opts.clearBackground) {
+                map.find('img').remove();
+            } else {
+                map.find('img').not('.background').remove();
+            }
+
             map.find('canvas').remove();
         },
 
@@ -506,7 +513,7 @@ define([
         },
 
         reset: function() {
-            this.clear();
+            this.clear({clearBackground: true});
             if (!$(this.mapEl).find('.background').length) {
                 this.createPlaceholderCopy();
             }
