@@ -852,7 +852,7 @@ ListItem GridCurMover::GetNthListItem(long n, short indent, short *style, char *
 				if (--n == 0) {
 					item.index = I_GRIDCURSTARTTIME;
 					item.indent++;
-					StringWithoutTrailingZeros(valStr,fUncertainStartTime/3600,6);
+					StringWithoutTrailingZeros(valStr,((double)fUncertainStartTime)/3600.,6);
 					sprintf(text, "Start Time: %s hours",valStr);
 					return item;
 				}

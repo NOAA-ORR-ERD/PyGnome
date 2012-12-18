@@ -7,7 +7,7 @@ define([
     'util',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree.min',
-    'lib/bootstrap'
+    'lib/bootstrap',
 ], function($, _, Backbone, models, util) {
 
      /*
@@ -55,8 +55,13 @@ define([
         }
     });
 
+    function MapViewException(message) {
+        this.message = message;
+        this.name = "MapViewException";
+    }
+
     /*
-     `MapView` represents the visual map and is reponsible for animating frames
+     `MapView` represents the visual map and is responsible for animating frames
      for each time step rendered by the server
      */
     var MapView = Backbone.View.extend({
@@ -67,12 +72,13 @@ define([
             this.activeFrameClass = this.options.activeFrameClass;
             this.placeholderEl = this.options.placeholderEl;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
+            this.latLongBounds = this.options.latLongBounds;
+            this.imageTimeout = this.options.imageTimeout || 30;
 
             this.createPlaceholderCopy();
             this.makeImagesClickable();
             this.status = MapView.STOPPED;
-
-            this.$map = $(this.mapEl);
+            this.map = $(this.mapEl);
 
             this.model = this.options.model;
             this.model.on(models.Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
@@ -179,12 +185,12 @@ define([
          */
         showImageForTimeStep: function(stepNum) {
             // Show the map div if this is the first image of the run.
-            if (this.$map.find('img').length === 1) {
-                this.$map.show();
+            if (this.map.find('img').length === 1) {
+                this.map.show();
             }
 
             var stepImage = this.getImageForTimeStep(stepNum);
-            var otherImages = this.$map.find('img').not(stepImage).not('.background');
+            var otherImages = this.map.find('img').not(stepImage).not('.background');
 
             // Hide all other images in the map div.
             otherImages.css('display', 'none');
@@ -208,13 +214,20 @@ define([
             var img = $('<img>').attr({
                 'class': 'frame',
                 'data-id': timeStep.id,
-                src: timeStep.get('url')
+                'src': timeStep.get('url')
             }).css('display', 'none');
 
             img.appendTo(map);
 
             $(img).imagesLoaded(function() {
-                setTimeout(_this.showImageForTimeStep, 50, [timeStep.id]);
+                // TODO: Check how much time has passed after next time
+                // // step is ready. If longer than N, show the image
+                // immediately. Otherwise, set a delay and then show image.
+
+                // TODO: Make the timeout value configurable.
+                setTimeout(_this.showImageForTimeStep,
+                           this.imageTimeout,
+                           [timeStep.id]);
             });
         },
 
@@ -224,7 +237,9 @@ define([
             // We must be playing a cached model run because the image already
             // exists. In all other cases the image should NOT exist.
             if (imageExists) {
-                setTimeout(this.showImageForTimeStep, 50, [timeStep.id]);
+                setTimeout(this.showImageForTimeStep,
+                           this.imageTimeout,
+                           [timeStep.id]);
                 return;
             }
 
@@ -236,8 +251,12 @@ define([
             $(this.mapEl).not('.background').empty();
         },
 
+        getBackground: function() {
+            return $(this.mapEl).find('img.background')[0];
+        },
+
         getSize: function() {
-            var image = this.getActiveImage();
+            var image = $('.background');
             return {height: image.height(), width: image.width()};
         },
 
@@ -329,15 +348,147 @@ define([
             }
 
             var map = $(this.mapEl);
-
             map.find('.background').remove();
 
-            var img = $('<img>').attr({
-                'class': 'background',
+            var background = $('<img>').attr({
+                class: 'background',
                 src: url
             });
 
-            img.appendTo(map);
+            background.imagesLoaded(this.createCanvases);
+            background.appendTo(map);
+        },
+
+        /*
+         Create a background canvas and paint lines for all spills on the
+         page.
+
+         Create a foreground canvas and setup event handlers to capture new
+         spills added to the map. This canvas is cleared entirely during line
+         additions (as the line position changes) and when the form container
+         refreshes.
+         */
+        createCanvases: function() {
+            var _this = this;
+            var background = $(this.mapEl).find('.background');
+
+             var backgroundCanvas = $('<canvas>').attr({
+                id: 'canvas-background',
+                height: background.height(),
+                width: background.width()
+            });
+
+            var foregroundCanvas = $('<canvas>').attr({
+                id: 'canvas-foreground',
+                class: 'drawable',
+                height: background.height(),
+                width: background.width()
+            });
+
+            function drawLine(ctx, start_x, start_y, end_x, end_y) {
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(start_x, start_y);
+                ctx.lineTo(end_x, end_y);
+                ctx.stroke();
+                ctx.closePath();
+                ctx.beginPath();
+                ctx.closePath();
+            }
+
+            // TODO: Update canvas sizes when window changes.
+
+            foregroundCanvas.mousedown(function(ev) {
+                this.pressed = true;
+                if (ev.originalEvent['layerX'] != undefined) {
+                    this.x0 = ev.originalEvent.layerX;
+                    this.y0 = ev.originalEvent.layerY;
+                }
+                else {
+                    // in IE, we use this property
+                    this.x0 = ev.originalEvent.x;
+                    this.y0 = ev.originalEvent.y;
+                }
+            });
+
+            var spillForms = $('.spill');
+            _.each(spillForms, function(form) {
+                var ctx = foregroundCanvas[0].getContext('2d');
+                var start = $(form).find('.start-coordinates');
+                var end = $(form).find('.end-coordinates');
+                var startInputs = $(start).find('.coordinate');
+                var startX, startY, startZ, endX, endY, endZ;
+                
+                startX = endX = $(startInputs[0]).val();
+                startY = endY = $(startInputs[1]).val();
+                startZ = endZ = $(startInputs[2]).val();
+
+                if (!startX || !startY) {
+                    return;
+                }
+                
+                if (end.length) {
+                    var endInputs = $(end).find('.coordinate');
+                    endX = $(endInputs[0]).val();
+                    endY = $(endInputs[1]).val();
+                    endZ = $(endInputs[2]).val();
+                }
+
+                var pixelStart = _this.pixelsFromCoordinates({
+                    lat: startY,
+                    long: startX
+                });
+
+                var pixelEnd = _this.pixelsFromCoordinates({
+                    lat: endY,
+                    long: endX
+                });
+
+                if (startX === endX && startY === endY) {
+                    pixelEnd.x += 5;
+                    pixelEnd.y += 5;
+                }
+
+                drawLine(ctx, pixelStart.x, pixelStart.y, pixelStart.x, pixelEnd.y);
+            });
+
+            foregroundCanvas.mousemove(function(ev) {
+                if (!this.pressed) {
+                    return;
+                }
+                this.moved = true;
+                var ctx = this.getContext('2d');
+                var xcurr, ycurr;
+                if (ev.originalEvent['layerX'] != undefined) {
+                    xcurr = ev.originalEvent.layerX;
+                    ycurr = ev.originalEvent.layerY;
+                }
+                else {
+                    // in IE, we use this property
+                    xcurr = ev.originalEvent.x;
+                    ycurr = ev.originalEvent.y;
+                }
+
+                // TODO: Draw a line for each spill. Redraw when changed.
+                ctx.clearRect(0, 0, this.width, this.height);
+                drawLine(ctx, this.x0, this.y0, xcurr, ycurr);
+            });
+
+            $(foregroundCanvas).mouseup(function(ev) {
+                var offset = $(this).offset();
+
+                if (this.pressed && this.moved) {
+                    var coords = _this.coordinatesFromPixels({
+                        x: ev.clientX - offset.left,
+                        y: ev.clientY - offset.top
+                    });
+                    _this.trigger(MapView.SPILL_DRAWN, coords.long, coords.lat);
+                }
+                this.pressed = this.moved = false;
+            });
+
+            backgroundCanvas.appendTo(map);
+            foregroundCanvas.appendTo(map);
         },
 
         modelRunBegan: function(data) {
@@ -356,19 +507,62 @@ define([
             this.clear();
             this.createPlaceholderCopy();
             this.setStopped();
+        },
+
+        pixelsFromCoordinates: function(point) {
+            var size = this.getSize();
+
+            if (!size.height || !size.width) {
+                throw new MapViewException('No current image size detected.');
+            }
+
+            var minLat = this.model.bounds[0][1];
+            var minLong = this.model.bounds[0][0];
+            var maxLat = this.model.bounds[1][1];
+            var maxLong = this.model.bounds[2][0];
+
+            var x = ((point.long - minLong) / (maxLong - minLong)) * size.width;
+            var y = ((point.lat - minLat) / (maxLat - minLat)) * size.height;
+
+            // Adjust for different origin
+            y = -y + size.height;
+
+            return {x: Math.round(x), y: Math.round(y)};
+        },
+
+        coordinatesFromPixels: function(point) {
+            var size = this.getSize();
+
+            if (!size.height || !size.width) {
+                throw new MapViewException('No current image size detected.');
+            }
+
+            var minLat = this.model.bounds[0][1];
+            var minLong = this.model.bounds[0][0];
+            var maxLat = this.model.bounds[1][1];
+            var maxLong = this.model.bounds[2][0];
+
+            // Adjust for different origin
+            point.y = -point.y + size.height;
+
+            var lat = (maxLat - minLat) * (point.y / size.height) + minLat;
+            var lng = (maxLong - minLong) * (point.x / size.width) + minLong;
+
+            return {lat: lat, long: lng};
         }
     }, {
-        // Statuses
+        // Statuse constants
         PAUSED: 1,
         STOPPED: 2,
         PLAYING: 3,
 
-        // Events
+        // Event constants
         DRAGGING_FINISHED: 'mapView:draggingFinished',
         REFRESH_FINISHED: 'mapView:refreshFinished',
         PLAYING_FINISHED: 'mapView:playingFinished',
         FRAME_CHANGED: 'mapView:frameChanged',
-        MAP_WAS_CLICKED: 'mapView:mapWasClicked'
+        MAP_WAS_CLICKED: 'mapView:mapWasClicked',
+        SPILL_DRAWN: 'mapView:spillDrawn'
     });
 
 
@@ -490,7 +684,7 @@ define([
             });
         }
     }, {
-        // Events
+        // Event constants 
         ADD_BUTTON_CLICKED: 'gnome:addItemButtonClicked',
         REMOVE_BUTTON_CLICKED: 'gnome:removeItemButtonClicked',
         SETTINGS_BUTTON_CLICKED: 'gnome:itemSettingsButtonClicked'
@@ -518,6 +712,7 @@ define([
             this.resizeButtonEl = this.options.resizeButtonEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
+            this.model = this.options.model;
 
             // Controls whose state, either enabled or disabled, is related to whether
             // or not an animation is playing. The resize and full screen buttons
@@ -542,11 +737,11 @@ define([
 
             if (this.model.expectedTimeSteps.length) {
                 this.setTimeSteps(this.model.expectedTimeSteps);
+                this.enableControls();
             }
 
             this.setupClickEvents();
 
-            this.model = this.options.model;
             this.model.on(models.Model.RUN_BEGAN, this.runBegan);
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
             this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
@@ -570,8 +765,7 @@ define([
                 [this.pauseButtonEl, MapControlView.PAUSE_BUTTON_CLICKED]
             ];
 
-            // TODO: This probably leaks memory, so do something else here, like
-            // looking up the right `customEvent` for the element.
+            // TODO: This probably leaks memory due to closing around `button`.
             _.each(_.object(clickEvents), function(customEvent, button) {
                 $(button).click(function(event) {
                     if ($(button).hasClass('disabled')) {
@@ -795,20 +989,20 @@ define([
         ON: true,
         OFF: false,
 
-        // Events
-        PLAY_BUTTON_CLICKED: "gnome:playButtonClicked",
-        PAUSE_BUTTON_CLICKED: "gnome:pauseButtonClicked",
-        BACK_BUTTON_CLICKED: "gnome:backButtonClicked",
-        FORWARD_BUTTON_CLICKED: "gnome:forwardButtonClicked",
-        ZOOM_IN_BUTTON_CLICKED: "gnome:zoomInButtonClicked",
-        ZOOM_OUT_BUTTON_CLICKED: "gnome:zoomOutButtonClicked",
-        MOVE_BUTTON_CLICKED: "gnome:moveButtonClicked",
-        FULLSCREEN_BUTTON_CLICKED: "gnome:fullscreenButtonClicked",
-        RESIZE_BUTTON_CLICKED: "gnome:resizeButtonClicked",
-        SLIDER_CHANGED: "gnome:sliderChanged",
-        SLIDER_MOVED: "gnome:sliderMoved",
+        // Event constants
+        PLAY_BUTTON_CLICKED: "mapControlView:playButtonClicked",
+        PAUSE_BUTTON_CLICKED: "mapControlView:pauseButtonClicked",
+        BACK_BUTTON_CLICKED: "mapControlView:backButtonClicked",
+        FORWARD_BUTTON_CLICKED: "mapControlView:forwardButtonClicked",
+        ZOOM_IN_BUTTON_CLICKED: "mapControlView:zoomInButtonClicked",
+        ZOOM_OUT_BUTTON_CLICKED: "mapControlView:zoomOutButtonClicked",
+        MOVE_BUTTON_CLICKED: "mapControlView:moveButtonClicked",
+        FULLSCREEN_BUTTON_CLICKED: "mapControlView:fullscreenButtonClicked",
+        RESIZE_BUTTON_CLICKED: "mapControlView:resizeButtonClicked",
+        SLIDER_CHANGED: "mapControlView:sliderChanged",
+        SLIDER_MOVED: "mapControlView:sliderMoved",
 
-        // Statuses
+        // Status constants
         STATUS_STOPPED: 0,
         STATUS_PLAYING: 1,
         STATUS_PAUSED: 2,
@@ -861,10 +1055,10 @@ define([
             this.trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
         }
     }, {
-        // Events
-        NEW_ITEM_CLICKED: "gnome:newMenuItemClicked",
-        RUN_ITEM_CLICKED: "gnome:runMenuItemClicked",
-        RUN_UNTIL_ITEM_CLICKED: "gnome:runUntilMenuItemClicked"
+        // Event constants
+        NEW_ITEM_CLICKED: "menuView:newMenuItemClicked",
+        RUN_ITEM_CLICKED: "menuView:runMenuItemClicked",
+        RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked"
     });
 
     return {

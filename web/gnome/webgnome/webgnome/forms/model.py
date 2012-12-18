@@ -26,7 +26,7 @@ class ModelSettingsForm(AutoIdForm, DateTimeForm):
     """
     duration_days = IntegerField(default=1, validators=[NumberRange(min=0)])
     duration_hours = IntegerField(default=0, validators=[NumberRange(min=0)])
-    include_minimum_regret = BooleanField(
+    uncertain = BooleanField(
         label="Include the Minimum Regret (Uncertainty) Solution",
         default=False)
     show_currents = BooleanField(label="Show Currents", default=False)
@@ -46,3 +46,9 @@ class ModelSettingsForm(AutoIdForm, DateTimeForm):
             self.date.data = obj.start_time.date()
             self.hour.data = obj.start_time.hour
             self.minute.data = obj.start_time.minute
+
+            if obj.duration.days:
+                self.duration_days.data = obj.duration.days
+
+            if obj.duration.seconds:
+                self.duration_hours.data = obj.duration.seconds / 60 / 60

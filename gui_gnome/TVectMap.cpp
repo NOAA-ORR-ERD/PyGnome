@@ -603,6 +603,7 @@ OSErr TVectorMap::ImportMap (char *path)
 			
 			if (bClosed && PointIndex > 1  && !strcmp (KeyStr, LineStartPtr))
 			{
+				if (PointIndex < PointCount) continue;	// skip any duplicates of the start point since they cause Windows GNOME to crash on exit
 				thisPolyHdl = (PolyObjectHdl) theLayer -> AddNewObject (kPolyType, &ObjectLRect, false);
 				if (thisPolyHdl != nil)
 				{

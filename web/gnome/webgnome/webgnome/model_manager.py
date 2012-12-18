@@ -7,6 +7,7 @@ import util
 try:
     from gnome.model import Model
     from gnome.movers import WindMover
+    from gnome.spill import PointReleaseSpill
 except ImportError:
     print 'Import error!'
     # If we failed to find the model package,
@@ -19,6 +20,7 @@ except ImportError:
     sys.path.append('../../../py_gnome')
     from gnome.model import Model
     from gnome.movers import WindMover
+    from gnome.spill import PointReleaseSpill
 
 
 class Wind(object):
@@ -41,7 +43,7 @@ class WebWindMover(WindMover):
     webgnome-specific functionality.
     """
     def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', 'Wind Mover')
+        self._name = kwargs.pop('name', 'Wind Mover')
         self.is_constant = kwargs.pop('is_constant', True)
         super(WebWindMover, self).__init__(*args, **kwargs)
 
@@ -53,7 +55,7 @@ class WebWindMover(WindMover):
             dt = timeseries[0].astype(object)
             series.append(
                 Wind(date=dt, speed=timeseries[1][0], speed_type='meters',
-                    direction=timeseries[1][1])
+                     direction=timeseries[1][1])
             )
 
         return series
@@ -62,10 +64,48 @@ class WebWindMover(WindMover):
     def timeseries(self, value):
         return WindMover.timeseries.__set__(self, value)
 
-    def __repr__(self):
-        if self.name:
-            return self.name
+    @property
+    def name(self):
+        if self._name:
+            return self._name
         return super(WebWindMover, self).__repr__()
+
+
+class WebPointReleaseSpill(PointReleaseSpill):
+    """
+    A subclass of :class:`gnome.movers.WindMover` that provides
+    webgnome-specific functionality.
+    """
+    def __init__(self, *args, **kwargs):
+        self._name = kwargs.pop('name', 'Spill')
+        super(WebPointReleaseSpill, self).__init__(*args, **kwargs)
+
+    @property
+    def start_position_x(self):
+        return self.start_position[0]
+
+    @property
+    def start_position_y(self):
+        return self.start_position[1]
+
+    @property
+    def start_position_z(self):
+        return self.start_position[2]
+
+    @property
+    def windage_min(self):
+        return self.windage_range[0]
+
+    @property
+    def windage_max(self):
+        return self.windage_range[1]
+
+    @property
+    def name(self):
+        if self._name:
+            return self._name
+        return super(WebPointReleaseSpill, self).__repr__()
+
 
 
 class WebModel(Model):

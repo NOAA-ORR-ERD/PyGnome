@@ -1,7 +1,7 @@
-<%page args="form"/>
+<%page args="form, action_url"/>
 
-<div class="hide" id="${form.id}">
-    <form action="" method="POST">
+<div class="hide form" id="${form.id}">
+    <form action="${action_url}" method="POST">
         ${form.mover_id}
     </form>
 </div>

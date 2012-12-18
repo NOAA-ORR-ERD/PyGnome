@@ -18,11 +18,68 @@ from webgnome.forms.movers import (
     DeleteMoverForm
 )
 
+from webgnome.forms.spills import DeleteSpillForm, AddSpillForm, PointReleaseSpillForm
+
 from webgnome.forms.model import RunModelUntilForm, ModelSettingsForm
 from webgnome.forms.movers import mover_form_classes
+from webgnome.forms.spills import spill_form_classes
+from webgnome.model_manager import WebWindMover, WebPointReleaseSpill
 from webgnome.navigation_tree import NavigationTree
 from webgnome import util
-from webgnome.views import movers
+
+
+def _get_mover_forms(request, model):
+    """
+    Return a list of update and delete forms for the movers in ``model``.
+    """ 
+    update_forms = []
+    delete_forms = []
+
+    for mover in model.movers:
+        delete_route = util.get_form_route(request, mover, 'delete')
+        update_route = util.get_form_route(request, mover, 'update')
+
+        if delete_route:
+            delete_url = request.route_url(delete_route)
+            delete_form = DeleteMoverForm(model=model, obj=mover)
+            delete_forms.append((delete_url, delete_form))
+
+        update_form_cls = mover_form_classes.get(mover.__class__, None)
+
+        if update_route and update_form_cls:
+            update_url = request.route_url(update_route, id=mover.id)
+            update_form = update_form_cls(obj=mover)
+            update_forms.append((update_url, update_form))
+
+    return update_forms, delete_forms
+
+
+def _get_spill_forms(request, model):
+    """
+    Return a list of update and delete forms for the spills in ``model``.
+    
+    TODO: Pretty similar to ``_get_mover_forms``.
+    """
+    update_forms = []
+    delete_forms = []
+
+    for spill in model.spills:
+        delete_route = util.get_form_route(request, spill, 'delete')
+        update_route = util.get_form_route(request, spill, 'update')
+
+        if delete_route:
+            delete_url = request.route_url(delete_route)
+            delete_form = DeleteSpillForm(model=model, obj=spill)
+            delete_forms.append((delete_url, delete_form))
+
+        update_form_cls = spill_form_classes.get(spill.__class__, None)
+
+        if update_route and update_form_cls:
+            update_url = request.route_url(update_route, id=spill.id)
+            update_form = update_form_cls(obj=spill)
+            update_forms.append((update_url, update_form))
+
+    return update_forms, delete_forms
 
 
 @view_config(route_name='model_forms', renderer='gnome_json')
@@ -38,34 +95,26 @@ def model_forms(request, model):
         'settings_form': ModelSettingsForm(obj=model),
         'settings_form_url': request.route_url('model_settings'),
         'add_mover_form': AddMoverForm(),
+        'add_spill_form': AddSpillForm(),
         'wind_mover_form': WindMoverForm(),
         'wind_mover_form_url': request.route_url('create_wind_mover'),
+        'point_release_spill_form': PointReleaseSpillForm(),
+        'point_release_spill_form_url': request.route_url(
+            'create_point_release_spill'),
         'form_view_container_id': 'modal-container',
-        'mover_update_forms': [],
-        'mover_delete_forms': []
+        'spill_update_forms': [],
+        'spill_delete_forms': []
     }
 
-    # The template will render a delete and edit form for each mover instance.
-    for mover in model.movers:
-        delete_form = DeleteMoverForm(model, obj=mover)
-        delete_url = request.route_url('delete_mover')
-        context['mover_delete_forms'].append(
-            (delete_url, delete_form))
+    mover_update_forms, mover_delete_forms = _get_mover_forms(request, model)
 
-        routes = movers.form_routes.get(mover.__class__, None)
+    context['mover_update_forms'] = mover_update_forms
+    context['mover_delete_forms'] = mover_delete_forms
 
-        if not routes:
-            continue
-
-        update_route = routes.get('update', None)
-        update_form_cls = mover_form_classes.get(mover.__class__, None)
-
-        if update_route and update_form_cls:
-            update_url = request.route_url(update_route, id=mover.id)
-            update_form = update_form_cls(obj=mover)
-            context['mover_update_forms'].append((update_url, update_form))
-
-        # TODO: Spill forms.
+    spill_update_forms, spill_delete_forms = _get_spill_forms(request, model)
+    
+    context['spill_update_forms'] = spill_update_forms
+    context['spill_delete_forms'] = spill_delete_forms
 
     return {
         'html': render('model_forms.mak', context, request)
@@ -95,13 +144,14 @@ def show_model(request):
             data['warning'] = 'The model you were working on is no longer ' \
                               'available. We created a new one for you.'
 
+    data['map_bounds'] = []
+    if model.map and model.map.map_bounds.any():
+        data['map_bounds'] = model.map.map_bounds.tolist()
+
     data['model'] = model
     data['model_form_html'] = model_forms(request)['html']
-
-     # TODO: Remove this after we decide on where to put the drop-down menu.
-    data['show_menu_above_map'] = 'map_menu' in request.GET
-
     data['add_mover_form_id'] = AddMoverForm().id
+    data['add_spill_form_id'] = AddSpillForm().id
     data['model_forms_url'] = request.route_url('model_forms')
     data['run_model_until_form_url'] = request.route_url('run_model_until')
 
@@ -172,7 +222,7 @@ def _model_settings_post(request, model):
         model.duration = datetime.timedelta(
             days=form.duration_days.data, hours=form.duration_hours.data)
 
-        model.uncertain = form.include_minimum_regret.data
+        model.uncertain = form.uncertain.data
 
         # TODO: show_currents, prevent_land_jumping, run_backwards options.
 
@@ -189,7 +239,6 @@ def model_settings(request, model):
     if request.method == 'POST':
         return _model_settings_post(request, model)
 
-    print model.start_time
     form = ModelSettingsForm(obj=model)
 
     return _render_model_settings(request, form)
@@ -262,7 +311,8 @@ def run_model(request, model):
 
     # TODO: Set separately in spill view.
     if not model.spills:
-        spill = gnome.spill.PointReleaseSpill(
+        spill = WebPointReleaseSpill(
+            name="Long Island Spill",
             num_LEs=1000,
             start_position=(-72.419992, 41.202120, 0.0),
             release_time=model.start_time)
@@ -282,26 +332,35 @@ def run_model(request, model):
         series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
         series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
 
-        w_mover = gnome.movers.WindMover(timeseries=series)
+        w_mover = WebWindMover(timeseries=series, is_constant=False)
         model.add_mover(w_mover)
 
 
     # TODO: Set separately in map configuration form/view.
-    map_file = os.path.join(
-        request.registry.settings['project_root'],
-        'sample_data', 'LongIslandSoundMap.BNA')
+    if not model.map:
+        map_file = os.path.join(
+            request.registry.settings['project_root'],
+            'sample_data', 'LongIslandSoundMap.BNA')
 
-    # the land-water map
-    model.map = gnome.map.MapFromBNA(
-        map_file, refloat_halflife=6 * 3600)
+        # the land-water map
+        model.map = gnome.map.MapFromBNA(
+            map_file, refloat_halflife=6 * 3600)
 
-    canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
-    polygons = haz_files.ReadBNA(map_file, "PolygonSet")
-    canvas.set_land(polygons)
-    model.output_map = canvas
+        canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
+        polygons = haz_files.ReadBNA(map_file, "PolygonSet")
+        canvas.set_land(polygons)
+        model.output_map = canvas
 
     data['background_image'] = _get_model_image_url(
         request, model, 'background_map.png')
+    data['map_bounds'] = model.map.map_bounds.tolist()
+
+    # Rewind the model if on the last step and the client requested it.
+    # TODO: Make a property
+    if model.current_time_step >= model._num_time_steps and \
+            request.POST.get('no_cache', False):
+        print 'rewind'
+        model.rewind()
 
     first_step = _get_time_step(request, model)
 
@@ -309,7 +368,7 @@ def run_model(request, model):
         return {}
 
     model.time_steps.append(first_step)
-    data['step'] = first_step
+    data['time_step'] = first_step
 
     return data
 

@@ -8,9 +8,13 @@
  */
 
 #include "GridWindMover_c.h"
+#ifndef pyGNOME
 #include "CROSS.H"
-//#include "netcdf.h"
+#else
+#include "Replacements.h"
+#endif
 
+#ifndef pyGNOME
 GridWindMover_c::GridWindMover_c(TMap *owner,char* name) : WindMover_c(owner, name)
 {
 	if(!name || !name[0]) this->SetClassName("Gridded Wind");
@@ -25,15 +29,11 @@ GridWindMover_c::GridWindMover_c(TMap *owner,char* name) : WindMover_c(owner, na
 	fUserUnits = kMetersPerSec;	
 	fWindScale = 1.;
 	fArrowScale = 10.;
-	//fFillValue = -1e+34;
-	
-	//fTimeShift = 0; // assume file is in local time
 	
 	timeGrid = 0;
-	//fAllowExtrapolationInTime = false;
 	
 }
-
+#endif
 
 /////////////////////////////////////////////////
 OSErr GridWindMover_c::PrepareForModelRun()
@@ -89,7 +89,6 @@ OSErr GridWindMover_c::get_move(int n, unsigned long model_time, unsigned long s
 		return 1;
 	}
 	
-	// code goes here, windage...
 	// For LEType spillType, check to make sure it is within the valid values
 	if( spillType < FORECAST_LE || spillType > UNCERTAINTY_LE)
 	{

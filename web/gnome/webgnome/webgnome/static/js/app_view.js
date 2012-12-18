@@ -33,7 +33,8 @@ define([
             this.model = new models.Model(this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
-                currentTimeStep: this.options.currentTimeStep
+                currentTimeStep: this.options.currentTimeStep,
+                bounds: this.options.mapBounds || []
             });
 
             this.menuView = new views.MenuView({
@@ -135,12 +136,11 @@ define([
             this.mapView.on(views.MapView.DRAGGING_FINISHED, this.zoomIn);
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
             this.mapView.on(views.MapView.MAP_WAS_CLICKED, this.zoomOut);
+            this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
 
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
-
-            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
         },
 
         setupKeyboardHandlers: function() {
@@ -194,9 +194,15 @@ define([
             }
         },
 
+        spillDrawn: function(x, y) {
+            this.addSpillFormView.show([x, y]);
+        },
+
         refreshForms: function() {
             this.destroyForms();
             this.addForms();
+            // Ignore the local time step cache on next model run.
+            this.model.dirty = true;
         },
 
         addForms: function() {
@@ -207,14 +213,22 @@ define([
                 formContainerEl: '#' + this.options.formContainerId
             });
 
+            this.addSpillFormView = new forms.AddSpillFormView({
+                el: $('#' + this.options.addSpillFormId),
+                formContainerEl: '#' + this.options.formContainerId
+            });
+
+            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+            this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
+
             this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
 
-            // Create an `AjaxForm` and bind it to a `AjaxFormView` for each modal
-            // form on the page, other than the Add Mover form, which we handled.
+            // Create an `AjaxForm` and bind it to a `AjaxFormView` or subclass
+            // for each form on the page.
             _.each($('div.form'), function(formDiv) {
-                var $div = $(formDiv);
-                var $form = $div.find('form');
-                var formId = $div.attr('id');
+                var div = $(formDiv);
+                var form = div.find('form');
+                var formId = div.attr('id');
 
                 if (formId === _this.options.addMoverFormId) {
                     return;
@@ -222,33 +236,30 @@ define([
 
                 _this.forms.add({
                     id: formId,
-                    url: $form.attr('action')
+                    url: form.attr('action')
                 });
 
                 var ajaxForm = _this.forms.get(formId);
                 var formEl = $('#' + formId);
                 var formContainerEl = '#' + _this.options.formContainerId;
+                var formClass;
 
-                if ($div.hasClass('wind')) {
-                    _this.formViews.add(formId, new forms.WindMoverFormView({
-                        ajaxForm: ajaxForm,
-                        el: formEl,
-                        formContainerEl: formContainerEl
-                    }));
+                if (div.hasClass('wind')) {
+                    formClass = forms.WindMoverFormView;
+                } else if (div.hasClass('spill')) {
+                    formClass = forms.PointReleaseSpillFormView;
+                } else if (div.hasClass('modal')) {
+                    formClass = forms.ModalAjaxFormView;
                 } else {
-                    var formClass = forms.AjaxFormView;
-
-                    if ($div.hasClass('modal')) {
-                        formClass = forms.ModalAjaxFormView;
-                    }
-
-                    _this.formViews.add(formId, new formClass({
-                        id: formId,
-                        ajaxForm: ajaxForm,
-                        el: formEl,
-                        formContainerEl: formContainerEl
-                    }));
+                    formClass = forms.AjaxFormView;
                 }
+
+                _this.formViews.add(formId, new formClass({
+                    id: formId,
+                    ajaxForm: ajaxForm,
+                    el: formEl,
+                    formContainerEl: formContainerEl
+                }));
             });
         },
 
@@ -281,6 +292,7 @@ define([
         },
 
         runUntilMenuItemClicked: function() {
+            // TODO: Fix this - old code.
             this.fetchForm({type: 'run_until'});
         },
 
@@ -480,22 +492,28 @@ define([
         removeButtonClicked: function() {
             var node = this.treeView.getActiveItem();
 
-            if (!node.data.form_id || !node.data.id) {
+            function error() {
+                alert('Error! Could not delete ' + node.data.title + '.');
+            }
+
+            if (!node.data.form_id || !node.data.object_id) {
+                return error();
+            }
+
+            var ajaxForm = this.forms.get(node.data.delete_form_id);
+            var formView = this.formViews.get(node.data.delete_form_id);
+
+            if (!ajaxForm || !formView) {
+                return error();
+            }
+
+            if (confirm('Remove ' + node.data.title + '?') === false) {
                 return;
             }
 
-            var type = node.data.form_id.replace('_', ' ');
-
-            if (confirm('Remove ' + type + '?') === false) {
-                return;
-            }
-
-            this.ajaxForm.submit({
-                url: this.ajaxForm.get('url') + '/' + node.data.form_id + '/delete',
-                data: "mover_id=" + node.data.id,
-                error: function() {
-                    alert('Could not remove item.');
-                }
+            ajaxForm.submit({
+                data: "mover_id=" + node.data.object_id,
+                error: error
             });
         },
 
@@ -507,6 +525,17 @@ define([
             }
 
             formView.show();
+        },
+
+        spillChosen: function(spillType, coords) {
+            var formView = this.formViews.get(spillType);
+            util.log(formView, this.formViews.formViews);
+
+            if (formView === undefined) {
+                return;
+            }
+
+            formView.show(coords);
         }
     });
 

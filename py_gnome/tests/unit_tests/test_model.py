@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import gnome.model
 import gnome.map
-from gnome import movers
+from gnome import movers, weather
 import gnome.spill
 
 def test_init():
@@ -240,7 +240,7 @@ def test_all_movers():
 
     # wind mover
     series = np.array( (start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
-    model.add_mover( gnome.movers.WindMover(timeseries=series) )
+    model.add_mover( gnome.movers.WindMover(weather.Wind(timeseries=series)) )
   
     
     # run the model all the way...
