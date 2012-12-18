@@ -73,7 +73,7 @@ define([
             this.placeholderEl = this.options.placeholderEl;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
-            this.imageTimeout = this.options.imageTimeout || 10;
+            this.imageTimeout = this.options.imageTimeout || 30;
 
             this.createPlaceholderCopy();
             this.makeImagesClickable();
