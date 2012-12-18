@@ -198,6 +198,12 @@ class Model(object):
         """
         self._spills[spill.id] = spill
         
+    def remove_spill(self, spill_id):
+        """
+        remove the passed-in spill from the spill list
+        """
+        if spill_id in self._spills:
+            del self._spills[spill_id]
         
     def setup_model_run(self):
         """
