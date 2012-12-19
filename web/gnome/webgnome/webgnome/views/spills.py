@@ -57,31 +57,36 @@ def delete_spill(request, model):
 def _render_point_release_spill_form(request, form, spill):
     html = render('webgnome:templates/forms/point_release_spill.mak', {
         'form': form,
-        'action_url': request.route_url('update_point_release_spill', id=spill.id)
+        'action_url': request.route_url('update_point_release_spill',
+                                        id=spill.id)
     })
 
     return {'form_html': html}
 
 
-def _update_point_release_spill_post(request, model, spill_id):
+def _update_point_release_spill_post(request, model, spill):
     form = PointReleaseSpillForm(request.POST)
 
     if form.validate():
+        orig_spill_id = spill.id
         spill = form.create()
         model.add_spill(spill)
+        created = False
 
         if spill:
-            model.remove_spill(spill_id)
+            model.remove_spill(orig_spill_id)
             message = util.make_message(
                 'success', 'Updated point release spill successfully.')
         else:
+            created = True
             message = util.make_message(
                 'warning', 'The spill did not exist, so we created a new one.')
 
         return {
             'id': spill.id,
             'message': message,
-            'form_html': None
+            'form_html': None,
+            'created': created
         }
 
     return _render_point_release_spill_form(request, form, spill)
@@ -95,7 +100,7 @@ def update_point_release_spill(request, model):
     spill = model.get_spill(int(spill_id))
 
     if request.method == 'POST':
-        return _update_point_release_spill_post(request, model, spill.id)
+        return _update_point_release_spill_post(request, model, spill)
 
     form = PointReleaseSpillForm(obj=spill)
 
@@ -110,7 +115,8 @@ def _create_point_release_spill_post(model, form):
     return {
         'id': spill.id,
         'type': 'spill',
-        'form_html': None
+        'form_html': None,
+        'created': True
     }
 
 

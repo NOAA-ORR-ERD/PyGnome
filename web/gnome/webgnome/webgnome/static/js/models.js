@@ -425,7 +425,8 @@ define([
     // Event constants
     AjaxForm.MESSAGE_RECEIVED = 'ajaxForm:messageReceived';
     AjaxForm.CHANGED = 'ajaxForm:changed';
-    AjaxForm.SUCCESS = 'ajaxForm:success';
+    AjaxForm.CREATED = 'ajaxForm:created';
+    AjaxForm.UPDATED = 'ajaxForm:saved';
 
     AjaxForm.prototype = {
         /*
@@ -437,11 +438,14 @@ define([
                 this.trigger(AjaxForm.MESSAGE_RECEIVED, message);
             }
 
-            if (_.has(response, 'form_html') && response.form_html) {
+            if (response.form_html) {
                 this.form_html = response.form_html;
                 this.trigger(AjaxForm.CHANGED, this);
-            } else {
-                this.trigger(AjaxForm.SUCCESS, this);
+            } else if (response.created) {
+                this.trigger(AjaxForm.CREATED, this);
+            } else{
+                this.trigger(AjaxForm.UPDATED, this);
+
             }
         },
 
@@ -517,8 +521,12 @@ define([
                 _this.trigger(AjaxForm.CHANGED, ajaxForm);
             });
 
-            this.forms[formOpts.id].on(AjaxForm.SUCCESS,  function(ajaxForm) {
-                _this.trigger(AjaxForm.SUCCESS, ajaxForm);
+            this.forms[formOpts.id].on(AjaxForm.CREATED,  function(ajaxForm) {
+                _this.trigger(AjaxForm.CREATED, ajaxForm);
+            });
+
+            this.forms[formOpts.id].on(AjaxForm.UPDATED,  function(ajaxForm) {
+                _this.trigger(AjaxForm.UPDATED, ajaxForm);
             });
         },
 

@@ -353,6 +353,8 @@ define([
         },
 
         loadMapFromUrl: function(url) {
+            var _this = this;
+
             if (this.placeholderCopy.length) {
                 this.removePlaceholderCopy();
             }
@@ -365,8 +367,78 @@ define([
                 src: url
             });
 
-            background.imagesLoaded(this.createCanvases);
+            background.imagesLoaded(function() {
+                _this.createCanvases();
+                _this.drawSpills();
+            });
+
             background.appendTo(map);
+        },
+
+        drawLine: function(ctx, start_x, start_y, end_x, end_y) {
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(start_x, start_y);
+            ctx.lineTo(end_x, end_y);
+            ctx.stroke();
+            ctx.closePath();
+            ctx.beginPath();
+            ctx.closePath();
+        },
+
+        drawSpill: function(spillForm) {
+            var ctx = this.foregroundCanvas[0].getContext('2d');
+            var start = $(spillForm).find('.start-coordinates');
+            var end = $(spillForm).find('.end-coordinates');
+            var startInputs = $(start).find('.coordinate');
+            var startX, startY, startZ, endX, endY, endZ;
+
+            startX = endX = $(startInputs[0]).val();
+            startY = endY = $(startInputs[1]).val();
+            startZ = endZ = $(startInputs[2]).val();
+
+            if (!startX || !startY) {
+                return;
+            }
+
+            if (end.length) {
+                var endInputs = $(end).find('.coordinate');
+                endX = $(endInputs[0]).val();
+                endY = $(endInputs[1]).val();
+                endZ = $(endInputs[2]).val();
+            }
+
+            var pixelStart = this.pixelsFromCoordinates({
+                lat: startY,
+                long: startX
+            });
+
+            var pixelEnd = this.pixelsFromCoordinates({
+                lat: endY,
+                long: endX
+            });
+
+            if (startX === endX && startY === endY) {
+                pixelEnd.x += 5;
+                pixelEnd.y += 5;
+            }
+
+            this.drawLine(ctx, pixelStart.x, pixelStart.y, pixelStart.x, pixelEnd.y);
+        },
+
+        // Draw a mark on the map for each existing spill.
+        drawSpills: function() {
+            var spillForms = $('.spill');
+            var _this = this;
+
+            // TODO: Draw a line for each spill. Redraw when changed.
+            var canvas = this.foregroundCanvas[0];
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            _.each(spillForms, function(form) {
+                _this.drawSpill(form);
+            });
         },
 
         /*
@@ -382,33 +454,21 @@ define([
             var _this = this;
             var background = $(this.mapEl).find('.background');
 
-             var backgroundCanvas = $('<canvas>').attr({
+            this.backgroundCanvas = $('<canvas>').attr({
                 id: 'canvas-background',
                 height: background.height(),
                 width: background.width()
             });
 
-            var foregroundCanvas = $('<canvas>').attr({
+            this.foregroundCanvas = $('<canvas>').attr({
                 id: 'canvas-foreground',
                 class: 'drawable',
                 height: background.height(),
                 width: background.width()
             });
 
-            function drawLine(ctx, start_x, start_y, end_x, end_y) {
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(start_x, start_y);
-                ctx.lineTo(end_x, end_y);
-                ctx.stroke();
-                ctx.closePath();
-                ctx.beginPath();
-                ctx.closePath();
-            }
-
             // TODO: Update canvas sizes when window changes.
-
-            foregroundCanvas.mousedown(function(ev) {
+            this.foregroundCanvas.mousedown(function(ev) {
                 if (!_this.canDrawSpill) {
                     return;
                 }
@@ -425,48 +485,8 @@ define([
                 }
             });
 
-            var spillForms = $('.spill');
-            _.each(spillForms, function(form) {
-                var ctx = foregroundCanvas[0].getContext('2d');
-                var start = $(form).find('.start-coordinates');
-                var end = $(form).find('.end-coordinates');
-                var startInputs = $(start).find('.coordinate');
-                var startX, startY, startZ, endX, endY, endZ;
-                
-                startX = endX = $(startInputs[0]).val();
-                startY = endY = $(startInputs[1]).val();
-                startZ = endZ = $(startInputs[2]).val();
-
-                if (!startX || !startY) {
-                    return;
-                }
-                
-                if (end.length) {
-                    var endInputs = $(end).find('.coordinate');
-                    endX = $(endInputs[0]).val();
-                    endY = $(endInputs[1]).val();
-                    endZ = $(endInputs[2]).val();
-                }
-
-                var pixelStart = _this.pixelsFromCoordinates({
-                    lat: startY,
-                    long: startX
-                });
-
-                var pixelEnd = _this.pixelsFromCoordinates({
-                    lat: endY,
-                    long: endX
-                });
-
-                if (startX === endX && startY === endY) {
-                    pixelEnd.x += 5;
-                    pixelEnd.y += 5;
-                }
-
-                drawLine(ctx, pixelStart.x, pixelStart.y, pixelStart.x, pixelEnd.y);
-            });
-
-            foregroundCanvas.mousemove(function(ev) {
+            // Event handlers to draw new spills
+            this.foregroundCanvas.mousemove(function(ev) {
                 if (!this.pressed) {
                     return;
                 }
@@ -485,10 +505,10 @@ define([
 
                 // TODO: Draw a line for each spill. Redraw when changed.
                 ctx.clearRect(0, 0, this.width, this.height);
-                drawLine(ctx, this.x0, this.y0, xcurr, ycurr);
+                _this.drawLine(ctx, this.x0, this.y0, xcurr, ycurr);
             });
 
-            $(foregroundCanvas).mouseup(function(ev) {
+            $(this.foregroundCanvas).mouseup(function(ev) {
                 var offset = $(this).offset();
 
                 if (this.pressed && this.moved) {
@@ -501,8 +521,8 @@ define([
                 this.pressed = this.moved = false;
             });
 
-            backgroundCanvas.appendTo(map);
-            foregroundCanvas.appendTo(map);
+            this.backgroundCanvas.appendTo(map);
+            this.foregroundCanvas.appendTo(map);
         },
 
         modelRunBegan: function(data) {
@@ -595,7 +615,8 @@ define([
             this.tree = this.setupDynatree();
 
             // Event handlers
-            this.options.ajaxForms.on(models.AjaxForm.SUCCESS, this.ajaxFormSuccess);
+            this.options.ajaxForms.on(models.AjaxForm.UPDATED, this.reload);
+            this.options.ajaxForms.on(models.AjaxForm.CREATED, this.reload);
             this.options.model.on(models.Model.CREATED, this.reload);
 
             // TODO: Remove this when we remove the Long Island default code.
@@ -623,15 +644,6 @@ define([
                 },
                 persist: true
             });
-        },
-
-        /*
-         Reload the tree view in case new items were added in an `AjaxForm` submit.
-         Called when an `AjaxForm` submits successfully.
-         */
-        ajaxFormSuccess: function(ajaxForm) {
-            util.log('tree view success')
-            this.reload();
         },
 
         getActiveItem: function() {

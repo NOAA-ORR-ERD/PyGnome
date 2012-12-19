@@ -15,7 +15,8 @@ define([
             _.bindAll(this);
             this.formViews = {};
 
-            this.options.ajaxForms.on(models.AjaxForm.SUCCESS, this.refresh);
+            this.options.ajaxForms.on(models.AjaxForm.CREATED, this.refresh);
+            this.options.ajaxForms.on(models.AjaxForm.UPDATED, this.refresh);
 
             // TODO: Remove this when we remove the Long Island code.
             this.options.model.on(models.Model.RUN_BEGAN, this.refresh);
@@ -51,8 +52,15 @@ define([
         },
 
         add: function(id, view) {
+            var _this = this;
             this.formViews[id] = view;
-            view.on(ModalAjaxFormView.ID_CHANGED, this.formIdChanged);
+            view.on(AjaxFormView.ID_CHANGED, this.formIdChanged);
+            view.on(AjaxFormView.CANCELED, function(form) {
+                _this.trigger(AjaxFormView.CANCELED, form);
+            });
+            view.on(AjaxFormView.REFRESHED, function(form) {
+                _this.trigger(AjaxFormView.REFRESHED, form);
+            });
         },
 
         get: function(formId) {
@@ -101,6 +109,7 @@ define([
             _.bindAll(this);
             this.wasCancelled = false;
             this.container = $(this.options.formContainerEl);
+            this.id = this.options.id;
             this.ajaxForm = this.options.ajaxForm;
             this.ajaxForm.on(models.AjaxForm.CHANGED, this.ajaxFormChanged);
             this.setupDatePickers();
@@ -127,6 +136,7 @@ define([
             this.refresh(ajaxForm.form_html);
             this.delegateEvents();
             this.setupDatePickers();
+            this.trigger(AjaxFormView.REFRESHED, this);
 
             if (this.wasCancelled) {
                 this.wasCancelled = false;
@@ -151,8 +161,9 @@ define([
          bound `AjaxForm`. If the request is successful, this `ModelFormView` will
          fire its `ajaxFormChanged` event handler.
          */
-        reload: function(id) {
-            this.ajaxForm.get({id: id});
+        reload: function(opts) {
+            opts = opts || {};
+            this.ajaxForm.get(opts);
         },
 
         getForm: function() {
@@ -280,7 +291,8 @@ define([
             event.preventDefault();
             this.hide();
             this.wasCancelled = true;
-            this.ajaxForm.get();
+            this.reload();
+            this.trigger(AjaxFormView.CANCELED, this);
         },
 
         /*
@@ -323,7 +335,9 @@ define([
             this.container.off('click', this.id + ' .btn-prev', this.goToPreviousStep);
         }
     }, {
-        ID_CHANGED: 'ajaxFormView:idChanged'
+        ID_CHANGED: 'ajaxFormView:idChanged',
+        CANCELED: 'ajaxFormView:canceled',
+        REFRESHED: 'ajaxFormView:refreshed'
     });
 
 
@@ -404,7 +418,8 @@ define([
         },
 
         events: {
-            'click .btn-primary': 'submit'
+            'click .btn-primary': 'submit',
+            'click .cancel': 'cancel'
         },
 
         getForm: function() {
@@ -435,10 +450,15 @@ define([
             }
 
             return false;
+        },
+
+        cancel: function(event) {
+            this.trigger(AddSpillFormView.CANCELED, this);
         }
     }, {
         // Event constants
-        SPILL_CHOSEN: 'addSpillFormView:spillChosen'
+        SPILL_CHOSEN: 'addSpillFormView:spillChosen',
+        CANCELED: 'addSpillFormView:canceled'
     });
 
 

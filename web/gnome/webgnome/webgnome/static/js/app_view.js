@@ -115,7 +115,11 @@ define([
         setupEventHandlers: function() {
             this.model.on(models.Model.CREATED, this.newModelCreated);
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
-            this.forms.on(models.AjaxForm.SUCCESS, this.ajaxFormSuccess);
+            this.forms.on(models.AjaxForm.UPDATED, this.ajaxFormUpdated);
+
+            this.formViews.on(forms.FormViewContainer.REFRESHED, this.mapView.drawSpills);
+            this.formViews.on(forms.AjaxFormView.REFRESHED, this.mapView.drawSpills);
+            this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.mapView.drawSpills);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
             this.formViews.on(forms.FormViewContainer.REFRESHED, this.refreshForms);
@@ -147,10 +151,10 @@ define([
         },
 
         /*
-         Consider the model dirty if the user saves a spill form, so we don't
-         get cached images back on the next model run.
+         Consider the model dirty if the user updates an existing  spill, so
+         we don't get cached images back on the next model run.
          */
-        ajaxFormSuccess: function(form) {
+        ajaxFormUpdated: function(form) {
             if (form.type && form.type === 'spill') {
                 this.rewind();
             }
@@ -479,7 +483,7 @@ define([
             }
 
             if (node.data.id) {
-                formView.reload(node.data.id);
+                formView.reload({id: node.data.id});
             } else {
                 this.formViews.hideAll();
                 formView.show();

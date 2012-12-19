@@ -62,6 +62,7 @@ def _render_wind_mover_form(request, form, mover):
 
 def _update_wind_mover_post(request, model, mover):
     form = WindMoverForm(request.POST)
+    created = False
 
     if form.validate():
         if mover:
@@ -71,13 +72,15 @@ def _update_wind_mover_post(request, model, mover):
         else:
             mover = form.create()
             model.add_mover(mover)
+            created = True
             message = util.make_message(
                 'warning', 'The mover did not exist, so we created a new one.')
 
         return {
             'id': mover.id,
             'message': message,
-            'form_html': None
+            'form_html': None,
+            'created': created
         }
 
     form.timeseries.append_entry()
@@ -107,7 +110,8 @@ def _create_wind_mover_post(model, form):
     return {
         'id': model.add_mover(mover),
         'type': 'mover',
-        'form_html': None
+        'form_html': None,
+        'created': True
     }
 
 

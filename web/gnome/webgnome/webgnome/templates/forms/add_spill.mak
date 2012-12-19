@@ -16,7 +16,7 @@
         </form>
     </div>
     <div class="modal-footer">
-        <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+        <button class="btn cancel" data-dismiss="modal" aria-hidden="true">Cancel</button>
         <button class="btn btn-primary">Create</button>
     </div>
 </div>
