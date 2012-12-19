@@ -217,3 +217,7 @@ select, input[type="file"] {
     overflow: scroll;
     max-height: 400px;
 }
+
+.units {
+    width: 120px;
+}

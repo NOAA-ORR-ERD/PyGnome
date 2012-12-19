@@ -8,7 +8,7 @@
 
     <div class="page-header form-inline">
         ${form.name}
-        <label>Units ${form.units(class_='input-small units', id='')} </label>
+        <label>Units ${form.units(class_='units', id='')} </label>
         <label class="checkbox">${form.is_active} Active </label>
     </div>
     <div class="page-body">
