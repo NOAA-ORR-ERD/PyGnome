@@ -74,6 +74,7 @@ define([
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
             this.imageTimeout = this.options.imageTimeout || 10;
+            this.canDrawSpill = false;
 
             this.createPlaceholderCopy();
             this.makeImagesClickable();
@@ -408,6 +409,10 @@ define([
             // TODO: Update canvas sizes when window changes.
 
             foregroundCanvas.mousedown(function(ev) {
+                if (!_this.canDrawSpill) {
+                    return;
+                }
+
                 this.pressed = true;
                 if (ev.originalEvent['layerX'] != undefined) {
                     this.x0 = ev.originalEvent.layerX;
@@ -592,6 +597,9 @@ define([
             // Event handlers
             this.options.ajaxForms.on(models.AjaxForm.SUCCESS, this.ajaxFormSuccess);
             this.options.model.on(models.Model.CREATED, this.reload);
+
+            // TODO: Remove this when we remove the Long Island default code.
+            this.options.model.on(models.Model.RUN_BEGAN, this.reload);
         },
 
         setupDynatree: function() {
@@ -721,6 +729,7 @@ define([
             this.moveButtonEl = this.options.moveButtonEl;
             this.fullscreenButtonEl = this.options.fullscreenButtonEl;
             this.resizeButtonEl = this.options.resizeButtonEl;
+            this.spillButtonEl = this.options.spillButtonEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
             this.model = this.options.model;
@@ -731,7 +740,7 @@ define([
             this.controls = [
                 this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
                 this.pauseButtonEl, this.moveButtonEl, this.zoomInButtonEl,
-                this.zoomOutButtonEl
+                this.zoomOutButtonEl, this.spillButtonEl
             ];
 
             this.status = MapControlView.STATUS_STOPPED;
@@ -773,7 +782,8 @@ define([
                 [this.moveButtonEl, MapControlView.MOVE_BUTTON_CLICKED],
                 [this.fullscreenButtonEl, MapControlView.FULLSCREEN_BUTTON_CLICKED],
                 [this.resizeButtonEl, MapControlView.RESIZE_BUTTON_CLICKED],
-                [this.pauseButtonEl, MapControlView.PAUSE_BUTTON_CLICKED]
+                [this.pauseButtonEl, MapControlView.PAUSE_BUTTON_CLICKED],
+                [this.spillButtonEl, MapControlView.SPILL_BUTTON_CLICKED]
             ];
 
             // TODO: This probably leaks memory due to closing around `button`.
@@ -1010,6 +1020,7 @@ define([
         MOVE_BUTTON_CLICKED: "mapControlView:moveButtonClicked",
         FULLSCREEN_BUTTON_CLICKED: "mapControlView:fullscreenButtonClicked",
         RESIZE_BUTTON_CLICKED: "mapControlView:resizeButtonClicked",
+        SPILL_BUTTON_CLICKED: "mapControllView:spillButtonClicked",
         SLIDER_CHANGED: "mapControlView:sliderChanged",
         SLIDER_MOVED: "mapControlView:sliderMoved",
 

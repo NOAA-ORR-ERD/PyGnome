@@ -33,7 +33,7 @@ def delete_mover(request, model):
     form = DeleteMoverForm(request.POST, model=model)
 
     if form.validate():
-        model.remove_mover(form.mover_id.data)
+        model.remove_mover(form.obj_id.data)
 
         return {
             'success': True

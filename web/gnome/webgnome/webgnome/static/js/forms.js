@@ -13,8 +13,12 @@ define([
     var FormViewContainer = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
-            this.options.ajaxForms.on(models.AjaxForm.SUCCESS, this.refresh);
             this.formViews = {};
+
+            this.options.ajaxForms.on(models.AjaxForm.SUCCESS, this.refresh);
+
+            // TODO: Remove this when we remove the Long Island code.
+            this.options.model.on(models.Model.RUN_BEGAN, this.refresh);
         },
 
         /*
@@ -786,7 +790,7 @@ define([
             header.text(input.val());
         }
     });
-       
+
 
     return {
         AddMoverFormView: AddMoverFormView,

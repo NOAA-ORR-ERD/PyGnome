@@ -37,7 +37,7 @@ def delete_spill(request, model):
     form = DeleteSpillForm(request.POST, model=model)
 
     if form.validate():
-        model.remove_spill(form.spill_id.data)
+        model.remove_spill(form.obj_id.data)
 
         return {
             'success': True

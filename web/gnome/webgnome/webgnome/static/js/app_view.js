@@ -26,8 +26,6 @@ define([
 
             this.apiRoot = "/model";
 
-            this.setupForms();
-
             // Initialize the model with any previously-generated time step data the
             // server had available.
             this.model = new models.Model(this.options.generatedTimeSteps, {
@@ -36,6 +34,8 @@ define([
                 currentTimeStep: this.options.currentTimeStep,
                 bounds: this.options.mapBounds || []
             });
+
+            this.setupForms();
 
             this.menuView = new views.MenuView({
                 // XXX: Hard-coded IDs
@@ -87,6 +87,7 @@ define([
                 moveButtonEl: "#move-button",
                 fullscreenButtonEl: "#fullscreen-button",
                 resizeButtonEl: "#resize-button",
+                spillButtonEl: "#spill-button",
                 timeEl: "#time",
                 // XXX: Partially hard-coded URL.
                 url: this.apiRoot + '/time_steps',
@@ -132,6 +133,7 @@ define([
             this.mapControlView.on(views.MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
             this.mapControlView.on(views.MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
             this.mapControlView.on(views.MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
+            this.mapControlView.on(views.MapControlView.SPILL_BUTTON_CLICKED, this.enableSpillDrawing);
 
             this.mapView.on(views.MapView.PLAYING_FINISHED, this.stopAnimation);
             this.mapView.on(views.MapView.DRAGGING_FINISHED, this.zoomIn);
@@ -280,7 +282,8 @@ define([
             this.formViews = new forms.FormViewContainer({
                 el: $('#' + this.options.formContainerId),
                 ajaxForms: this.forms,
-                url: this.options.formsUrl
+                url: this.options.formsUrl,
+                model: this.model
             });
 
             this.addForms();
@@ -454,6 +457,10 @@ define([
             $(this.sidebarEl).show('slow');
         },
 
+        enableSpillDrawing: function() {
+            this.mapView.canDrawSpill = true;
+        },
+
         showFormWithId: function(formId) {
             var formView = this.formViews.get(formId);
 
@@ -530,7 +537,7 @@ define([
             }
 
             ajaxForm.submit({
-                data: "mover_id=" + node.data.object_id,
+                data: "obj_id=" + node.data.object_id,
                 error: error
             });
         },
