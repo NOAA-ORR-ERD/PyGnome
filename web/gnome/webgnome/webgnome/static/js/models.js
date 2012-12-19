@@ -182,8 +182,11 @@ define([
                     !this.hasCachedTimeStep(options.runUntilTimeStep);
             }
 
-            if (this.dirty || needToGetRunUntilStep) {
+            if (this.dirty) {
                 options['no_cache'] = true;
+            }
+
+            if (this.dirty || needToGetRunUntilStep) {
                 this.doRun(options);
                 return;
             }

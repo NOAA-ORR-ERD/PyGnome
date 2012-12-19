@@ -128,7 +128,6 @@ define([
             this.mapControlView.on(views.MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
             this.mapControlView.on(views.MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
             this.mapControlView.on(views.MapControlView.SLIDER_CHANGED, this.sliderChanged);
-            this.mapControlView.on(views.MapControlView.SLIDER_MOVED, this.sliderMoved);
             this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.rewind);
             this.mapControlView.on(views.MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
             this.mapControlView.on(views.MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
