@@ -141,11 +141,13 @@ input[type="search"],
 input[type="tel"],
 input[type="color"],
 .uneditable-input {
-    padding: 2px;
+    padding: 1px;
+    height: 17px;
+
 }
 
 .form-horizontal .control-group {
-    margin: 1px 0 5px 0;
+    margin: 1px 0 1px 0;
 }
 
 .edit-time-forms th {
@@ -189,13 +191,13 @@ select, input[type="file"] {
 }
 
 .compass-container {
-    padding: 0 0 0 45px;
     position: relative;
+    margin-top: 10px;
 }
 
 .compass {
-    width: 300px;
-    height: 300px;
+    width: 210px;
+    height: 210px;
     position: relative;
 }
 
@@ -209,4 +211,9 @@ select, input[type="file"] {
 
 .table tbody tr.info td {
     background-color: #B5DAEC;
+}
+
+.wind-values {
+    overflow: scroll;
+    max-height: 400px;
 }

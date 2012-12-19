@@ -483,7 +483,8 @@ define([
             'click .edit-time': 'editButtonClicked',
             'click .cancel': 'cancelButtonClicked',
             'click .save': 'saveButtonClicked',
-            'click .delete-time': 'trashButtonClicked'
+            'click .delete-time': 'trashButtonClicked',
+            'change .units': 'renderTimeTable'
         },
 
         compassChanged: function(magnitude, direction) {
@@ -524,6 +525,7 @@ define([
         renderTimeTable: function() {
             var _this = this;
             var forms = this.$el.find('.edit-time-forms').find('.time-form');
+            var units = this.$el.find('.units').find('option:selected').val();
             var rows = [];
 
             // Clear out any existing rows.
@@ -532,7 +534,6 @@ define([
             _.each(forms, function(form) {
                 form = $(form);
                 var tmpl = _.template($("#time-series-row").html());
-                var speedType = form.find('.speed_type option:selected').val();
                 var direction = form.find('.direction').val();
 
                 if (isNaN(direction)) {
@@ -553,7 +554,7 @@ define([
                     date: dateTime.format('MM/DD/YYYY'),
                     time: dateTime.format('HH:mm'),
                     direction: direction,
-                    speed: form.find('.speed').val() + ' ' + speedType
+                    speed: form.find('.speed').val() + ' ' + units
                 })).data('data-form', form));
             });
 

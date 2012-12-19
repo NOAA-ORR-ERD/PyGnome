@@ -431,6 +431,10 @@ define([
             var spillForms = $('.spill');
             var _this = this;
 
+            if (!this.foregroundCanvas) {
+                return;
+            }
+
             // TODO: Draw a line for each spill. Redraw when changed.
             var canvas = this.foregroundCanvas[0];
             var ctx = canvas.getContext('2d');
