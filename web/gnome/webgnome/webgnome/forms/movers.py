@@ -197,16 +197,16 @@ class DeleteMoverForm(AutoIdForm):
 
     This is a hidden form submitted via AJAX by the JavaScript client.
     """
-    mover_id = IntegerField()
+    obj_id = IntegerField()
 
     def __init__(self, *args, **kwargs):
         self.model = kwargs.pop('model', None)
         super(DeleteMoverForm, self).__init__(*args, **kwargs)
 
-    def mover_id_validate(self, field):
-        mover_id = field.data
+    def obj_id_validate(self, field):
+        obj_id = field.data
 
-        if mover_id is None or self.model.has_mover_with_id(mover_id) is False:
+        if obj_id is None or self.model.has_mover_with_id(obj_id) is False:
             raise ValidationError('Mover with that ID does not exist')
 
 

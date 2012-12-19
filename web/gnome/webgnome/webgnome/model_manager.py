@@ -81,6 +81,14 @@ class WebPointReleaseSpill(PointReleaseSpill):
         super(WebPointReleaseSpill, self).__init__(*args, **kwargs)
 
     @property
+    def hour(self):
+        return self.release_time.hour
+
+    @property
+    def minute(self):
+        return self.release_time.minute
+
+    @property
     def start_position_x(self):
         return self.start_position[0]
 
@@ -119,6 +127,7 @@ class WebModel(Model):
         # Patch the object with an empty ``time_steps`` array for the time being.
         # TODO: Add output caching in the model.
         self.time_steps = []
+        self.runtime = None
 
     def has_mover_with_id(self, mover_id):
         """

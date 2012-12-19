@@ -5,6 +5,7 @@ import gnome.map
 import gnome.utilities.map_canvas
 import numpy
 import os
+import time
 
 from gnome.utilities.file_tools import haz_files
 
@@ -246,9 +247,10 @@ def model_settings(request, model):
 
 
 def _get_model_image_url(request, model, filename):
-    return request.static_url('webgnome:static/%s/%s/%s' % (
+    return request.static_url('webgnome:static/%s/%s/%s/%s' % (
         request.registry.settings['model_images_url_path'],
         model.id,
+        model.runtime,
         filename))
 
 
@@ -272,8 +274,13 @@ def _get_timestamps(model):
 
 def _get_time_step(request, model):
     step = None
-    images_dir = os.path.join(
+
+    model_dir = os.path.join(
         request.registry.settings['model_images_dir'], str(model.id))
+    images_dir = os.path.join(model_dir, model.runtime)
+
+    if not os.path.exists(model_dir):
+        os.mkdir(model_dir)
 
     if not os.path.exists(images_dir):
         os.mkdir(images_dir)
@@ -294,6 +301,10 @@ def _get_time_step(request, model):
     return step
 
 
+def _make_runtime():
+    return time.strftime("%Y-%m-%d-%H-%M-%S")
+
+
 @view_config(route_name='run_model', renderer='gnome_json')
 @util.json_require_model
 def run_model(request, model):
@@ -308,6 +319,9 @@ def run_model(request, model):
     data['expected_time_steps'] = timestamps
     model.timestamps = timestamps
     model.uncertain = True
+
+    if not model.runtime:
+        model.runtime = _make_runtime()
 
     # TODO: Set separately in spill view.
     if not model.spills:
@@ -351,16 +365,11 @@ def run_model(request, model):
         canvas.set_land(polygons)
         model.output_map = canvas
 
-    data['background_image'] = _get_model_image_url(
-        request, model, 'background_map.png')
-    data['map_bounds'] = model.map.map_bounds.tolist()
-
-    # Rewind the model if on the last step and the client requested it.
-    # TODO: Make a property
-    if model.current_time_step >= model._num_time_steps and \
-            request.POST.get('no_cache', False):
-        print 'rewind'
+    # The client requested no cached images, so rewind and clear the cache.
+    if request.POST.get('no_cache', False):
+        model.runtime = _make_runtime()
         model.rewind()
+        model.time_steps = []
 
     first_step = _get_time_step(request, model)
 
@@ -369,6 +378,10 @@ def run_model(request, model):
 
     model.time_steps.append(first_step)
     data['time_step'] = first_step
+
+    data['background_image'] = _get_model_image_url(
+        request, model, 'background_map.png')
+    data['map_bounds'] = model.map.map_bounds.tolist()
 
     return data
 

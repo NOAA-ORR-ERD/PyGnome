@@ -73,7 +73,8 @@ define([
             this.placeholderEl = this.options.placeholderEl;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
-            this.imageTimeout = this.options.imageTimeout || 30;
+            this.imageTimeout = this.options.imageTimeout || 10;
+            this.canDrawSpill = false;
 
             this.createPlaceholderCopy();
             this.makeImagesClickable();
@@ -85,7 +86,7 @@ define([
             this.model.on(models.Model.RUN_BEGAN, this.modelRunBegan);
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
             this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.Model.CREATED, this.modelCreated);
+            this.model.on(models.Model.CREATED, this.reset);
 
             if (this.backgroundImageUrl) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
@@ -121,8 +122,8 @@ define([
         },
 
         createPlaceholderCopy: function() {
-            this.placeholderCopy = $(this.placeholderEl).find(
-                'img').clone().appendTo($(this.mapEl)).show();
+            this.placeholderCopy = $(this.placeholderEl).find('img').clone()
+                .appendTo($(this.mapEl)).removeClass('hidden');
         },
 
         removePlaceholderCopy: function() {
@@ -193,7 +194,7 @@ define([
             var otherImages = this.map.find('img').not(stepImage).not('.background');
 
             // Hide all other images in the map div.
-            otherImages.css('display', 'none');
+            otherImages.addClass('hidden');
             otherImages.removeClass(this.activeFrameClass);
 
             // The image isn't loaded.
@@ -202,7 +203,7 @@ define([
             }
 
             stepImage.addClass(this.activeFrameClass);
-            stepImage.css('display', 'block');
+            stepImage.removeClass('hidden');
 
             this.trigger(MapView.FRAME_CHANGED);
         },
@@ -215,7 +216,7 @@ define([
                 'class': 'frame',
                 'data-id': timeStep.id,
                 'src': timeStep.get('url')
-            }).css('display', 'none');
+            }).addClass('hidden');
 
             img.appendTo(map);
 
@@ -247,8 +248,17 @@ define([
         },
 
         // Clear out the current frames.
-        clear: function() {
-            $(this.mapEl).not('.background').empty();
+        clear: function(opts) {
+            var map = $(this.mapEl);
+            opts = opts || {};
+
+            if (opts.clearBackground) {
+                map.find('img').remove();
+            } else {
+                map.find('img').not('.background').remove();
+            }
+
+            map.find('canvas').remove();
         },
 
         getBackground: function() {
@@ -343,6 +353,8 @@ define([
         },
 
         loadMapFromUrl: function(url) {
+            var _this = this;
+
             if (this.placeholderCopy.length) {
                 this.removePlaceholderCopy();
             }
@@ -355,8 +367,78 @@ define([
                 src: url
             });
 
-            background.imagesLoaded(this.createCanvases);
+            background.imagesLoaded(function() {
+                _this.createCanvases();
+                _this.drawSpills();
+            });
+
             background.appendTo(map);
+        },
+
+        drawLine: function(ctx, start_x, start_y, end_x, end_y) {
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(start_x, start_y);
+            ctx.lineTo(end_x, end_y);
+            ctx.stroke();
+            ctx.closePath();
+            ctx.beginPath();
+            ctx.closePath();
+        },
+
+        drawSpill: function(spillForm) {
+            var ctx = this.foregroundCanvas[0].getContext('2d');
+            var start = $(spillForm).find('.start-coordinates');
+            var end = $(spillForm).find('.end-coordinates');
+            var startInputs = $(start).find('.coordinate');
+            var startX, startY, startZ, endX, endY, endZ;
+
+            startX = endX = $(startInputs[0]).val();
+            startY = endY = $(startInputs[1]).val();
+            startZ = endZ = $(startInputs[2]).val();
+
+            if (!startX || !startY) {
+                return;
+            }
+
+            if (end.length) {
+                var endInputs = $(end).find('.coordinate');
+                endX = $(endInputs[0]).val();
+                endY = $(endInputs[1]).val();
+                endZ = $(endInputs[2]).val();
+            }
+
+            var pixelStart = this.pixelsFromCoordinates({
+                lat: startY,
+                long: startX
+            });
+
+            var pixelEnd = this.pixelsFromCoordinates({
+                lat: endY,
+                long: endX
+            });
+
+            if (startX === endX && startY === endY) {
+                pixelEnd.x += 5;
+                pixelEnd.y += 5;
+            }
+
+            this.drawLine(ctx, pixelStart.x, pixelStart.y, pixelStart.x, pixelEnd.y);
+        },
+
+        // Draw a mark on the map for each existing spill.
+        drawSpills: function() {
+            var spillForms = $('.spill');
+            var _this = this;
+
+            // TODO: Draw a line for each spill. Redraw when changed.
+            var canvas = this.foregroundCanvas[0];
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            _.each(spillForms, function(form) {
+                _this.drawSpill(form);
+            });
         },
 
         /*
@@ -372,33 +454,25 @@ define([
             var _this = this;
             var background = $(this.mapEl).find('.background');
 
-             var backgroundCanvas = $('<canvas>').attr({
+            this.backgroundCanvas = $('<canvas>').attr({
                 id: 'canvas-background',
                 height: background.height(),
                 width: background.width()
             });
 
-            var foregroundCanvas = $('<canvas>').attr({
+            this.foregroundCanvas = $('<canvas>').attr({
                 id: 'canvas-foreground',
                 class: 'drawable',
                 height: background.height(),
                 width: background.width()
             });
 
-            function drawLine(ctx, start_x, start_y, end_x, end_y) {
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(start_x, start_y);
-                ctx.lineTo(end_x, end_y);
-                ctx.stroke();
-                ctx.closePath();
-                ctx.beginPath();
-                ctx.closePath();
-            }
-
             // TODO: Update canvas sizes when window changes.
+            this.foregroundCanvas.mousedown(function(ev) {
+                if (!_this.canDrawSpill) {
+                    return;
+                }
 
-            foregroundCanvas.mousedown(function(ev) {
                 this.pressed = true;
                 if (ev.originalEvent['layerX'] != undefined) {
                     this.x0 = ev.originalEvent.layerX;
@@ -411,48 +485,8 @@ define([
                 }
             });
 
-            var spillForms = $('.spill');
-            _.each(spillForms, function(form) {
-                var ctx = foregroundCanvas[0].getContext('2d');
-                var start = $(form).find('.start-coordinates');
-                var end = $(form).find('.end-coordinates');
-                var startInputs = $(start).find('.coordinate');
-                var startX, startY, startZ, endX, endY, endZ;
-                
-                startX = endX = $(startInputs[0]).val();
-                startY = endY = $(startInputs[1]).val();
-                startZ = endZ = $(startInputs[2]).val();
-
-                if (!startX || !startY) {
-                    return;
-                }
-                
-                if (end.length) {
-                    var endInputs = $(end).find('.coordinate');
-                    endX = $(endInputs[0]).val();
-                    endY = $(endInputs[1]).val();
-                    endZ = $(endInputs[2]).val();
-                }
-
-                var pixelStart = _this.pixelsFromCoordinates({
-                    lat: startY,
-                    long: startX
-                });
-
-                var pixelEnd = _this.pixelsFromCoordinates({
-                    lat: endY,
-                    long: endX
-                });
-
-                if (startX === endX && startY === endY) {
-                    pixelEnd.x += 5;
-                    pixelEnd.y += 5;
-                }
-
-                drawLine(ctx, pixelStart.x, pixelStart.y, pixelStart.x, pixelEnd.y);
-            });
-
-            foregroundCanvas.mousemove(function(ev) {
+            // Event handlers to draw new spills
+            this.foregroundCanvas.mousemove(function(ev) {
                 if (!this.pressed) {
                     return;
                 }
@@ -471,10 +505,10 @@ define([
 
                 // TODO: Draw a line for each spill. Redraw when changed.
                 ctx.clearRect(0, 0, this.width, this.height);
-                drawLine(ctx, this.x0, this.y0, xcurr, ycurr);
+                _this.drawLine(ctx, this.x0, this.y0, xcurr, ycurr);
             });
 
-            $(foregroundCanvas).mouseup(function(ev) {
+            $(this.foregroundCanvas).mouseup(function(ev) {
                 var offset = $(this).offset();
 
                 if (this.pressed && this.moved) {
@@ -487,8 +521,8 @@ define([
                 this.pressed = this.moved = false;
             });
 
-            backgroundCanvas.appendTo(map);
-            foregroundCanvas.appendTo(map);
+            this.backgroundCanvas.appendTo(map);
+            this.foregroundCanvas.appendTo(map);
         },
 
         modelRunBegan: function(data) {
@@ -503,9 +537,11 @@ define([
             this.setStopped();
         },
 
-        modelCreated: function() {
-            this.clear();
-            this.createPlaceholderCopy();
+        reset: function() {
+            this.clear({clearBackground: true});
+            if (!$(this.mapEl).find('.background').length) {
+                this.createPlaceholderCopy();
+            }
             this.setStopped();
         },
 
@@ -579,8 +615,12 @@ define([
             this.tree = this.setupDynatree();
 
             // Event handlers
-            this.options.ajaxForms.on(models.AjaxForm.SUCCESS, this.ajaxFormSuccess);
+            this.options.ajaxForms.on(models.AjaxForm.UPDATED, this.reload);
+            this.options.ajaxForms.on(models.AjaxForm.CREATED, this.reload);
             this.options.model.on(models.Model.CREATED, this.reload);
+
+            // TODO: Remove this when we remove the Long Island default code.
+            this.options.model.on(models.Model.RUN_BEGAN, this.reload);
         },
 
         setupDynatree: function() {
@@ -604,15 +644,6 @@ define([
                 },
                 persist: true
             });
-        },
-
-        /*
-         Reload the tree view in case new items were added in an `AjaxForm` submit.
-         Called when an `AjaxForm` submits successfully.
-         */
-        ajaxFormSuccess: function(ajaxForm) {
-            util.log('tree view success')
-            this.reload();
         },
 
         getActiveItem: function() {
@@ -710,6 +741,7 @@ define([
             this.moveButtonEl = this.options.moveButtonEl;
             this.fullscreenButtonEl = this.options.fullscreenButtonEl;
             this.resizeButtonEl = this.options.resizeButtonEl;
+            this.spillButtonEl = this.options.spillButtonEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
             this.model = this.options.model;
@@ -720,7 +752,7 @@ define([
             this.controls = [
                 this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
                 this.pauseButtonEl, this.moveButtonEl, this.zoomInButtonEl,
-                this.zoomOutButtonEl
+                this.zoomOutButtonEl, this.spillButtonEl
             ];
 
             this.status = MapControlView.STATUS_STOPPED;
@@ -762,7 +794,8 @@ define([
                 [this.moveButtonEl, MapControlView.MOVE_BUTTON_CLICKED],
                 [this.fullscreenButtonEl, MapControlView.FULLSCREEN_BUTTON_CLICKED],
                 [this.resizeButtonEl, MapControlView.RESIZE_BUTTON_CLICKED],
-                [this.pauseButtonEl, MapControlView.PAUSE_BUTTON_CLICKED]
+                [this.pauseButtonEl, MapControlView.PAUSE_BUTTON_CLICKED],
+                [this.spillButtonEl, MapControlView.SPILL_BUTTON_CLICKED]
             ];
 
             // TODO: This probably leaks memory due to closing around `button`.
@@ -999,6 +1032,7 @@ define([
         MOVE_BUTTON_CLICKED: "mapControlView:moveButtonClicked",
         FULLSCREEN_BUTTON_CLICKED: "mapControlView:fullscreenButtonClicked",
         RESIZE_BUTTON_CLICKED: "mapControlView:resizeButtonClicked",
+        SPILL_BUTTON_CLICKED: "mapControllView:spillButtonClicked",
         SLIDER_CHANGED: "mapControlView:sliderChanged",
         SLIDER_MOVED: "mapControlView:sliderMoved",
 
