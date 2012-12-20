@@ -138,26 +138,6 @@ def get_obj_class(obj):
     return obj if type(obj) == type else obj.__class__
 
 
-class OrigProxy(object):
-    """
-    A proxy class that wraps a target object, forwarding calls to ``_target``.
-    Source: http://code.activestate.com/recipes/519639-true-lieberman-style-delegation-in-python/
-    """
-    def __init__(self, target):
-        self._target = target
-
-    def __getattr__(self, key):
-        target = self._target
-        f = getattr(target, key)
-        print key, type(f)
-        if isinstance(f, MethodType):
-            print f, key, target
-            # Rebind the method to the target.
-            return new.instancemethod(f.im_func, self, target.__class__)
-        else:
-            return f
-
-
 class DirectionConverter(object):
     DIRECTIONS = [
         "N",

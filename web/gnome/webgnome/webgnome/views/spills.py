@@ -37,7 +37,7 @@ def delete_spill(request, model):
     form = DeleteSpillForm(request.POST, model=model)
 
     if form.validate():
-        model.remove_spill(form.spill_id.data)
+        model.remove_spill(form.obj_id.data)
 
         return {
             'success': True
@@ -57,7 +57,8 @@ def delete_spill(request, model):
 def _render_point_release_spill_form(request, form, spill):
     html = render('webgnome:templates/forms/point_release_spill.mak', {
         'form': form,
-        'action_url': request.route_url('update_point_release_spill', id=spill.id)
+        'action_url': request.route_url('update_point_release_spill',
+                                        id=spill.id)
     })
 
     return {'form_html': html}
@@ -67,20 +68,25 @@ def _update_point_release_spill_post(request, model, spill):
     form = PointReleaseSpillForm(request.POST)
 
     if form.validate():
+        orig_spill_id = spill.id
+        spill = form.create()
+        model.add_spill(spill)
+        created = False
+
         if spill:
-            form.update(spill)
+            model.remove_spill(orig_spill_id)
             message = util.make_message(
                 'success', 'Updated point release spill successfully.')
         else:
-            spill = form.create()
-            model.add_spill(spill)
+            created = True
             message = util.make_message(
                 'warning', 'The spill did not exist, so we created a new one.')
 
         return {
             'id': spill.id,
             'message': message,
-            'form_html': None
+            'form_html': None,
+            'created': created
         }
 
     return _render_point_release_spill_form(request, form, spill)
@@ -104,11 +110,13 @@ def update_point_release_spill(request, model):
 
 def _create_point_release_spill_post(model, form):
     spill = form.create()
+    model.add_spill(spill)
 
     return {
-        'id': model.add_spill(spill),
+        'id': spill.id,
         'type': 'spill',
-        'form_html': None
+        'form_html': None,
+        'created': True
     }
 
 

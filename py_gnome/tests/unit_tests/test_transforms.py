@@ -6,7 +6,7 @@ import random
 import pytest
 
 
-# use test fixtures invalid_rq, wind_circ and wind_rand
+# use test fixtures invalid_rq, rq_wind and wind_rand
 # Defined in conftest.py
 def test_exceptions(invalid_rq):
     with pytest.raises(ValueError):
@@ -20,22 +20,22 @@ rtol = 0
 
 inv_atol = 1e-10    # randomly generate (r,theta), apply transform+inverse and check result is within 1e-10
 
-def test_r_theta_to_uv_wind(wind_circ):
-    uv_out = transforms.r_theta_to_uv_wind(wind_circ['rq'])
+def test_r_theta_to_uv_wind(rq_wind):
+    uv_out = transforms.r_theta_to_uv_wind(rq_wind['rq'])
     print "actual (u,v): "
     print uv_out
     print "computed (u,v): "
-    print wind_circ['uv']
-    assert np.allclose( uv_out, wind_circ['uv'], atol, rtol)
+    print rq_wind['uv']
+    assert np.allclose( uv_out, rq_wind['uv'], atol, rtol)
     
     
-def test_uv_to_r_theta_wind(wind_circ):
-    rq_out = transforms.uv_to_r_theta_wind(wind_circ['uv'])
+def test_uv_to_r_theta_wind(rq_wind):
+    rq_out = transforms.uv_to_r_theta_wind(rq_wind['uv'])
     print "actual (r,theta): "
     print rq_out
     print "computed (r,theta): "
-    print wind_circ['rq']
-    assert np.allclose( rq_out, wind_circ['rq'], atol, rtol)
+    print rq_wind['rq']
+    assert np.allclose( rq_out, rq_wind['rq'], atol, rtol)
     
 def test_wind_inverse(rq_rand):
     """
@@ -49,13 +49,13 @@ def test_wind_inverse(rq_rand):
     print rq_out
     assert np.allclose( rq_out, rq_rand['rq'], inv_atol, rtol)
     
-def test_r_theta_to_uv_current(curr_circ):
-    uv_out = transforms.r_theta_to_uv_current( curr_circ['rq'])
-    assert np.allclose( uv_out, curr_circ['uv'], atol, rtol)
+def test_r_theta_to_uv_current(rq_curr):
+    uv_out = transforms.r_theta_to_uv_current( rq_curr['rq'])
+    assert np.allclose( uv_out, rq_curr['uv'], atol, rtol)
     
-def test_uv_to_r_theta_current(curr_circ):
-    rq_out = transforms.uv_to_r_theta_current( curr_circ['uv'])
-    assert np.allclose( rq_out, curr_circ['rq'], atol, rtol)
+def test_uv_to_r_theta_current(rq_curr):
+    rq_out = transforms.uv_to_r_theta_current( rq_curr['uv'])
+    assert np.allclose( rq_out, rq_curr['rq'], atol, rtol)
     
 def test_current_inverse(rq_rand):
     """

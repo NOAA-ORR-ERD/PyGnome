@@ -34,10 +34,10 @@ cdef class CyOSSMTime:
         :param timeseries: numpy array containing time series data in time_value_pair structure as defined in type_defs
         If both are given, it will read data from the file
         
-        If timeseries are given, the data is always assumed to be in meters_per_sec
+        NOTE: If timeseries are given, and data is velocity, it is always assumed to be in meters_per_sec
         """
-        #if path is None and timeseries is None:
-        #    raise ValueError("Object needs either a path to the time series file or timeseries")   # TODO: check error
+        if path is None and timeseries is None:
+            raise ValueError("Object needs either a path to the time series file or timeseries")   # TODO: check error
         
         if path is not None:
             if file_contains is None:
@@ -47,19 +47,32 @@ cdef class CyOSSMTime:
                 self._read_time_values(path, file_contains, -1) # user_units should be read from the file
             else:
                 raise IOError("No such file: " + path)
-        # else:
-        #    if timeseries is None:
-        #        raise ValueError("timeseries cannot be None")
+        
         elif timeseries is not None:
             self._set_time_value_handle(timeseries)
-            self.time_dep.SetUserUnits(-1)  # default is undefined for now. UserUnits are only given in data file right now            
-        else:
-            self.time_dep.SetUserUnits(-1)  # default is undefined for now. UserUnits are only given in data file right now
-            
+            self.time_dep.SetUserUnits(-1)  # UserUnits for velocity assumed to be meter per second. 
+                                            # Leave undefined because the timeseries could be something other than velocity
+                                            # TODO: check if OSSMTimeValue_c is only used for velocity data?
     property user_units:
         def __get__(self):
-            """returns units for the time series"""
-            return self.time_dep.GetUserUnits()
+            """
+            returns units for the time series
+            Define units for velocity. In C++, these are #defined as
+            #define kUndefined      -1
+            #define kKnots           1
+            #define kMetersPerSec    2
+            #define kMilesPerHour    3
+            """
+            if self.time_dep.GetUserUnits() == -1:
+                return "undefined"
+            elif self.time_dep.GetUserUnits() == 1:
+                return "knot"
+            elif self.time_dep.GetUserUnits() == 2:
+                return "meter per second"
+            elif self.time_dep.GetUserUnits() == 3:
+                return "mile per hour"
+            else:
+                raise ValueError("C++ GetUserUnits() gave a result which is outside the expected bounds.")
     
     property timeseries:
         def __get__(self):
@@ -88,7 +101,7 @@ cdef class CyOSSMTime:
         for i in range( 0, modelTimeArray.size):
             err = self.time_dep.GetTimeValue( modelTimeArray[i], &vel_rec[i])
             if err != 0:
-                raise ValueError
+                raise ValueError("Error invoking TimeValue_c.GetTimeValue method in CyOSSMTime")
             
         return vel_rec
     
@@ -115,7 +128,7 @@ cdef class CyOSSMTime:
         err = self.time_dep.ReadTimeValues(path, file_contains, user_units)
         if err == 1:
             # TODO: need to define error codes in C++ and raise other exceptions
-            raise ValueError("User Units not found in file and user units not provided as input")
+            raise ValueError("Valid user units not found in file")
     
     def _set_time_value_handle(self, cnp.ndarray[TimeValuePair, ndim=1] time_val):
         """

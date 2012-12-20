@@ -11,7 +11,6 @@ def create_mover(request, model):
     form = AddMoverForm(request.POST)
 
     if request.method == 'POST' and form.validate():
-        # TODO: What does the client need to know at this point?
         return {
             'success': True
         }
@@ -34,7 +33,7 @@ def delete_mover(request, model):
     form = DeleteMoverForm(request.POST, model=model)
 
     if form.validate():
-        model.remove_mover(form.mover_id.data)
+        model.remove_mover(form.obj_id.data)
 
         return {
             'success': True
@@ -63,6 +62,7 @@ def _render_wind_mover_form(request, form, mover):
 
 def _update_wind_mover_post(request, model, mover):
     form = WindMoverForm(request.POST)
+    created = False
 
     if form.validate():
         if mover:
@@ -72,13 +72,15 @@ def _update_wind_mover_post(request, model, mover):
         else:
             mover = form.create()
             model.add_mover(mover)
+            created = True
             message = util.make_message(
                 'warning', 'The mover did not exist, so we created a new one.')
 
         return {
             'id': mover.id,
             'message': message,
-            'form_html': None
+            'form_html': None,
+            'created': created
         }
 
     form.timeseries.append_entry()
@@ -108,7 +110,8 @@ def _create_wind_mover_post(model, form):
     return {
         'id': model.add_mover(mover),
         'type': 'mover',
-        'form_html': None
+        'form_html': None,
+        'created': True
     }
 
 

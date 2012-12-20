@@ -54,22 +54,6 @@ data_format = enum(magnitude_direction=M19MAGNITUDEDIRECTION,
                    wind_uv=M19REALREAL)
 
 """
-Define units for velocity. In C++, these are #defined as
-#define kKnots           1
-#define kMetersPerSec    2
-#define kMilesPerHour    3
-
-TODO: In C++, these are user_units which are coupled with the GUI and the display.
-Leave it in here for now - but the OSSMTimeValue_c and the cy_ossm_time expects long wind file format
-and units are read from the file. For the time series case, the user_units are undefined
-
-TODO: Leave velocity_units enum here. Currently, it is used in test_cy_ossm_time.py only
-If we don't care about keeping these values consistent with C++, may want to remove this in future,
-just to keep things simple.
-"""
-velocity_units = enum(undefined=-1, knots=1, meters_per_sec=2, miles_per_hour=3)
-
-"""
 Lets define error codes here as well, may want to 
 group these under an ErrCodes class if it makes sense - but for now, let's see
 how many error codes we get.

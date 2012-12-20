@@ -26,15 +26,16 @@ define([
 
             this.apiRoot = "/model";
 
-            this.setupForms();
-
             // Initialize the model with any previously-generated time step data the
             // server had available.
             this.model = new models.Model(this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
-                currentTimeStep: this.options.currentTimeStep
+                currentTimeStep: this.options.currentTimeStep,
+                bounds: this.options.mapBounds || []
             });
+
+            this.setupForms();
 
             this.menuView = new views.MenuView({
                 // XXX: Hard-coded IDs
@@ -71,8 +72,7 @@ define([
                 backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                model: this.model,
-                latLongBounds: this.options.mapBounds
+                model: this.model
             });
 
             this.mapControlView = new views.MapControlView({
@@ -87,6 +87,7 @@ define([
                 moveButtonEl: "#move-button",
                 fullscreenButtonEl: "#fullscreen-button",
                 resizeButtonEl: "#resize-button",
+                spillButtonEl: "#spill-button",
                 timeEl: "#time",
                 // XXX: Partially hard-coded URL.
                 url: this.apiRoot + '/time_steps',
@@ -114,6 +115,12 @@ define([
         setupEventHandlers: function() {
             this.model.on(models.Model.CREATED, this.newModelCreated);
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
+            this.forms.on(models.AjaxForm.UPDATED, this.ajaxFormUpdated);
+
+            this.formViews.on(forms.FormViewContainer.REFRESHED, this.mapView.drawSpills);
+            this.formViews.on(forms.AjaxFormView.REFRESHED, this.mapView.drawSpills);
+            this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.mapView.drawSpills);
+
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
             this.formViews.on(forms.FormViewContainer.REFRESHED, this.refreshForms);
 
@@ -126,22 +133,31 @@ define([
             this.mapControlView.on(views.MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
             this.mapControlView.on(views.MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
             this.mapControlView.on(views.MapControlView.SLIDER_CHANGED, this.sliderChanged);
-            this.mapControlView.on(views.MapControlView.SLIDER_MOVED, this.sliderMoved);
-            this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
+            this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.rewind);
             this.mapControlView.on(views.MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
             this.mapControlView.on(views.MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
             this.mapControlView.on(views.MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
+            this.mapControlView.on(views.MapControlView.SPILL_BUTTON_CLICKED, this.enableSpillDrawing);
 
             this.mapView.on(views.MapView.PLAYING_FINISHED, this.stopAnimation);
             this.mapView.on(views.MapView.DRAGGING_FINISHED, this.zoomIn);
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
             this.mapView.on(views.MapView.MAP_WAS_CLICKED, this.zoomOut);
+            this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
 
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
+        },
 
-            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+        /*
+         Consider the model dirty if the user updates an existing  spill, so
+         we don't get cached images back on the next model run.
+         */
+        ajaxFormUpdated: function(form) {
+            if (form.type && form.type === 'spill') {
+                this.rewind();
+            }
         },
 
         setupKeyboardHandlers: function() {
@@ -164,7 +180,7 @@ define([
             });
 
             Mousetrap.bind('n m', function() {
-                _this.formViews.hideAll();
+                _this.formViews.hideAll()
                 _this.showFormWithId('AddMoverForm');
             });
 
@@ -195,6 +211,10 @@ define([
             }
         },
 
+        spillDrawn: function(x, y) {
+            this.addSpillFormView.show([x, y]);
+        },
+
         refreshForms: function() {
             this.destroyForms();
             this.addForms();
@@ -208,14 +228,22 @@ define([
                 formContainerEl: '#' + this.options.formContainerId
             });
 
+            this.addSpillFormView = new forms.AddSpillFormView({
+                el: $('#' + this.options.addSpillFormId),
+                formContainerEl: '#' + this.options.formContainerId
+            });
+
+            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+            this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
+
             this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
 
             // Create an `AjaxForm` and bind it to a `AjaxFormView` or subclass
             // for each form on the page.
             _.each($('div.form'), function(formDiv) {
-                var $div = $(formDiv);
-                var $form = $div.find('form');
-                var formId = $div.attr('id');
+                var div = $(formDiv);
+                var form = div.find('form');
+                var formId = div.attr('id');
 
                 if (formId === _this.options.addMoverFormId) {
                     return;
@@ -223,7 +251,8 @@ define([
 
                 _this.forms.add({
                     id: formId,
-                    url: $form.attr('action')
+                    url: form.attr('action'),
+                    type: form.attr('data-type')
                 });
 
                 var ajaxForm = _this.forms.get(formId);
@@ -231,11 +260,11 @@ define([
                 var formContainerEl = '#' + _this.options.formContainerId;
                 var formClass;
 
-                if ($div.hasClass('wind')) {
+                if (div.hasClass('wind')) {
                     formClass = forms.WindMoverFormView;
-                } else if ($div.hasClass('spill')) {
+                } else if (div.hasClass('spill')) {
                     formClass = forms.PointReleaseSpillFormView;
-                } else if ($div.hasClass('modal')) {
+                } else if (div.hasClass('modal')) {
                     formClass = forms.ModalAjaxFormView;
                 } else {
                     formClass = forms.AjaxFormView;
@@ -257,7 +286,8 @@ define([
             this.formViews = new forms.FormViewContainer({
                 el: $('#' + this.options.formContainerId),
                 ajaxForms: this.forms,
-                url: this.options.formsUrl
+                url: this.options.formsUrl,
+                model: this.model
             });
 
             this.addForms();
@@ -279,6 +309,7 @@ define([
         },
 
         runUntilMenuItemClicked: function() {
+            // TODO: Fix this - old code.
             this.fetchForm({type: 'run_until'});
         },
 
@@ -396,8 +427,16 @@ define([
             this.model.getNextTimeStep();
         },
 
-        jumpToFirstFrame: function() {
-            this.model.setCurrentTimeStep(0);
+        reset: function() {
+            this.mapView.reset();
+            this.model.clearData();
+            this.mapControlView.reset();
+        },
+
+        rewind: function() {
+            this.mapView.clear();
+            this.model.clearData();
+            this.mapControlView.reset();
         },
 
         /*
@@ -422,6 +461,10 @@ define([
             $(this.sidebarEl).show('slow');
         },
 
+        enableSpillDrawing: function() {
+            this.mapView.canDrawSpill = true;
+        },
+
         showFormWithId: function(formId) {
             var formView = this.formViews.get(formId);
 
@@ -435,14 +478,12 @@ define([
         showFormForNode: function(node) {
             var formView = this.formViews.get(node.data.form_id);
 
-            util.log(formView, node)
-
             if (formView === undefined) {
                 return;
             }
 
             if (node.data.id) {
-                formView.reload(node.data.id);
+                formView.reload({id: node.data.id});
             } else {
                 this.formViews.hideAll();
                 formView.show();
@@ -500,7 +541,7 @@ define([
             }
 
             ajaxForm.submit({
-                data: "mover_id=" + node.data.object_id,
+                data: "obj_id=" + node.data.object_id,
                 error: error
             });
         },
@@ -513,6 +554,16 @@ define([
             }
 
             formView.show();
+        },
+
+        spillChosen: function(spillType, coords) {
+            var formView = this.formViews.get(spillType);
+
+            if (formView === undefined) {
+                return;
+            }
+
+            formView.show(coords);
         }
     });
 

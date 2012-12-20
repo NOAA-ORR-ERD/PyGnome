@@ -15,7 +15,7 @@ define([
             var value = Backbone.Model.prototype.get.call(this, attr);
 
             if (attr === 'timestamp') {
-                value = util.getUTCStringForTimestamp(value);
+                value = util.formatTimestamp(value);
             }
 
             return value;
@@ -38,6 +38,7 @@ define([
             // An array of timestamps, one for each step we expect the server to
             // make, passed back when we initiate a model run.
             this.expectedTimeSteps = opts.expectedTimeSteps || [];
+            this.bounds = opts.bounds;
             // Optionally specify the zoom level.
             this.zoomLevel = opts.zoomLevel === undefined ? 4 : opts.zoomLevel;
             // If true, `Model` will request a new set of time steps from the server
@@ -81,8 +82,7 @@ define([
             var timestamp;
 
             if (this.serverHasTimeStep(stepNum)) {
-                timestamp = util.getUTCStringForTimestamp(
-                    this.expectedTimeSteps[stepNum]);
+                timestamp = util.formatTimestamp(this.expectedTimeSteps[stepNum]);
             }
 
             return timestamp;
@@ -110,6 +110,7 @@ define([
 
             this.dirty = false;
             this.expectedTimeSteps = data.expected_time_steps;
+            this.bounds = data.map_bounds;
 
             if (_.has(data, 'time_step')) {
                 this.addTimeStep(data.time_step)                ;
@@ -179,6 +180,10 @@ define([
                 this.runUntilTimeStep = options.runUntilTimeStep;
                 needToGetRunUntilStep = options.runUntilTimeStep &&
                     !this.hasCachedTimeStep(options.runUntilTimeStep);
+            }
+
+            if (this.dirty) {
+                options['no_cache'] = true;
             }
 
             if (this.dirty || needToGetRunUntilStep) {
@@ -290,10 +295,15 @@ define([
        },
 
        timeStepRequestFailure: function(xhr, textStatus, errorThrown) {
-           if (xhr.status === 404) {
+           if (xhr.status === 500) {
+               // TODO: Inform user of more information.
+               alert('The run failed due to a server-side error.');
+           } if (xhr.status === 404) {
                // TODO: Maybe we shouldn't return 404 when finished? Seems wrong.
-               this.finishRun();
+               alert('The model you were working with is no longer available.');
            }
+           this.finishRun();
+           util.log(xhr);
        },
 
         /*
@@ -334,8 +344,9 @@ define([
          Clear all time step data. Used when creating a new server-side model.
          */
         clearData: function() {
+            this.dirty = true;
             this.rewind();
-            this.timeSteps = [];
+            this.reset();
             this.expectedTimeSteps = [];
         },
 
@@ -405,15 +416,17 @@ define([
     var AjaxForm = function(opts) {
         _.bindAll(this);
         this.url = opts.url;
+        this.type = opts.type;
 
         // Mix Backbone.js event methods into `AjaxForm`.
         _.extend(this, Backbone.Events);
     };
 
-    // Events
+    // Event constants
     AjaxForm.MESSAGE_RECEIVED = 'ajaxForm:messageReceived';
     AjaxForm.CHANGED = 'ajaxForm:changed';
-    AjaxForm.SUCCESS = 'ajaxForm:success';
+    AjaxForm.CREATED = 'ajaxForm:created';
+    AjaxForm.UPDATED = 'ajaxForm:saved';
 
     AjaxForm.prototype = {
         /*
@@ -425,11 +438,14 @@ define([
                 this.trigger(AjaxForm.MESSAGE_RECEIVED, message);
             }
 
-            if (_.has(response, 'form_html') && response.form_html) {
+            if (response.form_html) {
                 this.form_html = response.form_html;
                 this.trigger(AjaxForm.CHANGED, this);
-            } else {
-                this.trigger(AjaxForm.SUCCESS, this);
+            } else if (response.created) {
+                this.trigger(AjaxForm.CREATED, this);
+            } else{
+                this.trigger(AjaxForm.UPDATED, this);
+
             }
         },
 
@@ -505,8 +521,12 @@ define([
                 _this.trigger(AjaxForm.CHANGED, ajaxForm);
             });
 
-            this.forms[formOpts.id].on(AjaxForm.SUCCESS,  function(ajaxForm) {
-                _this.trigger(AjaxForm.SUCCESS, ajaxForm);
+            this.forms[formOpts.id].on(AjaxForm.CREATED,  function(ajaxForm) {
+                _this.trigger(AjaxForm.CREATED, ajaxForm);
+            });
+
+            this.forms[formOpts.id].on(AjaxForm.UPDATED,  function(ajaxForm) {
+                _this.trigger(AjaxForm.UPDATED, ajaxForm);
             });
         },
 

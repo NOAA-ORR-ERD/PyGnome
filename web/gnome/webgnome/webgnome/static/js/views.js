@@ -73,18 +73,20 @@ define([
             this.placeholderEl = this.options.placeholderEl;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
+            this.imageTimeout = this.options.imageTimeout || 10;
+            this.canDrawSpill = false;
 
             this.createPlaceholderCopy();
             this.makeImagesClickable();
             this.status = MapView.STOPPED;
-            this.$map = $(this.mapEl);
+            this.map = $(this.mapEl);
 
             this.model = this.options.model;
             this.model.on(models.Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
             this.model.on(models.Model.RUN_BEGAN, this.modelRunBegan);
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
             this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.Model.CREATED, this.modelCreated);
+            this.model.on(models.Model.CREATED, this.reset);
 
             if (this.backgroundImageUrl) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
@@ -120,8 +122,8 @@ define([
         },
 
         createPlaceholderCopy: function() {
-            this.placeholderCopy = $(this.placeholderEl).find(
-                'img').clone().appendTo($(this.mapEl)).show();
+            this.placeholderCopy = $(this.placeholderEl).find('img').clone()
+                .appendTo($(this.mapEl)).removeClass('hidden');
         },
 
         removePlaceholderCopy: function() {
@@ -184,15 +186,15 @@ define([
          */
         showImageForTimeStep: function(stepNum) {
             // Show the map div if this is the first image of the run.
-            if (this.$map.find('img').length === 1) {
-                this.$map.show();
+            if (this.map.find('img').length === 1) {
+                this.map.show();
             }
 
             var stepImage = this.getImageForTimeStep(stepNum);
-            var otherImages = this.$map.find('img').not(stepImage).not('.background');
+            var otherImages = this.map.find('img').not(stepImage).not('.background');
 
             // Hide all other images in the map div.
-            otherImages.css('display', 'none');
+            otherImages.addClass('hidden');
             otherImages.removeClass(this.activeFrameClass);
 
             // The image isn't loaded.
@@ -201,7 +203,7 @@ define([
             }
 
             stepImage.addClass(this.activeFrameClass);
-            stepImage.css('display', 'block');
+            stepImage.removeClass('hidden');
 
             this.trigger(MapView.FRAME_CHANGED);
         },
@@ -213,13 +215,20 @@ define([
             var img = $('<img>').attr({
                 'class': 'frame',
                 'data-id': timeStep.id,
-                src: timeStep.get('url')
-            }).css('display', 'none');
+                'src': timeStep.get('url')
+            }).addClass('hidden');
 
             img.appendTo(map);
 
             $(img).imagesLoaded(function() {
-                setTimeout(_this.showImageForTimeStep, 50, [timeStep.id]);
+                // TODO: Check how much time has passed after next time
+                // // step is ready. If longer than N, show the image
+                // immediately. Otherwise, set a delay and then show image.
+
+                // TODO: Make the timeout value configurable.
+                setTimeout(_this.showImageForTimeStep,
+                           this.imageTimeout,
+                           [timeStep.id]);
             });
         },
 
@@ -229,7 +238,9 @@ define([
             // We must be playing a cached model run because the image already
             // exists. In all other cases the image should NOT exist.
             if (imageExists) {
-                setTimeout(this.showImageForTimeStep, 50, [timeStep.id]);
+                setTimeout(this.showImageForTimeStep,
+                           this.imageTimeout,
+                           [timeStep.id]);
                 return;
             }
 
@@ -237,12 +248,25 @@ define([
         },
 
         // Clear out the current frames.
-        clear: function() {
-            $(this.mapEl).not('.background').empty();
+        clear: function(opts) {
+            var map = $(this.mapEl);
+            opts = opts || {};
+
+            if (opts.clearBackground) {
+                map.find('img').remove();
+            } else {
+                map.find('img').not('.background').remove();
+            }
+
+            map.find('canvas').remove();
+        },
+
+        getBackground: function() {
+            return $(this.mapEl).find('img.background')[0];
         },
 
         getSize: function() {
-            var image = this.getActiveImage();
+            var image = $('.background');
             return {height: image.height(), width: image.width()};
         },
 
@@ -329,20 +353,180 @@ define([
         },
 
         loadMapFromUrl: function(url) {
+            var _this = this;
+
             if (this.placeholderCopy.length) {
                 this.removePlaceholderCopy();
             }
 
             var map = $(this.mapEl);
-
             map.find('.background').remove();
 
-            var img = $('<img>').attr({
-                'class': 'background',
+            var background = $('<img>').attr({
+                class: 'background',
                 src: url
             });
 
-            img.appendTo(map);
+            background.imagesLoaded(function() {
+                _this.createCanvases();
+                _this.drawSpills();
+            });
+
+            background.appendTo(map);
+        },
+
+        drawLine: function(ctx, start_x, start_y, end_x, end_y) {
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(start_x, start_y);
+            ctx.lineTo(end_x, end_y);
+            ctx.stroke();
+            ctx.closePath();
+            ctx.beginPath();
+            ctx.closePath();
+        },
+
+        drawSpill: function(spillForm) {
+            var ctx = this.foregroundCanvas[0].getContext('2d');
+            var start = $(spillForm).find('.start-coordinates');
+            var end = $(spillForm).find('.end-coordinates');
+            var startInputs = $(start).find('.coordinate');
+            var startX, startY, startZ, endX, endY, endZ;
+
+            startX = endX = $(startInputs[0]).val();
+            startY = endY = $(startInputs[1]).val();
+            startZ = endZ = $(startInputs[2]).val();
+
+            if (!startX || !startY) {
+                return;
+            }
+
+            if (end.length) {
+                var endInputs = $(end).find('.coordinate');
+                endX = $(endInputs[0]).val();
+                endY = $(endInputs[1]).val();
+                endZ = $(endInputs[2]).val();
+            }
+
+            var pixelStart = this.pixelsFromCoordinates({
+                lat: startY,
+                long: startX
+            });
+
+            var pixelEnd = this.pixelsFromCoordinates({
+                lat: endY,
+                long: endX
+            });
+
+            if (startX === endX && startY === endY) {
+                pixelEnd.x += 5;
+                pixelEnd.y += 5;
+            }
+
+            this.drawLine(ctx, pixelStart.x, pixelStart.y, pixelStart.x, pixelEnd.y);
+        },
+
+        // Draw a mark on the map for each existing spill.
+        drawSpills: function() {
+            var spillForms = $('.spill');
+            var _this = this;
+
+            if (!this.foregroundCanvas) {
+                return;
+            }
+
+            // TODO: Draw a line for each spill. Redraw when changed.
+            var canvas = this.foregroundCanvas[0];
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            _.each(spillForms, function(form) {
+                _this.drawSpill(form);
+            });
+        },
+
+        /*
+         Create a background canvas and paint lines for all spills on the
+         page.
+
+         Create a foreground canvas and setup event handlers to capture new
+         spills added to the map. This canvas is cleared entirely during line
+         additions (as the line position changes) and when the form container
+         refreshes.
+         */
+        createCanvases: function() {
+            var _this = this;
+            var background = $(this.mapEl).find('.background');
+
+            this.backgroundCanvas = $('<canvas>').attr({
+                id: 'canvas-background',
+                height: background.height(),
+                width: background.width()
+            });
+
+            this.foregroundCanvas = $('<canvas>').attr({
+                id: 'canvas-foreground',
+                class: 'drawable',
+                height: background.height(),
+                width: background.width()
+            });
+
+            // TODO: Update canvas sizes when window changes.
+            this.foregroundCanvas.mousedown(function(ev) {
+                if (!_this.canDrawSpill) {
+                    return;
+                }
+
+                this.pressed = true;
+                if (ev.originalEvent['layerX'] != undefined) {
+                    this.x0 = ev.originalEvent.layerX;
+                    this.y0 = ev.originalEvent.layerY;
+                }
+                else {
+                    // in IE, we use this property
+                    this.x0 = ev.originalEvent.x;
+                    this.y0 = ev.originalEvent.y;
+                }
+            });
+
+            // Event handlers to draw new spills
+            this.foregroundCanvas.mousemove(function(ev) {
+                if (!this.pressed) {
+                    return;
+                }
+                this.moved = true;
+                var ctx = this.getContext('2d');
+                var xcurr, ycurr;
+                if (ev.originalEvent['layerX'] != undefined) {
+                    xcurr = ev.originalEvent.layerX;
+                    ycurr = ev.originalEvent.layerY;
+                }
+                else {
+                    // in IE, we use this property
+                    xcurr = ev.originalEvent.x;
+                    ycurr = ev.originalEvent.y;
+                }
+
+                // TODO: Draw a line for each spill. Redraw when changed.
+                ctx.clearRect(0, 0, this.width, this.height);
+                _this.drawLine(ctx, this.x0, this.y0, xcurr, ycurr);
+            });
+
+            $(this.foregroundCanvas).mouseup(function(ev) {
+                var offset = $(this).offset();
+
+                if (this.pressed && this.moved) {
+                    var coords = _this.coordinatesFromPixels({
+                        x: ev.clientX - offset.left,
+                        y: ev.clientY - offset.top
+                    });
+                    _this.trigger(MapView.SPILL_DRAWN, coords.long, coords.lat);
+                }
+                this.pressed = this.moved = false;
+            });
+
+            this.backgroundCanvas.appendTo(map);
+            this.foregroundCanvas.appendTo(map);
         },
 
         modelRunBegan: function(data) {
@@ -357,9 +541,11 @@ define([
             this.setStopped();
         },
 
-        modelCreated: function() {
-            this.clear();
-            this.createPlaceholderCopy();
+        reset: function() {
+            this.clear({clearBackground: true});
+            if (!$(this.mapEl).find('.background').length) {
+                this.createPlaceholderCopy();
+            }
             this.setStopped();
         },
 
@@ -370,13 +556,16 @@ define([
                 throw new MapViewException('No current image size detected.');
             }
 
-            var minLat = this.latLongBounds[0][1];
-            var minLong = this.latLongBounds[0][0];
-            var maxLat = this.latLongBounds[1][1];
-            var maxLong = this.latLongBounds[2][0];
+            var minLat = this.model.bounds[0][1];
+            var minLong = this.model.bounds[0][0];
+            var maxLat = this.model.bounds[1][1];
+            var maxLong = this.model.bounds[2][0];
 
             var x = ((point.long - minLong) / (maxLong - minLong)) * size.width;
             var y = ((point.lat - minLat) / (maxLat - minLat)) * size.height;
+
+            // Adjust for different origin
+            y = -y + size.height;
 
             return {x: Math.round(x), y: Math.round(y)};
         },
@@ -388,10 +577,13 @@ define([
                 throw new MapViewException('No current image size detected.');
             }
 
-            var minLat = this.latLongBounds[0][1];
-            var minLong = this.latLongBounds[0][0];
-            var maxLat = this.latLongBounds[1][1];
-            var maxLong = this.latLongBounds[2][0];
+            var minLat = this.model.bounds[0][1];
+            var minLong = this.model.bounds[0][0];
+            var maxLat = this.model.bounds[1][1];
+            var maxLong = this.model.bounds[2][0];
+
+            // Adjust for different origin
+            point.y = -point.y + size.height;
 
             var lat = (maxLat - minLat) * (point.y / size.height) + minLat;
             var lng = (maxLong - minLong) * (point.x / size.width) + minLong;
@@ -399,17 +591,18 @@ define([
             return {lat: lat, long: lng};
         }
     }, {
-        // Statuses
+        // Statuse constants
         PAUSED: 1,
         STOPPED: 2,
         PLAYING: 3,
 
-        // Events
+        // Event constants
         DRAGGING_FINISHED: 'mapView:draggingFinished',
         REFRESH_FINISHED: 'mapView:refreshFinished',
         PLAYING_FINISHED: 'mapView:playingFinished',
         FRAME_CHANGED: 'mapView:frameChanged',
-        MAP_WAS_CLICKED: 'mapView:mapWasClicked'
+        MAP_WAS_CLICKED: 'mapView:mapWasClicked',
+        SPILL_DRAWN: 'mapView:spillDrawn'
     });
 
 
@@ -426,8 +619,12 @@ define([
             this.tree = this.setupDynatree();
 
             // Event handlers
-            this.options.ajaxForms.on(models.AjaxForm.SUCCESS, this.ajaxFormSuccess);
+            this.options.ajaxForms.on(models.AjaxForm.UPDATED, this.reload);
+            this.options.ajaxForms.on(models.AjaxForm.CREATED, this.reload);
             this.options.model.on(models.Model.CREATED, this.reload);
+
+            // TODO: Remove this when we remove the Long Island default code.
+            this.options.model.on(models.Model.RUN_BEGAN, this.reload);
         },
 
         setupDynatree: function() {
@@ -451,15 +648,6 @@ define([
                 },
                 persist: true
             });
-        },
-
-        /*
-         Reload the tree view in case new items were added in an `AjaxForm` submit.
-         Called when an `AjaxForm` submits successfully.
-         */
-        ajaxFormSuccess: function(ajaxForm) {
-            util.log('tree view success')
-            this.reload();
         },
 
         getActiveItem: function() {
@@ -531,7 +719,7 @@ define([
             });
         }
     }, {
-        // Events
+        // Event constants 
         ADD_BUTTON_CLICKED: 'gnome:addItemButtonClicked',
         REMOVE_BUTTON_CLICKED: 'gnome:removeItemButtonClicked',
         SETTINGS_BUTTON_CLICKED: 'gnome:itemSettingsButtonClicked'
@@ -557,6 +745,7 @@ define([
             this.moveButtonEl = this.options.moveButtonEl;
             this.fullscreenButtonEl = this.options.fullscreenButtonEl;
             this.resizeButtonEl = this.options.resizeButtonEl;
+            this.spillButtonEl = this.options.spillButtonEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
             this.model = this.options.model;
@@ -567,7 +756,7 @@ define([
             this.controls = [
                 this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
                 this.pauseButtonEl, this.moveButtonEl, this.zoomInButtonEl,
-                this.zoomOutButtonEl
+                this.zoomOutButtonEl, this.spillButtonEl
             ];
 
             this.status = MapControlView.STATUS_STOPPED;
@@ -609,7 +798,8 @@ define([
                 [this.moveButtonEl, MapControlView.MOVE_BUTTON_CLICKED],
                 [this.fullscreenButtonEl, MapControlView.FULLSCREEN_BUTTON_CLICKED],
                 [this.resizeButtonEl, MapControlView.RESIZE_BUTTON_CLICKED],
-                [this.pauseButtonEl, MapControlView.PAUSE_BUTTON_CLICKED]
+                [this.pauseButtonEl, MapControlView.PAUSE_BUTTON_CLICKED],
+                [this.spillButtonEl, MapControlView.SPILL_BUTTON_CLICKED]
             ];
 
             // TODO: This probably leaks memory due to closing around `button`.
@@ -836,20 +1026,21 @@ define([
         ON: true,
         OFF: false,
 
-        // Events
-        PLAY_BUTTON_CLICKED: "gnome:playButtonClicked",
-        PAUSE_BUTTON_CLICKED: "gnome:pauseButtonClicked",
-        BACK_BUTTON_CLICKED: "gnome:backButtonClicked",
-        FORWARD_BUTTON_CLICKED: "gnome:forwardButtonClicked",
-        ZOOM_IN_BUTTON_CLICKED: "gnome:zoomInButtonClicked",
-        ZOOM_OUT_BUTTON_CLICKED: "gnome:zoomOutButtonClicked",
-        MOVE_BUTTON_CLICKED: "gnome:moveButtonClicked",
-        FULLSCREEN_BUTTON_CLICKED: "gnome:fullscreenButtonClicked",
-        RESIZE_BUTTON_CLICKED: "gnome:resizeButtonClicked",
-        SLIDER_CHANGED: "gnome:sliderChanged",
-        SLIDER_MOVED: "gnome:sliderMoved",
+        // Event constants
+        PLAY_BUTTON_CLICKED: "mapControlView:playButtonClicked",
+        PAUSE_BUTTON_CLICKED: "mapControlView:pauseButtonClicked",
+        BACK_BUTTON_CLICKED: "mapControlView:backButtonClicked",
+        FORWARD_BUTTON_CLICKED: "mapControlView:forwardButtonClicked",
+        ZOOM_IN_BUTTON_CLICKED: "mapControlView:zoomInButtonClicked",
+        ZOOM_OUT_BUTTON_CLICKED: "mapControlView:zoomOutButtonClicked",
+        MOVE_BUTTON_CLICKED: "mapControlView:moveButtonClicked",
+        FULLSCREEN_BUTTON_CLICKED: "mapControlView:fullscreenButtonClicked",
+        RESIZE_BUTTON_CLICKED: "mapControlView:resizeButtonClicked",
+        SPILL_BUTTON_CLICKED: "mapControllView:spillButtonClicked",
+        SLIDER_CHANGED: "mapControlView:sliderChanged",
+        SLIDER_MOVED: "mapControlView:sliderMoved",
 
-        // Statuses
+        // Status constants
         STATUS_STOPPED: 0,
         STATUS_PLAYING: 1,
         STATUS_PAUSED: 2,
@@ -902,10 +1093,10 @@ define([
             this.trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
         }
     }, {
-        // Events
-        NEW_ITEM_CLICKED: "gnome:newMenuItemClicked",
-        RUN_ITEM_CLICKED: "gnome:runMenuItemClicked",
-        RUN_UNTIL_ITEM_CLICKED: "gnome:runUntilMenuItemClicked"
+        // Event constants
+        NEW_ITEM_CLICKED: "menuView:newMenuItemClicked",
+        RUN_ITEM_CLICKED: "menuView:runMenuItemClicked",
+        RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked"
     });
 
     return {

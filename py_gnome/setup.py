@@ -115,9 +115,14 @@ extensions = []
 lib= []
 libdirs= []
 
-extra_includes="."
 compile_args = []
 link_args = []
+
+# List of include directories for cython code - append to this list as needed for each platform
+l_include_dirs = [CPP_CODE_DIR,
+                    np.get_include(),
+                    '.']
+
 
 if sys.platform == "darwin":
     # build cy_basic_types along with lib_gnome so we can use distutils for building everything
@@ -130,11 +135,7 @@ if sys.platform == "darwin":
                                 define_macros = macros,
                                 extra_compile_args=compile_args,
    	                            extra_link_args= ['-Wl,../third_party_lib/libnetcdf.a'],
-                                include_dirs=[CPP_CODE_DIR,
-                                              np.get_include(),
-                                              'cyGNOME',
-                                              extra_includes,
-                                              ],
+                                include_dirs=l_include_dirs,
                                 )
     
     extensions.append(basic_types_ext)
@@ -194,7 +195,7 @@ elif sys.platform == "win32":
     libdirs += ['gnome/cy_gnome']
     macros += [('CYTHON_CCOMPLEX', 0),]
     extension_names += ['cy_basic_types']
-
+    l_include_dirs += '..\third_party_lib\vs2008'
 #
 ### the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
 #
@@ -214,11 +215,7 @@ for mod_name in extension_names:
    	                             extra_link_args=link_args,
                                  libraries = lib,
                                  library_dirs = libdirs,
-                                 include_dirs=[CPP_CODE_DIR,
-                                               np.get_include(),
-                                               'cyGNOME',
-                                               extra_includes,
-                                               ],
+                                 include_dirs=l_include_dirs,
                                  )
                        )
 

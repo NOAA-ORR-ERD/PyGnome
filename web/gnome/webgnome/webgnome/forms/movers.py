@@ -20,32 +20,16 @@ from webgnome import util
 from base import AutoIdForm, DateTimeForm
 
 
-class WindForm(AutoIdForm, DateTimeForm):
+class WindValueForm(AutoIdForm, DateTimeForm):
     """
     A specific value in a :class:`gnome.movers.WindMover` time series.
     Note that this class inherits the ``date``, ``hour`` and ``minute`` fields.
     """
-    SPEED_KNOTS = 'knots'
-    SPEED_METERS = 'meters'
-    SPEED_MILES = 'miles'
-
-    SPEED_CHOICES = (
-        (SPEED_KNOTS, 'Knots'),
-        (SPEED_METERS, 'Meters / sec'),
-        (SPEED_MILES, 'Miles / hour')
-    )
-
     speed = FloatField('Speed', default=0, validators=[NumberRange(min=1)])
-    speed_type = SelectField(
-        choices=SPEED_CHOICES,
-        validators=[Required()],
-        default=SPEED_KNOTS
-    )
-
     direction = StringField(validators=[Required()])
 
     def __init__(self, *args, **kwargs):
-        super(WindForm, self).__init__(*args, **kwargs)
+        super(WindValueForm, self).__init__(*args, **kwargs)
 
         self.date.validators = [Optional()]
         self.hour.validators = [Optional()]
@@ -91,9 +75,24 @@ class WindMoverForm(AutoIdForm):
         (SCALE_RADIANS, 'rad'),
         (SCALE_DEGREES, 'deg')
     )
+    
+    UNIT_KNOTS = 'kts'
+    UNIT_METERS = 'mps'
+    UNIT_MILES = 'mph'
 
+    UNIT_CHOICES = (
+        (UNIT_KNOTS, 'Knots'),
+        (UNIT_METERS, 'Meters / sec'),
+        (UNIT_MILES, 'Miles / hour')
+    )   
+    
     name = StringField(default='Wind Mover', validators=[Required()])
-    timeseries = FieldList(FormField(WindForm), min_entries=1)
+    timeseries = FieldList(FormField(WindValueForm), min_entries=1)
+    units = SelectField(
+        choices=UNIT_CHOICES,
+        validators=[Required()],
+        default=UNIT_KNOTS
+    )   
 
     is_active = BooleanField('Active', default=True)
     uncertain_speed_scale = FloatField('Speed Scale', default=2,
@@ -154,6 +153,7 @@ class WindMoverForm(AutoIdForm):
             name=self.name.data,
             is_constant=self.is_constant.data,
             is_active=self.is_active.data,
+            units=self.units.data,
             uncertain_angle_scale=self.uncertain_angle_scale.data,
             uncertain_speed_scale=self.uncertain_speed_scale.data,
             uncertain_duration=self.uncertain_duration.data,
@@ -165,6 +165,7 @@ class WindMoverForm(AutoIdForm):
         Update ``mover`` using data from this form.
         """
         mover._name = self.name.data
+        mover.wind.units = self.units.data
         mover.is_active = self.is_active.data
         mover.is_constant = self.is_constant.data
         mover.uncertain_angle_scale = self.uncertain_angle_scale.data
@@ -197,16 +198,16 @@ class DeleteMoverForm(AutoIdForm):
 
     This is a hidden form submitted via AJAX by the JavaScript client.
     """
-    mover_id = IntegerField()
+    obj_id = IntegerField()
 
     def __init__(self, *args, **kwargs):
         self.model = kwargs.pop('model', None)
         super(DeleteMoverForm, self).__init__(*args, **kwargs)
 
-    def mover_id_validate(self, field):
-        mover_id = field.data
+    def obj_id_validate(self, field):
+        obj_id = field.data
 
-        if mover_id is None or self.model.has_mover_with_id(mover_id) is False:
+        if obj_id is None or self.model.has_mover_with_id(obj_id) is False:
             raise ValidationError('Mover with that ID does not exist')
 
 

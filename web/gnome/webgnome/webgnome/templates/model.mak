@@ -81,6 +81,7 @@
                 <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
                 <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
                 <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
+                <a class="btn disabled" id="spill-button" href="javascript:"><i class="icon-tint"></i></a>
             </div>
             <div class="btn-group">
                 <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
@@ -130,6 +131,7 @@
                     sidebarId: 'sidebar',
                     formContainerId: 'modal-container',
                     addMoverFormId: "${add_mover_form_id}",
+                    addSpillFormId: "${add_spill_form_id}",
                     generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                     expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                     backgroundImageUrl: "${background_image_url or '' | n}",
