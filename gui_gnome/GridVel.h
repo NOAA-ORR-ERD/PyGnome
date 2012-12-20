@@ -134,8 +134,8 @@ class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 
 Boolean IsTriGridFile (char *path);
 Boolean IsRectGridFile (char *path);
-Boolean IsNetCDFFile (char *path, short *gridType);
-Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType);
+//Boolean IsNetCDFFile (char *path, short *gridType);
+//Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType);
 short ConcentrationTable(outputData **oilConcHdl,float *depthSlice,short tableType/*,double *triAreaArray,long numLevels*/);	// send oilconchdl
 
 #endif

@@ -63,7 +63,7 @@ extension_names = [
                    'cy_wind_mover',
 # CATS mover broken at the moment                   
 #                   'cy_cats_mover',
-#                   'cy_netcdf_mover',
+#                   'cy_gridcurrent_mover',
                    'cy_ossm_time',
                    'cy_date_time',
                    'cy_random_mover',
@@ -98,8 +98,10 @@ cpp_files = [
               'DagTreeIO.cpp',
               'ShioCurrent1.cpp',
               'ShioCurrent2.cpp',
-              'NetCDFMover_c.cpp',
-              'TriGridVel3D_c.cpp',
+              'GridCurrentMover_c.cpp',
+              'TimeGridVel_c.cpp',
+              'MakeTriangles.cpp',
+              'MakeDagTree.cpp',
               ]
 
 

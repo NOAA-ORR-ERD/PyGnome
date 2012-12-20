@@ -88,4 +88,13 @@ void GetDateTime(unsigned long *seconds);
 void GNOMEDLL_API SecondsToDate(unsigned long seconds, DateTimeRec *date);
 #endif
 
+Boolean IsWindowsPath(char* path);
+Boolean IsUnixPath(char* path);
+Boolean IsClassicPath(char* path);
+Boolean IsUnixAbsolutePath(char* path);
+Boolean IsWindowsAbsolutePath(char* path);
+Boolean IsClassicAbsolutePath(char* path);
+Boolean IsFullPath(char* path);
+Boolean ConvertIfClassicPath(char* path, char* unixPath);
+
 #endif

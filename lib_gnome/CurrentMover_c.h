@@ -38,7 +38,7 @@ public:
 	Boolean			bIAmA3DMover;
 	
 	CurrentMover_c (TMap *owner, char *name);
-	CurrentMover_c () {}
+	CurrentMover_c ();
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
 	virtual OSErr		UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList);
 	virtual OSErr		AllocateUncertainty (int numLESets, int* LESetsSizesList);

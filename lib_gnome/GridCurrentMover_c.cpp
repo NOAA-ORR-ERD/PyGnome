@@ -66,6 +66,48 @@ GridCurrentMover_c::GridCurrentMover_c (TMap *owner, char *name) : CurrentMover_
 }
 #endif
 
+GridCurrentMover_c::GridCurrentMover_c () : CurrentMover_c()
+{
+	timeGrid = 0;
+	memset(&fVar,0,sizeof(fVar));
+	fVar.arrowScale = 1.;
+	fVar.arrowDepth = 0;
+	//if (gNoaaVersion)
+	{
+		fVar.alongCurUncertainty = .5;
+		fVar.crossCurUncertainty = .25;
+		fVar.durationInHrs = 24.0;
+	}
+	/*else
+	{
+		fVar.alongCurUncertainty = 0.;
+		fVar.crossCurUncertainty = 0.;
+		fVar.durationInHrs = 0.;
+	}*/
+	//fVar.uncertMinimumInMPS = .05;
+	fVar.uncertMinimumInMPS = 0.0;
+	fVar.curScale = 1.0;
+	fVar.startTimeInHrs = 0.0;
+	fVar.gridType = TWO_D; // 2D default
+	//fVar.maxNumDepths = 1;	// 2D default - may always be constant for netCDF files
+	
+	// Override TCurrentMover defaults
+	fDownCurUncertainty = -fVar.alongCurUncertainty; 
+	fUpCurUncertainty = fVar.alongCurUncertainty; 	
+	fRightCurUncertainty = fVar.crossCurUncertainty;  
+	fLeftCurUncertainty = -fVar.crossCurUncertainty; 
+	fDuration=fVar.durationInHrs*3600.; //24 hrs as seconds 
+	fUncertainStartTime = (long) (fVar.startTimeInHrs*3600.);
+	//
+	
+	fIsOptimizedForStep = false;
+	
+	//SetClassName (name); // short file name
+	
+	fAllowVerticalExtrapolationOfCurrents = false;
+	fMaxDepthForExtrapolation = 0.;	// assume 2D is just surface
+	
+}
 
 OSErr GridCurrentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *velocity,double timeStep,Boolean useEddyUncertainty)
 {
@@ -117,7 +159,6 @@ OSErr GridCurrentMover_c::PrepareForModelRun()
 
 OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
-	long timeDataInterval;
 	OSErr err=0;
 	char errmsg[256];
 	
@@ -128,7 +169,6 @@ OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const S
 	if (!timeGrid) return -1;
 	
 	err = timeGrid -> SetInterval(errmsg, model_time); 
-	
 	if (err) goto done;
 	
 	if (bIsFirstStep)
@@ -234,13 +274,68 @@ WorldPoint3D GridCurrentMover_c::GetMove(const Seconds& model_time, Seconds time
 	
 	dLong = ((scaledPatVelocity.u / METERSPERDEGREELAT) * timeStep) / LongToLatRatio3 (refPoint.p.pLat);
 	dLat  =  (scaledPatVelocity.v / METERSPERDEGREELAT) * timeStep;
-	
+
 	deltaPoint.p.pLong = dLong * 1000000;
 	deltaPoint.p.pLat  = dLat  * 1000000;
 	
 	return deltaPoint;
 }
 
+OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath) 
+{
+	// this code is for curvilinear grids
+	OSErr err = 0;
+	short gridType;
+	char fileNamesPath[256];
+	Boolean isNetCDFPathsFile = false;
+	TimeGridVel *newTimeGrid = nil;
+	
+	
+	if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(path, &isNetCDFPathsFile, fileNamesPath, &gridType))
+	{
+		if (gridType == CURVILINEAR)
+		{
+			newTimeGrid = new TimeGridVelCurv();
+		}
+		else if (gridType == TRIANGULAR)
+		{
+			newTimeGrid = new TimeGridVelTri();
+		}
+		
+		else
+		{
+			newTimeGrid = new TimeGridVelRect();
+		}
+		if (newTimeGrid)
+		{
+			//err = this->InitMover(timeGrid);
+			//if(err) return err;
+			err = newTimeGrid->TextRead(path,topFilePath);
+			if(err) return err;
+			this->SetTimeGrid(newTimeGrid);
+		}
+		if (isNetCDFPathsFile)
+		{
+			char errmsg[256];
+			err = timeGrid->ReadInputFileNames(fileNamesPath);
+			if (err) return err;
+			timeGrid->DisposeAllLoadedData();
+			//err = ((NetCDFMover*)newMover)->SetInterval(errmsg);	// if set interval here will get error if times are not in model range
+			if(err) return err;
+		}
+	}
+	/*else if
+	{
+	}
+	else 
+	{
+	}*/
+Error: // JLM 	 10/27/98
+	//if(newMover) {newMover->Dispose();delete newMover;newMover = 0;};
+	//return 0;
+	return err;
+
+}	
 VelocityRec GridCurrentMover_c::GetScaledPatValue(const Seconds& model_time, WorldPoint p,Boolean * useEddyUncertainty)
 {
 	VelocityRec v = {0,0};

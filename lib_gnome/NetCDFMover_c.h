@@ -44,7 +44,7 @@ typedef struct {
 	double 	arrowDepth;	// depth level where velocities will be shown
 } NetCDFVariables;
 
-enum { REGULAR=1, REGULAR_SWAFS, CURVILINEAR, TRIANGULAR, REGRIDDED};	// maybe eliminate regridded option
+//enum { REGULAR=1, REGULAR_SWAFS, CURVILINEAR, TRIANGULAR, REGRIDDED};	// maybe eliminate regridded option
 
 enum {
 	I_NETCDFNAME = 0 ,

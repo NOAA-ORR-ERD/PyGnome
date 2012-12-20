@@ -6441,89 +6441,13 @@ void GetOurAppPathName(char* path)
 #endif
 }
 
-Boolean IsClassicAbsolutePath(char* path)
-{
-	// classic paths use ':' delimiters and full paths start with drive name
-	if (IsClassicPath(path) && path[0]!=':' && path[0]!='.') return true;
-	return false;
-}
-
-Boolean IsUnixAbsolutePath(char* path)
-{
-	if (path[0]=='/') return true;
-	return false;
-}
-
-Boolean IsWindowsAbsolutePath(char* path)
-{
-	// check for mapped drive 
-	if (path[1]==':' && path[2]=='\\') return true;
-	// check for unmapped drive
-	if (path[1]=='\\' && path[2]=='\\') return true;
-	// at some point switch the leading \ to be full path rather than partial, have to figure out the drive
-	return false;
-}
-
-Boolean IsWindowsPath(char* path)
-{
-	long i,len;
-	
-	//If leads with a {drive letter}:\ it's a full path, this is covered below
-	// unmapped drive \\, also covered below
-	if (IsWindowsAbsolutePath(path)) return true;
-
-	// if has '\' anywhere in path it's Windows (though Mac allows '\' in filenames, for now assuming it's a delimiter)
-	len = strlen(path);
-	for(i = 0; i < len  && path[i]; i++)
-	{
-		if(path[i] == '\\')
-			return true;
-	}
-	
-	return false;	// is filename only true or false...
-}
-
-Boolean IsUnixPath(char* path)
-{
-	long i,len;
-	
-	//If leads with a '/' it's a full path, this is covered below
-	//if (IsUnixAbsolutePath(path) return true;
-
-	// if has '/' anywhere in path it's unix (though Mac allows '/' in filenames, for now assuming it's a delimiter)
-	len = strlen(path);
-	for(i = 0; i < len  && path[i]; i++)
-	{
-		if(path[i] == '/')
-			return true;
-	}
-	
-	return false;	// is filename only true or false...
-}
-
-Boolean IsClassicPath(char* path)
-{
-	long i,len;
-	if (IsWindowsAbsolutePath(path))
-		return false;
-	// if has ':' anywhere in path it's classic (Windows and Mac don't allow ':' in filenames)
-	len = strlen(path);
-	for(i = 0; i < len  && path[i]; i++)
-	{
-		if(path[i] == ':')
-			return true;
-	}
-	
-	return false;	// is filename only true or false...
-}
-
 Boolean ConvertIfUnixPath(char* path, char* classicPath)
 {
 	OSErr err = 0;
 	
 	if (IsWindowsPath(path)) return false;
 	if (IsClassicPath(path)) return false;
-	 
+	
 #ifdef MAC
 	if (IsUnixAbsolutePath(path)) 
 	{
@@ -6543,16 +6467,8 @@ Boolean ConvertIfUnixPath(char* path, char* classicPath)
 	strcpy(classicPath,":");
 	strcat(classicPath,path);
 	return true;
-
+	
 	//return false;
-}
-
-Boolean IsFullPath(char* path)
-{
-	if (IsWindowsAbsolutePath(path)) return true;
-	if (IsClassicAbsolutePath(path)) return true;
-	if (IsUnixAbsolutePath(path)) return true;
-	return false;
 }
 
 Boolean IsPartialPath(char* relativePath)
@@ -6573,10 +6489,10 @@ Boolean IsPartialPath(char* relativePath)
 		otherDelimiter = ibmDelimiter;
 	else
 		otherDelimiter = macDelimiter;
-
+	
 	
 	isRelativePath = 	(relativePath[0] == macDelimiter || relativePath[0] == ibmDelimiter || relativePath[0] == unixDirectoryUp);
-
+	
 	return(isRelativePath);
 }
 
