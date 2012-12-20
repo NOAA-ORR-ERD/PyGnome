@@ -120,8 +120,8 @@ class TestGridCurrentMover():
         #time = datetime.datetime(2009, 8, 2, 0) #first file
         time = datetime.datetime(2009, 8, 9, 0) #second file
         self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = r"SampleData/file series/flist1.txt"
-        topology_file = r"SampleData/file series/HiROMSTopology.dat"
+        time_grid_file = r"SampleData/file_series/flist1.txt"
+        topology_file = r"SampleData/file_series/HiROMSTopology.dat"
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-157.795728) #for HiROMS
         self.cm.ref[:]['lat'] = (21.069288)
