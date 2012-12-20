@@ -44,11 +44,9 @@ class WebWindMover(WindMover):
     def __init__(self, *args, **kwargs):
         self._name = kwargs.pop('name', 'Wind Mover')
         self.is_constant = kwargs.pop('is_constant', True)
-
         timeseries = kwargs.pop('timeseries')
         units = kwargs.pop('units')
-        kwargs['wind'] = Wind(timeseries, units=str(units))
-
+        kwargs['wind'] = Wind(timeseries, units=units)
         super(WebWindMover, self).__init__(*args, **kwargs)
 
     @property
@@ -63,7 +61,7 @@ class WebWindMover(WindMover):
     def timeseries(self):
         series = []
 
-        for timeseries in self.wind.get_timeseries(self.wind.user_units):
+        for timeseries in self.wind.get_timeseries(units=self.units):
             dt = timeseries[0].astype(object)
             series.append(
                 WindValue(date=dt, speed=timeseries[1][0],
@@ -74,7 +72,7 @@ class WebWindMover(WindMover):
 
     @timeseries.setter
     def timeseries(self, timeseries):
-        self.wind.timeseries = timeseries
+        self.wind.set_timeseries(timeseries, self.units)
 
     @property
     def name(self):

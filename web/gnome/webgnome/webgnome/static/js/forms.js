@@ -627,10 +627,25 @@ define([
 
             this.setupCompass();
         },
+        
+        formDatesMatch: function(form1, form2) {
+            return (form1.find('.date').val() == form2.find('.date').val()
+                && form1.find('.hour').val() == form2.find('.hour').val()
+                && form1.find('.minute').val() == form2.find('.minute').val())
+        },
 
         trashButtonClicked: function(event) {
             event.preventDefault();
             var form = $(event.target).closest('tr').data('data-form');
+            var editForm = this.$el.find('.add-time-forms').find('.edit-time-form');
+
+            // There is an edit form visible
+            if (editForm.length && this.formDatesMatch(editForm, form)) {
+                // The edit form is for this wind value, so delete it.
+                editForm.detach().empty().remove();
+                this.$el.find('.add-time-forms').find(
+                    '.add-time-form').removeClass('hidden');
+            }
             form.detach().empty().remove();
             this.renderTimeTable();
         },
@@ -645,7 +660,8 @@ define([
             form.detach().appendTo('.edit-time-forms');
 
             // Show the add form
-            $('.add-time-forms').find('.add-time-form').removeClass('hidden');
+            this.$el.find('.add-time-forms').find(
+                '.add-time-form').removeClass('hidden');
 
             this.renderTimeTable();
             this.compass.compassUI('reset');
@@ -679,7 +695,7 @@ define([
             // Delete any edit forms currently in view.
             addFormContainer.find('.edit-time-form').remove();
 
-            var formCopy = form.clone().appendTo(addFormContainer);
+            var formCopy = form.clone().prependTo(addFormContainer);
             formCopy.data('form-original', form);
             formCopy.removeClass('hidden');
 

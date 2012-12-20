@@ -81,12 +81,12 @@
                     </div>
 
                     <div class="compass-container offset3">
-                        <div id="${defs.uid('compass_edit', form)}" class="compass"></div>
+                        <div id="${defs.uid('compass_edit', form)}"
+                             class="compass"></div>
                     </div>
                 </div>
 
                 <div class="span6 edit-time-forms">
-
                     <div class="span11 wind-values">
                         <hr>
                         <table class="table table-striped time-list">
