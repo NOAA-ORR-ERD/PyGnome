@@ -26,8 +26,6 @@ define([
 
             this.apiRoot = "/model";
 
-            this.setupForms();
-
             // Initialize the model with any previously-generated time step data the
             // server had available.
             this.model = new models.Model(this.options.generatedTimeSteps, {
@@ -36,6 +34,8 @@ define([
                 currentTimeStep: this.options.currentTimeStep,
                 bounds: this.options.mapBounds || []
             });
+
+            this.setupForms();
 
             this.menuView = new views.MenuView({
                 // XXX: Hard-coded IDs
@@ -87,6 +87,7 @@ define([
                 moveButtonEl: "#move-button",
                 fullscreenButtonEl: "#fullscreen-button",
                 resizeButtonEl: "#resize-button",
+                spillButtonEl: "#spill-button",
                 timeEl: "#time",
                 // XXX: Partially hard-coded URL.
                 url: this.apiRoot + '/time_steps',
@@ -114,6 +115,12 @@ define([
         setupEventHandlers: function() {
             this.model.on(models.Model.CREATED, this.newModelCreated);
             this.model.on(models.Model.RUN_ERROR, this.modelRunError);
+            this.forms.on(models.AjaxForm.UPDATED, this.ajaxFormUpdated);
+
+            this.formViews.on(forms.FormViewContainer.REFRESHED, this.mapView.drawSpills);
+            this.formViews.on(forms.AjaxFormView.REFRESHED, this.mapView.drawSpills);
+            this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.mapView.drawSpills);
+
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
             this.formViews.on(forms.FormViewContainer.REFRESHED, this.refreshForms);
 
@@ -126,11 +133,11 @@ define([
             this.mapControlView.on(views.MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
             this.mapControlView.on(views.MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
             this.mapControlView.on(views.MapControlView.SLIDER_CHANGED, this.sliderChanged);
-            this.mapControlView.on(views.MapControlView.SLIDER_MOVED, this.sliderMoved);
-            this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.jumpToFirstFrame);
+            this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.rewind);
             this.mapControlView.on(views.MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
             this.mapControlView.on(views.MapControlView.FULLSCREEN_BUTTON_CLICKED, this.useFullscreen);
             this.mapControlView.on(views.MapControlView.RESIZE_BUTTON_CLICKED, this.disableFullscreen);
+            this.mapControlView.on(views.MapControlView.SPILL_BUTTON_CLICKED, this.enableSpillDrawing);
 
             this.mapView.on(views.MapView.PLAYING_FINISHED, this.stopAnimation);
             this.mapView.on(views.MapView.DRAGGING_FINISHED, this.zoomIn);
@@ -141,6 +148,16 @@ define([
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
+        },
+
+        /*
+         Consider the model dirty if the user updates an existing  spill, so
+         we don't get cached images back on the next model run.
+         */
+        ajaxFormUpdated: function(form) {
+            if (form.type && form.type === 'spill') {
+                this.rewind();
+            }
         },
 
         setupKeyboardHandlers: function() {
@@ -163,7 +180,7 @@ define([
             });
 
             Mousetrap.bind('n m', function() {
-                _this.formViews.hideAll();
+                _this.formViews.hideAll()
                 _this.showFormWithId('AddMoverForm');
             });
 
@@ -201,8 +218,6 @@ define([
         refreshForms: function() {
             this.destroyForms();
             this.addForms();
-            // Ignore the local time step cache on next model run.
-            this.model.dirty = true;
         },
 
         addForms: function() {
@@ -236,7 +251,8 @@ define([
 
                 _this.forms.add({
                     id: formId,
-                    url: form.attr('action')
+                    url: form.attr('action'),
+                    type: form.attr('data-type')
                 });
 
                 var ajaxForm = _this.forms.get(formId);
@@ -270,7 +286,8 @@ define([
             this.formViews = new forms.FormViewContainer({
                 el: $('#' + this.options.formContainerId),
                 ajaxForms: this.forms,
-                url: this.options.formsUrl
+                url: this.options.formsUrl,
+                model: this.model
             });
 
             this.addForms();
@@ -410,8 +427,16 @@ define([
             this.model.getNextTimeStep();
         },
 
-        jumpToFirstFrame: function() {
-            this.model.setCurrentTimeStep(0);
+        reset: function() {
+            this.mapView.reset();
+            this.model.clearData();
+            this.mapControlView.reset();
+        },
+
+        rewind: function() {
+            this.mapView.clear();
+            this.model.clearData();
+            this.mapControlView.reset();
         },
 
         /*
@@ -436,6 +461,10 @@ define([
             $(this.sidebarEl).show('slow');
         },
 
+        enableSpillDrawing: function() {
+            this.mapView.canDrawSpill = true;
+        },
+
         showFormWithId: function(formId) {
             var formView = this.formViews.get(formId);
 
@@ -454,7 +483,7 @@ define([
             }
 
             if (node.data.id) {
-                formView.reload(node.data.id);
+                formView.reload({id: node.data.id});
             } else {
                 this.formViews.hideAll();
                 formView.show();
@@ -512,7 +541,7 @@ define([
             }
 
             ajaxForm.submit({
-                data: "mover_id=" + node.data.object_id,
+                data: "obj_id=" + node.data.object_id,
                 error: error
             });
         },
@@ -529,7 +558,6 @@ define([
 
         spillChosen: function(spillType, coords) {
             var formView = this.formViews.get(spillType);
-            util.log(formView, this.formViews.formViews);
 
             if (formView === undefined) {
                 return;

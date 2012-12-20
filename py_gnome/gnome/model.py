@@ -197,17 +197,24 @@ class Model(object):
         the key ``spill_id`` if one exists.
         """
         return self._spills.get(spill_id, None)
-   
+
     def add_spill(self, spill):
-        #fixme: where should we check if a spill is in a valic location on the map?
         """
         add a spill to the model
-        
+
         :param spill: an instance of the gnome.Spill class
-        
+
         """
+        #fixme: where should we check if a spill is in a valid location on the map?
         self._spills[spill.id] = spill
-        
+
+    def remove_spill(self, spill_id):
+        """
+        remove the passed-in spill from the spill list
+        """
+        if spill_id in self._spills:
+            del self._spills[spill_id]
+
     def get_wind(self, id):
         """
         Return a :class:`gnome.weather.Wind` in the ``self._wind`` dict with
@@ -234,8 +241,7 @@ class Model(object):
         replace a given Wind with a new one
         """
         self._wind[id] = new_obj
-        
-        
+
     def setup_model_run(self):
         """
         Sets up each mover for the model run

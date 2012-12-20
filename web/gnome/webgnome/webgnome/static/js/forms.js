@@ -13,8 +13,13 @@ define([
     var FormViewContainer = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
-            this.options.ajaxForms.on(models.AjaxForm.SUCCESS, this.refresh);
             this.formViews = {};
+
+            this.options.ajaxForms.on(models.AjaxForm.CREATED, this.refresh);
+            this.options.ajaxForms.on(models.AjaxForm.UPDATED, this.refresh);
+
+            // TODO: Remove this when we remove the Long Island code.
+            this.options.model.on(models.Model.RUN_BEGAN, this.refresh);
         },
 
         /*
@@ -47,8 +52,15 @@ define([
         },
 
         add: function(id, view) {
+            var _this = this;
             this.formViews[id] = view;
-            view.on(ModalAjaxFormView.ID_CHANGED, this.formIdChanged);
+            view.on(AjaxFormView.ID_CHANGED, this.formIdChanged);
+            view.on(AjaxFormView.CANCELED, function(form) {
+                _this.trigger(AjaxFormView.CANCELED, form);
+            });
+            view.on(AjaxFormView.REFRESHED, function(form) {
+                _this.trigger(AjaxFormView.REFRESHED, form);
+            });
         },
 
         get: function(formId) {
@@ -97,6 +109,7 @@ define([
             _.bindAll(this);
             this.wasCancelled = false;
             this.container = $(this.options.formContainerEl);
+            this.id = this.options.id;
             this.ajaxForm = this.options.ajaxForm;
             this.ajaxForm.on(models.AjaxForm.CHANGED, this.ajaxFormChanged);
             this.setupDatePickers();
@@ -123,6 +136,7 @@ define([
             this.refresh(ajaxForm.form_html);
             this.delegateEvents();
             this.setupDatePickers();
+            this.trigger(AjaxFormView.REFRESHED, this);
 
             if (this.wasCancelled) {
                 this.wasCancelled = false;
@@ -147,8 +161,9 @@ define([
          bound `AjaxForm`. If the request is successful, this `ModelFormView` will
          fire its `ajaxFormChanged` event handler.
          */
-        reload: function(id) {
-            this.ajaxForm.get({id: id});
+        reload: function(opts) {
+            opts = opts || {};
+            this.ajaxForm.get(opts);
         },
 
         getForm: function() {
@@ -276,7 +291,8 @@ define([
             event.preventDefault();
             this.hide();
             this.wasCancelled = true;
-            this.ajaxForm.get();
+            this.reload();
+            this.trigger(AjaxFormView.CANCELED, this);
         },
 
         /*
@@ -319,7 +335,9 @@ define([
             this.container.off('click', this.id + ' .btn-prev', this.goToPreviousStep);
         }
     }, {
-        ID_CHANGED: 'ajaxFormView:idChanged'
+        ID_CHANGED: 'ajaxFormView:idChanged',
+        CANCELED: 'ajaxFormView:canceled',
+        REFRESHED: 'ajaxFormView:refreshed'
     });
 
 
@@ -400,7 +418,8 @@ define([
         },
 
         events: {
-            'click .btn-primary': 'submit'
+            'click .btn-primary': 'submit',
+            'click .cancel': 'cancel'
         },
 
         getForm: function() {
@@ -431,10 +450,15 @@ define([
             }
 
             return false;
+        },
+
+        cancel: function(event) {
+            this.trigger(AddSpillFormView.CANCELED, this);
         }
     }, {
         // Event constants
-        SPILL_CHOSEN: 'addSpillFormView:spillChosen'
+        SPILL_CHOSEN: 'addSpillFormView:spillChosen',
+        CANCELED: 'addSpillFormView:canceled'
     });
 
 
@@ -459,7 +483,8 @@ define([
             'click .edit-time': 'editButtonClicked',
             'click .cancel': 'cancelButtonClicked',
             'click .save': 'saveButtonClicked',
-            'click .delete-time': 'trashButtonClicked'
+            'click .delete-time': 'trashButtonClicked',
+            'change .units': 'renderTimeTable'
         },
 
         compassChanged: function(magnitude, direction) {
@@ -500,6 +525,7 @@ define([
         renderTimeTable: function() {
             var _this = this;
             var forms = this.$el.find('.edit-time-forms').find('.time-form');
+            var units = this.$el.find('.units').find('option:selected').val();
             var rows = [];
 
             // Clear out any existing rows.
@@ -508,7 +534,6 @@ define([
             _.each(forms, function(form) {
                 form = $(form);
                 var tmpl = _.template($("#time-series-row").html());
-                var speedType = form.find('.speed_type option:selected').val();
                 var direction = form.find('.direction').val();
 
                 if (isNaN(direction)) {
@@ -529,7 +554,7 @@ define([
                     date: dateTime.format('MM/DD/YYYY'),
                     time: dateTime.format('HH:mm'),
                     direction: direction,
-                    speed: form.find('.speed').val() + ' ' + speedType
+                    speed: form.find('.speed').val() + ' ' + units
                 })).data('data-form', form));
             });
 
@@ -602,10 +627,25 @@ define([
 
             this.setupCompass();
         },
+        
+        formDatesMatch: function(form1, form2) {
+            return (form1.find('.date').val() == form2.find('.date').val()
+                && form1.find('.hour').val() == form2.find('.hour').val()
+                && form1.find('.minute').val() == form2.find('.minute').val())
+        },
 
         trashButtonClicked: function(event) {
             event.preventDefault();
             var form = $(event.target).closest('tr').data('data-form');
+            var editForm = this.$el.find('.add-time-forms').find('.edit-time-form');
+
+            // There is an edit form visible
+            if (editForm.length && this.formDatesMatch(editForm, form)) {
+                // The edit form is for this wind value, so delete it.
+                editForm.detach().empty().remove();
+                this.$el.find('.add-time-forms').find(
+                    '.add-time-form').removeClass('hidden');
+            }
             form.detach().empty().remove();
             this.renderTimeTable();
         },
@@ -620,7 +660,8 @@ define([
             form.detach().appendTo('.edit-time-forms');
 
             // Show the add form
-            $('.add-time-forms').find('.add-time-form').removeClass('hidden');
+            this.$el.find('.add-time-forms').find(
+                '.add-time-form').removeClass('hidden');
 
             this.renderTimeTable();
             this.compass.compassUI('reset');
@@ -654,7 +695,7 @@ define([
             // Delete any edit forms currently in view.
             addFormContainer.find('.edit-time-form').remove();
 
-            var formCopy = form.clone().appendTo(addFormContainer);
+            var formCopy = form.clone().prependTo(addFormContainer);
             formCopy.data('form-original', form);
             formCopy.removeClass('hidden');
 
@@ -786,7 +827,7 @@ define([
             header.text(input.val());
         }
     });
-       
+
 
     return {
         AddMoverFormView: AddMoverFormView,

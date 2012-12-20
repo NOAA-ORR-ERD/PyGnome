@@ -1,9 +1,11 @@
 <%namespace name="defs" file="../defs.mak"/>
 <%page args="form, action_url"/>
 
-<div class="spill form hidden" id="${form.id}">
+<div class="spill form hidden"  id="${form.id}">
 
-    <form action="${action_url}" id="point_release_spill"
+    <form action="${action_url}"
+          id="point_release_spill"
+          data-type="spill"
           class="form-horizontal"
           method="POST">
 
