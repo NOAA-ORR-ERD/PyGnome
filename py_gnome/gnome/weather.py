@@ -37,6 +37,9 @@ class Wind(object):
             raise ValueError("Either provide timeseries or a valid long file")
         
         if( timeseries is not None):
+            if units is None:
+                raise ValueError("Provide valid units as string or unicode for timeseries")
+            
             self._check_timeseries(timeseries, units)
             
             timeseries['value'] = self._convert_units(timeseries['value'], data_format, units, 'meter per second')

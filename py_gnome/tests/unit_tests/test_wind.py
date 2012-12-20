@@ -33,7 +33,7 @@ def test_exceptions(invalid_rq):
         weather.Wind(timeseries=dtv_rq, units='meters per second')
         
     # exception raised since no units given for timeseries during init or set_timeseries
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
         dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(4)]
         dtv_rq.value = (1,0)
