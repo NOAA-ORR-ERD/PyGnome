@@ -2961,7 +2961,7 @@ done:
 	return err;
 }
 
-OSErr Map3D_c::SetUpCurvilinearGrid(char *path,DOUBLEH landMaskH, long numRows, long numCols, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, char* errmsg)
+OSErr Map3D_c::SetUpCurvilinearGrid(DOUBLEH landMaskH, long numRows, long numCols, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, char* errmsg)
 {
 	long i, j, n, ntri, numVerdatPts=0; 
 	long numRows_ext = numRows+1, numCols_ext = numCols+1;
@@ -3329,6 +3329,7 @@ OSErr Map3D_c::SetUpCurvilinearGrid(char *path,DOUBLEH landMaskH, long numRows, 
 findnewstartpoint:
 	if (islandNum > numIslands) 
 	{
+		//err = -1; goto done;
 		_SetHandleSize((Handle)boundaryPtsH,nBoundaryPts*sizeof(**boundaryPtsH));
 		_SetHandleSize((Handle)waterBoundaryPtsH,nBoundaryPts*sizeof(**waterBoundaryPtsH));
 		_SetHandleSize((Handle)boundaryEndPtsH,nEndPts*sizeof(**boundaryEndPtsH));
@@ -3354,11 +3355,12 @@ findnewstartpoint:
 	if (!foundPt)
 	{
 		printNote("Lost trying to set boundaries");
+		err = -1; goto done;
 		// clean up handles and set grid without a map
-		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
+		/*if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
 		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
 		if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH = 0;}
-		goto setFields;
+		goto setFields;*/
 	}
 	
 findnextpoint:
@@ -3395,7 +3397,7 @@ findnextpoint:
 	_SetHandleSize((Handle)waterBoundaryPtsH,nBoundaryPts*sizeof(**waterBoundaryPtsH));
 	_SetHandleSize((Handle)boundaryEndPtsH,nEndPts*sizeof(**boundaryEndPtsH));
 	
-//setFields:	
+setFields:	
 	
 	/////////////////////////////////////////////////
 	
@@ -3465,7 +3467,7 @@ done:
 	if(err)
 	{
 		if(!errmsg[0])
-			strcpy(errmsg,"An error occurred in Map3D::ReorderPoints");
+			strcpy(errmsg,"An error occurred in Map3D_c::SetUpCurvilinearGrid");
 		printError(errmsg); 
 		if(pts) {DisposeHandle((Handle)pts); pts=0;}
 		if(depths) {DisposeHandle((Handle)depths); depths=0;}
@@ -3492,8 +3494,538 @@ done:
 	return err;
 }
 
+OSErr Map3D_c::SetUpCurvilinearGrid2(DOUBLEH landMaskH, long numRows, long numCols, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, char* errmsg)
+{	// this is for the points on nodes case (old coops_mask)
+	OSErr err = 0;
+	long i,j,k;
+	char *velUnits=0; 
+	long latlength = numRows, numtri = 0;
+	long lonlength = numCols;
+	Boolean isLandMask = true;
+	float fDepth1, fLat1, fLong1;
+	long index1=0;
+	
+	errmsg[0]=0;
+	
+	long n, ntri, numVerdatPts=0;
+	long numRows_minus1 = numRows-1, numCols_minus1 = numCols-1;
+	long nv = numRows * numCols;
+	long nCells = numRows_minus1 * numCols_minus1;
+	long iIndex, jIndex, index; 
+	long triIndex1, triIndex2, waterCellNum=0;
+	long ptIndex = 0, cellNum = 0;
+	
+	long currentIsland=0, islandNum, nBoundaryPts=0, nEndPts=0, waterStartPoint;
+	long nSegs, segNum = 0, numIslands, rectIndex; 
+	long currentIndex,startIndex; 
+	long diag = 1;
+	Boolean foundPt = false, isOdd;
+	
+	LONGH landWaterInfo = (LONGH)_NewHandleClear(nCells * sizeof(long));
+	LONGH maskH2 = (LONGH)_NewHandleClear(nv * sizeof(long));
+	
+	LONGH ptIndexHdl = (LONGH)_NewHandleClear(nv * sizeof(**ptIndexHdl));
+	LONGH verdatPtsH = (LONGH)_NewHandleClear(nv * sizeof(**verdatPtsH));
+	GridCellInfoHdl gridCellInfo = (GridCellInfoHdl)_NewHandleClear(nCells * sizeof(**gridCellInfo));
+	
+	TopologyHdl topo=0;
+	LongPointHdl pts=0;
+	VelocityFH velH = 0;
+	DAGTreeStruct tree;
+	WorldRect triBounds;
+	FLOATH depths=0;
+	
+	LONGH boundaryPtsH = 0;
+	LONGH boundaryEndPtsH = 0;
+	LONGH waterBoundaryPtsH = 0;
+	Boolean** segUsed = 0;
+	SegInfoHdl segList = 0;
+	LONGH flagH = 0;
+	
+	TTriGridVel *triGrid = nil;
+	tree.treeHdl = 0;
+	TDagTree *dagTree = 0;
+	
+	/////////////////////////////////////////////////
+	
+	if (!landMaskH) return -1;
+	
+	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH || !maskH2) {err = memFullErr; goto done;}
+	
+	index1 = 0;
+	for (i=0;i<numRows-1;i++)
+	{
+		for (j=0;j<numCols-1;j++)
+		{
+			if (INDEXH(landMaskH,i*numCols+j)==0)	// land point
+			{
+				INDEXH(landWaterInfo,i*numCols_minus1+j) = -1;	// may want to mark each separate island with a unique number
+			}
+			else
+			{
+				if (INDEXH(landMaskH,(i+1)*numCols+j)==0 || INDEXH(landMaskH,i*numCols+j+1)==0 || INDEXH(landMaskH,(i+1)*numCols+j+1)==0)
+				{
+					INDEXH(landWaterInfo,i*numCols_minus1+j) = -1;	// may want to mark each separate island with a unique number
+				}
+				else
+				{
+					INDEXH(landWaterInfo,i*numCols_minus1+j) = 1;
+					INDEXH(ptIndexHdl,i*numCols+j) = -2;	// water box
+					INDEXH(ptIndexHdl,i*numCols+j+1) = -2;
+					INDEXH(ptIndexHdl,(i+1)*numCols+j) = -2;
+					INDEXH(ptIndexHdl,(i+1)*numCols+j+1) = -2;
+				}
+			}
+		}
+	}
+	
+	for (i=0;i<numRows;i++)
+	{
+		for (j=0;j<numCols;j++)
+		{
+			if (INDEXH(ptIndexHdl,i*numCols+j) == -2)
+			{
+				INDEXH(ptIndexHdl,i*numCols+j) = ptIndex;	// count up grid points
+				ptIndex++;
+			}
+			else
+				INDEXH(ptIndexHdl,i*numCols+j) = -1;
+		}
+	}
+	
+	for (i=0;i<numRows-1;i++)
+	{
+		for (j=0;j<numCols-1;j++)
+		{
+			if (INDEXH(landWaterInfo,i*numCols_minus1+j)>0)
+			{
+				INDEXH(gridCellInfo,i*numCols_minus1+j).cellNum = cellNum;
+				cellNum++;
+				INDEXH(gridCellInfo,i*numCols_minus1+j).topLeft = INDEXH(ptIndexHdl,i*numCols+j);
+				INDEXH(gridCellInfo,i*numCols_minus1+j).topRight = INDEXH(ptIndexHdl,i*numCols+j+1);
+				INDEXH(gridCellInfo,i*numCols_minus1+j).bottomLeft = INDEXH(ptIndexHdl,(i+1)*numCols+j);
+				INDEXH(gridCellInfo,i*numCols_minus1+j).bottomRight = INDEXH(ptIndexHdl,(i+1)*numCols+j+1);
+			}
+			else INDEXH(gridCellInfo,i*numCols_minus1+j).cellNum = -1;
+		}
+	}
+	ntri = cellNum*2;	// each water cell is split into two triangles
+	if(!(topo = (TopologyHdl)_NewHandleClear(ntri * sizeof(Topology)))){err = memFullErr; goto done;}	
+	for (i=0;i<nv;i++)
+	{
+		if (INDEXH(ptIndexHdl,i) != -1)
+		{
+			INDEXH(verdatPtsH,numVerdatPts) = i;
+			numVerdatPts++;
+		}
+	}
+	_SetHandleSize((Handle)verdatPtsH,numVerdatPts*sizeof(**verdatPtsH));
+	pts = (LongPointHdl)_NewHandle(sizeof(LongPoint)*(numVerdatPts));
+	if(pts == nil)
+	{
+		strcpy(errmsg,"Not enough memory to triangulate data.");
+		return -1;
+	}
+	
+	/////////////////////////////////////////////////
+	//index = 0;
+	for (i=0; i<=numVerdatPts; i++)	// make a list of grid points that will be used for triangles
+	{
+		float fLong, fLat, fDepth, dLon, dLat, dLon1, dLon2, dLat1, dLat2;
+		double val, u=0., v=0.;
+		LongPoint vertex;
+		
+		if(i < numVerdatPts) 
+		{	// since velocities are defined at the lower left corner of each grid cell
+			// need to add an extra row/col at the top/right of the grid
+			// set lat/lon based on distance between previous two points 
+			// these are just for boundary/drawing purposes, velocities are set to zero
+			index = i+1;
+			n = INDEXH(verdatPtsH,i);
+			iIndex = n/numCols;
+			jIndex = n%numCols;
+			//fLat = INDEXH(fVertexPtsH,(iIndex-1)*fNumCols+jIndex).pLat;
+			//fLong = INDEXH(fVertexPtsH,(iIndex-1)*fNumCols+jIndex).pLong;
+			fLat = INDEXH(vertexPtsH,(iIndex)*numCols+jIndex).pLat;
+			fLong = INDEXH(vertexPtsH,(iIndex)*numCols+jIndex).pLong;
+			fDepth = INDEXH(depthPtsH,(iIndex)*numCols+jIndex);
+			
+			vertex.v = (long)(fLat*1e6);
+			vertex.h = (long)(fLong*1e6);
+			
+			//fDepth = 1.;
+			INDEXH(pts,i) = vertex;
+		}
+		else { // for outputting a verdat the last line should be all zeros
+			//index = 0;
+			//fLong = fLat = fDepth = 0.0;
+		}
+		/////////////////////////////////////////////////
+		
+	}
+	// figure out the bounds
+	triBounds = voidWorldRect;
+	if(pts) 
+	{
+		LongPoint	thisLPoint;
+		
+		if(numVerdatPts > 0)
+		{
+			WorldPoint  wp;
+			for(i=0;i<numVerdatPts;i++)
+			{
+				thisLPoint = INDEXH(pts,i);
+				wp.pLat = thisLPoint.v;
+				wp.pLong = thisLPoint.h;
+				AddWPointToWRect(wp.pLat, wp.pLong, &triBounds);
+			}
+		}
+	}
+	
+	DisplayMessage("NEXTMESSAGETEMP");
+	DisplayMessage("Making Triangles");
+	
+	/////////////////////////////////////////////////
+	for (i=0;i<numRows_minus1;i++)
+	{
+		for (j=0;j<numCols_minus1;j++)
+		{
+			if (INDEXH(landWaterInfo,i*numCols_minus1+j)==-1)
+				continue;
+			waterCellNum = INDEXH(gridCellInfo,i*numCols_minus1+j).cellNum;	// split each cell into 2 triangles
+			triIndex1 = 2*waterCellNum;
+			triIndex2 = 2*waterCellNum+1;
+			// top/left tri in rect
+			(*topo)[triIndex1].vertex1 = INDEXH(gridCellInfo,i*numCols_minus1+j).topRight;
+			(*topo)[triIndex1].vertex2 = INDEXH(gridCellInfo,i*numCols_minus1+j).topLeft;
+			(*topo)[triIndex1].vertex3 = INDEXH(gridCellInfo,i*numCols_minus1+j).bottomLeft;
+			if (j==0 || INDEXH(gridCellInfo,i*numCols_minus1+j-1).cellNum == -1)
+				(*topo)[triIndex1].adjTri1 = -1;
+			else
+			{
+				(*topo)[triIndex1].adjTri1 = INDEXH(gridCellInfo,i*numCols_minus1+j-1).cellNum * 2 + 1;
+			}
+			(*topo)[triIndex1].adjTri2 = triIndex2;
+			if (i==0 || INDEXH(gridCellInfo,(i-1)*numCols_minus1+j).cellNum==-1)
+				(*topo)[triIndex1].adjTri3 = -1;
+			else
+			{
+				(*topo)[triIndex1].adjTri3 = INDEXH(gridCellInfo,(i-1)*numCols_minus1+j).cellNum * 2 + 1;
+			}
+			// bottom/right tri in rect
+			(*topo)[triIndex2].vertex1 = INDEXH(gridCellInfo,i*numCols_minus1+j).bottomLeft;
+			(*topo)[triIndex2].vertex2 = INDEXH(gridCellInfo,i*numCols_minus1+j).bottomRight;
+			(*topo)[triIndex2].vertex3 = INDEXH(gridCellInfo,i*numCols_minus1+j).topRight;
+			if (j==numCols-2 || INDEXH(gridCellInfo,i*numCols_minus1+j+1).cellNum == -1)
+				(*topo)[triIndex2].adjTri1 = -1;
+			else
+			{
+				(*topo)[triIndex2].adjTri1 = INDEXH(gridCellInfo,i*numCols_minus1+j+1).cellNum * 2;
+			}
+			(*topo)[triIndex2].adjTri2 = triIndex1;
+			if (i==numRows-2 || INDEXH(gridCellInfo,(i+1)*numCols_minus1+j).cellNum == -1)
+				(*topo)[triIndex2].adjTri3 = -1;
+			else
+			{
+				(*topo)[triIndex2].adjTri3 = INDEXH(gridCellInfo,(i+1)*numCols_minus1+j).cellNum * 2;
+			}
+		}
+	}
+	
+	DisplayMessage("NEXTMESSAGETEMP");
+	DisplayMessage("Making Dag Tree");
+	MySpinCursor(); // JLM 8/4/99
+	tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); 
+	MySpinCursor(); // JLM 8/4/99
+	if (errmsg[0])	
+	{err = -1; goto done;} 
+	// sethandle size of the fTreeH to be tree.fNumBranches, the rest are zeros
+	_SetHandleSize((Handle)tree.treeHdl,tree.numBranches*sizeof(DAG));
+	/////////////////////////////////////////////////
+	
+	/////////////////////////////////////////////////
+	// go through topo look for -1, and list corresponding boundary sides
+	// then reorder as contiguous boundary segments - need to group boundary rects by islands
+	// will need a new field for list of boundary points since there can be duplicates, can't just order and list segment endpoints
+	
+	nSegs = 2*ntri; //number of -1's in topo
+	 boundaryPtsH = (LONGH)_NewHandleClear(nv * sizeof(**boundaryPtsH));
+	 boundaryEndPtsH = (LONGH)_NewHandleClear(nv * sizeof(**boundaryEndPtsH));
+	 waterBoundaryPtsH = (LONGH)_NewHandleClear(nv * sizeof(**waterBoundaryPtsH));
+	 flagH = (LONGH)_NewHandleClear(nv * sizeof(**flagH));
+	 segUsed = (Boolean**)_NewHandleClear(nSegs * sizeof(Boolean));
+	 segList = (SegInfoHdl)_NewHandleClear(nSegs * sizeof(**segList));
+	 // first go through rectangles and group by island
+	 // do this before making dagtree, 
+	 DisplayMessage("NEXTMESSAGETEMP");
+	 DisplayMessage("Numbering Islands");
+	 MySpinCursor(); // JLM 8/4/99
+	 //err = NumberIslands(&maskH2, velocityH, landWaterInfo, fNumRows_minus1, fNumCols_minus1, &numIslands);	// numbers start at 3 (outer boundary)
+	 err = NumberIslands(&maskH2, landMaskH, landWaterInfo, numRows_minus1, numCols_minus1, &numIslands);	// numbers start at 3 (outer boundary)
+	 MySpinCursor(); // JLM 8/4/99
+	 if (err) goto done;
+	 for (i=0;i<ntri;i++)
+	 {
+	 if ((i+1)%2==0) isOdd = 0; else isOdd = 1;
+	 // the middle neighbor triangle is always the other half of the rectangle so can't be land or outside the map
+	 // odd - left/top, even - bottom/right the 1-2 segment is top/bot, the 2-3 segment is right/left
+	 if ((*topo)[i].adjTri1 == -1)
+	 {
+	 // add segment pt 2 - pt 3 to list, need points, triNum and whether it's L/W boundary (boundary num)
+	 (*segList)[segNum].pt1 = (*topo)[i].vertex2;
+	 (*segList)[segNum].pt2 = (*topo)[i].vertex3;
+	 // check which land block this segment borders and mark the island
+	 if (isOdd) 
+	 {
+	 // check left rectangle for L/W border 
+	 rectIndex = INDEXH(verdatPtsH,(*topo)[i].vertex3);	// to get back into original grid for L/W info - use maskH2
+	 iIndex = rectIndex/numCols;
+	 jIndex = rectIndex%numCols;
+	 if (jIndex>0 && INDEXH(maskH2,iIndex*numCols + jIndex-1)>=3)
+	 {
+	 (*segList)[segNum].isWater = 0;
+	 (*segList)[segNum].islandNumber = INDEXH(maskH2,iIndex*numCols + jIndex-1);	
+	 }
+	 else
+	 {
+	 (*segList)[segNum].isWater = 1;
+	 (*segList)[segNum].islandNumber = 1;	
+	 }
+	 }
+	 else 
+	 {	
+	 // check right rectangle for L/W border convert back to row/col
+	 rectIndex = INDEXH(verdatPtsH,(*topo)[i].vertex1);
+	 iIndex = rectIndex/numCols;
+	 jIndex = rectIndex%numCols;
+	 //if (jIndex<fNumCols && INDEXH(maskH2,iIndex*fNumCols + jIndex+1)>=3)
+	 if (jIndex<numCols_minus1 && INDEXH(maskH2,iIndex*numCols + jIndex+1)>=3)
+	 {
+	 (*segList)[segNum].isWater = 0;
+	 //(*segList)[segNum].islandNumber = INDEXH(maskH2,iIndex*fNumCols + jIndex+1);	
+	 (*segList)[segNum].islandNumber = INDEXH(maskH2,iIndex*numCols + jIndex+1);	
+	 }
+	 else
+	 {
+	 (*segList)[segNum].isWater = 1;
+	 (*segList)[segNum].islandNumber = 1;	
+	 }
+	 }
+	 segNum++;
+	 }
+	 
+	 if ((*topo)[i].adjTri3 == -1)
+	 {
+		 // add segment pt 1 - pt 2 to list
+		 // odd top, even bottom
+		 (*segList)[segNum].pt1 = (*topo)[i].vertex1;
+		 (*segList)[segNum].pt2 = (*topo)[i].vertex2;
+		 // check which land block this segment borders and mark the island
+		 if (isOdd) 
+		 {
+			 // check top rectangle for L/W border
+			 rectIndex = INDEXH(verdatPtsH,(*topo)[i].vertex3);	// to get back into original grid for L/W info - use maskH2
+			 iIndex = rectIndex/numCols;
+			 jIndex = rectIndex%numCols;
+			 if (iIndex>0 && INDEXH(maskH2,(iIndex-1)*numCols + jIndex)>=3)
+			 {
+				 (*segList)[segNum].isWater = 0;
+				 (*segList)[segNum].islandNumber = INDEXH(maskH2,(iIndex-1)*numCols + jIndex);
+			 }
+			 else
+			 {
+				 (*segList)[segNum].isWater = 1;
+				 (*segList)[segNum].islandNumber = 1;
+			 }
+		 }
+		 else 
+		 {
+			 // check bottom rectangle for L/W border
+			 rectIndex = INDEXH(verdatPtsH,(*topo)[i].vertex1);
+			 iIndex = rectIndex/numCols;
+			 jIndex = rectIndex%numCols;
+			 //if (iIndex<fNumRows && INDEXH(maskH2,(iIndex+1)*fNumCols + jIndex)>=3)
+			 if (iIndex<numRows_minus1 && INDEXH(maskH2,(iIndex+1)*numCols + jIndex)>=3)
+			 {
+				 (*segList)[segNum].isWater = 0;
+				 //(*segList)[segNum].islandNumber = INDEXH(maskH2,(iIndex+1)*fNumCols + jIndex);		// this should be the neighbor's value
+				 (*segList)[segNum].islandNumber = INDEXH(maskH2,(iIndex+1)*numCols + jIndex);		// this should be the neighbor's value
+			 }
+			 else
+			 {
+				 (*segList)[segNum].isWater = 1;
+				 (*segList)[segNum].islandNumber = 1;		
+			 }
+		 }
+		 segNum++;
+		 }
+	 }
+	 nSegs = segNum;
+	 _SetHandleSize((Handle)segList,nSegs*sizeof(**segList));
+	 _SetHandleSize((Handle)segUsed,nSegs*sizeof(**segUsed));
+	 // go through list of segments, and make list of boundary segments
+	 // as segment is taken mark so only use each once
+	 // get a starting point, add the first and second to the list
+	 islandNum = 3;
+	 findnewstartpoint:
+	 if (islandNum > numIslands) 
+	 {
+		 //err = -1; goto done
+		 _SetHandleSize((Handle)boundaryPtsH,nBoundaryPts*sizeof(**boundaryPtsH));
+		 _SetHandleSize((Handle)waterBoundaryPtsH,nBoundaryPts*sizeof(**waterBoundaryPtsH));
+		 _SetHandleSize((Handle)boundaryEndPtsH,nEndPts*sizeof(**boundaryEndPtsH));
+		 goto setFields;	// off by 2 - 0,1,2 are water cells, 3 and up are land
+	 }
+	 foundPt = false;
+	 for (i=0;i<nSegs;i++)
+	 {
+		 if ((*segUsed)[i]) continue;
+		 waterStartPoint = nBoundaryPts;
+		 (*boundaryPtsH)[nBoundaryPts++] = (*segList)[i].pt1;
+		 (*flagH)[(*segList)[i].pt1] = 1;
+		 (*waterBoundaryPtsH)[nBoundaryPts] = (*segList)[i].isWater+1;
+		 (*boundaryPtsH)[nBoundaryPts++] = (*segList)[i].pt2;
+		 (*flagH)[(*segList)[i].pt2] = 1;
+		 currentIndex = (*segList)[i].pt2;
+		 startIndex = (*segList)[i].pt1;
+		 currentIsland = (*segList)[i].islandNumber;	
+		 foundPt = true;
+		 (*segUsed)[i] = true;
+		 break;
+	 }
+	 if (!foundPt)
+	 {
+		 printNote("Lost trying to set boundaries");
+		 err = -1; goto done;
+		 // clean up handles and set grid without a map
+		 //if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
+		 //if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
+		 //if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH = 0;}
+		 //goto setFields;
+	 }
+	 
+	 findnextpoint:
+	 for (i=0;i<nSegs;i++)
+	 {
+		 // look for second point of the previous selected segment, add the second to point list
+		 if ((*segUsed)[i]) continue;
+		 if ((*segList)[i].islandNumber > 3 && (*segList)[i].islandNumber != currentIsland) continue;
+		 if ((*segList)[i].islandNumber > 3 && currentIsland <= 3) continue;
+		 index = (*segList)[i].pt1;
+		 if (index == currentIndex)	// found next point
+		 {
+			 currentIndex = (*segList)[i].pt2;
+			 (*segUsed)[i] = true;
+			 if (currentIndex == startIndex) // completed a segment
+			 {
+				 islandNum++;
+				 (*boundaryEndPtsH)[nEndPts++] = nBoundaryPts-1;
+				 (*waterBoundaryPtsH)[waterStartPoint] = (*segList)[i].isWater+1;	// need to deal with this
+				 goto findnewstartpoint;
+			 }
+			 else
+			 {
+				 (*boundaryPtsH)[nBoundaryPts] = (*segList)[i].pt2;
+				 (*flagH)[(*segList)[i].pt2] = 1;
+				 (*waterBoundaryPtsH)[nBoundaryPts] = (*segList)[i].isWater+1;
+				 nBoundaryPts++;
+				 goto findnextpoint;
+			}
+		 }
+	 }
+	 // shouldn't get here unless there's a problem...
+	 _SetHandleSize((Handle)boundaryPtsH,nBoundaryPts*sizeof(**boundaryPtsH));
+	 _SetHandleSize((Handle)waterBoundaryPtsH,nBoundaryPts*sizeof(**waterBoundaryPtsH));
+	 _SetHandleSize((Handle)boundaryEndPtsH,nEndPts*sizeof(**boundaryEndPtsH));
+	 	
+setFields:	
+	
+	/////////////////////////////////////////////////
+	
+	triGrid = new TTriGridVel;
+	if (!triGrid)
+	{		
+		err = true;
+		TechError("Error in TimeGridVelCurv_c::ReorderPointsCOOPSMask()","new TTriGridVel",err);
+		goto done;
+	}
+	
+	fGrid = (TTriGridVel*)triGrid;
+	
+	triGrid -> SetBounds(triBounds); 
 
-OSErr Map3D_c::SetUpTriangleGrid2(char *path, long numNodes, long ntri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors) 
+	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
+	if(!dagTree)
+	{
+		err = -1;
+		printError("Unable to create dag tree.");
+		goto done;
+	}
+	
+	triGrid -> SetDagTree(dagTree);
+	
+	if (waterBoundaryPtsH)	// maybe assume rectangle grids will have map?
+	{
+		// maybe move up and have the map read in the boundary information
+		this->SetBoundarySegs(boundaryEndPtsH);	
+		this->SetWaterBoundaries(waterBoundaryPtsH);
+		this->SetBoundaryPoints(boundaryPtsH);
+		this->SetMapBounds(triBounds);		
+	}
+	else
+	{
+		err = -1;
+		goto done;
+	}
+	
+	
+	pts = 0;	// because fGrid is now responsible for it
+	topo = 0; // because fGrid is now responsible for it
+	velH = 0; // because fGrid is now responsible for it
+	tree.treeHdl = 0; // because fGrid is now responsible for it
+	velH = 0; // because fGrid is now responsible for it
+	
+	/////////////////////////////////////////////////
+done:
+	if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
+	if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
+	if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+	if (segUsed) {DisposeHandle((Handle)segUsed); segUsed = 0;}
+	if (segList) {DisposeHandle((Handle)segList); segList = 0;}
+	if (flagH) {DisposeHandle((Handle)flagH); flagH = 0;}
+	
+	if(err)
+	{
+		if(!errmsg[0])
+			strcpy(errmsg,"An error occurred in Map3D_c::SetUpCurvilinearGrid2");
+		printError(errmsg); 
+		if(pts) {DisposeHandle((Handle)pts); pts=0;}
+		if(depths) {DisposeHandle((Handle)depths); depths=0;}
+		if(topo) {DisposeHandle((Handle)topo); topo=0;}
+		if(velH) {DisposeHandle((Handle)velH); velH=0;}
+		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
+		
+		if(fGrid)
+		{
+			fGrid ->Dispose();
+			delete fGrid;
+			fGrid = 0;
+		}
+		if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
+		if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
+		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
+		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
+		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
+		
+		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
+		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
+		if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH = 0;}
+	}
+		
+	return err;	
+}
+
+OSErr Map3D_c::SetUpTriangleGrid2(long numNodes, long ntri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors) 
 {
 	OSErr err = 0;
 	char errmsg[256];
@@ -3761,7 +4293,7 @@ done:
 	return err;
 }
 
-OSErr Map3D_c::SetUpTriangleGrid(char *path, long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts) 
+OSErr Map3D_c::SetUpTriangleGrid(long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts) 
 {
 	OSErr err = 0;
 	char errmsg[256];
@@ -3844,12 +4376,12 @@ OSErr Map3D_c::SetUpTriangleGrid(char *path, long numNodes, long numTri, WORLDPO
 		{	
 			index = i+1;
 			n = INDEXH(verdatPtsH,i);
-			fLat = INDEXH(vertexPtsH,n).pLat;	// don't need to store fVertexPtsH, just pass in and use here
+			fLat = INDEXH(vertexPtsH,n).pLat;	
 			fLong = INDEXH(vertexPtsH,n).pLong;
 			vertex.v = (long)(fLat*1e6);
 			vertex.h = (long)(fLong*1e6);
 			
-			fDepth = INDEXH(depthPtsH,n);	// this will be set from bathymetry, just a fudge here for outputting a verdat
+			fDepth = INDEXH(depthPtsH,n);	
 			INDEXH(pts,i) = vertex;
 			INDEXH(depths,i) = fDepth;
 		}
