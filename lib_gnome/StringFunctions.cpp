@@ -1379,3 +1379,150 @@ void DateToSeconds (DateTimeRec *date, unsigned long *seconds)
 }
 #endif
 
+// Path functions - eventually replace with a library
+Boolean IsClassicAbsolutePath(char* path)
+{
+	// classic paths use ':' delimiters and full paths start with drive name
+	if (IsClassicPath(path) && path[0]!=':' && path[0]!='.') return true;
+	return false;
+}
+
+Boolean IsUnixAbsolutePath(char* path)
+{
+	if (path[0]=='/') return true;
+	return false;
+}
+
+Boolean IsWindowsAbsolutePath(char* path)
+{
+	// check for mapped drive 
+	if (path[1]==':' && path[2]=='\\') return true;
+	// check for unmapped drive
+	if (path[1]=='\\' && path[2]=='\\') return true;
+	// at some point switch the leading \ to be full path rather than partial, have to figure out the drive
+	return false;
+}
+
+Boolean IsWindowsPath(char* path)
+{
+	long i,len;
+	
+	//If leads with a {drive letter}:\ it's a full path, this is covered below
+	// unmapped drive \\, also covered below
+	if (IsWindowsAbsolutePath(path)) return true;
+	
+	// if has '\' anywhere in path it's Windows (though Mac allows '\' in filenames, for now assuming it's a delimiter)
+	len = strlen(path);
+	for(i = 0; i < len  && path[i]; i++)
+	{
+		if(path[i] == '\\')
+			return true;
+	}
+	
+	return false;	// is filename only true or false...
+}
+
+Boolean IsUnixPath(char* path)
+{
+	long i,len;
+	
+	//If leads with a '/' it's a full path, this is covered below
+	//if (IsUnixAbsolutePath(path) return true;
+	
+	// if has '/' anywhere in path it's unix (though Mac allows '/' in filenames, for now assuming it's a delimiter)
+	len = strlen(path);
+	for(i = 0; i < len  && path[i]; i++)
+	{
+		if(path[i] == '/')
+			return true;
+	}
+	
+	return false;	// filename only should be true...
+}
+
+Boolean IsClassicPath(char* path)
+{
+	long i,len;
+	if (IsWindowsAbsolutePath(path))
+		return false;
+	// if has ':' anywhere in path it's classic (Windows and Mac don't allow ':' in filenames)
+	len = strlen(path);
+	for(i = 0; i < len  && path[i]; i++)
+	{
+		if(path[i] == ':')
+			return true;
+	}
+	
+	return false;	// is filename only true or false...
+}
+
+Boolean IsFullPath(char* path)
+{
+	if (IsWindowsAbsolutePath(path)) return true;
+	if (IsClassicAbsolutePath(path)) return true;
+	if (IsUnixAbsolutePath(path)) return true;
+	return false;
+}
+
+Boolean ConvertIfClassicPath(char* path, char* unixPath)
+{	// do we need to support old filelists?
+	OSErr err = 0;
+	
+	if (IsWindowsPath(path)) return false;
+	if (IsUnixPath(path)) return false;
+	
+#ifdef MAC
+	if (IsClassicAbsolutePath(path)) 
+	{
+		err = ConvertTraditionalPathToUnixPath((const char *)path, unixPath, kMaxNameLen); 
+		return true;
+	}
+#endif	
+	if (IsClassicPath(path)) 	// partial path
+	{	// leading ':' colons can mean directory up (first is current directory)
+
+		Boolean foundLeadingColons = false;
+		short i,numLeadingColons = 0;
+		//char *originalS = s;
+		char *p = path;
+		//if (!path[0]) return false;
+		//if(removeLeading)
+		//{
+			// move past leading colons
+		StringSubstitute(path,':','/'); 
+		while (*p == '/') {foundLeadingColons = true;p++;numLeadingColons++;}
+			///
+			if(foundLeadingColons) 
+			{	//// do shift left/copy code	
+				while (*p) { *path = *p; path++;p++;} 
+				*path = 0;// terminate the C-String
+				// at this point s points to the null terminator
+				if (numLeadingColons==1) 
+				{
+					strcpy(unixPath,path);
+				}
+				else
+				{
+					//strcpy(unixPath,".");
+					for (i=0;i<numLeadingColons-1;i++) {strcat(unixPath,".");}
+					strcat(unixPath,"/");
+					strcat(unixPath,path);
+					//strcpy(path,unixPath);
+				}
+			}
+		//}
+		
+		
+		//StringSubstitute(path,':','/'); 
+		//if (path[0]==':' || path[0]=='.') strcpy(unixPath,path);
+		//else {strcpy(unixPath,":"); strcat(unixPath,path);}	// unix partial paths shouldn't start with '/'
+		return true;
+	}
+	// assume if doesn't have any file delimiters it's a filename - leave as is
+	strcpy(unixPath,path);
+	return true;
+	
+	//return false;
+}
+
+

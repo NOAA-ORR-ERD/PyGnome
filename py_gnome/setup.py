@@ -68,11 +68,12 @@ extension_names = [
                    'cy_wind_mover',
 # CATS mover broken at the moment                   
 #                   'cy_cats_mover',
-#                   'cy_netcdf_mover',
+#                   'cy_gridcurrent_mover',
                    'cy_ossm_time',
                    'cy_date_time',
                    'cy_random_mover',
-                   'cy_land_check'
+                   'cy_land_check',
+                   'cy_shio_time'
                    ]
 
 cpp_files = [ 
@@ -103,8 +104,10 @@ cpp_files = [
               'DagTreeIO.cpp',
               'ShioCurrent1.cpp',
               'ShioCurrent2.cpp',
-              'NetCDFMover_c.cpp',
-              'TriGridVel3D_c.cpp',
+              'GridCurrentMover_c.cpp',
+              'TimeGridVel_c.cpp',
+              'MakeTriangles.cpp',
+              'MakeDagTree.cpp',
               ]
 
 
@@ -198,7 +201,8 @@ elif sys.platform == "win32":
     libdirs += ['gnome/cy_gnome']
     macros += [('CYTHON_CCOMPLEX', 0),]
     extension_names += ['cy_basic_types']
-    l_include_dirs += '..\third_party_lib\vs2008'
+    l_include_dirs += [r'..\third_party_lib\vs2008']
+
 #
 ### the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
 #

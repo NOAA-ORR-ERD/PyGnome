@@ -10,8 +10,8 @@
 #ifndef __Replacements__
 #define __Replacements__
 
+#include "StringFunctions.h"
 #include "OSSMTimeValue_c.h"
-#include "PtCurMap_c.h"
 #include "PtCurMover_c.h"
 #include "OLEList_c.h"
 #include "LEList_c.h"
@@ -22,21 +22,14 @@
 #include "CurrentMover_c.h"
 #include "CATSMover_c.h"
 #include "WindMover_c.h"
-#include "CATSMover3D_c.h"
+//#include "CATSMover3D_c.h"
 #include "TriCurMover_c.h"
 #include "TriGridVel_c.h"
-#include "TriGridVel3D_c.h"
 #include "RectGridVel_c.h"
 #include "TideCurCycleMover_c.h"
-// JS: Comment out the NetCDF functionality for now
-//#include "NetCDFMover_c.h"
-//#include "NetCDFMoverTri_c.h"
-//#include "NetCDFMoverCurv_c.h"
-//#include "NetCDFWindMover_c.h"
 #include "Weatherer_c.h"
 #include "OSSMWeatherer_c.h"
 #include "Random_c.h"
-#include "Random3D_c.h"
 #include "CompoundMover_c.h"
 #include "CompoundMap_c.h"
 #include "ShioTimeValue_c.h"
@@ -71,6 +64,10 @@
 #define TMover Mover_c
 #define TModel Model_c
 #define TMap Map_c
+#define TimeGridVel TimeGridVel_c
+#define TimeGridVelRect TimeGridVelRect_c
+#define TimeGridVelCurv TimeGridVelCurv_c
+#define TimeGridVelTri TimeGridVelTri_c
 
 #define TechError(a, b, c) printf(a)
 #define printError(msg) printf(msg)
@@ -79,16 +76,12 @@
 #ifndef ibmpyGNOME
 #define _isnan isnan
 #endif
-/*
-extern Model_c *model;
-extern Settings settings;
-extern Boolean gNoaaVersion;
-*/ // AH 06/20/2012
 
-PtCurMap_c *GetPtCurMap(void);
+//PtCurMap_c *GetPtCurMap(void);
 void MySpinCursor(void);
 void SysBeep(short);
-Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl);
+//Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl);
+Boolean FileExists(short vRefNum, long dirID, CHARPTR filename);
 OSErr MyGetFileSize(short vRefNum, long dirID, CHARPTR pathName, LONGPTR size);
 OSErr ReadSectionOfFile(short vRefNum, long dirID, CHARPTR name,
 						long offset, long length, VOIDPTR ptr, CHARHP handle);
@@ -99,4 +92,9 @@ OSErr AskUserForUnits(short* selectedUnits,Boolean *userCancel);
 Boolean CmdPeriod(void);
 void PenNormal(void);
 long			ScreenToWorldDistance(short pixels);
+
+void AddDelimiterAtEndIfNeeded(char* str);
+Boolean IsPartialPath(char* relativePath);
+void ResolvePartialPathFromThisFolderPath(char* relativePath,char * thisFolderPath);
+void ResolvePathFromInputFile(char *pathOfTheInputFile, char* pathToResolve); 
 #endif
