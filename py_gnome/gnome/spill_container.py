@@ -47,31 +47,29 @@ class SpillContainer(object):
         """
         return self._data_arrays[data_name]
     
-    # def __setitem__(self, data_name, array):
-    #     disabled -- probably not good to allow setting of data directly!
-    #     """
-    #     sets the data item
+    def __setitem__(self, data_name, array):
         
-    #     careful -- this needs to be compatible with the needs of any mover that uses it.
+        """
+        sets the data item
         
-    #     It will be checked to at least be size-consistent with the rest of the
-    #     data, and type-consistent if the data array is being replaced
-    #     """
+        careful! -- this should probably only be used for testing!
+        as all arrays need to be compatible
+        
+        It will be checked to at least be size-consistent with the rest of the
+        data, and type-consistent if the data array is being replaced
+        """
 
-    #     array = np.asarray(array)
+        array = np.asarray(array)
         
-    #     if len(array) != self.num_LEs:
-    #         raise ValueError("Length of new data arrays must be number of LEs in the Spill")
-                        
-    #     if data_name in self._data_arrays:
-    #         # if the array is already here, the type should match        
-    #         if array.dtype !=  self._data_arrays[data_name].dtype:
-    #             raise ValueError("new data array must be the same type")
-    #         # and the shape should match        
-    #         if array.shape !=  self._data_arrays[data_name].shape:
-    #             raise ValueError("new data array must be the same shape")
+        if data_name in self._data_arrays:
+            # if the array is already here, the type should match        
+            if array.dtype !=  self._data_arrays[data_name].dtype:
+                raise ValueError("new data array must be the same type")
+            # and the shape should match        
+            if array.shape !=  self._data_arrays[data_name].shape:
+                raise ValueError("new data array must be the same shape")
                     
-    #     self._data_arrays[data_name] = array
+        self._data_arrays[data_name] = array
 
     def add_spill(self, spill):
         self.spills.append(spill)

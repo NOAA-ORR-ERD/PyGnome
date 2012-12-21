@@ -73,7 +73,7 @@ extension_names = [
                    'cy_date_time',
                    'cy_random_mover',
                    'cy_land_check',
-                   'cy_shio_time'
+#                   'cy_shio_time'
                    ]
 
 cpp_files = [ 
