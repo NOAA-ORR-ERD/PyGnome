@@ -9,9 +9,10 @@ import numpy as np
 
 import gnome
 from gnome import movers
-from gnome import basic_types, spill
+from gnome import basic_types
 from gnome.utilities import time_utils 
 from gnome.utilities import projections
+from gnome.spill_container import TestSpillContainer
 
 
 import pytest
@@ -24,6 +25,8 @@ def test_exceptions():
     with pytest.raises(ValueError):
         movers.RandomMover(diffusion_coef=0)
 
+    with pytest.raises(ValueError):
+        movers.RandomMover(diffusion_coef=-1000)
 
 class TestRandomMover():
     """
@@ -36,7 +39,7 @@ class TestRandomMover():
     model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
     time_step = 15*60 # seconds
 
-    pSpill = spill.PointReleaseSpill(num_le, start_pos, rel_time, persist=-1)
+    pSpill = TestSpillContainer(num_le, start_pos)#, rel_time, persist=-1)
 
     mover = movers.RandomMover()
     

@@ -267,7 +267,6 @@ class SurfaceReleaseSpill(FloatingSpill):
 
             arrays = self.create_new_elements(num)
 
-            print "num:", num
             #compute the position of the elements:
             if release_delta == 0: # all released at once:
                 x1, y1 = self.start_position[:2]
@@ -276,21 +275,16 @@ class SurfaceReleaseSpill(FloatingSpill):
                 arrays['positions'][:,1] = np.linspace(y1, y2, num)
             else:
                 x1, y1 = self.prev_release_pos[:2]
-                print "x1, y1", x1, y1
                 dx = self.end_position[0] - self.start_position[0]
                 dy = self.end_position[1] - self.start_position[1]
 
-                print "dt, release_delta", dt, release_delta
                 fraction = min (1, dt / release_delta)
-                print "fraction", fraction
                 x2 = (fraction * dx) + self.start_position[0]
                 y2 = (fraction * dy) + self.start_position[1]
-                print "x2, y2", x2, y2
                     
 
                 if np.array_equal(self.prev_release_pos, self.start_position):
                     # we want both the first and last points
-                    print "first release"
                     arrays['positions'][:,0] = np.linspace(x1, x2, num)
                     arrays['positions'][:,1] = np.linspace(y1, y2, num)
                 else:

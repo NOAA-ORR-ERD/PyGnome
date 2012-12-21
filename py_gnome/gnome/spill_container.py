@@ -10,10 +10,14 @@ The spills themselves provide the arrays themselves (adding more each time LEs a
 This is the "magic" class -- it handles the smart allocation of arrays, etc.
 
 """
+import datetime
+
 import numpy as np
 
 from gnome import basic_types
 from gnome.utilities import rand    # not to confuse with python random module
+import gnome.spill
+
 
 class SpillContainer(object):
     """
@@ -130,3 +134,27 @@ class SpillContainer(object):
     __repr__ = __str__ # should write a better one, I suppose
 
         
+
+class TestSpillContainer(SpillContainer):
+    """
+    A really simple spill container, pre-initialized with LEs at a point.
+
+    This make sit easy to use for tesint other classes -- movers, maps, etc.
+    """
+    def __init__(self, num_elements=0, start_pos=(0.0,0.0,0.0)):
+        """
+        initilize a simple spill container
+        """
+        SpillContainer.__init__(self, uncertain=False)
+
+        dt = datetime.datetime(2000,1,1,1)
+        spill = gnome.spill.SurfaceReleaseSpill(num_elements,
+                                                start_pos,    
+                                                dt)
+        self.spills.append(spill)
+        self.prepare_for_model_step(dt)
+
+
+
+
+
