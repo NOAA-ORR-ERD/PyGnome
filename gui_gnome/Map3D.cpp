@@ -3000,44 +3000,18 @@ OSErr Map3D_c::SetUpCurvilinearGrid(char *path,DOUBLEH landMaskH, long numRows, 
 	TDagTree *dagTree = 0;
 	
 	
-	// write out verdat file for debugging
-	//FILE *outfile = 0;
-	//char name[32], path[256],m[300];
-	//strcpy(name,"NewVerdat.dat");
-	//errmsg[0]=0;
-	
-	//err = AskUserForSaveFilename(name,path,".dat",true);
-	//if(err) return USERCANCEL; 
-	//strcpy(sExportSelectedTriPath, path); // remember the path for the user
-	//SetWatchCursor();
-	//sprintf(m, "Exporting VERDAT to %s...",path);
-	//DisplayMessage("NEXTMESSAGETEMP");
-	//DisplayMessage(m);
-	/////////////////////////////////////////////////
-	
-	
 	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH || !maskH2) {err = memFullErr; goto done;}
 	
-	//outfile=fopen(path,"w");
-	//if (!outfile) {err = -1; printError("Unable to open file for writing"); goto done;}
-	//fprintf(outfile,"DOGS\tMETERS\n");
 	for (i=0;i<numRows;i++)
 	{
 		for (j=0;j<numCols;j++)
 		{
-			// eventually will need to have a land mask
-			//if (INDEXH(velocityH,i*numCols+j).u==0 && INDEXH(velocityH,i*numCols+j).v==0)	// land point
 			if (INDEXH(landMaskH,i*numCols+j)==0)	// land point
 			{
 				INDEXH(landWaterInfo,i*numCols+j) = -1;	// may want to mark each separate island with a unique number
 			}
 			else
 			{
-				//float dLat = INDEXH(vertexPtsH,i*numCols+j).pLat;
-				//float dLon = INDEXH(vertexPtsH,i*numCols+j).pLong;
-				//long index = i*numCols+j+1;
-				//float dZ = 1.;
-				//fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index, dLon, dLat, dZ);	
 				INDEXH(landWaterInfo,i*numCols+j) = 1;
 				INDEXH(ptIndexHdl,i*numCols_ext+j) = -2;	// water box
 				INDEXH(ptIndexHdl,i*numCols_ext+j+1) = -2;
@@ -3047,7 +3021,6 @@ OSErr Map3D_c::SetUpCurvilinearGrid(char *path,DOUBLEH landMaskH, long numRows, 
 		}
 	}
 	
-	//fclose(outfile);
 	for (i=0;i<numRows_ext;i++)
 	{
 		for (j=0;j<numCols_ext;j++)
@@ -3098,12 +3071,6 @@ OSErr Map3D_c::SetUpCurvilinearGrid(char *path,DOUBLEH landMaskH, long numRows, 
 		return -1;
 	}
 	
-	/////////////////////////////////////////////////
-	// write out the file
-	/////////////////////////////////////////////////
-	//outfile=fopen(path,"w");
-	//if (!outfile) {err = -1; printError("Unable to open file for writing"); goto done;}
-	//fprintf(outfile,"DOGS\tMETERS\n");
 	
 	for (i=0; i<=numVerdatPts; i++)	// make a list of grid points that will be used for triangles
 	{
@@ -3148,8 +3115,6 @@ OSErr Map3D_c::SetUpCurvilinearGrid(char *path,DOUBLEH landMaskH, long numRows, 
 					fLat = INDEXH(vertexPtsH,(iIndex-1)*numCols+jIndex).pLat;
 					fLong = INDEXH(vertexPtsH,(iIndex-1)*numCols+jIndex).pLong;
 					fDepth = INDEXH(depthPtsH,(iIndex-1)*numCols+jIndex);
-					//u = INDEXH(velocityH,(iIndex-1)*numCols+jIndex).u;
-					//v = INDEXH(velocityH,(iIndex-1)*numCols+jIndex).v;
 				}
 				else
 				{
@@ -3163,21 +3128,16 @@ OSErr Map3D_c::SetUpCurvilinearGrid(char *path,DOUBLEH landMaskH, long numRows, 
 			vertex.v = (long)(fLat*1e6);
 			vertex.h = (long)(fLong*1e6);
 			
-			//fDepth = 1.;
 			INDEXH(pts,i) = vertex;
 			INDEXH(depths,i) = fDepth;
 		}
 		else { // for outputting a verdat the last line should be all zeros
-			index = 0;
-			fLong = fLat = fDepth = 0.0;
+			//index = 0;
+			//fLong = fLat = fDepth = 0.0;
 		}
-		//fprintf(outfile, "%ld,%.6f,%.6f,%.6f,%.2f,%.2f\n", index, fLong, fLat, fDepth, u, v);	
-		//fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index, fLong, fLat, fDepth);	
 		/////////////////////////////////////////////////
 		
 	}
-	//fclose(outfile);
-	// figure out the bounds
 	triBounds = voidWorldRect;
 	if(pts) 
 	{
@@ -3247,17 +3207,6 @@ OSErr Map3D_c::SetUpCurvilinearGrid(char *path,DOUBLEH landMaskH, long numRows, 
 	}
 
 	
-	DisplayMessage("NEXTMESSAGETEMP");
-	DisplayMessage("Making Dag Tree");
-	/*MySpinCursor(); // JLM 8/4/99
-	 tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); 
-	 MySpinCursor(); // JLM 8/4/99
-	 if (errmsg[0])	
-	 {err = -1; goto done;} 
-	 // sethandle size of the fTreeH to be tree.fNumBranches, the rest are zeros
-	 _SetHandleSize((Handle)tree.treeHdl,tree.numBranches*sizeof(DAG));*/
-	/////////////////////////////////////////////////
-	//if (this -> moverMap != model -> uMap) goto setFields;	// don't try to create a map
 	/////////////////////////////////////////////////
 	// go through topo look for -1, and list corresponding boundary sides
 	// then reorder as contiguous boundary segments - need to group boundary rects by islands
@@ -3446,67 +3395,8 @@ findnextpoint:
 	_SetHandleSize((Handle)waterBoundaryPtsH,nBoundaryPts*sizeof(**waterBoundaryPtsH));
 	_SetHandleSize((Handle)boundaryEndPtsH,nEndPts*sizeof(**boundaryEndPtsH));
 	
-setFields:	
+//setFields:	
 	
-	//fVerdatToNetCDFH = verdatPtsH;
-	
-	
-	{	//for debugging
-		/////////////////////////////////////////////////
-		// write out the file
-		/////////////////////////////////////////////////
-		/*outfile=fopen(path,"w");
-		 if (!outfile) {err = -1; printError("Unable to open file for writing"); goto done;}
-		 fprintf(outfile,"DOGS\tMETERS\n");
-		 
-		 float fLong, fLat, fDepth = 1.0;
-		 long index, index1, startver, endver, count = 0;
-		 LongPoint vertex;
-		 
-		 for(i = 0; i < nEndPts; i++)
-		 {
-		 // boundary points may be used in more than one segment, this will mess up verdat 
-		 startver = i == 0? 0: (*boundaryEndPtsH)[i-1] + 1;
-		 endver = (*boundaryEndPtsH)[i]+1;
-		 index1 = (*boundaryPtsH)[startver];
-		 vertex = (*pts)[index1];
-		 fLong = ((float)vertex.h) / 1e6;
-		 fLat = ((float)vertex.v) / 1e6;
-		 count++;
-		 fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", count, fLong, fLat, fDepth);	
-		 for(j = startver + 1; j < endver; j++)
-		 {
-		 index = (*boundaryPtsH)[j];
-		 vertex = (*pts)[index];
-		 fLong = ((float)vertex.h) / 1e6;
-		 fLat = ((float)vertex.v) / 1e6;
-		 count++;
-		 fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", count, fLong, fLat, fDepth);	
-		 }
-		 }
-		 for (i = 0; i < numVerdatPts; i++)
-		 {
-		 if ((*flagH)[i] == 1) continue;
-		 count++;
-		 vertex = (*pts)[i];
-		 fLong = ((float)vertex.h) / 1e6;
-		 fLat = ((float)vertex.v) / 1e6;
-		 fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", count, fLong, fLat, fDepth);	
-		 }
-		 fprintf(outfile, "0,0.,0.,0.\n");	
-		 
-		 // write out the number of boundary segments
-		 fprintf(outfile,"%ld\n",nEndPts);
-		 
-		 // now write out out the break points
-		 for(i = 0; i < nEndPts; i++ )
-		 {
-		 fprintf(outfile,"%ld\n",INDEXH(boundaryEndPtsH,i)+1);
-		 }
-		 /////////////////////////////////////////////////
-		 
-		 fclose(outfile);*/
-	}
 	/////////////////////////////////////////////////
 	
 	triGrid = new TTriGridVel;
@@ -3521,6 +3411,8 @@ setFields:
 	
 	triGrid -> SetBounds(triBounds); 
 	
+	DisplayMessage("NEXTMESSAGETEMP");
+	DisplayMessage("Making Dag Tree");
 	MySpinCursor(); // JLM 8/4/99
 	tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); 
 	MySpinCursor(); // JLM 8/4/99
@@ -3630,39 +3522,6 @@ OSErr Map3D_c::SetUpTriangleGrid2(char *path, long numNodes, long ntri, WORLDPOI
 	
 	Boolean addOne = false;	// for debugging
 	
-	// write out verdat file for debugging
-	/*FILE *outfile = 0;
-	 char name[32], path[256],m[300];
-	 SFReply reply;
-	 Point where = CenteredDialogUpLeft(M55);
-	 char ibmBackwardsTypeStr[32] = "";
-	 strcpy(name,"NewVerdat.dat");
-	 errmsg[0]=0;
-	 
-	 #ifdef MAC
-	 sfputfile(&where, "Name:", name, (DlgHookUPP)0, &reply);
-	 #else
-	 sfpputfile(&where, ibmBackwardsTypeStr, name, (MyDlgHookProcPtr)0, &reply,
-	 M55, (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
-	 #endif
-	 if (!reply.good) {err = -1; goto done;}
-	 
-	 my_p2cstr(reply.fName);
-	 #ifdef MAC
-	 GetFullPath (reply.vRefNum, 0, (char *) "", path);
-	 strcat (path, ":");
-	 strcat (path, (char *) reply.fName);
-	 #else
-	 strcpy(path, reply.fName);
-	 #endif
-	 //strcpy(sExportSelectedTriPath, path); // remember the path for the user
-	 SetWatchCursor();
-	 sprintf(m, "Exporting VERDAT to %s...",path);
-	 DisplayMessage("NEXTMESSAGETEMP");
-	 DisplayMessage(m);*/
-	/////////////////////////////////////////////////
-	
-	
 	if (!vertFlagsH || !verdatPtsH || !verdatBreakPtsH) {err = memFullErr; goto done;}
 	
 	// put boundary points into verdat list
@@ -3713,13 +3572,6 @@ OSErr Map3D_c::SetUpTriangleGrid2(char *path, long numNodes, long ntri, WORLDPOI
 		return -1;
 	}
 	
-	/////////////////////////////////////////////////
-	// write out the file
-	/////////////////////////////////////////////////
-	//outfile=fopen(path,"w");
-	//if (!outfile) {err = -1; printError("Unable to open file for writing"); goto done;}
-	//fprintf(outfile,"DOGS\tMETERS\n");
-	
 	//numVerdatPts = nv;	//for now, may reorder later
 	for (i=0; i<=numVerdatPts; i++)
 	{
@@ -3738,7 +3590,6 @@ OSErr Map3D_c::SetUpTriangleGrid2(char *path, long numNodes, long ntri, WORLDPOI
 			vertex.h = (long)(fLong*1e6);
 			
 			fDepth = INDEXH(depthPtsH,n);	// this will be set from bathymetry, just a fudge here for outputting a verdat
-			//fDepth = 1.;	// this will be set from bathymetry, just a fudge here for outputting a verdat
 			INDEXH(pts,i) = vertex;
 			INDEXH(depths,i) = fDepth;
 		}
@@ -3746,7 +3597,6 @@ OSErr Map3D_c::SetUpTriangleGrid2(char *path, long numNodes, long ntri, WORLDPOI
 			//index = 0;
 			//fLong = fLat = fDepth = 0.0;
 		}
-		//fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index, fLong, fLat, fDepth);	
 		/////////////////////////////////////////////////
 	}
 	// figure out the bounds
@@ -3768,17 +3618,6 @@ OSErr Map3D_c::SetUpTriangleGrid2(char *path, long numNodes, long ntri, WORLDPOI
 		}
 	}
 	
-	// write out the number of chains
-	//fprintf(outfile,"%ld\n",numVerdatBreakPts);
-	
-	// now write out out the break points
-	//for(i = 0; i < numVerdatBreakPts; i++ )
-	 //{
-	 //fprintf(outfile,"%ld\n",INDEXH(verdatBreakPtsH,i));
-	// }
-	/////////////////////////////////////////////////
-	
-	//fclose(outfile);
 	// shrink handle
 	_SetHandleSize((Handle)verdatBreakPtsH,numVerdatBreakPts*sizeof(long));
 	for(i = 0; i < numVerdatBreakPts; i++ )
@@ -3804,20 +3643,14 @@ OSErr Map3D_c::SetUpTriangleGrid2(char *path, long numNodes, long ntri, WORLDPOI
 	}
 	for(i = 0; i < ntri; i ++)
 	{	// topology data needs to be CCW
-		long debugTest = tri_verts[i];
 		(*topo)[i].vertex1 = tri_verts[i];
-		debugTest = tri_verts[i+ntri];
 		//(*topo)[i].vertex2 = tri_verts[i+ntri];
 		(*topo)[i].vertex3 = tri_verts[i+ntri];
-		debugTest = tri_verts[i+2*ntri];
 		//(*topo)[i].vertex3 = tri_verts[i+2*ntri];
 		(*topo)[i].vertex2 = tri_verts[i+2*ntri];
-		debugTest = tri_neighbors[i];
 		(*topo)[i].adjTri1 = tri_neighbors[i];
-		debugTest = tri_neighbors[i+ntri];
 		//(*topo)[i].adjTri2 = tri_neighbors[i+ntri];
 		(*topo)[i].adjTri3 = tri_neighbors[i+ntri];
-		debugTest = tri_neighbors[i+2*ntri];
 		//(*topo)[i].adjTri3 = tri_neighbors[i+2*ntri];
 		(*topo)[i].adjTri2 = tri_neighbors[i+2*ntri];
 	}
@@ -3842,7 +3675,6 @@ OSErr Map3D_c::SetUpTriangleGrid2(char *path, long numNodes, long ntri, WORLDPOI
 	}
 	
 	fGrid = (TTriGridVel*)triGrid;
-	//fGrid = (TTriGridVel3D*)triGrid;
 	
 	triGrid -> SetBounds(triBounds); 
 	
@@ -3898,7 +3730,6 @@ OSErr Map3D_c::SetUpTriangleGrid2(char *path, long numNodes, long ntri, WORLDPOI
 	}
 	
 	/////////////////////////////////////////////////
-	//fVerdatToNetCDFH = verdatPtsH;	// this should be resized
 	
 done:
 	if (err) printError("Error reordering gridpoints into verdat format");
@@ -3930,7 +3761,6 @@ done:
 	return err;
 }
 
-//OSErr NetCDFMoverTri::ReorderPoints(TMap **newMap, short *bndry_indices, short *bndry_nums, short *bndry_type, long numBoundaryPts) 
 OSErr Map3D_c::SetUpTriangleGrid(char *path, long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts) 
 {
 	OSErr err = 0;
@@ -3956,39 +3786,6 @@ OSErr Map3D_c::SetUpTriangleGrid(char *path, long numNodes, long numTri, WORLDPO
 	TDagTree *dagTree = 0;
 	
 	Boolean addOne = false;	// for debugging
-	
-	// write out verdat file for debugging
-	/*FILE *outfile = 0;
-	 char name[32], path[256],m[300];
-	 SFReply reply;
-	 Point where = CenteredDialogUpLeft(M55);
-	 char ibmBackwardsTypeStr[32] = "";
-	 strcpy(name,"NewVerdat.dat");
-	 errmsg[0]=0;
-	 
-	 #ifdef MAC
-	 sfputfile(&where, "Name:", name, (DlgHookUPP)0, &reply);
-	 #else
-	 sfpputfile(&where, ibmBackwardsTypeStr, name, (MyDlgHookProcPtr)0, &reply,
-	 M55, (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
-	 #endif
-	 if (!reply.good) {err = -1; goto done;}
-	 
-	 my_p2cstr(reply.fName);
-	 #ifdef MAC
-	 GetFullPath (reply.vRefNum, 0, (char *) "", path);
-	 strcat (path, ":");
-	 strcat (path, (char *) reply.fName);
-	 #else
-	 strcpy(path, reply.fName);
-	 #endif
-	 //strcpy(sExportSelectedTriPath, path); // remember the path for the user
-	 SetWatchCursor();
-	 sprintf(m, "Exporting VERDAT to %s...",path);
-	 DisplayMessage("NEXTMESSAGETEMP");
-	 DisplayMessage(m);*/
-	/////////////////////////////////////////////////
-	
 	
 	if (!vertFlagsH || !verdatPtsH || !verdatBreakPtsH) {err = memFullErr; goto done;}
 	
@@ -4037,13 +3834,6 @@ OSErr Map3D_c::SetUpTriangleGrid(char *path, long numNodes, long numTri, WORLDPO
 		return -1;
 	}
 	
-	/////////////////////////////////////////////////
-	// write out the file
-	/////////////////////////////////////////////////
-	//outfile=fopen(path,"w");
-	//if (!outfile) {err = -1; printError("Unable to open file for writing"); goto done;}
-	//fprintf(outfile,"DOGS\tMETERS\n");
-	
 	for (i=0; i<=numVerdatPts; i++)
 	{
 		long index;
@@ -4067,7 +3857,6 @@ OSErr Map3D_c::SetUpTriangleGrid(char *path, long numNodes, long numTri, WORLDPO
 			index = 0;
 			fLong = fLat = fDepth = 0.0;
 		}
-		//fprintf(outfile, "%ld,%.6f,%.6f,%.6f\n", index, fLong, fLat, fDepth);	
 		/////////////////////////////////////////////////
 	}
 	// figure out the bounds
@@ -4089,17 +3878,6 @@ OSErr Map3D_c::SetUpTriangleGrid(char *path, long numNodes, long numTri, WORLDPO
 		}
 	}
 	
-	// write out the number of chains
-	//fprintf(outfile,"%ld\n",numVerdatBreakPts);
-	
-	// now write out out the break points
-	///for(i = 0; i < numVerdatBreakPts; i++ )
-	// {
-	// fprintf(outfile,"%ld\n",INDEXH(verdatBreakPtsH,i));
-	 //}
-	/////////////////////////////////////////////////
-	
-	//fclose(outfile);
 	// shrink handle
 	_SetHandleSize((Handle)verdatBreakPtsH,numVerdatBreakPts*sizeof(long));
 	for(i = 0; i < numVerdatBreakPts; i++ )
@@ -4187,7 +3965,6 @@ OSErr Map3D_c::SetUpTriangleGrid(char *path, long numNodes, long numTri, WORLDPO
 	}
 	
 	/////////////////////////////////////////////////
-	//fVerdatToNetCDFH = verdatPtsH;	// this should be resized
 	
 done:
 	if (err) printError("Error reordering gridpoints into verdat format");
