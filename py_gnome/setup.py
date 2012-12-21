@@ -2,7 +2,7 @@
 
 """
 
-The master setup.py file
+The master setup.py file for py_gnome
 
 you should be able to run :
 
@@ -51,6 +51,11 @@ else:
 
 sys.argv.count(config) != 0 and sys.argv.remove(config)
 #------------
+
+# for the mac -- forcing 32 bit only builds
+if sys.platform == 'darwin':
+    #Setting this should force only 32 bit intel build
+	os.environ['ARCHFLAGS'] = "-arch i386"
 
 
 CPP_CODE_DIR = "../lib_gnome"
