@@ -33,7 +33,6 @@ if "clean" in "".join(sys.argv[1:]):
 else:
     target = 'build'
 
-
 if "cleanall" in "".join(sys.argv[1:]):
     target = 'clean'
     print "Deleting cython files .."
@@ -43,8 +42,6 @@ if "cleanall" in "".join(sys.argv[1:]):
     os.system('rm -rv build')
     os.system('rm -rv pyGnome.egg-info')
     sys.argv[1] = 'clean'   # this is what distutils understands
-else:
-    target = 'build'
 
 # only for windows
 if "debug" in "".join(sys.argv[2:]):
