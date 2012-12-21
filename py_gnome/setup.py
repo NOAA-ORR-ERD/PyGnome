@@ -2,7 +2,7 @@
 
 """
 
-The master setup.py file
+The master setup.py file for py_gnome
 
 you should be able to run :
 
@@ -33,7 +33,6 @@ if "clean" in "".join(sys.argv[1:]):
 else:
     target = 'build'
 
-
 if "cleanall" in "".join(sys.argv[1:]):
     target = 'clean'
     print "Deleting cython files .."
@@ -43,8 +42,6 @@ if "cleanall" in "".join(sys.argv[1:]):
     os.system('rm -rv build')
     os.system('rm -rv pyGnome.egg-info')
     sys.argv[1] = 'clean'   # this is what distutils understands
-else:
-    target = 'build'
 
 # only for windows
 if "debug" in "".join(sys.argv[2:]):
@@ -54,6 +51,11 @@ else:
 
 sys.argv.count(config) != 0 and sys.argv.remove(config)
 #------------
+
+# for the mac -- forcing 32 bit only builds
+if sys.platform == 'darwin':
+    #Setting this should force only 32 bit intel build
+	os.environ['ARCHFLAGS'] = "-arch i386"
 
 
 CPP_CODE_DIR = "../lib_gnome"
@@ -67,7 +69,8 @@ extension_names = [
                    'cy_ossm_time',
                    'cy_date_time',
                    'cy_random_mover',
-                   'cy_land_check'
+                   'cy_land_check',
+                   #'cy_shio_time'
                    ]
 
 cpp_files = [ 
@@ -195,7 +198,8 @@ elif sys.platform == "win32":
     libdirs += ['gnome/cy_gnome']
     macros += [('CYTHON_CCOMPLEX', 0),]
     extension_names += ['cy_basic_types']
-    l_include_dirs += '..\third_party_lib\vs2008'
+    l_include_dirs += [r'..\third_party_lib\vs2008']
+
 #
 ### the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
 #
