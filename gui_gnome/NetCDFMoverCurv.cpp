@@ -1996,7 +1996,7 @@ void NetCDFMoverCurv::DrawContourScale(Rect r, WorldRect view)
  return bottomDepth;
  }*/
 
-Boolean IsTransposeArrayHeaderLine(char *s, long* numPts)
+/*Boolean IsTransposeArrayHeaderLine(char *s, long* numPts)
 {		
 	char* strToMatch = "TransposeArray";
 	long numScanned, len = strlen(strToMatch);
@@ -2008,10 +2008,10 @@ Boolean IsTransposeArrayHeaderLine(char *s, long* numPts)
 	else
 		return FALSE;
 	return TRUE; 
-}
+}*/
 /////////////////////////////////////////////////////////////////
 //OSErr NetCDFMoverCurv::ReadTransposeArray(CHARH fileBufH,long *line,LONGH *transposeArray,long numPts,char* errmsg)
-OSErr ReadTransposeArray(CHARH fileBufH,long *line,LONGH *transposeArray,long numPts,char* errmsg)
+/*OSErr ReadTransposeArray(CHARH fileBufH,long *line,LONGH *transposeArray,long numPts,char* errmsg)
 // Note: '*line' must contain the line# at which the vertex data begins
 { // May want to combine this with read vertices if it becomes a mandatory component of PtCur files
 	OSErr err=0;
@@ -2042,7 +2042,7 @@ done:
 	}
 	return err;		
 	
-}
+}*/
 
 OSErr NetCDFMoverCurv::ReadTopology(char* path, TMap **newMap)
 {

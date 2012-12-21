@@ -6,13 +6,10 @@
     <form action="${action_url}" id="wind_mover" class="form-horizontal"
           method="POST">
 
-    <div class="page-header">
-        <h3> <a href="javascript:" class="edit-mover-name">${form.name.data}</a> </h3>
-        <div class="top-form form-inline hidden">
-            ${form.name}
-            <label class="checkbox">${form.is_active} Active </label>
-            <button class="save-mover-name btn btn-success">Save</button>
-        </div>
+    <div class="page-header form-inline">
+        ${form.name}
+        <label>Units ${form.units(class_='units', id='')} </label>
+        <label class="checkbox">${form.is_active} Active </label>
     </div>
     <div class="page-body">
         <%
@@ -59,9 +56,9 @@
 
                 <div class="span6 add-time-forms">
                     <div class='time-form add-time-form'>
-                        ${defs.form_control(form.auto_increment_time_by, "hours",
-                                             opts={'class_': 'auto_increment_by'})}
                         <%include file="wind_form.mak" args="form=add_form, is_variable=True"/>
+                        ${defs.form_control(form.auto_increment_time_by, "hours",
+                                            opts={'class_': 'auto_increment_by'})}
 
                         <div class="control-group add-time-buttons">
                             <div class="controls">
@@ -82,11 +79,29 @@
                                 </div>
                         </div>
                     </div>
+
+                    <div class="compass-container offset3">
+                        <div id="${defs.uid('compass_edit', form)}"
+                             class="compass"></div>
+                    </div>
                 </div>
 
                 <div class="span6 edit-time-forms">
-                    <div class="compass-container span6">
-                        <div id="${defs.uid('compass_edit', form)}" class="compass"></div>
+                    <div class="span11 wind-values">
+                        <hr>
+                        <table class="table table-striped time-list">
+                            <thead>
+                            <tr class='table-header'>
+                                <th>Date (m/d/y)</th>
+                                <th>Time</th>
+                                <th>Speed</th>
+                                <th>Wind From</th>
+                                <th>&nbsp;</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
                     </div>
 
                     % for wind_form in form.timeseries[:-1]:
@@ -105,23 +120,6 @@
                             </div>
                         </div>
                     % endfor
-                </div>
-
-                <div class="span11">
-                    <hr>
-                    <table class="table table-striped time-list">
-                        <thead>
-                        <tr class='table-header'>
-                            <th>Date (m/d/y)</th>
-                            <th>Time</th>
-                            <th>Speed</th>
-                            <th>Wind From</th>
-                            <th>&nbsp;</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
                 </div>
             </div>
 

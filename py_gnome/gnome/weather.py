@@ -37,6 +37,9 @@ class Wind(object):
             raise ValueError("Either provide timeseries or a valid long file")
         
         if( timeseries is not None):
+            if units is None:
+                raise ValueError("Provide valid units as string or unicode for timeseries")
+            
             self._check_timeseries(timeseries, units)
             
             timeseries['value'] = self._convert_units(timeseries['value'], data_format, units, 'meter per second')
@@ -63,9 +66,6 @@ class Wind(object):
         """
         Run some checks to make sure timeseries is valid
         """
-        if type(units) is not str:
-            raise TypeError("timeseries must include 'units' as a string")
-            
         try:
             if( timeseries.dtype is not basic_types.datetime_value_2d):
                 # Both 'is' or '==' work in this case. There is only one instance of basic_types.datetime_value_2d

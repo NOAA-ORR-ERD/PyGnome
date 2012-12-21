@@ -15,23 +15,23 @@ If this fixture is used by a different module, then move it to conftest.py
 Currently, it is only used by test_helpers_convert.py
 """
 @pytest.fixture(scope="module")
-def wind_ts(wind_circ):
+def wind_ts(rq_wind):
     """
-    setup a wind timeseries - uses the wind_circ fixture to get the wind values used for conversions
+    setup a wind timeseries - uses the rq_wind fixture to get the wind values used for conversions
     - returns a dict with the expected datetime_rq, datetime_uv and time_value_pair objects
     """
-    dtv_rq = np.zeros((len(wind_circ['rq']),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-    dtv_rq.value = wind_circ['rq']
+    dtv_rq = np.zeros((len(rq_wind['rq']),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
+    dtv_rq.value = rq_wind['rq']
 
     dtv_uv = np.zeros((len(dtv_rq),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-    dtv_uv.value = wind_circ['uv']
+    dtv_uv.value = rq_wind['uv']
 
     tv = np.zeros((len(dtv_uv),), dtype=basic_types.time_value_pair).view(dtype=np.recarray)
 
     # for np.zeros for datetime, this is the time in sec. It is 8hours offset from GMT - need to make this locale independent
     tv.time = 8*3600
-    tv.value.u = wind_circ['uv'][:,0]
-    tv.value.v = wind_circ['uv'][:,1]
+    tv.value.u = rq_wind['uv'][:,0]
+    tv.value.v = rq_wind['uv'][:,1]
 
     print "Test Case - actual values:"
     print "datetime_value_2d: datetime, (r, theta):"

@@ -38,7 +38,7 @@ class WindMoverFixtures(object):
                 'direction': 'S',
                 'direction_degrees': '',
                 'speed': '10',
-                'speed_type': 'knots'
+                'units': 'knots'
             }
 
             time_series.update(**kwargs)

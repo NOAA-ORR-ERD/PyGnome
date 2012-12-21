@@ -35,6 +35,7 @@ class Model(object):
 
         self.output_map = None
         self.map = None
+        self._wind = OrderedDict()  #list of wind objects
         self._movers = OrderedDict()
         self._spills = OrderedDict()
         self._uncertain_spills = OrderedDict()
@@ -78,6 +79,15 @@ class Model(object):
         :return: an integer ID value for this model
         """
         return id(self)
+
+    @property
+    def wind(self):
+        """
+        Return a list of wind objects added to the model, in order of insertion
+        
+        :return: a list of wind objects
+        """
+        return self._wind.values()
 
     @property
     def movers(self):
@@ -187,18 +197,51 @@ class Model(object):
         the key ``spill_id`` if one exists.
         """
         return self._spills.get(spill_id, None)
-   
+
     def add_spill(self, spill):
-        #fixme: where should we check if a spill is in a valic location on the map?
         """
         add a spill to the model
-        
+
         :param spill: an instance of the gnome.Spill class
-        
+
         """
+        #fixme: where should we check if a spill is in a valid location on the map?
         self._spills[spill.id] = spill
-        
-        
+
+    def remove_spill(self, spill_id):
+        """
+        remove the passed-in spill from the spill list
+        """
+        if spill_id in self._spills:
+            del self._spills[spill_id]
+
+    def get_wind(self, id):
+        """
+        Return a :class:`gnome.weather.Wind` in the ``self._wind`` dict with
+        the key ``id`` if one exists.
+        """
+        return self._wind.get(id, None)
+
+    def add_wind(self, obj):
+        """
+        add a new Wind to the model -- at the end of the stack
+        """
+        self._wind[obj.id] = obj
+        return obj.id
+
+    def remove_wind(self, id):
+        """
+        remove the passed-in Wind from the wind list
+        """
+        if id in self._wind:
+            del self._wind[id]
+
+    def replace_wind(self, id, new_obj):
+        """
+        replace a given Wind with a new one
+        """
+        self._wind[id] = new_obj
+
     def setup_model_run(self):
         """
         Sets up each mover for the model run

@@ -5,11 +5,9 @@ import util
 
 # XXX: This except block should not be necessary.
 try:
-    from gnome.model import Model
-    from gnome.movers import WindMover
-    from gnome.spill import PointReleaseSpill
+    import gnome
 except ImportError:
-    print 'Import error!'
+    print 'Import error! Could not find gnome library.'
     # If we failed to find the model package,
     # it could be that we are running webgnome
     # from an in-place virtualenv.  Let's add
@@ -18,22 +16,23 @@ except ImportError:
     # If we fail in this attempt...oh well.
     import sys
     sys.path.append('../../../py_gnome')
-    from gnome.model import Model
-    from gnome.movers import WindMover
-    from gnome.spill import PointReleaseSpill
+
+from gnome.model import Model
+from gnome.movers import WindMover
+from gnome.spill import PointReleaseSpill
+from gnome.weather import Wind
 
 
-class Wind(object):
+class WindValue(object):
     """
     An object that represents a single wind value in a wind time series, using
     object fields so that it can be used to instantiate a form field.
     """
-    def __init__(self, date, speed, speed_type, direction):
+    def __init__(self, date, speed, direction):
         self.date = date
         self.hour = date.hour
         self.minute = date.minute
         self.speed = speed
-        self.speed_type = speed_type
         self.direction = direction
 
 
@@ -45,24 +44,35 @@ class WebWindMover(WindMover):
     def __init__(self, *args, **kwargs):
         self._name = kwargs.pop('name', 'Wind Mover')
         self.is_constant = kwargs.pop('is_constant', True)
+        timeseries = kwargs.pop('timeseries')
+        units = kwargs.pop('units')
+        kwargs['wind'] = Wind(timeseries, units=units)
         super(WebWindMover, self).__init__(*args, **kwargs)
+
+    @property
+    def units(self):
+        return self.wind.user_units
+
+    @units.setter
+    def units(self, units):
+        self.wind._user_units = units
 
     @property
     def timeseries(self):
         series = []
 
-        for timeseries in super(WebWindMover, self).timeseries:
+        for timeseries in self.wind.get_timeseries(units=self.units):
             dt = timeseries[0].astype(object)
             series.append(
-                Wind(date=dt, speed=timeseries[1][0], speed_type='meters',
-                     direction=timeseries[1][1])
+                WindValue(date=dt, speed=timeseries[1][0],
+                          direction=timeseries[1][1])
             )
 
         return series
 
     @timeseries.setter
-    def timeseries(self, value):
-        return WindMover.timeseries.__set__(self, value)
+    def timeseries(self, timeseries):
+        self.wind.set_timeseries(timeseries, self.units)
 
     @property
     def name(self):
@@ -79,6 +89,14 @@ class WebPointReleaseSpill(PointReleaseSpill):
     def __init__(self, *args, **kwargs):
         self._name = kwargs.pop('name', 'Spill')
         super(WebPointReleaseSpill, self).__init__(*args, **kwargs)
+
+    @property
+    def hour(self):
+        return self.release_time.hour
+
+    @property
+    def minute(self):
+        return self.release_time.minute
 
     @property
     def start_position_x(self):
@@ -119,6 +137,7 @@ class WebModel(Model):
         # Patch the object with an empty ``time_steps`` array for the time being.
         # TODO: Add output caching in the model.
         self.time_steps = []
+        self.runtime = None
 
     def has_mover_with_id(self, mover_id):
         """

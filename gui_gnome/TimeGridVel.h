@@ -19,11 +19,12 @@ public:
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
 	
-	OSErr 				ReadInputFileNames(char *fileNamesPath);
+	//OSErr 				ReadInputFileNames(char *fileNamesPath);
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth) {return 0;}
 	
 	virtual void Draw(Rect r, WorldRect view,double refScale,
 					  double arrowScale,double arrowDepth, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)=0;
+	virtual	OSErr 	ExportTopology(char* path) {return 0;}
 };
 
 class TimeGridVelRect : virtual public TimeGridVelRect_c, public TimeGridVel
@@ -57,7 +58,7 @@ public:
 	
 	Boolean			VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth);
 	
-	virtual	OSErr 	ReadTopology(char* path);
+	//virtual	OSErr 	ReadTopology(char* path);
 	virtual	OSErr 	ExportTopology(char* path);
 
 	virtual void Draw(Rect r, WorldRect view,double refScale,
@@ -77,7 +78,7 @@ public:
 	
 	Boolean			VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth);
 	
-	virtual	OSErr 	ReadTopology(char* path);
+	//virtual	OSErr 	ReadTopology(char* path);
 	virtual	OSErr 	ExportTopology(char* path);
 
 	virtual void Draw(Rect r, WorldRect view,double refScale,

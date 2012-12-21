@@ -22,51 +22,6 @@ def test_exceptions():
 atol = 1e-14
 rtol = 1e-14
 
-def _defaults(wm):
-    """
-    checks the default properties of the WindMover object as given in the input are as expected
-    """
-    assert wm.is_active == True
-    assert wm.uncertain_duration == 10800
-    assert wm.uncertain_time_delay == 0
-    assert wm.uncertain_speed_scale == 2
-    assert wm.uncertain_angle_scale == 0.4
-
-def get_timeseries_from_cpp(windmover):
-        """
-        local method for tests - returns the timeseries used internally by the C++ WindMover_c object.
-        This should be the same as the timeseries stored in the self.wind object
-        
-        Data is returned as a datetime_value_2d array in units of meters per second in 
-        data_format = wind_uv
-        
-        This is simply used for testing.
-        """
-        dtv = windmover.wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
-        tv  = convert.to_time_value_pair(dtv, basic_types.data_format.wind_uv)
-        val = windmover.mover.get_time_value(tv['time'])
-        tv['value']['u'] = val['u']
-        tv['value']['v'] = val['v']
-        
-        return convert.to_datetime_value_2d( tv, basic_types.data_format.wind_uv)
-
-def _assert_timeseries_equivalence(cpp_timeseries, wind_ts):
-    """
-    private method used to print data and assert 
-    """
-    print
-    print "====================="
-    print "WindMover timeseries [time], [u, v]: "
-    print cpp_timeseries['time']
-    print cpp_timeseries['value']
-    print "---------------------"
-    print "Wind timeseries [time], [u, v]: "
-    print wind_ts['time']
-    print wind_ts['value']
-
-    assert np.all(cpp_timeseries['time'] == wind_ts['time'])
-    assert np.allclose(cpp_timeseries['value'], wind_ts['value'], atol, rtol)
-
 def test_read_file_init():
     """
     initialize from a long wind file
@@ -76,7 +31,7 @@ def test_read_file_init():
     wm = movers.WindMover(wind)
     wind_ts = wind.get_timeseries(data_format=basic_types.data_format.wind_uv, units='meter per second')
     _defaults(wm)   # check defaults set correctly
-    cpp_timeseries = get_timeseries_from_cpp(wm)
+    cpp_timeseries = _get_timeseries_from_cpp(wm)
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
 
     # make sure default user_units is correct and correctly called
@@ -84,62 +39,23 @@ def test_read_file_init():
     wind_ts = wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
     cpp_timeseries['value'] = unit_conversion.convert('Velocity','meter per second',wind.user_units,cpp_timeseries['value'])
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
-
-@pytest.fixture(scope="module")
-def wind(wind_circ):
-   """
-   Create Wind object using the time series given by the test fixture
-   'wind_circ' and the default settings
-   """
-   dtv_rq = np.zeros((len(wind_circ['rq']),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-   dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(len(dtv_rq))]
-   dtv_rq.value = wind_circ['rq']
-   dtv_uv = np.zeros((len(dtv_rq),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-   dtv_uv.time = dtv_rq.time
-   dtv_uv.value= wind_circ['uv']
    
-   wind  = weather.Wind(timeseries=dtv_rq,data_format=basic_types.data_format.magnitude_direction, units='meters per second')
-   return {'wind':wind, 'rq': dtv_rq, 'uv': dtv_uv} 
-   
-def test_timeseries_init(wind):
+def test_timeseries_init(wind_circ):
    """
    test default properties of the object are initialized correctly
    """
-   wm = movers.WindMover(wind['wind'])
+   wm = movers.WindMover(wind_circ['wind'])
    _defaults(wm)
-   cpp_timeseries = get_timeseries_from_cpp(wm)
-   assert np.all(cpp_timeseries['time'] == wind['uv']['time'])
-   assert np.allclose(cpp_timeseries['value'], wind['uv']['value'], atol, rtol)
+   cpp_timeseries = _get_timeseries_from_cpp(wm)
+   assert np.all(cpp_timeseries['time'] == wind_circ['uv']['time'])
+   assert np.allclose(cpp_timeseries['value'], wind_circ['uv']['value'], atol, rtol)
    
-def test_update_wind(wind):
-   """
-   create a wind object and update it's timeseries. Make sure the internal C++ WindMover's properties have also changed
-   """
-   o_wind = wind['wind']           # original wind value
-   wm  = movers.WindMover(o_wind)  # define wind mover
    
-   # update wind timeseries - default data_format is magnitude_direction
-   t_dtv = np.zeros((3,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-   t_dtv.time = [datetime(2012,11,06,20,0+i,30) for i in range(3)]
-   t_dtv.value= np.random.uniform(1,5, (3,2) )
-   o_wind.set_timeseries(t_dtv, units='meters per second', data_format=basic_types.data_format.wind_uv)
-   
-   cpp_timeseries = get_timeseries_from_cpp(wm)
-   assert np.all(cpp_timeseries['time'] == t_dtv.time)
-   assert np.allclose(cpp_timeseries['value'], t_dtv.value, atol, rtol)
-   
-   # set the wind timeseries back to test fixture values
-   o_wind.set_timeseries(wind['rq'], units='meters per second')
-   cpp_timeseries = get_timeseries_from_cpp(wm)
-   assert np.all(cpp_timeseries['time'] == wind['uv']['time'])
-   assert np.allclose(cpp_timeseries['value'], wind['uv']['value'], atol, rtol)
-  
-  
-def test_properties(wind):
+def test_properties(wind_circ):
    """
    test setting the properties of the object
    """
-   wm = movers.WindMover(wind['wind'])
+   wm = movers.WindMover(wind_circ['wind'])
    
    wm.uncertain_duration = 1
    wm.uncertain_time_delay = 2
@@ -150,18 +66,36 @@ def test_properties(wind):
    assert wm.uncertain_time_delay == 2
    assert wm.uncertain_speed_scale == 3
    assert wm.uncertain_angle_scale == 4    
+   
+   
+def test_update_wind(wind_circ):
+   """
+   create a wind object and update it's timeseries. Make sure the internal C++ WindMover's properties have also changed
+   """
+   o_wind = wind_circ['wind']           # original wind value
+   wm  = movers.WindMover(o_wind)  # define wind mover
+   
+   # update wind timeseries - default data_format is magnitude_direction
+   t_dtv = np.zeros((3,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
+   t_dtv.time = [datetime(2012,11,06,20,0+i,30) for i in range(3)]
+   t_dtv.value= np.random.uniform(1,5, (3,2) )
+   o_wind.set_timeseries(t_dtv, units='meters per second', data_format=basic_types.data_format.wind_uv)
+   
+   cpp_timeseries = _get_timeseries_from_cpp(wm)
+   assert np.all(cpp_timeseries['time'] == t_dtv.time)
+   assert np.allclose(cpp_timeseries['value'], t_dtv.value, atol, rtol)
+   
+   # set the wind timeseries back to test fixture values
+   o_wind.set_timeseries(wind_circ['rq'], units='meters per second')
+   cpp_timeseries = _get_timeseries_from_cpp(wm)
+   assert np.all(cpp_timeseries['time'] == wind_circ['uv']['time'])
+   assert np.allclose(cpp_timeseries['value'], wind_circ['uv']['value'], atol, rtol)
   
-
-"""
-Defined as a function for standard point release spill for testing movers. The way it is used
-below, a function here is not required - it is only defined and used here so that 
-if this spill is used by multiple test modules, it can simply be moved to conftest.py
-and decorated appropriately (@pytest.fixture(scope="module")), without breaking this test
-"""
 def spill_ex():
    """
    example point release spill with 5 particles for testing
    """
+   from gnome import spill
    num_le = 5
    start_pos = np.zeros((num_le,3), dtype=basic_types.world_point_type)
    start_pos += (3., 6., 0.)
@@ -174,7 +108,6 @@ class TestWindMover:
    """
    gnome.WindMover() test
 
-   TODO: Move it to separate file
    """
    time_step = 15 * 60 # seconds
    spill = spill_ex()
@@ -238,3 +171,53 @@ class TestWindMover:
  
        xform = projections.FlatEarthProjection.meters_to_lonlat(exp, self.spill['positions'])
        return xform
+
+
+
+"""
+Helper methods for this module
+"""
+def _defaults(wm):
+    """
+    checks the default properties of the WindMover object as given in the input are as expected
+    """
+    assert wm.is_active == True
+    assert wm.uncertain_duration == 10800
+    assert wm.uncertain_time_delay == 0
+    assert wm.uncertain_speed_scale == 2
+    assert wm.uncertain_angle_scale == 0.4
+
+def _get_timeseries_from_cpp(windmover):
+        """
+        local method for tests - returns the timeseries used internally by the C++ WindMover_c object.
+        This should be the same as the timeseries stored in the self.wind object
+        
+        Data is returned as a datetime_value_2d array in units of meters per second in 
+        data_format = wind_uv
+        
+        This is simply used for testing.
+        """
+        dtv = windmover.wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
+        tv  = convert.to_time_value_pair(dtv, basic_types.data_format.wind_uv)
+        val = windmover.mover.get_time_value(tv['time'])
+        tv['value']['u'] = val['u']
+        tv['value']['v'] = val['v']
+        
+        return convert.to_datetime_value_2d( tv, basic_types.data_format.wind_uv)
+
+def _assert_timeseries_equivalence(cpp_timeseries, wind_ts):
+    """
+    private method used to print data and assert 
+    """
+    print
+    print "====================="
+    print "WindMover timeseries [time], [u, v]: "
+    print cpp_timeseries['time']
+    print cpp_timeseries['value']
+    print "---------------------"
+    print "Wind timeseries [time], [u, v]: "
+    print wind_ts['time']
+    print wind_ts['value']
+
+    assert np.all(cpp_timeseries['time'] == wind_ts['time'])
+    assert np.allclose(cpp_timeseries['value'], wind_ts['value'], atol, rtol)
