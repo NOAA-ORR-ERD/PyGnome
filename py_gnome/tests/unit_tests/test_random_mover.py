@@ -34,7 +34,8 @@ class TestRandomMover():
 
     """
     num_le = 5
-    start_pos = np.zeros((num_le,3), dtype=basic_types.world_point_type)
+    #start_pos = np.zeros((num_le,3), dtype=basic_types.world_point_type)
+    start_pos = (0.0,0.0,0.0)
     rel_time = datetime.datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
     model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
     time_step = 15*60 # seconds
@@ -67,15 +68,16 @@ class TestRandomMover():
         assert True
 
 start_locs = [(0.0,0.0,0.0),
-              (30.0, 30.0, 30.0),
-              (-45.0, -60.0, 30.0),
+#              (30.0, 30.0, 30.0),
+#              (-45.0, -60.0, 30.0),
               ]
 
-timesteps = [36, 360, 3600]
+#timesteps = [36, 360, 3600]
+timesteps = [36, ]
 
 test_cases = [(loc, step) for loc in start_locs for step in timesteps]
 
-@pytest.mark.parametrize( ("start_loc","time_step"), test_cases)
+@pytest.mark.parametrize( ("start_loc", "time_step"), test_cases)
 def test_variance1(start_loc, time_step):
     """
     After a few timesteps the variance of the particle positions should be
@@ -83,7 +85,7 @@ def test_variance1(start_loc, time_step):
     """
     num_le = 1000
     start_time = datetime.datetime(2012,11,10,0)
-    spill = gnome.spill.PointReleaseSpill(num_le, start_loc, start_time)
+    spill = TestSpillContainer(num_le, start_loc, start_time)
     D = 100000
     num_steps = 10
     spill.reset()

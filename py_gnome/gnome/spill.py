@@ -67,7 +67,7 @@ class Spill(object):
         cls._array_info.update({'positions':      ( (3,), basic_types.world_point_type),
                                 'next_positions': ( (3,), basic_types.world_point_type),
                                 'last_water_positions': ( (3,), basic_types.world_point_type),
-                                'status_codes': ( (), basic_types.world_point_type),
+                                'status_codes': ( (), basic_types.status_code_type),
                                 'spill_id': ( (), basic_types.id_type)
                                 })
 

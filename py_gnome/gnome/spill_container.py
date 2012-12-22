@@ -139,20 +139,21 @@ class TestSpillContainer(SpillContainer):
     """
     A really simple spill container, pre-initialized with LEs at a point.
 
-    This make sit easy to use for tesint other classes -- movers, maps, etc.
+    This make sit easy to use for tesing other classes -- movers, maps, etc.
     """
-    def __init__(self, num_elements=0, start_pos=(0.0,0.0,0.0)):
+    def __init__(self, num_elements=0,
+                       start_pos=(0.0,0.0,0.0),
+                       release_time=datetime.datetime(2000,1,1,1)):
         """
         initilize a simple spill container
         """
         SpillContainer.__init__(self, uncertain=False)
 
-        dt = datetime.datetime(2000,1,1,1)
         spill = gnome.spill.SurfaceReleaseSpill(num_elements,
                                                 start_pos,    
-                                                dt)
+                                                release_time)
         self.spills.append(spill)
-        self.prepare_for_model_step(dt)
+        self.prepare_for_model_step(release_time)
 
 
 
