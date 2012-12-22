@@ -33,7 +33,6 @@ if "clean" in "".join(sys.argv[1:]):
 else:
     target = 'build'
 
-
 if "cleanall" in "".join(sys.argv[1:]):
     target = 'clean'
     print "Deleting cython files .."
@@ -43,8 +42,6 @@ if "cleanall" in "".join(sys.argv[1:]):
     os.system('rm -rv build')
     os.system('rm -rv pyGnome.egg-info')
     sys.argv[1] = 'clean'   # this is what distutils understands
-else:
-    target = 'build'
 
 # only for windows
 if "debug" in "".join(sys.argv[2:]):
@@ -53,12 +50,11 @@ else:
     config = 'release'    # only used by windows
 
 sys.argv.count(config) != 0 and sys.argv.remove(config)
-#------------
 
 # for the mac -- forcing 32 bit only builds
 if sys.platform == 'darwin':
     #Setting this should force only 32 bit intel build
-	os.environ['ARCHFLAGS'] = "-arch i386"
+    os.environ['ARCHFLAGS'] = "-arch i386"
 
 
 CPP_CODE_DIR = "../lib_gnome"
@@ -73,7 +69,7 @@ extension_names = [
                    'cy_date_time',
                    'cy_random_mover',
                    'cy_land_check',
-#                   'cy_shio_time'
+#                   'cy_shio_time',
                    ]
 
 cpp_files = [ 

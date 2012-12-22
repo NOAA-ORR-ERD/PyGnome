@@ -36,7 +36,7 @@ class SpillContainer(object):
     """
     def __init__(self, uncertain=False):
         
-        self.is_uncertain = False   # uncertainty spill - same information as basic_types.spill_type
+        self.is_uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
         self.is_active = True       # sets whether the spill is active or not
         
         self._data_arrays = {}
@@ -143,11 +143,12 @@ class TestSpillContainer(SpillContainer):
     """
     def __init__(self, num_elements=0,
                        start_pos=(0.0,0.0,0.0),
-                       release_time=datetime.datetime(2000,1,1,1)):
+                       release_time=datetime.datetime(2000,1,1,1),
+                       uncertain=False):
         """
         initilize a simple spill container
         """
-        SpillContainer.__init__(self, uncertain=False)
+        SpillContainer.__init__(self, uncertain=uncertain)
 
         spill = gnome.spill.SurfaceReleaseSpill(num_elements,
                                                 start_pos,    
