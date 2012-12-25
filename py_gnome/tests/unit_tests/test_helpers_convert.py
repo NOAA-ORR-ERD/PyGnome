@@ -3,7 +3,7 @@ Unit tests ConvertDatetimeValue methods
 """
 
 from gnome import basic_types
-from gnome.helpers import convert
+from gnome.utilities import convert
 import pytest
 import numpy as np
 
