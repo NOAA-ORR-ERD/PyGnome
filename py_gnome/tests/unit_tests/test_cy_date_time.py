@@ -11,6 +11,16 @@ import numpy as np
 from gnome import basic_types
 from gnome.utilities import time_utils
 
+# only used in test_cy_date_time to validate time_utils.date_to_sec functionality
+date_rec =   np.dtype([('year', np.short),
+                       ('month', np.short),
+                       ('day', np.short),
+                       ('hour', np.short),
+                       ('minute', np.short),
+                       ('second', np.short), 
+                       ('dayOfWeek', np.short),], align=True)
+
+
 def _convert(x):
     """
     helper method for the next 4 tests
@@ -52,7 +62,7 @@ class TestCyDateTime():
     target = cy_date_time.Cy_date_time()
     now =  datetime.now()
 
-    daterec = np.empty((1,), dtype=basic_types.date_rec)
+    daterec = np.empty((1,), dtype=date_rec)
     daterec['year'] = now.year
     daterec['month'] = now.month
     daterec['day'] = now.day
@@ -69,7 +79,7 @@ class TestCyDateTime():
         py_gnome uses this to convert time back to date
         '''
         pyDate = time_utils.sec_to_timestruct(self.pySec)
-        date = np.empty((1,), dtype=basic_types.date_rec)
+        date = np.empty((1,), dtype=date_rec)
         date['year'] = pyDate.tm_year
         date['month'] = pyDate.tm_mon
         date['day'] = pyDate.tm_mday
@@ -92,7 +102,7 @@ class TestCyDateTime():
         '''
         Test Gnome's reverse conversion back to Date
         '''
-        date = np.empty((1,), dtype=basic_types.date_rec)
+        date = np.empty((1,), dtype=date_rec)
         date = self.target.SecondsToDate(self.pySec)
 
         # let's also get the date from pyGnome function

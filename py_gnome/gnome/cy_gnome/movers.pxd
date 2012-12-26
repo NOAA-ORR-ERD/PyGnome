@@ -73,37 +73,46 @@ cdef extern from "WindMover_c.h":
         
         
 cdef extern from "CATSMover_c.h":
-   ctypedef struct TCM_OPTIMZE:
-       Boolean isOptimizedForStep
-       Boolean isFirstStep
-       double  value
+   #============================================================================
+   # ctypedef struct TCM_OPTIMZE:
+   #    Boolean isOptimizedForStep
+   #    Boolean isFirstStep
+   #    double  value
+   #============================================================================
        
    cdef cppclass CATSMover_c(CurrentMover_c):
-       WorldPoint         refP                
-       GridVel_c        *fGrid    
-       long             refZ                     
+       #========================================================================
+       # WorldPoint         refP                
+       # GridVel_c        *fGrid    
+       # long             refZ                     
        short             scaleType                 
-       double             scaleValue             
-       char             scaleOtherFile[32]
-       double             refScale
-       Boolean         bRefPointOpen
-       Boolean            bUncertaintyPointOpen
-       Boolean         bTimeFileOpen
-       Boolean            bTimeFileActive
-       Boolean         bShowGrid
-       Boolean         bShowArrows
-       double             arrowScale
-       OSSMTimeValue_c *timeDep
+       double            scaleValue             
+       # char             scaleOtherFile[32]
+       # double             refScale
+       # Boolean         bRefPointOpen
+       # Boolean            bUncertaintyPointOpen
+       # Boolean         bTimeFileOpen
+       # Boolean            bTimeFileActive
+       # Boolean         bShowGrid
+       # Boolean         bShowArrows
+       # double             arrowScale
+       # OSSMTimeValue_c *timeDep
        double            fEddyDiffusion    
-       double            fEddyV0
-       TCM_OPTIMZE     fOptimize
-       WorldPoint3D    GetMove (Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType)
-       int             ReadTopology(char* path, Map_c **newMap)
-       void            SetRefPosition (WorldPoint p, long z)
-       OSErr           ComputeVelocityScale(Seconds&)
-       void        SetTimeDep(OSSMTimeValue_c *time_dep)
-       void        ModelStepIsDone()
-       OSErr 		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+       # double            fEddyV0
+       # TCM_OPTIMZE     fOptimize
+       #========================================================================
+       
+       #int   ReadTopology(char* path, Map_c **newMap)    # what is this for? Do we want to expose? What is Map_c?
+       void  SetRefPosition (WorldPoint , long )    # Could we use WorldPoint3D for this?
+       #OSErr ComputeVelocityScale(Seconds&)    # seems to require TMap, TCATSMover
+       
+       OSErr PrepareForModelRun()
+       OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+       void  SetTimeDep(OSSMTimeValue_c *)
+       OSErr GetTimeValue(Seconds &, VelocityRec *)
+       OSErr PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)    # currently this happens in C++ get_move command
+       void  ModelStepIsDone()
+       
 
 cdef extern from "GridCurrentMover_c.h":
     
