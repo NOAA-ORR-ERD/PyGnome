@@ -45,6 +45,14 @@ cdef class CyShioTime(object):
             raise IOError("No such file: " + path)
     
     
+    property daylight_savings_off:
+        def __get__(self):
+            return self.shio.daylight_savings_off
+        
+        def __set__(self, bool value):
+            self.shio.daylight_savings_off = value
+    
+    
     property filename:
         def __get__(self):
             cdef bytes fileName
