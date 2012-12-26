@@ -27,6 +27,10 @@ lib_gnome/OSSMTimeValue_c class and ShioTimeValue
 cdef extern from "OSSMTimeValue_c.h":
     cdef cppclass OSSMTimeValue_c:
         OSSMTimeValue_c() except +    
+        # Members
+        string  fileName
+        
+        # Methods
         OSErr   GetTimeValue(Seconds &, VelocityRec *)
         OSErr   ReadTimeValues (char *, short, short)
         void    SetTimeValueHandle(TimeValuePairH)    # sets all time values 

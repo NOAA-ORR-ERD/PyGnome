@@ -29,8 +29,7 @@ cdef class CyShioTime(object):
         """
         Init CyShioTime with defaults
         """
-        self.shio.daylight_savings_off=daylight_savings_off
-        #self._file = path    # TODO: check if this works on Mac, then file a bug for windows! 
+        self.shio.daylight_savings_off=daylight_savings_off 
         
         if os.path.exists(path):
             #self._read_time_values(path) # user_units should be read from the file
@@ -46,22 +45,29 @@ cdef class CyShioTime(object):
             raise IOError("No such file: " + path)
     
     
+    property filename:
+        def __get__(self):
+            cdef bytes fileName
+            fileName = self.shio.fileName
+            return fileName
+    
+    id = property( lambda self: id(self)) 
     
     def __repr__(self):
       """
       Return an unambiguous representation of this object so it can be recreated 
       """
-      # TODO: fix self.file above then uncomment this!
-      #return "CyShioTime( {0}.file, daylight_savings_off=0.{shio.daylight_savings_off})".format(self)
-      return self.__str__()
-    
+      # Tried the following, but eval(repr( obj_instance)) would not work on it so updated it to hard code the class name
+      # '{0.__class__}( "{0.filename}", daylight_savings_off={1})'.format(self, self.shio.daylight_savings_off)
+      return 'CyShioTime( "{0.filename}", daylight_savings_off={1})'.format(self, self.shio.daylight_savings_off)
+      
     def __str__(self):
        """Return string representation of this object"""
        """info = {'Long': round(g_wp[0]['long'], 2),'Lat': round( g_wp[0]['lat'], 2),
                'StationName': sName, 'StationType': sType,
                'DaylightSavingsOff': self.shio.daylight_savings_off}"""
        
-       info  = "CyShioTime object - Info read from file: \n  StationName : {0[StationName]},  StationType : {0[StationType]}\n  (Long, Lat) : ({0[Long]}, {0[Lat]})\n  DaylightSavingsOff : {0[DaylightSavingsOff]}".format(self.get_info())
+       info  = "CyShioTime object - Info read from file:\n  File: {1.filename} \n  StationName : {0[StationName]},  StationType : {0[StationType]}\n  (Long, Lat) : ({0[Long]}, {0[Lat]})\n  DaylightSavingsOff : {0[DaylightSavingsOff]}".format(self.get_info(),self)
        
        return info
     
