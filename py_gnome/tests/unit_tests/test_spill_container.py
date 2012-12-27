@@ -38,6 +38,8 @@ def test_one_simple_spill():
     sc.add_spill(spill)
     sc.prepare_for_model_step(start_time)
 
+    assert sc.num_elements == num_elements
+
     assert sc['positions'].shape == (num_elements, 3)
     assert sc['last_water_positions'].shape == (num_elements, 3)
 

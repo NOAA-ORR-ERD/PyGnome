@@ -1,6 +1,7 @@
 from gnome import movers
 
-from gnome import basic_types, spill, weather
+from gnome import basic_types, weather
+from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils, transforms, convert
 from gnome.utilities import projections
 
@@ -97,10 +98,12 @@ def spill_ex():
    """
    from gnome import spill
    num_le = 5
-   start_pos = np.zeros((num_le,3), dtype=basic_types.world_point_type)
-   start_pos += (3., 6., 0.)
+   #start_pos = np.zeros((num_le,3), dtype=basic_types.world_point_type)
+   start_pos = (3., 6., 0.)
    rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
-   pSpill = spill.PointReleaseSpill(num_le, start_pos, rel_time, persist=-1)
+   #pSpill = TestSpillContainer(num_le, start_pos, rel_time, persist=-1)
+   #fixme: what to do about persistance?
+   pSpill = TestSpillContainer(num_le, start_pos, rel_time)
    return pSpill
 
 
@@ -111,11 +114,11 @@ class TestWindMover:
    """
    time_step = 15 * 60 # seconds
    spill = spill_ex()
-   
-   model_time = time_utils.sec_to_date(time_utils.date_to_sec(spill.release_time) + 1)
+   rel_time = spill.spills[0].release_time # digging a bit deep...
+   model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
 
    time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
-   time_val['time']  = np.datetime64( spill.release_time.isoformat() )
+   time_val['time']  = np.datetime64( rel_time.isoformat() )
    time_val['value'] = (2., 25.)
    wind = weather.Wind(timeseries=time_val, units='meters per second')
    wm = movers.WindMover(wind)
@@ -165,7 +168,7 @@ class TestWindMover:
        """
        # expected move
        uv = transforms.r_theta_to_uv_wind(self.time_val['value'])
-       exp = np.zeros( (self.spill.num_LEs, 3) )
+       exp = np.zeros( (self.spill.num_elements, 3) )
        exp[:,0] = self.spill['windages']*uv[0,0]*self.time_step # 'u'
        exp[:,1] = self.spill['windages']*uv[0,1]*self.time_step # 'v'
  

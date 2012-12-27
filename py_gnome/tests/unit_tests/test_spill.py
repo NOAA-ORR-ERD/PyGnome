@@ -114,6 +114,8 @@ def test_reset_array_types():
     #windages should no longer be there
     #print Spill._Spill__all_subclasses
     arrays = sp1.create_new_elements(1)
+    print "This test can fail if other's failed before it -- leaving dangling references"
+    print "Fix other tests first"
     assert 'windages' not in arrays
 
 

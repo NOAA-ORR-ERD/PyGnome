@@ -74,6 +74,12 @@ class SpillContainer(object):
                 raise ValueError("new data array must be the same shape")
                     
         self._data_arrays[data_name] = array
+    @property
+    def num_elements(self):
+        """
+        The number of elements currently in the SpillContainer
+        """
+        return len(self['positions']) # every spill should have a postitions data array
 
     def add_spill(self, spill):
         self.spills.append(spill)
