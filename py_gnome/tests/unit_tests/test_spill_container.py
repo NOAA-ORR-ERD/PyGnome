@@ -77,6 +77,14 @@ def test_multiple_spills():
     assert sc['positions'].shape == (num_elements*2, 3)
     assert sc['last_water_positions'].shape == (num_elements*2, 3)
 
+    ## check the get_spill method
+    assert sc.get_spill(spill.id) == spill
+    assert sc.get_spill(spill2.id) == spill2
+
+    ## check the remove_spill_by_id
+    sc.remove_spill_by_id(spill.id)
+    assert sc.get_spill(spill.id) is None # it shouldn't be there anymore.
+
 
 def test_reset():
     start_time = datetime(2012, 1, 1, 12)

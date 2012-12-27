@@ -44,6 +44,12 @@ void ShioTimeValue_c::InitInstanceVariables(void)
 
 }
 
+ShioTimeValue_c::ShioTimeValue_c() : OSSMTimeValue_c()
+{
+	daylight_savings_off = true;	// JS: What is this for?
+	this->InitInstanceVariables();
+}
+
 ShioTimeValue_c::ShioTimeValue_c(TMover *theOwner,TimeValuePairH tvals) : OSSMTimeValue_c(theOwner)
 { 	// having this this function is inherited but meaningless
 	this->ProgrammerError("TShioTimeValue constructor");

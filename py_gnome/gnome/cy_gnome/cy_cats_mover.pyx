@@ -8,7 +8,7 @@ from movers cimport CATSMover_c,Map_c
 from utils cimport OSSMTimeValue_c,ShioTimeValue_c
 
 
-cdef class Cy_cats_mover:
+cdef class CyCatsMover:
 
     cdef CATSMover_c *mover
     
@@ -25,8 +25,8 @@ cdef class Cy_cats_mover:
         self.mover.fEddyDiffusion = diffusion_coefficient
         ## should not have to do this manually.
         ## make-shifting for now.
-        self.mover.fOptimize.isOptimizedForStep = 0
-        self.mover.fOptimize.isFirstStep = 1
+        #self.mover.fOptimize.isOptimizedForStep = 0
+        #self.mover.fOptimize.isFirstStep = 1
             
     def set_shio(self, shio_file):
         cdef ShioTimeValue_c *shio
@@ -38,19 +38,14 @@ cdef class Cy_cats_mover:
         self.mover.bTimeFileActive = True
         return True
         
-    def set_ossm(self, ossm_file):
-        cdef OSSMTimeValue_c *ossm
-        ossm = new OSSMTimeValue_c()
-        if(ossm.ReadTimeValues(ossm_file,1,1) == -1):
-            return False
-        self.mover.SetTimeDep(ossm)
-        #self.mover.SetRefPosition(ossm.GetRefWorldPoint(), 0)
-        self.mover.bTimeFileActive = True
+    def set_ossm(self, CyOSSMTime ossm):
+        self.mover.SetTimeDep(ossm.time_dep)
+        self.mover.bTimeFileActive = True   # What is this?
         return True
         
     def set_ref_point(self, ref_point):
         cdef WorldPoint p
-        p.pLong = ref_point[0]*10**6
+        p.pLong = ref_point[0]*10**6    # should this happen in C++?
         p.pLat = ref_point[1]*10**6
         self.mover.SetRefPosition(p, 0)
         

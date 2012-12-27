@@ -90,8 +90,34 @@ class SpillContainer(object):
 
         :param spill: the spill object to remove
         """
-
         self.spills.remove(spill)
+
+    def remove_spill_by_id(self, spill_id):
+        """
+        remove the spill that has the given id
+
+        :param id: the id of the spill you want to remove
+        """
+
+        for spill in self.spills:
+            if spill.id == spill_id:
+                self.spills.remove(spill)
+                break
+
+    
+    def get_spill(self, id):
+        """
+        return the spill with a given id
+        
+        :param id: the id of the spill desired
+
+        returns None if there is no spill with that id
+        """
+        # fixme: used an ordered_dict for efficiency?
+        for spill in self.spills:
+            if spill.id == id:
+                return spill
+        return None
 
     def reset(self):
         """

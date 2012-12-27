@@ -1,7 +1,9 @@
 # these paths are created when you create a python virtualenv
 # over the web/gnome path
-include
-man
-bin
-lib
-.Python
+# A leading slash indicates that the ignore entry is only valid
+# with respect to the directory in which the .gitignore file resides.
+/include
+/man
+/bin
+/lib
+/.Python

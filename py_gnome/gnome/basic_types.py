@@ -32,15 +32,7 @@ world_point = np.dtype([('long', world_point_type),
                        align=True)
 velocity_rec       = np.dtype([('u', np.double), ('v', np.double),], align=True)
 time_value_pair    = np.dtype([('time', seconds), ('value', velocity_rec),], align=True)
-
-# only used in test_cy_date_time to validate time_utils.date_to_sec functionality
-date_rec           = np.dtype([('year', np.short),
-                               ('month', np.short),
-                               ('day', np.short),
-                               ('hour', np.short),
-                               ('minute', np.short),
-                               ('second', np.short), 
-                               ('dayOfWeek', np.short),], align=True)
+ebb_flood_data    = np.dtype([('time', seconds), ('scale', np.float64),('type',np.int16)], align=True)
 
 # In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
 # this is also consistent with the definition in type_defs.pxd .. define it here to keep things consistent
