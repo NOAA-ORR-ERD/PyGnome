@@ -19,19 +19,15 @@ class Model(object):
         """ 
         Initializes model attributes. 
         """
+        
         self._uncertain = False # sets whether uncertainty is on or not.
-
-        self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
-        self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
-
-        self.reset() # initializes everything to nothing.
+        self.reset() # initializes everything to defaults/nothing
 
     def reset(self):
         """
-        Resets model to defaults -- Caution -- clears all movers, etc.
+        Resets model to defaults -- Caution -- clears all movers, spills, etc.
         
         """
-
 
         self.output_map = None
         self.map = None
@@ -41,6 +37,7 @@ class Model(object):
         self._uncertain_spills = OrderedDict()
         
         self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
+        self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
         self.time_step = timedelta(minutes=15).total_seconds()
 
         self.uncertain = False

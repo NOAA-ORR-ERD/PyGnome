@@ -57,10 +57,10 @@ def test_simple_run():
     
     model.add_mover(a_mover)
 
-    spill = gnome.spill.PointReleaseSpill(num_LEs=10,
-                                          start_position = (0.0, 0.0, 0.0),
-                                          release_time = start_time,
-                                          )
+    spill = gnome.spill.SurfaceReleaseSpill(num_elements=10,
+                                            start_position = (0.0, 0.0, 0.0),
+                                            release_time = start_time,
+                                            )
     
     model.add_spill(spill)
     model.start_time = spill.release_time
@@ -93,10 +93,10 @@ def test_simple_run_with_map():
     
     model.add_mover(a_mover)
 
-    spill = gnome.spill.PointReleaseSpill(num_LEs=10,
-                                          start_position = (0.0, 0.0, 0.0),
-                                          release_time = start_time,
-                                          )
+    spill = gnome.spill.SurfaceReleaseSpill(num_elements=10,
+                                            start_position = (0.0, 0.0, 0.0),
+                                            release_time = start_time,
+                                            )
     
     model.add_spill(spill)
     model.start_time = spill.release_time
@@ -151,10 +151,10 @@ def test_simple_run_with_image_output():
     start_points[:,0] = np.linspace(-127.1, -126.5, N)
     start_points[:,1] = np.linspace( 47.93, 48.1, N)
     #print start_points
-    spill = gnome.spill.PointReleaseSpill(num_LEs=10,
-                                          start_position = start_points,
-                                          release_time = start_time,
-                                          )
+    spill = gnome.spill.SurfaceReleaseSpill(num_elements=10,
+                                            start_position = start_points,
+                                            release_time = start_time,
+                                            )
     
     model.add_spill(spill)
     model.start_time = spill.release_time
@@ -224,10 +224,10 @@ def test_all_movers():
     model.start_time = start_time
 
     # a spill
-    model.add_spill(gnome.spill.PointReleaseSpill(num_LEs=10,
-                                          start_position = (0.0, 0.0, 0.0),
-                                          release_time = start_time,
-                                          ) )
+    model.add_spill(gnome.spill.SurfaceReleaseSpill(num_elements=10,
+                                                    start_position = (0.0, 0.0, 0.0),
+                                                    release_time = start_time,
+                                                    ) )
 
     # the land-water map
     model.map = gnome.map.GnomeMap() # the simpleset of maps
