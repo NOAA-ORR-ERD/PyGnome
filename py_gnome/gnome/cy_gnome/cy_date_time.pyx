@@ -3,7 +3,7 @@ cimport numpy as np
 from gnome import basic_types
 
 from type_defs cimport *
-from utils cimport DateToSeconds,SecondsToDate
+from utils cimport DateToSeconds,SecondsToDate,ResetAllRandomSeeds
 
 cdef class CyDateTime:
    cdef unsigned long * seconds
@@ -30,3 +30,10 @@ cdef class CyDateTime:
    def SecondsToDate(self, unsigned long secs):
        SecondsToDate( secs, self.dateRec)
        return self.tDateRec
+
+
+def reset_lib_random_seeds():
+    """
+    Resets all the random seeds for lib_gnome
+    """
+    ResetAllRandomSeeds()
