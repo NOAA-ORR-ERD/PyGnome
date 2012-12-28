@@ -115,12 +115,12 @@ class TestRandom():
         Since seed is not reset, the move should be repeatable
         TODO: CURRENTLY, this fails so no assertion is made
         """
-        from gnome.cy_gnome import cy_date_time
+        from gnome.cy_gnome import cy_helpers
         
-        cy_date_time.reset_lib_random_seeds()   # reset all seeds
+        cy_helpers.reset_lib_random_seeds()   # reset all seeds
         delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(delta)
-        cy_date_time.reset_lib_random_seeds()   # reset all seeds
+        cy_helpers.reset_lib_random_seeds()   # reset all seeds
         new_delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(new_delta)
         print

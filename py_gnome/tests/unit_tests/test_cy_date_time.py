@@ -4,7 +4,7 @@ test time conversions from date time to seconds and vice versa
 just a python script right now
 """
 
-from gnome.cy_gnome import cy_date_time
+from gnome.cy_gnome import cy_helpers
 from datetime import datetime
 import time
 import numpy as np
@@ -59,7 +59,7 @@ def test_numpy_array():
     assert np.all( time_utils.round_time(x, roundTo=1) == xn)
 
 class TestCyDateTime():
-    target = cy_date_time.CyDateTime()
+    target = cy_helpers.CyDateTime()
     now =  datetime.now()
 
     daterec = np.empty((1,), dtype=date_rec)

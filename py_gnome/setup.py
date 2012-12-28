@@ -62,11 +62,11 @@ CPP_CODE_DIR = "../lib_gnome"
 
 # the cython extensions to build -- each should correspond to a *.pyx file
 extension_names = [
+                   'cy_helpers',
                    'cy_wind_mover',
                    'cy_cats_mover',
 #                   'cy_gridcurrent_mover',
                    'cy_ossm_time',
-                   'cy_date_time',
                    'cy_random_mover',
                    'cy_land_check',
                    'cy_shio_time',

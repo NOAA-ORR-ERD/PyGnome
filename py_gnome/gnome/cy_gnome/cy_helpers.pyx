@@ -2,14 +2,14 @@ import cython
 cimport numpy as np
 from gnome import basic_types
 
-from type_defs cimport *
-from utils cimport DateToSeconds,SecondsToDate,ResetAllRandomSeeds
+cimport type_defs
+cimport utils
 
 cdef class CyDateTime:
    cdef unsigned long * seconds
    cdef unsigned long tSeconds
-   cdef DateTimeRec * dateRec
-   cdef DateTimeRec tDateRec
+   cdef type_defs.DateTimeRec * dateRec
+   cdef type_defs.DateTimeRec tDateRec
    
    def __cinit__(self):
        self.seconds = &self.tSeconds
@@ -23,12 +23,12 @@ cdef class CyDateTime:
        """
        pass
        
-   def DateToSeconds(self, np.ndarray[DateTimeRec, ndim=1] date):
-       DateToSeconds( &date[0], self.seconds)
+   def DateToSeconds(self, np.ndarray[type_defs.DateTimeRec, ndim=1] date):
+       utils.DateToSeconds( &date[0], self.seconds)
        return self.tSeconds
 
    def SecondsToDate(self, unsigned long secs):
-       SecondsToDate( secs, self.dateRec)
+       utils.SecondsToDate( secs, self.dateRec)
        return self.tDateRec
 
 
@@ -36,4 +36,4 @@ def reset_lib_random_seeds():
     """
     Resets all the random seeds for lib_gnome
     """
-    ResetAllRandomSeeds()
+    utils.ResetAllRandomSeeds()
