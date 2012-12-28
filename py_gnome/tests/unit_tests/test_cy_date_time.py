@@ -59,7 +59,7 @@ def test_numpy_array():
     assert np.all( time_utils.round_time(x, roundTo=1) == xn)
 
 class TestCyDateTime():
-    target = cy_date_time.Cy_date_time()
+    target = cy_date_time.CyDateTime()
     now =  datetime.now()
 
     daterec = np.empty((1,), dtype=date_rec)

@@ -5,7 +5,7 @@ from gnome import basic_types
 from type_defs cimport *
 from utils cimport DateToSeconds,SecondsToDate
 
-cdef class Cy_date_time:
+cdef class CyDateTime:
    cdef unsigned long * seconds
    cdef unsigned long tSeconds
    cdef DateTimeRec * dateRec
