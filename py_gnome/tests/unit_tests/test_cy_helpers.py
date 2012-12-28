@@ -11,7 +11,11 @@ import numpy as np
 from gnome import basic_types
 from gnome.utilities import time_utils
 
-# only used in test_cy_date_time to validate time_utils.date_to_sec functionality
+"""
+Test CyDateTime
+"""
+#===========================
+# only used in test_cy_helpers to validate time_utils.date_to_sec functionality
 date_rec =   np.dtype([('year', np.short),
                        ('month', np.short),
                        ('day', np.short),
@@ -132,6 +136,11 @@ class TestCyDateTime():
         print "expected: " + str(tgt)
         print "actual: " + str(act)
         assert tgt == act
+
+"""
+End test CyDateTime
+===================
+"""
 
 if __name__=="__main__":
     a = TestCyDateTime()
