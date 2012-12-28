@@ -9,6 +9,7 @@ import numpy as np
 from gnome import basic_types
 from gnome.cy_gnome import cy_random_mover
 from gnome.utilities import time_utils
+from gnome.cy_gnome import cy_helpers
 
 import datetime
 
@@ -88,17 +89,20 @@ class TestRandom():
         
     def test_update_coef(self):
         """
-        For now just test that the move is different from original move
+        Test that the move is different from original move since diffusion coefficient is different
+        use the py.test -s flag to view the difference between the two
         """
-        np.set_printoptions(precision=4)
+        cy_helpers.reset_lib_random_seeds()   # reset all seeds
+        np.set_printoptions(precision=6)
         delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(delta)    # get the move before changing the coefficient
         print 
         print  "diffusion_coef = {0.diffusion_coef}".format(self.rm) + " get_move output:"
         print delta.view(dtype=np.float64).reshape(-1,3)
         self.rm.diffusion_coef = 10
-        assert self.rm.diffusion_coef == 10 
+        assert self.rm.diffusion_coef == 10
         
+        cy_helpers.reset_lib_random_seeds()   # reset all seeds
         new_delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(new_delta)    # get the move after changing coefficient
         print
@@ -106,17 +110,16 @@ class TestRandom():
         print new_delta.view(dtype=np.float64).reshape(-1,3)
         print
         print "-- Norm of difference between movement vector --"        
-        print self._diff(delta, new_delta)
+        print self._diff(delta, new_delta).reshape(-1,1)
         assert np.all(delta['lat'] != new_delta['lat'])
         assert np.all(delta['long'] != new_delta['long'])
+        
+        self.rm.diffusion_coef = 100000        # reset it
     
     def test_seed(self):
         """
         Since seed is not reset, the move should be repeatable
-        TODO: CURRENTLY, this fails so no assertion is made
         """
-        from gnome.cy_gnome import cy_helpers
-        
         cy_helpers.reset_lib_random_seeds()   # reset all seeds
         delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(delta)
@@ -132,8 +135,8 @@ class TestRandom():
         print
         print "-- Norm of difference between movement vector --"
         print self._diff(delta, new_delta)
-        #assert np.all(self.delta['lat'] == new_delta['lat'])
-        #assert np.all(self.delta['long'] == new_delta['long'])    
+        assert np.all(self.delta['lat'] == new_delta['lat'])
+        assert np.all(self.delta['long'] == new_delta['long'])    
     
     def _diff(self, delta, new_delta):
         """
