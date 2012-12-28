@@ -133,8 +133,9 @@ class TestCyDateTime():
         """
         tgt = time_utils.round_time( dt=self.now, roundTo=1)
         act = time_utils.sec_to_date(self.pySec)
-        print "expected: " + str(tgt)
-        print "actual: " + str(act)
+        print
+        print "expected:\t" + str(tgt)
+        print "actual:  \t" + str(act)
         assert tgt == act
 
 """
