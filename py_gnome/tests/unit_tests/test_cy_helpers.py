@@ -99,7 +99,6 @@ class TestCyDateTime():
         Note the tm_dst = 0 before comparing against Python results
         '''
         sec = self.target.DateToSeconds(self.daterec)
-        print "pySec - sec: " + str(self.pySec - sec)
         assert self.pySec == sec
 
     def test_sec_to_timestruct(self):
@@ -117,13 +116,15 @@ class TestCyDateTime():
         # NOTE (JS): Not sure 1 is added to day of the week in StringFunctions.CPP
         # This doesn't seem to effect the date/time value - left it as is.
         # The C++ time struct 0=Sunday and 6=Sat. For Python time struct 0=Monday and 6=Sunday
+        print   # for pretty printing
         for field in list(date):
            
             # for pyDate all fields must match
             assert pyDate[field] == self.daterec[field][0]
 
             if field != 'dayOfWeek':
-                print field + ":" + str(date[field]) + " " + str(self.daterec[field][0])
+                #print field + ":" + str(date[field]) + " " + str(self.daterec[field][0])
+                print "expected {0}: {1}\t actual {0}: {2}".format(field, date[field], self.daterec[field][0])
                 assert date[field] == self.daterec[field][0]
                 
     def test_sec_to_date(self):

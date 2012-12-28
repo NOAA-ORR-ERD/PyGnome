@@ -197,25 +197,27 @@ class TestWind:
       dt = all_winds['rq'].time[0].astype(object) + (all_winds['rq'].time[1]-all_winds['rq'].time[0]).astype(object)/2
       get_rq = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction, datetime=dt).view(dtype=np.recarray)
       get_uv = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.wind_uv, datetime=dt).view(dtype=np.recarray)
+      
+      np.set_printoptions(precision=4)
       print
       print "=================================================="
       print "(u,v):" 
       print  str( all_winds['uv'].value[:2,:])
       print
-      print "get_uv: " + str(get_uv.value[0])
-      print "time: " + repr(dt)
+      print "get_uv:\t{0}".format(get_uv.value[0])
+      print "time:  \t{0}".format(dt)
       print "-----------------"
-      print "u-bounds: (" + str( min(all_winds['uv'].value[:2,0])) + ", " + str(max(all_winds['uv'].value[:2,0])) + "); computed-u: " + str( get_uv.value[0,0])
-      print "v-bounds: (" + str( min(all_winds['uv'].value[:2,1])) + ", " + str(max(all_winds['uv'].value[:2,1])) + "); computed-v: " + str( get_uv.value[0,1])
+      print "u-bounds: ({0:0.4f},{1:0.4f});\t computed-u: ({2:0.4f})".format(min(all_winds['uv'].value[:2,0]), max(all_winds['uv'].value[:2,0]), get_uv.value[0,0])
+      print "v-bounds: ({0:0.4f},{1:0.4f});\t computed-v: ({2:0.4f})".format(min(all_winds['uv'].value[:2,1]), max(all_winds['uv'].value[:2,1]), get_uv.value[0,1])
       print "-----------------"
+      print "FOR INFO ONLY: INTERPOLATION IS DONE IN (u,v) SPACE"
       print "(r,theta): " 
       print  str( all_winds['rq'].value[:2,:])
       print
-      print "get_rq: " + str(get_rq.value[0])
+      print "get_rq:\t{0}".format(get_rq.value[0])
       print "-----------------"
-      print "FOR INFO ONLY: INTERPOLATION IS DONE IN (u,v) SPACE"
-      print "r-bounds: (" + str( min(all_winds['rq'].value[:2,0])) + ", " + str(max(all_winds['rq'].value[:2,0])) + "); computed-r: " + str( get_rq.value[0,0])
-      print "theta-bounds: (" + str( min(all_winds['rq'].value[:2,1])) + ", " + str(max(all_winds['rq'].value[:2,1])) + "); computed-theta: " + str( get_rq.value[0,1])
+      print "r-bounds: ({0:0.4f},{1:0.4f});\t computed-r: ({2:0.4f})".format( min(all_winds['rq'].value[:2,0]), max(all_winds['rq'].value[:2,0]), get_rq.value[0,0])
+      print "q-bounds: ({0:0.4f},{1:0.4f});\t computed-q: ({2:0.4f})".format( min(all_winds['rq'].value[:2,1]), max(all_winds['rq'].value[:2,1]), get_rq.value[0,1])
       print "-----------------"       
       print "NOTE: This test fails at times for randomly generated (r,theta)"
       print "      Still trying to understand how the hermite interpolation should work"
