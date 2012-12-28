@@ -31,7 +31,7 @@ class SpillContainer(object):
     The data for the elements is stored in the _data_arrays dict. They can be
     accessed by indexing. For example:
      
-    positions = spill_contianer['positions'] : returns a (num_LEs, 3) array of world_point_types
+    positions = spill_container['positions'] : returns a (num_LEs, 3) array of world_point_types
     
     """
     def __init__(self, uncertain=False):
@@ -124,13 +124,22 @@ class SpillContainer(object):
         resets all the spills and stored arrays are cleared
         """
         for spill in self.spills:
-            print "calling reset on spill:", spill.id
             spill.reset()
         self._data_arrays = {}
 
     def prepare_for_model_step(self, current_time, time_step=None):
         """
         Called at the beginning of a time step
+
+        This calls release_elements on all of the contained spills, and adds
+        the elements to the data arrays
+        
+        """
+        pass
+
+    def release_elements(self, current_time, time_step=None):
+        """
+        Called at the end of a time step
 
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
@@ -144,6 +153,7 @@ class SpillContainer(object):
                         self._data_arrays[name] = np.r_[ self._data_arrays[name], new_data[name] ]
                     else:
                         self._data_arrays[name] = new_data[name]
+
 
     def update_windage(self, time_step):
         ##fixme: this really doesn't seem to belonge here.

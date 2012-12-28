@@ -186,7 +186,6 @@ class SurfaceReleaseSpill(FloatingSpill):
         :param windage: the windage range of the LEs (min, max). Default is (0.01, 0.04) from 1% to 4%.
         :param persist: Default is 900s, so windage is updated every 900 sec.
                         The -1 means the persistence is infinite so it is only set at the beginning of the run.
-        :param uncertain: flag determines whether spill is uncertain or not
         """
         super(SurfaceReleaseSpill, self).__init__(windage_range, windage_persist)
         
@@ -304,5 +303,70 @@ class SurfaceReleaseSpill(FloatingSpill):
 
        self.num_released = 0
        self.prev_release_pos = self.start_position
+
+class SpatialReleaseSpill(FloatingSpill):
+    """
+    A simple spill  class  --  a release of floating non-weathering particles,
+    with their initial positions pre-specified
+
+    """
+    def __init__(self,
+                 start_positions,
+                 release_time,
+                 windage_range=(0.01, 0.04),
+                 windage_persist=900,
+                 ):
+        """
+        :param start_positions: locations the LEs are released (num_elements X 3): (long, lat, z) (floating point)
+        :param release_time: time the LEs are released (datetime object)
+        :param windage: the windage range of the LEs (min, max). Default is (0.01, 0.04) from 1% to 4%.
+        :param persist: Default is 900s, so windage is updated every 900 sec.
+                        The -1 means the persistence is infinite so it is only set at the beginning of the run.
+        """
+        super(SpatialReleaseSpill, self).__init__(windage_range, windage_persist)
+        
+        self.start_positions = np.asarray(start_positions,
+                                          dtype=basic_types.world_point_type).reshape((-1, 3))
+        self.num_elements = self.start_positions.shape[0]
+        
+        self.release_time = release_time
+
+        self.windage_range    = windage_range[0:2]
+        self.windage_persist  = windage_persist
+
+    def initialize_new_elements(self, arrays):
+        """
+        initilize the new elements just created (i.e set their default values)
+        This is probably need to be extended by subclasses
+        """
+        super(SpatialReleaseSpill, self).initialize_new_elements(arrays)
+        #arrays['positions'][:] = self.start_position
+
+    def release_elements(self, current_time, time_step=None):
+        """
+        Release any new elements to be added to the SpillContainer
+                
+        :param current_time: datetime object for current time
+        :param time_step: the time step, in seconds -- this version doesn't use this
+
+        :returns : None if there are no new elements released
+                   a dict of arrays if there are new elements
+
+        NOTE: this releases all the elements at their initial positions at the release_time
+        """
+
+        if current_time >= self.release_time:
+            arrays = self.create_new_elements(self.num_elements)
+            arrays['positions'][:,:] = self.start_positions
+            return arrays
+        else:
+            return None
+
+    def reset(self):
+       """
+       reset to initial conditions -- i.e. nothing released. 
+       """
+       super(SurfaceReleaseSpill, self).reset()
+
 
 

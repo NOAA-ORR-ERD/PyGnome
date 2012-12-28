@@ -33,8 +33,8 @@ class Model(object):
         self.map = None
         self._wind = OrderedDict()  #list of wind objects
         self._movers = OrderedDict()
-        self.spill_container = gnome.spill_container.SpillContainer()
-        self.uncertain_spill_container = gnome.spill_container.SpillContainer()
+        self._spill_container = gnome.spill_container.SpillContainer()
+        self._uncertain_spill_container = gnome.spill_container.SpillContainer()
         
         self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
         self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
@@ -49,8 +49,8 @@ class Model(object):
         """
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
-        self.spill_container.reset()
-        self.uncertain_spill_container.reset()
+        self._spill_container.reset()
+        self._uncertain_spill_container.reset()
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
 
     ### Assorted properties
@@ -253,7 +253,6 @@ class Model(object):
             #initialize a clean uncertainty spill_container
             self._uncertain_spill_container = self._spill_container.copy()            
 
-    
     def setup_time_step(self):
         """
         sets up everything for the current time_step:
@@ -263,7 +262,7 @@ class Model(object):
         
         self._spill_container.prepare_for_model_step(self.model_time, self.time_step)
         if self.uncertain:
-            self._spill_container.prepare_for_model_step(self.model_time, self.time_step)
+            self._uncertain_spill_container.prepare_for_model_step(self.model_time, self.time_step)
         
         # initialize movers differently if model uncertainty is on
         for mover in self.movers:
@@ -276,29 +275,33 @@ class Model(object):
             -- calls the beaching code to beach the elements that need beaching.
             -- sets the new position
         """
-        if self.uncertain:
-            containers = (self._spill_container, self._uncertain_spill_container)
-        else:
-            containers = (self._spill_container,)
+        ## if there are no spills, there is nothing to do:
+        if self._spill_container.spills:
+            if self.uncertain:
+                containers = (self._spill_container, self._uncertain_spill_container)
+            else:
+                containers = (self._spill_container,)
 
-        for sc in containers # either one of none, depending on uncertaintly or not
-            # reset next_positions
-            sc['next_positions'][:] = sc['positions']
+            for sc in containers: # either one of none, depending on uncertaintly or not
+                # reset next_positions
+                sc['next_positions'][:] = sc['positions']
 
-            # loop through the movers
-            for mover in self.movers:
-                delta = mover.get_move(sc, self.time_step, self.model_time)
-                sc['next_positions'] += delta
-        
-            self.map.beach_elements(sc)
+                # loop through the movers
+                for mover in self.movers:
+                    delta = mover.get_move(sc, self.time_step, self.model_time)
+                    sc['next_positions'] += delta
+            
+                self.map.beach_elements(sc)
 
-            # the final move to the new positions
-            sc['positions'][:] = sc['next_positions']
+                # the final move to the new positions
+                sc['positions'][:] = sc['next_positions']
 
     def step_is_done(self):
         """
         loop through movers and call model_step_is_done
         """
+        ##fixme: release elements for next time step here?
+
         for mover in self.movers:
             mover.model_step_is_done()
     
@@ -350,8 +353,10 @@ class Model(object):
         else:    
             self.setup_time_step()
             self.move_elements()
+            # release elements here.
             self.step_is_done()
         self.current_time_step += 1        
+        self._spill_container.release_elements(self.model_time) 
         return True
     
     def __iter__(self):

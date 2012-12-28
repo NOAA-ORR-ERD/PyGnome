@@ -9,7 +9,7 @@ import pytest
 import numpy as np
 
 from gnome import basic_types
-from gnome.spill import Spill, FloatingSpill, SurfaceReleaseSpill
+from gnome.spill import Spill, FloatingSpill, SurfaceReleaseSpill, SpatialReleaseSpill
 
 
 def test_init_Spill():
@@ -403,9 +403,32 @@ class Test_SurfaceReleaseSpill():
     def cont_not_valid_times(self):        
         with pytest.raises(ValueError):
             sp = SurfaceReleaseSpill(num_elements = 100,
-                                 start_position = self.start_position,
-                                 release_time = self.release_time,
-                                 end_release_time = self.release_time - datetime.timedelta(seconds=1),
-                                 )
+                                     start_position = self.start_position,
+                                     release_time = self.release_time,
+                                     end_release_time = self.release_time - datetime.timedelta(seconds=1),
+                                     )
+
+def test_SpatialReleaseSpill():
+    """
+    see if the right arrays get created
+    """
+    start_positions = ( (0.0,   0.0,   0.0 ),
+                        (28.0, -75.0,  0.0 ),
+                        (-15,    12,    4.0),
+                        ( 80,    -80,  100.0),
+                        )
+    release_time = datetime.datetime(2012,1,1,1)
+    sp = SpatialReleaseSpill(start_positions,
+                             release_time,
+                             windage_range=(0.01, 0.04),
+                             windage_persist=900,
+                             )
+    data = sp.release_elements(release_time)
+
+    assert 'windages' in data
+
+    assert data['status_codes'].shape == (4,)
+    assert data['positions'].shape == (4,3)
+    assert np.alltrue( data['status_codes'] == basic_types.oil_status.in_water )
 
 
