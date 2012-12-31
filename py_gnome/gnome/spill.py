@@ -34,8 +34,8 @@ class Spill(object):
     def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0), uncertain=False):
         
         self.num_LEs = num_LEs
-        self.is_uncertain = False   # uncertainty spill - same information as basic_types.spill_type
-        self.is_active = True       # sets whether the spill is active or not
+        self.is_uncertain = uncertain  # uncertainty spill - same information as basic_types.spill_type
+        self.is_active = True          # sets whether the spill is active or not
         
         self._data_arrays = {}
         

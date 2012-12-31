@@ -135,8 +135,8 @@ class TestRandom():
         print
         print "-- Norm of difference between movement vector --"
         print self._diff(delta, new_delta)
-        assert np.all(self.delta['lat'] == new_delta['lat'])
-        assert np.all(self.delta['long'] == new_delta['long'])    
+        assert np.all(delta['lat'] == new_delta['lat'])
+        assert np.all(delta['long'] == new_delta['long'])    
     
     def _diff(self, delta, new_delta):
         """
