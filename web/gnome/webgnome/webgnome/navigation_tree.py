@@ -1,37 +1,10 @@
-from collections import OrderedDict
-
-from webgnome.forms.model import ModelSettingsForm
-from webgnome.forms.movers import AddMoverForm, DeleteMoverForm, mover_form_classes
-from webgnome.forms.spills import AddSpillForm, DeleteSpillForm, spill_form_classes
-
-
 class NavigationTree(object):
     """
-    An class that renders a JSON representation of a ``gnome.model.Model``
+    A class that renders a JSON representation of a ``gnome.model.Model``
     used to initialize a navigation tree widget in the JavaScript app.
     """
-    def __init__(self, request, model):
-        self.request = request
+    def __init__(self, model):
         self.model = model
-
-    def _get_model_settings(self):
-        """
-        Return a dict of values containing each model setting that the client
-        should be able to read and change.
-        """
-        settings_attrs = [
-            'start_time',
-            'duration',
-            'uncertain',
-        ]
-
-        settings = OrderedDict()
-
-        for attr in settings_attrs:
-            if hasattr(self.model, attr):
-                settings[attr] = getattr(self.model, attr)
-
-        return settings
 
     def _get_value_title(self, name, value, max_chars=8):
         """
@@ -44,82 +17,42 @@ class NavigationTree(object):
         return '%s: %s' % (name, value)
 
     def render(self):
-        """
-        Return an ordered list of tree elements for ``self.model``, suitable
-        for JSON serialization.
-
-        Nodes are given a ``form_id`` value that points to a form rendered in
-        the client. The client uses this value to display a form for the item
-        when appropriate (i.e., when the user clicks on an "Add" or "Edit"
-        button).
-        """
-        settings = {
-            'title': 'Model Settings',
-            'key': ModelSettingsForm.get_id(self.model),
-            'form_id': ModelSettingsForm.get_id(self.model),
-            'children': []
-        }
+        data = self.model.to_dict()
 
         movers = {
             'title': 'Movers',
-            'key': AddMoverForm.get_id(),
-            'form_id': AddMoverForm.get_id(),
+            'form_id': 'add_mover',
             'children': []
         }
 
-        spills = {
-            'title': 'Spills',
-            'key': AddSpillForm.get_id(),
-            'form_id': AddSpillForm.get_id(),
-            'children': []
-        }
-
-        for name, value in self._get_model_settings().items():
-            settings['children'].append({
-                # All settings use the model update form.
-                'key': ModelSettingsForm.get_id(self.model),
-                'form_id': ModelSettingsForm.get_id(self.model),
-                'title': self._get_value_title(name, value),
-            })
-
-        # XXX: Hard-coded form ID. FormView class does not exist yet.
-        settings['children'].append({
-            'key': 'model_map',
-            'form_id': 'model_map',
-            'title': 'Map: None'
-        })
-
-        for mover in self.model.movers:
-            form_class = mover_form_classes.get(mover.__class__, None)
-
-            if not form_class:
-                continue
-
-            _id = form_class.get_id(mover)
-
+        for mover in data.pop('wind_movers', []):
             movers['children'].append({
-                'key': _id,
-                'form_id': _id,
-                'delete_form_id': DeleteMoverForm.get_id(mover),
                 'object_id': mover.id,
                 'title': mover.name
             })
 
-        for spill in self.model.spills:
-            form_class = spill_form_classes.get(spill.__class__, None)
+        spills = {
+            'title': 'Spills',
+            'form_id': 'add_spill',
+            'children': []
+        }
 
-            if not form_class:
-                continue
-
-            _id = form_class.get_id(spill)
-
-
+        for spill in data.pop('point_release_spills', []):
             spills['children'].append({
-                'key': _id,
-                'form_id': _id,
-                'delete_form_id': DeleteSpillForm.get_id(spill),
                 'object_id': spill.id,
-                'title': spill.name,
+                'title': spill.name
+            })
+
+        settings = {
+            'title': 'Model Settings',
+            'form_id': 'model_settings',
+            'children': []
+        }
+
+        for name, value in data.items():
+            settings['children'].append({
+                'form_id': 'model_settings',
+                'title': self._get_value_title(name, value),
             })
 
         return [settings, movers, spills]

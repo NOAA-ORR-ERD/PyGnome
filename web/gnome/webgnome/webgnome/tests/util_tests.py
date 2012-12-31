@@ -28,7 +28,7 @@ class JsonRequireModelTests(UnitTestBase):
             def __init__(self, request):
                 self.request = request
 
-            @util.json_require_model
+            @util.require_model
             def method(self):
                 return {}
 
@@ -38,7 +38,7 @@ class JsonRequireModelTests(UnitTestBase):
 
 
     def test_decorator_works_on_function(self):
-        @util.json_require_model
+        @util.require_model
         def mock_view(response):
             return {}
 

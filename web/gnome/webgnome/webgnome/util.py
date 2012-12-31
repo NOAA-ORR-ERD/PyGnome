@@ -4,12 +4,13 @@ util.py: Utility function for the webgnome package.
 import datetime
 import inspect
 import math
-import new
 import uuid
 
 from functools import wraps
+from itertools import chain
 from pyramid.renderers import JSON
-from types import MethodType
+from hazpy.unit_conversion.unit_data import ConvertDataUnits
+
 
 def make_message(type, text):
     """
@@ -62,6 +63,7 @@ gnome_json = JSON(adapters=(
     (uuid.UUID, lambda obj, request: str(obj))
 ))
 
+
 def get_model_from_request(request):
     """
     Return a :class:`gnome.model.Model` if the user has a session key that
@@ -101,17 +103,67 @@ MISSING_MODEL_ERROR = {
 }
 
 
-def json_require_model(f):
+def valid_model_id(request):
+    """
+    A Cornice validator that returns a 404 if a valid model was not found
+    in the user's session.
+    """
+    model = get_model_from_request(request)
+
+    if model is None:
+        request.errors.add('body', 'model', 'Model not found.')
+        request.errors.status = 404
+        return
+
+
+def valid_mover_id(request):
+    """
+    A Cornice validator that returns a 404 if a valid mover was not found using
+    an ``id`` matchdict value.
+    """
+    valid_model_id(request)
+    model = get_model_from_request(request)
+
+    if request.errors:
+        return
+
+    mover_exists = model.has_mover(int(request.matchdict['id']))
+
+    if not mover_exists:
+        request.errors.add('body', 'mover', 'Mover not found.')
+        request.errors.status = 404
+
+
+def valid_spill_id(request):
+    """
+    A Cornice validator that returns a 404 if a valid spill was not found using
+    an ``id`` matchdict value.
+    """
+    valid_model_id(request)
+    model = get_model_from_request(request)
+
+    if request.errors:
+        return
+
+    spill_exists = model.has_spill(int(request.matchdict['id']))
+
+    if not spill_exists:
+        request.errors.add('body', 'spill', 'Spill not found.')
+        request.errors.status = 404
+
+
+def require_model(f):
     """
     Wrap a JSON view in a precondition that checks if the user has a valid
     ``model_id`` in his or her session and fails if not.
 
-    If the key is missing or no model is found for that key, return a JSON
-    object with a ``message`` object describing the error.
+    If the key is missing or no model is found for that key, create a new model.
 
     This decorator works on functions and methods. It returns a method decorator
     if the first argument to the function is ``self``. Otherwise, it returns a
     function decorator.
+
+    Instead of returning an error, should we just create a model?
     """
     args = inspect.getargspec(f)
 
@@ -120,7 +172,7 @@ def json_require_model(f):
         def inner_method(self, *args, **kwargs):
             model = get_model_from_request(self.request)
             if model is None:
-                return MISSING_MODEL_ERROR
+                model = self.request.registry.settings.Model.create()
             return f(self, model, *args, **kwargs)
         wrapper = inner_method
     else:
@@ -128,7 +180,7 @@ def json_require_model(f):
         def inner_fn(request, *args, **kwargs):
             model = get_model_from_request(request)
             if model is None:
-                return MISSING_MODEL_ERROR
+                model = request.registry.settings.Model.create()
             return f(request, model, *args, **kwargs)
         wrapper = inner_fn
     return wrapper
@@ -179,3 +231,10 @@ class DirectionConverter(object):
         idx = cls.DIRECTIONS.index(cardinal_direction.upper())
         if idx:
             return (360.0 / 16) * idx
+
+
+velocity_unit_values = list(chain.from_iterable(
+    [item[1] for item in ConvertDataUnits['Velocity'].values()]))
+
+velocity_unit_options = [(values[1][0], values[1][0]) for label, values in
+                         ConvertDataUnits['Velocity'].items()]

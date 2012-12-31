@@ -1,25 +1,24 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="form, is_variable=False"/>
+<%page args="wind, is_variable=False"/>
 
-%if is_variable:
-    ${defs.form_control(form.date, opts={'class_': 'date'}, use_id=True)}
-    ${defs.time_control(form, "Time (24 hour)")}
-%endif
+% if is_variable:
+    ${defs.form_control(
+        h.text(wind['datetime'], class_='date'))}
+    ${defs.time_control()}
+% endif
 
-${defs.form_control(form.direction,
-                    help_text='Enter cardinal direction or degrees true.',
-                    opts={'class_': 'direction'})}
+## Are we actually getting a wind value here or what?
 
-<div class="control-group ${'error' if form.speed.errors else ''}">
+${defs.form_control(
+    h.text(wind['direction']),
+    help_text='Enter cardinal direction or degrees true.')}
+
+<div class="control-group">
     <label class="control-label">Speed</label>
 
     <div class="controls">
-    ${form.speed(class_='speed')}
-    % if form.speed.errors:
-        <span class="help">
-        ${form.speed.errors[0]}
-        </span>
-    % endif
+    ${h.text(wind['speed'], classes="speed")}
+    <span class="help"> </span>
     </div>
 </div>
 

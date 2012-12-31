@@ -177,6 +177,12 @@ class Model(object):
         self._movers[mover.id] = mover
         return mover.id
 
+    def has_mover(self, mover_id):
+        """
+        Return True if ``mover_id`` is valid, False if not.
+        """
+        return self._movers.has_key(mover_id)
+
     def remove_mover(self, mover_id):
         """
         remove the passed-in mover from the mover list
@@ -207,6 +213,12 @@ class Model(object):
         """
         #fixme: where should we check if a spill is in a valid location on the map?
         self._spills[spill.id] = spill
+
+    def has_spill(self, spill_id):
+        """
+        Return True if ``spill_id`` is valid, False if not.
+        """
+        return self._spills.has_key(spill_id)
 
     def remove_spill(self, spill_id):
         """

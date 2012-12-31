@@ -53,7 +53,7 @@ define([
             this.treeView = new views.TreeView({
                 // XXX: Hard-coded URL, ID.
                 treeEl: "#tree",
-                url: "/tree",
+                url: "/model/tree",
                 ajaxForms: this.forms,
                 model: this.model
             });

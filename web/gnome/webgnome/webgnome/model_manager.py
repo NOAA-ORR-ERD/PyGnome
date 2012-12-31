@@ -1,6 +1,7 @@
 """
 model_manager.py: Manage a pool of running models.
 """
+import numpy
 import util
 
 # XXX: This except block should not be necessary.
@@ -20,20 +21,6 @@ except ImportError:
 from gnome.model import Model
 from gnome.movers import WindMover
 from gnome.spill import PointReleaseSpill
-from gnome.weather import Wind
-
-
-class WindValue(object):
-    """
-    An object that represents a single wind value in a wind time series, using
-    object fields so that it can be used to instantiate a form field.
-    """
-    def __init__(self, date, speed, direction):
-        self.date = date
-        self.hour = date.hour
-        self.minute = date.minute
-        self.speed = speed
-        self.direction = direction
 
 
 class WebWindMover(WindMover):
@@ -44,35 +31,49 @@ class WebWindMover(WindMover):
     def __init__(self, *args, **kwargs):
         self._name = kwargs.pop('name', 'Wind Mover')
         self.is_constant = kwargs.pop('is_constant', True)
-        timeseries = kwargs.pop('timeseries')
-        units = kwargs.pop('units')
-        kwargs['wind'] = Wind(timeseries, units=units)
+
+        # TODO: What to do with this value? Conversion?
+        self.uncertain_angle_scale_units = kwargs.pop(
+            'uncertain_angle_scale_units', None)
+
         super(WebWindMover, self).__init__(*args, **kwargs)
 
-    @property
-    def units(self):
-        return self.wind.user_units
+    def from_dict(self, data):
+        self.wind = data['wind']
+        self.is_active = data['is_active']
+        self.uncertain_duration = data['uncertain_duration']
+        self.uncertain_speed_scale = data['uncertain_speed_scale']
+        self.uncertain_angle_scale = data['uncertain_angle_scale']
+        self.uncertain_time_delay = data['uncertain_time_delay']
 
-    @units.setter
-    def units(self, units):
-        self.wind._user_units = units
+        # TODO: What to do here?
+        self.uncertain_angle_scale_units = 'deg'
 
-    @property
-    def timeseries(self):
+    def to_dict(self):
         series = []
 
-        for timeseries in self.wind.get_timeseries(units=self.units):
+        for timeseries in self.wind.get_timeseries(units=self.wind.user_units):
             dt = timeseries[0].astype(object)
             series.append(
-                WindValue(date=dt, speed=timeseries[1][0],
+                dict(datetime=dt, speed=timeseries[1][0],
                           direction=timeseries[1][1])
             )
 
-        return series
+        return {
+            'wind': {
+                'timeseries': series,
+                'units': self.wind.user_units
+            },
 
-    @timeseries.setter
-    def timeseries(self, timeseries):
-        self.wind.set_timeseries(timeseries, self.units)
+            'is_active': self.is_active,
+            'uncertain_duration': self.uncertain_duration,
+            'uncertain_time_delay': self.uncertain_time_delay,
+            'uncertain_speed_scale': self.uncertain_speed_scale,
+            'uncertain_angle_scale': self.uncertain_angle_scale,
+
+            # XXX: Does WindMover always return the angle scale in degrees?
+            'uncertain_angle_scale_units': self.uncertain_angle_scale_units
+        }
 
     @property
     def name(self):
@@ -87,7 +88,8 @@ class WebPointReleaseSpill(PointReleaseSpill):
     webgnome-specific functionality.
     """
     def __init__(self, *args, **kwargs):
-        self._name = kwargs.pop('name', 'Spill')
+        self._name = kwargs.pop('name', None)
+        self.is_active = kwargs.pop('is_active', True)
         super(WebPointReleaseSpill, self).__init__(*args, **kwargs)
 
     @property
@@ -124,6 +126,23 @@ class WebPointReleaseSpill(PointReleaseSpill):
             return self._name
         return super(WebPointReleaseSpill, self).__repr__()
 
+    def from_dict(self, data):
+        self.release_time = data['release_time']
+        self.start_position = data['start_position']
+        self.windage_range = data['windage']
+        self._name = data['name']
+        self.is_uncertain = data['uncertain']
+        self.num_LEs = data['num_LEs']
+
+    def to_dict(self):
+        return {
+            'release_time': self.release_time,
+            'start_position': self.start_position,
+            'windage': self.windage_range,
+            'name': self._name,
+            'uncertain': self.is_uncertain,
+            'num_LEs': self.num_LEs
+        }
 
 
 class WebModel(Model):
@@ -131,6 +150,14 @@ class WebModel(Model):
     A subclass of :class:`gnome.model.Model` that provides webgnome-specific
     functionality.
     """
+    mover_keys = {
+        WebWindMover: 'wind_movers'
+    }
+
+    spill_keys = {
+        WebPointReleaseSpill: 'point_release_spills'
+    }
+
     def __init__(self, *args, **kwargs):
         super(WebModel, self).__init__()
 
@@ -138,6 +165,11 @@ class WebModel(Model):
         # TODO: Add output caching in the model.
         self.time_steps = []
         self.runtime = None
+
+    @property
+    def duration_hours(self):
+        if self.duration.seconds:
+            return self.duration.seconds / 60 / 60
 
     def has_mover_with_id(self, mover_id):
         """
@@ -155,7 +187,51 @@ class WebModel(Model):
         TODO: The manager patches :class:`gnome.model.Model` with this method,
         but the method should belong to that class.
         """
-        return int(spill_id) in self._spills
+        return int(spill_id) in self.spills
+
+    def build_subtree(self, data, objs, keys):
+        for key in keys.values():
+            if key not in data:
+                data[key] = []
+
+        for obj in objs:
+            key = keys.get(obj.__class__, None)
+
+            if not key or not hasattr(obj, 'to_dict'):
+                continue
+
+            if key not in data:
+                data[key] = []
+
+            data[key].append(obj.to_dict())
+
+        return data
+    
+    def to_dict(self, include_spills=True, include_movers=True):
+        data = {
+            'uncertain': self.uncertain,
+            'time_step': self.time_step,
+            'start_time': self.start_time,
+            'duration_days': 0,
+            'duration_hours': 0
+        }
+
+        if self.duration.days:
+            data['duration_days'] = self.duration.days
+    
+        if self.duration_hours:
+            data['duration_hours'] = self.duration_hours
+
+        if include_movers:
+            data = self.build_subtree(data, self.movers, self.mover_keys)
+
+        if include_spills:
+            data = self.build_subtree(data, self.spills, self.spill_keys)
+
+        return data
+
+    def from_dict(self):
+        pass
 
 
 class ModelManager(object):
