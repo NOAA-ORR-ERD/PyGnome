@@ -45,8 +45,8 @@ class TestRandomMover():
         print self.pSpill['positions']
     
     def test_string_representation_matches_repr_method(self):
-        assert repr(self.mover) == 'Random Mover'
-        assert str(self.mover) == 'Random Mover'
+        assert repr(self.mover) == 'RandomMover(diffusion_coef=100000.0)'
+        assert str(self.mover) == 'RandomMover(diffusion_coef=100000.0)'
 
     def test_id_matches_builtin_id(self):
         assert id(self.mover) == self.mover.id

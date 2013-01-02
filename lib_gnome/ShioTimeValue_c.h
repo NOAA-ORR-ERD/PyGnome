@@ -56,8 +56,6 @@ class GNOMEDLL_API ShioTimeValue_c : virtual public OSSMTimeValue_c {
 protected:
 
 	// instance variables
-	char fStationName[MAXSTATIONNAMELEN];
-	char fStationType;
 	double fLatitude;
 	double fLongitude;
 	CONSTITUENT2 fConstituent;
@@ -66,8 +64,6 @@ protected:
 	//
 	Boolean fHighLowValuesOpen; // for the list
 	Boolean fEbbFloodValuesOpen; // for the list
-	EbbFloodDataH fEbbFloodDataHdl;	// values to show on list for tidal currents
-	HighLowDataH fHighLowDataHdl;	// values to show on list for tidal heights
 	
 	OSErr		GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,float *** val);
 	OSErr 		GetKeyedValue(CHARH f, char*key, long lineNum, char* strLine,DATA * val);
@@ -84,10 +80,13 @@ protected:
 	long 		I_SHIOEBBFLOODS(void);
 	
 public:						
-	
-	bool	daylight_savings_off;	// AH 07/09/2012
-	
-							ShioTimeValue_c() { fEbbFloodDataHdl = 0; fHighLowDataHdl = 0; daylight_savings_off = true; timeValues = 0;}
+	char					fStationName[MAXSTATIONNAMELEN];
+	char					fStationType;
+	bool					daylight_savings_off;	// AH 07/09/2012
+	EbbFloodDataH			fEbbFloodDataHdl;	// values to show on list for tidal currents
+	HighLowDataH			fHighLowDataHdl;	// values to show on list for tidal heights
+
+							ShioTimeValue_c ();
 							ShioTimeValue_c (TMover *theOwner);
 							ShioTimeValue_c (TMover *theOwner,TimeValuePairH tvals);
 	virtual ClassID 		GetClassID () { return TYPE_SHIOTIMEVALUES; }
