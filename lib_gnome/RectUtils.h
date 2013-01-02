@@ -11,11 +11,11 @@ typedef struct ExPoint
     						double	 				v;
 					} ExPoint, *ExPointPtr;
 
-typedef struct LongPoint
+/*typedef struct LongPoint
 					{
     						long 					h;
     						long 					v;
-					} LongPoint, *LongPointPtr, **LongPointHdl;
+					} LongPoint, *LongPointPtr, **LongPointHdl;*/
 
 typedef struct LongRect
 					{

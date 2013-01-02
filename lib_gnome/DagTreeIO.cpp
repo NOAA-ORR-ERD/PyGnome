@@ -667,6 +667,44 @@ checkTriPts:
 }
 
 /////////////////////////////////////////////////
+Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts)
+{
+	char* token = strtok(s,PTCUR_DELIM_STR);
+	*numPts = 0;
+	*numLandPts = 0;	
+	if(!token || strncmpnocase(token,"VERTICES",strlen("VERTICES")) != 0)
+	{
+		return FALSE;
+	}
+	
+	token = strtok(NULL,PTCUR_DELIM_STR);
+	
+	if(!token || sscanf(token,"%ld",numPts) != 1)
+	{
+		return FALSE;
+	}
+	
+	token = strtok(NULL,PTCUR_DELIM_STR);
+	
+	if(!token || sscanf(token,"%ld",numLandPts) != 1)
+	{
+		//return FALSE;
+		*numLandPts = 0;	// don't require
+	}
+	return TRUE;
+	
+	/*char* strToMatch = "VERTICES";
+	 long numScanned, len = strlen(strToMatch);
+	 if(!strncmpnocase(s,strToMatch,len)) {
+	 numScanned = sscanf(s+len+1,"%ld",numPts);
+	 if (numScanned != 1 || *numPts <= 0.0)
+	 return FALSE; 
+	 }
+	 else
+	 return FALSE;
+	 return TRUE; */
+}
+
 /////////////////////////////////////////////////////////////////
 Boolean IsWaterBoundaryHeaderLine(char *s, long* numWaterBoundaries, long* numBoundaryPts)
 {	

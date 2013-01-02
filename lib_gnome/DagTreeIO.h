@@ -21,6 +21,7 @@ long FindTriThirdPoint(long **longH,long p1, long p2, long index);
 int	Right_or_Left_of_Segment(LongPointHdl ptsH,long ref_p1,long ref_p2, LongPoint test_p1);
 long WhatTriIsPtIn(DAGHdl treeH,TopologyHdl topH, LongPointHdl ptsH,LongPoint pt);
 
+Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts);
 
 Boolean IsWaterBoundaryHeaderLine(char *s, long* numWaterBoundaries, long* numBoundaryPts);
 Boolean IsBoundarySegmentHeaderLine(char *s, long* numBoundarySegs);

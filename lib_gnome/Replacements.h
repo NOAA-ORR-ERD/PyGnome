@@ -68,6 +68,8 @@
 #define TimeGridVelRect TimeGridVelRect_c
 #define TimeGridVelCurv TimeGridVelCurv_c
 #define TimeGridVelTri TimeGridVelTri_c
+#define TimeGridCurTri TimeGridCurTri_c
+#define TimeGridCurRect TimeGridCurRect_c
 
 #define TechError(a, b, c) printf(a)
 #define printError(msg) printf(msg)

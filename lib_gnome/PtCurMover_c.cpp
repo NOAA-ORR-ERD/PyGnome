@@ -152,7 +152,7 @@ OSErr PtCurMover_c::PrepareForModelStep(const Seconds& model_time,const Seconds&
 	 }
 	 }*/
 	if (!bActive) return 0; 
-	err = this -> SetInterval(errmsg, model->GetModelTime()); // AH 07/17/2012
+	err = this -> SetInterval(errmsg, model_time); // AH 07/17/2012
 	
 	if(err) goto done;
 	
@@ -880,7 +880,7 @@ done:
 }
 
 /**************************************************************************************************/
-OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
+/*OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
 {	// expects a number of the form 
 	// <number><comma><number>
 	//e.g.  "-120.2345,40.345"
@@ -892,11 +892,11 @@ OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
 	char delimiterChar = ',';
 	Boolean scientificNotation = false;
 	
-	j = 0;	/* index into supplied string */
+	j = 0;	// index into supplied string //
 	
 	for (pairIndex = 1; pairIndex <= 2 && !err; ++pairIndex)
 	{
-		/* scan u, then v */
+		// scan u, then v //
 		Boolean keepGoing = true;
 		for (k = 0 ; keepGoing; j++)
 		{	   			
@@ -953,13 +953,13 @@ OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
 		
 		if(err) break; // so we break out of the main loop, shouldn't happen
 		
-		num[k++] = 0;									/* terminate the number-string */
+		num[k++] = 0;									// terminate the number-string //
 		
 		if (pairIndex == 1)
 		{
 			if (!scientificNotation) VelocityPtr -> u = atof(num);
 			
-			if (startChar[j] == ',')					/* increment j past the comma to next coordinate */
+			if (startChar[j] == ',')					// increment j past the comma to next coordinate //
 			{
 				++j;
 				delimiterChar = ','; // JLM reset the delimiter char
@@ -976,4 +976,4 @@ OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
 	if (scientificNotation) return -2;
 	return err;
 
-}
+}*/

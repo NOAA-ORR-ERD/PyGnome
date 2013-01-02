@@ -324,7 +324,36 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 			if(err) return err;
 		}
 	}
-	/*else if
+	else if (IsPtCurFile(path))
+	{
+		char errmsg[256];
+
+		newTimeGrid = new TimeGridCurTri();
+		if (newTimeGrid)
+		{
+			//GridCurrentMover *newGridCurrentMover = new GridCurrentMover(owner, fileName);
+			//if (!newGridCurrentMover)
+			{ 
+				//TechError("CreateAndInitCurrentsMover()", "new GridCurrentMover()", 0);
+				//return 0;
+			}
+			//newMover = newGridCurrentMover;
+			
+			//err = this->InitMover(newTimeGrid);
+			//if(err) goto Error;
+			err = newTimeGrid->TextRead(path,"");
+			if(err) return err;
+			this->SetTimeGrid(newTimeGrid);
+			if (!err) /// JLM 5/3/10
+			{
+				//char errmsg[256];
+				//err = timeGrid->ReadInputFileNames(fileNamesPath);
+				timeGrid->DisposeAllLoadedData();
+				//if(!err) err = timeGrid->SetInterval(errmsg,model->GetModelTime()); // if set interval here will get error if times are not in model range
+			}
+		}
+	}
+		/*else if
 	{
 	}
 	else 
