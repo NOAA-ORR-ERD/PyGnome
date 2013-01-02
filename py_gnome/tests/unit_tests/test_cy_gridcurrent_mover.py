@@ -71,47 +71,47 @@ class TestGridCurrentMover():
         assert np.all(self.cm.delta['lat'] != 0)
         assert np.all(self.cm.delta['long'] != 0)
         
-#     def test_move_reg(self):
-#         """
-#         test move for a regular grid (first time in file)
-#         """
-#         time = datetime.datetime(1999, 11, 29, 21)
-#         self.cm.model_time = time_utils.date_to_sec(time)
-#         time_grid_file = r"SampleData/currents/test.cdf"
-#         topology_file = r"SampleData/currents/NYTopology.dat"	# will want a null default
-#         self.gcm.text_read(time_grid_file,topology_file)
-#         self.cm.ref[:]['long'] = (3.104588) #for simple example
-#         self.cm.ref[:]['lat'] = (52.016468)
-#         self.check_move()
-#         actual = np.empty((self.cm.num_le,), dtype=basic_types.world_point)
-#         actual[:]['lat'] = (.003354610952486354)
-#         actual[:]['long'] = (.0010056182923228838)
-#         tol = 1e-5
-#         np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 
-#                                    "test.cdf move is not within a tolerance of "+str(tol), 0)
-#         np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
-#                                    "test.cdf move is not within a tolerance of "+str(tol), 0)
-#         
-#     def test_move_curv(self):
-#         """
-#         test move for a curvilinear grid (first time in file)
-#         """
-#         time = datetime.datetime(2008, 1, 29, 17)
-#         self.cm.model_time = time_utils.date_to_sec(time)
-#         time_grid_file = r"SampleData/currents/ny_cg.nc"
-#         topology_file = r"SampleData/currents/NYTopology.dat"	
-#         self.gcm.text_read(time_grid_file,topology_file)
-#         self.cm.ref[:]['long'] = (-74.03988) #for NY
-#         self.cm.ref[:]['lat'] = (40.536092)
-#         self.check_move()
-#         actual = np.empty((self.cm.num_le,), dtype=basic_types.world_point)
-#         actual[:]['lat'] = (.000911)
-#         actual[:]['long'] = (-.001288)
-#         tol = 1e-5
-#         np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 
-#                                    "ny_cg.nc move is not within a tolerance of "+str(tol), 0)
-#         np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
-#                                    "ny_cg.nc move is not within a tolerance of "+str(tol), 0)
+    def test_move_reg(self):
+        """
+        test move for a regular grid (first time in file)
+        """
+        time = datetime.datetime(1999, 11, 29, 21)
+        self.cm.model_time = time_utils.date_to_sec(time)
+        time_grid_file = r"SampleData/currents/test.cdf"
+        topology_file = r"SampleData/currents/NYTopology.dat"	# will want a null default
+        self.gcm.text_read(time_grid_file,topology_file)
+        self.cm.ref[:]['long'] = (3.104588) #for simple example
+        self.cm.ref[:]['lat'] = (52.016468)
+        self.check_move()
+        actual = np.empty((self.cm.num_le,), dtype=basic_types.world_point)
+        actual[:]['lat'] = (.003354610952486354)
+        actual[:]['long'] = (.0010056182923228838)
+        tol = 1e-5
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 
+                                   "test.cdf move is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
+                                   "test.cdf move is not within a tolerance of "+str(tol), 0)
+        
+    def test_move_curv(self):
+        """
+        test move for a curvilinear grid (first time in file)
+        """
+        time = datetime.datetime(2008, 1, 29, 17)
+        self.cm.model_time = time_utils.date_to_sec(time)
+        time_grid_file = r"SampleData/currents/ny_cg.nc"
+        topology_file = r"SampleData/currents/NYTopology.dat"	
+        self.gcm.text_read(time_grid_file,topology_file)
+        self.cm.ref[:]['long'] = (-74.03988) #for NY
+        self.cm.ref[:]['lat'] = (40.536092)
+        self.check_move()
+        actual = np.empty((self.cm.num_le,), dtype=basic_types.world_point)
+        actual[:]['lat'] = (.000911)
+        actual[:]['long'] = (-.001288)
+        tol = 1e-5
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 
+                                   "ny_cg.nc move is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
+                                   "ny_cg.nc move is not within a tolerance of "+str(tol), 0)
         
     def test_move_curv_series(self):
         """
@@ -120,8 +120,8 @@ class TestGridCurrentMover():
         #time = datetime.datetime(2009, 8, 2, 0) #first file
         time = datetime.datetime(2009, 8, 9, 0) #second file
         self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = r"SampleData/currents/file_series/flist1.txt"
-        #time_grid_file = r"SampleData/currents/file_series/flist2.txt"
+        #time_grid_file = r"SampleData/currents/file_series/flist1.txt"
+        time_grid_file = r"SampleData/currents/file_series/flist2.txt"
         topology_file = r"SampleData/currents/file_series/HiROMSTopology.dat"
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-157.795728) #for HiROMS
@@ -138,28 +138,48 @@ class TestGridCurrentMover():
         np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
                                    "HiROMS move is not within a tolerance of "+str(tol), 0)
         
-#     def test_move_tri(self):
-#         """
-#         test move for a curvilinear grid (first time in file)
-#         """
-#         time = datetime.datetime(2004, 12, 31, 13)
-#         self.cm.model_time = time_utils.date_to_sec(time)
-#         time_grid_file = r"SampleData/currents/ChesBay.nc"
-#         topology_file = r"SampleData/currents/ChesBay.dat"	
-#         self.gcm.text_read(time_grid_file,topology_file)
-#         self.cm.ref[:]['long'] = (-76.149368) #for ChesBay
-#         self.cm.ref[:]['lat'] = (37.74496)
-#         self.check_move()
-#         actual = np.empty((self.cm.num_le,), dtype=basic_types.world_point)
-#         actual[:]['lat'] = (-.00170908)
-#         actual[:]['long'] = (-.0003672)
-#         tol = 1e-5
-#         np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 
-#                                    "ches_bay move is not within a tolerance of "+str(tol), 0)
-#         np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
-#                                    "ches_bay move is not within a tolerance of "+str(tol), 0)
-#         
+    def test_move_tri(self):
+        """
+        test move for a triangular grid (first time in file)
+        """
+        time = datetime.datetime(2004, 12, 31, 13)
+        self.cm.model_time = time_utils.date_to_sec(time)
+        time_grid_file = r"SampleData/currents/ChesBay.nc"
+        topology_file = r"SampleData/currents/ChesBay.dat"	
+        self.gcm.text_read(time_grid_file,topology_file)
+        self.cm.ref[:]['long'] = (-76.149368) #for ChesBay
+        self.cm.ref[:]['lat'] = (37.74496)
+        self.check_move()
+        actual = np.empty((self.cm.num_le,), dtype=basic_types.world_point)
+        actual[:]['lat'] = (-.00170908)
+        actual[:]['long'] = (-.0003672)
+        tol = 1e-5
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 
+                                   "ches_bay move is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
+                                   "ches_bay move is not within a tolerance of "+str(tol), 0)
         
+    def test_move_ptcur(self):
+        """
+        test move for a ptCur grid (first time in file)
+        """
+        time = datetime.datetime(2000, 2, 14, 10)
+        self.cm.model_time = time_utils.date_to_sec(time)
+        time_grid_file = r"SampleData/currents/ptCurNoMap.cur"
+        topology_file = r"SampleData/currents/ChesBay.dat"	
+        self.gcm.text_read(time_grid_file,topology_file)
+        self.cm.ref[:]['long'] = (-124.686928) #for ptCur test
+        self.cm.ref[:]['lat'] = (48.401124)
+        self.check_move()
+        actual = np.empty((self.cm.num_le,), dtype=basic_types.world_point)
+        actual[:]['lat'] = (.0161987)
+        actual[:]['long'] = (-.02439887)
+        tol = 1e-5
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 
+                                   "ptcur move is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
+                                   "ptcur move is not within a tolerance of "+str(tol), 0)
+               
     
 if __name__ == "__main__":
     """
