@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
 """
-spill.py
+spill.py - A new implementation of the spill class(s)
 
-a new implementation of the spill class(s)
-
-keeps all the data in separate arrays, so we only store and move around the
+We now keep all the data in separate arrays, so we only store and move around the
 data that is needed
 
 This is the "magic" class -- it handles the smart allocation of arrays, etc.
@@ -18,9 +16,9 @@ from gnome.utilities import rand    # not to confuse with python random module
 
 class Spill(object):
     """
-    Base class for all spills
+    This is the Base class for all spills
     
-    Needs to be subclassed to do anything useful
+    It Needs to be subclassed to do anything useful
 
     Many of the "fields" associated with a collection of LEs are optional,
     or used only by some movers, so only the ones required will be requested
@@ -29,7 +27,7 @@ class Spill(object):
     The data for the LEs is stored in the _data_arrays dict. They can be
     accessed by indexing:
       
-    positions = Spill['positions'] : returns a (num_LEs, 3) array of world_point_types
+    >>> positions = Spill['positions']  # assigns a (num_LEs, 3) array of world_point_types
     """
     def __init__(self, num_LEs, initial_positions=(0.0,0.0,0.0), uncertain=False):
         
@@ -96,8 +94,6 @@ class Spill(object):
     @property
     def id(self):
         """
-        Return an ID value for this spill.
-
         This method uses Python's builtin `id()` function to identify the
         object. Override it for more exotic forms of identification.
 
@@ -118,7 +114,8 @@ class PointReleaseSpill(Spill):
     non-weathering particles
 
     """
-    def __init__(self, num_LEs, start_position, release_time, windage=(0.01, 0.04), persist=900, uncertain=False):
+    def __init__(self, num_LEs, start_position, release_time,
+                 windage=(0.01, 0.04), persist=900, uncertain=False):
         """
         :param num_LEs: number of LEs used for this spill
         :param start_position: location the LEs are released (long, lat, z) (floating point)
@@ -152,9 +149,7 @@ class PointReleaseSpill(Spill):
         Do whatever needs to be done at the beginning of a time step:
         
         In this case:
-        
-        Release the LEs -- i.e. change their status to in_water
-        if the current time is greater than or equal to the release time
+         - *Release the LEs* -- i.e. change their status to in_water if the current time is greater than or equal to the release time
         
         :param current_time: datetime object for current time
         :param time_step: the time step, in seconds
@@ -172,7 +167,9 @@ class PointReleaseSpill(Spill):
     def update_windage(self, time_step):
         """
         Update windage for each LE for each time step
-        May want to cythonize this to speed it up
+
+        .. note::
+             May want to cythonize this to speed it up
         """
         self['windages'][:] = rand.random_with_persistance(self.windage_range[0],
                                                           self.windage_range[1],
