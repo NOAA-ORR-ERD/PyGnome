@@ -1,18 +1,8 @@
 <%namespace name="defs" file="../defs.mak"/>
 <%page args="model"/>
 
-<div class="modal form hide fade" id="model_settings"
-     data-backdrop="static" role="dialog" aria-labelledby="modal-label"
-     aria-hidden="true">
-
-    <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"
-                aria-hidden="true">×
-        </button>
-        <h3 id="modal-label">Model Settings</h3>
-    </div>
-
-    <div class="modal-body">
+<div class="form page hide" id="model_settings" title="Model Settings">
+    <div class="page-body">
         <form action="" class="form-horizontal model-settings" method="POST">
             <%
                 start_time = h.text('start_time', model.start_time, class_="date")
@@ -38,10 +28,5 @@
             ${defs.form_control(computation_time_step, 'hours', label='Time Step')}
 
         </form>
-    </div>
-
-    <div class="modal-footer">
-        <button class="btn cancel" data-dismiss="modal" aria-hidden="true"> Cancel</button>
-        <button class="btn btn-primary">Save</button>
     </div>
 </div>

@@ -26,6 +26,7 @@ def show_model(request):
     wind_movers = model_dict.pop('wind_movers')
     model_settings = util.SchemaForm(schema.ModelSettingsSchema, model_dict)
     default_wind_mover = util.SchemaForm(schema.WindMoverSchema)
+    default_wind = util.SchemaForm(schema.WindSchema)
     default_wind_value = util.SchemaForm(schema.WindValueSchema)
     default_point_release_spill = util.SchemaForm(schema.PointReleaseSpillSchema)
 
@@ -34,7 +35,8 @@ def show_model(request):
         'model': model_settings,
         'default_wind_mover': default_wind_mover,
         'default_point_release_spill': default_point_release_spill,
-        'default_wind': default_wind_value
+        'default_wind': default_wind,
+        'default_wind_value': default_wind_value
     }
 
     if created:

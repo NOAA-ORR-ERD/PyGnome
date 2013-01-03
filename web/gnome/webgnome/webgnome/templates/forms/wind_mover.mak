@@ -1,20 +1,19 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="mover"/>
+<%page args="mover, default_wind, default_wind_value"/>
 
-<div class="wind form page hide" id="wind_mover"
-     data-id="${mover_id if mover_id else ''}">
-
+<div class="wind form page hide" id="wind_mover">
     <form action="" class="form-horizontal" method="POST">
-
-    <div class="page-header form-inline">
-        ${h.text('name', mover.name)}
-        <%
-            from webgnome.util import velocity_unit_options
-            units = mover.wind['units'] if mover.wind else 'mps'
-        %>
-        <label>Units ${h.select('units', units, velocity_unit_options, class_='units')}</label>
-        <label class="checkbox">${h.checkbox('is_active', checked=mover.is_active)} Active </label>
-    </div>
+        <div class="page-header form-inline">
+            <label>Name</label> ${h.text('name', mover.name)}
+            <%
+                from webgnome.util import velocity_unit_options
+                units = mover.wind.units if mover.wind else default_wind.units
+            %>
+            <label>Units</label> ${h.select('units', units, velocity_unit_options, class_='units')}
+            <label class="checkbox">${h.checkbox('is_active', checked=mover.is_active)}
+                Active
+            </label>
+        </div>
     <div class="page-body">
         <%
             is_constant = hasattr(mover, 'id') is False or mover.is_constant
@@ -38,7 +37,7 @@
 
                 <div class="span4 add-time-forms">
                     <%
-                        wind = winds[0] if winds else default_wind
+                        wind = winds[0] if winds else default_wind_value
                     %>
                     <div class='time-form add-time-form'>
                         ${h.checkbox("is_constant", checked=True, class_="hidden")}
@@ -57,11 +56,11 @@
                 <div class="span4 add-time-forms">
                     <div class='time-form add-time-form'>
                         <%
-                            auto_increment_by = h.text('auto_increment_by',
+                            auto_increment_by = h.text('auto_increment_by', 6,
                                                         class_='auto_increment_by')
                         %>
-                        <%include file="wind_form.mak" args="wind=default_wind, is_variable=True"/>
-                        ${defs.form_control(auto_increment_by, "hours")}
+                        <%include file="wind_form.mak" args="wind=default_wind_value, is_variable=True"/>
+                        ${defs.form_control(auto_increment_by, "hours", label="Auto-increment By")}
 
                         <div class="control-group add-time-buttons">
                             <div class="controls">
@@ -114,14 +113,16 @@
                     uncertain_duration = h.text('uncertain_duration', mover.uncertain_duration)
                     uncertain_speed_scale = h.text('uncertain_speed_scale', mover.uncertain_speed_scale)
                     uncertain_angle_scale = h.text('uncertain_angle_scale', mover.uncertain_angle_scale)
-                    uncertain_angle_scale_units = h.text('uncertain_angle_scale_units', mover.uncertain_angle_scale_units)
+                    uncertain_angle_scale_units = h.select('uncertain_angle_scale_units',
+                                                            mover.uncertain_angle_scale_units,
+                                                            (('rad', 'Radians'), ('deg', 'Degrees')))
                 %>
 
-                ${defs.form_control(uncertain_time_delay, "hours")}
-                ${defs.form_control(uncertain_duration, "hours")}
-                ${defs.form_control(uncertain_speed_scale)}
-                ${defs.form_control(uncertain_angle_scale)}
-                ${defs.form_control(uncertain_angle_scale_units)}
+                ${defs.form_control(uncertain_time_delay, "hours", label="Time Delay")}
+                ${defs.form_control(uncertain_duration, "hours", label="Duration")}
+                ${defs.form_control(uncertain_speed_scale, label="Speed Scale")}
+                ${defs.form_control(uncertain_angle_scale, label="Angle Scale")}
+                ${defs.form_control(uncertain_angle_scale_units, label="Angle Scale Units")}
             </div>
         </div>
     </div>

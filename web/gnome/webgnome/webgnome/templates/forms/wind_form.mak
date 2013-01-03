@@ -3,21 +3,20 @@
 
 % if is_variable:
     ${defs.form_control(
-        h.text(wind.datetime, class_='date'))}
+        h.text('date', wind.datetime, class_='date'), label="Date")}
     ${defs.time_control()}
 % endif
 
-## Are we actually getting a wind value here or what?
-
 ${defs.form_control(
-    h.text(wind.direction),
+    h.text('direction', wind.direction),
+    label='Direction',
     help_text='Enter cardinal direction or degrees true.')}
 
 <div class="control-group">
     <label class="control-label">Speed</label>
 
     <div class="controls">
-    ${h.text(wind.speed, classes="speed")}
+    ${h.text('speed', wind.speed, classes="speed")}
     <span class="help"> </span>
     </div>
 </div>

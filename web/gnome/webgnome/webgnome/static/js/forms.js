@@ -324,16 +324,18 @@ define([
 
 
      /*
-     An `FormView` subclass that displays in a modal window.
+     An `FormView` subclass that displays in a JQuery UI modal window.
      */
-    var JqModalFormView = FormView.extend({
+    var JQueryUIModalFormView = FormView.extend({
         initialize: function(options) {
-            JqModalFormView.__super__.initialize.apply(this, arguments);
+            JQueryUIModalFormView.__super__.initialize.apply(this, options);
 
-            this.$el.dialog({
+            var opts = $.extend({}, {
                 autoOpen: false,
-                height: 700,
-                width: 925,
+                // Disable the default behavior of auto-focus on first element.
+                open: function(event, ui) {
+                    $("input").blur();
+                },
                 buttons: {
                     Cancel: function() {
                         $(this).dialog("close");
@@ -343,7 +345,9 @@ define([
                         $(this).dialog("close");
                     }
                 }
-            });
+            }, options);
+
+            this.$el.dialog(opts);
         },
 
         /*
@@ -465,9 +469,15 @@ define([
     /*
      `WindMoverFormView` handles the WindMover form.
      */
-    var WindMoverFormView = JqModalFormView.extend({
+    var WindMoverFormView = JQueryUIModalFormView.extend({
         initialize: function(options) {
-            WindMoverFormView.__super__.initialize.apply(this, arguments);
+            var opts = _.extend({
+                width: 900,
+                height: 710,
+                title: "Edit Wind Mover"
+            }, options);
+
+            WindMoverFormView.__super__.initialize.apply(this, [opts]);
             this.renderTimeTable();
             this.setupCompass();
 
@@ -781,22 +791,46 @@ define([
 
 
     var AddWindMoverFormView = WindMoverFormView.extend({
+         initialize: function(options) {
+             var opts = _.extend({
+                 title: "Add Wind Mover"
+             }, options);
+
+             AddWindMoverFormView.__super__.initialize.apply(this, [opts]);
+         },
+
         submit: function() {
             console.log('add wind mover submit');
+        },
+
+        show: function() {
+            AddWindMoverFormView.__super__.show.apply(this);
+            console.log('add wind mover show');
+        },
+
+        hide: function() {
+            AddWindMoverFormView.__super__.hide.apply(this);
+            console.log('add wind mover hide');
         }
     });
 
 
-    var PointReleaseSpillFormView = FormView.extend({
+    var PointReleaseSpillFormView = JQueryUIModalFormView.extend({
          initialize: function(options) {
-            PointReleaseSpillFormView.__super__.initialize.apply(this, arguments);
+             var opts = _.extend({
+                width: 400,
+                height: 420,
+                title: "Edit Point Release Spill"
+            }, options);
+
+            PointReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
 
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
         },
 
         show: function(coords) {
-            FormView.prototype.show.call(this);
+            PointReleaseSpillFormView.__super__.show.apply(this);
 
             if (coords) {
                 var coordInputs = this.$el.find('.coordinate');
@@ -852,7 +886,8 @@ define([
         PointReleaseSpillFormView: PointReleaseSpillFormView,
         FormView: FormView,
         ModalFormView: ModalFormView,
-        FormViewContainer: FormViewContainer
+        FormViewContainer: FormViewContainer,
+        JQueryUIModalFormView: JQueryUIModalFormView
     };
 
 });

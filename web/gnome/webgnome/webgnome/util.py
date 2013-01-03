@@ -83,37 +83,62 @@ class SchemaForm(object):
     The value of each field is passed through :func:`to_json` to prepare it
     for output in an HTML document.
     """
+    class ObjectValue(object):
+        def __init__(self, fields):
+            for field in fields:
+                self.__dict__[field[0]] = field[1]
+
+        def __repr__(self):
+            return 'ObjectValue(%s)' % (
+            ','.join(['%s=%s' % (k, v) for k, v in self.__dict__.items()]))
+
     def __init__(self, schema, obj=None):
         self.schema = schema().bind()
         self.obj = obj
-        self.set_defaults()
+        self._fields = {}
+        self.create_fields()
 
-#    def make_json_values(self, obj):
-#        """
-#        Convert ``obj`` to JSON, unless it is an iterable or dict-like object,
-#        in which case traverse all items in the list or keys in the dict and
-#        convert them to JSON.
-#        """
-#        def json_list(obj):
-#            return [self.make_json_values(v) for v in obj]
-#
-#        if isinstance(obj, list):
-#            return json_list(obj)
-#        if isinstance(obj, tuple):
-#            return tuple(json_list(obj))
-#        if isinstance(obj, set):
-#            return set(json_list(obj))
-#        elif isinstance(obj, dict):
-#            return {k: self.make_json_values(v) for k, v in obj.items}
-#        elif isinstance(obj, str):
-#            return obj
-#        else:
-#            try:
-#                return to_json(obj)
-#            except ValueError:
-#                return ''
+    def __getattr__(self, name):
+        if name in self._fields:
+            return self._fields[name]
+        else:
+            raise AttributeError
 
-    def set_defaults(self):
+    def get_field_value(self, field, parents=None):
+        value = None
+        parents = parents or []
+
+        if self.obj:
+            target = self.obj
+
+            for parent in parents:
+                if isinstance(target, dict):
+                    target = target.get(parent, None)
+                else:
+                    target = getattr(target, parent, None)
+
+            if isinstance(target, dict):
+                value = target.get(field.name, None)
+            elif hasattr(target, field.name):
+                value = getattr(target, field.name, None)
+        else:
+            # Use schema default. Catch defaults of 0 by checking against None.
+            if field.default is not None:
+                value = field.default
+
+        value = field.serialize(value) if value is not None else ''
+
+        if isinstance(value, dict):
+            fields = []
+            for key, val in value.items():
+                if isinstance(val, dict):
+                    val = self.get_field_value(val)
+                fields.append((key, val))
+            return self.ObjectValue(fields)
+
+        return value
+
+    def create_fields(self):
         """
         Create a field on self for each field in the given Colander schema.
 
@@ -124,16 +149,7 @@ class SchemaForm(object):
         If ``obj`` was not given, look up the form defaults in ``self.schema``.
         """
         for field in self.schema.children:
-            if self.obj:
-                default = ''
-                if hasattr(self.obj, field.name):
-                    default = self.obj.__dict__[field.name]
-                elif field.name in self.obj:
-                    default = self.obj[field.name]
-            else:
-                 default = field.default if field.default else None
-
-            self.__dict__[field.name] =  field.serialize(default) if default else None
+            self._fields[field.name] = self.get_field_value(field)
 
 
 def get_model_from_session(request):

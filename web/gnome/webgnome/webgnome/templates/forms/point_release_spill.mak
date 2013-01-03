@@ -1,25 +1,12 @@
 <%namespace name="defs" file="../defs.mak"/>
 <%page args="spill, spill_id=None, form_id=None"/>
 
-<div class="spill form hidden" id=${form_id if form_id else spill_id}
-        data-id=${spill_id}>
-
-    <form action="" id="point_release_spill" data-type="spill"
-          class="form-horizontal" method="POST">
-
-        <div class="page-header">
-            <div class="top-form form-inline hidden">
-                ${h.text('name', spill.name)}"/>
-                <label class="checkbox">
-                    ${h.checkbox("active", checked=spill.is_active)}
-                    Active
-                </label>
-                <button class="save-spill-name btn btn-success">Save</button>
-            </div>
-        </div>
-
+<div class="spill form page hide" id='point_release_spill'>
+    <form action="" data-type="spill" class="form-horizontal" method="POST">
         <div class="page-body">
             <%
+                name = h.text('name', spill.name)
+                is_active = h.checkbox("active", checked=spill.is_active)
                 num_LEs = h.text('numLEs', spill.num_LEs)
                 release_time = h.text('release_start', spill.release_time, class_="date")
                 start_position_x = h.text('start_position_x', spill.start_position[0], class_="coordinate")
@@ -31,11 +18,10 @@
                 is_uncertain = h.checkbox('is_uncertain', spill.uncertain)
             %>
 
-
+            ${defs.form_control(name, label="Name")}
+            ${defs.form_control(is_active, label="Active")}
             ${defs.form_control(num_LEs, label="Number of LEs")}
-            ${defs.form_control(release_time, label='Release Start',
-                                opts={'class_': 'date'}, use_id=True)}
-            ${defs.time_control()}
+            ${defs.form_control(release_time, label='Release Start')}
 
             <div class="control-group">
                 <label class="control-label">Start Position (X, Y, Z)</label>
@@ -52,13 +38,6 @@
             ${defs.form_control(windage_max, label="Windage Max")}
             ${defs.form_control(windage_persist, label="Windage Persist")}
             ${defs.form_control(is_uncertain, label="Is Uncertain")}
-        </div>
-
-        <div class="control-group form-buttons">
-            <div class="form-actions">
-                <button class="btn cancel"> Cancel</button>
-                <button class="btn btn-primary">Save</button>
-            </div>
         </div>
     </form>
 </div>

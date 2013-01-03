@@ -236,10 +236,12 @@ define([
                 formContainerEl: '#' + this.options.formContainerId
             });
 
-            this.modelSettingsFormView = new forms.ModalFormView({
+            this.modelSettingsFormView = new forms.JQueryUIModalFormView({
                 el: $('#' + this.options.modelSettingsFormId),
                 formContainerEl: '#' + this.options.formContainerId,
-                model: this.modelSettings
+                model: this.modelSettings,
+                height: 300,
+                width: 600
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
