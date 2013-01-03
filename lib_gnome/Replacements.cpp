@@ -15,21 +15,15 @@
 using std::fstream;
 using std::ios;
 
-//PtCurMap_c *GetPtCurMap(void) {
-//	return NULL;
-//}
-
 void MySpinCursor(void) { return; }
 
 void SysBeep(short x) { return; }
 
-//Boolean OSPlotDialog(OiledShorelineData** oiledShorelineHdl) { return 0; }
-
 Boolean CmdPeriod(void) { return false; }
 
-void PenNormal(void) { return; }
+//void PenNormal(void) { return; }
 
-long ScreenToWorldDistance(short pixels) { return 0; } // temporary, obviously.\
+//long ScreenToWorldDistance(short pixels) { return 0; } // temporary, obviously.\
 
 Boolean FileExists(short vRefNum, long dirID, CHARPTR filename)
 {
@@ -113,7 +107,7 @@ OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR
 	return false;
 }
 
-void paramtext(char* p0,char* p1,char* p2,char* p3) { return; }
+//void paramtext(char* p0,char* p1,char* p2,char* p3) { return; }
 
 OSErr AskUserForUnits(short* selectedUnits,Boolean *userCancel) { return -1; }
 

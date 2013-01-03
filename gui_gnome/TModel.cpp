@@ -6851,24 +6851,28 @@ TWindMover* TModel::GetNthWindMover(long desiredNum0Relative)
 	TMover *thisMover = 0;
 	char thisName[kMaxNameLen];
 	long numWindMovers = 0;
+	ClassID classID;
+	//mover = (TWindMover*)this->GetMoverExact(TYPE_WINDMOVER);
 
 	// universal movers
 	for (k = 0, d = this->uMap->moverList->GetItemCount (); k < d; k++)
 	{
 		this->uMap->moverList -> GetListItem ((Ptr) &thisMover, k);
-		thisMover -> GetClassName (thisName);
-		if(!strcmpnocase(thisName,"Constant Wind")) 
+		classID = thisMover -> GetClassID ();
+		if(classID == TYPE_WINDMOVER) /*return thisMover;*/
+		//thisMover -> GetClassName (thisName);
+		//if(!strcmpnocase(thisName,"Constant Wind")) 
 		{
 			if(desiredNum0Relative == numWindMovers)
 				return dynamic_cast<TWindMover *>(thisMover);
 			numWindMovers++;
 		}
-		if(!strcmpnocase(thisName,"Variable Wind")) 
+		/*if(!strcmpnocase(thisName,"Variable Wind")) 
 		{
 			if(desiredNum0Relative == numWindMovers)
 				return dynamic_cast<TWindMover *>(thisMover);
 			numWindMovers++;
-		}
+		}*/
 	}
 	
 	// movers that belong to a map
@@ -6877,19 +6881,21 @@ TWindMover* TModel::GetNthWindMover(long desiredNum0Relative)
 		for (k = 0, d = map -> moverList -> GetItemCount (); k < d; k++)
 		{
 			map -> moverList -> GetListItem ((Ptr) &thisMover, k);
-			thisMover -> GetClassName (thisName);
-			if(!strcmpnocase(thisName,"Constant Wind")) 
+			classID = thisMover -> GetClassID ();
+			if(classID == TYPE_WINDMOVER) /*return thisMover;*/
+			//thisMover -> GetClassName (thisName);
+			//if(!strcmpnocase(thisName,"Constant Wind")) 
 			{
 				if(desiredNum0Relative == numWindMovers)
 					return dynamic_cast<TWindMover *>(thisMover);
 				numWindMovers++;
 			}
-			if(!strcmpnocase(thisName,"Variable Wind")) 
+			/*if(!strcmpnocase(thisName,"Variable Wind")) 
 			{
 				if(desiredNum0Relative == numWindMovers)
 					return dynamic_cast<TWindMover *>(thisMover);
 				numWindMovers++;
-			}
+			}*/
 		}
 	}
 	return nil;
@@ -6937,6 +6943,8 @@ void TModel::DrawLegends(Rect r, WorldRect wRect)
 			if (windMover && windMover->bActive && windMover->bShowWindBarb) windMover->DrawWindVector(r, wRect);
 		}
 	}
+	//windMover = (TWindMover*)this->GetMoverExact(TYPE_WINDMOVER);	// want to draw more than one...
+	//if (windMover && windMover->bActive && windMover->bShowWindBarb) windMover->DrawWindVector(r, wRect);
 	return;
 }
 

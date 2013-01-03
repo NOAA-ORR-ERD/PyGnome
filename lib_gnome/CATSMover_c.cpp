@@ -24,7 +24,7 @@
 extern TModel *model;
 #else
 #include "Replacements.h"
-extern Model_c *model;	// TODO: no longer exposed to pyGnome - delete?
+//extern Model_c *model;	// TODO: no longer exposed to pyGnome - delete?
 #endif
 
 using std::fstream;
@@ -48,7 +48,7 @@ CATSMover_c::CATSMover_c () {
 	memset(&fOptimize,0,sizeof(fOptimize));
 
 }
-
+#ifndef pyGNOME
 CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 {
 	fDuration=48*3600; //48 hrs as seconds 
@@ -65,6 +65,7 @@ CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 	memset(&fOptimize,0,sizeof(fOptimize));
 	SetClassName (name);
 }
+#endif
 
 #ifdef pyGNOME
 
@@ -79,8 +80,6 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time) {	// AH 08/08
 	double length, theirLengthSq, myLengthSq, dotProduct;
 	VelocityRec theirVelocity,myVelocity;
 	WorldPoint3D refPt3D = {0,0,0.};
-	TMap *map;
-	TCATSMover *mover;
 	
 	if (this->timeDep && this->timeDep->fFileType==HYDROLOGYFILE)
 	{
@@ -485,7 +484,7 @@ void CATSMover_c::DeleteTimeDep ()
 	return;
 }
 
-OSErr CATSMover_c::ReadTopology(char* path, TMap **newMap)
+OSErr CATSMover_c::ReadTopology(char* path/*, TMap **newMap*/)
 {
 	// import PtCur triangle info so don't have to regenerate
 	char s[1024], errmsg[256];

@@ -54,7 +54,9 @@ public:
 	
 	VelocityRec	current_time_value;		// AH 07/16/2012
 	
+#ifndef pyGNOME
 	WindMover_c (TMap *owner, char* name);
+#endif
 	WindMover_c ();
 	virtual			   ~WindMover_c ();	// move to cpp file for debugging
 	virtual void		Dispose ();

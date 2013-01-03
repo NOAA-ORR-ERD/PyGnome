@@ -7312,7 +7312,7 @@ OSErr TimeGridCurRect_c::ReadHeaderLines(char *path, WorldRect *bounds)
 	NthLineInTextOptimized(*f, line++, s, 256); // gridcur header
 	if(fUserUnits == kUndefined)
 	{	
-#ifdef pyGNOME
+#ifdef pyGNOME	// get rid of this and require units in file
 		fUserUnits = kKnots;
 #else
 		// we have to ask the user for units...

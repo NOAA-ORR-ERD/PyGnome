@@ -40,11 +40,13 @@ WindMover_c::WindMover_c() : Mover_c()
 	Init();
 }
 
+#ifndef pyGNOME
 WindMover_c::WindMover_c(TMap *owner,char* name) : Mover_c(owner, name)
 {
 	if(!name || !name[0]) this->SetClassName("Variable Wind"); // JLM , a default useful in the wizard
 	Init();	// initialize the local vars
 }
+#endif
 
 void WindMover_c::Init()
 {
