@@ -1,18 +1,25 @@
 <%namespace name="defs" file="../defs.mak"/>
 <%page args="model"/>
 
-<div class="form page hidden" id="model_settings">
-    <div class="page-header">
-        <h3>Model Settings</h3>
+<div class="modal form hide fade" id="model_settings"
+     data-backdrop="static" role="dialog" aria-labelledby="modal-label"
+     aria-hidden="true">
+
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"
+                aria-hidden="true">×
+        </button>
+        <h3 id="modal-label">Model Settings</h3>
     </div>
-    <div class="page-body">
+
+    <div class="modal-body">
         <form action="" class="form-horizontal model-settings" method="POST">
             <%
-                start_time = h.text('start_time', model['start_time'], class_="date")
-                duration_days = h.text('duration_days', model['duration_days'])
-                duration_hours = h.text('duration_hours', model['duration_hours'], class_="hour")
-                uncertain = h.checkbox('uncertain', checked=model['uncertain'])
-                computation_time_step = h.text('time_step', model['time_step'])
+                start_time = h.text('start_time', model.start_time, class_="date")
+                duration_days = h.text('duration_days', model.duration_days)
+                duration_hours = h.text('duration_hours', model.duration_hours, class_="hour")
+                uncertain = h.checkbox('uncertain', checked=model.uncertain)
+                computation_time_step = h.text('time_step', model.time_step)
             %>
 
             ${defs.form_control(start_time, label="Model Start Date:")}
@@ -30,12 +37,11 @@
             ${defs.form_control(uncertain, label='Uncertain')}
             ${defs.form_control(computation_time_step, 'hours', label='Time Step')}
 
-            <div class="control-group form-buttons">
-                <div class="form-actions">
-                    <button class="btn cancel"> Cancel</button>
-                    <button class="btn btn-primary">Save</button>
-                </div>
-            </div>
         </form>
+    </div>
+
+    <div class="modal-footer">
+        <button class="btn cancel" data-dismiss="modal" aria-hidden="true"> Cancel</button>
+        <button class="btn btn-primary">Save</button>
     </div>
 </div>

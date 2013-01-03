@@ -1,11 +1,5 @@
 ### Mako defs.
 
-## Make a unique element ID by combining ``name`` and ``id``, presuming
-## that ``id`` is already unique. Note: this has to be on one line or it
-## produces invalid ID values (i.e., with linebreaks).
-<%def name="uid(name, id)"><% return "%s_%s" % (name, id) %></%def>
-
-
 <%def name="is_active(url)">
 <%doc>
      Return True if the current request path is equal to ``url``.

@@ -1,16 +1,17 @@
 <%namespace name="defs" file="../defs.mak"/>
 <%page args="spill, spill_id=None, form_id=None"/>
 
-<div class="spill form hidden" id=${form_id if form_id else ''} data-id="${spill_id if spill_id else ''}">
+<div class="spill form hidden" id=${form_id if form_id else spill_id}
+        data-id=${spill_id}>
 
     <form action="" id="point_release_spill" data-type="spill"
           class="form-horizontal" method="POST">
 
         <div class="page-header">
             <div class="top-form form-inline hidden">
-                ${h.text('name', spill['name'])}"/>
+                ${h.text('name', spill.name)}"/>
                 <label class="checkbox">
-                    ${h.checkbox("active", checked=spill['is_active'])}
+                    ${h.checkbox("active", checked=spill.is_active)}
                     Active
                 </label>
                 <button class="save-spill-name btn btn-success">Save</button>
@@ -19,15 +20,15 @@
 
         <div class="page-body">
             <%
-                num_LEs = h.text('numLEs', spill['num_LEs'])
-                release_time = h.text('release_start', spill['release_time'], class_="date")
-                start_position_x = h.text('start_position_x', spill['start_position'][0], class_="coordinate")
-                start_position_y = h.text('start_position_y', spill['start_position'][1], class_="coordinate")
-                start_position_z = h.text('start_position_z', spill['start_position'][2], class_="coordinate")
-                windage_min = h.text('windage_min', spill['windage'][0])
-                windage_max = h.text('windage_max', spill['windage'][1])
-                windage_persist = h.text('persist', spill['persist'])
-                is_uncertain = h.checkbox('is_uncertain', spill['uncertain'])
+                num_LEs = h.text('numLEs', spill.num_LEs)
+                release_time = h.text('release_start', spill.release_time, class_="date")
+                start_position_x = h.text('start_position_x', spill.start_position[0], class_="coordinate")
+                start_position_y = h.text('start_position_y', spill.start_position[1], class_="coordinate")
+                start_position_z = h.text('start_position_z', spill.start_position[2], class_="coordinate")
+                windage_min = h.text('windage_min', spill.windage[0])
+                windage_max = h.text('windage_max', spill.windage[1])
+                windage_persist = h.text('persist', spill.persist)
+                is_uncertain = h.checkbox('is_uncertain', spill.uncertain)
             %>
 
 

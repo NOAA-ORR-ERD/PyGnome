@@ -11,7 +11,7 @@
 
     <link href="/static/css/bootstrap.css" rel="stylesheet">
     <link href="/static/css/bootstrap-responsive.css" rel="stylesheet">
-    <link href="/static/css/smoothness/jquery-ui-1.8.24.custom.css" rel="stylesheet">
+    <link href="/static/css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet">
     <link href="/static/css/base.css" rel="stylesheet">
 
     <%block name="extra_head"> </%block>

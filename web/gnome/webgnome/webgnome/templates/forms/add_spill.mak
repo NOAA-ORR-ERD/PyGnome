@@ -18,7 +18,7 @@
 
                 <div class="controls">
                     ${h.select('spill_type', 'add_point_release_spill',
-                               (('add_point_release_spill', 'Point Release Spill'),))}
+                               (('point_release_spill', 'Point Release Spill'),))}
                 </div>
             </div>
         </form>

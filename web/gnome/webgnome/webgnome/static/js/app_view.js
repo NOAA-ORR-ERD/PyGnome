@@ -24,17 +24,18 @@ define([
         initialize: function() {
             _.bindAll(this);
 
-            this.apiRoot = "/model";
+            this.apiRoot = "/model/" + this.options.modelId;
 
             // Initialize the model with any previously-generated time step data the
             // server had available.
-            this.model = new models.Model(this.options.generatedTimeSteps, {
+            this.model = new models.ModelRun(this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
                 currentTimeStep: this.options.currentTimeStep,
                 bounds: this.options.mapBounds || []
             });
 
+            this.setupModels();
             this.setupForms();
 
             this.menuView = new views.MenuView({
@@ -53,8 +54,7 @@ define([
             this.treeView = new views.TreeView({
                 // XXX: Hard-coded URL, ID.
                 treeEl: "#tree",
-                url: "/model/tree",
-                ajaxForms: this.forms,
+                url: this.apiRoot + "/tree",
                 model: this.model
             });
 
@@ -96,8 +96,8 @@ define([
             });
 
             this.messageView = new views.MessageView({
-                model: this.model,
-                ajaxForms: this.forms
+                model: this.model
+                // ajaxForms
             });
 
             this.setupEventHandlers();
@@ -113,16 +113,16 @@ define([
         },
 
         setupEventHandlers: function() {
-            this.model.on(models.Model.CREATED, this.newModelCreated);
-            this.model.on(models.Model.RUN_ERROR, this.modelRunError);
-            this.forms.on(models.AjaxForm.UPDATED, this.ajaxFormUpdated);
+            this.model.on(models.ModelRun.CREATED, this.newModelCreated);
+            this.model.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.pointReleaseSpills.on("update", this.spillUpdated);
 
             this.formViews.on(forms.FormViewContainer.REFRESHED, this.mapView.drawSpills);
-            this.formViews.on(forms.AjaxFormView.REFRESHED, this.mapView.drawSpills);
+            this.formViews.on(forms.FormView.REFRESHED, this.mapView.drawSpills);
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.mapView.drawSpills);
+            this.formViews.on(forms.FormViewContainer.REFRESHED, this.refreshForms);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
-            this.formViews.on(forms.FormViewContainer.REFRESHED, this.refreshForms);
 
             this.treeControlView.on(views.TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
             this.treeControlView.on(views.TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
@@ -151,13 +151,11 @@ define([
         },
 
         /*
-         Consider the model dirty if the user updates an existing  spill, so
+         Consider the model dirty if the user updates an existing spill, so
          we don't get cached images back on the next model run.
          */
-        ajaxFormUpdated: function(form) {
-            if (form.type && form.type === 'spill') {
-                this.rewind();
-            }
+        spillUpdated: function(form) {
+            this.rewind();
         },
 
         setupKeyboardHandlers: function() {
@@ -180,13 +178,13 @@ define([
             });
 
             Mousetrap.bind('n m', function() {
-                _this.formViews.hideAll()
-                _this.showFormWithId('AddMoverForm');
+                _this.formViews.hideAll();
+                _this.showFormWithId('add_mover');
             });
 
             Mousetrap.bind('n w', function() {
                 _this.formViews.hideAll();
-                _this.showFormWithId('WindMoverForm');
+                _this.showFormWithId('wind_mover');
             });
 
             Mousetrap.bind('s f', function() {
@@ -197,22 +195,29 @@ define([
             });
         },
 
+        spillDrawn: function(x, y) {
+            this.addSpillFormView.show([x, y]);
+        },
+
         newModelCreated: function() {
             this.formViews.refresh();
         },
 
-        destroyForms: function() {
-            if (this.forms) {
-                this.forms.deleteAll();
-            }
+        setupForms: function() {
+            this.formViews = new forms.FormViewContainer({
+                el: $('#' + this.options.formContainerId),
+                pointReleaseSpills: this.pointReleaseSpills,
+                windMovers: this.windMovers,
+                model: this.model // TODO: Remove this when we remove Long Island
+            });
 
+            this.addForms();
+        },
+
+        destroyForms: function() {
             if (this.formViews) {
                 this.formViews.deleteAll();
             }
-        },
-
-        spillDrawn: function(x, y) {
-            this.addSpillFormView.show([x, y]);
         },
 
         refreshForms: function() {
@@ -221,8 +226,6 @@ define([
         },
 
         addForms: function() {
-            var _this = this;
-
             this.addMoverFormView = new forms.AddMoverFormView({
                 el: $('#' + this.options.addMoverFormId),
                 formContainerEl: '#' + this.options.formContainerId
@@ -233,64 +236,51 @@ define([
                 formContainerEl: '#' + this.options.formContainerId
             });
 
+            this.modelSettingsFormView = new forms.ModalFormView({
+                el: $('#' + this.options.modelSettingsFormId),
+                formContainerEl: '#' + this.options.formContainerId,
+                model: this.modelSettings
+            });
+
+            this.addWindMoverFormView = new forms.AddWindMoverFormView({
+                // TODO: Hard-coded ID here
+                el: $('#wind_mover')
+            });
+
+            this.addPointReleaseSpillFormView = new forms.AddPointReleaseSpillFormView({
+                // TODO: Hard-coded ID here
+                el: $('#point_release_spill')
+            });
+
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
             this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
 
             this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
-
-            // Create an `AjaxForm` and bind it to a `AjaxFormView` or subclass
-            // for each form on the page.
-            _.each($('div.form'), function(formDiv) {
-                var div = $(formDiv);
-                var form = div.find('form');
-                var formId = div.attr('id');
-
-                if (formId === _this.options.addMoverFormId) {
-                    return;
-                }
-
-                _this.forms.add({
-                    id: formId,
-                    url: form.attr('action'),
-                    type: form.attr('data-type')
-                });
-
-                var ajaxForm = _this.forms.get(formId);
-                var formEl = $('#' + formId);
-                var formContainerEl = '#' + _this.options.formContainerId;
-                var formClass;
-
-                if (div.hasClass('wind')) {
-                    formClass = forms.WindMoverFormView;
-                } else if (div.hasClass('spill')) {
-                    formClass = forms.PointReleaseSpillFormView;
-                } else if (div.hasClass('modal')) {
-                    formClass = forms.ModalAjaxFormView;
-                } else {
-                    formClass = forms.AjaxFormView;
-                }
-
-                _this.formViews.add(formId, new formClass({
-                    id: formId,
-                    ajaxForm: ajaxForm,
-                    el: formEl,
-                    formContainerEl: formContainerEl
-                }));
-            });
+            this.formViews.add(this.options.addSpillFormId, this.addSpillFormView);
+            this.formViews.add(this.options.modelSettingsFormId, this.modelSettingsFormView);
+            this.formViews.add(this.options.windMoverFormId, this.addWindMoverFormView);
+            this.formViews.add(this.options.pointReleaseSpillFormId, this.addPointReleaseSpillFormView);
         },
 
-        setupForms: function() {
-            // `AjaxForm` instances, keyed to form ID.
-            this.forms = new models.AjaxFormCollection();
+        setupModels: function() {
+            this.pointReleaseSpills = new models.PointReleaseSpillCollection(
+                this.options.pointReleaseSpills, {
+                    url: "/model/" + this.options.modelId + "/spill/point_release"
+                }
+            );
 
-            this.formViews = new forms.FormViewContainer({
-                el: $('#' + this.options.formContainerId),
-                ajaxForms: this.forms,
-                url: this.options.formsUrl,
-                model: this.model
-            });
+            this.windMovers = new models.WindMoverCollection(
+                this.options.windMovers, {
+                    url: "/model/" + this.options.modelId + "/mover/wind"
+                }
+            );
 
-            this.addForms();
+            this.modelSettings = new models.ModelSettings(
+                this.options.modelSettings, {
+                    url: "/model/" + this.options.modelId +
+                        "?include_movers=false&include_spills=false"
+                }
+            );
         },
 
         modelRunError: function() {
@@ -379,9 +369,9 @@ define([
                     rect = this.mapView.getAdjustedRect(rect);
                 }
 
-                this.model.zoomFromRect(rect, models.Model.ZOOM_IN);
+                this.model.zoomFromRect(rect, models.ModelRun.ZOOM_IN);
             } else {
-                this.model.zoomFromPoint(startPosition, models.Model.ZOOM_IN);
+                this.model.zoomFromPoint(startPosition, models.ModelRun.ZOOM_IN);
             }
 
             this.mapView.setRegularCursor();
@@ -391,7 +381,7 @@ define([
             this.model.rewind();
             this.mapView.setPaused();
             this.mapControlView.setPaused();
-            this.model.zoomFromPoint(point, models.Model.ZOOM_OUT);
+            this.model.zoomFromPoint(point, models.ModelRun.ZOOM_OUT);
             this.mapView.setRegularCursor();
         },
 

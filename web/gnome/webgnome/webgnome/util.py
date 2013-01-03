@@ -3,6 +3,7 @@ util.py: Utility function for the webgnome package.
 """
 import datetime
 import inspect
+import json
 import math
 import uuid
 
@@ -64,7 +65,78 @@ gnome_json = JSON(adapters=(
 ))
 
 
-def get_model_from_request(request):
+def to_json(obj, encoder=json_encoder):
+    return json.dumps(obj, default=encoder)
+
+
+class SchemaForm(object):
+    """
+    A class that creates fields on itself based on a Colander schema.
+
+    Instances are given fields of the same name as fields on the schema. Values
+    for the fields are set by looking up same-named fields or dict keys in an
+    ``obj`` passed into the constructor.
+
+    If not passed both an object and a schema, the form will use any defaults
+    the schema provides for field values.
+
+    The value of each field is passed through :func:`to_json` to prepare it
+    for output in an HTML document.
+    """
+    def __init__(self, schema, obj=None):
+        self.schema = schema().bind()
+        self.obj = obj
+        self.set_defaults()
+
+#    def make_json_values(self, obj):
+#        """
+#        Convert ``obj`` to JSON, unless it is an iterable or dict-like object,
+#        in which case traverse all items in the list or keys in the dict and
+#        convert them to JSON.
+#        """
+#        def json_list(obj):
+#            return [self.make_json_values(v) for v in obj]
+#
+#        if isinstance(obj, list):
+#            return json_list(obj)
+#        if isinstance(obj, tuple):
+#            return tuple(json_list(obj))
+#        if isinstance(obj, set):
+#            return set(json_list(obj))
+#        elif isinstance(obj, dict):
+#            return {k: self.make_json_values(v) for k, v in obj.items}
+#        elif isinstance(obj, str):
+#            return obj
+#        else:
+#            try:
+#                return to_json(obj)
+#            except ValueError:
+#                return ''
+
+    def set_defaults(self):
+        """
+        Create a field on self for each field in the given Colander schema.
+
+        If ``obj`` was given in the constructor, use any value found for a
+        field by looking it up by name on ``obj``, either as a field or a key
+        in a dict-like object.
+
+        If ``obj`` was not given, look up the form defaults in ``self.schema``.
+        """
+        for field in self.schema.children:
+            if self.obj:
+                default = ''
+                if hasattr(self.obj, field.name):
+                    default = self.obj.__dict__[field.name]
+                elif field.name in self.obj:
+                    default = self.obj[field.name]
+            else:
+                 default = field.default if field.default else None
+
+            self.__dict__[field.name] =  field.serialize(default) if default else None
+
+
+def get_model_from_session(request):
     """
     Return a :class:`gnome.model.Model` if the user has a session key that
     matches the ID of a running model.
@@ -108,12 +180,22 @@ def valid_model_id(request):
     A Cornice validator that returns a 404 if a valid model was not found
     in the user's session.
     """
-    model = get_model_from_request(request)
+    model = None
+    model_id = request.matchdict.get('model_id', None)
+    Model = request.registry.settings.Model
+
+    if model_id:
+        try:
+            model = Model.get(int(model_id))
+        except Model.DoesNotExist:
+            model = None
 
     if model is None:
         request.errors.add('body', 'model', 'Model not found.')
         request.errors.status = 404
         return
+
+    request.validated['model'] = model
 
 
 def valid_mover_id(request):
@@ -122,11 +204,11 @@ def valid_mover_id(request):
     an ``id`` matchdict value.
     """
     valid_model_id(request)
-    model = get_model_from_request(request)
 
     if request.errors:
         return
 
+    model = request.validated['model']
     mover_exists = model.has_mover(int(request.matchdict['id']))
 
     if not mover_exists:
@@ -140,11 +222,11 @@ def valid_spill_id(request):
     an ``id`` matchdict value.
     """
     valid_model_id(request)
-    model = get_model_from_request(request)
 
     if request.errors:
         return
 
+    model = request.validated['model']
     spill_exists = model.has_spill(int(request.matchdict['id']))
 
     if not spill_exists:
@@ -170,7 +252,7 @@ def require_model(f):
     if args and args.args[0] == 'self':
         @wraps(f)
         def inner_method(self, *args, **kwargs):
-            model = get_model_from_request(self.request)
+            model = get_model_from_session(self.request)
             if model is None:
                 model = self.request.registry.settings.Model.create()
             return f(self, model, *args, **kwargs)
@@ -178,7 +260,7 @@ def require_model(f):
     else:
         @wraps(f)
         def inner_fn(request, *args, **kwargs):
-            model = get_model_from_request(request)
+            model = get_model_from_session(request)
             if model is None:
                 model = request.registry.settings.Model.create()
             return f(request, model, *args, **kwargs)
@@ -231,6 +313,20 @@ class DirectionConverter(object):
         idx = cls.DIRECTIONS.index(cardinal_direction.upper())
         if idx:
             return (360.0 / 16) * idx
+
+
+def get_model_image_url(request, model, filename):
+    """
+    Get the URL path for ``filename``.
+
+    Paths for images generated by a model include the model ID and runtime to
+    separate images generated by different runs.
+    """
+    return request.static_url('webgnome:static/%s/%s/%s/%s' % (
+        request.registry.settings['model_images_url_path'],
+        model.id,
+        model.runtime,
+        filename))
 
 
 velocity_unit_values = list(chain.from_iterable(

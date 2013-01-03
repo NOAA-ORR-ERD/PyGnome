@@ -1,10 +1,9 @@
-from webgnome import util
+from  pyramid.httpexceptions import HTTPNotFound
 
 
 class BaseResource(object):
     def __init__(self, request):
         self.request = request
-        self.model = util.get_model_from_request(request)
 
     @property
     def id(self):

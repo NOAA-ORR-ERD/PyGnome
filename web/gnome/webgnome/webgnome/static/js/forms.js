@@ -14,19 +14,18 @@ define([
         initialize: function() {
             _.bindAll(this);
             this.formViews = {};
-
-            this.options.ajaxForms.on(models.AjaxForm.CREATED, this.refresh);
-            this.options.ajaxForms.on(models.AjaxForm.UPDATED, this.refresh);
+            this.options.pointReleaseSpills.on("create", this.refresh);
+            this.options.windMovers.on("create", this.refresh);
 
             // TODO: Remove this when we remove the Long Island code.
-            this.options.model.on(models.Model.RUN_BEGAN, this.refresh);
+            this.options.model.on(models.ModelRun.RUN_BEGAN, this.refresh);
         },
 
         /*
          Refresh all forms from the server.
 
-         Called when any `AjaxForm` on the page has a successful submit, in case
-         additional forms should appear for new items.
+         Called when any new spills or movers are added, so their forms are
+         added to the page.
          */
         refresh: function() {
             var _this = this;
@@ -46,20 +45,14 @@ define([
             });
         },
 
-        formIdChanged: function(newId, oldId) {
-            this.formViews[newId] = this.formViews[oldId];
-            delete this.formViews[oldId];
-        },
-
         add: function(id, view) {
             var _this = this;
             this.formViews[id] = view;
-            view.on(AjaxFormView.ID_CHANGED, this.formIdChanged);
-            view.on(AjaxFormView.CANCELED, function(form) {
-                _this.trigger(AjaxFormView.CANCELED, form);
+            view.on(FormView.CANCELED, function(form) {
+                _this.trigger(FormView.CANCELED, form);
             });
-            view.on(AjaxFormView.REFRESHED, function(form) {
-                _this.trigger(AjaxFormView.REFRESHED, form);
+            view.on(FormView.REFRESHED, function(form) {
+                _this.trigger(FormView.REFRESHED, form);
             });
         },
 
@@ -85,11 +78,9 @@ define([
     });
 
     /*
-     `AjaxFormView` is responsible for displaying HTML forms retrieved
-     from and submitted to the server using an `AjaxForm object. `AjaxFormView`
-     displays an HTML form in a modal "window" over the page using the rendered HTML
-     returned by the server. It listens to 'change' events on a bound `AjaxForm` and
-     refreshes itself when that event fires.
+     `FormView` is responsible for displaying HTML forms rendered on the server.
+     It listens to 'change' events on a bound model and refreshes itself when
+     that event fires.
 
      The view is designed to handle multi-step forms implemented purely in
      JavaScript (and HTML) using data- properties on DOM elements. The server
@@ -100,18 +91,20 @@ define([
      but whatever it is, this is the button that signals final submission of the
      form).
 
-     Submitting a form from `AjaxFormView` serializes the form HTML and sends it to
-     a bound `AjaxForm` model object, which then handles settings up the AJAX
-     request for a POST.
+     Submitting a form from `FormView` sends the value of its inputs to the
+     model object passed into the form's constructor, which syncs it with the
+     server.
      */
-    var AjaxFormView = Backbone.View.extend({
+    var FormView = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
             this.wasCancelled = false;
             this.container = $(this.options.formContainerEl);
             this.id = this.options.id;
-            this.ajaxForm = this.options.ajaxForm;
-            this.ajaxForm.on(models.AjaxForm.CHANGED, this.ajaxFormChanged);
+            this.model = this.options.model;
+            if(this.model) {
+                this.model.on("update", this.modelChanged);
+            }
             this.setupDatePickers();
         },
 
@@ -132,11 +125,9 @@ define([
             });
         },
 
-        ajaxFormChanged: function(ajaxForm) {
-            this.refresh(ajaxForm.form_html);
-            this.delegateEvents();
-            this.setupDatePickers();
-            this.trigger(AjaxFormView.REFRESHED, this);
+        modelChanged: function(model) {
+            this.refresh();
+            this.trigger(FormView.REFRESHED, this);
 
             if (this.wasCancelled) {
                 this.wasCancelled = false;
@@ -154,16 +145,6 @@ define([
         hide: function() {
             this.$el.addClass('hidden');
             $('#main-content').removeClass('hidden');
-        },
-
-        /*
-         Reload this form's HTML by initiating an AJAX request via this view's
-         bound `AjaxForm`. If the request is successful, this `ModelFormView` will
-         fire its `ajaxFormChanged` event handler.
-         */
-        reload: function(opts) {
-            opts = opts || {};
-            this.ajaxForm.get(opts);
         },
 
         getForm: function() {
@@ -279,10 +260,7 @@ define([
         submit: function(event) {
             event.preventDefault();
             var form = this.getForm();
-            this.ajaxForm.submit({
-                data: form.serialize(),
-                url: form.attr('action')
-            });
+            console.log('submit', form.serialize());
             this.hide();
             return false;
         },
@@ -292,23 +270,15 @@ define([
             this.hide();
             this.wasCancelled = true;
             this.reload();
-            this.trigger(AjaxFormView.CANCELED, this);
+            this.trigger(FormView.CANCELED, this);
         },
 
         /*
-         Replace this form with the form in `html`, an HTML string rendered by the
-         server. Recreate any jQuery UI datepickers on the form if necessary.
-         If there is an error in the form, load the step with errors.
+         Refresh this form from the latest values of `this.model`.
          */
-        refresh: function(html) {
-            var oldId = this.$el.attr('id');
-
-            this.remove();
-
-            html = $(html);
-            html.appendTo(this.container);
-
-            this.$el = $('#' + html.attr('id'));
+        refresh: function() {
+//            this.remove();
+            console.log('refresh', this.model);
 
             var stepWithError = this.getFirstStepWithError();
             if (stepWithError) {
@@ -318,11 +288,6 @@ define([
             var tabWithError = this.getFirstTabWithError();
             if (tabWithError) {
                 $('a[href="#' + tabWithError + '"]').tab('show');
-            }
-
-            var newId = this.$el.attr('id');
-            if (oldId !== newId) {
-                this.trigger(AjaxFormView.ID_CHANGED, newId, oldId);
             }
         },
 
@@ -335,16 +300,15 @@ define([
             this.container.off('click', this.id + ' .btn-prev', this.goToPreviousStep);
         }
     }, {
-        ID_CHANGED: 'ajaxFormView:idChanged',
         CANCELED: 'ajaxFormView:canceled',
         REFRESHED: 'ajaxFormView:refreshed'
     });
 
 
     /*
-     An `AjaxFormView` subclass that displays in a modal window.
+     An `FormView` subclass that displays in a modal window.
      */
-    var ModalAjaxFormView = Backbone.View.extend({
+    var ModalFormView = FormView.extend({
         /*
          Hide any other visible modals and show this one.
          */
@@ -356,8 +320,44 @@ define([
         hide: function() {
             this.$el.modal('hide');
         }
-    }, {
-        ID_CHANGED: 'modalAjaxFormView:idChanged'
+    });
+
+
+     /*
+     An `FormView` subclass that displays in a modal window.
+     */
+    var JqModalFormView = FormView.extend({
+        initialize: function(options) {
+            JqModalFormView.__super__.initialize.apply(this, arguments);
+
+            this.$el.dialog({
+                autoOpen: false,
+                height: 700,
+                width: 925,
+                buttons: {
+                    Cancel: function() {
+                        $(this).dialog("close");
+                    },
+
+                    "Save": function() {
+                        $(this).dialog("close");
+                    }
+                }
+            });
+        },
+
+        /*
+         Hide any other visible modals and show this one.
+         */
+        show: function() {
+            $('div.modal').modal('hide');
+            this.$el.dialog('open');
+            this.$el.removeClass('hide');
+        },
+
+        hide: function() {
+            this.$el.dialog('close');
+        }
     });
 
 
@@ -465,14 +465,14 @@ define([
     /*
      `WindMoverFormView` handles the WindMover form.
      */
-    var WindMoverFormView = AjaxFormView.extend({
+    var WindMoverFormView = JqModalFormView.extend({
         initialize: function(options) {
-            this.constructor.__super__.initialize.apply(this, arguments);
+            WindMoverFormView.__super__.initialize.apply(this, arguments);
             this.renderTimeTable();
             this.setupCompass();
 
             // Extend prototype's events with ours.
-            this.events = _.extend({}, AjaxFormView.prototype.events, this.events);
+            this.events = _.extend({}, FormView.prototype.events, this.events);
         },
 
         events: {
@@ -612,8 +612,8 @@ define([
             header.text(input.val());
         },
 
-        ajaxFormChanged: function() {
-            WindMoverFormView.__super__.ajaxFormChanged.apply(this, arguments);
+        modelChanged: function() {
+            WindMoverFormView.__super__.modelChanged.apply(this, arguments);
             this.renderTimeTable();
             this.setupCompass();
 
@@ -780,16 +780,23 @@ define([
     });
 
 
-    var PointReleaseSpillFormView = AjaxFormView.extend({
+    var AddWindMoverFormView = WindMoverFormView.extend({
+        submit: function() {
+            console.log('add wind mover submit');
+        }
+    });
+
+
+    var PointReleaseSpillFormView = FormView.extend({
          initialize: function(options) {
-            this.constructor.__super__.initialize.apply(this, arguments);
+            PointReleaseSpillFormView.__super__.initialize.apply(this, arguments);
 
             // Extend prototype's events with ours.
-            this.events = _.extend({}, AjaxFormView.prototype.events, this.events);
+            this.events = _.extend({}, FormView.prototype.events, this.events);
         },
 
         show: function(coords) {
-            AjaxFormView.prototype.show.call(this);
+            FormView.prototype.show.call(this);
 
             if (coords) {
                 var coordInputs = this.$el.find('.coordinate');
@@ -829,13 +836,22 @@ define([
     });
 
 
+    var AddPointReleaseSpillFormView = PointReleaseSpillFormView.extend({
+        submit: function() {
+            console.log('add point release form submit');
+        }
+    });
+
+
     return {
         AddMoverFormView: AddMoverFormView,
         AddSpillFormView: AddSpillFormView,
+        AddWindMoverFormView: AddWindMoverFormView,
+        AddPointReleaseSpillFormView: AddPointReleaseSpillFormView,
         WindMoverFormView: WindMoverFormView,
         PointReleaseSpillFormView: PointReleaseSpillFormView,
-        AjaxFormView: AjaxFormView,
-        ModalAjaxFormView: ModalAjaxFormView,
+        FormView: FormView,
+        ModalFormView: ModalFormView,
         FormViewContainer: FormViewContainer
     };
 

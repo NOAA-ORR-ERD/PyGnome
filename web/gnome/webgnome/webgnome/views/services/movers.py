@@ -7,36 +7,29 @@ from webgnome.schema import WindMoverSchema
 from webgnome.views.services.base import BaseResource
 
 
-@resource(collection_path='/mover/wind', path='/mover/wind/{id:\d+}',
+@resource(collection_path='/model/{model_id:\d+}/mover/wind',
+          path='/model/{model_id:\d+}/mover/wind/{id:\d+}',
           renderer='gnome_json', description='A wind mover.')
 class WindMover(BaseResource):
 
-    @property
-    def data(self):
+    def get_wind(self, wind_data):
         """
-        Return ``self.request.validated`` after modifying it for use as input
-        to a WindMover constructor.
-
-        NOTE again that this modified ``self.request.validated`` rather than
-        copying it as the dict may contain a lot of data.
+        Return a :class:`gnome.weather.Wind` object initialized with the data
+        in ``wind_data``, a dict.
         """
-        data = self.request.validated
-
-        if 'wind' in data and data['wind']:
-            wind_data = data.pop('wind')
-            wind = Wind(units=wind_data['units'],
-                        timeseries=wind_data['timeseries'])
-            data['wind'] = wind
-
-        return data
+        return Wind(units=wind_data['units'],
+                    timeseries=wind_data['timeseries'])
 
     @view(validators=util.valid_model_id, schema=WindMoverSchema)
     def collection_post(self):
         """
         Create a WindMover from a JSON representation.
         """
-        mover = WebWindMover(**self.data)
-        self.model.add_mover(mover)
+        data = self.request.validated
+        data['wind'] = self.get_wind(data['wind'])
+        model = data.pop('model')
+        mover = WebWindMover(**data)
+        model.add_mover(mover)
 
         return {
             'success': True,
@@ -49,16 +42,18 @@ class WindMover(BaseResource):
         Return a JSON representation of WindMover matching the ``id`` matchdict
         value.
         """
-        mover = self.model.get_mover(self.id)
-        return mover.to_dict()
+        model = self.request.validated.pop('model')
+        return model.get_mover(self.id).to_dict()
 
     @view(validators=util.valid_mover_id, schema=WindMoverSchema)
     def put(self):
         """
         Update an existing WindMover from a JSON representation.
         """
-        mover = self.model.get_mover(self.id)
-        mover.from_dict(self.data)
+        data = self.request.validated
+        data['wind'] = self.get_wind(data['wind'])
+        model = data.pop('model')
+        mover = model.get_mover(self.id).from_dict(data)
 
         return {
             'success': True,
@@ -70,7 +65,7 @@ class WindMover(BaseResource):
         """
         Delete a WindMover.
         """
-        self.model.remove_mover(self.id)
+        self.request.validated['model'].remove_mover(self.id)
         message = util.make_message('success', 'Deleted wind mover.')
 
         return {

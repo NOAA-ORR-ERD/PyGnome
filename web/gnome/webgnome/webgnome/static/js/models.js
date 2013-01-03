@@ -24,10 +24,10 @@ define([
 
 
     /*
-     `Model` is a collection of `TimeStep` objects representing a run of
+     `ModelRun` is a collection of `TimeStep` objects representing a run of
      the user's active model.
      */
-    var Model = Backbone.Collection.extend({
+    var ModelRun = Backbone.Collection.extend({
         model: TimeStep,
 
         initialize: function(timeSteps, opts) {
@@ -100,10 +100,10 @@ define([
             var message = util.parseMessage(data);
 
             if (message) {
-                this.trigger(Model.MESSAGE_RECEIVED, message);
+                this.trigger(ModelRun.MESSAGE_RECEIVED, message);
 
                 if (message.error) {
-                    this.trigger(Model.RUN_ERROR);
+                    this.trigger(ModelRun.RUN_ERROR);
                     return false;
                 }
             }
@@ -116,7 +116,7 @@ define([
                 this.addTimeStep(data.time_step)                ;
             }
 
-            this.trigger(Model.RUN_BEGAN, data);
+            this.trigger(ModelRun.RUN_BEGAN, data);
             this.getNextTimeStep();
             return true;
         },
@@ -170,7 +170,7 @@ define([
         run: function(opts) {
             var options = $.extend({}, {
                 zoomLevel: this.zoomLevel,
-                zoomDirection: Model.ZOOM_NONE,
+                zoomDirection: ModelRun.ZOOM_NONE,
                 runUntilTimeStep: this.runUntilTimeStep
             }, opts);
 
@@ -223,12 +223,12 @@ define([
 
             if (this.currentTimeStep === this.runUntilTimeStep ||
                     this.currentTimeStep === _.last(this.expectedTimeSteps)) {
-                this.trigger(Model.RUN_FINISHED);
+                this.trigger(ModelRun.RUN_FINISHED);
                 this.runUntilTimeStep = null;
                 return;
              }
 
-             this.trigger(Model.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
+             this.trigger(ModelRun.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
         },
 
         isOnLastTimeStep: function() {
@@ -244,7 +244,7 @@ define([
         finishRun: function() {
             this.rewind();
             this.runUntilTimeStep = null;
-            this.trigger(Model.RUN_FINISHED);
+            this.trigger(ModelRun.RUN_FINISHED);
         },
 
         /*
@@ -278,16 +278,16 @@ define([
             var message = util.parseMessage(data);
 
             if (message) {
-                this.trigger(Model.MESSAGE_RECEIVED, message);
+                this.trigger(ModelRun.MESSAGE_RECEIVED, message);
 
                 if (message.error) {
-                    this.trigger(Model.RUN_ERROR);
+                    this.trigger(ModelRun.RUN_ERROR);
                     return;
                 }
             }
 
             if (!data.time_step) {
-                this.trigger(Model.RUN_ERROR);
+                this.trigger(ModelRun.RUN_ERROR);
                 return;
             }
 
@@ -372,18 +372,18 @@ define([
             var message = util.parseMessage(data);
 
             if (message) {
-                this.trigger(Model.MESSAGE_RECEIVED, message);
+                this.trigger(ModelRun.MESSAGE_RECEIVED, message);
 
                 if (message.error) {
-                    // TODO: Separate error event?
-                    this.trigger(Model.RUN_ERROR);
+                    // TODO: Is this the error event we want to use here?
+                    this.trigger(ModelRun.RUN_ERROR);
                     return;
                 }
             }
 
             this.clearData();
             this.dirty = true;
-            this.trigger(Model.CREATED);
+            this.trigger(ModelRun.CREATED);
         }
     }, {
         // Class constants
@@ -401,152 +401,62 @@ define([
     });
 
 
-    /*
-     `AjaxForm` is a helper object that handles requesting rendered form HTML from
-     the server and posting submitted forms. Form HTML, including error output, is
-     rendered on the server. By convention, if a form submission returns `form_html`
-     then the form contains errors and should be displayed again. Otherwise, we
-     assume that submission succeeded.
-
-     This object handles the GET and POST requests made when a user clicks on a
-     control, typically using one of the control views (e.g., `TreeControlView`),
-     that displays a form, or when the user submits a form. The form HTML is
-     displayed in a modal view using `ModalFormView`.
-     */
-    var AjaxForm = function(opts) {
-        _.bindAll(this);
-        this.url = opts.url;
-        this.type = opts.type;
-
-        // Mix Backbone.js event methods into `AjaxForm`.
-        _.extend(this, Backbone.Events);
-    };
-
-    // Event constants
-    AjaxForm.MESSAGE_RECEIVED = 'ajaxForm:messageReceived';
-    AjaxForm.CHANGED = 'ajaxForm:changed';
-    AjaxForm.CREATED = 'ajaxForm:created';
-    AjaxForm.UPDATED = 'ajaxForm:saved';
-
-    AjaxForm.prototype = {
-        /*
-         Refresh this form from the server's JSON response.
-         */
+    var BaseModel = Backbone.Model.extend({
         parse: function(response) {
             var message = util.parseMessage(response);
             if (message) {
-                this.trigger(AjaxForm.MESSAGE_RECEIVED, message);
+                this.trigger(this.prototype.MESSAGE_RECEIVED, message);
             }
-
-            if (response.form_html) {
-                this.form_html = response.form_html;
-                this.trigger(AjaxForm.CHANGED, this);
-            } else if (response.created) {
-                this.trigger(AjaxForm.CREATED, this);
-            } else{
-                this.trigger(AjaxForm.UPDATED, this);
-
-            }
-        },
-
-        /*
-         Make an AJAX request for this `AjaxForm`, merging `opts` into the options
-         object passed to $.ajax. By default, this method uses a GET operation.
-         */
-        makeRequest: function(opts) {
-            var options = $.extend({}, opts || {}, {
-                url: this.url,
-                tryCount: 0,
-                retryLimit: 3,
-                success: this.parse,
-                error: util.handleAjaxError
-            });
-
-            if (options.id) {
-                options.url = options.url + '/' + options.id;
-            }
-
-            $.ajax(options);
-        },
-
-        /*
-         Get the HTML for this form from the server.
-         */
-        get: function(opts) {
-            var options = $.extend({}, opts || {}, {
-                type: 'GET'
-            });
-            this.makeRequest(options);
-        },
-
-        /*
-         Submit using `opts` and refresh this `AjaxForm` from JSON in the response.
-         The assumption here is that `data` and `url` have been provided in `opts`
-         and we're just passing them along to the `makeRequest()` method.
-         */
-        submit: function(opts) {
-             var options = $.extend({}, opts, {
-                type: 'POST'
-            });
-
-            this.makeRequest(options);
+            BaseModel.__super__.parse.apply(this, arguments);
         }
-    };
+    }, {
+        MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
+    });
 
 
-    /*
-     A collection of `AjaxForm` instances.
-
-     Listen for SUBMIT_SUCCESS and SUBMIT_ERROR events on all instances and
-     rebroadcast them.
-     */
-    var AjaxFormCollection = function() {
-        _.bindAll(this);
-        _.extend(this, Backbone.Events);
-        this.forms = {};
-    };
-
-
-    AjaxFormCollection.prototype = {
-        add: function(formOpts) {
-            var _this = this;
-
-            if (!_.has(formOpts, 'collection')) {
-                formOpts.collection = this;
-            }
-
-            this.forms[formOpts.id] = new AjaxForm(formOpts);
-
-            this.forms[formOpts.id].on(AjaxForm.CHANGED,  function(ajaxForm) {
-                _this.trigger(AjaxForm.CHANGED, ajaxForm);
-            });
-
-            this.forms[formOpts.id].on(AjaxForm.CREATED,  function(ajaxForm) {
-                _this.trigger(AjaxForm.CREATED, ajaxForm);
-            });
-
-            this.forms[formOpts.id].on(AjaxForm.UPDATED,  function(ajaxForm) {
-                _this.trigger(AjaxForm.UPDATED, ajaxForm);
-            });
-        },
-
-        get: function(id) {
-            return this.forms[id];
-        },
-
-        deleteAll: function() {
-            var _this = this;
-            _.each(this.forms, function(form, key) {
-                delete _this.forms[key];
-            });
+    var ModelSettings = BaseModel.extend({
+        initialize: function(attrs, opts) {
+            this.url = opts.url;
         }
-    };
+    });
+
+
+    // Spills
+
+    var PointReleaseSpill = BaseModel.extend({});
+
+
+    var PointReleaseSpillCollection = Backbone.Collection.extend({
+        model: PointReleaseSpill,
+
+        initialize: function(spills, opts) {
+            this.url = opts.url;
+        }
+    });
+
+
+    // Movers
+
+    var WindMover = BaseModel.extend({});
+
+
+    var WindMoverCollection = Backbone.Collection.extend({
+        model: WindMover,
+
+        initialize: function(movers, opts) {
+            this.url = opts.url;
+        }
+    });
+
 
     return {
         TimeStep: TimeStep,
-        Model: Model,
-        AjaxForm: AjaxForm,
-        AjaxFormCollection: AjaxFormCollection
+        ModelRun: ModelRun,
+        ModelSettings: ModelSettings,
+        PointReleaseSpill: PointReleaseSpill,
+        PointReleaseSpillCollection: PointReleaseSpillCollection,
+        WindMover: WindMover,
+        WindMoverCollection: WindMoverCollection
     };
 
 });

@@ -1,44 +1,42 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="mover, mover_id=None, form_id=None"/>
+<%page args="mover"/>
 
-<%
-    from webgnome.util import velocity_unit_options
-%>
+<div class="wind form page hide" id="wind_mover"
+     data-id="${mover_id if mover_id else ''}">
 
-<div class="wind form hidden" id="${form_id if form_id else ''}" data-id="${mover_id if mover_id else ''}">
-
-    <form action="" id="wind_mover" class="form-horizontal" method="POST">
+    <form action="" class="form-horizontal" method="POST">
 
     <div class="page-header form-inline">
-        ${h.text('name', mover['name'])}
-        <label>Units ${h.select('units', mover['wind']['units'], velocity_unit_options, class_='units')}</label>
-        <label class="checkbox">${h.checkbox('is_active', checked=mover['is_active'])} Active </label>
+        ${h.text('name', mover.name)}
+        <%
+            from webgnome.util import velocity_unit_options
+            units = mover.wind['units'] if mover.wind else 'mps'
+        %>
+        <label>Units ${h.select('units', units, velocity_unit_options, class_='units')}</label>
+        <label class="checkbox">${h.checkbox('is_active', checked=mover.is_active)} Active </label>
     </div>
     <div class="page-body">
         <%
-            constant_id = defs.uid('constant', mover_id)
-            variable_id = defs.uid('variable', mover_id)
-            uncertainty_id = defs.uid('uncertainty', mover_id)
-            is_constant = hasattr(mover, 'id') is False or mover['is_constant']
+            is_constant = hasattr(mover, 'id') is False or mover.is_constant
             is_variable = is_constant is False
-            winds = mover['wind']['timeseries']
+            winds = mover.wind.timeseries if mover.wind else []
         %>
 
         <ul class="nav nav-tabs">
             <li class="${"active" if is_constant else ""}">
-                <a href="#${constant_id}" data-toggle="tab">Constant Wind</a>
+                <a href="#constant" data-toggle="tab">Constant Wind</a>
             </li>
             <li class="${"active" if is_variable else ""}">
-                <a href="#${variable_id}" data-toggle="tab">Variable Wind</a>
+                <a href="#variable" data-toggle="tab">Variable Wind</a>
             </li>
-            <li><a href="#${uncertainty_id}" data-toggle="tab">Uncertainty</a></li>
+            <li><a href="#uncertainty" data-toggle="tab">Uncertainty</a></li>
         </ul>
 
         <div class="tab-content">
             <div class="tab-pane constant-wind ${"active" if is_constant else ""}"
-                 id="${constant_id}">
+                 id="constant">
 
-                <div class="span6 add-time-forms">
+                <div class="span4 add-time-forms">
                     <%
                         wind = winds[0] if winds else default_wind
                     %>
@@ -47,16 +45,16 @@
                         <%include file="wind_form.mak" args="wind=wind"/>
                     </div>
                 </div>
-                <div class="compass-container span6">
-                    <div id="${defs.uid('compass_add', mover_id)}"
+                <div class="compass-container span3 offset1">
+                    <div id="compass_add"
                          class="compass"></div>
                 </div>
             </div>
 
             <div class="tab-pane variable-wind ${"active" if is_variable else ""}"
-                 id="${variable_id}">
+                 id="variable">
 
-                <div class="span6 add-time-forms">
+                <div class="span4 add-time-forms">
                     <div class='time-form add-time-form'>
                         <%
                             auto_increment_by = h.text('auto_increment_by',
@@ -85,14 +83,14 @@
                         </div>
                     </div>
 
-                    <div class="compass-container offset3">
-                        <div id="${defs.uid('compass_edit', mover_id)}"
+                    <div class="compass-container offset1">
+                        <div id="compass_edit"
                              class="compass"></div>
                     </div>
                 </div>
 
-                <div class="span6 edit-time-forms">
-                    <div class="span11 wind-values">
+                <div class="span4 edit-time-forms">
+                    <div class="wind-values">
                         <table class="table table-striped time-list">
                             <thead>
                             <tr class='table-header'>
@@ -110,13 +108,13 @@
                 </div>
             </div>
 
-            <div class="tab-pane" id="${uncertainty_id}">
+            <div class="tab-pane" id="uncertainty">
                 <%
-                    uncertain_time_delay = h.text('uncertain_time_delay', mover['uncertain_time_delay'])
-                    uncertain_duration = h.text('uncertain_duration', mover['uncertain_duration'])
-                    uncertain_speed_scale = h.text('uncertain_speed_scale', mover['uncertain_speed_scale'])
-                    uncertain_angle_scale = h.text('uncertain_angle_scale', mover['uncertain_angle_scale'])
-                    uncertain_angle_scale_units = h.text('uncertain_angle_scale_units', mover['uncertain_angle_scale_units'])
+                    uncertain_time_delay = h.text('uncertain_time_delay', mover.uncertain_time_delay)
+                    uncertain_duration = h.text('uncertain_duration', mover.uncertain_duration)
+                    uncertain_speed_scale = h.text('uncertain_speed_scale', mover.uncertain_speed_scale)
+                    uncertain_angle_scale = h.text('uncertain_angle_scale', mover.uncertain_angle_scale)
+                    uncertain_angle_scale_units = h.text('uncertain_angle_scale_units', mover.uncertain_angle_scale_units)
                 %>
 
                 ${defs.form_control(uncertain_time_delay, "hours")}
@@ -124,13 +122,6 @@
                 ${defs.form_control(uncertain_speed_scale)}
                 ${defs.form_control(uncertain_angle_scale)}
                 ${defs.form_control(uncertain_angle_scale_units)}
-            </div>
-        </div>
-
-        <div class="control-group form-buttons">
-            <div class="form-actions">
-                <button class="btn cancel"> Cancel </button>
-                <button class="btn btn-primary">Save</button>
             </div>
         </div>
     </div>

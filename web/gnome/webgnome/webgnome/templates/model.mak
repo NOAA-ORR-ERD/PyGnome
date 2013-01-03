@@ -95,13 +95,18 @@
         <div id="map">
         </div>
 
-        <div id="placeholder" class="hidden">
-            <img class="frame active" src="/static/img/placeholder.gif">
+        <div class="placeholder" class="hidden">
+            <h1>No Map Data</h1>
         </div>
     </div>
 
     <div id="modal-container">
-        ${model_form_html | n}
+        <%include file="forms/add_mover.mak"/>
+        <%include file="forms/add_spill.mak"/>
+        <%include file="forms/model_settings.mak" args="model=model"/>
+        <%include file="forms/wind_mover.mak" args="mover=default_wind_mover, form_id='wind_mover'"/>
+        <%include file="forms/point_release_spill.mak"
+            args="spill=default_point_release_spill, form_id='point_release_spill'"/>
     </div>
 </%block>
 
@@ -126,17 +131,23 @@
             $('#map').imagesLoaded(function() {
                 new app_view.AppView({
                     mapId: 'map',
-                    mapPlaceholderId: 'placeholder',
+                    mapPlaceholderClass: 'placeholder',
                     mapBounds: ${map_bounds},
                     sidebarId: 'sidebar',
                     formContainerId: 'modal-container',
-                    addMoverFormId: "${add_mover_form_id}",
-                    addSpillFormId: "${add_spill_form_id}",
+                    addMoverFormId: "add_mover",
+                    addSpillFormId: "add_spill",
+                    windMoverFormId: "wind_mover",
+                    pointReleaseSpillFormId: "point_release_spill",
+                    modelSettingsFormId: "model_settings",
                     generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                     expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                     backgroundImageUrl: "${background_image_url or '' | n}",
-                    currentTimeStep: ${model.current_time_step},
-                    formsUrl: "${model_forms_url}"
+                    currentTimeStep: ${current_time_step},
+                    pointReleaseSpills: ${point_release_spills | n},
+                    windMovers: ${wind_movers | n},
+                    modelId: ${model_id},
+                    modelSettings: ${model_settings | n}
                 });
             });
         });

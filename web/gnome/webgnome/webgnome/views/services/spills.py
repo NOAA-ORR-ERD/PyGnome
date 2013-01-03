@@ -6,22 +6,20 @@ from webgnome.schema import PointReleaseSpillSchema
 from webgnome.views.services.base import BaseResource
 
 
-@resource(collection_path='/spill/point_release',
-          path='/spill/point_release/{id:\d+}',
+@resource(collection_path='/model/{model_id:\d+}/spill/point_release',
+          path='/model/{model_id:\d+}/spill/point_release/{id:\d+}',
           renderer='gnome_json', description='A point release spill.')
 class PointRelease(BaseResource):
-
-    @property
-    def data(self):
-        return self.request.validated
 
     @view(validators=util.valid_model_id, schema=PointReleaseSpillSchema)
     def collection_post(self):
         """
         Create a PointReleaseSpill from a JSON representation.
         """
-        spill = WebPointReleaseSpill(**self.data)
-        self.model.add_spill(spill)
+        data = self.request.validated
+        model = data.pop('model')
+        spill = WebPointReleaseSpill(**data)
+        model.add_spill(spill)
 
         return {
             'success': True,
@@ -34,7 +32,7 @@ class PointRelease(BaseResource):
         Return a JSON representation of the PointReleaseSpill matching the
         ``id`` matchdict value.
         """
-        spill = self.model.get_spill(self.id)
+        spill = self.request.validated['model'].get_spill(self.id)
         return spill.to_dict()
 
     @view(validators=util.valid_spill_id, schema=PointReleaseSpillSchema)
@@ -42,8 +40,10 @@ class PointRelease(BaseResource):
         """
         Update an existing PointReleaseSpill from a JSON representation.
         """
-        spill = self.model.get_spill(self.id)
-        spill.from_dict(self.data)
+        data = self.request.validated
+        model = data.pop('model')
+        spill = model.get_spill(self.id)
+        spill.from_dict(data)
 
         return {
             'success': True,
@@ -55,7 +55,7 @@ class PointRelease(BaseResource):
         """
         Delete a PointReleaseSpill.
         """
-        self.model.remove_spill(self.id)
+        self.request.validated['model'].remove_spill(self.id)
         message = util.make_message('success', 'Deleted point release spill.')
 
         return {

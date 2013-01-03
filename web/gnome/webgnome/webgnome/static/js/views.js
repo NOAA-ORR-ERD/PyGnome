@@ -20,9 +20,7 @@ define([
             _.bindAll(this);
 
             this.options.model.on(
-                models.Model.MESSAGE_RECEIVED, this.displayMessage);
-            this.options.ajaxForms.on(
-                models.AjaxForm.MESSAGE_RECEIVED, this.displayMessage);
+                models.ModelRun.MESSAGE_RECEIVED, this.displayMessage);
 
             this.hideAll();
         },
@@ -70,23 +68,23 @@ define([
             this.mapEl = this.options.mapEl;
             this.frameClass = this.options.frameClass;
             this.activeFrameClass = this.options.activeFrameClass;
-            this.placeholderEl = this.options.placeholderEl;
+            this.placeholderClass = this.options.placeholderClass;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
             this.imageTimeout = this.options.imageTimeout || 10;
             this.canDrawSpill = false;
 
-            this.createPlaceholderCopy();
+            this.showPlaceholder();
             this.makeImagesClickable();
             this.status = MapView.STOPPED;
             this.map = $(this.mapEl);
 
             this.model = this.options.model;
-            this.model.on(models.Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
-            this.model.on(models.Model.RUN_BEGAN, this.modelRunBegan);
-            this.model.on(models.Model.RUN_ERROR, this.modelRunError);
-            this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.Model.CREATED, this.reset);
+            this.model.on(models.ModelRun.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+            this.model.on(models.ModelRun.RUN_BEGAN, this.modelRunBegan);
+            this.model.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.model.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
+            this.model.on(models.ModelRun.CREATED, this.reset);
 
             if (this.backgroundImageUrl) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
@@ -121,13 +119,12 @@ define([
             this.status = MapView.PLAYING;
         },
 
-        createPlaceholderCopy: function() {
-            this.placeholderCopy = $(this.placeholderEl).find('img').clone()
-                .appendTo($(this.mapEl)).removeClass('hidden');
+        showPlaceholder: function() {
+            $('.' + this.placeholderClass).removeClass('hidden');
         },
 
-        removePlaceholderCopy: function() {
-            this.placeholderCopy.remove();
+        hidePlaceholder: function() {
+            $('.' + this.placeholderClass).addClass('hidden');
         },
 
         makeImagesClickable: function() {
@@ -355,9 +352,7 @@ define([
         loadMapFromUrl: function(url) {
             var _this = this;
 
-            if (this.placeholderCopy.length) {
-                this.removePlaceholderCopy();
-            }
+            this.hidePlaceholder();
 
             var map = $(this.mapEl);
             map.find('.background').remove();
@@ -543,7 +538,7 @@ define([
         reset: function() {
             this.clear({clearBackground: true});
             if (!$(this.mapEl).find('.background').length) {
-                this.createPlaceholderCopy();
+                this.showPlaceholder();
             }
             this.setStopped();
         },
@@ -618,12 +613,10 @@ define([
             this.tree = this.setupDynatree();
 
             // Event handlers
-            this.options.ajaxForms.on(models.AjaxForm.UPDATED, this.reload);
-            this.options.ajaxForms.on(models.AjaxForm.CREATED, this.reload);
-            this.options.model.on(models.Model.CREATED, this.reload);
+            this.options.model.on(models.ModelRun.CREATED, this.reload);
 
             // TODO: Remove this when we remove the Long Island default code.
-            this.options.model.on(models.Model.RUN_BEGAN, this.reload);
+            this.options.model.on(models.ModelRun.RUN_BEGAN, this.reload);
         },
 
         setupDynatree: function() {
@@ -641,6 +634,12 @@ define([
                 },
                 onDblClick: function(node, event) {
                     _this.trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
+                },
+                onClick: function(node, event) {
+//                    if (!node.hasChildren()) {
+//                        // TODO: Use a different event for this.
+//                        _this.trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
+//                    }
                 },
                 initAjax: {
                     url: _this.url
@@ -777,10 +776,10 @@ define([
 
             this.setupClickEvents();
 
-            this.model.on(models.Model.RUN_BEGAN, this.runBegan);
-            this.model.on(models.Model.RUN_ERROR, this.modelRunError);
-            this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.Model.CREATED, this.modelCreated);
+            this.model.on(models.ModelRun.RUN_BEGAN, this.runBegan);
+            this.model.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.model.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
+            this.model.on(models.ModelRun.CREATED, this.modelCreated);
 
             this.options.mapView.on(MapView.FRAME_CHANGED, this.mapViewFrameChanged);
         },

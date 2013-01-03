@@ -150,6 +150,16 @@ input[type="color"],
     margin: 1px 0 1px 0;
 }
 
+.form-horizontal .controls,
+.form-horizontal .controls:first-child {
+    margin-left: 120px;
+}
+
+.form-horizontal .control-label {
+    width: 100px;
+    padding-top: 0;
+}
+
 .edit-time-forms th {
     padding: 0 8px 8px 8px;
 }
@@ -221,3 +231,23 @@ select, input[type="file"] {
 .units {
     width: 120px;
 }
+
+.placeholder {
+    background-color: #FEE5C6;
+    max-width: 900px;
+}
+
+.placeholder h1 {
+    text-align: center;
+    padding: 100px 0 300px;
+}
+
+.modal-body {
+    max-height: 800px;
+}
+
+.edit-time-forms {
+    padding-left: 30px;
+}
+
+

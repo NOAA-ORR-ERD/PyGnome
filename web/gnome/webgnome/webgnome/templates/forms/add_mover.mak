@@ -17,7 +17,7 @@
                 </label>
 
                 <div class="controls">
-                    ${h.select('mover_type', 'add_wind_mover', (('add_wind_mover', 'Wind Mover'),))}
+                    ${h.select('mover_type', 'wind_mover', (('wind_mover', 'Wind Mover'),))}
                 </div>
             </div>
         </form>
