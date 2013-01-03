@@ -182,6 +182,29 @@ class TestGridCurrentMover():
         np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
                                    "ptcur move is not within a tolerance of "+str(tol), 0)
                
+    def test_move_gridcurtime(self):
+        """
+        test move for a gridCurTime file (first time in file)
+        """
+        time = datetime.datetime(2002, 1, 30, 1)
+        self.cm.model_time = time_utils.date_to_sec(time)
+        time_grid_file = r"SampleData/currents/gridcur_ts.cur"
+        topology_file = r"SampleData/currents/ChesBay.dat"	
+        self.gcm.text_read(time_grid_file,topology_file)
+        self.cm.ref[:]['long'] = (-119.933264) #for gridCur test
+        self.cm.ref[:]['lat'] = (34.138736)
+        self.check_move()
+        actual = np.empty((self.cm.num_le,), dtype=basic_types.world_point)
+        actual[:]['lat'] = (-0.0034527536849574456)
+        actual[:]['long'] = (0.005182449331779978)
+        actual[:]['z'] = (0.)
+        tol = 1e-5
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 
+                                   "gridcurtime move is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
+                                   "gridcurtime move is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_equal(self.cm.delta, actual, "test_move_gridcurtime() failed", 0)
+               
     def test_move_gridcur_series(self):
         """
         test move for a gridCur file series (first time in first file)
@@ -200,9 +223,9 @@ class TestGridCurrentMover():
         actual[:]['z'] = (0.)
         tol = 1e-5
         np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 
-                                   "gridcur move is not within a tolerance of "+str(tol), 0)
+                                   "gridcur series move is not within a tolerance of "+str(tol), 0)
         np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
-                                   "gridcur move is not within a tolerance of "+str(tol), 0)
+                                   "gridcur series move is not within a tolerance of "+str(tol), 0)
         np.testing.assert_equal(self.cm.delta, actual, "test_move_gridcur_series() failed", 0)
                
     
