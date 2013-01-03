@@ -355,7 +355,7 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 		{			
 			//err = this->InitMover(timeGrid);
 			//if(err) goto Error;
-			//this->fUserUnits = selectedUnits;
+			dynamic_cast<TimeGridCurRect*>(newTimeGrid)->fUserUnits = selectedUnits;
 			err = newTimeGrid->TextRead(path,"");
 			if(err) goto Error;
 			this->SetTimeGrid(newTimeGrid);
