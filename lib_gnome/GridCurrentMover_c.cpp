@@ -285,7 +285,7 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 {
 	// this code is for curvilinear grids
 	OSErr err = 0;
-	short gridType;
+	short gridType, selectedUnits;
 	char fileNamesPath[256];
 	Boolean isNetCDFPathsFile = false;
 	TimeGridVel *newTimeGrid = nil;
@@ -331,13 +331,6 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 		newTimeGrid = new TimeGridCurTri();
 		if (newTimeGrid)
 		{
-			//GridCurrentMover *newGridCurrentMover = new GridCurrentMover(owner, fileName);
-			//if (!newGridCurrentMover)
-			{ 
-				//TechError("CreateAndInitCurrentsMover()", "new GridCurrentMover()", 0);
-				//return 0;
-			}
-			//newMover = newGridCurrentMover;
 			
 			//err = this->InitMover(newTimeGrid);
 			//if(err) goto Error;
@@ -353,13 +346,29 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 			}
 		}
 	}
-		/*else if
+	else if (IsGridCurTimeFile(path,&selectedUnits))
 	{
+		char errmsg[256];
+		newTimeGrid = new TimeGridCurRect();
+		//timeGrid = new TimeGridVel();
+		if (newTimeGrid)
+		{			
+			//err = this->InitMover(timeGrid);
+			//if(err) goto Error;
+			//this->fUserUnits = selectedUnits;
+			err = newTimeGrid->TextRead(path,"");
+			if(err) goto Error;
+			this->SetTimeGrid(newTimeGrid);
+			if (!err /*&& isNetCDFPathsFile*/) /// JLM 5/3/10
+			{
+				//char errmsg[256];
+				//err = timeGrid->ReadInputFileNames(fileNamesPath);
+				/*if(!err)*/ timeGrid->DisposeAllLoadedData();
+				//if(!err) err = timeGrid->SetInterval(errmsg,model->GetModelTime()); // if set interval here will get error if times are not in model range
+			}
+		}
 	}
-	else 
-	{
-	}*/
-Error: // JLM 	 10/27/98
+	Error: // JLM 	 10/27/98
 	//if(newMover) {newMover->Dispose();delete newMover;newMover = 0;};
 	//return 0;
 	return err;

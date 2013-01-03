@@ -25,6 +25,48 @@
 using std::cout;
 
 /////////////////////////////////////////////////
+Boolean IsGridCurTimeFile (char *path, short *selectedUnitsP)
+{
+	Boolean bIsValid = false;
+	OSErr	err = noErr;
+	long line;
+	char strLine [256];
+	char firstPartOfFile [256];
+	long lenToRead,fileLength;
+	short selectedUnits = kUndefined, numScanned;
+	char unitsStr[64], gridcurStr[64];
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return false;
+	
+	lenToRead = _min(256,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	if (!err)
+	{	// must start with [GRIDCURTIME]
+		char * strToMatch = "[GRIDCURTIME]";
+		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 256);
+		if (!strncmp (strLine,strToMatch,strlen(strToMatch)))
+		{
+			bIsValid = true;
+			*selectedUnitsP = selectedUnits;
+			numScanned = sscanf(strLine,"%s%s",gridcurStr,unitsStr);
+			if(numScanned != 2) { selectedUnits = kUndefined; goto done; }
+			RemoveLeadingAndTrailingWhiteSpace(unitsStr);
+			selectedUnits = StrToSpeedUnits(unitsStr);// note we are not supporting cm/sec in gnome
+		}
+	}
+	
+done:
+	if(bIsValid)
+	{
+		*selectedUnitsP = selectedUnits;
+	}
+	return bIsValid;
+}
+
+/////////////////////////////////////////////////
 Boolean IsPtCurFile (char *path)
 {
 	Boolean	bIsValid = false;
@@ -7270,12 +7312,16 @@ OSErr TimeGridCurRect_c::ReadHeaderLines(char *path, WorldRect *bounds)
 	NthLineInTextOptimized(*f, line++, s, 256); // gridcur header
 	if(fUserUnits == kUndefined)
 	{	
+#ifdef pyGNOME
+		fUserUnits = kKnots;
+#else
 		// we have to ask the user for units...
 		Boolean userCancel=false;
 		short selectedUnits = kKnots; // knots will be default
 		err = AskUserForUnits(&selectedUnits,&userCancel);
 		if(err || userCancel) { err = -1; goto done;}
 		fUserUnits = selectedUnits;
+#endif
 	}
 	
 	//
