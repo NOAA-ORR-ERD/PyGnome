@@ -33,6 +33,7 @@ typedef struct ExRect
     						double	 				right;
 					} ExRect, *ExRectPtr;
 
+#ifndef pyGNOME
 /**************************************************************************************************/
 /*										      Macros   						    				  */
 #define RectWidth(r) ((r).right - (r).left)
@@ -60,7 +61,6 @@ Boolean RectInRect (Rect *InsideRectPtr, Rect *OutsideRectPtr);
 Boolean RectInRect2 (Rect *InsideRectPtr, Rect *OutsideRectPtr);
 void GetSmallestRect (Rect *SmallRectPtr, double XToYRatio, Rect *SmallestRectPtr);
 void GetSmallestLRect (LongRect *SmallRectPtr, double XToYRatio, LongRect *SmallestRectPtr);
-void SetLRect (LongRectPtr LRectPtr, long left, long top, long right, long bottom);
 void GetMaxLRect (LongRect *Rect1Ptr, LongRect *Rect2Ptr, LongRect *MaxRectPtr);
 void GetMaxRect (Rect *Rect1Ptr, Rect *Rect2Ptr, Rect *MaxRectPtr);
 void GetRectCenter (Rect *thisRectPtr, Point *CenterPtPtr);
@@ -94,10 +94,11 @@ void GetScaledLRect (LongRect *CurrRectPtr, double XToYRatio, LongRect *LimitRec
 
 short ForceOntoQuickDrawPlane(long n);
 Boolean IntersectToQuickDrawPlane(LongRect r,Rect* qdr);
-OSErr	GetLScaleAndOffsets (LongRectPtr SourceRectPtr, LongRectPtr DestRectPtr, ScaleRecPtr ScaleInfoPtr);
-
 void MySetRect(RECTPTR r, short left, short top, short right, short bottom);
 Point RectCenter(Rect r);
+#endif
+void SetLRect (LongRectPtr LRectPtr, long left, long top, long right, long bottom);
+OSErr	GetLScaleAndOffsets (LongRectPtr SourceRectPtr, LongRectPtr DestRectPtr, ScaleRecPtr ScaleInfoPtr);
 
 #endif
 
