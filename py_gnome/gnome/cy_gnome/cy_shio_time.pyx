@@ -79,48 +79,6 @@ cdef class CyShioTime(object):
        
        return info
     
-    #===========================================================================
-    # property ebb_flood:
-    #    def __get__(self):
-    #        """
-    #        Return ebb_flood data
-    #        """
-    #        return self._get_ebb_flood_data()
-    #    
-    # property high_low:
-    #    def __get__(self):
-    #        """
-    #        Return ebb_flood data
-    #        """
-    #        return self._get_high_low_data()
-    #===========================================================================
-        
-    #===========================================================================
-    # def get_height(self, modelTime):
-    #    """
-    #    TODO: Since the handles are not defined, perhaps this need not be called outside of GetTimeValues
-    #    Invokes Shio's GetConvertedHeightValue() method for a specified modelTime or array of model times
-    #    """
-    #    cdef cnp.ndarray[Seconds, ndim=1] modelTimeArray
-    #    modelTimeArray = np.asarray(modelTime, basic_types.seconds).reshape((-1,))     
-    #     
-    #    # velocity record passed to OSSMTimeValue_c methods and returned back to python
-    #    cdef cnp.ndarray[VelocityRec, ndim=1] vel_rec 
-    #    cdef VelocityRec * velrec
-    #    
-    #    cdef unsigned int i 
-    #    cdef OSErr err 
-    #    
-    #    vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
-    #    
-    #    for i in range( 0, modelTimeArray.size):
-    #       err = self.shio.GetConvertedHeightValue( modelTimeArray[i], &vel_rec[i])
-    #       err = 0
-    #       if err != 0:
-    #           raise ValueError("Error invoking ShioTimeValue_c.GetTimeValue method in CyShioTime")
-    #    return vel_rec
-    #===========================================================================
-    
     def get_time_value(self, modelTime):
         """
         GetTimeValue - for a specified modelTime or array of model times, it computes
@@ -185,25 +143,37 @@ cdef class CyShioTime(object):
         return info
     
     
-    #===========================================================================
-    # def _get_ebb_flood_data(self):
-    #    cdef short tmp_size = sizeof(EbbFloodData)
-    #    cdef cnp.ndarray[EbbFloodData, ndim=1] ebb_flood
-    #    
-    #    # FAILS because fEbbFloodDataHdl is assigned in GetTimeValue
-    #    sz = _GetHandleSize(<Handle>self.shio.fEbbFloodDataHdl)  # allocate memory and copy it over
-    #    ebb_flood = np.empty((sz/tmp_size,), dtype=basic_types.ebb_flood_data)  
-    #    memcpy( &ebb_flood[0], self.shio.fEbbFloodDataHdl[0], sz)
-    #    return ebb_flood
-    # 
-    # def _get_high_low_data(self):
-    #    cdef short tmp_size = sizeof(HighLowData)
-    #    cdef cnp.ndarray[HighLowData, ndim=1] high_low
-    #    
-    #    # FAILS because fEbbFloodDataHdl is assigned in GetTimeValue
-    #    sz = _GetHandleSize(<Handle>self.shio.fHighLowDataHdl)  # allocate memory and copy it over
-    #    high_low = np.empty((sz/tmp_size,), dtype=basic_types.ebb_flood_data)  
-    #    
-    #    memcpy( &high_low[0], self.shio.fHighLowDataHdl[0], sz)
-    #    return high_low
-    #===========================================================================
+    def get_ebb_flood(self, modelTime):
+        """
+        Return ebb flood data for specified modelTime
+        """
+        self.get_time_value(modelTime)  # initialize self.shio.fEbbFloodDataHdl for specified duration
+        cdef short tmp_size = sizeof(EbbFloodData)
+        cdef cnp.ndarray[EbbFloodData, ndim=1] ebb_flood
+        #cdef EbbFloodDataH ebb_flood_hdlH
+       
+        # FAILS because fEbbFloodDataHdl is assigned in GetTimeValue
+        #ebb_flood_hdlH = self.shio.GetEbbFloodDataHdl()
+        sz = _GetHandleSize(<Handle>self.shio.fEbbFloodDataHdl)  # allocate memory and copy it over
+        #sz = _GetHandleSize(<Handle>ebb_flood_hdlH)
+        print sz
+        print tmp_size
+        #ebb_flood = np.empty((sz/tmp_size,), dtype=basic_types.ebb_flood_data)
+        ebb_flood = np.empty((1,), dtype=basic_types.ebb_flood_data)  
+        #memcpy( &ebb_flood[0], self.shio.fEbbFloodDataHdl[0], sz)
+        #return ebb_flood
+    
+    def get_high_low(self, modelTime):
+        """
+        Return high and low tide data for specified modelTime
+        """
+        self.get_time_value(modelTime)  # initialize self.shio.fEbbFloodDataHdl for specified duration
+        cdef short tmp_size = sizeof(HighLowData)
+        cdef cnp.ndarray[HighLowData, ndim=1] high_low
+    
+        # FAILS because fEbbFloodDataHdl is assigned in GetTimeValue
+        sz = _GetHandleSize(<Handle>self.shio.fHighLowDataHdl)  # allocate memory and copy it over
+        high_low = np.empty((sz/tmp_size,), dtype=basic_types.ebb_flood_data)  
+    
+        memcpy( &high_low[0], self.shio.fHighLowDataHdl[0], sz)
+        return high_low
