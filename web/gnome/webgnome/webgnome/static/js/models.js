@@ -407,14 +407,14 @@ define([
             if (message) {
                 this.trigger(this.prototype.MESSAGE_RECEIVED, message);
             }
-            BaseModel.__super__.parse.apply(this, arguments);
+            return BaseModel.__super__.parse.apply(this, arguments);
         }
     }, {
         MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
     });
 
 
-    var ModelSettings = BaseModel.extend({
+    var Model = BaseModel.extend({
         initialize: function(attrs, opts) {
             this.url = opts.url;
         }
@@ -436,9 +436,52 @@ define([
 
 
     // Movers
+    var WindValue = BaseModel.extend({});
 
-    var WindMover = BaseModel.extend({});
+    var WindValueCollection = Backbone.Collection.extend({
+        model: WindValue
+    });
 
+    var Wind = BaseModel.extend({
+        initialize: function(attrs) {
+            var timeseries = [];
+            // TODO: Move into a utility function.
+            if (attrs && attrs.hasOwnProperty('timeseries')) {
+                timeseries = attrs['timeseries'];
+                delete(attrs['timeseries']);
+            }
+            this.set('timeseries', new WindValueCollection(timeseries));
+        },
+
+        toJSON: function() {
+            var attrs = this.attributes;
+            var timesteps = attrs['timeseries'];
+            attrs['timeseries'] = timesteps.sortBy(function(item) {
+                return item.datetime;
+            });
+            return attrs;
+        }
+    });
+
+    var WindMover = BaseModel.extend({
+        initialize: function(attrs) {
+            var wind = {};
+            if (attrs && attrs.hasOwnProperty('wind')) {
+                wind = attrs['wind'];
+                delete(attrs['wind']);
+            }
+            this.set('wind', new Wind(wind));
+        },
+
+        // Return a `moment` object for the date field.
+        get: function(attr) {
+            if (attr === 'date') {
+                return moment(this.attributes[attr]).local();
+            } else {
+                return WindMover.__super__.get.apply(this, arguments);
+            }
+        }
+    });
 
     var WindMoverCollection = Backbone.Collection.extend({
         model: WindMover,
@@ -452,7 +495,7 @@ define([
     return {
         TimeStep: TimeStep,
         ModelRun: ModelRun,
-        ModelSettings: ModelSettings,
+        Model: Model,
         PointReleaseSpill: PointReleaseSpill,
         PointReleaseSpillCollection: PointReleaseSpillCollection,
         WindMover: WindMover,

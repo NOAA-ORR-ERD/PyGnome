@@ -28,7 +28,7 @@ define([
 
             // Initialize the model with any previously-generated time step data the
             // server had available.
-            this.model = new models.ModelRun(this.options.generatedTimeSteps, {
+            this.modelRun = new models.ModelRun(this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
                 currentTimeStep: this.options.currentTimeStep,
@@ -55,7 +55,9 @@ define([
                 // XXX: Hard-coded URL, ID.
                 treeEl: "#tree",
                 url: this.apiRoot + "/tree",
-                model: this.model
+                modelRun: this.modelRun,
+                pointReleaseSpills: this.pointReleaseSpills,
+                windMovers: this.windMovers
             });
 
             this.treeControlView = new views.TreeControlView({
@@ -72,7 +74,7 @@ define([
                 backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                model: this.model
+                modelRun: this.modelRun
             });
 
             this.mapControlView = new views.MapControlView({
@@ -91,12 +93,12 @@ define([
                 timeEl: "#time",
                 // XXX: Partially hard-coded URL.
                 url: this.apiRoot + '/time_steps',
-                model: this.model,
+                modelRun: this.modelRun,
                 mapView: this.mapView
             });
 
             this.messageView = new views.MessageView({
-                model: this.model
+                modelRun: this.modelRun
                 // ajaxForms
             });
 
@@ -113,14 +115,13 @@ define([
         },
 
         setupEventHandlers: function() {
-            this.model.on(models.ModelRun.CREATED, this.newModelCreated);
-            this.model.on(models.ModelRun.RUN_ERROR, this.modelRunError);
-            this.pointReleaseSpills.on("update", this.spillUpdated);
+            this.modelRun.on(models.ModelRun.CREATED, this.newModelCreated);
+            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
 
-            this.formViews.on(forms.FormViewContainer.REFRESHED, this.mapView.drawSpills);
-            this.formViews.on(forms.FormView.REFRESHED, this.mapView.drawSpills);
+            this.pointReleaseSpills.on("sync", this.spillUpdated);
+            this.pointReleaseSpills.on('sync', this.mapView.drawSpills);
+
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.mapView.drawSpills);
-            this.formViews.on(forms.FormViewContainer.REFRESHED, this.refreshForms);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
@@ -184,7 +185,12 @@ define([
 
             Mousetrap.bind('n w', function() {
                 _this.formViews.hideAll();
-                _this.showFormWithId('wind_mover');
+                _this.showFormWithId('add_wind_mover');
+            });
+
+            Mousetrap.bind('n p', function() {
+                _this.formViews.hideAll();
+                _this.showFormWithId('add_point_release_spill');
             });
 
             Mousetrap.bind('s f', function() {
@@ -206,9 +212,6 @@ define([
         setupForms: function() {
             this.formViews = new forms.FormViewContainer({
                 el: $('#' + this.options.formContainerId),
-                pointReleaseSpills: this.pointReleaseSpills,
-                windMovers: this.windMovers,
-                model: this.model // TODO: Remove this when we remove Long Island
             });
 
             this.addForms();
@@ -239,19 +242,31 @@ define([
             this.modelSettingsFormView = new forms.JQueryUIModalFormView({
                 el: $('#' + this.options.modelSettingsFormId),
                 formContainerEl: '#' + this.options.formContainerId,
-                model: this.modelSettings,
-                height: 300,
-                width: 600
+                model: this.model,
+                dialog: {
+                    height: 300,
+                    width: 600
+                }
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
-                // TODO: Hard-coded ID here
-                el: $('#wind_mover')
+                el: $('#' + this.options.addWindMoverFormId),
+                windMovers: this.windMovers
+            });
+
+            this.editWindMoverFormView = new forms.WindMoverFormView({
+                el: $('#' + this.options.editWindMoverFormId),
+                windMovers: this.windMovers
             });
 
             this.addPointReleaseSpillFormView = new forms.AddPointReleaseSpillFormView({
-                // TODO: Hard-coded ID here
-                el: $('#point_release_spill')
+                el: $('#' + this.options.addPointReleaseSpillFormId),
+                pointReleaseSpills: this.pointReleaseSpills
+            });
+
+            this.editPointReleaseSpillFormView = new forms.AddPointReleaseSpillFormView({
+                el: $('#' + this.options.editPointReleaseSpillFormId),
+                pointReleaseSpills: this.pointReleaseSpills
             });
 
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
@@ -260,8 +275,10 @@ define([
             this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
             this.formViews.add(this.options.addSpillFormId, this.addSpillFormView);
             this.formViews.add(this.options.modelSettingsFormId, this.modelSettingsFormView);
-            this.formViews.add(this.options.windMoverFormId, this.addWindMoverFormView);
-            this.formViews.add(this.options.pointReleaseSpillFormId, this.addPointReleaseSpillFormView);
+            this.formViews.add(this.options.addWindMoverFormId, this.addWindMoverFormView);
+            this.formViews.add(this.options.editWindMoverFormId, this.editWindMoverFormView);
+            this.formViews.add(this.options.addPointReleaseSpillFormId, this.addPointReleaseSpillFormView);
+            this.formViews.add(this.options.editPointReleaseSpillFormId, this.editPointReleaseSpillFormView);
         },
 
         setupModels: function() {
@@ -277,7 +294,7 @@ define([
                 }
             );
 
-            this.modelSettings = new models.ModelSettings(
+            this.model = new models.Model(
                 this.options.modelSettings, {
                     url: "/model/" + this.options.modelId +
                         "?include_movers=false&include_spills=false"
@@ -319,11 +336,11 @@ define([
             this.mapControlView.setPlaying();
             this.mapView.setPlaying();
 
-            if (this.model.isOnLastTimeStep()) {
-                this.model.rewind();
+            if (this.modelRun.isOnLastTimeStep()) {
+                this.modelRun.rewind();
             }
 
-            this.model.run(opts);
+            this.modelRun.run(opts);
         },
 
         playButtonClicked: function() {
@@ -331,7 +348,7 @@ define([
         },
 
         enableZoomIn: function() {
-            if (this.model.hasData() === false) {
+            if (this.modelRun.hasData() === false) {
                 return;
             }
 
@@ -342,7 +359,7 @@ define([
         },
 
         enableZoomOut: function() {
-            if (this.model.hasData() === false) {
+            if (this.modelRun.hasData() === false) {
                 return;
             }
 
@@ -358,7 +375,7 @@ define([
         zoomIn: function(startPosition, endPosition) {
             this.mapView.setPaused();
             this.mapControlView.setPaused();
-            this.model.rewind();
+            this.modelRun.rewind();
 
             if (endPosition) {
                 var rect = {start: startPosition, end: endPosition};
@@ -367,23 +384,23 @@ define([
                 // If we are at zoom level 0 and there is no map portion outside of
                 // the visible area, then adjust the coordinates of the selected
                 // rectangle to the on-screen pixel bounds.
-                if (!isInsideMap && this.model.zoomLevel === 0) {
+                if (!isInsideMap && this.modelRun.zoomLevel === 0) {
                     rect = this.mapView.getAdjustedRect(rect);
                 }
 
-                this.model.zoomFromRect(rect, models.ModelRun.ZOOM_IN);
+                this.modelRun.zoomFromRect(rect, models.ModelRun.ZOOM_IN);
             } else {
-                this.model.zoomFromPoint(startPosition, models.ModelRun.ZOOM_IN);
+                this.modelRun.zoomFromPoint(startPosition, models.ModelRun.ZOOM_IN);
             }
 
             this.mapView.setRegularCursor();
         },
 
         zoomOut: function(point) {
-            this.model.rewind();
+            this.modelRun.rewind();
             this.mapView.setPaused();
             this.mapControlView.setPaused();
-            this.model.zoomFromPoint(point, models.ModelRun.ZOOM_OUT);
+            this.modelRun.zoomFromPoint(point, models.ModelRun.ZOOM_OUT);
             this.mapView.setRegularCursor();
         },
 
@@ -395,14 +412,14 @@ define([
 
         sliderChanged: function(newStepNum) {
             // No need to do anything if the slider is on the current time step.
-            if (newStepNum === this.model.currentTimeStep) {
+            if (newStepNum === this.modelRun.currentTimeStep) {
                 return;
             }
 
             // If the model and map view have the time step, display it.
-            if (this.model.hasCachedTimeStep(newStepNum) &&
+            if (this.modelRun.hasCachedTimeStep(newStepNum) &&
                     this.mapView.timeStepIsLoaded(newStepNum)) {
-                this.model.setCurrentTimeStep(newStepNum);
+                this.modelRun.setCurrentTimeStep(newStepNum);
                 return;
             }
 
@@ -416,18 +433,18 @@ define([
             if (this.mapView.isPaused() || this.mapView.isStopped()) {
                 return;
             }
-            this.model.getNextTimeStep();
+            this.modelRun.getNextTimeStep();
         },
 
         reset: function() {
             this.mapView.reset();
-            this.model.clearData();
+            this.modelRun.clearData();
             this.mapControlView.reset();
         },
 
         rewind: function() {
             this.mapView.clear();
-            this.model.clearData();
+            this.modelRun.clearData();
             this.mapControlView.reset();
         },
 
@@ -439,8 +456,8 @@ define([
          all of the remaining frames if they don't exist, until the end.
          */
         jumpToLastFrame: function() {
-            var lastFrame = this.model.length - 1;
-            this.model.setCurrentTimeStep(lastFrame);
+            var lastFrame = this.modelRun.length - 1;
+            this.modelRun.setCurrentTimeStep(lastFrame);
         },
 
         useFullscreen: function() {
@@ -468,18 +485,22 @@ define([
         },
 
         showFormForNode: function(node) {
-            var formView = this.formViews.get(node.data.form_id);
+            var formView;
+
+            if (node.data.form_id) {
+                formView = this.formViews.get(node.data.form_id);
+            }
 
             if (formView === undefined) {
                 return;
             }
 
-            if (node.data.id) {
-                formView.reload({id: node.data.id});
-            } else {
-                this.formViews.hideAll();
-                formView.show();
+            if (node.data.object_id) {
+                formView.reload(node.data.object_id);
             }
+
+            this.formViews.hideAll();
+            formView.show();
         },
 
         /*

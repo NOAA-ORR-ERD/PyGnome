@@ -27,8 +27,9 @@ class NavigationTree(object):
 
         for mover in data.pop('wind_movers', []):
             movers['children'].append({
-                'object_id': mover.id,
-                'title': mover.name
+                'object_id': mover['id'],
+                'form_id': 'edit_wind_mover',
+                'title': mover['name']
             })
 
         spills = {
@@ -39,8 +40,9 @@ class NavigationTree(object):
 
         for spill in data.pop('point_release_spills', []):
             spills['children'].append({
-                'object_id': spill.id,
-                'title': spill.name
+                'object_id': spill['id'],
+                'form_id': 'edit_point_release_spill',
+                'title': spill['name']
             })
 
         settings = {

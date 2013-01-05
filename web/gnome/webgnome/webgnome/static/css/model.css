@@ -1,6 +1,7 @@
 
 ul.dynatree-container {
-    max-height: 400px;
+    /* TODO: How to handle this in a responsive layout? */
+    max-height: 600px;
     border: none;
 }
 
@@ -167,6 +168,10 @@ input[type="color"],
 
 .form-inline .checkbox {
     padding-left: 5px;
+}
+
+.form-inline .checkbox {
+    margin-bottom: 1px;
 }
 
 .edit-time-forms th {

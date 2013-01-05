@@ -19,7 +19,7 @@ define([
         initialize: function() {
             _.bindAll(this);
 
-            this.options.model.on(
+            this.options.modelRun.on(
                 models.ModelRun.MESSAGE_RECEIVED, this.displayMessage);
 
             this.hideAll();
@@ -79,18 +79,18 @@ define([
             this.status = MapView.STOPPED;
             this.map = $(this.mapEl);
 
-            this.model = this.options.model;
-            this.model.on(models.ModelRun.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
-            this.model.on(models.ModelRun.RUN_BEGAN, this.modelRunBegan);
-            this.model.on(models.ModelRun.RUN_ERROR, this.modelRunError);
-            this.model.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.ModelRun.CREATED, this.reset);
+            this.modelRun = this.options.modelRun;
+            this.modelRun.on(models.ModelRun.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+            this.modelRun.on(models.ModelRun.RUN_BEGAN, this.modelRunBegan);
+            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
+            this.modelRun.on(models.ModelRun.CREATED, this.reset);
 
             if (this.backgroundImageUrl) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
             }
 
-            if (this.model.hasCachedTimeStep(this.model.getCurrentTimeStep())) {
+            if (this.modelRun.hasCachedTimeStep(this.modelRun.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
             }
         },
@@ -346,7 +346,7 @@ define([
         },
 
         nextTimeStepReady: function() {
-            this.addTimeStep(this.model.getCurrentTimeStep());
+            this.addTimeStep(this.modelRun.getCurrentTimeStep());
         },
 
         loadMapFromUrl: function(url) {
@@ -550,10 +550,10 @@ define([
                 throw new MapViewException('No current image size detected.');
             }
 
-            var minLat = this.model.bounds[0][1];
-            var minLong = this.model.bounds[0][0];
-            var maxLat = this.model.bounds[1][1];
-            var maxLong = this.model.bounds[2][0];
+            var minLat = this.modelRun.bounds[0][1];
+            var minLong = this.modelRun.bounds[0][0];
+            var maxLat = this.modelRun.bounds[1][1];
+            var maxLong = this.modelRun.bounds[2][0];
 
             var x = ((point.long - minLong) / (maxLong - minLong)) * size.width;
             var y = ((point.lat - minLat) / (maxLat - minLat)) * size.height;
@@ -571,10 +571,10 @@ define([
                 throw new MapViewException('No current image size detected.');
             }
 
-            var minLat = this.model.bounds[0][1];
-            var minLong = this.model.bounds[0][0];
-            var maxLat = this.model.bounds[1][1];
-            var maxLong = this.model.bounds[2][0];
+            var minLat = this.modelRun.bounds[0][1];
+            var minLong = this.modelRun.bounds[0][0];
+            var maxLat = this.modelRun.bounds[1][1];
+            var maxLong = this.modelRun.bounds[2][0];
 
             // Adjust for different origin
             point.y = -point.y + size.height;
@@ -612,11 +612,14 @@ define([
             this.url = this.options.url;
             this.tree = this.setupDynatree();
 
+            this.options.windMovers.on('sync', this.reload);
+            this.options.pointReleaseSpills.on('sync', this.reload);
+
             // Event handlers
-            this.options.model.on(models.ModelRun.CREATED, this.reload);
+            this.options.modelRun.on(models.ModelRun.CREATED, this.reload);
 
             // TODO: Remove this when we remove the Long Island default code.
-            this.options.model.on(models.ModelRun.RUN_BEGAN, this.reload);
+            this.options.modelRun.on(models.ModelRun.RUN_BEGAN, this.reload);
         },
 
         setupDynatree: function() {
@@ -746,7 +749,7 @@ define([
             this.spillButtonEl = this.options.spillButtonEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
-            this.model = this.options.model;
+            this.modelRun = this.options.modelRun;
 
             // Controls whose state, either enabled or disabled, is related to whether
             // or not an animation is playing. The resize and full screen buttons
@@ -769,17 +772,17 @@ define([
                 disabled: true
             });
 
-            if (this.model.expectedTimeSteps.length) {
-                this.setTimeSteps(this.model.expectedTimeSteps);
+            if (this.modelRun.expectedTimeSteps.length) {
+                this.setTimeSteps(this.modelRun.expectedTimeSteps);
                 this.enableControls();
             }
 
             this.setupClickEvents();
 
-            this.model.on(models.ModelRun.RUN_BEGAN, this.runBegan);
-            this.model.on(models.ModelRun.RUN_ERROR, this.modelRunError);
-            this.model.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.ModelRun.CREATED, this.modelCreated);
+            this.modelRun.on(models.ModelRun.RUN_BEGAN, this.runBegan);
+            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
+            this.modelRun.on(models.ModelRun.CREATED, this.modelCreated);
 
             this.options.mapView.on(MapView.FRAME_CHANGED, this.mapViewFrameChanged);
         },
@@ -821,7 +824,7 @@ define([
         },
 
         sliderMoved: function(event, ui) {
-            var timestamp = this.model.getTimestampForExpectedStep(ui.value);
+            var timestamp = this.modelRun.getTimestampForExpectedStep(ui.value);
 
             if (timestamp) {
                 this.setTime(timestamp);
@@ -834,16 +837,16 @@ define([
         },
 
         runBegan: function() {
-            if (this.model.dirty) {
+            if (this.modelRun.dirty) {
                 // TODO: Is this really what we want to do here?
                 this.reset();
             }
 
-            this.setTimeSteps(this.model.expectedTimeSteps);
+            this.setTimeSteps(this.modelRun.expectedTimeSteps);
         },
 
         mapViewFrameChanged: function() {
-            var timeStep = this.model.getCurrentTimeStep();
+            var timeStep = this.modelRun.getCurrentTimeStep();
             this.setTimeStep(timeStep.id);
             this.setTime(timeStep.get('timestamp'));
         },

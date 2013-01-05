@@ -49,6 +49,8 @@ class WebWindMover(WindMover):
         # TODO: What to do here?
         self.uncertain_angle_scale_units = 'deg'
 
+        return self
+
     def to_dict(self):
         series = []
 
@@ -65,6 +67,8 @@ class WebWindMover(WindMover):
                 'units': self.wind.user_units
             },
 
+            'id': self.id,
+            'name': self.name,
             'is_active': self.is_active,
             'uncertain_duration': self.uncertain_duration,
             'uncertain_time_delay': self.uncertain_time_delay,
@@ -134,8 +138,11 @@ class WebPointReleaseSpill(PointReleaseSpill):
         self.is_uncertain = data['uncertain']
         self.num_LEs = data['num_LEs']
 
+        return self
+
     def to_dict(self):
         return {
+            'id': self.id,
             'release_time': self.release_time,
             'start_position': self.start_position,
             'windage': self.windage_range,

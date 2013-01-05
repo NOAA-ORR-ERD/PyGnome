@@ -3,12 +3,12 @@
 
 % if is_variable:
     ${defs.form_control(
-        h.text('date', wind.datetime, class_='date'), label="Date")}
+        h.text('datetime', wind.datetime, class_='date'), label="Date")}
     ${defs.time_control()}
 % endif
 
 ${defs.form_control(
-    h.text('direction', wind.direction),
+    h.text('direction', wind.direction, class_="direction"),
     label='Direction',
     help_text='Enter cardinal direction or degrees true.')}
 
@@ -16,7 +16,7 @@ ${defs.form_control(
     <label class="control-label">Speed</label>
 
     <div class="controls">
-    ${h.text('speed', wind.speed, classes="speed")}
+    ${h.text('speed', wind.speed, class_="speed")}
     <span class="help"> </span>
     </div>
 </div>

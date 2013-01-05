@@ -106,9 +106,14 @@
         <%include file="forms/model_settings.mak" args="model=model"/>
         <%include file="forms/wind_mover.mak"
             args="mover=default_wind_mover, default_wind=default_wind,
-                  default_wind_value=default_wind_value, form_id='wind_mover'"/>
+                  default_wind_value=default_wind_value, form_id='add_wind_mover'"/>
+        <%include file="forms/wind_mover.mak"
+            args="mover=default_wind_mover, default_wind=default_wind,
+                  default_wind_value=default_wind_value, form_id='edit_wind_mover'"/>
         <%include file="forms/point_release_spill.mak"
-            args="spill=default_point_release_spill, form_id='point_release_spill'"/>
+            args="spill=default_point_release_spill, form_id='add_point_release_spill'"/>
+         <%include file="forms/point_release_spill.mak"
+            args="spill=default_point_release_spill, form_id='edit_point_release_spill'"/>
     </div>
 </%block>
 
@@ -139,8 +144,10 @@
                     formContainerId: 'modal-container',
                     addMoverFormId: "add_mover",
                     addSpillFormId: "add_spill",
-                    windMoverFormId: "wind_mover",
-                    pointReleaseSpillFormId: "point_release_spill",
+                    addWindMoverFormId: "add_wind_mover",
+                    editWindMoverFormId: "edit_wind_mover",
+                    addPointReleaseSpillFormId: "add_point_release_spill",
+                    editPointReleaseSpillFormId: "edit_point_release_spill",
                     modelSettingsFormId: "model_settings",
                     generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                     expectedTimeSteps: ${expected_time_steps_json or '[]' | n},

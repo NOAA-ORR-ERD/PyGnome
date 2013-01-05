@@ -71,7 +71,7 @@ def validate_direction(node, value):
 class WindValueSchema(MappingSchema):
     datetime = SchemaNode(DateTime(default_tzinfo=None), default=now)
     speed = SchemaNode(Float(), default=0, validator=Range(min=0))
-    direction = SchemaNode(String(), default="N")
+    direction = SchemaNode(Float(), default=0)
 
 
 class DatetimeValue2dArray(Sequence):
@@ -106,7 +106,7 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
 class WindSchema(MappingSchema):
     timeseries = WindTimeSeriesSchema(default=[])
     units = SchemaNode(String(), validator=OneOf(util.velocity_unit_values),
-                       default='mps')
+                       default='m/s')
 
 
 class WindMoverSchema(MappingSchema):

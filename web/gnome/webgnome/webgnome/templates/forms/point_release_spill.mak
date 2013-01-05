@@ -1,7 +1,7 @@
 <%namespace name="defs" file="../defs.mak"/>
 <%page args="spill, spill_id=None, form_id=None"/>
 
-<div class="spill form page hide" id='point_release_spill'>
+<div class="spill form page hide" id='${form_id}'>
     <form action="" data-type="spill" class="form-horizontal" method="POST">
         <div class="page-body">
             <%
