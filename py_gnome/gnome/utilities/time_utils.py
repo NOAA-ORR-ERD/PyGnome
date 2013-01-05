@@ -20,7 +20,7 @@ def date_to_sec(date_time):
     
     The epoch is as defined in python: Jan 1, 1970
     """
-    d_array = numpy.asarray(date_time, dtype=numpy.datetime64).reshape(-1)
+    d_array = numpy.asarray(date_time, dtype='datetime64[us]').reshape(-1)
     t_array = numpy.zeros(numpy.shape(d_array), dtype=numpy.uint32)
     
     for li in range(len(d_array)):
