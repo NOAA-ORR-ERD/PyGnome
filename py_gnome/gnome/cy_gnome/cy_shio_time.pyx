@@ -150,18 +150,14 @@ cdef class CyShioTime(object):
         self.get_time_value(modelTime)  # initialize self.shio.fEbbFloodDataHdl for specified duration
         cdef short tmp_size = sizeof(EbbFloodData)
         cdef cnp.ndarray[EbbFloodData, ndim=1] ebb_flood
-        #cdef EbbFloodDataH ebb_flood_hdlH
-       
-        # FAILS because fEbbFloodDataHdl is assigned in GetTimeValue
-        #ebb_flood_hdlH = self.shio.GetEbbFloodDataHdl()
-        sz = _GetHandleSize(<Handle>self.shio.fEbbFloodDataHdl)  # allocate memory and copy it over
-        #sz = _GetHandleSize(<Handle>ebb_flood_hdlH)
-        print sz
-        print tmp_size
-        #ebb_flood = np.empty((sz/tmp_size,), dtype=basic_types.ebb_flood_data)
-        ebb_flood = np.empty((1,), dtype=basic_types.ebb_flood_data)  
-        #memcpy( &ebb_flood[0], self.shio.fEbbFloodDataHdl[0], sz)
-        #return ebb_flood
+        
+        if self.shio.fStationType == 'C':
+            sz = _GetHandleSize(<Handle>self.shio.fEbbFloodDataHdl)  # allocate memory and copy it over
+            ebb_flood = np.empty((sz/tmp_size,), dtype=basic_types.ebb_flood_data)
+            memcpy( &ebb_flood[0], self.shio.fEbbFloodDataHdl[0], sz)
+            return ebb_flood
+        else:
+            return 0
     
     def get_high_low(self, modelTime):
         """
@@ -170,10 +166,13 @@ cdef class CyShioTime(object):
         self.get_time_value(modelTime)  # initialize self.shio.fEbbFloodDataHdl for specified duration
         cdef short tmp_size = sizeof(HighLowData)
         cdef cnp.ndarray[HighLowData, ndim=1] high_low
-    
-        # FAILS because fEbbFloodDataHdl is assigned in GetTimeValue
-        sz = _GetHandleSize(<Handle>self.shio.fHighLowDataHdl)  # allocate memory and copy it over
-        high_low = np.empty((sz/tmp_size,), dtype=basic_types.ebb_flood_data)  
-    
-        memcpy( &high_low[0], self.shio.fHighLowDataHdl[0], sz)
-        return high_low
+        
+        if self.shio.fStationType == 'H':
+            self.get_time_value(modelTime)  # initialize self.shio.fEbbFloodDataHdl for specified duration
+            sz = _GetHandleSize(<Handle>self.shio.fHighLowDataHdl)  # allocate memory and copy it over
+            high_low = np.empty((sz/tmp_size,), dtype=basic_types.ebb_flood_data)  
+        
+            memcpy( &high_low[0], self.shio.fHighLowDataHdl[0], sz)
+            return high_low
+        else:
+            return 0
