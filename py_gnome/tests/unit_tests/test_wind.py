@@ -194,9 +194,13 @@ class TestWind:
       
       Output should be an interpolated value between the values of the 0th and 1st index of timeseries.
       """
-      dt = all_winds['rq'].time[0].astype(object) + (all_winds['rq'].time[1]-all_winds['rq'].time[0]).astype(object)/2
+      #dt = all_winds['rq'].time[0].astype(object) + (all_winds['rq'].time[1]-all_winds['rq'].time[0]).astype(object)/2
+      dt = all_winds['rq'].time[0] + (all_winds['rq'].time[1]-all_winds['rq'].time[0])/2
+      all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction, datetime=dt).view(dtype=np.recarray)
+      
       get_rq = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction, datetime=dt).view(dtype=np.recarray)
       get_uv = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.wind_uv, datetime=dt).view(dtype=np.recarray)
+      
       
       np.set_printoptions(precision=4)
       print
@@ -205,7 +209,7 @@ class TestWind:
       print  str( all_winds['uv'].value[:2,:])
       print
       print "get_uv:\t{0}".format(get_uv.value[0])
-      print "time:  \t{0}".format(dt)
+      print "time:  \t{0}".format(str(dt))
       print "-----------------"
       print "u-bounds: ({0:0.4f},{1:0.4f});\t computed-u: ({2:0.4f})".format(min(all_winds['uv'].value[:2,0]), max(all_winds['uv'].value[:2,0]), get_uv.value[0,0])
       print "v-bounds: ({0:0.4f},{1:0.4f});\t computed-v: ({2:0.4f})".format(min(all_winds['uv'].value[:2,1]), max(all_winds['uv'].value[:2,1]), get_uv.value[0,1])
@@ -221,12 +225,12 @@ class TestWind:
       print "-----------------"       
       print "NOTE: This test fails at times for randomly generated (r,theta)"
       print "      Still trying to understand how the hermite interpolation should work"
-      
-      assert get_uv.time[0].astype(object) == dt
+       
+      assert get_uv.time[0] == dt
       assert get_uv.value[0,0] > np.min( all_winds['uv'].value[:2,0]) \
-         and get_uv.value[0,0] < np.max( all_winds['uv'].value[:2,0])
+        and get_uv.value[0,0] < np.max( all_winds['uv'].value[:2,0])
       assert get_uv.value[0,1] > np.min( all_winds['uv'].value[:2,1]) \
-         and get_uv.value[0,1] < np.max( all_winds['uv'].value[:2,1])
+        and get_uv.value[0,1] < np.max( all_winds['uv'].value[:2,1])
       #=========================================================================
       ## FOLLOWING DOES NOT WORK
       # assert get_rq.value[0,0] > all_winds['rq'].value[0,0] and get_rq.value[0,0] < all_winds['rq'].value[1,0]

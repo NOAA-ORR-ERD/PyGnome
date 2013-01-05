@@ -115,7 +115,7 @@ class TestWindMover:
    model_time = time_utils.sec_to_date(time_utils.date_to_sec(spill.release_time) + 1)
 
    time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
-   time_val['time']  = np.datetime64( spill.release_time.isoformat() )
+   time_val['time']  = np.datetime64( spill.release_time )
    time_val['value'] = (2., 25.)
    wind = weather.Wind(timeseries=time_val, units='meters per second')
    wm = movers.WindMover(wind)

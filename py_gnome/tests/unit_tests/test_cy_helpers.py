@@ -58,9 +58,9 @@ def test_numpy_array():
     """
     time_utils works for numpy datetime object
     """
-    x = np.zeros((3,), dtype=np.datetime64)
+    x = np.zeros((3,), dtype='datetime64[s]')
     xn = _convert(x)
-    assert np.all( time_utils.round_time(x, roundTo=1) == xn)
+    assert np.all( x == xn)
 
 class TestCyDateTime():
     target = cy_helpers.CyDateTime()
