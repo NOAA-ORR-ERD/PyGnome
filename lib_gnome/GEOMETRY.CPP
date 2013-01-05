@@ -35,18 +35,18 @@ float LongToLatRatio(float baseLat)
 { return cos(baseLat * 3.14159/180); }
 #endif
 
-float MilesPerDegreeLong(float baseLat)
+/*float MilesPerDegreeLong(float baseLat)
 { return 69 * LongToLatRatio(baseLat); }
-
+*/
 float MilesPerDegreeLat()
 { return 69; }
 
-float DegreesLongPerMile(float baseLat)
+/*float DegreesLongPerMile(float baseLat)
 { return 1 / MilesPerDegreeLong(baseLat); }
 
 float DegreesLatPerMile()
 { return 1.0 / 69.0; }
-
+*/
 
 float LongToLatRatio2(WorldRect *wr)
 #ifdef LLSHIFT
@@ -69,7 +69,7 @@ float LongToLatRatio3(long baseLat)
 #else
 { return cos(((float)baseLat / 1000000.0) * 3.14159 / 180); }
 #endif
-
+#ifndef pyGNOME
 Boolean SameSegmentEndPoints(Segment s1, Segment s2)
 {
 	return (s1.fromLong == s2.fromLong && s1.fromLat == s2.fromLat) ||
@@ -77,8 +77,8 @@ Boolean SameSegmentEndPoints(Segment s1, Segment s2)
 		   (s1.fromLong == s2.toLong && s1.fromLat == s2.toLat) ||
 		   (s1.toLong == s2.toLong && s1.toLat == s2.toLat);
 }
-
-Point ForcePointOnLineIntoRect(short x, short y, float slope, Rect r)
+#endif
+/*Point ForcePointOnLineIntoRect(short x, short y, float slope, Rect r)
 {
 	short x2, y2;
 	Point p;
@@ -105,10 +105,10 @@ Point ForcePointOnLineIntoRect(short x, short y, float slope, Rect r)
 	}
 	
 	return p;
-}
+}*/
 
 ////////////////////////////////////////////////////////////// DISTANCES AND AREA
-
+#ifndef pyGNOME
 float UnitsPerDegreeLat()
 {
 #ifdef STANDARDUNITS
@@ -126,7 +126,7 @@ float UnitsPerDegreeLat()
 	
 	return MILESPERDEGREELAT;
 }
-
+#endif
 float EarthRadius()
 {
 	float radius = EARTHRADIUSINMILES;
@@ -145,7 +145,7 @@ float EarthRadius()
 	
 	return radius;
 }
-
+#ifndef pyGNOME
 float LongToDistance(long dLong, WorldPoint center)
 {
 	float distance, baseLat = center.pLat / 1000000.0;
@@ -180,7 +180,7 @@ long DistanceToLat(float distance)
 	
 	return dLat * 1000000;
 }
-
+#endif
 /*
 float DistanceBetweenWorldPoints(WorldPoint p1, WorldPoint p2)
 {
@@ -237,7 +237,7 @@ float DistanceBetweenWorldPoints(WorldPoint p1, WorldPoint p2)
 	return d;
 }
 
-float ComputePolygonArea(long numPoints, PointH points, WorldRect bounds)
+/*float ComputePolygonArea(long numPoints, PointH points, WorldRect bounds)
 {
 	float x1, x2, y1, y2, area = 0, subArea = 0;
 	WorldPoint p, p0 = INDEXH(points, 0).p,
@@ -275,7 +275,7 @@ float ComputeWorldRectArea(WorldRect bounds)
 	q = &p[0];
 	
 	return ComputePolygonArea(5, (PointH)&q, bounds);
-}
+}*/
 
 ////////////////////////////////////////////////////////////// INTERSECTION: POINTS
 
@@ -285,13 +285,13 @@ float ComputeWorldRectArea(WorldRect bounds)
 //			"Touches" means shape A is "In" shape B or shape B is "In" shape A
 
 ////////////////////////////////////////////////////////////// INTERSECTION: POINTS
-
+#ifndef pyGNOME
 Boolean WPointNearWPoint(WorldPoint p1, WorldPoint p2, float d)
 {
 	return DistanceBetweenWorldPoints(p1, p2) <= d;
 }
-
-Boolean WPointNearWPoint2(long long1, long lat1, long long2, long lat2,
+#endif
+/*Boolean WPointNearWPoint2(long long1, long lat1, long long2, long lat2,
 						 long dLong, long dLat, float d)
 {
 	WorldRect circle;
@@ -408,16 +408,16 @@ Boolean CircleInCircle(WorldRect circle1, WorldRect circle2,
 	
 	return TRUE;
 }
-
+*/
 ////////////////////////////////////////////////////////////// INTERSECTION: RECTS
-
+#ifndef pyGNOME
 Boolean WPointInWRect(long longVal, long latVal, WorldRect *w)
 {
 	return latVal >= w->loLat && latVal <= w->hiLat &&
 		   longVal >= w->loLong && longVal <= w->hiLong;
 }
-
-Boolean WPointInWRectE(long longVal, long latVal, WorldRect *w,
+	
+/*Boolean WPointInWRectE(long longVal, long latVal, WorldRect *w,
 					   long dLong, long dLat, float d)
 {
 	WorldRect w2;
@@ -447,7 +447,7 @@ Boolean WPointInWRectE(long longVal, long latVal, WorldRect *w,
 		return TRUE;
 	
 	return FALSE;
-}
+}*/
 
 Boolean WRectTouchesWRect(WorldRect *wr1, WorldRect *wr2)
 {
@@ -458,8 +458,9 @@ Boolean WRectTouchesWRect(WorldRect *wr1, WorldRect *wr2)
 	
 	return TRUE;
 }
+#endif
 
-Boolean WRectINWRect(WorldRect *wr1, WorldRect *wr2,
+/*Boolean WRectINWRect(WorldRect *wr1, WorldRect *wr2,
 					 long dLong, long dLat, float d)
 {
 	return WPointInWRectE(wr1->loLong, wr1->loLat, wr2, dLong, dLat, d) &&
@@ -935,14 +936,14 @@ void SetSegment(Segment *s, long fromLong, long fromLat, long toLong, long toLat
 	s->fromLat = fromLat;
 	s->toLong = toLong;
 	s->toLat = toLat;
-}
+}*/
 
 void SetWorldRect(WorldRect *w, long loLat, long loLong, long hiLat, long hiLong)
 {
 	w->loLat = loLat; w->loLong = loLong; w->hiLat = hiLat; w->hiLong = hiLong;
 }
 
-void MakeWorldPointValid(long *pLong, long *pLat)
+/*void MakeWorldPointValid(long *pLong, long *pLat)
 {
 	if ((*pLong) > theWorld.hiLong) (*pLong) = theWorld.hiLong;
 	if ((*pLong) < theWorld.loLong) (*pLong) = theWorld.loLong;
@@ -959,19 +960,18 @@ void MakeWorldRectValid(WorldRect *wr)
 	
 	if (wr->loLong > wr->hiLong) SwitchLongs(&wr->loLong, &wr->hiLong);
 	if (wr->loLat > wr->hiLat) SwitchLongs(&wr->loLat, &wr->hiLat);
+}*/
+Boolean EqualWRects(WorldRect wr1, WorldRect wr2)
+{
+	return wr1.loLong == wr2.loLong && wr1.loLat == wr2.loLat &&
+	wr1.hiLong == wr2.hiLong && wr1.hiLat == wr2.hiLat;
 }
-
+	
+#ifndef pyGOME
 Boolean EqualWPoints(WorldPoint p1, WorldPoint p2)
 {
 	return p1.pLong == p2.pLong && p1.pLat == p2.pLat;
 }
-
-Boolean EqualWRects(WorldRect wr1, WorldRect wr2)
-{
-	return wr1.loLong == wr2.loLong && wr1.loLat == wr2.loLat &&
-		   wr1.hiLong == wr2.hiLong && wr1.hiLat == wr2.hiLat;
-}
-
 void OffsetWRect(WorldRect *w, long dh, long dv)
 {
 	w->loLat += dv; w->loLong += dh; w->hiLat += dv; w->hiLong += dh;
@@ -1008,8 +1008,7 @@ WorldRect UnionWRect(WorldRect w1, WorldRect w2)
 	
 	return w;
 }
-
-WorldRect SectWRect(WorldRect *w1, WorldRect *w2)
+/*WorldRect SectWRect(WorldRect *w1, WorldRect *w2)
 {
 	WorldRect w;
 	
@@ -1021,8 +1020,7 @@ WorldRect SectWRect(WorldRect *w1, WorldRect *w2)
 	if (w.loLat > w.hiLat || w.loLong > w.hiLong) w = voidWorldRect;
 	
 	return w;
-}
-
+}*/
 WorldRect AddWRectBorders(WorldRect w, short fraction)
 {
 	long d = 0;
@@ -1032,7 +1030,7 @@ WorldRect AddWRectBorders(WorldRect w, short fraction)
 	
 	return w;
 }
-
+#endif
 WorldRect *AddWPointToWRect(long pLat, long pLong, WorldRect *w)
 {
 	SetWorldRect(w, _min(w->loLat, pLat),
@@ -1042,7 +1040,7 @@ WorldRect *AddWPointToWRect(long pLat, long pLong, WorldRect *w)
 	
 	return w;
 }
-
+#ifndef pyGNOME
 WorldPoint Midpoint(Segment s)
 {
 	WorldPoint w;
@@ -1113,7 +1111,6 @@ WorldPoint PointOfIntersection(Segment s1, Segment s2)
 }
 
 ////////// POINT IN POLYGON
-
 Boolean SegmentCrossesVerticalRay(long x1, long y1, long x2, long y2, long xp, long yp)
 {
 	long dy, DY, dx, DX;
@@ -1178,3 +1175,4 @@ void SetPt(POINTPTR p, short h, short v)
 	p->v = v;
 }
 
+#endif
