@@ -146,7 +146,7 @@ class MapCanvas(object):
         
         :param spill: a spill object to draw
         """
-
+        ##fixme: add checks for the status flag!
 
         if spill.is_uncertain:
             color = self.colors['uncert_LE']

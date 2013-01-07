@@ -101,7 +101,7 @@ class Model(object):
 
         :return: a list of spills
         """
-        return self.spill_container.spills
+        return self._spill_container.spills
 
 #    ## uncertainspills mirror the regular ones... 
 #    @property
@@ -334,7 +334,7 @@ class Model(object):
         filename = os.path.join(images_dir, 'foreground_%05i.png'%self.current_time_step)
 
         self.output_map.create_foreground_image()
-        for sc in (self._uncertain_spill_container, self.spill_container):
+        for sc in (self._uncertain_spill_container, self._spill_container):
             self.output_map.draw_elements(sc)
             
         self.output_map.save_foreground(filename)

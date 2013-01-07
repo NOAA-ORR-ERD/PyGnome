@@ -13,6 +13,7 @@ import gnome.model
 import gnome.map
 from gnome import movers, weather
 import gnome.spill
+from gnome.spill import SpatialReleaseSpill
 
 def test_init():
     model = gnome.model.Model()
@@ -152,8 +153,7 @@ def test_simple_run_with_image_output():
     start_points[:,0] = np.linspace(-127.1, -126.5, N)
     start_points[:,1] = np.linspace( 47.93, 48.1, N)
     #print start_points
-    spill = gnome.spill.SurfaceReleaseSpill(num_elements=10,
-                                            start_position = start_points,
+    spill = gnome.spill.SpatialReleaseSpill(start_positions = start_points,
                                             release_time = start_time,
                                             )
     

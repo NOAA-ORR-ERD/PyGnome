@@ -366,7 +366,7 @@ class SpatialReleaseSpill(FloatingSpill):
        """
        reset to initial conditions -- i.e. nothing released. 
        """
-       super(SurfaceReleaseSpill, self).reset()
+       super(SpatialReleaseSpill, self).reset()
 
 
 
