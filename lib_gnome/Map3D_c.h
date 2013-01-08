@@ -110,9 +110,10 @@ public:
 	virtual  long 	GetNumPointsInBoundarySeg(long segno);
 	virtual	long 	GetNumBoundaryPts(void);
 	
-	OSErr			SetUpCurvilinearGrid(char *path,DOUBLEH landMaskH, long numRows, long numCols, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, char* errmsg);	
-	OSErr			SetUpTriangleGrid2(char *path, long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors);
-	OSErr			SetUpTriangleGrid(char *path, long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts);
+	OSErr			SetUpCurvilinearGrid(DOUBLEH landMaskH, long numRows, long numCols, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, char* errmsg);	
+	OSErr			SetUpCurvilinearGrid2(DOUBLEH landMaskH, long numRows, long numCols, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, char* errmsg);	
+	OSErr			SetUpTriangleGrid2(long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors);
+	OSErr			SetUpTriangleGrid(long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts);
 
 	void	FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo);
 

@@ -374,7 +374,7 @@ Boolean maketriangles(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH bo
 	
 	//memerr = false;
 
-	PenNormal();
+	//PenNormal();
 	for(;;)
 	{
 		if(segCount==nbounds)break;
@@ -751,7 +751,7 @@ Boolean maketriangles2(TopologyHdl *topoHdl, LongPointHdl ptsH, long nv, LONGH b
 	
 	//memerr = false;
 
-	PenNormal();
+	//PenNormal();
 	for(;;)
 	{
 		if(segCount==nbounds)break;

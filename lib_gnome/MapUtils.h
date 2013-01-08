@@ -38,7 +38,7 @@
 
 OSErr	GetScaleAndOffsets (Rect *SourceRectPtr, Rect *DestRectPtr, ScaleRecPtr ScaleInfoPtr);
 void	GetScrMidPoint (Point scrPoint1, Point scrPoint2, Point *theMidPoint);
-OSErr 	ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr);
+//OSErr 	ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr);
 void 	PlotVector (long scrX, long scrY, double *vectorUvel, double *vectorVvel, long MilePixels);
 void 	GetDegMin (long MatrixLong, long *degPtr, double *minPtr);
 void 	RoundDMS (long MatrixDeg, long *LongDeg, double *ExMins);

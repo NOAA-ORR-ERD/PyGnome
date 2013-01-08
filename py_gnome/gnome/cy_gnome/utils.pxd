@@ -21,6 +21,12 @@ cdef extern from "StringFunctions.h":
     void SecondsToDate (unsigned long, DateTimeRec *)
 
 """
+Reset random seeds lib_gnome/MYRANDOM.H
+"""
+cdef extern from "MYRANDOM.H":
+    void ResetAllRandomSeeds ()
+
+"""
 Declare methods for interpolation of timeseries from 
 lib_gnome/OSSMTimeValue_c class and ShioTimeValue
 """

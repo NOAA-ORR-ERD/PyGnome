@@ -141,7 +141,7 @@ cdef class CyShioTime(object):
         for i in range( 0, modelTimeArray.size):
            err = self.shio.GetTimeValue( modelTimeArray[i], &vel_rec[i])
            if err != 0:
-               raise ValueError("Error invoking ShioTimeValue_c.GetTimeValue method in CyShioTime")
+               raise ValueError("Error invoking ShioTimeValue_c.GetTimeValue method in CyShioTime: C++ OSERR = " + str(err))
             
         return vel_rec
     

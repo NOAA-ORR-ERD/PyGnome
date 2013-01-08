@@ -60,7 +60,7 @@ void GridCurMover::Dispose ()
 }
 
 
-Boolean IsGridCurTimeFile (char *path, short *selectedUnitsP)
+/*Boolean IsGridCurTimeFile (char *path, short *selectedUnitsP)
 {
 	Boolean bIsValid = false;
 	OSErr	err = noErr;
@@ -99,7 +99,7 @@ done:
 		*selectedUnitsP = selectedUnits;
 	}
 	return bIsValid;
-}
+}*/
 
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////

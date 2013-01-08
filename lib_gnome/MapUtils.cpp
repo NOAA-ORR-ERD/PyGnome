@@ -531,7 +531,7 @@ void PlotVector (long scrX, long scrY, double *vectorUvel, double *vectorVvel, l
 	return;
 }
 /**************************************************************************************************/
-OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
+/*OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
 {	// expects a number of the form 
 	// <number><comma><number>
 	//e.g.  "-120.2345,40.345"
@@ -543,11 +543,11 @@ OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
 	char errStr[256]="";
 	char delimiterChar = ',';
 	
-	j = 0;	/* index into supplied string */
+	j = 0;	// index into supplied string //
 
 	for (pairIndex = 1; pairIndex <= 2 && !ErrCode; ++pairIndex)
 	{
-	   /* first convert the longitude */
+	   // first convert the longitude //
 	   Boolean keepGoing = true;
 	   for (deciPlaces = -1, k = 0 ; keepGoing; j++)
 	   {	   			
@@ -606,7 +606,7 @@ OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
 
 		if (deciPlaces < kNumDeciPlaces)
 		{
-			if (deciPlaces == -1)						/* if decimal point was not encountered */
+			if (deciPlaces == -1)						// if decimal point was not encountered //
 				deciPlaces = 0;
 
 			do
@@ -617,13 +617,13 @@ OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
 			while (deciPlaces < kNumDeciPlaces);
 		}
 		
-		num[k++] = 0;									/* terminate the number-string */
+		num[k++] = 0;									// terminate the number-string //
 		
 		if (pairIndex == 1)
 		{
 			MatrixLPtPtr -> h = atol(num);
 			
-			if (startChar[j] == ',')					/* increment j past the comma to next coordinate */
+			if (startChar[j] == ',')					// increment j past the comma to next coordinate //
 			{
 				++j;
 				delimiterChar = ','; // JLM reset the dilimiter char
@@ -656,7 +656,7 @@ OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
 
 	return (ErrCode);
 
-}
+}*/
 /**************************************************************************************************/
 void GetLRectViewRatio (LongRect *theGeoRect, long mapProjCode, double *viewRatio)
 /* this subroutine calculates both the MapMatrixRatio and MapViewRatio fields in ViewStatusRec.

@@ -1400,20 +1400,21 @@ Boolean Model_c::ThereIsASubsurfaceSpill()
 	return false;
 }
 
-long Model_c::GetNumMovers(char* moverName)
+long Model_c::GetNumMovers(ClassID desiredClassID)
 {
 	// loop through each mover in the universal map
 	TMover *thisMover = nil;
 	TMap *map;
 	char thisName[kMaxNameLen];
 	long i,n,k,d,numMovers=0;
+	ClassID classID;
 	
 	// universal movers
 	for (k = 0, d = this->uMap->moverList->GetItemCount (); k < d; k++)
 	{
 		this->uMap->moverList -> GetListItem ((Ptr) &thisMover, k);
-		thisMover -> GetClassName (thisName);
-		if(!strcmpnocase(thisName,moverName)) numMovers++;
+		classID = thisMover -> GetClassID ();
+		if(classID == desiredClassID) numMovers++;;
 	}
 	
 	// movers that belong to a map
@@ -1422,19 +1423,18 @@ long Model_c::GetNumMovers(char* moverName)
 		for (k = 0, d = map -> moverList -> GetItemCount (); k < d; k++)
 		{
 			map -> moverList -> GetListItem ((Ptr) &thisMover, k);
-			thisMover -> GetClassName (thisName);
-			if(!strcmpnocase(thisName,moverName)) numMovers++;
+			classID = thisMover -> GetClassID ();
+			if(classID == desiredClassID) numMovers++;;
 		}
 	}
-	
+		
 	return numMovers;
 }
 
 long Model_c::GetNumWindMovers()
 {
 	long numWindMovers=0;
-	numWindMovers += GetNumMovers("Constant Wind");
-	numWindMovers += GetNumMovers("Variable Wind");
+	numWindMovers += GetNumMovers(TYPE_WINDMOVER);
 	return numWindMovers;
 }
 

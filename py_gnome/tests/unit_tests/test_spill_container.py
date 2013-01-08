@@ -36,7 +36,7 @@ def test_one_simple_spill():
                                 start_position,
                                 start_time)
     sc.add_spill(spill)
-    sc.prepare_for_model_step(start_time)
+    sc.release_elements(start_time)
 
     assert sc.num_elements == num_elements
 
@@ -67,12 +67,12 @@ def test_multiple_spills():
 
     sc.add_spill(spill)
     sc.add_spill(spill2)
-    sc.prepare_for_model_step(start_time)
+    sc.release_elements(start_time)
 
     assert sc['positions'].shape == (num_elements, 3)
     assert sc['last_water_positions'].shape == (num_elements, 3)
 
-    sc.prepare_for_model_step(start_time + timedelta(hours=24) )
+    sc.release_elements(start_time + timedelta(hours=24) )
 
     assert sc['positions'].shape == (num_elements*2, 3)
     assert sc['last_water_positions'].shape == (num_elements*2, 3)

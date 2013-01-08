@@ -4,6 +4,7 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
+#include "ExportSymbols.h"
 
 #define IA 16807
 #define IM 2147483647
@@ -16,8 +17,8 @@
 #define RNMX (1.0-EPS)
 
 void ResetMyRandomSeed(void);
-float MyRandom (void);
+float GNOMEDLL_API MyRandom (void);
 
-void ResetAllRandomSeeds(void);
+void GNOMEDLL_API ResetAllRandomSeeds(void);
 
 #endif

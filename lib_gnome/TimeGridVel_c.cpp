@@ -14,6 +14,7 @@
 #include <math.h>
 #include <float.h>
 #include "DagTreeIO.h"
+#include "OUtils.h"	// for the units
 
 #ifndef pyGNOME
 #include "CROSS.H"
@@ -24,8 +25,76 @@
 using std::cout;
 
 /////////////////////////////////////////////////
+Boolean IsGridCurTimeFile (char *path, short *selectedUnitsP)
+{
+	Boolean bIsValid = false;
+	OSErr	err = noErr;
+	long line;
+	char strLine [256];
+	char firstPartOfFile [256];
+	long lenToRead,fileLength;
+	short selectedUnits = kUndefined, numScanned;
+	char unitsStr[64], gridcurStr[64];
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return false;
+	
+	lenToRead = _min(256,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	if (!err)
+	{	// must start with [GRIDCURTIME]
+		char * strToMatch = "[GRIDCURTIME]";
+		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 256);
+		if (!strncmp (strLine,strToMatch,strlen(strToMatch)))
+		{
+			bIsValid = true;
+			*selectedUnitsP = selectedUnits;
+			numScanned = sscanf(strLine,"%s%s",gridcurStr,unitsStr);
+			if(numScanned != 2) { selectedUnits = kUndefined; goto done; }
+			RemoveLeadingAndTrailingWhiteSpace(unitsStr);
+			selectedUnits = StrToSpeedUnits(unitsStr);// note we are not supporting cm/sec in gnome
+		}
+	}
+	
+done:
+	if(bIsValid)
+	{
+		*selectedUnitsP = selectedUnits;
+	}
+	return bIsValid;
+}
 
+/////////////////////////////////////////////////
+Boolean IsPtCurFile (char *path)
+{
+	Boolean	bIsValid = false;
+	OSErr	err = noErr;
+	long line;
+	char	strLine [256];
+	char	firstPartOfFile [256];
+	long lenToRead,fileLength;
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return false;
+	
+	lenToRead = _min(256,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	if (!err)
+	{	// must start with [FILETYPE] PTCUR
+		char * strToMatch = "[FILETYPE]\tPTCUR";
+		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 256);
+		if (!strncmp (strLine,strToMatch,strlen(strToMatch)))
+			bIsValid = true;
+	}
+	
+	return bIsValid;
+}
 
+/////////////////////////////////////////////////
 Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType)
 {
 	// NOTE!! if the input variable path does point to a NetCDFPaths file, 
@@ -132,8 +201,6 @@ Boolean IsNetCDFFile (char *path, short *gridType)
 		//if (status != NC_NOERR) {*gridType = CURVILINEAR; goto done;}	// this should probably be an error
 		if (status != NC_NOERR) {*gridType = REGULAR; goto done;}	// this should probably be an error - change default to regular 1/29/09
 	}
-	//OSStatus strcpyFileSystemRepresentationFromClassicPath(char *nativePath, char * classicPath, long nativePathMaxLength )
-	//if (status != NC_NOERR) {*gridType = CURVILINEAR; goto done;}	// this should probably be an error
 	
 	status = nc_inq_attlen(ncid,NC_GLOBAL,"grid_type",&t_len2);
 	if (status == NC_NOERR) /*{*gridType = CURVILINEAR; goto done;}*/
@@ -250,8 +317,7 @@ TimeGridVel_c::TimeGridVel_c ()
 	
 	fInputFilesHdl = 0;	// for multiple files case
 	
-	//fAllowExtrapolationInTime = false;
-	fAllowExtrapolationInTime = true;
+	fAllowExtrapolationInTime = false;
 	
 }
 
@@ -421,7 +487,6 @@ OSErr TimeGridVel_c::ReadInputFileNames(char *fileNamesPath)
 		//strcpy(path,(*inputFilesHdl)[i].pathName);
 		if((*inputFilesHdl)[i].pathName[0] && FileExists(0,0,(*inputFilesHdl)[i].pathName))
 		{
-			char errmsg[256];
 #if TARGET_API_MAC_CARBON
 			err = ConvertTraditionalPathToUnixPath((const char *) (*inputFilesHdl)[i].pathName, outPath, kMaxNameLen) ;
 			status = nc_open(outPath, NC_NOWRITE, &ncid);
@@ -431,10 +496,6 @@ OSErr TimeGridVel_c::ReadInputFileNames(char *fileNamesPath)
 			status = nc_open(path, NC_NOWRITE, &ncid);
 			if (status != NC_NOERR) /*{err = -1; goto done;}*/
 			{
-				//#if TARGET_API_MAC_CARBON
-				//err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-				//status = nc_open(outPath, NC_NOWRITE, &ncid);
-				//#endif
 				if (status != NC_NOERR) {err = -2; goto done;}
 			}
 			
@@ -907,7 +968,6 @@ OSErr TimeGridVelRect_c::ReadTimeData(long index,VelocityFH *velocityH, char* er
 	long latlength = fNumRows;
 	long lonlength = fNumCols;
 	long depthlength = fNumDepthLevels;	// code goes here, do we want all depths? maybe if movermap is a ptcur map??
-	//long depthlength = 1;	// code goes here, do we want all depths?
 	double scale_factor = 1.;
 	Boolean bDepthIncluded = false;
 	
@@ -918,14 +978,6 @@ OSErr TimeGridVelRect_c::ReadTimeData(long index,VelocityFH *velocityH, char* er
 	
 	status = nc_open(path, NC_NOWRITE, &ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
-	/*if (status != NC_NOERR) 
-	{
-#if TARGET_API_MAC_CARBON
-		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-		status = nc_open(outPath, NC_NOWRITE, &ncid);
-#endif
-		if (status != NC_NOERR) {err = -1; goto done;}
-	}*/
 	
 	status = nc_inq_ndims(ncid, &numdims);
 	if (status != NC_NOERR) {err = -1; goto done;}
@@ -1117,6 +1169,8 @@ OSErr TimeGridVel_c::SetInterval(char *errmsg, const Seconds& model_time)
 	if(intervalLoaded) 
 		return 0;
 	
+	//sprintf(errmsg,"Time interval = %ld\n",timeDataInterval);
+	//printNote(errmsg);
 	// check for constant current 
 	if(numTimesInFile==1 && !(GetNumFiles()>1))	//or if(timeDataInterval==-1) 
 	{
@@ -1622,6 +1676,7 @@ long TimeGridVel_c::GetVelocityIndex(WorldPoint p)
 	LongRect		gridLRect, geoRect;
 	ScaleRec		thisScaleRec;
 	
+	// for some reason this is getting garbled in pyGNOME
 	//TRectGridVel* rectGrid = dynamic_cast<TRectGridVel*>(fGrid);	// fNumRows, fNumCols members of TimeGridVel_c
 	
 	//WorldRect bounds = rectGrid->GetBounds();
@@ -1644,6 +1699,7 @@ long TimeGridVel_c::GetVelocityIndex(WorldPoint p)
 	return rowNum * fNumCols + colNum;
 }
 
+// this is only used for VelocityStrAtPoint which is in the gui code
 LongPoint TimeGridVel_c::GetVelocityIndices(WorldPoint p) 
 {
 	long rowNum, colNum;
@@ -1904,6 +1960,7 @@ long TimeGridVelCurv_c::GetVelocityIndex(WorldPoint wp)
 	return index;
 }
 
+// this is only used for VelocityStrAtPoint which is in the gui code
 LongPoint TimeGridVelCurv_c::GetVelocityIndices(WorldPoint wp)
 {
 	LongPoint indices={-1,-1};
@@ -3186,16 +3243,16 @@ OSErr TimeGridVelCurv_c::ReorderPoints(DOUBLEH landmaskH, char* errmsg)
 	long i, j, n, ntri, numVerdatPts=0;
 	long fNumRows_ext = fNumRows+1, fNumCols_ext = fNumCols+1;
 	long nv = fNumRows * fNumCols, nv_ext = fNumRows_ext*fNumCols_ext;
-	long currentIsland=0, islandNum, nBoundaryPts=0, nEndPts=0, waterStartPoint;
-	long nSegs, segNum = 0, numIslands, rectIndex; 
-	long iIndex,jIndex,index,currentIndex,startIndex; 
+	//long currentIsland=0, islandNum, nBoundaryPts=0, nEndPts=0, waterStartPoint;
+	//long nSegs, segNum = 0, numIslands, rectIndex; 
+	long iIndex,jIndex,index/*,currentIndex,startIndex*/; 
 	long triIndex1,triIndex2,waterCellNum=0;
-	long ptIndex = 0,cellNum = 0,diag = 1;
-	Boolean foundPt = false, isOdd;
+	long ptIndex = 0,cellNum = 0/*,diag = 1*/;
+	//Boolean foundPt = false, isOdd;
 	OSErr err = 0;
 	
 	LONGH landWaterInfo = (LONGH)_NewHandleClear(fNumRows * fNumCols * sizeof(long));
-	LONGH maskH2 = (LONGH)_NewHandleClear(nv_ext * sizeof(long));
+	//LONGH maskH2 = (LONGH)_NewHandleClear(nv_ext * sizeof(long));
 	
 	LONGH ptIndexHdl = (LONGH)_NewHandleClear(nv_ext * sizeof(**ptIndexHdl));
 	LONGH verdatPtsH = (LONGH)_NewHandleClear(nv_ext * sizeof(**verdatPtsH));
@@ -3207,19 +3264,19 @@ OSErr TimeGridVelCurv_c::ReorderPoints(DOUBLEH landmaskH, char* errmsg)
 	DAGTreeStruct tree;
 	WorldRect triBounds;
 	
-	LONGH boundaryPtsH = 0;
-	LONGH boundaryEndPtsH = 0;
-	LONGH waterBoundaryPtsH = 0;
-	Boolean** segUsed = 0;
-	SegInfoHdl segList = 0;
-	LONGH flagH = 0;
+	//LONGH boundaryPtsH = 0;
+	//LONGH boundaryEndPtsH = 0;
+	//LONGH waterBoundaryPtsH = 0;
+	//Boolean** segUsed = 0;
+	//SegInfoHdl segList = 0;
+	//LONGH flagH = 0;
 	
 	TTriGridVel *triGrid = nil;
 	tree.treeHdl = 0;
 	TDagTree *dagTree = 0;
 	
 	
-	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH || !maskH2) {err = memFullErr; goto done;}
+	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH /*|| !maskH2*/) {err = memFullErr; goto done;}
 	
 	for (i=0;i<fNumRows;i++)
 	{
@@ -3351,7 +3408,7 @@ OSErr TimeGridVelCurv_c::ReorderPoints(DOUBLEH landmaskH, char* errmsg)
 		/////////////////////////////////////////////////
 		
 	}
-	//fclose(outfile);
+
 	// figure out the bounds
 	triBounds = voidWorldRect;
 	if(pts) 
@@ -3425,7 +3482,7 @@ OSErr TimeGridVelCurv_c::ReorderPoints(DOUBLEH landmaskH, char* errmsg)
 	DisplayMessage("Making Dag Tree");
 	/////////////////////////////////////////////////
 	//if (this -> moverMap != model -> uMap) goto setFields;	// don't try to create a map
-	goto setFields;
+	//goto setFields;
 	/////////////////////////////////////////////////
 	// go through topo look for -1, and list corresponding boundary sides
 	// then reorder as contiguous boundary segments - need to group boundary rects by islands
@@ -3615,7 +3672,7 @@ findnextpoint:
 	_SetHandleSize((Handle)waterBoundaryPtsH,nBoundaryPts*sizeof(**waterBoundaryPtsH));
 	_SetHandleSize((Handle)boundaryEndPtsH,nEndPts*sizeof(**boundaryEndPtsH));
 */	
-setFields:	
+//setFields:	
 	
 	fVerdatToNetCDFH = verdatPtsH;
 	
@@ -3673,9 +3730,9 @@ setFields:
 	}
 	else*/
 	{
-		if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH=0;}
-		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH=0;}
-		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH=0;}
+		//if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH=0;}
+		//if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH=0;}
+		//if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH=0;}
 	}
 	
 	/////////////////////////////////////////////////
@@ -3683,9 +3740,9 @@ done:
 	if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
 	if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
 	if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
-	if (segUsed) {DisposeHandle((Handle)segUsed); segUsed = 0;}
-	if (segList) {DisposeHandle((Handle)segList); segList = 0;}
-	if (flagH) {DisposeHandle((Handle)flagH); flagH = 0;}
+	//if (segUsed) {DisposeHandle((Handle)segUsed); segUsed = 0;}
+	//if (segList) {DisposeHandle((Handle)segList); segList = 0;}
+	//if (flagH) {DisposeHandle((Handle)flagH); flagH = 0;}
 	
 	if(err)
 	{
@@ -3707,11 +3764,11 @@ done:
 		if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
 		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
 		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
-		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
+		//if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
 		
-		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
-		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
-		if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH = 0;}
+		//if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
+		//if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
+		//if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH = 0;}
 	}
 	return err;
 }
@@ -3728,7 +3785,6 @@ OSErr TimeGridVelCurv_c::ReorderPointsNoMask(char* errmsg)
 	OSErr err = 0;
 	
 	LONGH landWaterInfo = (LONGH)_NewHandleClear(fNumRows * fNumCols * sizeof(long));
-	LONGH maskH2 = (LONGH)_NewHandleClear(nv_ext * sizeof(long));
 	
 	LONGH ptIndexHdl = (LONGH)_NewHandleClear(nv_ext * sizeof(**ptIndexHdl));
 	LONGH verdatPtsH = (LONGH)_NewHandleClear(nv_ext * sizeof(**verdatPtsH));
@@ -3748,7 +3804,7 @@ OSErr TimeGridVelCurv_c::ReorderPointsNoMask(char* errmsg)
 	/////////////////////////////////////////////////
 	
 	
-	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH || !maskH2) {err = memFullErr; goto done;}
+	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH) {err = memFullErr; goto done;}
 	
 	err = this -> ReadTimeData(indexOfStart,&velocityH,errmsg);	// try to use velocities to set grid
 	
@@ -4024,7 +4080,6 @@ done:
 			fGrid = 0;
 		}
 		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
-		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
 	}
 	if (velocityH) {DisposeHandle((Handle)velocityH); velocityH = 0;}
 	return err;
@@ -4034,18 +4089,13 @@ OSErr TimeGridVelCurv_c::ReorderPointsCOOPSMask(DOUBLEH landmaskH, char* errmsg)
 {
 	OSErr err = 0;
 	long i,j,k;
-	char path[256], outPath[256];
 	char *velUnits=0; 
-	int status, ncid, numdims;
-	int mask_id, uv_ndims;
 	long latlength = fNumRows, numtri = 0;
 	long lonlength = fNumCols;
-	Boolean isLandMask = true;
 	float fDepth1, fLat1, fLong1;
 	long index1=0;
 	
 	errmsg[0]=0;
-	//*newMap = 0;
 	
 	long n, ntri, numVerdatPts=0;
 	long fNumRows_minus1 = fNumRows-1, fNumCols_minus1 = fNumCols-1;
@@ -4055,14 +4105,14 @@ OSErr TimeGridVelCurv_c::ReorderPointsCOOPSMask(DOUBLEH landmaskH, char* errmsg)
 	long triIndex1, triIndex2, waterCellNum=0;
 	long ptIndex = 0, cellNum = 0;
 	
-	long currentIsland=0, islandNum, nBoundaryPts=0, nEndPts=0, waterStartPoint;
-	long nSegs, segNum = 0, numIslands, rectIndex; 
-	long currentIndex,startIndex; 
-	long diag = 1;
-	Boolean foundPt = false, isOdd;
+	//long currentIsland=0, islandNum, nBoundaryPts=0, nEndPts=0, waterStartPoint;
+	//long nSegs, segNum = 0, numIslands, rectIndex; 
+	//long currentIndex,startIndex; 
+	//long diag = 1;
+	//Boolean foundPt = false, isOdd;
 	
 	LONGH landWaterInfo = (LONGH)_NewHandleClear(nCells * sizeof(long));
-	LONGH maskH2 = (LONGH)_NewHandleClear(nv * sizeof(long));
+	//LONGH maskH2 = (LONGH)_NewHandleClear(nv * sizeof(long));
 	
 	LONGH ptIndexHdl = (LONGH)_NewHandleClear(nv * sizeof(**ptIndexHdl));
 	LONGH verdatPtsH = (LONGH)_NewHandleClear(nv * sizeof(**verdatPtsH));
@@ -4074,12 +4124,12 @@ OSErr TimeGridVelCurv_c::ReorderPointsCOOPSMask(DOUBLEH landmaskH, char* errmsg)
 	DAGTreeStruct tree;
 	WorldRect triBounds;
 	
-	LONGH boundaryPtsH = 0;
-	LONGH boundaryEndPtsH = 0;
-	LONGH waterBoundaryPtsH = 0;
-	Boolean** segUsed = 0;
-	SegInfoHdl segList = 0;
-	LONGH flagH = 0;
+	//LONGH boundaryPtsH = 0;
+	//LONGH boundaryEndPtsH = 0;
+	//LONGH waterBoundaryPtsH = 0;
+	//Boolean** segUsed = 0;
+	//SegInfoHdl segList = 0;
+	//LONGH flagH = 0;
 	
 	TTriGridVel *triGrid = nil;
 	tree.treeHdl = 0;
@@ -4087,24 +4137,9 @@ OSErr TimeGridVelCurv_c::ReorderPointsCOOPSMask(DOUBLEH landmaskH, char* errmsg)
 	
 	/////////////////////////////////////////////////
 	
-	strcpy(path,fVar.pathName);
-	if (!path || !path[0]) return -1;
-	
-	status = nc_open(path, NC_NOWRITE, &ncid);
-	if (status != NC_NOERR) /*{err = -1; goto done;}*/
-	{
-#if TARGET_API_MAC_CARBON
-		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-		status = nc_open(outPath, NC_NOWRITE, &ncid);
-#endif
-		if (status != NC_NOERR) {err = -1; goto done;}
-	}
-	status = nc_inq_ndims(ncid, &numdims);
-	if (status != NC_NOERR) {err = -1; goto done;}
-	
 	if (!landmaskH) return -1;
 	
-	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH || !maskH2) {err = memFullErr; goto done;}
+	if (!landWaterInfo || !ptIndexHdl || !gridCellInfo || !verdatPtsH /*|| !maskH2*/) {err = memFullErr; goto done;}
 	
 	index1 = 0;
 	for (i=0;i<fNumRows-1;i++)
@@ -4302,7 +4337,7 @@ OSErr TimeGridVelCurv_c::ReorderPointsCOOPSMask(DOUBLEH landmaskH, char* errmsg)
 	// go through topo look for -1, and list corresponding boundary sides
 	// then reorder as contiguous boundary segments - need to group boundary rects by islands
 	// will need a new field for list of boundary points since there can be duplicates, can't just order and list segment endpoints
-	goto setFields;
+	//goto setFields;
 	
 	/*nSegs = 2*ntri; //number of -1's in topo
 	boundaryPtsH = (LONGH)_NewHandleClear(nv * sizeof(**boundaryPtsH));
@@ -4534,9 +4569,9 @@ setFields:
 	}
 	else*/
 	{
-		if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH=0;}
-		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH=0;}
-		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH=0;}
+		//if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH=0;}
+		//if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH=0;}
+		//if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH=0;}
 	}
 	
 	pts = 0;	// because fGrid is now responsible for it
@@ -4550,9 +4585,9 @@ done:
 	if (landWaterInfo) {DisposeHandle((Handle)landWaterInfo); landWaterInfo=0;}
 	if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
 	if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
-	if (segUsed) {DisposeHandle((Handle)segUsed); segUsed = 0;}
-	if (segList) {DisposeHandle((Handle)segList); segList = 0;}
-	if (flagH) {DisposeHandle((Handle)flagH); flagH = 0;}
+	//if (segUsed) {DisposeHandle((Handle)segUsed); segUsed = 0;}
+	//if (segList) {DisposeHandle((Handle)segList); segList = 0;}
+	//if (flagH) {DisposeHandle((Handle)flagH); flagH = 0;}
 	
 	if(err)
 	{
@@ -4574,11 +4609,11 @@ done:
 		if (ptIndexHdl) {DisposeHandle((Handle)ptIndexHdl); ptIndexHdl = 0;}
 		if (gridCellInfo) {DisposeHandle((Handle)gridCellInfo); gridCellInfo = 0;}
 		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
-		if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
+		//if (maskH2) {DisposeHandle((Handle)maskH2); maskH2 = 0;}
 		
-		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
-		if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
-		if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH = 0;}
+		//if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
+		//if (boundaryEndPtsH) {DisposeHandle((Handle)boundaryEndPtsH); boundaryEndPtsH = 0;}
+		//if (waterBoundaryPtsH) {DisposeHandle((Handle)waterBoundaryPtsH); waterBoundaryPtsH = 0;}
 	}
 	
 	
@@ -5863,8 +5898,6 @@ OSErr TimeGridVelTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 	
 	curr_index[0] = index;	// time 
 	curr_count[0] = 1;	// take one at a time
-	//curr_count[1] = 1;	// depth
-	//curr_count[2] = numNodes;
 	
 	// check for sigma or zgrid dimension
 	if (numdims>=6)	// should check what the dimensions are
@@ -5905,10 +5938,9 @@ OSErr TimeGridVelTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 	}
 	else
 		numVelsAtDepthLevel = numNodes;
-	//curr_uvals = new float[numNodes]; 
+
 	curr_uvals = new float[totalNumberOfVels]; 
 	if(!curr_uvals) {TechError("TimeGridVelTri_c::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
-	//curr_vvals = new float[numNodes]; 
 	curr_vvals = new float[totalNumberOfVels]; 
 	if(!curr_vvals) {TechError("TimeGridVelTri_c::ReadTimeData()", "new[]", 0); err = memFullErr; goto done;}
 	
@@ -5916,8 +5948,6 @@ OSErr TimeGridVelTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 	if (status != NC_NOERR) {err = -1; goto done;}
 	status = nc_get_vara_float(ncid, curr_vcmp_id, curr_index, curr_count, curr_vvals);
 	if (status != NC_NOERR) {err = -1; goto done;}
-	//status = nc_get_att_float(ncid, curr_ucmp_id, "_FillValue", &fill_value);// missing_value vs _FillValue
-	//if (status != NC_NOERR) {err = -1; goto done;}
 	status = nc_get_att_float(ncid, curr_ucmp_id, "missing_value", &fill_value);// missing_value vs _FillValue
 	if (status != NC_NOERR) {/*err = -1; goto done;*/fill_value=-9999.;}
 	status = nc_get_att_double(ncid, curr_ucmp_id, "scale_factor", &scale_factor);
@@ -6012,8 +6042,8 @@ OSErr TimeGridVelTri_c::ReorderPoints2(long *bndry_indices, long *bndry_nums, lo
 	LongPointHdl pts=0;
 	VelocityFH velH = 0;
 	WorldRect triBounds;
-	LONGH waterBoundariesH=0;
-	LONGH boundaryPtsH = 0;
+	//LONGH waterBoundariesH=0;
+	//LONGH boundaryPtsH = 0;
 	
 	TTriGridVel *triGrid = nil;
 	
@@ -6204,7 +6234,7 @@ OSErr TimeGridVelTri_c::ReorderPoints2(long *bndry_indices, long *bndry_nums, lo
 	//totalDepthH = 0; // because fGrid is now responsible for it
 	
 	/////////////////////////////////////////////////
-	numBoundaryPts = INDEXH(verdatBreakPtsH,numVerdatBreakPts-1)+1;
+	/*numBoundaryPts = INDEXH(verdatBreakPtsH,numVerdatBreakPts-1)+1;
 	waterBoundariesH = (LONGH)_NewHandle(sizeof(long)*numBoundaryPts);
 	if (!waterBoundariesH) {err = memFullErr; goto done;}
 	boundaryPtsH = (LONGH)_NewHandleClear(numBoundaryPts * sizeof(**boundaryPtsH));
@@ -6216,7 +6246,7 @@ OSErr TimeGridVelTri_c::ReorderPoints2(long *bndry_indices, long *bndry_nums, lo
 		if (bndry_type[i]==1)	
 			INDEXH(waterBoundariesH,i)=2;	// water boundary, this marks start point rather than end point...
 		INDEXH(boundaryPtsH,i) = bndry_indices[i]-1;
-	}
+	}*/
 	
 	// code goes here, do we want to store grid boundary and land/water information?
 	/*if (waterBoundariesH)	
@@ -6232,9 +6262,9 @@ OSErr TimeGridVelTri_c::ReorderPoints2(long *bndry_indices, long *bndry_nums, lo
 	}
 	else*/
 	{
-		if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
+		//if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
 		if (verdatBreakPtsH) {DisposeHandle((Handle)verdatBreakPtsH); verdatBreakPtsH=0;}
-		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
+		//if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
 	}
 	
 	/////////////////////////////////////////////////
@@ -6267,10 +6297,10 @@ done:
 			delete *newMap;
 			*newMap=0;
 		}*/
-		if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
+		//if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
 		if (verdatBreakPtsH) {DisposeHandle((Handle)verdatBreakPtsH); verdatBreakPtsH = 0;}
 		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
-		if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
+		//if (boundaryPtsH) {DisposeHandle((Handle)boundaryPtsH); boundaryPtsH = 0;}
 	}
 	return err;
 }
@@ -6292,7 +6322,7 @@ OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, lon
 	VelocityFH velH = 0;
 	DAGTreeStruct tree;
 	WorldRect triBounds;
-	LONGH waterBoundariesH=0;
+	//LONGH waterBoundariesH=0;
 	
 	TTriGridVel *triGrid = nil;
 	tree.treeHdl = 0;
@@ -6327,7 +6357,7 @@ OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, lon
 		}
 	}
 	INDEXH(verdatBreakPtsH,numVerdatBreakPts++) = numBoundaryPts;
-	
+
 	// add the rest of the points to the verdat list (these points are the interior points)
 	for(i = 0; i < nv; i++) {
 		if(INDEXH(vertFlagsH,i) == 0)	
@@ -6454,7 +6484,7 @@ OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, lon
 	//totalDepthH = 0; // because fGrid is now responsible for it
 	
 	/////////////////////////////////////////////////
-	numBoundaryPts = INDEXH(verdatBreakPtsH,numVerdatBreakPts-1)+1;
+	/*numBoundaryPts = INDEXH(verdatBreakPtsH,numVerdatBreakPts-1)+1;
 	waterBoundariesH = (LONGH)_NewHandle(sizeof(long)*numBoundaryPts);
 	if (!waterBoundariesH) {err = memFullErr; goto done;}
 	
@@ -6463,7 +6493,7 @@ OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, lon
 		INDEXH(waterBoundariesH,i)=1;	// default is land
 		if (bndry_type[i]==1)	
 			INDEXH(waterBoundariesH,i)=2;	// water boundary, this marks start point rather than end point...
-	}
+	}*/
 	
 	// code goes here, do we want to store the grid boundary and land/water information?
 	/*if (waterBoundariesH)
@@ -6478,7 +6508,7 @@ OSErr TimeGridVelTri_c::ReorderPoints(long *bndry_indices, long *bndry_nums, lon
 	}
 	else*/
 	{
-		if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
+		//if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
 		if (verdatBreakPtsH) {DisposeHandle((Handle)verdatBreakPtsH); verdatBreakPtsH=0;}
 	}
 	
@@ -6511,7 +6541,7 @@ done:
 			delete *newMap;
 			*newMap=0;
 		}*/
-		if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
+		//if (waterBoundariesH) {DisposeHandle((Handle)waterBoundariesH); waterBoundariesH=0;}
 		if (verdatBreakPtsH) {DisposeHandle((Handle)verdatBreakPtsH); verdatBreakPtsH = 0;}
 		if (verdatPtsH) {DisposeHandle((Handle)verdatPtsH); verdatPtsH = 0;}
 	}
@@ -6816,7 +6846,7 @@ done:
 
 // code to be used for gridcur and ptcur (and probably windcur)
 // leave out of pyGNOME for now - maybe move to a separate file
-#ifndef pyGNOME
+//#ifndef pyGNOME
 TimeGridCurRect_c::TimeGridCurRect_c () : TimeGridVel_c()
 {
 	fTimeDataHdl = 0;
@@ -7282,12 +7312,16 @@ OSErr TimeGridCurRect_c::ReadHeaderLines(char *path, WorldRect *bounds)
 	NthLineInTextOptimized(*f, line++, s, 256); // gridcur header
 	if(fUserUnits == kUndefined)
 	{	
+#ifdef pyGNOME	// get rid of this and require units in file
+		fUserUnits = kKnots;
+#else
 		// we have to ask the user for units...
 		Boolean userCancel=false;
 		short selectedUnits = kKnots; // knots will be default
 		err = AskUserForUnits(&selectedUnits,&userCancel);
 		if(err || userCancel) { err = -1; goto done;}
 		fUserUnits = selectedUnits;
+#endif
 	}
 	
 	//
@@ -8302,7 +8336,7 @@ OSErr TimeGridCurTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 	long numDepths = 1;
 	
 	LongPointHdl ptsHdl = 0;
-	TTriGridVel* triGrid = (TTriGridVel*)fGrid; // don't think need 3D here
+	TTriGridVel* triGrid = dynamic_cast<TTriGridVel*> (fGrid); // don't think need 3D here
 	
 	OSErr err = 0;
 	DateTimeRec time;
@@ -8310,8 +8344,8 @@ OSErr TimeGridCurTri_c::ReadTimeData(long index,VelocityFH *velocityH, char* err
 	long numPoints; 
 	errmsg[0]=0;
 	
-	//strcpy(path,fVar.pathName);
-	strnzcpy (path, fVar.pathName, kMaxNameLen - 1);
+	strcpy(path,fVar.pathName);
+	//strnzcpy (path, fVar.pathName, kMaxNameLen - 1);
 	if (!path || !path[0]) return -1;
 	
 	lengthToRead = (*fTimeDataHdl)[index].lengthOfData;
@@ -8586,11 +8620,13 @@ OSErr TimeGridCurTri_c::TextRead(char *path, char *topFilePath)
 	{
 		if (!haveBoundaryData) {err=-1; strcpy(errmsg,"File must have boundary data to create topology"); goto done;}
 		//DisplayMessage("NEXTMESSAGETEMP");
-		DisplayMessage("Making Triangles");
+		DisplayMessage("Making Triangles\n");
+		
 		if (err = maketriangles(&topo,pts,numPoints,boundarySegs,numBoundarySegs))  // use maketriangles.cpp
 			err = -1; // for now we require TTopology
 		// code goes here, support Galt style ??
-		DisplayMessage(0);
+		//DisplayMessage(0);
+		DisplayMessage("\n");
 		if(err) goto done;
 	}
 	MySpinCursor(); // JLM 8/4/99
@@ -8606,9 +8642,10 @@ OSErr TimeGridCurTri_c::TextRead(char *path, char *topFilePath)
 	else
 	{
 		//DisplayMessage("NEXTMESSAGETEMP");
-		DisplayMessage("Making Dag Tree");
+		DisplayMessage("Making Dag Tree\n");
 		tree = MakeDagTree(topo, (LongPoint**)pts, errmsg); // use CATSDagTree.cpp and my_build_list.h
-		DisplayMessage(0);
+		//DisplayMessage(0);
+		DisplayMessage("\n");
 		if (errmsg[0])	
 			err = -1; // for now we require TIndexedDagTree
 		// code goes here, support Galt style ??
@@ -8637,8 +8674,7 @@ OSErr TimeGridCurTri_c::TextRead(char *path, char *topFilePath)
 		if (waterBoundaries){DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
 	}
 	
-	/////////////////////////////////////////////////
-	
+	/////////////////////////////////////////////////	
 	
 	triGrid = new TTriGridVel;
 	if (!triGrid)
@@ -8739,6 +8775,6 @@ done:
 	// rest of file (i.e. velocity data) is read as needed
 }
 
-#endif
+//#endif
 
 

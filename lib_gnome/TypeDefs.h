@@ -412,6 +412,12 @@ typedef struct {
 
 //++ Geometry
 
+typedef struct LongPoint
+{
+	long 					h;
+	long 					v;
+} LongPoint, *LongPointPtr, **LongPointHdl;
+
 #ifndef pyGNOME
 typedef struct {
 	long pLong;

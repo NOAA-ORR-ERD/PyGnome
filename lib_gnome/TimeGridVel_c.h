@@ -37,6 +37,8 @@ typedef struct {
 
 Boolean IsNetCDFFile (char *path, short *gridType);
 Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType);
+Boolean IsPtCurFile (char *path);
+Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
 class TimeGridVel_c
 {
 public:
@@ -96,6 +98,7 @@ public:
 	virtual OSErr		TextRead(char *path,char *topFilePath) {return 0;}
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) {return 0;}
 	OSErr 				ReadInputFileNames(char *fileNamesPath);
+	//void				SetInputFilesHdl(PtCurFileInfoH inputFilesHdl) {if (fInputFilesHdl) {DisposeHandle((Handle)fInputFilesHdl)} fInputFilesHdl = inputFilesHdl;}
 
 	virtual void		DisposeTimeHdl();
 	void 				DisposeLoadedData(LoadedData * dataPtr);	
@@ -219,7 +222,7 @@ public:
 	//virtual	OSErr 	ExportTopology(char* path);
 };
 
-#ifndef pyGNOME
+//#ifndef pyGNOME
 class TimeGridCurRect_c : virtual public TimeGridVel_c
 {
 public:
@@ -323,5 +326,5 @@ public:
 	OSErr 				ReorderPoints(char* errmsg); 
 	OSErr				GetLatLonFromIndex(long iIndex, long jIndex, WorldPoint *wp);
 };
-#endif	
+//#endif	
 #endif

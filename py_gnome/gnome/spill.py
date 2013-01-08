@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
 """
-sources.py
+spill.py - A new implementation of the spill class(s)
 
-classes for various types of sources of elements for GNOME
+We now keep all the data in separate arrays, so we only store and move around the
+data that is needed
 
-these are managed by the spill class
+This is the "magic" class -- it handles the smart allocation of arrays, etc.
+
+these are managed by the SpillContainer class
 """
+
 import sys
 import numpy as np
 from gnome import basic_types
@@ -16,7 +20,7 @@ class Spill(object):
     base class for a source of elements
 
 
-    NOTE: It's important to dereive all Spills fro this base class, as all sorts of
+    NOTE: It's important to dereive all Spills from this base class, as all sorts of
           trickery to keep track of spill ids, and what instances there are of
           derived classes, so that we can keep track of whatdata arrays are needed, etc.
 
@@ -41,20 +45,6 @@ class Spill(object):
         self.__set_id()
         self.__all_subclasses[ id(self) ] = self.__class__
         Spill.reset_array_types()
-
-        # self._data_arrays['positions'] = np.zeros((0, 3),
-        #                                           dtype=basic_types.world_point_type)
-        # self._data_arrays['positions'][:,:] = initial_positions
-        # self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
-        # self._data_arrays['last_water_positions'] = np.zeros_like(self['positions'])
-
-        # self._data_arrays['status_codes'] = ( np.zeros((0,),
-        #                                                dtype=basic_types.status_code_type)
-        #                                      )
-        # self._data_arrays['status_codes'][:] = basic_types.oil_status.in_water
-        
-        # self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
-        #                                           dtype = basic_types.windage_type)
 
     @classmethod
     def reset_array_types(cls):
@@ -224,7 +214,7 @@ class SurfaceReleaseSpill(FloatingSpill):
     def release_elements(self, current_time, time_step=None):
         """
         Release any new elements to be added to the SpillContainer
-                
+
         :param current_time: datetime object for current time
         :param time_step: the time step, in seconds -- this version doesn't use this
 
@@ -336,8 +326,15 @@ class SpatialReleaseSpill(FloatingSpill):
 
     def initialize_new_elements(self, arrays):
         """
+<<<<<<< HEAD
         initilize the new elements just created (i.e set their default values)
         This is probably need to be extended by subclasses
+=======
+        Update windage for each LE for each time step
+
+        .. note::
+             May want to cythonize this to speed it up
+>>>>>>> master
         """
         super(SpatialReleaseSpill, self).initialize_new_elements(arrays)
         #arrays['positions'][:] = self.start_position

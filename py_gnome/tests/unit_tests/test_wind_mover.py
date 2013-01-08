@@ -147,20 +147,29 @@ class TestWindMover:
            curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
            delta = self.wm.get_move(self.spill, self.time_step, curr_time)
            actual = self._expected_move()
-           
+
            # the results should be independent of model time
            tol = 1e-8
            np.testing.assert_allclose(delta, actual, tol, tol,
                                       "WindMover.get_move() is not within a tolerance of " + str(tol), 0)
-           
+
            print "Time step [sec]: \t" + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
            print "C++ delta-move: " ; print str(delta)
            print "Expected delta-move: "; print str(actual)
-                  
+
+   def test_get_move_exceptions(self):
+       curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step))
+       tmp_windages = self.spill._data_arrays['windages']
+       del self.spill._data_arrays['windages']
+       with pytest.raises(KeyError):
+           self.wm.get_move(self.spill, self.time_step, curr_time)
+       self.spill._data_arrays['windages'] = tmp_windages
+
    def test_update_wind_vel(self):
        self.time_val['value'] = (1., 120.) # now given as (r, theta)
        self.wind.set_timeseries( self.time_val, units='meters per second')
        self.test_get_move()
+       self.test_get_move_exceptions()
    
    def _expected_move(self):
        """

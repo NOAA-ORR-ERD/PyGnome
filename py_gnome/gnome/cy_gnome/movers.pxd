@@ -65,9 +65,9 @@ cdef extern from "WindMover_c.h":
         
         OSErr PrepareForModelRun()
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID)
-        void SetTimeDep(OSSMTimeValue_c *)
-        OSErr GetTimeValue(Seconds &, VelocityRec *)
-        OSErr PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)	# currently this happens in C++ get_move command
+        void SetTimeDep(OSSMTimeValue_c *ossm)
+        OSErr GetTimeValue(Seconds &time, VelocityRec *vel)
+        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step, bool uncertain, int numLESets, int* LESetsSizesList)	# currently this happens in C++ get_move command
         void ModelStepIsDone()
         
         
@@ -79,39 +79,38 @@ cdef extern from "CATSMover_c.h":
    #    Boolean isFirstStep
    #    double  value
    #============================================================================
-       
    cdef cppclass CATSMover_c(CurrentMover_c):
-       #========================================================================
-       # WorldPoint         refP                
-       # GridVel_c        *fGrid    
-       # long             refZ                     
-       short             scaleType                 
-       double            scaleValue             
-       # char             scaleOtherFile[32]
-       # double             refScale
-       # Boolean         bRefPointOpen
-       # Boolean            bUncertaintyPointOpen
-       # Boolean         bTimeFileOpen
-       # Boolean            bTimeFileActive
-       # Boolean         bShowGrid
-       # Boolean         bShowArrows
-       # double             arrowScale
-       # OSSMTimeValue_c *timeDep
-       double            fEddyDiffusion    
-       # double            fEddyV0
-       # TCM_OPTIMZE     fOptimize
-       #========================================================================
+        CATSMover_c() except +
+        double          fEddyDiffusion
+        short           scaleType                 
+        double          scaleValue
+        Boolean         bTimeFileActive
+        #=======================================================================
+        # WorldPoint      refP                
+        # GridVel_c       *fGrid    
+        # long            refZ                     
+        # char            scaleOtherFile[32]
+        # double          refScale
+        # Boolean         bRefPointOpen
+        # Boolean         bUncertaintyPointOpen
+        # Boolean         bTimeFileOpen
+        # Boolean         bShowGrid
+        # Boolean         bShowArrows
+        # double          arrowScale
+        # OSSMTimeValue_c *timeDep
+        # double          fEddyV0
+        #=======================================================================
+        #TCM_OPTIMZE     fOptimize
        
-       #int   ReadTopology(char* path, Map_c **newMap)    # what is this for? Do we want to expose? What is Map_c?
-       void  SetRefPosition (WorldPoint , long )    # Could we use WorldPoint3D for this?
-       #OSErr ComputeVelocityScale(Seconds&)    # seems to require TMap, TCATSMover
+        #int   ReadTopology(char* path, Map_c **newMap)    # what is this for? Do we want to expose? What is Map_c?
+        void  SetRefPosition (WorldPoint , long )    # Could we use WorldPoint3D for this?
+        #OSErr ComputeVelocityScale(Seconds&)    # seems to require TMap, TCATSMover
        
-       OSErr PrepareForModelRun()
-       OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
-       void  SetTimeDep(OSSMTimeValue_c *)
-       OSErr GetTimeValue(Seconds &, VelocityRec *)
-       OSErr PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)    # currently this happens in C++ get_move command
-       void  ModelStepIsDone()
+        OSErr PrepareForModelRun()
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+        void  SetTimeDep(OSSMTimeValue_c *ossm)
+        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step, bool uncertain, int numLESets, int* LESetsSizesList)    # currently this happens in C++ get_move command
+        void  ModelStepIsDone()
        
 
 cdef extern from "GridCurrentMover_c.h":

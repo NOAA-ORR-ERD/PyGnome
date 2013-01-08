@@ -49,8 +49,8 @@ class TestRandomMover():
         print self.pSpill['positions']
     
     def test_string_representation_matches_repr_method(self):
-        assert repr(self.mover) == 'Random Mover'
-        assert str(self.mover) == 'Random Mover'
+        assert repr(self.mover) == 'RandomMover(diffusion_coef=100000.0)'
+        assert str(self.mover) == 'RandomMover(diffusion_coef=100000.0)'
 
     def test_id_matches_builtin_id(self):
         assert id(self.mover) == self.mover.id
@@ -88,7 +88,6 @@ def test_variance1(start_loc, time_step):
     spill = TestSpillContainer(num_le, start_loc, start_time)
     D = 100000
     num_steps = 10
-    spill.reset()
 
     rand = movers.RandomMover(diffusion_coef=D)
 

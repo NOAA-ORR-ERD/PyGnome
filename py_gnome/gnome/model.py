@@ -170,6 +170,8 @@ class Model(object):
     def add_mover(self, mover):
         """
         add a new mover to the model -- at the end of the stack
+
+        :param mover: an instance of one of the gnome.movers classes
         """
         self._movers[mover.id] = mover
         return mover.id
@@ -199,7 +201,7 @@ class Model(object):
         """
         add a spill to the model
 
-        :param spill: an instance of the gnome.Spill class
+        :param spill: an instance of one of the gnome.spill classes
 
         """
         #fixme: where should we check if a spill is in a valid location on the map?

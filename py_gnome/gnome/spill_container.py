@@ -183,12 +183,13 @@ class TestSpillContainer(SpillContainer):
 
     This make sit easy to use for tesing other classes -- movers, maps, etc.
     """
-    def __init__(self, num_elements=0,
-                       start_pos=(0.0,0.0,0.0),
-                       release_time=datetime.datetime(2000,1,1,1),
-                       uncertain=False):
+    def __init__(self,
+                 num_elements=0,
+                 start_pos=(0.0,0.0,0.0),
+                 release_time=datetime.datetime(2000,1,1,1),
+                 uncertain=False):
         """
-        initilize a simple spill container
+        initilize a simple spill container (instantaneous point release)
         """
         SpillContainer.__init__(self, uncertain=uncertain)
 
@@ -196,7 +197,7 @@ class TestSpillContainer(SpillContainer):
                                                 start_pos,    
                                                 release_time)
         self.spills.append(spill)
-        self.prepare_for_model_step(release_time)
+        self.release_elements(release_time)
 
 
 

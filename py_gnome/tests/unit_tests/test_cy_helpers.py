@@ -4,14 +4,18 @@ test time conversions from date time to seconds and vice versa
 just a python script right now
 """
 
-from gnome.cy_gnome import cy_date_time
+from gnome.cy_gnome import cy_helpers
 from datetime import datetime
 import time
 import numpy as np
 from gnome import basic_types
 from gnome.utilities import time_utils
 
-# only used in test_cy_date_time to validate time_utils.date_to_sec functionality
+"""
+Test CyDateTime
+"""
+#===========================
+# only used in test_cy_helpers to validate time_utils.date_to_sec functionality
 date_rec =   np.dtype([('year', np.short),
                        ('month', np.short),
                        ('day', np.short),
@@ -59,7 +63,7 @@ def test_numpy_array():
     assert np.all( time_utils.round_time(x, roundTo=1) == xn)
 
 class TestCyDateTime():
-    target = cy_date_time.Cy_date_time()
+    target = cy_helpers.CyDateTime()
     now =  datetime.now()
 
     daterec = np.empty((1,), dtype=date_rec)
@@ -95,7 +99,6 @@ class TestCyDateTime():
         Note the tm_dst = 0 before comparing against Python results
         '''
         sec = self.target.DateToSeconds(self.daterec)
-        print "pySec - sec: " + str(self.pySec - sec)
         assert self.pySec == sec
 
     def test_sec_to_timestruct(self):
@@ -113,13 +116,15 @@ class TestCyDateTime():
         # NOTE (JS): Not sure 1 is added to day of the week in StringFunctions.CPP
         # This doesn't seem to effect the date/time value - left it as is.
         # The C++ time struct 0=Sunday and 6=Sat. For Python time struct 0=Monday and 6=Sunday
+        print   # for pretty printing
         for field in list(date):
            
             # for pyDate all fields must match
             assert pyDate[field] == self.daterec[field][0]
 
             if field != 'dayOfWeek':
-                print field + ":" + str(date[field]) + " " + str(self.daterec[field][0])
+                #print field + ":" + str(date[field]) + " " + str(self.daterec[field][0])
+                print "expected {0}: {1}\t actual {0}: {2}".format(field, date[field], self.daterec[field][0])
                 assert date[field] == self.daterec[field][0]
                 
     def test_sec_to_date(self):
@@ -129,9 +134,15 @@ class TestCyDateTime():
         """
         tgt = time_utils.round_time( dt=self.now, roundTo=1)
         act = time_utils.sec_to_date(self.pySec)
-        print "expected: " + str(tgt)
-        print "actual: " + str(act)
+        print
+        print "expected:\t" + str(tgt)
+        print "actual:  \t" + str(act)
         assert tgt == act
+
+"""
+End test CyDateTime
+===================
+"""
 
 if __name__=="__main__":
     a = TestCyDateTime()

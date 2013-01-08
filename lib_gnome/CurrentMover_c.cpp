@@ -24,6 +24,7 @@
 extern TModel *model;
 #endif
 
+#ifndef pyGNOME
 CurrentMover_c::CurrentMover_c (TMap *owner, char *name) : Mover_c(owner, name)
 {
 	// set fields of our base class
@@ -45,7 +46,7 @@ CurrentMover_c::CurrentMover_c (TMap *owner, char *name) : Mover_c(owner, name)
 	bIsFirstStep = false;
 	fModelStartTime = 0;
 }
-
+#endif
 CurrentMover_c::CurrentMover_c () : Mover_c()
 {
 	// set fields of our base class

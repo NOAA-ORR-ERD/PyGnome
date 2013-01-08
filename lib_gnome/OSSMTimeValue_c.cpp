@@ -370,7 +370,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	SplitPathFile(s, this->fileName);
 	
 	//////////////////////////////////////////
-	/**/ paramtext(fileName, "", "", ""); /**/
+	///**/ paramtext(fileName, "", "", ""); /**/
 	//////////////////////////////////////////
 
 	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f))
