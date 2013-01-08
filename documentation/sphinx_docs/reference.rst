@@ -49,9 +49,21 @@ Class Reference:
 .. automodule:: gnome.spill
    :members:
 
-``gnome.movers.simple_mover`` -- a simple pyGNOME mover class
+``gnome.movers`` -- pyGNOME mover classes
 ---------------------------------------------------
-.. automodule:: gnome.movers.simple_mover
+.. automodule:: gnome.movers
+.. autoclass:: Mover
+   :members:
+.. autoclass:: CyMover
+   :members:
+.. autoclass:: WindMover
+   :members:
+.. autoclass:: RandomMover
+   :members:
+
+``gnome.weather`` -- the pyGNOME weather classes
+---------------------------------------------------
+.. automodule:: gnome.weather
    :members:
 
 
