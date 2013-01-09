@@ -277,10 +277,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\lib_gnome\TriGridVel3D_c.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\lib_gnome\TriGridVel_c.cpp"
 				>
 			</File>

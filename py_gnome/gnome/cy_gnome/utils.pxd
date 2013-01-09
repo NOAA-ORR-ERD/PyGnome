@@ -49,20 +49,18 @@ cdef extern from "OSSMTimeValue_c.h":
 ShioTimeValue_c.h derives from OSSMTimeValue_c - so no need to redefine methods given in OSSMTimeValue_c like GetTimeValue
 """
 cdef extern from "ShioTimeValue_c.h":
-        
-    # TODO: These may not be needed
     ctypedef struct EbbFloodData:
         Seconds time
         double speedInKnots
-        short type
+        short type  # // 0 -> MinBeforeFlood, 1 -> MaxFlood, 2 -> MinBeforeEbb, 3 -> MaxEbb
         
-    ctypedef EbbFloodData *EbbFloodDataP    # Weird syntax, it says EbbFloodDataP is pointer to pointer to EbbFloodData struct
+    ctypedef EbbFloodData *EbbFloodDataP    
     ctypedef EbbFloodData **EbbFloodDataH   # Weird syntax, it says EbbFloodDataH is pointer to pointer to EbbFloodData struct
 
     ctypedef struct HighLowData:
         Seconds time
         double height
-        short type
+        short type  # // 0 -> Low Tide, 1 -> High Tide
     
     ctypedef HighLowData *HighLowDataP
     ctypedef HighLowData **HighLowDataH
