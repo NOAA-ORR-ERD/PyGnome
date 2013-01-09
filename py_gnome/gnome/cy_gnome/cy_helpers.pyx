@@ -4,6 +4,7 @@ from gnome import basic_types
 
 cimport type_defs
 cimport utils
+cimport stdlib
 
 cdef class CyDateTime:
    cdef unsigned long * seconds
@@ -32,8 +33,8 @@ cdef class CyDateTime:
        return self.tDateRec
 
 
-def reset_lib_random_seeds():
+def srand(seed):
     """
-    Resets all the random seeds for lib_gnome
+    Resets C++ random seed 
     """
-    utils.ResetAllRandomSeeds()
+    stdlib.srand(seed)
