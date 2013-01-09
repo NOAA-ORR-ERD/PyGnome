@@ -113,7 +113,8 @@ class GnomeMap(object):
         """
         Determines which LEs were or weren't beached.
         
-        This map class  has no land, so nothing changes
+        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
+            This map class  has no land, so nothing changes
         """
         return None
 
@@ -125,7 +126,8 @@ class GnomeMap(object):
         .. note::
             This map class has no land, and so is a no-op.
         
-        :param spill: The spill object that hold the elements that need refloating
+        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
+            This object holds the elements that need refloating
         """
         pass
 
@@ -314,7 +316,8 @@ class RasterMap(GnomeMap):
         
         This version uses a modified Bresenham algorithm to find out which pixels the LE may have crossed.
         
-        :param spill: a spill object.  It must have the following data arrays:
+        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
+            It must have the following data arrays:
             ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
         # pull the data from the spill 
