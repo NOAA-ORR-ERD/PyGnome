@@ -131,9 +131,7 @@ class SpillContainer(object):
         """
         Called at the beginning of a time step
 
-        This calls release_elements on all of the contained spills, and adds
-        the elements to the data arrays
-        
+        Note sure what might need to get done here...        
         """
         pass
 
@@ -145,15 +143,16 @@ class SpillContainer(object):
         the elements to the data arrays
         
         """
+        print "in release_elements", current_time
         for spill in self.spills:
             new_data = spill.release_elements(current_time, time_step)
+            print "got new data:", new_data
             if new_data is not None:
                 for name, array in new_data.items():
                     if name in self._data_arrays:
                         self._data_arrays[name] = np.r_[ self._data_arrays[name], new_data[name] ]
                     else:
                         self._data_arrays[name] = new_data[name]
-
 
     def update_windage(self, time_step):
         ##fixme: this really doesn't seem to belonge here.

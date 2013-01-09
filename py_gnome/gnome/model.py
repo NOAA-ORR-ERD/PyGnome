@@ -183,12 +183,14 @@ class Model(object):
         if mover_id in self._movers:
             del self._movers[mover_id]
 
-    def replace_mover(self, mover_id, new_mover):
-        """
-        replace a given mover with a new one
-        """
-        self._movers[mover_id] = new_mover
-        return new_mover
+    # def replace_mover(self, mover_id, new_mover):
+    #     """
+    #     replace a given mover with a new one
+
+    #     this is probably broken -- ids won't match!
+    #     """
+    #     self._movers[mover_id] = new_mover
+    #     return new_mover
 
     def get_spill(self, spill_id):
         """
@@ -253,6 +255,7 @@ class Model(object):
         self._spill_container.reset()
         if self.uncertain:
             #initialize a clean uncertainty spill_container
+            # or jsut make a new one?
             self._uncertain_spill_container = self._spill_container.copy()            
 
     def setup_time_step(self):
@@ -336,8 +339,10 @@ class Model(object):
         filename = os.path.join(images_dir, 'foreground_%05i.png'%self.current_time_step)
 
         self.output_map.create_foreground_image()
-        for sc in (self._uncertain_spill_container, self._spill_container):
-            self.output_map.draw_elements(sc)
+        if self.uncertain:
+            self.output_map.draw_elements(self._uncertain_spill_container)
+        print "number of LEs: ", self._spill_container['positions'].shape
+        self.output_map.draw_elements(self._spill_container)
             
         self.output_map.save_foreground(filename)
         return filename
@@ -347,6 +352,7 @@ class Model(object):
         Steps the model forward (or backward) in time. Needs testing for hindcasting.
                 
         """
+        print "in step, time step:", self.current_time_step
         if self.current_time_step >= self._num_time_steps:
             return False
         
@@ -358,7 +364,7 @@ class Model(object):
             # release elements here.
             self.step_is_done()
         self.current_time_step += 1        
-        self._spill_container.release_elements(self.model_time) 
+        self._spill_container.release_elements(self.model_time)
         return True
     
     def __iter__(self):
@@ -390,7 +396,7 @@ class Model(object):
         step rendered
         :param images_dir: directory to write the image too.
         """
-        # write out the zeroth image:
+        # run the next step:
         if not self.step():
             raise StopIteration
         filename = self.write_image(images_dir)

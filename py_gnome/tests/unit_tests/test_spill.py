@@ -82,10 +82,9 @@ def test_reset_array_types():
     tests to make sure that after resetting, only arrays that are
     used by existing spills are created
 
-    NOTE: This test is sensitive to other tests failures
-          I suspect that when other tests fail, the test harness
-          may keep references around that defeats this. So fix other
-          failures first.
+    NOTE: This test is sensitive to other tests 
+          I suspect that when other tests have been run, the test harness
+          may keep references around that defeats this. So test this by itself
     """
     sp1 = Spill()
     sp1.reset() # make sure that we're reset from previous tests
@@ -114,7 +113,7 @@ def test_reset_array_types():
     #windages should no longer be there
     #print Spill._Spill__all_subclasses
     arrays = sp1.create_new_elements(1)
-    print "This test can fail if other's failed before it -- leaving dangling references"
+    print "This test can fail if others have been run before it -- leaving dangling references"
     print "Fix other tests first"
     assert 'windages' not in arrays
 
@@ -431,4 +430,23 @@ def test_SpatialReleaseSpill():
     assert data['positions'].shape == (4,3)
     assert np.alltrue( data['status_codes'] == basic_types.oil_status.in_water )
 
+def test_SpatialReleaseSpill2():
+    """
+    make sure they don't release elements twice
+    """
+    start_positions = ( (0.0,   0.0,   0.0 ),
+                        (28.0, -75.0,  0.0 ),
+                        (-15,    12,    4.0),
+                        ( 80,    -80,  100.0),
+                        )
+    release_time = datetime.datetime(2012,1,1,1)
+    sp = SpatialReleaseSpill(start_positions,
+                             release_time,
+                             windage_range=(0.01, 0.04),
+                             windage_persist=900,
+                             )
+    data = sp.release_elements(release_time)
+
+    assert data['positions'].shape == (4,3)
+    data = sp.release_elements(release_time+datetime.timedelta(hours=1))
 

@@ -108,56 +108,57 @@ def spill_ex():
 
 
 class TestWindMover:
-   """
-   gnome.WindMover() test
+    """
+    gnome.WindMover() test
 
-   """
-   time_step = 15 * 60 # seconds
-   spill = spill_ex()
-   rel_time = spill.spills[0].release_time # digging a bit deep...
-   model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
+    """
+    def __init__(self):
+        time_step = 15 * 60 # seconds
+        self.spill = spill_ex()
+        rel_time = self.spill.spills[0].release_time # digging a bit deep...
+        model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
 
-   time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
-   time_val['time']  = np.datetime64( rel_time.isoformat() )
-   time_val['value'] = (2., 25.)
-   wind = weather.Wind(timeseries=time_val, units='meters per second')
-   wm = movers.WindMover(wind)
+        time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
+        time_val['time']  = np.datetime64( rel_time.isoformat() )
+        time_val['value'] = (2., 25.)
+        wind = weather.Wind(timeseries=time_val, units='meters per second')
+        self.wm = movers.WindMover(wind)
 
-   def test_string_repr_no_errors(self):
-       print
-       print "======================"
-       print "repr(WindMover): "
-       print repr( self.wm)
-       print
-       print "str(WindMover): "
-       print str(self.wm)
-       assert True
+    def test_string_repr_no_errors(self):
+        print
+        print "======================"
+        print "repr(WindMover): "
+        print repr( self.wm)
+        print
+        print "str(WindMover): "
+        print str(self.wm)
+        assert True
 
-   def test_id_matches_builtin_id(self):
-       assert id(self.wm) == self.wm.id
+    def test_id_matches_builtin_id(self):
+        assert id(self.wm) == self.wm.id
 
-   def test_get_move(self):
-       """
-       Test the get_move(...) results in WindMover match the expected delta
-       """
-       self.spill.prepare_for_model_step(self.model_time, self.time_step)
-       self.wm.prepare_for_model_step(self.model_time, self.time_step)
+    def test_get_move(self):
+        """
+        Test the get_move(...) results in WindMover match the expected delta
+        """
+        self.spill.prepare_for_model_step(self.model_time, self.time_step)
+        self.wm.prepare_for_model_step(self.model_time, self.time_step)
 
-       for ix in range(2):
-           curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
-           delta = self.wm.get_move(self.spill, self.time_step, curr_time)
-           actual = self._expected_move()
+        for ix in range(2):
+            curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
+            delta = self.wm.get_move(self.spill, self.time_step, curr_time)
+            actual = self._expected_move()
 
-           # the results should be independent of model time
-           tol = 1e-8
-           np.testing.assert_allclose(delta, actual, tol, tol,
-                                      "WindMover.get_move() is not within a tolerance of " + str(tol), 0)
+            # the results should be independent of model time
+            tol = 1e-8
+            np.testing.assert_allclose(delta, actual, tol, tol,
+                                       "WindMover.get_move() is not within a tolerance of " + str(tol), 0)
 
-           print "Time step [sec]: \t" + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
-           print "C++ delta-move: " ; print str(delta)
-           print "Expected delta-move: "; print str(actual)
+            print "Time step [sec]: \t" + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
+            print "C++ delta-move: " ; print str(delta)
+            print "Expected delta-move: "; print str(actual)
 
-   def test_get_move_exceptions(self):
+    def test_get_move_exceptions(self):
        curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step))
        tmp_windages = self.spill._data_arrays['windages']
        del self.spill._data_arrays['windages']
@@ -165,13 +166,13 @@ class TestWindMover:
            self.wm.get_move(self.spill, self.time_step, curr_time)
        self.spill._data_arrays['windages'] = tmp_windages
 
-   def test_update_wind_vel(self):
+    def test_update_wind_vel(self):
        self.time_val['value'] = (1., 120.) # now given as (r, theta)
        self.wind.set_timeseries( self.time_val, units='meters per second')
        self.test_get_move()
        self.test_get_move_exceptions()
    
-   def _expected_move(self):
+    def _expected_move(self):
        """
        Put the expected move logic in separate (fixture) if it gets used multiple times
        """

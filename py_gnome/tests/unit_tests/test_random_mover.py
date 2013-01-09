@@ -40,10 +40,10 @@ class TestRandomMover():
     model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
     time_step = 15*60 # seconds
 
-    pSpill = TestSpillContainer(num_le, start_pos)#, rel_time, persist=-1)
-
     mover = movers.RandomMover()
-    
+    def __init__(self):
+        # allocate stuff here so it doen'st stick around
+        self.pSpill = TestSpillContainer(self.num_le, self.start_pos)
     def reset_pos(self):
         self.pSpill['positions'] = (0.,0.,0.)
         print self.pSpill['positions']
@@ -68,12 +68,12 @@ class TestRandomMover():
         assert True
 
 start_locs = [(0.0,0.0,0.0),
-#              (30.0, 30.0, 30.0),
-#              (-45.0, -60.0, 30.0),
+              (30.0, 30.0, 30.0),
+              (-45.0, -60.0, 30.0),
               ]
 
-#timesteps = [36, 360, 3600]
-timesteps = [36, ]
+timesteps = [36, 360, 3600]
+#timesteps = [36, ]
 
 test_cases = [(loc, step) for loc in start_locs for step in timesteps]
 

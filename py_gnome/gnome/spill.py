@@ -321,20 +321,15 @@ class SpatialReleaseSpill(FloatingSpill):
         
         self.release_time = release_time
 
+        self.elements_not_released = True
+
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
 
     def initialize_new_elements(self, arrays):
         """
-<<<<<<< HEAD
         initilize the new elements just created (i.e set their default values)
         This is probably need to be extended by subclasses
-=======
-        Update windage for each LE for each time step
-
-        .. note::
-             May want to cythonize this to speed it up
->>>>>>> master
         """
         super(SpatialReleaseSpill, self).initialize_new_elements(arrays)
         #arrays['positions'][:] = self.start_position
@@ -351,8 +346,8 @@ class SpatialReleaseSpill(FloatingSpill):
 
         NOTE: this releases all the elements at their initial positions at the release_time
         """
-
-        if current_time >= self.release_time:
+        if self.elements_not_released and current_time >= self.release_time:
+            self.elements_not_released = False
             arrays = self.create_new_elements(self.num_elements)
             arrays['positions'][:,:] = self.start_positions
             return arrays
