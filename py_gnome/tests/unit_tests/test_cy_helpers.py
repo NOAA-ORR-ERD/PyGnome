@@ -142,7 +142,9 @@ class TestCyDateTime():
 """
 End test CyDateTime
 ===================
+Testing to ensure cy_helpers.srand() sets up correctly is done in test_cy_random_mover.py
 """
+
 
 if __name__=="__main__":
     a = TestCyDateTime()
