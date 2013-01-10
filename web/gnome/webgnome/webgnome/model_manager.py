@@ -1,10 +1,12 @@
 """
 model_manager.py: Manage a pool of running models.
 """
-import numpy
-import util
+import datetime
 
 # XXX: This except block should not be necessary.
+import os
+from webgnome import util
+
 try:
     import gnome
 except ImportError:
@@ -21,6 +23,7 @@ except ImportError:
 from gnome.model import Model
 from gnome.movers import WindMover
 from gnome.spill import PointReleaseSpill
+from gnome.map import MapFromBNA
 
 
 class WebWindMover(WindMover):
@@ -40,6 +43,7 @@ class WebWindMover(WindMover):
 
     def from_dict(self, data):
         self.wind = data['wind']
+        self._name = data['name']
         self.is_active = data['is_active']
         self.uncertain_duration = data['uncertain_duration']
         self.uncertain_speed_scale = data['uncertain_speed_scale']
@@ -152,6 +156,20 @@ class WebPointReleaseSpill(PointReleaseSpill):
         }
 
 
+class WebMapFromBNA(MapFromBNA):
+    """
+    A subclass of :class:`gnome.map.MapFromBNA` that provides
+    webgnome-specific functionality.
+    """
+    def __init__(self, *args, **kwargs):
+        self._name = kwargs.pop('name', None)
+        super(WebMapFromBNA, self).__init__(*args, **kwargs)
+
+    @property
+    def name(self):
+        return self._name
+
+
 class WebModel(Model):
     """
     A subclass of :class:`gnome.model.Model` that provides webgnome-specific
@@ -166,12 +184,47 @@ class WebModel(Model):
     }
 
     def __init__(self, *args, **kwargs):
+        self.base_dir = self._make_base_dir(kwargs.pop('model_images_dir'))
+
         super(WebModel, self).__init__()
 
         # Patch the object with an empty ``time_steps`` array for the time being.
         # TODO: Add output caching in the model.
         self.time_steps = []
         self.runtime = None
+
+    def _make_base_dir(self, dir):
+        base_dir = os.path.join(dir, str(self.id))
+
+        if not os.path.exists(base_dir):
+            os.mkdir(base_dir)
+
+        return base_dir
+
+    @property
+    def run_images_dir(self):
+        if not self.runtime:
+            self.runtime = util.get_runtime()
+
+        images_dir = os.path.join(self.base_dir, self.runtime)
+
+        if not os.path.exists(images_dir):
+            os.mkdir(images_dir)
+
+        return images_dir
+
+    @property
+    def background_image(self):
+        if not self.output_map:
+            return
+
+        image_path = os.path.join(self.run_images_dir, 'background_map.png')
+
+        if not os.path.exists(image_path):
+            self.output_map.draw_background()
+            self.output_map.save_background(image_path)
+
+        return image_path
 
     @property
     def duration_hours(self):
@@ -237,8 +290,13 @@ class WebModel(Model):
 
         return data
 
-    def from_dict(self):
-        pass
+    def from_dict(self, data):
+        self.uncertain = data['uncertain']
+        self.start_time = data['start_time']
+        self.time_step = data['time_step']
+        self.duration = datetime.timedelta(
+            days=data['duration_days'],
+            seconds=data['duration_hours'] * 60 * 60)
 
 
 class ModelManager(object):
@@ -252,12 +310,12 @@ class ModelManager(object):
     def __init__(self):
         self.running_models = {}
 
-    def create(self):
-        model = WebModel()
+    def create(self, **kwargs):
+        model = WebModel(**kwargs)
         self.running_models[model.id] = model
         return model
 
-    def get_or_create(self, model_id):
+    def get_or_create(self, model_id, **kwargs):
         """
         Return a running :class:`WebModel` instance if the user has a
         valid ``model_id`` key in his or her session. Otherwise, create a new
@@ -270,7 +328,7 @@ class ModelManager(object):
             model = self.running_models.get(model_id, None)
 
         if model is None:
-            model = self.create()
+            model = self.create(**kwargs)
             created = True
 
         return model, created

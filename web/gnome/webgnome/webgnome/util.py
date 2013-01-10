@@ -5,10 +5,12 @@ import datetime
 import inspect
 import json
 import math
+import time
 import uuid
 
 from functools import wraps
 from itertools import chain
+from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
 
@@ -102,7 +104,7 @@ class SchemaForm(object):
         if name in self._fields:
             return self._fields[name]
         else:
-            raise AttributeError
+            raise AttributeError(name)
 
     def get_field_value(self, field, parents=None):
         value = None
@@ -209,9 +211,31 @@ def valid_model_id(request):
     if model is None:
         request.errors.add('body', 'model', 'Model not found.')
         request.errors.status = 404
-        return
+
+    authenticated_model_id = request.session.get(
+        request.registry.settings['model_session_key'], None)
+
+    if model.id != authenticated_model_id:
+        raise Forbidden()
 
     request.validated['model'] = model
+
+
+def valid_map(request):
+    """
+    A Cornice validator that returns a 404 if a map was not found for the user's
+    current model.
+    """
+    valid_model_id(request)
+
+    if request.errors:
+        return
+
+    model = request.validated['model']
+
+    if not model.map:
+        request.errors.add('body', 'map', 'Map not found.')
+        request.errors.status = 404
 
 
 def valid_mover_id(request):
@@ -343,6 +367,14 @@ def get_model_image_url(request, model, filename):
         model.id,
         model.runtime,
         filename))
+
+
+def get_runtime():
+    """
+    Return the current time as a string to be used as part of the file path
+    for all images generated during a model run.
+    """
+    return time.strftime("%Y-%m-%d-%H-%M-%S")
 
 
 velocity_unit_values = list(chain.from_iterable(

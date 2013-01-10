@@ -1,7 +1,8 @@
+html, body {
+    height: 100%;
+}
 
 ul.dynatree-container {
-    /* TODO: How to handle this in a responsive layout? */
-    max-height: 600px;
     border: none;
 }
 
@@ -13,10 +14,6 @@ ul.dynatree-container {
 .dynatree-ico-ef span.dynatree-icon  /* Expanded Folder */
 {
     background-image: none;
-}
-
-.dynatree-node a {
-    font-size: 9pt;
 }
 
 #tree-list {
@@ -51,6 +48,19 @@ div.nav-collapse > div.btn-toolbar {
 
 #sidebar-toolbar {
     display: inline;
+}
+
+#sidebar {
+    height: 100%;
+    border-right: solid 1px #D4D4D4;
+}
+
+#content {
+    height: 100%;
+}
+
+#container {
+    height: 100%;
 }
 
 #time {
@@ -147,6 +157,11 @@ input[type="color"],
 
 }
 
+input[type="text"], input[type="password"], .ui-autocomplete-input, textarea, .uneditable-input {
+    color: black;
+    font-size: 13px;
+}
+
 .form-horizontal .control-group {
     margin: 1px 0 1px 0;
 }
@@ -219,6 +234,11 @@ select, input[type="file"] {
     margin-top: 10px;
 }
 
+.variable-wind .compass-container {
+    margin-left: 100px;
+    margin-bottom: 10px;
+}
+
 .compass {
     width: 210px;
     height: 210px;
@@ -226,11 +246,11 @@ select, input[type="file"] {
 }
 
 .model-settings .control-label {
-    width: 210px;
+    width: 150px;
 }
 
 .model-settings .controls {
-    margin-left: 230px;
+    margin-left: 170px;
 }
 
 .table tbody tr.info td {
@@ -240,6 +260,10 @@ select, input[type="file"] {
 .wind-values {
     overflow: scroll;
     max-height: 400px;
+}
+
+.wind form {
+    margin-bottom: 0;
 }
 
 .units {
@@ -265,3 +289,12 @@ select, input[type="file"] {
 }
 
 
+@media (max-width: 767px) {
+    #sidebar {
+        height: auto;
+    }
+
+    #container {
+        height: auto;
+    }
+}

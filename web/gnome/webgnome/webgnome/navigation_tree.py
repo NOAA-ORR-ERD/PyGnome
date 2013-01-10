@@ -6,7 +6,7 @@ class NavigationTree(object):
     def __init__(self, model):
         self.model = model
 
-    def _get_value_title(self, name, value, max_chars=8):
+    def _get_value_title(self, name, value, max_chars=50):
         """
         Return a title string that combines ``name`` and ``value``, with value
         shortened if it is longer than ``max_chars``.
@@ -26,11 +26,21 @@ class NavigationTree(object):
         }
 
         for mover in data.pop('wind_movers', []):
-            movers['children'].append({
+            mover_item = {
                 'object_id': mover['id'],
                 'form_id': 'edit_wind_mover',
-                'title': mover['name']
-            })
+                'title': mover['name'],
+                 'children': []
+            }
+
+            for name, value in mover.items():
+                mover_item['children'].append({
+                    'object_id': mover['id'],
+                    'form_id': 'edit_wind_mover',
+                    'title': self._get_value_title(name, value)
+                })
+
+            movers['children'].append(mover_item)
 
         spills = {
             'title': 'Spills',
@@ -39,11 +49,21 @@ class NavigationTree(object):
         }
 
         for spill in data.pop('point_release_spills', []):
-            spills['children'].append({
+            spill_item = {
                 'object_id': spill['id'],
                 'form_id': 'edit_point_release_spill',
-                'title': spill['name']
-            })
+                'title': spill['name'],
+                'children': []
+            }
+
+            for name, value in spill.items():
+                spill_item['children'].append({
+                    'object_id': spill['id'],
+                    'form_id': 'edit_point_release_spill',
+                    'title': self._get_value_title(name, value)
+                })
+
+            spills['children'].append(spill_item)
 
         settings = {
             'title': 'Model Settings',
@@ -56,5 +76,14 @@ class NavigationTree(object):
                 'form_id': 'model_settings',
                 'title': self._get_value_title(name, value),
             })
+
+        _map = self.model.map
+        map_form_id = 'map' if _map else 'add_map'
+
+        settings['children'].append({
+            'form_id': map_form_id,
+            'title': 'Map: %s' % (_map if _map else 'None')
+        })
+
 
         return [settings, movers, spills]

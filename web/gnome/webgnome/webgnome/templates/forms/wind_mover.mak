@@ -24,13 +24,13 @@
 
         <ul class="nav nav-tabs">
             <li class="active">
-                <a href="#wind" data-toggle="tab">Wind Data</a>
+                <a href="#${form_id}_wind" data-toggle="tab">Wind Data</a>
             </li>
-            <li><a href="#uncertainty" data-toggle="tab">Uncertainty</a></li>
+            <li><a href="#${form_id}_uncertainty" data-toggle="tab">Uncertainty</a></li>
         </ul>
 
         <div class="tab-content">
-            <div class="tab-pane active" id="wind">
+            <div class="tab-pane active wind" id="${form_id}_wind">
                 <div class="constant-wind">
                     <div class="span4 add-time-forms">
                         <%
@@ -75,7 +75,7 @@
                             </div>
                         </div>
 
-                        <div class="compass-container offset1">
+                        <div class="compass-container">
                             <div id="${form_id}_compass_edit" class="compass"></div>
                         </div>
                     </div>
@@ -99,7 +99,7 @@
                     </div>
                 </div>
             </div>
-            <div class="tab-pane uncertainty" id="uncertainty">
+            <div class="tab-pane uncertainty" id="${form_id}_uncertainty">
                 <%
                     uncertain_time_delay = h.text('uncertain_time_delay', mover.uncertain_time_delay)
                     uncertain_duration = h.text('uncertain_duration', mover.uncertain_duration)

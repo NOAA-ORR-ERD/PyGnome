@@ -32,7 +32,7 @@ define([
 
         initialize: function(timeSteps, opts) {
             _.bindAll(this);
-            this.url = opts.url;
+            this.url = opts.url + '/runner';
             this.currentTimeStep = opts.currentTimeStep || 0;
             this.nextTimeStep = this.currentTimeStep ? this.currentTimeStep + 1 : 0;
             // An array of timestamps, one for each step we expect the server to
@@ -144,7 +144,7 @@ define([
 
             $.ajax({
                 type: 'POST',
-                url: this.url + '/run',
+                url: this.url,
                 data: opts,
                 tryCount: 0,
                 retryLimit: 3,
@@ -268,7 +268,7 @@ define([
             // Request the next step from the server.
             $.ajax({
                 type: "GET",
-                url: this.url + '/next_step',
+                url: this.url,
                 success: this.timeStepRequestSuccess,
                 error: this.timeStepRequestFailure
             });
@@ -349,42 +349,6 @@ define([
             this.reset();
             this.expectedTimeSteps = [];
         },
-
-        /*
-         Request a new model. This destroys the current model.
-         */
-        create: function() {
-            $.ajax({
-                url: this.url + "/create",
-                data: "confirm_new=1",
-                type: "POST",
-                tryCount: 0,
-                retryLimit: 3,
-                success: this.createSuccess,
-                error: util.handleAjaxError
-            });
-        },
-
-         /*
-         Handle a successful request to the server to create a new model.
-         */
-        createSuccess: function(data) {
-            var message = util.parseMessage(data);
-
-            if (message) {
-                this.trigger(ModelRun.MESSAGE_RECEIVED, message);
-
-                if (message.error) {
-                    // TODO: Is this the error event we want to use here?
-                    this.trigger(ModelRun.RUN_ERROR);
-                    return;
-                }
-            }
-
-            this.clearData();
-            this.dirty = true;
-            this.trigger(ModelRun.CREATED);
-        }
     }, {
         // Class constants
         ZOOM_IN: 'zoom_in',
@@ -405,7 +369,7 @@ define([
         parse: function(response) {
             var message = util.parseMessage(response);
             if (message) {
-                this.trigger(this.prototype.MESSAGE_RECEIVED, message);
+                this.trigger(this.constructor.__super__.MESSAGE_RECEIVED, message);
             }
             return BaseModel.__super__.parse.apply(this, arguments);
         }
@@ -415,8 +379,10 @@ define([
 
 
     var Model = BaseModel.extend({
-        initialize: function(attrs, opts) {
-            this.url = opts.url;
+        url: function() {
+            var id = this.id ? '/' + this.id : '';
+            return '/model' + id +
+                "?include_movers=false&include_spills=false";
         }
     });
 
@@ -439,38 +405,48 @@ define([
     var WindValue = BaseModel.extend({});
 
     var WindValueCollection = Backbone.Collection.extend({
-        model: WindValue
+        model: WindValue,
+
+        comparator: function(item) {
+            return item.get('datetime');
+        }
     });
 
     var Wind = BaseModel.extend({
         initialize: function(attrs) {
             var timeseries = [];
-            // TODO: Move into a utility function.
-            if (attrs && attrs.hasOwnProperty('timeseries')) {
+            if (attrs && _.has(attrs, 'timeseries')) {
                 timeseries = attrs['timeseries'];
                 delete(attrs['timeseries']);
             }
             this.set('timeseries', new WindValueCollection(timeseries));
-        },
-
-        toJSON: function() {
-            var attrs = this.attributes;
-            var timesteps = attrs['timeseries'];
-            attrs['timeseries'] = timesteps.sortBy(function(item) {
-                return item.datetime;
-            });
-            return attrs;
         }
     });
 
     var WindMover = BaseModel.extend({
-        initialize: function(attrs) {
-            var wind = {};
-            if (attrs && attrs.hasOwnProperty('wind')) {
-                wind = attrs['wind'];
-                delete(attrs['wind']);
+        /*
+         If the user passed an object for `key`, as when setting multiple
+         attributes at once, then make sure the 'wind' field is a `Wind`
+         object.
+         */
+        set: function(key, val, options) {
+            if (key && _.isObject(key) && _.has(key, 'wind')) {
+                key['wind'] = new Wind(key['wind']);
+            } else if (this.get('wind') === undefined) {
+                key['wind'] = new Wind();
             }
-            this.set('wind', new Wind(wind));
+
+            WindMover.__super__.set.apply(this, [key, val, options]);
+            return this;
+        },
+
+        parse: function(response) {
+            var attrs = WindMover.__super__.parse.apply(this, [response]);
+            var wind = {};
+            if (attrs && _.has(attrs, 'wind')) {
+                attrs['wind'] = new Wind(wind);
+            }
+            return attrs;
         },
 
         // Return a `moment` object for the date field.

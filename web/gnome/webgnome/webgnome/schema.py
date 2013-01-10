@@ -68,8 +68,28 @@ def validate_direction(node, value):
         _validate_cardinal_direction(node, value.upper())
 
 
+class LocalDateTime(DateTime):
+    def __init__(self, *args, **kwargs):
+        kwargs['default_tzinfo'] = kwargs.get('default_tzinfo', None)
+        super(LocalDateTime, self).__init__(*args, **kwargs)
+
+    def strip_timezone(self, _datetime):
+        if _datetime and isinstance(_datetime, datetime.datetime)\
+                or isinstance(_datetime, datetime.date):
+            _datetime = _datetime.replace(tzinfo=None)
+        return _datetime
+
+    def serialize(self, node, appstruct):
+        dt = super(LocalDateTime, self).serialize(node, appstruct)
+        return self.strip_timezone(dt)
+
+    def deserialize(self, node, cstruct):
+        dt = super(LocalDateTime, self).deserialize(node, cstruct)
+        return self.strip_timezone(dt)
+
+
 class WindValueSchema(MappingSchema):
-    datetime = SchemaNode(DateTime(default_tzinfo=None), default=now)
+    datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now)
     speed = SchemaNode(Float(), default=0, validator=Range(min=0))
     direction = SchemaNode(Float(), default=0)
 
@@ -136,7 +156,7 @@ class WindageSchema(TupleSchema):
 class PointReleaseSpillSchema(MappingSchema):
     default_name = 'Point Release Spill'
     num_LEs = SchemaNode(Int(), default=0)
-    release_time = SchemaNode(DateTime(default_tzinfo=None), default=now)
+    release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now)
     start_position = PositionSchema(default=(0, 0, 0))
     windage = WindageSchema(default=(0.01, 0.04))
     persist = SchemaNode(Float(), default=900)
@@ -153,8 +173,14 @@ class WindMoversSchema(SequenceSchema):
     mover = WindMoverSchema()
 
 
+class MapSchema(MappingSchema):
+    name = SchemaNode(String())
+    filename = SchemaNode(String())
+    refloat_halflife = SchemaNode(Float(), default=1)
+
+
 class ModelSettingsSchema(MappingSchema):
-    start_time = SchemaNode(DateTime(default_tzinfo=None), default=now)
+    start_time = SchemaNode(LocalDateTime(), default=now)
     duration_days = SchemaNode(Int(), default=1, validator=Range(min=0))
     duration_hours = SchemaNode(Int(),default=0, validator=Range(min=0))
     uncertain = SchemaNode(Bool(), default=False)

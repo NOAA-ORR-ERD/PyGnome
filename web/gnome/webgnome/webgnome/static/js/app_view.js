@@ -26,15 +26,6 @@ define([
 
             this.apiRoot = "/model/" + this.options.modelId;
 
-            // Initialize the model with any previously-generated time step data the
-            // server had available.
-            this.modelRun = new models.ModelRun(this.options.generatedTimeSteps, {
-                url: this.apiRoot,
-                expectedTimeSteps: this.options.expectedTimeSteps,
-                currentTimeStep: this.options.currentTimeStep,
-                bounds: this.options.mapBounds || []
-            });
-
             this.setupModels();
             this.setupForms();
 
@@ -50,12 +41,14 @@ define([
             });
 
             this.sidebarEl = '#' + this.options.sidebarId;
+            $(this.sidebarEl).resizable({handles: 'e, w'});
 
             this.treeView = new views.TreeView({
                 // XXX: Hard-coded URL, ID.
                 treeEl: "#tree",
                 url: this.apiRoot + "/tree",
                 modelRun: this.modelRun,
+                modelSettings: this.modelSettings,
                 pointReleaseSpills: this.pointReleaseSpills,
                 windMovers: this.windMovers
             });
@@ -70,7 +63,7 @@ define([
 
             this.mapView = new views.MapView({
                 mapEl: '#' + this.options.mapId,
-                placeholderEl: '#' + this.options.mapPlaceholderId,
+                placeholderClass: this.options.mapPlaceholderClass,
                 backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
@@ -124,6 +117,7 @@ define([
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.mapView.drawSpills);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
+            this.treeView.on(views.TreeView.CHANGED, this.treeChanged);
 
             this.treeControlView.on(views.TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
             this.treeControlView.on(views.TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
@@ -239,34 +233,29 @@ define([
                 formContainerEl: '#' + this.options.formContainerId
             });
 
-            this.modelSettingsFormView = new forms.JQueryUIModalFormView({
+            this.modelSettingsFormView = new forms.ModelSettingsFormView({
                 el: $('#' + this.options.modelSettingsFormId),
-                formContainerEl: '#' + this.options.formContainerId,
-                model: this.model,
-                dialog: {
-                    height: 300,
-                    width: 600
-                }
+                model: this.modelSettings
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
                 el: $('#' + this.options.addWindMoverFormId),
-                windMovers: this.windMovers
+                collection: this.windMovers
             });
 
             this.editWindMoverFormView = new forms.WindMoverFormView({
                 el: $('#' + this.options.editWindMoverFormId),
-                windMovers: this.windMovers
+                collection: this.windMovers
             });
 
             this.addPointReleaseSpillFormView = new forms.AddPointReleaseSpillFormView({
                 el: $('#' + this.options.addPointReleaseSpillFormId),
-                pointReleaseSpills: this.pointReleaseSpills
+                collection: this.pointReleaseSpills
             });
 
-            this.editPointReleaseSpillFormView = new forms.AddPointReleaseSpillFormView({
+            this.editPointReleaseSpillFormView = new forms.PointReleaseSpillFormView({
                 el: $('#' + this.options.editPointReleaseSpillFormId),
-                pointReleaseSpills: this.pointReleaseSpills
+                collection: this.pointReleaseSpills
             });
 
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
@@ -294,12 +283,18 @@ define([
                 }
             );
 
-            this.model = new models.Model(
-                this.options.modelSettings, {
-                    url: "/model/" + this.options.modelId +
-                        "?include_movers=false&include_spills=false"
-                }
-            );
+            this.options.modelSettings['id'] = this.options.modelId;
+            this.modelSettings = new models.Model(this.options.modelSettings);
+
+            // Initialize the model with any previously-generated time step data the
+            // server had available.
+            this.modelRun = new models.ModelRun(this.options.generatedTimeSteps, {
+                url: this.apiRoot,
+                expectedTimeSteps: this.options.expectedTimeSteps,
+                currentTimeStep: this.options.currentTimeStep,
+                bounds: this.options.mapBounds || [],
+                modelSettings: this.modelSettings
+            });
         },
 
         modelRunError: function() {
@@ -309,17 +304,12 @@ define([
             });
         },
 
-        isValidFormType: function(formType) {
-            return _.contains(this.formTypes, formType);
-        },
-
         runMenuItemClicked: function() {
             this.play({});
         },
 
         runUntilMenuItemClicked: function() {
-            // TODO: Fix this - old code.
-            this.fetchForm({type: 'run_until'});
+            console.log('run until item clicked');
         },
 
         newMenuItemClicked: function() {
@@ -327,7 +317,14 @@ define([
                 return;
             }
 
-            this.model.create();
+            var _this = this;
+            var model = new models.Model({}, {url: this.apiRoot});
+            model.save(null, {
+                success: function() {
+                    _this.modelSettings.destroy();
+                    window.location.reload(true);
+                }
+            });
         },
 
         play: function(opts) {
@@ -525,6 +522,14 @@ define([
 
         treeItemDoubleClicked: function(node) {
             this.showFormForNode(node);
+        },
+
+        treeChanged: function() {
+//            console.log('called')
+//            var height = $(this.sidebarEl).height();
+//            console.log('tree changed', height)
+//            $(this.sidebarEl).resizable('option', 'maxHeight', height);
+//            $(this.sidebarEl).resizable('option', 'minHeight', height);
         },
 
         settingsButtonClicked: function() {

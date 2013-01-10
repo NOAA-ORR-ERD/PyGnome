@@ -39,18 +39,7 @@ define([
     });
 
     /*
-     `FormView` is responsible for displaying HTML forms rendered on the server.
-     It listens to 'change' events on a bound model and refreshes itself when
-     that event fires.
-
-     The view is designed to handle multi-step forms implemented purely in
-     JavaScript (and HTML) using data- properties on DOM elements. The server
-     returns one rendered form, but may split its content into several <div>s, each
-     with a `data-step` property. If a form is structured this way, the user of the
-     JavaScript application will see it as a multi-step form with "next," "back"
-     and (at the end) a "save" or "create" button (the label is given by the server,
-     but whatever it is, this is the button that signals final submission of the
-     form).
+     `FormView` is the base class for forms intended to wrap Backbone models.
 
      Submitting a form from `FormView` sends the value of its inputs to the
      model object passed into the form's constructor, which syncs it with the
@@ -63,15 +52,8 @@ define([
             this.container = $(this.options.formContainerEl);
             this.id = this.options.id;
             this.model = this.options.model;
-            if(this.model) {
-                this.model.on("update", this.modelChanged);
-            }
+            this.collection = this.options.collection;
             this.setupDatePickers();
-        },
-
-        events: {
-            'click .btn-next': 'goToNextStep',
-            'click .btn-prev': 'goToPreviousStep'
         },
 
         setupDatePickers: function() {
@@ -84,16 +66,8 @@ define([
             });
         },
 
-        modelChanged: function(model) {
-            this.refresh();
-            this.trigger(FormView.REFRESHED, this);
-
-            if (this.wasCancelled) {
-                this.wasCancelled = false;
-                return;
-            }
-
-            this.show();
+        getForm: function() {
+            return this.$el.find('form');
         },
 
         show: function() {
@@ -106,169 +80,120 @@ define([
             $('#main-content').removeClass('hidden');
         },
 
-        getForm: function() {
-            return this.$el.find('form');
+        submit: function() {
+            // Override this in your subclass.
         },
 
-        getFirstTabWithError: function() {
-            if (this.getForm().find('.nav-tabs').length === 0) {
-                return null;
+        cancel: function() {
+            // Override this in your subclass.
+        },
+
+        formHasDateFields: function(form) {
+            var fields = this.getFormDateFields(form);
+            return fields.date && fields.hour && fields.minute;
+        },
+
+        setForm: function(form, data) {
+            _.each(data, function(dataVal, fieldName) {
+                var input = form.find('#' + fieldName);
+
+                if (!input.length) {
+                    return;
+                }
+
+                if (input.is(':checkbox')) {
+                    input.prop('checked', dataVal);
+                } else {
+                    input.val(dataVal);
+                }
+            });
+
+            // Include only the date in the date field, reformat it, and move
+            // time values into the hour and minute fields.
+            if (this.formHasDateFields(form)) {
+                var dateTime = this.getFormDate(form);
+                this.setFormDate(form, dateTime);
+            }
+        },
+
+        getFormDateFields: function(form) {
+            return {
+                date: form.find('.date'),
+                hour: form.find('.hour'),
+                minute: form.find('.minute')
+            }
+        },
+
+        getFormDate: function(form) {
+            var fields = this.getFormDateFields(form);
+            var date = fields.date.val();
+            var hour = fields.hour.val();
+            var minute = fields.minute.val();
+
+            if (hour && minute) {
+                date = date + ' ' + hour + ':' + minute;
             }
 
-            var errorDiv = $('div.control-group.error').first();
-            var tabDiv = errorDiv.closest('.tab-pane');
-
-            if (tabDiv.length) {
-                return tabDiv.attr('id');
+            // TODO: Handle a date-parsing error here.
+            if (date) {
+                return moment(date).local();
             }
         },
 
-        getFirstStepWithError: function() {
-            var step = 1;
-
-            if (!this.getForm().hasClass('multistep')) {
-                return null;
+        setFormDate: function(form, dateTime) {
+            if (!dateTime) {
+                return;
             }
-
-            var errorDiv = $('div.control-group.error').first();
-            var stepDiv = errorDiv.closest('div.step');
-
-            if (stepDiv === false) {
-                step = stepDiv.attr('data-step');
-            }
-
-            return step;
+            var fields = this.getFormDateFields(form);
+            fields.date.val(dateTime.format("MM/DD/YYYY"));
+            fields.hour.val(dateTime.format('HH'));
+            fields.minute.val(dateTime.format('mm'));
         },
 
-        getStep: function(stepNum) {
-            return this.getForm().find('div[data-step="' + stepNum  + '"]').length > 0;
+         getFormData: function() {
+            var data = {};
+            var inputs = this.$el.find('input');
+            var checkboxes = this.$el.find('input:checkbox');
+
+            _.each(inputs, function(field) {
+                field = $(field);
+                data[field.attr('name')] = field.val();
+            });
+
+            _.each(checkboxes, function(field) {
+                field = $(field);
+                data[field.attr('name')] = field.prop('checked');
+            });
+
+            return data;
         },
 
-        previousStepExists: function(stepNum) {
-           return this.getStep(stepNum - 1);
-        },
+        clearForm: function() {
+            var inputs = this.$el.find('select,input');
 
-        nextStepExists: function(stepNum) {
-            stepNum = parseInt(stepNum, 10);
-            return this.getStep(stepNum + 1);
-        },
-
-        goToStep: function(stepNum) {
-            var form = this.getForm();
-
-            if (!form.hasClass('multistep')) {
+            if (!inputs.length) {
                 return;
             }
 
-            var stepDiv = form.find('div.step[data-step="' + stepNum + '"]');
-
-            if (stepDiv.length === 0) {
-                return;
-            }
-
-            var otherStepDivs = form.find('div.step');
-            otherStepDivs.addClass('hidden');
-            otherStepDivs.removeClass('active');
-            stepDiv.removeClass('hidden');
-            stepDiv.addClass('active');
-
-            var prevButton = this.container.find('.btn-prev');
-            var nextButton = this.container.find('.btn-next');
-            var saveButton = this.container.find('.btn-primary');
-
-            if (this.previousStepExists(stepNum)) {
-                prevButton.removeClass('hidden');
-            } else {
-                prevButton.addClass('hidden');
-            }
-
-            if (this.nextStepExists(stepNum)) {
-                nextButton.removeClass('hidden');
-                saveButton.addClass('hidden');
-                return;
-            }
-
-            nextButton.addClass('hidden');
-            saveButton.removeClass('hidden');
+            _.each(inputs, function(field) {
+                $(field).val('');
+            });
         },
 
-        goToNextStep: function() {
-            var form = this.getForm();
+        reset: function() {
+            this.model = null;
+            this.clearForm();
+        },
 
-            if (!form.hasClass('multistep')) {
-                return;
+        reload: function(id) {
+            var model = this.collection.get(id);
+            if (model) {
+                this.model = model;
             }
-
-            var activeStepDiv = form.find('div.step.active');
-            var currentStep = parseInt(activeStepDiv.attr('data-step'), 10);
-            this.goToStep(currentStep + 1);
-        },
-
-        goToPreviousStep: function(event) {
-            var form = this.getForm();
-
-            if (!form.hasClass('multistep')) {
-                return;
-            }
-
-            var activeStep = form.find('div.step.active');
-            var currentStep = parseInt(activeStep.attr('data-step'), 10);
-            this.goToStep(currentStep - 1);
-        },
-
-        submit: function(event) {
-            event.preventDefault();
-            var form = this.getForm();
-            console.log('submit', form.serialize());
-            this.hide();
-            return false;
-        },
-
-        cancel: function(event) {
-            event.preventDefault();
-            this.hide();
-            this.wasCancelled = true;
-            this.reload();
-            this.trigger(FormView.CANCELED, this);
-        },
-
-        /*
-         Refresh this form from the latest values of `this.model`.
-         */
-        refresh: function() {
-            console.log('refresh', this.model);
-
-            var stepWithError = this.getFirstStepWithError();
-            if (stepWithError) {
-                this.goToStep(stepWithError);
-            }
-
-            var tabWithError = this.getFirstTabWithError();
-            if (tabWithError) {
-                $('a[href="#' + tabWithError + '"]').tab('show');
-            }
-        },
+        }
     }, {
         CANCELED: 'ajaxFormView:canceled',
         REFRESHED: 'ajaxFormView:refreshed'
-    });
-
-
-    /*
-     An `FormView` subclass that displays in a modal window.
-     */
-    var ModalFormView = FormView.extend({
-        /*
-         Hide any other visible modals and show this one.
-         */
-        show: function() {
-            $('div.modal').modal('hide');
-            this.$el.modal();
-        },
-
-        hide: function() {
-            this.$el.modal('hide');
-        }
     });
 
 
@@ -280,25 +205,30 @@ define([
             JQueryUIModalFormView.__super__.initialize.apply(this, [options]);
             var _this = this;
 
+            // The default set of UI Dialog widget options. A 'dialog' field
+            // may be passed in with `options` containing additional options,
+            // or subclasses may provide a 'dialog' field with the same.
             var opts = $.extend({
+                zIndex: 5000,
                 autoOpen: false,
                 buttons: {
                     Cancel: function() {
+                        _this.cancel();
                         $(this).dialog("close");
                     },
 
-                    "Save": function() {
+                    Save: function() {
                         _this.submit();
                         $(this).dialog("close");
                     }
                 },
                 close: this.close
-            }, options.dialog || {});
+            }, options.dialog || this.dialog || {});
 
             this.$el.dialog(opts);
 
-            // A workaround for the default JQuery UI Dialog behavior of auto-
-            // focusing on the first input element.
+            // Workaround the default JQuery UI Dialog behavior of auto-
+            // focusing on the first input element by adding an invisible one.
             $('<span class="ui-helper-hidden-accessible">' +
                 '<input type="text"/></span>').prependTo(this.$el);
         },
@@ -307,7 +237,6 @@ define([
          Hide any other visible modals and show this one.
          */
         show: function() {
-            $('div.modal').modal('hide');
             this.$el.dialog('open');
             this.$el.removeClass('hide');
         },
@@ -322,35 +251,38 @@ define([
     });
 
 
+    var ChooseObjectTypeFormView = JQueryUIModalFormView.extend({
+        initialize: function(options) {
+            var _this = this;
+            var opts = _.extend({
+                dialog: {
+                    height: 175,
+                    width: 400,
+                    buttons: {
+                        Cancel: function() {
+                            $(this).dialog("close");
+                        },
+
+                        Choose: function() {
+                            _this.submit();
+                            $(this).dialog("close");
+                        }
+                    }
+                }
+            }, options);
+
+            ChooseObjectTypeFormView.__super__.initialize.apply(this, [opts]);
+        }
+    });
+
+
     /*
      This is a non-AJAX-enabled modal form object to support the "add mover" form,
      which asks the user to choose a type of mover to add. We then use the selection
      to display another, mover-specific form.
      */
-    var AddMoverFormView = Backbone.View.extend({
-        initialize: function() {
-            _.bindAll(this);
-            this.container = $(this.options.formContainerEl);
-        },
-
-        events: {
-            'click .btn-primary': 'submit'
-        },
-
-        getForm: function() {
-            return this.$el.find('form');
-        },
-
-        show: function() {
-            this.$el.modal();
-        },
-
-        hide: function() {
-            this.$el.modal('hide');
-        },
-
-        submit: function(event) {
-            event.preventDefault();
+    var AddMoverFormView = ChooseObjectTypeFormView.extend({
+        submit: function() {
             var form = this.getForm();
             var moverType = form.find('select[name="mover_type"]').val();
 
@@ -372,35 +304,16 @@ define([
      form, which asks the user to choose a type of spill to add. We then use the
      selection to display another, spill-specific form.
      */
-    var AddSpillFormView = Backbone.View.extend({
-        initialize: function() {
-            _.bindAll(this);
-            this.container = $(this.options.formContainerEl);
-        },
-
-        events: {
-            'click .btn-primary': 'submit',
-            'click .cancel': 'cancel'
-        },
-
-        getForm: function() {
-            return this.$el.find('form');
-        },
-
+    var AddSpillFormView = ChooseObjectTypeFormView.extend({
         show: function(coords) {
             if (coords) {
                 this.coords = coords;
             }
 
-            this.$el.modal();
+            AddSpillFormView.__super__.show.apply(this);
         },
 
-        hide: function() {
-            this.$el.modal('hide');
-        },
-
-        submit: function(event) {
-            event.preventDefault();
+        submit: function() {
             var form = this.getForm();
             var spillType = form.find('select[name="spill_type"]').val();
 
@@ -413,13 +326,17 @@ define([
             return false;
         },
 
-        cancel: function(event) {
+        cancel: function() {
             this.trigger(AddSpillFormView.CANCELED, this);
         }
     }, {
         // Event constants
         SPILL_CHOSEN: 'addSpillFormView:spillChosen',
         CANCELED: 'addSpillFormView:canceled'
+    });
+
+
+    var AddMapFormView = JQueryUIModalFormView.extend({
     });
 
 
@@ -431,7 +348,7 @@ define([
             var opts = _.extend({
                 dialog: {
                     width: 900,
-                    height: 710,
+                    height: 705,
                     title: "Edit Wind Mover"
                 }
             }, options);
@@ -542,17 +459,39 @@ define([
                 })).data('data-wind-id', windValue.cid));
             });
 
-            // Sort table by date and time of each item.
-            rows = _.sortBy(rows, function(tr) {
-                var date = tr.find('.time-series-date').text();
-                var time = tr.find(
-                    '.time-series-time').text().replace(' ', '', 'g');
-                return Date.parse(date + ' ' + time)
-            });
-
             _.each(rows, function(row) {
                 row.appendTo(_this.getTimesTable());
             });
+        },
+
+        /*
+         Prepare `data` with the wind timeseries values needed to save a
+         constant wind mover.
+         */
+        prepareConstantWindData: function(data) {
+            var timeseries = this.model.get('wind').get('timeseries');
+            var values = {
+                // A 'datetime' field is required, but it will be ignored for a
+                // constant wind mover during the model run, so we just use the
+                // current time.
+                datetime: moment().format(),
+                direction: data.direction,
+                speed: data.speed
+            };
+
+            if (timeseries.length === 1) {
+                // Update an existing time series value.
+                var time = timeseries.at(0);
+                time.set(values);
+            } else {
+                // Add the first (and only) time series value.
+                timeseries.add(values);
+            }
+
+            delete(data.speed);
+            delete(data.direction);
+
+            return data
         },
 
         submit: function() {
@@ -560,36 +499,16 @@ define([
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
 
-            if (timeseries.length < 2) {
-                if (!data.direction || !data.speed) {
-                    alert('You must enter either a direction and speed for ' +
-                        'a constant wind mover, or at least one wind value ' +
-                        'for a variable wind mover before saving.')
-                }
-
-                var values = {
-                    // The server will ignore a datetime on a single timeseries.
-                    datetime: moment().format(),
-                    direction: data.direction,
-                    speed: data.speed
-                };
-
-                if (timeseries.length === 1) {
-                    // Update an existing time series value.
-                    var time = timeseries.at(0);
-                    time.set(values);
-                } else {
-                    // Add the first (and only) time series value.
-                    timeseries.add(values);
-                }
-
-                delete(data.speed);
-                delete(data.direction);
-            }
-
             wind.set('units', data.units);
             delete(data.units);
+
+            // A constant wind mover has these values.
+            if (data.direction !== undefined && data.speed !== undefined) {
+                data = this.prepareConstantWindData(data);
+            }
+
             this.model.set(data);
+            this.collection.add(this.model);
             this.model.save();
         },
 
@@ -653,7 +572,6 @@ define([
             var addForm = this.getAddForm();
 
             if (addForm.data('data-wind-id') === wind.cid) {
-                console.log('Edit form is visible for this wind.');
                 this.setFormDefaults();
                 addForm.find('.add-time-buttons').removeClass('hidden');
                 addForm.find('.edit-time-buttons').addClass('hidden');
@@ -723,9 +641,6 @@ define([
             row.removeClass('error').removeClass('warning').addClass('info');
         },
         
-        /*
-         Clone the add time form and add an item to the table of time series.
-         */
         addButtonClicked: function(event) {
             event.preventDefault();
             var wind = this.model.get('wind');
@@ -760,40 +675,6 @@ define([
                 units: this.$el.find('#units').val(),
                 is_active: this.$el.find('#is_active').prop('checked')
             };
-        },
-        
-        getFormDateFields: function(form) {
-            return {
-                date: form.find('.date'),
-                hour: form.find('.hour'),
-                minute: form.find('.minute')
-            }
-        },
-        
-        getFormDate: function(form) {
-            var fields = this.getFormDateFields(form);
-            var date = fields.date.val();
-            var hour = fields.hour.val();
-            var minute = fields.minute.val();
-
-            if (hour && minute) {
-                date = date + ' ' + hour + ':' + minute;
-            }
-
-            // TODO: Handle a date-parsing error here.
-            if (date) {
-                return moment(date).local();
-            }
-        },
-        
-        setFormDate: function(form, dateTime) {
-            if (!dateTime) {
-                return;
-            }
-            var fields = this.getFormDateFields(form);
-            fields.date.val(dateTime.format("MM/DD/YYYY"));
-            fields.hour.val(dateTime.format('HH'));
-            fields.minute.val(dateTime.format('mm'));
         },
 
         getFormDataForDiv: function(div) {
@@ -851,34 +732,6 @@ define([
             return data;
         },
 
-        formHasDateFields: function(form) {
-            var fields = this.getFormDateFields(form);
-            return fields.date && fields.hour && fields.minute;
-        },
-
-        setForm: function(form, data) {
-            _.each(data, function(dataVal, fieldName) {
-                var input = form.find('#' + fieldName);
-
-                if (!input.length) {
-                    return;
-                }
-
-                if (input.is(':checkbox')) {
-                    input.prop('checked', dataVal);
-                } else {
-                    input.val(dataVal);
-                }
-            });
-
-            // Include only the date in the date field, reformat it, and move
-            // time values into the hour and minute fields.
-            if (this.formHasDateFields(form)) {
-                var dateTime = this.getFormDate(form);
-                this.setFormDate(form, dateTime);
-            }
-        },
-
         setFormDefaults: function() {
             var _this = this;
             var data = this.defaults;
@@ -899,49 +752,38 @@ define([
 
             var uncertainty = this.$el.find('.uncertainty');
             this.setForm(uncertainty, data['uncertainty']);
+        },
 
+        setInputsFromModel: function() {
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
 
-            // A constant wind mover
-            if (timeseries && timeseries.length === 1) {
-                var addForm = this.getAddForm();
-                var formData = timeseries.at(0).toJSON();
-                this.setForm(addForm, formData);
-            }
-        },
+            this.$el.find('#name').val(this.model.get('name'));
+            this.$el.find('#is_active').prop('checked', this.model.get('active'));
+            this.$el.find('#units').val(wind.get('units'));
 
-        clearForm: function() {
-            var inputs = this.$el.find('select,input');
+            var constantAddForm = this.getAddForm('constant');
+            var firstTimeValue = timeseries.at(0);
 
-            if (!inputs.length) {
-                return;
-            }
-
-            _.each(inputs, function(field) {
-                $(field).val('');
-            });
-        },
-
-        reset: function() {
-            this.model = null;
-            this.clearForm();
-        },
-
-        reload: function(mover_id) {
-            var mover = this.windMovers.get(mover_id);
-            if (mover) {
-                this.model = mover;
+            if (firstTimeValue) {
+                var formData = firstTimeValue.toJSON();
+                this.setForm(constantAddForm, formData);
             }
         },
 
         show: function() {
             this.renderTimeTable();
             this.setFormDefaults();
+
+            if (this.model.id) {
+                this.setInputsFromModel();
+            }
+
             var timeseries = this.model.get('wind').get('timeseries');
             if (timeseries.length > 1) {
                 this.$el.find('.type').val('variable');
             }
+
             this.typeChanged();
             WindMoverFormView.__super__.show.apply(this, arguments);
         }
@@ -950,85 +792,92 @@ define([
 
     var AddWindMoverFormView = WindMoverFormView.extend({
         initialize: function(options) {
-            this.windMovers = options.windMovers;
-
             var opts = _.extend({
                 dialog: {
                     width: 900,
-                    height: 710,
+                    height: 705,
                     title: "Add Wind Mover"
-                },
-                model: this.newMover()
+                }
             }, options);
 
             AddWindMoverFormView.__super__.initialize.apply(this, [opts]);
-        },
-
-        deleteMover: function() {
-            if (this.mover) {
-                this.windMovers.remove(this.mover);
-            }
-        },
-
-        newMover: function() {
-            this.deleteMover();
-            var mover = new models.WindMover();
-            this.windMovers.add(mover);
-            return mover;
         },
 
         /*
          Use a new WindMover every time the form is opened.
          */
         show: function() {
-            this.model = this.newMover();
+            this.model = null;
+            this.model = new models.WindMover();
             AddWindMoverFormView.__super__.show.apply(this);
-        },
-
-        reset: function() {
-            this.deleteMover();
-            this.clearForm();
         },
 
         /*
          Reset the form when it closes and clear out the model.
         */
         close: function() {
-            this.reset();
+            this.model = null;
+            this.clearForm();
         }
     });
 
 
     var PointReleaseSpillFormView = JQueryUIModalFormView.extend({
-         initialize: function(options) {
-             var opts = _.extend({
-                 dialog: {
-                     width: 400,
-                     height: 420,
-                     title: "Edit Point Release Spill"
-                 }
+        initialize: function(options) {
+            var opts = _.extend({
+                dialog: {
+                    width: 400,
+                    height: 420,
+                    title: "Edit Point Release Spill"
+                }
             }, options);
 
             PointReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
 
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
-        },
-
-        show: function(coords) {
-            PointReleaseSpillFormView.__super__.show.apply(this);
-
-            if (coords) {
-                var coordInputs = this.$el.find('.coordinate');
-                $(coordInputs[0]).val(coords[0]);
-                $(coordInputs[1]).val(coords[1]);
-            }
+            this.pointReleaseSpills = options.pointReleaseSpills;
+            this.defaults = this.getFormData();
         },
 
         events: {
             'click .edit-spill-name': 'editSpillNameClicked',
             'click .save-spill-name': 'saveSpillNameButtonClicked',
             'change input[name="name"]': 'spillNameChanged'
+        },
+
+        setForm: function(form, data) {
+            if (_.has(data, 'windage')) {
+                data['windage_min'] = data['windage'][0];
+                data['windage_max'] = data['windage'][1];
+            }
+
+            if (_.has(data, 'start_position')) {
+                var pos = data['start_position'];
+                data['start_position_x'] = pos[0];
+                data['start_position_y'] = pos[1];
+                data['start_position_z'] = pos[2];
+            }
+
+            PointReleaseSpillFormView.__super__.setForm.apply(this, arguments);
+        },
+
+        show: function(coords) {
+            var form = this.getForm();
+
+            if (this.model && this.model.id) {
+                this.setForm(form, this.model.toJSON());
+            } else {
+                this.setForm(form, this.defaults);
+            }
+
+            if (coords) {
+                var coordInputs = this.$el.find('.coordinate');
+                $(coordInputs[0]).val(coords[0]);
+                $(coordInputs[1]).val(coords[1]);
+            }
+
+            PointReleaseSpillFormView.__super__.show.apply(this, arguments);
         },
 
         editSpillNameClicked: function(event) {
@@ -1052,13 +901,70 @@ define([
             var form = input.closest('.form');
             var header = form.find('.page-header').find('a');
             header.text(input.val());
+        },
+
+        submit: function() {
+            var data = this.getFormData();
+
+            data['release_time'] = this.getFormDate(this.getForm()).format();
+            data['is_active'] = data['active'];
+            data['windage'] = [
+                data['windage_min'], data['windage_max']
+            ];
+            data['start_position'] = [
+                data['start_position_x'], data['start_position_y'],
+                data['start_position_z']
+            ];
+
+            this.model.set(data);
+            this.collection.add(this.model);
+            this.model.save();
         }
     });
 
 
     var AddPointReleaseSpillFormView = PointReleaseSpillFormView.extend({
+        initialize: function(options) {
+            var opts = _.extend({
+                dialog: {
+                    width: 400,
+                    height: 420,
+                    title: "Add Point Release Spill"
+                }
+            }, options);
+
+            AddPointReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
+        },
+
+        show: function() {
+            this.model = new models.PointReleaseSpill();
+            AddPointReleaseSpillFormView.__super__.show.apply(this, arguments);
+        },
+
+        close: function() {
+            this.model = null;
+            this.clearForm();
+        }
+    });
+
+
+    var ModelSettingsFormView = JQueryUIModalFormView.extend({
+        initialize: function(options) {
+            var opts = _.extend({
+                dialog: {
+                    height: 300,
+                    width: 470
+                }
+            }, options);
+
+            ModelSettingsFormView.__super__.initialize.apply(this, [opts]);
+        },
+
         submit: function() {
-            console.log('add point release form submit');
+            var data = this.getFormData();
+            data['start_time'] = this.getFormDate(this.getForm()).format();
+            this.model.set(data);
+            this.model.save();
         }
     });
 
@@ -1071,9 +977,8 @@ define([
         WindMoverFormView: WindMoverFormView,
         PointReleaseSpillFormView: PointReleaseSpillFormView,
         FormView: FormView,
-        ModalFormView: ModalFormView,
         FormViewContainer: FormViewContainer,
-        JQueryUIModalFormView: JQueryUIModalFormView
+        ModelSettingsFormView: ModelSettingsFormView
     };
 
 });

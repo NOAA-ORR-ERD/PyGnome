@@ -103,6 +103,8 @@
     <div id="modal-container">
         <%include file="forms/add_mover.mak"/>
         <%include file="forms/add_spill.mak"/>
+        <%include file="forms/add_map.mak"/>
+        <%include file="forms/map.mak"/>
         <%include file="forms/model_settings.mak" args="model=model"/>
         <%include file="forms/wind_mover.mak"
             args="mover=default_wind_mover, default_wind=default_wind,

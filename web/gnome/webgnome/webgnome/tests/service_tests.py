@@ -103,6 +103,32 @@ class ModelServiceTests(FunctionalTestBase):
         self.assertEqual(resp.json_body['duration_hours'], 1)
 
 
+class ModelRunnerServiceTests(FunctionalTestBase):
+
+    def create_model(self):
+        return self.testapp.post('/model')
+
+    def test_get_first_step(self):
+        resp = self.create_model()
+        _id = resp.json_body['model_id']
+        resp = self.testapp.post_json('/model/%s/runner' % _id)
+        data = resp.json_body
+
+        # TODO: Tests the default behavior of loading the Long Island script.
+        self.assertEqual(data['map_bounds'],
+                         [[-73.083328, 40.922832], [-73.083328, 41.330833],
+                          [-72.336334, 41.330833], [-72.336334, 40.922832]])
+        self.assertIn('foreground_00000.png', data['time_step']['url'])
+        self.assertIn('background_map.png', data['background_image'])
+        self.assertEqual(data['time_step']['id'], 0)
+
+        resp = self.testapp.get('/model/%s/runner' % _id)
+        data = resp.json_body
+
+        self.assertIn('foreground_00001.png', data['time_step']['url'])
+        self.assertEqual(data['time_step']['id'], 1)
+
+
 class WindMoverServiceTests(FunctionalTestBase):
 
     def get_safe_date(self, dt):

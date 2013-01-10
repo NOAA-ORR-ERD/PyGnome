@@ -1,6 +1,7 @@
 import gnome.basic_types
 import gnome.utilities.map_canvas
 import datetime
+from gnome.weather import Wind
 import numpy
 import os
 import time
@@ -40,8 +41,11 @@ class Model(BaseResource):
         """
         Create a new model with default settings.
         """
-        model = self.settings.Model.create()
+        model = self.settings.Model.create(
+            model_images_dir=self.settings['model_images_dir'])
+
         message = util.make_message('success', 'Created a new model.')
+        self.request.session[self.settings['model_session_key']] = model.id
 
         return {
             'success': True,
@@ -50,19 +54,12 @@ class Model(BaseResource):
         }
     
     @view(schema=ModelSettingsSchema, validators=util.valid_model_id)
-    def post(self):
+    def put(self):
         """
         Update settings for the current model.
         """
-        app_struct = self.request.validated
         model = self.request.validated['model']
-
-        model.uncertain = app_struct['uncertain']
-        model.start_time = app_struct['start_time']
-        model.time_step = app_struct['time_step']
-        model.duration = datetime.timedelta(
-            days=app_struct['duration_days'],
-            seconds=app_struct['duration_hours'] * 60 * 60)
+        model.from_dict(self.request.validated)
 
         return {
             'success': True
@@ -120,7 +117,7 @@ class ModelRunner(BaseResource):
 
         return timestamps
 
-    def _get_time_step(self):
+    def _get_next_step(self):
         """
         Generate the next step of the model run and return a dict of metadata
         describing the step, including a URL to an image of particles.
@@ -128,18 +125,8 @@ class ModelRunner(BaseResource):
         step = None
         model = self.request.validated['model']
 
-        model_dir = os.path.join(
-            self.settings['model_images_dir'], str(model.id))
-        images_dir = os.path.join(model_dir, model.runtime)
-
-        if not os.path.exists(model_dir):
-            os.mkdir(model_dir)
-
-        if not os.path.exists(images_dir):
-            os.mkdir(images_dir)
-
         try:
-            curr_step, file_path, timestamp = model.next_image(images_dir)
+            curr_step, file_path, timestamp = model.next_image(model.run_images_dir)
             filename = file_path.split(os.path.sep)[-1]
             image_url = util.get_model_image_url(self.request, model, filename)
 
@@ -152,13 +139,6 @@ class ModelRunner(BaseResource):
             pass
 
         return step
-
-    def _make_runtime(self):
-        """
-        Return the current time as a string to be used as part of the file path
-        for all images generated during this run of the model.
-        """
-        return time.strftime("%Y-%m-%d-%H-%M-%S")
 
     @view(validators=util.valid_model_id)
     def post(self):
@@ -176,7 +156,7 @@ class ModelRunner(BaseResource):
         model.uncertain = True
 
         if not model.runtime:
-            model.runtime = self._make_runtime()
+            model.runtime = util.get_runtime()
 
         # TODO: Set separately in spill view.
         if not model.spills:
@@ -201,8 +181,8 @@ class ModelRunner(BaseResource):
             series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
             series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
 
-            w_mover = WebWindMover(timeseries=series, is_constant=False,
-                                   units='mps')
+            wind = Wind(units='mps', timeseries=series)
+            w_mover = WebWindMover(wind=wind, is_constant=False)
             model.add_mover(w_mover)
 
 
@@ -223,11 +203,11 @@ class ModelRunner(BaseResource):
 
         # The client requested no cached images, so rewind and clear the cache.
         if self.request.POST.get('no_cache', False):
-            model.runtime = self._make_runtime()
+            model.runtime = util.get_runtime()
             model.rewind()
             model.time_steps = []
 
-        first_step = self._get_time_step()
+        first_step = self._get_next_step()
 
         if not first_step:
             return {}
@@ -235,8 +215,8 @@ class ModelRunner(BaseResource):
         model.time_steps.append(first_step)
         data['time_step'] = first_step
 
-        data['background_image'] = self._get_model_image_url(
-            'background_map.png')
+        data['background_image'] = util.get_model_image_url(
+            self.request, model, 'background_map.png')
         data['map_bounds'] = model.map.map_bounds.tolist()
 
         return data
@@ -246,7 +226,7 @@ class ModelRunner(BaseResource):
         """
         Get the next step in the model run.
         """
-        step = self.get_time_step()
+        step = self._get_next_step()
 
         if not step:
             raise HTTPNotFound

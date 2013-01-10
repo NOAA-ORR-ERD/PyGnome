@@ -20,7 +20,9 @@ def show_model(request):
     """
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
-    model, created = settings.Model.get_or_create(model_id)
+    model_images_dir = request.registry.settings['model_images_dir']
+    model, created = settings.Model.get_or_create(
+        model_id, model_images_dir=model_images_dir)
     model_dict = model.to_dict()
     point_release_spills = model_dict.pop('point_release_spills')
     wind_movers = model_dict.pop('wind_movers')
@@ -56,9 +58,11 @@ def show_model(request):
     data['model_settings'] = util.to_json(model_dict)
     data['model_forms_url'] = request.route_url('model_forms')
 
-    if model.time_steps:
+    if model.background_image:
         data['background_image_url'] = util.get_model_image_url(
             request, model, 'background_map.png')
+
+    if model.time_steps:
         data['generated_time_steps_json'] = util.to_json(model.time_steps)
         data['expected_time_steps_json'] = util.to_json(model.timestamps)
 

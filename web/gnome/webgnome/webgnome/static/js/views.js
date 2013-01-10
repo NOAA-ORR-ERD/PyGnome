@@ -74,7 +74,6 @@ define([
             this.imageTimeout = this.options.imageTimeout || 10;
             this.canDrawSpill = false;
 
-            this.showPlaceholder();
             this.makeImagesClickable();
             this.status = MapView.STOPPED;
             this.map = $(this.mapEl);
@@ -88,6 +87,8 @@ define([
 
             if (this.backgroundImageUrl) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
+            } else {
+                this.showPlaceholder();
             }
 
             if (this.modelRun.hasCachedTimeStep(this.modelRun.getCurrentTimeStep())) {
@@ -610,13 +611,17 @@ define([
             _.bindAll(this);
             this.treeEl = this.options.treeEl;
             this.url = this.options.url;
+
+            // Turn off node icons. A [+] icon will still appear for nodes
+            // that have children.
+            $.ui.dynatree.nodedatadefaults["icon"] = false;
             this.tree = this.setupDynatree();
 
             this.options.windMovers.on('sync', this.reload);
+            this.options.windMovers.on('add', this.reload);
             this.options.pointReleaseSpills.on('sync', this.reload);
-
-            // Event handlers
-            this.options.modelRun.on(models.ModelRun.CREATED, this.reload);
+            this.options.pointReleaseSpills.on('add', this.reload);
+            this.options.modelSettings.on('sync', this.reload);
 
             // TODO: Remove this when we remove the Long Island default code.
             this.options.modelRun.on(models.ModelRun.RUN_BEGAN, this.reload);
@@ -634,15 +639,13 @@ define([
                     // isReloading is true if status was read from existing cookies.
                     // isError is only used in Ajax mode
                     this.reactivate();
+                    _this.trigger(TreeView.CHANGED);
+                },
+                onExpand: function() {
+                    _this.trigger(TreeView.CHANGED);
                 },
                 onDblClick: function(node, event) {
                     _this.trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
-                },
-                onClick: function(node, event) {
-//                    if (!node.hasChildren()) {
-//                        // TODO: Use a different event for this.
-//                        _this.trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
-//                    }
                 },
                 initAjax: {
                     url: _this.url
@@ -660,7 +663,8 @@ define([
         }
     }, {
         ITEM_ACTIVATED: 'gnome:treeItemActivated',
-        ITEM_DOUBLE_CLICKED: 'gnome:treeItemDoubleClicked'
+        ITEM_DOUBLE_CLICKED: 'gnome:treeItemDoubleClicked',
+        CHANGED: 'gnome:treeChanged'
     });
 
 

@@ -38,7 +38,7 @@
 
 
 <div class="container-fluid" id="content">
-    <div class="row-fluid">
+    <div class="row-fluid" id="container">
         <div class="span2" id="sidebar">
             <%block name="sidebar"> </%block>
         </div>
@@ -50,7 +50,6 @@
 
 <footer>
     <div class="container-fluid">
-        <p>Copyright NOAA 2012.</p>
     </div>
 </footer>
 
