@@ -1,4 +1,3 @@
-import cython
 cimport numpy as cnp
 import numpy as np
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
