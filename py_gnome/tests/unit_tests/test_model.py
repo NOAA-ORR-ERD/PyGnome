@@ -176,6 +176,66 @@ def test_simple_run_with_image_output():
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
 
 
+def test_simple_run_with_image_output_uncertainty():
+    """
+    pretty much all this tests is that the model will run and output images
+    """
+    
+    # create a place for test images (cleaning out any old ones)
+    images_dir = "Test_images2"
+    if os.path.isdir(images_dir):
+        shutil.rmtree(images_dir)
+    os.mkdir(images_dir)
+
+    start_time = datetime(2012, 9, 15, 12, 0)
+    
+    model = gnome.model.Model()
+    model.duration = timedelta(hours=1)
+
+    mapfile = "SampleData/MapBounds_Island.bna"
+
+    # the land-water map
+    model.map = gnome.map.MapFromBNA( mapfile,
+                                      refloat_halflife=6*3600, #seconds
+                                     )
+    # the image output map
+    map = gnome.utilities.map_canvas.MapCanvas((400, 300))
+    polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
+    map.set_land(polygons)
+    model.output_map = map
+    
+    a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    model.add_mover(a_mover)
+
+    N = 10 # a line of ten points
+    start_points = np.zeros((N, 3) , dtype=np.float64)
+    start_points[:,0] = np.linspace(-127.1, -126.5, N)
+    start_points[:,1] = np.linspace( 47.93, 48.1, N)
+    #print start_points
+    spill = gnome.spill.SpatialReleaseSpill(start_positions = start_points,
+                                            release_time = start_time,
+                                            )
+    
+    model.add_spill(spill)
+    model.start_time = spill.release_time
+    #image_info = model.next_image()
+
+    model.is_uncertain = True
+
+    num_steps_output = 0
+    while True:
+         try:
+             image_info = model.next_image(images_dir)
+             num_steps_output += 1
+             print image_info
+         except StopIteration:
+             print "Done with the model run"
+             break
+
+    assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+    ## fixme -- do an assertionlooking for red in images?
+
+
 def test_mover_api():
     """
     Test the API methods for adding and removing movers to the model.

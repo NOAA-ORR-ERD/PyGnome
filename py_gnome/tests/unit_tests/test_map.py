@@ -13,23 +13,10 @@ import gnome.map
 import gnome.spill
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities import map_canvas
+from gnome.spill_container import TestSpillContainer
 
 
-## some utilities:
-
-def make_sample_spill(num_elements):
-    """
-    make a spill_container object with the required data arrays
-    """
-    spill = gnome.spill_container.SpillContainer()
-
-    spill['positions']= np.zeros( (num_elements, 3), dtype=np.float64)
-    spill['next_positions'] =  np.zeros_like(spill['positions'])
-    spill['last_water_positions'] = np.zeros_like(spill['positions'])
-    spill['status_codes'] = np.zeros((num_elements,), dtype=basic_types.status_code_type) + basic_types.oil_status.in_water
-
-    return spill;
-
+ 
 ##fixme: these two should maybe be in their own test file -- for testing map_canvas.
 
 ### tests of depricated code -- port to new map code?
@@ -334,7 +321,7 @@ class Test_full_move:
                         projection=projections.NoProjection(),
                         )
          
-        spill = make_sample_spill(1)
+        spill = TestSpillContainer(1)
 
         spill['positions'] = np.array( ( ( 5.0, 5.0, 0.0), ), dtype=np.float64) 
         spill['next_positions'] = np.array( ( (15.0, 5.0, 0.0), ), dtype=np.float64)
@@ -361,7 +348,7 @@ class Test_full_move:
         # one diagonal upper left to lower right
         # one diagonal upper right to lower left
         
-        spill = make_sample_spill(4)
+        spill = TestSpillContainer(4)
 
         spill['positions'] = np.array( ( ( 5.0, 5.0, 0.0),
                                          ( 15.0, 5.0, 0.0),
@@ -404,7 +391,7 @@ class Test_full_move:
         # diagonal that doesn't hit
         # diagonal that does hit
  
-        spill = make_sample_spill(4)
+        spill = TestSpillContainer(4)
 
         spill['positions'] = np.array( ( ( 5.0, 5.0, 0.0),
                                          (15.0, 5.0, 0.0),
@@ -448,7 +435,7 @@ class Test_full_move:
         # diagonal that doesn't hit
         # diagonal that does hit
         #spill = gnome.spill.Spill(num_LEs=4)
-        spill = make_sample_spill(4)
+        spill = TestSpillContainer(4)
         spill['positions']= np.array( ( ( 30.0, 5.0, 0.0), # outside from right
                                      ( -5.0, 5.0, 0.0), # outside from left
                                      ( 5.0, -5.0, 0.0), # outside from top

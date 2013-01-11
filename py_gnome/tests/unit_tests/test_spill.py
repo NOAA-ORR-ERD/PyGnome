@@ -3,6 +3,7 @@ Tests the new spill code.
 """
 
 import datetime
+import copy
 
 import pytest
 
@@ -50,6 +51,26 @@ def test_set_id():
 
     #print [spill.id for spill in spills]
     #assert False
+
+def test_deepcopy():
+    """
+    only tests that the ids work -- not sure about anything else...
+
+    test_spill_container does test some other issues.
+    """
+    spill1 = Spill() 
+    spill2 = copy.deepcopy(spill1)
+    assert spill1 is not spill2
+    assert spill1.id != spill2.id
+
+def test_copy():
+    """
+    only tests that the ids work -- not sure about anything else...
+    """
+    spill1 = Spill() 
+    spill2 = copy.copy(spill1)
+    assert spill1 is not spill2
+    assert spill1.id != spill2.id
 
 def test_new_elements():
     """

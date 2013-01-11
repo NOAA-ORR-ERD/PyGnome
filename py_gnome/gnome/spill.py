@@ -12,6 +12,7 @@ these are managed by the SpillContainer class
 """
 
 import sys
+import copy
 import numpy as np
 from gnome import basic_types
 
@@ -45,6 +46,33 @@ class Spill(object):
         self.__set_id()
         self.__all_subclasses[ id(self) ] = self.__class__
         Spill.reset_array_types()
+
+    def __deepcopy__(self, memo=None):
+        """
+        the deepcopy implementation
+
+        we need this, as we don't want the ids copied, but do want everything else.
+
+        got the method from:
+
+        http://stackoverflow.com/questions/3253439/python-copy-how-to-inherit-the-default-copying-behaviour
+
+        Despite what that thread says for __copy__, the built-in deepcopy() ends up using recursion
+        """
+        obj_copy = object.__new__(type(self))
+        obj_copy.__dict__ = copy.deepcopy(self.__dict__, memo)
+        obj_copy.__set_id()
+        return obj_copy
+
+    def __copy__(self):
+        """
+        might as well have copy, too.
+        """
+        obj_copy = object.__new__(type(self))
+        obj_copy.__dict__ = self.__dict__.copy()
+        obj_copy.__set_id()
+        return obj_copy
+
 
     @classmethod
     def reset_array_types(cls):

@@ -217,7 +217,91 @@ def test_data_setting_new_list():
     sp['new_name'] = new_arr
 
     assert np.array_equal(sp['new_name'],  new_arr) 
-  
+
+
+def test_copy():
+    """
+    test whether copying a spill_container works
+    """
+    start_time = datetime(2012, 1, 1, 12)
+    start_time2 = datetime(2012, 1, 2, 12)
+
+    start_position =  (23.0, -78.5, 0.0)
+    start_position2 = (45.0,  75.0, 0.0)
+
+    num_elements =  100
+
+    sc = SpillContainer()
+    spill = SurfaceReleaseSpill(num_elements,
+                                start_position,
+                                start_time)
+
+    spill2 = SurfaceReleaseSpill(num_elements,
+                                start_position2,
+                                start_time2)
+
+    sc.add_spill(spill)
+    sc.add_spill(spill2)
+
+    sc2 = sc.copy(uncertain=True)
+
+    assert sc2.is_uncertain
+    assert len(sc.spills) == len(sc2.spills)
+    
+    # make sure they aren't references to the same spills
+    assert sc.spills[0] not in sc2.spills
+    assert sc.spills[1] not in sc2.spills
+
+    # make sure they have unique ids:
+    for id1 in [s.id for s in sc.spills]:
+        for id2 in [s.id for s in sc2.spills]:
+            print id1, id2
+            assert not id1==id2
+
+    # do the spills work?
+
+    sc.release_elements(start_time)
+
+    assert sc['positions'].shape == (num_elements, 3)
+    assert sc['last_water_positions'].shape == (num_elements, 3)
+
+    # nothing released yet.
+    assert sc2['positions'].shape[0] == 0
+
+    # now release second set:
+    sc2.release_elements(start_time)
+    # elements should be there.
+    assert sc2['positions'].shape == (num_elements, 3)
+    assert sc2['last_water_positions'].shape == (num_elements, 3)
+
+    # next release:
+    sc.release_elements(start_time + timedelta(hours=24) )
+
+    assert sc['positions'].shape == (num_elements*2, 3)
+    assert sc['last_water_positions'].shape == (num_elements*2, 3)
+
+    # second set should not have changed
+    assert sc2['positions'].shape == (num_elements, 3)
+    assert sc2['last_water_positions'].shape == (num_elements, 3)
+
+    # release second set
+    sc2.release_elements(start_time + timedelta(hours=24) )
+    assert sc2['positions'].shape == (num_elements*2, 3)
+    assert sc2['last_water_positions'].shape == (num_elements*2, 3)
+
+    # ## check the get_spill method
+    # assert sc.get_spill(spill.id) == spill
+    # assert sc.get_spill(spill2.id) == spill2
+
+    # ## check the remove_spill_by_id
+    # sc.remove_spill_by_id(spill.id)
+    # assert sc.get_spill(spill.id) is None # it shouldn't be there anymore.
+
+
+
+
+
+
 ## NOTE: this is no longer a feature  
 # def test_data_setting_new_error():
 #     """

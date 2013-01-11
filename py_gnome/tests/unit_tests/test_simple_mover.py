@@ -40,7 +40,28 @@ def test_north():
     expected = proj.meters_to_lonlat((0.0, 1000.0, 0.0), (0.0, 0.0, 0.0))
     assert np.alltrue(delta == expected)
     
-    
-    
+def test_uncertainty():
+    sp = TestSpillContainer(num_elements=100,
+                            start_pos=(20, 0.0, 0.0),
+                            )
+
+    u_sp = TestSpillContainer(num_elements=100,
+                              start_pos=(20, 0.0, 0.0),
+                              )
+    u_sp.is_uncertain = True
+
+    mover = simple_mover.SimpleMover(velocity=(10.0, 10.0, 0.0) )
+
+    delta = mover.get_move(sp, time_step = 100.0, model_time=None)
+    u_delta = mover.get_move(u_sp, time_step = 100.0, model_time=None)
+
+    expected = np.zeros_like(delta)
+    expected = proj.meters_to_lonlat((1000.0, 1000.0, 0.0), (0.0, 0.0, 0.0))
+    assert np.alltrue(delta == expected)
+    #but uncertain spills shold be different:
+    assert not np.alltrue(u_delta == expected)
+
+    # the average should be close:
+    assert np.allclose( np.mean(delta, 0), np.mean(u_delta, 0), rtol=1e-1)
 
     

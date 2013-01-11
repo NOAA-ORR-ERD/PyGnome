@@ -34,13 +34,13 @@ class Model(object):
         self._wind = OrderedDict()  #list of wind objects
         self._movers = OrderedDict()
         self._spill_container = gnome.spill_container.SpillContainer()
-        self._uncertain_spill_container = gnome.spill_container.SpillContainer()
+        self._uncertain_spill_container = None
         
         self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
         self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
         self.time_step = timedelta(minutes=15).total_seconds()
 
-        self.uncertain = False
+        self.is_uncertain = False
         self.rewind()
         
     def rewind(self):
@@ -50,16 +50,18 @@ class Model(object):
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
         self._spill_container.reset()
-        self._uncertain_spill_container.reset()
+        if self._uncertain:
+            self._uncertain_spill_container = self._spill_container.copy(uncertain=True)
+        else:
+            self._uncertain_spill_container = None
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
 
     ### Assorted properties
     @property
-    def uncertain(self):
+    def is_uncertain(self):
         return self._uncertain
-    
-    @uncertain.setter
-    def uncertain(self, uncertain_value):
+    @is_uncertain.setter
+    def is_uncertain(self, uncertain_value):
         """
         only if uncertainty switch is toggled, then restart model
         """
@@ -148,6 +150,7 @@ class Model(object):
     @duration.setter
     def duration(self, duration):
         if duration < self._duration: # only need to rewind if shorter than it was...
+            ## fixme: actually, only need to rewide is current model time is byond new time...
             self.rewind()
         self._duration = duration
         self._num_time_steps = self._duration.total_seconds() // self.time_step
@@ -253,21 +256,13 @@ class Model(object):
             mover.prepare_for_model_run()
 
         self._spill_container.reset()
-        if self.uncertain:
-            #initialize a clean uncertainty spill_container
-            # or jsut make a new one?
-            self._uncertain_spill_container = self._spill_container.copy()            
 
     def setup_time_step(self):
         """
         sets up everything for the current time_step:
         
-        releases elements, refloats, prepares the movers, etc.
+        right now only prepares the movers -- maybe more later?.
         """
-        
-        self._spill_container.prepare_for_model_step(self.model_time, self.time_step)
-        if self.uncertain:
-            self._uncertain_spill_container.prepare_for_model_step(self.model_time, self.time_step)
         
         # initialize movers differently if model uncertainty is on
         for mover in self.movers:
@@ -282,12 +277,10 @@ class Model(object):
         """
         ## if there are no spills, there is nothing to do:
         if self._spill_container.spills:
-            if self.uncertain:
-                containers = (self._spill_container, self._uncertain_spill_container)
-            else:
-                containers = (self._spill_container,)
-
-            for sc in containers: # either one of none, depending on uncertaintly or not
+            containers = [ self._spill_container ]
+            if self.is_uncertain:
+                containers.append( self._uncertain_spill_container )
+            for sc in containers: # either one or two, depending on uncertaintly or not
                 # reset next_positions
                 sc['next_positions'][:] = sc['positions']
 
@@ -305,7 +298,6 @@ class Model(object):
         """
         loop through movers and call model_step_is_done
         """
-        ##fixme: release elements for next time step here?
 
         for mover in self.movers:
             mover.model_step_is_done()
@@ -339,9 +331,8 @@ class Model(object):
         filename = os.path.join(images_dir, 'foreground_%05i.png'%self.current_time_step)
 
         self.output_map.create_foreground_image()
-        if self.uncertain:
+        if self.is_uncertain:
             self.output_map.draw_elements(self._uncertain_spill_container)
-        print "number of LEs: ", self._spill_container['positions'].shape
         self.output_map.draw_elements(self._spill_container)
             
         self.output_map.save_foreground(filename)
@@ -352,7 +343,6 @@ class Model(object):
         Steps the model forward (or backward) in time. Needs testing for hindcasting.
                 
         """
-        print "in step, time step:", self.current_time_step
         if self.current_time_step >= self._num_time_steps:
             return False
         
@@ -361,17 +351,18 @@ class Model(object):
         else:    
             self.setup_time_step()
             self.move_elements()
-            # release elements here.
             self.step_is_done()
         self.current_time_step += 1        
         self._spill_container.release_elements(self.model_time)
+        if self.is_uncertain:
+            self._uncertain_spill_container.release_elements(self.model_time)
         return True
     
     def __iter__(self):
         """
         for compatibility with Python's iterator protocol
         
-        resets the model and returns itself so it can be iterated over. 
+        rewinds the model and returns itself so it can be iterated over. 
         """
         self.rewind()
         return self

@@ -39,10 +39,10 @@ class SpillContainer(object):
         self.is_uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
         self.is_active = True       # sets whether the spill is active or not
         
-        self._data_arrays = {}
-
         self.spills = [] # A list of spills (spill sources)
-        
+        self.reset()
+
+
     def __getitem__(self, data_name):
         """
         The basic way to access data for the LEs
@@ -80,6 +80,14 @@ class SpillContainer(object):
         The number of elements currently in the SpillContainer
         """
         return len(self['positions']) # every spill should have a postitions data array
+
+    def copy(self, uncertain=False):
+        import copy
+        new_sc = copy.deepcopy(self)
+        #new_sc = SpillContainer()
+        new_sc.is_uncertain = uncertain
+
+        return new_sc
 
     def add_spill(self, spill):
         self.spills.append(spill)
@@ -121,11 +129,16 @@ class SpillContainer(object):
 
     def reset(self):
         """
-        resets all the spills and stored arrays are cleared
+        resets all the spills and stored arrays are cleared, then replaced with
+        appropriate empty arrays
         """
         for spill in self.spills:
             spill.reset()
-        self._data_arrays = {}
+        # this should create a full set of zero-sized arrays
+        # it creates a temporary Spill object, that should reflect
+        # the arrays types of all existing Spills
+        self._data_arrays = gnome.spill.Spill().create_new_elements(0)
+
 
     def prepare_for_model_step(self, current_time, time_step=None):
         """
@@ -143,10 +156,8 @@ class SpillContainer(object):
         the elements to the data arrays
         
         """
-        print "in release_elements", current_time
         for spill in self.spills:
             new_data = spill.release_elements(current_time, time_step)
-            print "got new data:", new_data
             if new_data is not None:
                 for name, array in new_data.items():
                     if name in self._data_arrays:
