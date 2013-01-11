@@ -6,10 +6,10 @@
         <form action="" class="form-horizontal model-settings" method="POST">
             <%
                 start_time = h.text('start_time', model.start_time, class_="date")
-                duration_days = h.text('duration_days', model.duration_days)
-                duration_hours = h.text('duration_hours', model.duration_hours, class_="hour")
+                duration_days = h.text('duration_days', model.duration_days, class_="input-extra-small")
+                duration_hours = h.text('duration_hours', model.duration_hours, class_="input-extra-small")
                 uncertain = h.checkbox('uncertain', checked=model.uncertain)
-                computation_time_step = h.text('time_step', model.time_step)
+                computation_time_step = h.text('time_step', model.time_step, class_="input-extra-small")
             %>
 
             ${defs.form_control(start_time, label="Model Start Date:")}

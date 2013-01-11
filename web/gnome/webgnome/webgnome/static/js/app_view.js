@@ -321,10 +321,13 @@ define([
 
             var _this = this;
             var model = new models.Model({}, {url: this.apiRoot});
-            model.save(null, {
+            _this.modelSettings.destroy({
                 success: function() {
-                    _this.modelSettings.destroy();
-                    window.location.reload(true);
+                    model.save(null, {
+                        success: function() {
+                            window.location.reload(true);
+                        }
+                    });
                 }
             });
         },

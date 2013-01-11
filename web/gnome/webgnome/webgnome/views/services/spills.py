@@ -43,7 +43,7 @@ class PointReleaseSpill(BaseResource):
         Return a JSON representation of the PointReleaseSpill matching the
         ``id`` matchdict value.
         """
-        spill = self.request.validated['model'].get_spill(self.id)
+        spill = self.request.validated['model'].spills.get(self.id)
         return spill.to_dict()
 
     @view(validators=util.valid_spill_id, schema=PointReleaseSpillSchema)
@@ -53,7 +53,7 @@ class PointReleaseSpill(BaseResource):
         """
         data = self.request.validated
         model = data.pop('model')
-        spill = model.get_spill(self.id)
+        spill = model.spills.get(self.id)
         spill.from_dict(data)
 
         return {
@@ -66,7 +66,7 @@ class PointReleaseSpill(BaseResource):
         """
         Delete a PointReleaseSpill.
         """
-        self.request.validated['model'].remove_spill(self.id)
+        self.request.validated['model'].spills.remove(self.id)
         message = util.make_message('success', 'Deleted point release spill.')
 
         return {

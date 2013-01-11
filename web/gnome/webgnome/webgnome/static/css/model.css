@@ -1,7 +1,3 @@
-html, body {
-    height: 100%;
-}
-
 ul.dynatree-container {
     border: none;
 }
@@ -16,16 +12,12 @@ ul.dynatree-container {
     background-image: none;
 }
 
-#tree-list {
-    display: none;
-}
-
-div.nav-collapse > div.btn-toolbar {
-    margin: 0;
-}
-
-.navbar .nav {
-    margin-right: 40px;
+#slider-container {
+    width: 158px;
+    cursor: default;
+    color: #333;
+    opacity: 1;
+    background-color: whiteSmoke;
 }
 
 #slider {
@@ -36,31 +28,15 @@ div.nav-collapse > div.btn-toolbar {
     position: absolute;
     left: 2px;
     top: 15px;
+    padding-top: 0;
 }
 
-#slider-container {
-    width: 158px;
-    cursor: default;
-    color: #333;
-    opacity: 1;
-    background-color: whiteSmoke;
+.ui-slider .ui-slider-handle {
+    height: 1em;
 }
 
-#sidebar-toolbar {
+.sidebar-toolbar {
     display: inline;
-}
-
-#sidebar {
-    height: 100%;
-    border-right: solid 1px #D4D4D4;
-}
-
-#content {
-    height: 100%;
-}
-
-#container {
-    height: 100%;
 }
 
 #time {
@@ -88,17 +64,6 @@ legend {
     font-size: 18px;
     margin-bottom: 0;
     line-height: 20px;
-}
-
-#hour,
-#minute,
-.hour,
-.minute {
-    width: 20px;
-}
-
-#duration_days {
-    width: 40px;
 }
 
 #map {
@@ -136,59 +101,6 @@ legend {
     max-width: 700px;
 }
 
-select, textarea,
-input[type="text"],
-input[type="password"],
-input[type="datetime"],
-input[type="datetime-local"],
-input[type="date"],
-input[type="month"],
-input[type="time"],
-input[type="week"],
-input[type="number"],
-input[type="email"],
-input[type="url"],
-input[type="search"],
-input[type="tel"],
-input[type="color"],
-.uneditable-input {
-    padding: 1px;
-    height: 17px;
-
-}
-
-input[type="text"], input[type="password"], .ui-autocomplete-input, textarea, .uneditable-input {
-    color: black;
-    font-size: 13px;
-}
-
-.form-horizontal .control-group {
-    margin: 1px 0 1px 0;
-}
-
-.form-horizontal .controls,
-.form-horizontal .controls:first-child {
-    margin-left: 120px;
-}
-
-.form-horizontal .control-label {
-    width: 100px;
-    padding-top: 0;
-}
-
-.form-inline label {
-    padding-right: 5px;
-    padding-left: 5px;
-}
-
-.form-inline .checkbox {
-    padding-left: 5px;
-}
-
-.form-inline .checkbox {
-    margin-bottom: 1px;
-}
-
 .edit-time-forms th {
     padding: 0 8px 8px 8px;
 }
@@ -211,18 +123,6 @@ input[type="text"], input[type="password"], .ui-autocomplete-input, textarea, .u
 
 .speed_type {
     width: 120px;
-}
-
-select, input[type="file"] {
-    height: 25px;
-}
-
-.help-inline {
-    padding-top: 4px;
-}
-
-.modal-header h3 {
-    display: inline;
 }
 
 .edit-mover-name {
@@ -288,13 +188,3 @@ select, input[type="file"] {
     padding-left: 30px;
 }
 
-
-@media (max-width: 767px) {
-    #sidebar {
-        height: auto;
-    }
-
-    #container {
-        height: auto;
-    }
-}

@@ -54,7 +54,7 @@
         % endif
 
         <div class="controls">
-        ${h.text("hour", class_="hour")} : ${h.text("minute", class_="minute")}
+        ${h.text("hour", class_="input-micro")} : ${h.text("minute", class_="input-micro")}
             <span class="help-inline">
                 % if help_text:
                     ${help_text}

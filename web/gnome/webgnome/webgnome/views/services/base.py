@@ -1,5 +1,3 @@
-from  pyramid.httpexceptions import HTTPNotFound
-
 
 class BaseResource(object):
     def __init__(self, request):

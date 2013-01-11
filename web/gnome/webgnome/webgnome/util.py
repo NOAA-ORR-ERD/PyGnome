@@ -211,6 +211,7 @@ def valid_model_id(request):
     if model is None:
         request.errors.add('body', 'model', 'Model not found.')
         request.errors.status = 404
+        return
 
     authenticated_model_id = request.session.get(
         request.registry.settings['model_session_key'], None)
@@ -249,9 +250,8 @@ def valid_mover_id(request):
         return
 
     model = request.validated['model']
-    mover_exists = model.has_mover(int(request.matchdict['id']))
 
-    if not mover_exists:
+    if not int(request.matchdict['id']) in model.movers:
         request.errors.add('body', 'mover', 'Mover not found.')
         request.errors.status = 404
 
@@ -267,9 +267,8 @@ def valid_spill_id(request):
         return
 
     model = request.validated['model']
-    spill_exists = model.has_spill(int(request.matchdict['id']))
 
-    if not spill_exists:
+    if not int(request.matchdict['id']) in model.spills:
         request.errors.add('body', 'spill', 'Spill not found.')
         request.errors.status = 404
 

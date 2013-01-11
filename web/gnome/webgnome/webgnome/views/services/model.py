@@ -30,23 +30,6 @@ class Model(BaseResource):
 
         return model_settings
     
-    @view()
-    def collection_post(self):
-        """
-        Create a new model with default settings.
-        """
-        model = self.settings.Model.create(
-            model_images_dir=self.settings['model_images_dir'])
-
-        message = util.make_message('success', 'Created a new model.')
-        self.request.session[self.settings['model_session_key']] = model.id
-
-        return {
-            'success': True,
-            'model_id': model.id,
-            'message': message
-        }
-    
     @view(schema=ModelSettingsSchema, validators=util.valid_model_id)
     def put(self):
         """
@@ -64,12 +47,29 @@ class Model(BaseResource):
         """
         Delete the current model.
         """
-        self.settings.Model.delete(self.request.matchdict['model_id'])
+        self.settings.Model.delete(int(self.request.matchdict['model_id']))
         message = util.make_message('success', 'Deleted the current model.')
     
         return {
             'success': True,
             'model_id': self.request.matchdict['model_id'],
+            'message': message
+        }
+
+    @view()
+    def collection_post(self):
+        """
+        Create a new model with default settings.
+        """
+        model = self.settings.Model.create(
+            model_images_dir=self.settings['model_images_dir'])
+
+        message = util.make_message('success', 'Created a new model.')
+        self.request.session[self.settings['model_session_key']] = model.id
+
+        return {
+            'success': True,
+            'model_id': model.id,
             'message': message
         }
 
@@ -143,31 +143,18 @@ class ModelRunner(BaseResource):
         model = self.request.validated['model']
         data = {}
 
-        # TODO: This should probably be a method on the model.
+        # TODO: Some of this should probably be in a model method.
         timestamps = self._get_timestamps()
-        data['expected_time_steps'] = timestamps
         model.timestamps = timestamps
-
-        # Turning this off because it breaks everything.
-        # model.uncertain = True
-
-        if not model.runtime:
-            model.runtime = util.get_runtime()
-
-        # The client requested no cached images, so rewind and clear the cache.
-        if self.request.POST.get('no_cache', False):
-            model.runtime = util.get_runtime()
-            model.rewind()
-            model.time_steps = []
-
+        model.runtime = util.get_runtime()
+        model.rewind()
+        model.time_steps = []
         first_step = self._get_next_step()
 
-        if not first_step:
-            return {}
-
         model.time_steps.append(first_step)
-        data['time_step'] = first_step
 
+        data['expected_time_steps'] = timestamps
+        data['time_step'] = first_step
         data['background_image'] = util.get_model_image_url(
             self.request, model, 'background_map.png')
         data['map_bounds'] = model.map.map_bounds.tolist()
