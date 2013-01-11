@@ -53,7 +53,9 @@ public:
 	double			fEddyV0;			//  in m/s, used for cutoff of minimum eddy for uncertainty
 	TCM_OPTIMZE fOptimize; // this does not need to be saved to the save file	
 	
+#ifndef pyGNOME
 						CATSMover_c (TMap *owner, char *name);
+#endif
 						CATSMover_c ();
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
@@ -72,7 +74,7 @@ public:
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); // AH 07/10/2012
 	virtual void 		ModelStepIsDone();
 	virtual Boolean		VelocityStrAtPoint(WorldPoint3D wp, char *velStr);
-	virtual	OSErr		ReadTopology(char* path, TMap **newMap);
+	virtual	OSErr		ReadTopology(char* path/*, TMap **newMap*/);
 
 	
 			OSErr		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spill_ID);

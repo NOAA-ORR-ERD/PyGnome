@@ -13,14 +13,12 @@
 Boolean IsWizardFile(char* fullPathName);
 
 void GetOurAppPathName(char* path);
+Boolean ConvertIfUnixPath(char* path, char* classicPath);
+Boolean IsPartialPath(char* relativePath);
 void ResolvePathFromApplication(char* relativePath);
 void ResolvePathFromInputFile(char *pathOfTheInputFile, char* pathToResolve); // JLM 6/8/10
 OSErr ResolvePathFromCommandFile(char* pathToResolve); 
 void ResolvePath(char* pathToResolve);
-Boolean IsClassicPath(char* path);
-Boolean IsWindowsAbsolutePath(char* path);
-Boolean IsPartialPath(char* relativePath);
-Boolean ConvertIfUnixPath(char* path, char* classicPath);
 void ResolvePartialPathFromThisFolderPath(char* relativePath,char * thisFolderPath);
 
 void AddDelimiterAtEndIfNeeded(char* str);

@@ -1,16 +1,14 @@
  #!/usr/bin/env python
 
 """
- An implementation of the GNOME land-water map.
- 
- This is a re-write of the C++ raster map approach
- 
- NOTES:
+An implementation of the GNOME land-water map.
 
-Should we just use non-projected coordinates for the raster map? --
-   it makes for a little less computation at every step.
+This is a re-write of the C++ raster map approach
 
-Do we want to treat lakes differently than regular water?
+NOTES:
+ - Should we just use non-projected coordinates for the raster map?
+   It makes for a little less computation at every step.
+ - Do we want to treat lakes differently than regular water?
 
 New features:
  - Map now handles spillable area and map bounds as polygons
@@ -35,8 +33,8 @@ from gnome.utilities.geometry.polygons import PolygonSet
             
 class GnomeMap(object):
     """
-    The very simplest map for GNOME -- all water,
-    only a bounding box for the map bounds.
+    The very simplest map for GNOME -- all water
+    with only a bounding box for the map bounds.
     
     This also serves as a description of the interface
     """
@@ -47,12 +45,10 @@ class GnomeMap(object):
         """
         This __init__ will be different for other implementations
         
-        map_bounds is the bounds of the map:
-          ( (x1,y1), (x2,y2),(x3,y3),..)
-        
-        An NX2 array of points that describe a polygon
-
-        if no map bounds is provided -- the whole world is valid
+        :param map_bounds: the bounds of the map:
+            ( (x1,y1), (x2,y2),(x3,y3),..)
+            An NX2 array of points that describe a polygon
+            if no map bounds is provided -- the whole world is valid
         
         """
         if map_bounds is not None:
@@ -64,91 +60,78 @@ class GnomeMap(object):
                                           ( 360, -90),
                                           (-360, -90),
                                           ), dtype=np.float64 )
-                                         
-        
+
     def on_map(self, coord):
         """
-        returns True is the location is on the map
-
-        coord is a (long, lat, depth) location.
+        .. note::
+            should this support non-rectangular maps? -- point in polygon?
                 
-        note: should this support no-rectangular maps? -- point in polygon?
-        """
-        """
-        returns true is the spill position is in the allowable spill area
-        
-        This may not be the same as in_water!
-        
+        :param coord: (long, lat, depth) location
+        :return:
+         - True if the location is on the map
         """
         return point_in_poly(self.map_bounds, coord[:2])
-        
+
     def on_land(self, coord):
         """
-        returns a Boolean result:
+        .. note::
+            what should this give if it is off map?
         
-        True if the point is on land,
-        False if the point is on water
+        :param coord: (long, lat, depth) location
         
-        coord is a (long, lat, depth) location
-        
-        Always returns False-- no land in this implementation
-        
-        ## note: what should this give if off map?
+        :return:
+         - Always returns False-- no land in this implementation
         
         """
         return False
 
     def in_water(self, coord):
         """
-        returns a Boolean result:
+        :param coord: (long, lat, depth) location
         
-        True if the point is in the water,
-        False if the point is on land (or off map?)
-        
-        coord is a (long, lat, depth) location
+        :return:
+         - True if the point is in the water,
+         - False if the point is on land (or off map?)
         
         """
         return self.on_map(coord)
-    
+
     def allowable_spill_position(self, coord):
         """
-        returns a Boolean result:
+        .. note::
+            it could be either off the map, or in a location that spills aren't allowed
         
-        True if the point is an allowable spill position
-        False if the point is not an allowable spill position
-
-        (Note: it could be either off the map, or in a location that spills
-        aren't allowed)
+        :param coord: (long, lat, depth) location
         
-        coord is a (long, lat, depth) location
-        
+        :return:
+         - True if the point is an allowable spill position
+         - False if the point is not an allowable spill position
         """
         return self.on_map(coord)
 
     def beach_elements(self, spill):
         """
-        beach_LEs (spill)
+        Determines which LEs were or weren't beached.
         
-        determines which LEs were or weren't beached.
-        
-        This map class  has no land, so nothing changes
+        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
+            This map class  has no land, so nothing changes
         """
         return None
-    
+
     def refloat_elements(self, spill):
         """
-        refloat_elements(spill)
+        This method performs the re-float logic -- changing the element status flag,
+        and moving the element to the last known water position
         
-        :param spill: The spill object that hold the elements that need refloating
+        .. note::
+            This map class has no land, and so is a no-op.
         
-        Does the re-float logic -- changing the element status flag, an moving the
-        element to the last knows water position
-        
-        This map class has no land, and so is a no-op.
+        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
+            This object holds the elements that need refloating
         """
         pass
-    
-        
+
+
 from gnome.cy_gnome import cy_land_check as land_check
 # from gnome import land_check
 
@@ -185,14 +168,14 @@ class RasterMap(GnomeMap):
         """
         create a new RasterMap
         
-        refloat_halflife is the halflife for refloating off land -- given in seconds
+        :param refloat_halflife: The halflife for refloating off land -- given in seconds.
                 This is assumed to be the same everywhere at this point
         
-        bitmap_array is a numpy array that stores the land-water map
+        :param bitmap_array: A numpy array that stores the land-water map
         
-        projection is a gnome.map_canvas.Projection object -- used to convert from lat-long to pixels in the array
+        :param projection: A gnome.map_canvas.Projection object -- used to convert from lat-long to pixels in the array
         
-        map_bounds is the polygon boudning the map -- could be larger or smaller than the land raster
+        :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
         """
         
         self.refloat_halflife = refloat_halflife
@@ -226,10 +209,11 @@ class RasterMap(GnomeMap):
     
     def on_land(self, coord):
         """
-        returns 1 if point on land
-        returns 0 if not on land
+        :param coord: (long, lat, depth) location
         
-        coord is (long, lat, depth) location
+        :return:
+         - 1 if point on land
+         - 0 if not on land
         
         """
         return self._on_land_pixel(self.projection.to_pixel(coord)[0]) # to_pixel converts to array of points...
@@ -259,13 +243,13 @@ class RasterMap(GnomeMap):
 
     def in_water(self, coord):
         """
-        returns true if the point given by coord is in the water
-        
-        :param coord: is a (lon, lat, depth) coordinate
-        
-        (depth is ignored in this version)
-        
         checks if it's on the map, first.
+            (depth is ignored in this version)
+
+        :param coord: (lon, lat, depth) coordinate
+        
+        :return: true if the point given by coord is in the water
+        
         """
         if not self.on_map(coord):
             return False
@@ -326,17 +310,15 @@ class RasterMap(GnomeMap):
             
     def beach_elements(self, spill):
         """
-        beach_LEs
+        Determines which LEs were or weren't beached.
         
-        determines which LEs were or weren't beached.
+        Any that are beached have the beached flag set, and a "last known water position" (lkwp) is computed
         
-        Any that are beached have the beached flag set, and a "last know water position" (lkwp) is computed
+        This version uses a modified Bresenham algorithm to find out which pixels the LE may have crossed.
         
-        param: spill  - a spill object -- it must have:
-               'prev_position', 'positions', 'last_water_pt' and 'status_code' data arrays
-        
-        This version uses a modified Bresenham algorythm to find out which pixels the LE may have crossed.
-        
+        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
+            It must have the following data arrays:
+            ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
         # pull the data from the spill 
         ## is the last water point the same as the previos position? why not?? if beached, it won't move, if not, then we can use it?
@@ -367,27 +349,26 @@ class RasterMap(GnomeMap):
 
     def check_land(self, raster_map, positions, end_positions, status_codes, last_water_positions):
         """
-        do the actual land-checking
-                
-        status_codes, positions and last_water_positions are altered in place.
-        
-        calls a Cython version: gnome.cy_gnome.cy_land_check.check_land
+        Do the actual land-checking.  This method calls a Cython version:
+            gnome.cy_gnome.cy_land_check.check_land()
+
+        The arguments **status_codes**, **positions** and **last_water_positions** are altered in place.
         """
-        return gnome.cy_gnome.cy_land_check.check_land(raster_map,
-                                                       positions,
-                                                       end_positions,
-                                                       status_codes,
-                                                       last_water_positions)
+        gnome.cy_gnome.cy_land_check.check_land(raster_map,
+                                                positions,
+                                                end_positions,
+                                                status_codes,
+                                                last_water_positions)
 
     
     def allowable_spill_position(self, coord):
         """
-        returns true is the spill position is in the allowable spill area
+        Returns true is the spill position is in the allowable spill area
         
-        :param coord: (lon, lat, depth) triple
+        .. note::
+            This may not be the same as in_water!
         
-        This may not be the same as in_water!
-        
+        :param coord: (lon, lat, depth) coordinate
         """
         if self.on_map(coord):
             if not self.on_land(coord):
@@ -405,9 +386,9 @@ class RasterMap(GnomeMap):
         Projects an array of (lon, lat) tuples onto the bitmap, and modifies it in 
         place to hold the corresponding projected values.
         
-        :param coords:  a Nx3 numpy array of (lon, lat, depth) points
+        :param coords:  a numpy array of (lon, lat, depth) points
         
-        returns: NX2 numpy array of integer pixel values
+        :return: a numpy array of (x, y) pixel values
         """
         
         return self.projection.to_pixel(coords)
@@ -465,16 +446,13 @@ class MapFromBNA(RasterMap):
                  raster_size = 1024*1024, # default to 1MB raster
                  ):
         """
-        Creates a GnomeMap (specifically a RasterMap) from a bna file
-        
-        bna_file: full path to a bna file
-        
-        refloat_halflife: the half-life (in seconds) for the re-floating.
-        
-        raster_size: total number of pixels (bytes) to make the raster -- the actual size
-        will match the aspect ratio of the bounding box of the land
-        
+        Creates a GnomeMap (specifically a RasterMap) from a bna file.
         It is expected that you will get the spillable area and map bounds from the BNA -- if they exist
+        
+        :param bna_file: full path to a bna file
+        :param refloat_halflife: the half-life (in seconds) for the re-floating.
+        :param raster_size: the total number of pixels (bytes) to make the raster -- the actual size
+        will match the aspect ratio of the bounding box of the land
         """
         polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
 

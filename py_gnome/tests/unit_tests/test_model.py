@@ -6,6 +6,7 @@ test code for the model class
 not a lot to test by itself, but a start
 
 """
+import pytest
 import os, shutil
 from datetime import datetime, timedelta
 import numpy as np
@@ -55,14 +56,16 @@ def test_simple_run():
     model.map = gnome.map.GnomeMap()
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
     
-    model.add_mover(a_mover)
+    model.movers += a_mover
+    assert len(model.movers) == 1
 
     spill = gnome.spill.PointReleaseSpill(num_LEs=10,
                                           start_position = (0.0, 0.0, 0.0),
                                           release_time = start_time,
                                           )
     
-    model.add_spill(spill)
+    model.spills += spill
+    assert len(model.spills) == 1
     model.start_time = spill.release_time
     
     # test iterator:
@@ -91,14 +94,16 @@ def test_simple_run_with_map():
                                 )
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
     
-    model.add_mover(a_mover)
+    model.movers += a_mover
+    assert len(model.movers) == 1
 
     spill = gnome.spill.PointReleaseSpill(num_LEs=10,
                                           start_position = (0.0, 0.0, 0.0),
                                           release_time = start_time,
                                           )
     
-    model.add_spill(spill)
+    model.spills += spill
+    assert len(model.spills) == 1
     model.start_time = spill.release_time
     
     # test iterator:
@@ -144,7 +149,8 @@ def test_simple_run_with_image_output():
     model.output_map = map
     
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
-    model.add_mover(a_mover)
+    model.movers += a_mover
+    assert len(model.movers) == 1
 
     N = 10 # a line of ten points
     start_points = np.zeros((N, 3) , dtype=np.float64)
@@ -156,7 +162,8 @@ def test_simple_run_with_image_output():
                                           release_time = start_time,
                                           )
     
-    model.add_spill(spill)
+    model.spills += spill
+    assert len(model.spills) == 1
     model.start_time = spill.release_time
     #image_info = model.next_image()
 
@@ -187,26 +194,43 @@ def test_mover_api():
 
     mover_1 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     mover_2 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    mover_3 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    mover_4 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
 
-    id_1 = model.add_mover(mover_1)
-    id_2 = model.add_mover(mover_2)
+    # test our add object methods
+    model.movers += mover_1
+    model.movers += mover_2
 
-    assert(model.get_mover(id_1) == mover_1)
-    assert(model.get_mover(id_2) == mover_2)
-    assert(model.get_mover('Invalid') is None)
+    # test our get object methods
+    assert(model.movers[mover_1.id] == mover_1)
+    assert(model.movers[mover_2.id] == mover_2)
+    with pytest.raises(KeyError):
+        l__temp = model.movers['Invalid']
 
-    model.remove_mover(id_1)
-    model.remove_mover(id_2)
-    assert(model.remove_mover('Invalid') is None)
+    # test our iter and len object methods
+    assert len(model.movers) == 2
+    assert len([m for m in model.movers]) == 2
+    for m1, m2 in zip([m for m in model.movers], [mover_1, mover_2]):
+        assert m1 == m2
 
-    assert(model.get_mover(id_1) is None)
-    assert(model.get_mover(id_2) is None)
+    # test our add objectlist methods
+    model.movers += [mover_3, mover_4]
+    assert [m for m in model.movers] == [mover_1, mover_2, mover_3, mover_4]
 
-    id_1 = model.add_mover(mover_1)
-    id_2 = model.add_mover(mover_2)
+    # test our remove object methods
+    del model.movers[mover_3.id]
+    assert [m for m in model.movers] == [mover_1, mover_2, mover_4]
+    with pytest.raises(KeyError):
+        # our key should also be gone after the delete
+        l__temp = model.movers[mover_3.id]
 
-    model.replace_mover(id_1, mover_2)
-    model.replace_mover(id_2, mover_2)
+    # test our replace method
+    model.movers[mover_2.id] = mover_3
+    assert [m for m in model.movers] == [mover_1, mover_3, mover_4]
+    assert model.movers[mover_3.id] == mover_3
+    with pytest.raises(KeyError):
+        # our key should also be gone after the delete
+        l__temp = model.movers[mover_2.id]
 
 
 def test_all_movers():
@@ -224,23 +248,27 @@ def test_all_movers():
     model.start_time = start_time
 
     # a spill
-    model.add_spill(gnome.spill.PointReleaseSpill(num_LEs=10,
-                                          start_position = (0.0, 0.0, 0.0),
-                                          release_time = start_time,
-                                          ) )
+    model.spills += gnome.spill.PointReleaseSpill(num_LEs=10,
+                                                  start_position = (0.0, 0.0, 0.0),
+                                                  release_time = start_time,
+                                                  )
+    assert len(model.spills) == 1
 
     # the land-water map
     model.map = gnome.map.GnomeMap() # the simpleset of maps
     
     # simplemover
-    model.add_mover( movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0)) )
+    model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    assert len(model.movers) == 1
 
     # random mover
-    model.add_mover( gnome.movers.RandomMover(diffusion_coef=100000) )
+    model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
+    assert len(model.movers) == 2
 
     # wind mover
     series = np.array( (start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
-    model.add_mover( gnome.movers.WindMover(weather.Wind(timeseries=series)) )
+    model.movers += gnome.movers.WindMover(weather.Wind(timeseries=series, units='meter per second'))
+    assert len(model.movers) == 3
   
     
     # run the model all the way...

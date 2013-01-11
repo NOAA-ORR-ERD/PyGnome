@@ -28,7 +28,7 @@
 		I_PTCURMINCURRENT
 		};
 */
-Boolean IsPtCurFile (char *path)
+/*Boolean IsPtCurFile (char *path)
 {
 	Boolean	bIsValid = false;
 	OSErr	err = noErr;
@@ -53,7 +53,7 @@ Boolean IsPtCurFile (char *path)
 	}
 	
 	return bIsValid;
-}
+}*/
 
 /////////////////////////////////////////////////
 
@@ -1097,7 +1097,7 @@ BadValue:
 /////////////////////////////////////////////////
 //#define PTCUR_DELIM_STR " \t"
 
-Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts)
+/*Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts)
 {
 	char* token = strtok(s,PTCUR_DELIM_STR);
 	*numPts = 0;
@@ -1121,7 +1121,7 @@ Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts)
 		//return FALSE;
 		*numLandPts = 0;	// don't require
 	}
-	return TRUE;
+	return TRUE;*/
 	
 	/*char* strToMatch = "VERTICES";
 	long numScanned, len = strlen(strToMatch);
@@ -1133,7 +1133,7 @@ Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts)
 	else
 		return FALSE;
 	return TRUE; */
-}
+//}
 
 /////////////////////////////////////////////////////////////////
 OSErr PtCurMover::ReadPtCurVertices(CHARH fileBufH,long *line,LongPointHdl *pointsH,FLOATH *bathymetryH,char* errmsg,long numPoints)
@@ -1558,7 +1558,7 @@ done:
 	// rest of file (i.e. velocity data) is read as needed
 }
 
-void CheckYear(short *year)
+/*void CheckYear(short *year)
 {
 	if (*year < 1900)					// two digit date, so fix it
 	{
@@ -1568,7 +1568,7 @@ void CheckYear(short *year)
 			*year += 2000;					// correct for year 2000 (00 to 40)
 	}
 
-}
+}*/
 
 OSErr PtCurMover::ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile)
 {
@@ -1655,13 +1655,13 @@ done:
 
 
 /**************************************************************************************************/
-OSErr ScanDepth (char *startChar, double *DepthPtr)
+/*OSErr ScanDepth (char *startChar, double *DepthPtr)
 {	// expects a single depth value 
 	long	j, k;
 	char	num [64];
 	OSErr	err = 0;
 	
-	j = 0;	/* index into supplied string */
+	j = 0;	// index into supplied string //
 
 	Boolean keepGoing = true;
 	for (k = 0 ; keepGoing; j++)
@@ -1697,14 +1697,14 @@ OSErr ScanDepth (char *startChar, double *DepthPtr)
 		}
 	}
 		
-	num[k++] = 0;									/* terminate the number-string */
+	num[k++] = 0;									// terminate the number-string //
 	
 	*DepthPtr = atof(num);
 	///////////////
 	
 	return err;
 
-}
+}*/
 /**************************************************************************************************/
 OSErr PtCurMover::ReadTopology(char* path, TMap **newMap)
 {

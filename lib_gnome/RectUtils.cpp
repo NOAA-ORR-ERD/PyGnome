@@ -3,6 +3,7 @@
 #include	"RectUtils.h"
 #include	"GenDefs.h"
 
+#ifndef pyGNOME
 /**************************************************************************************************/
 Boolean operator != (Rect r1, Rect r2)
 {
@@ -145,6 +146,7 @@ void GetSmallestLRect (LongRect *SmallRectPtr, double XToYRatio, LongRect *Small
 	
 	return;
 }
+#endif
 /**************************************************************************************************/
 void SetLRect (LongRectPtr LRectPtr, long left, long top, long right, long bottom)
 {
@@ -155,6 +157,7 @@ void SetLRect (LongRectPtr LRectPtr, long left, long top, long right, long botto
 	
 	return;
 }
+#ifndef pyGNOME
 /**************************************************************************************************/
 void SetExRect (ExRect *ExRectPtr, double left, double top, double right, double bottom)
 {
@@ -984,7 +987,7 @@ Point RectCenter(Rect r)
 	
 	return p;
 }
-
+#endif
 
 /**************************************************************************************************/
 OSErr GetLScaleAndOffsets (LongRectPtr SourceRectPtr, LongRectPtr DestRectPtr, ScaleRecPtr ScaleInfoPtr)

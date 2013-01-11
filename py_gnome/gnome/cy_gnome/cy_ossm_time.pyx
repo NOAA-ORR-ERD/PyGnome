@@ -1,4 +1,3 @@
-import cython
 import numpy as np
 import os 
 
@@ -101,7 +100,7 @@ cdef class CyOSSMTime:
         for i in range( 0, modelTimeArray.size):
             err = self.time_dep.GetTimeValue( modelTimeArray[i], &vel_rec[i])
             if err != 0:
-                raise ValueError("Error invoking TimeValue_c.GetTimeValue method in CyOSSMTime")
+                raise ValueError("Error invoking TimeValue_c.GetTimeValue method in CyOSSMTime: C++ OSERR = " + str(err))
             
         return vel_rec
     

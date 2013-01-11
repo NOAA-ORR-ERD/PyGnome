@@ -54,6 +54,8 @@ public:
 	virtual OSErr 		SettingsItem (ListItem item);
 	virtual OSErr 		DeleteItem (ListItem item);
 	
+	virtual	OSErr 	ExportTopology(char* path) {return timeGrid->ExportTopology(path);}
+
 	virtual OSErr 		SettingsDialog();
 	
 

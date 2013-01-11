@@ -8,6 +8,7 @@
 #define TechError(a, b, c) printf(a)
 
 ////////////////////////////////////////////////////////////// MISC
+#ifndef pyGNOME
 Boolean OppositeSides(long x1, long y1, long x2, long y2,
 					  long X1, long Y1, long X2, long Y2)
 {
@@ -42,10 +43,10 @@ Boolean SegmentTouchesSegment(Segment s1, Segment s2)
 	return (OppositeSides(s1.fromLong, s1.fromLat, s1.toLong, s1.toLat,
 						  s2.fromLong, s2.fromLat, s2.toLong, s2.toLat));
 }
+#endif
+//#define SquareIndex(val, lo, hi) ((val) < (lo) ? 0 : ((val) > (hi) ? 2 : 1))
 
-#define SquareIndex(val, lo, hi) ((val) < (lo) ? 0 : ((val) > (hi) ? 2 : 1))
-
-Boolean SegmentInWRect(long x1, long y1, long x2, long y2, WorldRect wr)
+/*Boolean SegmentInWRect(long x1, long y1, long x2, long y2, WorldRect wr)
 {
 	//		6  |  7  |  8			// 0 = can't be touching ;
 	//		-------------			// 1 = is touching ;
@@ -78,7 +79,7 @@ Boolean SegmentInWRect(long x1, long y1, long x2, long y2, WorldRect wr)
 		   OppositeSides(x1, y1, x2, y2, wr.loLong, wr.hiLat, wr.hiLong, wr.hiLat) ||
 		   OppositeSides(x1, y1, x2, y2, wr.hiLong, wr.loLat, wr.hiLong, wr.hiLat);
 }
-
+ 
 void ClipSegmentToSegment(long *x1, long *y1, long *x2, long *y2,
 						  long X1, long Y1, long X2, long Y2,
 						  Boolean modifyFirstPoint, Boolean *touches)
@@ -197,7 +198,6 @@ double Compute2x2Determinant(double m[2][2])
 	return m[0][0] * m[1][1] - m[0][1] * m[1][0];
 }
 ////////////////////////////////////////////////////////////// SEGMENTS <-> WPOINTS
-#ifndef pyGNOME
 WORLDPOINTH SegmentsToWPoints(SEGMENTH segments, long numSegs, WorldRect *wr)
 {
 	Boolean completedLoop = FALSE;
@@ -249,7 +249,8 @@ WORLDPOINTH SegmentsToWPoints(SEGMENTH segments, long numSegs, WorldRect *wr)
 	
 	return wPoints;
 }
-#endif
+*/
+#ifndef pyGNOME
 SEGMENTH WPointsToSegments(WORLDPOINTH wPoints, long numPoints, long *numSegs)
 {
 	long i, j;
@@ -276,8 +277,9 @@ SEGMENTH WPointsToSegments(WORLDPOINTH wPoints, long numPoints, long *numSegs)
 	
 	return segments;
 }
+#endif
 
-PointH SegmentsToPointTypes(SEGMENTH segments, long numSegs, long *numPoints)
+/*PointH SegmentsToPointTypes(SEGMENTH segments, long numSegs, long *numPoints)
 {
 	Boolean completedLoop = FALSE;
 	long i, n, pieceStartLong = -1, pieceStartLat = -1;
@@ -372,17 +374,17 @@ Boolean HaveCoincidentSegments(SEGMENTH a, SEGMENTH b)
 	
 	return FALSE;
 }
-
+*/
+#ifndef pyGNOME
 void ExchangeSegs(SEGMENTH S, long a, long b)
 {
 	long i;
 	Segment m;
 	
-	/* old way
-	m = INDEXH(S, a);
-	INDEXH(S, a) = INDEXH(S, b);
-	INDEXH(S, b) = m;
-	*/
+	// old way
+	//m = INDEXH(S, a);
+	//INDEXH(S, a) = INDEXH(S, b);
+	//INDEXH(S, b) = m;
 	
 	// new way
 	
@@ -486,7 +488,8 @@ void SortSegments(SEGMENTH S, long numSegs)
 		}
 	}
 }
-
+#endif
+/*
 OSErr DeleteSegment(SEGMENTH *segments, long *numSegs, long i)
 {
 	for ( ; i < ((*numSegs) - 1) ; i++)
@@ -499,7 +502,8 @@ OSErr DeleteSegment(SEGMENTH *segments, long *numSegs, long i)
 	
 	return 0;
 }
-
+*/
+#ifndef pyGNOME
 OSErr InsertSegment(SEGMENTH *segments, long *numSegs, long index, WorldPoint m)
 {
 	long i;
@@ -511,13 +515,12 @@ OSErr InsertSegment(SEGMENTH *segments, long *numSegs, long index, WorldPoint m)
 	_SetHandleSize((Handle)*segments, ((*numSegs) + 1) * sizeof(Segment));
 	if (_MemError()) { TechError("AddSegment()", "_SetHandleSize()", 0); return -1; }
 	
-	/* old way: insert at end
-	INDEXH(*segments, *numSegs) = INDEXH(*segments, index);
-	INDEXH(*segments, index).toLong = m.pLong;
-	INDEXH(*segments, index).toLat = m.pLat;
-	INDEXH(*segments, *numSegs).fromLong = m.pLong;
-	INDEXH(*segments, *numSegs).fromLat = m.pLat;
-	*/
+	// old way: insert at end
+	//INDEXH(*segments, *numSegs) = INDEXH(*segments, index);
+	//INDEXH(*segments, index).toLong = m.pLong;
+	//INDEXH(*segments, index).toLat = m.pLat;
+	//INDEXH(*segments, *numSegs).fromLong = m.pLong;
+	//INDEXH(*segments, *numSegs).fromLat = m.pLat;
 	
 	(*numSegs)++;
 	
@@ -543,7 +546,8 @@ OSErr AddSegment(SEGMENTH *segments, long *numSegs, Segment s)
 	
 	return 0;
 }
-
+#endif
+/*
 OSErr AddSegmentI(SEGMENTH *segments, long *numSegs, Segment s, long i)
 {
 	long j;
@@ -560,7 +564,6 @@ OSErr AddSegmentI(SEGMENTH *segments, long *numSegs, Segment s, long i)
 	return 0;
 }
 
-/*
 OSErr RemoveCommonSegments(SEGMENTH *P, long *numSegsP, SEGMENTH *Q, long *numSegsQ)
 {
 	long i, j, err;
@@ -576,7 +579,7 @@ OSErr RemoveCommonSegments(SEGMENTH *P, long *numSegsP, SEGMENTH *Q, long *numSe
 	
 	return 0;
 }
-*/
+
 
 OSErr CompletePolygonIslands(SEGMENTH *P, long *numSegs)
 {
@@ -652,8 +655,8 @@ SEGMENTH NextPolygonPiece(SEGMENTH segments, long numSegs,
 		INDEXH(S, j) = INDEXH(segments, i);
 	
 	return S;
-}
-
+}*/
+#ifndef pyGNOME
 SEGMENTH CombinePolygonPieces(SEGMENTH *A1, SEGMENTH *B1,
 							  Boolean keepAinB, Boolean keepAnotinB,
 							  Boolean keepBinA, Boolean keepBnotinA)
@@ -713,7 +716,8 @@ SEGMENTH CombinePolygonPieces(SEGMENTH *A1, SEGMENTH *B1,
 		
 		return err ? 0 : C;
 }
-
+#endif
+/*
 SEGMENTH UnionPolygons(SEGMENTH *P, SEGMENTH *Q, Boolean *appended)
 {
 	SEGMENTH total;
@@ -734,19 +738,19 @@ SEGMENTH UnionPolygons(SEGMENTH *P, SEGMENTH *Q, Boolean *appended)
 	}
 	
 	return CombinePolygonPieces(P, Q, FALSE, TRUE, FALSE, TRUE);
-}
-
+}*/
+#ifndef pyGNOME
 SEGMENTH IntersectPolygons(SEGMENTH *P, SEGMENTH *Q)
 {
 	return CombinePolygonPieces(P, Q, TRUE, FALSE, TRUE, FALSE);
 }
-
-SEGMENTH DifferencePolygons(SEGMENTH *P, SEGMENTH *Q)
+#endif
+/*SEGMENTH DifferencePolygons(SEGMENTH *P, SEGMENTH *Q)
 {
 	return CombinePolygonPieces(P, Q, FALSE, TRUE, TRUE, FALSE);
 }
 
-/*
+
 
 // NOTE: This function modifies P and Q (only by completing their islands).
 
@@ -866,7 +870,7 @@ SEGMENTH UnionPolygons(SEGMENTH *P, SEGMENTH *Q)
 		
 		return err ? 0 : total;
 }
-*/
+
 
 ////////////////////////////////////////////////////////////// ENVELOPES
 
@@ -1114,4 +1118,4 @@ SEGMENTH ComputeEnvelope(SEGMENTH segments, float radius)
 		if (circleB) DisposeHandle((Handle)circleB);
 		
 		return total;
-}
+}*/

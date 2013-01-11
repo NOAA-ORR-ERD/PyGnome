@@ -127,7 +127,7 @@ public:
 	 TMap*				GetMap(ClassID desiredClassID);
 	 TLEList*			GetMirroredLEList(TLEList* owner);
 	 TLEList*			GetLEListOwner(TLEList* mirroredLEList);
-	 long				GetNumMovers(char* moverName);
+	 long				GetNumMovers(ClassID desiredClassID);
 	 long				GetNumWindMovers();	
 	 TWindMover*			GetWindMover(Boolean createIfDoesNotExist);
 	 Boolean				ThereIsA3DMover(float *arrowDepth);

@@ -1,20 +1,48 @@
+import cython
 cimport numpy as np
 import numpy as np
 
-
 from type_defs cimport *
-from movers cimport NetCDFMover_c
+from movers cimport GridCurrentMover_c
+from movers cimport TimeGridVel_c
+from movers cimport TimeGridVelRect_c
+from movers cimport TimeGridVelCurv_c
 
-cdef class Cy_netcdf_mover:
+cdef class CyGridCurrentMover:
 
-    cdef NetCDFMover_c *mover
+    cdef GridCurrentMover_c *mover
     
     def __cinit__(self):
-        self.mover = new NetCDFMover_c()
+        self.mover = new GridCurrentMover_c()
     
     def __dealloc__(self):
         del self.mover
     
+#     def set_time_grid(self, time_grid_file, topology_file):
+#         self.mover.fIsOptimizedForStep = 0
+#         #cdef TimeGridVel_c *time_grid
+#         cdef TimeGridVelCurv_c *time_grid
+#         time_grid = new TimeGridVelCurv_c()
+#         #time_grid = new TimeGridVel_c()
+#         if (time_grid.TextRead(time_grid_file, topology_file) == -1):
+#             return False
+#         self.mover.SetTimeGrid(time_grid)
+#         return True
+            
+
+    def text_read(self, time_grid_file, topology_file):
+        """
+        .. function::text_read
+        
+        """
+        cdef OSErr err
+        err = self.mover.TextRead(time_grid_file, topology_file)
+        if err != 0:
+            """
+            For now just raise an OSError - until the types of possible errors are defined and enumerated
+            """
+            raise OSError("GridCurrentMover_c.TextRead returned an error.")
+
     def __init__(self):
         self.mover.fIsOptimizedForStep = 0
 
@@ -44,7 +72,7 @@ cdef class Cy_netcdf_mover:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
             """
-            raise OSError("NetCDFMover_c.PrepareForModelStep returned an error.")
+            raise OSError("GridCurrentMover_c.PrepareForModelStep returned an error.")
 
     def get_move(self, 
                  model_time, 
@@ -64,7 +92,7 @@ cdef class Cy_netcdf_mover:
                  LE_type,
                  spill_ID)
                  
-        Invokes the underlying C++ NetCDFMover_c.get_move(...)
+        Invokes the underlying C++ GridCurrentMover_c.get_move(...)
         
         :param model_time: current model time
         :param step_len: step length over which delta is computed

@@ -3,11 +3,11 @@
 Units used in GNOME / PyGNOME
 ===========================
 
-GNOME is a model of physical proceses, and thus most of the thigns computed are in various physical units.
+GNOME is a model of physical processes, and thus most of the things computed are in various physical units.
 
-to keep things clean, the internal computational code is all handled in a consitent set of units.
+to keep things clean, the internal computational code is all handled in a consistent set of units.
 
-conversion is done on I/O or ocastionally within in a class (i.e the class may store data in the units the user gave, but return values in the standard unit to other parts of the code) So unless otherwise noted, pass data into methods in the following standard units:
+conversion is done on I/O or occasionally within a class (i.e the class may store data in the units the user gave, but return values in the standard unit to other parts of the code) So unless otherwise noted, pass data into methods in the following standard units:
 
 Time
     Time is expressed in floating point seconds -- stored in a C ``unsigned long``

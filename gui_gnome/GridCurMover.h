@@ -11,7 +11,7 @@
 #include "PtCurMover.h"
 #include "TWindMover.h"
 
-Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
+//Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
 
 class GridCurMover : virtual public GridCurMover_c,  public TCATSMover
 {

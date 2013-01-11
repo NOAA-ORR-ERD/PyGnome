@@ -412,6 +412,12 @@ typedef struct {
 
 //++ Geometry
 
+typedef struct LongPoint
+{
+	long 					h;
+	long 					v;
+} LongPoint, *LongPointPtr, **LongPointHdl;
+
 #ifndef pyGNOME
 typedef struct {
 	long pLong;
@@ -670,6 +676,7 @@ typedef struct
 #define CONSTANTCURRENT 0
 #define CONSTANTWIND 0
 
+enum { REGULAR=1, REGULAR_SWAFS, CURVILINEAR, TRIANGULAR, REGRIDDED};	// maybe eliminate regridded option
 enum {TWO_D=1, BAROTROPIC, SIGMA, MULTILAYER, SIGMA_ROMS};	// gridtypes
 
 enum {

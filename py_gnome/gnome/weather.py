@@ -37,6 +37,9 @@ class Wind(object):
             raise ValueError("Either provide timeseries or a valid long file")
         
         if( timeseries is not None):
+            if units is None:
+                raise ValueError("Provide valid units as string or unicode for timeseries")
+            
             self._check_timeseries(timeseries, units)
             
             timeseries['value'] = self._convert_units(timeseries['value'], data_format, units, 'meter per second')
@@ -116,18 +119,18 @@ class Wind(object):
         that was entered is returned. If datetime is a list containing datetime objects, then the
         wind value for each of those date times is determined by the underlying CyOSSMTime object and
         the timeseries is returned.  
-        
+
         The output data_format is defined by the basic_types.data_format
-        
+
         :param datetime: [optional] datetime object or list of datetime objects for which the value is desired
         :type datetime: datetime object
         :param units: [optional] outputs data in these units. Default is to output data in user_units
         :type units: string. Uses the hazpy.unit_conversion module
         :param data_format: output format for the times series; as defined by basic_types.data_format.
         :type data_format: integer value defined by basic_types.data_format.* (see cy_basic_types.pyx)
+
         :returns: numpy array containing dtype=basic_types.datetime_value_2d. Contains user specified datetime
-        and the corresponding values in user specified data_format
-        :param units: optional parameter for desired output units
+            and the corresponding values in user specified data_format
         """
         if datetime is None:
             datetimeval = convert.to_datetime_value_2d(self.ossm.timeseries, data_format)

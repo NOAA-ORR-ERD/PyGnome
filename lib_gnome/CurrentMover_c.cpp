@@ -24,7 +24,30 @@
 extern TModel *model;
 #endif
 
+#ifndef pyGNOME
 CurrentMover_c::CurrentMover_c (TMap *owner, char *name) : Mover_c(owner, name)
+{
+	// set fields of our base class
+	fDuration=48*3600; //48 hrs as seconds 
+	fUncertainStartTime = 0;
+	fTimeUncertaintyWasSet = 0;
+	
+	fDownCurUncertainty = -.3;  // 30%
+	fUpCurUncertainty = .3; 	
+	fRightCurUncertainty = .1;  // 10%
+	fLeftCurUncertainty= -.1; 
+	
+	fLESetSizesH = 0;
+	fUncertaintyListH = 0;
+	
+	bIAmPartOfACompoundMover = false;
+	bIAmA3DMover = false;
+	
+	bIsFirstStep = false;
+	fModelStartTime = 0;
+}
+#endif
+CurrentMover_c::CurrentMover_c () : Mover_c()
 {
 	// set fields of our base class
 	fDuration=48*3600; //48 hrs as seconds 

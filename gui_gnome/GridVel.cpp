@@ -76,7 +76,7 @@ Boolean IsGridCurFile(char *path)
 	return bIsValid;
 }
 
-Boolean IsGridWindFile(char *path,short *selectedUnitsP)
+/*Boolean IsGridWindFile(char *path,short *selectedUnitsP)
 {
 
 	Boolean	bIsValid = false;
@@ -115,7 +115,7 @@ done:
 		*selectedUnitsP = selectedUnits;
 	}
 	return bIsValid;
-}
+}*/
 
 Boolean IsOssmCurFile(char *path)
 {
@@ -178,204 +178,6 @@ Boolean IsTriGridFile (char *path)
 			bIsValid = true;
 	}
 	
-	return bIsValid;
-}
-
-/////////////////////////////////////////////////
-
-Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType)
-{
-	// NOTE!! if the input variable path does point to a NetCDFPaths file, 
-	// the input variable is overwritten with the path to the first NetCDF file.
-	// The original input value of path is copied to fileNamesPath in such a case.
-	// If the input vatiable does not point to a NetCDFPaths file, the input path is left unchanged.
-	Boolean	bIsValid = false;
-	OSErr	err = noErr;
-	long line = 0;
-	char	strLine [512];
-	char	firstPartOfFile [512], classicPath[256];
-	long lenToRead,fileLength;
-	char *key;
-	
-	*isNetCDFPathsFile = false;
-	
-	err = MyGetFileSize(0,0,path,&fileLength);
-	if(err) return false;
-	
-	lenToRead = _min(512,fileLength);
-	
-	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
-	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
-
-	if(err) {
-		// should we report the file i/o err to the user here ?
-		return false;
-	}
-
-	// must start with "NetCDF Files"
-	NthLineInTextNonOptimized (firstPartOfFile, line++, strLine, 512);
-	RemoveLeadingAndTrailingWhiteSpace(strLine);
-	key = "NetCDF Files";
-	if (strncmpnocase (strLine, key, strlen(key)) != 0)
-		return false;
-
-	// next line must be "[FILE] <path>"
-	NthLineInTextNonOptimized(firstPartOfFile, line++, strLine, 512); 
-	RemoveLeadingAndTrailingWhiteSpace(strLine);
-	key = "[FILE]";
-	if (strncmpnocase (strLine, key, strlen(key)) != 0)
-		return false;
-
-	strcpy(fileNamesPath,path); // transfer the input path to this output variable
-
-	strcpy(path,strLine+strlen(key)); // this is overwriting the input variable (see NOTE above)
-	RemoveLeadingAndTrailingWhiteSpace(path);
-	ResolvePathFromInputFile(fileNamesPath,path); // JLM 6/8/10
-
-	if(!FileExists(0,0,path)){
-		// tell the user the file does not exist
-		printError("FileExists returned false for the first path listed in the IsNetCDFPathsFile.");
-		return false;
-	}
-	
-	bIsValid = IsNetCDFFile (path, gridType);
-	if (bIsValid) *isNetCDFPathsFile = true;
-	else{
-		// tell the user this is not a NetCDF file
-		printError("IsNetCDFFile returned false for the first path listed in the IsNetCDFPathsFile.");
-		return false;
-	}
-
-	return bIsValid;
-}
-
-/////////////////////////////////////////////////
-
-Boolean IsNetCDFFile (char *path, short *gridType)	
-{
-	// separate into IsNetCDFFile and GetGridType
-	Boolean	bIsValid = false;
-	OSErr err = noErr;
-	long line;
-	char strLine [512], outPath[256];
-	char firstPartOfFile [512], *modelTypeStr=0, *gridTypeStr=0, *sourceStr=0/*, *historyStr=0*/;
-	long lenToRead,fileLength;
-	int status, ncid;
-	size_t t_len, t_len2;
-	
-	err = MyGetFileSize(0,0,path,&fileLength);
-	if(err) return false;
-	
-	lenToRead = _min(512,fileLength);
-	
-	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
-	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
-	if (!err)
-	{	// must start with "CDF
-		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 512);
-		if (!strncmp (firstPartOfFile, "CDF", 3))
-			bIsValid = true;
-	}
-	
-	if (!bIsValid) return false;
-
-	// need a global attribute to identify grid type - this won't work for non Navy regular grid
-	status = nc_open(path, NC_NOWRITE, &ncid);
-	if (status != NC_NOERR) /*{*gridType = CURVILINEAR; goto done;}*/	// this should probably be an error
-	{
-#if TARGET_API_MAC_CARBON
-		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
-			status = nc_open(outPath, NC_NOWRITE, &ncid);
-#endif
-		//if (status != NC_NOERR) {*gridType = CURVILINEAR; goto done;}	// this should probably be an error
-		if (status != NC_NOERR) {*gridType = REGULAR; goto done;}	// this should probably be an error - change default to regular 1/29/09
-	}
-	//OSStatus strcpyFileSystemRepresentationFromClassicPath(char *nativePath, char * classicPath, long nativePathMaxLength )
-	//if (status != NC_NOERR) {*gridType = CURVILINEAR; goto done;}	// this should probably be an error
-
-	status = nc_inq_attlen(ncid,NC_GLOBAL,"grid_type",&t_len2);
-	if (status == NC_NOERR) /*{*gridType = CURVILINEAR; goto done;}*/
-	{
-		gridTypeStr = new char[t_len2+1];
-		status = nc_get_att_text(ncid, NC_GLOBAL, "grid_type", gridTypeStr);
-		//if (status != NC_NOERR) {*gridType = CURVILINEAR; goto done;} 
-		if (status != NC_NOERR) {*gridType = REGULAR; goto done;} 
-		gridTypeStr[t_len2] = '\0';
-		
-		//if (!strncmpnocase (gridTypeStr, "REGULAR", 7) || !strncmpnocase (gridTypeStr, "UNIFORM", 7) || !strncmpnocase (gridTypeStr, "RECTANGULAR", 11))
-		if (!strncmpnocase (gridTypeStr, "REGULAR", 7) || !strncmpnocase (gridTypeStr, "UNIFORM", 7) || !strncmpnocase (gridTypeStr, "RECTANGULAR", 11) /*|| !strncmpnocase (gridTypeStr, "RECTILINEAR", 11)*/)
-		// note CO-OPS uses rectilinear but they have all the data for curvilinear so don't add the grid type
-		{
-			 *gridType = REGULAR;
-			 goto done;
-		}
-		if (!strncmpnocase (gridTypeStr, "CURVILINEAR", 11) || !strncmpnocase (gridTypeStr, "RECTILINEAR", 11) || strstrnocase(gridTypeStr,"curv"))// "Rectilinear" is what CO-OPS uses, not one of our keywords. Their data is in curvilinear format. NYHOPS uses "Orthogonal Curv Grid"
-		{
-			 *gridType = CURVILINEAR;
-			 goto done;
-		}
-		if (!strncmpnocase (gridTypeStr, "TRIANGULAR", 10))
-		{
-			 *gridType = TRIANGULAR;
-			 goto done;
-		}
-	}
-	else	// for now don't require global grid identifier since LAS files don't have it
-	{
-		status = nc_inq_attlen(ncid,NC_GLOBAL,"source",&t_len2);	// for HF Radar use source since no grid_type global
-		if (status == NC_NOERR) 
-		{
-			sourceStr = new char[t_len2+1];
-			status = nc_get_att_text(ncid, NC_GLOBAL, "source", sourceStr);
-			if (status != NC_NOERR) { } 
-			else
-			{
-				sourceStr[t_len2] = '\0';			
-				if (!strncmpnocase (sourceStr, "Surface Ocean HF-Radar", 22)) { *gridType = REGULAR; goto done;}
-			}
-		}
-		/*status = nc_inq_attlen(ncid,NC_GLOBAL,"history",&t_len2);	// LAS uses ferret, would also need to check for coordinate variable...
-		if (status == NC_NOERR) 
-		{
-			historyStr = new char[t_len2+1];
-			status = nc_get_att_text(ncid, NC_GLOBAL, "history", historyStr);
-			if (status != NC_NOERR) { } 
-			else
-			{
-				sourceStr[t_len2] = '\0';			
-				if (strstrnocase (historyStr, "ferret") { *gridType = REGULAR; goto done;}	// could be curvilinear - maybe a ferret flag??
-			}
-		}*/
-	}
-	status = nc_inq_attlen(ncid,NC_GLOBAL,"generating_model",&t_len);
-	if (status != NC_NOERR) {
-		status = nc_inq_attlen(ncid,NC_GLOBAL,"generator",&t_len);
-		//if (status != NC_NOERR) {*gridType = CURVILINEAR; goto done;}}
-		if (status != NC_NOERR) {*gridType = REGULAR; goto done;}}	// changed default to REGULAR 1/29/09
-	modelTypeStr = new char[t_len+1];
-	status = nc_get_att_text(ncid, NC_GLOBAL, "generating_model", modelTypeStr);
-	if (status != NC_NOERR) {
-		status = nc_get_att_text(ncid, NC_GLOBAL, "generator", modelTypeStr);
-		//if (status != NC_NOERR) {*gridType = CURVILINEAR; goto done;} }
-		if (status != NC_NOERR) {*gridType = REGULAR; goto done;} }	// changed default to REGULAR 1/29/09
-	modelTypeStr[t_len] = '\0';
-	
-	if (!strncmp (modelTypeStr, "SWAFS", 5))
-		 *gridType = REGULAR_SWAFS;
-	//else if (!strncmp (modelTypeStr, "NCOM", 4))
-	else if (strstr (modelTypeStr, "NCOM"))	// Global NCOM
-		 *gridType = REGULAR;
-	//else if (!strncmp (modelTypeStr, "fictitious test data", strlen("fictitious test data")))
-		//*gridType = CURVILINEAR;	// for now, should have overall Navy identifier
-	else
-		 //*gridType = CURVILINEAR;
-		 *gridType = REGULAR; // change default to REGULAR - 1/29/09
-
-done:
-	if (modelTypeStr) delete [] modelTypeStr;	
-	if (gridTypeStr) delete [] gridTypeStr;	
-	if (sourceStr) delete [] sourceStr;	
-	//if (historyStr) delete [] historyStr;	
 	return bIsValid;
 }
 

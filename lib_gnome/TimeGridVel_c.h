@@ -15,6 +15,7 @@
 #include "ExportSymbols.h"
 #include "DagTree.h"
 #include "DagTreeIO.h"
+#include "my_build_list.h"
 
 #ifndef pyGNOME
 #include "GridVel.h"
@@ -34,6 +35,11 @@ typedef struct {
 	//
 } TimeGridVariables;
 
+Boolean IsNetCDFFile (char *path, short *gridType);
+Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType);
+Boolean IsPtCurFile (char *path);
+Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
+Boolean IsGridWindFile(char *path,short *selectedUnits);
 class TimeGridVel_c
 {
 public:
@@ -53,6 +59,8 @@ public:
 	PtCurFileInfoH	fInputFilesHdl;
 	long fTimeShift;		// to convert GMT to local time
 	Boolean fAllowExtrapolationInTime;
+	
+	WorldRect fGridBounds;
 
 
 	TimeGridVel_c (/*TMover *owner, char *name*/);	// do we need an owner? or a name
@@ -68,7 +76,10 @@ public:
 	virtual LongPoint 	GetVelocityIndices(WorldPoint wp);
 	virtual VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p) {VelocityRec vRec = {0,.0,}; return vRec;}
 	
-	virtual WorldRect GetGridBounds(){return fGrid->GetBounds();}	
+	//virtual WorldRect GetGridBounds(){return fGrid->GetBounds();}	
+	//virtual void SetGridBounds(WorldRect gridBounds){return fGrid->SetBounds(gridBounds);}	
+	virtual WorldRect GetGridBounds(){return fGridBounds;}	
+	virtual void SetGridBounds(WorldRect gridBounds){fGridBounds = gridBounds;}	
 	virtual Seconds 		GetStartTimeValue(long index);
 	virtual Seconds 		GetTimeValue(long index);
 	virtual OSErr		GetStartTime(Seconds *startTime);
@@ -87,6 +98,8 @@ public:
 	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	
 	virtual OSErr		TextRead(char *path,char *topFilePath) {return 0;}
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) {return 0;}
+	OSErr 				ReadInputFileNames(char *fileNamesPath);
+	//void				SetInputFilesHdl(PtCurFileInfoH inputFilesHdl) {if (fInputFilesHdl) {DisposeHandle((Handle)fInputFilesHdl)} fInputFilesHdl = inputFilesHdl;}
 
 	virtual void		DisposeTimeHdl();
 	void 				DisposeLoadedData(LoadedData * dataPtr);	
@@ -144,7 +157,7 @@ public:
 	
 	LONGH fVerdatToNetCDFH;	// for curvilinear
 	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
-	Boolean bIsCOOPSWaterMask;
+	Boolean bVelocitiesOnNodes;		// default is velocities on cells
 
 	//virtual	~TimeGridVelCurv_c() { Dispose (); }
 	
@@ -172,6 +185,7 @@ public:
 	float		GetTotalDepthFromTriIndex(long triIndex);
 	float		GetTotalDepth(WorldPoint refPoint,long ptIndex);
 	
+	virtual	OSErr 	ReadTopology(char* path);
 	//virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
 	//virtual	OSErr 	ExportTopology(char* path);
 };
@@ -204,10 +218,12 @@ public:
 	virtual long			GetNumDepthLevels();
 	float					GetTotalDepth(WorldPoint refPoint, long triNum);
 	
+	virtual	OSErr 	ReadTopology(char* path);
 	//virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
 	//virtual	OSErr 	ExportTopology(char* path);
 };
 
+//#ifndef pyGNOME
 class TimeGridCurRect_c : virtual public TimeGridVel_c
 {
 public:
@@ -231,7 +247,6 @@ public:
 	virtual long		GetNumTimesInFile();
 	OSErr				ReadHeaderLines(char *path, WorldRect *bounds);
 	OSErr			ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile);
-	
 	virtual void		DisposeTimeHdl();
 	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	
 	virtual OSErr		GetStartTime(Seconds *startTime);	// switch this to GetTimeValue
@@ -311,5 +326,37 @@ public:
 	
 	OSErr 				ReorderPoints(char* errmsg); 
 	OSErr				GetLatLonFromIndex(long iIndex, long jIndex, WorldPoint *wp);
+
+	virtual	OSErr 	ReadTopology(char* path);
 };
+/*class TimeGridWindRectASCII_c : virtual public TimeGridVel_c
+{
+public:
+	// code goes here, build off of TimeGridCurRect_c ??
+	PtCurTimeDataHdl fTimeDataHdl;	
+	short fUserUnits;
+	
+	TimeGridWindRectASCII_c();
+	//virtual	~TimeGridCurRect_c() { Dispose (); }
+	
+	//virtual void	Dispose() { return; }
+	
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDRECTASCII; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDRECTASCII) return TRUE; return TimeGridVel_c::IAm(id); }
+	
+	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
+	
+	virtual OSErr		TextRead(char *path,char *topFilePath);
+	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
+	//virtual OSErr		ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataH,Boolean setStartTime);
+	virtual long		GetNumTimesInFile();
+	OSErr				ReadHeaderLines(char *path, WorldRect *bounds);
+	OSErr			ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile);
+	virtual void		DisposeTimeHdl();
+	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	
+	virtual OSErr		GetStartTime(Seconds *startTime);	// switch this to GetTimeValue
+	virtual OSErr		GetEndTime(Seconds *endTime);
+};*/
+
+//#endif	
 #endif

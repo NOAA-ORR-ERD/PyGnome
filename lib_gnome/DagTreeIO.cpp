@@ -667,6 +667,44 @@ checkTriPts:
 }
 
 /////////////////////////////////////////////////
+Boolean IsPtCurVerticesHeaderLine(char *s, long* numPts, long* numLandPts)
+{
+	char* token = strtok(s,PTCUR_DELIM_STR);
+	*numPts = 0;
+	*numLandPts = 0;	
+	if(!token || strncmpnocase(token,"VERTICES",strlen("VERTICES")) != 0)
+	{
+		return FALSE;
+	}
+	
+	token = strtok(NULL,PTCUR_DELIM_STR);
+	
+	if(!token || sscanf(token,"%ld",numPts) != 1)
+	{
+		return FALSE;
+	}
+	
+	token = strtok(NULL,PTCUR_DELIM_STR);
+	
+	if(!token || sscanf(token,"%ld",numLandPts) != 1)
+	{
+		//return FALSE;
+		*numLandPts = 0;	// don't require
+	}
+	return TRUE;
+	
+	/*char* strToMatch = "VERTICES";
+	 long numScanned, len = strlen(strToMatch);
+	 if(!strncmpnocase(s,strToMatch,len)) {
+	 numScanned = sscanf(s+len+1,"%ld",numPts);
+	 if (numScanned != 1 || *numPts <= 0.0)
+	 return FALSE; 
+	 }
+	 else
+	 return FALSE;
+	 return TRUE; */
+}
+
 /////////////////////////////////////////////////////////////////
 Boolean IsWaterBoundaryHeaderLine(char *s, long* numWaterBoundaries, long* numBoundaryPts)
 {	
@@ -826,3 +864,49 @@ done:
 	return err;		
 
 }
+Boolean IsTransposeArrayHeaderLine(char *s, long* numPts)
+{		
+	char* strToMatch = "TransposeArray";
+	long numScanned, len = strlen(strToMatch);
+	if(!strncmpnocase(s,strToMatch,len)) {
+		numScanned = sscanf(s+len+1,"%ld",numPts);
+		if (numScanned != 1 || *numPts <= 0)
+			return FALSE; 
+	}
+	else
+		return FALSE;
+	return TRUE; 
+}
+OSErr ReadTransposeArray(CHARH fileBufH,long *line,LONGH *transposeArray,long numPts,char* errmsg)
+// Note: '*line' must contain the line# at which the vertex data begins
+{ // May want to combine this with read vertices if it becomes a mandatory component of PtCur files
+	OSErr err=0;
+	char s[64];
+	long i,numScanned,index;
+	LONGH verdatToNetCDFH = 0;
+	
+	strcpy(errmsg,""); // clear it
+	
+	verdatToNetCDFH = (LONGH)_NewHandle(sizeof(long)*numPts);
+	if(!verdatToNetCDFH){TechError("ReadTransposeArray()", "_NewHandle()", 0); err = memFullErr; goto done;}
+	
+	for(i=0;i<numPts;i++)
+	{
+		NthLineInTextOptimized(*fileBufH, (*line)++, s, 64); 
+		numScanned=sscanf(s,"%ld",&index) ;
+		if (numScanned!= 1)
+		{ err = -1; TechError("ReadTransposeArray()", "sscanf() == 1", 0); goto done; }
+		(*verdatToNetCDFH)[i] = index;
+	}
+	*transposeArray = verdatToNetCDFH;
+	
+done:
+	
+	if(err) 
+	{
+		if(verdatToNetCDFH) {DisposeHandle((Handle)verdatToNetCDFH); verdatToNetCDFH=0;}
+	}
+	return err;		
+	
+}
+

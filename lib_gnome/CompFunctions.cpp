@@ -535,3 +535,293 @@ Boolean EqualUniqueIDs(UNIQUEID uid,UNIQUEID uid2)
 	if(uid.ticksAtCreation != uid2.ticksAtCreation) return false;
 	return true;
 }
+
+
+/**************************************************************************************************/
+OSErr ScanDepth (char *startChar, double *DepthPtr)
+{	// expects a single depth value 
+	long	j, k;
+	char	num [64];
+	OSErr	err = 0;
+	
+	j = 0;	/* index into supplied string */
+	
+	Boolean keepGoing = true;
+	for (k = 0 ; keepGoing; j++)
+	{	   			
+		switch(startChar[j])
+		{
+			case 0: // end of string
+				keepGoing = false;
+				break;
+			case '.':
+				num[k++] = startChar[j];
+				break;
+			case '-': // depths can't be negative but -1 is end of data flag
+			case '0': case '1': case '2': case '3': case '4':
+			case '5': case '6': case '7': case '8': case '9':
+				num[k++] = startChar[j];
+				if(k>=32) // end of number not found
+				{
+					err = -1;
+					return err;
+				}
+				break;
+			case ' ':
+			case '\t': // white space
+				if(k == 0) continue; // ignore leading white space
+				while(startChar[j+1] == ' ' || startChar[j+1] == '\t') j++; // move past any additional whitespace chars
+				keepGoing = false;
+				break;
+			default:
+				err = -1;
+				return err;
+				break;
+		}
+	}
+	
+	num[k++] = 0;									/* terminate the number-string */
+	
+	*DepthPtr = atof(num);
+	///////////////
+	
+	return err;
+	
+}
+/**************************************************************************************************/
+OSErr ScanMatrixPt (char *startChar, LongPoint *MatrixLPtPtr)
+{	// expects a number of the form 
+	// <number><comma><number>
+	//e.g.  "-120.2345,40.345"
+	// JLM, 2/26/99 extended to handle
+	// <number><whiteSpace><number>
+	long	deciPlaces, j, k, pairIndex;
+	char	num [64];
+	OSErr	ErrCode = 0;
+	char errStr[256]="";
+	char delimiterChar = ',';
+	
+	j = 0;	/* index into supplied string */
+	
+	for (pairIndex = 1; pairIndex <= 2 && !ErrCode; ++pairIndex)
+	{
+		/* first convert the longitude */
+		Boolean keepGoing = true;
+		for (deciPlaces = -1, k = 0 ; keepGoing; j++)
+		{	   			
+			switch(startChar[j])
+			{
+				case ',': // delimiter
+				case 0: // end of string
+					keepGoing = false;
+					break;
+				case '.':
+					if(deciPlaces != -1)
+					{
+						strcpy(errStr,"Improper format err: two decimal place chars in same number");
+						ErrCode = -4; // to many numbers before the decimal place
+						keepGoing = false;
+					}
+					deciPlaces = 0;		// decimal point encountered 
+					break;
+				case '-':// number
+				case '0': case '1': case '2': case '3': case '4':
+				case '5': case '6': case '7': case '8': case '9':
+					if (deciPlaces != -1)// if decimal has been found, keep track of places 
+						++deciPlaces;
+					if (deciPlaces <= kNumDeciPlaces)// don't copy more than 6 decimal place characters 
+					{
+						num[k++] = startChar[j];
+						if(k>=20) 
+						{
+							if(deciPlaces == -1) 
+							{	// still have not found the decimal place
+								strcpy(errStr,"Improper format err: too many decimals before decimal place");
+								ErrCode = -3; // to many numbers before the decimal place
+							}
+							keepGoing = false; // stop at 20
+						}
+					}
+					break;
+				case ' ':
+				case '\t': // white space
+					if(k == 0) continue;// ignore leading white space
+					while(startChar[j+1] == ' ' || startChar[j+1] == '\t') j++;// movepass any addional whitespace chars
+					if(startChar[j+1] == ',') j++; // it was <whitespace><comma>, use the comma as the delimiter
+					// we have either found a comma or will use the white space as a delimiter
+					// in either case we stop this loop
+					keepGoing = false;
+					break;
+				default:
+					strcpy(errStr,"Improper format err: unexpected char");
+					ErrCode = -1;
+					keepGoing = false;
+					break;
+			}
+		}
+		
+		if(ErrCode) break; // so we break out of the main loop
+		
+		if (deciPlaces < kNumDeciPlaces)
+		{
+			if (deciPlaces == -1)						/* if decimal point was not encountered */
+				deciPlaces = 0;
+			
+			do
+			{
+				num[k++] = '0';
+				++deciPlaces;
+			}
+			while (deciPlaces < kNumDeciPlaces);
+		}
+		
+		num[k++] = 0;									/* terminate the number-string */
+		
+		if (pairIndex == 1)
+		{
+			MatrixLPtPtr -> h = atol(num);
+			
+			if (startChar[j] == ',')					/* increment j past the comma to next coordinate */
+			{
+				++j;
+				delimiterChar = ','; // JLM reset the dilimiter char
+			}
+		}
+		else
+			MatrixLPtPtr -> v = atol(num);
+	}
+	///////////////
+	
+	if(ErrCode)
+	{	//JLM
+		char tempStr[68];
+		strcat(errStr,NEWLINESTRING);
+		strcat(errStr,"Expected  <number><comma or white space><number>");
+		strcat(errStr,NEWLINESTRING);
+		strcat(errStr,"Offending line:");
+		strcat(errStr,NEWLINESTRING);
+		// append the first part of the string to the error message
+		strncpy(tempStr,startChar,60);
+		tempStr[60] = 0;
+		if(strlen(tempStr) > 50)
+		{
+			tempStr[50] = 0;
+			strcat(tempStr,"...");
+		}
+		strcat(errStr,tempStr);
+		printError(errStr);
+	}
+	
+	return (ErrCode);
+	
+}
+/**************************************************************************************************/
+OSErr ScanVelocity (char *startChar, VelocityRec *VelocityPtr, long *scanLength)
+{	// expects a number of the form 
+	// <number><comma><number>
+	//e.g.  "-120.2345,40.345"
+	// JLM, 2/26/99 extended to handle
+	// <number><whiteSpace><number>
+	long	j, k, pairIndex;
+	char	num [64];
+	OSErr	err = 0;
+	char delimiterChar = ',';
+	Boolean scientificNotation = false;
+	
+	j = 0;	/* index into supplied string */
+	
+	for (pairIndex = 1; pairIndex <= 2 && !err; ++pairIndex)
+	{
+		/* scan u, then v */
+		Boolean keepGoing = true;
+		for (k = 0 ; keepGoing; j++)
+		{	   			
+			switch(startChar[j])
+			{
+				case ',': // delimiter
+				case 0: // end of string
+					keepGoing = false;
+					break;
+				case '.':
+					num[k++] = startChar[j];
+					break;
+				case '+': // number
+					if (!scientificNotation) 
+					{
+						err=-1; 
+						return err;
+					}
+					// else number
+				case '-': // number
+				case '0': case '1': case '2': case '3': case '4':
+				case '5': case '6': case '7': case '8': case '9':
+					num[k++] = startChar[j];
+					if(k>=32) // no space or comma found to signal end of number
+					{
+						err = -1;
+						return err;
+					}
+					break;
+				case 'e': 
+					num[k++] = startChar[j];
+					if(k>=32) // no space or comma found to signal end of number
+					{
+						err = -1;
+						return err;
+					}
+					scientificNotation = true;
+					break;
+				case ' ':
+				case '\t': // white space
+					if(k == 0) continue; // ignore leading white space
+					while(startChar[j+1] == ' ' || startChar[j+1] == '\t') j++; // move past any additional whitespace chars
+					if(startChar[j+1] == ',') j++; // it was <whitespace><comma>, use the comma as the delimiter
+					// we have either found a comma or will use the white space as a delimiter
+					// in either case we stop this loop
+					keepGoing = false;
+					break;
+				default:
+					err = -1;
+					return err;
+					break;
+			}
+		}
+		
+		if(err) break; // so we break out of the main loop, shouldn't happen
+		
+		num[k++] = 0;									/* terminate the number-string */
+		
+		if (pairIndex == 1)
+		{
+			if (!scientificNotation) VelocityPtr -> u = atof(num);
+			
+			if (startChar[j] == ',')					/* increment j past the comma to next coordinate */
+			{
+				++j;
+				delimiterChar = ','; // JLM reset the delimiter char
+			}
+		}
+		else
+		{
+			if (!scientificNotation) VelocityPtr -> v = atof(num);
+			*scanLength = j; // amount of input string that was read
+		}
+	}
+	///////////////
+	
+	if (scientificNotation) return -2;
+	return err;
+	
+}
+void CheckYear(short *year)
+{
+	if (*year < 1900)					// two digit date, so fix it
+	{
+		if (*year >= 40 && *year <= 99)	
+			*year += 1900;
+		else
+			*year += 2000;					// correct for year 2000 (00 to 40)
+	}
+	
+}
+

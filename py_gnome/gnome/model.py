@@ -2,6 +2,7 @@
 import os
 from datetime import datetime, timedelta
 from collections import OrderedDict
+from gnome.utilities.orderedcollection import OrderedCollection
 
 import gnome
 
@@ -29,30 +30,27 @@ class Model(object):
     def reset(self):
         """
         Resets model to defaults -- Caution -- clears all movers, etc.
-        
         """
-
-
         self.output_map = None
         self.map = None
-        self._wind = OrderedDict()  #list of wind objects
-        self._movers = OrderedDict()
-        self._spills = OrderedDict()
-        self._uncertain_spills = OrderedDict()
-        
+        self.wind = OrderedCollection(dtype=gnome.weather.Wind)  #list of wind objects
+        self.movers = OrderedCollection(dtype=gnome.movers.Mover)
+        self.spills = OrderedCollection(dtype=gnome.spill.Spill)
+        self.uncertain_spills = OrderedCollection(dtype=gnome.spill.Spill)
+
         self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
         self.time_step = timedelta(minutes=15).total_seconds()
 
         self.uncertain = False
         self.rewind()
-        
+
     def rewind(self):
         """
-        resets the model to the beginning (start_time)
+        Resets the model to the beginning (start_time)
         """
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
-        for spills in (self.spills,self.uncertain_spills):
+        for spills in (self.spills, self.uncertain_spills):
             for spill in spills: 
                 spill.reset()
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
@@ -61,7 +59,7 @@ class Model(object):
     @property
     def uncertain(self):
         return self._uncertain
-    
+
     @uncertain.setter
     def uncertain(self, uncertain_value):
         """
@@ -70,7 +68,7 @@ class Model(object):
         if self._uncertain != uncertain_value:
             self._uncertain = uncertain_value
             self.rewind()   
-    
+
     @property
     def id(self):
         """
@@ -81,44 +79,13 @@ class Model(object):
         return id(self)
 
     @property
-    def wind(self):
-        """
-        Return a list of wind objects added to the model, in order of insertion
-        
-        :return: a list of wind objects
-        """
-        return self._wind.values()
-
-    @property
-    def movers(self):
-        """
-        Return a list of the movers added to this model, in order of insertion.
-
-        :return: a list of movers
-        """
-        return self._movers.values()
-
-    @property
-    def spills(self):
-        """
-        Return a list of the spills added to this model, in order of insertion.
-
-        :return: a list of spills
-        """
-        return self._spills.values()
-
-    @property
-    def uncertain_spills(self):
-        return self._uncertain_spills.values()
-        
-    @property
     def start_time(self):
         return self._start_time
     @start_time.setter
     def start_time(self, start_time):
         self._start_time = start_time
         self.rewind()
-    
+
     @property
     def time_step(self):
         return self._time_step
@@ -128,7 +95,6 @@ class Model(object):
         sets the time step, and rewinds the model
 
         :param time_step: the timestep as a timedelta object or integer seconds.
-
         """
         try: 
             self._time_step = time_step.total_seconds()
@@ -136,7 +102,7 @@ class Model(object):
             self._time_step = int(time_step)
         self._num_time_steps = self._duration.total_seconds() // self._time_step
         self.rewind()
-    
+
     @property
     def current_time_step(self):
         return self._current_time_step
@@ -154,7 +120,7 @@ class Model(object):
             self.rewind()
         self._duration = duration
         self._num_time_steps = self._duration.total_seconds() // self.time_step
-        
+
     @property
     def map(self):
         return self._map
@@ -163,158 +129,69 @@ class Model(object):
         ## we'll want to do more here, probably
         self._map = map
 
-    def get_mover(self, mover_id):
-        """
-        Return a :class:`gnome.movers.Mover` in the ``self._movers`` dict with
-        the key ``mover_id`` if one exists.
-        """
-        return self._movers.get(mover_id, None)
-
-    def add_mover(self, mover):
-        """
-        add a new mover to the model -- at the end of the stack
-        """
-        self._movers[mover.id] = mover
-        return mover.id
-
-    def has_mover(self, mover_id):
-        """
-        Return True if ``mover_id`` is valid, False if not.
-        """
-        return self._movers.has_key(mover_id)
-
-    def remove_mover(self, mover_id):
-        """
-        remove the passed-in mover from the mover list
-        """
-        if mover_id in self._movers:
-            del self._movers[mover_id]
-
-    def replace_mover(self, mover_id, new_mover):
-        """
-        replace a given mover with a new one
-        """
-        self._movers[mover_id] = new_mover
-        return new_mover
-
-    def get_spill(self, spill_id):
-        """
-        Return a :class:`gnome.spill.Spill` in the ``self._spills`` dict with
-        the key ``spill_id`` if one exists.
-        """
-        return self._spills.get(spill_id, None)
-
-    def add_spill(self, spill):
-        """
-        add a spill to the model
-
-        :param spill: an instance of the gnome.Spill class
-
-        """
-        #fixme: where should we check if a spill is in a valid location on the map?
-        self._spills[spill.id] = spill
-
-    def has_spill(self, spill_id):
-        """
-        Return True if ``spill_id`` is valid, False if not.
-        """
-        return self._spills.has_key(spill_id)
-
-    def remove_spill(self, spill_id):
-        """
-        remove the passed-in spill from the spill list
-        """
-        if spill_id in self._spills:
-            del self._spills[spill_id]
-
-    def get_wind(self, id):
-        """
-        Return a :class:`gnome.weather.Wind` in the ``self._wind`` dict with
-        the key ``id`` if one exists.
-        """
-        return self._wind.get(id, None)
-
-    def add_wind(self, obj):
-        """
-        add a new Wind to the model -- at the end of the stack
-        """
-        self._wind[obj.id] = obj
-        return obj.id
-
-    def remove_wind(self, id):
-        """
-        remove the passed-in Wind from the wind list
-        """
-        if id in self._wind:
-            del self._wind[id]
-
-    def replace_wind(self, id, new_obj):
-        """
-        replace a given Wind with a new one
-        """
-        self._wind[id] = new_obj
-
     def setup_model_run(self):
         """
         Sets up each mover for the model run
-        
+
         Currently, only movers need to initialize at the beginning of the run
         """
         for mover in self.movers:
             mover.prepare_for_model_run()
-            
-        self._uncertain_spills = OrderedDict()
+
+        self.uncertain_spills = OrderedCollection(dtype=gnome.spill.Spill)
         if self.uncertain:
             self._uncertain_spill_id_map = []   # a list mapping the order in which list is added to it's unique 'id'
             for spill in self.spills:
                 uSpill = copy.deepcopy(spill)
                 uSpill.is_uncertain = True
-                self._uncertain_spills[uSpill.id] = uSpill   # should spill ID get updated? Does this effect how movers applies uncertainty?
-                
+                self.uncertain_spills[uSpill.id] = uSpill   # should spill ID get updated? Does this effect how movers applies uncertainty?
+
                 if self._uncertain_spill_id_map.count(uSpill.id) != 0:
+                    # TODO: if we are making a deepcopy, when would we ever have a duplicate id in this case?
                     raise ValueError("An uncertain spill with this id has been defined. spill.id should be unique")
                 self._uncertain_spill_id_map.append(uSpill.id)
-            
 
-    
+
     def setup_time_step(self):
         """
-        sets up everything for the current time_step:
-        
-        releases elements, refloats, prepares the movers, etc.
+        Sets up everything for the current time_step:
+
+        Releases elements, refloats, prepares the movers, etc.
         """
         #self.model_time = self._start_time + timedelta(seconds=self.current_time_step*self.time_step)
-        
+
         for spill in self.spills:
             spill.prepare_for_model_step(self.model_time, self.time_step)
-        
+
         # if model is uncertain, update following defaults
         num_uSpills = 0
         uSpill_size = None
         if self.uncertain:
             num_uSpills = len(self.uncertain_spills)
             uSpill_size = np.zeros((num_uSpills,), dtype=np.int)
-            
+
             for i in range(0, num_uSpills):
                 self.uncertain_spills[i].prepare_for_model_step(self.model_time, self.time_step)
                 uSpill_size[i] = spill.num_LEs
-        
+
         # initialize movers differently if model uncertainty is on
         for mover in self.movers:
             mover.prepare_for_model_step(self.model_time, self.time_step, num_uSpills, uSpill_size)
-                
-                
+
+
     def move_elements(self):
-        """ 
-        Moves elements: loops through all the movers. and moves the elements
-            -- sets new_position array for each spill
-            -- calls the beaching code to beach the elements that need beaching.
-            -- sets the new position
+        """
+
+        Moves elements:
+         - loops through all the movers. and moves the elements
+         - sets new_position array for each spill
+         - calls the beaching code to beach the elements that need beaching.
+         - sets the new position
         """
         for spills in (self.spills,self.uncertain_spills):
             for spill in spills:
                 spill['next_positions'][:] = spill['positions']
-            
+
             uncertain_spill_number = -1 # only used by get_move for uncertain spills
             for mover in self.movers:
                 for spill in spills:
@@ -330,19 +207,19 @@ class Model(object):
                 # print "in map loop"
                 # print "pos:", spill['positions']
                 # print "next_pos:", spill['next_positions']
-    
+
             # the final move to the new positions
             for spill in spills:
                 spill['positions'][:] = spill['next_positions']
-        
+
 
     def step_is_done(self):
         """
-        loop through movers and call model_step_is_done
+        Loop through movers and call model_step_is_done
         """
         for mover in self.movers:
             mover.model_step_is_done()
-    
+
     # def write_output(self):
     #     """
     #     write the output of the current time step to whatever output
@@ -358,10 +235,9 @@ class Model(object):
     def write_image(self, images_dir):
         ##fixme: put this in an "Output" class?
         """
-        render the map image, according to current parameters
+        Render the map image, according to current parameters
 
         :param images_dir: directory to write the image to.
-
         """
         if self.output_map is None:
             raise ValueError("You must have an ouput map to use the image output")
@@ -375,18 +251,17 @@ class Model(object):
         for spills in (self.uncertain_spills, self.spills):
             for spill in spills:
                 self.output_map.draw_elements(spill)
-            
+
         self.output_map.save_foreground(filename)
         return filename
 
     def step(self):
         """
         Steps the model forward in time. Needs testing for hindcasting.
-                
         """
         if self.current_time_step >= self._num_time_steps:
             return False
-        
+
         if self.current_time_step == -1:
             self.setup_model_run() # that's all we need to do for the zeroth time step
         else:    
@@ -395,12 +270,12 @@ class Model(object):
             self.step_is_done()
         self.current_time_step += 1        
         return True
-    
+
     def __iter__(self):
         """
-        for compatibility with Python's iterator protocol
-        
-        resets the model and returns itself so it can be iterated over. 
+        For compatibility with Python's iterator protocol.
+
+        Resets the model and returns itself so it can be iterated over.
         """
         self.rewind()
         return self
@@ -413,16 +288,17 @@ class Model(object):
 
         Return the step number
         """
-        
+
         if not self.step():
             raise StopIteration
         return self.current_time_step
 
-                
+
     def next_image(self, images_dir):
         """
-        compute the next model step, render an image, and return info about the
+        Compute the next model step, render an image, and return info about the
         step rendered
+
         :param images_dir: directory to write the image too.
         """
         # write out the zeroth image:
@@ -435,7 +311,7 @@ class Model(object):
         """
         Do a full run of the model, outputting an image per time step.
         """
-        
+
         # run the model
         while True:
             try:
@@ -444,5 +320,3 @@ class Model(object):
                 print "Done with the model run"
                 break
 
-
-        

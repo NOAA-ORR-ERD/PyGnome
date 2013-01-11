@@ -1021,7 +1021,7 @@ OSErr AddMapsDialog2()
 			{
 				DOUBLEH maskH = 0;
 				err = gMap->GetPointsAndMask(path,&maskH,&vertexPtsH,&depthPtsH,&numRows, &numCols);	//Text read	
-				if (!err) err = gMap->SetUpCurvilinearGrid(path,maskH,numRows,numCols,vertexPtsH,depthPtsH,errmsg);	//Reorder points
+				if (!err) err = gMap->SetUpCurvilinearGrid(maskH,numRows,numCols,vertexPtsH,depthPtsH,errmsg);	//Reorder points
 				if(maskH) {DisposeHandle((Handle)maskH); maskH = 0;}
 			}
 			else if (gridType == TRIANGULAR)
@@ -1031,9 +1031,9 @@ OSErr AddMapsDialog2()
 				if (!err) 
 				{	// separate points and boundary
 					if (numTri == 0)
-						err = gMap->SetUpTriangleGrid(path,numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts);	//Reorder points
+						err = gMap->SetUpTriangleGrid(numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts);	//Reorder points
 					else
-						err = gMap->SetUpTriangleGrid2(path,numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts,tri_verts, tri_neighbors);	//Reorder points
+						err = gMap->SetUpTriangleGrid2(numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts,tri_verts, tri_neighbors);	//Reorder points
 				
 				}
 				if (bndry_indices) delete [] bndry_indices;

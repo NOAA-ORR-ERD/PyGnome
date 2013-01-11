@@ -2,7 +2,7 @@
 
 """
 
-The master setup.py file
+The master setup.py file for py_gnome
 
 you should be able to run :
 
@@ -33,7 +33,6 @@ if "clean" in "".join(sys.argv[1:]):
 else:
     target = 'build'
 
-
 if "cleanall" in "".join(sys.argv[1:]):
     target = 'clean'
     print "Deleting cython files .."
@@ -43,8 +42,6 @@ if "cleanall" in "".join(sys.argv[1:]):
     os.system('rm -rv build')
     os.system('rm -rv pyGnome.egg-info')
     sys.argv[1] = 'clean'   # this is what distutils understands
-else:
-    target = 'build'
 
 # only for windows
 if "debug" in "".join(sys.argv[2:]):
@@ -55,19 +52,25 @@ else:
 sys.argv.count(config) != 0 and sys.argv.remove(config)
 #------------
 
+# for the mac -- forcing 32 bit only builds
+if sys.platform == 'darwin':
+    #Setting this should force only 32 bit intel build
+	os.environ['ARCHFLAGS'] = "-arch i386"
+
 
 CPP_CODE_DIR = "../lib_gnome"
 
 # the cython extensions to build -- each should correspond to a *.pyx file
 extension_names = [
+                   'cy_helpers',
                    'cy_wind_mover',
-# CATS mover broken at the moment                   
-#                   'cy_cats_mover',
-#                   'cy_netcdf_mover',
+                   'cy_cats_mover',
+                   #'cy_gridcurrent_mover',
+                   #'cy_gridwind_mover',
                    'cy_ossm_time',
-                   'cy_date_time',
                    'cy_random_mover',
-                   'cy_land_check'
+                   'cy_land_check',
+                   'cy_shio_time',
                    ]
 
 cpp_files = [ 
@@ -85,8 +88,8 @@ cpp_files = [
               'RectUtils.cpp',
               'WindMover_c.cpp',
               'CompFunctions.cpp',
-              'CMYLIST.cpp',
-              'GEOMETR2.cpp',
+              #'CMYLIST.cpp',
+              #'GEOMETR2.cpp',
               'StringFunctions.cpp',
               'OUTILS.cpp',
               'CATSMover_c.cpp',
@@ -98,8 +101,12 @@ cpp_files = [
               'DagTreeIO.cpp',
               'ShioCurrent1.cpp',
               'ShioCurrent2.cpp',
-              'NetCDFMover_c.cpp',
-              'TriGridVel3D_c.cpp',
+              'GridCurrentMover_c.cpp',
+              'GridWindMover_c.cpp',
+              'TimeGridVel_c.cpp',
+              'TimeGridWind_c.cpp',
+              'MakeTriangles.cpp',
+              'MakeDagTree.cpp',
               ]
 
 
@@ -113,9 +120,14 @@ extensions = []
 lib= []
 libdirs= []
 
-extra_includes="."
 compile_args = []
 link_args = []
+
+# List of include directories for cython code - append to this list as needed for each platform
+l_include_dirs = [CPP_CODE_DIR,
+                    np.get_include(),
+                    '.']
+
 
 if sys.platform == "darwin":
     # build cy_basic_types along with lib_gnome so we can use distutils for building everything
@@ -128,11 +140,7 @@ if sys.platform == "darwin":
                                 define_macros = macros,
                                 extra_compile_args=compile_args,
    	                            extra_link_args= ['-Wl,../third_party_lib/libnetcdf.a'],
-                                include_dirs=[CPP_CODE_DIR,
-                                              np.get_include(),
-                                              'cyGNOME',
-                                              extra_includes,
-                                              ],
+                                include_dirs=l_include_dirs,
                                 )
     
     extensions.append(basic_types_ext)
@@ -192,6 +200,7 @@ elif sys.platform == "win32":
     libdirs += ['gnome/cy_gnome']
     macros += [('CYTHON_CCOMPLEX', 0),]
     extension_names += ['cy_basic_types']
+    l_include_dirs += [r'..\third_party_lib\vs2008']
 
 #
 ### the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
@@ -212,11 +221,7 @@ for mod_name in extension_names:
    	                             extra_link_args=link_args,
                                  libraries = lib,
                                  library_dirs = libdirs,
-                                 include_dirs=[CPP_CODE_DIR,
-                                               np.get_include(),
-                                               'cyGNOME',
-                                               extra_includes,
-                                               ],
+                                 include_dirs=l_include_dirs,
                                  )
                        )
 
