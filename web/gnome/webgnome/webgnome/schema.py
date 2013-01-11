@@ -174,7 +174,7 @@ class WindMoversSchema(SequenceSchema):
 
 
 class MapSchema(MappingSchema):
-    name = SchemaNode(String())
+    name = SchemaNode(String(), default="Map")
     filename = SchemaNode(String())
     refloat_halflife = SchemaNode(Float(), default=1)
 

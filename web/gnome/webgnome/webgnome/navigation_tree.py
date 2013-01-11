@@ -71,19 +71,21 @@ class NavigationTree(object):
             'children': []
         }
 
+        map_data = data.pop('map')
+        map_form_id = 'edit_map' if map_data else 'add_map'
+
+
+        settings['children'].append({
+            'form_id': map_form_id,
+            'object_id': map_data['id'] if map_data else None,
+            'title': 'Map: %s' % (map_data['name'] if map_data else 'None')
+        })
+
         for name, value in data.items():
             settings['children'].append({
                 'form_id': 'model_settings',
                 'title': self._get_value_title(name, value),
             })
-
-        _map = self.model.map
-        map_form_id = 'map' if _map else 'add_map'
-
-        settings['children'].append({
-            'form_id': map_form_id,
-            'title': 'Map: %s' % (_map if _map else 'None')
-        })
 
 
         return [settings, movers, spills]

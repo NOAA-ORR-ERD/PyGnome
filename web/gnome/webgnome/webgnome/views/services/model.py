@@ -1,16 +1,10 @@
-import gnome.basic_types
-import gnome.utilities.map_canvas
 import datetime
-from gnome.weather import Wind
-import numpy
 import os
-import time
 
 from cornice.resource import resource, view
-from hazpy.file_tools import haz_files
 from pyramid.httpexceptions import HTTPNotFound
 
-from webgnome import util, WebPointReleaseSpill, WebWindMover
+from webgnome import util
 from webgnome.navigation_tree import NavigationTree
 from webgnome.schema import ModelSettingsSchema
 from webgnome.views.services.base import BaseResource
@@ -126,7 +120,7 @@ class ModelRunner(BaseResource):
         model = self.request.validated['model']
 
         try:
-            curr_step, file_path, timestamp = model.next_image(model.run_images_dir)
+            curr_step, file_path, timestamp = model.next_image(model.data_dir)
             filename = file_path.split(os.path.sep)[-1]
             image_url = util.get_model_image_url(self.request, model, filename)
 
@@ -157,49 +151,6 @@ class ModelRunner(BaseResource):
 
         if not model.runtime:
             model.runtime = util.get_runtime()
-
-        # TODO: Set separately in spill view.
-        if not model.spills:
-            spill = WebPointReleaseSpill(
-                name="Long Island Spill",
-                num_LEs=1000,
-                start_position=(-72.419992, 41.202120, 0.0),
-                release_time=model.start_time)
-
-            model.add_spill(spill)
-
-        if not model.movers:
-            start_time = model.start_time
-
-            r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
-            model.add_mover(r_mover)
-
-            series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
-            series[0] = (start_time, (30, 50) )
-            series[1] = (start_time + datetime.timedelta(hours=18), (30, 50))
-            series[2] = (start_time + datetime.timedelta(hours=30), (20, 25))
-            series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
-            series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
-
-            wind = Wind(units='mps', timeseries=series)
-            w_mover = WebWindMover(wind=wind, is_constant=False)
-            model.add_mover(w_mover)
-
-
-        # TODO: Set separately in map configuration form/view.
-        if not model.map:
-            map_file = os.path.join(
-                self.settings['project_root'],
-                'sample_data', 'LongIslandSoundMap.BNA')
-
-            # the land-water map
-            model.map = gnome.map.MapFromBNA(
-                map_file, refloat_halflife=6 * 3600)
-
-            canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
-            polygons = haz_files.ReadBNA(map_file, "PolygonSet")
-            canvas.set_land(polygons)
-            model.output_map = canvas
 
         # The client requested no cached images, so rewind and clear the cache.
         if self.request.POST.get('no_cache', False):

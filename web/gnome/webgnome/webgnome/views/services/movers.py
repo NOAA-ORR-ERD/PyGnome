@@ -36,6 +36,17 @@ class WindMover(BaseResource):
             'id': mover.id
         }
 
+    @view(validators=util.valid_model_id)
+    def collection_get(self):
+        """
+        Return a list of existing WindMovers.
+        """
+        data = self.request.validated
+        model = data.pop('model')
+        model_data = model.to_dict(include_movers=True)
+
+        return model_data['wind_movers']
+
     @view(validators=util.valid_mover_id)
     def get(self):
         """

@@ -21,6 +21,12 @@ define([
 
             this.options.modelRun.on(
                 models.ModelRun.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.modelSettings.on(
+                models.Model.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.pointReleaseSpills.on(
+                models.PointReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.windMovers.on(
+                models.WindMover.MESSAGE_RECEIVED, this.displayMessage);
 
             this.hideAll();
         },
@@ -622,9 +628,6 @@ define([
             this.options.pointReleaseSpills.on('sync', this.reload);
             this.options.pointReleaseSpills.on('add', this.reload);
             this.options.modelSettings.on('sync', this.reload);
-
-            // TODO: Remove this when we remove the Long Island default code.
-            this.options.modelRun.on(models.ModelRun.RUN_BEGAN, this.reload);
         },
 
         setupDynatree: function() {
@@ -639,10 +642,6 @@ define([
                     // isReloading is true if status was read from existing cookies.
                     // isError is only used in Ajax mode
                     this.reactivate();
-                    _this.trigger(TreeView.CHANGED);
-                },
-                onExpand: function() {
-                    _this.trigger(TreeView.CHANGED);
                 },
                 onDblClick: function(node, event) {
                     _this.trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
@@ -663,8 +662,7 @@ define([
         }
     }, {
         ITEM_ACTIVATED: 'gnome:treeItemActivated',
-        ITEM_DOUBLE_CLICKED: 'gnome:treeItemDoubleClicked',
-        CHANGED: 'gnome:treeChanged'
+        ITEM_DOUBLE_CLICKED: 'gnome:treeItemDoubleClicked'
     });
 
 
@@ -1077,31 +1075,43 @@ define([
             this.runItemEl = this.options.runItemEl;
             this.stepItemEl = this.options.stepItemEl;
             this.runUntilItemEl = this.options.runUntilItemEl;
+            this.longIslandItemEl = this.options.longIslandItemEl;
 
             $(this.newItemEl).click(this.newItemClicked);
             $(this.runItemEl).click(this.runItemClicked);
             $(this.runUntilItemEl).click(this.runUntilItemClicked);
+            $(this.longIslandItemEl).click(this.longIslandItemClicked);
+        },
+
+        hideDropdown: function() {
+            $(this.modelDropdownEl).dropdown('toggle');
         },
 
         newItemClicked: function(event) {
-            $(this.modelDropdownEl).dropdown('toggle');
+            this.hideDropdown();
             this.trigger(MenuView.NEW_ITEM_CLICKED);
         },
 
         runItemClicked: function(event) {
-            $(this.runDropdownEl).dropdown('toggle');
+            this.hideDropdown();
             this.trigger(MenuView.RUN_ITEM_CLICKED);
         },
 
         runUntilItemClicked: function(event) {
-            $(this.runDropdownEl).dropdown('toggle');
+            this.hideDropdown();
             this.trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
+        },
+
+        longIslandItemClicked: function(event) {
+            this.hideDropdown();
+            this.trigger(MenuView.LONG_ISLAND_ITEM_CLICKED);
         }
     }, {
         // Event constants
         NEW_ITEM_CLICKED: "menuView:newMenuItemClicked",
         RUN_ITEM_CLICKED: "menuView:runMenuItemClicked",
-        RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked"
+        RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked",
+        LONG_ISLAND_ITEM_CLICKED: "menuView:longIslandItemClicked"
     });
 
     return {

@@ -9,7 +9,18 @@ from webgnome.views.services.base import BaseResource
 @resource(collection_path='/model/{model_id:\d+}/spill/point_release',
           path='/model/{model_id:\d+}/spill/point_release/{id:\d+}',
           renderer='gnome_json', description='A point release spill.')
-class PointRelease(BaseResource):
+class PointReleaseSpill(BaseResource):
+
+    @view(validators=util.valid_model_id)
+    def collection_get(self):
+        """
+        Return a list of existing PointReleaseSpills.
+        """
+        data = self.request.validated
+        model = data.pop('model')
+        model_data = model.to_dict(include_spills=True)
+
+        return model_data['point_release_spills']
 
     @view(validators=util.valid_model_id, schema=PointReleaseSpillSchema)
     def collection_post(self):

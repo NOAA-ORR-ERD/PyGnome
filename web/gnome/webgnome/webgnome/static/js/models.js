@@ -174,19 +174,12 @@ define([
                 runUntilTimeStep: this.runUntilTimeStep
             }, opts);
 
-            var needToGetRunUntilStep = false;
-
             if (options.runUntilTimeStep) {
                 this.runUntilTimeStep = options.runUntilTimeStep;
-                needToGetRunUntilStep = options.runUntilTimeStep &&
-                    !this.hasCachedTimeStep(options.runUntilTimeStep);
             }
 
             if (this.dirty) {
                 options['no_cache'] = true;
-            }
-
-            if (this.dirty || needToGetRunUntilStep) {
                 this.doRun(options);
                 return;
             }
@@ -232,7 +225,7 @@ define([
         },
 
         isOnLastTimeStep: function() {
-            return this.currentTimeStep === this.length - 1;
+            return this.currentTimeStep === this.expectedTimeSteps.length - 1;
         },
 
          /*
@@ -366,12 +359,53 @@ define([
 
 
     var BaseModel = Backbone.Model.extend({
+        // Add an array of field names here that should be converted to strings
+        // during `toJSON` calls and to `moment` objects during `get` calls.
+        dateFields: null,
+
         parse: function(response) {
             var message = util.parseMessage(response);
             if (message) {
                 this.trigger(this.constructor.__super__.MESSAGE_RECEIVED, message);
             }
-            return BaseModel.__super__.parse.apply(this, arguments);
+
+            var data = BaseModel.__super__.parse.apply(this, arguments);
+
+            // Convert date fields from strings into `moment` objects.
+            if (this.dateFields) {
+                _.each(this.dateFields, function(field) {
+                    if (typeof(data[field] === "string")) {
+                        data[field] = moment(data[field]);
+                    }
+                });
+            }
+
+        },
+
+         // Return a `moment` object for any date field.
+        get: function(attr) {
+            if(this.dateFields && _.contains(this.dateFields, attr)) {
+                return moment(this.attributes[attr]);
+            }
+
+            return BaseModel.__super__.get.apply(this, arguments);
+        },
+
+        // Call .format() on any date fields when preparing them for JSON
+        // serialization.
+        toJSON: function() {
+            var data = BaseModel.__super__.toJSON.apply(this, arguments);
+
+            if (this.dateFields) {
+                _.each(this.dateFields, function(field) {
+                    if (typeof(data[field]) === "string") {
+                        return;
+                    }
+                    data[field] = data[field].format();
+                });
+            }
+
+            return data;
         }
     }, {
         MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
@@ -379,6 +413,8 @@ define([
 
 
     var Model = BaseModel.extend({
+        dateFields: ['start_time'],
+
         url: function() {
             var id = this.id ? '/' + this.id : '';
             return '/model' + id +
@@ -389,7 +425,9 @@ define([
 
     // Spills
 
-    var PointReleaseSpill = BaseModel.extend({});
+    var PointReleaseSpill = BaseModel.extend({
+        dateFields: ['release_time']
+    });
 
 
     var PointReleaseSpillCollection = Backbone.Collection.extend({
@@ -402,7 +440,9 @@ define([
 
 
     // Movers
-    var WindValue = BaseModel.extend({});
+    var WindValue = BaseModel.extend({
+        dateFields: ['datetime']
+    });
 
     var WindValueCollection = Backbone.Collection.extend({
         model: WindValue,
@@ -411,6 +451,7 @@ define([
             return item.get('datetime');
         }
     });
+
 
     var Wind = BaseModel.extend({
         initialize: function(attrs) {
@@ -422,6 +463,7 @@ define([
             this.set('timeseries', new WindValueCollection(timeseries));
         }
     });
+
 
     var WindMover = BaseModel.extend({
         /*
@@ -447,17 +489,9 @@ define([
                 attrs['wind'] = new Wind(wind);
             }
             return attrs;
-        },
-
-        // Return a `moment` object for the date field.
-        get: function(attr) {
-            if (attr === 'date') {
-                return moment(this.attributes[attr]).local();
-            } else {
-                return WindMover.__super__.get.apply(this, arguments);
-            }
         }
     });
+
 
     var WindMoverCollection = Backbone.Collection.extend({
         model: WindMover,
@@ -468,6 +502,9 @@ define([
     });
 
 
+    var Map = BaseModel.extend({});
+
+
     return {
         TimeStep: TimeStep,
         ModelRun: ModelRun,
@@ -475,7 +512,9 @@ define([
         PointReleaseSpill: PointReleaseSpill,
         PointReleaseSpillCollection: PointReleaseSpillCollection,
         WindMover: WindMover,
-        WindMoverCollection: WindMoverCollection
+        WindMoverCollection: WindMoverCollection,
+        WindValue: WindValue,
+        Map: Map
     };
 
 });

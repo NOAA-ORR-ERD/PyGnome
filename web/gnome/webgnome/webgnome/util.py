@@ -284,8 +284,6 @@ def require_model(f):
     This decorator works on functions and methods. It returns a method decorator
     if the first argument to the function is ``self``. Otherwise, it returns a
     function decorator.
-
-    Instead of returning an error, should we just create a model?
     """
     args = inspect.getargspec(f)
 

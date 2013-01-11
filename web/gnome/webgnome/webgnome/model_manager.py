@@ -5,6 +5,7 @@ import datetime
 
 # XXX: This except block should not be necessary.
 import os
+from hazpy.file_tools import haz_files
 from webgnome import util
 
 try:
@@ -20,6 +21,7 @@ except ImportError:
     import sys
     sys.path.append('../../../py_gnome')
 
+import gnome.utilities.map_canvas
 from gnome.model import Model
 from gnome.movers import WindMover
 from gnome.spill import PointReleaseSpill
@@ -163,11 +165,24 @@ class WebMapFromBNA(MapFromBNA):
     """
     def __init__(self, *args, **kwargs):
         self._name = kwargs.pop('name', None)
+        self.filename = args[0]
         super(WebMapFromBNA, self).__init__(*args, **kwargs)
 
     @property
     def name(self):
         return self._name
+
+    @property
+    def id(self):
+        return id(self)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'filename': self.filename,
+            'name': self.name,
+            'refloat_halflife': self.refloat_halflife
+        }
 
 
 class WebModel(Model):
@@ -202,23 +217,23 @@ class WebModel(Model):
         return base_dir
 
     @property
-    def run_images_dir(self):
+    def data_dir(self):
         if not self.runtime:
             self.runtime = util.get_runtime()
 
-        images_dir = os.path.join(self.base_dir, self.runtime)
+        data_dir = os.path.join(self.base_dir, self.runtime)
 
-        if not os.path.exists(images_dir):
-            os.mkdir(images_dir)
+        if not os.path.exists(data_dir):
+            os.mkdir(data_dir)
 
-        return images_dir
+        return data_dir
 
     @property
     def background_image(self):
         if not self.output_map:
             return
 
-        image_path = os.path.join(self.run_images_dir, 'background_map.png')
+        image_path = os.path.join(self.data_dir, 'background_map.png')
 
         if not os.path.exists(image_path):
             self.output_map.draw_background()
@@ -249,6 +264,18 @@ class WebModel(Model):
         """
         return int(spill_id) in self.spills
 
+    def add_bna_map(self, filename, map_data):
+        map_file = os.path.join(self.data_dir, filename)
+
+        # Create the land-water map
+        self.map = WebMapFromBNA(map_file, **map_data)
+
+        # TODO: Should size be user-configurable?
+        canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
+        polygons = haz_files.ReadBNA(filename, "PolygonSet")
+        canvas.set_land(polygons)
+        self.output_map = canvas
+
     def build_subtree(self, data, objs, keys):
         for key in keys.values():
             if key not in data:
@@ -273,8 +300,10 @@ class WebModel(Model):
             'time_step': self.time_step,
             'start_time': self.start_time,
             'duration_days': 0,
-            'duration_hours': 0
+            'duration_hours': 0,
+            'map': self.map.to_dict() if self.map else None
         }
+
 
         if self.duration.days:
             data['duration_days'] = self.duration.days

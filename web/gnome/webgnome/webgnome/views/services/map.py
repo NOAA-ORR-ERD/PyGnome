@@ -22,13 +22,7 @@ class Map(BaseResource):
         value.
         """
         model = self.request.validated.pop('model')
-        map = model.map
-
-        return {
-            'filename': map.filename,
-            'name': map.name,
-            'refloat_halflife': map.refloat_halflife
-        }
+        return model.map.to_dict()
 
     @view(validators=util.valid_model_id, schema=MapSchema)
     def post(self):
@@ -36,20 +30,7 @@ class Map(BaseResource):
         Add a map to the current model.
         """
         model = self.request.validated.pop('model')
-        map_file = os.path.join(
-            self.settings['project_root'],
-            'webgnome', 'data', self.validated['filename'])
-
-        # Create the land-water map
-        model.map = WebMapFromBNA(
-            map_file, name=self.validated['name'],
-            refloat_halflife=self.validated['refloat_halflife'])
-
-        # TODO: Should size be user-configurable?
-        canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
-        polygons = haz_files.ReadBNA(map_file, "PolygonSet")
-        canvas.set_land(polygons)
-        model.output_map = canvas
+        model.add_bna_map(filename, validated)
 
         return {
             'filename': self.validated['filename'],

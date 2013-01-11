@@ -15,6 +15,11 @@
             <ul class="dropdown-menu" role="menu" aria-labelledby="file-drop">
                 <li><a tabindex="-1" id="menu-new" href="javascript:">New</a></li>
                 <li><a tabindex="-1" href="javascript:">Load from file</a></li>
+                <li class="dropdown-submenu"><a tabindex="-1" href="javascript:">Load example...</a>
+                    <ul class="dropdown-menu">
+                        <li><a tabindex="-1" id="long-island" href="javascript:">Long Island Sound</a></li>
+                    </ul>
+                </li>
                 <li><a tabindex="-1" href="javascript:">Save</a></li>
                 <li class="divider"></li>
                 <li><a tabindex="-1" href="javascript:">Preferences</a></li>
@@ -104,7 +109,7 @@
         <%include file="forms/add_mover.mak"/>
         <%include file="forms/add_spill.mak"/>
         <%include file="forms/add_map.mak"/>
-        <%include file="forms/map.mak"/>
+        <%include file="forms/map.mak" args="map=_map"/>
         <%include file="forms/model_settings.mak" args="model=model"/>
         <%include file="forms/wind_mover.mak"
             args="mover=default_wind_mover, default_wind=default_wind,
@@ -139,18 +144,7 @@
 
             $('#map').imagesLoaded(function() {
                 new app_view.AppView({
-                    mapId: 'map',
-                    mapPlaceholderClass: 'placeholder',
                     mapBounds: ${map_bounds},
-                    sidebarId: 'sidebar',
-                    formContainerId: 'modal-container',
-                    addMoverFormId: "add_mover",
-                    addSpillFormId: "add_spill",
-                    addWindMoverFormId: "add_wind_mover",
-                    editWindMoverFormId: "edit_wind_mover",
-                    addPointReleaseSpillFormId: "add_point_release_spill",
-                    editPointReleaseSpillFormId: "edit_point_release_spill",
-                    modelSettingsFormId: "model_settings",
                     generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                     expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                     backgroundImageUrl: "${background_image_url or '' | n}",
@@ -158,7 +152,8 @@
                     pointReleaseSpills: ${point_release_spills | n},
                     windMovers: ${wind_movers | n},
                     modelId: ${model_id},
-                    modelSettings: ${model_settings | n}
+                    modelSettings: ${model_settings | n},
+                    map: ${map_data | n}
                 });
             });
         });

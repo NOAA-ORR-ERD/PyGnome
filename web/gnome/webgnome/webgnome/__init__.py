@@ -42,12 +42,7 @@ def main(global_config, **settings):
     config.add_renderer('gnome_json', gnome_json)
 
     config.add_route('show_model', '/')
-    config.add_route('model_forms', 'model/forms')
-    config.add_route('create_model', '/model/create')
-    config.add_route('get_time_steps', '/model/time_steps')
-    config.add_route('run_model', '/model/run')
-    config.add_route('run_model_until', '/model/run_until')
-    config.add_route('model_map', '/model/map')
+    config.add_route('long_island', '/long_island')
 
     config.include("cornice")
 

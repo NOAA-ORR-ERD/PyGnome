@@ -16,9 +16,9 @@ define([
             this.formViews = {};
         },
 
-        add: function(id, view) {
+        add: function(view) {
             var _this = this;
-            this.formViews[id] = view;
+            this.formViews[view.id] = view;
             view.on(FormView.CANCELED, function(form) {
                 _this.trigger(FormView.CANCELED, form);
             });
@@ -49,11 +49,14 @@ define([
         initialize: function() {
             _.bindAll(this);
             this.wasCancelled = false;
-            this.container = $(this.options.formContainerEl);
             this.id = this.options.id;
             this.model = this.options.model;
             this.collection = this.options.collection;
             this.setupDatePickers();
+
+            if (this.options.id) {
+                this.$el = $('#' + this.options.id);
+            }
         },
 
         setupDatePickers: function() {
@@ -111,8 +114,8 @@ define([
             // Include only the date in the date field, reformat it, and move
             // time values into the hour and minute fields.
             if (this.formHasDateFields(form)) {
-                var dateTime = this.getFormDate(form);
-                this.setFormDate(form, dateTime);
+                var datetime = this.getFormDate(form);
+                this.setFormDate(form, datetime);
             }
         },
 
@@ -136,18 +139,18 @@ define([
 
             // TODO: Handle a date-parsing error here.
             if (date) {
-                return moment(date).local();
+                return moment(date);
             }
         },
 
-        setFormDate: function(form, dateTime) {
-            if (!dateTime) {
+        setFormDate: function(form, datetime) {
+            if (!datetime) {
                 return;
             }
             var fields = this.getFormDateFields(form);
-            fields.date.val(dateTime.format("MM/DD/YYYY"));
-            fields.hour.val(dateTime.format('HH'));
-            fields.minute.val(dateTime.format('mm'));
+            fields.date.val(datetime.format("MM/DD/YYYY"));
+            fields.hour.val(datetime.format('HH'));
+            fields.minute.val(datetime.format('mm'));
         },
 
          getFormData: function() {
@@ -336,7 +339,24 @@ define([
     });
 
 
-    var AddMapFormView = JQueryUIModalFormView.extend({
+    var AddMapFormView = ChooseObjectTypeFormView.extend({});
+
+
+    var MapFormView = JQueryUIModalFormView.extend({
+        initialize: function(options) {
+            var opts = _.extend({
+                dialog: {
+                    height: 200,
+                    width: 425
+                }
+            }, options);
+
+            MapFormView.__super__.initialize.apply(this, [opts]);
+        },
+
+        reload: function(id) {
+            // Do nothing - we always use the same map object.
+        }
     });
 
 
@@ -446,14 +466,14 @@ define([
                     speed = speed.toFixed(1);
                 }
 
-                var dateTime = moment(windValue.get('datetime'));
+                var datetime = moment(windValue.get('datetime'));
                 // TODO: Error handling
                 var error = null;
 
                 rows.push($(tmpl({
                     error: error ? 'error' : '',
-                    date: dateTime.format('MM/DD/YYYY'),
-                    time: dateTime.format('HH:mm'),
+                    date: datetime.format('MM/DD/YYYY'),
+                    time: datetime.format('HH:mm'),
                     direction: direction + ' &deg;',
                     speed: speed + ' ' + units
                 })).data('data-wind-id', windValue.cid));
@@ -474,7 +494,7 @@ define([
                 // A 'datetime' field is required, but it will be ignored for a
                 // constant wind mover during the model run, so we just use the
                 // current time.
-                datetime: moment().format(),
+                datetime: moment(),
                 direction: data.direction,
                 speed: data.speed
             };
@@ -567,17 +587,18 @@ define([
         trashButtonClicked: function(event) {
             event.preventDefault();
             var windId = $(event.target).closest('tr').data('data-wind-id');
-            var winds = this.model.get('winds');
-            var wind = winds.getByCid(windId);
+            var wind = this.model.get('wind');
+            var timeseries = wind.get('timeseries');
+            var windValue = timeseries.getByCid(windId);
             var addForm = this.getAddForm();
 
-            if (addForm.data('data-wind-id') === wind.cid) {
+            if (addForm.data('data-wind-id') === windValue.cid) {
                 this.setFormDefaults();
                 addForm.find('.add-time-buttons').removeClass('hidden');
                 addForm.find('.edit-time-buttons').addClass('hidden');
             }
 
-            winds.remove(wind);
+            timeseries.remove(windValue);
             this.renderTimeTable();
         },
 
@@ -589,18 +610,45 @@ define([
             return value;
         },
 
+        findDuplicate: function(timeseries, datetime, existingWindId) {
+            var duplicate = timeseries.filter(function(time) {
+                return time.get('datetime').format() == datetime.format();
+            });
+
+            window.timeseries = timeseries;
+
+            if (existingWindId) {
+                duplicate = _.reject(duplicate, function(item) {
+                    return item.cid === existingWindId;
+                });
+            }
+
+            return duplicate;
+        },
+
         saveButtonClicked: function(event) {
             event.preventDefault();
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
             var addForm = this.getAddForm();
-            var dateTime = this.getFormDate(addForm);
+            var datetime = this.getFormDate(addForm);
             var windId = addForm.data('data-wind-id');
             var windValue = timeseries.getByCid(windId);
             var direction = addForm.find('#direction').val();
+            var duplicate = this.findDuplicate(timeseries, datetime, windId);
+            var message = 'Wind data for that date and time exists. Replace it?';
+
+            if (duplicate.length) {
+                if (window.confirm(message)) {
+                    timeseries.remove(duplicate);
+                    this.renderTimeTable();
+                } else {
+                    return;
+                }
+            }
 
             windValue.set({
-                datetime: dateTime.format(),
+                datetime: datetime,
                 direction: this.getCardinalAngle(direction),
                 speed: addForm.find('#speed').val()
             });
@@ -632,7 +680,7 @@ define([
             var windValue = timeseries.getByCid(windId);
             var addForm = this.getAddForm();
 
-            this.clearInputs(addForm);
+//            this.clearInputs(addForm);
             addForm.data('data-wind-id', windValue.cid);
             addForm.find('.add-time-buttons').addClass('hidden');
             addForm.find('.edit-time-buttons').removeClass('hidden');
@@ -646,16 +694,26 @@ define([
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
             var addForm = this.getAddForm();
-            var dateTime = this.getFormDate(addForm);
+            var datetime = this.getFormDate(addForm);
             var direction = addForm.find('#direction').val();
+            var duplicate = this.findDuplicate(timeseries, datetime);
+            var message = 'Wind data for that date and time exists. Replace it?';
+
+            if (duplicate.length) {
+                if (window.confirm(message)) {
+                    timeseries.remove(duplicate);
+                    this.renderTimeTable();
+                } else {
+                    return;
+                }
+            }
 
             timeseries.add({
-                datetime: dateTime.format(),
+                datetime: datetime,
                 direction: this.getCardinalAngle(direction),
                 speed: addForm.find('#speed').val()
             });
 
-            wind.set('timeseries', timeseries);
             this.renderTimeTable();
             this.compass.compassUI('reset');
 
@@ -664,8 +722,8 @@ define([
             // Increase the date and time on the Add form if 'auto increase by'
             // value was provided.
             if (autoIncrementBy) {
-                dateTime.add('hours', autoIncrementBy);
-                this.setFormDate(addForm, dateTime);
+                var nextDatetime = datetime.clone().add('hours', autoIncrementBy);
+                this.setFormDate(addForm, nextDatetime);
             }
         },
 
@@ -906,7 +964,7 @@ define([
         submit: function() {
             var data = this.getFormData();
 
-            data['release_time'] = this.getFormDate(this.getForm()).format();
+            data['release_time'] = this.getFormDate(this.getForm());
             data['is_active'] = data['active'];
             data['windage'] = [
                 data['windage_min'], data['windage_max']
@@ -962,7 +1020,7 @@ define([
 
         submit: function() {
             var data = this.getFormData();
-            data['start_time'] = this.getFormDate(this.getForm()).format();
+            data['start_time'] = this.getFormDate(this.getForm());
             this.model.set(data);
             this.model.save();
         }
@@ -970,10 +1028,12 @@ define([
 
 
     return {
+        AddMapFormView: AddMapFormView,
         AddMoverFormView: AddMoverFormView,
         AddSpillFormView: AddSpillFormView,
         AddWindMoverFormView: AddWindMoverFormView,
         AddPointReleaseSpillFormView: AddPointReleaseSpillFormView,
+        MapFormView: MapFormView,
         WindMoverFormView: WindMoverFormView,
         PointReleaseSpillFormView: PointReleaseSpillFormView,
         FormView: FormView,
