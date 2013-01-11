@@ -97,12 +97,12 @@ def configure_long_island(request, model):
         start_position=(-72.419992, 41.202120, 0.0),
         release_time=model.start_time)
 
-    model.add_spill(spill)
+    model.spills.add(spill)
 
     start_time = model.start_time
 
     r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
-    model.add_mover(r_mover)
+    model.movers.add(r_mover)
 
     series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
     series[0] = (start_time, (30, 50) )
@@ -113,7 +113,7 @@ def configure_long_island(request, model):
 
     wind = Wind(units='mps', timeseries=series)
     w_mover = WebWindMover(wind=wind, is_constant=False)
-    model.add_mover(w_mover)
+    model.movers.add(w_mover)
 
     map_file = os.path.join(
         request.registry.settings['project_root'],
@@ -123,6 +123,8 @@ def configure_long_island(request, model):
     # the land-water map
     model.map = WebMapFromBNA(
         map_file, refloat_halflife=6 * 3600, name="Long Island Sound")
+
+    model.uncertain = False
 
     canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
     polygons = haz_files.ReadBNA(map_file, "PolygonSet")

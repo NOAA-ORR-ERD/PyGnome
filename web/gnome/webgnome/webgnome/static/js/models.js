@@ -401,7 +401,10 @@ define([
                     if (typeof(data[field]) === "string") {
                         return;
                     }
-                    data[field] = data[field].format();
+
+                    if (data[field]) {
+                        data[field] = data[field].format();
+                    }
                 });
             }
 

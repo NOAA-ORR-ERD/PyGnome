@@ -29,7 +29,7 @@ class WindMover(BaseResource):
         data['wind'] = self.get_wind(data['wind'])
         model = data.pop('model')
         mover = WebWindMover(**data)
-        model.add_mover(mover)
+        model.movers.add(mover)
 
         return {
             'success': True,

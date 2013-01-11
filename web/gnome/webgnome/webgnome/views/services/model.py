@@ -147,7 +147,9 @@ class ModelRunner(BaseResource):
         timestamps = self._get_timestamps()
         data['expected_time_steps'] = timestamps
         model.timestamps = timestamps
-        model.uncertain = True
+
+        # Turning this off because it breaks everything.
+        # model.uncertain = True
 
         if not model.runtime:
             model.runtime = util.get_runtime()

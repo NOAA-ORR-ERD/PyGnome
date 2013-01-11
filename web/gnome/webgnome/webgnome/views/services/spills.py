@@ -30,7 +30,7 @@ class PointReleaseSpill(BaseResource):
         data = self.request.validated
         model = data.pop('model')
         spill = WebPointReleaseSpill(**data)
-        model.add_spill(spill)
+        model.spills.add(spill)
 
         return {
             'success': True,
