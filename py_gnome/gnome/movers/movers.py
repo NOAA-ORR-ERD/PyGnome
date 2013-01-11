@@ -6,26 +6,33 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 
+from datetime import datetime, timedelta
+from time import gmtime
 
 class Mover(GnomeObject):
     """
     Base class from which all Python movers can inherit
-
+    :param is_active_start: datetime when the mover should be active
+    :param is_active_stop: datetime after which the mover should be inactive
     It defines the interface for a Python mover. The model expects the methods defined here. 
     The get_move(...) method needs to be implemented by the derived class.  
     """
-    def __init__(self, is_active=True, **kwargs):
-        self._is_active = is_active
-        super(Mover,self).__init__(**kwargs)
+    def __init__(self, 
+                 is_active_start= datetime( *gmtime(0)[:7] ), 
+                 is_active_stop = datetime.max):   # default min + max values for timespan
+        """
+        During init, it defaults is_active = True
+        """
+        self._is_active = True  # set in prepare_for_model_step
+        self.on = True          # turn the mover on / off for the run
+        if is_active_stop <= is_active_start:
+            raise ValueError("is_active_start should be a python datetime object strictly smaller than is_active_stop")
+        
+        self.is_active_start = is_active_start
+        self.is_active_stop  = is_active_stop
 
     # Methods for is_active property definition
-    @property
-    def is_active(self):
-        return self._is_active
-
-    @is_active.setter
-    def is_active(self, value):
-        self._is_active = value
+    is_active = property(lambda self: self._is_active)
 
     def datetime_to_seconds(self, model_time):
         """
@@ -39,22 +46,23 @@ class Mover(GnomeObject):
         """
         pass
 
-    def prepare_for_model_step(self, model_time_datetime, time_step,
+    def prepare_for_model_step(self, model_time, time_step,
                                uncertain_spills_count=0, uncertain_spills_size=None):
         """
-        Default implementation of prepare_for_model_step(...)
-         - It sets the model time
-         - It checks the inputs for uncertainty spills are valid
+        sets is_active flag based on time_span. If 
+            model_time + time_step > is_active_start and model_time + time_span < is_active_stop
+        then set flag to true.
+        
+        :param model_time: datetime object giving current model_time
+        :param time_step: time step in seconds
+        
+        NOTE: method signature will change after one_spill is merged - update docs after merge 
         """
-        self.model_time = self.datetime_to_seconds(model_time_datetime)
-        if uncertain_spills_count < 0:
-            raise ValueError("The uncertain_spills_count cannot be less than 0")
-        elif uncertain_spills_count > 0:
-            if uncertain_spills_size is None:
-                raise ValueError("uncertain_spills_size cannot be None if uncertain_spills_count is greater than 0")
-
-            if len(uncertain_spills_size) != uncertain_spills_count:
-                raise ValueError("uncertain_spills_size needs an entry for each of the uncertain spills")
+        if (model_time + timedelta(seconds=time_step) > self.is_active_start) and \
+        (model_time + timedelta(seconds=time_step) < self.is_active_stop):
+            self._is_active = True
+        else:
+            self._is_active = False
 
 
     def get_move(self, spill, time_step, model_time, uncertain_spill_number=0):
@@ -85,8 +93,8 @@ class CyMover(Mover):
     We assumes any derived class will instantiate a 'mover' object that
     has methods like: prepare_for_model_run, prepare_for_model_step,
     """
-    def __init__(self, is_active=True, **kwargs):
-        super(CyMover,self).__init__(is_active=is_active,**kwargs)
+    def __init__(self, is_active_start= datetime( *gmtime(0)[:7] ), is_active_stop = datetime.max):
+        super(CyMover,self).__init__(is_active_start, is_active_stop)
 
     def prepare_for_model_run(self):
         """
@@ -94,15 +102,20 @@ class CyMover(Mover):
         """
         self.mover.prepare_for_model_run()
 
-    def prepare_for_model_step(self, model_time_datetime, time_step,
+    def prepare_for_model_step(self, model_time, time_step,
                                uncertain_spills_count=0, uncertain_spills_size=None):
         """
         Default implementation of prepare_for_model_step(...)
-         - Checks the inputs for uncertainty spills are valid.
-         - Invokes the cython mover's prepare_for_model_step.
+         - Sets the mover's is_active flag if time is within specified timespan
+         - Invokes the cython mover's prepare_for_model_step
+         
+        :param model_time: datetime object with current model time
+        :param time_step: time step in seconds
+        
+        NOTE: Remaining inputs will change after one_spill merge .. TODO: Fix this
         """
-        super(CyMover,self).prepare_for_model_step(model_time_datetime, time_step, uncertain_spills_count, uncertain_spills_size)
-        self.mover.prepare_for_model_step(self.model_time, time_step, uncertain_spills_count, uncertain_spills_size)
+        super(CyMover,self).prepare_for_model_step(model_time, time_step, uncertain_spills_count, uncertain_spills_size)
+        self.mover.prepare_for_model_step( self.datetime_to_seconds(model_time), time_step, uncertain_spills_count, uncertain_spills_size)
 
     def prepare_data_for_get_move(self, spill, model_time_datetime):
         """
@@ -145,7 +158,9 @@ class WindMover(CyMover):
 
     The real work is done by the CyWindMover object.  CyMover sets everything up that is common to all movers.
     """
-    def __init__(self, wind, is_active=True,
+    def __init__(self, wind, 
+                 is_active_start= datetime( *gmtime(0)[:7] ), 
+                 is_active_stop = datetime.max,
                  uncertain_duration=10800, uncertain_time_delay=0, 
                  uncertain_speed_scale=2., uncertain_angle_scale=0.4):
         """
@@ -162,7 +177,7 @@ class WindMover(CyMover):
                                  uncertain_speed_scale=uncertain_speed_scale,  
                                  uncertain_angle_scale=uncertain_angle_scale)
         self.mover.set_ossm(self.wind.ossm)
-        super(WindMover,self).__init__(is_active=is_active)
+        super(WindMover,self).__init__(is_active_start, is_active_stop)
 
     def __repr__(self):
         """
@@ -203,19 +218,22 @@ class WindMover(CyMover):
         :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
         """
         self.prepare_data_for_get_move(spill, model_time_datetime)
-        try:
-            windage = spill['windages']
-        except KeyError, e:
-            raise KeyError("The spill does not have the required data arrays\n" + e.message)
-
-        self.mover.get_move(  self.model_time,
-                              time_step, 
-                              self.positions,
-                              self.delta,
-                              windage,
-                              self.status_codes,
-                              self.spill_type,
-                              uncertain_spill_number)
+        
+        if self.is_active: 
+            try:
+                windage = spill['windages']
+            except KeyError, e:
+                raise KeyError("The spill does not have the required data arrays\n" + e.message)
+    
+            self.mover.get_move(  self.model_time,
+                                  time_step, 
+                                  self.positions,
+                                  self.delta,
+                                  windage,
+                                  self.status_codes,
+                                  self.spill_type,
+                                  uncertain_spill_number)
+            
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
 
@@ -226,9 +244,11 @@ class RandomMover(CyMover):
     The real work is done by CyRandomMover.
     CyMover sets everything up that is common to all movers.
     """
-    def __init__(self, diffusion_coef=100000, is_active=True):
+    def __init__(self, diffusion_coef=100000, 
+                 is_active_start= datetime( *gmtime(0)[:7] ), 
+                 is_active_stop = datetime.max):
         self.mover = CyRandomMover(diffusion_coef=diffusion_coef)
-        super(RandomMover,self).__init__(is_active=is_active)
+        super(RandomMover,self).__init__(is_active_start, is_active_stop)
 
     @property
     def diffusion_coef(self):
@@ -269,13 +289,15 @@ class RandomMover(CyMover):
         """
         self.prepare_data_for_get_move(spill, model_time_datetime)
 
-        self.mover.get_move(  self.model_time,
-                              time_step, 
-                              self.positions,
-                              self.delta,
-                              self.status_codes,
-                              self.spill_type,
-                              uncertain_spill_number)
+        if self.is_active: 
+            self.mover.get_move(  self.model_time,
+                                  time_step, 
+                                  self.positions,
+                                  self.delta,
+                                  self.status_codes,
+                                  self.spill_type,
+                                  uncertain_spill_number)
+            
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
@@ -285,7 +307,9 @@ class WeatheringMover(Mover):
     Python Weathering mover
 
     """
-    def __init__(self, wind, is_active=True,
+    def __init__(self, wind, 
+                 is_active_start= datetime( *gmtime(0)[:7] ), 
+                 is_active_stop = datetime.max,
                  uncertain_duration=10800, uncertain_time_delay=0,
                  uncertain_speed_scale=2., uncertain_angle_scale=0.4):
         """
@@ -302,7 +326,7 @@ class WeatheringMover(Mover):
         self.uncertain_speed_scale=uncertain_speed_scale
         self.uncertain_angle_scale=uncertain_angle_scale
 
-        super(WeatheringMover,self).__init__(is_active=is_active)
+        super(WeatheringMover,self).__init__(is_active_start, is_active_stop)
 
     def __repr__(self):
         return "WeatheringMover( wind=<wind_object>, uncertain_duration= %s, uncertain_time_delay=%s, uncertain_speed_scale=%s, uncertain_angle_scale=%s)" \
