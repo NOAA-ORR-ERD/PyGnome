@@ -1,13 +1,13 @@
 import numpy as np
 
 from gnome.utilities import time_utils, transforms, convert
-from gnome import basic_types
+from gnome import basic_types, GnomeObject
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
 
 
-class Mover(object):
+class Mover(GnomeObject):
     """
     Base class from which all Python movers can inherit
 
@@ -17,15 +17,6 @@ class Mover(object):
     def __init__(self, is_active=True, **kwargs):
         self._is_active = is_active
         super(Mover,self).__init__(**kwargs)
-
-    @property
-    def id(self):
-        """
-        Override this method for more exotic forms of identification.
-
-        :return: the integer ID returned by the builtin id() for this object
-        """
-        return id(self)
 
     # Methods for is_active property definition
     @property
