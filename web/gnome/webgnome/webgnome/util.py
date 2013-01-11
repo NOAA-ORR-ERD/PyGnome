@@ -251,7 +251,12 @@ def valid_mover_id(request):
 
     model = request.validated['model']
 
-    if not int(request.matchdict['id']) in model.movers:
+    try:
+        mover = model.movers.get(int(request.matchdict['id']))
+    except KeyError:
+        mover = None
+
+    if not mover:
         request.errors.add('body', 'mover', 'Mover not found.')
         request.errors.status = 404
 
@@ -268,7 +273,12 @@ def valid_spill_id(request):
 
     model = request.validated['model']
 
-    if not int(request.matchdict['id']) in model.spills:
+    try:
+        spill = model.spills.get(int(request.matchdict['id']))
+    except KeyError:
+        spill = None
+
+    if not spill:
         request.errors.add('body', 'spill', 'Spill not found.')
         request.errors.status = 404
 
