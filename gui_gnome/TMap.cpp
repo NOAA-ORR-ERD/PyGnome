@@ -915,6 +915,62 @@ OSErr TMap::AddItem(ListItem item)
 						}
 						if (timeGrid)
 						{
+							Point where;
+							OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
+							MySFReply reply;
+							Boolean bTopFile = false;
+							char outPath[256], topFilePath[256];
+							topFilePath[0]=0;
+							// code goes here, store path as unix
+							if (gridType!=REGULAR)	// move this outside, pass the path in
+							{
+								short buttonSelected;
+								buttonSelected  = MULTICHOICEALERT(1688,"Do you have an extended topology file to load?",FALSE);
+								switch(buttonSelected){
+									case 1: // there is an extended top file
+										bTopFile = true;
+										break;  
+									case 3: // no extended top file
+										bTopFile = false;
+										break;
+									case 4: // cancel
+										//err=-1;// stay at this dialog
+										break;
+								}
+							}
+							if(bTopFile)
+							{
+#if TARGET_API_MAC_CARBON
+								mysfpgetfile(&where, "", -1, typeList,
+											 (MyDlgHookUPP)0, &reply, M38c, MakeModalFilterUPP(STDFilter));
+								if (!reply.good)
+								{
+								}
+								else
+									strcpy(topFilePath, reply.fullPath);
+								
+#else
+								where = CenteredDialogUpLeft(M38c);
+								sfpgetfile(&where, "",
+										   (FileFilterUPP)0,
+										   -1, typeList,
+										   (DlgHookUPP)0,
+										   &reply, M38c,
+										   (ModalFilterUPP)MakeUPP((ProcPtr)STDFilter, uppModalFilterProcInfo));
+								if (!reply.good) 
+								{
+								}
+								
+								my_p2cstr(reply.fName);
+								
+#ifdef MAC
+								GetFullPath(reply.vRefNum, 0, (char *)reply.fName, topFilePath);
+#else
+								strcpy(topFilePath, reply.fName);
+#endif
+#endif		
+							}
+							
 							GridWindMover *newGridWindMover = new GridWindMover(dynamic_cast<TMap *>(this),"");
 							if (!newGridWindMover)
 							{ 
@@ -925,7 +981,12 @@ OSErr TMap::AddItem(ListItem item)
 							
 							err = newGridWindMover->InitMover(timeGrid);
 							//if(err) goto Error;
-							if (!err) err = timeGrid->TextRead(path,"");
+#if TARGET_API_MAC_CARBON
+							if (!err) err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+							if (!err) strcpy(path,outPath);
+#endif
+							//if (!err) err = timeGrid->TextRead(path,"");
+							if (!err) err = timeGrid->TextRead(path,topFilePath);
 							//if(err) goto Error;
 						}
 						if(!err) err = GridWindSettingsDialog(newMover,this,true,mapWindow);

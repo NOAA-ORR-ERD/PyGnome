@@ -12,9 +12,51 @@
 #include "CROSS.H"
 #else
 #include "Replacements.h"
+#include "OUTILS.H"
 #endif
 
 #include "netcdf.h"
+
+Boolean IsGridWindFile(char *path,short *selectedUnitsP)
+{
+	
+	Boolean	bIsValid = false;
+	OSErr	err = noErr;
+	long line;
+	char	strLine [512];
+	char	firstPartOfFile [512];
+	long lenToRead,fileLength;
+	short selectedUnits = kUndefined, numScanned;
+	char unitsStr[64], gridwindStr[64];
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return false;
+	
+	lenToRead = _min(512,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	if (!err)
+	{
+		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 512);
+		if (strstr(strLine,"[GRIDWIND"))
+		{
+			bIsValid = true;
+			*selectedUnitsP = selectedUnits;
+			numScanned = sscanf(strLine,"%s%s",gridwindStr,unitsStr);
+			if(numScanned != 2) { selectedUnits = kUndefined; goto done; }
+			RemoveLeadingAndTrailingWhiteSpace(unitsStr);
+			selectedUnits = StrToSpeedUnits(unitsStr);// note we are not supporting cm/sec in gnome
+		}
+	}
+	
+done:
+	if(bIsValid)
+	{
+		*selectedUnitsP = selectedUnits;
+	}
+	return bIsValid;
+}
 
 TimeGridWindRect_c::TimeGridWindRect_c() : TimeGridVel_c()
 {
@@ -116,15 +158,15 @@ OSErr TimeGridWindRect_c::TextRead(char *path,char *topFilePath)
 	strcpy(fVar.userName, fileName); // maybe use a name from the file
 	
 	status = nc_open(path, NC_NOWRITE, &ncid);
-	//if (status != NC_NOERR) {err = -1; goto done;}
-	if (status != NC_NOERR)
+	if (status != NC_NOERR) {err = -1; goto done;}
+	/*if (status != NC_NOERR)
 	{
 #if TARGET_API_MAC_CARBON
 		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
 		status = nc_open(outPath, NC_NOWRITE, &ncid);
 #endif
 		if (status != NC_NOERR) {err = -1; goto done;}
-	}
+	}*/
 	
 	status = nc_inq_dimid(ncid, "time", &recid); //Navy
 	if (status != NC_NOERR) 
@@ -280,6 +322,7 @@ OSErr TimeGridWindRect_c::TextRead(char *path,char *topFilePath)
 	fGrid = (TGridVel*)rectGrid;
 	
 	rectGrid -> SetBounds(bounds); 
+	this->SetGridBounds(bounds);
 	status = nc_close(ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
@@ -478,7 +521,7 @@ long TimeGridWindCurv_c::GetVelocityIndex(WorldPoint wp)
 	long index = -1;
 	if (fGrid) 
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	return index;
 }
 
@@ -487,7 +530,7 @@ LongPoint TimeGridWindCurv_c::GetVelocityIndices(WorldPoint wp)
 	LongPoint indices={-1,-1};
 	if (fGrid) 
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		indices = ((TTriGridVel*)fGrid)->GetRectIndicesFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		indices = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndicesFromTriIndex(wp,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	return indices;
 }
 
@@ -501,7 +544,7 @@ VelocityRec TimeGridWindCurv_c::GetScaledPatValue(const Seconds& model_time, Wor
 	
 	if (fGrid) 
 		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
-		index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		index = (dynamic_cast<TTriGridVel*>(fGrid))->GetRectIndexFromTriIndex(refPoint.p,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
 	
 	// Check for constant wind 
 	if(GetNumTimesInFile()==1 || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time > ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime)  || (fEndData.timeIndex == UNASSIGNEDINDEX && model_time < ((*fTimeHdl)[fStartData.timeIndex] + fTimeShift) && fAllowExtrapolationInTime))
@@ -566,9 +609,11 @@ OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want 
 	double timeConversion = 1.;
 	char errmsg[256] = "";
 	char fileName[64],*modelTypeStr=0;
-	Point where;
-	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
-	MySFReply reply;
+//#ifndef pyGNOME
+	//Point where;
+	//OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
+	//MySFReply reply;
+//#endif
 	Boolean bTopFile = false, fIsNavy = false;	// for now keep code around but probably don't need Navy curvilinear wind
 	//VelocityFH velocityH = 0;
 	char outPath[256];
@@ -582,15 +627,15 @@ OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want 
 	//strcpy(fFileName, fileName); // maybe use a name from the file
 	strcpy(fVar.userName, fileName); // maybe use a name from the file
 	status = nc_open(path, NC_NOWRITE, &ncid);
-	//if (status != NC_NOERR) {err = -1; goto done;}
-	if (status != NC_NOERR) 
+	if (status != NC_NOERR) {err = -1; goto done;}
+	/*if (status != NC_NOERR) 
 	{
 #if TARGET_API_MAC_CARBON
 		err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
 		status = nc_open(outPath, NC_NOWRITE, &ncid);
 #endif
 		if (status != NC_NOERR) {err = -1; goto done;}
-	}
+	}*/
 	// check number of dimensions - 2D or 3D
 	status = nc_inq_ndims(ncid, &numdims);
 	if (status != NC_NOERR) {err = -1; goto done;}
@@ -806,7 +851,9 @@ OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want 
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
 	// for now ask for an ascii file, output from Topology save option
-	{if (topFilePath[0]) {err = (dynamic_cast<TimeGridWindCurv*>(this))->ReadTopology(topFilePath); goto done;}}
+	//{if (topFilePath[0]) {err = (dynamic_cast<TimeGridWindCurv*>(this))->ReadTopology(topFilePath); goto done;}}
+	{if (topFilePath[0]) {err = ReadTopology(topFilePath); goto done;}}
+/*#ifndef pyGNOME
 	{
 		short buttonSelected;
 		buttonSelected  = MULTICHOICEALERT(1688,"Do you have an extended topology file to load?",FALSE);
@@ -861,7 +908,8 @@ OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want 
 		err = (dynamic_cast<TimeGridWindCurv*>(this))->ReadTopology(topPath);	
 		goto done;
 	}
-	
+#endif
+ */
 	err = ReorderPoints(errmsg);	
 	
 done:
@@ -1398,6 +1446,7 @@ OSErr TimeGridWindCurv_c::ReorderPoints(char* errmsg)
 	
 	fGrid = (TTriGridVel*)triGrid;
 	
+	this->SetGridBounds(triBounds);
 	triGrid -> SetBounds(triBounds); 
 	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
 	if(!dagTree)
@@ -1445,6 +1494,254 @@ done:
 	return err;
 }
 
+OSErr TimeGridWindCurv_c::ReadTopology(char* path)
+{
+	// import NetCDF curvilinear info so don't have to regenerate
+	char s[1024], errmsg[256]/*, s[256], topPath[256]*/;
+	long i, numPoints, numTopoPoints, line = 0, numPts;
+	CHARH f = 0;
+	OSErr err = 0;
+	
+	TopologyHdl topo=0;
+	LongPointHdl pts=0;
+	FLOATH depths=0;
+	VelocityFH velH = 0;
+	DAGTreeStruct tree;
+	WorldRect bounds = voidWorldRect;
+	
+	TTriGridVel *triGrid = nil;
+	tree.treeHdl = 0;
+	TDagTree *dagTree = 0;
+	
+	long numWaterBoundaries, numBoundaryPts, numBoundarySegs;
+	LONGH boundarySegs=0, waterBoundaries=0, boundaryPts=0;
+	
+	errmsg[0]=0;
+	
+	
+	if (!path || !path[0]) return 0;
+	
+	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
+		TechError("TimeGridWindCurv_c::ReadTopology()", "ReadFileContents()", err);
+		goto done;
+	}
+	
+	_HLock((Handle)f); // JLM 8/4/99
+	
+	// No header
+	// start with transformation array and vertices
+	MySpinCursor(); // JLM 8/4/99
+	NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	if(IsTransposeArrayHeaderLine(s,&numPts)) // 
+	{
+		if (err = ReadTransposeArray(f,&line,&fVerdatToNetCDFH,numPts,errmsg)) 
+		{strcpy(errmsg,"Error in ReadTransposeArray"); goto done;}
+	}
+	else {err=-1; strcpy(errmsg,"Error in Transpose header line"); goto done;}
+	
+	if(err = ReadTVertices(f,&line,&pts,&depths,errmsg)) goto done;
+	
+	if(pts) 
+	{
+		LongPoint	thisLPoint;
+		
+		numPts = _GetHandleSize((Handle)pts)/sizeof(LongPoint);
+		if(numPts > 0)
+		{
+			WorldPoint  wp;
+			for(i=0;i<numPts;i++)
+			{
+				thisLPoint = INDEXH(pts,i);
+				wp.pLat = thisLPoint.v;
+				wp.pLong = thisLPoint.h;
+				AddWPointToWRect(wp.pLat, wp.pLong, &bounds);
+			}
+		}
+	}
+	MySpinCursor();
+	
+	NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	//code goes here, boundary points
+	if(IsBoundarySegmentHeaderLine(s,&numBoundarySegs)) // Boundary data from CATs
+	{
+		MySpinCursor();
+		if (numBoundarySegs>0)
+			err = ReadBoundarySegs(f,&line,&boundarySegs,numBoundarySegs,errmsg);
+		if(err) goto done;
+		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	}
+	else
+	{
+		//err = -1;
+		//strcpy(errmsg,"Error in Boundary segment header line");
+		//goto done;
+		// not needed for 2D files, but we require for now
+	}
+	MySpinCursor(); // JLM 8/4/99
+	
+	if(IsWaterBoundaryHeaderLine(s,&numWaterBoundaries,&numBoundaryPts)) // Boundary types from CATs
+	{
+		MySpinCursor();
+		if (numBoundaryPts>0)
+			err = ReadWaterBoundaries(f,&line,&waterBoundaries,numWaterBoundaries,numBoundaryPts,errmsg);
+		if(err) goto done;
+		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	}
+	else
+	{
+		//err = -1;
+		//strcpy(errmsg,"Error in Water boundaries header line");
+		//goto done;
+		// not needed for 2D files, but we require for now
+	}
+	MySpinCursor(); // JLM 8/4/99
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	
+	if(IsBoundaryPointsHeaderLine(s,&numBoundaryPts)) // Boundary data from CATs
+	{
+		MySpinCursor();
+		if (numBoundaryPts>0)
+			err = ReadBoundaryPts(f,&line,&boundaryPts,numBoundaryPts,errmsg);
+		if(err) goto done;
+		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	}
+	else
+	{
+		//err = -1;
+		//strcpy(errmsg,"Error in Boundary segment header line");
+		//goto done;
+		// not always needed ? probably always needed for curvilinear
+	}
+	MySpinCursor(); // JLM 8/4/99
+	
+	if(IsTTopologyHeaderLine(s,&numTopoPoints)) // Topology from CATs
+	{
+		MySpinCursor();
+		err = ReadTTopologyBody(f,&line,&topo,&velH,errmsg,numTopoPoints,FALSE);
+		if(err) goto done;
+		NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	}
+	else
+	{
+		err = -1; // for now we require TTopology
+		strcpy(errmsg,"Error in topology header line");
+		if(err) goto done;
+	}
+	MySpinCursor(); // JLM 8/4/99
+	
+	
+	//NthLineInTextOptimized(*f, (line)++, s, 1024); 
+	
+	if(IsTIndexedDagTreeHeaderLine(s,&numPoints))  // DagTree from CATs
+	{
+		MySpinCursor();
+		err = ReadTIndexedDagTreeBody(f,&line,&tree,errmsg,numPoints);
+		if(err) goto done;
+	}
+	else
+	{
+		err = -1; // for now we require TIndexedDagTree
+		strcpy(errmsg,"Error in dag tree header line");
+		if(err) goto done;
+	}
+	MySpinCursor(); // JLM 8/4/99
+	
+	/////////////////////////////////////////////////
+	// if map information is in the file just toss it
+	/*if (waterBoundaries && (this -> moverMap == model -> uMap))
+	 {
+	 //PtCurMap *map = CreateAndInitPtCurMap(fVar.userName,bounds); // the map bounds are the same as the grid bounds
+	 PtCurMap *map = CreateAndInitPtCurMap("Extended Topology",bounds); // the map bounds are the same as the grid bounds
+	 if (!map) {strcpy(errmsg,"Error creating ptcur map"); goto done;}
+	 // maybe move up and have the map read in the boundary information
+	 map->SetBoundarySegs(boundarySegs);	
+	 map->SetWaterBoundaries(waterBoundaries);
+	 
+	 *newMap = map;
+	 }*/
+	{	// wind will always be on another map
+		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
+		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs=0;}
+		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts=0;}
+	}
+	/*if (!(this -> moverMap == model -> uMap))	// maybe assume rectangle grids will have map?
+	 {
+	 if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
+	 if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs=0;}
+	 }*/
+	
+	/////////////////////////////////////////////////
+	
+	
+	triGrid = new TTriGridVel;
+	if (!triGrid)
+	{		
+		err = true;
+		TechError("Error in TimeGridWindCurv_c::ReadTopology()","new TTriGridVel" ,err);
+		goto done;
+	}
+	
+	fGrid = (TTriGridVel*)triGrid;
+	
+	triGrid -> SetBounds(bounds); 
+	//triGrid -> SetDepths(depths);
+	
+	dagTree = new TDagTree(pts,topo,tree.treeHdl,velH,tree.numBranches); 
+	if(!dagTree)
+	{
+		err = -1;
+		printError("Unable to read Extended Topology file.");
+		goto done;
+	}
+	
+	triGrid -> SetDagTree(dagTree);
+	
+	pts = 0;	// because fGrid is now responsible for it
+	topo = 0; // because fGrid is now responsible for it
+	tree.treeHdl = 0; // because fGrid is now responsible for it
+	velH = 0; // because fGrid is now responsible for it
+	//depths = 0;
+	
+done:
+	
+	if(depths) {DisposeHandle((Handle)depths); depths=0;}
+	if(f) 
+	{
+		_HUnlock((Handle)f); 
+		DisposeHandle((Handle)f); 
+		f = 0;
+	}
+	
+	if(err)
+	{
+		if(!errmsg[0])
+			strcpy(errmsg,"An error occurred in TimeGridWindCurv_c::ReadTopology");
+		printError(errmsg); 
+		if(pts) {DisposeHandle((Handle)pts); pts=0;}
+		if(topo) {DisposeHandle((Handle)topo); topo=0;}
+		if(velH) {DisposeHandle((Handle)velH); velH=0;}
+		if(depths) {DisposeHandle((Handle)depths); depths=0;}
+		if(tree.treeHdl) {DisposeHandle((Handle)tree.treeHdl); tree.treeHdl=0;}
+		
+		if(fGrid)
+		{
+			fGrid ->Dispose();
+			delete fGrid;
+			fGrid = 0;
+		}
+		/*if (*newMap) 
+		 {
+		 (*newMap)->Dispose();
+		 delete *newMap;
+		 *newMap=0;
+		 }*/
+		if (waterBoundaries) {DisposeHandle((Handle)waterBoundaries); waterBoundaries=0;}
+		if (boundarySegs) {DisposeHandle((Handle)boundarySegs); boundarySegs = 0;}
+		if (boundaryPts) {DisposeHandle((Handle)boundaryPts); boundaryPts = 0;}
+	}
+	return err;
+}
+
 OSErr TimeGridWindCurv_c::GetLatLonFromIndex(long iIndex, long jIndex, WorldPoint *wp)
 {
 	float dLat, dLon, dLat1, dLon1, dLat2, dLon2, fLat, fLong;
@@ -1489,3 +1786,5 @@ OSErr TimeGridWindCurv_c::GetLatLonFromIndex(long iIndex, long jIndex, WorldPoin
 	
 	return noErr;
 }
+
+

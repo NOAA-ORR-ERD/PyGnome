@@ -41,7 +41,7 @@ class SimpleMover(Mover):
         self.uncertainty_scale = uncertainty_scale
 
     def __repr__(self):
-        return 'Simple mover'
+        return 'SimpleMover(<%s>)' % (self.id)
 
     def get_move(self, spill, time_step, model_time, uncertain_spill_number=0):
         """

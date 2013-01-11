@@ -6845,8 +6845,6 @@ done:
 }
 
 // code to be used for gridcur and ptcur (and probably windcur)
-// leave out of pyGNOME for now - maybe move to a separate file
-//#ifndef pyGNOME
 TimeGridCurRect_c::TimeGridCurRect_c () : TimeGridVel_c()
 {
 	fTimeDataHdl = 0;
@@ -7480,7 +7478,7 @@ OSErr TimeGridCurRect_c::TextRead(char *path, char *topFilePath)
 	//SplitPathFile(pathName,fFileName);
 	strcpy(pathName,fVar.pathName);
 	SplitPathFile(pathName,fVar.userName);	// code goes here, this won't work on unix paths
-	
+	printNote("Got Here\n");
 	// code goes here, we need to worry about really big files
 	
 	// do the readgridcur file stuff, store numrows, numcols, return the bounds
@@ -7488,6 +7486,7 @@ OSErr TimeGridCurRect_c::TextRead(char *path, char *topFilePath)
 	if(err)
 		goto done;
 	
+	printNote("Got Here\n");
 	/////////////////////////////////////////////////
 	
 	rectGrid = new TRectGridVel;

@@ -13,18 +13,22 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "WindMover_c.h"
-#include "TimeGridVel.h"
+#include "ExportSymbols.h"
 
 
 #ifndef pyGNOME
 #include "GridVel.h"
+#include "TimeGridVel.h"
 #else
 #include "GridVel_c.h"
 #define TGridVel GridVel_c
+#include "TimeGridVel_c.h"
+#define TimeGridVel TimeGridVel_c
+#define TMap Map_c
 #endif
 
 
-class GridWindMover_c : virtual public WindMover_c {
+class GNOMEDLL_API GridWindMover_c : virtual public WindMover_c {
 
 public:
 	
@@ -42,18 +46,23 @@ public:
 	float fArrowScale;
 	Boolean fIsOptimizedForStep;
 
+#ifndef pyGNOME
 	GridWindMover_c (TMap *owner, char* name);
+#endif
 	GridWindMover_c () {}
 	
+	virtual ClassID 	GetClassID () { return TYPE_GRIDWINDMOVER; }
+	virtual Boolean		IAm(ClassID id) { if(id==TYPE_GRIDWINDMOVER) return TRUE; return WindMover_c::IAm(id); }
+
+	virtual WorldRect GetGridBounds(){return timeGrid->GetGridBounds();}	
+	void		SetTimeGrid(TimeGridVel *newTimeGrid) {timeGrid = newTimeGrid;}
+
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); 
 	virtual void 		ModelStepIsDone();
 	virtual WorldPoint3D       GetMove(const Seconds& model_time, Seconds timeStep,long setIndex,long leIndex,LERec *theLE,LETYPE leType);
-
-	virtual WorldRect GetGridBounds(){return timeGrid->GetGridBounds();}	
-	virtual ClassID 	GetClassID () { return TYPE_GRIDWINDMOVER; }
-	virtual Boolean		IAm(ClassID id) { if(id==TYPE_GRIDWINDMOVER) return TRUE; return WindMover_c::IAm(id); }
-
+	
+	OSErr			TextRead(char *path,char *topFilePath);
 	OSErr 			get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID);
 };
 
