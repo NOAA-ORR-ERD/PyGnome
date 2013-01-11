@@ -680,7 +680,6 @@ define([
             var windValue = timeseries.getByCid(windId);
             var addForm = this.getAddForm();
 
-//            this.clearInputs(addForm);
             addForm.data('data-wind-id', windValue.cid);
             addForm.find('.add-time-buttons').addClass('hidden');
             addForm.find('.edit-time-buttons').removeClass('hidden');
@@ -1023,6 +1022,18 @@ define([
             data['start_time'] = this.getFormDate(this.getForm());
             this.model.set(data);
             this.model.save();
+        },
+
+        show: function(coords) {
+            var form = this.getForm();
+
+            if (this.model && this.model.id) {
+                this.setForm(form, this.model.toJSON());
+            } else {
+                this.setForm(form, this.defaults);
+            }
+
+            ModelSettingsFormView.__super__.show.apply(this, arguments);
         }
     });
 

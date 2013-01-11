@@ -125,6 +125,11 @@ legend {
     width: 120px;
 }
 
+.hour,
+.minute {
+    width: 20px;
+}
+
 .edit-mover-name {
     padding: 0 0 0 10px;
 }

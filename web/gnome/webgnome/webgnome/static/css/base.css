@@ -120,10 +120,6 @@ select, input[type="file"] {
     width: 50px;
 }
 
-.input-micro {
-    width: 20px;
-}
-
 .help-inline {
     padding-top: 4px;
 }
