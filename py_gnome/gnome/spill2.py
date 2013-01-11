@@ -16,10 +16,10 @@ do the real work.
 """
 import numpy as np
 
-from gnome import basic_types
+from gnome import basic_types, GnomeObject
 from gnome.utilities import rand    # not to confuse with python random module
 
-class Spill(object):
+class Spill(GnomeObject):
     """
     Base class for all spills
     
@@ -95,18 +95,6 @@ class Spill(object):
         In this case nothing.
         """
         return None
-
-    @property
-    def id(self):
-        """
-        Return an ID value for this spill.
-
-        This method uses Python's builtin `id()` function to identify the
-        object. Override it for more exotic forms of identification.
-
-        :return: the integer ID returned by id() for this object
-        """
-        return id(self)
 
     def __str__(self):
         msg = ["gnome.spill.Spill(num_LEs=%i)\n"%self.num_LEs]
