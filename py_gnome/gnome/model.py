@@ -154,6 +154,8 @@ class Model(object):
         """
         #fixme: where should we check if a spill is in a valid location on the map?
         self._spill_container.add_spill(spill)
+        if self.is_uncertain:
+            self._uncertain_spill_container = self._spill_container.copy(uncertain=True)
 
     def remove_spill(self, spill_id):
         """
