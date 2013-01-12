@@ -96,6 +96,9 @@ class OrderedCollection(object):
         for i in sorted(self._index.values()):
             yield self._elems[i]
 
+    def __contains__(self, ident):
+        return ident in self._index
+
     def __getitem__(self, ident):
         return self.get(ident)
 

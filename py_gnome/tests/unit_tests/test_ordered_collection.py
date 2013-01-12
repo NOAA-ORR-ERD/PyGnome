@@ -35,6 +35,10 @@ class TestOrderedCollection(object):
         oc = OrderedCollection([1,2,3,4,5])
         assert [i for i in oc] == [1,2,3,4,5]
 
+    def test_contains(self):
+        oc = OrderedCollection([1,2,3,4,5])
+        assert id(5) in oc
+
     def test_getitem(self):
         oc = OrderedCollection([1,2,3,4,5])
         assert oc[id(3)] == 3
