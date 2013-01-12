@@ -16,13 +16,13 @@ class TestOrderedCollection(object):
         assert oc.dtype == int
 
         with pytest.raises(TypeError):
-            oc = OrderedCollection()
+            oc = OrderedCollection() # either a populated list or a dtype is required
 
         with pytest.raises(TypeError):
             oc = OrderedCollection('not a list')
 
         with pytest.raises(TypeError):
-            oc = OrderedCollection([])
+            oc = OrderedCollection([]) # either a populated list or a dtype is required
 
         with pytest.raises(TypeError):
             oc = OrderedCollection([1,2,3,4,5], float)
@@ -66,6 +66,8 @@ class TestOrderedCollection(object):
         oc = OrderedCollection([1,2,3,4,5])
         oc.add(6)
         assert [i for i in oc] == [1,2,3,4,5,6]
+        with pytest.raises(TypeError):
+            oc.add('not an int')
 
     def test_remove(self):
         oc = OrderedCollection([1,2,3,4,5])
@@ -84,6 +86,8 @@ class TestOrderedCollection(object):
         with pytest.raises(KeyError):
             # our key should also be gone after the delete
             l__temp = oc[id(4)]
+        with pytest.raises(TypeError):
+            oc.replace(id(7), 'not an int')
 
     def test_with_movers(self):
         mover_1 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
