@@ -16,64 +16,74 @@ class NavigationTree(object):
         value = value if len(value) <= max_chars else '%s ...' % value[:max_chars]
         return '%s: %s' % (name, value)
 
-    def render(self):
-        data = self.model.to_dict()
+    def _render_children(self, nodes, form_id, object_type=None):
+        """
+        Render a list of dictionaries ``nodes`` as child nodes of a root node.
 
-        movers = {
-            'title': 'Movers',
-            'form_id': 'add_mover',
-            'children': []
-        }
+        Returns a list dictionaries each of which has a 'form_id', 'title', and
+        'children' field, the last of which will include any key, value pairs
+        in the dict.
 
-        for mover in data.pop('wind_movers', []):
-            mover_item = {
-                'object_id': mover['id'],
-                'form_id': 'edit_wind_mover',
-                'title': mover['name'],
-                 'children': []
-            }
+        If a 'name' field exists in a node, it is used as the title of the
+        rendered child.
 
-            for name, value in mover.items():
-                mover_item['children'].append({
-                    'object_id': mover['id'],
-                    'form_id': 'edit_wind_mover',
-                    'title': self._get_value_title(name, value)
-                })
+        If an 'id' field exists in a node, it is used as the 'object_id' field
+        of the rendered child.
+        """
+        children = []
+        for node in nodes:
+            node_id = node['id'] if 'id' in node else None
 
-            movers['children'].append(mover_item)
-
-        spills = {
-            'title': 'Spills',
-            'form_id': 'add_spill',
-            'children': []
-        }
-
-        for spill in data.pop('point_release_spills', []):
-            spill_item = {
-                'object_id': spill['id'],
-                'form_id': 'edit_point_release_spill',
-                'title': spill['name'],
+            item = {
+                'form_id': form_id,
+                'title': node.pop('name', 'Item'),
                 'children': []
             }
 
-            for name, value in spill.items():
-                spill_item['children'].append({
-                    'object_id': spill['id'],
-                    'form_id': 'edit_point_release_spill',
+            if node_id:
+                item['object_id'] = node_id
+            if object_type:
+                item['object_type'] = object_type
+
+            for name, value in node.items():
+                sub_item = {
+                    'form_id': form_id,
                     'title': self._get_value_title(name, value)
-                })
+                }
 
-            spills['children'].append(spill_item)
+                if node_id:
+                    sub_item['object_id'] = node_id,
+                item['children'].append(sub_item)
 
-        settings = {
-            'title': 'Model Settings',
-            'form_id': 'model_settings',
+            children.append(item)
+        return children
+
+    def _render_root_node(self, title, form_id):
+        return {
+            'title': title,
+            'form_id': form_id,
             'children': []
         }
 
+    def render(self):
+        data = self.model.to_dict()
+        movers = self._render_root_node('Movers', 'add_mover')
+        spills = self._render_root_node('Spills', 'add_spill')
+        settings = self._render_root_node('Model Settings', 'model_settings')
+
+        movers['children'].extend(
+            self._render_children(data.pop('wind_movers', []),
+                                  object_type='wind_mover',
+                                  form_id='edit_wind_mover'))
+
+        spills['children'].extend(
+            self._render_children(data.pop('point_release_spills', []),
+                                  object_type='point_release_spill',
+                                  form_id='edit_point_release_spill'))
+
+         # Add the map manually as the first model setting
         map_data = data.pop('map')
         map_form_id = 'edit_map' if map_data else 'add_map'
-
 
         settings['children'].append({
             'form_id': map_form_id,
@@ -81,11 +91,8 @@ class NavigationTree(object):
             'title': 'Map: %s' % (map_data['name'] if map_data else 'None')
         })
 
-        for name, value in data.items():
-            settings['children'].append({
-                'form_id': 'model_settings',
-                'title': self._get_value_title(name, value),
-            })
-
+        settings['children'].extend(self._render_children(
+            [dict(name=self._get_value_title(key, value))
+             for key, value in data.items()], form_id='model_settings'))
 
         return [settings, movers, spills]

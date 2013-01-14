@@ -153,7 +153,7 @@
                     currentTimeStep: ${current_time_step},
                     pointReleaseSpills: ${point_release_spills | n},
                     windMovers: ${wind_movers | n},
-                    modelId: ${model_id},
+                    modelId: "${model_id}",
                     modelSettings: ${model_settings | n},
                     map: ${map_data | n}
                 });

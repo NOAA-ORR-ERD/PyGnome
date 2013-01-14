@@ -335,7 +335,7 @@ class ModelManager(object):
         model = None
 
         if model_id:
-            model = self.get(model_id)
+            model = self.running_models.get(str(model_id), None)
 
         if model is None:
             model = self.create(**kwargs)

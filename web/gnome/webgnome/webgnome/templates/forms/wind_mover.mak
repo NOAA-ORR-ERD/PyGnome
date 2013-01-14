@@ -9,8 +9,9 @@
                 from webgnome.util import velocity_unit_options
                 units = mover.wind.units if mover.wind else default_wind.units
             %>
-            <label>Type</label> ${h.select('type', 'constant',
-                                           (('constant', 'Constant'),('variable', 'Variable')),
+            <label>Type</label> ${h.select('type', 'constant', (
+                                           ('constant-wind', 'Constant'),
+                                           ('variable-wind', 'Variable')),
                                            class_='type')}
             <label>Units</label> ${h.select('units', units, velocity_unit_options, class_='units')}
             <label class="checkbox">${h.checkbox('is_active', checked=mover.is_active)}

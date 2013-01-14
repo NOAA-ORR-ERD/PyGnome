@@ -367,7 +367,7 @@ define([
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
-                    width: 900,
+                    width: 850,
                     height: 705,
                     title: "Edit Wind Mover"
                 }
@@ -398,14 +398,13 @@ define([
 
         typeChanged: function() {
             var type = this.$el.find('.type').val();
+            var typeDiv = this.$el.find('.' + type);
+            var otherDivs = this.$el.find(
+                '.tab-pane.wind > div').not(typeDiv);
 
-            if (type === 'constant') {
-                this.$el.find('.constant-wind').removeClass('hidden');
-                this.$el.find('.variable-wind').addClass('hidden');
-            } else {
-                this.$el.find('.constant-wind').addClass('hidden');
-                this.$el.find('.variable-wind').removeClass('hidden');
-            }
+            console.log(otherDivs.length)
+            typeDiv.removeClass('hidden');
+            otherDivs.addClass('hidden');
         },
 
         compassChanged: function(magnitude, direction) {
@@ -505,6 +504,7 @@ define([
                 time.set(values);
             } else {
                 // Add the first (and only) time series value.
+                timeseries.reset([]);
                 timeseries.add(values);
             }
 
@@ -521,6 +521,17 @@ define([
 
             wind.set('units', data.units);
             delete(data.units);
+
+            if (this.$el.find('.type').val() === 'constant-wind'
+                    && timeseries.length > 1) {
+
+                var message = 'Changing this mover to use constant wind will ' +
+                    'delete variable wind data. Go ahead?';
+
+                if (!window.confirm(message)) {
+                   return;
+                }
+            }
 
             // A constant wind mover has these values.
             if (data.direction !== undefined && data.speed !== undefined) {
@@ -576,7 +587,7 @@ define([
         },
 
         getMoverTypeDiv: function(type) {
-            type = type || this.getMoverType() + '-wind';
+            type = type || this.getMoverType();
             return this.$el.find('.' + type);
         },
 
@@ -819,8 +830,18 @@ define([
             this.$el.find('#is_active').prop('checked', this.model.get('active'));
             this.$el.find('#units').val(wind.get('units'));
 
-            var constantAddForm = this.getAddForm('constant');
+            var constantAddForm = this.getAddForm('constant-wind');
             var firstTimeValue = timeseries.at(0);
+
+            var moverType = this.$el.find('.type');
+
+            if (timeseries.length > 1) {
+                moverType.val('variable-wind');
+            } else {
+                moverType.val('constant-wind');
+            }
+
+            this.typeChanged();
 
             if (firstTimeValue) {
                 var formData = firstTimeValue.toJSON();
@@ -828,7 +849,18 @@ define([
             }
         },
 
+        close: function() {
+            this.model = null;
+            WindMoverFormView.__super__.close.apply(this, arguments);
+        },
+
         show: function() {
+            if (this.model === undefined) {
+                window.alert('That mover was not found. Please refresh the page.')
+                console.log('Mover undefined.');
+                return;
+            }
+
             this.renderTimeTable();
             this.setFormDefaults();
 
@@ -836,12 +868,6 @@ define([
                 this.setInputsFromModel();
             }
 
-            var timeseries = this.model.get('wind').get('timeseries');
-            if (timeseries.length > 1) {
-                this.$el.find('.type').val('variable');
-            }
-
-            this.typeChanged();
             WindMoverFormView.__super__.show.apply(this, arguments);
         }
     });
@@ -851,7 +877,7 @@ define([
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
-                    width: 900,
+                    width: 850,
                     height: 705,
                     title: "Add Wind Mover"
                 }

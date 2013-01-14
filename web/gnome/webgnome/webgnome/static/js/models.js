@@ -292,7 +292,7 @@ define([
                alert('The run failed due to a server-side error.');
            } if (xhr.status === 404) {
                // The run finished. We already check if the server is expected
-               // to have a time step before the request, in a local cache of
+               // to have a time step before th in a local cache of
                // expected time steps for the run, so we should not reach
                // this point in normal operation. That is, assuming the local
                // cache of time steps matches the server's -- which it always
@@ -384,6 +384,7 @@ define([
                 });
             }
 
+            return data;
         },
 
          // Return a `moment` object for any date field.
