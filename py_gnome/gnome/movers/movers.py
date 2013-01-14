@@ -23,7 +23,7 @@ class Mover(GnomeObject):
         """
         During init, it defaults is_active = True
         """
-        self._is_active = True  # set in prepare_for_model_step
+        self._is_active = True  # initialize to True, though this is set in prepare_for_model_step for each step
         self.on = True          # turn the mover on / off for the run
         if is_active_stop <= is_active_start:
             raise ValueError("is_active_start should be a python datetime object strictly smaller than is_active_stop")
@@ -115,7 +115,8 @@ class CyMover(Mover):
         NOTE: Remaining inputs will change after one_spill merge .. TODO: Fix this
         """
         super(CyMover,self).prepare_for_model_step(model_time, time_step, uncertain_spills_count, uncertain_spills_size)
-        self.mover.prepare_for_model_step( self.datetime_to_seconds(model_time), time_step, uncertain_spills_count, uncertain_spills_size)
+        if self.is_active and self.on:
+            self.mover.prepare_for_model_step( self.datetime_to_seconds(model_time), time_step, uncertain_spills_count, uncertain_spills_size)
 
     def prepare_data_for_get_move(self, spill, model_time_datetime):
         """
@@ -184,16 +185,20 @@ class WindMover(CyMover):
         .. todo::
             We probably want to include more information.
         """
-        return "WindMover( wind=<wind_object>, uncertain_duration= %s, uncertain_time_delay=%s, uncertain_speed_scale=%s, uncertain_angle_scale=%s)" \
+        return "WindMover( wind=<wind_object>, uncertain_duration= %s, uncertain_time_delay=%s, uncertain_speed_scale=%s, uncertain_angle_scale=%s, is_active_start, is_active_stop, on)" \
                % (self.uncertain_duration, self.uncertain_time_delay, \
-                  self.uncertain_speed_scale, self.uncertain_angle_scale)
+                  self.uncertain_speed_scale, self.uncertain_angle_scale, \
+                  self.is_active_start, self.is_active_stop, self.on)
 
     def __str__(self):
         info = "WindMover - current state. See 'wind' object for wind conditions:\n" + \
                "  uncertain_duration={0.uncertain_duration}\n" + \
                "  uncertain_time_delay={0.uncertain_time_delay}\n" + \
                "  uncertain_speed_scale={0.uncertain_speed_scale}\n" + \
-               "  uncertain_angle_scale={0.uncertain_angle_scale}"
+               "  uncertain_angle_scale={0.uncertain_angle_scale}" + \
+               "  is_active_start time={0.is_active_start}" + \
+               "  is_active_stop time={0.is_active_stop}" + \
+               "  current on/off status={0.on}" 
         return info.format(self.mover)
 
     # Define properties using lambda functions: uses lambda function, which are accessible via fget/fset as follows:
@@ -219,7 +224,7 @@ class WindMover(CyMover):
         """
         self.prepare_data_for_get_move(spill, model_time_datetime)
         
-        if self.is_active: 
+        if self.is_active and self.on: 
             try:
                 windage = spill['windages']
             except KeyError, e:
@@ -262,23 +267,7 @@ class RandomMover(CyMover):
         .. todo:: 
             We probably want to include more information.
         """
-        return "RandomMover(diffusion_coef=%s)" % (self.diffusion_coef,)
-
-    def prepare_for_model_step(self, model_time_datetime, time_step, uncertain_spills_count=0, uncertain_spills_size=None):
-       """
-       Random mover does not use uncertainty for anything during prepare_for_model_step(...)
-
-       This method does not call super().prepare_for_model_step() ... the MRO would choose CyMover.  Instead, we would
-       like to call the Mover.prepare_for_model_step() base class method
-
-        .. todo:: 
-            Why do we need to skip the super() method and go to the next one in the MRO?
-            The reason is that our local mover.prepare_for_model_step() **takes different arguments**.  We could probably refactor
-            this a bit.
-
-       """
-       Mover.prepare_for_model_step(self, model_time_datetime, time_step, uncertain_spills_count, uncertain_spills_size)
-       self.mover.prepare_for_model_step(self.model_time, time_step)
+        return "RandomMover(diffusion_coef=%s,is_active_start=%s, is_active_stop=%s, on=%s)" % (self.diffusion_coef,self.is_active_start, self.is_active_stop, self.on)
 
     def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
         """
@@ -289,7 +278,7 @@ class RandomMover(CyMover):
         """
         self.prepare_data_for_get_move(spill, model_time_datetime)
 
-        if self.is_active: 
+        if self.is_active and self.on: 
             self.mover.get_move(  self.model_time,
                                   time_step, 
                                   self.positions,
@@ -370,13 +359,14 @@ class WeatheringMover(Mover):
         self.model_time = self.datetime_to_seconds(model_time_datetime)
         self.prepare_data_for_get_move(spill, model_time_datetime)
 
-        self.mover.get_move(  self.model_time,
-                              time_step,
-                              self.positions,
-                              self.delta,
-                              self.status_codes,
-                              self.spill_type,
-                              uncertain_spill_number)
+        if self.is_active and self.on: 
+            self.mover.get_move(  self.model_time,
+                                  time_step,
+                                  self.positions,
+                                  self.delta,
+                                  self.status_codes,
+                                  self.spill_type,
+                                  uncertain_spill_number)
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
