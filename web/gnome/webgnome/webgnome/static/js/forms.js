@@ -367,7 +367,7 @@ define([
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
-                    width: 900,
+                    width: 850,
                     height: 705,
                     title: "Edit Wind Mover"
                 }
@@ -877,7 +877,7 @@ define([
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
-                    width: 900,
+                    width: 850,
                     height: 705,
                     title: "Add Wind Mover"
                 }
