@@ -828,7 +828,18 @@ define([
             }
         },
 
+        close: function() {
+            this.model = null;
+            WindMoverFormView.__super__.close.apply(this, arguments);
+        },
+
         show: function() {
+            if (this.model === undefined) {
+                window.alert('That mover was not found. Please refresh the page.')
+                console.log('Mover undefined.');
+                return;
+            }
+
             this.renderTimeTable();
             this.setFormDefaults();
 

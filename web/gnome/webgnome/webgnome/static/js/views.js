@@ -616,7 +616,7 @@ define([
         initialize: function() {
             _.bindAll(this);
             this.treeEl = this.options.treeEl;
-            this.url = this.options.url;
+            this.url = this.options.apiRoot + "/tree";
 
             // Turn off node icons. A [+] icon will still appear for nodes
             // that have children.
@@ -677,7 +677,6 @@ define([
             this.addButtonEl = this.options.addButtonEl;
             this.removeButtonEl = this.options.removeButtonEl;
             this.settingsButtonEl = this.options.settingsButtonEl;
-            this.url = this.options.url;
 
             // Controls that require the user to select an item in the TreeView.
             this.itemControls = [this.removeButtonEl, this.settingsButtonEl];
