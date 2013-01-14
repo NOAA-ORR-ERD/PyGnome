@@ -12,7 +12,7 @@ from webgnome.views.services.base import BaseResource
 
 
 @resource(collection_path='/model',
-          path='/model/{model_id:\d+}',
+          path='/model/{model_id}',
           renderer='gnome_json',
           description='Create a new model or delete the current model.')
 class Model(BaseResource):
@@ -47,7 +47,7 @@ class Model(BaseResource):
         """
         Delete the current model.
         """
-        self.settings.Model.delete(int(self.request.matchdict['model_id']))
+        self.settings.Model.delete(self.request.matchdict['model_id'])
         message = util.make_message('success', 'Deleted the current model.')
     
         return {
@@ -74,7 +74,7 @@ class Model(BaseResource):
         }
 
 
-@resource(path='/model/{model_id:\d+}/tree', renderer='gnome_json',
+@resource(path='/model/{model_id}/tree', renderer='gnome_json',
           description='A Dynatree JSON representation of the current model.')
 class ModelTree(BaseResource):
 
@@ -87,7 +87,7 @@ class ModelTree(BaseResource):
         return NavigationTree(self.request.validated['model']).render()
     
     
-@resource(path='/model/{model_id:\d+}/runner', renderer='gnome_json',
+@resource(path='/model/{model_id}/runner', renderer='gnome_json',
           description='Run the current model.')
 class ModelRunner(BaseResource):
     def _get_timestamps(self):

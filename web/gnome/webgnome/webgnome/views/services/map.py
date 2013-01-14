@@ -11,7 +11,7 @@ from webgnome.model_manager import WebMapFromBNA
 from webgnome.views.services.base import BaseResource
 
 
-@resource(path='/model/{model_id:\d+}/map',
+@resource(path='/model/{model_id}/map',
           renderer='gnome_json', description='A map.')
 class Map(BaseResource):
 

@@ -7,8 +7,8 @@ from webgnome.schema import WindMoverSchema
 from webgnome.views.services.base import BaseResource
 
 
-@resource(collection_path='/model/{model_id:\d+}/mover/wind',
-          path='/model/{model_id:\d+}/mover/wind/{id:\d+}',
+@resource(collection_path='/model/{model_id}/mover/wind',
+          path='/model/{model_id}/mover/wind/{id}',
           renderer='gnome_json', description='A wind mover.')
 class WindMover(BaseResource):
 

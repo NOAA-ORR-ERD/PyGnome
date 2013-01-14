@@ -206,7 +206,7 @@ def valid_model_id(request):
 
     if model_id:
         try:
-            model = Model.get(int(model_id))
+            model = Model.get(model_id)
         except Model.DoesNotExist:
             model = None
 
@@ -253,7 +253,7 @@ def valid_mover_id(request):
 
     model = request.validated['model']
 
-    if not int(request.matchdict['id']) in model.movers:
+    if not request.matchdict['id'] in model.movers:
         request.errors.add('body', 'mover', 'Mover not found.')
         request.errors.status = 404
 
@@ -270,7 +270,7 @@ def valid_spill_id(request):
 
     model = request.validated['model']
 
-    if not int(request.matchdict['id']) in model.spills:
+    if not request.matchdict['id'] in model.spills:
         request.errors.add('body', 'spill', 'Spill not found.')
         request.errors.status = 404
 

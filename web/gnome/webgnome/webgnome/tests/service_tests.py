@@ -7,12 +7,12 @@ from base import FunctionalTestBase
 class ModelHelperMixin(object):
     def create_model(self):
         resp = self.testapp.post('/model')
-        self.base_url = '/model/%s' % resp.json_body['model_id']
+        self.base_url = str('/model/%s' % resp.json_body['model_id'])
         return resp
 
     def model_url(self, postfix):
         postfix = '/%s' % postfix if postfix[0] not in ('/', '?') else postfix
-        return '%s%s' % (self.base_url, postfix)
+        return str('%s%s' % (self.base_url, postfix))
 
 
 class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
@@ -177,7 +177,7 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.collection_url = self.model_url('/mover/wind')
 
     def get_mover_url(self, mover_id):
-        return '%s/%s' % (self.collection_url, mover_id)
+        return str('%s/%s' % (self.collection_url, mover_id))
 
     def get_safe_date(self, dt):
         """
@@ -294,7 +294,7 @@ class PointReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.collection_url = self.model_url('/spill/point_release')
 
     def get_spill_url(self, spill_id):
-        return '%s/%s' % (self.collection_url, spill_id)
+        return str('%s/%s' % (self.collection_url, spill_id))
 
     def make_spill_data(self, **kwargs):
         now = datetime.datetime.now()

@@ -6,8 +6,8 @@ from webgnome.schema import PointReleaseSpillSchema
 from webgnome.views.services.base import BaseResource
 
 
-@resource(collection_path='/model/{model_id:\d+}/spill/point_release',
-          path='/model/{model_id:\d+}/spill/point_release/{id:\d+}',
+@resource(collection_path='/model/{model_id}/spill/point_release',
+          path='/model/{model_id}/spill/point_release/{id}',
           renderer='gnome_json', description='A point release spill.')
 class PointReleaseSpill(BaseResource):
 

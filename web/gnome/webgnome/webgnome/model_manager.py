@@ -3,11 +3,12 @@ model_manager.py: Manage a pool of running models.
 """
 import datetime
 
-# XXX: This except block should not be necessary.
 import os
+from uuid import uuid1
 from hazpy.file_tools import haz_files
 from webgnome import util
 
+# XXX: This except block should not be necessary.
 try:
     import gnome
 except ImportError:
@@ -19,6 +20,7 @@ except ImportError:
     # and see if we can import the Model.
     # If we fail in this attempt...oh well.
     import sys
+    import gnome
     sys.path.append('../../../py_gnome')
 
 import gnome.utilities.map_canvas
@@ -174,7 +176,7 @@ class WebMapFromBNA(MapFromBNA):
 
     @property
     def id(self):
-        return id(self)
+        return uuid1()
 
     def to_dict(self):
         return {
@@ -242,24 +244,6 @@ class WebModel(Model):
     def duration_hours(self):
         if self.duration.seconds:
             return self.duration.seconds / 60 / 60
-
-    def has_mover_with_id(self, mover_id):
-        """
-        Return True if the model has a mover with the ID ``mover_id``.
-
-        TODO: The manager patches :class:`gnome.model.Model` with this method,
-        but the method should belong to that class.
-        """
-        return int(mover_id) in self._movers
-
-    def has_spill_with_id(self, spill_id):
-        """
-        Return True if the model has a spill with the ID ``spill_id``.
-
-        TODO: The manager patches :class:`gnome.model.Model` with this method,
-        but the method should belong to that class.
-        """
-        return int(spill_id) in self.spills
 
     def add_bna_map(self, filename, map_data):
         map_file = os.path.join(self.data_dir, filename)
@@ -338,7 +322,7 @@ class ModelManager(object):
 
     def create(self, **kwargs):
         model = WebModel(**kwargs)
-        self.running_models[model.id] = model
+        self.running_models[str(model.id)] = model
         return model
 
     def get_or_create(self, model_id, **kwargs):
@@ -351,7 +335,7 @@ class ModelManager(object):
         model = None
 
         if model_id:
-            model = self.running_models.get(model_id, None)
+            model = self.get(model_id)
 
         if model is None:
             model = self.create(**kwargs)
@@ -360,6 +344,7 @@ class ModelManager(object):
         return model, created
 
     def get(self, model_id):
+        model_id = str(model_id)
         if not model_id in self.running_models:
             raise self.DoesNotExist
         return self.running_models.get(model_id)
