@@ -73,10 +73,11 @@ class SimpleMover(Mover):
 
         # delta[:] = self.velocity * time_step
         delta = np.zeros_like(positions)
+        
+        if self.is_active and self.on:
+            delta[in_water_mask] = self.velocity * time_step
 
-        delta[in_water_mask] = self.velocity * time_step
-
-        # scale for projection
-        delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
+            # scale for projection
+            delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
         
         return delta
