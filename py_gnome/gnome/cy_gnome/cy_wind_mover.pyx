@@ -1,22 +1,40 @@
-import cython
+cimport cython
 cimport numpy as cnp
 import numpy as np
-from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
+
 from gnome import basic_types
 
-from movers cimport WindMover_c
+# following exist in gnome.cy_gnome 
+from movers cimport WindMover_c,Mover_c
 from type_defs cimport WorldPoint3D, LEWindUncertainRec, LEStatus, LEType, OSErr, Seconds, VelocityRec
+cimport cy_mover,cy_ossm_time
 
-cdef class CyWindMover:
+"""
+Dynamic casts are not currently supported in Cython - define it here instead.
+Since this function is custom for each mover, just keep it with the definition for each mover
+"""
+cdef extern from *:
+    WindMover_c* dynamic_cast_ptr "dynamic_cast<WindMover_c *>" (Mover_c *) except NULL
 
-    cdef WindMover_c *mover
+
+cdef class CyWindMover(cy_mover.CyMover):
+    """
+    Cython wrapper for C++ WindMover_c object. It derives from cy_mover.CyMover base class
+    which defines default functionality for some methods
+    """
+    cdef WindMover_c *wind
     
-    # Let's define the following - it is only used for testing
     def __cinit__(self):
+        """
+        create a new WindMover_c() and also do a dynamic cast of member variable 'self.mover' to WindMover_c
+        so all members of WindMover_c are available to this class
+        """
         self.mover = new WindMover_c()
+        self.wind = dynamic_cast_ptr(self.mover)
         
     def __dealloc__(self):
-        del self.mover
+        del self.mover  # since this is allocated in this class, free memory here as well
+        self.wind = NULL
     
     def __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
                  uncertain_speed_scale=2, uncertain_angle_scale=0.4):
@@ -33,76 +51,50 @@ cdef class CyWindMover:
         
         constant_wind_value is a tuple of values: (u, v)
         """
-        self.mover.fIsConstantWind  = 1  # Assume wind is constant, but initialize velocity to 0.
-        self.mover.fConstantValue.u = 0
-        self.mover.fConstantValue.v = 0
-        self.mover.fDuration = uncertain_duration
-        self.mover.fUncertainStartTime = uncertain_time_delay
-        self.mover.fSpeedScale = uncertain_speed_scale
-        self.mover.fAngleScale = uncertain_angle_scale
+        self.wind.fIsConstantWind  = 1  # Assume wind is constant, but initialize velocity to 0.
+        self.wind.fConstantValue.u = 0
+        self.wind.fConstantValue.v = 0
+        self.wind.fDuration = uncertain_duration
+        self.wind.fUncertainStartTime = uncertain_time_delay
+        self.wind.fSpeedScale = uncertain_speed_scale
+        self.wind.fAngleScale = uncertain_angle_scale
+        
+    def __repr__(self):
+        """
+        unambiguous repr of object, reuse for str() method
+        """
+        info = "CyWindMover(uncertain_duration=%s,uncertain_time_delay=%s,uncertain_speed_scale=%s,uncertain_angle_scale=%s)" \
+        % (self.wind.fDuration, self.wind.fUncertainStartTime, self.wind.fSpeedScale, self.wind.fAngleScale)
+        return info
         
     property uncertain_duration:
         def __get__(self):
-            return self.mover.fDuration
+            return self.wind.fDuration
         
         def __set__(self,value):
-            self.mover.fDuration = value
+            self.wind.fDuration = value
     
     property uncertain_time_delay:
         def __get__(self):
-            return self.mover.fUncertainStartTime
+            return self.wind.fUncertainStartTime
         
         def __set__(self, value):
-            self.mover.fUncertainStartTime = value
+            self.wind.fUncertainStartTime = value
     
     property uncertain_speed_scale:
         def __get__(self):
-            return self.mover.fSpeedScale
+            return self.wind.fSpeedScale
         
         def __set__(self, value):
-            self.mover.fSpeedScale = value
+            self.wind.fSpeedScale = value
     
     property uncertain_angle_scale:
         def __get__(self):
-            return self.mover.fAngleScale
+            return self.wind.fAngleScale
         
         def __set__(self, value):
-            self.mover.fAngleScale = value
+            self.wind.fAngleScale = value
         
-    
-    def prepare_for_model_run(self):
-        """
-        .. function::prepare_for_model_run
-        
-        """
-        self.mover.PrepareForModelRun()
-        
-    def prepare_for_model_step(self, model_time, step_len, numSets=0, cnp.ndarray[cnp.npy_int] setSizes=None):
-        """
-        .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
-        
-        prepares the mover for time step, calls the underlying C++ mover objects PrepareForModelStep(..)
-        
-        :param model_time: current model time.
-        :param step_len: length of the time step over which the get move will be computed
-        """
-        cdef OSErr err
-        if numSets == 0:
-            err = self.mover.PrepareForModelStep(model_time, step_len, False, 0, NULL)
-        else:
-            err = self.mover.PrepareForModelStep(model_time, step_len, True, numSets, <int *>&setSizes[0])
-            
-        if err != 0:
-            """
-            For now just raise an OSError - until the types of possible errors are defined and enumerated
-            """
-            raise OSError("WindMover_c.PreareForModelStep returned an error.")
-
-    def model_step_is_done(self):
-        """
-        invoke C++ model step is done functionality
-        """
-        self.mover.ModelStepIsDone()
 
     def get_move(self,
                  model_time,
@@ -142,7 +134,7 @@ cdef class CyWindMover:
         N = len(ref_points) # set a data type?
         
         # modifies delta in place
-        err = self.mover.get_move(N,
+        err = self.wind.get_move(N,
                                   model_time,
                                   step_len,
                                   &ref_points[0],
@@ -162,18 +154,20 @@ cdef class CyWindMover:
         
 
     def set_constant_wind(self,windU,windV):
-    
-        self.mover.fConstantValue.u = windU
-        self.mover.fConstantValue.v = windV
-        self.mover.fIsConstantWind = 1
+        """
+        Constant wind can be set using set_ossm as well; though this is exposed for testing
+        """
+        self.wind.fConstantValue.u = windU
+        self.wind.fConstantValue.v = windV
+        self.wind.fIsConstantWind = 1
         
-    def set_ossm(self, CyOSSMTime ossm):
+    def set_ossm(self, cy_ossm_time.CyOSSMTime ossm):
         """
         Use the CyOSSMTime object to set the wind mover OSSM time member variable using
         the SetTimeDep method
         """
-        self.mover.SetTimeDep(ossm.time_dep)
-        self.mover.fIsConstantWind = 0
+        self.wind.SetTimeDep(ossm.time_dep)
+        self.wind.fIsConstantWind = 0
         return True
    
     def get_time_value(self, modelTime):
@@ -194,7 +188,7 @@ cdef class CyWindMover:
         vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
         
         for i in range( 0, modelTimeArray.size):
-           err = self.mover.GetTimeValue( modelTimeArray[i], &vel_rec[i])
+           err = self.wind.GetTimeValue( modelTimeArray[i], &vel_rec[i])
            if err != 0:
                raise ValueError
         

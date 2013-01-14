@@ -51,14 +51,16 @@ movers:
 """
 cdef extern from "Mover_c.h":
     cdef cppclass Mover_c:
-        pass
+        OSErr PrepareForModelRun()
+        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step, bool uncertain, int numLESets, int* LESetsSizesList)    # currently this happens in C++ get_move command
+        void ModelStepIsDone()
 
 cdef extern from "CurrentMover_c.h":
     cdef cppclass CurrentMover_c(Mover_c):
         pass
 
 cdef extern from "WindMover_c.h":
-    cdef cppclass WindMover_c:
+    cdef cppclass WindMover_c(Mover_c):
         WindMover_c() except +
         Boolean fIsConstantWind
         VelocityRec fConstantValue
@@ -67,14 +69,15 @@ cdef extern from "WindMover_c.h":
         double fSpeedScale
         double fAngleScale
         
-        OSErr PrepareForModelRun()
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID)
         void SetTimeDep(OSSMTimeValue_c *ossm)
         OSErr GetTimeValue(Seconds &time, VelocityRec *vel)
-        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step, bool uncertain, int numLESets, int* LESetsSizesList)	# currently this happens in C++ get_move command
-        void ModelStepIsDone()
         
-        
+cdef extern from "Random_c.h":
+    cdef cppclass Random_c(Mover_c):
+        Random_c() except +
+        double fDiffusionCoefficient
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)        
         
 cdef extern from "CATSMover_c.h":
    #============================================================================
@@ -169,13 +172,3 @@ cdef extern from "GridWindMover_c.h":
         void 		SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr                TextRead(char *path,char *topFilePath)
         
-cdef extern from "Random_c.h":
-    cdef cppclass Random_c:
-        Boolean bUseDepthDependent
-        double fDiffusionCoefficient
-        double fUncertaintyFactor
-        TR_OPTIMZE fOptimize
-        OSErr PrepareForModelRun()
-        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
-        OSErr PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)
-        void ModelStepIsDone()
