@@ -37,12 +37,12 @@
 </div>
 
 
-<div class="container-fluid" id="content">
-    <div class="row-fluid" id="container">
+<div class="container-fluid outer-wrapper">
+    <div class="row-fluid inner-wrapper">
         <div class="span2" id="sidebar">
             <%block name="sidebar"> </%block>
         </div>
-        <div class="span8">
+        <div class="span8" id="content">
             <%block name="content"> </%block>
         </div>
     </div>

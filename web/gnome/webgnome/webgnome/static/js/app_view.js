@@ -44,7 +44,7 @@ define([
 
             this.treeView = new views.TreeView({
                 treeEl: "#tree",
-                url: this.apiRoot + "/tree",
+                apiRoot: this.apiRoot,
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
                 pointReleaseSpills: this.pointReleaseSpills,
@@ -80,7 +80,6 @@ define([
                 resizeButtonEl: "#resize-button",
                 spillButtonEl: "#spill-button",
                 timeEl: "#time",
-                url: this.apiRoot + '/time_steps',
                 modelRun: this.modelRun,
                 mapView: this.mapView
             });
@@ -321,10 +320,13 @@ define([
 
             var _this = this;
             var model = new models.Model({}, {url: this.apiRoot});
-            model.save(null, {
+            _this.modelSettings.destroy({
                 success: function() {
-                    _this.modelSettings.destroy();
-                    window.location.reload(true);
+                    model.save(null, {
+                        success: function() {
+                            window.location.reload(true);
+                        }
+                    });
                 }
             });
         },
@@ -500,11 +502,15 @@ define([
                 return;
             }
 
+
+            // This has to come before we show the form because form views
+            // may set their models to null when hiding.
+            this.formViews.hideAll();
+
             if (node.data.object_id) {
                 formView.reload(node.data.object_id);
             }
 
-            this.formViews.hideAll();
             formView.show();
         },
 

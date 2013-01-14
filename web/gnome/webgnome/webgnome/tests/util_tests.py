@@ -1,7 +1,7 @@
 import webgnome.util as util
 import datetime
 
-from webgnome.model_manager import ModelManager
+from webgnome.model_manager import ModelManager, WebModel
 from base import UnitTestBase
 
 
@@ -10,41 +10,65 @@ class JsonRequireModelTests(UnitTestBase):
         request = self.get_request()
         request.registry.settings.model_session_key = \
             self.settings['model_session_key']
+        request.registry.settings.model_images_dir = \
+            self.settings['model_images_dir']
         request.registry.settings.Model = ModelManager()
         request.context = self.get_resource()
         return request
 
-    def assert_is_missing_model_error(self, response):
-        self.assertEqual(type(response), dict)
-        self.assertTrue(response['error'])
-
-        message = response['message']
-
-        self.assertEqual(message['type'], 'error')
-        self.assertEqual(message['text'], 'That model is no longer available.')
-
-    def test_decorator_works_on_methods(self):
+    def test_function_decorator_creates_model_if_one_doesnt_exist(self):
         class MockView(object):
             def __init__(self, request):
                 self.request = request
 
             @util.require_model
-            def method(self):
-                return {}
+            def method(self, model):
+                return model
 
         request = self.make_request()
         response = MockView(request).method()
-        self.assert_is_missing_model_error(response)
+        self.assertEqual(type(response), WebModel)
+        self.assertTrue(response.id)
 
-
-    def test_decorator_works_on_function(self):
+    def test_method_decorator_creates_model_if_one_doesnt_exist(self):
         @util.require_model
-        def mock_view(response):
-            return {}
+        def mock_view(response, model):
+            return model
 
         request = self.make_request()
         response = mock_view(request)
-        self.assert_is_missing_model_error(response)
+        self.assertEqual(type(response), WebModel)
+        self.assertTrue(response.id)
+
+    def test_function_decorator_uses_existing_model_if_one_exists(self):
+        @util.require_model
+        def mock_view(response, model):
+            return model
+
+        request = self.make_request()
+        model = request.registry.settings.Model.create(
+            model_images_dir=self.settings['model_images_dir'])
+        request.session[self.settings['model_session_key']] = model.id
+        response = mock_view(request)
+        self.assertEqual(response, model)
+        self.assertTrue(response.id, model.id)
+
+    def test_method_decorator_uses_existing_model_if_one_exists(self):
+        class MockView(object):
+            def __init__(self, request):
+                self.request = request
+
+            @util.require_model
+            def method(self, model):
+                return model
+
+        request = self.make_request()
+        model = request.registry.settings.Model.create(
+            model_images_dir=self.settings['model_images_dir'])
+        request.session[self.settings['model_session_key']] = model.id
+        response = MockView(request).method()
+        self.assertEqual(response, model)
+        self.assertTrue(response.id, model.id)
 
 
 class MakeMessageTests(UnitTestBase):

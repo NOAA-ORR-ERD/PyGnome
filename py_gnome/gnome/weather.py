@@ -2,14 +2,14 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
-from gnome import basic_types
+from gnome import basic_types, GnomeObject
 from gnome.utilities import transforms, time_utils, convert
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from hazpy import unit_conversion
 
 import numpy as np
 
-class Wind(object):
+class Wind(GnomeObject):
     """
     Defines the Wind conditions for a spill
     """
@@ -98,18 +98,6 @@ class Wind(object):
         Return string representation of this object
         """
         return "Wind Object"
-    
-    @property
-    def id(self):
-        """
-        Return an ID value for this object
-
-        This method uses Python's builtin `id()` function to identify the
-        object. Override it for more exotic forms of identification.
-
-        :return: the integer ID returned by id() for this object
-        """
-        return id(self)
     
     user_units = property( lambda self: self._user_units)   
     

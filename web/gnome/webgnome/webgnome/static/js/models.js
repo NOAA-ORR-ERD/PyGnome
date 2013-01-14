@@ -179,7 +179,6 @@ define([
             }
 
             if (this.dirty) {
-                options['no_cache'] = true;
                 this.doRun(options);
                 return;
             }
@@ -292,8 +291,13 @@ define([
                // TODO: Inform user of more information.
                alert('The run failed due to a server-side error.');
            } if (xhr.status === 404) {
-               // TODO: Maybe we shouldn't return 404 when finished? Seems wrong.
-               alert('The model you were working with is no longer available.');
+               // The run finished. We already check if the server is expected
+               // to have a time step before th in a local cache of
+               // expected time steps for the run, so we should not reach
+               // this point in normal operation. That is, assuming the local
+               // cache of time steps matches the server's -- which it always
+               // should.
+               this.finishRun();
            }
            this.finishRun();
            util.log(xhr);
@@ -380,6 +384,7 @@ define([
                 });
             }
 
+            return data;
         },
 
          // Return a `moment` object for any date field.

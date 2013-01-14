@@ -210,7 +210,7 @@ def test_mover_api():
     # test our iter and len object methods
     assert len(model.movers) == 2
     assert len([m for m in model.movers]) == 2
-    for m1, m2 in zip([m for m in model.movers], [mover_1, mover_2]):
+    for m1, m2 in zip(model.movers, [mover_1, mover_2]):
         assert m1 == m2
 
     # test our add objectlist methods

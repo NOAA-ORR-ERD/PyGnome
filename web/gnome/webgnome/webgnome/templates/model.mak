@@ -44,7 +44,7 @@
 </%block>
 
 <%block name="sidebar">
-     <div class="container" id="sidebar-toolbar">
+     <div class="container sidebar-toolbar">
       <div class="btn-toolbar">
         <div class="btn-group">
             <a class="btn" id="add-button" href="javascript:"><i class="icon-plus-sign"></i></a>
@@ -90,7 +90,9 @@
             </div>
             <div class="btn-group">
                 <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
-                <div class="btn disabled" id="slider-container"><span id="time">00:00</span> <div id="slider"></div></div>
+                <div class="btn disabled" id="slider-container">
+                    <span id="time">00:00</span> <div id="slider"></div>
+                </div>
                 <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
                 <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
                 <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
@@ -151,7 +153,7 @@
                     currentTimeStep: ${current_time_step},
                     pointReleaseSpills: ${point_release_spills | n},
                     windMovers: ${wind_movers | n},
-                    modelId: ${model_id},
+                    modelId: "${model_id}",
                     modelSettings: ${model_settings | n},
                     map: ${map_data | n}
                 });

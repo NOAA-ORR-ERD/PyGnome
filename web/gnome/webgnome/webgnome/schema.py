@@ -80,8 +80,8 @@ class LocalDateTime(DateTime):
         return _datetime
 
     def serialize(self, node, appstruct):
-        dt = super(LocalDateTime, self).serialize(node, appstruct)
-        return self.strip_timezone(dt)
+        appstruct = self.strip_timezone(appstruct)
+        return super(LocalDateTime, self).serialize(node, appstruct)
 
     def deserialize(self, node, cstruct):
         dt = super(LocalDateTime, self).deserialize(node, cstruct)

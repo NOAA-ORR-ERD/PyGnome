@@ -1,5 +1,3 @@
-from  pyramid.httpexceptions import HTTPNotFound
-
 
 class BaseResource(object):
     def __init__(self, request):
@@ -9,7 +7,7 @@ class BaseResource(object):
     def id(self):
         _id = self.request.matchdict.get('id', None)
         if _id:
-            return int(_id)
+            return _id
 
     @property
     def settings(self):

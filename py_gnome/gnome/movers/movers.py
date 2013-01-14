@@ -1,7 +1,7 @@
 import numpy as np
 
 from gnome.utilities import time_utils, transforms, convert
-from gnome import basic_types
+from gnome import basic_types, GnomeObject
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
@@ -9,7 +9,7 @@ from gnome.cy_gnome.cy_random_mover import CyRandomMover
 from datetime import datetime, timedelta
 from time import gmtime
 
-class Mover(object):
+class Mover(GnomeObject):
     """
     Base class from which all Python movers can inherit
     :param is_active_start: datetime when the mover should be active
@@ -30,15 +30,6 @@ class Mover(object):
         
         self.is_active_start = is_active_start
         self.is_active_stop  = is_active_stop
-
-    @property
-    def id(self):
-        """
-        Override this method for more exotic forms of identification.
-
-        :return: the integer ID returned by the builtin id() for this object
-        """
-        return id(self)
 
     # Methods for is_active property definition
     is_active = property(lambda self: self._is_active)

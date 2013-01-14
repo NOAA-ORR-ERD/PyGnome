@@ -4,30 +4,55 @@ from gnome.utilities.time_utils import round_time
 from base import FunctionalTestBase
 
 
-class ModelServiceTests(FunctionalTestBase):
+class ModelHelperMixin(object):
     def create_model(self):
-        return self.testapp.post('/model')
+        resp = self.testapp.post('/model')
+        self.base_url = str('/model/%s' % resp.json_body['model_id'])
+        return resp
+
+    def model_url(self, postfix):
+        postfix = '/%s' % postfix if postfix[0] not in ('/', '?') else postfix
+        return str('%s%s' % (self.base_url, postfix))
+
+
+class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_model_gets_a_valid_model(self):
         self.create_model()
-        resp = self.testapp.get('/model', status=200)
+        resp = self.testapp.get(self.base_url, status=200)
+        data = resp.json_body
         iso_rounded_now = round_time(datetime.datetime.now(), 3600).isoformat()
 
-        self.assertEqual(resp.json_body['uncertain'], False)
-        self.assertEqual(resp.json_body['start_time'], iso_rounded_now)
-        self.assertEqual(resp.json_body['time_step'], 900.0)
-        self.assertEqual(resp.json_body['duration_days'], 2)
-        self.assertEqual(resp.json_body['duration_hours'], 0)
-        self.assertEqual(resp.json_body['point_release_spills'], [])
-        self.assertEqual(resp.json_body['wind_movers'], [])
+        self.assertEqual(data['uncertain'], False)
+        self.assertEqual(data['start_time'], iso_rounded_now)
+        self.assertEqual(data['time_step'], 900.0)
+        self.assertEqual(data['duration_days'], 2)
+        self.assertEqual(data['duration_hours'], 0)
+
+        # We did not specify to include movers or spills.
+        self.assertNotIn('point_release_spills', data)
+        self.assertNotIn('wind_movers', data)
+
+    def test_get_model_includes_movers_if_requested(self):
+        self.create_model()
+        resp = self.testapp.get(self.model_url('?include_movers=1'), status=200)
+        data = resp.json_body
+
+        self.assertEqual(data['wind_movers'], [])
+
+    def test_get_model_includes_spills_if_requested(self):
+        self.create_model()
+        resp = self.testapp.get(self.model_url('?include_spills=1'), status=200)
+        data = resp.json_body
+
+        self.assertEqual(data['point_release_spills'], [])
 
     def test_get_model_returns_404_if_model_does_not_exist(self):
-        resp = self.testapp.get('/model', status=404)
+        resp = self.testapp.get('/model/234343', status=404)
         self.assertEqual(resp.status_code, 404)
 
     def test_create_model_creates_a_model(self):
-        resp = self.testapp.post('/model', status=200)
-
+        resp = self.create_model()
         self.assertTrue(resp.json_body['model_id'])
         self.assertEqual(resp.json_body['message'],  {
             'type': 'success',
@@ -36,7 +61,7 @@ class ModelServiceTests(FunctionalTestBase):
 
     def test_delete_model_deletes_model(self):
         self.create_model()
-        resp = self.testapp.delete('/model', status=200)
+        resp = self.testapp.delete(self.base_url, status=200)
 
         self.assertTrue(resp.json_body['model_id'])
         self.assertEqual(resp.json_body['message'],  {
@@ -45,41 +70,10 @@ class ModelServiceTests(FunctionalTestBase):
         })
 
         # Model doesn't exist anymore
-        resp = self.testapp.get('/model', status=404)
+        resp = self.testapp.get(self.base_url, status=404)
         self.assertEqual(resp.status_code, 404)
 
-    def test_create_model_creates_a_new_model_if_one_eixsts(self):
-        self.create_model()
-
-        # Get default settings
-        resp = self.testapp.get('/model', status=200)
-        default_uncertain = resp.json_body['uncertain']
-        default_time_step = resp.json_body['time_step']
-
-        # Change model settings and get a couple of the new values to test.
-        self.test_post_settings()
-        resp = self.testapp.get('/model', status=200)
-        self.assertNotEqual(default_uncertain, resp.json_body['uncertain'])
-        self.assertNotEqual(default_time_step, resp.json_body['time_step'])
-
-        # Verify that the new model has default values.
-        self.testapp.post('/model', status=200)
-        resp = self.testapp.get('/model', status=200)
-        self.assertEqual(resp.json_body['uncertain'], default_uncertain)
-        self.assertEqual(resp.json_body['time_step'], default_time_step)
-
-    def test_get_default_settings(self):
-        self.create_model()
-        resp = self.testapp.get('/model/settings', status=200)
-        iso_rounded_now = round_time(datetime.datetime.now(), 3600).isoformat()
-
-        self.assertEqual(resp.json_body['uncertain'], False)
-        self.assertEqual(resp.json_body['start_time'], iso_rounded_now)
-        self.assertEqual(resp.json_body['time_step'], 900.0)
-        self.assertEqual(resp.json_body['duration_days'], 2)
-        self.assertEqual(resp.json_body['duration_hours'], 0)
-
-    def test_post_settings(self):
+    def test_put_settings(self):
         self.create_model()
         start = datetime.datetime(2012, 12, 1, 2, 30)
 
@@ -91,10 +85,10 @@ class ModelServiceTests(FunctionalTestBase):
             'duration_hours': 1
         }
 
-        resp = self.testapp.post_json('/model/settings', data)
+        resp = self.testapp.put_json(self.base_url, data)
         self.assertTrue(resp.json_body['success'])
 
-        resp = self.testapp.get('/model/settings')
+        resp = self.testapp.get(self.base_url)
 
         self.assertEqual(resp.json_body['uncertain'], True)
         self.assertEqual(resp.json_body['start_time'], start.isoformat())
@@ -103,18 +97,17 @@ class ModelServiceTests(FunctionalTestBase):
         self.assertEqual(resp.json_body['duration_hours'], 1)
 
 
-class ModelRunnerServiceTests(FunctionalTestBase):
-
-    def create_model(self):
-        return self.testapp.post('/model')
+class ModelRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_first_step(self):
-        resp = self.create_model()
-        _id = resp.json_body['model_id']
-        resp = self.testapp.post_json('/model/%s/runner' % _id)
-        data = resp.json_body
+        self.create_model()
 
-        # TODO: Tests the default behavior of loading the Long Island script.
+        # Load the Long Island script parameters into the model.
+        self.testapp.get('/long_island')
+
+        # Post to runner URL to get the first step.
+        resp = self.testapp.post_json(self.model_url('runner'))
+        data = resp.json_body
         self.assertEqual(data['map_bounds'],
                          [[-73.083328, 40.922832], [-73.083328, 41.330833],
                           [-72.336334, 41.330833], [-72.336334, 40.922832]])
@@ -122,14 +115,69 @@ class ModelRunnerServiceTests(FunctionalTestBase):
         self.assertIn('background_map.png', data['background_image'])
         self.assertEqual(data['time_step']['id'], 0)
 
-        resp = self.testapp.get('/model/%s/runner' % _id)
-        data = resp.json_body
+    def test_get_additional_steps(self):
+        self.create_model()
 
-        self.assertIn('foreground_00001.png', data['time_step']['url'])
-        self.assertEqual(data['time_step']['id'], 1)
+        # Load the Long Island script parameters into the model.
+        self.testapp.get('/long_island')
+
+        # Post to runner URL to get the first step and expected # of time steps.
+        url = self.model_url('runner')
+        resp = self.testapp.post_json(url)
+        num_steps = len(resp.json_body['expected_time_steps'])
+
+        for step in range(num_steps):
+            # Skip the first step because we received it in the POST.
+            if step == 0:
+                continue
+            resp = self.testapp.get(url)
+            data = resp.json_body
+            # TODO: Add more value tests here.
+            self.assertEqual(data['time_step']['id'], step)
+
+        # The model should now be exhausted and return a 404 if the user tries
+        # to run it.
+        resp = self.testapp.get(url, status=404)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_restart_runner_after_finished(self):
+        self.create_model()
+
+        # Load the Long Island script parameters into the model.
+        self.testapp.get('/long_island')
+
+        # Post to runner URL to get the first step and expected # of time steps.
+        url = self.model_url('runner')
+        resp = self.testapp.post_json(url)
+        num_steps = len(resp.json_body['expected_time_steps'])
+
+        for step in range(num_steps):
+            # Skip the first step because we received it in the POST.
+            if step == 0:
+                continue
+            self.testapp.get(url)
+
+        resp = self.testapp.get(url, status=404)
+        self.assertEqual(resp.status_code, 404)
+
+        # Restart the model runner by POSTing to its URL.
+        resp = self.testapp.post_json(url)
+
+        # Verify that we can now get steps
+        self.assertIn('foreground_00000.png', resp.json_body['time_step']['url'])
+        resp = self.testapp.get(url)
+        self.assertIn('foreground_00001.png', resp.json_body['time_step']['url'])
 
 
-class WindMoverServiceTests(FunctionalTestBase):
+class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
+
+    def setUp(self):
+        super(WindMoverServiceTests, self).setUp()
+        self.create_model()
+        self.collection_url = self.model_url('/mover/wind')
+
+    def get_mover_url(self, mover_id):
+        return str('%s/%s' % (self.collection_url, mover_id))
 
     def get_safe_date(self, dt):
         """
@@ -142,10 +190,6 @@ class WindMoverServiceTests(FunctionalTestBase):
         Using .isoformat() prepares the object for JSON serialization.
         """
         return dt.replace(microsecond=0).isoformat()
-
-
-    def create_model(self):
-        return self.testapp.post('/model')
 
     def make_wind_mover_data(self, **kwargs):
         now = datetime.datetime.now()
@@ -182,16 +226,14 @@ class WindMoverServiceTests(FunctionalTestBase):
         return data
 
     def test_wind_mover_create(self):
-        self.create_model()
         data = self.make_wind_mover_data()
-
-        resp = self.testapp.post_json('/mover/wind', data)
+        resp = self.testapp.post_json(self.collection_url, data)
         mover_id = resp.json_body['id']
 
         self.assertTrue(resp.json_body['success'])
         self.assertTrue(mover_id)
 
-        resp = self.testapp.get('/mover/wind/{0}'.format(mover_id))
+        resp = self.testapp.get(self.get_mover_url(mover_id))
 
         self.assertEqual(resp.json['is_active'], True)
         self.assertEqual(resp.json['wind']['units'], 'mps')
@@ -209,9 +251,8 @@ class WindMoverServiceTests(FunctionalTestBase):
         self.assertEqual(resp.json['uncertain_angle_scale_units'], 'deg')
 
     def test_wind_mover_update(self):
-        self.create_model()
         data = self.make_wind_mover_data()
-        resp = self.testapp.post_json('/mover/wind', data)
+        resp = self.testapp.post_json(self.collection_url, data)
         mover_id = resp.json_body['id']
 
         safe_now = self.get_safe_date(datetime.datetime.now())
@@ -220,10 +261,10 @@ class WindMoverServiceTests(FunctionalTestBase):
         data['is_active'] = False
         data['uncertain_duration'] = 6
 
-        resp = self.testapp.put_json('/mover/wind/{0}'.format(mover_id), data)
+        resp = self.testapp.put_json(self.get_mover_url(mover_id), data)
         self.assertEqual(resp.json['success'], True)
 
-        resp = self.testapp.get('/mover/wind/{0}'.format(mover_id))
+        resp = self.testapp.get(self.get_mover_url(mover_id))
 
         self.assertEqual(resp.json['wind']['timeseries'][0]['direction'],
                          data['wind']['timeseries'][0]['direction'])
@@ -233,18 +274,27 @@ class WindMoverServiceTests(FunctionalTestBase):
         self.assertEqual(resp.json['uncertain_duration'], 6.0)
 
     def test_wind_mover_delete(self):
-        self.create_model()
         data = self.make_wind_mover_data()
-        resp = self.testapp.post_json('/mover/wind', data)
+
+        # create a mover
+        resp = self.testapp.post_json(self.collection_url, data)
         mover_id = resp.json_body['id']
-        resp = self.testapp.delete_json('/mover/wind/{0}'.format(mover_id))
+
+        # delete the mover
+        mover_url = self.get_mover_url(mover_id)
+        resp = self.testapp.delete_json(mover_url)
         self.assertEqual(resp.json['success'], True)
-        self.testapp.get('/mover/wind/{0}'.format(mover_id), status=404)
+        self.testapp.get(mover_url, status=404)
 
 
-class PointReleaseSpillServiceTests(FunctionalTestBase):
-    def create_model(self):
-        return self.testapp.post('/model')
+class PointReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
+    def setUp(self):
+        super(PointReleaseSpillServiceTests, self).setUp()
+        self.create_model()
+        self.collection_url = self.model_url('/spill/point_release')
+
+    def get_spill_url(self, spill_id):
+        return str('%s/%s' % (self.collection_url, spill_id))
 
     def make_spill_data(self, **kwargs):
         now = datetime.datetime.now()
@@ -266,39 +316,38 @@ class PointReleaseSpillServiceTests(FunctionalTestBase):
         return data
 
     def test_spill_create(self):
-        self.create_model()
         data = self.make_spill_data()
-
-        resp = self.testapp.post_json('/spill/point_release', data)
+        resp = self.testapp.post_json(self.collection_url, data)
         spill_id = resp.json_body['id']
 
         self.assertTrue(resp.json_body['success'])
         self.assertTrue(spill_id)
 
-        resp = self.testapp.get('/spill/point_release/{0}'.format(spill_id))
+        resp = self.testapp.get(self.get_spill_url(spill_id))
 
         self.assertEqual(resp.json['release_time'], data['release_time'])
 
     def test_spill_update(self):
-        self.create_model()
         data = self.make_spill_data()
-        resp = self.testapp.post_json('/spill/point_release', data)
+        resp = self.testapp.post_json(self.collection_url, data)
         spill_id = resp.json_body['id']
 
         data['is_active'] = False
         data['release_Time'] = datetime.datetime.now().isoformat()
 
-        resp = self.testapp.put_json('/spill/point_release/{0}'.format(spill_id), data)
+        mover_url = self.get_spill_url(spill_id)
+
+        resp = self.testapp.put_json(mover_url, data)
         self.assertEqual(resp.json['success'], True)
 
-        resp = self.testapp.get('/spill/point_release/{0}'.format(spill_id))
+        resp = self.testapp.get(mover_url)
         self.assertEqual(resp.json['release_time'], data['release_time'])
 
     def test_spill_delete(self):
-        self.create_model()
         data = self.make_spill_data()
-        resp = self.testapp.post_json('/spill/point_release', data)
+        resp = self.testapp.post_json(self.collection_url, data)
         spill_id = resp.json_body['id']
-        resp = self.testapp.delete_json('/spill/point_release/{0}'.format(spill_id))
+        spill_url = self.get_spill_url(spill_id)
+        resp = self.testapp.delete_json(spill_url)
         self.assertEqual(resp.json['success'], True)
-        self.testapp.get('/spill/point_release/{0}'.format(spill_id), status=404)
+        self.testapp.get(spill_url, status=404)

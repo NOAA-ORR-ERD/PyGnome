@@ -7,8 +7,8 @@ from webgnome.schema import WindMoverSchema
 from webgnome.views.services.base import BaseResource
 
 
-@resource(collection_path='/model/{model_id:\d+}/mover/wind',
-          path='/model/{model_id:\d+}/mover/wind/{id:\d+}',
+@resource(collection_path='/model/{model_id}/mover/wind',
+          path='/model/{model_id}/mover/wind/{id}',
           renderer='gnome_json', description='A wind mover.')
 class WindMover(BaseResource):
 
@@ -54,7 +54,7 @@ class WindMover(BaseResource):
         value.
         """
         model = self.request.validated.pop('model')
-        return model.get_mover(self.id).to_dict()
+        return model.movers.get(self.id).to_dict()
 
     @view(validators=util.valid_mover_id, schema=WindMoverSchema)
     def put(self):
@@ -64,7 +64,7 @@ class WindMover(BaseResource):
         data = self.request.validated
         data['wind'] = self.get_wind(data['wind'])
         model = data.pop('model')
-        mover = model.get_mover(self.id).from_dict(data)
+        mover = model.movers.get(self.id).from_dict(data)
 
         return {
             'success': True,
@@ -76,7 +76,7 @@ class WindMover(BaseResource):
         """
         Delete a WindMover.
         """
-        self.request.validated['model'].remove_mover(self.id)
+        self.request.validated['model'].movers.remove(self.id)
         message = util.make_message('success', 'Deleted wind mover.')
 
         return {

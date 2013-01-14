@@ -5,12 +5,12 @@ from collections import OrderedDict
 from gnome.utilities.orderedcollection import OrderedCollection
 
 import gnome
-
+from gnome import GnomeObject
 from gnome.utilities.time_utils import round_time
 import numpy as np
 import copy
 
-class Model(object):
+class Model(GnomeObject):
     
     """ 
     PyGNOME Model Class
@@ -68,15 +68,6 @@ class Model(object):
         if self._uncertain != uncertain_value:
             self._uncertain = uncertain_value
             self.rewind()   
-
-    @property
-    def id(self):
-        """
-        Return an ID value for this model.
-
-        :return: an integer ID value for this model
-        """
-        return id(self)
 
     @property
     def start_time(self):
@@ -170,9 +161,9 @@ class Model(object):
             num_uSpills = len(self.uncertain_spills)
             uSpill_size = np.zeros((num_uSpills,), dtype=np.int)
 
-            for i in range(0, num_uSpills):
-                self.uncertain_spills[i].prepare_for_model_step(self.model_time, self.time_step)
-                uSpill_size[i] = spill.num_LEs
+            for us, i in zip(self.uncertain_spills, range(num_uSpills)):
+                us.prepare_for_model_step(self.model_time, self.time_step)
+                uSpill_size[i] = us.num_LEs
 
         # initialize movers differently if model uncertainty is on
         for mover in self.movers:
