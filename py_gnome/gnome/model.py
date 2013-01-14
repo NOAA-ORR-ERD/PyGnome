@@ -157,6 +157,8 @@ class Model(object):
         """
         #fixme: where should we check if a spill is in a valid location on the map?
         self._spill_container.spills += spill
+        ## fixme -- this may not be strictly required, but it's safer.
+        self.rewind() 
 
     def remove_spill(self, spill_id):
         """
