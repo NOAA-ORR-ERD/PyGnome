@@ -74,7 +74,11 @@ class OrderedCollection(object):
             raise TypeError('OrderedCollection: expected type %s, got type %s' % (self.dtype, type(elem)))
 
     def remove(self, ident):
-        ''' Remove an object from the collection '''
+        '''
+        Remove an object from the collection
+
+        :param ident: id of the object
+        '''
         self._elems[self._index[ident]] = None
         del self._index[ident]
 

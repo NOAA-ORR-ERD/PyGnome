@@ -103,6 +103,8 @@ class Spill(object):
                 break
             else:
                 id+=1
+        else:
+            raise ValueError("There are no more ids aavailable to spills!")
 
     def __del__(self):
         """

@@ -35,7 +35,7 @@ def test_one_simple_spill():
     spill = SurfaceReleaseSpill(num_elements,
                                 start_position,
                                 start_time)
-    sc.add_spill(spill)
+    sc.spills.add(spill)
     sc.release_elements(start_time)
 
     assert sc.num_elements == num_elements
@@ -65,8 +65,11 @@ def test_multiple_spills():
                                 start_position,
                                 start_time2)
 
-    sc.add_spill(spill)
-    sc.add_spill(spill2)
+    sc.spills.add(spill)
+
+    print sc.spills
+
+    sc.spills.add(spill2)
     sc.release_elements(start_time)
 
     assert sc['positions'].shape == (num_elements, 3)
@@ -78,12 +81,13 @@ def test_multiple_spills():
     assert sc['last_water_positions'].shape == (num_elements*2, 3)
 
     ## check the get_spill method
-    assert sc.get_spill(spill.id) == spill
-    assert sc.get_spill(spill2.id) == spill2
+    assert sc.spills[spill.id] == spill
+    assert sc.spills[spill2.id] == spill2
 
-    ## check the remove_spill_by_id
-    sc.remove_spill_by_id(spill.id)
-    assert sc.get_spill(spill.id) is None # it shouldn't be there anymore.
+    ## check remove
+    sc.spills.remove(spill.id)
+    with pytest.raises(KeyError):
+        sc.spills[spill.id] is None # it shouldn't be there anymore.
 
 
 def test_reset():
@@ -100,8 +104,8 @@ def test_reset():
                                 start_position,
                                 start_time2)
 
-    sc.add_spill(spill)
-    sc.add_spill(spill2)
+    sc.spills.add(spill)
+    sc.spills.add(spill2)
     sc.prepare_for_model_step(start_time)
     sc.prepare_for_model_step(start_time + timedelta(hours=24) )
 
@@ -126,13 +130,13 @@ def test_reset2():
                                 start_position,
                                 start_time2)
 
-    sc.add_spill(spill)
-    sc.add_spill(spill2)
+    sc.spills.add(spill)
+    sc.spills.add(spill2)
 
     sc.prepare_for_model_step(start_time)
     sc.prepare_for_model_step(start_time + timedelta(hours=24) )
 
-    sc.remove_spill(spill)
+    sc.spills.remove(spill.id)
 
     sc.reset()
     print "id of spill 2", spill2.id
@@ -240,8 +244,8 @@ def test_copy():
                                 start_position2,
                                 start_time2)
 
-    sc.add_spill(spill)
-    sc.add_spill(spill2)
+    sc.spills.add(spill)
+    sc.spills.add(spill2)
 
     sc2 = sc.copy(uncertain=True)
 
@@ -249,8 +253,8 @@ def test_copy():
     assert len(sc.spills) == len(sc2.spills)
     
     # make sure they aren't references to the same spills
-    assert sc.spills[0] not in sc2.spills
-    assert sc.spills[1] not in sc2.spills
+    assert sc.spills[spill.id] not in sc2.spills
+    assert sc.spills[spill2.id] not in sc2.spills
 
     # make sure they have unique ids:
     for id1 in [s.id for s in sc.spills]:
@@ -298,21 +302,22 @@ def test_copy():
     # assert sc.get_spill(spill.id) is None # it shouldn't be there anymore.
 
 
+def test_ordered_collection_api():
+    start_time = datetime(2012, 1, 1, 12)
+    start_position = (23.0, -78.5, 0.0)
+    num_elements =  100
+
+    sc = SpillContainer()
+    sc.spills += SurfaceReleaseSpill(num_elements,
+                                     start_position,
+                                     start_time)
+    assert len(sc.spills) == 1
 
 
 
 
-## NOTE: this is no longer a feature  
-# def test_data_setting_new_error():
-#     """
-#     Should get an error adding a new data array of the wrong size
-#     """
-#     sp = TestSpillContainer(num_elements =  10)
-    
-#     new_arr = np.ones( (12, 3), dtype=np.float64 )
-    
-#     with pytest.raises(ValueError):
-#         sp['new_name'] = new_arr
+if __name__ == "__main__":
+    test_reset2()
 
 
 

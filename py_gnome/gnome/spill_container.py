@@ -17,6 +17,7 @@ import numpy as np
 from gnome import basic_types
 from gnome.utilities import rand    # not to confuse with python random module
 import gnome.spill
+from gnome.utilities.orderedcollection import OrderedCollection
 
 
 class SpillContainer(object):
@@ -39,7 +40,7 @@ class SpillContainer(object):
         self.is_uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
         self.is_active = True       # sets whether the spill is active or not
         
-        self.spills = [] # A list of spills (spill sources)
+        self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.reset()
 
 
@@ -89,43 +90,43 @@ class SpillContainer(object):
 
         return new_sc
 
-    def add_spill(self, spill):
-        self.spills.append(spill)
+    # def add_spill(self, spill):
+    #     self.spills.add(spill)
 
-    def remove_spill(self, spill):
-        """
-        remove the given spill from the collection
+    # def remove_spill(self, spill):
+    #     """
+    #     remove the given spill from the collection
 
-        :param spill: the spill object to remove
-        """
-        self.spills.remove(spill)
+    #     :param spill: the spill object to remove
+    #     """
+    #     self.spills.remove(spill)
 
-    def remove_spill_by_id(self, spill_id):
-        """
-        remove the spill that has the given id
+    # def remove_spill_by_id(self, spill_id):
+    #     """
+    #     remove the spill that has the given id
 
-        :param id: the id of the spill you want to remove
-        """
+    #     :param id: the id of the spill you want to remove
+    #     """
 
-        for spill in self.spills:
-            if spill.id == spill_id:
-                self.spills.remove(spill)
-                break
+    #     for spill in self.spills:
+    #         if spill.id == spill_id:
+    #             self.spills.remove(spill)
+    #             break
 
     
-    def get_spill(self, id):
-        """
-        return the spill with a given id
+    # def get_spill(self, id):
+    #     """
+    #     return the spill with a given id
         
-        :param id: the id of the spill desired
+    #     :param id: the id of the spill desired
 
-        returns None if there is no spill with that id
-        """
-        # fixme: used an ordered_dict for efficiency?
-        for spill in self.spills:
-            if spill.id == id:
-                return spill
-        return None
+    #     returns None if there is no spill with that id
+    #     """
+    #     # fixme: used an ordered_dict for efficiency?
+    #     for spill in self.spills:
+    #         if spill.id == id:
+    #             return spill
+    #     return None
 
     def reset(self):
         """
@@ -206,9 +207,8 @@ class TestSpillContainer(SpillContainer):
         spill = gnome.spill.SurfaceReleaseSpill(num_elements,
                                                 start_pos,    
                                                 release_time)
-        self.spills.append(spill)
+        self.spills.add(spill)
         self.release_elements(release_time)
-
 
 
 

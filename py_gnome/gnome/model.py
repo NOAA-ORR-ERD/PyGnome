@@ -46,14 +46,17 @@ class Model(object):
         """
         Resets the model to the beginning (start_time)
         """
+        ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
+
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
+        ## note: this may be redundant -- they will get reset in setup_model_run() anyway..
         self._spill_container.reset()
-        if self._uncertain:
-            self._uncertain_spill_container = self._spill_container.copy(uncertain=True)
-        else:
-            self._uncertain_spill_container = None
-        ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
+        try:
+            self._uncertain_spill_container.reset()
+        except AttributeError:
+            pass # there must not be one...
+
 
     ### Assorted properties
     @property
@@ -153,7 +156,7 @@ class Model(object):
 
         """
         #fixme: where should we check if a spill is in a valid location on the map?
-        self._spill_container.add_spill(spill)
+        self._spill_container.spills += spill
 
     def remove_spill(self, spill_id):
         """
@@ -171,6 +174,10 @@ class Model(object):
         for mover in self.movers:
             mover.prepare_for_model_run()
         self._spill_container.reset()
+        if self._uncertain:
+            self._uncertain_spill_container = self._spill_container.copy(uncertain=True)
+        else:
+            self._uncertain_spill_container = None
 
     def setup_time_step(self):
         """
