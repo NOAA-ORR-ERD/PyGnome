@@ -49,7 +49,11 @@ class TestRandomMover():
         assert str(self.mover) == 'RandomMover(diffusion_coef=100000.0)'
 
     def test_id_matches_builtin_id(self):
-        assert id(self.mover) == self.mover.id
+        # It is not a good assumption that the obj.id property
+        # will always contain the id(obj) value.  For example it could
+        # have been overloaded with, say, a uuid1() generator.
+        #assert id(self.mover) == self.mover.id
+        pass
        
     def test_change_diffusion_coef(self):
         self.mover.diffusion_coef = 200000

@@ -131,7 +131,11 @@ class TestWindMover:
        assert True
 
    def test_id_matches_builtin_id(self):
-       assert id(self.wm) == self.wm.id
+       # It is not a good assumption that the obj.id property
+       # will always contain the id(obj) value.  For example it could
+       # have been overloaded with, say, a uuid1() generator.
+       #assert id(self.wm) == self.wm.id
+       pass
 
    def test_get_move(self):
        """
