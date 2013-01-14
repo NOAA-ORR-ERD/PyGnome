@@ -625,8 +625,10 @@ define([
 
             this.options.windMovers.on('sync', this.reload);
             this.options.windMovers.on('add', this.reload);
+            this.options.windMovers.on('destroy', this.reload);
             this.options.pointReleaseSpills.on('sync', this.reload);
             this.options.pointReleaseSpills.on('add', this.reload);
+            this.options.pointReleaseSpills.on('destroy', this.reload);
             this.options.modelSettings.on('sync', this.reload);
         },
 

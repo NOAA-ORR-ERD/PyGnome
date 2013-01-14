@@ -549,14 +549,23 @@ define([
                 alert('Error! Could not delete ' + node.data.title + '.');
             }
 
-            if (!node.data.form_id || !node.data.object_id) {
+            if (!node.data.object_id || !node.data.object_type) {
                 return error();
             }
 
-            var ajaxForm = this.forms.get(node.data.delete_form_id);
-            var formView = this.formViews.get(node.data.delete_form_id);
+            var collections = {
+                'point_release_spill': this.pointReleaseSpills,
+                'wind_mover': this.windMovers
+            };
 
-            if (!ajaxForm || !formView) {
+            if (!_.has(collections, node.data.object_type)) {
+                return error();
+            }
+
+            var object = collections[node.data.object_type].get(
+                node.data.object_id);
+
+            if (!object) {
                 return error();
             }
 
@@ -564,10 +573,7 @@ define([
                 return;
             }
 
-            ajaxForm.submit({
-                data: "obj_id=" + node.data.object_id,
-                error: error
-            });
+            object.destroy();
         },
 
         moverChosen: function(moverType) {
