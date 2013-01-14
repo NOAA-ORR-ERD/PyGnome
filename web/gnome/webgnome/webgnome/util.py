@@ -5,11 +5,13 @@ import datetime
 import inspect
 import json
 import math
+import os
 import time
 import uuid
 
 from functools import wraps
 from itertools import chain
+import errno
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
@@ -251,12 +253,7 @@ def valid_mover_id(request):
 
     model = request.validated['model']
 
-    try:
-        mover = model.movers.get(int(request.matchdict['id']))
-    except KeyError:
-        mover = None
-
-    if not mover:
+    if not int(request.matchdict['id']) in model.movers:
         request.errors.add('body', 'mover', 'Mover not found.')
         request.errors.status = 404
 
@@ -273,20 +270,15 @@ def valid_spill_id(request):
 
     model = request.validated['model']
 
-    try:
-        spill = model.spills.get(int(request.matchdict['id']))
-    except KeyError:
-        spill = None
-
-    if not spill:
+    if not int(request.matchdict['id']) in model.spills:
         request.errors.add('body', 'spill', 'Spill not found.')
         request.errors.status = 404
 
 
 def require_model(f):
     """
-    Wrap a JSON view in a precondition that checks if the user has a valid
-    ``model_id`` in his or her session and fails if not.
+    Wrap a JSON view in a precondition that ensures the user has a valid model
+    ID in his or her session.
 
     If the key is missing or no model is found for that key, create a new model.
 
@@ -300,16 +292,20 @@ def require_model(f):
         @wraps(f)
         def inner_method(self, *args, **kwargs):
             model = get_model_from_session(self.request)
+            settings = self.request.registry.settings
             if model is None:
-                model = self.request.registry.settings.Model.create()
+                model = settings.Model.create(
+                    model_images_dir=settings.model_images_dir)
             return f(self, model, *args, **kwargs)
         wrapper = inner_method
     else:
         @wraps(f)
         def inner_fn(request, *args, **kwargs):
             model = get_model_from_session(request)
+            settings = request.registry.settings
             if model is None:
-                model = request.registry.settings.Model.create()
+                model = settings.Model.create(
+                    model_images_dir=settings.model_images_dir)
             return f(request, model, *args, **kwargs)
         wrapper = inner_fn
     return wrapper
@@ -382,6 +378,21 @@ def get_runtime():
     for all images generated during a model run.
     """
     return time.strftime("%Y-%m-%d-%H-%M-%S")
+
+
+def mkdir_p(path):
+    """
+    Make direction at ``path`` by first creating parent directories, unless they
+    already exist. Similar to `mkdir -p` functionality in Unix/Linux.
+
+    http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+    """
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
 
 
 velocity_unit_values = list(chain.from_iterable(

@@ -4,7 +4,7 @@ from gnome.utilities.time_utils import round_time
 from base import FunctionalTestBase
 
 
-class ModelMixin(object):
+class ModelHelperMixin(object):
     def create_model(self):
         resp = self.testapp.post('/model')
         self.base_url = '/model/%s' % resp.json_body['model_id']
@@ -15,7 +15,7 @@ class ModelMixin(object):
         return '%s%s' % (self.base_url, postfix)
 
 
-class ModelServiceTests(FunctionalTestBase, ModelMixin):
+class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_model_gets_a_valid_model(self):
         self.create_model()
@@ -97,7 +97,7 @@ class ModelServiceTests(FunctionalTestBase, ModelMixin):
         self.assertEqual(resp.json_body['duration_hours'], 1)
 
 
-class ModelRunnerServiceTests(FunctionalTestBase, ModelMixin):
+class ModelRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_first_step(self):
         self.create_model()
@@ -169,7 +169,7 @@ class ModelRunnerServiceTests(FunctionalTestBase, ModelMixin):
         self.assertIn('foreground_00001.png', resp.json_body['time_step']['url'])
 
 
-class WindMoverServiceTests(FunctionalTestBase, ModelMixin):
+class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def setUp(self):
         super(WindMoverServiceTests, self).setUp()
@@ -287,7 +287,7 @@ class WindMoverServiceTests(FunctionalTestBase, ModelMixin):
         self.testapp.get(mover_url, status=404)
 
 
-class PointReleaseSpillServiceTests(FunctionalTestBase, ModelMixin):
+class PointReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
     def setUp(self):
         super(PointReleaseSpillServiceTests, self).setUp()
         self.create_model()

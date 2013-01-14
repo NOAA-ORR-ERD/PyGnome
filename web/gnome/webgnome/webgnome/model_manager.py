@@ -210,10 +210,7 @@ class WebModel(Model):
 
     def _make_base_dir(self, dir):
         base_dir = os.path.join(dir, str(self.id))
-
-        if not os.path.exists(base_dir):
-            os.mkdir(base_dir)
-
+        util.mkdir_p(base_dir)
         return base_dir
 
     @property
