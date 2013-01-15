@@ -148,9 +148,9 @@ class TestWindMover:
         self.wm.prepare_for_model_step(self.model_time, self.time_step)
 
         for ix in range(2):
-            curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
-            delta = self.wm.get_move(self.spill, self.time_step, curr_time)
-            actual = self._expected_move()
+           curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
+           delta = self.wm.get_move(self.spill, self.time_step, curr_time)
+           actual = self._expected_move()
 
            # the results should be independent of model time
            tol = 1e-8
