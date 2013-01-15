@@ -51,6 +51,7 @@ class Common():
         self.status[:] = basic_types.oil_status.in_water
         self.wind[:] = .03
     
+@pytest.mark.slow
 class TestGridWindMover():
     cm = Common()
     gcm = cy_gridwind_mover.CyGridWindMover()    
