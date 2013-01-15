@@ -32,10 +32,7 @@ class PointReleaseSpill(BaseResource):
         spill = WebPointReleaseSpill(**data)
         model.spills.add(spill)
 
-        return {
-            'success': True,
-            'id': spill.id
-        }
+        return spill.to_dict()
 
     @view(validators=util.valid_spill_id)
     def get(self):
@@ -56,10 +53,7 @@ class PointReleaseSpill(BaseResource):
         spill = model.spills.get(self.id)
         spill.from_dict(data)
 
-        return {
-            'success': True,
-            'id': spill.id
-        }
+        return spill.to_dict()
 
     @view(validators=util.valid_spill_id)
     def delete(self):
@@ -67,11 +61,4 @@ class PointReleaseSpill(BaseResource):
         Delete a PointReleaseSpill.
         """
         self.request.validated['model'].spills.remove(self.id)
-        message = util.make_message('success', 'Deleted point release spill.')
-
-        return {
-            'success': True,
-            'mover_id': self.id,
-            'message': message
-        }
 

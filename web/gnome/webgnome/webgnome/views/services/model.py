@@ -38,9 +38,7 @@ class Model(BaseResource):
         model = self.request.validated['model']
         model.from_dict(self.request.validated)
 
-        return {
-            'success': True
-        }   
+        return model.to_dict()
     
     @view(validators=util.valid_model_id)
     def delete(self):
@@ -48,13 +46,6 @@ class Model(BaseResource):
         Delete the current model.
         """
         self.settings.Model.delete(self.request.matchdict['model_id'])
-        message = util.make_message('success', 'Deleted the current model.')
-    
-        return {
-            'success': True,
-            'model_id': self.request.matchdict['model_id'],
-            'message': message
-        }
 
     @view()
     def collection_post(self):
@@ -64,14 +55,12 @@ class Model(BaseResource):
         model = self.settings.Model.create(
             model_images_dir=self.settings['model_images_dir'])
 
-        message = util.make_message('success', 'Created a new model.')
         self.request.session[self.settings['model_session_key']] = model.id
 
-        return {
-            'success': True,
-            'model_id': model.id,
-            'message': message
-        }
+        data = model.to_dict()
+        data['message'] = util.make_message('success', 'Created a new model.')
+
+        return data
 
 
 @resource(path='/model/{model_id}/tree', renderer='gnome_json',

@@ -48,7 +48,8 @@ define([
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
                 pointReleaseSpills: this.pointReleaseSpills,
-                windMovers: this.windMovers
+                windMovers: this.windMovers,
+                map: this.map
             });
 
             this.treeControlView = new views.TreeControlView({
@@ -273,13 +274,13 @@ define([
 
             this.pointReleaseSpills = new models.PointReleaseSpillCollection(
                 this.options.pointReleaseSpills, {
-                    url: "/model/" + this.options.modelId + "/spill/point_release"
+                    url: this.apiRoot + "/spill/point_release"
                 }
             );
 
             this.windMovers = new models.WindMoverCollection(
                 this.options.windMovers, {
-                    url: "/model/" + this.options.modelId + "/mover/wind"
+                    url: this.apiRoot + "/mover/wind"
                 }
             );
 

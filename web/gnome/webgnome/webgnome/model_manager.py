@@ -174,10 +174,6 @@ class WebMapFromBNA(MapFromBNA):
     def name(self):
         return self._name
 
-    @property
-    def id(self):
-        return uuid1()
-
     def to_dict(self):
         return {
             'id': self.id,
@@ -282,7 +278,8 @@ class WebModel(Model):
             'start_time': self.start_time,
             'duration_days': 0,
             'duration_hours': 0,
-            'map': self.map.to_dict() if self.map else None
+            'map': self.map.to_dict() if self.map else None,
+            'id': self.id
         }
 
 

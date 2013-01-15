@@ -630,6 +630,7 @@ define([
             this.options.pointReleaseSpills.on('add', this.reload);
             this.options.pointReleaseSpills.on('destroy', this.reload);
             this.options.modelSettings.on('sync', this.reload);
+            this.options.map.on('sync', this.reload);
         },
 
         setupDynatree: function() {

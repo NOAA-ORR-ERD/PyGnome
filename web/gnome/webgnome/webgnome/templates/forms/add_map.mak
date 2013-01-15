@@ -9,11 +9,11 @@
                 </label>
 
                 <div class="controls">
-                    ${h.select('map', 'eerie', (('/static/data/lakeerie.bna', 'Lake Eerie'),
-                                                ('/static/data/lakehuron.bna', 'Lake Huron'),
-                                                ('/static/data/lakemichigan.bna', 'Lake Michigan'),
-                                                ('/static/data/lakeontario.bna', 'Lake Ontario'),
-                                                ('/static/data/newyork.bna', 'New York')))}
+                    ${h.select('map_file', 'eerie', (('/data/lakeerie.bna', 'Lake Eerie'),
+                                                     ('/data/lakehuron.bna', 'Lake Huron'),
+                                                     ('/data/lakemichigan.bna', 'Lake Michigan'),
+                                                     ('/data/lakeontario.bna', 'Lake Ontario'),
+                                                     ('/data/newyork.bna', 'New York')))}
                 </div>
             </div>
         </div>

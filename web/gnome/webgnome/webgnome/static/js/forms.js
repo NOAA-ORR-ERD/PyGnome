@@ -339,7 +339,19 @@ define([
     });
 
 
-    var AddMapFormView = ChooseObjectTypeFormView.extend({});
+    var AddMapFormView = ChooseObjectTypeFormView.extend({
+        submit: function() {
+            var option = this.$el.find('#map_file');
+            var file = option.find('option:selected');
+            if (file) {
+                this.model.set('name', file.text());
+                this.model.set('filename', file.val());
+                this.model.set('refloat_halflife', 6 * 3600);
+                this.model.save();
+                console.log('saved')
+            }
+        }
+    });
 
 
     var MapFormView = JQueryUIModalFormView.extend({
