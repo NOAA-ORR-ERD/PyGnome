@@ -155,4 +155,22 @@ class Wind(GnomeObject):
         self.ossm.timeseries = timeval
     
     
+
+def constant_wind(speed, direction, units):
+    """
+    utility to create a constant wind
+
+    :param speed: speed of wind 
+    :param direction: direction -- degrees True, direction wind is from( degrees True )
+    :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s", "cm/s", etc.
+    """
+    timeseries = series = np.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
+     series[0] = (start_time,                      ( 10,   45) )
+    return Wind( timeseries=timeseries, 
+                 units=units)
+
+
+
+
+
         

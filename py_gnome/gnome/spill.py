@@ -22,7 +22,7 @@ class Spill(object):
 
 
     NOTE: It's important to dereive all Spills from this base class, as all sorts of
-          trickery to keep track of spill ids, and what instances there are of
+          trickery to keep track of spill spill_nums, and what instances there are of
           derived classes, so that we can keep track of whatdata arrays are needed, etc.
 
     """
@@ -35,15 +35,15 @@ class Spill(object):
     #             name           shape (not including first axis)       dtype         
     _array_info = {}
 
-    __all_ids = set() # set of all the in-use ids
-    __all_subclasses = {} # keys are the instance id -- values are the subclass object
+    __all_spill_nums = set() # set of all the in-use spill_nums
+    __all_subclasses = {} # keys are the instance spill_num -- values are the subclass object
     def __init__(self, num_elements=0):
 
         self.num_elements = num_elements
 
         self.is_active = True       # sets whether the spill is active or not
 
-        self.__set_id()
+        self.__set_spill_num()
         self.__all_subclasses[ id(self) ] = self.__class__
         Spill.reset_array_types()
 
@@ -51,7 +51,7 @@ class Spill(object):
         """
         the deepcopy implementation
 
-        we need this, as we don't want the ids copied, but do want everything else.
+        we need this, as we don't want the spill_nums copied, but do want everything else.
 
         got the method from:
 
@@ -61,7 +61,7 @@ class Spill(object):
         """
         obj_copy = object.__new__(type(self))
         obj_copy.__dict__ = copy.deepcopy(self.__dict__, memo)
-        obj_copy.__set_id()
+        obj_copy.__set_spill_num()
         return obj_copy
 
     def __copy__(self):
@@ -70,7 +70,7 @@ class Spill(object):
         """
         obj_copy = object.__new__(type(self))
         obj_copy.__dict__ = self.__dict__.copy()
-        obj_copy.__set_id()
+        obj_copy.__set_spill_num()
         return obj_copy
 
 
@@ -86,33 +86,33 @@ class Spill(object):
                                 'next_positions': ( (3,), basic_types.world_point_type),
                                 'last_water_positions': ( (3,), basic_types.world_point_type),
                                 'status_codes': ( (), basic_types.status_code_type),
-                                'spill_id': ( (), basic_types.id_type)
+                                'spill_spill_num': ( (), basic_types.id_type)
                                 })
 
-    def __set_id(self):
+    def __set_spill_num(self):
         """
-        returns an id that is not already in use
+        returns an spill_num that is not already in use
 
         inefficient, but who cares?
         """
-        id = 1
-        while id < 65536: # just so it will eventually terminate!
-            if id not in self.__all_ids:
-                self.id = id
-                self.__all_ids.add(id)
+        spill_num = 1
+        while spill_num < 65536: # just so it will eventually terminate!
+            if spill_num not in self.__all_spill_nums:
+                self.spill_num = spill_num
+                self.__all_spill_nums.add(spill_num)
                 break
             else:
-                id+=1
+                spill_num+=1
         else:
-            raise ValueError("There are no more ids aavailable to spills!")
+            raise ValueError("There are no more spill_nums aavailable to spills!")
 
     def __del__(self):
         """
         called when instance is deleted:
 
-        removes its id from Spill.__all_ids and instance from Spill.__all_subclass_instances
+        removes its spill_num from Spill.__all_spill_nums and instance from Spill.__all_subclass_instances
         """
-        self.__all_ids.remove(self.id)
+        self.__all_spill_nums.remove(self.spill_num)
         del self.__all_subclasses[ id(self) ]
 
     def reset(self):
@@ -145,7 +145,7 @@ class Spill(object):
         initilize the new elements just created
         This is probably need to be extended by subclasses
         """
-        arrays['spill_id'][:] = self.id
+        arrays['spill_spill_num'][:] = self.spill_num
         arrays['status_codes'][:] = basic_types.oil_status.in_water
 
 class FloatingSpill(Spill):
