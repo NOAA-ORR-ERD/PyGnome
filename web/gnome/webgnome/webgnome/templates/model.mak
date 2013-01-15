@@ -103,7 +103,7 @@
         </div>
 
         <div class="placeholder" class="hidden">
-            <h1>No Map Data</h1>
+            <div id="map_canvas"></div>
         </div>
     </div>
 
@@ -146,16 +146,16 @@
 
             $('#map').imagesLoaded(function() {
                 new app_view.AppView({
-                    mapBounds: ${map_bounds},
                     generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                     expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
-                    backgroundImageUrl: "${background_image_url or '' | n}",
+                    backgroundImageUrl: "${background_image_url | n}",
                     currentTimeStep: ${current_time_step},
                     pointReleaseSpills: ${point_release_spills | n},
                     windMovers: ${wind_movers | n},
                     modelId: "${model_id}",
                     modelSettings: ${model_settings | n},
-                    map: ${map_data | n}
+                    map: ${map_data | n},
+                    mapIsLoaded: ${"true" if map_is_loaded else "false"}
                 });
             });
         });

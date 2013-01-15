@@ -111,7 +111,10 @@ class ModelRunner(BaseResource):
         try:
             curr_step, file_path, timestamp = model.next_image(model.data_dir)
             filename = file_path.split(os.path.sep)[-1]
-            image_url = util.get_model_image_url(self.request, model, filename)
+            image_url = self.request.static_url(
+                'webgnome:static/%s/%s/%s/%s' % (
+                    self.settings['model_images_url_path'],
+                    model.id, 'data', filename))
 
             step = {
                 'id': curr_step,
@@ -144,9 +147,6 @@ class ModelRunner(BaseResource):
 
         data['expected_time_steps'] = timestamps
         data['time_step'] = first_step
-        data['background_image'] = util.get_model_image_url(
-            self.request, model, 'background_map.png')
-        data['map_bounds'] = model.map.map_bounds.tolist()
 
         return data
 

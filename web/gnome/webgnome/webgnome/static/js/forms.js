@@ -195,8 +195,8 @@ define([
             }
         }
     }, {
-        CANCELED: 'ajaxFormView:canceled',
-        REFRESHED: 'ajaxFormView:refreshed'
+        CANCELED: 'formView:canceled',
+        REFRESHED: 'formView:refreshed'
     });
 
 
@@ -263,6 +263,7 @@ define([
                     width: 400,
                     buttons: {
                         Cancel: function() {
+                            _this.cancel();
                             $(this).dialog("close");
                         },
 
@@ -348,7 +349,6 @@ define([
                 this.model.set('filename', file.val());
                 this.model.set('refloat_halflife', 6 * 3600);
                 this.model.save();
-                console.log('saved')
             }
         }
     });
@@ -1014,7 +1014,14 @@ define([
             this.model.set(data);
             this.collection.add(this.model);
             this.model.save();
+        },
+
+        cancel: function() {
+            console.log('cancel')
+            this.trigger(PointReleaseSpillFormView.CANCELED, this);
         }
+    }, {
+        CANCELED: 'pointReleaseSpillForm:canceled'
     });
 
 

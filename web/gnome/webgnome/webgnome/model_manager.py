@@ -4,7 +4,6 @@ model_manager.py: Manage a pool of running models.
 import datetime
 
 import os
-from uuid import uuid1
 from hazpy.file_tools import haz_files
 from webgnome import util
 
@@ -46,6 +45,10 @@ class WebWindMover(WindMover):
         super(WebWindMover, self).__init__(*args, **kwargs)
 
     def from_dict(self, data):
+        """
+        Set this object's properties from a dict ``data`` that has all the
+        necessaries.
+        """
         self.wind = data['wind']
         self._name = data['name']
         self.is_active = data['is_active']
@@ -60,6 +63,9 @@ class WebWindMover(WindMover):
         return self
 
     def to_dict(self):
+        """
+        Return a dict representation of this object.
+        """
         series = []
 
         for timeseries in self.wind.get_timeseries(units=self.wind.user_units):
@@ -139,6 +145,10 @@ class WebPointReleaseSpill(PointReleaseSpill):
         return super(WebPointReleaseSpill, self).__repr__()
 
     def from_dict(self, data):
+        """
+        Set this object's properties from a dict ``data`` that has all the
+        necessaries.
+        """
         self.release_time = data['release_time']
         self.start_position = data['start_position']
         self.windage_range = data['windage']
@@ -149,6 +159,9 @@ class WebPointReleaseSpill(PointReleaseSpill):
         return self
 
     def to_dict(self):
+        """
+        Return a dict representation of this mover.
+        """
         return {
             'id': self.id,
             'release_time': self.release_time,
@@ -172,13 +185,20 @@ class WebMapFromBNA(MapFromBNA):
 
     @property
     def name(self):
+        """
+        Return the user-specified name of this map.
+        """
         return self._name
 
     def to_dict(self):
+        """
+        Return a dict representation of this map.
+        """
         return {
             'id': self.id,
             'filename': self.filename,
             'name': self.name,
+            'bounds': self.map_bounds.tolist(),
             'refloat_halflife': self.refloat_halflife
         }
 
@@ -198,6 +218,7 @@ class WebModel(Model):
 
     def __init__(self, *args, **kwargs):
         self.base_dir = self._make_base_dir(kwargs.pop('model_images_dir'))
+        self.data_dir = self._make_data_dir()
 
         super(WebModel, self).__init__()
 
@@ -207,16 +228,23 @@ class WebModel(Model):
         self.runtime = None
 
     def _make_base_dir(self, dir):
+        """
+        Create the base directory for this model's data files if it does not
+        already exist, using ``dir`` as the directory prefix.
+
+        Return the created path.
+        """
         base_dir = os.path.join(dir, str(self.id))
         util.mkdir_p(base_dir)
         return base_dir
 
-    @property
-    def data_dir(self):
-        if not self.runtime:
-            self.runtime = util.get_runtime()
+    def _make_data_dir(self):
+        """
+        Create a directory to contain files related to the current run.
 
-        data_dir = os.path.join(self.base_dir, self.runtime)
+        Return the created path.
+        """
+        data_dir = os.path.join(self.base_dir, 'data')
 
         if not os.path.exists(data_dir):
             os.mkdir(data_dir)
@@ -225,16 +253,14 @@ class WebModel(Model):
 
     @property
     def background_image(self):
+        """
+        Return the path to the file containing the background image for the
+        current map.
+        """
         if not self.output_map:
             return
 
-        image_path = os.path.join(self.data_dir, 'background_map.png')
-
-        if not os.path.exists(image_path):
-            self.output_map.draw_background()
-            self.output_map.save_background(image_path)
-
-        return image_path
+        return os.path.join(self.base_dir, 'background_map.png')
 
     @property
     def duration_hours(self):
@@ -242,7 +268,14 @@ class WebModel(Model):
             return self.duration.seconds / 60 / 60
 
     def add_bna_map(self, filename, map_data):
-        map_file = os.path.join(self.data_dir, filename)
+        """
+        Add a BNA map that exists at ``filename``, a path relative to the base
+        directory for the model.
+
+        Creates the land-water map and the canvas, and saves the background
+        image for the map.
+        """
+        map_file = os.path.join(self.base_dir, filename)
 
         # Create the land-water map
         self.map = WebMapFromBNA(map_file, **map_data)
@@ -253,7 +286,19 @@ class WebModel(Model):
         canvas.set_land(polygons)
         self.output_map = canvas
 
+        # Save the background image.
+        self.output_map.draw_background()
+        self.output_map.save_background(self.background_image)
+
     def build_subtree(self, data, objs, keys):
+        """
+        Build a subtree of dicts for spills and movers on the model.
+
+        Traverses ``objs``, a list of objects, and calls ``to_dict`` on each
+        one if the method is available. The dict representation of the object
+        is added to the ``data`` dict using the key found in ``keys`` for the
+        object's class.
+        """
         for key in keys.values():
             if key not in data:
                 data[key] = []
@@ -272,6 +317,10 @@ class WebModel(Model):
         return data
     
     def to_dict(self, include_spills=True, include_movers=True):
+        """
+        Return a dictionary representation of this model. Includes subtrees
+        (lists of dictionaries) for any movers and spills configured.
+        """
         data = {
             'uncertain': self.uncertain,
             'time_step': self.time_step,
@@ -281,7 +330,6 @@ class WebModel(Model):
             'map': self.map.to_dict() if self.map else None,
             'id': self.id
         }
-
 
         if self.duration.days:
             data['duration_days'] = self.duration.days
@@ -298,6 +346,11 @@ class WebModel(Model):
         return data
 
     def from_dict(self, data):
+        """
+        Set fields on this model from the dict ``data``.
+
+        Note: does not set movers or spills.
+        """
         self.uncertain = data['uncertain']
         self.start_time = data['start_time']
         self.time_step = data['time_step']
@@ -318,15 +371,22 @@ class ModelManager(object):
         self.running_models = {}
 
     def create(self, **kwargs):
+        """
+        Create a new :class:`WebModel`, adds it to the `running_models` dict
+        and returns the new object.
+        """
         model = WebModel(**kwargs)
         self.running_models[str(model.id)] = model
         return model
 
     def get_or_create(self, model_id, **kwargs):
         """
-        Return a running :class:`WebModel` instance if the user has a
-        valid ``model_id`` key in his or her session. Otherwise, create a new
-        model and return it.
+        Get a running :class:`WebModel` instance if one exists with the ID
+        ``model_id``. Otherwise, create a new model and return it.
+
+        Return a tuple of the signature (model, created) where ``model`` is
+        the model object and ``created`` is a boolean signifying whether the
+        object was created or not.
         """
         created = False
         model = None
@@ -341,16 +401,26 @@ class ModelManager(object):
         return model, created
 
     def get(self, model_id):
+        """
+        Return a model if one exists in `running_models` with the ID
+        ``model_id``, else raises :class:`ModelManager.DoesNotExist`.
+        """
         model_id = str(model_id)
         if not model_id in self.running_models:
             raise self.DoesNotExist
         return self.running_models.get(model_id)
 
-    def add(self, model_id, model):
-        self.running_models[model_id] = model
-
     def delete(self, model_id):
+        """
+        Delete the model whose ID matches ``model_id``.
+
+        Using a ``model_id`` that does not exist in `running_models` is a no-op.
+        """
         self.running_models.pop(model_id, None)
 
     def exists(self, model_id):
+        """
+        Return True of a model exists in `running_models with the ID
+        ``model_id``, False if not.
+        """
         return model_id in self.running_models

@@ -175,14 +175,9 @@ legend {
     width: 120px;
 }
 
-.placeholder {
-    background-color: #FEE5C6;
-    max-width: 800px;
-}
-
-.placeholder h1 {
-    text-align: center;
-    padding: 100px 0 300px;
+#map_canvas {
+    height: 500px;
+    width: 700px;
 }
 
 .modal-body {

@@ -50,9 +50,8 @@ class PointReleaseSpill(BaseResource):
         """
         data = self.request.validated
         model = data.pop('model')
-        spill = model.spills.get(self.id)
-        spill.from_dict(data)
-
+        spill = WebPointReleaseSpill(**data)
+        model.spills[self.id] = spill
         return spill.to_dict()
 
     @view(validators=util.valid_spill_id)

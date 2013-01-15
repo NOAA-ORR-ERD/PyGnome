@@ -31,6 +31,8 @@ class Map(BaseResource):
         """
         data = self.request.validated
         model = data.pop('model')
+        # Ignore the map bounds on setting -- this is readonly for now.
+        data.pop('map_bounds')
         filename = data.pop('filename')
         model.add_bna_map(filename, data)
         return model.map.to_dict()

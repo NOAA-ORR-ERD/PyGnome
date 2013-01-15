@@ -36,8 +36,8 @@ def show_model(request):
     model_data = model.to_dict()
     point_release_spills = model_data.pop('point_release_spills')
     wind_movers = model_data.pop('wind_movers')
-    map_data = model_data.pop('map')
     model_settings = util.SchemaForm(schema.ModelSettingsSchema, model_data)
+    map_data = model.map.to_dict() if model.map else None
     map_settings = util.SchemaForm(schema.MapSchema, map_data)
     default_wind_mover = util.SchemaForm(schema.WindMoverSchema)
     default_wind = util.SchemaForm(schema.WindSchema)
@@ -49,6 +49,7 @@ def show_model(request):
         'model_id': model.id,
         '_map': map_settings,
         'map_bounds': [],
+        'map_is_loaded': False,
         'current_time_step': model.current_time_step,
 
         # Default values for forms that use them.
@@ -61,7 +62,9 @@ def show_model(request):
         'map_data': util.to_json(map_data),
         'point_release_spills': util.to_json(point_release_spills),
         'wind_movers': util.to_json(wind_movers),
-        'model_settings': util.to_json(model_data)
+        'model_settings': util.to_json(model_data),
+        'background_image_url': util.get_model_image_url(
+            request, model, 'background_map.png')
     }
 
     if created:
@@ -70,12 +73,11 @@ def show_model(request):
             data['warning'] = 'The model you were working on is no longer ' \
                               'available. We created a new one for you.'
 
-    if model.map and model.map.map_bounds.any():
-        data['map_bounds'] = model.map.map_bounds.tolist()
+    if model.map:
+        data['map_is_loaded'] = True
 
-    if model.background_image:
-        data['background_image_url'] = util.get_model_image_url(
-            request, model, 'background_map.png')
+        if model.map.map_bounds.any():
+            data['map_bounds'] = model.map.map_bounds.tolist()
 
     if model.time_steps:
         data['generated_time_steps_json'] = util.to_json(model.time_steps)
@@ -130,6 +132,10 @@ def configure_long_island(request, model):
     polygons = haz_files.ReadBNA(map_file, "PolygonSet")
     canvas.set_land(polygons)
     model.output_map = canvas
+
+    # Save the background image.
+    model.output_map.draw_background()
+    model.output_map.save_background(model.background_image)
 
     return {
         'success': True

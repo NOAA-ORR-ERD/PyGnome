@@ -65,7 +65,8 @@ define([
                 backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                modelRun: this.modelRun
+                modelRun: this.modelRun,
+                model: this.map
             });
 
             this.mapControlView = new views.MapControlView({
@@ -82,7 +83,8 @@ define([
                 spillButtonEl: "#spill-button",
                 timeEl: "#time",
                 modelRun: this.modelRun,
-                mapView: this.mapView
+                mapView: this.mapView,
+                model: this.map
             });
 
             this.messageView = new views.MessageView({
@@ -108,9 +110,10 @@ define([
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
 
             this.pointReleaseSpills.on("sync", this.spillUpdated);
-            this.pointReleaseSpills.on('sync', this.mapView.drawSpills);
+            this.pointReleaseSpills.on('sync', this.drawSpills);
 
-            this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.mapView.drawSpills);
+            this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
+            this.editPointReleaseSpillFormView.on(forms.PointReleaseSpillFormView.CANCELED, this.drawSpills);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
@@ -134,6 +137,7 @@ define([
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
             this.mapView.on(views.MapView.MAP_WAS_CLICKED, this.zoomOut);
             this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
+            this.mapView.on(views.MapView.READY, this.drawSpills);
 
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
@@ -155,8 +159,12 @@ define([
          Consider the model dirty if the user updates an existing spill, so
          we don't get cached images back on the next model run.
          */
-        spillUpdated: function(form) {
+        spillUpdated: function() {
             this.rewind();
+        },
+
+        drawSpills: function() {
+            this.mapView.drawSpills(this.pointReleaseSpills);
         },
 
         setupKeyboardHandlers: function() {

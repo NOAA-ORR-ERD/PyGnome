@@ -5,11 +5,11 @@ define([
     'lib/backbone',
     'models',
     'util',
+    'lib/gmaps-amd',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree.min',
     'lib/bootstrap',
-], function($, _, Backbone, models, util) {
-
+], function($, _, Backbone, models, util, GMap) {
      /*
      `MessageView` is responsible for displaying messages sent back from the server
      during AJAX form submissions. These are non-form error conditions, usually,
@@ -70,6 +70,7 @@ define([
      */
     var MapView = Backbone.View.extend({
         initialize: function() {
+            var _this = this;
             _.bindAll(this);
             this.mapEl = this.options.mapEl;
             this.frameClass = this.options.frameClass;
@@ -90,8 +91,26 @@ define([
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
             this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
             this.modelRun.on(models.ModelRun.CREATED, this.reset);
+            
+            this.model = this.options.model;
 
-            if (this.backgroundImageUrl) {
+            this.model.on('sync', function() {
+                _this.reset();
+                _this.loadMapFromUrl(_this.backgroundImageUrl);
+            });
+
+            var gmapOptions = {
+                center: new google.maps.LatLng(-34.397, 150.644),
+                zoom: 1,
+                scrollwheel: true,
+                scaleControl: true,
+                mapTypeId: google.maps.MapTypeId.HYBRID,
+            };
+
+            self.googleMap = new google.maps.Map($('#map_canvas')[0], gmapOptions);
+
+            // Map is loaded
+            if (this.model.id) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
             } else {
                 this.showPlaceholder();
@@ -371,7 +390,8 @@ define([
 
             background.imagesLoaded(function() {
                 _this.createCanvases();
-                _this.drawSpills();
+                _this.trigger(MapView.READY);
+//                _this.drawSpills();
             });
 
             background.appendTo(map);
@@ -388,26 +408,24 @@ define([
             ctx.closePath();
         },
 
-        drawSpill: function(spillForm) {
+        drawSpill: function(spill) {
             var ctx = this.foregroundCanvas[0].getContext('2d');
-            var start = $(spillForm).find('.start-coordinates');
-            var end = $(spillForm).find('.end-coordinates');
-            var startInputs = $(start).find('.coordinate');
             var startX, startY, startZ, endX, endY, endZ;
+            var start = spill.get('start_position');
+            var end = spill.get('end_position');
 
-            startX = endX = $(startInputs[0]).val();
-            startY = endY = $(startInputs[1]).val();
-            startZ = endZ = $(startInputs[2]).val();
+            startX = endX = start[0];
+            startY = endY = start[1];
+            startZ = endZ = start[2];
 
-            if (!startX || !startY) {
+            if (!startX) {
                 return;
             }
 
-            if (end.length) {
-                var endInputs = $(end).find('.coordinate');
-                endX = $(endInputs[0]).val();
-                endY = $(endInputs[1]).val();
-                endZ = $(endInputs[2]).val();
+            if (end) {
+                endX = end[0];
+                endY = end[1];
+                endZ = end[2];
             }
 
             var pixelStart = this.pixelsFromCoordinates({
@@ -429,21 +447,23 @@ define([
         },
 
         // Draw a mark on the map for each existing spill.
-        drawSpills: function() {
-            var spillForms = $('.spill');
+        drawSpills: function(spills) {
             var _this = this;
 
             if (!this.foregroundCanvas) {
                 return;
             }
 
-            // TODO: Draw a line for each spill. Redraw when changed.
             var canvas = this.foregroundCanvas[0];
             var ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            _.each(spillForms, function(form) {
-                _this.drawSpill(form);
+            if (spills === undefined || !spills.length) {
+                return;
+            }
+
+            spills.forEach(function(spill) {
+                _this.drawSpill(spill);
             });
         },
 
@@ -530,8 +550,8 @@ define([
             this.foregroundCanvas.appendTo(map);
         },
 
-        modelRunBegan: function(data) {
-            this.loadMapFromUrl(data.background_image);
+        modelRunBegan: function() {
+            this.loadMapFromUrl(this.backgroundImageUrl);
         },
 
         modelRunError: function() {
@@ -552,15 +572,20 @@ define([
 
         pixelsFromCoordinates: function(point) {
             var size = this.getSize();
+            var bounds = this.model.get('bounds');
 
             if (!size.height || !size.width) {
                 throw new MapViewException('No current image size detected.');
             }
+                        
+            if (!bounds) {
+                throw new MapViewException('Map is missing boundary data.');
+            }
 
-            var minLat = this.modelRun.bounds[0][1];
-            var minLong = this.modelRun.bounds[0][0];
-            var maxLat = this.modelRun.bounds[1][1];
-            var maxLong = this.modelRun.bounds[2][0];
+            var minLat = bounds[0][1];
+            var minLong = bounds[0][0];
+            var maxLat = bounds[1][1];
+            var maxLong = bounds[2][0];
 
             var x = ((point.long - minLong) / (maxLong - minLong)) * size.width;
             var y = ((point.lat - minLat) / (maxLat - minLat)) * size.height;
@@ -573,15 +598,16 @@ define([
 
         coordinatesFromPixels: function(point) {
             var size = this.getSize();
+            var bounds = this.model.get('bounds');
 
             if (!size.height || !size.width) {
                 throw new MapViewException('No current image size detected.');
             }
 
-            var minLat = this.modelRun.bounds[0][1];
-            var minLong = this.modelRun.bounds[0][0];
-            var maxLat = this.modelRun.bounds[1][1];
-            var maxLong = this.modelRun.bounds[2][0];
+            var minLat = bounds[0][1];
+            var minLong = bounds[0][0];
+            var maxLat = bounds[1][1];
+            var maxLong = bounds[2][0];
 
             // Adjust for different origin
             point.y = -point.y + size.height;
@@ -603,7 +629,8 @@ define([
         PLAYING_FINISHED: 'mapView:playingFinished',
         FRAME_CHANGED: 'mapView:frameChanged',
         MAP_WAS_CLICKED: 'mapView:mapWasClicked',
-        SPILL_DRAWN: 'mapView:spillDrawn'
+        SPILL_DRAWN: 'mapView:spillDrawn',
+        READY: 'mapView:ready'
     });
 
 
@@ -738,6 +765,7 @@ define([
      */
     var MapControlView = Backbone.View.extend({
         initialize: function() {
+            var _this = this;
             _.bindAll(this);
             this.containerEl = this.options.containerEl;
             this.sliderEl = this.options.sliderEl;
@@ -754,16 +782,29 @@ define([
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
             this.modelRun = this.options.modelRun;
+            this.model = this.options.model;
 
-            // Controls whose state, either enabled or disabled, is related to whether
-            // or not an animation is playing. The resize and full screen buttons
-            // are intentionally excluded.
-            this.controls = [
+            this.animationControls = [
                 this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
-                this.pauseButtonEl, this.moveButtonEl, this.zoomInButtonEl,
-                this.zoomOutButtonEl, this.spillButtonEl
+                this.pauseButtonEl
             ];
 
+            this.mapControls = [
+                this.moveButtonEl, this.zoomInButtonEl, this.zoomOutButtonEl,
+                this.spillButtonEl
+            ];
+
+            if (this.model.id) {
+                this.enableControls(this.mapControls);
+            }
+
+            this.model.on('sync', function() {
+                if (_this.model.id) {
+                    _this.enableControls(_this.mapControls);
+                }
+            });
+
+            this.controls = this.animationControls.concat(this.mapControls);
             this.status = MapControlView.STATUS_STOPPED;
 
             $(this.pauseButtonEl).hide();

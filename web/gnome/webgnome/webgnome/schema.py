@@ -173,10 +173,27 @@ class WindMoversSchema(SequenceSchema):
     mover = WindMoverSchema()
 
 
+class MapBoundarySchema(TupleSchema):
+    x = SchemaNode(Float())
+    y = SchemaNode(Float())
+
+
+class MapBoundsSchema(SequenceSchema):
+    boundary = MapBoundarySchema()
+
+
+default_map_bounds = ((-360, 90),
+                      ( 360, 90),
+                      ( 360, -90),
+                      (-360, -90))
+
+
 class MapSchema(MappingSchema):
     name = SchemaNode(String(), default="Map")
     filename = SchemaNode(String())
     refloat_halflife = SchemaNode(Float(), default=1)
+    map_bounds = MapBoundsSchema(default=default_map_bounds,
+                                 missing=default_map_bounds)
 
 
 class ModelSettingsSchema(MappingSchema):
