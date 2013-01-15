@@ -194,6 +194,9 @@ class TestWindMover:
        return xform
 
 def test_timespan():
+    """
+    Ensure the is_active flag is being set correctly and checked, such that if is_active=False, the delta produced by get_move = 0
+    """
     time_step = 15 * 60 # seconds
     spill = spill_ex()
     
@@ -216,15 +219,6 @@ def test_timespan():
     delta = wm.get_move(spill, time_step, model_time)
     assert wm.is_active == True
     assert np.all(delta[:,:2] != 0)   # model_time + time_step > is_active_start
-    
-    # No need to test get_move again, above tests it is working per is_active flag
-    # Next test just some more borderline cases that is_active is being set correctly
-    wm.is_active_stop = model_time + timedelta(seconds=1.5*time_step)
-    wm.prepare_for_model_step(model_time, time_step)
-    assert wm.is_active == True
-    wm.prepare_for_model_step(model_time+timedelta(seconds=time_step), time_step)
-    assert wm.is_active == False
-    
     
 
 """

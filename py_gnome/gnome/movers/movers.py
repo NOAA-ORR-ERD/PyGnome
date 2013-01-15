@@ -150,7 +150,8 @@ class CyMover(Mover):
         Subclassed movers can override this method, but should probably call the super()
         method, as the contained mover most likely needs cleanup.
         """
-        self.mover.model_step_is_done()
+        if self.is_active and self.on:
+            self.mover.model_step_is_done()
 
 class WindMover(CyMover):
     """
