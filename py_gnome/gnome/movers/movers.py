@@ -59,7 +59,7 @@ class Mover(GnomeObject):
         NOTE: method signature will change after one_spill is merged - update docs after merge 
         """
         if (model_time + timedelta(seconds=time_step) > self.is_active_start) and \
-        (model_time + timedelta(seconds=time_step) < self.is_active_stop):
+        (model_time + timedelta(seconds=time_step) <= self.is_active_stop):
             self._is_active = True
         else:
             self._is_active = False
