@@ -20,35 +20,35 @@ def test_init_Spill():
     assert  sp.id == 1
 
 
-def test_set_id():
-    """
-    ids should get set, and stay unique as you delete and create spills
-    """
-
-    spills = [Spill() for i in range(10)]
-
-    # the ids are unique
-    assert len( set([spill.id for spill in spills]) ) == len(spills)
-
-    #delete and create a few:
-    del spills[3]
-    del spills[5]
-
-    spills.extend(  [FloatingSpill() for i in range(5)] ) 
-
-    # ids still unique
-    assert len( set([spill.id for spill in spills]) ) == len(spills)
-
-    del spills[10]
-    del spills[4]
-
-    spills.extend(  [SurfaceReleaseSpill() for i in range(5)] ) 
-
-    # ids still unique
-    assert len( set([spill.id for spill in spills]) ) == len(spills)
-
-    #print [spill.id for spill in spills]
-    #assert False
+#def test_set_id():
+#    """
+#    ids should get set, and stay unique as you delete and create spills
+#    """
+#
+#    spills = [Spill() for i in range(10)]
+#
+#    # the ids are unique
+#    assert len( set([spill.id for spill in spills]) ) == len(spills)
+#
+#    #delete and create a few:
+#    del spills[3]
+#    del spills[5]
+#
+#    spills.extend(  [FloatingSpill() for i in range(5)] ) 
+#
+#    # ids still unique
+#    assert len( set([spill.id for spill in spills]) ) == len(spills)
+#
+#    del spills[10]
+#    del spills[4]
+#
+#    spills.extend(  [SurfaceReleaseSpill() for i in range(5)] ) 
+#
+#    # ids still unique
+#    assert len( set([spill.id for spill in spills]) ) == len(spills)
+#
+#    #print [spill.id for spill in spills]
+#    #assert False
 
 def test_new_elements():
     """
