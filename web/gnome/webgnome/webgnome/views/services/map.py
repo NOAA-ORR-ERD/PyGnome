@@ -24,16 +24,13 @@ class Map(BaseResource):
         model = self.request.validated.pop('model')
         return model.map.to_dict()
 
-    @view(validators=util.valid_model_id, schema=MapSchema)
+    @view(validators=util.map_filename_exists, schema=MapSchema)
     def post(self):
         """
         Add a map to the current model.
         """
-        model = self.request.validated.pop('model')
-        model.add_bna_map(filename, validated)
-
-        return {
-            'filename': self.validated['filename'],
-            'name': self.validated['name'],
-            'refloat_halflife': self.validated['refloat_halflife']
-        }
+        data = self.request.validated
+        model = data.pop('model')
+        filename = data.pop('filename')
+        model.add_bna_map(filename, data)
+        return model.map.to_dict()

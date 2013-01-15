@@ -356,6 +356,17 @@ define([
 
         reload: function(id) {
             // Do nothing - we always use the same map object.
+        },
+
+        submit: function() {
+            var option = this.$el.find('#map_file');
+            var file = option.val();
+            if (file) {
+                this.model.set('name', option.text());
+                this.model.set('filename', 'file');
+                this.model.set('refloat_halflife', 6 * 3600)
+                this.model.save();
+            }
         }
     });
 

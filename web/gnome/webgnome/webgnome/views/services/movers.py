@@ -31,10 +31,7 @@ class WindMover(BaseResource):
         mover = WebWindMover(**data)
         model.movers.add(mover)
 
-        return {
-            'success': True,
-            'id': mover.id
-        }
+        return mover.to_dict()
 
     @view(validators=util.valid_model_id)
     def collection_get(self):
@@ -66,10 +63,7 @@ class WindMover(BaseResource):
         model = data.pop('model')
         mover = model.movers.get(self.id).from_dict(data)
 
-        return {
-            'success': True,
-            'id': mover.id
-        }
+        return mover.to_dict()
 
     @view(validators=util.valid_mover_id)
     def delete(self):
@@ -77,10 +71,3 @@ class WindMover(BaseResource):
         Delete a WindMover.
         """
         self.request.validated['model'].movers.remove(self.id)
-        message = util.make_message('success', 'Deleted wind mover.')
-
-        return {
-            'success': True,
-            'mover_id': self.id,
-            'message': message
-        }

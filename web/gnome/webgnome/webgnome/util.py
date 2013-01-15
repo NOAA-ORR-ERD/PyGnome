@@ -172,23 +172,6 @@ def get_model_from_session(request):
     return model
 
 
-def get_form_route(request, obj, route_type):
-    """
-    Find a route name for ``obj`` given the type of route.
-
-    ``route_type`` is a short-hand description like "create" or "delete" used
-    as a key in the ``form_routes`` dictionary.
-    """
-    route = None
-    form_cls = get_obj_class(obj)
-    routes = request.registry.settings['form_routes'].get(form_cls, None)
-
-    if routes:
-        route = routes.get(route_type, None)
-
-    return route
-
-
 MISSING_MODEL_ERROR = {
     'error': True,
     'message': make_message('error', 'That model is no longer available.')
@@ -239,6 +222,27 @@ def valid_map(request):
     if not model.map:
         request.errors.add('body', 'map', 'Map not found.')
         request.errors.status = 404
+
+
+def map_filename_exists(request):
+    """
+    A Cornice validator that returns an error if the filename specified in a
+    Map resource POST does not exist in the web application's filesystem.
+    """
+    valid_model_id(request)
+
+    if request.errors:
+        return
+
+    filename_parts = request.validated['filename'].split('/')
+    abs_filename = os.path.join(request.registry.settings.package_root,
+                                *filename_parts)
+
+    if not os.path.exists(abs_filename):
+        request.errors.add('body', 'map', 'Map filename does not exist.')
+        request.errors.status = 400
+
+    request.validated['filename'] = abs_filename
 
 
 def valid_mover_id(request):

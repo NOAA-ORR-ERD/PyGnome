@@ -7,7 +7,7 @@ from base import FunctionalTestBase
 class ModelHelperMixin(object):
     def create_model(self):
         resp = self.testapp.post('/model')
-        self.base_url = str('/model/%s' % resp.json_body['model_id'])
+        self.base_url = str('/model/%s' % resp.json_body['id'])
         return resp
 
     def model_url(self, postfix):
@@ -53,7 +53,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_create_model_creates_a_model(self):
         resp = self.create_model()
-        self.assertTrue(resp.json_body['model_id'])
+        self.assertTrue(resp.json_body['id'])
         self.assertEqual(resp.json_body['message'],  {
             'type': 'success',
             'text': 'Created a new model.'
@@ -62,12 +62,6 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
     def test_delete_model_deletes_model(self):
         self.create_model()
         resp = self.testapp.delete(self.base_url, status=200)
-
-        self.assertTrue(resp.json_body['model_id'])
-        self.assertEqual(resp.json_body['message'],  {
-            'type': 'success',
-            'text': 'Deleted the current model.'
-        })
 
         # Model doesn't exist anymore
         resp = self.testapp.get(self.base_url, status=404)
@@ -86,7 +80,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
         }
 
         resp = self.testapp.put_json(self.base_url, data)
-        self.assertTrue(resp.json_body['success'])
+        self.assertTrue(resp.json_body['id'])
 
         resp = self.testapp.get(self.base_url)
 
@@ -230,7 +224,6 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.post_json(self.collection_url, data)
         mover_id = resp.json_body['id']
 
-        self.assertTrue(resp.json_body['success'])
         self.assertTrue(mover_id)
 
         resp = self.testapp.get(self.get_mover_url(mover_id))
@@ -262,7 +255,7 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         data['uncertain_duration'] = 6
 
         resp = self.testapp.put_json(self.get_mover_url(mover_id), data)
-        self.assertEqual(resp.json['success'], True)
+        self.assertTrue(resp.json_body['id'])
 
         resp = self.testapp.get(self.get_mover_url(mover_id))
 
@@ -283,7 +276,6 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         # delete the mover
         mover_url = self.get_mover_url(mover_id)
         resp = self.testapp.delete_json(mover_url)
-        self.assertEqual(resp.json['success'], True)
         self.testapp.get(mover_url, status=404)
 
 
@@ -320,7 +312,6 @@ class PointReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.post_json(self.collection_url, data)
         spill_id = resp.json_body['id']
 
-        self.assertTrue(resp.json_body['success'])
         self.assertTrue(spill_id)
 
         resp = self.testapp.get(self.get_spill_url(spill_id))
@@ -338,7 +329,7 @@ class PointReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         mover_url = self.get_spill_url(spill_id)
 
         resp = self.testapp.put_json(mover_url, data)
-        self.assertEqual(resp.json['success'], True)
+        self.assertTrue(resp.json['id'])
 
         resp = self.testapp.get(mover_url)
         self.assertEqual(resp.json['release_time'], data['release_time'])
@@ -349,5 +340,39 @@ class PointReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         spill_id = resp.json_body['id']
         spill_url = self.get_spill_url(spill_id)
         resp = self.testapp.delete_json(spill_url)
-        self.assertEqual(resp.json['success'], True)
         self.testapp.get(spill_url, status=404)
+
+
+class MapServiceTests(FunctionalTestBase, ModelHelperMixin):
+    def setUp(self):
+        super(MapServiceTests, self).setUp()
+        self.create_model()
+        self.url = self.model_url('map')
+
+    def test_create_map(self):
+        data = {
+            'filename': '/data/lakeerie.bna',
+            'name': 'Lake Eerie',
+            'refloat_halflife': 6 * 3600
+        }
+        resp = self.testapp.post_json(self.url, data)
+        resp_data = resp.json_body
+
+        self.assertIn(data['filename'], resp_data['filename'])
+        self.assertEqual(data['name'], resp_data['name'])
+        self.assertEqual(data['refloat_halflife'], resp_data['refloat_halflife'])
+
+    def test_get_map(self):
+        data = {
+            'filename': '/data/lakeerie.bna',
+            'name': 'Lake Eerie',
+            'refloat_halflife': 6 * 3600
+        }
+        resp = self.testapp.post_json(self.url, data)
+        self.assertTrue(resp.json_body['id'])
+
+        resp = self.testapp.get(self.url)
+        resp_data = resp.json_body
+        self.assertIn(data['filename'], resp_data['filename'])
+        self.assertEqual(data['name'], resp_data['name'])
+        self.assertEqual(data['refloat_halflife'], resp_data['refloat_halflife'])

@@ -48,7 +48,8 @@ define([
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
                 pointReleaseSpills: this.pointReleaseSpills,
-                windMovers: this.windMovers
+                windMovers: this.windMovers,
+                map: this.map
             });
 
             this.treeControlView = new views.TreeControlView({
