@@ -14,9 +14,11 @@ these are managed by the SpillContainer class
 import sys
 import copy
 import numpy as np
-from gnome import basic_types
 
-class Spill(object):
+from gnome import basic_types, GnomeObject
+
+
+class Spill(GnomeObject):
     """
     base class for a source of elements
 

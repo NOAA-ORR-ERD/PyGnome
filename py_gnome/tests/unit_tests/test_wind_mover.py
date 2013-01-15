@@ -18,6 +18,12 @@ def test_exceptions():
     """
     with pytest.raises(TypeError):
         movers.WindMover()
+        
+    with pytest.raises(ValueError):
+        file = r"SampleData/WindDataFromGnome.WND"
+        wind = weather.Wind(file=file)
+        now = datetime.now()
+        movers.WindMover(wind, is_active_start=now, is_active_stop=now)
 
 # tolerance for np.allclose(..) function
 atol = 1e-14
@@ -134,9 +140,6 @@ class TestWindMover:
         print str(self.wm)
         assert True
 
-    def test_id_matches_builtin_id(self):
-        assert id(self.wm) == self.wm.id
-
     def test_get_move(self):
         """
         Test the get_move(...) results in WindMover match the expected delta
@@ -149,14 +152,16 @@ class TestWindMover:
             delta = self.wm.get_move(self.spill, self.time_step, curr_time)
             actual = self._expected_move()
 
-            # the results should be independent of model time
-            tol = 1e-8
-            np.testing.assert_allclose(delta, actual, tol, tol,
-                                       "WindMover.get_move() is not within a tolerance of " + str(tol), 0)
+           # the results should be independent of model time
+           tol = 1e-8
+           np.testing.assert_allclose(delta, actual, tol, tol,
+                                      "WindMover.get_move() is not within a tolerance of " + str(tol), 0)
+           
+           assert self.wm.is_active == True
 
-            print "Time step [sec]: \t" + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
-            print "C++ delta-move: " ; print str(delta)
-            print "Expected delta-move: "; print str(actual)
+           print "Time step [sec]: \t" + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
+           print "C++ delta-move: " ; print str(delta)
+           print "Expected delta-move: "; print str(actual)
 
     def test_get_move_exceptions(self):
        curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step))
@@ -185,7 +190,33 @@ class TestWindMover:
        xform = projections.FlatEarthProjection.meters_to_lonlat(exp, self.spill['positions'])
        return xform
 
+def test_timespan():
+    """
+    Ensure the is_active flag is being set correctly and checked, such that if is_active=False, the delta produced by get_move = 0
+    """
+    time_step = 15 * 60 # seconds
+    spill = spill_ex()
+    
+    model_time = time_utils.sec_to_date(time_utils.date_to_sec(spill.release_time) + 1)
+    spill.prepare_for_model_step(model_time, time_step)   # release particles
 
+    time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
+    time_val['time']  = np.datetime64( spill.release_time.isoformat() )
+    time_val['value'] = (2., 25.)
+    wind = weather.Wind(timeseries=time_val, units='meters per second')
+    
+    wm = movers.WindMover(wind, is_active_start=model_time+timedelta(seconds=time_step))
+    wm.prepare_for_model_step(model_time, time_step)
+    delta = wm.get_move(spill, time_step, model_time)
+    assert wm.is_active == False
+    assert np.all(delta == 0)   # model_time + time_step = is_active_start
+    
+    wm.is_active_start = model_time + timedelta(seconds=time_step/2)
+    wm.prepare_for_model_step(model_time, time_step)
+    delta = wm.get_move(spill, time_step, model_time)
+    assert wm.is_active == True
+    assert np.all(delta[:,:2] != 0)   # model_time + time_step > is_active_start
+    
 
 """
 Helper methods for this module
@@ -194,7 +225,7 @@ def _defaults(wm):
     """
     checks the default properties of the WindMover object as given in the input are as expected
     """
-    assert wm.is_active == True
+    assert wm.is_active == True  # timespan is as big as possible
     assert wm.uncertain_duration == 10800
     assert wm.uncertain_time_delay == 0
     assert wm.uncertain_speed_scale == 2

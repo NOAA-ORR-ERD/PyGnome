@@ -19,10 +19,14 @@ define([
         initialize: function() {
             _.bindAll(this);
 
-            this.options.model.on(
+            this.options.modelRun.on(
+                models.ModelRun.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.modelSettings.on(
                 models.Model.MESSAGE_RECEIVED, this.displayMessage);
-            this.options.ajaxForms.on(
-                models.AjaxForm.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.pointReleaseSpills.on(
+                models.PointReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.windMovers.on(
+                models.WindMover.MESSAGE_RECEIVED, this.displayMessage);
 
             this.hideAll();
         },
@@ -70,29 +74,30 @@ define([
             this.mapEl = this.options.mapEl;
             this.frameClass = this.options.frameClass;
             this.activeFrameClass = this.options.activeFrameClass;
-            this.placeholderEl = this.options.placeholderEl;
+            this.placeholderClass = this.options.placeholderClass;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
             this.imageTimeout = this.options.imageTimeout || 10;
             this.canDrawSpill = false;
 
-            this.createPlaceholderCopy();
             this.makeImagesClickable();
             this.status = MapView.STOPPED;
             this.map = $(this.mapEl);
 
-            this.model = this.options.model;
-            this.model.on(models.Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
-            this.model.on(models.Model.RUN_BEGAN, this.modelRunBegan);
-            this.model.on(models.Model.RUN_ERROR, this.modelRunError);
-            this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.Model.CREATED, this.reset);
+            this.modelRun = this.options.modelRun;
+            this.modelRun.on(models.ModelRun.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+            this.modelRun.on(models.ModelRun.RUN_BEGAN, this.modelRunBegan);
+            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
+            this.modelRun.on(models.ModelRun.CREATED, this.reset);
 
             if (this.backgroundImageUrl) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
+            } else {
+                this.showPlaceholder();
             }
 
-            if (this.model.hasCachedTimeStep(this.model.getCurrentTimeStep())) {
+            if (this.modelRun.hasCachedTimeStep(this.modelRun.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
             }
         },
@@ -121,13 +126,12 @@ define([
             this.status = MapView.PLAYING;
         },
 
-        createPlaceholderCopy: function() {
-            this.placeholderCopy = $(this.placeholderEl).find('img').clone()
-                .appendTo($(this.mapEl)).removeClass('hidden');
+        showPlaceholder: function() {
+            $('.' + this.placeholderClass).removeClass('hidden');
         },
 
-        removePlaceholderCopy: function() {
-            this.placeholderCopy.remove();
+        hidePlaceholder: function() {
+            $('.' + this.placeholderClass).addClass('hidden');
         },
 
         makeImagesClickable: function() {
@@ -349,15 +353,13 @@ define([
         },
 
         nextTimeStepReady: function() {
-            this.addTimeStep(this.model.getCurrentTimeStep());
+            this.addTimeStep(this.modelRun.getCurrentTimeStep());
         },
 
         loadMapFromUrl: function(url) {
             var _this = this;
 
-            if (this.placeholderCopy.length) {
-                this.removePlaceholderCopy();
-            }
+            this.hidePlaceholder();
 
             var map = $(this.mapEl);
             map.find('.background').remove();
@@ -446,8 +448,7 @@ define([
         },
 
         /*
-         Create a background canvas and paint lines for all spills on the
-         page.
+         Create a background canvas and paint lines for all spills on the page.
 
          Create a foreground canvas and setup event handlers to capture new
          spills added to the map. This canvas is cleared entirely during line
@@ -544,7 +545,7 @@ define([
         reset: function() {
             this.clear({clearBackground: true});
             if (!$(this.mapEl).find('.background').length) {
-                this.createPlaceholderCopy();
+                this.showPlaceholder();
             }
             this.setStopped();
         },
@@ -556,10 +557,10 @@ define([
                 throw new MapViewException('No current image size detected.');
             }
 
-            var minLat = this.model.bounds[0][1];
-            var minLong = this.model.bounds[0][0];
-            var maxLat = this.model.bounds[1][1];
-            var maxLong = this.model.bounds[2][0];
+            var minLat = this.modelRun.bounds[0][1];
+            var minLong = this.modelRun.bounds[0][0];
+            var maxLat = this.modelRun.bounds[1][1];
+            var maxLong = this.modelRun.bounds[2][0];
 
             var x = ((point.long - minLong) / (maxLong - minLong)) * size.width;
             var y = ((point.lat - minLat) / (maxLat - minLat)) * size.height;
@@ -577,10 +578,10 @@ define([
                 throw new MapViewException('No current image size detected.');
             }
 
-            var minLat = this.model.bounds[0][1];
-            var minLong = this.model.bounds[0][0];
-            var maxLat = this.model.bounds[1][1];
-            var maxLong = this.model.bounds[2][0];
+            var minLat = this.modelRun.bounds[0][1];
+            var minLong = this.modelRun.bounds[0][0];
+            var maxLat = this.modelRun.bounds[1][1];
+            var maxLong = this.modelRun.bounds[2][0];
 
             // Adjust for different origin
             point.y = -point.y + size.height;
@@ -615,16 +616,21 @@ define([
         initialize: function() {
             _.bindAll(this);
             this.treeEl = this.options.treeEl;
-            this.url = this.options.url;
+            this.url = this.options.apiRoot + "/tree";
+
+            // Turn off node icons. A [+] icon will still appear for nodes
+            // that have children.
+            $.ui.dynatree.nodedatadefaults["icon"] = false;
             this.tree = this.setupDynatree();
 
-            // Event handlers
-            this.options.ajaxForms.on(models.AjaxForm.UPDATED, this.reload);
-            this.options.ajaxForms.on(models.AjaxForm.CREATED, this.reload);
-            this.options.model.on(models.Model.CREATED, this.reload);
-
-            // TODO: Remove this when we remove the Long Island default code.
-            this.options.model.on(models.Model.RUN_BEGAN, this.reload);
+            this.options.windMovers.on('sync', this.reload);
+            this.options.windMovers.on('add', this.reload);
+            this.options.windMovers.on('destroy', this.reload);
+            this.options.pointReleaseSpills.on('sync', this.reload);
+            this.options.pointReleaseSpills.on('add', this.reload);
+            this.options.pointReleaseSpills.on('destroy', this.reload);
+            this.options.modelSettings.on('sync', this.reload);
+            this.options.map.on('sync', this.reload);
         },
 
         setupDynatree: function() {
@@ -674,7 +680,6 @@ define([
             this.addButtonEl = this.options.addButtonEl;
             this.removeButtonEl = this.options.removeButtonEl;
             this.settingsButtonEl = this.options.settingsButtonEl;
-            this.url = this.options.url;
 
             // Controls that require the user to select an item in the TreeView.
             this.itemControls = [this.removeButtonEl, this.settingsButtonEl];
@@ -748,7 +753,7 @@ define([
             this.spillButtonEl = this.options.spillButtonEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
-            this.model = this.options.model;
+            this.modelRun = this.options.modelRun;
 
             // Controls whose state, either enabled or disabled, is related to whether
             // or not an animation is playing. The resize and full screen buttons
@@ -771,17 +776,17 @@ define([
                 disabled: true
             });
 
-            if (this.model.expectedTimeSteps.length) {
-                this.setTimeSteps(this.model.expectedTimeSteps);
+            if (this.modelRun.expectedTimeSteps.length) {
+                this.setTimeSteps(this.modelRun.expectedTimeSteps);
                 this.enableControls();
             }
 
             this.setupClickEvents();
 
-            this.model.on(models.Model.RUN_BEGAN, this.runBegan);
-            this.model.on(models.Model.RUN_ERROR, this.modelRunError);
-            this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.Model.CREATED, this.modelCreated);
+            this.modelRun.on(models.ModelRun.RUN_BEGAN, this.runBegan);
+            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
+            this.modelRun.on(models.ModelRun.CREATED, this.modelCreated);
 
             this.options.mapView.on(MapView.FRAME_CHANGED, this.mapViewFrameChanged);
         },
@@ -823,7 +828,7 @@ define([
         },
 
         sliderMoved: function(event, ui) {
-            var timestamp = this.model.getTimestampForExpectedStep(ui.value);
+            var timestamp = this.modelRun.getTimestampForExpectedStep(ui.value);
 
             if (timestamp) {
                 this.setTime(timestamp);
@@ -836,16 +841,16 @@ define([
         },
 
         runBegan: function() {
-            if (this.model.dirty) {
+            if (this.modelRun.dirty) {
                 // TODO: Is this really what we want to do here?
                 this.reset();
             }
 
-            this.setTimeSteps(this.model.expectedTimeSteps);
+            this.setTimeSteps(this.modelRun.expectedTimeSteps);
         },
 
         mapViewFrameChanged: function() {
-            var timeStep = this.model.getCurrentTimeStep();
+            var timeStep = this.modelRun.getCurrentTimeStep();
             this.setTimeStep(timeStep.id);
             this.setTime(timeStep.get('timestamp'));
         },
@@ -1072,31 +1077,43 @@ define([
             this.runItemEl = this.options.runItemEl;
             this.stepItemEl = this.options.stepItemEl;
             this.runUntilItemEl = this.options.runUntilItemEl;
+            this.longIslandItemEl = this.options.longIslandItemEl;
 
             $(this.newItemEl).click(this.newItemClicked);
             $(this.runItemEl).click(this.runItemClicked);
             $(this.runUntilItemEl).click(this.runUntilItemClicked);
+            $(this.longIslandItemEl).click(this.longIslandItemClicked);
+        },
+
+        hideDropdown: function() {
+            $(this.modelDropdownEl).dropdown('toggle');
         },
 
         newItemClicked: function(event) {
-            $(this.modelDropdownEl).dropdown('toggle');
+            this.hideDropdown();
             this.trigger(MenuView.NEW_ITEM_CLICKED);
         },
 
         runItemClicked: function(event) {
-            $(this.runDropdownEl).dropdown('toggle');
+            this.hideDropdown();
             this.trigger(MenuView.RUN_ITEM_CLICKED);
         },
 
         runUntilItemClicked: function(event) {
-            $(this.runDropdownEl).dropdown('toggle');
+            this.hideDropdown();
             this.trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
+        },
+
+        longIslandItemClicked: function(event) {
+            this.hideDropdown();
+            this.trigger(MenuView.LONG_ISLAND_ITEM_CLICKED);
         }
     }, {
         // Event constants
         NEW_ITEM_CLICKED: "menuView:newMenuItemClicked",
         RUN_ITEM_CLICKED: "menuView:runMenuItemClicked",
-        RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked"
+        RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked",
+        LONG_ISLAND_ITEM_CLICKED: "menuView:longIslandItemClicked"
     });
 
     return {

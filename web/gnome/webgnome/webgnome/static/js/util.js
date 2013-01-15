@@ -74,11 +74,31 @@ define([
         return timestamp;
     }
 
+
+    var dirNames = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S',
+                    'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+
+    function cardinalName(angle) {
+        return dirNames[Math.floor((+(angle) + 360 / 32) / (360 / 16.0) % 16)];
+    }
+
+    function cardinalAngle(name) {
+        var idx = dirNames.indexOf(name.toUpperCase());
+        if (idx === -1) {
+            return null;
+        }
+        else {
+            return (360.0 / 16) * idx
+        }
+    }
+
     return {
         log: log,
         handleAjaxError: handleAjaxError,
         parseMessage: parseMessage,
-        formatTimestamp: formatTimestamp
+        formatTimestamp: formatTimestamp,
+        cardinalName: cardinalName,
+        cardinalAngle: cardinalAngle
     };
 
 });

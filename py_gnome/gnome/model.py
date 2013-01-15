@@ -6,10 +6,12 @@ import copy
 import numpy as np
 
 import gnome
+
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
+from gnome.gnomeobject import GnomeObject
 
-class Model(object):
+class Model(GnomeObject):
     
     """ 
     PyGNOME Model Class
@@ -72,15 +74,6 @@ class Model(object):
             self.rewind()   
 
     @property
-    def id(self):
-        """
-        Return an ID value for this model.
-
-        :return: an integer ID value for this model
-        """
-        return id(self)
-
-    @property
     def spills(self):
         """
         Return a list of the spills added to this model, in order of insertion.
@@ -89,6 +82,7 @@ class Model(object):
         """
         return self._spill_container.spills
         
+
     @property
     def start_time(self):
         return self._start_time
