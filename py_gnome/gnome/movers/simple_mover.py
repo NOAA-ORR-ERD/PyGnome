@@ -15,7 +15,8 @@ from gnome.movers import Mover
 
 ## this allows for this to be changed in the future.
 from gnome.utilities.projections import FlatEarthProjection as proj
-
+from datetime import datetime
+from time import gmtime
 
 class SimpleMover(Mover):
     """
@@ -25,7 +26,9 @@ class SimpleMover(Mover):
     
     (not all that different than a constant wind mover, now that I think about it)    
     """
-    def __init__(self, velocity):
+    def __init__(self, velocity,
+                 is_active_start= datetime( *gmtime(0)[:7] ), 
+                 is_active_stop = datetime.max):
         """
         simple_mover (velocity)
 
@@ -37,6 +40,8 @@ class SimpleMover(Mover):
         self.velocity = np.asarray( velocity,
                                     dtype = basic_types.mover_type, # use this, to be compatible with whatever we are using for location
                                     ).reshape((3,))
+                                    
+        super(SimpleMover,self).__init__(is_active_start, is_active_stop)
 
     def __repr__(self):
         return 'SimpleMover(<%s>)' % (self.id)
@@ -73,10 +78,11 @@ class SimpleMover(Mover):
 
         # delta[:] = self.velocity * time_step
         delta = np.zeros_like(positions)
+        
+        if self.is_active and self.on:
+            delta[in_water_mask] = self.velocity * time_step
 
-        delta[in_water_mask] = self.velocity * time_step
-
-        # scale for projection
-        delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
+            # scale for projection
+            delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
         
         return delta

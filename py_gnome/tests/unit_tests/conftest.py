@@ -10,6 +10,18 @@ from datetime import datetime
 from gnome import basic_types
 
 """
+Skip slow tests
+"""
+def pytest_addoption(parser):
+    parser.addoption("--runslow", action="store_true",
+        help="run slow tests")
+
+def pytest_runtest_setup(item):
+    if 'slow' in item.keywords and not item.config.getoption("--runslow"):
+        pytest.skip("need --runslow option to run")
+
+
+"""
 ====================================
 Following fixtures define standard functions for generating 
 (r,theta) values and corresponding (u, v) values for testing
