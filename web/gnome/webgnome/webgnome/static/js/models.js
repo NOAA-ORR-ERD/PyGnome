@@ -510,7 +510,11 @@ define([
     });
 
 
-    var Map = BaseModel.extend({});
+    var Map = BaseModel.extend({
+        initialize: function(attrs, options) {
+            this.url = options.url;
+        }
+    });
 
 
     return {
