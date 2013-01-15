@@ -185,10 +185,12 @@ class WindMover(CyMover):
         .. todo::
             We probably want to include more information.
         """
-        return "WindMover( wind=<wind_object>, uncertain_duration= %s, uncertain_time_delay=%s, uncertain_speed_scale=%s, uncertain_angle_scale=%s, is_active_start, is_active_stop, on)" \
-               % (self.uncertain_duration, self.uncertain_time_delay, \
-                  self.uncertain_speed_scale, self.uncertain_angle_scale, \
-                  self.is_active_start, self.is_active_stop, self.on)
+        info="WindMover( wind=<wind_object>, uncertain_duration={0.uncertain_duration}," +\
+        "uncertain_time_delay={0.uncertain_time_delay}, uncertain_speed_scale={0.uncertain_speed_scale}," + \
+        "uncertain_angle_scale={0.uncertain_angle_scale}, is_active_start={1.is_active_start}, is_active_stop={1.is_active_stop}, on={1.on})" \
+        
+        return info.format(self.mover, self)
+               
 
     def __str__(self):
         info = "WindMover - current state. See 'wind' object for wind conditions:\n" + \
@@ -196,10 +198,10 @@ class WindMover(CyMover):
                "  uncertain_time_delay={0.uncertain_time_delay}\n" + \
                "  uncertain_speed_scale={0.uncertain_speed_scale}\n" + \
                "  uncertain_angle_scale={0.uncertain_angle_scale}" + \
-               "  is_active_start time={0.is_active_start}" + \
-               "  is_active_stop time={0.is_active_stop}" + \
-               "  current on/off status={0.on}" 
-        return info.format(self.mover)
+               "  is_active_start time={1.is_active_start}" + \
+               "  is_active_stop time={1.is_active_stop}" + \
+               "  current on/off status={1.on}" 
+        return info.format(self.mover, self)
 
     # Define properties using lambda functions: uses lambda function, which are accessible via fget/fset as follows:
     uncertain_duration = property( lambda self: self.mover.uncertain_duration,
