@@ -233,3 +233,11 @@ class TestWind:
       # assert get_rq.value[0,1] > all_winds['rq'].value[1,0] and get_rq.value[0,1] < all_winds['rq'].value[1,1]
       #=========================================================================
 
+
+def test_constant_wind():
+    """
+    tests the utility function for creating a constant wind
+    """
+    wind = weather.constant_wind(10, 'knots')
+    
+    

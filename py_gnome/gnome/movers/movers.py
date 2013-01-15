@@ -211,6 +211,7 @@ class WindMover(CyMover):
         :param model_time_datetime: current time of the model as a date time object
         :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
         """
+        print "in get_move:", model_time_datetime
         self.prepare_data_for_get_move(spill, model_time_datetime)
         try:
             windage = spill['windages']

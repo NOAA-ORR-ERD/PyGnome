@@ -19,18 +19,18 @@ def test_init_Spill():
     """
     sp = Spill()
 
-    assert  sp.id > 0
+    assert  sp.spill_num > 0
 
 
-def test_set_id():
+def test_set_spill_num():
     """
-    ids should get set, and stay unique as you delete and create spills
+    spill_nums should get set, and stay unique as you delete and create spills
     """
 
     spills = [Spill() for i in range(10)]
 
-    # the ids are unique
-    assert len( set([spill.id for spill in spills]) ) == len(spills)
+    # the spill_nums are unique
+    assert len( set([spill.spill_num for spill in spills]) ) == len(spills)
 
     #delete and create a few:
     del spills[3]
@@ -38,39 +38,39 @@ def test_set_id():
 
     spills.extend(  [FloatingSpill() for i in range(5)] ) 
 
-    # ids still unique
-    assert len( set([spill.id for spill in spills]) ) == len(spills)
+    # spill_nums still unique
+    assert len( set([spill.spill_num for spill in spills]) ) == len(spills)
 
     del spills[10]
     del spills[4]
 
     spills.extend(  [SurfaceReleaseSpill(5, (0,0,0), None ) for i in range(5)] ) 
 
-    # ids still unique
-    assert len( set([spill.id for spill in spills]) ) == len(spills)
+    # spill_nums still unique
+    assert len( set([spill.spill_num for spill in spills]) ) == len(spills)
 
-    #print [spill.id for spill in spills]
+    #print [spill.spill_num for spill in spills]
     #assert False
 
 def test_deepcopy():
     """
-    only tests that the ids work -- not sure about anything else...
+    only tests that the spill_nums work -- not sure about anything else...
 
     test_spill_container does test some other issues.
     """
     spill1 = Spill() 
     spill2 = copy.deepcopy(spill1)
     assert spill1 is not spill2
-    assert spill1.id != spill2.id
+    assert spill1.spill_num != spill2.spill_num
 
 def test_copy():
     """
-    only tests that the ids work -- not sure about anything else...
+    only tests that the spill_nums work -- not sure about anything else...
     """
     spill1 = Spill() 
     spill2 = copy.copy(spill1)
     assert spill1 is not spill2
-    assert spill1.id != spill2.id
+    assert spill1.spill_num != spill2.spill_num
 
 def test_new_elements():
     """
