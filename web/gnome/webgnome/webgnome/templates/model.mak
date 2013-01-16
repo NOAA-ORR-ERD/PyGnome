@@ -75,7 +75,8 @@
     </div>
 
     <div id="main-content">
-         <div class="btn-toolbar">
+        <div class="row">
+          <div class="btn-toolbar">
               <div class="btn-group">
                   <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
               </div>
@@ -98,6 +99,8 @@
                 <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
             </div>
         </div>
+        </div>
+
 
         <div id="map">
         </div>
