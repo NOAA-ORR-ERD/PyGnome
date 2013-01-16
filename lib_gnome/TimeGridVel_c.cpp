@@ -7420,12 +7420,19 @@ OSErr TimeGridCurRect_c::ReadHeaderLines(char *path, WorldRect *bounds)
 	}
 	else
 	{	// multiple files
+		char errmsg[256];
 		long numLinesInText = NumLinesInText(*f);
 		long numFiles = (numLinesInText - (line - 1))/3;	// 3 lines for each file - filename, starttime, endtime
 		//strcpy(fPathName,s+strlen("[FILE]\t"));
 		strcpy(fVar.pathName,s+strlen("[FILE] "));
+		sprintf(errmsg,"pathName = %s\n",fVar.pathName);
+		printNote(errmsg);
 		RemoveLeadingAndTrailingWhiteSpace(fVar.pathName);
 		ResolvePathFromInputFile(path,fVar.pathName); // JLM 6/8/10
+		sprintf(errmsg,"pathName = %s\n",path);
+		printNote(errmsg);
+		sprintf(errmsg,"resolved pathName = %s\n",fVar.pathName);
+		printNote(errmsg);
 		if(fVar.pathName[0] && FileExists(0,0,fVar.pathName))
 		{
 			err = ScanFileForTimes(fVar.pathName,&fTimeDataHdl,&fTimeHdl);	// AH 07/17/2012
@@ -7477,8 +7484,11 @@ OSErr TimeGridCurRect_c::TextRead(char *path, char *topFilePath)
 	//strcpy(pathName,fPathName);
 	//SplitPathFile(pathName,fFileName);
 	strcpy(pathName,fVar.pathName);
+#ifndef pyGNOME
 	SplitPathFile(pathName,fVar.userName);	// code goes here, this won't work on unix paths
-	printNote("Got Here\n");
+#else
+	SplitPathFileName (pathName, fVar.userName);
+#endif
 	// code goes here, we need to worry about really big files
 	
 	// do the readgridcur file stuff, store numrows, numcols, return the bounds
@@ -7486,7 +7496,6 @@ OSErr TimeGridCurRect_c::TextRead(char *path, char *topFilePath)
 	if(err)
 		goto done;
 	
-	printNote("Got Here\n");
 	/////////////////////////////////////////////////
 	
 	rectGrid = new TRectGridVel;
