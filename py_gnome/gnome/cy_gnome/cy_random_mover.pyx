@@ -1,4 +1,4 @@
-cimport numpy as np
+cimport numpy as cnp
 import numpy as np
 
 from type_defs cimport *
@@ -37,7 +37,7 @@ cdef class CyRandomMover:
         """
         self.mover.PrepareForModelRun()
         
-    def prepare_for_model_step(self, model_time, step_len):
+    def prepare_for_model_step(self, model_time, step_len, numSets=0, cnp.ndarray[cnp.npy_int] setSizes=None):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
         
@@ -57,9 +57,9 @@ cdef class CyRandomMover:
     def get_move(self, 
                  model_time, 
                  step_len, 
-                 np.ndarray[WorldPoint3D, ndim=1] ref_points, 
-                 np.ndarray[WorldPoint3D, ndim=1] delta, 
-                 np.ndarray[np.npy_int16] LE_status, 
+                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points, 
+                 cnp.ndarray[WorldPoint3D, ndim=1] delta, 
+                 cnp.ndarray[cnp.npy_int16] LE_status, 
                  LEType spill_type, 
                  long spill_ID):
         """

@@ -1,6 +1,4 @@
-
 ul.dynatree-container {
-    max-height: 400px;
     border: none;
 }
 
@@ -14,20 +12,12 @@ ul.dynatree-container {
     background-image: none;
 }
 
-.dynatree-node a {
-    font-size: 9pt;
-}
-
-#tree-list {
-    display: none;
-}
-
-div.nav-collapse > div.btn-toolbar {
-    margin: 0;
-}
-
-.navbar .nav {
-    margin-right: 40px;
+#slider-container {
+    width: 158px;
+    cursor: default;
+    color: #333;
+    opacity: 1;
+    background-color: whiteSmoke;
 }
 
 #slider {
@@ -38,17 +28,14 @@ div.nav-collapse > div.btn-toolbar {
     position: absolute;
     left: 2px;
     top: 15px;
+    padding-top: 0;
 }
 
-#slider-container {
-    width: 150px;
-    cursor: default;
-    color: #333;
-    opacity: 1;
-    background-color: whiteSmoke;
+.ui-slider .ui-slider-handle {
+    height: 1em;
 }
 
-#sidebar-toolbar {
+.sidebar-toolbar {
     display: inline;
 }
 
@@ -77,17 +64,6 @@ legend {
     font-size: 18px;
     margin-bottom: 0;
     line-height: 20px;
-}
-
-#hour,
-#minute,
-.hour,
-.minute {
-    width: 20px;
-}
-
-#duration_days {
-    width: 40px;
 }
 
 #map {
@@ -125,31 +101,6 @@ legend {
     max-width: 700px;
 }
 
-select, textarea,
-input[type="text"],
-input[type="password"],
-input[type="datetime"],
-input[type="datetime-local"],
-input[type="date"],
-input[type="month"],
-input[type="time"],
-input[type="week"],
-input[type="number"],
-input[type="email"],
-input[type="url"],
-input[type="search"],
-input[type="tel"],
-input[type="color"],
-.uneditable-input {
-    padding: 1px;
-    height: 17px;
-
-}
-
-.form-horizontal .control-group {
-    margin: 1px 0 1px 0;
-}
-
 .edit-time-forms th {
     padding: 0 8px 8px 8px;
 }
@@ -174,16 +125,9 @@ input[type="color"],
     width: 120px;
 }
 
-select, input[type="file"] {
-    height: 25px;
-}
-
-.help-inline {
-    padding-top: 4px;
-}
-
-.modal-header h3 {
-    display: inline;
+.hour,
+.minute {
+    width: 20px;
 }
 
 .edit-mover-name {
@@ -195,6 +139,11 @@ select, input[type="file"] {
     margin-top: 10px;
 }
 
+.variable-wind .compass-container {
+    margin-left: 100px;
+    margin-bottom: 10px;
+}
+
 .compass {
     width: 210px;
     height: 210px;
@@ -202,11 +151,11 @@ select, input[type="file"] {
 }
 
 .model-settings .control-label {
-    width: 210px;
+    width: 150px;
 }
 
 .model-settings .controls {
-    margin-left: 230px;
+    margin-left: 170px;
 }
 
 .table tbody tr.info td {
@@ -218,6 +167,20 @@ select, input[type="file"] {
     max-height: 400px;
 }
 
+.wind form {
+    margin-bottom: 0;
+}
+
 .units {
     width: 120px;
 }
+
+#map_canvas {
+    height: 500px;
+    width: 700px;
+}
+
+.modal-body {
+    max-height: 800px;
+}
+

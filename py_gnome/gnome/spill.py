@@ -15,8 +15,9 @@ import sys
 import copy
 import numpy as np
 from gnome import basic_types
+from gnome.gnomeobject import GnomeObject
 
-class Spill(object):
+class Spill(GnomeObject):
     """
     base class for a source of elements
 
@@ -59,8 +60,7 @@ class Spill(object):
 
         Despite what that thread says for __copy__, the built-in deepcopy() ends up using recursion
         """
-        obj_copy = object.__new__(type(self))
-        obj_copy.__dict__ = copy.deepcopy(self.__dict__, memo)
+        obj_copy = super(Spill, self).__deepcopy__(memo)
         obj_copy.__set_spill_num()
         return obj_copy
 
@@ -68,8 +68,7 @@ class Spill(object):
         """
         might as well have copy, too.
         """
-        obj_copy = object.__new__(type(self))
-        obj_copy.__dict__ = self.__dict__.copy()
+        obj_copy = super(Spill, self).__copy__()
         obj_copy.__set_spill_num()
         return obj_copy
 

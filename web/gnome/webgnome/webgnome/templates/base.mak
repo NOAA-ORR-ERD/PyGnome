@@ -11,7 +11,7 @@
 
     <link href="/static/css/bootstrap.css" rel="stylesheet">
     <link href="/static/css/bootstrap-responsive.css" rel="stylesheet">
-    <link href="/static/css/smoothness/jquery-ui-1.8.24.custom.css" rel="stylesheet">
+    <link href="/static/css/custom-theme/jquery-ui-1.8.16.custom.css" rel="stylesheet">
     <link href="/static/css/base.css" rel="stylesheet">
 
     <%block name="extra_head"> </%block>
@@ -37,12 +37,12 @@
 </div>
 
 
-<div class="container-fluid" id="content">
-    <div class="row-fluid">
+<div class="container-fluid outer-wrapper">
+    <div class="row-fluid inner-wrapper">
         <div class="span2" id="sidebar">
             <%block name="sidebar"> </%block>
         </div>
-        <div class="span8">
+        <div class="span8" id="content">
             <%block name="content"> </%block>
         </div>
     </div>
@@ -50,7 +50,6 @@
 
 <footer>
     <div class="container-fluid">
-        <p>Copyright NOAA 2012.</p>
     </div>
 </footer>
 
