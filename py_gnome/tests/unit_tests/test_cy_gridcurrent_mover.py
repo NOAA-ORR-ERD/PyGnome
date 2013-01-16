@@ -48,7 +48,8 @@ class Common():
         self.ref[:] = 1.
         self.ref[:]['z'] = 0 # on surface by default
         self.status[:] = basic_types.oil_status.in_water
-    
+   
+@pytest.mark.slow
 class TestGridCurrentMover():
     cm = Common()
     gcm = cy_gridcurrent_mover.CyGridCurrentMover()    

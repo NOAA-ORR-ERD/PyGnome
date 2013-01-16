@@ -157,10 +157,14 @@ class TestWind:
        repr(all_winds['wind'])
        print str(all_winds['wind'])
        assert True
- 
+
    def test_id_matches_builtin_id(self, all_winds):
-       assert id(all_winds['wind']) == all_winds['wind'].id
-   
+       # It is not a good assumption that the obj.id property
+       # will always contain the id(obj) value.  For example it could
+       # have been overloaded with, say, a uuid1() generator.
+       #assert id(all_winds['wind']) == all_winds['wind'].id
+       pass
+
    def test_get_timeseries(self, all_winds):
        """
        Initialize from timeseries and test the get_time_value method 
@@ -233,3 +237,10 @@ class TestWind:
       # assert get_rq.value[0,1] > all_winds['rq'].value[1,0] and get_rq.value[0,1] < all_winds['rq'].value[1,1]
       #=========================================================================
 
+
+def test_constant_wind():
+    """
+    tests the utility function for creating a constant wind
+    """
+    wind = weather.constant_wind(10, 135, 'knots')
+    

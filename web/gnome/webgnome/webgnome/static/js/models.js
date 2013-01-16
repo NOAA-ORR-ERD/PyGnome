@@ -24,21 +24,20 @@ define([
 
 
     /*
-     `Model` is a collection of `TimeStep` objects representing a run of
+     `ModelRun` is a collection of `TimeStep` objects representing a run of
      the user's active model.
      */
-    var Model = Backbone.Collection.extend({
+    var ModelRun = Backbone.Collection.extend({
         model: TimeStep,
 
         initialize: function(timeSteps, opts) {
             _.bindAll(this);
-            this.url = opts.url;
+            this.url = opts.url + '/runner';
             this.currentTimeStep = opts.currentTimeStep || 0;
             this.nextTimeStep = this.currentTimeStep ? this.currentTimeStep + 1 : 0;
             // An array of timestamps, one for each step we expect the server to
             // make, passed back when we initiate a model run.
             this.expectedTimeSteps = opts.expectedTimeSteps || [];
-            this.bounds = opts.bounds;
             // Optionally specify the zoom level.
             this.zoomLevel = opts.zoomLevel === undefined ? 4 : opts.zoomLevel;
             // If true, `Model` will request a new set of time steps from the server
@@ -100,23 +99,22 @@ define([
             var message = util.parseMessage(data);
 
             if (message) {
-                this.trigger(Model.MESSAGE_RECEIVED, message);
+                this.trigger(ModelRun.MESSAGE_RECEIVED, message);
 
                 if (message.error) {
-                    this.trigger(Model.RUN_ERROR);
+                    this.trigger(ModelRun.RUN_ERROR);
                     return false;
                 }
             }
 
             this.dirty = false;
             this.expectedTimeSteps = data.expected_time_steps;
-            this.bounds = data.map_bounds;
 
             if (_.has(data, 'time_step')) {
                 this.addTimeStep(data.time_step)                ;
             }
 
-            this.trigger(Model.RUN_BEGAN, data);
+            this.trigger(ModelRun.RUN_BEGAN, data);
             this.getNextTimeStep();
             return true;
         },
@@ -124,8 +122,8 @@ define([
         /*
          Helper that performs an AJAX request to start ("run") the model.
 
-         Receives back the background image for the map and an array of timestamps,
-         one for each step the server expects to generate on subsequent requests.
+         Receives an array of timestamps, one for each step the server expects
+         to generate on subsequent requests.
          */
         doRun: function(opts) {
             var isInvalid = function(obj) {
@@ -144,7 +142,7 @@ define([
 
             $.ajax({
                 type: 'POST',
-                url: this.url + '/run',
+                url: this.url,
                 data: opts,
                 tryCount: 0,
                 retryLimit: 3,
@@ -170,23 +168,15 @@ define([
         run: function(opts) {
             var options = $.extend({}, {
                 zoomLevel: this.zoomLevel,
-                zoomDirection: Model.ZOOM_NONE,
+                zoomDirection: ModelRun.ZOOM_NONE,
                 runUntilTimeStep: this.runUntilTimeStep
             }, opts);
 
-            var needToGetRunUntilStep = false;
-
             if (options.runUntilTimeStep) {
                 this.runUntilTimeStep = options.runUntilTimeStep;
-                needToGetRunUntilStep = options.runUntilTimeStep &&
-                    !this.hasCachedTimeStep(options.runUntilTimeStep);
             }
 
             if (this.dirty) {
-                options['no_cache'] = true;
-            }
-
-            if (this.dirty || needToGetRunUntilStep) {
                 this.doRun(options);
                 return;
             }
@@ -223,16 +213,16 @@ define([
 
             if (this.currentTimeStep === this.runUntilTimeStep ||
                     this.currentTimeStep === _.last(this.expectedTimeSteps)) {
-                this.trigger(Model.RUN_FINISHED);
+                this.trigger(ModelRun.RUN_FINISHED);
                 this.runUntilTimeStep = null;
                 return;
              }
 
-             this.trigger(Model.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
+             this.trigger(ModelRun.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
         },
 
         isOnLastTimeStep: function() {
-            return this.currentTimeStep === this.length - 1;
+            return this.currentTimeStep === this.expectedTimeSteps.length - 1;
         },
 
          /*
@@ -244,7 +234,7 @@ define([
         finishRun: function() {
             this.rewind();
             this.runUntilTimeStep = null;
-            this.trigger(Model.RUN_FINISHED);
+            this.trigger(ModelRun.RUN_FINISHED);
         },
 
         /*
@@ -268,7 +258,7 @@ define([
             // Request the next step from the server.
             $.ajax({
                 type: "GET",
-                url: this.url + '/next_step',
+                url: this.url,
                 success: this.timeStepRequestSuccess,
                 error: this.timeStepRequestFailure
             });
@@ -278,16 +268,16 @@ define([
             var message = util.parseMessage(data);
 
             if (message) {
-                this.trigger(Model.MESSAGE_RECEIVED, message);
+                this.trigger(ModelRun.MESSAGE_RECEIVED, message);
 
                 if (message.error) {
-                    this.trigger(Model.RUN_ERROR);
+                    this.trigger(ModelRun.RUN_ERROR);
                     return;
                 }
             }
 
             if (!data.time_step) {
-                this.trigger(Model.RUN_ERROR);
+                this.trigger(ModelRun.RUN_ERROR);
                 return;
             }
 
@@ -299,8 +289,13 @@ define([
                // TODO: Inform user of more information.
                alert('The run failed due to a server-side error.');
            } if (xhr.status === 404) {
-               // TODO: Maybe we shouldn't return 404 when finished? Seems wrong.
-               alert('The model you were working with is no longer available.');
+               // The run finished. We already check if the server is expected
+               // to have a time step before th in a local cache of
+               // expected time steps for the run, so we should not reach
+               // this point in normal operation. That is, assuming the local
+               // cache of time steps matches the server's -- which it always
+               // should.
+               this.finishRun();
            }
            this.finishRun();
            util.log(xhr);
@@ -349,42 +344,6 @@ define([
             this.reset();
             this.expectedTimeSteps = [];
         },
-
-        /*
-         Request a new model. This destroys the current model.
-         */
-        create: function() {
-            $.ajax({
-                url: this.url + "/create",
-                data: "confirm_new=1",
-                type: "POST",
-                tryCount: 0,
-                retryLimit: 3,
-                success: this.createSuccess,
-                error: util.handleAjaxError
-            });
-        },
-
-         /*
-         Handle a successful request to the server to create a new model.
-         */
-        createSuccess: function(data) {
-            var message = util.parseMessage(data);
-
-            if (message) {
-                this.trigger(Model.MESSAGE_RECEIVED, message);
-
-                if (message.error) {
-                    // TODO: Separate error event?
-                    this.trigger(Model.RUN_ERROR);
-                    return;
-                }
-            }
-
-            this.clearData();
-            this.dirty = true;
-            this.trigger(Model.CREATED);
-        }
     }, {
         // Class constants
         ZOOM_IN: 'zoom_in',
@@ -401,152 +360,171 @@ define([
     });
 
 
-    /*
-     `AjaxForm` is a helper object that handles requesting rendered form HTML from
-     the server and posting submitted forms. Form HTML, including error output, is
-     rendered on the server. By convention, if a form submission returns `form_html`
-     then the form contains errors and should be displayed again. Otherwise, we
-     assume that submission succeeded.
+    var BaseModel = Backbone.Model.extend({
+        // Add an array of field names here that should be converted to strings
+        // during `toJSON` calls and to `moment` objects during `get` calls.
+        dateFields: null,
 
-     This object handles the GET and POST requests made when a user clicks on a
-     control, typically using one of the control views (e.g., `TreeControlView`),
-     that displays a form, or when the user submits a form. The form HTML is
-     displayed in a modal view using `ModalFormView`.
-     */
-    var AjaxForm = function(opts) {
-        _.bindAll(this);
-        this.url = opts.url;
-        this.type = opts.type;
-
-        // Mix Backbone.js event methods into `AjaxForm`.
-        _.extend(this, Backbone.Events);
-    };
-
-    // Event constants
-    AjaxForm.MESSAGE_RECEIVED = 'ajaxForm:messageReceived';
-    AjaxForm.CHANGED = 'ajaxForm:changed';
-    AjaxForm.CREATED = 'ajaxForm:created';
-    AjaxForm.UPDATED = 'ajaxForm:saved';
-
-    AjaxForm.prototype = {
-        /*
-         Refresh this form from the server's JSON response.
-         */
         parse: function(response) {
             var message = util.parseMessage(response);
             if (message) {
-                this.trigger(AjaxForm.MESSAGE_RECEIVED, message);
+                this.trigger(this.constructor.__super__.MESSAGE_RECEIVED, message);
             }
 
-            if (response.form_html) {
-                this.form_html = response.form_html;
-                this.trigger(AjaxForm.CHANGED, this);
-            } else if (response.created) {
-                this.trigger(AjaxForm.CREATED, this);
-            } else{
-                this.trigger(AjaxForm.UPDATED, this);
+            var data = BaseModel.__super__.parse.apply(this, arguments);
 
-            }
-        },
-
-        /*
-         Make an AJAX request for this `AjaxForm`, merging `opts` into the options
-         object passed to $.ajax. By default, this method uses a GET operation.
-         */
-        makeRequest: function(opts) {
-            var options = $.extend({}, opts || {}, {
-                url: this.url,
-                tryCount: 0,
-                retryLimit: 3,
-                success: this.parse,
-                error: util.handleAjaxError
-            });
-
-            if (options.id) {
-                options.url = options.url + '/' + options.id;
+            // Convert date fields from strings into `moment` objects.
+            if (this.dateFields) {
+                _.each(this.dateFields, function(field) {
+                    if (typeof(data[field] === "string")) {
+                        data[field] = moment(data[field]);
+                    }
+                });
             }
 
-            $.ajax(options);
+            return data;
         },
 
-        /*
-         Get the HTML for this form from the server.
-         */
-        get: function(opts) {
-            var options = $.extend({}, opts || {}, {
-                type: 'GET'
-            });
-            this.makeRequest(options);
+         // Return a `moment` object for any date field.
+        get: function(attr) {
+            if(this.dateFields && _.contains(this.dateFields, attr)) {
+                return moment(this.attributes[attr]);
+            }
+
+            return BaseModel.__super__.get.apply(this, arguments);
         },
 
-        /*
-         Submit using `opts` and refresh this `AjaxForm` from JSON in the response.
-         The assumption here is that `data` and `url` have been provided in `opts`
-         and we're just passing them along to the `makeRequest()` method.
-         */
-        submit: function(opts) {
-             var options = $.extend({}, opts, {
-                type: 'POST'
-            });
+        // Call .format() on any date fields when preparing them for JSON
+        // serialization.
+        toJSON: function() {
+            var data = BaseModel.__super__.toJSON.apply(this, arguments);
 
-            this.makeRequest(options);
+            if (this.dateFields) {
+                _.each(this.dateFields, function(field) {
+                    if (typeof(data[field]) === "string") {
+                        return;
+                    }
+
+                    if (data[field]) {
+                        data[field] = data[field].format();
+                    }
+                });
+            }
+
+            return data;
         }
-    };
+    }, {
+        MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
+    });
 
 
-    /*
-     A collection of `AjaxForm` instances.
+    var Model = BaseModel.extend({
+        dateFields: ['start_time'],
 
-     Listen for SUBMIT_SUCCESS and SUBMIT_ERROR events on all instances and
-     rebroadcast them.
-     */
-    var AjaxFormCollection = function() {
-        _.bindAll(this);
-        _.extend(this, Backbone.Events);
-        this.forms = {};
-    };
+        url: function() {
+            var id = this.id ? '/' + this.id : '';
+            return '/model' + id +
+                "?include_movers=false&include_spills=false";
+        }
+    });
 
 
-    AjaxFormCollection.prototype = {
-        add: function(formOpts) {
-            var _this = this;
+    // Spills
 
-            if (!_.has(formOpts, 'collection')) {
-                formOpts.collection = this;
+    var PointReleaseSpill = BaseModel.extend({
+        dateFields: ['release_time']
+    });
+
+
+    var PointReleaseSpillCollection = Backbone.Collection.extend({
+        model: PointReleaseSpill,
+
+        initialize: function(spills, opts) {
+            this.url = opts.url;
+        }
+    });
+
+
+    // Movers
+    var WindValue = BaseModel.extend({
+        dateFields: ['datetime']
+    });
+
+    var WindValueCollection = Backbone.Collection.extend({
+        model: WindValue,
+
+        comparator: function(item) {
+            return item.get('datetime');
+        }
+    });
+
+
+    var Wind = BaseModel.extend({
+        initialize: function(attrs) {
+            var timeseries = [];
+            if (attrs && _.has(attrs, 'timeseries')) {
+                timeseries = attrs['timeseries'];
+                delete(attrs['timeseries']);
+            }
+            this.set('timeseries', new WindValueCollection(timeseries));
+        }
+    });
+
+
+    var WindMover = BaseModel.extend({
+        /*
+         If the user passed an object for `key`, as when setting multiple
+         attributes at once, then make sure the 'wind' field is a `Wind`
+         object.
+         */
+        set: function(key, val, options) {
+            if (key && _.isObject(key) && _.has(key, 'wind')) {
+                key['wind'] = new Wind(key['wind']);
+            } else if (this.get('wind') === undefined) {
+                key['wind'] = new Wind();
             }
 
-            this.forms[formOpts.id] = new AjaxForm(formOpts);
-
-            this.forms[formOpts.id].on(AjaxForm.CHANGED,  function(ajaxForm) {
-                _this.trigger(AjaxForm.CHANGED, ajaxForm);
-            });
-
-            this.forms[formOpts.id].on(AjaxForm.CREATED,  function(ajaxForm) {
-                _this.trigger(AjaxForm.CREATED, ajaxForm);
-            });
-
-            this.forms[formOpts.id].on(AjaxForm.UPDATED,  function(ajaxForm) {
-                _this.trigger(AjaxForm.UPDATED, ajaxForm);
-            });
+            WindMover.__super__.set.apply(this, [key, val, options]);
+            return this;
         },
 
-        get: function(id) {
-            return this.forms[id];
-        },
-
-        deleteAll: function() {
-            var _this = this;
-            _.each(this.forms, function(form, key) {
-                delete _this.forms[key];
-            });
+        parse: function(response) {
+            var attrs = WindMover.__super__.parse.apply(this, [response]);
+            var wind = {};
+            if (attrs && _.has(attrs, 'wind')) {
+                attrs['wind'] = new Wind(wind);
+            }
+            return attrs;
         }
-    };
+    });
+
+
+    var WindMoverCollection = Backbone.Collection.extend({
+        model: WindMover,
+
+        initialize: function(movers, opts) {
+            this.url = opts.url;
+        }
+    });
+
+
+    var Map = BaseModel.extend({
+        initialize: function(attrs, options) {
+            this.url = options.url;
+        }
+    });
+
 
     return {
         TimeStep: TimeStep,
+        ModelRun: ModelRun,
         Model: Model,
-        AjaxForm: AjaxForm,
-        AjaxFormCollection: AjaxFormCollection
+        PointReleaseSpill: PointReleaseSpill,
+        PointReleaseSpillCollection: PointReleaseSpillCollection,
+        WindMover: WindMover,
+        WindMoverCollection: WindMoverCollection,
+        WindValue: WindValue,
+        Map: Map
     };
 
 });

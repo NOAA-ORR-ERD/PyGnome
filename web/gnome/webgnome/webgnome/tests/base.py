@@ -17,7 +17,6 @@ class GnomeTestCase(unittest.TestCase):
         dirname = os.path.dirname(__file__)
         return appconfig('config:%s' % config_file, relative_to=dirname)
 
-
 class FunctionalTestBase(GnomeTestCase):
     def setUp(self):
         self.settings = self.get_settings()

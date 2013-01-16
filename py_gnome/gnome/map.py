@@ -21,6 +21,7 @@ New features:
 import numpy as np
 
 import gnome
+from gnome import GnomeObject
 from gnome.utilities import map_canvas
 from gnome.basic_types import world_point_type, oil_status
 
@@ -31,7 +32,7 @@ from gnome.utilities.geometry.PinP import CrossingsTest as point_in_poly
 from gnome.utilities.geometry.polygons import PolygonSet
 
             
-class GnomeMap(object):
+class GnomeMap(GnomeObject):
     """
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.

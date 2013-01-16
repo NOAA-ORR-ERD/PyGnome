@@ -13,30 +13,91 @@ class OrderedCollection(object):
     '''
     def __init__(self, elems=[], dtype=None):
         if elems and not isinstance(elems, list):
-            raise TypeError('OrderedCollection: needs a list of objects')
+            raise TypeError('%s: needs a list of objects' % (self.__class__.__name__))
 
         if not dtype and len(elems) == 0:
-            raise TypeError('OrderedCollection: specify a data type if list is empty')
+            raise TypeError('%s: specify a data type if list is empty' % (self.__class__.__name__))
         elif not dtype:
             self.dtype = type(elems[0])
         else:
             self.dtype = dtype
 
         if not all([isinstance(e, self.dtype) for e in elems]):
-            raise TypeError('Group needs a list of type: %s' % (self.dtype))
+            raise TypeError('%s: needs a list of %s' % (self.__class__.__name__, self.dtype))
         # a bunch of Gnome classes have an id property defined, which we will prefer
         # otherwise, we just take the id(e) value
-        self._index = dict([(e.id if hasattr(e, 'id') else id(e), idx) for e, idx in zip(elems, range(len(elems)))])
+        # NOTE: we stringify the e.id value since it could be of a type that is hard to reference as a key
+        self._index = dict([(str(e.id) if hasattr(e, 'id') else id(e), idx) for e, idx in zip(elems, range(len(elems)))])
         self._elems = elems[:]
         pass
+
+    def get(self, ident):
+        try:
+            return self._elems[self._index[ident]]
+        except:
+            return self._elems[self._index[str(ident)]]
+
+    def add(self, elem):
+        ''' Add an object to the collection '''
+        if isinstance(elem, self.dtype):
+            if hasattr(elem, 'id'):
+                # a bunch of Gnome classes have an id property defined, which we will prefer.
+                # NOTE: the e.id value is stringified since the key has been also.
+                l__id = str(elem.id)
+            else:
+                l__id = id(elem)
+            if l__id not in self._index.keys():
+                self._index[l__id] = len(self._elems)
+                self._elems.append(elem)
+            pass
+        elif isinstance(elem, list) and all([isinstance(e, self.dtype) for e in elem]):
+            for e in elem:
+                self.add(e)
+            pass
+        else:
+            raise TypeError('%s: expected %s, got %s' % (self.__class__.__name__, self.dtype, type(elem)))
+
+    def remove(self, ident):
+        ''' Remove an object from the collection '''
+        if ident in self._index:
+            self._elems[self._index[ident]] = None
+            del self._index[ident]
+        else:
+            self._elems[self._index[str(ident)]] = None
+            del self._index[str(ident)]
+
+    def replace(self, ident, new_elem):
+        if not isinstance(new_elem, self.dtype):
+            raise TypeError('%s: expected %s, got %s' % (self.__class__.__name__, self.dtype, type(new_elem)))
+
+        if ident in self._index.keys():
+            l__key = ident
+        elif str(ident) in self._index.keys():
+            l__key = str(ident)
+        else:
+            self.add(new_elem)
+            return
+
+        # we have an existing object
+        idx = self._index[l__key]
+        del self._index[l__key]
+        if hasattr(new_elem, 'id'):
+            # a bunch of Gnome classes have an id property defined, which we will prefer
+            # NOTE: the e.id value is stringified since the key has been also.
+            self._index[str(new_elem.id)] = idx
+        else:
+            self._index[id(new_elem)] = idx
+        self._elems[idx] = new_elem
 
     def __len__(self):
         return len(self._index.keys())
 
     def __iter__(self):
-        vals = self._index.values()
-        for i in sorted(vals):
+        for i in sorted(self._index.values()):
             yield self._elems[i]
+
+    def __contains__(self, ident):
+        return ident in self._index
 
     def __getitem__(self, ident):
         return self.get(ident)
@@ -51,48 +112,17 @@ class OrderedCollection(object):
         self.add(rop)
         return self
 
-    def get(self, ident):
-        return self._elems[self._index[ident]]
-
-    def add(self, elem):
-        ''' Add an object to the collection '''
-        if isinstance(elem, self.dtype):
-            if hasattr(elem, 'id'):
-                # a bunch of Gnome classes have an id property defined, which we will prefer
-                l__id = elem.id
-            else:
-                l__id = id(elem)
-            if l__id not in self._index.keys():
-                self._index[l__id] = len(self._elems)
-                self._elems.append(elem)
-            pass
-        elif isinstance(elem, list) and all([isinstance(e, self.dtype) for e in elem]):
-            for e in elem:
-                self.add(e)
-            pass
+    def __str__(self):
+        itemlist = sorted(self._index.items(), key=lambda x: x[1]) # order by position in list
+        itemlist = [(k,self._elems[v]) for k,v in itemlist] # reference the value in list
+        if len(itemlist) > 6: # should we abbreviate the list?
+            strlist = ['\t%s: %s,' % (i) for i in itemlist[:2]]
+            strlist += ('\t...','\t...')
+            strlist += ['\t%s: %s,' % (i) for i in itemlist[-2:]]
         else:
-            raise TypeError('OrderedCollection: expected type %s, got type %s' % (self.dtype, type(elem)))
+            strlist = ['\t%s: %s,' % (i) for i in itemlist]
+        return '%s({\n%s\n})' % (self.__class__.__name__, '\n'.join(strlist))
 
-    def remove(self, ident):
-        ''' Remove an object from the collection '''
-        self._elems[self._index[ident]] = None
-        del self._index[ident]
-
-    def replace(self, ident, new_elem):
-        ''' Replace an object in the collection '''
-        if ident in self._index.keys():
-            # we have an existing object
-            idx = self._index[ident]
-            del self._index[ident]
-            if hasattr(new_elem, 'id'):
-                # a bunch of Gnome classes have an id property defined, which we will prefer
-                self._index[new_elem.id] = idx
-            else:
-                self._index[id(new_elem)] = idx
-            self._elems[idx] = new_elem
-        else:
-            # right now we just add it at the end.
-            # should we throw a key error instead?
-            self.add(new_elem)
-
+    def __repr__(self):
+        return self.__str__()
 
