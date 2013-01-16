@@ -1,4 +1,3 @@
-import cython
 cimport numpy as np
 from gnome import basic_types
 

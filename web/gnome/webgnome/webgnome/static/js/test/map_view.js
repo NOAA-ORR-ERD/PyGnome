@@ -10,7 +10,7 @@ define([
 
     var testUrl = "/test";
 
-    var model = new models.Model([], {
+    var model = new models.ModelRun([], {
         url: testUrl,
         expectedTimeSteps: [],
         currentTimeStep: 0

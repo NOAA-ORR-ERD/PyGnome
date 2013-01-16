@@ -1,17 +1,35 @@
-body {
+html, body {
+    height: 100%;
+}
+
+.outer-wrapper {
+    height: 100%;
+}
+
+div.nav-collapse > div.btn-toolbar {
+    margin: 0;
+}
+
+.navbar .nav {
+    margin-right: 40px;
+}
+
+#sidebar {
+    padding-top: 60px;
+    height: 100%;
+    border-right: solid 1px #D4D4D4;
+}
+
+.inner-wrapper {
+    height: 100%;
+}
+
+#content {
+    height: 100%;
     padding-top: 60px;
 }
 
-div#content {
-    margin-bottom: 10px;
-}
-
-div.splash-image {
-    float: right;
-    margin: 0 0 20px 20px;
-}
-
-div.caption {
+.caption {
     float: right;
     clear: left;
     font-size: .8em;
@@ -25,4 +43,87 @@ footer {
 
 .hidden {
     display: none;
+}
+
+/* Responsive fixes - different sizes */
+
+@media (max-width: 767px) {
+    #sidebar {
+        height: auto;
+    }
+
+    .inner-wrapper {
+        height: auto;
+    }
+}
+
+/* Forms */
+
+select, textarea,
+input[type="text"],
+input[type="password"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="date"],
+input[type="month"],
+input[type="time"],
+input[type="week"],
+input[type="number"],
+input[type="email"],
+input[type="url"],
+input[type="search"],
+input[type="tel"],
+input[type="color"],
+.uneditable-input {
+    padding: 1px;
+    height: 17px;
+
+}
+
+input[type="text"], input[type="password"], .ui-autocomplete-input, textarea, .uneditable-input {
+    color: black;
+    font-size: 13px;
+}
+
+.form-horizontal .control-group {
+    margin: 1px 0 1px 0;
+}
+
+.form-horizontal .controls,
+.form-horizontal .controls:first-child {
+    margin-left: 120px;
+}
+
+.form-horizontal .control-label {
+    width: 100px;
+    padding-top: 0;
+}
+
+.form-inline label {
+    padding-right: 5px;
+    padding-left: 5px;
+}
+
+.form-inline .checkbox {
+    padding-left: 5px;
+}
+
+.form-inline .checkbox {
+    margin-bottom: 1px;
+}
+
+select, input[type="file"] {
+    height: 25px;
+}
+
+.input-extra-small {
+    width: 50px;
+}
+
+.help-inline {
+    padding-top: 4px;
+}
+
+.modal-header h3 {
+    display: inline;
 }

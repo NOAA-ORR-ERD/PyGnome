@@ -5,11 +5,11 @@ define([
     'lib/backbone',
     'models',
     'util',
+    'lib/gmaps-amd',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree.min',
     'lib/bootstrap',
-], function($, _, Backbone, models, util) {
-
+], function($, _, Backbone, models, util, GMap) {
      /*
      `MessageView` is responsible for displaying messages sent back from the server
      during AJAX form submissions. These are non-form error conditions, usually,
@@ -19,10 +19,14 @@ define([
         initialize: function() {
             _.bindAll(this);
 
-            this.options.model.on(
+            this.options.modelRun.on(
+                models.ModelRun.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.modelSettings.on(
                 models.Model.MESSAGE_RECEIVED, this.displayMessage);
-            this.options.ajaxForms.on(
-                models.AjaxForm.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.pointReleaseSpills.on(
+                models.PointReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.windMovers.on(
+                models.WindMover.MESSAGE_RECEIVED, this.displayMessage);
 
             this.hideAll();
         },
@@ -66,33 +70,53 @@ define([
      */
     var MapView = Backbone.View.extend({
         initialize: function() {
+            var _this = this;
             _.bindAll(this);
             this.mapEl = this.options.mapEl;
             this.frameClass = this.options.frameClass;
             this.activeFrameClass = this.options.activeFrameClass;
-            this.placeholderEl = this.options.placeholderEl;
+            this.placeholderClass = this.options.placeholderClass;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
             this.imageTimeout = this.options.imageTimeout || 10;
             this.canDrawSpill = false;
 
-            this.createPlaceholderCopy();
             this.makeImagesClickable();
             this.status = MapView.STOPPED;
             this.map = $(this.mapEl);
 
+            this.modelRun = this.options.modelRun;
+            this.modelRun.on(models.ModelRun.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+            this.modelRun.on(models.ModelRun.RUN_BEGAN, this.modelRunBegan);
+            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
+            this.modelRun.on(models.ModelRun.CREATED, this.reset);
+            
             this.model = this.options.model;
-            this.model.on(models.Model.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
-            this.model.on(models.Model.RUN_BEGAN, this.modelRunBegan);
-            this.model.on(models.Model.RUN_ERROR, this.modelRunError);
-            this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.Model.CREATED, this.reset);
 
-            if (this.backgroundImageUrl) {
+            this.model.on('sync', function() {
+                _this.reset();
+                _this.loadMapFromUrl(_this.backgroundImageUrl);
+            });
+
+            var gmapOptions = {
+                center: new google.maps.LatLng(-34.397, 150.644),
+                zoom: 1,
+                scrollwheel: true,
+                scaleControl: true,
+                mapTypeId: google.maps.MapTypeId.HYBRID,
+            };
+
+            self.googleMap = new google.maps.Map($('#map_canvas')[0], gmapOptions);
+
+            // Map is loaded
+            if (this.model.id) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
+            } else {
+                this.showPlaceholder();
             }
 
-            if (this.model.hasCachedTimeStep(this.model.getCurrentTimeStep())) {
+            if (this.modelRun.hasCachedTimeStep(this.modelRun.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
             }
         },
@@ -121,13 +145,12 @@ define([
             this.status = MapView.PLAYING;
         },
 
-        createPlaceholderCopy: function() {
-            this.placeholderCopy = $(this.placeholderEl).find('img').clone()
-                .appendTo($(this.mapEl)).removeClass('hidden');
+        showPlaceholder: function() {
+            $('.' + this.placeholderClass).removeClass('hidden');
         },
 
-        removePlaceholderCopy: function() {
-            this.placeholderCopy.remove();
+        hidePlaceholder: function() {
+            $('.' + this.placeholderClass).addClass('hidden');
         },
 
         makeImagesClickable: function() {
@@ -349,15 +372,13 @@ define([
         },
 
         nextTimeStepReady: function() {
-            this.addTimeStep(this.model.getCurrentTimeStep());
+            this.addTimeStep(this.modelRun.getCurrentTimeStep());
         },
 
         loadMapFromUrl: function(url) {
             var _this = this;
 
-            if (this.placeholderCopy.length) {
-                this.removePlaceholderCopy();
-            }
+            this.hidePlaceholder();
 
             var map = $(this.mapEl);
             map.find('.background').remove();
@@ -369,7 +390,8 @@ define([
 
             background.imagesLoaded(function() {
                 _this.createCanvases();
-                _this.drawSpills();
+                _this.trigger(MapView.READY);
+//                _this.drawSpills();
             });
 
             background.appendTo(map);
@@ -386,26 +408,24 @@ define([
             ctx.closePath();
         },
 
-        drawSpill: function(spillForm) {
+        drawSpill: function(spill) {
             var ctx = this.foregroundCanvas[0].getContext('2d');
-            var start = $(spillForm).find('.start-coordinates');
-            var end = $(spillForm).find('.end-coordinates');
-            var startInputs = $(start).find('.coordinate');
             var startX, startY, startZ, endX, endY, endZ;
+            var start = spill.get('start_position');
+            var end = spill.get('end_position');
 
-            startX = endX = $(startInputs[0]).val();
-            startY = endY = $(startInputs[1]).val();
-            startZ = endZ = $(startInputs[2]).val();
+            startX = endX = start[0];
+            startY = endY = start[1];
+            startZ = endZ = start[2];
 
-            if (!startX || !startY) {
+            if (!startX) {
                 return;
             }
 
-            if (end.length) {
-                var endInputs = $(end).find('.coordinate');
-                endX = $(endInputs[0]).val();
-                endY = $(endInputs[1]).val();
-                endZ = $(endInputs[2]).val();
+            if (end) {
+                endX = end[0];
+                endY = end[1];
+                endZ = end[2];
             }
 
             var pixelStart = this.pixelsFromCoordinates({
@@ -427,27 +447,28 @@ define([
         },
 
         // Draw a mark on the map for each existing spill.
-        drawSpills: function() {
-            var spillForms = $('.spill');
+        drawSpills: function(spills) {
             var _this = this;
 
             if (!this.foregroundCanvas) {
                 return;
             }
 
-            // TODO: Draw a line for each spill. Redraw when changed.
             var canvas = this.foregroundCanvas[0];
             var ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            _.each(spillForms, function(form) {
-                _this.drawSpill(form);
+            if (spills === undefined || !spills.length) {
+                return;
+            }
+
+            spills.forEach(function(spill) {
+                _this.drawSpill(spill);
             });
         },
 
         /*
-         Create a background canvas and paint lines for all spills on the
-         page.
+         Create a background canvas and paint lines for all spills on the page.
 
          Create a foreground canvas and setup event handlers to capture new
          spills added to the map. This canvas is cleared entirely during line
@@ -529,8 +550,8 @@ define([
             this.foregroundCanvas.appendTo(map);
         },
 
-        modelRunBegan: function(data) {
-            this.loadMapFromUrl(data.background_image);
+        modelRunBegan: function() {
+            this.loadMapFromUrl(this.backgroundImageUrl);
         },
 
         modelRunError: function() {
@@ -544,22 +565,27 @@ define([
         reset: function() {
             this.clear({clearBackground: true});
             if (!$(this.mapEl).find('.background').length) {
-                this.createPlaceholderCopy();
+                this.showPlaceholder();
             }
             this.setStopped();
         },
 
         pixelsFromCoordinates: function(point) {
             var size = this.getSize();
+            var bounds = this.model.get('bounds');
 
             if (!size.height || !size.width) {
                 throw new MapViewException('No current image size detected.');
             }
+                        
+            if (!bounds) {
+                throw new MapViewException('Map is missing boundary data.');
+            }
 
-            var minLat = this.model.bounds[0][1];
-            var minLong = this.model.bounds[0][0];
-            var maxLat = this.model.bounds[1][1];
-            var maxLong = this.model.bounds[2][0];
+            var minLat = bounds[0][1];
+            var minLong = bounds[0][0];
+            var maxLat = bounds[1][1];
+            var maxLong = bounds[2][0];
 
             var x = ((point.long - minLong) / (maxLong - minLong)) * size.width;
             var y = ((point.lat - minLat) / (maxLat - minLat)) * size.height;
@@ -572,15 +598,16 @@ define([
 
         coordinatesFromPixels: function(point) {
             var size = this.getSize();
+            var bounds = this.model.get('bounds');
 
             if (!size.height || !size.width) {
                 throw new MapViewException('No current image size detected.');
             }
 
-            var minLat = this.model.bounds[0][1];
-            var minLong = this.model.bounds[0][0];
-            var maxLat = this.model.bounds[1][1];
-            var maxLong = this.model.bounds[2][0];
+            var minLat = bounds[0][1];
+            var minLong = bounds[0][0];
+            var maxLat = bounds[1][1];
+            var maxLong = bounds[2][0];
 
             // Adjust for different origin
             point.y = -point.y + size.height;
@@ -602,7 +629,8 @@ define([
         PLAYING_FINISHED: 'mapView:playingFinished',
         FRAME_CHANGED: 'mapView:frameChanged',
         MAP_WAS_CLICKED: 'mapView:mapWasClicked',
-        SPILL_DRAWN: 'mapView:spillDrawn'
+        SPILL_DRAWN: 'mapView:spillDrawn',
+        READY: 'mapView:ready'
     });
 
 
@@ -615,16 +643,21 @@ define([
         initialize: function() {
             _.bindAll(this);
             this.treeEl = this.options.treeEl;
-            this.url = this.options.url;
+            this.url = this.options.apiRoot + "/tree";
+
+            // Turn off node icons. A [+] icon will still appear for nodes
+            // that have children.
+            $.ui.dynatree.nodedatadefaults["icon"] = false;
             this.tree = this.setupDynatree();
 
-            // Event handlers
-            this.options.ajaxForms.on(models.AjaxForm.UPDATED, this.reload);
-            this.options.ajaxForms.on(models.AjaxForm.CREATED, this.reload);
-            this.options.model.on(models.Model.CREATED, this.reload);
-
-            // TODO: Remove this when we remove the Long Island default code.
-            this.options.model.on(models.Model.RUN_BEGAN, this.reload);
+            this.options.windMovers.on('sync', this.reload);
+            this.options.windMovers.on('add', this.reload);
+            this.options.windMovers.on('destroy', this.reload);
+            this.options.pointReleaseSpills.on('sync', this.reload);
+            this.options.pointReleaseSpills.on('add', this.reload);
+            this.options.pointReleaseSpills.on('destroy', this.reload);
+            this.options.modelSettings.on('sync', this.reload);
+            this.options.map.on('sync', this.reload);
         },
 
         setupDynatree: function() {
@@ -674,7 +707,6 @@ define([
             this.addButtonEl = this.options.addButtonEl;
             this.removeButtonEl = this.options.removeButtonEl;
             this.settingsButtonEl = this.options.settingsButtonEl;
-            this.url = this.options.url;
 
             // Controls that require the user to select an item in the TreeView.
             this.itemControls = [this.removeButtonEl, this.settingsButtonEl];
@@ -733,6 +765,7 @@ define([
      */
     var MapControlView = Backbone.View.extend({
         initialize: function() {
+            var _this = this;
             _.bindAll(this);
             this.containerEl = this.options.containerEl;
             this.sliderEl = this.options.sliderEl;
@@ -748,17 +781,30 @@ define([
             this.spillButtonEl = this.options.spillButtonEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
+            this.modelRun = this.options.modelRun;
             this.model = this.options.model;
 
-            // Controls whose state, either enabled or disabled, is related to whether
-            // or not an animation is playing. The resize and full screen buttons
-            // are intentionally excluded.
-            this.controls = [
+            this.animationControls = [
                 this.backButtonEl, this.forwardButtonEl, this.playButtonEl,
-                this.pauseButtonEl, this.moveButtonEl, this.zoomInButtonEl,
-                this.zoomOutButtonEl, this.spillButtonEl
+                this.pauseButtonEl
             ];
 
+            this.mapControls = [
+                this.moveButtonEl, this.zoomInButtonEl, this.zoomOutButtonEl,
+                this.spillButtonEl
+            ];
+
+            if (this.model.id) {
+                this.enableControls(this.mapControls);
+            }
+
+            this.model.on('sync', function() {
+                if (_this.model.id) {
+                    _this.enableControls(_this.mapControls);
+                }
+            });
+
+            this.controls = this.animationControls.concat(this.mapControls);
             this.status = MapControlView.STATUS_STOPPED;
 
             $(this.pauseButtonEl).hide();
@@ -771,17 +817,17 @@ define([
                 disabled: true
             });
 
-            if (this.model.expectedTimeSteps.length) {
-                this.setTimeSteps(this.model.expectedTimeSteps);
+            if (this.modelRun.expectedTimeSteps.length) {
+                this.setTimeSteps(this.modelRun.expectedTimeSteps);
                 this.enableControls();
             }
 
             this.setupClickEvents();
 
-            this.model.on(models.Model.RUN_BEGAN, this.runBegan);
-            this.model.on(models.Model.RUN_ERROR, this.modelRunError);
-            this.model.on(models.Model.RUN_FINISHED, this.modelRunFinished);
-            this.model.on(models.Model.CREATED, this.modelCreated);
+            this.modelRun.on(models.ModelRun.RUN_BEGAN, this.runBegan);
+            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
+            this.modelRun.on(models.ModelRun.CREATED, this.modelCreated);
 
             this.options.mapView.on(MapView.FRAME_CHANGED, this.mapViewFrameChanged);
         },
@@ -823,7 +869,7 @@ define([
         },
 
         sliderMoved: function(event, ui) {
-            var timestamp = this.model.getTimestampForExpectedStep(ui.value);
+            var timestamp = this.modelRun.getTimestampForExpectedStep(ui.value);
 
             if (timestamp) {
                 this.setTime(timestamp);
@@ -836,16 +882,16 @@ define([
         },
 
         runBegan: function() {
-            if (this.model.dirty) {
+            if (this.modelRun.dirty) {
                 // TODO: Is this really what we want to do here?
                 this.reset();
             }
 
-            this.setTimeSteps(this.model.expectedTimeSteps);
+            this.setTimeSteps(this.modelRun.expectedTimeSteps);
         },
 
         mapViewFrameChanged: function() {
-            var timeStep = this.model.getCurrentTimeStep();
+            var timeStep = this.modelRun.getCurrentTimeStep();
             this.setTimeStep(timeStep.id);
             this.setTime(timeStep.get('timestamp'));
         },
@@ -1072,31 +1118,43 @@ define([
             this.runItemEl = this.options.runItemEl;
             this.stepItemEl = this.options.stepItemEl;
             this.runUntilItemEl = this.options.runUntilItemEl;
+            this.longIslandItemEl = this.options.longIslandItemEl;
 
             $(this.newItemEl).click(this.newItemClicked);
             $(this.runItemEl).click(this.runItemClicked);
             $(this.runUntilItemEl).click(this.runUntilItemClicked);
+            $(this.longIslandItemEl).click(this.longIslandItemClicked);
+        },
+
+        hideDropdown: function() {
+            $(this.modelDropdownEl).dropdown('toggle');
         },
 
         newItemClicked: function(event) {
-            $(this.modelDropdownEl).dropdown('toggle');
+            this.hideDropdown();
             this.trigger(MenuView.NEW_ITEM_CLICKED);
         },
 
         runItemClicked: function(event) {
-            $(this.runDropdownEl).dropdown('toggle');
+            this.hideDropdown();
             this.trigger(MenuView.RUN_ITEM_CLICKED);
         },
 
         runUntilItemClicked: function(event) {
-            $(this.runDropdownEl).dropdown('toggle');
+            this.hideDropdown();
             this.trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
+        },
+
+        longIslandItemClicked: function(event) {
+            this.hideDropdown();
+            this.trigger(MenuView.LONG_ISLAND_ITEM_CLICKED);
         }
     }, {
         // Event constants
         NEW_ITEM_CLICKED: "menuView:newMenuItemClicked",
         RUN_ITEM_CLICKED: "menuView:runMenuItemClicked",
-        RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked"
+        RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked",
+        LONG_ISLAND_ITEM_CLICKED: "menuView:longIslandItemClicked"
     });
 
     return {

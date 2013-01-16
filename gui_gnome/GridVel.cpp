@@ -76,7 +76,7 @@ Boolean IsGridCurFile(char *path)
 	return bIsValid;
 }
 
-Boolean IsGridWindFile(char *path,short *selectedUnitsP)
+/*Boolean IsGridWindFile(char *path,short *selectedUnitsP)
 {
 
 	Boolean	bIsValid = false;
@@ -115,7 +115,7 @@ done:
 		*selectedUnitsP = selectedUnits;
 	}
 	return bIsValid;
-}
+}*/
 
 Boolean IsOssmCurFile(char *path)
 {

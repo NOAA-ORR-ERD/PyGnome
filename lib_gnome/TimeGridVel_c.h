@@ -39,6 +39,7 @@ Boolean IsNetCDFFile (char *path, short *gridType);
 Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType);
 Boolean IsPtCurFile (char *path);
 Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
+Boolean IsGridWindFile(char *path,short *selectedUnits);
 class TimeGridVel_c
 {
 public:
@@ -325,6 +326,37 @@ public:
 	
 	OSErr 				ReorderPoints(char* errmsg); 
 	OSErr				GetLatLonFromIndex(long iIndex, long jIndex, WorldPoint *wp);
+
+	virtual	OSErr 	ReadTopology(char* path);
 };
+/*class TimeGridWindRectASCII_c : virtual public TimeGridVel_c
+{
+public:
+	// code goes here, build off of TimeGridCurRect_c ??
+	PtCurTimeDataHdl fTimeDataHdl;	
+	short fUserUnits;
+	
+	TimeGridWindRectASCII_c();
+	//virtual	~TimeGridCurRect_c() { Dispose (); }
+	
+	//virtual void	Dispose() { return; }
+	
+	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDRECTASCII; }
+	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDRECTASCII) return TRUE; return TimeGridVel_c::IAm(id); }
+	
+	VelocityRec 		GetScaledPatValue(const Seconds& model_time, WorldPoint3D p);
+	
+	virtual OSErr		TextRead(char *path,char *topFilePath);
+	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg);
+	//virtual OSErr		ScanFileForTimes(char *path,PtCurTimeDataHdl *timeDataH,Boolean setStartTime);
+	virtual long		GetNumTimesInFile();
+	OSErr				ReadHeaderLines(char *path, WorldRect *bounds);
+	OSErr			ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile);
+	virtual void		DisposeTimeHdl();
+	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	
+	virtual OSErr		GetStartTime(Seconds *startTime);	// switch this to GetTimeValue
+	virtual OSErr		GetEndTime(Seconds *endTime);
+};*/
+
 //#endif	
 #endif
