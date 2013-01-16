@@ -234,10 +234,10 @@ class TestWind:
       #=========================================================================
 
 
-def test_constant_wind():
-    """
-    tests the utility function for creating a constant wind
-    """
-    wind = weather.constant_wind(10, 'knots')
+# def test_constant_wind():
+#     """
+#     tests the utility function for creating a constant wind
+#     """
+#     wind = weather.constant_wind(10, 'knots')
     
     

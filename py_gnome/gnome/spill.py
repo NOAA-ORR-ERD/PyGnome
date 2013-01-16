@@ -93,10 +93,13 @@ class Spill(object):
         """
         returns an spill_num that is not already in use
 
+        This approach will assure that all the spills within one python isntance have
+        unique spills numbers, but also that they will be small numbers.
+
         inefficient, but who cares?
         """
         spill_num = 1
-        while spill_num < 65536: # just so it will eventually terminate!
+        while spill_num < 65536: # just so it will eventually terminate! (and fit into an int16)
             if spill_num not in self.__all_spill_nums:
                 self.spill_num = spill_num
                 self.__all_spill_nums.add(spill_num)
@@ -104,7 +107,7 @@ class Spill(object):
             else:
                 spill_num+=1
         else:
-            raise ValueError("There are no more spill_nums aavailable to spills!")
+            raise ValueError("There are no more spill_nums available to spills!")
 
     def __del__(self):
         """
