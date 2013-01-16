@@ -51,7 +51,6 @@ class WebWindMover(WindMover):
         """
         self.wind = data['wind']
         self._name = data['name']
-        self.is_active = data['is_active']
         self.uncertain_duration = data['uncertain_duration']
         self.uncertain_speed_scale = data['uncertain_speed_scale']
         self.uncertain_angle_scale = data['uncertain_angle_scale']
@@ -323,7 +322,7 @@ class WebModel(Model):
         """
         data = {
             'uncertain': self.uncertain,
-            'time_step': self.time_step,
+            'time_step': (self.time_step / 60.0) / 60.0,
             'start_time': self.start_time,
             'duration_days': 0,
             'duration_hours': 0,
@@ -353,7 +352,7 @@ class WebModel(Model):
         """
         self.uncertain = data['uncertain']
         self.start_time = data['start_time']
-        self.time_step = data['time_step']
+        self.time_step = data['time_step'] * 60 * 60
         self.duration = datetime.timedelta(
             days=data['duration_days'],
             seconds=data['duration_hours'] * 60 * 60)

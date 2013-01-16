@@ -113,6 +113,7 @@ define([
 
         setupEventHandlers: function() {
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.SERVER_RESET, this.rewind);
 
             this.pointReleaseSpills.on("sync", this.spillUpdated);
             this.pointReleaseSpills.on('sync', this.drawSpills);
@@ -431,7 +432,6 @@ define([
         },
 
         sliderChanged: function(newStepNum) {
-
             // No need to do anything if the slider is on the current time step.
             if (newStepNum === this.modelRun.currentTimeStep) {
                 return;

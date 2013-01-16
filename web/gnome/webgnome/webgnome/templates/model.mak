@@ -74,16 +74,15 @@
       </div>
     </div>
 
-    <div id="main-content">
-        <div class="row">
-          <div class="btn-toolbar">
-              <div class="btn-group">
-                  <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
-              </div>
-              <div class="btn-group">
-                  <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
-              </div>
-              <div class="btn-group">
+    <div id="main-content" class="row">
+        <div class="btn-toolbar">
+            <div class="btn-group">
+                <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
+            </div>
+            <div class="btn-group">
+                <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
+            </div>
+            <div class="btn-group">
                 <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
                 <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
                 <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
@@ -91,14 +90,16 @@
             </div>
             <div class="btn-group">
                 <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
+
                 <div class="btn disabled" id="slider-container">
-                    <span id="time">00:00</span> <div id="slider"></div>
+                    <span id="time">00:00</span>
+
+                    <div id="slider"></div>
                 </div>
                 <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
                 <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
                 <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
             </div>
-        </div>
         </div>
 
 

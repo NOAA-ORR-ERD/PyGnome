@@ -108,14 +108,23 @@ define([
             }
 
             this.dirty = false;
-            this.expectedTimeSteps = data.expected_time_steps;
 
-            if (_.has(data, 'time_step')) {
-                this.addTimeStep(data.time_step)                ;
+            var isFirstStep = data.time_step.id === 0;
+
+            // The Gnome model was reset on the server without our knowledge,
+            // so reset the client-side model to stay in sync.
+            if (isFirstStep && this.currentTimeStep) {
+                this.rewind();
+                this.trigger(ModelRun.SERVER_RESET);
             }
 
-            this.trigger(ModelRun.RUN_BEGAN, data);
-            this.getNextTimeStep();
+            this.addTimeStep(data.time_step);
+
+            if (isFirstStep) {
+                this.expectedTimeSteps = data.expected_time_steps;
+                this.trigger(ModelRun.RUN_BEGAN, data);
+            }
+
             return true;
         },
 
@@ -259,30 +268,10 @@ define([
             $.ajax({
                 type: "GET",
                 url: this.url,
-                success: this.timeStepRequestSuccess,
+                success: this.runSuccess,
                 error: this.timeStepRequestFailure
             });
         },
-
-        timeStepRequestSuccess: function(data) {
-            var message = util.parseMessage(data);
-
-            if (message) {
-                this.trigger(ModelRun.MESSAGE_RECEIVED, message);
-
-                if (message.error) {
-                    this.trigger(ModelRun.RUN_ERROR);
-                    return;
-                }
-            }
-
-            if (!data.time_step) {
-                this.trigger(ModelRun.RUN_ERROR);
-                return;
-            }
-
-            this.addTimeStep(data.time_step);
-       },
 
        timeStepRequestFailure: function(xhr, textStatus, errorThrown) {
            if (xhr.status === 500) {
@@ -356,7 +345,8 @@ define([
         RUN_FINISHED: 'model:modelRunFinished',
         RUN_ERROR: 'model:runError',
         NEXT_TIME_STEP_READY: 'model:nextTimeStepReady',
-        MESSAGE_RECEIVED: 'model:messageReceived'
+        MESSAGE_RECEIVED: 'model:messageReceived',
+        SERVER_RESET: 'model:serverReset'
     });
 
 
