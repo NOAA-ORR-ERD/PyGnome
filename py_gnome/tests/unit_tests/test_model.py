@@ -14,6 +14,7 @@ import gnome.model
 import gnome.map
 from gnome import movers, weather
 import gnome.spill
+from gnome.spill import SpatialReleaseSpill
 
 def test_init():
     model = gnome.model.Model()
@@ -59,21 +60,24 @@ def test_simple_run():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = gnome.spill.PointReleaseSpill(num_LEs=10,
-                                          start_position = (0.0, 0.0, 0.0),
-                                          release_time = start_time,
-                                          )
+    spill = gnome.spill.SurfaceReleaseSpill(num_elements=10,
+                                            start_position = (0.0, 0.0, 0.0),
+                                            release_time = start_time,
+                                            )
     
-    model.spills += spill
-    assert len(model.spills) == 1
+    # model.spills += spill
+    # assert len(model.spills) == 1
+    model.add_spill(spill) 
+
     model.start_time = spill.release_time
-    
+
     # test iterator:
     for step in model:
         print "just ran time step: %s"%model.current_time_step
 
-    # reset and run again:
-    model.reset()
+    # rewind and run again:
+    print "rewinding"
+    model.rewind()
     # test iterator:
     for step in model:
         print "just ran time step: %s"%model.current_time_step
@@ -97,12 +101,13 @@ def test_simple_run_with_map():
     model.movers += a_mover
     assert len(model.movers) == 1
 
-    spill = gnome.spill.PointReleaseSpill(num_LEs=10,
-                                          start_position = (0.0, 0.0, 0.0),
-                                          release_time = start_time,
-                                          )
+    spill = gnome.spill.SurfaceReleaseSpill(num_elements=10,
+                                            start_position = (0.0, 0.0, 0.0),
+                                            release_time = start_time,
+                                            )
     
-    model.spills += spill
+    #model.spills += spill
+    model.add_spill(spill)
     assert len(model.spills) == 1
     model.start_time = spill.release_time
     
@@ -120,6 +125,7 @@ def test_simple_run_with_map():
 
 import gnome.utilities.map_canvas
 from gnome.utilities.file_tools import haz_files
+
 def test_simple_run_with_image_output():
     """
     pretty much all this tests is that the model will run and output images
@@ -157,13 +163,14 @@ def test_simple_run_with_image_output():
     start_points[:,0] = np.linspace(-127.1, -126.5, N)
     start_points[:,1] = np.linspace( 47.93, 48.1, N)
     #print start_points
-    spill = gnome.spill.PointReleaseSpill(num_LEs=10,
-                                          start_position = start_points,
-                                          release_time = start_time,
-                                          )
+    spill = gnome.spill.SpatialReleaseSpill(start_positions = start_points,
+                                            release_time = start_time,
+                                            )
     
-    model.spills += spill
+    #model.spills += spill
+    model.add_spill(spill)
     assert len(model.spills) == 1
+
     model.start_time = spill.release_time
     #image_info = model.next_image()
 
@@ -179,6 +186,66 @@ def test_simple_run_with_image_output():
              break
 
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+
+
+def test_simple_run_with_image_output_uncertainty():
+    """
+    pretty much all this tests is that the model will run and output images
+    """
+    
+    # create a place for test images (cleaning out any old ones)
+    images_dir = "Test_images2"
+    if os.path.isdir(images_dir):
+        shutil.rmtree(images_dir)
+    os.mkdir(images_dir)
+
+    start_time = datetime(2012, 9, 15, 12, 0)
+    
+    model = gnome.model.Model()
+    model.duration = timedelta(hours=1)
+
+    mapfile = "SampleData/MapBounds_Island.bna"
+
+    # the land-water map
+    model.map = gnome.map.MapFromBNA( mapfile,
+                                      refloat_halflife=6*3600, #seconds
+                                     )
+    # the image output map
+    map = gnome.utilities.map_canvas.MapCanvas((400, 300))
+    polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
+    map.set_land(polygons)
+    model.output_map = map
+    
+    a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    model.movers += a_mover
+
+    N = 10 # a line of ten points
+    start_points = np.zeros((N, 3) , dtype=np.float64)
+    start_points[:,0] = np.linspace(-127.1, -126.5, N)
+    start_points[:,1] = np.linspace( 47.93, 48.1, N)
+    #print start_points
+    spill = gnome.spill.SpatialReleaseSpill(start_positions = start_points,
+                                            release_time = start_time,
+                                            )
+    
+    model.add_spill(spill)
+    model.start_time = spill.release_time
+    #image_info = model.next_image()
+
+    model.is_uncertain = True
+
+    num_steps_output = 0
+    while True:
+         try:
+             image_info = model.next_image(images_dir)
+             num_steps_output += 1
+             print image_info
+         except StopIteration:
+             print "Done with the model run"
+             break
+
+    assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+    ## fixme -- do an assertionlooking for red in images?
 
 
 def test_mover_api():
@@ -248,11 +315,15 @@ def test_all_movers():
     model.start_time = start_time
 
     # a spill
-    model.spills += gnome.spill.PointReleaseSpill(num_LEs=10,
-                                                  start_position = (0.0, 0.0, 0.0),
-                                                  release_time = start_time,
-                                                  )
-    assert len(model.spills) == 1
+    model.add_spill(gnome.spill.SurfaceReleaseSpill(num_elements=10,
+                                                    start_position = (0.0, 0.0, 0.0),
+                                                    release_time = start_time,
+                                                    ) )
+    # model.spills += gnome.spill.PointReleaseSpill(num_LEs=10,
+    #                                               start_position = (0.0, 0.0, 0.0),
+    #                                               release_time = start_time,
+    #                                               )
+    # assert len(model.spills) == 1
 
     # the land-water map
     model.map = gnome.map.GnomeMap() # the simpleset of maps

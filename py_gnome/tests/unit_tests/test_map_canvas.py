@@ -8,7 +8,7 @@ import numpy as np
 import numpy.random as random
 
 from gnome import basic_types
-import gnome.spill
+from gnome.spill_container import TestSpillContainer
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
 import gnome.utilities.geometry.polygons
@@ -102,7 +102,7 @@ def test_render_elements():
     lat = random.uniform(min_lat, max_lat, (N,))
 
     #create a spill
-    spill = gnome.spill.Spill(num_LEs=N)
+    spill = TestSpillContainer(num_elements=N)
     spill['positions'][:,0] = lon
     spill['positions'][:,1] = lat
 
@@ -113,7 +113,7 @@ def test_render_elements():
     lon = random.uniform(min_lon, max_lon, (N,))
     lat = random.uniform(min_lat, max_lat, (N,))
 
-    spill = gnome.spill.Spill(num_LEs=N, uncertain=True)
+    spill = TestSpillContainer(num_elements=N, uncertain=True)
     spill['positions'][:,0] = lon
     spill['positions'][:,1] = lat
 

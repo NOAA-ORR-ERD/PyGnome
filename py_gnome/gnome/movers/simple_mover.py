@@ -9,6 +9,7 @@ can be, for testing and demonstration purposes
 """
 
 import numpy as np
+from numpy import random
 
 from gnome import basic_types
 from gnome.movers import Mover
@@ -26,7 +27,7 @@ class SimpleMover(Mover):
     
     (not all that different than a constant wind mover, now that I think about it)    
     """
-    def __init__(self, velocity,
+    def __init__(self, velocity, uncertainty_scale=0.5,
                  is_active_start= datetime( *gmtime(0)[:7] ), 
                  is_active_stop = datetime.max):
         """
@@ -40,9 +41,8 @@ class SimpleMover(Mover):
         self.velocity = np.asarray( velocity,
                                     dtype = basic_types.mover_type, # use this, to be compatible with whatever we are using for location
                                     ).reshape((3,))
-                                    
+        self.uncertainty_scale = uncertainty_scale
         super(SimpleMover,self).__init__(is_active_start, is_active_stop)
-
     def __repr__(self):
         return 'SimpleMover(<%s>)' % (self.id)
 
@@ -62,7 +62,6 @@ class SimpleMover(Mover):
         :returns delta: Nx3 numpy array of movement -- in (long, lat, meters) units
         
         """
-        
         # Get the data:
         try:
             positions      = spill['positions']
@@ -74,15 +73,18 @@ class SimpleMover(Mover):
         in_water_mask =  (status_codes == basic_types.oil_status.in_water)
                 
         # compute the move
-        # delta = np.zeros((in_water_mask.sum(), 3), dtype = basic_types.mover_type)
-
-        # delta[:] = self.velocity * time_step
         delta = np.zeros_like(positions)
         
         if self.is_active and self.on:
             delta[in_water_mask] = self.velocity * time_step
-
-            # scale for projection
-            delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
+            # add some random stuff if uncertainty is on
+            if spill.is_uncertain:
+                num = sum(in_water_mask)
+                scale = self.uncertainty_scale * self.velocity * time_step
+                delta[in_water_mask,0] += random.uniform( -scale[0], scale[0], num )
+                delta[in_water_mask,1] += random.uniform( -scale[1], scale[1], num )
+                delta[in_water_mask,2] += random.uniform( -scale[2], scale[2], num )
+        # scale for projection
+        delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
         
         return delta

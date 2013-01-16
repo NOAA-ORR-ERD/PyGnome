@@ -10,6 +10,7 @@ __init__.py for the gnome package
 from gnomeobject import GnomeObject
 from . import model
 from . import spill
+from . import spill_container
 from . import map
 from . import movers
 from . import weather

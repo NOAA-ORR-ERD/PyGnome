@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
+
+#
+# code from the "multiple spills" approach -- probably not needed.
+
+#
 """
-spill2.py
+spill.py
 
 a new implementation of the spill class(s)
 
@@ -9,9 +14,6 @@ keeps all the data in separate arrays, so we only store and move around the
 data that is needed
 
 This is the "magic" class -- it handles the smart allocation of arrays, etc.
-
-The spill class is mostly a container for the data arrays -- the source classes
-do the real work.
 
 """
 import numpy as np
@@ -40,21 +42,21 @@ class Spill(GnomeObject):
         self.is_uncertain = False   # uncertainty spill - same information as basic_types.spill_type
         self.is_active = True       # sets whether the spill is active or not
         
-        # self._data_arrays = {}
+        self._data_arrays = {}
         
-        # self._data_arrays['positions'] = np.zeros((num_LEs, 3),
-        #                                           dtype=basic_types.world_point_type)
-        # self._data_arrays['positions'][:,:] = initial_positions
-        # self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
-        # self._data_arrays['last_water_positions'] = np.zeros_like(self['positions'])
+        self._data_arrays['positions'] = np.zeros((num_LEs, 3),
+                                                  dtype=basic_types.world_point_type)
+        self._data_arrays['positions'][:,:] = initial_positions
+        self._data_arrays['next_positions'] =  np.zeros_like(self['positions'])
+        self._data_arrays['last_water_positions'] = np.zeros_like(self['positions'])
 
-        # self._data_arrays['status_codes'] = ( np.zeros((num_LEs,),
-        #                                                dtype=basic_types.status_code_type)
-        #                                      )
-        # self._data_arrays['status_codes'][:] = basic_types.oil_status.in_water
+        self._data_arrays['status_codes'] = ( np.zeros((num_LEs,),
+                                                       dtype=basic_types.status_code_type)
+                                             )
+        self._data_arrays['status_codes'][:] = basic_types.oil_status.in_water
         
-        # self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
-        #                                           dtype = basic_types.windage_type)             
+        self._data_arrays['windages'] =  np.zeros((self.num_LEs, ),
+                                                  dtype = basic_types.windage_type)             
 
     def __getitem__(self, data_name):
         """
