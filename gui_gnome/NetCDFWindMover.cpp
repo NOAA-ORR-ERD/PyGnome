@@ -1412,6 +1412,7 @@ OSErr NetCDFWindMover::TextRead(char *path)
 			strcpy(fFileName, modelTypeStr); // maybe use a name from the file
 		}
 	}
+	//SetClassName(fFileName); //first check that name is now the default and not set by command file ("NetCDF Wind")
 	status = nc_inq_dimid(ncid, "lat", &latid); 
 	if (status != NC_NOERR) 
 	{

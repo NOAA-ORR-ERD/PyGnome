@@ -153,7 +153,11 @@ OSErr TimeGridWindRect_c::TextRead(char *path,char *topFilePath)
 	strcpy(fVar.pathName,path);
 	
 	strcpy(s,path);
+#ifndef pyGNOME
 	SplitPathFile (s, fileName);
+#else
+	SplitPathFileName (s, fileName);
+#endif
 	//strcpy(fFileName, fileName);	// maybe use a name from the file
 	strcpy(fVar.userName, fileName); // maybe use a name from the file
 	
@@ -623,7 +627,11 @@ OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want 
 	strcpy(fVar.pathName,path);
 	
 	strcpy(s,path);
+#ifndef pyGNOME
 	SplitPathFile (s, fileName);
+#else
+	SplitPathFileName (s, fileName);
+#endif
 	//strcpy(fFileName, fileName); // maybe use a name from the file
 	strcpy(fVar.userName, fileName); // maybe use a name from the file
 	status = nc_open(path, NC_NOWRITE, &ncid);
