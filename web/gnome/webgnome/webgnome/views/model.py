@@ -9,7 +9,7 @@ import numpy
 
 from pyramid.view import view_config
 
-from webgnome import schema, WebPointReleaseSpill, WebWindMover
+from webgnome import schema, WebSurfaceReleaseSpill, WebWindMover
 from webgnome import util
 from webgnome.model_manager import WebMapFromBNA
 
@@ -34,7 +34,7 @@ def show_model(request):
     model, created = settings.Model.get_or_create(
         model_id, model_images_dir=model_images_dir)
     model_data = model.to_dict()
-    point_release_spills = model_data.pop('point_release_spills')
+    surface_release_spills = model_data.pop('surface_release_spills')
     wind_movers = model_data.pop('wind_movers')
     model_settings = util.SchemaForm(schema.ModelSettingsSchema, model_data)
     map_data = model.map.to_dict() if model.map else None
@@ -42,7 +42,7 @@ def show_model(request):
     default_wind_mover = util.SchemaForm(schema.WindMoverSchema)
     default_wind = util.SchemaForm(schema.WindSchema)
     default_wind_value = util.SchemaForm(schema.WindValueSchema)
-    default_point_release_spill = util.SchemaForm(schema.PointReleaseSpillSchema)
+    default_surface_release_spill = util.SchemaForm(schema.SurfaceReleaseSpillSchema)
 
     data = {
         'model': model_settings,
@@ -54,13 +54,13 @@ def show_model(request):
 
         # Default values for forms that use them.
         'default_wind_mover': default_wind_mover,
-        'default_point_release_spill': default_point_release_spill,
+        'default_surface_release_spill': default_surface_release_spill,
         'default_wind': default_wind,
         'default_wind_value': default_wind_value,
 
         # JSON data to bootstrap the JS application.
         'map_data': util.to_json(map_data),
-        'point_release_spills': util.to_json(point_release_spills),
+        'surface_release_spills': util.to_json(surface_release_spills),
         'wind_movers': util.to_json(wind_movers),
         'model_settings': util.to_json(model_data),
         'background_image_url': util.get_model_image_url(
@@ -93,9 +93,9 @@ def configure_long_island(request, model):
     Configure the user's current model with the parameters of the Long Island
     script.
     """
-    spill = WebPointReleaseSpill(
+    spill = WebSurfaceReleaseSpill(
         name="Long Island Spill",
-        num_LEs=1000,
+        num_elements=1000,
         start_position=(-72.419992, 41.202120, 0.0),
         release_time=model.start_time)
 
@@ -126,7 +126,7 @@ def configure_long_island(request, model):
     model.map = WebMapFromBNA(
         map_file, refloat_halflife=6 * 3600, name="Long Island Sound")
 
-    model.uncertain = False
+    model.is_uncertain = False
 
     canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
     polygons = haz_files.ReadBNA(map_file, "PolygonSet")

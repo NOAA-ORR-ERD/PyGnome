@@ -421,13 +421,13 @@ define([
 
     // Spills
 
-    var PointReleaseSpill = BaseModel.extend({
+    var SurfaceReleaseSpill = BaseModel.extend({
         dateFields: ['release_time']
     });
 
 
-    var PointReleaseSpillCollection = Backbone.Collection.extend({
-        model: PointReleaseSpill,
+    var SurfaceReleaseSpillCollection = Backbone.Collection.extend({
+        model: SurfaceReleaseSpill,
 
         initialize: function(spills, opts) {
             this.url = opts.url;
@@ -462,6 +462,15 @@ define([
 
 
     var WindMover = BaseModel.extend({
+        get: function (attr) {
+            console.log(attr)
+            if (attr === 'is_active_start' || attr === 'is_active_stop') {
+                return moment(this.attributes[attr]).format('MM/DD/YYYY');
+            }
+
+            return WindMover.__super__.get.apply(this, arguments);
+        },
+
         /*
          If the user passed an object for `key`, as when setting multiple
          attributes at once, then make sure the 'wind' field is a `Wind`
@@ -509,8 +518,8 @@ define([
         TimeStep: TimeStep,
         ModelRun: ModelRun,
         Model: Model,
-        PointReleaseSpill: PointReleaseSpill,
-        PointReleaseSpillCollection: PointReleaseSpillCollection,
+        SurfaceReleaseSpill: SurfaceReleaseSpill,
+        SurfaceReleaseSpillCollection: SurfaceReleaseSpillCollection,
         WindMover: WindMover,
         WindMoverCollection: WindMoverCollection,
         WindValue: WindValue,

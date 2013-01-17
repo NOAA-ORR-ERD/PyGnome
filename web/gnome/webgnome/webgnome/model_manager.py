@@ -5,6 +5,7 @@ import datetime
 
 import os
 from hazpy.file_tools import haz_files
+import numpy
 from webgnome import util
 
 # XXX: This except block should not be necessary.
@@ -23,9 +24,10 @@ except ImportError:
     sys.path.append('../../../py_gnome')
 
 import gnome.utilities.map_canvas
+from gnome import basic_types
 from gnome.model import Model
 from gnome.movers import WindMover
-from gnome.spill import PointReleaseSpill
+from gnome.spill import SurfaceReleaseSpill
 from gnome.map import MapFromBNA
 
 
@@ -51,6 +53,8 @@ class WebWindMover(WindMover):
         """
         self.wind = data['wind']
         self._name = data['name']
+        self.is_active_start = data['is_active_start']
+        self.is_active_stop = data['is_active_stop']
         self.uncertain_duration = data['uncertain_duration']
         self.uncertain_speed_scale = data['uncertain_speed_scale']
         self.uncertain_angle_scale = data['uncertain_angle_scale']
@@ -83,6 +87,8 @@ class WebWindMover(WindMover):
             'id': self.id,
             'name': self.name,
             'is_active': self.is_active,
+            'is_active_start': self.is_active_start,
+            'is_active_stop': self.is_active_stop,
             'uncertain_duration': self.uncertain_duration,
             'uncertain_time_delay': self.uncertain_time_delay,
             'uncertain_speed_scale': self.uncertain_speed_scale,
@@ -99,7 +105,7 @@ class WebWindMover(WindMover):
         return super(WebWindMover, self).__repr__()
 
 
-class WebPointReleaseSpill(PointReleaseSpill):
+class WebSurfaceReleaseSpill(SurfaceReleaseSpill):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
     webgnome-specific functionality.
@@ -107,7 +113,7 @@ class WebPointReleaseSpill(PointReleaseSpill):
     def __init__(self, *args, **kwargs):
         self._name = kwargs.pop('name', None)
         self.is_active = kwargs.pop('is_active', True)
-        super(WebPointReleaseSpill, self).__init__(*args, **kwargs)
+        super(WebSurfaceReleaseSpill, self).__init__(*args, **kwargs)
 
     @property
     def hour(self):
@@ -141,7 +147,7 @@ class WebPointReleaseSpill(PointReleaseSpill):
     def name(self):
         if self._name:
             return self._name
-        return super(WebPointReleaseSpill, self).__repr__()
+        return super(WebSurfaceReleaseSpill, self).__repr__()
 
     def from_dict(self, data):
         """
@@ -149,11 +155,12 @@ class WebPointReleaseSpill(PointReleaseSpill):
         necessaries.
         """
         self.release_time = data['release_time']
-        self.start_position = data['start_position']
-        self.windage_range = data['windage']
+        self.start_position = numpy.asarray(
+            data['start_position'],
+            dtype=basic_types.world_point_type).reshape((3,))
+        self.windage_range = data['windage_range']
         self._name = data['name']
-        self.is_uncertain = data['uncertain']
-        self.num_LEs = data['num_LEs']
+        self.num_elements = data['num_elements']
 
         return self
 
@@ -164,11 +171,10 @@ class WebPointReleaseSpill(PointReleaseSpill):
         return {
             'id': self.id,
             'release_time': self.release_time,
-            'start_position': self.start_position,
-            'windage': self.windage_range,
+            'start_position': self.start_position.tolist(),
+            'windage_range': self.windage_range,
             'name': self._name,
-            'uncertain': self.is_uncertain,
-            'num_LEs': self.num_LEs
+            'num_elements': self.num_elements
         }
 
 
@@ -212,7 +218,7 @@ class WebModel(Model):
     }
 
     spill_keys = {
-        WebPointReleaseSpill: 'point_release_spills'
+        WebSurfaceReleaseSpill: 'surface_release_spills'
     }
 
     def __init__(self, *args, **kwargs):
@@ -321,7 +327,7 @@ class WebModel(Model):
         (lists of dictionaries) for any movers and spills configured.
         """
         data = {
-            'uncertain': self.uncertain,
+            'is_uncertain': self.is_uncertain,
             'time_step': (self.time_step / 60.0) / 60.0,
             'start_time': self.start_time,
             'duration_days': 0,
@@ -350,7 +356,7 @@ class WebModel(Model):
 
         Note: does not set movers or spills.
         """
-        self.uncertain = data['uncertain']
+        self.is_uncertain = data['is_uncertain']
         self.start_time = data['start_time']
         self.time_step = data['time_step'] * 60 * 60
         self.duration = datetime.timedelta(

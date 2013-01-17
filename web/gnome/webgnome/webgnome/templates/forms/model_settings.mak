@@ -8,7 +8,7 @@
                 start_time = h.text('start_time', model.start_time, class_="date")
                 duration_days = h.text('duration_days', model.duration_days, class_="input-extra-small")
                 duration_hours = h.text('duration_hours', model.duration_hours, class_="input-extra-small")
-                uncertain = h.checkbox('uncertain', checked=model.uncertain)
+                is_uncertain = h.checkbox('is_uncertain', checked=model.is_uncertain)
                 computation_time_step = h.text('time_step', model.time_step, class_="input-extra-small")
             %>
 
@@ -24,7 +24,7 @@
                 </div>
             </div>
 
-            ${defs.form_control(uncertain, label='Uncertain')}
+            ${defs.form_control(is_uncertain, label='Include Uncertainty Solution')}
             ${defs.form_control(computation_time_step, 'hours', label='Time Step')}
 
         </form>

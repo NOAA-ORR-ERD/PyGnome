@@ -77,9 +77,9 @@ class NavigationTree(object):
                                   form_id='edit_wind_mover'))
 
         spills['children'].extend(
-            self._render_children(data.pop('point_release_spills', []),
-                                  object_type='point_release_spill',
-                                  form_id='edit_point_release_spill'))
+            self._render_children(data.pop('surface_release_spills', []),
+                                  object_type='surface_release_spill',
+                                  form_id='edit_surface_release_spill'))
 
          # Add the map manually as the first model setting
         map_data = data.pop('map')

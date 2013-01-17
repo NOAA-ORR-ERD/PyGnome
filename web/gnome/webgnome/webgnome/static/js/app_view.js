@@ -52,7 +52,7 @@ define([
                 apiRoot: this.apiRoot,
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
-                pointReleaseSpills: this.pointReleaseSpills,
+                surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers,
                 map: this.map
             });
@@ -95,7 +95,7 @@ define([
             this.messageView = new views.MessageView({
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
-                pointReleaseSpills: this.pointReleaseSpills,
+                surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers
             });
 
@@ -115,11 +115,11 @@ define([
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
             this.modelRun.on(models.ModelRun.SERVER_RESET, this.rewind);
 
-            this.pointReleaseSpills.on("sync", this.spillUpdated);
-            this.pointReleaseSpills.on('sync', this.drawSpills);
+            this.surfaceReleaseSpills.on("sync", this.spillUpdated);
+            this.surfaceReleaseSpills.on('sync', this.drawSpills);
 
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
-            this.editPointReleaseSpillFormView.on(forms.PointReleaseSpillFormView.CANCELED, this.drawSpills);
+            this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
@@ -170,7 +170,7 @@ define([
         },
 
         drawSpills: function() {
-            this.mapView.drawSpills(this.pointReleaseSpills);
+            this.mapView.drawSpills(this.surfaceReleaseSpills);
         },
 
         setupKeyboardHandlers: function() {
@@ -204,7 +204,7 @@ define([
 
             Mousetrap.bind('n p', function() {
                 _this.formViews.hideAll();
-                _this.showFormWithId('add_point_release_spill');
+                _this.showFormWithId('add_surface_release_spill');
             });
 
             Mousetrap.bind('s f', function() {
@@ -257,14 +257,14 @@ define([
                 collection: this.windMovers
             });
 
-            this.addPointReleaseSpillFormView = new forms.AddPointReleaseSpillFormView({
-                id: 'add_point_release_spill',
-                collection: this.pointReleaseSpills
+            this.addSurfaceReleaseSpillFormView = new forms.AddSurfaceReleaseSpillFormView({
+                id: 'add_surface_release_spill',
+                collection: this.surfaceReleaseSpills
             });
 
-            this.editPointReleaseSpillFormView = new forms.PointReleaseSpillFormView({
-                id: 'edit_point_release_spill',
-                collection: this.pointReleaseSpills
+            this.editSurfaceReleaseSpillFormView = new forms.SurfaceReleaseSpillFormView({
+                id: 'edit_surface_release_spill',
+                collection: this.surfaceReleaseSpills
             });
 
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
@@ -274,10 +274,10 @@ define([
             this.formViews.add(this.addSpillFormView);
             this.formViews.add(this.addMapFormView);
             this.formViews.add(this.addWindMoverFormView);
-            this.formViews.add(this.addPointReleaseSpillFormView);
+            this.formViews.add(this.addSurfaceReleaseSpillFormView);
             this.formViews.add(this.modelSettingsFormView);
             this.formViews.add(this.editWindMoverFormView);
-            this.formViews.add(this.editPointReleaseSpillFormView);
+            this.formViews.add(this.editSurfaceReleaseSpillFormView);
             this.formViews.add(this.editMapFormView);
         },
 
@@ -286,9 +286,9 @@ define([
                 url: this.apiRoot + '/map'
             });
 
-            this.pointReleaseSpills = new models.PointReleaseSpillCollection(
-                this.options.pointReleaseSpills, {
-                    url: this.apiRoot + "/spill/point_release"
+            this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
+                this.options.surfaceReleaseSpills, {
+                    url: this.apiRoot + "/spill/surface_release"
                 }
             );
 
@@ -568,7 +568,7 @@ define([
             }
 
             var collections = {
-                'point_release_spill': this.pointReleaseSpills,
+                'surface_release_spill': this.surfaceReleaseSpills,
                 'wind_mover': this.windMovers
             };
 

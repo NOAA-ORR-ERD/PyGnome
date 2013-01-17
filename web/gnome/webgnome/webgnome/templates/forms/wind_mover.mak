@@ -4,7 +4,7 @@
 <div class="wind form page hide" id="${form_id}">
     <form action="" class="form-horizontal" method="POST">
         <div class="page-header form-inline">
-            <label>Name</label> ${h.text('name', mover.name)}
+            <label>Name</label> ${h.text('name', mover.name, class_='input-small')}
             <%
                 from webgnome.util import velocity_unit_options
                 units = mover.wind.units if mover.wind else default_wind.units
@@ -12,11 +12,10 @@
             <label>Type</label> ${h.select('type', 'constant', (
                                            ('constant-wind', 'Constant'),
                                            ('variable-wind', 'Variable')),
-                                           class_='type')}
+                                           class_='type input-small')}
             <label>Units</label> ${h.select('units', units, velocity_unit_options, class_='units')}
-            <label class="checkbox">${h.checkbox('is_active', checked=mover.is_active)}
-                Active
-            </label>
+            <label>Active from</label>${h.text('is_active_start', mover.is_active_start, class_='date input-small')}
+            <label>Until</label>${h.text('is_active_end', mover.is_active_stop, class_='date input-small')}
         </div>
     <div class="page-body">
         <%

@@ -123,10 +123,10 @@
         <%include file="forms/wind_mover.mak"
             args="mover=default_wind_mover, default_wind=default_wind,
                   default_wind_value=default_wind_value, form_id='edit_wind_mover'"/>
-        <%include file="forms/point_release_spill.mak"
-            args="spill=default_point_release_spill, form_id='add_point_release_spill'"/>
-         <%include file="forms/point_release_spill.mak"
-            args="spill=default_point_release_spill, form_id='edit_point_release_spill'"/>
+        <%include file="forms/surface_release_spill.mak"
+            args="spill=default_surface_release_spill, form_id='add_surface_release_spill'"/>
+         <%include file="forms/surface_release_spill.mak"
+            args="spill=default_surface_release_spill, form_id='edit_surface_release_spill'"/>
     </div>
 </%block>
 
@@ -154,7 +154,7 @@
                     expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                     backgroundImageUrl: "${background_image_url | n}",
                     currentTimeStep: ${current_time_step},
-                    pointReleaseSpills: ${point_release_spills | n},
+                    surfaceReleaseSpills: ${surface_release_spills | n},
                     windMovers: ${wind_movers | n},
                     modelId: "${model_id}",
                     modelSettings: ${model_settings | n},

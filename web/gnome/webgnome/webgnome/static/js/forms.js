@@ -840,6 +840,8 @@ define([
 
             this.$el.find('#name').val(this.model.get('name'));
             this.$el.find('#is_active').prop('checked', this.model.get('active'));
+            this.$el.find('#is_active_start').val(this.model.get('is_active_start'));
+            this.$el.find('#is_active_stop').val(this.model.get('is_active_stop'));
             this.$el.find('#units').val(wind.get('units'));
 
             var constantAddForm = this.getAddForm('constant-wind');
@@ -917,7 +919,7 @@ define([
     });
 
 
-    var PointReleaseSpillFormView = JQueryUIModalFormView.extend({
+    var SurfaceReleaseSpillFormView = JQueryUIModalFormView.extend({
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
@@ -927,11 +929,11 @@ define([
                 }
             }, options);
 
-            PointReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
+            SurfaceReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
 
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
-            this.pointReleaseSpills = options.pointReleaseSpills;
+            this.surfaceReleaseSpills = options.surfaceReleaseSpills;
             this.defaults = this.getFormData();
         },
 
@@ -942,9 +944,9 @@ define([
         },
 
         setForm: function(form, data) {
-            if (_.has(data, 'windage')) {
-                data['windage_min'] = data['windage'][0];
-                data['windage_max'] = data['windage'][1];
+            if (_.has(data, 'windage_range')) {
+                data['windage_min'] = data['windage_range'][0];
+                data['windage_max'] = data['windage_range'][1];
             }
 
             if (_.has(data, 'start_position')) {
@@ -954,7 +956,7 @@ define([
                 data['start_position_z'] = pos[2];
             }
 
-            PointReleaseSpillFormView.__super__.setForm.apply(this, arguments);
+            SurfaceReleaseSpillFormView.__super__.setForm.apply(this, arguments);
         },
 
         show: function(coords) {
@@ -972,7 +974,7 @@ define([
                 $(coordInputs[1]).val(coords[1]);
             }
 
-            PointReleaseSpillFormView.__super__.show.apply(this, arguments);
+            SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
         },
 
         editSpillNameClicked: function(event) {
@@ -1003,7 +1005,7 @@ define([
 
             data['release_time'] = this.getFormDate(this.getForm());
             data['is_active'] = data['active'];
-            data['windage'] = [
+            data['windage_range'] = [
                 data['windage_min'], data['windage_max']
             ];
             data['start_position'] = [
@@ -1018,14 +1020,14 @@ define([
 
         cancel: function() {
             console.log('cancel')
-            this.trigger(PointReleaseSpillFormView.CANCELED, this);
+            this.trigger(SurfaceReleaseSpillFormView.CANCELED, this);
         }
     }, {
-        CANCELED: 'pointReleaseSpillForm:canceled'
+        CANCELED: 'surfaceReleaseSpillForm:canceled'
     });
 
 
-    var AddPointReleaseSpillFormView = PointReleaseSpillFormView.extend({
+    var AddSurfaceReleaseSpillFormView = SurfaceReleaseSpillFormView.extend({
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
@@ -1035,12 +1037,12 @@ define([
                 }
             }, options);
 
-            AddPointReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
+            AddSurfaceReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
         },
 
         show: function() {
-            this.model = new models.PointReleaseSpill();
-            AddPointReleaseSpillFormView.__super__.show.apply(this, arguments);
+            this.model = new models.SurfaceReleaseSpill();
+            AddSurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
         },
 
         close: function() {
@@ -1088,10 +1090,10 @@ define([
         AddMoverFormView: AddMoverFormView,
         AddSpillFormView: AddSpillFormView,
         AddWindMoverFormView: AddWindMoverFormView,
-        AddPointReleaseSpillFormView: AddPointReleaseSpillFormView,
+        AddSurfaceReleaseSpillFormView: AddSurfaceReleaseSpillFormView,
         MapFormView: MapFormView,
         WindMoverFormView: WindMoverFormView,
-        PointReleaseSpillFormView: PointReleaseSpillFormView,
+        SurfaceReleaseSpillFormView: SurfaceReleaseSpillFormView,
         FormView: FormView,
         FormViewContainer: FormViewContainer,
         ModelSettingsFormView: ModelSettingsFormView

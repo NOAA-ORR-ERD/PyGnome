@@ -132,7 +132,9 @@ class WindSchema(MappingSchema):
 class WindMoverSchema(MappingSchema):
     default_name = 'Wind Mover'
     wind = WindSchema()
-    is_active = SchemaNode(Bool(), default=True)
+    is_active = SchemaNode(Bool(), default=True, missing=True)
+    is_active_start = SchemaNode(LocalDateTime(), default=now)
+    is_active_stop = SchemaNode(LocalDateTime(), default=None, missing=None)
     name = SchemaNode(String(), default=default_name, missing=default_name)
     uncertain_duration = SchemaNode(Float(), default=3, validator=Range(min=0))
     uncertain_time_delay = SchemaNode(Float(), default=0, validator=Range(min=0))
@@ -148,25 +150,24 @@ class PositionSchema(TupleSchema):
     start_position_z = SchemaNode(Float())
 
 
-class WindageSchema(TupleSchema):
+class WindageRangeSchema(TupleSchema):
     windage_min = SchemaNode(Float())
     windage_max = SchemaNode(Float())
 
 
-class PointReleaseSpillSchema(MappingSchema):
+class SurfaceReleaseSpillSchema(MappingSchema):
     default_name = 'Point Release Spill'
-    num_LEs = SchemaNode(Int(), default=0)
+    num_elements = SchemaNode(Int(), default=0)
     release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now)
     start_position = PositionSchema(default=(0, 0, 0))
-    windage = WindageSchema(default=(0.01, 0.04))
-    persist = SchemaNode(Float(), default=900)
-    uncertain = SchemaNode(Bool(), default=False)
+    windage_range = WindageRangeSchema(default=(0.01, 0.04))
+    windage_persist = SchemaNode(Float(), default=900)
     is_active = SchemaNode(Bool(), default=True)
     name = SchemaNode(String(), default=default_name, missing=default_name)
 
 
-class PointReleaseSpillsSchema(SequenceSchema):
-    spill = PointReleaseSpillSchema()
+class SurfaceReleaseSpillsSchema(SequenceSchema):
+    spill = SurfaceReleaseSpillSchema()
 
 
 class WindMoversSchema(SequenceSchema):
@@ -200,10 +201,10 @@ class ModelSettingsSchema(MappingSchema):
     start_time = SchemaNode(LocalDateTime(), default=now)
     duration_days = SchemaNode(Int(), default=1, validator=Range(min=0))
     duration_hours = SchemaNode(Int(),default=0, validator=Range(min=0))
-    uncertain = SchemaNode(Bool(), default=False)
+    is_uncertain = SchemaNode(Bool(), default=False)
     time_step = SchemaNode(Float(), default=0.1)
 
 
 class ModelSchema(ModelSettingsSchema):
-    point_release_spills = PointReleaseSpillsSchema(default=[])
+    surface_release_spills = SurfaceReleaseSpillsSchema(default=[])
     wind_movers = WindMoversSchema(default=[])
