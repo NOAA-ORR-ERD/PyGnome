@@ -5,6 +5,7 @@ from gnome import basic_types, GnomeObject
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
+from gnome.utilities import rand    # not to confuse with python random module
 
 from datetime import datetime, timedelta
 from time import gmtime
@@ -46,31 +47,36 @@ class Mover(GnomeObject):
         """
         pass
 
-    def prepare_for_model_step(self, model_time, time_step,
-                               uncertain_spills_count=0, uncertain_spills_size=None):
+    def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
         sets is_active flag based on time_span. If 
             model_time + time_step > is_active_start and model_time + time_span < is_active_stop
         then set flag to true.
         
-        :param model_time: datetime object giving current model_time
+        :param sc: an instance of the gnome.spill_container.SpillContainer class
         :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as a date time object
         
-        NOTE: method signature will change after one_spill is merged - update docs after merge 
         """
-        if (model_time + timedelta(seconds=time_step) > self.is_active_start) and \
-        (model_time + timedelta(seconds=time_step) <= self.is_active_stop):
+        if (model_time_datetime + timedelta(seconds=time_step) > self.is_active_start) and \
+        (model_time_datetime + timedelta(seconds=time_step) <= self.is_active_stop):
             self._is_active = True
         else:
             self._is_active = False
+            
 
-
-    def get_move(self, spill, time_step, model_time, uncertain_spill_number=0):
+    def get_move(self, sc, time_step, model_time_datetime):
         """
-        Not implemented in base class.  Each class derived from Mover object must implement it's own get_move
+        Compute the move in (long,lat,z) space. It returns the delta move
+        for each element of the spill as a numpy array of size (number_elements X 3)
+        and dtype = gnome.basic_types.world_point_type
+         
+        Not implemented in base class
+        Each class derived from Mover object must implement it's own get_move
 
-        .. todo::
-            maybe we should elaborate on exactly what this function does.
+        :param sc: an instance of the gnome.spill_container.SpillContainer class
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as a date time object
         """
         raise NotImplementedError("Each mover that derives from Mover base class must implement get_move(...)")
 
@@ -102,39 +108,43 @@ class CyMover(Mover):
         """
         self.mover.prepare_for_model_run()
 
-    def prepare_for_model_step(self, model_time, time_step,
-                               uncertain_spills_count=0, uncertain_spills_size=None):
+    def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
         Default implementation of prepare_for_model_step(...)
-         - Sets the mover's is_active flag if time is within specified timespan
+         - Sets the mover's is_active flag if time is within specified timespan (done in base class Mover)
          - Invokes the cython mover's prepare_for_model_step
          
-        :param model_time: datetime object with current model time
+        :param sc: an instance of the gnome.spill_container.SpillContainer class
         :param time_step: time step in seconds
-        
-        NOTE: Remaining inputs will change after one_spill merge .. TODO: Fix this
+        :param model_time_datetime: current time of the model as a date time object
         """
-        super(CyMover,self).prepare_for_model_step(model_time, time_step, uncertain_spills_count, uncertain_spills_size)
+        super(CyMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
         if self.is_active and self.on:
-            self.mover.prepare_for_model_step( self.datetime_to_seconds(model_time), time_step, uncertain_spills_count, uncertain_spills_size)
+            uncertain_spill_count = 0
+            uncertain_spill_size = np.array( (0,) ) # only useful if spill.is_uncertain
+            if sc.is_uncertain:
+                uncertain_spill_count = 1
+                uncertain_spill_size = np.array( (sc.num_elements,) )
+            
+            self.mover.prepare_for_model_step( self.datetime_to_seconds(model_time_datetime), time_step, uncertain_spill_count, uncertain_spill_size)
 
-    def prepare_data_for_get_move(self, spill, model_time_datetime):
+    def prepare_data_for_get_move(self, sc, model_time_datetime):
         """
         organizes the spill object into inputs for calling with Cython wrapper's get_move(...)
 
-        :param spill: an instance of the gnome.spill.Spill class
+        :param sc: an instance of the gnome.spill_container.SpillContainer class
         :param model_time_datetime: current time of the model as a date time object
         """
         self.model_time = self.datetime_to_seconds(model_time_datetime)
 
         # Get the data:
         try:
-            self.positions      = spill['positions']
-            self.status_codes   = spill['status_codes']
+            self.positions      = sc['positions']
+            self.status_codes   = sc['status_codes']
         except KeyError, err:
-            raise ValueError("The spill does not have the required data arrays\n" + err.message)
+            raise ValueError("The spill container does not have the required data arrays\n" + err.message)
 
-        if spill.is_uncertain:
+        if sc.is_uncertain:
             self.spill_type = basic_types.spill_type.uncertainty
         else:
             self.spill_type = basic_types.spill_type.forecast
@@ -160,6 +170,12 @@ class WindMover(CyMover):
 
     The real work is done by the CyWindMover object.  CyMover sets everything up that is common to all movers.
     """
+    # One wind mover with a 20knot wind should (on average) produce the same results as a two wind movers
+    # with a 10know wind each. 
+    # This requires the windage is only set once for each timestep irrespective of how many wind movers are active during that time
+    # Another way to state this, is the get_move operation is linear. This is why the following class level attributes are defined.
+    _windage_is_set = False         # class scope, independent of instances of WindMover  
+    _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
     def __init__(self, wind, 
                  is_active_start= datetime( *gmtime(0)[:7] ), 
                  is_active_stop = datetime.max,
@@ -217,35 +233,59 @@ class WindMover(CyMover):
     uncertain_angle_scale = property( lambda self: self.mover.uncertain_angle_scale,
                                       lambda self, val: setattr(self.mover,'uncertain_angle_scale', val))
 
-
-    def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
+    def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
-        :param spill: an instance of the gnome.spill.Spill class
+        Call base class method and also update windage for this timestep
+         
+        :param sc: an instance of the gnome.spill_container.SpillContainer class
         :param time_step: time step in seconds
         :param model_time_datetime: current time of the model as a date time object
-        :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
         """
-        print "in get_move:", model_time_datetime
-        self.prepare_data_for_get_move(spill, model_time_datetime)
+        super(WindMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
+        if (not WindMover._windage_is_set and not sc.is_uncertain) or (not WindMover._uspill_windage_is_set and sc.is_uncertain):
+            for spill in sc.spills:
+                ix = sc['spill_num'] == spill.spill_num   # matching indices
+                sc['windages'][ix] = rand.random_with_persistance(spill.windage_range[0],
+                                                                  spill.windage_range[1],
+                                                                  spill.windage_persist,
+                                                                  time_step,
+                                                                  array_len=len(ix) )
+            if sc.is_uncertain:
+                WindMover._uspill_windage_is_set = True
+            else:
+                WindMover._windage_is_set = True
+        
+    
+    def get_move(self, sc, time_step, model_time_datetime):
+        """
+        :param sc: an instance of the gnome.SpillContainer class
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as a date time object
+        """
+        self.prepare_data_for_get_move(sc, model_time_datetime)
         
         if self.is_active and self.on: 
-            try:
-                windage = spill['windages']
-            except KeyError, e:
-                raise KeyError("The spill does not have the required data arrays\n" + e.message)
-    
             self.mover.get_move(  self.model_time,
                                   time_step, 
                                   self.positions,
                                   self.delta,
-                                  windage,
+                                  sc['windages'],
                                   self.status_codes,
                                   self.spill_type,
-                                  uncertain_spill_number)
+                                  0)    # only ever 1 spill_container so this is always 0!
             
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
-
+    def model_step_is_done(self):
+        """
+        Set _windage_is_set flag back to False
+        """
+        if WindMover._windage_is_set:
+            WindMover._windage_is_set = False
+        if WindMover._uspill_windage_is_set:
+            WindMover._uspill_windage_is_set = False
+        super(WindMover,self).model_step_is_done() 
+    
 class RandomMover(CyMover):
     """
     This mover class inherits from CyMover and contains CyRandomMover
@@ -273,12 +313,11 @@ class RandomMover(CyMover):
         """
         return "RandomMover(diffusion_coef=%s,is_active_start=%s, is_active_stop=%s, on=%s)" % (self.diffusion_coef,self.is_active_start, self.is_active_stop, self.on)
 
-    def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
+    def get_move(self, spill, time_step, model_time_datetime):
         """
         :param spill: spill object
         :param time_step: time step in seconds
         :param model_time_datetime: current time of the model as a date time object
-        :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
         """
         self.prepare_data_for_get_move(spill, model_time_datetime)
 
@@ -289,7 +328,7 @@ class RandomMover(CyMover):
                                   self.delta,
                                   self.status_codes,
                                   self.spill_type,
-                                  uncertain_spill_number)
+                                  0)    # only ever 1 spill_container so this is always 0!
             
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
@@ -342,26 +381,24 @@ class WeatheringMover(Mover):
         else:
             self.spill_type = basic_types.spill_type.forecast
 
-    def prepare_for_model_step(self, model_time_datetime, time_step, uncertain_spills_count=0, uncertain_spills_size=None):
+    def prepare_for_model_step(self, sc, time_step, model_time_datetime):
        """
        Right now this method just calls its super() method.
        """
-       super(WeatheringMover,self).prepare_for_model_step(model_time_datetime, time_step,
-                                                          uncertain_spills_count, uncertain_spills_size)
+       super(WeatheringMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
 
-    def get_move(self, spill, time_step, model_time_datetime, uncertain_spill_number=0):
+    def get_move(self, sc, time_step, model_time_datetime):
         """
         :param spill: spill object
         :param time_step: time step in seconds
         :param model_time_datetime: current time of the model as a date time object
-        :param uncertain_spill_number: starting from 0 for the 1st uncertain spill, it is the order in which the uncertain spill is added
         """
 
         # validate our spill object
-        self.validate_spill(spill)
+        self.validate_spill(sc)
 
         self.model_time = self.datetime_to_seconds(model_time_datetime)
-        self.prepare_data_for_get_move(spill, model_time_datetime)
+        self.prepare_data_for_get_move(sc, model_time_datetime)
 
         if self.is_active and self.on: 
             self.mover.get_move(  self.model_time,
@@ -370,7 +407,7 @@ class WeatheringMover(Mover):
                                   self.delta,
                                   self.status_codes,
                                   self.spill_type,
-                                  uncertain_spill_number)
+                                  0)    # only ever 1 spill_container so this is always 0!
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 

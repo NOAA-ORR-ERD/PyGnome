@@ -184,16 +184,9 @@ class Model(GnomeObject):
         
         # initialize movers differently if model uncertainty is on
         for mover in self.movers:
+            mover.prepare_for_model_step(self._spill_container, self.time_step, self.model_time)
             if self.is_uncertain:
-                mover.prepare_for_model_step(self.model_time,
-                                             self.time_step,
-                                             1,
-                                             np.array( (self._uncertain_spill_container.num_elements,) )
-                                             )
-            else:
-                mover.prepare_for_model_step(self.model_time,
-                                             self.time_step,
-                                             0)
+                mover.prepare_for_model_step(self._uncertain_spill_container, self.time_step, self.model_time)
                                 
     def move_elements(self):
         """

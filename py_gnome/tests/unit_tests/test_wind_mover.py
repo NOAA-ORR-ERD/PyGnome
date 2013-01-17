@@ -145,7 +145,7 @@ class TestWindMover:
         Test the get_move(...) results in WindMover match the expected delta
         """
         self.spill.prepare_for_model_step(self.model_time, self.time_step)
-        self.wm.prepare_for_model_step(self.model_time, self.time_step)
+        self.wm.prepare_for_model_step( self.spill, self.time_step, self.model_time)
 
         for ix in range(2):
            curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step*ix))
@@ -201,6 +201,7 @@ def test_timespan():
     rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
     #fixme: what to do about persistance?
     spill = TestSpillContainer(5, start_pos, rel_time)
+    spill.release_elements(datetime.now())
 
     model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
     spill.prepare_for_model_step(model_time, time_step)   # release particles
@@ -211,17 +212,16 @@ def test_timespan():
     wind = weather.Wind(timeseries=time_val, units='meters per second')
     
     wm = movers.WindMover(wind, is_active_start=model_time+timedelta(seconds=time_step))
-    wm.prepare_for_model_step(model_time, time_step)
+    wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
     assert wm.is_active == False
     assert np.all(delta == 0)   # model_time + time_step = is_active_start
     
     wm.is_active_start = model_time + timedelta(seconds=time_step/2)
-    wm.prepare_for_model_step(model_time, time_step)
+    wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
     assert wm.is_active == True
-    #TODO: fix
-    #assert np.all(delta[:,:2] != 0)   # model_time + time_step > is_active_start
+    assert np.all(delta[:,:2] != 0)   # model_time + time_step > is_active_start
     
 
 """
