@@ -2407,12 +2407,12 @@ OSErr NetCDFMoverCurv::ExportTopology(char* path)
 		y =(*ptsH)[i].v/1000000.0;
 		//sprintf(topoStr,"%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
 		//sprintf(topoStr,"%ld\t%lf\t%lf\n",i+1,x,y);
-		if (depthsH) 
+		/*if (depthsH) 
 		{
 			z = (*depthsH)[i];
 			sprintf(topoStr,"%lf\t%lf\t%lf\n",x,y,z);
 		}
-		else
+		else*/
 			sprintf(topoStr,"%lf\t%lf\n",x,y);
 		strcpy(buffer,topoStr);
 		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;

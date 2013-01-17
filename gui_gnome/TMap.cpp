@@ -899,6 +899,8 @@ OSErr TMap::AddItem(ListItem item)
 					TimeGridVel *timeGrid = 0;
 					GridWindMover *newMover = 0;
 					//TMap **newMap = 0;
+					char outPath[256], topFilePath[256];
+					topFilePath[0]=0;
 					
 					if (err = GetWindFilePath(path)) return -1;
 					if (IsNetCDFFile(path,&gridType) || IsNetCDFPathsFile(path, &isNetCDFPathsFile, fileNamesPath, &gridType))
@@ -919,8 +921,8 @@ OSErr TMap::AddItem(ListItem item)
 							OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
 							MySFReply reply;
 							Boolean bTopFile = false;
-							char outPath[256], topFilePath[256];
-							topFilePath[0]=0;
+							//char outPath[256], topFilePath[256];
+							//topFilePath[0]=0;
 							// code goes here, store path as unix
 							if (gridType!=REGULAR)	// move this outside, pass the path in
 							{
@@ -1038,6 +1040,40 @@ OSErr TMap::AddItem(ListItem item)
 					}
 					else if (IsGridWindFile(path,&selectedUnits))	// code goes here, constant wind case
 					{
+#ifdef GUI_GNOME
+						timeGrid = new TimeGridCurRect();
+						
+						if(timeGrid)
+						{
+							GridWindMover *newGridWindMover = new GridWindMover(dynamic_cast<TMap *>(this),"");
+							if (!newGridWindMover)
+							{ 
+								TechError("TMap::AddItem()", "new GridWindMover()", 0);
+								return 0;
+							}
+							newMover = newGridWindMover;
+							timeGrid -> fUserUnits = selectedUnits;
+							
+							err = newGridWindMover->InitMover(timeGrid);
+							//if(err) goto Error;
+//#if TARGET_API_MAC_CARBON
+//							if (!err) err = ConvertTraditionalPathToUnixPath((const char *) path, outPath, kMaxNameLen) ;
+//							if (!err) strcpy(path,outPath);
+//#endif
+							//if (!err) err = timeGrid->TextRead(path,"");
+							if (!err) err = timeGrid->TextRead(path,topFilePath);
+							//if(err) goto Error;
+							if(!err) err = GridWindSettingsDialog(newMover,this,true,mapWindow);
+							/////////////////
+							if (!err /*&& isNetCDFPathsFile*/) /// JLM 5/3/10
+							{
+								char errmsg[256];
+								//err = timeGrid->ReadInputFileNames(fileNamesPath);
+								//if(!err) timeGrid->DisposeAllLoadedData();
+								//if(!err) err = timeGrid->SetInterval(errmsg,model->GetModelTime()); // if set interval here will get error if times are not in model range
+							}
+						}
+#else
 						GridWndMover *newMover = new GridWndMover(dynamic_cast<TMap *>(this),"");
 						newMover -> fUserUnits = selectedUnits;
 						if (err = newMover -> TextRead(path))
@@ -1047,8 +1083,9 @@ OSErr TMap::AddItem(ListItem item)
 						}
 						//err = GridWindSettingsDialog(newMover,this,true,mapWindow);
 						err = WindSettingsDialog(newMover,dynamic_cast<TMap *>(this),true,mapWindow,false);
-						if(err)	{ newMover->Dispose(); delete newMover; newMover = 0;}
-						return err;
+#endif
+						if(err)	{ newMover->Dispose(); delete newMover; newMover = 0; return err;}
+						//return err;
 					}
 					else
 					{
