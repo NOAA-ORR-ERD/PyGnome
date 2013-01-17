@@ -41,9 +41,7 @@ class TestRandomMover():
     time_step = 15*60 # seconds
 
     mover = movers.RandomMover()
-    def __init__(self):
-        # allocate stuff here so it doen'st stick around
-        self.pSpill = TestSpillContainer(self.num_le, self.start_pos)
+    
     def reset_pos(self):
         self.pSpill['positions'] = (0.,0.,0.)
         print self.pSpill['positions']
@@ -72,7 +70,8 @@ class TestRandomMover():
         """
         Simply tests the method executes without exceptions
         """
-        self.mover.prepare_for_model_step(self.model_time, self.time_step)
+        pSpill = TestSpillContainer(self.num_le, self.start_pos)
+        self.mover.prepare_for_model_step(pSpill, self.time_step, self.model_time)
         assert True
 
 start_locs = [(0.0,0.0,0.0),
@@ -103,7 +102,7 @@ def test_variance1(start_loc, time_step):
     for i in range(num_steps):
         model_time += datetime.timedelta(seconds=time_step)
         spill.prepare_for_model_step(model_time, time_step)
-        rand.prepare_for_model_step(model_time, time_step)
+        rand.prepare_for_model_step(spill, time_step, model_time)
         delta = rand.get_move(spill, time_step, model_time)
         #print "delta:", delta
         spill['positions'] += delta
