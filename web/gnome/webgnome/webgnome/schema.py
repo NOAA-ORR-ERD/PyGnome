@@ -132,8 +132,8 @@ class WindSchema(MappingSchema):
 class WindMoverSchema(MappingSchema):
     default_name = 'Wind Mover'
     wind = WindSchema()
-    is_active = SchemaNode(Bool(), default=True, missing=True)
-    is_active_start = SchemaNode(LocalDateTime(), default=now)
+    on = SchemaNode(Bool(), default=True, missing=True)
+    is_active_start = SchemaNode(LocalDateTime(), default=None, missing=None)
     is_active_stop = SchemaNode(LocalDateTime(), default=None, missing=None)
     name = SchemaNode(String(), default=default_name, missing=default_name)
     uncertain_duration = SchemaNode(Float(), default=3, validator=Range(min=0))

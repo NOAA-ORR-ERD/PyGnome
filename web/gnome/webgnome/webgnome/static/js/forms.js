@@ -91,8 +91,8 @@ define([
             // Override this in your subclass.
         },
 
-        formHasDateFields: function(form) {
-            var fields = this.getFormDateFields(form);
+        hasDateFields: function(target) {
+            var fields = this.getDateFields(target);
             return fields.date && fields.hour && fields.minute;
         },
 
@@ -110,25 +110,26 @@ define([
                     input.val(dataVal);
                 }
             });
-
-            // Include only the date in the date field, reformat it, and move
-            // time values into the hour and minute fields.
-            if (this.formHasDateFields(form)) {
-                var datetime = this.getFormDate(form);
-                this.setFormDate(form, datetime);
-            }
         },
 
-        getFormDateFields: function(form) {
+        getDateFields: function(target) {
+            if (target.length === 0) {
+                return;
+            }
+
             return {
-                date: form.find('.date'),
-                hour: form.find('.hour'),
-                minute: form.find('.minute')
+                date: target.find('.date'),
+                hour: target.find('.hour'),
+                minute: target.find('.minute')
             }
         },
 
-        getFormDate: function(form) {
-            var fields = this.getFormDateFields(form);
+        getFormDate: function(target) {
+            if (target.length === 0) {
+                return;
+            }
+
+            var fields = this.getDateFields(target);
             var date = fields.date.val();
             var hour = fields.hour.val();
             var minute = fields.minute.val();
@@ -143,11 +144,13 @@ define([
             }
         },
 
-        setFormDate: function(form, datetime) {
-            if (!datetime) {
+        setDateFields: function(target, datetime) {
+
+            if (!datetime || target.length === 0) {
                 return;
             }
-            var fields = this.getFormDateFields(form);
+
+            var fields = this.getDateFields(target);
             fields.date.val(datetime.format("MM/DD/YYYY"));
             fields.hour.val(datetime.format('HH'));
             fields.minute.val(datetime.format('mm'));
@@ -379,8 +382,8 @@ define([
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
-                    width: 850,
-                    height: 705,
+                    width: 750,
+                    height: 550,
                     title: "Edit Wind Mover"
                 }
             }, options);
@@ -401,6 +404,7 @@ define([
             'click input[name="name"]': 'moverNameChanged',
             'click .add-time': 'addButtonClicked',
             'click .edit-time': 'editButtonClicked',
+            'click .show-compass': 'showCompass',
             'click .cancel': 'cancelButtonClicked',
             'click .save': 'saveButtonClicked',
             'click .delete-time': 'trashButtonClicked',
@@ -414,9 +418,13 @@ define([
             var otherDivs = this.$el.find(
                 '.tab-pane.wind > div').not(typeDiv);
 
-            console.log(otherDivs.length)
             typeDiv.removeClass('hidden');
             otherDivs.addClass('hidden');
+        },
+
+        showCompass: function() {
+            this.compass.compassUI('reset');
+            this.compassDialog.dialog('open');
         },
 
         compassChanged: function(magnitude, direction) {
@@ -442,6 +450,26 @@ define([
                     _this.compassChanged(magnitude, direction);
                 }
             });
+
+            this.compassDialog = this.$el.find('.compass-container').dialog({
+                width: 250,
+                title: "Compass",
+                zIndex: 6000,
+                autoOpen: false,
+                buttons: {
+                    OK: function () {
+                        $(this).dialog("close");
+                    }
+                }
+            });
+        },
+
+        setForm: function(form, data) {
+            SurfaceReleaseSpillFormView.__super__.setForm.apply(this, arguments);
+
+            var timeContainer = form.find('.datetime_container');
+            var releaseTime = this.getFormDate(timeContainer);
+            this.setDateFields(timeContainer, releaseTime);
         },
 
         getTimesTable: function() {
@@ -551,8 +579,10 @@ define([
             }
 
             this.model.set(data);
+
             this.collection.add(this.model);
             this.model.save();
+            console.log('submit', this.model.id, this.model.get('wind'))
         },
 
         editMoverNameClicked: function(event) {
@@ -745,7 +775,7 @@ define([
             // value was provided.
             if (autoIncrementBy) {
                 var nextDatetime = datetime.clone().add('hours', autoIncrementBy);
-                this.setFormDate(addForm, nextDatetime);
+                this.setDateFields(addForm, nextDatetime);
             }
         },
 
@@ -753,7 +783,7 @@ define([
             return {
                 name: this.$el.find('#name').val(),
                 units: this.$el.find('#units').val(),
-                is_active: this.$el.find('#is_active').prop('checked')
+                on: this.$el.find('#on').prop('checked')
             };
         },
 
@@ -792,6 +822,7 @@ define([
             };
 
             data['uncertainty'] = this.getFormDataForDiv(uncertainty);
+            data['defaultWindDate'] = moment(this.$el.find('.datetime').val());
 
             return data;
         },
@@ -809,6 +840,9 @@ define([
             var uncertainty = this.$el.find('.uncertainty');
             var uncertaintyData = this.getFormDataForDiv(uncertainty);
             data = $.extend(data, divData, uncertaintyData);
+            var activeRange = this.$el.find('.active_range');
+            var activeRangeData = this.getFormDataForDiv(activeRange);
+            data = $.extend(data, divData, activeRangeData);
             return data;
         },
 
@@ -817,8 +851,10 @@ define([
             var data = this.defaults;
 
             this.$el.find('#name').val(data.name);
-            this.$el.find('#is_active').prop('checked', data.is_active);
+            this.$el.find('#on').prop('checked', data.on);
             this.$el.find('#units').val(data.units);
+            this.setDateFields(
+                this.$el.find('.datetime-container'), data['defaultWindDate']);
 
             _.each(data['moverTypes'], function(moverData, typeName) {
                 var form = _this.getAddForm(typeName);
@@ -836,18 +872,21 @@ define([
 
         setInputsFromModel: function() {
             var wind = this.model.get('wind');
-            var timeseries = wind.get('timeseries');
 
             this.$el.find('#name').val(this.model.get('name'));
             this.$el.find('#is_active').prop('checked', this.model.get('active'));
-            this.$el.find('#is_active_start').val(this.model.get('is_active_start'));
-            this.$el.find('#is_active_stop').val(this.model.get('is_active_stop'));
             this.$el.find('#units').val(wind.get('units'));
 
-            var constantAddForm = this.getAddForm('constant-wind');
-            var firstTimeValue = timeseries.at(0);
+            this.setDateFields(this.$el.find('.is_active_start_container'),
+                               this.model.get('is_active_start'));
+            this.setDateFields(this.$el.find('.is_active_stop_container'),
+                               this.model.get('is_active_stop'));
 
             var moverType = this.$el.find('.type');
+            var timeseries = wind.get('timeseries');
+            var firstTimeValue = timeseries.at(0);
+
+            console.log('set inputs', this.model.id, wind, timeseries)
 
             if (timeseries.length > 1) {
                 moverType.val('variable-wind');
@@ -856,6 +895,8 @@ define([
             }
 
             this.typeChanged();
+
+            var constantAddForm = this.getAddForm('constant-wind');
 
             if (firstTimeValue) {
                 var formData = firstTimeValue.toJSON();
@@ -891,8 +932,8 @@ define([
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
-                    width: 850,
-                    height: 705,
+                    width: 750,
+                    height: 550,
                     title: "Add Wind Mover"
                 }
             }, options);
@@ -957,6 +998,10 @@ define([
             }
 
             SurfaceReleaseSpillFormView.__super__.setForm.apply(this, arguments);
+
+            var timeContainer = form.find('.release_time_container');
+            var releaseTime = this.getFormDate(timeContainer);
+            this.setDateFields(timeContainer, releaseTime);
         },
 
         show: function(coords) {
@@ -1004,7 +1049,7 @@ define([
             var data = this.getFormData();
 
             data['release_time'] = this.getFormDate(this.getForm());
-            data['is_active'] = data['active'];
+            data['is_active'] = data['is_active'];
             data['windage_range'] = [
                 data['windage_min'], data['windage_max']
             ];
@@ -1019,7 +1064,6 @@ define([
         },
 
         cancel: function() {
-            console.log('cancel')
             this.trigger(SurfaceReleaseSpillFormView.CANCELED, this);
         }
     }, {

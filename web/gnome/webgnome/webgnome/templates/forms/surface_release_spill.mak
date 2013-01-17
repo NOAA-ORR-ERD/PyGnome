@@ -8,7 +8,6 @@
                 name = h.text('name', spill.name)
                 is_active = h.checkbox("active", checked=spill.is_active)
                 num_elements = h.text('num_elements', spill.num_elements, 'num_elements')
-                release_time = h.text('release_time', spill.release_time, class_="date")
                 start_position_x = h.text('start_position_x', spill.start_position[0], class_="coordinate")
                 start_position_y = h.text('start_position_y', spill.start_position[1], class_="coordinate")
                 start_position_z = h.text('start_position_z', spill.start_position[2], class_="coordinate")
@@ -20,8 +19,8 @@
             ${defs.form_control(name, label="Name")}
             ${defs.form_control(is_active, label="Active")}
             ${defs.form_control(num_elements, label="Number of LEs")}
-            ${defs.form_control(release_time, label='Release Start')}
-            ${defs.time_control()}
+            ${defs.datetime_control(spill.release_time, 'release_time',
+                                    date_label='Release Start')}
 
             <div class="control-group">
                 <label class="control-label">Start Position (X, Y, Z)</label>

@@ -451,25 +451,16 @@ define([
 
     var Wind = BaseModel.extend({
         initialize: function(attrs) {
-            var timeseries = [];
-            if (attrs && _.has(attrs, 'timeseries')) {
-                timeseries = attrs['timeseries'];
-                delete(attrs['timeseries']);
-            }
+            attrs = attrs || {};
+            var timeseries = attrs['timeseries'] || [];
             this.set('timeseries', new WindValueCollection(timeseries));
+            console.log('wind init', attrs, this.get('timeseries'));
         }
     });
 
 
     var WindMover = BaseModel.extend({
-        get: function (attr) {
-            console.log(attr)
-            if (attr === 'is_active_start' || attr === 'is_active_stop') {
-                return moment(this.attributes[attr]).format('MM/DD/YYYY');
-            }
-
-            return WindMover.__super__.get.apply(this, arguments);
-        },
+        dateFields: ['is_active_start', 'is_active_stop'],
 
         /*
          If the user passed an object for `key`, as when setting multiple
@@ -485,15 +476,6 @@ define([
 
             WindMover.__super__.set.apply(this, [key, val, options]);
             return this;
-        },
-
-        parse: function(response) {
-            var attrs = WindMover.__super__.parse.apply(this, [response]);
-            var wind = {};
-            if (attrs && _.has(attrs, 'wind')) {
-                attrs['wind'] = new Wind(wind);
-            }
-            return attrs;
         }
     });
 

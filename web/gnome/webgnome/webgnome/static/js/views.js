@@ -672,6 +672,11 @@ define([
                     // isReloading is true if status was read from existing cookies.
                     // isError is only used in Ajax mode
                     this.reactivate();
+
+                     // Expand all items
+                    this.getRoot().visit(function (node) {
+                        node.expand(true);
+                    });
                 },
                 onDblClick: function(node, event) {
                     _this.trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
