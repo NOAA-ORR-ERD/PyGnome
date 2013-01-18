@@ -1108,12 +1108,11 @@ WorldPoint ShioTimeValue_c::GetRefWorldPoint (void)
 	return wp;
 }
 
-#ifndef pyGNOME
 /////////////////////////////////////////////////
-OSErr ShioTimeValue_c::GetLocationInTideCycle(short *ebbFloodType, float *fraction)
+OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *ebbFloodType, float *fraction)
 {
 	
-	Seconds time = model->GetModelTime(), ebbFloodTime;	
+	Seconds time = model_time, ebbFloodTime;	
 	EbbFloodData ebbFloodData1, ebbFloodData2;
 	long i, numValues;
 	short type;
@@ -1266,7 +1265,6 @@ OSErr ShioTimeValue_c::GetLocationInTideCycle(short *ebbFloodType, float *fracti
 	return 0;
 }
 
-#endif
 void ShioTimeValue_c::ProgrammerError(char* routine)
 {
 	char str[256];

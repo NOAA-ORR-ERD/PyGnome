@@ -1146,7 +1146,7 @@ Boolean TideCurCycleMover_c::CheckInterval(long &timeDataInterval, const Seconds
 		{
 			short ebbFloodType;
 			float fraction;
-			timeFile->GetLocationInTideCycle(&ebbFloodType,&fraction);
+			timeFile->GetLocationInTideCycle(model_time,&ebbFloodType,&fraction);
 			if (ebbFloodType>=fPatternStartPoint)
 			{
 				offset = ebbFloodType - fPatternStartPoint;
