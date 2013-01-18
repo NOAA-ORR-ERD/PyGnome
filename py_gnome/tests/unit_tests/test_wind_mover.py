@@ -23,7 +23,7 @@ def test_exceptions():
         file = r"SampleData/WindDataFromGnome.WND"
         wind = weather.Wind(file=file)
         now = datetime.now()
-        movers.WindMover(wind, is_active_start=now, is_active_stop=now)
+        movers.WindMover(wind, active_start=now, active_stop=now)
 
 # tolerance for np.allclose(..) function
 atol = 1e-14
@@ -157,7 +157,7 @@ class TestWindMover:
            np.testing.assert_allclose(delta, actual, tol, tol,
                                       "WindMover.get_move() is not within a tolerance of " + str(tol), 0)
            
-           assert self.wm.is_active == True
+           assert self.wm.active == True
 
            print "Time step [sec]: \t" + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
            print "C++ delta-move: " ; print str(delta)
@@ -192,7 +192,7 @@ class TestWindMover:
 
 def test_timespan():
     """
-    Ensure the is_active flag is being set correctly and checked, such that if is_active=False, the delta produced by get_move = 0
+    Ensure the active flag is being set correctly and checked, such that if active=False, the delta produced by get_move = 0
     """
     time_step = 15 * 60 # seconds
     
@@ -211,17 +211,17 @@ def test_timespan():
     time_val['value'] = (2., 25.)
     wind = weather.Wind(timeseries=time_val, units='meters per second')
     
-    wm = movers.WindMover(wind, is_active_start=model_time+timedelta(seconds=time_step))
+    wm = movers.WindMover(wind, active_start=model_time+timedelta(seconds=time_step))
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
-    assert wm.is_active == False
-    assert np.all(delta == 0)   # model_time + time_step = is_active_start
+    assert wm.active == False
+    assert np.all(delta == 0)   # model_time + time_step = active_start
     
-    wm.is_active_start = model_time + timedelta(seconds=time_step/2)
+    wm.active_start = model_time + timedelta(seconds=time_step/2)
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
-    assert wm.is_active == True
-    assert np.all(delta[:,:2] != 0)   # model_time + time_step > is_active_start
+    assert wm.active == True
+    assert np.all(delta[:,:2] != 0)   # model_time + time_step > active_start
     
 
 """
@@ -231,7 +231,7 @@ def _defaults(wm):
     """
     checks the default properties of the WindMover object as given in the input are as expected
     """
-    assert wm.is_active == True  # timespan is as big as possible
+    assert wm.active == True  # timespan is as big as possible
     assert wm.uncertain_duration == 10800
     assert wm.uncertain_time_delay == 0
     assert wm.uncertain_speed_scale == 2
