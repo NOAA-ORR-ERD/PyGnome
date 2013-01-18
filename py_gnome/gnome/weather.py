@@ -2,12 +2,15 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
+
+import datetime
+
+import numpy as np
+
 from gnome import basic_types, GnomeObject
 from gnome.utilities import transforms, time_utils, convert
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from hazpy import unit_conversion
-
-import numpy as np
 
 class Wind(GnomeObject):
     """
@@ -155,20 +158,20 @@ class Wind(GnomeObject):
         self.ossm.timeseries = timeval
     
 
-# def constant_wind(speed, direction, units):
-#     """
-#     utility to create a constant wind
+def ConstantWind(speed, direction, units='m/s'):
+     """
+     utility to create a constant wind "timeseries"
 
-#     :param speed: speed of wind 
-#     :param direction: direction -- degrees True, direction wind is from( degrees True )
-#     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s", "cm/s", etc.
-#     """
-#     timeseries = series = np.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
-#      series[0] = (start_time,                      ( 10,   45) )
-#     return Wind( timeseries=timeseries, 
-#                  units=units)
+     :param speed: speed of wind 
+     :param direction: direction -- degrees True, direction wind is from( degrees True )
+     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s", "cm/s", etc.
+     """
+     wind_vel = np.zeros((1,), dtype=basic_types.datetime_value_2d)
+     wind_vel['time'][0] = datetime.datetime.now() # jsut to have a time 
+     wind_vel['value'][0] = (speed, direction)
 
-
-
+     return Wind(timeseries=wind_vel,
+                 data_format=basic_types.data_format.magnitude_direction,
+                 units=units)
 
         

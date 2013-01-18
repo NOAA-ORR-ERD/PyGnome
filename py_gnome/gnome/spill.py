@@ -228,10 +228,6 @@ class SurfaceReleaseSpill(FloatingSpill):
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
 
-#        if windage_persist <= 0:
-#            # if it is anything less than 0, treat it as -1 flag
-#            self.update_windage(0)
-
         self.num_released = 0
         self.prev_release_pos = self.start_position
 

@@ -238,8 +238,16 @@ class TestWind:
       #=========================================================================
 
 
-# def test_constant_wind():
-#     """
-#     tests the utility function for creating a constant wind
-#     """
-#     wind = weather.constant_wind(10, 'knots')
+def test_constant_wind():
+     """
+     tests the utility function for creating a constant wind
+     """
+     wind = weather.ConstantWind(10, 45, 'knots')
+
+     assert np.allclose(wind.get_timeseries(datetime=datetime(2013,1,10,12,0), units='knots' )[0][1],
+                        (10, 45))
+     assert np.allclose(wind.get_timeseries(datetime=datetime(2000,1,10,12,0), units='knots' )[0][1],
+                        (10, 45))
+     assert np.allclose(wind.get_timeseries(datetime=datetime(2020,1,10,12,0), units='knots' )[0][1],
+                        (10, 45))
+
