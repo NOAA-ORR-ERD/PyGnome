@@ -80,7 +80,6 @@ cpp_files = [
               'ClassID_c.cpp',
               'Random_c.cpp',
               'TimeValuesIO.cpp',
-              #'MYRANDOM.cpp',
               'GEOMETRY.cpp',
               'OSSMTimeValue_c.cpp',
               'TimeValue_c.cpp',
