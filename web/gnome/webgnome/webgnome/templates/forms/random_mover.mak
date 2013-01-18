@@ -8,8 +8,8 @@
             ${defs.form_control(h.text('name', mover.name), label='Name')}
             ${defs.form_control(h.text('diffusion_coef', mover.diffusion_coef),
                                 label='Diffusion Coefficient')}
-            ${defs.datetime_control(mover.is_active_start, 'is_active_start', date_label="Active Start")}
-            ${defs.datetime_control(mover.is_active_stop, 'is_active_stop', date_label="Active Stop")}
+            ${defs.datetime_control(mover.active_start, 'active_start', date_label="Active Start")}
+            ${defs.datetime_control(mover.active_stop, 'active_stop', date_label="Active Stop")}
         </div>
     </form>
 </div>

@@ -577,6 +577,12 @@ define([
         },
 
         submit: function() {
+            // Clear the add time form in the variable wind div as those
+            // values must be "saved" in order to mean anything.
+            var variable = $('.variable-wind');
+            variable.find('input').val('');
+            variable.find('input:checkbox').prop('checked', false);
+
             var data = this.getFormData();
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
@@ -854,12 +860,6 @@ define([
          directly to a model object to be saved to the server.
          */
         getFormData: function() {
-            // Clear the add time form in the variable wind div as those
-            // values must be "saved" in order to mean anything.
-            var variable = $('.variable-wind');
-            variable.find('input').val('');
-            variable.find('input:checkbox').prop('checked', false);
-
             var data = this.getBaseFormData();
             var moverTypeDiv = this.getMoverTypeDiv();
             var divData = this.getFormDataForDiv(moverTypeDiv);
@@ -913,10 +913,10 @@ define([
             this.$el.find('#active').prop('checked', this.model.get('active'));
             this.$el.find('#units').val(wind.get('units'));
 
-            this.setDateFields(this.$el.find('.is_active_start_container'),
-                               this.model.get('is_active_start'));
-            this.setDateFields(this.$el.find('.is_active_stop_container'),
-                               this.model.get('is_active_stop'));
+            this.setDateFields(this.$el.find('.active_start_container'),
+                               this.model.get('active_start'));
+            this.setDateFields(this.$el.find('.active_stop_container'),
+                               this.model.get('active_stop'));
 
             var moverType = this.$el.find('.type');
             var timeseries = wind.get('timeseries');
@@ -1171,19 +1171,19 @@ define([
 
         show: function() {
             ModelSettingsFormView.__super__.show.apply(this, arguments);
-            var isActiveStart = this.$el.find('.is_active_start_container');
-            var isActiveStop = this.$el.find('.is_active_stop_container');
+            var isActiveStart = this.$el.find('.active_start_container');
+            var isActiveStop = this.$el.find('.active_stop_container');
             this.setDateFields(isActiveStart, this.getFormDate(isActiveStart));
             this.setDateFields(isActiveStop, this.getFormDate(isActiveStop));
         },
 
         submit: function() {
             var data = this.getFormData();
-            var isActiveStart = this.$el.find('.is_active_start_container');
-            var isActiveStop = this.$el.find('.is_active_stop_container');
+            var isActiveStart = this.$el.find('.active_start_container');
+            var isActiveStop = this.$el.find('.active_stop_container');
 
-            data['is_active_start'] = this.getFormDate(isActiveStart);
-            data['is_active_stop'] = this.getFormDate(isActiveStop);
+            data['active_start'] = this.getFormDate(isActiveStart);
+            data['active_stop'] = this.getFormDate(isActiveStop);
 
             this.model.set(data);
             this.model.save();

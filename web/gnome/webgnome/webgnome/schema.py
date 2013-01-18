@@ -48,24 +48,28 @@ def now(node, kw):
     return datetime.datetime.now()
 
 
-def _validate_degrees_true(node, direction):
+def nonzero(node, value):
+    if value <= 0:
+        raise Invalid(node, 'Value must be greater than zero.')
+
+def degrees_true(node, direction):
     if 0 > direction > 360:
         raise Invalid(
             node, 'Direction in degrees true must be between 0 and 360.')
 
 
-def _validate_cardinal_direction(node, direction):
+def cardinal_direction(node, direction):
     if not util.DirectionConverter.is_cardinal_direction(direction):
         raise Invalid(
             node, 'A cardinal directions must be one of: %s' % ', '.join(
                 util.DirectionConverter.DIRECTIONS))
 
 
-def validate_direction(node, value):
+def valid_direction(node, value):
     try:
-        _validate_degrees_true(node, float(value))
+        degrees_true(node, float(value))
     except ValueError:
-        _validate_cardinal_direction(node, value.upper())
+        cardinal_direction(node, value.upper())
 
 
 class LocalDateTime(DateTime):
@@ -90,8 +94,10 @@ class LocalDateTime(DateTime):
 
 class WindValueSchema(MappingSchema):
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now)
-    speed = SchemaNode(Float(), default=0, validator=Range(min=0))
-    direction = SchemaNode(Float(), default=0)
+    speed = SchemaNode(Float(), default=0, validator=nonzero)
+    # TODO: Validate string and float or just float?
+    direction = SchemaNode(Float(), default=0,
+                           validator=degrees_true)
 
 
 class DatetimeValue2dArray(Sequence):
@@ -131,9 +137,8 @@ class WindSchema(MappingSchema):
 
 class BaseMoverSchema(MappingSchema):
     on = SchemaNode(Bool(), default=True, missing=True)
-#    active = SchemaNode(Bool(), default=None, missing=None)
-    is_active_start = SchemaNode(LocalDateTime(), default=None, missing=None)
-    is_active_stop = SchemaNode(LocalDateTime(), default=None, missing=None)
+    active_start = SchemaNode(LocalDateTime(), default=None, missing=None)
+    active_stop = SchemaNode(LocalDateTime(), default=None, missing=None)
 
 
 class WindMoverSchema(BaseMoverSchema):
