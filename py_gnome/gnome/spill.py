@@ -42,7 +42,7 @@ class Spill(GnomeObject):
 
         self.num_elements = num_elements
 
-        self.is_active = True       # sets whether the spill is active or not
+        self.on = True       # sets whether the spill is active or not
 
         self.__set_spill_num()
         self.__all_subclasses[ id(self) ] = self.__class__
@@ -85,17 +85,20 @@ class Spill(GnomeObject):
                                 'next_positions': ( (3,), basic_types.world_point_type),
                                 'last_water_positions': ( (3,), basic_types.world_point_type),
                                 'status_codes': ( (), basic_types.status_code_type),
-                                'spill_spill_num': ( (), basic_types.id_type)
+                                'spill_num': ( (), basic_types.id_type)
                                 })
 
     def __set_spill_num(self):
         """
         returns an spill_num that is not already in use
 
+        This approach will assure that all the spills within one python isntance have
+        unique spills numbers, but also that they will be small numbers.
+
         inefficient, but who cares?
         """
         spill_num = 1
-        while spill_num < 65536: # just so it will eventually terminate!
+        while spill_num < 65536: # just so it will eventually terminate! (and fit into an int16)
             if spill_num not in self.__all_spill_nums:
                 self.spill_num = spill_num
                 self.__all_spill_nums.add(spill_num)
@@ -103,7 +106,7 @@ class Spill(GnomeObject):
             else:
                 spill_num+=1
         else:
-            raise ValueError("There are no more spill_nums aavailable to spills!")
+            raise ValueError("There are no more spill_nums available to spills!")
 
     def __del__(self):
         """
@@ -144,7 +147,7 @@ class Spill(GnomeObject):
         initilize the new elements just created
         This is probably need to be extended by subclasses
         """
-        arrays['spill_spill_num'][:] = self.spill_num
+        arrays['spill_num'][:] = self.spill_num
         arrays['status_codes'][:] = basic_types.oil_status.in_water
 
 class FloatingSpill(Spill):
@@ -167,19 +170,6 @@ class FloatingSpill(Spill):
         super(FloatingSpill, cls).add_array_types()
         cls._array_info['windages'] = ( (), basic_types.windage_type )
 
-    ##fixme: where does this go????
-    @classmethod
-    def update_windage(self, windages, time_step):
-        """
-        Update windage for each LE for each time step
-        May want to cythonize this to speed it up
-        """
-        windages[:] = rand.random_with_persistance(self.windage_range[0],
-                                                           self.windage_range[1],
-                                                           self.windage_persist,
-                                                           time_step,
-                                                           array_len=len(wiindages),
-                                                           )
 
 class SurfaceReleaseSpill(FloatingSpill):
     """
@@ -224,10 +214,6 @@ class SurfaceReleaseSpill(FloatingSpill):
         self.end_position = np.asarray(end_position, dtype=basic_types.world_point_type).reshape((3,))
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
-
-#        if windage_persist <= 0:
-#            # if it is anything less than 0, treat it as -1 flag
-#            self.update_windage(0)
 
         self.num_released = 0
         self.prev_release_pos = self.start_position

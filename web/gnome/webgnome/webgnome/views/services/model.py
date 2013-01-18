@@ -156,12 +156,21 @@ class ModelRunner(BaseResource):
         Get the next step in the model run.
         """
         step = self._get_next_step()
+        model = self.request.validated['model']
+        data = {}
 
         if not step:
             raise HTTPNotFound
 
-        self.request.validated['model'].time_steps.append(step)
+        # The model rewound itself. Reset web-specific caches
+        # and send the list of expected timestamps.
+        if step['id'] == 0:
+            model.time_steps = []
+            model.timestamps = self._get_timestamps()
+            model.runtime = util.get_runtime()
+            data['expected_time_steps'] = self._get_timestamps()
 
-        return {
-            'time_step': step
-        }
+        self.request.validated['model'].time_steps.append(step)
+        data['time_step'] = step
+
+        return data

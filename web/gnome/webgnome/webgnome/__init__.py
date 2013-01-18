@@ -5,7 +5,7 @@ from pyramid.events import BeforeRender
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
 
 from webgnome import helpers
-from webgnome.model_manager import ModelManager, WebWindMover, WebPointReleaseSpill
+from webgnome.model_manager import ModelManager, WebWindMover, WebSurfaceReleaseSpill
 from webgnome.util import json_date_adapter, gnome_json
 
 

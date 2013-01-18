@@ -38,7 +38,7 @@ class SpillContainer(object):
     def __init__(self, uncertain=False):
         
         self.is_uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
-        self.is_active = True       # sets whether the spill is active or not
+        self.on = True       # sets whether the spill is active or not
         
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.reset()
@@ -165,19 +165,6 @@ class SpillContainer(object):
                         self._data_arrays[name] = np.r_[ self._data_arrays[name], new_data[name] ]
                     else:
                         self._data_arrays[name] = new_data[name]
-
-    def update_windage(self, time_step):
-        ##fixme: this really doesn't seem to belonge here.
-        ##       regardless, we need to know the windage_ranges....
-        """
-        Update windage for each LE for each time step
-        May want to cythonize this to speed it up
-        """
-        self['windages'][:] = rand.random_with_persistance(self.windage_range[0],
-                                                          self.windage_range[1],
-                                                          self.windage_persist,
-                                                          time_step,
-                                                          array_len=self.num_LEs)
 
 
     def __str__(self):
