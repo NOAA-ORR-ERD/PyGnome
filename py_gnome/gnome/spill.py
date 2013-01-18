@@ -42,7 +42,7 @@ class Spill(GnomeObject):
 
         self.num_elements = num_elements
 
-        self.is_active = True       # sets whether the spill is active or not
+        self.on = True       # sets whether the spill is active or not
 
         self.__set_spill_num()
         self.__all_subclasses[ id(self) ] = self.__class__
@@ -92,10 +92,13 @@ class Spill(GnomeObject):
         """
         returns an spill_num that is not already in use
 
+        This approach will assure that all the spills within one python isntance have
+        unique spills numbers, but also that they will be small numbers.
+
         inefficient, but who cares?
         """
         spill_num = 1
-        while spill_num < 65536: # just so it will eventually terminate!
+        while spill_num < 65536: # just so it will eventually terminate! (and fit into an int16)
             if spill_num not in self.__all_spill_nums:
                 self.spill_num = spill_num
                 self.__all_spill_nums.add(spill_num)
@@ -103,7 +106,7 @@ class Spill(GnomeObject):
             else:
                 spill_num+=1
         else:
-            raise ValueError("There are no more spill_nums aavailable to spills!")
+            raise ValueError("There are no more spill_nums available to spills!")
 
     def __del__(self):
         """
@@ -211,10 +214,6 @@ class SurfaceReleaseSpill(FloatingSpill):
         self.end_position = np.asarray(end_position, dtype=basic_types.world_point_type).reshape((3,))
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
-
-#        if windage_persist <= 0:
-#            # if it is anything less than 0, treat it as -1 flag
-#            self.update_windage(0)
 
         self.num_released = 0
         self.prev_release_pos = self.start_position

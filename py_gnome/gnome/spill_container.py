@@ -38,7 +38,7 @@ class SpillContainer(object):
     def __init__(self, uncertain=False):
         
         self.is_uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
-        self.is_active = True       # sets whether the spill is active or not
+        self.on = True       # sets whether the spill is active or not
         
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.reset()
