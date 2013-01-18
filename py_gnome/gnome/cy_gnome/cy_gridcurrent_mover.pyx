@@ -30,7 +30,7 @@ cdef class CyGridCurrentMover:
 #         return True
             
 
-    def text_read(self, time_grid_file, topology_file):
+    def text_read(self, time_grid_file, topology_file=None):
         """
         .. function::text_read
         

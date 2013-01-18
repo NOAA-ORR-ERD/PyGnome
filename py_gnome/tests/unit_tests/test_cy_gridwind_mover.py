@@ -150,17 +150,23 @@ class TestGridWindMover():
         """
         test move for a gridCurTime file (first time in file)
         """
-        time = datetime.datetime(2002, 11, 19, 1)
-        self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = r"SampleData/winds/gridWindTime.wnd"
+       # time = datetime.datetime(2002, 11, 19, 1)
+        time = datetime.datetime(2002, 1, 30, 1)
+        self.cm.model_time = time_utils.date_to_sec(time) 
+        #time_grid_file = r"SampleData/winds/gridWindTime.wnd"
+        time_grid_file = r"SampleData/winds/gridwind_ts.wnd"
         topology_file = r"SampleData/winds/WindSpeedDirSubsetTop.DAT"	
         self.gcm.text_read(time_grid_file,topology_file)
-        self.cm.ref[:]['long'] = (-9.936358) #for gridWind test
-        self.cm.ref[:]['lat'] = (42.801036)
+        #self.cm.ref[:]['long'] = (-9.936358) #for gridWind test
+        #self.cm.ref[:]['lat'] = (42.801036)
+        self.cm.ref[:]['long'] = (-119.861328) #for gridWind test
+        self.cm.ref[:]['lat'] = (34.130412)
         self.check_move()
         actual = np.empty((self.cm.num_le,), dtype=basic_types.world_point)
-        actual[:]['lat'] = (-1.943844444793926e-05)
-        actual[:]['long'] = (0.00010266066357533313)
+       # actual[:]['lat'] = (-1.943844444793926e-05)
+        #actual[:]['long'] = (0.00010266066357533313)
+        actual[:]['lat'] = (-0.0001765253714478036)
+        actual[:]['long'] = (0.00010508690731670587)
         actual[:]['z'] = (0.)
         tol = 1e-5
         np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 

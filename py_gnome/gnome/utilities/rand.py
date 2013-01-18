@@ -12,7 +12,7 @@ from math import sqrt
 
 
 ##fixme: change this to take the windage array as input parameter, then change in place
-def random_with_persistance(low, high, persistence=0, time_step=1, array_len=1):
+def random_with_persistance(low, high, persistence=0, time_step=1., array_len=1):
     """
     Used by gnome to generate a randomness between low and high, which is persistent for duration time_step
     
@@ -41,7 +41,7 @@ def random_with_persistance(low, high, persistence=0, time_step=1, array_len=1):
     
     if persistence > 0:
         orig = high - low
-        range = orig * sqrt( persistence/time_step)
+        range = orig * sqrt( float(persistence)/float(time_step))
         mean = (high + low)/2.
         
         # update the bounds for generating the random number 

@@ -166,19 +166,6 @@ class SpillContainer(object):
                     else:
                         self._data_arrays[name] = new_data[name]
 
-    def update_windage(self, time_step):
-        ##fixme: this really doesn't seem to belonge here.
-        ##       regardless, we need to know the windage_ranges....
-        """
-        Update windage for each LE for each time step
-        May want to cythonize this to speed it up
-        """
-        self['windages'][:] = rand.random_with_persistance(self.windage_range[0],
-                                                          self.windage_range[1],
-                                                          self.windage_persist,
-                                                          time_step,
-                                                          array_len=self.num_LEs)
-
 
     def __str__(self):
         msg = "gnome.spill_container.SpillContainer\nspill LE attributes: %s"%self._data_arrays.keys()

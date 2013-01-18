@@ -85,7 +85,7 @@ class Spill(GnomeObject):
                                 'next_positions': ( (3,), basic_types.world_point_type),
                                 'last_water_positions': ( (3,), basic_types.world_point_type),
                                 'status_codes': ( (), basic_types.status_code_type),
-                                'spill_spill_num': ( (), basic_types.id_type)
+                                'spill_num': ( (), basic_types.id_type)
                                 })
 
     def __set_spill_num(self):
@@ -144,7 +144,7 @@ class Spill(GnomeObject):
         initilize the new elements just created
         This is probably need to be extended by subclasses
         """
-        arrays['spill_spill_num'][:] = self.spill_num
+        arrays['spill_num'][:] = self.spill_num
         arrays['status_codes'][:] = basic_types.oil_status.in_water
 
 class FloatingSpill(Spill):
@@ -167,19 +167,6 @@ class FloatingSpill(Spill):
         super(FloatingSpill, cls).add_array_types()
         cls._array_info['windages'] = ( (), basic_types.windage_type )
 
-    ##fixme: where does this go????
-    @classmethod
-    def update_windage(self, windages, time_step):
-        """
-        Update windage for each LE for each time step
-        May want to cythonize this to speed it up
-        """
-        windages[:] = rand.random_with_persistance(self.windage_range[0],
-                                                           self.windage_range[1],
-                                                           self.windage_persist,
-                                                           time_step,
-                                                           array_len=len(wiindages),
-                                                           )
 
 class SurfaceReleaseSpill(FloatingSpill):
     """

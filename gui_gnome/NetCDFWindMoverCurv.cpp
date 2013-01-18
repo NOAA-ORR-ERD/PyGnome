@@ -184,6 +184,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 		
 		strcpy(fFileName, modelTypeStr); 
 	}
+	//SetClassName(fFileName); //first check that name is now the default and not set by command file ("NetCDF Wind")
 	
 	//if (fIsNavy)
 	{
