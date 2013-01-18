@@ -40,30 +40,30 @@ public:
 	LONGH			fBoundaryTypeH;		// 1 land, 2 water
 	LONGH			fBoundaryPointsH;	// for curvilinear grids
 
-	Boolean			bDrawLandBitMap;
-	Boolean			bDrawWaterBitMap;
+	//Boolean			bDrawLandBitMap;
+	//Boolean			bDrawWaterBitMap;
 	
 public:
-	Boolean			bShowGrid;
-	Boolean			bShowDepthContours;
+	//Boolean			bShowGrid;
+	//Boolean			bShowDepthContours;
 	short			fGridType;
 	short			fVerticalGridType;
-	Rect			fLegendRect;
-	Boolean			bShowLegend;
-	short			fDiagnosticStrType;		// 0 no diagnostic string, 1 tri area, 2 num LEs, 3 conc levels, 4 depths, 5 subsurface particles
-	Boolean			bDrawContours;
-	DOUBLEH			fContourLevelsH;
+	//Rect			fLegendRect;
+	//Boolean			bShowLegend;
+	//short			fDiagnosticStrType;		// 0 no diagnostic string, 1 tri area, 2 num LEs, 3 conc levels, 4 depths, 5 subsurface particles
+	//Boolean			bDrawContours;
+	//DOUBLEH			fContourLevelsH;
 	
-	long			fWaterDensity;
-	double			fMixedLayerDepth;
-	double			fBreakingWaveHeight;
+	//long			fWaterDensity;
+	//double			fMixedLayerDepth;
+	//double			fBreakingWaveHeight;
 		
-	Boolean			bUseSmoothing;
-	Boolean			bUseLineCrossAlgorithm;
+	//Boolean			bUseSmoothing;
+	//Boolean			bUseLineCrossAlgorithm;
 	float			fMinDistOffshore;	// set how far LEs reflect off shoreline, so they don't get stuck
 	//Boolean			bShowElapsedTime;	// should be a model field
-	short			fWaveHtInput;	// 0 from wind speed, 1 breaking wave height measure, 2 significant wave height measure
-	DropletInfoRecH	fDropletSizesH;
+	//short			fWaveHtInput;	// 0 from wind speed, 1 breaking wave height measure, 2 significant wave height measure
+	//DropletInfoRecH	fDropletSizesH;
 	
 public:
 	Map3D_c (char* name, WorldRect bounds);
@@ -79,6 +79,7 @@ public:
 	virtual	LONGH 	GetBoundarySegs() { return fBoundarySegmentsH; }
 	virtual	LONGH 	GetWaterBoundaries() { return fBoundaryTypeH; }
 	virtual	LONGH 	GetBoundaryPoints() { return fBoundaryPointsH; }
+	
 	Boolean 	MoreSegments(LONGH segh,long *startIndex, long *endIndex,long *curIndex);
 	void			SetMinDistOffshore(WorldRect wBounds);
 	
@@ -90,7 +91,7 @@ public:
 
 	TMover* 		GetMover(ClassID desiredClassID);
 	TCurrentMover* 	Get3DCurrentMover();
-	double			GetSpillStartDepth();
+	//double			GetSpillStartDepth();
 	Boolean			ThereIsADispersedSpill();
 	TTriGridVel* 	GetGrid();
 	LongPointHdl 	GetPointsHdl();	
@@ -102,8 +103,8 @@ public:
 	virtual	double			DepthAtPoint(WorldPoint wp);
 	double 			DepthAtCentroid(long triNum);
 	WorldPoint3D 	TurnLEAlongShoreLine(WorldPoint3D waterPoint, WorldPoint3D beachedPoint, WorldPoint3D toPoint);
-	double 			GetBreakingWaveHeight(void);
-	double 			GetMixedLayerDepth(void) {return fMixedLayerDepth;}
+	//double 			GetBreakingWaveHeight(void);
+	//double 			GetMixedLayerDepth(void) {return fMixedLayerDepth;}
 	//OSErr 			GetDepthAtMaxTri(TOLEList *thisLEList,long *maxTriIndex,double *depthAtPnt);	
 	OSErr 			GetDepthAtMaxTri(long *maxTriIndex, double *depthAtPnt);	
 	virtual	long 	GetNumBoundarySegs(void);
@@ -115,12 +116,10 @@ public:
 	OSErr			SetUpTriangleGrid2(long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts, long *tri_verts, long *tri_neighbors);
 	OSErr			SetUpTriangleGrid(long numNodes, long numTri, WORLDPOINTFH vertexPtsH, FLOATH depthPtsH, long *bndry_indices, long *bndry_nums, long *bndry_type, long numBoundaryPts);
 
-	void	FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo);
-
 	Boolean 	IsBoundaryPoint(long pt);
-	virtual	long 	GetNumContourLevels(void);
+	//virtual	long 	GetNumContourLevels(void);
 	virtual	float			GetMaxDepth2(void);
-	DropletInfoRecH	GetDropletSizesH(void) {return fDropletSizesH;}	
+	//DropletInfoRecH	GetDropletSizesH(void) {return fDropletSizesH;}	
 
 };
 
