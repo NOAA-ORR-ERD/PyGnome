@@ -15,7 +15,7 @@
                                            class_='type input-small')}
             <label>Units</label> ${h.select('units', units, velocity_unit_options, class_='units input-small')}
             <label class="checkbox">${h.checkbox('on', checked=mover.on)}
-                Active
+               On
             </label>
         </div>
     <div class="page-body">
@@ -112,7 +112,6 @@
                 ${defs.form_control(uncertain_angle_scale_units, label="Angle Scale Units")}
             </div>
             <div class="tab-pane active-range" id="${form_id}_active_range">
-                <% print mover.is_active_start %>
                 ${defs.datetime_control(mover.is_active_start, 'is_active_start', date_label="Active Start")}
                 ${defs.datetime_control(mover.is_active_stop, 'is_active_stop', date_label="Active Stop")}
             </div>

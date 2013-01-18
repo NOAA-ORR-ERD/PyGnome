@@ -257,6 +257,16 @@ define([
                 collection: this.windMovers
             });
 
+            this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
+                id: 'add_random_mover',
+                collection: this.randomMovers
+            });
+
+            this.editRandomMoverFormView = new forms.RandomMoverFormView({
+                id: 'edit_random_mover',
+                collection: this.randomMovers
+            });           
+
             this.addSurfaceReleaseSpillFormView = new forms.AddSurfaceReleaseSpillFormView({
                 id: 'add_surface_release_spill',
                 collection: this.surfaceReleaseSpills
@@ -274,9 +284,11 @@ define([
             this.formViews.add(this.addSpillFormView);
             this.formViews.add(this.addMapFormView);
             this.formViews.add(this.addWindMoverFormView);
+            this.formViews.add(this.addRandomMoverFormView);
             this.formViews.add(this.addSurfaceReleaseSpillFormView);
             this.formViews.add(this.modelSettingsFormView);
             this.formViews.add(this.editWindMoverFormView);
+            this.formViews.add(this.editRandomMoverFormView);
             this.formViews.add(this.editSurfaceReleaseSpillFormView);
             this.formViews.add(this.editMapFormView);
         },
@@ -295,6 +307,12 @@ define([
             this.windMovers = new models.WindMoverCollection(
                 this.options.windMovers, {
                     url: this.apiRoot + "/mover/wind"
+                }
+            );
+
+            this.randomMovers = new models.RandomMoverCollection(
+                this.options.randomMovers, {
+                    url: this.apiRoot + "/mover/random"
                 }
             );
 
@@ -569,7 +587,8 @@ define([
 
             var collections = {
                 'surface_release_spill': this.surfaceReleaseSpills,
-                'wind_mover': this.windMovers
+                'wind_mover': this.windMovers,
+                'random_mover': this.randomMovers
             };
 
             if (!_.has(collections, node.data.object_type)) {

@@ -9,7 +9,11 @@
                 </label>
 
                 <div class="controls">
-                    ${h.select('mover_type', 'add_wind_mover', (('add_wind_mover', 'Wind Mover'),))}
+                    <%
+                        mover_types = (('add_wind_mover', 'Wind Mover'),
+                                       ('add_random_mover', 'Random Mover'))
+                    %>
+                    ${h.select('mover_type', 'add_wind_mover', mover_types)}
                 </div>
             </div>
         </form>

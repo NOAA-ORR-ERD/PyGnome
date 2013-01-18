@@ -1,5 +1,6 @@
 import datetime
 
+from time import gmtime
 from gnome.utilities.time_utils import round_time
 from base import FunctionalTestBase
 
@@ -197,7 +198,6 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
                 'timeseries': timeseries,
                 'units': 'mps'
             },
-            'is_active': True,
             'uncertain_duration': 4,
             'uncertain_time_delay': 2,
             'uncertain_speed_scale': 2,
@@ -224,7 +224,7 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         resp = self.testapp.get(self.get_mover_url(mover_id))
 
-        self.assertEqual(resp.json['is_active'], True)
+        self.assertEqual(resp.json['on'], True)
         self.assertEqual(resp.json['wind']['units'], 'mps')
 
         winds = data['wind']['timeseries']
@@ -238,6 +238,10 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(resp.json['uncertain_time_delay'], data['uncertain_time_delay'])
         self.assertEqual(resp.json['uncertain_angle_scale'], data['uncertain_angle_scale'])
         self.assertEqual(resp.json['uncertain_angle_scale_units'], 'deg')
+        self.assertEqual(resp.json['is_active_start'],
+                         datetime.datetime(*gmtime(0)[:7]).isoformat())
+        self.assertEqual(resp.json['is_active_stop'],
+                         datetime.datetime.max.isoformat())
 
     def test_wind_mover_update(self):
         data = self.make_wind_mover_data()
@@ -259,6 +263,18 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(resp.json['wind']['timeseries'][0]['datetime'],
                          safe_now)
         self.assertEqual(resp.json['uncertain_duration'], 6.0)
+
+    def test_wind_mover_update_is_active_fields(self):
+        active_start = datetime.datetime.now().isoformat()
+        active_stop = datetime.datetime.now().isoformat()
+
+        data = self.make_wind_mover_data()
+        data['is_active_start'] = active_start
+        data['is_active_stop'] = active_stop
+        resp = self.testapp.post_json(self.collection_url, data)
+
+        self.assertEqual(resp.json['is_active_start'], active_start)
+        self.assertEqual(resp.json['is_active_stop'], active_stop)
 
     def test_wind_mover_delete(self):
         data = self.make_wind_mover_data()

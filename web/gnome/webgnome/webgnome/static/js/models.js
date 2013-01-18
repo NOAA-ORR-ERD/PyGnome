@@ -406,6 +406,13 @@ define([
     }, {
         MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
     });
+    
+    
+    var BaseCollection = Backbone.Collection.extend({
+        initialize: function (objs, opts) {
+            this.url = opts.url;
+        }       
+    });
 
 
     var Model = BaseModel.extend({
@@ -427,11 +434,7 @@ define([
 
 
     var SurfaceReleaseSpillCollection = Backbone.Collection.extend({
-        model: SurfaceReleaseSpill,
-
-        initialize: function(spills, opts) {
-            this.url = opts.url;
-        }
+        model: SurfaceReleaseSpill
     });
 
 
@@ -454,18 +457,21 @@ define([
             attrs = attrs || {};
             var timeseries = attrs['timeseries'] || [];
             this.set('timeseries', new WindValueCollection(timeseries));
-            console.log('wind init', attrs, this.get('timeseries'));
         }
     });
 
 
-    var WindMover = BaseModel.extend({
-        dateFields: ['is_active_start', 'is_active_stop'],
+    var BaseMover = BaseModel.extend({
+        dateFields: ['is_active_start', 'is_active_stop']
+    });
+
+
+    var WindMover = BaseMover.extend({
 
         /*
          If the user passed an object for `key`, as when setting multiple
          attributes at once, then make sure the 'wind' field is a `Wind`
-         object.
+         object.jkl
          */
         set: function(key, val, options) {
             if (key && _.isObject(key) && _.has(key, 'wind')) {
@@ -480,13 +486,17 @@ define([
     });
 
 
-    var WindMoverCollection = Backbone.Collection.extend({
-        model: WindMover,
-
-        initialize: function(movers, opts) {
-            this.url = opts.url;
-        }
+    var WindMoverCollection = BaseCollection.extend({
+        model: WindMover
     });
+    
+    
+    var RandomMover = BaseMover.extend({});
+    
+    
+    var RandomMoverCollection = BaseCollection.extend({
+        model: RandomMover
+    });   
 
 
     var Map = BaseModel.extend({
@@ -494,7 +504,7 @@ define([
             this.url = options.url;
         }
     });
-
+      
 
     return {
         TimeStep: TimeStep,
@@ -504,6 +514,8 @@ define([
         SurfaceReleaseSpillCollection: SurfaceReleaseSpillCollection,
         WindMover: WindMover,
         WindMoverCollection: WindMoverCollection,
+        RandomMover: RandomMover,
+        RandomMoverCollection: RandomMoverCollection,
         WindValue: WindValue,
         Map: Map
     };

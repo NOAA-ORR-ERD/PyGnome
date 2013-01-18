@@ -572,7 +572,7 @@ define([
 
         pixelsFromCoordinates: function(point) {
             var size = this.getSize();
-            var bounds = this.model.get('bounds');
+            var bounds = this.model.get('map_bounds');
 
             if (!size.height || !size.width) {
                 throw new MapViewException('No current image size detected.');
@@ -598,7 +598,7 @@ define([
 
         coordinatesFromPixels: function(point) {
             var size = this.getSize();
-            var bounds = this.model.get('bounds');
+            var bounds = this.model.get('map_bounds');
 
             if (!size.height || !size.width) {
                 throw new MapViewException('No current image size detected.');

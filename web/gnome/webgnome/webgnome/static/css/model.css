@@ -192,3 +192,6 @@ legend {
     width: 370px;
 }
 
+.show-compass {
+    color: blue!important;
+}

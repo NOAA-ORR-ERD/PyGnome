@@ -129,12 +129,16 @@ class WindSchema(MappingSchema):
                        default='m/s')
 
 
-class WindMoverSchema(MappingSchema):
-    default_name = 'Wind Mover'
-    wind = WindSchema()
+class BaseMoverSchema(MappingSchema):
     on = SchemaNode(Bool(), default=True, missing=True)
+#    active = SchemaNode(Bool(), default=None, missing=None)
     is_active_start = SchemaNode(LocalDateTime(), default=None, missing=None)
     is_active_stop = SchemaNode(LocalDateTime(), default=None, missing=None)
+
+
+class WindMoverSchema(BaseMoverSchema):
+    default_name = 'Wind Mover'
+    wind = WindSchema()
     name = SchemaNode(String(), default=default_name, missing=default_name)
     uncertain_duration = SchemaNode(Float(), default=3, validator=Range(min=0))
     uncertain_time_delay = SchemaNode(Float(), default=0, validator=Range(min=0))
@@ -142,6 +146,12 @@ class WindMoverSchema(MappingSchema):
     uncertain_angle_scale = SchemaNode(Float(), default=0.4, validator=Range(min=0))
     uncertain_angle_scale_units = SchemaNode(String(), default='rad', missing='rad',
                                              validator=OneOf(['rad', 'deg']))
+
+
+class RandomMoverSchema(BaseMoverSchema):
+    default_name = 'Random Mover'
+    name = SchemaNode(String(), default=default_name, missing=default_name)
+    diffusion_coef = SchemaNode(Float(), default=100000, missing=100000)
 
 
 class PositionSchema(TupleSchema):
@@ -157,13 +167,13 @@ class WindageRangeSchema(TupleSchema):
 
 class SurfaceReleaseSpillSchema(MappingSchema):
     default_name = 'Point Release Spill'
+    name = SchemaNode(String(), default=default_name, missing=default_name)
     num_elements = SchemaNode(Int(), default=0)
     release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now)
     start_position = PositionSchema(default=(0, 0, 0))
     windage_range = WindageRangeSchema(default=(0.01, 0.04))
     windage_persist = SchemaNode(Float(), default=900)
     is_active = SchemaNode(Bool(), default=True)
-    name = SchemaNode(String(), default=default_name, missing=default_name)
 
 
 class SurfaceReleaseSpillsSchema(SequenceSchema):

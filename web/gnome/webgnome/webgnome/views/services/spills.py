@@ -52,6 +52,7 @@ class SurfaceReleaseSpill(BaseResource):
         model = data.pop('model')
         spill = model.spills.get(self.id)
         spill.from_dict(data)
+        model.rewind()
 
         return spill.to_dict()
 

@@ -6,7 +6,7 @@
         <div class="page-body">
             <%
                 name = h.text('name', spill.name)
-                is_active = h.checkbox("active", checked=spill.is_active)
+                is_active = h.checkbox("is_active", checked=spill.is_active)
                 num_elements = h.text('num_elements', spill.num_elements, 'num_elements')
                 start_position_x = h.text('start_position_x', spill.start_position[0], class_="coordinate")
                 start_position_y = h.text('start_position_y', spill.start_position[1], class_="coordinate")

@@ -11,7 +11,7 @@ from pyramid.view import view_config
 
 from webgnome import schema, WebSurfaceReleaseSpill, WebWindMover
 from webgnome import util
-from webgnome.model_manager import WebMapFromBNA
+from webgnome.model_manager import WebMapFromBNA, WebRandomMover
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -36,13 +36,16 @@ def show_model(request):
     model_data = model.to_dict()
     surface_release_spills = model_data.pop('surface_release_spills')
     wind_movers = model_data.pop('wind_movers')
+    random_movers = model_data.pop('random_movers')
     model_settings = util.SchemaForm(schema.ModelSettingsSchema, model_data)
     map_data = model.map.to_dict() if model.map else None
     map_settings = util.SchemaForm(schema.MapSchema, map_data)
     default_wind_mover = util.SchemaForm(schema.WindMoverSchema)
     default_wind = util.SchemaForm(schema.WindSchema)
     default_wind_value = util.SchemaForm(schema.WindValueSchema)
+    default_random_mover = util.SchemaForm(schema.RandomMoverSchema)
     default_surface_release_spill = util.SchemaForm(schema.SurfaceReleaseSpillSchema)
+
 
     data = {
         'model': model_settings,
@@ -57,11 +60,13 @@ def show_model(request):
         'default_surface_release_spill': default_surface_release_spill,
         'default_wind': default_wind,
         'default_wind_value': default_wind_value,
+        'default_random_mover': default_random_mover,
 
         # JSON data to bootstrap the JS application.
         'map_data': util.to_json(map_data),
         'surface_release_spills': util.to_json(surface_release_spills),
         'wind_movers': util.to_json(wind_movers),
+        'random_movers': util.to_json(random_movers),
         'model_settings': util.to_json(model_data),
         'background_image_url': util.get_model_image_url(
             request, model, 'background_map.png')
@@ -103,7 +108,7 @@ def configure_long_island(request, model):
 
     start_time = model.start_time
 
-    r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
+    r_mover = WebRandomMover(diffusion_coef=500000)
     model.movers.add(r_mover)
 
     series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
