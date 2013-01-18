@@ -228,7 +228,11 @@ OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const 
 	//check to see that the time interval is loaded and set if necessary
 	if (!bActive) return noErr;
 	if (bIsFirstStep)
+	{
+		VelocityRec dummyValue;
 		fModelStartTime = model_time;
+		if (timeDep) err = timeDep->GetTimeValue(model_time,&dummyValue);
+	}
 	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
 	
 	if(err) goto done;
