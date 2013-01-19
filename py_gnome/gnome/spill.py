@@ -37,7 +37,8 @@ class Spill(GnomeObject):
     _array_info = {}
 
     __all_spill_nums = set() # set of all the in-use spill_nums
-    __all_subclasses = {} # keys are the instance spill_num -- values are the subclass object
+    __all_instances = {} # keys are the instance spill_num -- values are the subclass object
+
     def __init__(self, num_elements=0):
 
         self.num_elements = num_elements
@@ -45,7 +46,9 @@ class Spill(GnomeObject):
         self.is_active = True       # sets whether the spill is active or not
 
         self.__set_spill_num()
-        self.__all_subclasses[ id(self) ] = self.__class__
+        # note: this puts one entry for each instance, so there will be multiple entries for
+        # each subclass == but we need to know all of the instances
+        self.__all_instances[ id(self) ] = self.__class__
         Spill.reset_array_types()
 
     def __deepcopy__(self, memo=None):
@@ -62,6 +65,7 @@ class Spill(GnomeObject):
         """
         obj_copy = super(Spill, self).__deepcopy__(memo)
         obj_copy.__set_spill_num()
+        obj_copy.__all_instances[ id(obj_copy) ] = self.__class__
         return obj_copy
 
     def __copy__(self):
@@ -70,13 +74,29 @@ class Spill(GnomeObject):
         """
         obj_copy = super(Spill, self).__copy__()
         obj_copy.__set_spill_num()
+        obj_copy.__all_instances[ id(obj_copy) ] = self.__class__
         return obj_copy
+
+    def uncertain_copy(self):
+        """
+        Returns a copy of this spill for the uncertainty runs
+
+        The copy has eveything the same, including the spill_num,
+        but should have a new id.
+
+        Not much to this method, but it could be overridden to do something
+        fancier in the future or a subclass.
+        """
+        u_copy = super(Spill, self).__copy__()
+        u_copy.__all_instances[ id(u_copy) ] = self.__class__
+        return u_copy
 
 
     @classmethod
     def reset_array_types(cls):
         cls._array_info.clear()
-        for subclass in cls.__all_subclasses.values():
+        all_subclasses = set(cls.__all_instances.values())
+        for subclass in all_subclasses:
             subclass.add_array_types()
 
     @classmethod
@@ -114,8 +134,12 @@ class Spill(GnomeObject):
 
         removes its spill_num from Spill.__all_spill_nums and instance from Spill.__all_subclass_instances
         """
-        self.__all_spill_nums.remove(self.spill_num)
-        del self.__all_subclasses[ id(self) ]
+        try:
+            self.__all_spill_nums.remove(self.spill_num)
+        except KeyError:
+            # this one is already deleted (uncertain spills have same spill_num)
+            pass
+        del self.__all_instances[ id(self) ]
 
     def reset(self):
         """
