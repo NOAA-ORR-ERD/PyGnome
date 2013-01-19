@@ -39,6 +39,12 @@ class Spill(GnomeObject):
     __all_spill_nums = set() # set of all the in-use spill_nums
     __all_instances = {} # keys are the instance spill_num -- values are the subclass object
 
+    def __new__(cls, *args, **kwargs):
+        print "Spill.__new__ called", cls
+        obj = super(Spill, cls).__new__(cls, *args, **kwargs)
+        cls.__all_instances[ id(obj) ] = cls
+        return obj
+
     def __init__(self, num_elements=0):
 
         self.num_elements = num_elements
@@ -48,7 +54,7 @@ class Spill(GnomeObject):
         self.__set_spill_num()
         # note: this puts one entry for each instance, so there will be multiple entries for
         # each subclass == but we need to know all of the instances
-        self.__all_instances[ id(self) ] = self.__class__
+        #self.__all_instances[ id(self) ] = self.__class__
         Spill.reset_array_types()
 
     def __deepcopy__(self, memo=None):
@@ -65,7 +71,7 @@ class Spill(GnomeObject):
         """
         obj_copy = super(Spill, self).__deepcopy__(memo)
         obj_copy.__set_spill_num()
-        obj_copy.__all_instances[ id(obj_copy) ] = self.__class__
+        #obj_copy.__all_instances[ id(obj_copy) ] = self.__class__
         return obj_copy
 
     def __copy__(self):
@@ -74,7 +80,7 @@ class Spill(GnomeObject):
         """
         obj_copy = super(Spill, self).__copy__()
         obj_copy.__set_spill_num()
-        obj_copy.__all_instances[ id(obj_copy) ] = self.__class__
+        #obj_copy.__all_instances[ id(obj_copy) ] = self.__class__
         return obj_copy
 
     def uncertain_copy(self):
@@ -88,7 +94,7 @@ class Spill(GnomeObject):
         fancier in the future or a subclass.
         """
         u_copy = super(Spill, self).__copy__()
-        u_copy.__all_instances[ id(u_copy) ] = self.__class__
+        #u_copy.__all_instances[ id(u_copy) ] = self.__class__
         return u_copy
 
 
