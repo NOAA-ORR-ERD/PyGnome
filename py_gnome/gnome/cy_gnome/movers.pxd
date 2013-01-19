@@ -109,15 +109,12 @@ cdef extern from "CATSMover_c.h":
         #=======================================================================
         #TCM_OPTIMZE     fOptimize
        
-        #int   ReadTopology(char* path, Map_c **newMap)    # what is this for? Do we want to expose? What is Map_c?
+        int   ReadTopology(char* path)
         void  SetRefPosition (WorldPoint , long )    # Could we use WorldPoint3D for this?
         #OSErr ComputeVelocityScale(Seconds&)    # seems to require TMap, TCATSMover
        
-        OSErr PrepareForModelRun()
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
         void  SetTimeDep(OSSMTimeValue_c *ossm)
-        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step, bool uncertain, int numLESets, int* LESetsSizesList)    # currently this happens in C++ get_move command
-        void  ModelStepIsDone()
        
 
 cdef extern from "GridCurrentMover_c.h":

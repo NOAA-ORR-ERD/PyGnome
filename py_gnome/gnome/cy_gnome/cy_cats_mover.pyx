@@ -1,8 +1,8 @@
 cimport numpy as cnp
 import numpy as np
+import os
 
 from type_defs cimport *
-
 from movers cimport CATSMover_c,Mover_c
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
@@ -79,14 +79,16 @@ cdef class CyCatsMover(cy_mover.CyMover):
         p.pLat = ref_point[1]*10**6
         self.cats.SetRefPosition(p, 0)
             
-    #===========================================================================
-    # TODO: don't have map - is this required?
-    # def read_topology(self, path):
-    #    cdef Map_c **naught
-    #    if(self.cats.ReadTopology(path, naught)):
-    #        return False
-    #    return True
-    #===========================================================================
+    def read_topology(self, path):
+        cdef OSErr err
+        if os.path.exists(path):
+            err = self.cats.ReadTopology(path)
+            if err != False:
+                raise ValueError("CATSMover.ReadTopology(..) returned an error. OSErr: {0}".format(err))
+        else:
+            raise IOError("No such file: " + path)
+        
+        return True
     
 #===============================================================================
 #    def prepare_for_model_run(self):
