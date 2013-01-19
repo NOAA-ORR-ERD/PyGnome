@@ -31,6 +31,10 @@ ul.dynatree-container {
     padding-top: 0;
 }
 
+#main-content {
+    margin-left: 10px;
+}
+
 .ui-slider .ui-slider-handle {
     height: 1em;
 }
@@ -184,3 +188,10 @@ legend {
     max-height: 800px;
 }
 
+.form.wind .span4 {
+    width: 370px;
+}
+
+.show-compass {
+    color: blue!important;
+}

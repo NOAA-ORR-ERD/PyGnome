@@ -40,14 +40,19 @@ define([
             });
 
             this.sidebarEl = '#sidebar';
-            $(this.sidebarEl).resizable({handles: 'e, w'});
+            $(this.sidebarEl).resizable({
+                handles: 'e, w',
+                resize: function (event, ui) {
+                    $(this).css("height", '100%');
+                }
+            });
 
             this.treeView = new views.TreeView({
                 treeEl: "#tree",
                 apiRoot: this.apiRoot,
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
-                pointReleaseSpills: this.pointReleaseSpills,
+                surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers,
                 map: this.map
             });
@@ -90,7 +95,7 @@ define([
             this.messageView = new views.MessageView({
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
-                pointReleaseSpills: this.pointReleaseSpills,
+                surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers
             });
 
@@ -108,12 +113,13 @@ define([
 
         setupEventHandlers: function() {
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.SERVER_RESET, this.rewind);
 
-            this.pointReleaseSpills.on("sync", this.spillUpdated);
-            this.pointReleaseSpills.on('sync', this.drawSpills);
+            this.surfaceReleaseSpills.on("sync", this.spillUpdated);
+            this.surfaceReleaseSpills.on('sync', this.drawSpills);
 
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
-            this.editPointReleaseSpillFormView.on(forms.PointReleaseSpillFormView.CANCELED, this.drawSpills);
+            this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
@@ -164,7 +170,7 @@ define([
         },
 
         drawSpills: function() {
-            this.mapView.drawSpills(this.pointReleaseSpills);
+            this.mapView.drawSpills(this.surfaceReleaseSpills);
         },
 
         setupKeyboardHandlers: function() {
@@ -198,7 +204,7 @@ define([
 
             Mousetrap.bind('n p', function() {
                 _this.formViews.hideAll();
-                _this.showFormWithId('add_point_release_spill');
+                _this.showFormWithId('add_surface_release_spill');
             });
 
             Mousetrap.bind('s f', function() {
@@ -251,14 +257,24 @@ define([
                 collection: this.windMovers
             });
 
-            this.addPointReleaseSpillFormView = new forms.AddPointReleaseSpillFormView({
-                id: 'add_point_release_spill',
-                collection: this.pointReleaseSpills
+            this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
+                id: 'add_random_mover',
+                collection: this.randomMovers
             });
 
-            this.editPointReleaseSpillFormView = new forms.PointReleaseSpillFormView({
-                id: 'edit_point_release_spill',
-                collection: this.pointReleaseSpills
+            this.editRandomMoverFormView = new forms.RandomMoverFormView({
+                id: 'edit_random_mover',
+                collection: this.randomMovers
+            });           
+
+            this.addSurfaceReleaseSpillFormView = new forms.AddSurfaceReleaseSpillFormView({
+                id: 'add_surface_release_spill',
+                collection: this.surfaceReleaseSpills
+            });
+
+            this.editSurfaceReleaseSpillFormView = new forms.SurfaceReleaseSpillFormView({
+                id: 'edit_surface_release_spill',
+                collection: this.surfaceReleaseSpills
             });
 
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
@@ -268,10 +284,12 @@ define([
             this.formViews.add(this.addSpillFormView);
             this.formViews.add(this.addMapFormView);
             this.formViews.add(this.addWindMoverFormView);
-            this.formViews.add(this.addPointReleaseSpillFormView);
+            this.formViews.add(this.addRandomMoverFormView);
+            this.formViews.add(this.addSurfaceReleaseSpillFormView);
             this.formViews.add(this.modelSettingsFormView);
             this.formViews.add(this.editWindMoverFormView);
-            this.formViews.add(this.editPointReleaseSpillFormView);
+            this.formViews.add(this.editRandomMoverFormView);
+            this.formViews.add(this.editSurfaceReleaseSpillFormView);
             this.formViews.add(this.editMapFormView);
         },
 
@@ -280,15 +298,21 @@ define([
                 url: this.apiRoot + '/map'
             });
 
-            this.pointReleaseSpills = new models.PointReleaseSpillCollection(
-                this.options.pointReleaseSpills, {
-                    url: this.apiRoot + "/spill/point_release"
+            this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
+                this.options.surfaceReleaseSpills, {
+                    url: this.apiRoot + "/spill/surface_release"
                 }
             );
 
             this.windMovers = new models.WindMoverCollection(
                 this.options.windMovers, {
                     url: this.apiRoot + "/mover/wind"
+                }
+            );
+
+            this.randomMovers = new models.RandomMoverCollection(
+                this.options.randomMovers, {
+                    url: this.apiRoot + "/mover/random"
                 }
             );
 
@@ -426,7 +450,6 @@ define([
         },
 
         sliderChanged: function(newStepNum) {
-
             // No need to do anything if the slider is on the current time step.
             if (newStepNum === this.modelRun.currentTimeStep) {
                 return;
@@ -563,8 +586,9 @@ define([
             }
 
             var collections = {
-                'point_release_spill': this.pointReleaseSpills,
-                'wind_mover': this.windMovers
+                'surface_release_spill': this.surfaceReleaseSpills,
+                'wind_mover': this.windMovers,
+                'random_mover': this.randomMovers
             };
 
             if (!_.has(collections, node.data.object_type)) {

@@ -22,6 +22,10 @@ class Map3D : virtual public Map3D_c,  public TMap
 
 public:
 	
+	Boolean			bDrawLandBitMap;
+	Boolean			bDrawWaterBitMap;
+	Boolean			bShowDepthContours;
+	
 #ifdef IBM
 	HDIB			fWaterBitmap;
 	HDIB			fLandBitmap;
@@ -49,6 +53,8 @@ public:
 	virtual WorldPoint3D	MovementCheck2 (WorldPoint3D fromWPt, WorldPoint3D toWPt, Boolean isDispersed);
 	
 	void 	FindNearestBoundary(Point where, long *verNum, long *segNo);
+	void	FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo);
+	
 
 	virtual void	Draw (Rect r, WorldRect view);
 	virtual void 	DrawBoundaries(Rect r);

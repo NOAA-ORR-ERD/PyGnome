@@ -43,7 +43,7 @@ class Spill(GnomeObject):
 
         self.num_elements = num_elements
 
-        self.is_active = True       # sets whether the spill is active or not
+        self.on = True       # sets whether the spill is active or not
 
         self.__set_spill_num()
         # note: this puts one entry for each instance, so there will be multiple entries for

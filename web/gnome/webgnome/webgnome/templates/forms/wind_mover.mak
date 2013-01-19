@@ -12,10 +12,10 @@
             <label>Type</label> ${h.select('type', 'constant', (
                                            ('constant-wind', 'Constant'),
                                            ('variable-wind', 'Variable')),
-                                           class_='type')}
-            <label>Units</label> ${h.select('units', units, velocity_unit_options, class_='units')}
-            <label class="checkbox">${h.checkbox('is_active', checked=mover.is_active)}
-                Active
+                                           class_='type input-small')}
+            <label>Units</label> ${h.select('units', units, velocity_unit_options, class_='units input-small')}
+            <label class="checkbox">${h.checkbox('on', checked=mover.on)}
+               On
             </label>
         </div>
     <div class="page-body">
@@ -28,12 +28,13 @@
                 <a href="#${form_id}_wind" data-toggle="tab">Wind Data</a>
             </li>
             <li><a href="#${form_id}_uncertainty" data-toggle="tab">Uncertainty</a></li>
+            <li><a href="#${form_id}_active_range" data-toggle="tab">Active Time Range</a></li>
         </ul>
 
         <div class="tab-content">
             <div class="tab-pane active wind" id="${form_id}_wind">
                 <div class="constant-wind">
-                    <div class="span4 add-time-forms">
+                    <div class="span3 add-time-forms">
                         <%
                             wind = winds[0] if winds else default_wind_value
                         %>
@@ -41,13 +42,10 @@
                         <%include file="wind_form.mak" args="wind=wind"/>
                         </div>
                     </div>
-                    <div class="compass-container span3 offset1">
-                        <div id="${form_id}_compass_add" class="compass"></div>
-                    </div>
                 </div>
 
                 <div class="variable-wind hidden">
-                    <div class="span4 add-time-forms">
+                    <div class="span3 add-time-forms">
                         <div class='time-form add-time-form'>
                             <%
                                 auto_increment_by = h.text('auto_increment_by', 6,
@@ -74,10 +72,6 @@
                                     </button>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="compass-container">
-                            <div id="${form_id}_compass_edit" class="compass"></div>
                         </div>
                     </div>
 
@@ -117,7 +111,15 @@
                 ${defs.form_control(uncertain_angle_scale, label="Angle Scale")}
                 ${defs.form_control(uncertain_angle_scale_units, label="Angle Scale Units")}
             </div>
+            <div class="tab-pane active-range" id="${form_id}_active_range">
+                ${defs.datetime_control(mover.active_start, 'active_start', date_label="Active Start")}
+                ${defs.datetime_control(mover.active_stop, 'active_stop', date_label="Active Stop")}
+            </div>
         </div>
+    </div>
+
+    <div class="compass-container">
+        <div id="${form_id}_compass_add" class="compass"></div>
     </div>
 
     <!-- A template for time series item rows. -->

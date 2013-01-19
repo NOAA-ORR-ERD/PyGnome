@@ -1,5 +1,6 @@
 import datetime
 
+from time import gmtime
 from gnome.utilities.time_utils import round_time
 from base import FunctionalTestBase
 
@@ -23,14 +24,14 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
         data = resp.json_body
         iso_rounded_now = round_time(datetime.datetime.now(), 3600).isoformat()
 
-        self.assertEqual(data['uncertain'], False)
+        self.assertEqual(data['is_uncertain'], False)
         self.assertEqual(data['start_time'], iso_rounded_now)
-        self.assertEqual(data['time_step'], 900.0)
+        self.assertEqual(data['time_step'], 0.25)
         self.assertEqual(data['duration_days'], 2)
         self.assertEqual(data['duration_hours'], 0)
 
         # We did not specify to include movers or spills.
-        self.assertNotIn('point_release_spills', data)
+        self.assertNotIn('surface_release_spills', data)
         self.assertNotIn('wind_movers', data)
 
     def test_get_model_includes_movers_if_requested(self):
@@ -45,7 +46,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.get(self.model_url('?include_spills=1'), status=200)
         data = resp.json_body
 
-        self.assertEqual(data['point_release_spills'], [])
+        self.assertEqual(data['surface_release_spills'], [])
 
     def test_get_model_returns_404_if_model_does_not_exist(self):
         resp = self.testapp.get('/model/234343', status=404)
@@ -73,7 +74,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         data = {
             'start_time': start.isoformat(),
-            'uncertain': True,
+            'is_uncertain': True,
             'time_step': 200,
             'duration_days': 20,
             'duration_hours': 1
@@ -84,7 +85,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         resp = self.testapp.get(self.base_url)
 
-        self.assertEqual(resp.json_body['uncertain'], True)
+        self.assertEqual(resp.json_body['is_uncertain'], True)
         self.assertEqual(resp.json_body['start_time'], start.isoformat())
         self.assertEqual(resp.json_body['time_step'], 200.0)
         self.assertEqual(resp.json_body['duration_days'], 20)
@@ -102,11 +103,7 @@ class ModelRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
         # Post to runner URL to get the first step.
         resp = self.testapp.post_json(self.model_url('runner'))
         data = resp.json_body
-        self.assertEqual(data['map_bounds'],
-                         [[-73.083328, 40.922832], [-73.083328, 41.330833],
-                          [-72.336334, 41.330833], [-72.336334, 40.922832]])
         self.assertIn('foreground_00000.png', data['time_step']['url'])
-        self.assertIn('background_map.png', data['background_image'])
         self.assertEqual(data['time_step']['id'], 0)
 
     def test_get_additional_steps(self):
@@ -201,7 +198,6 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
                 'timeseries': timeseries,
                 'units': 'mps'
             },
-            'is_active': True,
             'uncertain_duration': 4,
             'uncertain_time_delay': 2,
             'uncertain_speed_scale': 2,
@@ -228,7 +224,7 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         resp = self.testapp.get(self.get_mover_url(mover_id))
 
-        self.assertEqual(resp.json['is_active'], True)
+        self.assertEqual(resp.json['on'], True)
         self.assertEqual(resp.json['wind']['units'], 'mps')
 
         winds = data['wind']['timeseries']
@@ -242,6 +238,10 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(resp.json['uncertain_time_delay'], data['uncertain_time_delay'])
         self.assertEqual(resp.json['uncertain_angle_scale'], data['uncertain_angle_scale'])
         self.assertEqual(resp.json['uncertain_angle_scale_units'], 'deg')
+        self.assertEqual(resp.json['active_start'],
+                         datetime.datetime(*gmtime(0)[:7]).isoformat())
+        self.assertEqual(resp.json['active_stop'],
+                         datetime.datetime.max.isoformat())
 
     def test_wind_mover_update(self):
         data = self.make_wind_mover_data()
@@ -251,7 +251,6 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         safe_now = self.get_safe_date(datetime.datetime.now())
         data['wind']['timeseries'][0]['direction'] = 120
         data['wind']['timeseries'][0]['datetime'] = safe_now
-        data['is_active'] = False
         data['uncertain_duration'] = 6
 
         resp = self.testapp.put_json(self.get_mover_url(mover_id), data)
@@ -263,8 +262,19 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
                          data['wind']['timeseries'][0]['direction'])
         self.assertEqual(resp.json['wind']['timeseries'][0]['datetime'],
                          safe_now)
-        self.assertEqual(resp.json['is_active'], False)
         self.assertEqual(resp.json['uncertain_duration'], 6.0)
+
+    def test_wind_mover_update_is_active_fields(self):
+        active_start = datetime.datetime.now().isoformat()
+        active_stop = datetime.datetime.now().isoformat()
+
+        data = self.make_wind_mover_data()
+        data['active_start'] = active_start
+        data['active_stop'] = active_stop
+        resp = self.testapp.post_json(self.collection_url, data)
+
+        self.assertEqual(resp.json['active_start'], active_start)
+        self.assertEqual(resp.json['active_stop'], active_stop)
 
     def test_wind_mover_delete(self):
         data = self.make_wind_mover_data()
@@ -279,11 +289,11 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.testapp.get(mover_url, status=404)
 
 
-class PointReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
+class SurfaceReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
     def setUp(self):
-        super(PointReleaseSpillServiceTests, self).setUp()
+        super(SurfaceReleaseSpillServiceTests, self).setUp()
         self.create_model()
-        self.collection_url = self.model_url('/spill/point_release')
+        self.collection_url = self.model_url('/spill/surface_release')
 
     def get_spill_url(self, spill_id):
         return str('%s/%s' % (self.collection_url, spill_id))
@@ -294,12 +304,12 @@ class PointReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         data = {
             'is_active': True,
             'release_time': now.isoformat(),
-            'num_LEs': 900,
+            'num_elements': 900,
             'name': 'Point Release Spill',
             'start_position': [10, 100, 0],
-            'windage': [1.2, 4.2],
-            'persist': 900,
-            'uncertain': False
+            'windage_range': [1.2, 4.2],
+            'windage_persist': 900,
+            'is_uncertain': False
         }
 
         if kwargs:
@@ -326,12 +336,12 @@ class PointReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         data['is_active'] = False
         data['release_Time'] = datetime.datetime.now().isoformat()
 
-        mover_url = self.get_spill_url(spill_id)
+        spill_url = self.get_spill_url(spill_id)
 
-        resp = self.testapp.put_json(mover_url, data)
+        resp = self.testapp.put_json(spill_url, data)
         self.assertTrue(resp.json['id'])
 
-        resp = self.testapp.get(mover_url)
+        resp = self.testapp.get(spill_url)
         self.assertEqual(resp.json['release_time'], data['release_time'])
 
     def test_spill_delete(self):

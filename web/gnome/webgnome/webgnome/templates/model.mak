@@ -74,15 +74,15 @@
       </div>
     </div>
 
-    <div id="main-content">
-         <div class="btn-toolbar">
-              <div class="btn-group">
-                  <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
-              </div>
-              <div class="btn-group">
-                  <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
-              </div>
-              <div class="btn-group">
+    <div id="main-content" class="row">
+        <div class="btn-toolbar">
+            <div class="btn-group">
+                <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
+            </div>
+            <div class="btn-group">
+                <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
+            </div>
+            <div class="btn-group">
                 <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
                 <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
                 <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
@@ -90,14 +90,18 @@
             </div>
             <div class="btn-group">
                 <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
+
                 <div class="btn disabled" id="slider-container">
-                    <span id="time">00:00</span> <div id="slider"></div>
+                    <span id="time">00:00</span>
+
+                    <div id="slider"></div>
                 </div>
                 <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
                 <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
                 <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
             </div>
         </div>
+
 
         <div id="map">
         </div>
@@ -113,16 +117,24 @@
         <%include file="forms/add_map.mak"/>
         <%include file="forms/map.mak" args="map=_map"/>
         <%include file="forms/model_settings.mak" args="model=model"/>
+
+        ## Mover forms
         <%include file="forms/wind_mover.mak"
             args="mover=default_wind_mover, default_wind=default_wind,
                   default_wind_value=default_wind_value, form_id='add_wind_mover'"/>
         <%include file="forms/wind_mover.mak"
             args="mover=default_wind_mover, default_wind=default_wind,
                   default_wind_value=default_wind_value, form_id='edit_wind_mover'"/>
-        <%include file="forms/point_release_spill.mak"
-            args="spill=default_point_release_spill, form_id='add_point_release_spill'"/>
-         <%include file="forms/point_release_spill.mak"
-            args="spill=default_point_release_spill, form_id='edit_point_release_spill'"/>
+         <%include file="forms/random_mover.mak"
+            args="mover=default_random_mover, form_id='add_random_mover'"/>
+         <%include file="forms/random_mover.mak"
+            args="mover=default_random_mover, form_id='edit_random_mover'"/>
+
+        ## Spill forms
+        <%include file="forms/surface_release_spill.mak"
+            args="spill=default_surface_release_spill, form_id='add_surface_release_spill'"/>
+        <%include file="forms/surface_release_spill.mak"
+            args="spill=default_surface_release_spill, form_id='edit_surface_release_spill'"/>
     </div>
 </%block>
 
@@ -150,8 +162,9 @@
                     expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                     backgroundImageUrl: "${background_image_url | n}",
                     currentTimeStep: ${current_time_step},
-                    pointReleaseSpills: ${point_release_spills | n},
+                    surfaceReleaseSpills: ${surface_release_spills | n},
                     windMovers: ${wind_movers | n},
+                    randomMovers: ${random_movers | n},
                     modelId: "${model_id}",
                     modelSettings: ${model_settings | n},
                     map: ${map_data | n},

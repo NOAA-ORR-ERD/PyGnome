@@ -108,14 +108,23 @@ define([
             }
 
             this.dirty = false;
-            this.expectedTimeSteps = data.expected_time_steps;
 
-            if (_.has(data, 'time_step')) {
-                this.addTimeStep(data.time_step)                ;
+            var isFirstStep = data.time_step.id === 0;
+
+            // The Gnome model was reset on the server without our knowledge,
+            // so reset the client-side model to stay in sync.
+            if (isFirstStep && this.currentTimeStep) {
+                this.rewind();
+                this.trigger(ModelRun.SERVER_RESET);
             }
 
-            this.trigger(ModelRun.RUN_BEGAN, data);
-            this.getNextTimeStep();
+            this.addTimeStep(data.time_step);
+
+            if (isFirstStep) {
+                this.expectedTimeSteps = data.expected_time_steps;
+                this.trigger(ModelRun.RUN_BEGAN, data);
+            }
+
             return true;
         },
 
@@ -259,30 +268,10 @@ define([
             $.ajax({
                 type: "GET",
                 url: this.url,
-                success: this.timeStepRequestSuccess,
+                success: this.runSuccess,
                 error: this.timeStepRequestFailure
             });
         },
-
-        timeStepRequestSuccess: function(data) {
-            var message = util.parseMessage(data);
-
-            if (message) {
-                this.trigger(ModelRun.MESSAGE_RECEIVED, message);
-
-                if (message.error) {
-                    this.trigger(ModelRun.RUN_ERROR);
-                    return;
-                }
-            }
-
-            if (!data.time_step) {
-                this.trigger(ModelRun.RUN_ERROR);
-                return;
-            }
-
-            this.addTimeStep(data.time_step);
-       },
 
        timeStepRequestFailure: function(xhr, textStatus, errorThrown) {
            if (xhr.status === 500) {
@@ -356,7 +345,8 @@ define([
         RUN_FINISHED: 'model:modelRunFinished',
         RUN_ERROR: 'model:runError',
         NEXT_TIME_STEP_READY: 'model:nextTimeStepReady',
-        MESSAGE_RECEIVED: 'model:messageReceived'
+        MESSAGE_RECEIVED: 'model:messageReceived',
+        SERVER_RESET: 'model:serverReset'
     });
 
 
@@ -416,6 +406,13 @@ define([
     }, {
         MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
     });
+    
+    
+    var BaseCollection = Backbone.Collection.extend({
+        initialize: function (objs, opts) {
+            this.url = opts.url;
+        }       
+    });
 
 
     var Model = BaseModel.extend({
@@ -431,17 +428,13 @@ define([
 
     // Spills
 
-    var PointReleaseSpill = BaseModel.extend({
+    var SurfaceReleaseSpill = BaseModel.extend({
         dateFields: ['release_time']
     });
 
 
-    var PointReleaseSpillCollection = Backbone.Collection.extend({
-        model: PointReleaseSpill,
-
-        initialize: function(spills, opts) {
-            this.url = opts.url;
-        }
+    var SurfaceReleaseSpillCollection = Backbone.Collection.extend({
+        model: SurfaceReleaseSpill
     });
 
 
@@ -461,21 +454,24 @@ define([
 
     var Wind = BaseModel.extend({
         initialize: function(attrs) {
-            var timeseries = [];
-            if (attrs && _.has(attrs, 'timeseries')) {
-                timeseries = attrs['timeseries'];
-                delete(attrs['timeseries']);
-            }
+            attrs = attrs || {};
+            var timeseries = attrs['timeseries'] || [];
             this.set('timeseries', new WindValueCollection(timeseries));
         }
     });
 
 
-    var WindMover = BaseModel.extend({
+    var BaseMover = BaseModel.extend({
+        dateFields: ['active_start', 'active_stop']
+    });
+
+
+    var WindMover = BaseMover.extend({
+
         /*
          If the user passed an object for `key`, as when setting multiple
          attributes at once, then make sure the 'wind' field is a `Wind`
-         object.
+         object.jkl
          */
         set: function(key, val, options) {
             if (key && _.isObject(key) && _.has(key, 'wind')) {
@@ -486,26 +482,21 @@ define([
 
             WindMover.__super__.set.apply(this, [key, val, options]);
             return this;
-        },
-
-        parse: function(response) {
-            var attrs = WindMover.__super__.parse.apply(this, [response]);
-            var wind = {};
-            if (attrs && _.has(attrs, 'wind')) {
-                attrs['wind'] = new Wind(wind);
-            }
-            return attrs;
         }
     });
 
 
-    var WindMoverCollection = Backbone.Collection.extend({
-        model: WindMover,
-
-        initialize: function(movers, opts) {
-            this.url = opts.url;
-        }
+    var WindMoverCollection = BaseCollection.extend({
+        model: WindMover
     });
+    
+    
+    var RandomMover = BaseMover.extend({});
+    
+    
+    var RandomMoverCollection = BaseCollection.extend({
+        model: RandomMover
+    });   
 
 
     var Map = BaseModel.extend({
@@ -513,16 +504,18 @@ define([
             this.url = options.url;
         }
     });
-
+      
 
     return {
         TimeStep: TimeStep,
         ModelRun: ModelRun,
         Model: Model,
-        PointReleaseSpill: PointReleaseSpill,
-        PointReleaseSpillCollection: PointReleaseSpillCollection,
+        SurfaceReleaseSpill: SurfaceReleaseSpill,
+        SurfaceReleaseSpillCollection: SurfaceReleaseSpillCollection,
         WindMover: WindMover,
         WindMoverCollection: WindMoverCollection,
+        RandomMover: RandomMover,
+        RandomMoverCollection: RandomMoverCollection,
         WindValue: WindValue,
         Map: Map
     };

@@ -23,8 +23,8 @@ define([
                 models.ModelRun.MESSAGE_RECEIVED, this.displayMessage);
             this.options.modelSettings.on(
                 models.Model.MESSAGE_RECEIVED, this.displayMessage);
-            this.options.pointReleaseSpills.on(
-                models.PointReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.surfaceReleaseSpills.on(
+                models.SurfaceReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
             this.options.windMovers.on(
                 models.WindMover.MESSAGE_RECEIVED, this.displayMessage);
 
@@ -572,7 +572,7 @@ define([
 
         pixelsFromCoordinates: function(point) {
             var size = this.getSize();
-            var bounds = this.model.get('bounds');
+            var bounds = this.model.get('map_bounds');
 
             if (!size.height || !size.width) {
                 throw new MapViewException('No current image size detected.');
@@ -598,7 +598,7 @@ define([
 
         coordinatesFromPixels: function(point) {
             var size = this.getSize();
-            var bounds = this.model.get('bounds');
+            var bounds = this.model.get('map_bounds');
 
             if (!size.height || !size.width) {
                 throw new MapViewException('No current image size detected.');
@@ -653,9 +653,9 @@ define([
             this.options.windMovers.on('sync', this.reload);
             this.options.windMovers.on('add', this.reload);
             this.options.windMovers.on('destroy', this.reload);
-            this.options.pointReleaseSpills.on('sync', this.reload);
-            this.options.pointReleaseSpills.on('add', this.reload);
-            this.options.pointReleaseSpills.on('destroy', this.reload);
+            this.options.surfaceReleaseSpills.on('sync', this.reload);
+            this.options.surfaceReleaseSpills.on('add', this.reload);
+            this.options.surfaceReleaseSpills.on('destroy', this.reload);
             this.options.modelSettings.on('sync', this.reload);
             this.options.map.on('sync', this.reload);
         },
@@ -672,6 +672,11 @@ define([
                     // isReloading is true if status was read from existing cookies.
                     // isError is only used in Ajax mode
                     this.reactivate();
+
+                     // Expand all items
+                    this.getRoot().visit(function (node) {
+                        node.expand(true);
+                    });
                 },
                 onDblClick: function(node, event) {
                     _this.trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
@@ -679,7 +684,7 @@ define([
                 initAjax: {
                     url: _this.url
                 },
-                persist: true
+                windage_persist: true
             });
         },
 
