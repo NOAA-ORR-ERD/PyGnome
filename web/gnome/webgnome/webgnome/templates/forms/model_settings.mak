@@ -1,37 +1,32 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="form, action_url"/>
+<%page args="model"/>
 
-<div class="form page hidden" id="${form.id}">
-    <div class="page-header">
-        <h3>Model Settings</h3>
-    </div>
+<div class="form page hide" id="model_settings" title="Model Settings">
     <div class="page-body">
-        <form action="${action_url}" class="form-horizontal model-settings" method="POST">
+        <form action="" class="form-horizontal model-settings" method="POST">
+            <%
+                duration_days = h.text('duration_days', model.duration_days, class_="input-extra-small")
+                duration_hours = h.text('duration_hours', model.duration_hours, class_="input-extra-small")
+                is_uncertain = h.checkbox('is_uncertain', checked=model.is_uncertain)
+                computation_time_step = h.text('time_step', model.time_step, class_="input-extra-small")
+            %>
 
-            ${defs.form_control(form.date, label="Model Start Date:")}
-            ${defs.time_control(form, "Model Start Time",  help_text="(24-hour)")}
+            ${defs.datetime_control(model.start_time, 'start_time',
+                                    date_label='Model Start Date',
+                                    hour_label='Model Start Time')}
 
-            <!-- Model duration control group -->
-            <div class="control-group ${'error' if form.duration_days.errors or form.duration_hours.errors else ''}">
+            <div class="control-group">
                 <label class="control-label" for="duration_days">Model
                     Run Duration:</label>
 
                 <div class="controls">
-                    ${form.duration_days} days and ${form.duration_hours(class_='hour')} hours
+                    ${duration_days} days and ${duration_hours} hours
                 </div>
             </div>
 
-            ${defs.form_control(form.uncertain)}
-            ${defs.form_control(form.show_currents)}
-            ${defs.form_control(form.computation_time_step, "hours")}
-            ${defs.form_control(form.prevent_land_jumping)}
-            ${defs.form_control(form.run_backwards)}
+            ${defs.form_control(is_uncertain, label='Include Uncertainty Solution')}
+            ${defs.form_control(computation_time_step, 'hours', label='Time Step')}
+
         </form>
     </div>
-        <div class="control-group form-buttons">
-            <div class="form-actions">
-                <button class="btn cancel"> Cancel </button>
-                <button class="btn btn-primary">Save</button>
-            </div>
-        </div>
 </div>

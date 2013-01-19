@@ -353,6 +353,7 @@
     save: function(key, val, options) {
       var attrs, current, done;
 
+
       // Handle both `"key", value` and `{key: value}` -style arguments.
       if (key == null || _.isObject(key)) {
         attrs = key;
@@ -376,6 +377,7 @@
 
       // Do not persist invalid models.
       if (!attrs && !this._validate(null, options)) return false;
+        var _this = this;
 
       // After a successful server-side save, the client is (optionally)
       // updated with the server-side state.
@@ -1382,7 +1384,9 @@
   // Useful when interfacing with server-side languages like **PHP** that make
   // it difficult to read the body of `PUT` requests.
   Backbone.sync = function(method, model, options) {
+
     var type = methodMap[method];
+
 
     // Default options, unless specified.
     _.defaults(options || (options = {}), {
@@ -1401,6 +1405,7 @@
     // Ensure that we have the appropriate request data.
     if (!options.data && model && (method === 'create' || method === 'update')) {
       params.contentType = 'application/json';
+
       params.data = JSON.stringify(model.toJSON(options));
     }
 
@@ -1422,6 +1427,7 @@
       };
     }
 
+
     // Don't process data on a non-GET request.
     if (params.type !== 'GET' && !options.emulateJSON) {
       params.processData = false;
@@ -1438,6 +1444,8 @@
       if (error) error(model, xhr, options);
       model.trigger('error', model, xhr, options);
     };
+
+
 
     // Make the request, allowing the user to override any Ajax options.
     return Backbone.ajax(_.extend(params, options));

@@ -92,7 +92,7 @@ class TestRandom():
         Test that the move is different from original move since diffusion coefficient is different
         use the py.test -s flag to view the difference between the two
         """
-        cy_helpers.reset_lib_random_seeds()   # reset all seeds
+        cy_helpers.srand(1)
         np.set_printoptions(precision=6)
         delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(delta)    # get the move before changing the coefficient
@@ -102,7 +102,7 @@ class TestRandom():
         self.rm.diffusion_coef = 10
         assert self.rm.diffusion_coef == 10
         
-        cy_helpers.reset_lib_random_seeds()   # reset all seeds
+        cy_helpers.srand(1)
         new_delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(new_delta)    # get the move after changing coefficient
         print
@@ -120,10 +120,10 @@ class TestRandom():
         """
         Since seed is not reset, the move should be repeatable
         """
-        cy_helpers.reset_lib_random_seeds()   # reset all seeds
+        cy_helpers.srand(1)
         delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(delta)
-        cy_helpers.reset_lib_random_seeds()   # reset all seeds
+        cy_helpers.srand(1)
         new_delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(new_delta)
         print

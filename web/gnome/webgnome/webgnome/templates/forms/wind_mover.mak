@@ -1,74 +1,68 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="form, action_url"/>
+<%page args="mover, default_wind, default_wind_value, form_id"/>
 
-<div class="wind form hidden" id="${form.id}">
-
-    <form action="${action_url}" id="wind_mover" class="form-horizontal"
-          method="POST">
-
-    <div class="page-header form-inline">
-        ${form.name}
-        <label>Units ${form.units(class_='units', id='')} </label>
-        <label class="checkbox">${form.is_active} Active </label>
-    </div>
+<div class="wind form page hide" id="${form_id}">
+    <form action="" class="form-horizontal" method="POST">
+        <div class="page-header form-inline">
+            <label>Name</label> ${h.text('name', mover.name)}
+            <%
+                from webgnome.util import velocity_unit_options
+                units = mover.wind.units if mover.wind else default_wind.units
+            %>
+            <label>Type</label> ${h.select('type', 'constant', (
+                                           ('constant-wind', 'Constant'),
+                                           ('variable-wind', 'Variable')),
+                                           class_='type input-small')}
+            <label>Units</label> ${h.select('units', units, velocity_unit_options, class_='units input-small')}
+            <label class="checkbox">${h.checkbox('on', checked=mover.on)}
+               On
+            </label>
+        </div>
     <div class="page-body">
         <%
-            constant_id = defs.uid('constant', form)
-            variable_id = defs.uid('variable', form)
-            uncertainty_id = defs.uid('uncertainty', form)
-            is_constant = form.instance is None or form.is_constant.data is True
-            is_variable = is_constant is False
+            winds = mover.wind.timeseries if mover.wind else []
         %>
 
         <ul class="nav nav-tabs">
-            <li class="${"active" if is_constant else ""}">
-                <a href="#${constant_id}" data-toggle="tab">Constant Wind</a>
+            <li class="active">
+                <a href="#${form_id}_wind" data-toggle="tab">Wind Data</a>
             </li>
-            <li class="${"active" if is_variable else ""}">
-                <a href="#${variable_id}" data-toggle="tab">Variable Wind</a>
-            </li>
-            <li><a href="#${uncertainty_id}" data-toggle="tab">Uncertainty</a></li>
+            <li><a href="#${form_id}_uncertainty" data-toggle="tab">Uncertainty</a></li>
+            <li><a href="#${form_id}_active_range" data-toggle="tab">Active Time Range</a></li>
         </ul>
 
         <div class="tab-content">
-                <div class="tab-pane constant-wind ${"active" if is_constant else ""}"
-                     id="${constant_id}">
-                <%
-                    add_form = form.timeseries[0]
-                %>
-
-                <div class="span6 add-time-forms">
-                    <div class='time-form add-time-form'>
-                        ${form.is_constant(class_='hidden')}
-                        <%include file="wind_form.mak" args="form=add_form"/>
+            <div class="tab-pane active wind" id="${form_id}_wind">
+                <div class="constant-wind">
+                    <div class="span3 add-time-forms">
+                        <%
+                            wind = winds[0] if winds else default_wind_value
+                        %>
+                        <div class='time-form add-time-form'>
+                        <%include file="wind_form.mak" args="wind=wind"/>
+                        </div>
                     </div>
                 </div>
-                <div class="compass-container span6">
-                    <div id="${defs.uid('compass_add', form)}" class="compass"></div>
-                </div>
-            </div>
 
-            <div class="tab-pane variable-wind ${"active" if is_variable else ""}"
-                 id="${variable_id}">
-                <%
-                    add_form = form.timeseries[-1]
-                %>
+                <div class="variable-wind hidden">
+                    <div class="span3 add-time-forms">
+                        <div class='time-form add-time-form'>
+                            <%
+                                auto_increment_by = h.text('auto_increment_by', 6,
+                                                        class_='auto_increment_by')
+                            %>
+                            <%include file="wind_form.mak" args="wind=default_wind_value, is_variable=True"/>
+                            ${defs.form_control(auto_increment_by, "hours", label="Auto-increment By")}
 
-                <div class="span6 add-time-forms">
-                    <div class='time-form add-time-form'>
-                        <%include file="wind_form.mak" args="form=add_form, is_variable=True"/>
-                        ${defs.form_control(form.auto_increment_time_by, "hours",
-                                            opts={'class_': 'auto_increment_by'})}
-
-                        <div class="control-group add-time-buttons">
-                            <div class="controls">
-                                <button class="btn btn-success add-time">
-                                    Add Time
-                                </button>
+                            <div class="control-group add-time-buttons">
+                                <div class="controls">
+                                    <button class="btn btn-success add-time">
+                                        Add Time
+                                    </button>
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="control-group edit-time-buttons hidden">
+                            <div class="control-group edit-time-buttons hidden">
                                 <div class="controls">
                                     <button class="btn cancel">
                                         Cancel
@@ -77,67 +71,55 @@
                                         Save
                                     </button>
                                 </div>
-                        </div>
-                    </div>
-
-                    <div class="compass-container offset3">
-                        <div id="${defs.uid('compass_edit', form)}"
-                             class="compass"></div>
-                    </div>
-                </div>
-
-                <div class="span6 edit-time-forms">
-                    <div class="span11 wind-values">
-                        <hr>
-                        <table class="table table-striped time-list">
-                            <thead>
-                            <tr class='table-header'>
-                                <th>Date (m/d/y)</th>
-                                <th>Time</th>
-                                <th>Speed</th>
-                                <th>Wind From</th>
-                                <th>&nbsp;</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    % for wind_form in form.timeseries[:-1]:
-                        <div class="edit-time-form time-form hidden">
-                        <%include file="wind_form.mak" args="form=wind_form, is_variable=True"/>
-
-                            <div class="control-group edit-time-buttons">
-                                <div class="controls">
-                                     <button class="btn btn-success save">
-                                        Save
-                                    </button>
-                                    <button class="btn cancel">
-                                        Cancel
-                                    </button>
-                                </div>
                             </div>
                         </div>
-                    % endfor
+                    </div>
+
+                    <div class="span4 edit-time-forms">
+                        <div class="wind-values">
+                            <table class="table table-striped time-list">
+                                <thead>
+                                <tr class='table-header'>
+                                    <th>Date (m/d/y)</th>
+                                    <th>Time</th>
+                                    <th>Speed</th>
+                                    <th>Wind From</th>
+                                    <th>&nbsp;</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
+            <div class="tab-pane uncertainty" id="${form_id}_uncertainty">
+                <%
+                    uncertain_time_delay = h.text('uncertain_time_delay', mover.uncertain_time_delay)
+                    uncertain_duration = h.text('uncertain_duration', mover.uncertain_duration)
+                    uncertain_speed_scale = h.text('uncertain_speed_scale', mover.uncertain_speed_scale)
+                    uncertain_angle_scale = h.text('uncertain_angle_scale', mover.uncertain_angle_scale)
+                    uncertain_angle_scale_units = h.select('uncertain_angle_scale_units',
+                                                            mover.uncertain_angle_scale_units,
+                                                            (('rad', 'Radians'), ('deg', 'Degrees')))
+                %>
 
-            <div class="tab-pane" id="${uncertainty_id}">
-                ${defs.form_control(form.uncertain_time_delay, "hours")}
-                ${defs.form_control(form.uncertain_duration, "hours")}
-                ${defs.form_control(form.uncertain_speed_scale)}
-                ${defs.form_control(form.uncertain_angle_scale)}
-                ${defs.form_control(form.uncertain_angle_scale_type)}
+                ${defs.form_control(uncertain_time_delay, "hours", label="Time Delay")}
+                ${defs.form_control(uncertain_duration, "hours", label="Duration")}
+                ${defs.form_control(uncertain_speed_scale, label="Speed Scale")}
+                ${defs.form_control(uncertain_angle_scale, label="Angle Scale")}
+                ${defs.form_control(uncertain_angle_scale_units, label="Angle Scale Units")}
+            </div>
+            <div class="tab-pane active-range" id="${form_id}_active_range">
+                ${defs.datetime_control(mover.is_active_start, 'is_active_start', date_label="Active Start")}
+                ${defs.datetime_control(mover.is_active_stop, 'is_active_stop', date_label="Active Stop")}
             </div>
         </div>
+    </div>
 
-        <div class="control-group form-buttons">
-            <div class="form-actions">
-                <button class="btn cancel"> Cancel </button>
-                <button class="btn btn-primary">Save</button>
-            </div>
-        </div>
+    <div class="compass-container">
+        <div id="${form_id}_compass_add" class="compass"></div>
     </div>
 
     <!-- A template for time series item rows. -->

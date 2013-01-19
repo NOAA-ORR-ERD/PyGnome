@@ -1,5 +1,4 @@
-import cython
-cimport numpy as np
+cimport numpy as cnp
 import numpy as np
 
 # following exist in gnome.cy_gnome 
@@ -51,9 +50,9 @@ cdef class CyRandomMover(cy_mover.CyMover):
     def get_move(self, 
                  model_time, 
                  step_len, 
-                 np.ndarray[WorldPoint3D, ndim=1] ref_points, 
-                 np.ndarray[WorldPoint3D, ndim=1] delta, 
-                 np.ndarray[np.npy_int16] LE_status, 
+                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points, 
+                 cnp.ndarray[WorldPoint3D, ndim=1] delta, 
+                 cnp.ndarray[cnp.npy_int16] LE_status, 
                  LEType spill_type, 
                  long spill_ID):
         """

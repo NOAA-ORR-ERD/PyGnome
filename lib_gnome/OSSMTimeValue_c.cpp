@@ -61,7 +61,11 @@ OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
 {
 	// NOTE: Must be called with a < b, else bogus value may be returned.
 	
-	(*dt) = INDEXH(timeValues, b).time - INDEXH(timeValues, a).time;
+	if (a < b)
+		(*dt) = INDEXH(timeValues, b).time - INDEXH(timeValues, a).time;
+	else //if (b < a)
+		(*dt) = INDEXH(timeValues, a).time - INDEXH(timeValues, b).time;
+
 	
 	if (*dt == 0)
 	{	// better error message, JLM 4/11/01 
@@ -206,7 +210,8 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 		if (err = GetTimeChange(b, b + 1, &dt)) return err;
 		slope2 = dv / dt;
 		dv = UorV(INDEXH(timeValues, a).value, index) - UorV(INDEXH(timeValues, a - 1).value, index);
-		if (err = GetTimeChange(a, a - 1, &dt)) return err;
+		//if (err = GetTimeChange(a, a - 1, &dt)) return err;
+		if (err = GetTimeChange(a-1, a, &dt)) return err;	// code requires time1 < time2
 		slope1 = dv / dt;
 		slope1 = 0.5 * (slope1 + slope);
 		slope2 = 0.5 * (slope2 + slope);
@@ -384,11 +389,11 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	{
 		isLongWindFile = IsLongWindFile(path,&selectedUnits,&dataInGMT);
 		if(isLongWindFile) {
-			if(format != M19MAGNITUDEDIRECTION)
+			/*if(format != M19MAGNITUDEDIRECTION)
 			{ // JLM thinks this is a user error, someone selecting a long wind file when creating a non-wind object
 				printError("isLongWindFile but format != M19MAGNITUDEDIRECTION");
 				{ err = -1; goto done;}
-			}
+			}*/	// allow pygnome to send in u,v long wind file
 			askForUnits = false;
 			numHeaderLines = 5;
 		}

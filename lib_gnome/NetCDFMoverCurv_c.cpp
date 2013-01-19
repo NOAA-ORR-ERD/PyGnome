@@ -2546,6 +2546,7 @@ OSErr NetCDFMoverCurv_c::ReorderPointsCOOPSMask(DOUBLEH landmaskH, TMap **newMap
 	err = NumberIslands(&maskH2, landmaskH, landWaterInfo, fNumRows_minus1, fNumCols_minus1, &numIslands);	// numbers start at 3 (outer boundary)
 	MySpinCursor(); // JLM 8/4/99
 	if (err) goto done;
+	//numIslands++;	// this is a special case for CBOFS, right now the only coops_mask example
 	for (i=0;i<ntri;i++)
 	{
 		if ((i+1)%2==0) isOdd = 0; else isOdd = 1;

@@ -3762,6 +3762,7 @@ OSErr Map3D_c::SetUpCurvilinearGrid2(DOUBLEH landMaskH, long numRows, long numCo
 	 MySpinCursor(); // JLM 8/4/99
 	 //err = NumberIslands(&maskH2, velocityH, landWaterInfo, fNumRows_minus1, fNumCols_minus1, &numIslands);	// numbers start at 3 (outer boundary)
 	 err = NumberIslands(&maskH2, landMaskH, landWaterInfo, numRows_minus1, numCols_minus1, &numIslands);	// numbers start at 3 (outer boundary)
+	 //numIslands++;	// this is a special case for CBOFS, right now the only coops_mask example
 	 MySpinCursor(); // JLM 8/4/99
 	 if (err) goto done;
 	 for (i=0;i<ntri;i++)

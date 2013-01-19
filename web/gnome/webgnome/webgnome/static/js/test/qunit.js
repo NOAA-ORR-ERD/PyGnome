@@ -581,7 +581,7 @@ config = {
 	blocking: true,
 
 	// when enabled, show only failing tests
-	// gets persisted through sessionStorage and can be changed in UI via checkbox
+	// gets windage_persisted through sessionStorage and can be changed in UI via checkbox
 	hidepassed: false,
 
 	// by default, run previously failed tests first
@@ -594,7 +594,7 @@ config = {
 	// when enabled, all tests must call expect()
 	requireExpects: false,
 
-	// add checkboxes that are persisted in the query-string
+	// add checkboxes that are windage_persisted in the query-string
 	// when enabled, the id is set to `true` as a `QUnit.config` property
 	urlConfig: [
 		{

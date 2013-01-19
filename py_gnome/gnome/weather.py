@@ -2,14 +2,17 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
-from gnome import basic_types
+
+import datetime
+
+import numpy as np
+
+from gnome import basic_types, GnomeObject
 from gnome.utilities import transforms, time_utils, convert
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from hazpy import unit_conversion
 
-import numpy as np
-
-class Wind(object):
+class Wind(GnomeObject):
     """
     Defines the Wind conditions for a spill
     """
@@ -99,18 +102,6 @@ class Wind(object):
         """
         return "Wind Object"
     
-    @property
-    def id(self):
-        """
-        Return an ID value for this object
-
-        This method uses Python's builtin `id()` function to identify the
-        object. Override it for more exotic forms of identification.
-
-        :return: the integer ID returned by id() for this object
-        """
-        return id(self)
-    
     user_units = property( lambda self: self._user_units)   
     
     def get_timeseries(self, datetime=None, units=None, data_format=basic_types.data_format.magnitude_direction):
@@ -166,5 +157,21 @@ class Wind(object):
         timeval = convert.to_time_value_pair(datetime_value_2d, data_format)
         self.ossm.timeseries = timeval
     
-    
+
+def ConstantWind(speed, direction, units='m/s'):
+     """
+     utility to create a constant wind "timeseries"
+
+     :param speed: speed of wind 
+     :param direction: direction -- degrees True, direction wind is from( degrees True )
+     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s", "cm/s", etc.
+     """
+     wind_vel = np.zeros((1,), dtype=basic_types.datetime_value_2d)
+     wind_vel['time'][0] = datetime.datetime.now() # jsut to have a time 
+     wind_vel['value'][0] = (speed, direction)
+
+     return Wind(timeseries=wind_vel,
+                 data_format=basic_types.data_format.magnitude_direction,
+                 units=units)
+
         
