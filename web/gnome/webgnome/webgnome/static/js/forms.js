@@ -912,6 +912,7 @@ define([
             this.$el.find('#name').val(this.model.get('name'));
             this.$el.find('#active').prop('checked', this.model.get('active'));
             this.$el.find('#units').val(wind.get('units'));
+            this.$el.find('#on').prop('checked', this.model.get('on'));
 
             this.setDateFields(this.$el.find('.active_start_container'),
                                this.model.get('active_start'));
