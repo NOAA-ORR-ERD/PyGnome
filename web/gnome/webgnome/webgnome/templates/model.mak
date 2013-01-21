@@ -168,7 +168,8 @@
                     modelId: "${model_id}",
                     modelSettings: ${model_settings | n},
                     map: ${map_data | n},
-                    mapIsLoaded: ${"true" if map_is_loaded else "false"}
+                    mapIsLoaded: ${"true" if map_is_loaded else "false"},
+                    animationThreshold: 20 // Milliseconds
                 });
             });
         });

@@ -71,7 +71,8 @@ define([
                 frameClass: 'frame',
                 activeFrameClass: 'active',
                 modelRun: this.modelRun,
-                model: this.map
+                model: this.map,
+                animationThreshold: this.options.animationThreshold
             });
 
             this.mapControlView = new views.MapControlView({

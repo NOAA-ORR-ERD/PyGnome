@@ -205,6 +205,9 @@ define([
          */
         addTimeStep: function(timeStepJson) {
             var timeStep = new TimeStep(timeStepJson);
+            var now = new Date().getTime();
+            var requestBegan = this.timeStepRequestBegin || now;
+            timeStep.set('requestTime', now - requestBegan);
             this.add(timeStep);
             this.setCurrentTimeStep(timeStep.id);
         },
@@ -263,6 +266,8 @@ define([
                 this.setCurrentTimeStep(this.nextTimeStep);
                 return;
             }
+
+            this.timeStepRequestBegin = new Date().getTime();
 
             // Request the next step from the server.
             $.ajax({
