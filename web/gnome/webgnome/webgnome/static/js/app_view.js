@@ -12,54 +12,52 @@ define([
 
      /*
      `AppView` acts as a controller, listening to delegate views and models for
-     events and coordinating any necessary changes.
+     events and coordinating state changes.
 
-     As a design principle, `AppView` should only handle events triggered by models
-     and views that *require* coordination. Otherwise, views should listen directly
-     to a specific model (or another view) and handle updating themselves without
-     assistance from `AppView`. This convention is in-progress and could be better
-     enforced.
+     `AppView` should only handle events triggered by models and views that
+     *require* coordination. When possible, views should listen directly to a
+     specific model (or another view) and handle updating themselves without
+     assistance from `AppView`.
      */
     var AppView = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
 
-            this.apiRoot = "/model";
+            this.apiRoot = "/model/" + this.options.modelId;
 
-            // Initialize the model with any previously-generated time step data the
-            // server had available.
-            this.model = new models.Model(this.options.generatedTimeSteps, {
-                url: this.apiRoot,
-                expectedTimeSteps: this.options.expectedTimeSteps,
-                currentTimeStep: this.options.currentTimeStep,
-                bounds: this.options.mapBounds || []
-            });
-
+            this.setupModels();
             this.setupForms();
 
             this.menuView = new views.MenuView({
-                // XXX: Hard-coded IDs
                 modelDropdownEl: "#file-drop",
                 runDropdownEl: "#run-drop",
                 helpDropdownEl: "#help-drop",
                 newItemEl: "#menu-new",
                 runItemEl: "#menu-run",
                 stepItemEl: "#menu-step",
-                runUntilItemEl: "#menu-run-until"
+                runUntilItemEl: "#menu-run-until",
+                longIslandItemEl: "#long-island"
             });
 
-            this.sidebarEl = '#' + this.options.sidebarId;
+            this.sidebarEl = '#sidebar';
+            $(this.sidebarEl).resizable({
+                handles: 'e, w',
+                resize: function (event, ui) {
+                    $(this).css("height", '100%');
+                }
+            });
 
             this.treeView = new views.TreeView({
-                // XXX: Hard-coded URL, ID.
                 treeEl: "#tree",
-                url: "/tree",
-                ajaxForms: this.forms,
-                model: this.model
+                apiRoot: this.apiRoot,
+                modelRun: this.modelRun,
+                modelSettings: this.modelSettings,
+                surfaceReleaseSpills: this.surfaceReleaseSpills,
+                windMovers: this.windMovers,
+                map: this.map
             });
 
             this.treeControlView = new views.TreeControlView({
-                // XXX: Hard-coded IDs
                 addButtonEl: "#add-button",
                 removeButtonEl: "#remove-button",
                 settingsButtonEl: "#settings-button",
@@ -67,16 +65,16 @@ define([
             });
 
             this.mapView = new views.MapView({
-                mapEl: '#' + this.options.mapId,
-                placeholderEl: '#' + this.options.mapPlaceholderId,
+                mapEl: '#map',
+                placeholderClass: 'placeholder',
                 backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                model: this.model
+                modelRun: this.modelRun,
+                model: this.map
             });
 
             this.mapControlView = new views.MapControlView({
-                // XXX: Hard-coded IDs.
                 sliderEl: "#slider",
                 playButtonEl: "#play-button",
                 pauseButtonEl: "#pause-button",
@@ -89,15 +87,16 @@ define([
                 resizeButtonEl: "#resize-button",
                 spillButtonEl: "#spill-button",
                 timeEl: "#time",
-                // XXX: Partially hard-coded URL.
-                url: this.apiRoot + '/time_steps',
-                model: this.model,
-                mapView: this.mapView
+                modelRun: this.modelRun,
+                mapView: this.mapView,
+                model: this.map
             });
 
             this.messageView = new views.MessageView({
-                model: this.model,
-                ajaxForms: this.forms
+                modelRun: this.modelRun,
+                modelSettings: this.modelSettings,
+                surfaceReleaseSpills: this.surfaceReleaseSpills,
+                windMovers: this.windMovers
             });
 
             this.setupEventHandlers();
@@ -113,16 +112,16 @@ define([
         },
 
         setupEventHandlers: function() {
-            this.model.on(models.Model.CREATED, this.newModelCreated);
-            this.model.on(models.Model.RUN_ERROR, this.modelRunError);
-            this.forms.on(models.AjaxForm.UPDATED, this.ajaxFormUpdated);
+            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.SERVER_RESET, this.rewind);
 
-            this.formViews.on(forms.FormViewContainer.REFRESHED, this.mapView.drawSpills);
-            this.formViews.on(forms.AjaxFormView.REFRESHED, this.mapView.drawSpills);
-            this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.mapView.drawSpills);
+            this.surfaceReleaseSpills.on("sync", this.spillUpdated);
+            this.surfaceReleaseSpills.on('sync', this.drawSpills);
+
+            this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
+            this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
-            this.formViews.on(forms.FormViewContainer.REFRESHED, this.refreshForms);
 
             this.treeControlView.on(views.TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
             this.treeControlView.on(views.TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
@@ -144,20 +143,34 @@ define([
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
             this.mapView.on(views.MapView.MAP_WAS_CLICKED, this.zoomOut);
             this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
+            this.mapView.on(views.MapView.READY, this.drawSpills);
 
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
+            this.menuView.on(views.MenuView.LONG_ISLAND_ITEM_CLICKED, this.loadLongIsland);
         },
 
         /*
-         Consider the model dirty if the user updates an existing  spill, so
+         Ping a server-side URL that will set the current model up with the
+         parameters from the Long Island Sound script, then reload the page.
+         */
+        loadLongIsland: function() {
+            $.get('/long_island', function() {
+                window.location.reload();
+            });
+        },
+
+        /*
+         Consider the model dirty if the user updates an existing spill, so
          we don't get cached images back on the next model run.
          */
-        ajaxFormUpdated: function(form) {
-            if (form.type && form.type === 'spill') {
-                this.rewind();
-            }
+        spillUpdated: function() {
+            this.rewind();
+        },
+
+        drawSpills: function() {
+            this.mapView.drawSpills(this.surfaceReleaseSpills);
         },
 
         setupKeyboardHandlers: function() {
@@ -180,13 +193,18 @@ define([
             });
 
             Mousetrap.bind('n m', function() {
-                _this.formViews.hideAll()
-                _this.showFormWithId('AddMoverForm');
+                _this.formViews.hideAll();
+                _this.showFormWithId('add_mover');
             });
 
             Mousetrap.bind('n w', function() {
                 _this.formViews.hideAll();
-                _this.showFormWithId('WindMoverForm');
+                _this.showFormWithId('add_wind_mover');
+            });
+
+            Mousetrap.bind('n p', function() {
+                _this.formViews.hideAll();
+                _this.showFormWithId('add_surface_release_spill');
             });
 
             Mousetrap.bind('s f', function() {
@@ -197,100 +215,119 @@ define([
             });
         },
 
-        newModelCreated: function() {
-            this.formViews.refresh();
-        },
-
-        destroyForms: function() {
-            if (this.forms) {
-                this.forms.deleteAll();
-            }
-
-            if (this.formViews) {
-                this.formViews.deleteAll();
-            }
-        },
-
         spillDrawn: function(x, y) {
             this.addSpillFormView.show([x, y]);
         },
 
-        refreshForms: function() {
-            this.destroyForms();
-            this.addForms();
-        },
-
-        addForms: function() {
-            var _this = this;
+        setupForms: function() {
+            this.formViews = new forms.FormViewContainer({
+                id: 'modal-container'
+            });
 
             this.addMoverFormView = new forms.AddMoverFormView({
-                el: $('#' + this.options.addMoverFormId),
-                formContainerEl: '#' + this.options.formContainerId
+                id: 'add_mover'
             });
 
             this.addSpillFormView = new forms.AddSpillFormView({
-                el: $('#' + this.options.addSpillFormId),
-                formContainerEl: '#' + this.options.formContainerId
+                id: 'add_spill'
+            });
+
+            this.addMapFormView = new forms.AddMapFormView({
+                id: 'add_map',
+                model: this.map
+            });
+
+            this.modelSettingsFormView = new forms.ModelSettingsFormView({
+                id: 'model_settings',
+                model: this.modelSettings
+            });
+
+            this.editMapFormView = new forms.MapFormView({
+                id: 'edit_map',
+                model: this.map
+            });
+
+            this.addWindMoverFormView = new forms.AddWindMoverFormView({
+                id: 'add_wind_mover',
+                collection: this.windMovers
+            });
+
+            this.editWindMoverFormView = new forms.WindMoverFormView({
+                id: 'edit_wind_mover',
+                collection: this.windMovers
+            });
+
+            this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
+                id: 'add_random_mover',
+                collection: this.randomMovers
+            });
+
+            this.editRandomMoverFormView = new forms.RandomMoverFormView({
+                id: 'edit_random_mover',
+                collection: this.randomMovers
+            });           
+
+            this.addSurfaceReleaseSpillFormView = new forms.AddSurfaceReleaseSpillFormView({
+                id: 'add_surface_release_spill',
+                collection: this.surfaceReleaseSpills
+            });
+
+            this.editSurfaceReleaseSpillFormView = new forms.SurfaceReleaseSpillFormView({
+                id: 'edit_surface_release_spill',
+                collection: this.surfaceReleaseSpills
             });
 
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
             this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
 
-            this.formViews.add(this.options.addMoverFormId, this.addMoverFormView);
-
-            // Create an `AjaxForm` and bind it to a `AjaxFormView` or subclass
-            // for each form on the page.
-            _.each($('div.form'), function(formDiv) {
-                var div = $(formDiv);
-                var form = div.find('form');
-                var formId = div.attr('id');
-
-                if (formId === _this.options.addMoverFormId) {
-                    return;
-                }
-
-                _this.forms.add({
-                    id: formId,
-                    url: form.attr('action'),
-                    type: form.attr('data-type')
-                });
-
-                var ajaxForm = _this.forms.get(formId);
-                var formEl = $('#' + formId);
-                var formContainerEl = '#' + _this.options.formContainerId;
-                var formClass;
-
-                if (div.hasClass('wind')) {
-                    formClass = forms.WindMoverFormView;
-                } else if (div.hasClass('spill')) {
-                    formClass = forms.PointReleaseSpillFormView;
-                } else if (div.hasClass('modal')) {
-                    formClass = forms.ModalAjaxFormView;
-                } else {
-                    formClass = forms.AjaxFormView;
-                }
-
-                _this.formViews.add(formId, new formClass({
-                    id: formId,
-                    ajaxForm: ajaxForm,
-                    el: formEl,
-                    formContainerEl: formContainerEl
-                }));
-            });
+            this.formViews.add(this.addMoverFormView);
+            this.formViews.add(this.addSpillFormView);
+            this.formViews.add(this.addMapFormView);
+            this.formViews.add(this.addWindMoverFormView);
+            this.formViews.add(this.addRandomMoverFormView);
+            this.formViews.add(this.addSurfaceReleaseSpillFormView);
+            this.formViews.add(this.modelSettingsFormView);
+            this.formViews.add(this.editWindMoverFormView);
+            this.formViews.add(this.editRandomMoverFormView);
+            this.formViews.add(this.editSurfaceReleaseSpillFormView);
+            this.formViews.add(this.editMapFormView);
         },
 
-        setupForms: function() {
-            // `AjaxForm` instances, keyed to form ID.
-            this.forms = new models.AjaxFormCollection();
-
-            this.formViews = new forms.FormViewContainer({
-                el: $('#' + this.options.formContainerId),
-                ajaxForms: this.forms,
-                url: this.options.formsUrl,
-                model: this.model
+        setupModels: function() {
+             this.map = new models.Map(this.options.map, {
+                url: this.apiRoot + '/map'
             });
 
-            this.addForms();
+            this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
+                this.options.surfaceReleaseSpills, {
+                    url: this.apiRoot + "/spill/surface_release"
+                }
+            );
+
+            this.windMovers = new models.WindMoverCollection(
+                this.options.windMovers, {
+                    url: this.apiRoot + "/mover/wind"
+                }
+            );
+
+            this.randomMovers = new models.RandomMoverCollection(
+                this.options.randomMovers, {
+                    url: this.apiRoot + "/mover/random"
+                }
+            );
+
+            this.options.modelSettings['id'] = this.options.modelId;
+            this.modelSettings = new models.Model(this.options.modelSettings);
+
+            // Initialize the model with any previously-generated time step data the
+            // server had available.
+            this.modelRun = new models.ModelRun(this.options.generatedTimeSteps, {
+                url: this.apiRoot,
+                expectedTimeSteps: this.options.expectedTimeSteps,
+                currentTimeStep: this.options.currentTimeStep,
+                bounds: this.options.mapBounds || [],
+                modelSettings: this.modelSettings
+            });
         },
 
         modelRunError: function() {
@@ -300,17 +337,13 @@ define([
             });
         },
 
-        isValidFormType: function(formType) {
-            return _.contains(this.formTypes, formType);
-        },
-
         runMenuItemClicked: function() {
             this.play({});
         },
 
         runUntilMenuItemClicked: function() {
-            // TODO: Fix this - old code.
-            this.fetchForm({type: 'run_until'});
+            // TODO: Implement.
+            console.log('run until item clicked');
         },
 
         newMenuItemClicked: function() {
@@ -318,20 +351,35 @@ define([
                 return;
             }
 
-            this.model.create();
+            var _this = this;
+            var model = new models.Model({}, {url: this.apiRoot});
+            _this.modelSettings.destroy({
+                success: function() {
+                    model.save(null, {
+                        success: function() {
+                            window.location.reload(true);
+                        }
+                    });
+                }
+            });
         },
 
         play: function(opts) {
+            if (!this.map.id) {
+                window.alert('You must add a map before you can run the model.');
+                return;
+            }
+
             this.mapControlView.disableControls();
             this.mapControlView.enableControls([this.mapControlView.pauseButtonEl]);
             this.mapControlView.setPlaying();
             this.mapView.setPlaying();
 
-            if (this.model.isOnLastTimeStep()) {
-                this.model.rewind();
+            if (this.modelRun.isOnLastTimeStep()) {
+                this.modelRun.rewind();
             }
 
-            this.model.run(opts);
+            this.modelRun.run(opts);
         },
 
         playButtonClicked: function() {
@@ -339,7 +387,7 @@ define([
         },
 
         enableZoomIn: function() {
-            if (this.model.hasData() === false) {
+            if (this.modelRun.hasData() === false) {
                 return;
             }
 
@@ -350,7 +398,7 @@ define([
         },
 
         enableZoomOut: function() {
-            if (this.model.hasData() === false) {
+            if (this.modelRun.hasData() === false) {
                 return;
             }
 
@@ -366,7 +414,7 @@ define([
         zoomIn: function(startPosition, endPosition) {
             this.mapView.setPaused();
             this.mapControlView.setPaused();
-            this.model.rewind();
+            this.modelRun.rewind();
 
             if (endPosition) {
                 var rect = {start: startPosition, end: endPosition};
@@ -375,23 +423,23 @@ define([
                 // If we are at zoom level 0 and there is no map portion outside of
                 // the visible area, then adjust the coordinates of the selected
                 // rectangle to the on-screen pixel bounds.
-                if (!isInsideMap && this.model.zoomLevel === 0) {
+                if (!isInsideMap && this.modelRun.zoomLevel === 0) {
                     rect = this.mapView.getAdjustedRect(rect);
                 }
 
-                this.model.zoomFromRect(rect, models.Model.ZOOM_IN);
+                this.modelRun.zoomFromRect(rect, models.ModelRun.ZOOM_IN);
             } else {
-                this.model.zoomFromPoint(startPosition, models.Model.ZOOM_IN);
+                this.modelRun.zoomFromPoint(startPosition, models.ModelRun.ZOOM_IN);
             }
 
             this.mapView.setRegularCursor();
         },
 
         zoomOut: function(point) {
-            this.model.rewind();
+            this.modelRun.rewind();
             this.mapView.setPaused();
             this.mapControlView.setPaused();
-            this.model.zoomFromPoint(point, models.Model.ZOOM_OUT);
+            this.modelRun.zoomFromPoint(point, models.ModelRun.ZOOM_OUT);
             this.mapView.setRegularCursor();
         },
 
@@ -403,14 +451,14 @@ define([
 
         sliderChanged: function(newStepNum) {
             // No need to do anything if the slider is on the current time step.
-            if (newStepNum === this.model.currentTimeStep) {
+            if (newStepNum === this.modelRun.currentTimeStep) {
                 return;
             }
 
             // If the model and map view have the time step, display it.
-            if (this.model.hasCachedTimeStep(newStepNum) &&
+            if (this.modelRun.hasCachedTimeStep(newStepNum) &&
                     this.mapView.timeStepIsLoaded(newStepNum)) {
-                this.model.setCurrentTimeStep(newStepNum);
+                this.modelRun.setCurrentTimeStep(newStepNum);
                 return;
             }
 
@@ -424,18 +472,18 @@ define([
             if (this.mapView.isPaused() || this.mapView.isStopped()) {
                 return;
             }
-            this.model.getNextTimeStep();
+            this.modelRun.getNextTimeStep();
         },
 
         reset: function() {
             this.mapView.reset();
-            this.model.clearData();
+            this.modelRun.clearData();
             this.mapControlView.reset();
         },
 
         rewind: function() {
             this.mapView.clear();
-            this.model.clearData();
+            this.modelRun.clearData();
             this.mapControlView.reset();
         },
 
@@ -447,8 +495,8 @@ define([
          all of the remaining frames if they don't exist, until the end.
          */
         jumpToLastFrame: function() {
-            var lastFrame = this.model.length - 1;
-            this.model.setCurrentTimeStep(lastFrame);
+            var lastFrame = this.modelRun.length - 1;
+            this.modelRun.setCurrentTimeStep(lastFrame);
         },
 
         useFullscreen: function() {
@@ -476,18 +524,26 @@ define([
         },
 
         showFormForNode: function(node) {
-            var formView = this.formViews.get(node.data.form_id);
+            var formView;
+
+            if (node.data.form_id) {
+                formView = this.formViews.get(node.data.form_id);
+            }
 
             if (formView === undefined) {
                 return;
             }
 
-            if (node.data.id) {
-                formView.reload({id: node.data.id});
-            } else {
-                this.formViews.hideAll();
-                formView.show();
+
+            // This has to come before we show the form because form views
+            // may set their models to null when hiding.
+            this.formViews.hideAll();
+
+            if (node.data.object_id) {
+                formView.reload(node.data.object_id);
             }
+
+            formView.show();
         },
 
         /*
@@ -525,14 +581,24 @@ define([
                 alert('Error! Could not delete ' + node.data.title + '.');
             }
 
-            if (!node.data.form_id || !node.data.object_id) {
+            if (!node.data.object_id || !node.data.object_type) {
                 return error();
             }
 
-            var ajaxForm = this.forms.get(node.data.delete_form_id);
-            var formView = this.formViews.get(node.data.delete_form_id);
+            var collections = {
+                'surface_release_spill': this.surfaceReleaseSpills,
+                'wind_mover': this.windMovers,
+                'random_mover': this.randomMovers
+            };
 
-            if (!ajaxForm || !formView) {
+            if (!_.has(collections, node.data.object_type)) {
+                return error();
+            }
+
+            var object = collections[node.data.object_type].get(
+                node.data.object_id);
+
+            if (!object) {
                 return error();
             }
 
@@ -540,10 +606,7 @@ define([
                 return;
             }
 
-            ajaxForm.submit({
-                data: "obj_id=" + node.data.object_id,
-                error: error
-            });
+            object.destroy();
         },
 
         moverChosen: function(moverType) {

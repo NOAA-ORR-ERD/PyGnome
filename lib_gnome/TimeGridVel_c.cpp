@@ -4353,6 +4353,7 @@ OSErr TimeGridVelCurv_c::ReorderPointsCOOPSMask(DOUBLEH landmaskH, char* errmsg)
 	MySpinCursor(); // JLM 8/4/99
 	//err = NumberIslands(&maskH2, velocityH, landWaterInfo, fNumRows_minus1, fNumCols_minus1, &numIslands);	// numbers start at 3 (outer boundary)
 	err = NumberIslands(&maskH2, landmaskH, landWaterInfo, fNumRows_minus1, fNumCols_minus1, &numIslands);	// numbers start at 3 (outer boundary)
+	//numIslands++;	// this is a special case for CBOFS, right now the only coops_mask example
 	MySpinCursor(); // JLM 8/4/99
 	if (err) goto done;
 	for (i=0;i<ntri;i++)
@@ -6845,8 +6846,6 @@ done:
 }
 
 // code to be used for gridcur and ptcur (and probably windcur)
-// leave out of pyGNOME for now - maybe move to a separate file
-//#ifndef pyGNOME
 TimeGridCurRect_c::TimeGridCurRect_c () : TimeGridVel_c()
 {
 	fTimeDataHdl = 0;
@@ -7422,12 +7421,19 @@ OSErr TimeGridCurRect_c::ReadHeaderLines(char *path, WorldRect *bounds)
 	}
 	else
 	{	// multiple files
+		char errmsg[256];
 		long numLinesInText = NumLinesInText(*f);
 		long numFiles = (numLinesInText - (line - 1))/3;	// 3 lines for each file - filename, starttime, endtime
 		//strcpy(fPathName,s+strlen("[FILE]\t"));
 		strcpy(fVar.pathName,s+strlen("[FILE] "));
+		sprintf(errmsg,"pathName = %s\n",fVar.pathName);
+		printNote(errmsg);
 		RemoveLeadingAndTrailingWhiteSpace(fVar.pathName);
 		ResolvePathFromInputFile(path,fVar.pathName); // JLM 6/8/10
+		sprintf(errmsg,"pathName = %s\n",path);
+		printNote(errmsg);
+		sprintf(errmsg,"resolved pathName = %s\n",fVar.pathName);
+		printNote(errmsg);
 		if(fVar.pathName[0] && FileExists(0,0,fVar.pathName))
 		{
 			err = ScanFileForTimes(fVar.pathName,&fTimeDataHdl,&fTimeHdl);	// AH 07/17/2012
@@ -7479,8 +7485,11 @@ OSErr TimeGridCurRect_c::TextRead(char *path, char *topFilePath)
 	//strcpy(pathName,fPathName);
 	//SplitPathFile(pathName,fFileName);
 	strcpy(pathName,fVar.pathName);
+#ifndef pyGNOME
 	SplitPathFile(pathName,fVar.userName);	// code goes here, this won't work on unix paths
-	
+#else
+	SplitPathFileName (pathName, fVar.userName);
+#endif
 	// code goes here, we need to worry about really big files
 	
 	// do the readgridcur file stuff, store numrows, numcols, return the bounds

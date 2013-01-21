@@ -9,7 +9,7 @@ define([
     var testUrl = "http://localhost/test";
 
     function makeModel(timeSteps, expectedTimeSteps) {
-        return new models.Model(timeSteps || [], {
+        return new models.ModelRun(timeSteps || [], {
             url: testUrl,
             expectedTimeSteps: expectedTimeSteps || []
         });

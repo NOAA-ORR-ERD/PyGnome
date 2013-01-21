@@ -13,7 +13,7 @@
     <div class="modal-body">
         <form action="${action_url}" class="form-horizontal" method="POST">
             ${defs.form_control(form.date)}
-            ${defs.time_control(form, "Stop time (24 hour):")}
+            ${defs.time_control()}
         </form>
     </div>
     <div class="modal-footer">

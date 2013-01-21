@@ -65,7 +65,7 @@ public:
 	
 };
 
-Boolean IsGridWindFile(char *path,short *selectedUnits);
+//Boolean IsGridWindFile(char *path,short *selectedUnits);
 
 
 #endif

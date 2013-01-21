@@ -28,6 +28,10 @@ cdef extern from "TimeGridVel_c.h":
         OSErr                TextRead(char *path,char *topFilePath)
     cdef cppclass TimeGridVelCurv_c:
         OSErr                TextRead(char *path,char *topFilePath)
+    cdef cppclass TimeGridWindRect_c:
+        OSErr                TextRead(char *path,char *topFilePath)
+    cdef cppclass TimeGridWindCurv_c:
+        OSErr                TextRead(char *path,char *topFilePath)
 
 # TODO: pre-processor directive for cython, but what is its purpose?
 # comment for now so it doesn't give compile time errors - not sure LELIST_c is used anywhere either
@@ -140,9 +144,26 @@ cdef extern from "GridCurrentMover_c.h":
         
         GridCurrentMover_c ()
         WorldPoint3D        GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
-        OSErr        get_move(int, unsigned long, unsigned long, char *, char *)
         OSErr 		PrepareForModelRun()
         OSErr 		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+        OSErr 		PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)
+        void 		ModelStepIsDone()
+        void 		SetTimeGrid(TimeGridVel_c *newTimeGrid)
+        OSErr                TextRead(char *path,char *topFilePath)
+        
+cdef extern from "GridWindMover_c.h":
+    
+    cdef cppclass GridWindMover_c:
+        TimeGridVel_c    *timeGrid
+        Boolean fIsOptimizedForStep
+        float    fWindScale
+        float    fArrowScale
+        short    fUserUnits
+        
+        GridWindMover_c ()
+        WorldPoint3D        GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
+        OSErr 		PrepareForModelRun()
+        OSErr 		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spillID)
         OSErr 		PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)
         void 		ModelStepIsDone()
         void 		SetTimeGrid(TimeGridVel_c *newTimeGrid)

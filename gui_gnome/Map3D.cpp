@@ -65,26 +65,26 @@ Map3D::Map3D(char* name, WorldRect bounds) : TMap(name, bounds)
 	bDrawWaterBitMap = false;
 
 	//bShowSurfaceLEs = true;
-	bShowLegend = true;
-	bShowGrid = false;
+	//bShowLegend = true;
+	//bShowGrid = false;
 	bShowDepthContours = false;
 	
-	bDrawContours = true;
+	//bDrawContours = true;
 
-	fDropletSizesH = 0;
+	//fDropletSizesH = 0;
 	
-	memset(&fLegendRect,0,sizeof(fLegendRect)); 
+	//memset(&fLegendRect,0,sizeof(fLegendRect)); 
 	
-	fWaterDensity = 1020;
-	fMixedLayerDepth = 10.;	//meters
-	fBreakingWaveHeight = 1.;	// meters
-	fDiagnosticStrType = 0;
+	//fWaterDensity = 1020;
+	//fMixedLayerDepth = 10.;	//meters
+	//fBreakingWaveHeight = 1.;	// meters
+	//fDiagnosticStrType = 0;
 	
 	fMinDistOffshore = 0.;	//km - use bounds to set default
-	bUseLineCrossAlgorithm = false;
-	bUseSmoothing = false;
+	//bUseLineCrossAlgorithm = false;
+	//bUseSmoothing = false;
 
-	fWaveHtInput = 0;	// default compute from wind speed
+	//fWaveHtInput = 0;	// default compute from wind speed
 
 	fVerticalGridType = TWO_D;
 	fGridType = CURVILINEAR;
@@ -107,10 +107,10 @@ void Map3D::Dispose()
 		fBoundaryPointsH = 0;
 	}
 	
-	if (fDropletSizesH) {
+	/*if (fDropletSizesH) {
 		DisposeHandle((Handle)fDropletSizesH);
 		fDropletSizesH = 0;
-	}
+	}*/
 
 #ifdef MAC
 	DisposeBlackAndWhiteBitMap (&fWaterBitmap);
@@ -480,7 +480,7 @@ done:
 			//	if (toWPt.z > depthAtPt) toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
 			if (toWPt.z > depthAtPt) 
 			{
-				if (bUseSmoothing)	// just testing some ideas, probably don't want to do this
+				/*if (bUseSmoothing)	// just testing some ideas, probably don't want to do this
 				{
 					// get depth at previous point, add a kick of horizontal diffusion based on the difference in depth
 					// this will flatten out the blips but also takes longer to pass through the area
@@ -516,7 +516,7 @@ done:
 						toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
 					}	
 				}
-				else
+				else*/
 					toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
 			}
 			if (toWPt.z <= 0) 
@@ -772,7 +772,7 @@ done:
 			//	if (toWPt.z > depthAtPt) toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
 			if (toWPt.z > depthAtPt) 
 			{
-				if (bUseSmoothing)	// just testing some ideas, probably don't want to do this
+				/*if (bUseSmoothing)	// just testing some ideas, probably don't want to do this
 				{
 					// get depth at previous point, add a kick of horizontal diffusion based on the difference in depth
 					// this will flatten out the blips but also takes longer to pass through the area
@@ -808,7 +808,7 @@ done:
 						toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
 					}	
 				}
-				else
+				else*/
 					toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
 			}
 			if (toWPt.z <= 0) 
@@ -1055,7 +1055,42 @@ OSErr Map3D::ReplaceMap()	// code goes here, maybe not for NetCDF?
 	
 }
 
-
+void Map3D::FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo)
+{
+	long startVer = 0,i,jseg;
+	//WorldPoint wp = ScreenToWorldPoint(where, MapDrawingRect(), settings.currentView);
+	WorldPoint wp2;
+	LongPoint lp;
+	long lastVer = GetNumBoundaryPts();
+	//long nbounds = GetNumBoundaries();
+	long nSegs = GetNumBoundarySegs();	
+	float wdist = LatToDistance(ScreenToWorldDistance(4));
+	LongPointHdl ptsHdl = GetPointsHdl();
+	if(!ptsHdl) return;
+	*verNum= -1;
+	*segNo =-1;
+	for(i = 0; i < lastVer; i++)
+	{
+		//wp2 = (*gVertices)[i];
+		lp = (*ptsHdl)[i];
+		wp2.pLat = lp.v;
+		wp2.pLong = lp.h;
+		
+		if(WPointNearWPoint(wp,wp2 ,wdist))
+		{
+			//for(jseg = 0; jseg < nbounds; jseg++)
+			for(jseg = 0; jseg < nSegs; jseg++)
+			{
+				if(i <= (*fBoundarySegmentsH)[jseg])
+				{
+					*verNum  = i;
+					*segNo = jseg;
+					break;
+				}
+			}
+		}
+	} 
+}
 
 void Map3D::FindNearestBoundary(Point where, long *verNum, long *segNo)
 {
@@ -1106,7 +1141,7 @@ OSErr Map3D::Write(BFPB *bfpb)
 	long numBoundaryPts = this -> GetNumBoundaryPts();
 	long numContourLevels = 0, numDepths = 0, numDropletSizes = 0, numSegSelected = 0;
 	double val2;
-	double dropsize, probability;
+	//double dropsize, probability;
 	
 	if (err = TMap::Write(bfpb)) return err;
 		
@@ -1166,17 +1201,17 @@ OSErr Map3D::Write(BFPB *bfpb)
 	if (err = WriteMacValue(bfpb,bDrawLandBitMap)) return err;
 	if (err = WriteMacValue(bfpb,bDrawWaterBitMap)) return err;
 	
-	if (err = WriteMacValue(bfpb,fLegendRect)) return err;
+	//if (err = WriteMacValue(bfpb,fLegendRect)) return err;
 	//if (err = WriteMacValue(bfpb,bShowLegend)) return err;
 	if (err = WriteMacValue(bfpb,bShowDepthContours)) return err;
 	
-	if (err = WriteMacValue(bfpb,fWaterDensity)) return err;
-	if (err = WriteMacValue(bfpb,fMixedLayerDepth)) return err;
-	if (err = WriteMacValue(bfpb,fBreakingWaveHeight)) return err;
+	//if (err = WriteMacValue(bfpb,fWaterDensity)) return err;
+	//if (err = WriteMacValue(bfpb,fMixedLayerDepth)) return err;
+	//if (err = WriteMacValue(bfpb,fBreakingWaveHeight)) return err;
 
 	//if (err = WriteMacValue(bfpb,fDiagnosticStrType)) return err;
 
-	if (err = WriteMacValue(bfpb,fWaveHtInput)) return err;
+	//if (err = WriteMacValue(bfpb,fWaveHtInput)) return err;
 
 	//if (fDropletSizesH) numDropletSizes = _GetHandleSize((Handle)fDropletSizesH)/sizeof(**fDropletSizesH);
 	
@@ -1266,16 +1301,16 @@ OSErr Map3D::Read(BFPB *bfpb)
 	if (err = ReadMacValue(bfpb, &bDrawLandBitMap)) return err;
 	if (err = ReadMacValue(bfpb, &bDrawWaterBitMap)) return err;
 	
-	if (err = ReadMacValue(bfpb, &fLegendRect)) return err;
+	//if (err = ReadMacValue(bfpb, &fLegendRect)) return err;
 	//if (err = ReadMacValue(bfpb, &bShowLegend)) return err;
 	if (err = ReadMacValue(bfpb, &bShowDepthContours)) return err;
 
-	if (err = ReadMacValue(bfpb, &fWaterDensity)) return err;
-	if (err = ReadMacValue(bfpb, &fMixedLayerDepth)) return err;
-	if (err = ReadMacValue(bfpb, &fBreakingWaveHeight)) return err;
+	//if (err = ReadMacValue(bfpb, &fWaterDensity)) return err;
+	//if (err = ReadMacValue(bfpb, &fMixedLayerDepth)) return err;
+	//if (err = ReadMacValue(bfpb, &fBreakingWaveHeight)) return err;
 	//if (err = ReadMacValue(bfpb, &fDiagnosticStrType)) return err;
 	
-	if (err = ReadMacValue(bfpb, &fWaveHtInput)) return err;
+	//if (err = ReadMacValue(bfpb, &fWaveHtInput)) return err;
 	/*if ((gMearnsVersion && version>1) || version>2)
 	{
 		if (err = ReadMacValue(bfpb, &numDropletSizes)) return err;
@@ -1323,7 +1358,7 @@ long Map3D::GetListLength()
 	long i, n, count = 1;
 	TMover *mover;
 
-		if (bIAmPartOfACompoundMap) {if (bOpen) count++; return count;}
+		//if (bIAmPartOfACompoundMap) {if (bOpen) count++; return count;}
 
 	if (bOpen) {
 		count++;// name
@@ -1340,9 +1375,9 @@ long Map3D::GetListLength()
 		//if(this->ThereIsADispersedSpill()) count++; // concentration table
 
 		//if(this->ThereIsADispersedSpill()) count++; // surface LEs
-		if(this->ThereIsADispersedSpill()) count++; // water density
-		if(this->ThereIsADispersedSpill()) count++; // mixed layer depth
-		if(this->ThereIsADispersedSpill()) count++; // breaking wave height
+		//if(this->ThereIsADispersedSpill()) count++; // water density
+		//if(this->ThereIsADispersedSpill()) count++; // mixed layer depth
+		//if(this->ThereIsADispersedSpill()) count++; // breaking wave height
 
 		//if(this->ThereIsADispersedSpill()) count++; // diagnostic string info
 		//if(this->ThereIsADispersedSpill()) count++; // droplet data
@@ -1373,7 +1408,7 @@ ListItem Map3D::GetNthListItem(long n, short indent, short *style, char *text)
 	}
 	n -= 1;
 
-	if (bIAmPartOfACompoundMap && bOpen) {
+	/*if (bIAmPartOfACompoundMap && bOpen) {
 	if (n == 0) {
 		item.indent++;
 		item.index = I_3DDRAWCONTOURSFORMAP;
@@ -1383,7 +1418,7 @@ ListItem Map3D::GetNthListItem(long n, short indent, short *style, char *text)
 		return item;
 	}
 	n -= 1;
-	}
+	}*/
 
 	if (bIAmPartOfACompoundMap) { item.owner = 0;return item;}
 	
@@ -1423,7 +1458,7 @@ ListItem Map3D::GetNthListItem(long n, short indent, short *style, char *text)
 	}
 	n -= 1;
 		
-	if(this ->ThereIsADispersedSpill())
+	/*if(this ->ThereIsADispersedSpill())
 	{
 		if (n == 0) {
 			//item.indent++;
@@ -1451,7 +1486,7 @@ ListItem Map3D::GetNthListItem(long n, short indent, short *style, char *text)
 			return item;
 		}
 		n -= 1;
-	}
+	}*/
 	
 	
 	if (bOpen) {
@@ -1508,7 +1543,7 @@ Boolean Map3D::ListClick(ListItem item, Boolean inBullet, Boolean doubleClick)
 				bShowDepthContours = !bShowDepthContours;
 				model->NewDirtNotification(DIRTY_MAPDRAWINGRECT); return TRUE;
 			case I_3DMOVERS: bMoversOpen = !bMoversOpen; return TRUE;
-			case I_3DDRAWCONTOURSFORMAP: bDrawContours = !bDrawContours; return TRUE;
+			//case I_3DDRAWCONTOURSFORMAP: bDrawContours = !bDrawContours; return TRUE;
 		}
 	}
 	
@@ -1773,7 +1808,7 @@ void Map3D::DrawBoundaries2(Rect r)
 	RGBColor sc;
 	GetForeColor(&sc);
 	
-	TMover *mover=0;
+	//TMover *mover=0;
 
 	long nSegs = GetNumBoundarySegs();	
 	long theSeg,startver,endver,j;
@@ -3762,6 +3797,7 @@ OSErr Map3D_c::SetUpCurvilinearGrid2(DOUBLEH landMaskH, long numRows, long numCo
 	 MySpinCursor(); // JLM 8/4/99
 	 //err = NumberIslands(&maskH2, velocityH, landWaterInfo, fNumRows_minus1, fNumCols_minus1, &numIslands);	// numbers start at 3 (outer boundary)
 	 err = NumberIslands(&maskH2, landMaskH, landWaterInfo, numRows_minus1, numCols_minus1, &numIslands);	// numbers start at 3 (outer boundary)
+	 //numIslands++;	// this is a special case for CBOFS, right now the only coops_mask example
 	 MySpinCursor(); // JLM 8/4/99
 	 if (err) goto done;
 	 for (i=0;i<ntri;i++)

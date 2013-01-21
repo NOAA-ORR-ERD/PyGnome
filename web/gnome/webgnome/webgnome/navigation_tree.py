@@ -1,39 +1,12 @@
-from collections import OrderedDict
-
-from webgnome.forms.model import ModelSettingsForm
-from webgnome.forms.movers import AddMoverForm, DeleteMoverForm, mover_form_classes
-from webgnome.forms.spills import AddSpillForm, DeleteSpillForm, spill_form_classes
-
-
 class NavigationTree(object):
     """
-    An class that renders a JSON representation of a ``gnome.model.Model``
+    A class that renders a JSON representation of a ``gnome.model.Model``
     used to initialize a navigation tree widget in the JavaScript app.
     """
-    def __init__(self, request, model):
-        self.request = request
+    def __init__(self, model):
         self.model = model
 
-    def _get_model_settings(self):
-        """
-        Return a dict of values containing each model setting that the client
-        should be able to read and change.
-        """
-        settings_attrs = [
-            'start_time',
-            'duration',
-            'uncertain',
-        ]
-
-        settings = OrderedDict()
-
-        for attr in settings_attrs:
-            if hasattr(self.model, attr):
-                settings[attr] = getattr(self.model, attr)
-
-        return settings
-
-    def _get_value_title(self, name, value, max_chars=8):
+    def _get_value_title(self, name, value, max_chars=50):
         """
         Return a title string that combines ``name`` and ``value``, with value
         shortened if it is longer than ``max_chars``.
@@ -43,83 +16,88 @@ class NavigationTree(object):
         value = value if len(value) <= max_chars else '%s ...' % value[:max_chars]
         return '%s: %s' % (name, value)
 
+    def _render_children(self, nodes, form_id, object_type=None):
+        """
+        Render a list of dictionaries ``nodes`` as child nodes of a root node.
+
+        Returns a list dictionaries each of which has a 'form_id', 'title', and
+        'children' field, the last of which will include any key, value pairs
+        in the dict.
+
+        If a 'name' field exists in a node, it is used as the title of the
+        rendered child.
+
+        If an 'id' field exists in a node, it is used as the 'object_id' field
+        of the rendered child.
+        """
+        children = []
+        for node in nodes:
+            node_id = node['id'] if 'id' in node else None
+
+            item = {
+                'form_id': form_id,
+                'title': node.pop('name', 'Item'),
+                'children': []
+            }
+
+            if node_id:
+                item['object_id'] = node_id
+            if object_type:
+                item['object_type'] = object_type
+
+            for name, value in node.items():
+                sub_item = {
+                    'form_id': form_id,
+                    'title': self._get_value_title(name, value)
+                }
+
+                if node_id:
+                    sub_item['object_id'] = node_id,
+                item['children'].append(sub_item)
+
+            children.append(item)
+        return children
+
+    def _render_root_node(self, title, form_id):
+        return {
+            'title': title,
+            'form_id': form_id,
+            'children': []
+        }
+
     def render(self):
-        """
-        Return an ordered list of tree elements for ``self.model``, suitable
-        for JSON serialization.
+        data = self.model.to_dict()
+        movers = self._render_root_node('Movers', 'add_mover')
+        spills = self._render_root_node('Spills', 'add_spill')
+        settings = self._render_root_node('Model Settings', 'model_settings')
 
-        Nodes are given a ``form_id`` value that points to a form rendered in
-        the client. The client uses this value to display a form for the item
-        when appropriate (i.e., when the user clicks on an "Add" or "Edit"
-        button).
-        """
-        settings = {
-            'title': 'Model Settings',
-            'key': ModelSettingsForm.get_id(self.model),
-            'form_id': ModelSettingsForm.get_id(self.model),
-            'children': []
-        }
+        movers['children'].extend(
+            self._render_children(data.pop('wind_movers', []),
+                                  object_type='wind_mover',
+                                  form_id='edit_wind_mover'))
 
-        movers = {
-            'title': 'Movers',
-            'key': AddMoverForm.get_id(),
-            'form_id': AddMoverForm.get_id(),
-            'children': []
-        }
+        movers['children'].extend(
+            self._render_children(data.pop('random_movers', []),
+                                  object_type='random_mover',
+                                  form_id='edit_random_mover'))
 
-        spills = {
-            'title': 'Spills',
-            'key': AddSpillForm.get_id(),
-            'form_id': AddSpillForm.get_id(),
-            'children': []
-        }
+        spills['children'].extend(
+            self._render_children(data.pop('surface_release_spills', []),
+                                  object_type='surface_release_spill',
+                                  form_id='edit_surface_release_spill'))
 
-        for name, value in self._get_model_settings().items():
-            settings['children'].append({
-                # All settings use the model update form.
-                'key': ModelSettingsForm.get_id(self.model),
-                'form_id': ModelSettingsForm.get_id(self.model),
-                'title': self._get_value_title(name, value),
-            })
+         # Add the map manually as the first model setting
+        map_data = data.pop('map')
+        map_form_id = 'edit_map' if map_data else 'add_map'
 
-        # XXX: Hard-coded form ID. FormView class does not exist yet.
         settings['children'].append({
-            'key': 'model_map',
-            'form_id': 'model_map',
-            'title': 'Map: None'
+            'form_id': map_form_id,
+            'object_id': map_data['id'] if map_data else None,
+            'title': 'Map: %s' % (map_data['name'] if map_data else 'None')
         })
 
-        for mover in self.model.movers:
-            form_class = mover_form_classes.get(mover.__class__, None)
-
-            if not form_class:
-                continue
-
-            _id = form_class.get_id(mover)
-
-            movers['children'].append({
-                'key': _id,
-                'form_id': _id,
-                'delete_form_id': DeleteMoverForm.get_id(mover),
-                'object_id': mover.id,
-                'title': mover.name
-            })
-
-        for spill in self.model.spills:
-            form_class = spill_form_classes.get(spill.__class__, None)
-
-            if not form_class:
-                continue
-
-            _id = form_class.get_id(spill)
-
-
-            spills['children'].append({
-                'key': _id,
-                'form_id': _id,
-                'delete_form_id': DeleteSpillForm.get_id(spill),
-                'object_id': spill.id,
-                'title': spill.name,
-            })
+        settings['children'].extend(self._render_children(
+            [dict(name=self._get_value_title(key, value))
+             for key, value in data.items()], form_id='model_settings'))
 
         return [settings, movers, spills]

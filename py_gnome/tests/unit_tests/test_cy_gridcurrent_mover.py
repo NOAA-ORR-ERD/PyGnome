@@ -48,7 +48,8 @@ class Common():
         self.ref[:] = 1.
         self.ref[:]['z'] = 0 # on surface by default
         self.status[:] = basic_types.oil_status.in_water
-    
+   
+@pytest.mark.slow
 class TestGridCurrentMover():
     cm = Common()
     gcm = cy_gridcurrent_mover.CyGridCurrentMover()    
@@ -78,7 +79,8 @@ class TestGridCurrentMover():
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
         time_grid_file = r"SampleData/currents/test.cdf"
-        topology_file = r"SampleData/currents/NYTopology.dat"	# will want a null default
+        #topology_file = r"SampleData/currents/NYTopology.dat"	# will want a null default
+        topology_file = r""	# will want a null default
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (3.104588) #for simple example
         self.cm.ref[:]['lat'] = (52.016468)
@@ -168,7 +170,8 @@ class TestGridCurrentMover():
         time = datetime.datetime(2000, 2, 14, 10)
         self.cm.model_time = time_utils.date_to_sec(time)
         time_grid_file = r"SampleData/currents/ptCurNoMap.cur"
-        topology_file = r"SampleData/currents/ChesBay.dat"	
+        #topology_file = r"SampleData/currents/ChesBay.dat"	
+        topology_file = r""	
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-124.686928) #for ptCur test
         self.cm.ref[:]['lat'] = (48.401124)
@@ -189,7 +192,8 @@ class TestGridCurrentMover():
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = time_utils.date_to_sec(time)
         time_grid_file = r"SampleData/currents/gridcur_ts.cur"
-        topology_file = r"SampleData/currents/ChesBay.dat"	
+        #topology_file = r"SampleData/currents/ChesBay.dat"	
+        topology_file = r""	
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-119.933264) #for gridCur test
         self.cm.ref[:]['lat'] = (34.138736)
@@ -212,7 +216,8 @@ class TestGridCurrentMover():
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = time_utils.date_to_sec(time)
         time_grid_file = r"SampleData/currents/gridcur_ts_hdr2.cur"
-        topology_file = r"SampleData/currents/ChesBay.dat"	
+        #topology_file = r"SampleData/currents/ChesBay.dat"	
+        topology_file = r""	
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-119.933264) #for gridCur test
         self.cm.ref[:]['lat'] = (34.138736)

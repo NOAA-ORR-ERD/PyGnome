@@ -135,7 +135,7 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	double timeAlpha;
 	long index; 
 	Seconds startTime,endTime;
-	Seconds time = model->GetModelTime();
+	//Seconds time = model->GetModelTime();
 	VelocityRec windVelocity;
 	OSErr err = noErr;
 	char errmsg[256];
@@ -175,5 +175,73 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	return deltaPoint;
 }
 
+OSErr GridWindMover_c::TextRead(char *path, char *topFilePath) 
+{
+	// this code is for curvilinear grids
+	OSErr err = 0;
+	short gridType, selectedUnits;
+	char fileNamesPath[256];
+	Boolean isNetCDFPathsFile = false;
+	TimeGridVel *newTimeGrid = nil;
+	
+	
+	if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(path, &isNetCDFPathsFile, fileNamesPath, &gridType))
+	{
+		if (gridType == CURVILINEAR)
+		{
+			newTimeGrid = new TimeGridWindCurv();
+		}
+		else
+		{
+			newTimeGrid = new TimeGridWindRect();
+		}
+		if (newTimeGrid)
+		{
+	 
+			 //err = newGridWindMover->InitMover(timeGrid);
+			 //if(err) goto Error;
+			 if (!err) err = newTimeGrid->TextRead(path,topFilePath);
+			 if(err) goto Error;
+			 this->SetTimeGrid(newTimeGrid);
+		}
+		 /////////////////
+		 if (!err && isNetCDFPathsFile)
+		 {
+			 //char errmsg[256];
+			 err = timeGrid->ReadInputFileNames(fileNamesPath);
+			 if(!err) timeGrid->DisposeAllLoadedData();
+			 //if(!err) err = newMover->SetInterval(errmsg); // if set interval here will get error if times are not in model range
+			 if (err) return err;
+		 }
+	}
+	else if (IsGridWindFile(path,&selectedUnits))
+	 {
+		 char errmsg[256];
+		 newTimeGrid = new TimeGridCurRect();
+		 //timeGrid = new TimeGridVel();
+		 if (newTimeGrid)
+		 {			
+			 //err = this->InitMover(timeGrid);
+			 //if(err) goto Error;
+			 dynamic_cast<TimeGridCurRect*>(newTimeGrid)->fUserUnits = selectedUnits;
+			 err = newTimeGrid->TextRead(path,"");
+			 if(err) goto Error;
+			 this->SetTimeGrid(newTimeGrid);
+			 if (!err) /// JLM 5/3/10
+			 {
+				 //char errmsg[256];
+				 //err = timeGrid->ReadInputFileNames(fileNamesPath);
+				 //if(!err)
+				 timeGrid->DisposeAllLoadedData();
+				 //if(!err) err = timeGrid->SetInterval(errmsg,model->GetModelTime()); // if set interval here will get error if times are not in model range
+			 }
+		 }
+	 }
+Error: // JLM 	 10/27/98
+	//if(newMover) {newMover->Dispose();delete newMover;newMover = 0;};
+	//return 0;
+	return err;
+	
+}	
 
 

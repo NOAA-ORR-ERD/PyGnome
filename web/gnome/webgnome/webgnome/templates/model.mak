@@ -15,6 +15,11 @@
             <ul class="dropdown-menu" role="menu" aria-labelledby="file-drop">
                 <li><a tabindex="-1" id="menu-new" href="javascript:">New</a></li>
                 <li><a tabindex="-1" href="javascript:">Load from file</a></li>
+                <li class="dropdown-submenu"><a tabindex="-1" href="javascript:">Load example...</a>
+                    <ul class="dropdown-menu">
+                        <li><a tabindex="-1" id="long-island" href="javascript:">Long Island Sound</a></li>
+                    </ul>
+                </li>
                 <li><a tabindex="-1" href="javascript:">Save</a></li>
                 <li class="divider"></li>
                 <li><a tabindex="-1" href="javascript:">Preferences</a></li>
@@ -39,7 +44,7 @@
 </%block>
 
 <%block name="sidebar">
-     <div class="container" id="sidebar-toolbar">
+     <div class="container sidebar-toolbar">
       <div class="btn-toolbar">
         <div class="btn-group">
             <a class="btn" id="add-button" href="javascript:"><i class="icon-plus-sign"></i></a>
@@ -69,15 +74,15 @@
       </div>
     </div>
 
-    <div id="main-content">
-         <div class="btn-toolbar">
-              <div class="btn-group">
-                  <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
-              </div>
-              <div class="btn-group">
-                  <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
-              </div>
-              <div class="btn-group">
+    <div id="main-content" class="row">
+        <div class="btn-toolbar">
+            <div class="btn-group">
+                <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
+            </div>
+            <div class="btn-group">
+                <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
+            </div>
+            <div class="btn-group">
                 <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
                 <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
                 <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
@@ -85,23 +90,51 @@
             </div>
             <div class="btn-group">
                 <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
-                <div class="btn disabled" id="slider-container"><span id="time">00:00</span> <div id="slider"></div></div>
+
+                <div class="btn disabled" id="slider-container">
+                    <span id="time">00:00</span>
+
+                    <div id="slider"></div>
+                </div>
                 <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
                 <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
                 <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
             </div>
         </div>
 
+
         <div id="map">
         </div>
 
-        <div id="placeholder" class="hidden">
-            <img class="frame active" src="/static/img/placeholder.gif">
+        <div class="placeholder" class="hidden">
+            <div id="map_canvas"></div>
         </div>
     </div>
 
     <div id="modal-container">
-        ${model_form_html | n}
+        <%include file="forms/add_mover.mak"/>
+        <%include file="forms/add_spill.mak"/>
+        <%include file="forms/add_map.mak"/>
+        <%include file="forms/map.mak" args="map=_map"/>
+        <%include file="forms/model_settings.mak" args="model=model"/>
+
+        ## Mover forms
+        <%include file="forms/wind_mover.mak"
+            args="mover=default_wind_mover, default_wind=default_wind,
+                  default_wind_value=default_wind_value, form_id='add_wind_mover'"/>
+        <%include file="forms/wind_mover.mak"
+            args="mover=default_wind_mover, default_wind=default_wind,
+                  default_wind_value=default_wind_value, form_id='edit_wind_mover'"/>
+         <%include file="forms/random_mover.mak"
+            args="mover=default_random_mover, form_id='add_random_mover'"/>
+         <%include file="forms/random_mover.mak"
+            args="mover=default_random_mover, form_id='edit_random_mover'"/>
+
+        ## Spill forms
+        <%include file="forms/surface_release_spill.mak"
+            args="spill=default_surface_release_spill, form_id='add_surface_release_spill'"/>
+        <%include file="forms/surface_release_spill.mak"
+            args="spill=default_surface_release_spill, form_id='edit_surface_release_spill'"/>
     </div>
 </%block>
 
@@ -125,19 +158,17 @@
 
             $('#map').imagesLoaded(function() {
                 new app_view.AppView({
-                    mapId: 'map',
-                    mapPlaceholderId: 'placeholder',
-                    mapBounds: ${map_bounds},
-                    sidebarId: 'sidebar',
-                    formContainerId: 'modal-container',
-                    addMoverFormId: "${add_mover_form_id}",
-                    addSpillFormId: "${add_spill_form_id}",
                     generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                     expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
-                    backgroundImageUrl: "${background_image_url or '' | n}",
-                    currentTimeStep: ${model.current_time_step},
-                    runModelUntilFormUrl: "${run_model_until_form_url}",
-                    formsUrl: "${model_forms_url}"
+                    backgroundImageUrl: "${background_image_url | n}",
+                    currentTimeStep: ${current_time_step},
+                    surfaceReleaseSpills: ${surface_release_spills | n},
+                    windMovers: ${wind_movers | n},
+                    randomMovers: ${random_movers | n},
+                    modelId: "${model_id}",
+                    modelSettings: ${model_settings | n},
+                    map: ${map_data | n},
+                    mapIsLoaded: ${"true" if map_is_loaded else "false"}
                 });
             });
         });

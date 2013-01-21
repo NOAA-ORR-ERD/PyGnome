@@ -50,12 +50,11 @@ else:
     config = 'release'    # only used by windows
 
 sys.argv.count(config) != 0 and sys.argv.remove(config)
-#------------
 
 # for the mac -- forcing 32 bit only builds
 if sys.platform == 'darwin':
     #Setting this should force only 32 bit intel build
-	os.environ['ARCHFLAGS'] = "-arch i386"
+    os.environ['ARCHFLAGS'] = "-arch i386"
 
 
 CPP_CODE_DIR = "../lib_gnome"
@@ -65,7 +64,8 @@ extension_names = [
                    'cy_helpers',
                    'cy_wind_mover',
                    'cy_cats_mover',
-                   #'cy_gridcurrent_mover',
+                   'cy_gridcurrent_mover',
+                   'cy_gridwind_mover',
                    'cy_ossm_time',
                    'cy_random_mover',
                    'cy_land_check',
@@ -80,7 +80,6 @@ cpp_files = [
               'ClassID_c.cpp',
               'Random_c.cpp',
               'TimeValuesIO.cpp',
-              'MYRANDOM.cpp',
               'GEOMETRY.cpp',
               'OSSMTimeValue_c.cpp',
               'TimeValue_c.cpp',
@@ -101,7 +100,9 @@ cpp_files = [
               'ShioCurrent1.cpp',
               'ShioCurrent2.cpp',
               'GridCurrentMover_c.cpp',
+              'GridWindMover_c.cpp',
               'TimeGridVel_c.cpp',
+              'TimeGridWind_c.cpp',
               'MakeTriangles.cpp',
               'MakeDagTree.cpp',
               ]

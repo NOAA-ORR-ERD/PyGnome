@@ -146,28 +146,29 @@ class MapCanvas(object):
         
         :param spill: a spill object to draw
         """
+        ##fixme: add checks for the status flag (beached, etc)!
+        if spill.num_elements > 0: # nothing to draw if no elements
+            if spill.is_uncertain:
+                color = self.colors['uncert_LE']
+            else:
+                color = self.colors['LE']
+                
+            positions = spill['positions']
 
+            pixel_pos = self.projection.to_pixel(positions, asint=False)
+            arr = self.fore_image_array
 
-        if spill.is_uncertain:
-            color = self.colors['uncert_LE']
-        else:
-            color = self.colors['LE']
-            
-        positions = spill['positions']
-        pixel_pos = self.projection.to_pixel(positions, asint=False)
-        arr = self.fore_image_array
-
-        # remove points that are off the map
-        pixel_pos = pixel_pos[(pixel_pos[:,0] > 1) &
-                              (pixel_pos[:,1] > 1) &
-                              (pixel_pos[:,0] < (self.image_size[0]-2) ) &
-                              (pixel_pos[:,1] < (self.image_size[1]-2) ) ]
-        # draw the four pixels for the LE
-        #note: long-lat backwards for array (vs image)  
-        arr[(pixel_pos[:,1]-0.5).astype(np.int32), (pixel_pos[:,0]-0.5).astype(np.int32)] = color
-        arr[(pixel_pos[:,1]-0.5).astype(np.int32), (pixel_pos[:,0]+0.5).astype(np.int32)] = color
-        arr[(pixel_pos[:,1]+0.5).astype(np.int32), (pixel_pos[:,0]-0.5).astype(np.int32)] = color
-        arr[(pixel_pos[:,1]+0.5).astype(np.int32), (pixel_pos[:,0]+0.5).astype(np.int32)] = color
+            # remove points that are off the map
+            pixel_pos = pixel_pos[(pixel_pos[:,0] > 1) &
+                                  (pixel_pos[:,1] > 1) &
+                                  (pixel_pos[:,0] < (self.image_size[0]-2) ) &
+                                  (pixel_pos[:,1] < (self.image_size[1]-2) ) ]
+            # draw the four pixels for the LE
+            #note: long-lat backwards for array (vs image)
+            arr[(pixel_pos[:,1]-0.5).astype(np.int32), (pixel_pos[:,0]-0.5).astype(np.int32)] = color
+            arr[(pixel_pos[:,1]-0.5).astype(np.int32), (pixel_pos[:,0]+0.5).astype(np.int32)] = color
+            arr[(pixel_pos[:,1]+0.5).astype(np.int32), (pixel_pos[:,0]-0.5).astype(np.int32)] = color
+            arr[(pixel_pos[:,1]+0.5).astype(np.int32), (pixel_pos[:,0]+0.5).astype(np.int32)] = color
 
 
     def save_background(self, filename, type="PNG"):
