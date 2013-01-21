@@ -462,7 +462,7 @@ define([
 
 
     var BaseMover = BaseModel.extend({
-        dateFields: ['is_active_start', 'is_active_stop']
+        dateFields: ['active_start', 'active_stop']
     });
 
 

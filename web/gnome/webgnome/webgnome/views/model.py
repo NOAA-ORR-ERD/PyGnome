@@ -46,7 +46,6 @@ def show_model(request):
     default_random_mover = util.SchemaForm(schema.RandomMoverSchema)
     default_surface_release_spill = util.SchemaForm(schema.SurfaceReleaseSpillSchema)
 
-
     data = {
         'model': model_settings,
         'model_id': model.id,

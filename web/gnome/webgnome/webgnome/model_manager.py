@@ -91,8 +91,8 @@ class WebWindMover(WindMover, BaseWebObject):
         'wind',
         'on',
         'name',
-        'is_active_start',
-        'is_active_stop',
+        'active_start',
+        'active_stop',
         'uncertain_duration',
         'uncertain_speed_scale',
         'uncertain_angle_scale',
@@ -137,8 +137,8 @@ class WebRandomMover(RandomMover, BaseWebObject):
         'id',
         'on',
         'name',
-        'is_active_start',
-        'is_active_stop',
+        'active_start',
+        'active_stop',
         'diffusion_coef'
     ]
 
@@ -159,6 +159,7 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
         super(WebSurfaceReleaseSpill, self).__init__(*args, **kwargs)
 
     serializable_fields = [
+        'id',
         'release_time',
         'start_position',
         'windage_range',
@@ -194,9 +195,9 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
     def windage_max(self):
         return self.windage_range[1]
 
-    def deserialize_start_position(self, data):
+    def deserialize_start_position(self, start_position):
         return numpy.asarray(
-            data['start_position'],
+            start_position,
             dtype=basic_types.world_point_type).reshape((3,))
 
     def serialize_start_position(self):
