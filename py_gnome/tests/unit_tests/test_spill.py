@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+
 """
-Tests the new spill code.
+Tests the spill code.
 """
 
 import datetime
@@ -63,6 +65,10 @@ def test_deepcopy():
     assert spill1 is not spill2
     assert spill1.spill_num != spill2.spill_num
 
+    #try deleting the copy, and see if any errors result
+    del spill2
+    del spill1
+
 def test_copy():
     """
     only tests that the spill_nums work -- not sure about anything else...
@@ -71,6 +77,33 @@ def test_copy():
     spill2 = copy.copy(spill1)
     assert spill1 is not spill2
     assert spill1.spill_num != spill2.spill_num
+    #try deleting the copy, and see if any errors result
+    del spill1
+    del spill2
+
+
+def test_uncertain_copy():
+    """
+    only tests a few things...
+    """
+    spill = SurfaceReleaseSpill(num_elements=100,
+                                start_position = (28, -78, 0.0),
+                                release_time = datetime.datetime.now(),
+                                end_position = (29, -79, 0.0),
+                                end_release_time = datetime.datetime.now() + datetime.timedelta(hours=24),
+                                windage_range = (0.02, 0.03),
+                                windage_persist = 0,)
+
+    u_spill = spill.uncertain_copy() 
+
+    assert u_spill is not spill
+    assert u_spill.spill_num == spill.spill_num
+    assert np.array_equal(u_spill.start_position, spill.start_position)
+    del spill
+    del u_spill
+    #assert False
+
+
 
 def test_new_elements():
     """
@@ -470,4 +503,11 @@ def test_SpatialReleaseSpill2():
 
     assert data['positions'].shape == (4,3)
     data = sp.release_elements(release_time+datetime.timedelta(hours=1))
+
+
+
+if __name__ == "__main__":
+    test_uncertain_copy()
+    #test_reset_array_types()
+
 

@@ -11,6 +11,7 @@ This is the "magic" class -- it handles the smart allocation of arrays, etc.
 
 """
 import datetime
+import copy
 
 import numpy as np
 
@@ -82,13 +83,18 @@ class SpillContainer(object):
         """
         return len(self['positions']) # every spill should have a postitions data array
 
-    def copy(self, uncertain=False):
-        import copy
-        new_sc = copy.deepcopy(self)
-        #new_sc = SpillContainer()
-        new_sc.is_uncertain = uncertain
+    def uncertain_copy(self):
+        """
+        Returns a copy of the spill_container suitable for uncertainty
 
-        return new_sc
+        It has all the same spills, with the same ids, and the is_uncertain
+        flag set to True
+        """
+        u_sc = SpillContainer(uncertain=True)
+        for sp in self.spills:
+            u_sc.spills += sp.uncertain_copy()
+        return u_sc
+
 
     # def add_spill(self, spill):
     #     self.spills.add(spill)

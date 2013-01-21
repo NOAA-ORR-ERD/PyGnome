@@ -171,7 +171,7 @@ class Model(GnomeObject):
             mover.prepare_for_model_run()
         self._spill_container.reset()
         if self._uncertain:
-            self._uncertain_spill_container = self._spill_container.copy(uncertain=True)
+            self._uncertain_spill_container = self._spill_container.uncertain_copy()
         else:
             self._uncertain_spill_container = None
 
