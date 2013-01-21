@@ -427,13 +427,12 @@ define([
 
 
     // Spills
-
     var SurfaceReleaseSpill = BaseModel.extend({
         dateFields: ['release_time']
     });
 
 
-    var SurfaceReleaseSpillCollection = Backbone.Collection.extend({
+    var SurfaceReleaseSpillCollection = BaseCollection.extend({
         model: SurfaceReleaseSpill
     });
 

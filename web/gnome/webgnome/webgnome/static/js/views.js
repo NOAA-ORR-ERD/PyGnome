@@ -280,8 +280,6 @@ define([
             } else {
                 map.find('img').not('.background').remove();
             }
-
-            map.find('canvas').remove();
         },
 
         getBackground: function() {
@@ -468,8 +466,6 @@ define([
         },
 
         /*
-         Create a background canvas and paint lines for all spills on the page.
-
          Create a foreground canvas and setup event handlers to capture new
          spills added to the map. This canvas is cleared entirely during line
          additions (as the line position changes) and when the form container

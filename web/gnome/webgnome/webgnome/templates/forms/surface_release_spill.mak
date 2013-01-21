@@ -18,7 +18,7 @@
 
             ${defs.form_control(name, label="Name")}
             ${defs.form_control(is_active, label="Active")}
-            ${defs.form_control(num_elements, label="Number of LEs")}
+            ${defs.form_control(num_elements, label="Number of Elements")}
             ${defs.datetime_control(spill.release_time, 'release_time',
                                     date_label='Release Start')}
 

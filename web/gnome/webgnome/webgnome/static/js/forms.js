@@ -1007,7 +1007,7 @@ define([
                 dialog: {
                     width: 400,
                     height: 420,
-                    title: "Edit Point Release Spill"
+                    title: "Edit Surface Release Spill"
                 }
             }, options);
 
@@ -1110,16 +1110,18 @@ define([
                 dialog: {
                     width: 400,
                     height: 420,
-                    title: "Add Point Release Spill"
+                    title: "Add Surface Release Spill"
                 }
             }, options);
 
             AddSurfaceReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
         },
 
-        show: function() {
+        show: function(coords) {
             this.model = new models.SurfaceReleaseSpill();
             AddSurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
+            this.$el.find('#start_position_x').val(coords[0]);
+            this.$el.find('#start_position_y').val(coords[1]);
         },
 
         close: function() {
