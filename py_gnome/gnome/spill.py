@@ -40,7 +40,7 @@ class Spill(GnomeObject):
     __all_instances = {} # keys are the instance spill_num -- values are the subclass object
 
     def __new__(cls, *args, **kwargs):
-        print "Spill.__new__ called", cls
+        #print "Spill.__new__ called", cls
         obj = super(Spill, cls).__new__(cls, *args, **kwargs)
         cls.__all_instances[ id(obj) ] = cls
         return obj
