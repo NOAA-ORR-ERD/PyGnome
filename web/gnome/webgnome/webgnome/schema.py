@@ -171,9 +171,9 @@ class WindageRangeSchema(TupleSchema):
 
 
 class SurfaceReleaseSpillSchema(MappingSchema):
-    default_name = 'Point Release Spill'
+    default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
-    num_elements = SchemaNode(Int(), default=0)
+    num_elements = SchemaNode(Int(), default=0, validator=nonzero)
     release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now)
     start_position = PositionSchema(default=(0, 0, 0))
     windage_range = WindageRangeSchema(default=(0.01, 0.04))

@@ -241,39 +241,27 @@ class WebModel(Model, BaseWebObject):
     }
 
     def __init__(self, *args, **kwargs):
-        self.base_dir = self._make_base_dir(kwargs.pop('model_images_dir'))
-        self.data_dir = self._make_data_dir()
+        # Create the base directory for all of the model's data.
+        self.base_dir = os.path.join(kwargs.pop('model_images_dir'),
+                                     str(self.id))
+        util.mkdir_p(self.base_dir)
 
         super(WebModel, self).__init__()
 
         # Patch the object with an empty ``time_steps`` array for the time being.
-        # TODO: Add output caching in the model.
+        # TODO: Add output caching in the model?
         self.time_steps = []
         self.runtime = None
 
-    def _make_base_dir(self, dir):
+    @property
+    def data_dir(self):
         """
-        Create the base directory for this model's data files if it does not
-        already exist, using ``dir`` as the directory prefix.
-
-        Return the created path.
+        Return the expected path to the files for the current run of the model.
         """
-        base_dir = os.path.join(dir, str(self.id))
-        util.mkdir_p(base_dir)
-        return base_dir
+        if not self.runtime:
+            return
 
-    def _make_data_dir(self):
-        """
-        Create a directory to contain files related to the current run.
-
-        Return the created path.
-        """
-        data_dir = os.path.join(self.base_dir, 'data')
-
-        if not os.path.exists(data_dir):
-            os.mkdir(data_dir)
-
-        return data_dir
+        return os.path.join(self.base_dir, self.runtime)
 
     @property
     def background_image(self):
