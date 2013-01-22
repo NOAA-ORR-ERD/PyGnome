@@ -11,8 +11,6 @@ This is the "magic" class -- it handles the smart allocation of arrays, etc.
 these are managed by the SpillContainer class
 """
 
-import sys
-import copy
 import numpy as np
 from gnome import basic_types
 from gnome.gnomeobject import GnomeObject
@@ -191,6 +189,8 @@ class FloatingSpill(Spill):
                  windage_persist=900):
 
         super(FloatingSpill, self).__init__()
+        self.windage_range = windage_range
+        self.windage_persist = windage_persist
 
         self.add_array_types()
 
@@ -331,13 +331,13 @@ class SurfaceReleaseSpill(FloatingSpill):
             return None
 
     def reset(self):
-       """
-       reset to initial conditions -- i.e. nothing released. 
-       """
-       super(SurfaceReleaseSpill, self).reset()
+        """
+        reset to initial conditions -- i.e. nothing released. 
+        """
+        super(SurfaceReleaseSpill, self).reset()
 
-       self.num_released = 0
-       self.prev_release_pos = self.start_position
+        self.num_released = 0
+        self.prev_release_pos = self.start_position
 
 class SpatialReleaseSpill(FloatingSpill):
     """
@@ -400,10 +400,10 @@ class SpatialReleaseSpill(FloatingSpill):
             return None
 
     def reset(self):
-       """
-       reset to initial conditions -- i.e. nothing released. 
-       """
-       super(SpatialReleaseSpill, self).reset()
+        """
+        reset to initial conditions -- i.e. nothing released. 
+        """
+        super(SpatialReleaseSpill, self).reset()
 
 
 

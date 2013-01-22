@@ -17,7 +17,7 @@ from pyramid.renderers import JSON
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
 
 
-def make_message(type, text):
+def make_message(type_in, text):
     """
     Create a dictionary suitable to be returned in a JSON response as a
     "message" sent to the JavaScript client.
@@ -27,7 +27,7 @@ def make_message(type, text):
     a ``type`` field and ``text`` field, it will display the message to the
     user.
     """
-    return dict(type=type, text=text)
+    return dict(type=type_in, text=text)
 
 
 def encode_json_date(obj):
