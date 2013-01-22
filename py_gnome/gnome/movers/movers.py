@@ -5,7 +5,10 @@ from gnome import basic_types, GnomeObject
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
+from gnome.cy_gnome import cy_cats_mover, cy_shio_time
 from gnome.utilities import rand    # not to confuse with python random module
+
+import os
 
 from datetime import datetime, timedelta
 from time import gmtime
@@ -333,7 +336,54 @@ class RandomMover(CyMover):
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
-
+class CatsMover(CyMover):
+    
+    def __init__(self, curr_file, shio_file=None,
+                 active_start= datetime( *gmtime(0)[:7] ), 
+                 active_stop = datetime.max):
+        """
+        
+        """
+        if not os.path.exists(curr_file):
+            raise ValueError("Path for Cats file does not exist: {0}".format(curr_file))
+        
+        self.curr_file = curr_file  # check if this is stored with cy_cats_mover?
+        self.mover = cy_cats_mover.CyCatsMover()
+        self.mover.read_topology(curr_file)
+        
+        if shio_file is not None and not os.path.exists(shio_file):
+            raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
+        else:
+            self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
+            self.mover.set_shio(self.shio)
+        
+        super(CatsMover,self).__init__(active_start, active_stop)
+        
+    def __repr__(self):
+        """
+        unambiguous representation of object
+        """
+        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.shio.filename)
+        return info
+    
+    def get_move(self, sc, time_step, model_time_datetime):
+        """
+        :param sc: an instance of the gnome.SpillContainer class
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as a date time object
+        """
+        self.prepare_data_for_get_move(sc, model_time_datetime)
+        
+        if self.active and self.on: 
+            self.mover.get_move(  self.model_time,
+                                  time_step, 
+                                  self.positions,
+                                  self.delta,
+                                  self.status_codes,
+                                  self.spill_type,
+                                  0)    # only ever 1 spill_container so this is always 0!
+        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+        
 class WeatheringMover(Mover):
     """
     Python Weathering mover
@@ -382,10 +432,10 @@ class WeatheringMover(Mover):
             self.spill_type = basic_types.spill_type.forecast
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
-       """
-       Right now this method just calls its super() method.
-       """
-       super(WeatheringMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
+        """
+        Right now this method just calls its super() method.
+        """
+        super(WeatheringMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
 
     def get_move(self, sc, time_step, model_time_datetime):
         """
