@@ -135,6 +135,10 @@ class Model(GnomeObject):
         self._map = map_in
         self.rewind()
 
+    @property
+    def num_time_steps(self):
+        return self._num_time_steps
+
     def get_spill(self, spill_id):
         """
         Return a :class:`gnome.spill.Spill` in the ``self._spills`` dict with
