@@ -11,12 +11,9 @@ This is the "magic" class -- it handles the smart allocation of arrays, etc.
 
 """
 import datetime
-import copy
 
 import numpy as np
 
-from gnome import basic_types
-from gnome.utilities import rand    # not to confuse with python random module
 import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
 
@@ -166,7 +163,7 @@ class SpillContainer(object):
         for spill in self.spills:
             new_data = spill.release_elements(current_time, time_step)
             if new_data is not None:
-                for name, array in new_data.items():
+                for name in new_data:
                     if name in self._data_arrays:
                         self._data_arrays[name] = np.r_[ self._data_arrays[name], new_data[name] ]
                     else:
