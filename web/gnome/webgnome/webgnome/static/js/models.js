@@ -358,6 +358,36 @@ define([
         // during `toJSON` calls and to `moment` objects during `get` calls.
         dateFields: null,
 
+        save: function(attrs, options) {
+            options = options || {};
+
+            if (!_.has(options, 'wait')) {
+                options.wait = true;
+            }
+
+            if (!_.has(options, 'success')) {
+                options.success = this.success;
+            }
+
+            if (!_.has(options, 'error')) {
+                options.error = this.error;
+            }
+
+            BaseModel.__super__.save.apply(this, [attrs, options]);
+        },
+
+        success: function(model, response, options) {
+            model.errors = null;
+        },
+
+        error: function(model, response, options) {
+            response = $.parseJSON(response.responseText);
+
+            if (response.errors.length) {
+                model.errors = response.errors;
+            }
+        },
+
         parse: function(response) {
             var message = util.parseMessage(response);
             if (message) {

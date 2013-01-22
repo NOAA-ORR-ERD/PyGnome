@@ -624,6 +624,7 @@ define([
                 return;
             }
 
+            formView.reload();
             formView.show();
         },
 
@@ -634,6 +635,7 @@ define([
                 return;
             }
 
+            formView.reload();
             formView.show(coords);
         }
     });
