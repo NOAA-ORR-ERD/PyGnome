@@ -3,8 +3,8 @@
 import pytest
 
 import gnome
-from gnome import movers, weather
-from gnome.utilities.orderedcollection import *
+from gnome import movers
+from gnome.utilities.orderedcollection import OrderedCollection
 
 class TestOrderedCollection(object):
     def test_init(self):
@@ -92,6 +92,14 @@ class TestOrderedCollection(object):
             l__temp = oc[id(4)]
         with pytest.raises(TypeError):
             oc.replace(id(7), 'not an int')
+
+    def test_index(self):
+        oc = OrderedCollection([1,2,3,4,5])
+        assert oc.index(id(3)) == 2
+        oc[id(3)] = 6
+        assert oc.index(id(6)) == 2
+        del oc[id(6)]
+        assert oc.index(id(4)) == 2
 
     def test_with_movers(self):
         mover_1 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))

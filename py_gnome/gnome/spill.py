@@ -116,10 +116,12 @@ class Spill(GnomeObject):
         """
         returns an spill_num that is not already in use
 
-        This approach will assure that all the spills within one python isntance have
+        This approach will assure that all the spills within one python instance have
         unique spills numbers, but also that they will be small numbers.
 
         inefficient, but who cares?
+        TODO: managing a unique list of id's for spills could probably be handled
+              by the spill container
         """
         spill_num = 1
         while spill_num < 65536: # just so it will eventually terminate! (and fit into an int16)
