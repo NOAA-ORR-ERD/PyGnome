@@ -61,8 +61,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="netcdf.lib"
 				OutputFile="..\..\py_gnome\gnome\cy_gnome\$(ProjectName).dll"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\..\third_party_lib\vs2008"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
