@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from uuid import uuid1, uuid4
+from uuid import uuid1
 import copy
 
 class GnomeObject(object):

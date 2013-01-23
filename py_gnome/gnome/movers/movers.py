@@ -36,7 +36,9 @@ class Mover(GnomeObject):
         self.active_stop  = active_stop
 
     # Methods for active property definition
-    active = property(lambda self: self._active)
+    @property
+    def active(self):
+        return self._active
 
     def datetime_to_seconds(self, model_time):
         """
@@ -448,16 +450,18 @@ class WeatheringMover(Mover):
         self.validate_spill(sc)
 
         self.model_time = self.datetime_to_seconds(model_time_datetime)
-        self.prepare_data_for_get_move(sc, model_time_datetime)
+        #self.prepare_data_for_get_move(sc, model_time_datetime)
 
         if self.active and self.on: 
-            self.mover.get_move(  self.model_time,
-                                  time_step,
-                                  self.positions,
-                                  self.delta,
-                                  self.status_codes,
-                                  self.spill_type,
-                                  0)    # only ever 1 spill_container so this is always 0!
+            #self.mover.get_move(  self.model_time,
+            #                      time_step,
+            #                      self.positions,
+            #                      self.delta,
+            #                      self.status_codes,
+            #                      self.spill_type,
+            #                      0)    # only ever 1 spill_container so this is always 0!
+            pass
+
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 

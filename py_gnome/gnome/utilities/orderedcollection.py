@@ -11,9 +11,11 @@ class OrderedCollection(object):
     - Objects can be replaced in order.  The objects will be referenced 
       by a new id, and still be in the correct order.
     '''
-    def __init__(self, elems=[], dtype=None):
+    def __init__(self, elems=None, dtype=None):
         if elems and not isinstance(elems, list):
             raise TypeError('%s: needs a list of objects' % (self.__class__.__name__))
+        if not elems:
+            elems = []
 
         if not dtype and len(elems) == 0:
             raise TypeError('%s: specify a data type if list is empty' % (self.__class__.__name__))
@@ -29,12 +31,11 @@ class OrderedCollection(object):
         # NOTE: we stringify the e.id value since it could be of a type that is hard to reference as a key
         self._index = dict([(str(e.id) if hasattr(e, 'id') else id(e), idx) for e, idx in zip(elems, range(len(elems)))])
         self._elems = elems[:]
-        pass
 
     def get(self, ident):
         try:
             return self._elems[self._index[ident]]
-        except:
+        except KeyError:
             return self._elems[self._index[str(ident)]]
 
     def add(self, elem):
@@ -49,11 +50,9 @@ class OrderedCollection(object):
             if l__id not in self._index.keys():
                 self._index[l__id] = len(self._elems)
                 self._elems.append(elem)
-            pass
         elif isinstance(elem, list) and all([isinstance(e, self.dtype) for e in elem]):
             for e in elem:
                 self.add(e)
-            pass
         else:
             raise TypeError('%s: expected %s, got %s' % (self.__class__.__name__, self.dtype, type(elem)))
 
@@ -88,6 +87,13 @@ class OrderedCollection(object):
         else:
             self._index[id(new_elem)] = idx
         self._elems[idx] = new_elem
+
+    def index(self, ident):
+        try:
+            idx = self._index[ident]
+        except KeyError:
+            idx = self._index[str(ident)]
+        return sorted(self._index.values()).index(idx)
 
     def __len__(self):
         return len(self._index.keys())
