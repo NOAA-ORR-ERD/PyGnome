@@ -35,7 +35,9 @@ class TestCats():
                            self.cm.status,basic_types.spill_type.forecast,
                            0)
         self.cats.model_step_is_done()
-        assert np.all(delta != 0)
+        assert np.all(delta['lat'] != 0)
+        assert np.all(delta['long'] != 0)
+        assert np.all(delta['z'] == 0)
         
     def uncertain_move(self, delta):
         """
@@ -48,23 +50,11 @@ class TestCats():
                            self.cm.status,basic_types.spill_type.uncertainty,
                            0)
         self.cats.model_step_is_done()
-        assert np.all(delta != 0)
+        assert np.all(delta['lat'] != 0)
+        assert np.all(delta['long'] != 0)
+        assert np.all(delta['z'] == 0)
         
-    # 
-    # TODO: Figure out why tests fail if following tests are uncommented
-    #
-    #===========================================================================
-    # def test_certain_move(self):
-    #    delta1  = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
-    #    self.certain_move(delta1)
-    #    assert np.all(delta1 != 0)
-    # 
-    # def test_uncertain_move(self):
-    #    delta2  = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
-    #    self.uncertain_move(delta2)
-    #    assert np.all( delta2 != 0)
-    #===========================================================================
-    
+        
     def test_move(self):
         """
         call get_move for forcast and uncertainty spill and makes sure
@@ -77,5 +67,6 @@ class TestCats():
         
         self.uncertain_move(self.cm.u_delta)
         print self.cm.u_delta
-        assert np.all(self.cm.delta != self.cm.u_delta)
+        assert np.all(self.cm.delta['lat'] != self.cm.u_delta['lat'])
+        assert np.all(self.cm.delta['long'] != self.cm.u_delta['long'])
     
