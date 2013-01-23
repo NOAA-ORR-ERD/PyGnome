@@ -11,9 +11,11 @@ class OrderedCollection(object):
     - Objects can be replaced in order.  The objects will be referenced 
       by a new id, and still be in the correct order.
     '''
-    def __init__(self, elems=[], dtype=None):
+    def __init__(self, elems=None, dtype=None):
         if elems and not isinstance(elems, list):
             raise TypeError('%s: needs a list of objects' % (self.__class__.__name__))
+        if not elems:
+            elems = []
 
         if not dtype and len(elems) == 0:
             raise TypeError('%s: specify a data type if list is empty' % (self.__class__.__name__))

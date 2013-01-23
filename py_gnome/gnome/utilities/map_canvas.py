@@ -8,7 +8,6 @@ the web version
 
 """
 
-import sys
 import numpy as np
 
 import PIL.Image
@@ -79,6 +78,7 @@ class MapCanvas(object):
         self.back_image.putpalette(self.palette)
         self.projection = projection_class(((-180,-85),(180, 85)), self.image_size) # BB will be re-set
         self.map_BB = None
+        self.land_polygons = None
    
     def set_land(self, polygons, BB=None):
         """
@@ -171,10 +171,10 @@ class MapCanvas(object):
             arr[(pixel_pos[:,1]+0.5).astype(np.int32), (pixel_pos[:,0]+0.5).astype(np.int32)] = color
 
 
-    def save_background(self, filename, type="PNG"):
-        self.back_image.save(filename, type)
+    def save_background(self, filename, type_in="PNG"):
+        self.back_image.save(filename, type_in)
 
-    def save_foreground(self, filename, type="PNG"):
+    def save_foreground(self, filename, type_in="PNG"):
         self.fore_image.save(filename, transparency=self.colors['transparent'])
     
 class BW_MapCanvas(MapCanvas):
