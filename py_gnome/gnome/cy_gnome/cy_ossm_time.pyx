@@ -18,8 +18,8 @@ cdef class CyOSSMTime:
     
 
     def __cinit__(self):
-       """ TODO: Update it so it can take path as input argument"""
-       self.time_dep = new OSSMTimeValue_c()
+        """ TODO: Update it so it can take path as input argument"""
+        self.time_dep = new OSSMTimeValue_c()
         
     def __dealloc__(self):
         del self.time_dep

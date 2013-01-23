@@ -182,7 +182,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\py_gnome\gnome\cy_gnome\cy_random_mover.cpp"
+				RelativePath="..\..\py_gnome\gnome\cy_gnome\cy_cats_mover.cpp"
 				>
 			</File>
 		</Filter>
