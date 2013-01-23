@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 import os
 from datetime import datetime, timedelta
-import copy
-
-import numpy as np
 
 import gnome
 
@@ -12,11 +9,14 @@ from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.gnomeobject import GnomeObject
 
 class Model(GnomeObject):
-    
     """ 
     PyGNOME Model Class
     
     """
+    _uncertain = False
+    output_map = None
+    _map = None
+    
     def __init__(self):
         """ 
         Initializes model attributes. 
@@ -131,16 +131,20 @@ class Model(GnomeObject):
     def map(self):
         return self._map
     @map.setter
-    def map(self, map):
-        self._map = map
+    def map(self, map_in):
+        self._map = map_in
         self.rewind()
+
+    @property
+    def num_time_steps(self):
+        return self._num_time_steps
 
     def get_spill(self, spill_id):
         """
         Return a :class:`gnome.spill.Spill` in the ``self._spills`` dict with
         the key ``spill_id`` if one exists.
         """
-        return self._spill_container.get_spill(spill_id)
+        return self._spill_container.spills[spill_id]
 
     def add_spill(self, spill):
         """
@@ -159,7 +163,7 @@ class Model(GnomeObject):
         remove the passed-in spill from the spill list
         """
         ##fixme: what if we want to remove by reference, rather than id?
-        self._spill_container.remove_spill_by_id(spill_id)
+        del self._spill_container.spills[spill_id]
 
     def setup_model_run(self):
         """
@@ -323,7 +327,7 @@ class Model(GnomeObject):
         # run the model
         while True:
             try:
-                image_info = model.next_image()
+                self.next_image(output_dir)
             except StopIteration:
                 print "Done with the model run"
                 break

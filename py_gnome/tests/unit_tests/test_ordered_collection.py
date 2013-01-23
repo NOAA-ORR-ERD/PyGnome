@@ -3,8 +3,8 @@
 import pytest
 
 import gnome
-from gnome import movers, weather
-from gnome.utilities.orderedcollection import *
+from gnome import movers
+from gnome.utilities.orderedcollection import OrderedCollection
 
 class TestOrderedCollection(object):
     def test_init(self):
@@ -15,16 +15,16 @@ class TestOrderedCollection(object):
         oc = OrderedCollection(dtype=int)
         assert oc.dtype == int
 
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError): # IGNORE:E1101
             oc = OrderedCollection() # either a populated list or a dtype is required
 
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError): # IGNORE:E1101
             oc = OrderedCollection('not a list')
 
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError): # IGNORE:E1101
             oc = OrderedCollection([]) # either a populated list or a dtype is required
 
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError): # IGNORE:E1101
             oc = OrderedCollection([1,2,3,4,5], float)
 
     def test_len(self):
@@ -42,8 +42,8 @@ class TestOrderedCollection(object):
     def test_getitem(self):
         oc = OrderedCollection([1,2,3,4,5])
         assert oc[id(3)] == 3
-        with pytest.raises(KeyError):
-            l__temp = oc[id(6)]
+        with pytest.raises(KeyError): # IGNORE:E1101
+            oc[id(6)] # IGNORE:W0106
 
     def test_setitem(self):
         oc = OrderedCollection([1,2,3,4,5])
@@ -54,7 +54,7 @@ class TestOrderedCollection(object):
 
     def test_delitem(self):
         oc = OrderedCollection([1,2,3,4,5])
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError): # IGNORE:E1101
             del oc[id(6)]
         del oc[id(4)]
         assert [i for i in oc] == [1,2,3,5]
@@ -70,12 +70,12 @@ class TestOrderedCollection(object):
         oc = OrderedCollection([1,2,3,4,5])
         oc.add(6)
         assert [i for i in oc] == [1,2,3,4,5,6]
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError): # IGNORE:E1101
             oc.add('not an int')
 
     def test_remove(self):
         oc = OrderedCollection([1,2,3,4,5])
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError): # IGNORE:E1101
             oc.remove(id(6))
         oc.remove(id(4))
         assert [i for i in oc] == [1,2,3,5]
@@ -87,11 +87,19 @@ class TestOrderedCollection(object):
         oc.replace(id(4), 7)
         assert [i for i in oc] == [1,2,3,7,5,6]
         assert oc[id(7)] == 7
-        with pytest.raises(KeyError):
+        with pytest.raises(KeyError): # IGNORE:E1101
             # our key should also be gone after the delete
-            l__temp = oc[id(4)]
-        with pytest.raises(TypeError):
+            oc[id(4)] # IGNORE:W0106
+        with pytest.raises(TypeError): # IGNORE:E1101
             oc.replace(id(7), 'not an int')
+
+    def test_index(self):
+        oc = OrderedCollection([1,2,3,4,5])
+        assert oc.index(id(3)) == 2
+        oc[id(3)] = 6
+        assert oc.index(id(6)) == 2
+        del oc[id(6)]
+        assert oc.index(id(4)) == 2
 
     def test_with_movers(self):
         mover_1 = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
