@@ -135,6 +135,8 @@ class TestConstantWind():
         Use the setup in ConstantWind and ConstantWindWithOSSM for this test   
         """
         # the move should be the same from both objects
+        print
+        print "test_constant_wind"
         print self.cw.delta
         print self.cww_ossm.delta
         np.testing.assert_equal(self.cw.delta, self.cww_ossm.delta, "test_constant_wind() failed", 0)
