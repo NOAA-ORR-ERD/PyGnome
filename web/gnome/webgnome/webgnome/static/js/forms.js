@@ -61,6 +61,54 @@ define([
             this.setupDatePickers();
         },
 
+        handleFieldError: function(error) {
+            var fieldId = this.getFieldIdForError(error);
+            var field = this.$el.find(fieldId);
+
+            if (!field.length) {
+                return;
+            }
+
+            var errorDiv = field.next('.help-inline');
+
+            // If there is no error div, then report the error to the user.
+            if (!errorDiv.length) {
+                alert(error.description);
+                return;
+            }
+
+            errorDiv.text(error.description);
+
+            var group = field.closest('.control-group');
+
+            if (!group.length) {
+                group.addClass('error');
+            }
+
+            group.addClass('error');
+        },
+
+        /*
+         Transform an error object into an input ID.
+         */
+        getFieldIdForError: function(error) {
+            return '#' + error.name;
+        },
+
+        /*
+         Handle a server-side error.
+
+         This will find any fields that directly match `item.location`. Form
+         classes can provide their own more advanced error handling with
+         `handleFieldError` and `getFieldIdForError`.
+         */
+        handleServerError: function() {
+            var _this = this;
+            _.each(this.model.errors, function(error) {
+                _this.handleFieldError(error);
+            });
+        },
+
         setupDatePickers: function() {
             // Setup datepickers
             _.each(this.$el.find('.date'), function(field) {
@@ -87,6 +135,7 @@ define([
 
         show: function() {
             this.prepareForm();
+            this.$el.find('.control-group').removeClass('error');
             $('#main-content').addClass('hidden');
             this.$el.removeClass('hidden');
         },
@@ -201,15 +250,29 @@ define([
             });
         },
 
+        setupModelEvents: function() {
+            var _this = this;
+            this.model.on('error', this.handleServerError);
+            this.model.on('sync', function() {
+                _this.$el.dialog('close');
+            });
+        },
+
         reset: function() {
             this.model = null;
             this.clearForm();
         },
 
         reload: function(id) {
-            var model = this.collection.get(id);
+            var model;
+
+            if (this.collection) {
+                model = this.collection.get(id);
+            }
+
             if (model) {
                 this.model = model;
+                this.setupModelEvents();
             }
         }
     }, {
@@ -235,12 +298,10 @@ define([
                 buttons: {
                     Cancel: function() {
                         _this.cancel();
-                        $(this).dialog("close");
                     },
 
                     Save: function() {
                         _this.submit();
-                        $(this).dialog("close");
                     }
                 },
                 close: this.close
@@ -254,6 +315,31 @@ define([
                 '<input type="text"/></span>').prependTo(this.$el);
         },
 
+        cancel: function() {
+            this.$el.dialog("close");
+            JQueryUIModalFormView.__super__.cancel.apply(this, arguments);
+        },
+
+        submit: function() {
+            // Close if the form isn't using a model. If the form IS using a
+            // model, it will close when the model saves without error.
+            if (!this.model) {
+                this.$el.dialog("close");
+            }
+            JQueryUIModalFormView.__super__.submit.apply(this, arguments);
+        },
+
+        reload: function() {
+            var _this = this;
+            JQueryUIModalFormView.__super__.reload.apply(this, arguments);
+
+            if (this.model) {
+                this.model.on('sync', function() {
+                    _this.$el.dialog('close');
+                });
+            }
+        },
+
         /*
          Hide any other visible modals and show this one.
          */
@@ -261,6 +347,7 @@ define([
             this.prepareForm();
             this.$el.dialog('open');
             this.$el.removeClass('hide');
+            this.$el.find('.control-group').removeClass('error');
         },
 
         hide: function() {
@@ -577,6 +664,12 @@ define([
         },
 
         submit: function() {
+            // Clear the add time form in the variable wind div as those
+            // values must be "saved" in order to mean anything.
+            var variable = $('.variable-wind');
+            variable.find('input').val('');
+            variable.find('input:checkbox').prop('checked', false);
+
             var data = this.getFormData();
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
@@ -854,12 +947,6 @@ define([
          directly to a model object to be saved to the server.
          */
         getFormData: function() {
-            // Clear the add time form in the variable wind div as those
-            // values must be "saved" in order to mean anything.
-            var variable = $('.variable-wind');
-            variable.find('input').val('');
-            variable.find('input:checkbox').prop('checked', false);
-
             var data = this.getBaseFormData();
             var moverTypeDiv = this.getMoverTypeDiv();
             var divData = this.getFormDataForDiv(moverTypeDiv);
@@ -912,11 +999,12 @@ define([
             this.$el.find('#name').val(this.model.get('name'));
             this.$el.find('#active').prop('checked', this.model.get('active'));
             this.$el.find('#units').val(wind.get('units'));
+            this.$el.find('#on').prop('checked', this.model.get('on'));
 
-            this.setDateFields(this.$el.find('.is_active_start_container'),
-                               this.model.get('is_active_start'));
-            this.setDateFields(this.$el.find('.is_active_stop_container'),
-                               this.model.get('is_active_stop'));
+            this.setDateFields(this.$el.find('.active_start_container'),
+                               this.model.get('active_start'));
+            this.setDateFields(this.$el.find('.active_stop_container'),
+                               this.model.get('active_stop'));
 
             var moverType = this.$el.find('.type');
             var timeseries = wind.get('timeseries');
@@ -961,10 +1049,19 @@ define([
             }
         },
 
-        show: function() {
+        handleFieldError: function(error) {
+            console.log(error)
+            if (error.name.indexOf('wind.') === 0) {
+                var fields = error.name.split('.');
+                // XXX: Need to convert Colander's index value in the error
+                // name to the correct model in the client-side collection.
+                // Is there a `changed` list of models?
+                alert('Error in wind value: ' + error.description
+                    + ' Position: ' + fields[2]);
+                return;
+            }
 
-
-            WindMoverFormView.__super__.show.apply(this, arguments);
+            WindMoverFormView.__super__.handleFieldError.apply(this, arguments);
         }
     });
 
@@ -986,8 +1083,8 @@ define([
          Use a new WindMover every time the form is opened.
          */
         show: function() {
-            this.model = null;
             this.model = new models.WindMover();
+            this.setupModelEvents();
             AddWindMoverFormView.__super__.show.apply(this);
         },
 
@@ -1007,7 +1104,7 @@ define([
                 dialog: {
                     width: 400,
                     height: 420,
-                    title: "Edit Point Release Spill"
+                    title: "Edit Surface Release Spill"
                 }
             }, options);
 
@@ -1110,16 +1207,22 @@ define([
                 dialog: {
                     width: 400,
                     height: 420,
-                    title: "Add Point Release Spill"
+                    title: "Add Surface Release Spill"
                 }
             }, options);
 
             AddSurfaceReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
         },
 
-        show: function() {
+        show: function(coords) {
             this.model = new models.SurfaceReleaseSpill();
+            this.setupModelEvents();
             AddSurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
+
+            if (coords) {
+                this.$el.find('#start_position_x').val(coords[0]);
+                this.$el.find('#start_position_y').val(coords[1]);
+            }
         },
 
         close: function() {
@@ -1171,19 +1274,19 @@ define([
 
         show: function() {
             ModelSettingsFormView.__super__.show.apply(this, arguments);
-            var isActiveStart = this.$el.find('.is_active_start_container');
-            var isActiveStop = this.$el.find('.is_active_stop_container');
+            var isActiveStart = this.$el.find('.active_start_container');
+            var isActiveStop = this.$el.find('.active_stop_container');
             this.setDateFields(isActiveStart, this.getFormDate(isActiveStart));
             this.setDateFields(isActiveStop, this.getFormDate(isActiveStop));
         },
 
         submit: function() {
             var data = this.getFormData();
-            var isActiveStart = this.$el.find('.is_active_start_container');
-            var isActiveStop = this.$el.find('.is_active_stop_container');
+            var isActiveStart = this.$el.find('.active_start_container');
+            var isActiveStop = this.$el.find('.active_stop_container');
 
-            data['is_active_start'] = this.getFormDate(isActiveStart);
-            data['is_active_stop'] = this.getFormDate(isActiveStop);
+            data['active_start'] = this.getFormDate(isActiveStart);
+            data['active_stop'] = this.getFormDate(isActiveStop);
 
             this.model.set(data);
             this.model.save();
@@ -1206,6 +1309,8 @@ define([
 
         show: function() {
             this.model = new models.RandomMover();
+            this.setupModelEvents();
+
             AddRandomMoverFormView.__super__.show.apply(this, arguments);
         },
 

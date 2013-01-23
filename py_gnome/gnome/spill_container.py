@@ -14,8 +14,6 @@ import datetime
 
 import numpy as np
 
-from gnome import basic_types
-from gnome.utilities import rand    # not to confuse with python random module
 import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
 
@@ -82,13 +80,18 @@ class SpillContainer(object):
         """
         return len(self['positions']) # every spill should have a postitions data array
 
-    def copy(self, uncertain=False):
-        import copy
-        new_sc = copy.deepcopy(self)
-        #new_sc = SpillContainer()
-        new_sc.is_uncertain = uncertain
+    def uncertain_copy(self):
+        """
+        Returns a copy of the spill_container suitable for uncertainty
 
-        return new_sc
+        It has all the same spills, with the same ids, and the is_uncertain
+        flag set to True
+        """
+        u_sc = SpillContainer(uncertain=True)
+        for sp in self.spills:
+            u_sc.spills += sp.uncertain_copy()
+        return u_sc
+
 
     # def add_spill(self, spill):
     #     self.spills.add(spill)
@@ -160,7 +163,7 @@ class SpillContainer(object):
         for spill in self.spills:
             new_data = spill.release_elements(current_time, time_step)
             if new_data is not None:
-                for name, array in new_data.items():
+                for name in new_data:
                     if name in self._data_arrays:
                         self._data_arrays[name] = np.r_[ self._data_arrays[name], new_data[name] ]
                     else:

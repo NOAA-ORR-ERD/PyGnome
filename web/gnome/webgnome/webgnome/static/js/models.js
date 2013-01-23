@@ -181,11 +181,9 @@ define([
                 runUntilTimeStep: this.runUntilTimeStep
             }, opts);
 
-            if (options.runUntilTimeStep) {
-                this.runUntilTimeStep = options.runUntilTimeStep;
-            }
+            this.runUntilTimeStep = options.runUntilTimeStep || null;
 
-            if (this.dirty) {
+            if (this.dirty || this.runUntilTimeStep) {
                 this.doRun(options);
                 return;
             }
@@ -205,6 +203,9 @@ define([
          */
         addTimeStep: function(timeStepJson) {
             var timeStep = new TimeStep(timeStepJson);
+            var now = new Date().getTime();
+            var requestBegan = this.timeStepRequestBegin || now;
+            timeStep.set('requestTime', now - requestBegan);
             this.add(timeStep);
             this.setCurrentTimeStep(timeStep.id);
         },
@@ -263,6 +264,8 @@ define([
                 this.setCurrentTimeStep(this.nextTimeStep);
                 return;
             }
+
+            this.timeStepRequestBegin = new Date().getTime();
 
             // Request the next step from the server.
             $.ajax({
@@ -355,6 +358,36 @@ define([
         // during `toJSON` calls and to `moment` objects during `get` calls.
         dateFields: null,
 
+        save: function(attrs, options) {
+            options = options || {};
+
+            if (!_.has(options, 'wait')) {
+                options.wait = true;
+            }
+
+            if (!_.has(options, 'success')) {
+                options.success = this.success;
+            }
+
+            if (!_.has(options, 'error')) {
+                options.error = this.error;
+            }
+
+            BaseModel.__super__.save.apply(this, [attrs, options]);
+        },
+
+        success: function(model, response, options) {
+            model.errors = null;
+        },
+
+        error: function(model, response, options) {
+            response = $.parseJSON(response.responseText);
+
+            if (response.errors.length) {
+                model.errors = response.errors;
+            }
+        },
+
         parse: function(response) {
             var message = util.parseMessage(response);
             if (message) {
@@ -427,13 +460,12 @@ define([
 
 
     // Spills
-
     var SurfaceReleaseSpill = BaseModel.extend({
         dateFields: ['release_time']
     });
 
 
-    var SurfaceReleaseSpillCollection = Backbone.Collection.extend({
+    var SurfaceReleaseSpillCollection = BaseCollection.extend({
         model: SurfaceReleaseSpill
     });
 
@@ -462,7 +494,7 @@ define([
 
 
     var BaseMover = BaseModel.extend({
-        dateFields: ['is_active_start', 'is_active_stop']
+        dateFields: ['active_start', 'active_stop']
     });
 
 

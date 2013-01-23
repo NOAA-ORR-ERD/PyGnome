@@ -1,3 +1,4 @@
+import colander
 import datetime
 import numpy
 
@@ -39,6 +40,16 @@ class WindValueSchemaTests(TestCase):
         self.assertEqual(wind_value['direction'], float(data['direction']))
         self.assertEqual(wind_value['speed'], float(data['speed']))
         self.assertEqual(wind_value['datetime'], dt_without_tz)
+
+    def test_speed_must_be_nonzero(self):
+        data = {
+            'datetime': datetime.datetime.now(),
+            'speed': 0,
+            'direction': 180.5
+        }
+
+        self.assertRaises(colander.Invalid,
+                          schema.WindValueSchema().deserialize, data)
 
 
 class WindSchemaTests(TestCase):

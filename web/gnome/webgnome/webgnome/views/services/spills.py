@@ -61,5 +61,7 @@ class SurfaceReleaseSpill(BaseResource):
         """
         Delete a SurfaceReleaseSpill.
         """
-        self.request.validated['model'].spills.remove(self.id)
+        model = self.request.validated['model']
+        model.spills.remove(self.id)
+        model.rewind()
 

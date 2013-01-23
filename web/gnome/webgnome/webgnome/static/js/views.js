@@ -78,7 +78,7 @@ define([
             this.placeholderClass = this.options.placeholderClass;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
-            this.imageTimeout = this.options.imageTimeout || 10;
+            this.animationThreshold = this.options.animationThreshold;
             this.canDrawSpill = false;
 
             this.makeImagesClickable();
@@ -231,9 +231,25 @@ define([
             this.trigger(MapView.FRAME_CHANGED);
         },
 
+        /*
+         Given the length of time the last timestep request took `requestTime`,
+         calculate the timeout value for displaying that step.
+
+         If `requestTime` was less than the threshold, then use the difference
+         between the threshold value and `requestTime` as the timeout.
+         Otherwise, use a timeout of 0, since the request has taken long enough.
+          */
+        getAnimationTimeout: function(requestTime) {
+            // Get the number of MS the last request took.
+            requestTime = requestTime || 0;
+            var threshold = this.animationThreshold;
+            return requestTime < threshold ? threshold - requestTime : 0;
+        },
+
         addImageForTimeStep: function(timeStep) {
             var _this = this;
             var map = $(this.mapEl);
+            var requestTime = timeStep.get('requestTime');
 
             var img = $('<img>').attr({
                 'class': 'frame',
@@ -250,7 +266,7 @@ define([
 
                 // TODO: Make the timeout value configurable.
                 setTimeout(_this.showImageForTimeStep,
-                           this.imageTimeout,
+                           _this.getAnimationTimeout(requestTime),
                            [timeStep.id]);
             });
         },
@@ -262,7 +278,8 @@ define([
             // exists. In all other cases the image should NOT exist.
             if (imageExists) {
                 setTimeout(this.showImageForTimeStep,
-                           this.imageTimeout,
+                           // Use 0 since this was a cached time step.
+                           this.getAnimationTimeout(0),
                            [timeStep.id]);
                 return;
             }
@@ -280,8 +297,6 @@ define([
             } else {
                 map.find('img').not('.background').remove();
             }
-
-            map.find('canvas').remove();
         },
 
         getBackground: function() {
@@ -468,8 +483,6 @@ define([
         },
 
         /*
-         Create a background canvas and paint lines for all spills on the page.
-
          Create a foreground canvas and setup event handlers to capture new
          spills added to the map. This canvas is cleared entirely during line
          additions (as the line position changes) and when the form container

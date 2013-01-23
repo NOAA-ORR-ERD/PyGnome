@@ -49,7 +49,8 @@ if "debug" in "".join(sys.argv[2:]):
 else:
     config = 'release'    # only used by windows
 
-sys.argv.count(config) != 0 and sys.argv.remove(config)
+if sys.argv.count(config) != 0:
+    sys.argv.remove(config)
 
 # for the mac -- forcing 32 bit only builds
 if sys.platform == 'darwin':
@@ -108,7 +109,7 @@ cpp_files = [
               ]
 
 
-cpp_files = [os.path.join(CPP_CODE_DIR , file) for file in cpp_files]
+cpp_files = [os.path.join(CPP_CODE_DIR , f) for f in cpp_files]
 
 ## setting the "pyGNOME" define so that conditional compilation in the cpp files is done right.
 macros = [('pyGNOME', 1),]
@@ -189,8 +190,8 @@ elif sys.platform == "win32":
                  #'/DEFAULTLIB:LIBCMT.lib',
                  ]
     # let's build C++ here
-    sys.path.append(".\gnome\DLL")   # need this for linking to work properly
-    proj = '..\project_files\lib_gnomeDLL\lib_gnomeDLL.sln'
+    sys.path.append(r".\gnome\DLL")   # need this for linking to work properly
+    proj = r'..\project_files\lib_gnomeDLL\lib_gnomeDLL.sln'
     platform = '/p:platform=Win32'
     subprocess.call([msbuild,proj,'/t:'+target,'/p:configuration='+config,platform])
 
@@ -210,8 +211,8 @@ elif sys.platform == "win32":
 # the build_ext and develop will find and link to the object in different places.
 
 for mod_name in extension_names:
-   cy_file = os.path.join("gnome/cy_gnome", mod_name+".pyx")
-   extensions.append(  Extension('gnome.cy_gnome.' + mod_name,
+    cy_file = os.path.join("gnome/cy_gnome", mod_name+".pyx")
+    extensions.append(  Extension('gnome.cy_gnome.' + mod_name,
                                  [cy_file], 
                                  language="c++",
                                  define_macros = macros,

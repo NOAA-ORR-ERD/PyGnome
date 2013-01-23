@@ -1,4 +1,4 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
 
 """
 An implementation of the GNOME land-water map.
@@ -20,7 +20,7 @@ New features:
  
 import numpy as np
 
-import gnome
+import gnome.cy_gnome.cy_land_check
 from gnome import GnomeObject
 from gnome.utilities import map_canvas
 from gnome.basic_types import world_point_type, oil_status
@@ -132,9 +132,6 @@ class GnomeMap(GnomeObject):
         """
         pass
 
-
-from gnome.cy_gnome import cy_land_check as land_check
-# from gnome import land_check
 
 class RasterMap(GnomeMap):
     """
@@ -378,7 +375,7 @@ class RasterMap(GnomeMap):
                 else:
                     return point_in_poly(self.spillable_area, coord[:2]) # point_in_poly is 2-d
             else:
-                 return False
+                return False
         else:
             return False
 
@@ -480,8 +477,6 @@ class MapFromBNA(RasterMap):
         if spillable_area is None:
             spillable_area = map_bounds
 
-        ##fixme: should we just stick with non-projected coord for the raster map?
-        W, H = BB.Width, BB.Height
         # stretch the bounding box, to get approximate aspect ratio in projected coords.
         aspect_ratio = np.cos(BB.Center[1] * np.pi / 180 ) * BB.Width / BB.Height
         w = int(np.sqrt(raster_size*aspect_ratio))

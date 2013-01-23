@@ -11,7 +11,7 @@ from webgnome.views.services.base import BaseResource
           path='/model/{model_id}/mover/wind/{id}',
           renderer='gnome_json', description='A wind mover.')
 class WindMover(BaseResource):
-    optional_fields = ['is_active_start', 'is_active_stop']
+    optional_fields = ['active_start', 'active_stop']
 
     def get_wind(self, wind_data):
         """
@@ -78,7 +78,7 @@ class WindMover(BaseResource):
           path='/model/{model_id}/mover/random/{id}',
           renderer='gnome_json', description='A random mover.')
 class RandomMover(BaseResource):
-    optional_fields = ['is_active_start', 'is_active_stop']
+    optional_fields = ['active_start', 'active_stop']
 
     @view(validators=util.valid_model_id, schema=RandomMoverSchema)
     def collection_post(self):

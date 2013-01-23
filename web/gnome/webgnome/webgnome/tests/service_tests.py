@@ -238,9 +238,9 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(resp.json['uncertain_time_delay'], data['uncertain_time_delay'])
         self.assertEqual(resp.json['uncertain_angle_scale'], data['uncertain_angle_scale'])
         self.assertEqual(resp.json['uncertain_angle_scale_units'], 'deg')
-        self.assertEqual(resp.json['is_active_start'],
+        self.assertEqual(resp.json['active_start'],
                          datetime.datetime(*gmtime(0)[:7]).isoformat())
-        self.assertEqual(resp.json['is_active_stop'],
+        self.assertEqual(resp.json['active_stop'],
                          datetime.datetime.max.isoformat())
 
     def test_wind_mover_update(self):
@@ -269,12 +269,12 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         active_stop = datetime.datetime.now().isoformat()
 
         data = self.make_wind_mover_data()
-        data['is_active_start'] = active_start
-        data['is_active_stop'] = active_stop
+        data['active_start'] = active_start
+        data['active_stop'] = active_stop
         resp = self.testapp.post_json(self.collection_url, data)
 
-        self.assertEqual(resp.json['is_active_start'], active_start)
-        self.assertEqual(resp.json['is_active_stop'], active_stop)
+        self.assertEqual(resp.json['active_start'], active_start)
+        self.assertEqual(resp.json['active_stop'], active_stop)
 
     def test_wind_mover_delete(self):
         data = self.make_wind_mover_data()

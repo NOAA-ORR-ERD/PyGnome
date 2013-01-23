@@ -71,7 +71,8 @@ define([
                 frameClass: 'frame',
                 activeFrameClass: 'active',
                 modelRun: this.modelRun,
-                model: this.map
+                model: this.map,
+                animationThreshold: this.options.animationThreshold
             });
 
             this.mapControlView = new views.MapControlView({
@@ -117,6 +118,8 @@ define([
 
             this.surfaceReleaseSpills.on("sync", this.spillUpdated);
             this.surfaceReleaseSpills.on('sync', this.drawSpills);
+            this.surfaceReleaseSpills.on('add', this.drawSpills);
+            this.surfaceReleaseSpills.on('remove', this.drawSpills);
 
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
             this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
@@ -485,6 +488,11 @@ define([
             this.mapView.clear();
             this.modelRun.clearData();
             this.mapControlView.reset();
+
+            if (this.map.id) {
+                this.mapControlView.enableControls(
+                    this.mapControlView.mapControls);
+            }
         },
 
         /*
@@ -578,7 +586,7 @@ define([
             var node = this.treeView.getActiveItem();
 
             function error() {
-                alert('Error! Could not delete ' + node.data.title + '.');
+                return alert('That item cannot be removed.')
             }
 
             if (!node.data.object_id || !node.data.object_type) {
@@ -616,6 +624,7 @@ define([
                 return;
             }
 
+            formView.reload();
             formView.show();
         },
 
@@ -626,6 +635,7 @@ define([
                 return;
             }
 
+            formView.reload();
             formView.show(coords);
         }
     });
