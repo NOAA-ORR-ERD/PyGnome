@@ -385,6 +385,7 @@ define([
 
             if (response.errors.length) {
                 model.errors = response.errors;
+                model.set(model.previousAttributes());
             }
         },
 
@@ -471,24 +472,28 @@ define([
 
 
     // Movers
-    var WindValue = BaseModel.extend({
-        dateFields: ['datetime']
-    });
-
-    var WindValueCollection = Backbone.Collection.extend({
-        model: WindValue,
-
-        comparator: function(item) {
-            return item.get('datetime');
-        }
-    });
-
 
     var Wind = BaseModel.extend({
-        initialize: function(attrs) {
-            attrs = attrs || {};
-            var timeseries = attrs['timeseries'] || [];
-            this.set('timeseries', new WindValueCollection(timeseries));
+
+        /*
+         Whenever `timeseries` is set, store a copy of the last version of the
+         array for optional reuse later.
+         */
+        set: function(key, val, options) {
+            var attrs;
+            if (key == null) return this;
+
+            if (_.isObject(key)) {
+                attrs = key;
+            } else {
+                (attrs = {})[key] = val;
+            }
+
+            if (attrs.timeseries !== undefined) {
+                this.previousTimeseries = this.get('timeseries');
+            }
+
+            return Wind.__super__.set.apply(this, arguments);
         }
     });
 
@@ -503,11 +508,16 @@ define([
         /*
          If the user passed an object for `key`, as when setting multiple
          attributes at once, then make sure the 'wind' field is a `Wind`
-         object.jkl
+         object.
          */
         set: function(key, val, options) {
-            if (key && _.isObject(key) && _.has(key, 'wind')) {
-                key['wind'] = new Wind(key['wind']);
+            if (key && key.wind) {
+                // Assume an object with a `get` method is a Model; otherwise
+                // assume the value is JSON that we need to send to a Wind
+                // constructor.
+                if (key['wind'].get === undefined) {
+                    key['wind'] = new Wind(key['wind']);
+                }
             } else if (this.get('wind') === undefined) {
                 key['wind'] = new Wind();
             }
@@ -548,7 +558,6 @@ define([
         WindMoverCollection: WindMoverCollection,
         RandomMover: RandomMover,
         RandomMoverCollection: RandomMoverCollection,
-        WindValue: WindValue,
         Map: Map
     };
 

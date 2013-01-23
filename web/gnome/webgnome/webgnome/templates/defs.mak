@@ -11,7 +11,7 @@
 
 
 <%def name="form_control(field, help_text=None, label=None, hidden=False,
-                         extra_classes=None, use_id=False, opts=None)">
+                         extra_classes=None)">
 <%doc>
     Render a Bootstrap form control around ``field``.
 </%doc>
@@ -32,6 +32,8 @@
 
         <div class="controls">
             ${field}
+            <span class="help-inline error">
+             </span>
             <span class="help-inline">
                  % if help_text:
                     ${help_text | n}
@@ -84,6 +86,8 @@
 
         <div class="controls">
         ${h.text(hour_label, value=hour, class_=hour_class)} : ${h.text(minute_label, value=minute, class_=minute_class)}
+            <span class="help-inline error">
+            </span>
             <span class="help-inline">
                 % if help_text:
                     ${help_text}

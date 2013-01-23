@@ -61,15 +61,12 @@ define([
             this.setupDatePickers();
         },
 
-        handleFieldError: function(error) {
-            var fieldId = this.getFieldIdForError(error);
-            var field = this.$el.find(fieldId);
-
+        showErrorForField: function(field, error) {
             if (!field.length) {
                 return;
             }
 
-            var errorDiv = field.next('.help-inline');
+            var errorDiv = field.next('.help-inline.error');
 
             // If there is no error div, then report the error to the user.
             if (!errorDiv.length) {
@@ -86,6 +83,13 @@ define([
             }
 
             group.addClass('error');
+        },
+
+        handleFieldError: function(error) {
+            var fieldId = this.getFieldIdForError(error);
+            var field = this.$el.find(fieldId);
+
+            this.showErrorForField(field, error);
         },
 
         /*
@@ -107,6 +111,8 @@ define([
             _.each(this.model.errors, function(error) {
                 _this.handleFieldError(error);
             });
+            // Clear out the errors now that we've handled them.
+            this.model.errors = null;
         },
 
         setupDatePickers: function() {
@@ -133,9 +139,22 @@ define([
             }
         },
 
+        clearErrors: function() {
+            var groups = this.$el.find('.control-group');
+            var errors = this.$el.find('.help-inline.error');
+
+            if (groups.length) {
+                groups.removeClass('error');
+            }
+
+            if (errors.length) {
+                errors.text('');
+            }
+        },
+
         show: function() {
             this.prepareForm();
-            this.$el.find('.control-group').removeClass('error');
+            this.clearErrors();
             $('#main-content').addClass('hidden');
             this.$el.removeClass('hidden');
         },
@@ -147,8 +166,7 @@ define([
 
         submit: function() {
             var data = this.getFormData();
-            this.model.set(data);
-            this.model.save();
+            this.model.save(data);
         },
 
         cancel: function() {
@@ -345,9 +363,9 @@ define([
          */
         show: function() {
             this.prepareForm();
+            this.clearErrors();
             this.$el.dialog('open');
             this.$el.removeClass('hide');
-            this.$el.find('.control-group').removeClass('error');
         },
 
         hide: function() {
@@ -457,10 +475,12 @@ define([
             var option = this.$el.find('#map_file');
             var file = option.find('option:selected');
             if (file) {
-                this.model.set('name', file.text());
-                this.model.set('filename', file.val());
-                this.model.set('refloat_halflife', 6 * 3600);
-                this.model.save();
+                var data = {
+                    name: file.text(),
+                    filename: file.val(),
+                    refloat_halflife: 6 * 3600 // TODO: Allow user to set?
+                };
+                this.model.save(data);
             }
         }
     });
@@ -585,6 +605,24 @@ define([
             return this.$el.find('.time-list');
         },
 
+        getWindIdsWithErrors: function() {
+            var valuesWithErrors = [];
+
+            if (!this.model.errors) {
+               return valuesWithErrors;
+            }
+
+            _.each(this.model.errors, function(error) {
+                var parts = error.name.split('.');
+
+                if (parts[1] === 'timeseries') {
+                    valuesWithErrors.push(parts[2]);
+                }
+            });
+
+            return valuesWithErrors;
+        },
+
         clearInputs: function(form) {
             $(form).find(':input').each(function() {
                 $(this).val('').prop('checked', false);
@@ -597,14 +635,15 @@ define([
             var timeseries = wind.get('timeseries');
             var units = this.$el.find('.units').find('option:selected').val();
             var rows = [];
+            var IdsWithErrors = this.getWindIdsWithErrors();
 
             // Clear out any existing rows.
             this.getTimesTable().find('tr').not('.table-header').remove();
 
-            timeseries.forEach(function(windValue) {
+            _.each(timeseries, function(windValue, index) {
                 var tmpl = _.template($("#time-series-row").html());
-                var direction = windValue.get('direction');
-                var speed = windValue.get('speed');
+                var direction = windValue.direction;
+                var speed = windValue.speed;
 
                 if (typeof(direction) === 'number') {
                     direction = direction.toFixed(1);
@@ -614,17 +653,24 @@ define([
                     speed = speed.toFixed(1);
                 }
 
-                var datetime = moment(windValue.get('datetime'));
+                var datetime = moment(windValue.datetime);
                 // TODO: Error handling
                 var error = null;
-
-                rows.push($(tmpl({
+                var row = $(tmpl({
                     error: error ? 'error' : '',
                     date: datetime.format('MM/DD/YYYY'),
                     time: datetime.format('HH:mm'),
                     direction: direction + ' &deg;',
                     speed: speed + ' ' + units
-                })).data('data-wind-id', windValue.cid));
+                }));
+
+                row.attr('data-wind-id', index);
+
+                if (_.contains(IdsWithErrors, index)) {
+                    row.addClass('error');
+                }
+
+                rows.push(row);
             });
 
             _.each(rows, function(row) {
@@ -637,25 +683,26 @@ define([
          constant wind mover.
          */
         prepareConstantWindData: function(data) {
-            var timeseries = this.model.get('wind').get('timeseries');
+            var wind = this.model.get('wind');
+            var timeseries = _.clone(wind.get('timeseries'));
             var values = {
                 // A 'datetime' field is required, but it will be ignored for a
                 // constant wind mover during the model run, so we just use the
                 // current time.
-                datetime: moment(),
+                datetime: moment().format(),
                 direction: data.direction,
                 speed: data.speed
             };
 
             if (timeseries.length === 1) {
                 // Update an existing time series value.
-                var time = timeseries.at(0);
-                time.set(values);
+                timeseries[0] = values
             } else {
                 // Add the first (and only) time series value.
-                timeseries.reset([]);
-                timeseries.add(values);
+                timeseries = [values];
             }
+
+            wind.set('timeseries', timeseries);
 
             delete(data.speed);
             delete(data.direction);
@@ -693,9 +740,8 @@ define([
                 data = this.prepareConstantWindData(data);
             }
 
-            this.model.set(data);
             this.collection.add(this.model);
-            this.model.save();
+            this.model.save(data);
         },
 
         editMoverNameClicked: function(event) {
@@ -752,19 +798,23 @@ define([
 
         trashButtonClicked: function(event) {
             event.preventDefault();
-            var windId = $(event.target).closest('tr').data('data-wind-id');
+            var windId = $(event.target).closest('tr').attr('data-wind-id');
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
-            var windValue = timeseries.getByCid(windId);
+            var windValue = timeseries[windId];
             var addForm = this.getAddForm();
 
-            if (addForm.data('data-wind-id') === windValue.cid) {
+            if (addForm.attr('data-wind-id') === windId) {
                 this.setFormDefaults();
                 addForm.find('.add-time-buttons').removeClass('hidden');
                 addForm.find('.edit-time-buttons').addClass('hidden');
             }
 
-            timeseries.remove(windValue);
+            if (windValue) {
+                // Remove the wind value from the timeseries array.
+                timeseries.splice(windId, 1);
+            }
+
             this.renderTimeTable();
         },
 
@@ -778,7 +828,7 @@ define([
 
         findDuplicate: function(timeseries, datetime, existingWindId) {
             var duplicate = timeseries.filter(function(time) {
-                return time.get('datetime').format() == datetime.format();
+                return time.datetime == datetime.format();
             });
 
             if (existingWindId) {
@@ -793,11 +843,10 @@ define([
         saveButtonClicked: function(event) {
             event.preventDefault();
             var wind = this.model.get('wind');
-            var timeseries = wind.get('timeseries');
+            var timeseries = _.clone(wind.get('timeseries'));
             var addForm = this.getAddForm();
             var datetime = this.getFormDate(addForm);
-            var windId = addForm.data('data-wind-id');
-            var windValue = timeseries.getByCid(windId);
+            var windId = addForm.attr('data-wind-id');
             var direction = addForm.find('#direction').val();
             var duplicate = this.findDuplicate(timeseries, datetime, windId);
             var message = 'Wind data for that date and time exists. Replace it?';
@@ -811,11 +860,14 @@ define([
                 }
             }
 
-            windValue.set({
-                datetime: datetime,
+            timeseries[windId] = {
+                datetime: datetime.format(),
                 direction: this.getCardinalAngle(direction),
                 speed: addForm.find('#speed').val()
-            });
+            };
+
+            wind.set('timeseries', timeseries);
+            this.model.save();
 
             this.setFormDefaults();
             addForm.find('.add-time-buttons').removeClass('hidden');
@@ -835,27 +887,38 @@ define([
             this.renderTimeTable();
         },
 
+        getRowForWindId: function(windId) {
+            return this.$el.find('tr[data-wind-id="' + windId + '"]')
+        },
+
+        showEditFormForWind: function(windId) {
+            var row = this.getRowForWindId(windId);
+            var wind = this.model.get('wind');
+            var timeseries = wind.get('timeseries');
+            var windValue = timeseries[windId];
+            var addForm = this.getAddForm();
+
+            addForm.attr('data-wind-id', windId);
+            addForm.find('.add-time-buttons').addClass('hidden');
+            addForm.find('.edit-time-buttons').removeClass('hidden');
+            this.setForm(addForm, windValue);
+            this.getTimesTable().find('tr').removeClass('info');
+            row.removeClass('error').removeClass('warning').addClass('info');
+        },
+
         editButtonClicked: function(event) {
             event.preventDefault();
             var row = $(event.target).closest('tr');
-            var wind = this.model.get('wind');
-            var timeseries = wind.get('timeseries');
-            var windId = row.data('data-wind-id');
-            var windValue = timeseries.getByCid(windId);
-            var addForm = this.getAddForm();
-
-            addForm.data('data-wind-id', windValue.cid);
-            addForm.find('.add-time-buttons').addClass('hidden');
-            addForm.find('.edit-time-buttons').removeClass('hidden');
-            this.setForm(addForm, windValue.toJSON());
-            this.getTimesTable().find('tr').removeClass('info');
-            row.removeClass('error').removeClass('warning').addClass('info');
+            var windId = row.attr('data-wind-id');
+            if(windId !== null) {
+                this.showEditFormForWind(windId);
+            }
         },
         
         addButtonClicked: function(event) {
             event.preventDefault();
             var wind = this.model.get('wind');
-            var timeseries = wind.get('timeseries');
+            var timeseries = _.clone(wind.get('timeseries'));
             var addForm = this.getAddForm();
             var datetime = this.getFormDate(addForm);
             var direction = addForm.find('#direction').val();
@@ -871,8 +934,8 @@ define([
                 }
             }
 
-            timeseries.add({
-                datetime: datetime,
+            timeseries.push({
+                datetime: datetime.format(),
                 direction: this.getCardinalAngle(direction),
                 speed: addForm.find('#speed').val()
             });
@@ -988,6 +1051,10 @@ define([
 
             var uncertainty = this.$el.find('.uncertainty');
             this.setForm(uncertainty, data['uncertainty']);
+
+            // Reset error states
+            this.$el.find('.control-group').removeClass('error');
+            this.$el.find('.help-inline.error').text('');
         },
 
         /*
@@ -1008,7 +1075,7 @@ define([
 
             var moverType = this.$el.find('.type');
             var timeseries = wind.get('timeseries');
-            var firstTimeValue = timeseries.at(0);
+            var firstTimeValue = timeseries[0];
 
             if (timeseries.length > 1) {
                 moverType.val('variable-wind');
@@ -1021,8 +1088,7 @@ define([
             var constantAddForm = this.getAddForm('constant-wind');
 
             if (firstTimeValue) {
-                var formData = firstTimeValue.toJSON();
-                this.setForm(constantAddForm, formData);
+                this.setForm(constantAddForm, firstTimeValue);
             }
         },
 
@@ -1050,18 +1116,41 @@ define([
         },
 
         handleFieldError: function(error) {
-            console.log(error)
             if (error.name.indexOf('wind.') === 0) {
-                var fields = error.name.split('.');
-                // XXX: Need to convert Colander's index value in the error
-                // name to the correct model in the client-side collection.
-                // Is there a `changed` list of models?
-                alert('Error in wind value: ' + error.description
-                    + ' Position: ' + fields[2]);
+                var parts = error.name.split('.');
+                var fieldName = parts[3];
+                var form = this.getAddForm();
+                var field = form.find('.' + fieldName);
+
+                this.showErrorForField(field, error);
                 return;
             }
 
             WindMoverFormView.__super__.handleFieldError.apply(this, arguments);
+        },
+
+        /*
+         Restore the model's wind value and its timeseries values to their
+         previous state if there was a server-side error, and render the wind
+         values table, in case one of the wind values is erroneous.
+         */
+        handleServerError: function() {
+            var wind = this.model.get('wind');
+
+            if (wind.previousTimeseries) {
+                wind.set('timeseries', wind.previousTimeseries);
+            }
+
+            var windIdsWithErrors = this.getWindIdsWithErrors();
+
+            this.renderTimeTable();
+
+            if (windIdsWithErrors.length) {
+                this.showEditFormForWind(windIdsWithErrors[0]);
+            }
+
+            // After this is called, model.errors will be null.
+            WindMoverFormView.__super__.handleServerError.apply(this, arguments);
         }
     });
 
@@ -1188,13 +1277,13 @@ define([
                 data['start_position_z']
             ];
 
-            this.model.set(data);
             this.collection.add(this.model);
-            this.model.save();
+            this.model.save(data);
         },
 
         cancel: function() {
             this.trigger(SurfaceReleaseSpillFormView.CANCELED, this);
+            SurfaceReleaseSpillFormView.__super__.cancel.apply(this, arguments);
         }
     }, {
         CANCELED: 'surfaceReleaseSpillForm:canceled'
@@ -1247,8 +1336,7 @@ define([
         submit: function() {
             var data = this.getFormData();
             data['start_time'] = this.getFormDate(this.getForm());
-            this.model.set(data);
-            this.model.save();
+            this.model.save(data);
         },
 
         show: function() {
@@ -1273,7 +1361,7 @@ define([
         },
 
         show: function() {
-            ModelSettingsFormView.__super__.show.apply(this, arguments);
+            RandomMoverFormView.__super__.show.apply(this, arguments);
             var isActiveStart = this.$el.find('.active_start_container');
             var isActiveStop = this.$el.find('.active_stop_container');
             this.setDateFields(isActiveStart, this.getFormDate(isActiveStart));
@@ -1288,8 +1376,7 @@ define([
             data['active_start'] = this.getFormDate(isActiveStart);
             data['active_stop'] = this.getFormDate(isActiveStop);
 
-            this.model.set(data);
-            this.model.save();
+            this.model.save(data);
         }
     });
 
@@ -1321,9 +1408,8 @@ define([
 
         submit: function() {
             var data = this.getFormData();
-            this.model.set(data);
             this.collection.add(this.model);
-            this.model.save();
+            this.model.save(data);
         }
     });
 
