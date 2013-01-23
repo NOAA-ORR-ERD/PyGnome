@@ -16,7 +16,6 @@ Used by map_canvas code and map code.
 NOTE: all coordinates are takes as (lon, lat, depth (even though depth is always ignored
 """
 
-import sys
 import numpy as np
 
 class NoProjection(object):
@@ -32,7 +31,6 @@ class NoProjection(object):
         create a new do-nothing projection
         """
         pass
-        return None
     
     def set_scale(self, bounding_box, image_size):
         pass
@@ -94,9 +92,10 @@ class GeoProjection(object):
         
         image_size: the size of the map image -- (width, height)
         """
+        self.center = None
+        self.offset = None
+        self.scale = None
         self.set_scale(bounding_box, image_size)
-        
-        return None
     
     def set_scale(self, bounding_box, image_size):
         """

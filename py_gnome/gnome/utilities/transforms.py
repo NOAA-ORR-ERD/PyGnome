@@ -1,5 +1,4 @@
 import numpy as np
-import math
 
 def r_theta_to_uv_current(r_theta):
     """
@@ -74,11 +73,9 @@ def uv_to_r_theta_wind(uv):
     r_theta = np.zeros_like(uv) 
     r_theta[:,0] = np.apply_along_axis(np.linalg.norm, 1, uv)
     
-    """
-    NOTE: Since desired angle is different from the angle that arctan2 outputs;
-    the uv array is transformed (multiply by -1) and atan2 is called with (u,v)
-    Only to ensure we get the angle per the Wind convention
-    """
+    #NOTE: Since desired angle is different from the angle that arctan2 outputs;
+    #      the uv array is transformed (multiply by -1) and atan2 is called with (u,v)
+    #      Only to ensure we get the angle per the Wind convention
     uv = np.asarray( -1*np.matrix(uv))  # create new uv object
     r_theta[:,1] = (np.rad2deg(np.arctan2(uv[:,0], uv[:,1])) + 360) % 360   # 0 to 360
     #return np.asarray(r_theta)

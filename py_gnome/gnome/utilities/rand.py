@@ -5,9 +5,7 @@ rand.py
 Contains functions for adding randomness - added 'g' for gnome random, not to confuse with standard
 python random functions 
 """
-import cython
 import numpy as np
-import random
 from math import sqrt
 
 
@@ -41,12 +39,12 @@ def random_with_persistance(low, high, persistence=0, time_step=1., array_len=1)
     
     if persistence > 0:
         orig = high - low
-        range = orig * sqrt( float(persistence)/float(time_step))
+        l__range = orig * sqrt( float(persistence)/float(time_step))
         mean = (high + low)/2.
         
         # update the bounds for generating the random number 
-        low = mean - range/2.
-        high= mean + range/2.
+        low = mean - l__range/2.
+        high= mean + l__range/2.
      
     if array_len == 1:   
         return np.random.uniform(low, high)
