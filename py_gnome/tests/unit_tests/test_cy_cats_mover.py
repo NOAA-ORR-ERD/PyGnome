@@ -18,7 +18,6 @@ class TestCats():
     """
     cats = cy_cats_mover.CyCatsMover()
     cats.set_shio(shio)
-    cats.prepare_for_model_run()    
     cats.read_topology(top_file)
 
     cm = cy_fixtures.CyTestMove()
@@ -61,6 +60,7 @@ class TestCats():
         (a) there is a move, so the deltas are not all zero
         (b) the uncertain and forcast moves are different
         """
+        self.cats.prepare_for_model_run()
         self.certain_move(self.cm.delta)
         print 
         print self.cm.delta
@@ -69,4 +69,4 @@ class TestCats():
         print self.cm.u_delta
         assert np.all(self.cm.delta['lat'] != self.cm.u_delta['lat'])
         assert np.all(self.cm.delta['long'] != self.cm.u_delta['long'])
-    
+        self.cats.model_step_is_done()
