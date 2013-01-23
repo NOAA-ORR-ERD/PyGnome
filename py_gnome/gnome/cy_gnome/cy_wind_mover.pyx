@@ -187,8 +187,8 @@ cdef class CyWindMover(cy_mover.CyMover):
         vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
         
         for i in range( 0, modelTimeArray.size):
-           err = self.wind.GetTimeValue( modelTimeArray[i], &vel_rec[i])
-           if err != 0:
-               raise ValueError
+            err = self.wind.GetTimeValue( modelTimeArray[i], &vel_rec[i])
+            if err != 0:
+                raise ValueError
         
         return vel_rec
