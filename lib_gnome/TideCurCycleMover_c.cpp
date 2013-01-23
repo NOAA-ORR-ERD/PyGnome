@@ -431,7 +431,7 @@ WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& model_time, Seconds tim
 	long ptIndex1,ptIndex2,ptIndex3; 
 	long index = -1; 
 	Seconds startTime,endTime;
-	Seconds time = model->GetModelTime();
+	Seconds time = model_time;
 	InterpolationVal interpolationVal;
 	VelocityRec scaledPatVelocity, timeValue = {1, 1};
 	Boolean useEddyUncertainty = false, isDry = false;	
