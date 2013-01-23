@@ -53,7 +53,7 @@ class TestCats():
         assert np.all(delta['long'] != 0)
         assert np.all(delta['z'] == 0)
         
-    @pytest.mark.xfail
+    @pytest.mark.xfail(reason="Unexpected failure. Tix #170") 
     def test_move(self):
         """
         call get_move for forcast and uncertainty spill and makes sure
