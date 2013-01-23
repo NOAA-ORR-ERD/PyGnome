@@ -135,9 +135,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="netcdf.lib"
 				ShowProgress="2"
 				OutputFile="..\..\py_gnome\gnome\cy_gnome\$(ProjectName).dll"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\..\third_party_lib\vs2008"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -213,6 +215,22 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\lib_gnome\GridCurrentMover_c.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\GridWindMover_c.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\MakeDagTree.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\MakeTriangles.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\lib_gnome\MemUtils.cpp"
 				>
 			</File>
@@ -266,6 +284,14 @@
 			</File>
 			<File
 				RelativePath="..\..\lib_gnome\StringFunctions.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\TimeGridVel_c.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\TimeGridWind_c.cpp"
 				>
 			</File>
 			<File
