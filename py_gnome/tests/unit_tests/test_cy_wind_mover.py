@@ -7,12 +7,9 @@ designed to be run with py.test
 """
 
 import numpy as np
-import datetime
 
 from gnome import basic_types
-from gnome.cy_gnome import cy_wind_mover
-from gnome.cy_gnome import cy_ossm_time
-from gnome.utilities import time_utils 
+from gnome.cy_gnome import cy_wind_mover,cy_ossm_time
 
 from gnome.utilities import projections
 import cy_fixtures

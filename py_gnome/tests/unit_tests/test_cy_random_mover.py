@@ -7,12 +7,8 @@ designed to be run with py.test
 import numpy as np
 
 from gnome import basic_types
-from gnome.cy_gnome import cy_random_mover
-from gnome.utilities import time_utils
-from gnome.cy_gnome import cy_helpers
+from gnome.cy_gnome import cy_random_mover,cy_helpers
 import cy_fixtures
-
-import datetime
 
 import pytest
 
