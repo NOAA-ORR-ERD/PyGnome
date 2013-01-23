@@ -233,7 +233,8 @@ OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const 
 		fModelStartTime = model_time;
 		if (timeDep) err = timeDep->GetTimeValue(model_time,&dummyValue);
 	}
-	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
+	//err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
+	SetInterval(errmsg, model_time);
 	
 	if(err) goto done;
 	
@@ -431,7 +432,7 @@ WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& model_time, Seconds tim
 	long ptIndex1,ptIndex2,ptIndex3; 
 	long index = -1; 
 	Seconds startTime,endTime;
-	Seconds time = model->GetModelTime();
+	Seconds time = model_time;
 	InterpolationVal interpolationVal;
 	VelocityRec scaledPatVelocity, timeValue = {1, 1};
 	Boolean useEddyUncertainty = false, isDry = false;	
