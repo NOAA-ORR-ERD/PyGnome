@@ -338,7 +338,7 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "creation_date", strlen(currentTimeStr), currentTimeStr);
 	if(!CheckNC(ncErr)) return false;
 	
-	tStr = "GNOME version 1.3.5";
+	tStr = "GNOME version 1.3.6";
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "source", strlen(tStr), tStr);
 	if(!CheckNC(ncErr)) return false;
 	

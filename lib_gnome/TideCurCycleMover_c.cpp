@@ -233,7 +233,8 @@ OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const 
 		fModelStartTime = model_time;
 		if (timeDep) err = timeDep->GetTimeValue(model_time,&dummyValue);
 	}
-	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
+	//err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
+	SetInterval(errmsg, model_time);
 	
 	if(err) goto done;
 	
