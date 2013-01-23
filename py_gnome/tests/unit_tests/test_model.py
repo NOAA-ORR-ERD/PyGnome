@@ -16,6 +16,8 @@ from gnome import movers, weather
 import gnome.spill
 from gnome.spill import SpatialReleaseSpill
 
+datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
+
 def test_init():
     model = gnome.model.Model()
     
@@ -93,7 +95,7 @@ def test_simple_run_with_map():
     
     model = gnome.model.Model()
     
-    model.map = gnome.map.MapFromBNA( 'SampleData/MapBounds_Island.bna',
+    model.map = gnome.map.MapFromBNA(os.path.join(datadir, 'MapBounds_Island.bna'),
                                 refloat_halflife=6*3600, #seconds
                                 )
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
@@ -142,7 +144,7 @@ def test_simple_run_with_image_output():
     model = gnome.model.Model()
     model.duration = timedelta(hours=1)
 
-    mapfile = "SampleData/MapBounds_Island.bna"
+    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
 
     # the land-water map
     model.map = gnome.map.MapFromBNA( mapfile,
@@ -176,17 +178,16 @@ def test_simple_run_with_image_output():
 
     num_steps_output = 0
     while True:
-         print "calling next_image"
-         try:
-             image_info = model.next_image(images_dir)
-             num_steps_output += 1
-             print image_info
-         except StopIteration:
-             print "Done with the model run"
-             break
+        print "calling next_image"
+        try:
+            image_info = model.next_image(images_dir)
+            num_steps_output += 1
+            print image_info
+        except StopIteration:
+            print "Done with the model run"
+            break
 
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
-
 
 def test_simple_run_with_image_output_uncertainty():
     """
@@ -200,22 +201,22 @@ def test_simple_run_with_image_output_uncertainty():
     os.mkdir(images_dir)
 
     start_time = datetime(2012, 9, 15, 12, 0)
-    
+
     model = gnome.model.Model()
     model.duration = timedelta(hours=1)
 
-    mapfile = "SampleData/MapBounds_Island.bna"
+    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
 
     # the land-water map
     model.map = gnome.map.MapFromBNA( mapfile,
                                       refloat_halflife=6*3600, #seconds
                                      )
     # the image output map
-    map = gnome.utilities.map_canvas.MapCanvas((400, 300))
+    l__map = gnome.utilities.map_canvas.MapCanvas((400, 300))
     polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
-    map.set_land(polygons)
-    model.output_map = map
-    
+    l__map.set_land(polygons)
+    model.output_map = l__map
+
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
 
@@ -227,7 +228,7 @@ def test_simple_run_with_image_output_uncertainty():
     spill = gnome.spill.SpatialReleaseSpill(start_positions = start_points,
                                             release_time = start_time,
                                             )
-    
+
     model.add_spill(spill)
     model.start_time = spill.release_time
     #image_info = model.next_image()
@@ -236,17 +237,16 @@ def test_simple_run_with_image_output_uncertainty():
 
     num_steps_output = 0
     while True:
-         try:
-             image_info = model.next_image(images_dir)
-             num_steps_output += 1
-             print image_info
-         except StopIteration:
-             print "Done with the model run"
-             break
+        try:
+            image_info = model.next_image(images_dir)
+            num_steps_output += 1
+            print image_info
+        except StopIteration:
+            print "Done with the model run"
+            break
 
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
     ## fixme -- do an assertionlooking for red in images?
-
 
 def test_mover_api():
     """
