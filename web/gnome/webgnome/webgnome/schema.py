@@ -1,6 +1,7 @@
 import gnome.basic_types
 import datetime
 import numpy
+import time
 
 from colander import (
     MappingSchema,
@@ -52,6 +53,14 @@ def nonzero(node, value):
     if value <= 0:
         raise Invalid(node, 'Value must be greater than zero.')
 
+
+def convertable_to_seconds(node, value):
+    try:
+        time.mktime(list(value.timetuple()))
+    except (OverflowError, ValueError) as e:
+        raise Invalid(node, 'Invalid date.')
+
+
 def degrees_true(node, direction):
     if 0 > direction > 360:
         raise Invalid(
@@ -66,6 +75,9 @@ def cardinal_direction(node, direction):
 
 
 def valid_direction(node, value):
+    """
+    Unused.
+    """
     try:
         degrees_true(node, float(value))
     except ValueError:
@@ -93,7 +105,8 @@ class LocalDateTime(DateTime):
 
 
 class WindValueSchema(MappingSchema):
-    datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now)
+    datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
+                          validator=convertable_to_seconds)
     speed = SchemaNode(Float(), default=0, validator=nonzero)
     # TODO: Validate string and float or just float?
     direction = SchemaNode(Float(), default=0,
@@ -174,7 +187,8 @@ class SurfaceReleaseSpillSchema(MappingSchema):
     default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
     num_elements = SchemaNode(Int(), default=0, validator=nonzero)
-    release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now)
+    release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
+                              validator=convertable_to_seconds)
     start_position = PositionSchema(default=(0, 0, 0))
     windage_range = WindageRangeSchema(default=(0.01, 0.04))
     windage_persist = SchemaNode(Float(), default=900)
@@ -213,7 +227,8 @@ class MapSchema(MappingSchema):
 
 
 class ModelSettingsSchema(MappingSchema):
-    start_time = SchemaNode(LocalDateTime(), default=now)
+    start_time = SchemaNode(LocalDateTime(), default=now,
+                            validator=convertable_to_seconds)
     duration_days = SchemaNode(Int(), default=1, validator=Range(min=0))
     duration_hours = SchemaNode(Int(),default=0, validator=Range(min=0))
     is_uncertain = SchemaNode(Bool(), default=False)
