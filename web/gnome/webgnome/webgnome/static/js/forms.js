@@ -518,6 +518,7 @@ define([
             this.defaults = this.getFormDefaults();
             this.windMovers = options.windMovers;
             this.setupCompass();
+            this.setupNwsMap();
 
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
@@ -533,8 +534,152 @@ define([
             'click .cancel': 'cancelButtonClicked',
             'click .save': 'saveButtonClicked',
             'click .delete-time': 'trashButtonClicked',
+            'click .manual': 'manualClicked',
+            'click .nws': 'nwsClicked',
+            'click .show-nws-map': 'showNwsMap',
+            'click .query-nws': 'queryNws',
             'change .units': 'renderTimeTable',
             'change .type': 'typeChanged'
+        },
+
+        showNwsMap: function() {
+            this.nwsMapDialog.dialog('open');
+        },
+
+        nwsWindsReceived: function(data) {
+            this.$el.find('.nws-description').text(data.description);
+            var wind = this.model.get('wind');
+            var timeseries = wind.get('timeseries');
+
+            _.each(data.results, function(windData) {
+                if (windData[1] === 0) {
+                    return;
+                }
+
+                timeseries.push({
+                    datetime: windData[0],
+                    speed: windData[1],
+                    direction: windData[2]
+                });
+            });
+
+            wind.set('timeseries', timeseries);
+
+            // NWS data is in knots, so the entire wind mover data set will have
+            // to use knots, since we don't have a way of setting it per value.
+            wind.set('units', 'knots');
+            this.$el.find('.units').val('knots');
+
+            this.renderTimeTable();
+        },
+
+        queryNws: function() {
+            var lat = this.$el.find('#latitude');
+            var lon = this.$el.find('#longitude');
+            var coords = {
+                latitude: lat.val(),
+                longitude: lon.val()
+            };
+
+            if (!coords.latitude || !coords.longitude) {
+                alert('Please enter both a latitude and longitude value.');
+                return;
+            }
+
+            models.getNwsWind(coords, this.nwsWindsReceived);
+        },
+
+        setupNwsMap: function() {
+            var _this = this;
+            var lat = this.$el.find('#latitude');
+            var lon = this.$el.find('#longitude');
+
+            var mapcenter = new google.maps.LatLngBounds(
+                new google.maps.LatLng(13, 144),
+                new google.maps.LatLng(40, -30)
+            );
+
+            this.nwsMapDialog = this.$el.find('.nws-map-container').dialog({
+                width: 400,
+                height: 400,
+                title: "NWS Map",
+                zIndex: 6000,
+                autoOpen: false,
+                buttons: {
+                    OK: function () {
+                        $(this).dialog("close");
+                    }
+                },
+                open: function() {
+                    google.maps.event.trigger(_this.nwsMap, 'resize');
+                    _this.nwsMap.setCenter(mapcenter.getCenter());
+
+                }
+            });
+
+            var myOptions = {
+                center: mapcenter.getCenter(),
+                zoom: 2,
+                mapTypeId: google.maps.MapTypeId.HYBRID,
+                streetViewControl: false
+            };
+
+            var latlngInit = new google.maps.LatLng(lat.val(), lon.val());
+
+            var map = new google.maps.Map(
+                this.nwsMapDialog.find('.nws-map-canvas')[0], myOptions);
+
+            this.nwsPoint = new google.maps.Marker({
+                position: latlngInit,
+                editable: true,
+                draggable: true
+            });
+            
+            this.nwsPoint.setMap(map);
+            this.nwsPoint.setVisible(false);
+
+            google.maps.event.addListener(map, 'click', function(event) {
+                var ulatlng = event.latLng;
+                _this.nwsPoint.setPosition(ulatlng);
+                _this.nwsPoint.setVisible(true);
+                lat.val(Math.round(ulatlng.lat() * 1000) / 1000);
+                lon.val(Math.round(ulatlng.lng() * 1000) / 1000);
+            });
+
+            google.maps.event.addListener(this.nwsPoint, 'dragend', function(event) {
+                var ulatlng = event.latLng;
+                _this.nwsPoint.setPosition(ulatlng);
+                _this.nwsPoint.setVisible(true);
+                lat.val(Math.round(ulatlng.lat() * 1000) / 1000);
+                lon.val(Math.round(ulatlng.lng() * 1000) / 1000);
+            });
+
+            this.nwsMap = map;
+        },
+        
+        nwsCoordinatesChanged: function() {
+            var ulatlng = new google.maps.LatLng(
+                this.$el.find('.latitude').val(),
+                this.$el.find('.longitude').val());
+            this.nwsPoint.setPosition(ulatlng);
+            this.nwsPoint.setVisible(true);
+        },
+
+        nwsClicked: function() {
+            this.$el.find('.btn.nws').addClass('active');
+            this.$el.find('.btn.manual').removeClass('active');
+            var form = this.getMoverTypeDiv('variable-wind');
+            form.find('.time-form').addClass('hidden');
+            form.find('.nws-form').removeClass('hidden');
+        },
+
+        manualClicked: function() {
+            // Show the edit form for the user's chosen wind mover type.
+            this.$el.find('.btn.nws').removeClass('active');
+            this.$el.find('.btn.manual').addClass('active');
+            var form = this.getMoverTypeDiv('variable-wind');
+            form.find('.nws-form').addClass('hidden');
+            form.find('.time-form').removeClass('hidden');
         },
 
         typeChanged: function() {

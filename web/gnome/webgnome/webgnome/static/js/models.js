@@ -538,6 +538,16 @@ define([
             this.url = options.url;
         }
     });
+
+
+    function getNwsWind(coords, success) {
+        var url = '/nws/wind?lat=' + coords.latitude + '&lon=' + coords.longitude;
+        $.ajax({
+            url: url,
+            success: success,
+            dataType: 'json'
+        });
+    }
       
 
     return {
@@ -550,7 +560,8 @@ define([
         WindMoverCollection: WindMoverCollection,
         RandomMover: RandomMover,
         RandomMoverCollection: RandomMoverCollection,
-        Map: Map
+        Map: Map,
+        getNwsWind: getNwsWind
     };
 
 });

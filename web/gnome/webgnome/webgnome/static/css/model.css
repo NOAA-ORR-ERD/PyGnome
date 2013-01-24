@@ -31,6 +31,15 @@ ul.dynatree-container {
     padding-top: 0;
 }
 
+#slider-shaded {
+    position: absolute;
+    height: 100%;
+    width: 0;
+    top: 0;
+    left: 0;
+    background-color: gray;
+}
+
 #main-content {
     margin-left: 10px;
 }
@@ -186,6 +195,11 @@ legend {
 #map_canvas {
     height: 500px;
     width: 700px;
+}
+
+.nws-map-canvas {
+    height: 100%;
+    width: 100%;
 }
 
 .modal-body {

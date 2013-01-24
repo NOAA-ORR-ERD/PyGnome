@@ -46,10 +46,22 @@
 
                 <div class="variable-wind hidden">
                     <div class="span3 add-time-forms">
-##                        <div class="btn-group wind-mover-nav">
-##                            <a href="javascript:" class="active btn btn-small">Manual</a>
-##                            <a href="javascript:" class="btn btn-small">From NWS</a>
-##                        </div>
+                        <div class="btn-group wind-mover-nav">
+                            <a href="javascript:" class="active btn btn-small manual">Manual</a>
+                            <a href="javascript:" class="btn btn-small nws">From NWS</a>
+                        </div>
+
+                        <div class='nws-form hidden'>
+                            ${defs.form_control(h.text('latitude', class_='input-small'), label='Latitude')}
+                            ${defs.form_control(h.text('longitude', class_='input-small'), label='Longitude')}
+                            ${defs.form_control("<span class='nws-description'></span>", label='Description')}
+                            <div class='control-group'>
+                                <div class="controls">
+                                    <a href="javascript:" class="btn show-nws-map">Show NWS Map</a>
+                                    <a href="javascript:" class="btn query-nws">Query NWS</a>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class='time-form add-time-form'>
                             <%
@@ -125,6 +137,10 @@
 
     <div class="compass-container">
         <div id="${form_id}_compass_add" class="compass"></div>
+    </div>
+
+    <div class="nws-map-container">
+        <div class="nws-map-canvas"></div>
     </div>
 
     <!-- A template for time series item rows. -->

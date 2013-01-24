@@ -797,6 +797,7 @@ define([
             this.fullscreenButtonEl = this.options.fullscreenButtonEl;
             this.resizeButtonEl = this.options.resizeButtonEl;
             this.spillButtonEl = this.options.spillButtonEl;
+            this.sliderShadedEl = this.options.sliderShadedEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
             this.modelRun = this.options.modelRun;
@@ -841,9 +842,11 @@ define([
             }
 
             this.setupClickEvents();
+            this.updateCachedPercentage();
 
             this.modelRun.on(models.ModelRun.RUN_BEGAN, this.runBegan);
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.NEXT_TIME_STEP_READY, this.updateCachedPercentage);
             this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
             this.modelRun.on(models.ModelRun.CREATED, this.modelCreated);
 
@@ -897,6 +900,13 @@ define([
             }
 
             this.trigger(MapControlView.SLIDER_MOVED, ui.value);
+        },
+
+        updateCachedPercentage: function() {
+            console.log(this.modelRun.length, this.modelRun.expectedTimeSteps.length)
+            console.log(100*(this.modelRun.length / this.modelRun.expectedTimeSteps.length))
+            this.setCachedPercentage(
+                100*(this.modelRun.length / this.modelRun.expectedTimeSteps.length))
         },
 
         runBegan: function() {
@@ -1075,6 +1085,10 @@ define([
 
         getTimeStep: function() {
             $(this.sliderEl).slider('value');
+        },
+
+        setCachedPercentage: function(percentage) {
+            $(this.sliderShadedEl).css('width', percentage + '%');
         },
 
         reset: function() {

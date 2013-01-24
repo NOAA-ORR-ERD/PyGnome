@@ -31,7 +31,7 @@
         % endif
 
         <div class="controls">
-            ${field}
+            ${field | n}
             <span class="help-inline">
                  % if help_text:
                     ${help_text | n}

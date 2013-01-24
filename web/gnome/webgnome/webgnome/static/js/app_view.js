@@ -77,6 +77,7 @@ define([
 
             this.mapControlView = new views.MapControlView({
                 sliderEl: "#slider",
+                sliderShadedEl: '#slider-shaded',
                 playButtonEl: "#play-button",
                 pauseButtonEl: "#pause-button",
                 backButtonEl: "#back-button",
