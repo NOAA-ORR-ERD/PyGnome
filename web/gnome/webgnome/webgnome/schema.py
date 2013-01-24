@@ -150,8 +150,10 @@ class WindSchema(MappingSchema):
 
 class BaseMoverSchema(MappingSchema):
     on = SchemaNode(Bool(), default=True, missing=True)
-    active_start = SchemaNode(LocalDateTime(), default=None, missing=None)
-    active_stop = SchemaNode(LocalDateTime(), default=None, missing=None)
+    active_start = SchemaNode(LocalDateTime(), default=None, missing=None,
+                              validator=convertable_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), default=None, missing=None,
+                             validator=convertable_to_seconds)
 
 
 class WindMoverSchema(BaseMoverSchema):

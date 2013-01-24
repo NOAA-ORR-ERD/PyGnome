@@ -903,8 +903,6 @@ define([
         },
 
         updateCachedPercentage: function() {
-            console.log(this.modelRun.length, this.modelRun.expectedTimeSteps.length)
-            console.log(100*(this.modelRun.length / this.modelRun.expectedTimeSteps.length))
             this.setCachedPercentage(
                 100*(this.modelRun.length / this.modelRun.expectedTimeSteps.length))
         },
