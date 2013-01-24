@@ -11,9 +11,10 @@ import pytest
 def test_exceptions(invalid_rq):
     with pytest.raises(ValueError):
         transforms.r_theta_to_uv_wind(invalid_rq['rq'][0])
+    with pytest.raises(ValueError):
         transforms.r_theta_to_uv_wind(invalid_rq['rq'][1])
+    with pytest.raises(ValueError):
         transforms.r_theta_to_uv_wind(invalid_rq['rq'][2])
-        transforms.r_theta_to_uv_wind(invalid_rq['rq'][3])
     
 atol = 1e-14
 rtol = 0
