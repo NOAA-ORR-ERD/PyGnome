@@ -3,7 +3,7 @@
 
 <div class="wind form page hide" id="${form_id}">
     <form action="" class="form-horizontal" method="POST">
-        <div class="page-header form-inline">
+        <div class="wind-mover-header form-inline">
             <label>Name</label> ${h.text('name', mover.name)}
             <%
                 from webgnome.util import velocity_unit_options
@@ -46,6 +46,11 @@
 
                 <div class="variable-wind hidden">
                     <div class="span3 add-time-forms">
+##                        <div class="btn-group wind-mover-nav">
+##                            <a href="javascript:" class="active btn btn-small">Manual</a>
+##                            <a href="javascript:" class="btn btn-small">From NWS</a>
+##                        </div>
+
                         <div class='time-form add-time-form'>
                             <%
                                 auto_increment_by = h.text('auto_increment_by', 6,
@@ -75,7 +80,7 @@
                         </div>
                     </div>
 
-                    <div class="span4 edit-time-forms">
+                    <div class="edit-time-forms">
                         <div class="wind-values">
                             <table class="table table-striped time-list">
                                 <thead>

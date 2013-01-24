@@ -276,6 +276,30 @@ def valid_spill_id(request):
         request.errors.status = 404
 
 
+def valid_coordinate_pair(request):
+    """
+    A Cornice validator that looks for a coordinate pair sent as `lat` and
+    `lon` GET parameters.
+    """
+    lat = request.GET.get('lat', None)
+    lon = request.GET.get('lon', None)
+
+    if lat is None:
+        request.errors.add('body', 'coordinates', 'Latitude is required as '
+                                                  '"lat" GET parameter.')
+        request.errors.status = 400
+
+    if lon is None:
+        request.errors.add('body', 'coordinates', 'Longitude is required as '
+                                                  '"lon" GET parameter.')
+        request.errors.status = 400
+
+    request.validated['coordinates'] = {
+        'lat': lat,
+        'lon': lon
+    }
+
+
 def require_model(f):
     """
     Wrap a JSON view in a precondition that ensures the user has a valid model

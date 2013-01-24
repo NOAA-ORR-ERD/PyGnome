@@ -7,7 +7,8 @@ define([
     'util',
     'lib/geo',
     'lib/moment',
-    'lib/compass-ui'
+    'lib/compass-ui',
+    'lib/bootstrap-tab'
 ], function($, _, Backbone, models, util, geo) {
 
     var FormViewContainer = Backbone.View.extend({
@@ -62,27 +63,26 @@ define([
         },
 
         showErrorForField: function(field, error) {
+            var errorDiv;
+
             if (!field.length) {
                 return;
             }
 
-            var errorDiv = field.next('.help-inline.error');
-
-            // If there is no error div, then report the error to the user.
-            if (!errorDiv.length) {
-                alert(error.description);
-                return;
-            }
-
-            errorDiv.text(error.description);
-
             var group = field.closest('.control-group');
 
-            if (!group.length) {
+            if (group.length) {
                 group.addClass('error');
+                errorDiv = group.find('a.error')
             }
 
-            group.addClass('error');
+            // If there is no error div, then report the error to the user.
+            if (errorDiv.length) {
+                errorDiv.attr('title', error.description);
+                errorDiv.removeClass('hidden');
+            } else {
+                alert(error.description);
+            }
         },
 
         handleFieldError: function(error) {
@@ -141,14 +141,15 @@ define([
 
         clearErrors: function() {
             var groups = this.$el.find('.control-group');
-            var errors = this.$el.find('.help-inline.error');
+            var errors = this.$el.find('a.error');
 
             if (groups.length) {
                 groups.removeClass('error');
             }
 
             if (errors.length) {
-                errors.text('');
+                errors.attr('title', '');
+                errors.addClass('hidden');
             }
         },
 
@@ -170,7 +171,10 @@ define([
         },
 
         cancel: function() {
-            // Override this in your subclass.
+            if (this.model && this.model.id) {
+                this.model.fetch();
+                this.model = null;
+            }
         },
 
         hasDateFields: function(target) {
@@ -269,16 +273,7 @@ define([
         },
 
         setupModelEvents: function() {
-            var _this = this;
             this.model.on('error', this.handleServerError);
-            this.model.on('sync', function() {
-                _this.$el.dialog('close');
-            });
-        },
-
-        reset: function() {
-            this.model = null;
-            this.clearForm();
         },
 
         reload: function(id) {
@@ -373,7 +368,8 @@ define([
         },
 
         close: function() {
-            // Override for custom behavior after the dialog has closed.
+            this.clearForm();
+
         }
     });
 
@@ -826,18 +822,24 @@ define([
             return value;
         },
 
-        findDuplicate: function(timeseries, datetime, existingWindId) {
-            var duplicate = timeseries.filter(function(time) {
-                return time.datetime == datetime.format();
+        /*
+         Search `timeseries` array for a value whose datetime matches `datetime`.
+
+         Skip any duplicate found at index `ignoreId`.
+
+         Return an array containing the index of each duplicate found.
+         */
+        findDuplicates: function(timeseries, datetime, ignoreIndex) {
+            var duplicateIndexes = [];
+
+            _.each(timeseries, function(value, index) {
+                if (moment(value.datetime).format() == datetime.format()
+                        && index !== parseInt(ignoreIndex)) {
+                    duplicateIndexes.push(index);
+                }
             });
 
-            if (existingWindId) {
-                duplicate = _.reject(duplicate, function(item) {
-                    return item.cid === existingWindId;
-                });
-            }
-
-            return duplicate;
+            return duplicateIndexes;
         },
 
         saveButtonClicked: function(event) {
@@ -848,12 +850,12 @@ define([
             var datetime = this.getFormDate(addForm);
             var windId = addForm.attr('data-wind-id');
             var direction = addForm.find('#direction').val();
-            var duplicate = this.findDuplicate(timeseries, datetime, windId);
+            var duplicates = this.findDuplicates(timeseries, datetime, windId);
             var message = 'Wind data for that date and time exists. Replace it?';
 
-            if (duplicate.length) {
+            if (duplicates.length) {
                 if (window.confirm(message)) {
-                    timeseries.remove(duplicate);
+                    timeseries.remove(duplicates[0]);
                     this.renderTimeTable();
                 } else {
                     return;
@@ -867,7 +869,6 @@ define([
             };
 
             wind.set('timeseries', timeseries);
-            this.model.save();
 
             this.setFormDefaults();
             addForm.find('.add-time-buttons').removeClass('hidden');
@@ -922,24 +923,26 @@ define([
             var addForm = this.getAddForm();
             var datetime = this.getFormDate(addForm);
             var direction = addForm.find('#direction').val();
-            var duplicate = this.findDuplicate(timeseries, datetime);
-            var message = 'Wind data for that date and time exists. Replace it?';
+            var duplicates = this.findDuplicates(timeseries, datetime);
+            var windValue = {
+                datetime: datetime.format(),
+                direction: this.getCardinalAngle(direction),
+                speed: addForm.find('#speed').val()
+            };
+            var warning = 'Wind data for that date and time exists. Replace it?';
 
-            if (duplicate.length) {
-                if (window.confirm(message)) {
-                    timeseries.remove(duplicate);
+            if (duplicates.length) {
+                if (window.confirm(warning)) {
+                    timeseries[duplicates[0]] = windValue;
                     this.renderTimeTable();
                 } else {
                     return;
                 }
+            } else {
+                timeseries.push(windValue);
             }
 
-            timeseries.push({
-                datetime: datetime.format(),
-                direction: this.getCardinalAngle(direction),
-                speed: addForm.find('#speed').val()
-            });
-
+            wind.set('timeseries', timeseries);
             this.renderTimeTable();
             this.compass.compassUI('reset');
 
@@ -1052,9 +1055,7 @@ define([
             var uncertainty = this.$el.find('.uncertainty');
             this.setForm(uncertainty, data['uncertainty']);
 
-            // Reset error states
-            this.$el.find('.control-group').removeClass('error');
-            this.$el.find('.help-inline.error').text('');
+            this.clearErrors();
         },
 
         /*
@@ -1092,13 +1093,8 @@ define([
             }
         },
 
-        close: function() {
-            this.model = null;
-            WindMoverFormView.__super__.close.apply(this, arguments);
-        },
-
         /*
-         Prepare this form for display. Usually called just before the form is
+         Prepare this form for display.
          */
         prepareForm: function() {
             if (this.model === undefined) {
@@ -1110,8 +1106,10 @@ define([
             this.renderTimeTable();
             this.setFormDefaults();
 
-            if (this.model.id) {
+            if (this.model && this.model.id) {
                 this.setInputsFromModel();
+            } else {
+                this.typeChanged();
             }
         },
 
@@ -1120,7 +1118,7 @@ define([
                 var parts = error.name.split('.');
                 var fieldName = parts[3];
                 var form = this.getAddForm();
-                var field = form.find('.' + fieldName);
+                var field = form.find('#' + fieldName);
 
                 this.showErrorForField(field, error);
                 return;
@@ -1149,6 +1147,8 @@ define([
                 this.showEditFormForWind(windIdsWithErrors[0]);
             }
 
+            this.$el.dialog('option', 'height', 600);
+
             // After this is called, model.errors will be null.
             WindMoverFormView.__super__.handleServerError.apply(this, arguments);
         }
@@ -1175,14 +1175,6 @@ define([
             this.model = new models.WindMover();
             this.setupModelEvents();
             AddWindMoverFormView.__super__.show.apply(this);
-        },
-
-        /*
-         Reset the form when it closes and clear out the model.
-        */
-        close: function() {
-            this.model = null;
-            this.clearForm();
         }
     });
 
@@ -1312,11 +1304,6 @@ define([
                 this.$el.find('#start_position_x').val(coords[0]);
                 this.$el.find('#start_position_y').val(coords[1]);
             }
-        },
-
-        close: function() {
-            this.model = null;
-            this.clearForm();
         }
     });
 
@@ -1399,11 +1386,6 @@ define([
             this.setupModelEvents();
 
             AddRandomMoverFormView.__super__.show.apply(this, arguments);
-        },
-
-        close: function() {
-            this.model = null;
-            this.clearForm();
         },
 
         submit: function() {

@@ -110,6 +110,8 @@ define([
                     changeYear: true
                 });
             });
+
+            $('.error').tooltip({selector: "a"});
         },
 
         setupEventHandlers: function() {

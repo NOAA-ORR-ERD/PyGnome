@@ -476,21 +476,13 @@ define([
     var Wind = BaseModel.extend({
 
         /*
-         Whenever `timeseries` is set, store a copy of the last version of the
-         array for optional reuse later.
+         Whenever `timeseries` is set, sort it by datetime.
          */
         set: function(key, val, options) {
-            var attrs;
-            if (key == null) return this;
-
-            if (_.isObject(key)) {
-                attrs = key;
-            } else {
-                (attrs = {})[key] = val;
-            }
-
-            if (attrs.timeseries !== undefined) {
-                this.previousTimeseries = this.get('timeseries');
+            if (key.timeseries && key.timeseries.length) {
+                key.timeseries = _.sortBy(key.timeseries, 'datetime');
+            } else if (key === 'timeseries' && val && val.length) {
+                val = _.sortBy(val, 'datetime');
             }
 
             return Wind.__super__.set.apply(this, arguments);

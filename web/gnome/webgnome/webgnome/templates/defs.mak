@@ -32,12 +32,12 @@
 
         <div class="controls">
             ${field}
-            <span class="help-inline error">
-             </span>
             <span class="help-inline">
                  % if help_text:
                     ${help_text | n}
                  % endif
+
+                <a href="#" class="icon-warning-sign error" title="error"></a>
             </span>
         </div>
     </div>
@@ -86,7 +86,10 @@
 
         <div class="controls">
         ${h.text(hour_label, value=hour, class_=hour_class)} : ${h.text(minute_label, value=minute, class_=minute_class)}
-            <span class="help-inline error">
+            <span class="help-inline">
+                    % if help_text:
+                    ${help_text}
+                    % endif
             </span>
             <span class="help-inline">
                 % if help_text:

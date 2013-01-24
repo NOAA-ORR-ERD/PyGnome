@@ -10,7 +10,7 @@ requirejs.config({
         'lib/gmaps-amd': {
             exports: "google"
         },
-        'lib/jquery.dynatree.min': ['lib/jquery-ui-1.8.24.custom.min', 'lib/jquery.cookie'],
+        'lib/jquery.dynatree.min': ['lib/jquery-ui-1.9.2.custom.min', 'lib/jquery.cookie'],
         'lib/underscore': {
             exports: "_"
         },

@@ -8,7 +8,7 @@ define([
     'lib/gmaps-amd',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree.min',
-    'lib/bootstrap',
+    'lib/bootstrap-dropdown',
 ], function($, _, Backbone, models, util, GMap) {
      /*
      `MessageView` is responsible for displaying messages sent back from the server
