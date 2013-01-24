@@ -22,8 +22,8 @@ class Mover(GnomeObject):
     The get_move(...) method needs to be implemented by the derived class.  
     """
     def __init__(self, 
-                 active_start= datetime( *gmtime(0)[:7] ), 
-                 active_stop = datetime.max):   # default min + max values for timespan
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0)):   # default min + max values for timespan
         """
         During init, it defaults active = True
         """
@@ -104,7 +104,7 @@ class CyMover(Mover):
     We assumes any derived class will instantiate a 'mover' object that
     has methods like: prepare_for_model_run, prepare_for_model_step,
     """
-    def __init__(self, active_start= datetime( *gmtime(0)[:7] ), active_stop = datetime.max):
+    def __init__(self, active_start= datetime( *gmtime(0)[:6] ), active_stop = datetime(2038,1,18,0,0,0)):
         super(CyMover,self).__init__(active_start, active_stop)
 
     def prepare_for_model_run(self):
@@ -182,8 +182,8 @@ class WindMover(CyMover):
     _windage_is_set = False         # class scope, independent of instances of WindMover  
     _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
     def __init__(self, wind, 
-                 active_start= datetime( *gmtime(0)[:7] ), 
-                 active_stop = datetime.max,
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0),
                  uncertain_duration=10800, uncertain_time_delay=0, 
                  uncertain_speed_scale=2., uncertain_angle_scale=0.4):
         """
@@ -299,8 +299,8 @@ class RandomMover(CyMover):
     CyMover sets everything up that is common to all movers.
     """
     def __init__(self, diffusion_coef=100000, 
-                 active_start= datetime( *gmtime(0)[:7] ), 
-                 active_stop = datetime.max):
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0)):
         self.mover = CyRandomMover(diffusion_coef=diffusion_coef)
         super(RandomMover,self).__init__(active_start, active_stop)
 
@@ -341,8 +341,8 @@ class RandomMover(CyMover):
 class CatsMover(CyMover):
     
     def __init__(self, curr_file, shio_file=None,
-                 active_start= datetime( *gmtime(0)[:7] ), 
-                 active_stop = datetime.max):
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0)):
         """
         
         """
@@ -392,8 +392,8 @@ class WeatheringMover(Mover):
 
     """
     def __init__(self, wind, 
-                 active_start= datetime( *gmtime(0)[:7] ), 
-                 active_stop = datetime.max,
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0),
                  uncertain_duration=10800, uncertain_time_delay=0,
                  uncertain_speed_scale=2., uncertain_angle_scale=0.4):
         """
