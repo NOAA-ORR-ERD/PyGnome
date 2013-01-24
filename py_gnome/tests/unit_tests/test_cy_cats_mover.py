@@ -1,0 +1,72 @@
+import numpy as np
+from gnome import basic_types
+from gnome.cy_gnome import cy_cats_mover, cy_ossm_time, cy_shio_time
+import cy_fixtures
+
+import pytest
+
+class TestCats():
+    """
+    Contains one test method to do one forecast move and one uncertainty move
+    and verify that they are different
+    
+    Primarily just checks that CyCatsMover can be initialized correctly and all methods are invoked
+    """
+    file_= r"SampleData/long_island_sound/CLISShio.txt"
+    shio = cy_shio_time.CyShioTime(file_)
+    top_file=r"SampleData/long_island_sound/tidesWAC.CUR"
+
+    cats = cy_cats_mover.CyCatsMover()
+    cats.set_shio(shio)
+    cats.read_topology(top_file)
+
+    cm = cy_fixtures.CyTestMove()
+    cm.ref[:] = (-72.5, 41.17, 0)
+    
+    def certain_move(self,delta):
+        """
+        test get_move for forecast LEs
+        """
+        self.cats.prepare_for_model_step(self.cm.model_time, self.cm.time_step)
+        self.cats.get_move(self.cm.model_time,
+                           self.cm.time_step,
+                           self.cm.ref, delta,
+                           self.cm.status,basic_types.spill_type.forecast,
+                           0)
+        self.cats.model_step_is_done()
+        assert np.all(delta['lat'] != 0)
+        assert np.all(delta['long'] != 0)
+        assert np.all(delta['z'] == 0)
+        
+    def uncertain_move(self, delta):
+        """
+        test get_move for uncertainty LEs
+        """
+        self.cats.prepare_for_model_step(self.cm.model_time, self.cm.time_step,1,self.cm.spill_size)
+        self.cats.get_move(self.cm.model_time,
+                           self.cm.time_step,
+                           self.cm.ref, delta,
+                           self.cm.status,basic_types.spill_type.uncertainty,
+                           0)
+        self.cats.model_step_is_done()
+        assert np.all(delta['lat'] != 0)
+        assert np.all(delta['long'] != 0)
+        assert np.all(delta['z'] == 0)
+        
+    @pytest.mark.xfail(reason="Unexpected failure. Tix #170") 
+    def test_move(self):
+        """
+        call get_move for forcast and uncertainty spill and makes sure
+        (a) there is a move, so the deltas are not all zero
+        (b) the uncertain and forcast moves are different
+        """
+        self.cats.prepare_for_model_run()
+        self.certain_move(self.cm.delta)
+        print 
+        print self.cm.delta
+        
+        self.uncertain_move(self.cm.u_delta)
+        print self.cm.u_delta
+        assert np.all(self.cm.delta['lat'] != self.cm.u_delta['lat'])
+        assert np.all(self.cm.delta['long'] != self.cm.u_delta['long'])
+        self.cats.model_step_is_done()

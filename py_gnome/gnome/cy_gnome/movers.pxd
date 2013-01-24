@@ -51,14 +51,16 @@ movers:
 """
 cdef extern from "Mover_c.h":
     cdef cppclass Mover_c:
-        pass
+        OSErr PrepareForModelRun()
+        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step, bool uncertain, int numLESets, int* LESetsSizesList)    # currently this happens in C++ get_move command
+        void ModelStepIsDone()
 
 cdef extern from "CurrentMover_c.h":
     cdef cppclass CurrentMover_c(Mover_c):
         pass
 
 cdef extern from "WindMover_c.h":
-    cdef cppclass WindMover_c:
+    cdef cppclass WindMover_c(Mover_c):
         WindMover_c() except +
         Boolean fIsConstantWind
         VelocityRec fConstantValue
@@ -67,14 +69,15 @@ cdef extern from "WindMover_c.h":
         double fSpeedScale
         double fAngleScale
         
-        OSErr PrepareForModelRun()
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spill_ID)
         void SetTimeDep(OSSMTimeValue_c *ossm)
         OSErr GetTimeValue(Seconds &time, VelocityRec *vel)
-        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step, bool uncertain, int numLESets, int* LESetsSizesList)	# currently this happens in C++ get_move command
-        void ModelStepIsDone()
         
-        
+cdef extern from "Random_c.h":
+    cdef cppclass Random_c(Mover_c):
+        Random_c() except +
+        double fDiffusionCoefficient
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)        
         
 cdef extern from "CATSMover_c.h":
    #============================================================================
@@ -106,15 +109,12 @@ cdef extern from "CATSMover_c.h":
         #=======================================================================
         #TCM_OPTIMZE     fOptimize
        
-        #int   ReadTopology(char* path, Map_c **newMap)    # what is this for? Do we want to expose? What is Map_c?
+        int   ReadTopology(char* path)
         void  SetRefPosition (WorldPoint , long )    # Could we use WorldPoint3D for this?
         #OSErr ComputeVelocityScale(Seconds&)    # seems to require TMap, TCATSMover
        
-        OSErr PrepareForModelRun()
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
         void  SetTimeDep(OSSMTimeValue_c *ossm)
-        OSErr PrepareForModelStep(Seconds &time, Seconds &time_step, bool uncertain, int numLESets, int* LESetsSizesList)    # currently this happens in C++ get_move command
-        void  ModelStepIsDone()
        
 
 cdef extern from "GridCurrentMover_c.h":
@@ -143,17 +143,14 @@ cdef extern from "GridCurrentMover_c.h":
         float    fMaxDepthForExtrapolation
         
         GridCurrentMover_c ()
-        WorldPoint3D        GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
-        OSErr 		PrepareForModelRun()
-        OSErr 		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
-        OSErr 		PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)
-        void 		ModelStepIsDone()
-        void 		SetTimeGrid(TimeGridVel_c *newTimeGrid)
-        OSErr                TextRead(char *path,char *topFilePath)
+        WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
+        OSErr 		    get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
+        void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
+        OSErr           TextRead(char *path,char *topFilePath)
         
 cdef extern from "GridWindMover_c.h":
     
-    cdef cppclass GridWindMover_c:
+    cdef cppclass GridWindMover_c(WindMover_c):
         TimeGridVel_c    *timeGrid
         Boolean fIsOptimizedForStep
         float    fWindScale
@@ -161,21 +158,7 @@ cdef extern from "GridWindMover_c.h":
         short    fUserUnits
         
         GridWindMover_c ()
-        WorldPoint3D        GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
-        OSErr 		PrepareForModelRun()
-        OSErr 		get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, double* windages, short* LE_status, LEType spillType, long spillID)
-        OSErr 		PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)
-        void 		ModelStepIsDone()
-        void 		SetTimeGrid(TimeGridVel_c *newTimeGrid)
-        OSErr                TextRead(char *path,char *topFilePath)
+        WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
+        void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
+        OSErr           TextRead(char *path,char *topFilePath)
         
-cdef extern from "Random_c.h":
-    cdef cppclass Random_c:
-        Boolean bUseDepthDependent
-        double fDiffusionCoefficient
-        double fUncertaintyFactor
-        TR_OPTIMZE fOptimize
-        OSErr PrepareForModelRun()
-        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
-        OSErr PrepareForModelStep(Seconds&, Seconds&, bool, int numLESets, int* LESetsSizesList)
-        void ModelStepIsDone()

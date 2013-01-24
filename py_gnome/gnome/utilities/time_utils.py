@@ -71,34 +71,34 @@ def sec_to_timestruct(seconds):
         lt[3] -= 1
     
     return time.struct_time(lt)
-    
-def round_time(dt=None, roundTo=60):
-   """
-   Round a datetime object or numpy array to any time laps in seconds
-   
-   :param dt: datetime.datetime object or numpy array of datetime objects, default now.
-   :param roundTo: Closest number of seconds to round to, default 1 minute.
-   
-   :returns: either an array with rounded values or just a single value if only 1 value was input
 
-   Author: Thierry Husson 2012 - Use it as you want but don't blame me.
-   
-   found on : http://stackoverflow.com
-   """
-   if dt is None :
-       dt = datetime.datetime.now()
-   
-   dt = numpy.asarray(dt, dtype=numpy.datetime64).reshape(-1)
+def round_time(dt=None, roundTo=60): # IGNORE:W0621
+    """
+    Round a datetime object or numpy array to any time laps in seconds
 
-   
-   for li in range(len(dt)):
-       date = dt[li].astype(object)
-       seconds = (date - date.min).seconds
-       rounding= (seconds+roundTo/2) // roundTo * roundTo
-       # // is a floor division, not a comment on following line:
-       dt[li] = date + datetime.timedelta(0,rounding-seconds,-date.microsecond)
-   
-   return ( len(dt)==1 and dt[0].astype(object) or dt )
+    :param dt: datetime.datetime object or numpy array of datetime objects, default now.
+    :param roundTo: Closest number of seconds to round to, default 1 minute.
+
+    :returns: either an array with rounded values or just a single value if only 1 value was input
+
+    Author: Thierry Husson 2012 - Use it as you want but don't blame me.
+
+    found on : http://stackoverflow.com
+    """
+    if dt is None :
+        dt = datetime.datetime.now()
+
+    dt = numpy.asarray(dt, dtype=numpy.datetime64).reshape(-1)
+
+
+    for li in range(len(dt)):
+        date = dt[li].astype(object)
+        seconds = (date - date.min).seconds
+        rounding= (seconds+roundTo/2) // roundTo * roundTo
+        # // is a floor division, not a comment on following line:
+        dt[li] = date + datetime.timedelta(0,rounding-seconds,-date.microsecond)
+
+    return ( len(dt)==1 and dt[0].astype(object) or dt )
 
 
 if __name__ == "__main__":
