@@ -211,7 +211,6 @@ bool NetCDFStore::Create(char *path, bool overwrite, int* ncID) {
 
 bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarIDs, map<string, int> *ncDimIDs) 
 {
-    
 	Seconds seconds;
 	char currentTimeStr[256], startTimeStr[256], timeStr[256];
 
@@ -307,13 +306,13 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
     (*ncVarIDs)["Flag"] = *varIDs;
     ++varIDs;
 
-     ncErr = nc_def_var(ncID, "status", NC_INT, VAR_DIMS, tData, varIDs);
+    ncErr = nc_def_var(ncID, "status", NC_INT, VAR_DIMS, tData, varIDs);
     if(!CheckNC(ncErr)) return false; // handle error.
 
     (*ncVarIDs)["Status"] = *varIDs;
     ++varIDs;
 
-   ncErr = nc_def_var(ncID, "id", NC_INT, VAR_DIMS, tData, varIDs);
+    ncErr = nc_def_var(ncID, "id", NC_INT, VAR_DIMS, tData, varIDs);
     if(!CheckNC(ncErr)) return false; // handle error.
 
     (*ncVarIDs)["ID"] = *varIDs;
@@ -325,10 +324,7 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 
 	GetDateTime(&seconds);
 	Secs2DateStringNetCDF(seconds, currentTimeStr);
-	//Secs2Date(seconds, &daterec);
-	//sprintf(trajectoryTime, "%02hd%02hd", daterec.hour, daterec.minute);
-	//sprintf(trajectoryDate, "%hd/%hd/%02hd", daterec.month, daterec.day, daterec.year % 100);
-	
+
 	tStr = "Particle output from the NOAA GNOME model";
 	ncErr = nc_put_att_text(ncID, NC_GLOBAL, "comment", strlen(tStr), tStr);
 	if(!CheckNC(ncErr)) return false;
@@ -370,19 +366,11 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	
     // Time:
     //tStr = "seconds since 1970-01-01 0:00:00";
-    //tStr = "seconds since ";
-	//strcat(tStr,currentTimeStr);
     //ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Time"], "units", strlen(tStr), tStr);
 	strcpy(timeStr, "seconds since ");
 	seconds = model->GetStartTime();
 	Secs2DateStringNetCDF(seconds, startTimeStr);
 	strcat(timeStr, startTimeStr);
-	//sprintf(currentTimeStr,"%s%s",timeStr,startTimeStr);
-
-    //if(!CheckNC(ncErr)) return false; // handle error.
-
-    // Time:
-    //tStr = "seconds since 1970-01-01 0:00:00";
     ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Time"], "units", strlen(timeStr), timeStr);
     if(!CheckNC(ncErr)) return false; // handle error.
 
@@ -402,7 +390,7 @@ bool NetCDFStore::Define(TModel* model, bool uncertain, map<string, int> *ncVarI
 	ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Time"], "comment", strlen(tStr), tStr);
 	if(!CheckNC(ncErr)) return false;
 
-   // Particle count
+    // Particle count
     tStr = "1";
     ncErr = nc_put_att_text(ncID, (*ncVarIDs)["Particle_Count"], "units", strlen(tStr), tStr);
     if(!CheckNC(ncErr)) return false; // handle error.

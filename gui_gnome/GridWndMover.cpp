@@ -289,15 +289,107 @@ OSErr GridWndMover::CheckAndPassOnMessage(TModelMessage *message)
 }
 
 
+OSErr GridWndMover::CheckAndScanFile(char *errmsg, const Seconds& model_time)
+{
+	Seconds time = model_time, startTime, endTime, lastEndTime, testTime; // AH 07/17/2012
+	
+	long i,numFiles = GetNumFiles();
+	OSErr err = 0;
+	
+	errmsg[0]=0;
+	if (fEndData.timeIndex!=UNASSIGNEDINDEX)
+		testTime = (*fTimeDataHdl)[fEndData.timeIndex].time;	// currently loaded end time
+	
+	for (i=0;i<numFiles;i++)
+	{
+		startTime = (*fInputFilesHdl)[i].startTime;
+		endTime = (*fInputFilesHdl)[i].endTime;
+		if (startTime<=time&&time<=endTime && !(startTime==endTime))
+		{
+			if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
+			// code goes here, check that start/end times match
+			strcpy(fPathName,(*fInputFilesHdl)[i].pathName);
+			fOverLap = false;
+			return err;
+		}
+		if (startTime==endTime && startTime==time)	// one time in file, need to overlap
+		{
+			long fileNum;
+			if (i<numFiles-1)
+				fileNum = i+1;
+			else
+				fileNum = i;
+			fOverLapStartTime = (*fInputFilesHdl)[fileNum-1].endTime;	// last entry in previous file
+			DisposeLoadedData(&fStartData);
+			/*if (fOverLapStartTime==testTime)	// shift end time data to start time data
+			 {
+			 fStartData = fEndData;
+			 ClearLoadedData(&fEndData);
+			 }
+			 else*/
+			{
+				if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
+				err = ScanFileForTimes((*fInputFilesHdl)[fileNum-1].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
+				DisposeLoadedData(&fEndData);
+				strcpy(fPathName,(*fInputFilesHdl)[fileNum-1].pathName);
+				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;
+			}
+			fStartData.timeIndex = UNASSIGNEDINDEX;
+			if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
+			err = ScanFileForTimes((*fInputFilesHdl)[fileNum].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
+			strcpy(fPathName,(*fInputFilesHdl)[fileNum].pathName);
+			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
+			if(err) return err;
+			fEndData.timeIndex = 0;
+			fOverLap = true;
+			return noErr;
+		}
+		if (i>0 && (lastEndTime<time && time<startTime))
+		{
+			fOverLapStartTime = (*fInputFilesHdl)[i-1].endTime;	// last entry in previous file
+			DisposeLoadedData(&fStartData);
+			if (fOverLapStartTime==testTime)	// shift end time data to start time data
+			{
+				fStartData = fEndData;
+				ClearLoadedData(&fEndData);
+			}
+			else
+			{
+				if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
+				err = ScanFileForTimes((*fInputFilesHdl)[i-1].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
+				DisposeLoadedData(&fEndData);
+				strcpy(fPathName,(*fInputFilesHdl)[i-1].pathName);
+				if (err = this -> ReadTimeData(GetNumTimesInFile()-1,&fStartData.dataHdl,errmsg)) return err;	
+			}
+			fStartData.timeIndex = UNASSIGNEDINDEX;
+			if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
+			err = ScanFileForTimes((*fInputFilesHdl)[i].pathName,&fTimeDataHdl,false);	// AH 07/17/2012
+			if (err) return err;
+			strcpy(fPathName,(*fInputFilesHdl)[i].pathName);
+			err = this -> ReadTimeData(0,&fEndData.dataHdl,errmsg);
+			if(err) return err;
+			fEndData.timeIndex = 0;
+			fOverLap = true;
+			return noErr;
+		}
+		lastEndTime = endTime;
+	}
+	strcpy(errmsg,"Time outside of interval being modeled");
+	return -1;	
+	//return err;
+}
+
 Boolean GridWndMover::CheckInterval(long &timeDataInterval, const Seconds& model_time)
 {
 	Seconds time =  model_time;	// AH 07/17/2012
 	long i,numTimes;
 	
 	numTimes = this -> GetNumTimesInFile(); 
+	if (numTimes==0) {timeDataInterval = 0; return false;}	// really something is wrong, no data exists
 	
 	// check for constant wind
-	if (numTimes==1) 
+	if (numTimes==1 && !(GetNumFiles()>1)) 
 	{
 		timeDataInterval = -1; // some flag here
 		if(fStartData.timeIndex==0 && fStartData.dataHdl)
@@ -383,25 +475,36 @@ OSErr GridWndMover::SetInterval(char *errmsg, const Seconds& model_time)
 		return 0;
 	
 	// check for constant wind 
-	if(numTimesInFile==1)	//or if(timeDataInterval==-1) 
+	if(numTimesInFile==1 && !(GetNumFiles()>1))	//or if(timeDataInterval==-1) 
 	{
 		indexOfStart = 0;
 		indexOfEnd = UNASSIGNEDINDEX;	// should already be -1
 	}
 	
-	if(timeDataInterval == 0)
+	if(timeDataInterval == 0 || timeDataInterval == numTimesInFile)
 	{	// before the first step in the file
-		err = -1;
-		strcpy(errmsg,"Time outside of interval being modeled");
-		goto done;
+		if (GetNumFiles()>1)
+		{
+			if ((err = CheckAndScanFile(errmsg, model_time)) || fOverLap) goto done;	// AH 07/17/2012
+			intervalLoaded = this -> CheckInterval(timeDataInterval, model_time);	// AH 07/17/2012
+			indexOfStart = timeDataInterval-1;
+			indexOfEnd = timeDataInterval;
+			numTimesInFile = this -> GetNumTimesInFile();
+		}
+		else
+		{
+			err = -1;
+			strcpy(errmsg,"Time outside of interval being modeled");
+			goto done;
+		}
 	}
-	else if(timeDataInterval == numTimesInFile) 
+	/*else if(timeDataInterval == numTimesInFile) 
 	{	// past the last information in the file
 		err = -1;
 		strcpy(errmsg,"Time outside of interval being modeled");
 		goto done;
-	}
-	else // load the two intervals
+	}*/
+	//else // load the two intervals
 	{
 		DisposeLoadedData(&fStartData);
 		
@@ -714,7 +817,7 @@ OSErr GridWndMover::ReadHeaderLines(char *path, WorldRect *bounds)
 	if(!strstr(s,"[FILE]")) 
 	{	// single file
 		
-		err = ScanFileForTimes(path,&fTimeDataHdl,true, model->GetStartTime());	// AH 07/17/2012
+		err = ScanFileForTimes(path,&fTimeDataHdl,true);
 		
 		if (err) goto done;
 	}
@@ -728,7 +831,7 @@ OSErr GridWndMover::ReadHeaderLines(char *path, WorldRect *bounds)
 		ResolvePathFromInputFile(path,fPathName); // JLM 6/8/10
 		if(fPathName[0] && FileExists(0,0,fPathName))
 		{
-			err = ScanFileForTimes(fPathName,&fTimeDataHdl,true, model->GetStartTime());	// AH 07/17/2012
+			err = ScanFileForTimes(fPathName,&fTimeDataHdl,true);
 			
 			if (err) goto done;
 			// code goes here, maybe do something different if constant wind
@@ -942,7 +1045,7 @@ done:
 	return err;
 }
 
-OSErr GridWndMover::ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime, const Seconds& start_time)
+OSErr GridWndMover::ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime)
 {
 	// scan through the file looking for times "[TIME "  (close file if necessary...)
 	

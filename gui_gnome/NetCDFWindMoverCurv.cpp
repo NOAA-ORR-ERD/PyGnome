@@ -142,7 +142,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 	static size_t pt_count[2];
 	Seconds startTime, startTime2;
 	double timeConversion = 1.;
-	char errmsg[256] = "";
+	char errmsg[256] = "",className[256]="";
 	char fileName[64],*modelTypeStr=0;
 	Point where;
 	OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
@@ -184,7 +184,9 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 		
 		strcpy(fFileName, modelTypeStr); 
 	}
-	//SetClassName(fFileName); //first check that name is now the default and not set by command file ("NetCDF Wind")
+	GetClassName(className);
+	if (!strcmp("NetCDF Wind",className))
+		SetClassName(fFileName); //first check that name is now the default and not set by command file ("NetCDF Wind")
 	
 	//if (fIsNavy)
 	{

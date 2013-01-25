@@ -1326,7 +1326,7 @@ OSErr NetCDFWindMover::TextRead(char *path)
 	static size_t pt_count[2];
 	Seconds startTime, startTime2;
 	double timeConversion = 1.;
-	char errmsg[256] = "";
+	char errmsg[256] = "",className[256] = "";
 	char fileName[64],s[256],*modelTypeStr=0;
 	char  outPath[256];
 	
@@ -1412,7 +1412,9 @@ OSErr NetCDFWindMover::TextRead(char *path)
 			strcpy(fFileName, modelTypeStr); // maybe use a name from the file
 		}
 	}
-	//SetClassName(fFileName); //first check that name is now the default and not set by command file ("NetCDF Wind")
+	GetClassName(className);
+	if (!strcmp("NetCDF Wind",className))
+		SetClassName(fFileName); //first check that name is now the default and not set by command file ("NetCDF Wind")
 	status = nc_inq_dimid(ncid, "lat", &latid); 
 	if (status != NC_NOERR) 
 	{
