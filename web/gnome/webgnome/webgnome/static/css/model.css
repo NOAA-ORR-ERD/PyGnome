@@ -31,6 +31,15 @@ ul.dynatree-container {
     padding-top: 0;
 }
 
+#slider-shaded {
+    position: absolute;
+    height: 100%;
+    width: 0;
+    top: 0;
+    left: 0;
+    background-color: gray;
+}
+
 #main-content {
     margin-left: 10px;
 }
@@ -103,6 +112,10 @@ legend {
 
 .alert {
     max-width: 700px;
+}
+
+.add-time-forms {
+    margin-right: 5px;
 }
 
 .edit-time-forms th {
@@ -184,6 +197,11 @@ legend {
     width: 700px;
 }
 
+.nws-map-canvas {
+    height: 100%;
+    width: 100%;
+}
+
 .modal-body {
     max-height: 800px;
 }
@@ -194,4 +212,36 @@ legend {
 
 .show-compass {
     color: blue!important;
+}
+
+.wind-mover-nav {
+    margin-left: 70px;
+    margin-bottom: 20px;
+}
+
+.wind-mover-header {
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+.icon-warning-sign.error {
+    color: red;
+}
+
+.ui-tooltip {
+    padding: 8px;
+    position: absolute;
+    z-index: 9999;
+    max-width: 300px;
+    -webkit-box-shadow: 0 0 5px #aaa;
+    box-shadow: 0 0 5px #aaa;
+}
+
+/* Fades and background-images don't work well together in IE6, drop the image */
+* html .ui-tooltip {
+    background-image: none;
+}
+
+body .ui-tooltip {
+    border-width: 2px;
 }

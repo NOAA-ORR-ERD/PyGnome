@@ -36,7 +36,7 @@ protected:
 public:
 	Mover_c (TMap *owner, char *name);
 	Mover_c () {}
-	virtual			   ~Mover_c () { Dispose (); }
+	virtual				~Mover_c();
 	virtual void		Dispose () {}
 
 	virtual OSErr		AddUncertainty (long setIndex, long leIndex, VelocityRec *v) { return 0; }

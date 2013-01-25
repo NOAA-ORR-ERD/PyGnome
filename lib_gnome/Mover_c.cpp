@@ -36,6 +36,10 @@ Mover_c::Mover_c(TMap *owner, char *name)
 }
 
 
+Mover_c::~Mover_c()
+{
+	Dispose ();
+}
 OSErr Mover_c::UpdateUncertainty(void)
 {
 	return 0;	

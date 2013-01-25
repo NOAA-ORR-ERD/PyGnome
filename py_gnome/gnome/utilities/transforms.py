@@ -44,8 +44,8 @@ def r_theta_to_uv_wind(r_theta):
     if np.any(r_theta[:,1] > 360) or np.any(r_theta[:,1] < 0):
         raise ValueError("input angle in r_theta[:,1] must be between 0 and 360")
     
-    if np.any(r_theta[:,0] <= 0):
-        raise ValueError("input magnitude in r_theta[:,0] must be greater than 0")
+    if np.any(r_theta[:,0] < 0):
+        raise ValueError("input magnitude in r_theta[:,0] must be greater than, equal to 0")
     
     rq = np.array(r_theta) 
     rq[:,1] = np.deg2rad(rq[:,1])

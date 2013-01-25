@@ -385,6 +385,7 @@ define([
 
             if (response.errors.length) {
                 model.errors = response.errors;
+                model.set(model.previousAttributes());
             }
         },
 
@@ -471,24 +472,20 @@ define([
 
 
     // Movers
-    var WindValue = BaseModel.extend({
-        dateFields: ['datetime']
-    });
-
-    var WindValueCollection = Backbone.Collection.extend({
-        model: WindValue,
-
-        comparator: function(item) {
-            return item.get('datetime');
-        }
-    });
-
 
     var Wind = BaseModel.extend({
-        initialize: function(attrs) {
-            attrs = attrs || {};
-            var timeseries = attrs['timeseries'] || [];
-            this.set('timeseries', new WindValueCollection(timeseries));
+
+        /*
+         Whenever `timeseries` is set, sort it by datetime.
+         */
+        set: function(key, val, options) {
+            if (key.timeseries && key.timeseries.length) {
+                key.timeseries = _.sortBy(key.timeseries, 'datetime');
+            } else if (key === 'timeseries' && val && val.length) {
+                val = _.sortBy(val, 'datetime');
+            }
+
+            return Wind.__super__.set.apply(this, arguments);
         }
     });
 
@@ -503,11 +500,16 @@ define([
         /*
          If the user passed an object for `key`, as when setting multiple
          attributes at once, then make sure the 'wind' field is a `Wind`
-         object.jkl
+         object.
          */
         set: function(key, val, options) {
-            if (key && _.isObject(key) && _.has(key, 'wind')) {
-                key['wind'] = new Wind(key['wind']);
+            if (key && key.wind) {
+                // Assume an object with a `get` method is a Model; otherwise
+                // assume the value is JSON that we need to send to a Wind
+                // constructor.
+                if (key['wind'].get === undefined) {
+                    key['wind'] = new Wind(key['wind']);
+                }
             } else if (this.get('wind') === undefined) {
                 key['wind'] = new Wind();
             }
@@ -536,6 +538,16 @@ define([
             this.url = options.url;
         }
     });
+
+
+    function getNwsWind(coords, success) {
+        var url = '/nws/wind?lat=' + coords.latitude + '&lon=' + coords.longitude;
+        $.ajax({
+            url: url,
+            success: success,
+            dataType: 'json'
+        });
+    }
       
 
     return {
@@ -548,8 +560,8 @@ define([
         WindMoverCollection: WindMoverCollection,
         RandomMover: RandomMover,
         RandomMoverCollection: RandomMoverCollection,
-        WindValue: WindValue,
-        Map: Map
+        Map: Map,
+        getNwsWind: getNwsWind
     };
 
 });

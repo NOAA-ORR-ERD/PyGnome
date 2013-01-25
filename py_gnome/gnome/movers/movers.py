@@ -5,7 +5,10 @@ from gnome import basic_types, GnomeObject
 from gnome.cy_gnome.cy_wind_mover import CyWindMover
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from gnome.cy_gnome.cy_random_mover import CyRandomMover
+from gnome.cy_gnome import cy_cats_mover, cy_shio_time
 from gnome.utilities import rand    # not to confuse with python random module
+
+import os
 
 from datetime import datetime, timedelta
 from time import gmtime
@@ -19,8 +22,8 @@ class Mover(GnomeObject):
     The get_move(...) method needs to be implemented by the derived class.  
     """
     def __init__(self, 
-                 active_start= datetime( *gmtime(0)[:7] ), 
-                 active_stop = datetime.max):   # default min + max values for timespan
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0)):   # default min + max values for timespan
         """
         During init, it defaults active = True
         """
@@ -101,7 +104,7 @@ class CyMover(Mover):
     We assumes any derived class will instantiate a 'mover' object that
     has methods like: prepare_for_model_run, prepare_for_model_step,
     """
-    def __init__(self, active_start= datetime( *gmtime(0)[:7] ), active_stop = datetime.max):
+    def __init__(self, active_start= datetime( *gmtime(0)[:6] ), active_stop = datetime(2038,1,18,0,0,0)):
         super(CyMover,self).__init__(active_start, active_stop)
 
     def prepare_for_model_run(self):
@@ -179,8 +182,8 @@ class WindMover(CyMover):
     _windage_is_set = False         # class scope, independent of instances of WindMover  
     _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
     def __init__(self, wind, 
-                 active_start= datetime( *gmtime(0)[:7] ), 
-                 active_stop = datetime.max,
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0),
                  uncertain_duration=10800, uncertain_time_delay=0, 
                  uncertain_speed_scale=2., uncertain_angle_scale=0.4):
         """
@@ -296,8 +299,8 @@ class RandomMover(CyMover):
     CyMover sets everything up that is common to all movers.
     """
     def __init__(self, diffusion_coef=100000, 
-                 active_start= datetime( *gmtime(0)[:7] ), 
-                 active_stop = datetime.max):
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0)):
         self.mover = CyRandomMover(diffusion_coef=diffusion_coef)
         super(RandomMover,self).__init__(active_start, active_stop)
 
@@ -335,15 +338,62 @@ class RandomMover(CyMover):
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
-
+class CatsMover(CyMover):
+    
+    def __init__(self, curr_file, shio_file=None,
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0)):
+        """
+        
+        """
+        if not os.path.exists(curr_file):
+            raise ValueError("Path for Cats file does not exist: {0}".format(curr_file))
+        
+        self.curr_file = curr_file  # check if this is stored with cy_cats_mover?
+        self.mover = cy_cats_mover.CyCatsMover()
+        self.mover.read_topology(curr_file)
+        
+        if shio_file is not None and not os.path.exists(shio_file):
+            raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
+        else:
+            self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
+            self.mover.set_shio(self.shio)
+        
+        super(CatsMover,self).__init__(active_start, active_stop)
+        
+    def __repr__(self):
+        """
+        unambiguous representation of object
+        """
+        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.shio.filename)
+        return info
+    
+    def get_move(self, sc, time_step, model_time_datetime):
+        """
+        :param sc: an instance of the gnome.SpillContainer class
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as a date time object
+        """
+        self.prepare_data_for_get_move(sc, model_time_datetime)
+        
+        if self.active and self.on: 
+            self.mover.get_move(  self.model_time,
+                                  time_step, 
+                                  self.positions,
+                                  self.delta,
+                                  self.status_codes,
+                                  self.spill_type,
+                                  0)    # only ever 1 spill_container so this is always 0!
+        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+        
 class WeatheringMover(Mover):
     """
     Python Weathering mover
 
     """
     def __init__(self, wind, 
-                 active_start= datetime( *gmtime(0)[:7] ), 
-                 active_stop = datetime.max,
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0),
                  uncertain_duration=10800, uncertain_time_delay=0,
                  uncertain_speed_scale=2., uncertain_angle_scale=0.4):
         """

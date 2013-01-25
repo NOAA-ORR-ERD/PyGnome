@@ -187,16 +187,6 @@ class Test_SurfaceReleaseSpill():
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
 
-    def test_init(self):
-        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
-                                 start_position = self.start_position,
-                                 release_time = self.release_time,
-                                 )
-        arrays = sp.create_new_elements(10)
-        assert arrays['status_codes'].shape == (10,)
-        assert arrays['positions'].shape == (10,3)
-        assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
-
     def test_inst_release(self):
         sp = SurfaceReleaseSpill(num_elements = self.num_elements,
                                  start_position = self.start_position,

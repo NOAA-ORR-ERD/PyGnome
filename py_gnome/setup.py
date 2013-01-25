@@ -61,7 +61,7 @@ if sys.platform == 'darwin':
 CPP_CODE_DIR = "../lib_gnome"
 
 # the cython extensions to build -- each should correspond to a *.pyx file
-extension_names = [
+extension_names = ['cy_mover',
                    'cy_helpers',
                    'cy_wind_mover',
                    'cy_cats_mover',

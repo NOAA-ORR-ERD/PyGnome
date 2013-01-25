@@ -8,6 +8,7 @@ Designed to be run with py.test
 """
 
 from __future__ import division
+import os
 import numpy as np
 import gnome.map
 import gnome.spill
@@ -15,7 +16,7 @@ from gnome.utilities.file_tools import haz_files
 from gnome.utilities import map_canvas
 from gnome.spill_container import TestSpillContainer
 
-
+datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
  
 ##fixme: these two should maybe be in their own test file -- for testing map_canvas.
 
@@ -62,10 +63,10 @@ def test_in_water_resolution():
     Test the limits of the precision, to within an order of magnitude, defining whether a point is in or out of water.
     '''
     
-    m = gnome.map.MapFromBNA( bna_filename = "SampleData/MapBounds_Island.bna" ,
-                              refloat_halflife = (2.*60.*60.) ,
-                              raster_size = 500*500 , # approx resolution
-                              ) #Create an 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
+    m = gnome.map.MapFromBNA(bna_filename = os.path.join(datadir, "Mapbounds_Island.bna"),
+                             refloat_halflife = (2.*60.*60.) ,
+                             raster_size = 500*500 , # approx resolution
+                             ) #Create an 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
     
     # Specify coordinates of the two points that make up the southeastern coastline segment of the island in the BNA map.
     x1 = -126.78709
@@ -209,8 +210,7 @@ class Test_RasterMap():
 
 from gnome.map import MapFromBNA
 class Test_MapfromBNA:
-    filename = "SampleData/Mapbounds_Island.bna"
-    bna_map = MapFromBNA(filename, 6, raster_size=1000)
+    bna_map = MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6, raster_size=1000)
     
     def test_map_in_water(self):
         '''
@@ -269,12 +269,6 @@ class Test_MapfromBNA:
     def test_map_off_map(self):
         point = (-126.097336, 47.43962, 0.0)
         assert not self.bna_map.on_map( point )
-
-
-    def test_map_off_map(self):
-        point = (-126.097336, 47.43962, 0.0)
-        assert not self.bna_map.on_map( point )
-
 
 from gnome import basic_types        
 class Test_full_move:
@@ -475,8 +469,8 @@ class Test_full_move:
 
 
 if __name__ == "__main__":
-     tester = Test_full_move()
-     tester.test_land_cross()
+    tester = Test_full_move()
+    tester.test_land_cross()
 
 
 
