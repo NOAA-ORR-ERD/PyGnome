@@ -28,6 +28,7 @@ from gnome import basic_types
 from gnome.model import Model
 from gnome.movers import WindMover, RandomMover
 from gnome.spill import SurfaceReleaseSpill
+from gnome.weather import Wind
 from gnome.map import MapFromBNA
 
 
@@ -80,6 +81,33 @@ class BaseWebObject(Serializable):
         self._name = name
 
 
+class WebWind(Wind, BaseWebObject):
+    default_name = 'Wind'
+    source_types = (
+        ('nws', 'NWS Wind Data'),
+        ('buoy', 'Buoy Station ID'),
+    )
+    serializable_fields = [
+        'id',
+        'units',
+        'timeseries',
+        'latitude',
+        'longitude',
+        'description',
+        'source',
+        'source_type'
+    ]
+
+    def __init__(self, *args, **kwargs):
+        self.name = kwargs.pop('name', 'Wind')
+        self.description = kwargs.pop('description', None)
+        self.source_type = kwargs.pop('source_type', None)
+        self.source = kwargs.pop('source', None)
+        self.longitude = kwargs.pop('longitude', None)
+        self.latitude = kwargs.pop('latitude', None)
+        super(WebWind, self).__init__(*args, **kwargs)
+
+
 class WebWindMover(WindMover, BaseWebObject):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
@@ -112,6 +140,9 @@ class WebWindMover(WindMover, BaseWebObject):
         super(WebWindMover, self).__init__(*args, **kwargs)
 
     def serialize_wind(self):
+        if not self.wind:
+            return None
+
         series = []
 
         for timeseries in self.wind.get_timeseries(units=self.wind.user_units):

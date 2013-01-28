@@ -24,9 +24,8 @@
         %>
 
         <ul class="nav nav-tabs">
-            <li class="active">
-                <a href="#${form_id}_wind" data-toggle="tab">Wind Data</a>
-            </li>
+            <li class="active"><a href="#${form_id}_wind" data-toggle="tab">Wind Data</a></li>
+            <li class="data-source-link"><a href="#${form_id}_data_source" data-toggle="tab">Data Source</a></li>
             <li><a href="#${form_id}_uncertainty" data-toggle="tab">Uncertainty</a></li>
             <li><a href="#${form_id}_active_range" data-toggle="tab">Active Time Range</a></li>
         </ul>
@@ -46,23 +45,6 @@
 
                 <div class="variable-wind hidden">
                     <div class="span3 add-time-forms">
-                        <div class="btn-group wind-mover-nav">
-                            <a href="javascript:" class="active btn btn-small manual">Manual</a>
-                            <a href="javascript:" class="btn btn-small nws">From NWS</a>
-                        </div>
-
-                        <div class='nws-form hidden'>
-                            ${defs.form_control(h.text('latitude', class_='input-small'), label='Latitude')}
-                            ${defs.form_control(h.text('longitude', class_='input-small'), label='Longitude')}
-                            ${defs.form_control("<span class='nws-description'></span>", label='Description')}
-                            <div class='control-group'>
-                                <div class="controls">
-                                    <a href="javascript:" class="btn show-nws-map">Show NWS Map</a>
-                                    <a href="javascript:" class="btn query-nws">Query NWS</a>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class='time-form add-time-form'>
                             <%
                                 auto_increment_by = h.text('auto_increment_by', 6,
@@ -111,6 +93,30 @@
                     </div>
                 </div>
             </div>
+
+            <div class="tab-pane data-source" id="${form_id}_data_source">
+                <div class="span4">
+                    <% from webgnome.model_manager import WebWind %>
+                    ${defs.form_control(h.select('source_type', mover.wind.source_type,
+                                                 WebWind.source_types, label='Source Type',
+                                                 class_='input-medium'),
+                                        label="Data Source")}
+                    ${defs.form_control(h.text('source', class_='input-small'), label='Source ID')}
+                     ${defs.form_control(h.text('latitude', class_='input-small'), label='Latitude')}
+                    ${defs.form_control(h.text('longitude', class_='input-small'), label='Longitude')}
+                    ${defs.form_control(h.textarea('description', class_='input-medium'), label='Description')}
+                    <div class='control-group'>
+                        <div class="controls">
+                            <button class="btn query-source">Get Latest</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="nws-map-container">
+                    <div class="nws-map-canvas"></div>
+                </div>
+            </div>
+
             <div class="tab-pane uncertainty" id="${form_id}_uncertainty">
                 <%
                     uncertain_time_delay = h.text('uncertain_time_delay', mover.uncertain_time_delay)
@@ -137,10 +143,6 @@
 
     <div class="compass-container">
         <div id="${form_id}_compass_add" class="compass"></div>
-    </div>
-
-    <div class="nws-map-container">
-        <div class="nws-map-canvas"></div>
     </div>
 
     <!-- A template for time series item rows. -->

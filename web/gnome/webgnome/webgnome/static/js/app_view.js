@@ -127,6 +127,8 @@ define([
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
             this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
 
+            this.formViews.on(forms.FormView.MESSAGE_READY, this.displayMessage);
+
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
             this.treeControlView.on(views.TreeControlView.ADD_BUTTON_CLICKED, this.addButtonClicked);
@@ -334,6 +336,10 @@ define([
                 bounds: this.options.mapBounds || [],
                 modelSettings: this.modelSettings
             });
+        },
+
+        displayMessage: function(message) {
+            this.messageView.displayMessage(message);
         },
 
         modelRunError: function() {

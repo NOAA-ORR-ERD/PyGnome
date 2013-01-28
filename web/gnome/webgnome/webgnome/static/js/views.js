@@ -492,6 +492,14 @@ define([
             var _this = this;
             var background = $(this.mapEl).find('.background');
 
+            if (this.backgroundCanvas) {
+                $(this.backgroundCanvas).remove();
+            }
+
+            if (this.foregroundCanvas) {
+                $(this.foregroundCanvas).remove();
+            }
+
             this.backgroundCanvas = $('<canvas>').attr({
                 id: 'canvas-background',
                 height: background.height(),

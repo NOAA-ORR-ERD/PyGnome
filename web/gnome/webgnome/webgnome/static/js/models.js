@@ -381,7 +381,13 @@ define([
         },
 
         error: function(model, response, options) {
-            response = $.parseJSON(response.responseText);
+            try {
+                response = $.parseJSON(response.responseText);
+            } catch(e) {
+                response.errors = [{
+                    description: 'A server error prevented saving the model.'
+                }];
+            }
 
             if (response.errors.length) {
                 model.errors = response.errors;

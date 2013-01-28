@@ -1,8 +1,8 @@
 from cornice.resource import resource, view
-from gnome.weather import Wind
+from pyramid.httpexceptions import HTTPBadRequest
 
 from webgnome import util
-from webgnome.model_manager import WebWindMover, WebRandomMover
+from webgnome.model_manager import WebWindMover, WebRandomMover, WebWind
 from webgnome.schema import WindMoverSchema, RandomMoverSchema
 from webgnome.views.services.base import BaseResource
 
@@ -13,21 +13,13 @@ from webgnome.views.services.base import BaseResource
 class WindMover(BaseResource):
     optional_fields = ['active_start', 'active_stop']
 
-    def get_wind(self, wind_data):
-        """
-        Return a :class:`gnome.weather.Wind` object initialized with the data
-        in ``wind_data``, a dict.
-        """
-        return Wind(units=wind_data['units'],
-                    timeseries=wind_data['timeseries'])
-
     @view(validators=util.valid_model_id, schema=WindMoverSchema)
     def collection_post(self):
         """
         Create a WindMover from a JSON representation.
         """
         data = self.prepare(self.request.validated)
-        data['wind'] = self.get_wind(data['wind'])
+        data['wind'] = WebWind(**data['wind'])
         model = data.pop('model')
         mover = WebWindMover(**data)
         model.movers.add(mover)
@@ -60,7 +52,7 @@ class WindMover(BaseResource):
         Update an existing WindMover from a JSON representation.
         """
         data = self.request.validated
-        data['wind'] = self.get_wind(data['wind'])
+        data['wind'] = WebWind(**data['wind'])
         model = data.pop('model')
         mover = model.movers.get(self.id).from_dict(data)
 

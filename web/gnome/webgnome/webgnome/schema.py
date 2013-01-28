@@ -21,6 +21,7 @@ from colander import (
 )
 
 from webgnome import util
+from webgnome.model_manager import WebWind
 
 
 def get_direction_degree(direction):
@@ -72,6 +73,22 @@ def cardinal_direction(node, direction):
         raise Invalid(
             node, 'A cardinal directions must be one of: %s' % ', '.join(
                 util.DirectionConverter.DIRECTIONS))
+
+
+def no_duplicates(node, values):
+    """
+    Reject ``values`` if it contains duplicates.
+    """
+    try:
+        unique = numpy.unique(values)
+    except AttributeError:
+        return
+
+    num_dups = len(values) - len(unique)
+
+    if num_dups:
+        raise Invalid(
+            node, 'Duplicates are not allowed. Found %s duplicates.' % num_dups)
 
 
 def valid_direction(node, value):
@@ -143,9 +160,15 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
 
 
 class WindSchema(MappingSchema):
-    timeseries = WindTimeSeriesSchema(default=[])
+    source = SchemaNode(String(), default=None, missing=None)
+    source_type = SchemaNode(String(), default=None, missing=None,
+                             validator=OneOf(WebWind.source_types))
+    description = SchemaNode(String(), default=None, missing=None)
+    timeseries = WindTimeSeriesSchema(default=[], validator=no_duplicates)
     units = SchemaNode(String(), validator=OneOf(util.velocity_unit_values),
                        default='m/s')
+    latitude = SchemaNode(Float(), default=None, missing=None)
+    longitude = SchemaNode(Float(), default=None, missing=None)
 
 
 class BaseMoverSchema(MappingSchema):
