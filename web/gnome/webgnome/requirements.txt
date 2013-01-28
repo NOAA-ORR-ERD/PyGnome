@@ -1,3 +1,5 @@
+requests
+lxml
 pytz
 python-cjson==1.0.5
 pyramid==1.4a1

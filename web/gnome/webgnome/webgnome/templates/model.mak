@@ -94,7 +94,7 @@
                 <div class="btn disabled" id="slider-container">
                     <span id="time">00:00</span>
 
-                    <div id="slider"></div>
+                    <div id="slider"><div id="slider-shaded"></div></div>
                 </div>
                 <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
                 <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
@@ -169,7 +169,7 @@
                     modelSettings: ${model_settings | n},
                     map: ${map_data | n},
                     mapIsLoaded: ${"true" if map_is_loaded else "false"},
-                    animationThreshold: 20 // Milliseconds
+                    animationThreshold: 10 // Milliseconds
                 });
             });
         });

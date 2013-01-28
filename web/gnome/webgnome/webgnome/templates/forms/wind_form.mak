@@ -11,12 +11,5 @@ ${defs.form_control(
     help_text='Enter cardinal direction or degrees true. ' \
         '<a href="javascript:" class="show-compass">Show compass.</a>')}
 
-<div class="control-group">
-    <label class="control-label">Speed</label>
-
-    <div class="controls">
-    ${h.text('speed', wind.speed, class_="speed")}
-    <span class="help"> </span>
-    </div>
-</div>
-
+${defs.form_control(
+    h.text('speed', wind.speed, class_="speed"), label='Speed')}

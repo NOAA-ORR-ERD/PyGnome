@@ -3,7 +3,7 @@
 
 <div class="wind form page hide" id="${form_id}">
     <form action="" class="form-horizontal" method="POST">
-        <div class="page-header form-inline">
+        <div class="wind-mover-header form-inline">
             <label>Name</label> ${h.text('name', mover.name)}
             <%
                 from webgnome.util import velocity_unit_options
@@ -46,6 +46,23 @@
 
                 <div class="variable-wind hidden">
                     <div class="span3 add-time-forms">
+                        <div class="btn-group wind-mover-nav">
+                            <a href="javascript:" class="active btn btn-small manual">Manual</a>
+                            <a href="javascript:" class="btn btn-small nws">From NWS</a>
+                        </div>
+
+                        <div class='nws-form hidden'>
+                            ${defs.form_control(h.text('latitude', class_='input-small'), label='Latitude')}
+                            ${defs.form_control(h.text('longitude', class_='input-small'), label='Longitude')}
+                            ${defs.form_control("<span class='nws-description'></span>", label='Description')}
+                            <div class='control-group'>
+                                <div class="controls">
+                                    <a href="javascript:" class="btn show-nws-map">Show NWS Map</a>
+                                    <a href="javascript:" class="btn query-nws">Query NWS</a>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class='time-form add-time-form'>
                             <%
                                 auto_increment_by = h.text('auto_increment_by', 6,
@@ -75,7 +92,7 @@
                         </div>
                     </div>
 
-                    <div class="span4 edit-time-forms">
+                    <div class="edit-time-forms">
                         <div class="wind-values">
                             <table class="table table-striped time-list">
                                 <thead>
@@ -120,6 +137,10 @@
 
     <div class="compass-container">
         <div id="${form_id}_compass_add" class="compass"></div>
+    </div>
+
+    <div class="nws-map-container">
+        <div class="nws-map-canvas"></div>
     </div>
 
     <!-- A template for time series item rows. -->

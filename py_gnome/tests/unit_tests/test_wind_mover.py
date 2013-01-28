@@ -1,3 +1,4 @@
+import os
 from gnome import movers
 
 from gnome import basic_types, weather
@@ -12,13 +13,15 @@ import pytest
 
 from hazpy import unit_conversion
 
+datadir = os.path.join(os.path.dirname(__file__), r'SampleData')
+
 def test_exceptions():
     """
     Test ValueError exception thrown if improper input arguments
     """
     with pytest.raises(TypeError):
         movers.WindMover()
-        
+
     with pytest.raises(ValueError):
         file_ = r"SampleData/WindDataFromGnome.WND"
         wind = weather.Wind(file=file_)
@@ -111,11 +114,9 @@ def spill_ex():
     pSpill = TestSpillContainer(num_le, start_pos, rel_time)
     return pSpill
 
-
 class TestWindMover:
     """
     gnome.WindMover() test
-
     """
     def __init__(self):
         #time_step = 15 * 60 # seconds
@@ -194,7 +195,7 @@ def test_timespan():
     Ensure the active flag is being set correctly and checked, such that if active=False, the delta produced by get_move = 0
     """
     time_step = 15 * 60 # seconds
-    
+
     #todo: hack for now, but should try to use same spill for all tests
     start_pos = (3., 6., 0.)
     rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
@@ -209,23 +210,23 @@ def test_timespan():
     time_val['time']  = np.datetime64( rel_time.isoformat() )
     time_val['value'] = (2., 25.)
     wind = weather.Wind(timeseries=time_val, units='meters per second')
-    
+
     wm = movers.WindMover(wind, active_start=model_time+timedelta(seconds=time_step))
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
     assert wm.active == False
     assert np.all(delta == 0)   # model_time + time_step = active_start
-    
+
     wm.active_start = model_time + timedelta(seconds=time_step/2)
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
     assert wm.active == True
     assert np.all(delta[:,:2] != 0)   # model_time + time_step > active_start
-    
 
-"""
-Helper methods for this module
-"""
+
+#
+#Helper methods for this module
+#
 def _defaults(wm):
     """
     checks the default properties of the WindMover object as given in the input are as expected
@@ -237,22 +238,22 @@ def _defaults(wm):
     assert wm.uncertain_angle_scale == 0.4
 
 def _get_timeseries_from_cpp(windmover):
-        """
-        local method for tests - returns the timeseries used internally by the C++ WindMover_c object.
-        This should be the same as the timeseries stored in the self.wind object
-        
-        Data is returned as a datetime_value_2d array in units of meters per second in 
-        data_format = wind_uv
-        
-        This is simply used for testing.
-        """
-        dtv = windmover.wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
-        tv  = convert.to_time_value_pair(dtv, basic_types.data_format.wind_uv)
-        val = windmover.mover.get_time_value(tv['time'])
-        tv['value']['u'] = val['u']
-        tv['value']['v'] = val['v']
-        
-        return convert.to_datetime_value_2d( tv, basic_types.data_format.wind_uv)
+    """
+    local method for tests - returns the timeseries used internally by the C++ WindMover_c object.
+    This should be the same as the timeseries stored in the self.wind object
+
+    Data is returned as a datetime_value_2d array in units of meters per second in 
+    data_format = wind_uv
+
+    This is simply used for testing.
+    """
+    dtv = windmover.wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
+    tv  = convert.to_time_value_pair(dtv, basic_types.data_format.wind_uv)
+    val = windmover.mover.get_time_value(tv['time'])
+    tv['value']['u'] = val['u']
+    tv['value']['v'] = val['v']
+
+    return convert.to_datetime_value_2d( tv, basic_types.data_format.wind_uv)
 
 def _assert_timeseries_equivalence(cpp_timeseries, wind_ts):
     """
