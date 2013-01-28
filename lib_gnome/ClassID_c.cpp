@@ -11,6 +11,12 @@
 #include "StringFunctions.h"
 #include "CompFunctions.h"
 
+ClassID_c::ClassID_c()
+{
+	// initialize
+	bActive = 1;	// active by default
+}
+
 void ClassID_c::SetClassName (char *newName)
 {
 	if (strlen (newName) > kMaxNameLen)
