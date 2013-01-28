@@ -250,9 +250,9 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, 
 		{	// move to separate function, and probably should combine with 
 			char errmsg[256] = "";
 			float cosTerm,sinTerm;
-			SetHandleSize((Handle)fWindUncertaintyList, numrec*sizeof(LEWindUncertainRec));
-			sprintf(errmsg,"Num LEs to Allocate = %ld\n",numrec);
-			printNote("errmsg");
+			_SetHandleSize((Handle)fWindUncertaintyList, numrec*sizeof(LEWindUncertainRec));
+			//sprintf(errmsg,"Num LEs to Allocate = %ld\n",numrec);
+			//printNote("errmsg");
 			//for pyGNOME there should only be one uncertainty spill so fLESetSizes has only 1 value which is zero and doesn't need to be updated.
 			if (numLESets != 1 || numLESetsStored != 1) {printError("num uncertainty spills not equal 1\n"); return -1;}
 			if (needToReInit) printNote("Uncertainty arrays are being reset\n");	// this shouldn't happen
