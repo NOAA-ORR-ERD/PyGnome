@@ -12,8 +12,10 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
+#include "ExportSymbols.h"
 
-class ClassID_c {
+
+class GNOMEDLL_API ClassID_c {
 
 public:
 	Boolean				bDirty;
@@ -22,7 +24,7 @@ public:
 	char				className [kMaxNameLen];
 	UNIQUEID			fUniqueID;
 	
-						//ClassID_c ();
+						ClassID_c ();
 	virtual			   ~ClassID_c () { Dispose (); }
 	virtual ClassID 	GetClassID 	() { return TYPE_UNDENTIFIED; }
 	virtual Boolean		IAm(ClassID id) { return FALSE; }

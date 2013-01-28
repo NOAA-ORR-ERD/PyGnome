@@ -189,10 +189,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\lib_gnome\CMYLIST.CPP"
-				>
-			</File>
-			<File
 				RelativePath="..\..\lib_gnome\CompFunctions.cpp"
 				>
 			</File>
@@ -206,10 +202,6 @@
 			</File>
 			<File
 				RelativePath="..\..\lib_gnome\DagTreeIO.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\GEOMETR2.CPP"
 				>
 			</File>
 			<File
@@ -238,10 +230,6 @@
 			</File>
 			<File
 				RelativePath="..\..\lib_gnome\Mover_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\MYRANDOM.CPP"
 				>
 			</File>
 			<File
