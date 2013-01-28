@@ -1158,7 +1158,7 @@ unsigned long DateString2Secs(CHARPTR s)
 		if (long_secs==-1) 
 		{
 			long_secs=0; 
-			printNote("The Windows function localtime() does not accept dates earlier than January 1,  00:00 GMT");
+			printNote("The Windows function localtime() does not accept dates earlier than January 1, 1970 GMT");
 			SysBeep(1);
 		}	// here check if year < 1970 and convert
 	seconds = long_secs;

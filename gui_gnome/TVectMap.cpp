@@ -598,6 +598,8 @@ OSErr TVectorMap::ImportMap (char *path)
 			// code goes here, if user wants longitudes switched to Eastern hemisphere add 360, but make sure no values > 0
 			//if (MatrixPt.h < 0 && gNoaaVersion)  MatrixPt.h += kWorldRight;	//  maybe set up a temp set in case of error?
 			//if (MatrixPt.h < 0 && gNoaaVersion)  MatrixPt.h += kWorldRight;
+			//if (PointCount <= 2)	// two point polygon not valid, but doesn't seem to cause a problem
+				//continue;
 			if (PointIndex == 1)	// save the key string for comparing later
 				strcpy (KeyStr, LineStartPtr);
 			

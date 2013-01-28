@@ -194,8 +194,8 @@ errHandler:
 OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = noErr;
-	long i;
-	Boolean needToReInit = false;
+	long i,j;
+	Boolean needToReInit = false, needToReAllocate = false;
 	//Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
 	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime);
 	// JLM, this is elapsedTime >= fUncertainStartTime because elapsedTime is the value at the start of the step
@@ -218,9 +218,9 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, 
 	if(fLESetSizes)
 	{	// check the LE sets are still the same, JLM 9/18/98
 		// code goes here, if LEs were added instead of needToReInit use needToReAllocate - save uncertainty if duration has not been exceeded
-		long numrec;
-		i = _GetHandleSize((Handle)fLESetSizes)/sizeof(long);
-		if(numLESets != i) needToReInit = true;
+		long numrec, uncertListSize = 0, numLESetsStored;
+		numLESetsStored = _GetHandleSize((Handle)fLESetSizes)/sizeof(long);
+		if(numLESets != numLESetsStored) needToReInit = true;
 		else
 		{
 			for (i = 0,numrec=0; i < numLESets ; i++) {
@@ -231,10 +231,48 @@ OSErr WindMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESets, 
 				}
 				numrec += LESetsSizesList[i];
 			}
+			uncertListSize = _GetHandleSize((Handle)fWindUncertaintyList)/sizeof(LEWindUncertainRec); 
+			if (numrec != uncertListSize)// this should not happen for gui gnome
+			{
+#ifdef pyGNOME
+				if (numrec > uncertListSize)
+					needToReAllocate = true;
+				else 
+					needToReInit = true;
+#else
+				needToReInit = true;
+#endif
+				//break;
+			}// need to check
 		}
 		
+		if (needToReAllocate)
+		{	// move to separate function, and probably should combine with 
+			char errmsg[256] = "";
+			float cosTerm,sinTerm;
+			_SetHandleSize((Handle)fWindUncertaintyList, numrec*sizeof(LEWindUncertainRec));
+			//sprintf(errmsg,"Num LEs to Allocate = %ld, previous Size = %ld\n",numrec,uncertListSize);
+			//printNote(errmsg);
+			//for pyGNOME there should only be one uncertainty spill so fLESetSizes has only 1 value which is zero and doesn't need to be updated.
+			if (numLESets != 1 || numLESetsStored != 1) {printError("num uncertainty spills not equal 1\n"); return -1;}
+			if (needToReInit) printNote("Uncertainty arrays are being reset\n");	// this shouldn't happen
+			//if(elapsedTime >= fTimeUncertaintyWasSet + fDuration) // we exceeded the persistance, time to update - either update whole list or just add on
+			// but would also need to update fSigmas - maybe move this section lower
+			for(i=uncertListSize;i<numrec;i++)
+			{
+				rndv(&cosTerm,&sinTerm);
+				for(j=0;j<10;j++)
+				{
+					if(TermsLessThanMax(cosTerm,sinTerm,
+										fMaxSpeed,fMaxAngle,fSigma2,fSigmaTheta))break;
+					rndv(&cosTerm,&sinTerm);
+				}
+				
+				(*fWindUncertaintyList)[i].randCos=cosTerm;
+				(*fWindUncertaintyList)[i].randSin = sinTerm;
+			}
+		}
 	}
-	
 	
 	// question JLM, should fSigma2 change only when the duration value is exceeded ??
 	// or every step as it does now ??

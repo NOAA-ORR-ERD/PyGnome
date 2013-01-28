@@ -50,13 +50,14 @@ public:
 	//virtual OSErr		GetStartTime(Seconds *startTime);
 	//virtual OSErr		GetEndTime(Seconds *endTime);
 	
+	virtual OSErr 		CheckAndScanFile(char *errmsg, const Seconds& model_time);	// AH 07/17/2012
 	virtual Boolean 	CheckInterval(long &timeDataInterval, const Seconds& model_time);	// AH 07/17/2012
 	virtual OSErr	 	SetInterval(char *errmsg, const Seconds& model_time); // AH 07/17/2012
 	
 	virtual OSErr		TextRead(char *path);
 	OSErr 				ReadHeaderLines(char *path, WorldRect *bounds);
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
-	OSErr 				ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime, const Seconds& start_time);	// AH 07/17/2012
+	OSErr 				ScanFileForTimes(char *path, PtCurTimeDataHdl *timeDataH,Boolean setStartTime);	
 	OSErr 				ReadInputFileNames(CHARH fileBufH, long *line, long numFiles, PtCurFileInfoH *inputFilesH, char *pathOfInputfile);
 	
 	virtual void		Draw (Rect r, WorldRect view);

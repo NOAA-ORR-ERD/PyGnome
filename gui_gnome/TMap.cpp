@@ -281,6 +281,32 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 				mover = newWindMover;
 			}
 		}
+		else if(!strcmpnocase(typeName,"GridWind")) 
+		{	// the netcdf mover needs a file and so is a special case
+			// this will just be a file name, assumed to be with the location file
+			// if not, ask for path ?
+			char *p, locFilePath[256], netcdfFilePath[256], firstPartOfFile[512], strLine[512], fileNamesPath[256];
+			long line, lenToRead = 512;
+			short gridType, selectedUnits;
+			GridWndMover *newMover = new GridWndMover(this,moverName);
+			//newMover -> fUserUnits = selectedUnits;
+			if (IsGridWindFile(path,&selectedUnits))			
+				newMover -> fUserUnits = selectedUnits;
+			else return -1;
+			if (err = newMover -> TextRead(path))
+			{
+				newMover->Dispose(); delete newMover; newMover = 0;
+				return -1; 
+			}
+			///////////////////
+			if(err) {
+				// it has already been added to the map's list,we need to get rid of it
+				this -> DropMover(newMover); 
+				newMover->Dispose(); delete newMover;  newMover = 0;
+			}			
+			//return err;
+			mover = newMover;
+		}
 		else if(!strcmpnocase(typeName,"NetCDFWind")) 
 		{	// the netcdf mover needs a file and so is a special case
 			// this will just be a file name, assumed to be with the location file

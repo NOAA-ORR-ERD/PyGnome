@@ -38,7 +38,7 @@ def invalid_rq():
     :returns: dictionary containing 'rq' which is numpy array of '(r,q)' values
     that violate above requirement
     """
-    bad_rq = np.array( [(0,0),(-1,0),(1,-1),(1,361)], dtype=np.float64)
+    bad_rq = np.array( [(-1,0),(1,-1),(1,361)], dtype=np.float64)
     return {'rq': bad_rq}
 
 # use this for wind and current deterministic (r,theta)

@@ -164,6 +164,9 @@ OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const S
 	
 	errmsg[0]=0;
 	
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
+	
 	if (!bActive) return noErr;
 	
 	if (!timeGrid) return -1;
@@ -171,9 +174,6 @@ OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const S
 	err = timeGrid -> SetInterval(errmsg, model_time); 
 	if (err) goto done;
 	
-	if (bIsFirstStep)
-		fModelStartTime = model_time;
-
 	if (uncertain)
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time

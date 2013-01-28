@@ -282,11 +282,12 @@ OSErr CATSMover_c::PrepareForModelRun()
 OSErr CATSMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err =0;
-	if (!bActive) return noErr;
 	
 	if (err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain, numLESets, LESetsSizesList)) 
 		return err; // note: this calls UpdateUncertainty()
 	
+	if (!bActive) return noErr;
+
 	err = this -> ComputeVelocityScale(model_time);	// AH 07/10/2012
 	
 	this -> fOptimize.isOptimizedForStep = true;
