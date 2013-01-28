@@ -147,14 +147,15 @@ OSErr TriCurMover_c::PrepareForModelStep(const Seconds& model_time, const Second
 		}
 	}*/
 	
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
+
 	if (!bActive) return 0; 
 	
 	err = dynamic_cast<TriCurMover *>(this) -> SetInterval(errmsg, model_time);	// AH 07/17/2012
 	
 	if(err) goto done;
 	
-	if (bIsFirstStep)
-		fModelStartTime = model_time;
 	if (uncertain)
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
