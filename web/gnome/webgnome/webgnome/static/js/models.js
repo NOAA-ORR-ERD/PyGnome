@@ -381,7 +381,14 @@ define([
         },
 
         error: function(model, response, options) {
-            response = $.parseJSON(response.responseText);
+            try {
+                response = $.parseJSON(response.responseText);
+            } catch(e) {
+                response.errors = [{
+                    name: 'server',
+                    description: 'A server error prevented saving the model.'
+                }];
+            }
 
             if (response.errors.length) {
                 model.errors = response.errors;
@@ -474,6 +481,11 @@ define([
     // Movers
 
     var Wind = BaseModel.extend({
+        initialize: function(attrs, options) {
+            if (!attrs.timeseries) {
+                this.set('timeseries', []);
+            }
+        },
 
         /*
          Whenever `timeseries` is set, sort it by datetime.
@@ -485,7 +497,7 @@ define([
                 val = _.sortBy(val, 'datetime');
             }
 
-            return Wind.__super__.set.apply(this, arguments);
+            return Wind.__super__.set.apply(this, [key, val, options]);
         }
     });
 

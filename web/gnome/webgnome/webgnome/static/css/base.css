@@ -15,10 +15,17 @@ div.nav-collapse > div.btn-toolbar {
 }
 
 #sidebar {
-    padding-top: 60px;
     height: 100%;
     min-width: 175px;
     border-right: solid 1px #D4D4D4;
+    width: 20%;
+    float: left;
+    position: relative;
+    top: 0;
+}
+
+#sidebar-container {
+    padding-top: 60px;
 }
 
 .inner-wrapper {

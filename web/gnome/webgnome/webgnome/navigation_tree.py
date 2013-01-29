@@ -6,7 +6,7 @@ class NavigationTree(object):
     def __init__(self, model):
         self.model = model
 
-    def _get_value_title(self, name, value, max_chars=50):
+    def _get_value_title(self, name, value, max_chars=200):
         """
         Return a title string that combines ``name`` and ``value``, with value
         shortened if it is longer than ``max_chars``.
