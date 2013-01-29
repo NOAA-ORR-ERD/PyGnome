@@ -62,6 +62,6 @@ def test_uncertainty():
     assert not np.alltrue(u_delta == expected)
 
     # the average should be close:
-    assert np.allclose( np.mean(delta, 0), np.mean(u_delta, 0), rtol=1e-1)
+    assert np.allclose( np.mean(delta, 0), np.mean(u_delta, 0), rtol=1e-6)
 
     
