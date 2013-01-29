@@ -38,7 +38,6 @@ class Spill(GnomeObject):
     __all_instances = {} # keys are the instance spill_num -- values are the subclass object
 
     def __new__(cls, *args, **kwargs):
-        #print "Spill.__new__ called", cls
         obj = super(Spill, cls).__new__(cls, *args, **kwargs)
         cls.__all_instances[ id(obj) ] = cls
         return obj
@@ -279,8 +278,6 @@ class SurfaceReleaseSpill(FloatingSpill):
               there will be an element released at botht he start and end,
               but no duplicate points. 
         """
-        print "in release_elements"
-        print current_time, time_step
         if current_time >= self.release_time:
             if self.num_released >= self.num_elements:
                 return None
@@ -293,7 +290,6 @@ class SurfaceReleaseSpill(FloatingSpill):
                 dt = release_delta
             else:
                 dt = max( (current_time - self.release_time).total_seconds() + time_step, 0.0)
-            print "dt:", dt
             # this here in case there is less than one released per time step.
             # or if the release time is before the model start time
             if release_delta == 0: #instantaneous release
@@ -301,7 +297,6 @@ class SurfaceReleaseSpill(FloatingSpill):
             else:
                 total_num = (dt / release_delta) * self.num_elements
                 num = int(total_num - self.num_released)
-                print total_num, num
 
             if num <= 0:
                 return None
