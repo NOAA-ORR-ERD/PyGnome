@@ -13,22 +13,11 @@ class Model(GnomeObject):
     PyGNOME Model Class
     
     """
-    _uncertain = False
-    output_map = None
-    _map = None
-    
     def __init__(self):
         """ 
         Initializes model attributes. 
 
         All this does is call reset() which initializes eveything to defaults
-        """
-        self.reset() # initializes everything to defaults/nothing
-
-    def reset(self):
-        """
-        Resets model to defaults -- Caution -- clears all movers, spills, etc.
-        
         """
         self._uncertain = False # sets whether uncertainty is on or not.
         self.output_map = None
@@ -43,6 +32,13 @@ class Model(GnomeObject):
         self.time_step = timedelta(minutes=15).total_seconds()
 
         self.rewind()
+
+    def reset(self):
+        """
+        Resets model to defaults -- Caution -- clears all movers, spills, etc.
+        
+        """
+        self.__init__()
 
     def rewind(self):
         """
