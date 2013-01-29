@@ -2,9 +2,9 @@ import numpy as np
 
 from gnome.utilities import time_utils, transforms, convert
 from gnome import basic_types, GnomeObject
-from gnome.cy_gnome.cy_wind_mover import CyWindMover
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
-from gnome.cy_gnome.cy_random_mover import CyRandomMover
+from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNORE:E0611
+from gnome.cy_gnome.cy_ossm_time import CyOSSMTime       #@UnresolvedImport @UnusedImport IGNORE:W0611
+from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time
 from gnome.utilities import rand    # not to confuse with python random module
 

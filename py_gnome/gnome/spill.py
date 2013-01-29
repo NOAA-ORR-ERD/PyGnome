@@ -20,9 +20,9 @@ class Spill(GnomeObject):
     base class for a source of elements
 
 
-    NOTE: It's important to dereive all Spills from this base class, as all sorts of
+    NOTE: It's important to derive all Spills from this base class, as all sorts of
           trickery to keep track of spill spill_nums, and what instances there are of
-          derived classes, so that we can keep track of whatdata arrays are needed, etc.
+          derived classes, so that we can keep track of what data arrays are needed, etc.
 
     """
 
