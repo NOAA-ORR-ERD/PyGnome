@@ -36,33 +36,57 @@ class Serializable(object):
     serializable_fields = []
 
     def to_dict(self):
+        """
+        Return a dictionary containing the serialized representation of this
+        object, using `self.serializable_fields` to look up fields on the object
+        that the dictionary should contain.
+
+        For every field, if there is a method defined on the object such that
+        the method name is `{field_name}_to_dict`, use the return value of that
+        method as the field value.
+
+        Note: any field in `self.serializable_fields` that does not exist on the
+        object and does not have a to_dict method will raise an AttributeError.
+        """
         data = {}
 
         for key in self.serializable_fields:
-            if not hasattr(self, key):
-                continue
+            to_dict_fn_name = '%s_to_dict' % key
 
-            serialize_fn_name = 'serialize_%s' % key
-
-            if hasattr(self, serialize_fn_name):
-                value = getattr(self, serialize_fn_name)()
+            if hasattr(self, to_dict_fn_name):
+                value = getattr(self, to_dict_fn_name)()
             else:
                 value = getattr(self, key)
+
+            if hasattr(value, 'to_dict'):
+                value = value.to_dict()
 
             data[key] = value
 
         return data
 
     def from_dict(self, data):
+        """
+        Set the state of this object using a dictionary ``data`` by looking up
+        the value of each key in ``data`` that is also in
+        `self.serializable_fields`.
+
+        For every field, if there is a method defined on the object such that
+        the method name is `{field_name}_from_dict`, use the return value of
+        that method as the field value.
+        """
         for key in self.serializable_fields:
-            if not hasattr(self, key) or not key in data:
+            if not key in data:
                 continue
 
+            from_dict_fn_name = '%s_from_dict' % key
             value = data[key]
-            deserialize_fn_name = 'deserialize_%s' % key
 
-            if hasattr(self, deserialize_fn_name):
-                value = getattr(self, deserialize_fn_name)(value)
+            if hasattr(self, from_dict_fn_name):
+                value = getattr(self, from_dict_fn_name)(value)
+
+            if hasattr(value, 'from_dict'):
+                value = value.from_dict()
 
             setattr(self, key, value)
 
@@ -84,6 +108,7 @@ class BaseWebObject(Serializable):
 class WebWind(Wind, BaseWebObject):
     default_name = 'Wind'
     source_types = (
+        ('manual', 'Manual Data'),
         ('nws', 'NWS Wind Data'),
         ('buoy', 'Buoy Station ID'),
     )
@@ -106,6 +131,26 @@ class WebWind(Wind, BaseWebObject):
         self.longitude = kwargs.pop('longitude', None)
         self.latitude = kwargs.pop('latitude', None)
         super(WebWind, self).__init__(*args, **kwargs)
+
+    @property
+    def units(self):
+        return self._user_units
+
+    @property
+    def timeseries(self):
+        return self.get_timeseries(units=self.user_units)
+
+    def timeseries_to_dict(self):
+        series = []
+
+        for wind_value in self.timeseries:
+            dt = wind_value[0].astype(object)
+            series.append(
+                dict(datetime=dt, speed=wind_value[1][0],
+                          direction=wind_value[1][1])
+            )
+
+        return series
 
 
 class WebWindMover(WindMover, BaseWebObject):
@@ -138,24 +183,6 @@ class WebWindMover(WindMover, BaseWebObject):
             'uncertain_angle_scale_units', None)
 
         super(WebWindMover, self).__init__(*args, **kwargs)
-
-    def serialize_wind(self):
-        if not self.wind:
-            return None
-
-        series = []
-
-        for timeseries in self.wind.get_timeseries(units=self.wind.user_units):
-            dt = timeseries[0].astype(object)
-            series.append(
-                dict(datetime=dt, speed=timeseries[1][0],
-                          direction=timeseries[1][1])
-            )
-
-        return {
-            'timeseries': series,
-            'units': self.wind.user_units
-        }
 
 
 class WebRandomMover(RandomMover, BaseWebObject):
@@ -226,12 +253,12 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
     def windage_max(self):
         return self.windage_range[1]
 
-    def deserialize_start_position(self, start_position):
+    def start_position_from_dict(self, start_position):
         return numpy.asarray(
             start_position,
             dtype=basic_types.world_point_type).reshape((3,))
 
-    def serialize_start_position(self):
+    def start_position_to_dict(self):
         return self.start_position.tolist()
 
 
@@ -248,7 +275,7 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
         'refloat_halflife'
     ]
 
-    def serialize_map_bounds(self):
+    def map_bounds_to_dict(self):
         return self.map_bounds.tolist()
 
     def __init__(self, *args, **kwargs):

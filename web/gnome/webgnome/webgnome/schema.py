@@ -162,7 +162,8 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
 class WindSchema(MappingSchema):
     source = SchemaNode(String(), default=None, missing=None)
     source_type = SchemaNode(String(), default=None, missing=None,
-                             validator=OneOf(WebWind.source_types))
+                             validator=OneOf([source[0] for source in
+                                              WebWind.source_types]))
     description = SchemaNode(String(), default=None, missing=None)
     timeseries = WindTimeSeriesSchema(default=[], validator=no_duplicates)
     units = SchemaNode(String(), validator=OneOf(util.velocity_unit_values),

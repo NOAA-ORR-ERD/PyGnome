@@ -116,6 +116,7 @@ define([
             _.each(this.model.errors, function(error) {
                 _this.handleFieldError(error);
             });
+
             // Clear out the errors now that we've handled them.
             this.model.errors = null;
         },
@@ -128,6 +129,31 @@ define([
                     changeYear: true
                 });
             });
+        },
+
+        setModelInput: function(fieldName, model) {
+            var field = this.$el.find('#' + fieldName);
+
+            if (model === undefined) {
+                model = this.model;
+            }
+
+            var value = model.get(fieldName);
+
+            switch (field[0].type) {
+                case 'select-one':
+                    field.find('option[value="' + value + '"]').attr('selected', 'selected');
+                    break;
+                case 'text':
+                case 'textarea':
+                    field.val(value);
+                    break;
+                case 'checkbox':
+                    field.prop('checked', value);
+                    break;
+                default:
+                    field.text(value);
+            }
         },
 
         getForm: function() {
@@ -533,9 +559,9 @@ define([
             this.defaults = this.getFormDefaults();
             this.windMovers = options.windMovers;
             this.setupCompass();
-            this.setupNwsMap();
+            this.setupWindMap();
 
-            this.$el.find('.data-source-link').on('shown', this.resizeMap);
+            this.$el.find('.data-source-link').on('shown', this.resizeWindMap);
 
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
@@ -553,16 +579,17 @@ define([
             'click .delete-time': 'trashButtonClicked',
             'click .query-source': 'querySource',
             'change .units': 'renderTimeTable',
-            'change .type': 'typeChanged'
+            'change .type': 'typeChanged',
+            'change #source_type': 'sourceTypeChanged'
         },
 
-        resizeMap: function() {
-            google.maps.event.trigger(this.nwsMap, 'resize');
-            this.nwsMap.setCenter(this.nwsMapCenter.getCenter());
+        resizeWindMap: function() {
+            google.maps.event.trigger(this.windMap, 'resize');
+            this.windMap.setCenter(this.windMapCenter.getCenter());
         },
 
         nwsWindsReceived: function(data) {
-            this.$el.find('.nws-description').text(data.description);
+            this.$el.find('#description').text(data.description);
             this.$el.find('#type').find(
                 'option[value="variable-wind"]').attr('selected', 'selected');
             this.typeChanged();
@@ -592,6 +619,7 @@ define([
             });
         },
 
+
         /*
          Run a function to query an external data source for wind data, given
          a valid data source chosen for the 'source' field.
@@ -607,6 +635,8 @@ define([
 
             if (dataSourceFns[source]) {
                 dataSourceFns[source]();
+            } else {
+                window.alert('That data source does not exist.');
             }
         },
 
@@ -630,18 +660,17 @@ define([
             models.getNwsWind(coords, this.nwsWindsReceived);
         },
 
-        setupNwsMap: function() {
-            var _this = this;
+        setupWindMap: function() {
             var lat = this.$el.find('#latitude');
             var lon = this.$el.find('#longitude');
 
-            this.nwsMapCenter = new google.maps.LatLngBounds(
+            this.windMapCenter = new google.maps.LatLngBounds(
                 new google.maps.LatLng(13, 144),
                 new google.maps.LatLng(40, -30)
             );
 
             var myOptions = {
-                center: this.nwsMapCenter.getCenter(),
+                center: this.windMapCenter.getCenter(),
                 zoom: 2,
                 mapTypeId: google.maps.MapTypeId.HYBRID,
                 streetViewControl: false
@@ -652,32 +681,32 @@ define([
             var map = new google.maps.Map(
                 this.$el.find('.nws-map-canvas')[0], myOptions);
 
-            this.nwsPoint = new google.maps.Marker({
+            var point = new google.maps.Marker({
                 position: latlngInit,
                 editable: true,
                 draggable: true
             });
             
-            this.nwsPoint.setMap(map);
-            this.nwsPoint.setVisible(false);
+            point.setMap(map);
+            point.setVisible(false);
 
             google.maps.event.addListener(map, 'click', function(event) {
                 var ulatlng = event.latLng;
-                _this.nwsPoint.setPosition(ulatlng);
-                _this.nwsPoint.setVisible(true);
+                point.setPosition(ulatlng);
+                point.setVisible(true);
                 lat.val(Math.round(ulatlng.lat() * 1000) / 1000);
                 lon.val(Math.round(ulatlng.lng() * 1000) / 1000);
             });
 
-            google.maps.event.addListener(this.nwsPoint, 'dragend', function(event) {
+            google.maps.event.addListener(point, 'dragend', function(event) {
                 var ulatlng = event.latLng;
-                _this.nwsPoint.setPosition(ulatlng);
-                _this.nwsPoint.setVisible(true);
+                point.setPosition(ulatlng);
+                point.setVisible(true);
                 lat.val(Math.round(ulatlng.lat() * 1000) / 1000);
                 lon.val(Math.round(ulatlng.lng() * 1000) / 1000);
             });
 
-            this.nwsMap = map;
+            this.windMap = map;
         },
         
         nwsCoordinatesChanged: function() {
@@ -696,6 +725,17 @@ define([
 
             typeDiv.removeClass('hidden');
             otherDivs.addClass('hidden');
+        },
+
+        sourceTypeChanged: function() {
+            var sourceType = this.$el.find('#source_type').val();
+            var queryButton = $('.query-source');
+
+            if (sourceType === 'manual') {
+                queryButton.attr('disabled', true);
+            } else {
+                queryButton.attr('disabled', false);
+            }
         },
 
         showCompass: function() {
@@ -831,7 +871,7 @@ define([
          */
         prepareConstantWindData: function(data) {
             var wind = this.model.get('wind');
-            var timeseries = _.clone(wind.get('timeseries')) || [];
+            var timeseries = _.clone(wind.get('timeseries'));
             var values = {
                 // A 'datetime' field is required, but it will be ignored for a
                 // constant wind mover during the model run, so we just use the
@@ -866,10 +906,14 @@ define([
 
             var data = this.getFormData();
             var wind = this.model.get('wind');
-            var timeseries = wind.get('timeseries') || [];
+            var timeseries = wind.get('timeseries');
 
-            wind.set('units', data.units);
-            delete(data.units);
+            // Set wind fields.
+            _.each(['units', 'source', 'source_type', 'latitude', 'longitude',
+                    'description'], function(field) {
+                wind.set(field, data[field]);
+                delete(data[field]);
+            });
 
             if (this.$el.find('.type').find('option:selected').val() === 'constant-wind'
                     && timeseries.length > 1) {
@@ -1146,6 +1190,7 @@ define([
             var data = this.getBaseFormData();
             var constant = this.$el.find('.constant-wind');
             var variable = this.$el.find('.variable-wind');
+            var dataSource = this.$el.find('.data-source');
             var uncertainty = this.$el.find('.uncertainty');
 
             data['moverTypes'] = {
@@ -1154,6 +1199,7 @@ define([
             };
 
             data['uncertainty'] = this.getFormDataForDiv(uncertainty);
+            data['dataSource'] = this.getFormDataForDiv(dataSource);
             data['defaultWindDate'] = moment(this.$el.find('.datetime').val());
 
             return data;
@@ -1171,6 +1217,10 @@ define([
             var uncertainty = this.$el.find('.uncertainty');
             var uncertaintyData = this.getFormDataForDiv(uncertainty);
             data = $.extend(data, divData, uncertaintyData);
+
+            var dataSource = this.$el.find('.data-source');
+            var dataSourceData = this.getFormDataForDiv(dataSource);
+            data = $.extend(data, divData, dataSourceData);
 
             var activeRange = this.$el.find('.active_range');
             var activeRangeData = this.getFormDataForDiv(activeRange);
@@ -1203,8 +1253,8 @@ define([
                 _this.setForm(form, moverData);
             });
 
-            var uncertainty = this.$el.find('.uncertainty');
-            this.setForm(uncertainty, data['uncertainty']);
+            this.setForm(this.$el.find('.uncertainty'), data['uncertainty']);
+            this.setForm(this.$el.find('.data-source'), data['dataSource']);
 
             this.clearErrors();
         },
@@ -1215,10 +1265,12 @@ define([
         setInputsFromModel: function() {
             var wind = this.model.get('wind');
 
-            this.$el.find('#name').val(this.model.get('name'));
-            this.$el.find('#active').prop('checked', this.model.get('active'));
-            this.$el.find('#units').val(wind.get('units'));
-            this.$el.find('#on').prop('checked', this.model.get('on'));
+            this.setModelInput('name');
+            this.setModelInput('on');
+            this.setModelInput('source', wind);
+            this.setModelInput('source_type', wind);
+            this.setModelInput('description', wind);
+            this.setModelInput('units', wind);
 
             this.setDateFields(this.$el.find('.active_start_container'),
                                this.model.get('active_start'));
@@ -1236,6 +1288,7 @@ define([
             }
 
             this.typeChanged();
+            this.sourceTypeChanged();
 
             var constantAddForm = this.getAddForm('constant-wind');
 
@@ -1286,18 +1339,26 @@ define([
         handleServerError: function() {
             var _this = this;
             var wind = this.model.get('wind');
+            var timeseries = wind.get('timeseries');
 
-            if (wind.previousTimeseries) {
-                wind.set('timeseries', wind.previousTimeseries);
-            }
-
-            var windIdsWithErrors = this.getWindIdsWithErrors();
+// May not need this as we now fetch the model state on cancel.
+//            if (wind.previousTimeseries) {
+//                wind.set('timeseries', wind.previousTimeseries);
+//            }
 
             this.renderTimeTable();
 
-            if (windIdsWithErrors.length) {
-                this.showEditFormForWind(windIdsWithErrors[0]);
+            var windIdsWithErrors = this.getWindIdsWithErrors();
 
+            if (windIdsWithErrors.length) {
+                this.$el.find('.wind-data-link').find('a').tab('show');
+
+                if (timeseries.length > 1) {
+                    this.showEditFormForWind(windIdsWithErrors[0]);
+                }
+
+                // Always mark up the table because a user with a constant
+                // wind mover could switch to variable wind and edit the value.
                 _.each(windIdsWithErrors, function(id) {
                     var row = _this.getRowForWindId(id);
 

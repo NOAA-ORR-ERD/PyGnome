@@ -24,7 +24,7 @@
         %>
 
         <ul class="nav nav-tabs">
-            <li class="active"><a href="#${form_id}_wind" data-toggle="tab">Wind Data</a></li>
+            <li class="active wind-data-link"><a href="#${form_id}_wind" data-toggle="tab">Wind Data</a></li>
             <li class="data-source-link"><a href="#${form_id}_data_source" data-toggle="tab">Data Source</a></li>
             <li><a href="#${form_id}_uncertainty" data-toggle="tab">Uncertainty</a></li>
             <li><a href="#${form_id}_active_range" data-toggle="tab">Active Time Range</a></li>

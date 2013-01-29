@@ -1435,7 +1435,6 @@
     var success = options.success;
     options.success = function(resp, status, xhr) {
       if (success) success(resp, status, xhr);
-        console.log('triggering sync on', model)
       model.trigger('sync', model, resp, options);
     };
 
