@@ -589,7 +589,7 @@ define([
         },
 
         nwsWindsReceived: function(data) {
-            this.$el.find('#description').text(data.description);
+            this.$el.find('#description').val(data.description);
             this.$el.find('#type').find(
                 'option[value="variable-wind"]').attr('selected', 'selected');
             this.typeChanged();
@@ -802,7 +802,7 @@ define([
             _.each(this.model.errors, function(error) {
                 var parts = error.name.split('.');
 
-                if (parts[1] === 'timeseries') {
+                if (parts.length > 1 && parts[1] === 'timeseries') {
                     valuesWithErrors.push(parts[2]);
                 }
             });
@@ -1161,7 +1161,7 @@ define([
 
         getFormDataForDiv: function(div) {
             var data = {};
-            var inputs = div.find('input,select');
+            var inputs = div.find('input,select,textarea');
 
             _.each(inputs, function(input) {
                 input = $(input);
@@ -1271,6 +1271,8 @@ define([
             this.setModelInput('source_type', wind);
             this.setModelInput('description', wind);
             this.setModelInput('units', wind);
+            this.setModelInput('latitude', wind);
+            this.setModelInput('longitude', wind);
 
             this.setDateFields(this.$el.find('.active_start_container'),
                                this.model.get('active_start'));
@@ -1341,16 +1343,14 @@ define([
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
 
-// May not need this as we now fetch the model state on cancel.
-//            if (wind.previousTimeseries) {
-//                wind.set('timeseries', wind.previousTimeseries);
-//            }
-
             this.renderTimeTable();
 
             var windIdsWithErrors = this.getWindIdsWithErrors();
 
             if (windIdsWithErrors.length) {
+                window.alert('Your wind data has errors. The errors have been' +
+                    ' highlighted. Please resolve them and save again.');
+
                 this.$el.find('.wind-data-link').find('a').tab('show');
 
                 if (timeseries.length > 1) {

@@ -67,28 +67,35 @@ class Serializable(object):
 
     def from_dict(self, data):
         """
-        Set the state of this object using a dictionary ``data`` by looking up
+        Set the state of this object using the dictionary ``data`` by looking up
         the value of each key in ``data`` that is also in
         `self.serializable_fields`.
 
-        For every field, if there is a method defined on the object such that
-        the method name is `{field_name}_from_dict`, use the return value of
-        that method as the field value.
+        For every field, the choice of how to set the field is as follows:
+
+        If there is a method defined on the object such that the method name is
+        `{field_name}_from_dict`, call that method with the field's data.
+
+        If the field on the object has a ``from_dict`` method, then use that
+        method instead.
+
+        If neither method exists, then set the field with the value from
+        ``data`` directly on the object.
         """
         for key in self.serializable_fields:
             if not key in data:
                 continue
 
             from_dict_fn_name = '%s_from_dict' % key
+            field = getattr(self, key)
             value = data[key]
 
             if hasattr(self, from_dict_fn_name):
-                value = getattr(self, from_dict_fn_name)(value)
-
-            if hasattr(value, 'from_dict'):
-                value = value.from_dict()
-
-            setattr(self, key, value)
+                getattr(self, from_dict_fn_name)(value)
+            elif hasattr(field, 'from_dict'):
+                field.from_dict(value)
+            else:
+                setattr(self, key, value)
 
         return self
 
@@ -114,7 +121,7 @@ class WebWind(Wind, BaseWebObject):
     )
     serializable_fields = [
         'id',
-        'units',
+        'units', # set the units before timeseries
         'timeseries',
         'latitude',
         'longitude',
@@ -130,15 +137,24 @@ class WebWind(Wind, BaseWebObject):
         self.source = kwargs.pop('source', None)
         self.longitude = kwargs.pop('longitude', None)
         self.latitude = kwargs.pop('latitude', None)
+
         super(WebWind, self).__init__(*args, **kwargs)
 
     @property
     def units(self):
         return self._user_units
 
+    @units.setter
+    def units(self, value):
+        self._user_units = value
+
     @property
     def timeseries(self):
         return self.get_timeseries(units=self.user_units)
+
+    @timeseries.setter
+    def timeseries(self, value):
+        self.set_timeseries(value, units=self.user_units)
 
     def timeseries_to_dict(self):
         series = []
@@ -254,7 +270,7 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
         return self.windage_range[1]
 
     def start_position_from_dict(self, start_position):
-        return numpy.asarray(
+        self.start_position = numpy.asarray(
             start_position,
             dtype=basic_types.world_point_type).reshape((3,))
 

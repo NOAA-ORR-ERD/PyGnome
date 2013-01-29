@@ -50,9 +50,14 @@ def now(node, kw):
     return datetime.datetime.now()
 
 
-def nonzero(node, value):
+def positive(node, value):
     if value <= 0:
         raise Invalid(node, 'Value must be greater than zero.')
+
+
+def zero_or_greater(node, value):
+    if value < 0:
+        raise Invalid(node, 'Value must be zero or greater.')
 
 
 def convertable_to_seconds(node, value):
@@ -124,7 +129,7 @@ class LocalDateTime(DateTime):
 class WindValueSchema(MappingSchema):
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
                           validator=convertable_to_seconds)
-    speed = SchemaNode(Float(), default=0, validator=nonzero)
+    speed = SchemaNode(Float(), default=0, validator=zero_or_greater)
     # TODO: Validate string and float or just float?
     direction = SchemaNode(Float(), default=0,
                            validator=degrees_true)
@@ -212,7 +217,7 @@ class WindageRangeSchema(TupleSchema):
 class SurfaceReleaseSpillSchema(MappingSchema):
     default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
-    num_elements = SchemaNode(Int(), default=0, validator=nonzero)
+    num_elements = SchemaNode(Int(), default=0, validator=positive)
     release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
                               validator=convertable_to_seconds)
     start_position = PositionSchema(default=(0, 0, 0))

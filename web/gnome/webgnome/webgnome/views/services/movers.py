@@ -2,7 +2,7 @@ from cornice.resource import resource, view
 from pyramid.httpexceptions import HTTPBadRequest
 
 from webgnome import util
-from webgnome.model_manager import WebWindMover, WebRandomMover, WebWind
+from webgnome.model_manager import WebWindMover, WebRandomMover
 from webgnome.schema import WindMoverSchema, RandomMoverSchema
 from webgnome.views.services.base import BaseResource
 
@@ -19,7 +19,6 @@ class WindMover(BaseResource):
         Create a WindMover from a JSON representation.
         """
         data = self.prepare(self.request.validated)
-        data['wind'] = WebWind(**data['wind'])
         model = data.pop('model')
         mover = WebWindMover(**data)
         model.movers.add(mover)
@@ -52,7 +51,6 @@ class WindMover(BaseResource):
         Update an existing WindMover from a JSON representation.
         """
         data = self.request.validated
-        data['wind'] = WebWind(**data['wind'])
         model = data.pop('model')
         mover = model.movers.get(self.id).from_dict(data)
 

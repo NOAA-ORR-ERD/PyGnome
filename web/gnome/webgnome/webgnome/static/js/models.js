@@ -385,6 +385,7 @@ define([
                 response = $.parseJSON(response.responseText);
             } catch(e) {
                 response.errors = [{
+                    name: 'server',
                     description: 'A server error prevented saving the model.'
                 }];
             }
