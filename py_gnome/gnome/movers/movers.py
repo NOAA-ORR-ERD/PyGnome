@@ -353,11 +353,12 @@ class CatsMover(CyMover):
         self.mover = cy_cats_mover.CyCatsMover()
         self.mover.read_topology(curr_file)
         
-        if shio_file is not None and not os.path.exists(shio_file):
-            raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
-        else:
-            self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
-            self.mover.set_shio(self.shio)
+        if shio_file is not None:
+            if not os.path.exists(shio_file):
+                raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
+            else:
+                self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
+                self.mover.set_shio(self.shio)
         
         super(CatsMover,self).__init__(active_start, active_stop)
         
