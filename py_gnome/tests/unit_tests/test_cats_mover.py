@@ -34,7 +34,6 @@ model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
 def test_loop():
     pSpill = TestSpillContainer(num_le, start_pos, rel_time)
     cats = movers.CatsMover(curr_file, shio_file)
-    cats = movers.CatsMover(curr_file)
     cats.prepare_for_model_run()
     cats.prepare_for_model_step(pSpill, time_step, model_time)
     delta = cats.get_move(pSpill, time_step, model_time)
@@ -50,7 +49,6 @@ def test_uncertain_loop():
     pSpill = TestSpillContainer(num_le, start_pos, rel_time)
     pSpill.uncertain = True
     cats = movers.CatsMover(curr_file, shio_file)
-    cats = movers.CatsMover(curr_file) 
     cats.prepare_for_model_run()
     cats.prepare_for_model_step(pSpill, time_step, model_time)
     delta = cats.get_move(pSpill, time_step, model_time)
