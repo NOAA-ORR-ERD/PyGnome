@@ -26,6 +26,9 @@ define([
             view.on(FormView.REFRESHED, function(form) {
                 _this.trigger(FormView.REFRESHED, form);
             });
+            view.on(FormView.MESSAGE_READY, function(message) {
+                _this.trigger(FormView.MESSAGE_READY, message);
+            });
         },
 
         get: function(formId) {
@@ -66,6 +69,7 @@ define([
             var errorDiv;
 
             if (!field.length) {
+                alert(error.description);
                 return;
             }
 
@@ -108,9 +112,11 @@ define([
          */
         handleServerError: function() {
             var _this = this;
+
             _.each(this.model.errors, function(error) {
                 _this.handleFieldError(error);
             });
+
             // Clear out the errors now that we've handled them.
             this.model.errors = null;
         },
@@ -123,6 +129,31 @@ define([
                     changeYear: true
                 });
             });
+        },
+
+        setModelInput: function(fieldName, model) {
+            var field = this.$el.find('#' + fieldName);
+
+            if (model === undefined) {
+                model = this.model;
+            }
+
+            var value = model.get(fieldName);
+
+            switch (field[0].type) {
+                case 'select-one':
+                    field.find('option[value="' + value + '"]').attr('selected', 'selected');
+                    break;
+                case 'text':
+                case 'textarea':
+                    field.val(value);
+                    break;
+                case 'checkbox':
+                    field.prop('checked', value);
+                    break;
+                default:
+                    field.text(value);
+            }
         },
 
         getForm: function() {
@@ -175,6 +206,10 @@ define([
                 this.model.fetch();
                 this.model = null;
             }
+        },
+
+        sendMessage: function(message) {
+            this.trigger(FormView.MESSAGE_READY, message);
         },
 
         hasDateFields: function(target) {
@@ -290,7 +325,8 @@ define([
         }
     }, {
         CANCELED: 'formView:canceled',
-        REFRESHED: 'formView:refreshed'
+        REFRESHED: 'formView:refreshed',
+        MESSAGE_READY: 'formView:messageReady'
     });
 
 
@@ -343,13 +379,10 @@ define([
         },
 
         reload: function() {
-            var _this = this;
             JQueryUIModalFormView.__super__.reload.apply(this, arguments);
 
             if (this.model) {
-                this.model.on('sync', function() {
-                    _this.$el.dialog('close');
-                });
+                this.model.on('sync', this.closeDialog);
             }
         },
 
@@ -370,6 +403,10 @@ define([
         close: function() {
             this.clearForm();
 
+        },
+
+        closeDialog: function() {
+            this.$el.dialog('close');
         }
     });
 
@@ -492,6 +529,10 @@ define([
             }, options);
 
             MapFormView.__super__.initialize.apply(this, [opts]);
+
+            // Have to set these manually since we override `reload`
+            this.model.on('error', this.handleServerError);
+            this.model.on('sync', this.closeDialog);
         },
 
         reload: function(id) {
@@ -518,7 +559,9 @@ define([
             this.defaults = this.getFormDefaults();
             this.windMovers = options.windMovers;
             this.setupCompass();
-            this.setupNwsMap();
+            this.setupWindMap();
+
+            this.$el.find('.data-source-link').on('shown', this.resizeWindMap);
 
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
@@ -534,28 +577,26 @@ define([
             'click .cancel': 'cancelButtonClicked',
             'click .save': 'saveButtonClicked',
             'click .delete-time': 'trashButtonClicked',
-            'click .manual': 'manualClicked',
-            'click .nws': 'nwsClicked',
-            'click .show-nws-map': 'showNwsMap',
-            'click .query-nws': 'queryNws',
+            'click .query-source': 'querySource',
             'change .units': 'renderTimeTable',
-            'change .type': 'typeChanged'
+            'change .type': 'typeChanged',
+            'change #source_type': 'sourceTypeChanged'
         },
 
-        showNwsMap: function() {
-            this.nwsMapDialog.dialog('open');
+        resizeWindMap: function() {
+            google.maps.event.trigger(this.windMap, 'resize');
+            this.windMap.setCenter(this.windMapCenter.getCenter());
         },
 
         nwsWindsReceived: function(data) {
-            this.$el.find('.nws-description').text(data.description);
+            this.$el.find('#description').val(data.description);
+            this.$el.find('#type').find(
+                'option[value="variable-wind"]').attr('selected', 'selected');
+            this.typeChanged();
             var wind = this.model.get('wind');
-            var timeseries = wind.get('timeseries');
+            var timeseries = [];
 
             _.each(data.results, function(windData) {
-                if (windData[1] === 0) {
-                    return;
-                }
-
                 timeseries.push({
                     datetime: windData[0],
                     speed: windData[1],
@@ -571,6 +612,32 @@ define([
             this.$el.find('.units').val('knots');
 
             this.renderTimeTable();
+
+            this.sendMessage({
+                type: 'success',
+                text: 'Wind data refreshed from current NWS forecasts.'
+            });
+        },
+
+
+        /*
+         Run a function to query an external data source for wind data, given
+         a valid data source chosen for the 'source' field.
+         */
+        querySource: function(event) {
+            event.preventDefault();
+
+            var dataSourceFns = {
+                nws: this.queryNws
+            };
+
+            var source = this.$el.find('#source_type').find('option:selected').val();
+
+            if (dataSourceFns[source]) {
+                dataSourceFns[source]();
+            } else {
+                window.alert('That data source does not exist.');
+            }
         },
 
         queryNws: function() {
@@ -586,39 +653,24 @@ define([
                 return;
             }
 
+            if (!window.confirm('Reset wind data from current NWS forecasts?')) {
+                return;
+            }
+
             models.getNwsWind(coords, this.nwsWindsReceived);
         },
 
-        setupNwsMap: function() {
-            var _this = this;
+        setupWindMap: function() {
             var lat = this.$el.find('#latitude');
             var lon = this.$el.find('#longitude');
 
-            var mapcenter = new google.maps.LatLngBounds(
+            this.windMapCenter = new google.maps.LatLngBounds(
                 new google.maps.LatLng(13, 144),
                 new google.maps.LatLng(40, -30)
             );
 
-            this.nwsMapDialog = this.$el.find('.nws-map-container').dialog({
-                width: 400,
-                height: 400,
-                title: "NWS Map",
-                zIndex: 6000,
-                autoOpen: false,
-                buttons: {
-                    OK: function () {
-                        $(this).dialog("close");
-                    }
-                },
-                open: function() {
-                    google.maps.event.trigger(_this.nwsMap, 'resize');
-                    _this.nwsMap.setCenter(mapcenter.getCenter());
-
-                }
-            });
-
             var myOptions = {
-                center: mapcenter.getCenter(),
+                center: this.windMapCenter.getCenter(),
                 zoom: 2,
                 mapTypeId: google.maps.MapTypeId.HYBRID,
                 streetViewControl: false
@@ -627,34 +679,34 @@ define([
             var latlngInit = new google.maps.LatLng(lat.val(), lon.val());
 
             var map = new google.maps.Map(
-                this.nwsMapDialog.find('.nws-map-canvas')[0], myOptions);
+                this.$el.find('.nws-map-canvas')[0], myOptions);
 
-            this.nwsPoint = new google.maps.Marker({
+            var point = new google.maps.Marker({
                 position: latlngInit,
                 editable: true,
                 draggable: true
             });
             
-            this.nwsPoint.setMap(map);
-            this.nwsPoint.setVisible(false);
+            point.setMap(map);
+            point.setVisible(false);
 
             google.maps.event.addListener(map, 'click', function(event) {
                 var ulatlng = event.latLng;
-                _this.nwsPoint.setPosition(ulatlng);
-                _this.nwsPoint.setVisible(true);
+                point.setPosition(ulatlng);
+                point.setVisible(true);
                 lat.val(Math.round(ulatlng.lat() * 1000) / 1000);
                 lon.val(Math.round(ulatlng.lng() * 1000) / 1000);
             });
 
-            google.maps.event.addListener(this.nwsPoint, 'dragend', function(event) {
+            google.maps.event.addListener(point, 'dragend', function(event) {
                 var ulatlng = event.latLng;
-                _this.nwsPoint.setPosition(ulatlng);
-                _this.nwsPoint.setVisible(true);
+                point.setPosition(ulatlng);
+                point.setVisible(true);
                 lat.val(Math.round(ulatlng.lat() * 1000) / 1000);
                 lon.val(Math.round(ulatlng.lng() * 1000) / 1000);
             });
 
-            this.nwsMap = map;
+            this.windMap = map;
         },
         
         nwsCoordinatesChanged: function() {
@@ -665,23 +717,6 @@ define([
             this.nwsPoint.setVisible(true);
         },
 
-        nwsClicked: function() {
-            this.$el.find('.btn.nws').addClass('active');
-            this.$el.find('.btn.manual').removeClass('active');
-            var form = this.getMoverTypeDiv('variable-wind');
-            form.find('.time-form').addClass('hidden');
-            form.find('.nws-form').removeClass('hidden');
-        },
-
-        manualClicked: function() {
-            // Show the edit form for the user's chosen wind mover type.
-            this.$el.find('.btn.nws').removeClass('active');
-            this.$el.find('.btn.manual').addClass('active');
-            var form = this.getMoverTypeDiv('variable-wind');
-            form.find('.nws-form').addClass('hidden');
-            form.find('.time-form').removeClass('hidden');
-        },
-
         typeChanged: function() {
             var type = this.$el.find('.type').val();
             var typeDiv = this.$el.find('.' + type);
@@ -690,6 +725,17 @@ define([
 
             typeDiv.removeClass('hidden');
             otherDivs.addClass('hidden');
+        },
+
+        sourceTypeChanged: function() {
+            var sourceType = this.$el.find('#source_type').val();
+            var queryButton = $('.query-source');
+
+            if (sourceType === 'manual') {
+                queryButton.attr('disabled', true);
+            } else {
+                queryButton.attr('disabled', false);
+            }
         },
 
         showCompass: function() {
@@ -756,7 +802,7 @@ define([
             _.each(this.model.errors, function(error) {
                 var parts = error.name.split('.');
 
-                if (parts[1] === 'timeseries') {
+                if (parts.length > 1 && parts[1] === 'timeseries') {
                     valuesWithErrors.push(parts[2]);
                 }
             });
@@ -862,10 +908,14 @@ define([
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
 
-            wind.set('units', data.units);
-            delete(data.units);
+            // Set wind fields.
+            _.each(['units', 'source', 'source_type', 'latitude', 'longitude',
+                    'description'], function(field) {
+                wind.set(field, data[field]);
+                delete(data[field]);
+            });
 
-            if (this.$el.find('.type').val() === 'constant-wind'
+            if (this.$el.find('.type').find('option:selected').val() === 'constant-wind'
                     && timeseries.length > 1) {
 
                 var message = 'Changing this mover to use constant wind will ' +
@@ -1111,7 +1161,7 @@ define([
 
         getFormDataForDiv: function(div) {
             var data = {};
-            var inputs = div.find('input,select');
+            var inputs = div.find('input,select,textarea');
 
             _.each(inputs, function(input) {
                 input = $(input);
@@ -1140,6 +1190,7 @@ define([
             var data = this.getBaseFormData();
             var constant = this.$el.find('.constant-wind');
             var variable = this.$el.find('.variable-wind');
+            var dataSource = this.$el.find('.data-source');
             var uncertainty = this.$el.find('.uncertainty');
 
             data['moverTypes'] = {
@@ -1148,6 +1199,7 @@ define([
             };
 
             data['uncertainty'] = this.getFormDataForDiv(uncertainty);
+            data['dataSource'] = this.getFormDataForDiv(dataSource);
             data['defaultWindDate'] = moment(this.$el.find('.datetime').val());
 
             return data;
@@ -1165,6 +1217,10 @@ define([
             var uncertainty = this.$el.find('.uncertainty');
             var uncertaintyData = this.getFormDataForDiv(uncertainty);
             data = $.extend(data, divData, uncertaintyData);
+
+            var dataSource = this.$el.find('.data-source');
+            var dataSourceData = this.getFormDataForDiv(dataSource);
+            data = $.extend(data, divData, dataSourceData);
 
             var activeRange = this.$el.find('.active_range');
             var activeRangeData = this.getFormDataForDiv(activeRange);
@@ -1197,8 +1253,8 @@ define([
                 _this.setForm(form, moverData);
             });
 
-            var uncertainty = this.$el.find('.uncertainty');
-            this.setForm(uncertainty, data['uncertainty']);
+            this.setForm(this.$el.find('.uncertainty'), data['uncertainty']);
+            this.setForm(this.$el.find('.data-source'), data['dataSource']);
 
             this.clearErrors();
         },
@@ -1209,10 +1265,14 @@ define([
         setInputsFromModel: function() {
             var wind = this.model.get('wind');
 
-            this.$el.find('#name').val(this.model.get('name'));
-            this.$el.find('#active').prop('checked', this.model.get('active'));
-            this.$el.find('#units').val(wind.get('units'));
-            this.$el.find('#on').prop('checked', this.model.get('on'));
+            this.setModelInput('name');
+            this.setModelInput('on');
+            this.setModelInput('source', wind);
+            this.setModelInput('source_type', wind);
+            this.setModelInput('description', wind);
+            this.setModelInput('units', wind);
+            this.setModelInput('latitude', wind);
+            this.setModelInput('longitude', wind);
 
             this.setDateFields(this.$el.find('.active_start_container'),
                                this.model.get('active_start'));
@@ -1230,6 +1290,7 @@ define([
             }
 
             this.typeChanged();
+            this.sourceTypeChanged();
 
             var constantAddForm = this.getAddForm('constant-wind');
 
@@ -1243,7 +1304,7 @@ define([
          */
         prepareForm: function() {
             if (this.model === undefined) {
-                window.alert('That mover was not found. Please refresh the page.')
+                window.alert('That mover was not found. Please refresh the page.');
                 console.log('Mover undefined.');
                 return;
             }
@@ -1278,18 +1339,33 @@ define([
          values table, in case one of the wind values is erroneous.
          */
         handleServerError: function() {
+            var _this = this;
             var wind = this.model.get('wind');
-
-            if (wind.previousTimeseries) {
-                wind.set('timeseries', wind.previousTimeseries);
-            }
-
-            var windIdsWithErrors = this.getWindIdsWithErrors();
+            var timeseries = wind.get('timeseries');
 
             this.renderTimeTable();
 
+            var windIdsWithErrors = this.getWindIdsWithErrors();
+
             if (windIdsWithErrors.length) {
-                this.showEditFormForWind(windIdsWithErrors[0]);
+                window.alert('Your wind data has errors. The errors have been' +
+                    ' highlighted. Please resolve them and save again.');
+
+                this.$el.find('.wind-data-link').find('a').tab('show');
+
+                if (timeseries.length > 1) {
+                    this.showEditFormForWind(windIdsWithErrors[0]);
+                }
+
+                // Always mark up the table because a user with a constant
+                // wind mover could switch to variable wind and edit the value.
+                _.each(windIdsWithErrors, function(id) {
+                    var row = _this.getRowForWindId(id);
+
+                    if (row.length) {
+                        row.addClass('error');
+                    }
+                });
             }
 
             this.$el.dialog('option', 'height', 600);
@@ -1315,10 +1391,14 @@ define([
 
         /*
          Use a new WindMover every time the form is opened.
+
+         This breaks any event handlers called in superclasses before this
+         method is called, so we need to reapply them.
          */
         show: function() {
             this.model = new models.WindMover();
             this.setupModelEvents();
+            this.model.on('sync', this.closeDialog);
             AddWindMoverFormView.__super__.show.apply(this);
         }
     });

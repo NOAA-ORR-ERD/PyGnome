@@ -20,8 +20,6 @@ class Wind(BaseResource):
         if r.status_code != 200:
             raise HTTPServerError('Could not contact NWS wind data service.')
 
-        print r.content
-
         try:
             doc = etree.fromstring(r.content)
             times = [n.text for n in doc.xpath('data/time-layout/start-valid-time')]

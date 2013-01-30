@@ -3,15 +3,19 @@ import os
 import gnome
 import gnome.basic_types
 import gnome.utilities.map_canvas
-from gnome.weather import Wind
 from hazpy.file_tools import haz_files
 import numpy
 
 from pyramid.view import view_config
-
-from webgnome import schema, WebSurfaceReleaseSpill, WebWindMover
+from webgnome import schema
 from webgnome import util
-from webgnome.model_manager import WebMapFromBNA, WebRandomMover
+from webgnome.model_manager import (
+    WebMapFromBNA,
+    WebRandomMover,
+    WebSurfaceReleaseSpill,
+    WebWindMover,
+    WebWind
+)
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -117,7 +121,7 @@ def configure_long_island(request, model):
     series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
     series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
 
-    wind = Wind(units='mps', timeseries=series)
+    wind = WebWind(units='mps', timeseries=series)
     w_mover = WebWindMover(wind=wind, is_constant=False)
     model.movers.add(w_mover)
 

@@ -21,6 +21,7 @@ from colander import (
 )
 
 from webgnome import util
+from webgnome.model_manager import WebWind
 
 
 def get_direction_degree(direction):
@@ -49,9 +50,14 @@ def now(node, kw):
     return datetime.datetime.now()
 
 
-def nonzero(node, value):
+def positive(node, value):
     if value <= 0:
         raise Invalid(node, 'Value must be greater than zero.')
+
+
+def zero_or_greater(node, value):
+    if value < 0:
+        raise Invalid(node, 'Value must be zero or greater.')
 
 
 def convertable_to_seconds(node, value):
@@ -72,6 +78,22 @@ def cardinal_direction(node, direction):
         raise Invalid(
             node, 'A cardinal directions must be one of: %s' % ', '.join(
                 util.DirectionConverter.DIRECTIONS))
+
+
+def no_duplicates(node, values):
+    """
+    Reject ``values`` if it contains duplicates.
+    """
+    try:
+        unique = numpy.unique(values)
+    except AttributeError:
+        return
+
+    num_dups = len(values) - len(unique)
+
+    if num_dups:
+        raise Invalid(
+            node, 'Duplicates are not allowed. Found %s duplicates.' % num_dups)
 
 
 def valid_direction(node, value):
@@ -107,7 +129,7 @@ class LocalDateTime(DateTime):
 class WindValueSchema(MappingSchema):
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
                           validator=convertable_to_seconds)
-    speed = SchemaNode(Float(), default=0, validator=nonzero)
+    speed = SchemaNode(Float(), default=0, validator=zero_or_greater)
     # TODO: Validate string and float or just float?
     direction = SchemaNode(Float(), default=0,
                            validator=degrees_true)
@@ -143,15 +165,24 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
 
 
 class WindSchema(MappingSchema):
-    timeseries = WindTimeSeriesSchema(default=[])
+    source = SchemaNode(String(), default=None, missing=None)
+    source_type = SchemaNode(String(), default=None, missing=None,
+                             validator=OneOf([source[0] for source in
+                                              WebWind.source_types]))
+    description = SchemaNode(String(), default=None, missing=None)
+    timeseries = WindTimeSeriesSchema(default=[], validator=no_duplicates)
     units = SchemaNode(String(), validator=OneOf(util.velocity_unit_values),
                        default='m/s')
+    latitude = SchemaNode(Float(), default=None, missing=None)
+    longitude = SchemaNode(Float(), default=None, missing=None)
 
 
 class BaseMoverSchema(MappingSchema):
     on = SchemaNode(Bool(), default=True, missing=True)
-    active_start = SchemaNode(LocalDateTime(), default=None, missing=None)
-    active_stop = SchemaNode(LocalDateTime(), default=None, missing=None)
+    active_start = SchemaNode(LocalDateTime(), default=None, missing=None,
+                              validator=convertable_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), default=None, missing=None,
+                             validator=convertable_to_seconds)
 
 
 class WindMoverSchema(BaseMoverSchema):
@@ -186,7 +217,7 @@ class WindageRangeSchema(TupleSchema):
 class SurfaceReleaseSpillSchema(MappingSchema):
     default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
-    num_elements = SchemaNode(Int(), default=0, validator=nonzero)
+    num_elements = SchemaNode(Int(), default=0, validator=positive)
     release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
                               validator=convertable_to_seconds)
     start_position = PositionSchema(default=(0, 0, 0))

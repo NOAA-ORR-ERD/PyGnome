@@ -118,6 +118,10 @@ legend {
     margin-right: 5px;
 }
 
+.edit-time-forms {
+    overflow: auto;
+}
+
 .edit-time-forms th {
     padding: 0 8px 8px 8px;
 }
@@ -180,8 +184,7 @@ legend {
 }
 
 .wind-values {
-    overflow: scroll;
-    max-height: 400px;
+    max-height: 280px;
 }
 
 .wind form {
@@ -192,14 +195,18 @@ legend {
     width: 120px;
 }
 
+#map_canvas img, .nws-map-canvas img {
+    max-width: none !important;
+}
+
 #map_canvas {
     height: 500px;
     width: 700px;
 }
 
 .nws-map-canvas {
-    height: 100%;
-    width: 100%;
+    height: 300px;
+    width: 300px;
 }
 
 .modal-body {
@@ -244,4 +251,9 @@ legend {
 
 body .ui-tooltip {
     border-width: 2px;
+}
+
+#description {
+ width: 130px;
+ height: 50px;
 }

@@ -239,9 +239,9 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(resp.json['uncertain_angle_scale'], data['uncertain_angle_scale'])
         self.assertEqual(resp.json['uncertain_angle_scale_units'], 'deg')
         self.assertEqual(resp.json['active_start'],
-                         datetime.datetime(*gmtime(0)[:7]).isoformat())
+                         datetime.datetime(*gmtime(0)[:6]).isoformat())
         self.assertEqual(resp.json['active_stop'],
-                         datetime.datetime.max.isoformat())
+                         datetime.datetime(2038,1,18,0,0,0).isoformat())
 
     def test_wind_mover_update(self):
         data = self.make_wind_mover_data()

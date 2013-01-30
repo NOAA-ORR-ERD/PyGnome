@@ -198,23 +198,25 @@ class Model(GnomeObject):
          - sets the new position
         """
         ## if there are no spills, there is nothing to do:
+
         if self._spill_container.spills:
             containers = [ self._spill_container ]
             if self.is_uncertain:
                 containers.append( self._uncertain_spill_container )
             for sc in containers: # either one or two, depending on uncertaintly or not
-                # reset next_positions
-                sc['next_positions'][:] = sc['positions']
+                if sc.num_elements > 0: # no reason to do any of this if there are no elements
+                    # reset next_positions
+                    sc['next_positions'][:] = sc['positions']
 
-                # loop through the movers
-                for mover in self.movers:
-                    delta = mover.get_move(sc, self.time_step, self.model_time)
-                    sc['next_positions'] += delta
-            
-                self.map.beach_elements(sc)
+                    # loop through the movers
+                    for mover in self.movers:
+                        delta = mover.get_move(sc, self.time_step, self.model_time)
+                        sc['next_positions'] += delta
+                
+                    self.map.beach_elements(sc)
 
-                # the final move to the new positions
-                sc['positions'][:] = sc['next_positions']
+                    # the final move to the new positions
+                    sc['positions'][:] = sc['next_positions']
 
     def step_is_done(self):
         """

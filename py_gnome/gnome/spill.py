@@ -38,7 +38,6 @@ class Spill(GnomeObject):
     __all_instances = {} # keys are the instance spill_num -- values are the subclass object
 
     def __new__(cls, *args, **kwargs):
-        #print "Spill.__new__ called", cls
         obj = super(Spill, cls).__new__(cls, *args, **kwargs)
         cls.__all_instances[ id(obj) ] = cls
         return obj
@@ -258,15 +257,20 @@ class SurfaceReleaseSpill(FloatingSpill):
         super(SurfaceReleaseSpill, self).initialize_new_elements(arrays)
         arrays['positions'][:] = self.start_position
 
-    def release_elements(self, current_time, time_step=None):
+    def release_elements(self, current_time, time_step):
         """
         Release any new elements to be added to the SpillContainer
 
         :param current_time: datetime object for current time
-        :param time_step: the time step, in seconds -- this version doesn't use this
+        :param time_step: the time step, in seconds -- used to decide how many should get released.
 
         :returns : None if there are no new elements released
                    a dict of arrays if there are new elements
+
+        For a continuous release, this releases the number of elements that
+        should have been released by the end of the current time step -- so
+        that the first set do get released at the instant of the beginning of
+        the release.
 
         NOTE: this version releases elements spread out along the line from
               start_position to end_position. If the release spans multiple
@@ -274,7 +278,6 @@ class SurfaceReleaseSpill(FloatingSpill):
               there will be an element released at botht he start and end,
               but no duplicate points. 
         """
-
         if current_time >= self.release_time:
             if self.num_released >= self.num_elements:
                 return None
@@ -286,12 +289,11 @@ class SurfaceReleaseSpill(FloatingSpill):
             if current_time >= self.end_release_time:
                 dt = release_delta
             else:
-                dt = max( (current_time - self.release_time).total_seconds(), 0.0)
-            
+                dt = max( (current_time - self.release_time).total_seconds() + time_step, 0.0)
             # this here in case there is less than one released per time step.
-            # or if the relase time is before the model start time
+            # or if the release time is before the model start time
             if release_delta == 0: #instantaneous release
-                num = self.num_elements - self.num_released #num_released shoudl always be 0?
+                num = self.num_elements - self.num_released #num_released should always be 0?
             else:
                 total_num = (dt / release_delta) * self.num_elements
                 num = int(total_num - self.num_released)
