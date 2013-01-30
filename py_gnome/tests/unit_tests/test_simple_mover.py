@@ -64,6 +64,6 @@ def test_uncertainty():
 
     # the mean should be close:
     # this is teh smallest tolerance that consitantly passed -- good enough?
-    assert np.allclose( np.mean(delta, 0), np.mean(u_delta, 0), rtol=1.7e-2)
+    assert np.allclose( np.mean(delta, 0), np.mean(u_delta, 0), rtol=1.7e-1)
 
     

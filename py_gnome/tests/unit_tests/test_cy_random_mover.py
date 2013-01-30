@@ -63,7 +63,7 @@ class TestRandom():
         Test that the move is different from original move since diffusion coefficient is different
         use the py.test -s flag to view the difference between the two
         """
-        cy_helpers.srand(1)
+        #cy_helpers.srand(1)    # this now happens in conftest.py before every test
         np.set_printoptions(precision=6)
         delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(delta)    # get the move before changing the coefficient
@@ -91,7 +91,7 @@ class TestRandom():
         """
         Since seed is not reset, the move should be repeatable
         """
-        cy_helpers.srand(1)
+        #cy_helpers.srand(1)    # this now happens in conftest.py before every test
         delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(delta)
         cy_helpers.srand(1)
