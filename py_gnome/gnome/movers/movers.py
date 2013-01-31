@@ -6,6 +6,7 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNO
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime       #@UnresolvedImport @UnusedImport IGNORE:W0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time
+from gnome import weather
 from gnome.utilities import rand    # not to confuse with python random module
 
 import os
@@ -184,8 +185,10 @@ class WindMover(CyMover):
     def __init__(self, wind, 
                  active_start= datetime( *gmtime(0)[:6] ), 
                  active_stop = datetime(2038,1,18,0,0,0),
-                 uncertain_duration=10800, uncertain_time_delay=0, 
-                 uncertain_speed_scale=2., uncertain_angle_scale=0.4):
+                 uncertain_duration=10800,
+                 uncertain_time_delay=0, 
+                 uncertain_speed_scale=2.,
+                 uncertain_angle_scale=0.4):
         """
         :param wind: wind object
         :param active: active flag
@@ -290,7 +293,24 @@ class WindMover(CyMover):
         if WindMover._uspill_windage_is_set:
             WindMover._uspill_windage_is_set = False
         super(WindMover,self).model_step_is_done() 
-    
+
+def wind_mover_from_file(filename, **kwargs):
+    """
+    Creates a wind mover from a wind time-series file (OSM long wind format)
+
+    :param filename: The full path to the data file
+    :param **kwargs: All keyword arguments are passed on to the WindMover constuctor
+
+    :returns mover: returns a wind mover, built from the file
+    """
+    w = weather.Wind(file=filename,
+                     data_format=basic_types.data_format.magnitude_direction)
+    ts = w.get_timeseries(data_format=basic_types.data_format.magnitude_direction)
+    wm = WindMover(w, **kwargs)
+
+    return wm
+
+
 class RandomMover(CyMover):
     """
     This mover class inherits from CyMover and contains CyRandomMover
