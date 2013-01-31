@@ -6,6 +6,7 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNO
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime       #@UnresolvedImport @UnusedImport IGNORE:W0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time
+from gnome import weather
 from gnome.utilities import rand    # not to confuse with python random module
 
 import os
@@ -106,6 +107,13 @@ class CyMover(Mover):
     """
     def __init__(self, active_start= datetime( *gmtime(0)[:6] ), active_stop = datetime(2038,1,18,0,0,0)):
         super(CyMover,self).__init__(active_start, active_stop)
+        
+        # initialize variables for readability, tough self.mover = None produces errors, so that is not init here
+        self.model_time = 0 
+        self.positions = np.zeros((0,3), dtype=basic_types.world_point_type)
+        self.delta = np.zeros((0,3), dtype=basic_types.world_point_type)
+        self.status_codes = np.zeros((0,1), dtype=basic_types.status_code_type)
+        self.spill_type = 0    # either a 1, or 2 depending on whether spill is certain or not
 
     def prepare_for_model_run(self):
         """
@@ -133,6 +141,29 @@ class CyMover(Mover):
             
             self.mover.prepare_for_model_step( self.datetime_to_seconds(model_time_datetime), time_step, uncertain_spill_count, uncertain_spill_size)
 
+    def get_move(self, sc, time_step, model_time_datetime):
+        """
+        Base implementation of Cython wrapped C++ movers
+        Override for things like the WindMover since it has a different implementation
+        
+        :param sc: spill_container.SpillContainer object
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as a date time object
+        """
+        self.prepare_data_for_get_move(sc, model_time_datetime)
+        
+        # only call get_move if mover is active, it is on and there are LEs that have been released
+        if self.active and self.on and len(self.positions) > 0:
+            self.mover.get_move(  self.model_time,
+                                  time_step, 
+                                  self.positions,
+                                  self.delta,
+                                  self.status_codes,
+                                  self.spill_type,
+                                  0)    # only ever 1 spill_container so this is always 0!
+            
+        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+    
     def prepare_data_for_get_move(self, sc, model_time_datetime):
         """
         organizes the spill object into inputs for calling with Cython wrapper's get_move(...)
@@ -184,8 +215,10 @@ class WindMover(CyMover):
     def __init__(self, wind, 
                  active_start= datetime( *gmtime(0)[:6] ), 
                  active_stop = datetime(2038,1,18,0,0,0),
-                 uncertain_duration=10800, uncertain_time_delay=0, 
-                 uncertain_speed_scale=2., uncertain_angle_scale=0.4):
+                 uncertain_duration=10800,
+                 uncertain_time_delay=0, 
+                 uncertain_speed_scale=2.,
+                 uncertain_angle_scale=0.4):
         """
         :param wind: wind object
         :param active: active flag
@@ -247,6 +280,11 @@ class WindMover(CyMover):
         :param model_time_datetime: current time of the model as a date time object
         """
         super(WindMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
+        
+        # if no particles released, then no need for windage
+        if len(sc['positions']) == 0:
+            return
+        
         if (not WindMover._windage_is_set and not sc.is_uncertain) or (not WindMover._uspill_windage_is_set and sc.is_uncertain):
             for spill in sc.spills:
                 ix = sc['spill_num'] == spill.spill_num   # matching indices
@@ -263,13 +301,15 @@ class WindMover(CyMover):
     
     def get_move(self, sc, time_step, model_time_datetime):
         """
+        Override base class functionality because mover has a different get_move signature
+        
         :param sc: an instance of the gnome.SpillContainer class
         :param time_step: time step in seconds
         :param model_time_datetime: current time of the model as a date time object
         """
         self.prepare_data_for_get_move(sc, model_time_datetime)
         
-        if self.active and self.on: 
+        if self.active and self.on and len(self.positions) > 0: 
             self.mover.get_move(  self.model_time,
                                   time_step, 
                                   self.positions,
@@ -290,7 +330,24 @@ class WindMover(CyMover):
         if WindMover._uspill_windage_is_set:
             WindMover._uspill_windage_is_set = False
         super(WindMover,self).model_step_is_done() 
-    
+
+def wind_mover_from_file(filename, **kwargs):
+    """
+    Creates a wind mover from a wind time-series file (OSM long wind format)
+
+    :param filename: The full path to the data file
+    :param **kwargs: All keyword arguments are passed on to the WindMover constuctor
+
+    :returns mover: returns a wind mover, built from the file
+    """
+    w = weather.Wind(file=filename,
+                     data_format=basic_types.data_format.magnitude_direction)
+    ts = w.get_timeseries(data_format=basic_types.data_format.magnitude_direction)
+    wm = WindMover(w, **kwargs)
+
+    return wm
+
+
 class RandomMover(CyMover):
     """
     This mover class inherits from CyMover and contains CyRandomMover
@@ -318,25 +375,6 @@ class RandomMover(CyMover):
         """
         return "RandomMover(diffusion_coef=%s,active_start=%s, active_stop=%s, on=%s)" % (self.diffusion_coef,self.active_start, self.active_stop, self.on)
 
-    def get_move(self, spill, time_step, model_time_datetime):
-        """
-        :param spill: spill object
-        :param time_step: time step in seconds
-        :param model_time_datetime: current time of the model as a date time object
-        """
-        self.prepare_data_for_get_move(spill, model_time_datetime)
-
-        if self.active and self.on: 
-            self.mover.get_move(  self.model_time,
-                                  time_step, 
-                                  self.positions,
-                                  self.delta,
-                                  self.status_codes,
-                                  self.spill_type,
-                                  0)    # only ever 1 spill_container so this is always 0!
-            
-        #return self.delta
-        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
 class CatsMover(CyMover):
     
@@ -353,11 +391,12 @@ class CatsMover(CyMover):
         self.mover = cy_cats_mover.CyCatsMover()
         self.mover.read_topology(curr_file)
         
-        if shio_file is not None and not os.path.exists(shio_file):
-            raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
-        else:
-            self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
-            self.mover.set_shio(self.shio)
+        if shio_file is not None:
+            if not os.path.exists(shio_file):
+                raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
+            else:
+                self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
+                self.mover.set_shio(self.shio)
         
         super(CatsMover,self).__init__(active_start, active_stop)
         
@@ -367,24 +406,6 @@ class CatsMover(CyMover):
         """
         info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.shio.filename)
         return info
-    
-    def get_move(self, sc, time_step, model_time_datetime):
-        """
-        :param sc: an instance of the gnome.SpillContainer class
-        :param time_step: time step in seconds
-        :param model_time_datetime: current time of the model as a date time object
-        """
-        self.prepare_data_for_get_move(sc, model_time_datetime)
-        
-        if self.active and self.on: 
-            self.mover.get_move(  self.model_time,
-                                  time_step, 
-                                  self.positions,
-                                  self.delta,
-                                  self.status_codes,
-                                  self.spill_type,
-                                  0)    # only ever 1 spill_container so this is always 0!
-        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
         
 class WeatheringMover(Mover):
     """
@@ -452,7 +473,7 @@ class WeatheringMover(Mover):
         self.model_time = self.datetime_to_seconds(model_time_datetime)
         #self.prepare_data_for_get_move(sc, model_time_datetime)
 
-        if self.active and self.on: 
+        if self.active and self.on and len(self.positions) > 0: 
             #self.mover.get_move(  self.model_time,
             #                      time_step,
             #                      self.positions,

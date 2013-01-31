@@ -144,7 +144,6 @@ def test_reset_array_types():
     sp1.reset() # make sure that we're reset from previous tests
 
     sp2 = FloatingSpill()
-    sp3 = Spill()
     sp4 = FloatingSpill()
     sp5 = Spill()
 
@@ -176,6 +175,7 @@ class Test_SurfaceReleaseSpill():
     num_elements = 10
     start_position = (-128.3, 28.5, 0)
     release_time=datetime.datetime(2012, 8, 20, 13)
+    timestep = 3600 # one hour in seconds
 
     def test_init(self):
         sp = SurfaceReleaseSpill(num_elements = self.num_elements,
@@ -192,24 +192,25 @@ class Test_SurfaceReleaseSpill():
                                  start_position = self.start_position,
                                  release_time = self.release_time,
                                  )
-        arrays = sp.release_elements(self.release_time)
+        timestep = 3600 # seconds
+        arrays = sp.release_elements(self.release_time, timestep)
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['positions'] == self.start_position )
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
 
         assert sp.num_released == self.num_elements
 
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(10))
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(10), timestep)
         assert arrays is None
 
         # reset and try again
         sp.reset()
         assert sp.num_released == 0
-        arrays = sp.release_elements(self.release_time - datetime.timedelta(10))
+        arrays = sp.release_elements(self.release_time - datetime.timedelta(10), timestep)
         assert arrays is None
         assert sp.num_released == 0
 
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(10))
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(10), timestep)
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['positions'] == self.start_position )
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
@@ -224,60 +225,48 @@ class Test_SurfaceReleaseSpill():
                                  release_time = self.release_time,
                                  end_release_time = self.release_time + datetime.timedelta(hours=10),
                                  )
-        # at exactly the release time -- none get released
-        arrays = sp.release_elements(self.release_time)
-        assert arrays is None
+        timestep = 3600 # one hour in seconds
 
-        # one hour into release
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(hours=1))
+        # at exactly the release time -- ten get released
+        arrays = sp.release_elements(self.release_time, timestep)
         assert arrays['positions'].shape == (10,3)
 
+        # one hour into release -- ten more released
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(hours=1), timestep)
+        assert arrays['positions'].shape == (10,3)
+        assert sp.num_released == 20
+
         # 1-1/2 hours into release - 5 more
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(hours=1.5))
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(hours=2), timestep/2)
         assert arrays['positions'].shape == (5,3)
-        assert sp.num_released == 15
+        assert sp.num_released == 25
 
         # at end -- rest should be released:
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(hours=10))
-        assert arrays['positions'].shape == (85,3)
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(hours=10), timestep)
+        assert arrays['positions'].shape == (75,3)
         assert sp.num_released == 100
 
         sp.reset()
 
-        ## 1 second after start: none yet
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(seconds=1))
-        assert arrays is None
-
-        ## 300 seconds: still none
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(seconds=300))
-        assert arrays is None
-
-        ## 360 seconds: first LE
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(seconds=360))
+        ## 360 second time step: first LE
+        arrays = sp.release_elements(self.release_time, 360)
         assert arrays['positions'].shape == (1,3)
         assert np.alltrue( arrays['positions'] == self.start_position )
-
-        ## 300 seconds again: shouldn't crash
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(seconds=00))
-        assert arrays is None
-
-        ## 600 seconds: no more yet
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(seconds=600))
-        assert arrays is None
 
         ## 720 seconds: one more
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(seconds=720))
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(seconds=360), 360)
         assert arrays['positions'].shape == (1,3)
         assert np.alltrue( arrays['positions'] == self.start_position )
+        assert sp.num_released == 2
 
     def test_inst_line_release(self):
         sp = SurfaceReleaseSpill(num_elements = 11, # so it's easy to compute where they should be!
-                                 start_position = (-128.0, 28.0, 0),
-                                 release_time = self.release_time,
-                                 end_position = (-129.0, 29.0, 0)
-                                 )
-        
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(hours=1))
+                                  start_position = (-128.0, 28.0, 0),
+                                  release_time = self.release_time,
+                                  end_position = (-129.0, 29.0, 0)
+                                  )
+        timestep = 600 # ten minutes in seconds         
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(hours=1), timestep)
         
         assert arrays['positions'].shape == (11,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
@@ -298,9 +287,9 @@ class Test_SurfaceReleaseSpill():
                                  end_position = (-129.0, 29.0, 0),
                                  end_release_time = self.release_time + datetime.timedelta(minutes=100)
                                  )
-        
+        timestep = 100 * 60       
         # first the full release over one time step
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(minutes=200) )
+        arrays = sp.release_elements(self.release_time, timestep )
         
         assert arrays['positions'].shape == (11,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
@@ -322,8 +311,8 @@ class Test_SurfaceReleaseSpill():
                                  end_release_time = self.release_time + datetime.timedelta(minutes=100)
                                  )
         
-        # release after 1/10 of release_time
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(minutes=10) )
+        # release at release time with time step of 1/10 of release_time
+        arrays = sp.release_elements(self.release_time, 10*60)
         
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
@@ -332,7 +321,7 @@ class Test_SurfaceReleaseSpill():
         assert sp.num_released == 10
 
         # second time step release:
-        arrays = sp.release_elements(self.release_time + datetime.timedelta(minutes=20) )
+        arrays = sp.release_elements(self.release_time + datetime.timedelta(minutes=10), 10*60 )
         
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
@@ -356,10 +345,11 @@ class Test_SurfaceReleaseSpill():
         #start before release
         time = self.release_time - datetime.timedelta(minutes=10)
         delta_t = datetime.timedelta(minutes=10)
+        timestep = delta_t.total_seconds()
         positions = np.zeros((0,3), dtype=np.float64)
         # end after release
         while time < self.release_time + datetime.timedelta(minutes=100):
-            arrays = sp.release_elements(time)
+            arrays = sp.release_elements(time, timestep)
             if arrays is not None:
                 positions = np.r_[positions, arrays['positions'] ]
             time += delta_t
@@ -386,10 +376,11 @@ class Test_SurfaceReleaseSpill():
         #start before release
         time = self.release_time - datetime.timedelta(minutes=10)
         delta_t = datetime.timedelta(minutes=2)
+        timestep = delta_t.total_seconds()
         positions = np.zeros((0,3), dtype=np.float64)
         # end after release
         while time < self.release_time + datetime.timedelta(minutes=100):
-            arrays = sp.release_elements(time)
+            arrays = sp.release_elements(time, timestep)
             print arrays
             if arrays is not None:
                 positions = np.r_[positions, arrays['positions'] ]
@@ -425,10 +416,11 @@ class Test_SurfaceReleaseSpill():
         #start before release
         time = self.release_time - datetime.timedelta(minutes=10)
         delta_t = datetime.timedelta(minutes=10)
+        timestep = delta_t.total_seconds()
         positions = np.zeros((0,3), dtype=np.float64)
         # end after release
         while time < self.release_time + datetime.timedelta(minutes=100):
-            arrays = sp.release_elements(time)
+            arrays = sp.release_elements(time, timestep)
             if arrays is not None:
                 positions = np.r_[positions, arrays['positions'] ]
             time += delta_t
@@ -443,7 +435,7 @@ class Test_SurfaceReleaseSpill():
         else:
             assert np.alltrue( np.abs(np.diff ( diff[:,0] / diff[:,1] ) ) < 1e-8 )
 
-    def cont_not_valid_times(self):        
+    def test_cont_not_valid_times(self):        
         with pytest.raises(ValueError):
             sp = SurfaceReleaseSpill(num_elements = 100,
                                      start_position = self.start_position,

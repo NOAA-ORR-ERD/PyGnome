@@ -1,6 +1,7 @@
 '''
 Test some of the base class functionality independent of derived clases.
 Just simpler to do the testing here
+
 '''
 
 from datetime import datetime,timedelta

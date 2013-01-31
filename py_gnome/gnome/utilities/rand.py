@@ -7,7 +7,8 @@ python random functions
 """
 import numpy as np
 from math import sqrt
-
+from gnome.cy_gnome import cy_helpers
+import random
 
 ##fixme: change this to take the windage array as input parameter, then change in place
 def random_with_persistance(low, high, persistence=0, time_step=1., array_len=1):
@@ -50,3 +51,15 @@ def random_with_persistance(low, high, persistence=0, time_step=1., array_len=1)
         return np.random.uniform(low, high)
     else:
         return np.random.uniform(low,high,array_len)
+    
+def seed(seed=1):
+    """
+    Set the C++, the python and the numpy random seed to desired value
+    
+    :param seed: Random number generator should be seeded by this value. Default is 1
+    """
+    cy_helpers.srand(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    
+    
