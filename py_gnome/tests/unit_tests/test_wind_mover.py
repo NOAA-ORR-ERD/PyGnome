@@ -123,10 +123,8 @@ class TestWindMover:
         self.spill = spill_ex()
         rel_time = self.spill.spills[0].release_time # digging a bit deep...
         #model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
-
-        time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
-        time_val['time']  = np.datetime64( rel_time.isoformat() )
-        time_val['value'] = (2., 25.)
+        
+        time_val = np.array((rel_time, (2., 25.)), dtype=basic_types.datetime_value_2d).reshape(1,)
         wind = weather.Wind(timeseries=time_val, units='meters per second')
         self.wm = movers.WindMover(wind)
 

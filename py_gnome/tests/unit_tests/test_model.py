@@ -300,24 +300,27 @@ def test_mover_api():
         l__temp = model.movers[mover_2.id]
 
 
-def test_all_movers():
+test_cases = [(datetime(2012, 1, 1, 0, 0), 0, 12 ), # model start_time, No. of time_steps after which LEs release, duration as No. of timesteps
+              (datetime(2012, 1, 1, 0, 0), 12, 12),
+              (datetime(2012, 1, 1, 0, 0), 13, 12)]
+
+@pytest.mark.parametrize(("start_time", "release_delay", "duration"), test_cases)
+def test_all_movers(start_time, release_delay, duration):
     """
     a test that tests that all the movers at least can be run
 
     add new ones as they come along!
     """
-
-    start_time = datetime(2012, 1, 1, 0, 0)
-    
     model = gnome.model.Model()
-    model.duration = timedelta(hours=12)
-    model.time_step = timedelta(hours = 1)
+    model.time_step = timedelta(hours=1)
+    model.duration = timedelta(seconds=model.time_step*duration)
     model.start_time = start_time
-
-    # a spill
+    start_loc = (1.0, 2.0, 0.0) # random non-zero starting points
+    
+    # a spill - release after 5 timesteps
     model.add_spill(gnome.spill.SurfaceReleaseSpill(num_elements=10,
-                                                    start_position = (0.0, 0.0, 0.0),
-                                                    release_time = start_time,
+                                                    start_position=start_loc,
+                                                    release_time  = start_time + timedelta(seconds=model.time_step*release_delay),
                                                     ) )
     # model.spills += gnome.spill.PointReleaseSpill(num_LEs=10,
     #                                               start_position = (0.0, 0.0, 0.0),
@@ -340,14 +343,23 @@ def test_all_movers():
     series = np.array( (start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     model.movers += gnome.movers.WindMover(weather.Wind(timeseries=series, units='meter per second'))
     assert len(model.movers) == 3
-  
     
     # run the model all the way...
     num_steps_output = 0
     for step in model:
         num_steps_output += 1
         print "running step:", step
-
+        
+    # test release happens correctly for all cases
+    if release_delay < duration:    # at least one get_move has been called after release
+        assert np.all(model._spill_container['positions'][:,:2] != start_loc[:2])
+       
+    elif release_delay == duration: # particles are released after last step so no motion, only initial state
+        assert np.all(model._spill_container['positions'] == start_loc)
+        
+    else:                           # release_delay > duration so nothing released though model ran
+        assert len(model._spill_container['positions']) == 0
+        
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
     
 if __name__ == "__main__":
