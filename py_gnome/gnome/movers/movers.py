@@ -453,7 +453,7 @@ class WeatheringMover(Mover):
         self.model_time = self.datetime_to_seconds(model_time_datetime)
         #self.prepare_data_for_get_move(sc, model_time_datetime)
 
-        if self.active and self.on: 
+        if self.active and self.on and len(self.positions) > 0: 
             #self.mover.get_move(  self.model_time,
             #                      time_step,
             #                      self.positions,
