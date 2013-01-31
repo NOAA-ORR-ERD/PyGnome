@@ -346,6 +346,7 @@ def test_all_movers(start_time, release_delay, duration):
     
     # add CATS mover
     model.movers += movers.CatsMover(r"SampleData/long_island_sound/tidesWAC.CUR")
+    assert len(model.movers) == 4
     
     # run the model all the way...
     num_steps_output = 0
