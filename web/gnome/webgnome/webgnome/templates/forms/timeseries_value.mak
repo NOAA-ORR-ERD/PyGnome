@@ -1,15 +1,21 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="wind, is_variable=False"/>
+<%page args="is_variable=False, compass_link=False"/>
 
 % if is_variable:
-    ${defs.datetime_control(wind.datetime, 'datetime', date_label="Date")}
+    ${defs.datetime_control('datetime', date_label="Date")}
 % endif
 
-${defs.form_control(
-    h.text('direction', wind.direction, class_="direction input-small"),
-    label='Direction',
-    help_text='Enter cardinal direction or degrees true. ' \
-        '<a href="javascript:" class="show-compass">Show compass.</a>')}
+<%
+    if compass_link:
+        help_text='Enter cardinal direction or degrees true. ' \
+            '<a href="javascript:" class="show-compass">Show compass.</a>'
+    else:
+        help_text =''
+%>
 
 ${defs.form_control(
-    h.text('speed', wind.speed, class_="speed"), label='Speed')}
+    h.text('direction', class_="direction input-small"),
+    label='Direction', help_text=help_text)}
+
+${defs.form_control(
+    h.text('speed', class_="speed"), label='Speed')}

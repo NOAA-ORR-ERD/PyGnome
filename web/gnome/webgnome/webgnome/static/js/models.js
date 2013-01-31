@@ -358,6 +358,22 @@ define([
         // during `toJSON` calls and to `moment` objects during `get` calls.
         dateFields: null,
 
+        initialize: function() {
+            this.bind('change', this.onIndexChange, this)
+        },
+
+        onIndexChange: function() {
+            if (this.collection) {
+                this.collection.sort({silent: true});
+            }
+        },
+
+        change: function() {
+            this.dirty = true;
+
+            BaseModel.__super__.change.apply(this, arguments)
+        },
+
         save: function(attrs, options) {
             options = options || {};
 
@@ -378,6 +394,7 @@ define([
 
         success: function(model, response, options) {
             model.errors = null;
+            model.dirty = false;
         },
 
         error: function(model, response, options) {
@@ -396,10 +413,23 @@ define([
             }
         },
 
+        fetch: function(options) {
+            options = options || {};
+            var _this = this;
+
+            if (!_.has(options, 'success')) {
+                options.success = function() {
+                    _this.dirty = false;
+                };
+            }
+
+            BaseModel.__super__.fetch.apply(this, [options]);
+        },
+
         parse: function(response) {
             var message = util.parseMessage(response);
             if (message) {
-                this.trigger(this.constructor.__super__.MESSAGE_RECEIVED, message);
+                this.trigger(BaseModel.__super__.MESSAGE_RECEIVED, message);
             }
 
             var data = BaseModel.__super__.parse.apply(this, arguments);
@@ -474,15 +504,21 @@ define([
 
 
     var SurfaceReleaseSpillCollection = BaseCollection.extend({
-        model: SurfaceReleaseSpill
+        model: SurfaceReleaseSpill,
+
+        comparator: function(spill) {
+            return moment(spill.get('release_time')).valueOf();
+        }
     });
 
 
     // Movers
 
     var Wind = BaseModel.extend({
+        dateFields: ['updated_at'],
+
         initialize: function(attrs, options) {
-            if (!attrs.timeseries) {
+            if (!attrs || !attrs.timeseries) {
                 this.set('timeseries', []);
             }
         },
@@ -528,12 +564,31 @@ define([
 
             WindMover.__super__.set.apply(this, [key, val, options]);
             return this;
+        },
+
+        type: function() {
+            var timeseries = this.get('wind.timeseries');
+
+            if (timeseries && timeseries.length > 1) {
+                return 'variable-wind';
+            } else {
+                return 'constant-wind';
+            }
         }
     });
 
 
     var WindMoverCollection = BaseCollection.extend({
-        model: WindMover
+        model: WindMover,
+
+        comparator: function(mover) {
+            var wind = mover.get('wind');
+            var timeseries = wind.get('timeseries');
+
+            if (timeseries.length) {
+                return moment(timeseries[0].datetime).valueOf();
+            }
+        }
     });
     
     

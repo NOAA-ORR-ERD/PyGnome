@@ -19,7 +19,7 @@
             ${defs.form_control(name, label="Name")}
             ${defs.form_control(is_active, label="Active")}
             ${defs.form_control(num_elements, label="Number of Elements")}
-            ${defs.datetime_control(spill.release_time, 'release_time',
+            ${defs.datetime_control('release_time', spill.release_time,
                                     date_label='Release Start')}
 
             <div class="control-group">

@@ -7,7 +7,7 @@ define([
     'util',
     'lib/gmaps-amd',
     'lib/jquery.imagesloaded.min',
-    'lib/jquery.dynatree.min',
+    'lib/jquery.dynatree',
     'lib/bootstrap-dropdown',
 ], function($, _, Backbone, models, util, GMap) {
      /*

@@ -127,7 +127,8 @@ class WebWind(Wind, BaseWebObject):
         'longitude',
         'description',
         'source',
-        'source_type'
+        'source_type',
+        'updated_at'
     ]
 
     def __init__(self, *args, **kwargs):
@@ -137,6 +138,7 @@ class WebWind(Wind, BaseWebObject):
         self.source = kwargs.pop('source', None)
         self.longitude = kwargs.pop('longitude', None)
         self.latitude = kwargs.pop('latitude', None)
+        self.updated_at = kwargs.pop('updated_at', None)
 
         super(WebWind, self).__init__(*args, **kwargs)
 

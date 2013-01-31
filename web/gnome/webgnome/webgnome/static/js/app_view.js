@@ -257,12 +257,16 @@ define([
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
                 id: 'add_wind_mover',
-                collection: this.windMovers
+                collection: this.windMovers,
+                defaults: this.options.defaultWindMover,
+                defaultTimeseriesValue: this.options.defaultWindTimeseriesValue
             });
 
             this.editWindMoverFormView = new forms.WindMoverFormView({
                 id: 'edit_wind_mover',
-                collection: this.windMovers
+                collection: this.windMovers,
+                defaults: this.options.defaultWindMover,
+                defaultTimeseriesValue: this.options.defaultWindTimeseriesValue
             });
 
             this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
@@ -557,7 +561,16 @@ define([
             this.formViews.hideAll();
 
             if (node.data.object_id) {
-                formView.reload(node.data.object_id);
+                try {
+                    formView.reload(node.data.object_id);
+                } catch (e) {
+                    if (e instanceof forms.ModelNotFoundException) {
+                        window.alert('That item is unavailable right now. ' +
+                            'Please refresh the page and try again.');
+
+                        return;
+                    }
+                }
             }
 
             formView.show();

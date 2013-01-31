@@ -6,10 +6,11 @@ define([
     'models',
     'util',
     'lib/geo',
+    'lib/rivets',
     'lib/moment',
     'lib/compass-ui',
     'lib/bootstrap-tab'
-], function($, _, Backbone, models, util, geo) {
+], function($, _, Backbone, models, util, geo, rivets) {
 
     var FormViewContainer = Backbone.View.extend({
         initialize: function() {
@@ -42,6 +43,11 @@ define([
         }
     });
 
+    function ModelNotFoundException(message) {
+        this.message = message;
+        this.name = "ModelNotFoundException";
+    }
+
     /*
      `FormView` is the base class for forms intended to wrap Backbone models.
 
@@ -61,7 +67,7 @@ define([
                 this.$el = $('#' + this.options.id);
             }
 
-            this.defaults = this.getFormData();
+            this.defaults = this.options.defaults;
             this.setupDatePickers();
         },
 
@@ -90,9 +96,7 @@ define([
         },
 
         handleFieldError: function(error) {
-            var fieldId = this.getFieldIdForError(error);
-            var field = this.$el.find(fieldId);
-
+            var field = this.$el.find('*[name="' + error.name + '"]').not('.hidden');
             this.showErrorForField(field, error);
         },
 
@@ -131,43 +135,14 @@ define([
             });
         },
 
-        setModelInput: function(fieldName, model) {
-            var field = this.$el.find('#' + fieldName);
-
-            if (model === undefined) {
-                model = this.model;
-            }
-
-            var value = model.get(fieldName);
-
-            switch (field[0].type) {
-                case 'select-one':
-                    field.find('option[value="' + value + '"]').attr('selected', 'selected');
-                    break;
-                case 'text':
-                case 'textarea':
-                    field.val(value);
-                    break;
-                case 'checkbox':
-                    field.prop('checked', value);
-                    break;
-                default:
-                    field.text(value);
-            }
-        },
-
         getForm: function() {
             return this.$el.find('form');
         },
 
-        prepareForm: function() {
-            var form = this.getForm();
-
-            if (this.model && this.model.id) {
-                this.setForm(form, this.model.toJSON());
-            } else {
-                this.setForm(form, this.defaults);
-            }
+        getByName: function(name, container, type) {
+            container = container && container.length ? container : this.$el;
+            type = type ? type : '*';
+            return container.find(type + '[name="' + name + '"]');
         },
 
         clearErrors: function() {
@@ -182,6 +157,10 @@ define([
                 errors.attr('title', '');
                 errors.addClass('hidden');
             }
+        },
+
+        prepareForm: function() {
+            // Override
         },
 
         show: function() {
@@ -202,6 +181,10 @@ define([
         },
 
         cancel: function() {
+            this.resetModel();
+        },
+
+        resetModel: function() {
             if (this.model && this.model.id) {
                 this.model.fetch();
                 this.model = null;
@@ -218,8 +201,9 @@ define([
         },
 
         setForm: function(form, data) {
+            var _this = this;
             _.each(data, function(dataVal, fieldName) {
-                var input = form.find('#' + fieldName);
+                var input = _this.getByName(fieldName, form);
 
                 if (!input.length) {
                     return;
@@ -266,6 +250,9 @@ define([
         },
 
         setDateFields: function(target, datetime) {
+            if (typeof target === 'string') {
+                target = this.$el.find(target);
+            }
 
             if (!datetime || target.length === 0) {
                 return;
@@ -309,13 +296,37 @@ define([
 
         setupModelEvents: function() {
             this.model.on('error', this.handleServerError);
+
+            if (this.rivets) {
+               rivets.unbind();
+            }
+
+            this.rivets = rivets.bind(this.$el, {model: this.model});
         },
 
-        reload: function(id) {
-            var model;
+        getModel: function(id) {
+            if (!id) {
+                return;
+            }
+
+            var model = null;
 
             if (this.collection) {
                 model = this.collection.get(id);
+            }
+
+            return model;
+        },
+
+        reload: function(id) {
+            if (!id) {
+                return;
+            }
+
+            var model = this.getModel(id);
+
+            if (!model) {
+                throw new ModelNotFoundException('Model missing on reload.');
             }
 
             if (model) {
@@ -353,7 +364,8 @@ define([
                         _this.submit();
                     }
                 },
-                close: this.close
+                close: this.close,
+                beforeClose: this.beforeClose
             }, options.dialog || this.dialog || {});
 
             this.$el.dialog(opts);
@@ -364,8 +376,19 @@ define([
                 '<input type="text"/></span>').prependTo(this.$el);
         },
 
+        beforeClose: function() {
+            if (!this.wasCancelled && this.model && this.model.dirty) {
+                if (!window.confirm('You have unsaved changes. Really close?')) {
+                    return false;
+                }
+            }
+
+            return true;
+        },
+
         cancel: function() {
-            this.$el.dialog("close");
+            this.wasCancelled = true;
+            this.closeDialog();
             JQueryUIModalFormView.__super__.cancel.apply(this, arguments);
         },
 
@@ -390,8 +413,9 @@ define([
          Hide any other visible modals and show this one.
          */
         show: function() {
-            this.prepareForm();
+            this.wasCancelled = false;
             this.clearErrors();
+            this.prepareForm();
             this.$el.dialog('open');
             this.$el.removeClass('hide');
         },
@@ -402,7 +426,8 @@ define([
 
         close: function() {
             this.clearForm();
-
+            this.closeDialog();
+            this.resetModel();
         },
 
         closeDialog: function() {
@@ -450,8 +475,7 @@ define([
      */
     var AddMoverFormView = ChooseObjectTypeFormView.extend({
         submit: function() {
-            var form = this.getForm();
-            var moverType = form.find('select[name="mover_type"]').val();
+            var moverType = this.getByName('mover_type').val();
 
             if (moverType) {
                 this.trigger(AddMoverFormView.MOVER_CHOSEN, moverType);
@@ -481,8 +505,7 @@ define([
         },
 
         submit: function() {
-            var form = this.getForm();
-            var spillType = form.find('select[name="spill_type"]').val();
+            var spillType = this.getByName('spill_type').val();
 
             if (spillType) {
                 this.trigger(AddSpillFormView.SPILL_CHOSEN, spillType, this.coords);
@@ -535,8 +558,9 @@ define([
             this.model.on('sync', this.closeDialog);
         },
 
-        reload: function(id) {
-            // Do nothing - we always use the same map object.
+        // Always use the same model
+        getModel: function(id) {
+            return this.model;
         }
     });
 
@@ -556,7 +580,7 @@ define([
 
             WindMoverFormView.__super__.initialize.apply(this, [opts]);
 
-            this.defaults = this.getFormDefaults();
+            this.defaultTimeseriesValue = options.defaultTimeseriesValue;
             this.windMovers = options.windMovers;
             this.setupCompass();
             this.setupWindMap();
@@ -580,8 +604,25 @@ define([
             'click .query-source': 'querySource',
             'change .units': 'renderTimeTable',
             'change .type': 'typeChanged',
-            'change #source_type': 'sourceTypeChanged'
+            'change select[name="source_type"]': 'sourceTypeChanged'
         },
+
+        setupModelEvents: function() {
+            var wind = this.model.get('wind');
+
+            this.model.off('error');
+            this.model.on('error', this.handleServerError);
+
+            if (this.rivets) {
+                this.rivets.unbind();
+            }
+
+            this.rivets = rivets.bind(this.$el, {
+                mover: this.model,
+                wind: wind
+            });
+        },
+
 
         resizeWindMap: function() {
             google.maps.event.trigger(this.windMap, 'resize');
@@ -589,10 +630,17 @@ define([
         },
 
         nwsWindsReceived: function(data) {
-            this.$el.find('#description').val(data.description);
-            this.$el.find('#type').find(
-                'option[value="variable-wind"]').attr('selected', 'selected');
-            this.typeChanged();
+            var desc = this.getByName('description');
+            var type = this.getByName('type');
+
+            desc.val(data.description);
+            desc.change();
+
+            type.find('option[value="variable-wind"]').attr('selected', 'selected');
+            type.change();
+
+            this.setDateFields('.updated_at_container', moment());
+
             var wind = this.model.get('wind');
             var timeseries = [];
 
@@ -609,7 +657,6 @@ define([
             // NWS data is in knots, so the entire wind mover data set will have
             // to use knots, since we don't have a way of setting it per value.
             wind.set('units', 'knots');
-            this.$el.find('.units').val('knots');
 
             this.renderTimeTable();
 
@@ -631,7 +678,7 @@ define([
                 nws: this.queryNws
             };
 
-            var source = this.$el.find('#source_type').find('option:selected').val();
+            var source = this.getByName('source_type').find('option:selected').val();
 
             if (dataSourceFns[source]) {
                 dataSourceFns[source]();
@@ -641,8 +688,8 @@ define([
         },
 
         queryNws: function() {
-            var lat = this.$el.find('#latitude');
-            var lon = this.$el.find('#longitude');
+            var lat = this.getByName('latitude');
+            var lon = this.getByName('longitude');
             var coords = {
                 latitude: lat.val(),
                 longitude: lon.val()
@@ -661,8 +708,8 @@ define([
         },
 
         setupWindMap: function() {
-            var lat = this.$el.find('#latitude');
-            var lon = this.$el.find('#longitude');
+            var lat = this.getByName('latitude');
+            var lon = this.getByName('longitude');
 
             this.windMapCenter = new google.maps.LatLngBounds(
                 new google.maps.LatLng(13, 144),
@@ -694,16 +741,25 @@ define([
                 var ulatlng = event.latLng;
                 point.setPosition(ulatlng);
                 point.setVisible(true);
+
                 lat.val(Math.round(ulatlng.lat() * 1000) / 1000);
                 lon.val(Math.round(ulatlng.lng() * 1000) / 1000);
+
+                lat.change();
+                lon.change();
             });
 
             google.maps.event.addListener(point, 'dragend', function(event) {
                 var ulatlng = event.latLng;
+
                 point.setPosition(ulatlng);
                 point.setVisible(true);
+
                 lat.val(Math.round(ulatlng.lat() * 1000) / 1000);
                 lon.val(Math.round(ulatlng.lng() * 1000) / 1000);
+
+                lat.change();
+                lon.change();
             });
 
             this.windMap = map;
@@ -711,8 +767,8 @@ define([
         
         nwsCoordinatesChanged: function() {
             var ulatlng = new google.maps.LatLng(
-                this.$el.find('.latitude').val(),
-                this.$el.find('.longitude').val());
+                this.getByName('latitude').val(),
+                this.getByName('longitude').val());
             this.nwsPoint.setPosition(ulatlng);
             this.nwsPoint.setVisible(true);
         },
@@ -728,7 +784,7 @@ define([
         },
 
         sourceTypeChanged: function() {
-            var sourceType = this.$el.find('#source_type').val();
+            var sourceType = this.model.get('wind').get('source_type');
             var queryButton = $('.query-source');
 
             if (sourceType === 'manual') {
@@ -773,19 +829,11 @@ define([
                 zIndex: 6000,
                 autoOpen: false,
                 buttons: {
-                    OK: function () {
+                    Close: function () {
                         $(this).dialog("close");
                     }
                 }
             });
-        },
-
-        setForm: function(form, data) {
-            SurfaceReleaseSpillFormView.__super__.setForm.apply(this, arguments);
-
-            var timeContainer = form.find('.datetime_container');
-            var datetime = this.getFormDate(timeContainer);
-            this.setDateFields(timeContainer, datetime);
         },
 
         getTimesTable: function() {
@@ -866,58 +914,42 @@ define([
         },
 
         /*
-         Prepare `data` with the wind timeseries values needed to save a
-         constant wind mover.
+         Get wind timeseries values needed to save a constant wind mover.
          */
-        prepareConstantWindData: function(data) {
-            var wind = this.model.get('wind');
-            var timeseries = _.clone(wind.get('timeseries'));
-            var values = {
+        getConstantWindData: function() {
+            var form = this.getAddForm();
+            var speed = form.find('input[name="speed"]');
+            var direction = form.find('input[name="direction"]');
+            return {
                 // A 'datetime' field is required, but it will be ignored for a
                 // constant wind mover during the model run, so we just use the
                 // current time.
                 datetime: moment().format(),
-                direction: data.direction,
-                speed: data.speed
+                direction: direction.val(),
+                speed: speed.val()
             };
-
-            if (timeseries.length === 1) {
-                // Update an existing time series value.
-                timeseries[0] = values
-            } else {
-                // Add the first (and only) time series value.
-                timeseries = [values];
-            }
-
-            wind.set('timeseries', timeseries);
-
-            delete(data.speed);
-            delete(data.direction);
-
-            return data
         },
 
         submit: function() {
             // Clear the add time form in the variable wind div as those
             // values must be "saved" in order to mean anything.
-            var variable = $('.variable-wind');
+            var variable = this.$el.find('.variable-wind');
             variable.find('input').val('');
             variable.find('input:checkbox').prop('checked', false);
 
-            var data = this.getFormData();
             var wind = this.model.get('wind');
+            var windUpdatedAt = this.getFormDate(
+                this.$el.find('.updated_at_container'));
+
+            if(windUpdatedAt) {
+                wind.set('updated_at', windUpdatedAt);
+            }
+
             var timeseries = wind.get('timeseries');
+            var constantWindSelected = this.$el.find('.type').find(
+                'option:selected').val() === 'constant-wind';
 
-            // Set wind fields.
-            _.each(['units', 'source', 'source_type', 'latitude', 'longitude',
-                    'description'], function(field) {
-                wind.set(field, data[field]);
-                delete(data[field]);
-            });
-
-            if (this.$el.find('.type').find('option:selected').val() === 'constant-wind'
-                    && timeseries.length > 1) {
-
+            if (constantWindSelected && timeseries.length > 1) {
                 var message = 'Changing this mover to use constant wind will ' +
                     'delete variable wind data. Go ahead?';
 
@@ -927,12 +959,22 @@ define([
             }
 
             // A constant wind mover has these values.
-            if (data.direction !== undefined && data.speed !== undefined) {
-                data = this.prepareConstantWindData(data);
+            if (constantWindSelected) {
+                var windData = this.getConstantWindData();
+
+                if (timeseries.length === 1) {
+                    // Update an existing time series value.
+                    timeseries[0] = windData
+                } else {
+                    // Add the first (and only) time series value.
+                    timeseries = [windData];
+                }
+
+                wind.set('timeseries', timeseries);
             }
 
             this.collection.add(this.model);
-            this.model.save(data);
+            this.model.save();
         },
 
         editMoverNameClicked: function(event) {
@@ -956,22 +998,6 @@ define([
             var form = input.closest('.form');
             var header = form.find('.page-header').find('a');
             header.text(input.val());
-        },
-
-        modelChanged: function() {
-            WindMoverFormView.__super__.modelChanged.apply(this, arguments);
-            this.renderTimeTable();
-            this.setupCompass();
-
-            var hasErrors = this.$el.find(
-                '.time-list').find('tr.error').length > 0;
-
-            if (hasErrors) {
-                alert('At least one of your time series values had errors in ' +
-                     'it. The rows with errors will be marked in red.');
-            }
-
-            this.setupCompass();
         },
 
         getMoverType: function() {
@@ -1118,6 +1144,13 @@ define([
             var addForm = this.getAddForm();
             var datetime = this.getFormDate(addForm);
             var direction = addForm.find('#direction').val();
+
+            // TODO: Handle this with a field validation plugin.
+            if (datetime === undefined) {
+                window.alert('Please enter a date and time.');
+                return;
+            }
+
             var duplicates = this.findDuplicates(timeseries, datetime);
             var windValue = {
                 datetime: datetime.format(),
@@ -1151,110 +1184,17 @@ define([
             }
         },
 
-        getBaseFormData: function() {
-            return {
-                name: this.$el.find('#name').val(),
-                units: this.$el.find('#units').val(),
-                on: this.$el.find('#on').prop('checked')
-            };
-        },
-
-        getFormDataForDiv: function(div) {
-            var data = {};
-            var inputs = div.find('input,select,textarea');
-
-            _.each(inputs, function(input) {
-                input = $(input);
-                var name = input.attr('name');
-                var val;
-
-                if (input.is(':checkbox')) {
-                    val = input.prop('checked');
-                } else {
-                    val = input.val();
-                }
-
-                if (name && val !== undefined && val !== '') {
-                    data[name] = val;
-                }
-            });
-
-            return data;
-        },
-
         /*
-         Save the values in all form fields in an object that can be used later
-         to look up field defaults.
-         */
-        getFormDefaults: function() {
-            var data = this.getBaseFormData();
-            var constant = this.$el.find('.constant-wind');
-            var variable = this.$el.find('.variable-wind');
-            var dataSource = this.$el.find('.data-source');
-            var uncertainty = this.$el.find('.uncertainty');
-
-            data['moverTypes'] = {
-                'constant-wind': this.getFormDataForDiv(constant),
-                'variable-wind': this.getFormDataForDiv(variable)
-            };
-
-            data['uncertainty'] = this.getFormDataForDiv(uncertainty);
-            data['dataSource'] = this.getFormDataForDiv(dataSource);
-            data['defaultWindDate'] = moment(this.$el.find('.datetime').val());
-
-            return data;
-        },
-
-        /*
-         Get the values of all form fields in an object that will be passed
-         directly to a model object to be saved to the server.
-         */
-        getFormData: function() {
-            var data = this.getBaseFormData();
-            var moverTypeDiv = this.getMoverTypeDiv();
-            var divData = this.getFormDataForDiv(moverTypeDiv);
-
-            var uncertainty = this.$el.find('.uncertainty');
-            var uncertaintyData = this.getFormDataForDiv(uncertainty);
-            data = $.extend(data, divData, uncertaintyData);
-
-            var dataSource = this.$el.find('.data-source');
-            var dataSourceData = this.getFormDataForDiv(dataSource);
-            data = $.extend(data, divData, dataSourceData);
-
-            var activeRange = this.$el.find('.active_range');
-            var activeRangeData = this.getFormDataForDiv(activeRange);
-            data = $.extend(data, divData, activeRangeData);
-
-            return data;
-        },
-
-        /*
-         Set all fields for which a value exists in the object created by
-         `getformDefaults`, in `self.defaults`.
+         Set all fields for which a default value exists.
          */
         setFormDefaults: function() {
-            var _this = this;
-            var data = this.defaults;
+            this.setDateFields('.datetime_container',
+                moment(this.defaultTimeseriesValue.datetime));
 
-            this.$el.find('#name').val(data.name);
-            this.$el.find('#on').prop('checked', data.on);
-            this.$el.find('#units').val(data.units);
-            this.setDateFields(
-                this.$el.find('.datetime-container'), data['defaultWindDate']);
-
-            _.each(data['moverTypes'], function(moverData, typeName) {
-                var form = _this.getAddForm(typeName);
-
-                if (!form.length) {
-                    return;
-                }
-
-                _this.setForm(form, moverData);
-            });
-
-            this.setForm(this.$el.find('.uncertainty'), data['uncertainty']);
-            this.setForm(this.$el.find('.data-source'), data['dataSource']);
+            this.$el.find('input[name="speed"]').val(
+                this.defaultTimeseriesValue.speed);
+            this.$el.find('input[name="direction"]').val(
+                this.defaultTimeseriesValue.direction);
 
             this.clearErrors();
         },
@@ -1264,20 +1204,9 @@ define([
          */
         setInputsFromModel: function() {
             var wind = this.model.get('wind');
-
-            this.setModelInput('name');
-            this.setModelInput('on');
-            this.setModelInput('source', wind);
-            this.setModelInput('source_type', wind);
-            this.setModelInput('description', wind);
-            this.setModelInput('units', wind);
-            this.setModelInput('latitude', wind);
-            this.setModelInput('longitude', wind);
-
-            this.setDateFields(this.$el.find('.active_start_container'),
-                               this.model.get('active_start'));
-            this.setDateFields(this.$el.find('.active_stop_container'),
-                               this.model.get('active_stop'));
+            this.setDateFields('.active_start_container', this.model.get('active_start'));
+            this.setDateFields('.active_stop_container', this.model.get('active_stop'));
+            this.setDateFields('.updated_at_container', wind.get('updated_at'));
 
             var moverType = this.$el.find('.type');
             var timeseries = wind.get('timeseries');
@@ -1290,12 +1219,9 @@ define([
             }
 
             this.typeChanged();
-            this.sourceTypeChanged();
-
-            var constantAddForm = this.getAddForm('constant-wind');
 
             if (firstTimeValue) {
-                this.setForm(constantAddForm, firstTimeValue);
+                this.setForm(this.getAddForm('constant-wind'), firstTimeValue);
             }
         },
 
@@ -1303,12 +1229,6 @@ define([
          Prepare this form for display.
          */
         prepareForm: function() {
-            if (this.model === undefined) {
-                window.alert('That mover was not found. Please refresh the page.');
-                console.log('Mover undefined.');
-                return;
-            }
-
             this.renderTimeTable();
             this.setFormDefaults();
 
@@ -1322,9 +1242,8 @@ define([
         handleFieldError: function(error) {
             if (error.name.indexOf('wind.') === 0) {
                 var parts = error.name.split('.');
-                var fieldName = parts[3];
-                var form = this.getAddForm();
-                var field = form.find('#' + fieldName);
+                var fieldName = parts[1];
+                var field = this.$el.find('*[name="' + fieldName + '"]').not('.hidden');
 
                 this.showErrorForField(field, error);
                 return;
@@ -1396,7 +1315,7 @@ define([
          method is called, so we need to reapply them.
          */
         show: function() {
-            this.model = new models.WindMover();
+            this.model = new models.WindMover(this.defaults);
             this.setupModelEvents();
             this.model.on('sync', this.closeDialog);
             AddWindMoverFormView.__super__.show.apply(this);
@@ -1428,7 +1347,7 @@ define([
             'change input[name="name"]': 'spillNameChanged'
         },
 
-        setForm: function(form, data) {
+        prepareForm: function(form, data) {
             if (_.has(data, 'windage_range')) {
                 data['windage_min'] = data['windage_range'][0];
                 data['windage_max'] = data['windage_range'][1];
@@ -1441,7 +1360,7 @@ define([
                 data['start_position_z'] = pos[2];
             }
 
-            SurfaceReleaseSpillFormView.__super__.setForm.apply(this, arguments);
+            SurfaceReleaseSpillFormView.__super__.prepareForm.apply(this, arguments);
 
             var timeContainer = form.find('.release_time_container');
             var releaseTime = this.getFormDate(timeContainer);
@@ -1545,6 +1464,11 @@ define([
             ModelSettingsFormView.__super__.initialize.apply(this, [opts]);
         },
 
+        // Always return the same model
+        getModel: function(id) {
+            return this.model;
+        },
+
         submit: function() {
             var data = this.getFormData();
             data['start_time'] = this.getFormDate(this.getForm());
@@ -1553,8 +1477,7 @@ define([
 
         show: function() {
             ModelSettingsFormView.__super__.show.apply(this, arguments);
-            this.setDateFields(
-                this.$el.find('.start_time_container'), this.getFormDate(this.$el));
+            this.setDateFields('.start_time_container', moment(this.model.get('start_time')));
         }
     });
 
@@ -1634,7 +1557,8 @@ define([
         SurfaceReleaseSpillFormView: SurfaceReleaseSpillFormView,
         FormView: FormView,
         FormViewContainer: FormViewContainer,
-        ModelSettingsFormView: ModelSettingsFormView
+        ModelSettingsFormView: ModelSettingsFormView,
+        ModelNotFoundException: ModelNotFoundException
     };
 
 });

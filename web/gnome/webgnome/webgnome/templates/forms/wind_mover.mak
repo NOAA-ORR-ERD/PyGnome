@@ -1,28 +1,27 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="mover, default_wind, default_wind_value, form_id"/>
+<%page args="default_wind, form_id, mover=None"/>
 
 <div class="wind form page hide" id="${form_id}">
     <form action="" class="form-horizontal" method="POST">
-        <div class="wind-mover-header form-inline">
-            <label>Name</label> ${h.text('name', mover.name)}
+        <div class="wind-mover-header clearfix">
+            ${defs.form_control(h.text('name', data_value='mover.name'),
+                                label='Name', inline=True)}
             <%
-                from webgnome.util import velocity_unit_options
-                units = mover.wind.units if mover.wind else default_wind.units
+                from webgnome.util import velocity_unit_values
+                velocity_unit_options = [(value, value) for value in velocity_unit_values]
             %>
-            <label>Type</label> ${h.select('type', 'constant', (
-                                           ('constant-wind', 'Constant'),
-                                           ('variable-wind', 'Variable')),
-                                           class_='type input-small')}
-            <label>Units</label> ${h.select('units', units, velocity_unit_options, class_='units input-small')}
-            <label class="checkbox">${h.checkbox('on', checked=mover.on)}
-               On
-            </label>
+            ${defs.form_control(h.select('type', 'constant', (
+                                        ('constant-wind', 'Constant'),
+                                        ('variable-wind', 'Variable')),
+                                        class_='type input-small', data_value='mover:type'),
+                                label='Type', inline=True)}
+            ${defs.form_control(h.select('units', None, velocity_unit_options,
+                                         class_='units input-small', data_value='wind.units'),
+                                label='Units', inline=True)}
+            ${defs.form_control(h.checkbox('on', data_checked='mover.on'),
+                                label_class='checkbox', label='On', inline=True)}
         </div>
     <div class="page-body">
-        <%
-            winds = mover.wind.timeseries if mover.wind else []
-        %>
-
         <ul class="nav nav-tabs">
             <li class="active wind-data-link"><a href="#${form_id}_wind" data-toggle="tab">Wind Data</a></li>
             <li class="data-source-link"><a href="#${form_id}_data_source" data-toggle="tab">Data Source</a></li>
@@ -34,12 +33,13 @@
             <div class="tab-pane active wind" id="${form_id}_wind">
                 <div class="constant-wind">
                     <div class="span3 add-time-forms">
-                        <%
-                            wind = winds[0] if winds else default_wind_value
-                        %>
                         <div class='time-form add-time-form'>
-                        <%include file="wind_form.mak" args="wind=wind"/>
+                        <%include file="timeseries_value.mak"/>
                         </div>
+                    </div>
+
+                    <div class="span2">
+                        <div id="${form_id}_compass_add_constant" class="compass"></div>
                     </div>
                 </div>
 
@@ -50,7 +50,7 @@
                                 auto_increment_by = h.text('auto_increment_by', 6,
                                                         class_='auto_increment_by')
                             %>
-                            <%include file="wind_form.mak" args="wind=default_wind_value, is_variable=True"/>
+                            <%include file="timeseries_value.mak", args="is_variable=True, compass_link=True"/>
                             ${defs.form_control(auto_increment_by, "hours", label="Auto-increment By")}
 
                             <div class="control-group add-time-buttons">
@@ -97,14 +97,15 @@
             <div class="tab-pane data-source" id="${form_id}_data_source">
                 <div class="span4">
                     <% from webgnome.model_manager import WebWind %>
-                    ${defs.form_control(h.select('source_type', mover.wind.source_type,
+                    ${defs.form_control(h.select('source_type', default_wind.source_type,
                                                  WebWind.source_types, label='Source Type',
-                                                 class_='input-medium'),
+                                                 class_='input-medium', data_value='wind.source_type'),
                                         label="Data Source")}
-                    ${defs.form_control(h.text('source', class_='input-small'), label='Source ID')}
-                     ${defs.form_control(h.text('latitude', class_='input-small'), label='Latitude')}
-                    ${defs.form_control(h.text('longitude', class_='input-small'), label='Longitude')}
-                    ${defs.form_control(h.textarea('description', class_='input-medium'), label='Description')}
+                    ${defs.form_control(h.text('source', class_='input-small', data_value='wind.source'), label='Source ID')}
+                     ${defs.form_control(h.text('latitude', class_='input-small', data_value='wind.latitude'), label='Latitude')}
+                    ${defs.form_control(h.text('longitude', class_='input-small', data_value='wind.longitude'), label='Longitude')}
+                    ${defs.datetime_control('updated_at', date_label="Last Updated")}
+                    ${defs.form_control(h.textarea('description', class_='input-medium', data_value='wind.description'), label='Description')}
                     <div class='control-group'>
                         <div class="controls">
                             <button class="btn query-source">Get Latest</button>
@@ -119,13 +120,13 @@
 
             <div class="tab-pane uncertainty" id="${form_id}_uncertainty">
                 <%
-                    uncertain_time_delay = h.text('uncertain_time_delay', mover.uncertain_time_delay)
-                    uncertain_duration = h.text('uncertain_duration', mover.uncertain_duration)
-                    uncertain_speed_scale = h.text('uncertain_speed_scale', mover.uncertain_speed_scale)
-                    uncertain_angle_scale = h.text('uncertain_angle_scale', mover.uncertain_angle_scale)
-                    uncertain_angle_scale_units = h.select('uncertain_angle_scale_units',
-                                                            mover.uncertain_angle_scale_units,
-                                                            (('rad', 'Radians'), ('deg', 'Degrees')))
+                    uncertain_time_delay = h.text('uncertain_time_delay', data_value='mover.uncertain_time_delay')
+                    uncertain_duration = h.text('uncertain_duration', data_value='mover.uncertain_duration')
+                    uncertain_speed_scale = h.text('uncertain_speed_scale', data_value='mover.uncertain_speed_scale')
+                    uncertain_angle_scale = h.text('uncertain_angle_scale', data_value='mover.uncertain_angle_scale')
+                    uncertain_angle_scale_units = h.select('uncertain_angle_scale_units', 'rad',
+                                                            (('rad', 'Radians'), ('deg', 'Degrees')),
+                                                            data_value='mover.uncertain_angle_scale_units')
                 %>
 
                 ${defs.form_control(uncertain_time_delay, "hours", label="Time Delay")}
@@ -135,8 +136,8 @@
                 ${defs.form_control(uncertain_angle_scale_units, label="Angle Scale Units")}
             </div>
             <div class="tab-pane active-range" id="${form_id}_active_range">
-                ${defs.datetime_control(mover.active_start, 'active_start', date_label="Active Start")}
-                ${defs.datetime_control(mover.active_stop, 'active_stop', date_label="Active Stop")}
+                ${defs.datetime_control('active_start', date_label="Active Start")}
+                ${defs.datetime_control('active_stop', date_label="Active Stop")}
             </div>
         </div>
     </div>
