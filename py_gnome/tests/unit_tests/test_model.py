@@ -344,6 +344,9 @@ def test_all_movers(start_time, release_delay, duration):
     model.movers += gnome.movers.WindMover(weather.Wind(timeseries=series, units='meter per second'))
     assert len(model.movers) == 3
     
+    # add CATS mover
+    model.movers += movers.CatsMover(r"SampleData/long_island_sound/tidesWAC.CUR")
+    
     # run the model all the way...
     num_steps_output = 0
     for step in model:
