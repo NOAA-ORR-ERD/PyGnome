@@ -1,6 +1,7 @@
 """
 util.py: Utility function for the webgnome package.
 """
+import colander
 import datetime
 import inspect
 import json
@@ -51,6 +52,8 @@ def json_encoder(obj):
 
     if date_str:
         return date_str
+    elif obj is colander.null:
+        return None
     else:
         return str(obj)
 
@@ -106,6 +109,9 @@ class SchemaForm(object):
         else:
             raise AttributeError(name)
 
+    def __get__(self, name):
+        return self._fields[name]
+
     def get_default_field_value(self, field):
         value = field.default
 
@@ -135,8 +141,6 @@ class SchemaForm(object):
 
         Otherwise, or if the value was not found on ``target``, use the field's
         default value if provided, falling back to None.
-
-        If the
         """
         if isinstance(target, dict):
             value = target.get(field.name, None)
@@ -434,6 +438,3 @@ def mkdir_p(path):
 
 velocity_unit_values = list(chain.from_iterable(
     [item[1] for item in ConvertDataUnits['Velocity'].values()]))
-
-velocity_unit_options = [(values[1][0], values[1][0]) for label, values in
-                         ConvertDataUnits['Velocity'].items()]

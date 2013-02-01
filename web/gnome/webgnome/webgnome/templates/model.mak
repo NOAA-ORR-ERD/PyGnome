@@ -115,26 +115,18 @@
         <%include file="forms/add_mover.mak"/>
         <%include file="forms/add_spill.mak"/>
         <%include file="forms/add_map.mak"/>
-        <%include file="forms/map.mak" args="map=_map"/>
-        <%include file="forms/model_settings.mak" args="model=model"/>
+        <%include file="forms/map.mak"/>
+        <%include file="forms/model_settings.mak"/>
 
         ## Mover forms
-        <%include file="forms/wind_mover.mak"
-            args="mover=default_wind_mover, default_wind=default_wind,
-                  default_wind_value=default_wind_value, form_id='add_wind_mover'"/>
-        <%include file="forms/wind_mover.mak"
-            args="mover=default_wind_mover, default_wind=default_wind,
-                  default_wind_value=default_wind_value, form_id='edit_wind_mover'"/>
-         <%include file="forms/random_mover.mak"
-            args="mover=default_random_mover, form_id='add_random_mover'"/>
-         <%include file="forms/random_mover.mak"
-            args="mover=default_random_mover, form_id='edit_random_mover'"/>
+        <%include file="forms/wind_mover.mak" args="form_id='add_wind_mover'"/>
+        <%include file="forms/wind_mover.mak" args="form_id='edit_wind_mover'"/>
+        <%include file="forms/random_mover.mak" args="form_id='add_random_mover'"/>
+        <%include file="forms/random_mover.mak" args="form_id='edit_random_mover'"/>
 
         ## Spill forms
-        <%include file="forms/surface_release_spill.mak"
-            args="spill=default_surface_release_spill, form_id='add_surface_release_spill'"/>
-        <%include file="forms/surface_release_spill.mak"
-            args="spill=default_surface_release_spill, form_id='edit_surface_release_spill'"/>
+        <%include file="forms/surface_release_spill.mak" args="form_id='add_surface_release_spill'"/>
+        <%include file="forms/surface_release_spill.mak", args="form_id='edit_surface_release_spill'"/>
     </div>
 </%block>
 
@@ -147,11 +139,34 @@
             'lib/underscore',
             'app_view',
             'util',
+            'lib/rivets',
             'lib/jquery.imagesloaded.min',
-        ], function($, _, app_view, util) {
+        ], function($, _, app_view, util, rivets) {
             "use strict";
 
-            // Use Django-style templates.
+            // Configure a Rivets adapter to work with Backbone
+            // per http://rivetsjs.com/
+            rivets.configure({
+                adapter: {
+                    subscribe: function(obj, keypath, callback) {
+                        callback.wrapped = function(m, v) {
+                            callback(v)
+                        };
+                        obj.on('change:' + keypath, callback.wrapped);
+                    },
+                    unsubscribe: function(obj, keypath, callback) {
+                        obj.off('change:' + keypath, callback.wrapped);
+                    },
+                    read: function(obj, keypath) {
+                        return obj.get(keypath);
+                    },
+                    publish: function(obj, keypath, value) {
+                        obj.set(keypath, value);
+                    }
+                }
+            });
+
+            // Use Django-style templates with Underscore.
             _.templateSettings = {
                 interpolate: /\{\{(.+?)\}\}/g
             };
@@ -163,11 +178,17 @@
                     backgroundImageUrl: "${background_image_url | n}",
                     currentTimeStep: ${current_time_step},
                     surfaceReleaseSpills: ${surface_release_spills | n},
+                    defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
                     windMovers: ${wind_movers | n},
+                    defaultWindMover: ${default_wind_mover | n},
+                    defaultWindTimeseriesValue: ${default_timeseries_value | n},
                     randomMovers: ${random_movers | n},
+                    defaultRandomMover: ${default_random_mover | n},
                     modelId: "${model_id}",
                     modelSettings: ${model_settings | n},
                     map: ${map_data | n},
+                    // No default map data yet, so use the current map data
+                    defaultMap: ${map_data | n},
                     mapIsLoaded: ${"true" if map_is_loaded else "false"},
                     animationThreshold: 10 // Milliseconds
                 });

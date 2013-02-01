@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import gnome
 import gnome.basic_types
@@ -16,6 +17,10 @@ from webgnome.model_manager import (
     WebWindMover,
     WebWind
 )
+
+
+def _default_schema(schema):
+    return json.dumps(schema().bind().serialize(), default=util.json_encoder)
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -42,13 +47,13 @@ def show_model(request):
     wind_movers = model_data.pop('wind_movers')
     random_movers = model_data.pop('random_movers')
     model_settings = util.SchemaForm(schema.ModelSettingsSchema, model_data)
-    map_data = model.map.to_dict() if model.map else None
+    map_data = model_data['map']
     map_settings = util.SchemaForm(schema.MapSchema, map_data)
-    default_wind_mover = util.SchemaForm(schema.WindMoverSchema)
-    default_wind = util.SchemaForm(schema.WindSchema)
-    default_wind_value = util.SchemaForm(schema.WindValueSchema)
-    default_random_mover = util.SchemaForm(schema.RandomMoverSchema)
-    default_surface_release_spill = util.SchemaForm(schema.SurfaceReleaseSpillSchema)
+    default_wind_mover = _default_schema(schema.WindMoverSchema)
+    default_timeseries_value = _default_schema(schema.TimeseriesValueSchema)
+    default_random_mover = _default_schema(schema.RandomMoverSchema)
+    default_surface_release_spill = _default_schema(
+        schema.SurfaceReleaseSpillSchema)
 
     data = {
         'model': model_settings,
@@ -61,8 +66,7 @@ def show_model(request):
         # Default values for forms that use them.
         'default_wind_mover': default_wind_mover,
         'default_surface_release_spill': default_surface_release_spill,
-        'default_wind': default_wind,
-        'default_wind_value': default_wind_value,
+        'default_timeseries_value': default_timeseries_value,
         'default_random_mover': default_random_mover,
 
         # JSON data to bootstrap the JS application.

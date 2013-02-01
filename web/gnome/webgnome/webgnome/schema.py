@@ -126,7 +126,7 @@ class LocalDateTime(DateTime):
         return self.strip_timezone(dt)
 
 
-class WindValueSchema(MappingSchema):
+class TimeseriesValueSchema(MappingSchema):
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
                           validator=convertable_to_seconds)
     speed = SchemaNode(Float(), default=0, validator=zero_or_greater)
@@ -161,7 +161,7 @@ class DatetimeValue2dArraySchema(SequenceSchema):
 
 
 class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
-    value = WindValueSchema()
+    value = TimeseriesValueSchema()
 
 
 class WindSchema(MappingSchema):
@@ -175,6 +175,7 @@ class WindSchema(MappingSchema):
                        default='m/s')
     latitude = SchemaNode(Float(), default=None, missing=None)
     longitude = SchemaNode(Float(), default=None, missing=None)
+    updated_at = SchemaNode(LocalDateTime(), default=None, missing=None, )
 
 
 class BaseMoverSchema(MappingSchema):
@@ -222,7 +223,7 @@ class SurfaceReleaseSpillSchema(MappingSchema):
                               validator=convertable_to_seconds)
     start_position = PositionSchema(default=(0, 0, 0))
     windage_range = WindageRangeSchema(default=(0.01, 0.04))
-    windage_persist = SchemaNode(Float(), default=900)
+    windage_persist = SchemaNode(Float(), default=900, missing=900)
     is_active = SchemaNode(Bool(), default=True)
 
 

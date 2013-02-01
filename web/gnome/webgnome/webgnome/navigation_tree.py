@@ -32,7 +32,7 @@ class NavigationTree(object):
         """
         children = []
         for node in nodes:
-            node_id = node['id'] if 'id' in node else None
+            node_id = node.pop('id') if 'id' in node else None
 
             item = {
                 'form_id': form_id,
@@ -97,7 +97,7 @@ class NavigationTree(object):
         })
 
         settings['children'].extend(self._render_children(
-            [dict(name=self._get_value_title(key, value))
+            [dict(name=self._get_value_title(key, value), id=self.model.id)
              for key, value in data.items()], form_id='model_settings'))
 
         return [settings, movers, spills]
