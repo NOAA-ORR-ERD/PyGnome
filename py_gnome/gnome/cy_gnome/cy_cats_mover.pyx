@@ -29,7 +29,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
         del self.mover  # since this is allocated in this class, free memory here as well
         self.cats = NULL
     
-    def __init__(self, scale_type=0, scale_value=1, diffusion_coefficient=1):
+    def __init__(self, scale_type=0, scale_value=1, diffusion_coefficient=0):
         cdef WorldPoint p
         self.cats.scaleType = scale_type
         self.cats.scaleValue = scale_value
