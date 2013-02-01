@@ -11,6 +11,7 @@ This is the "magic" class -- it handles the smart allocation of arrays, etc.
 
 """
 import datetime
+import copy
 
 import numpy as np
 
@@ -178,27 +179,104 @@ class SpillContainer(object):
 
         
 
+class UncertainSpillContainerPair(object):
+    """
+    Container holds two Spill
+    """
+    
+    def __init__(self, uncertain=False):
+        """
+        
+        """
+        self.spill_container  = SpillContainer()
+        if uncertain:
+            self._uncertain = uncertain
+            self.u_spill_container = SpillContainer(uncertain=True)
+            
+    
+    def reset(self):
+        """
+        reset spill_collections
+        """
+        self.spill_container.reset()
+        self.u_spill_container.reset()
+    
+    @property
+    def uncertain(self):
+        return self._uncertain
+    
+    @uncertain.setter
+    def uncertain(self, value):
+        if type(value) is not bool:
+            raise TypeError("uncertain property must be a bool (True/False)")
+        if self._uncertain == True and value == False:
+            del self.u_spill_container
+            self.reset()    # Not sure if we want to do this?
+        elif self._uncertain == False and value == True:
+            self.u_spill_container = copy.deepcopy(self.spill_container)
+            self.reset()
+            
+        self._uncertain = value
+        
+    def add(self, spill):
+        self.spill_container.spills += spill
+        if self.uncertain:
+            # todo: make sure spill_num for copied spill are the same as original
+            self.u_spill_container.spills += copy.deepcopy(spill)
+    
+    def remove(self, ident):
+        del self.spill_container.spills[ident]
+    
+    def replace(self, ident, new_spill):
+        self.spill_container.spills[ident] = new_spill
+        if self.uncertain:
+            idx  = self.spill_container.index(ident)
+            u_obj= [s for s in self.u_spill_container][idx]
+            self.u_spill_container.spills[u_obj.id] = copy.deepcopy(new_spill)
+    
+    def __getitem__(self, ident):
+        spill = [self.spill_container.spills[ident]]
+        if self.uncertain:
+            idx = self.spill_container.index(ident)
+            spill.append( [s for s in self.u_spill_container][idx])
+            
+        return tuple(spill)
+    
+    def __setitem__(self, ident, new_spill):
+        self.replace(ident, new_spill)
+    
+    def __delitem__(self, ident):
+        self.remove(ident)
+    
+    def __iadd__(self, rop):
+        self.add(rop)
+        return self
+    
+    def items(self):
+        return (self.spill_container, self.u_spill_container)
+    
+    
 class TestSpillContainer(SpillContainer):
-    """
-    A really simple spill container, pre-initialized with LEs at a point.
+   """
+   A really simple spill container, pre-initialized with LEs at a point.
 
-    This make sit easy to use for tesing other classes -- movers, maps, etc.
-    """
-    def __init__(self,
-                 num_elements=0,
-                 start_pos=(0.0,0.0,0.0),
-                 release_time=datetime.datetime(2000,1,1,1),
-                 uncertain=False):
-        """
-        initilize a simple spill container (instantaneous point release)
-        """
-        SpillContainer.__init__(self, uncertain=uncertain)
+   This make sit easy to use for tesing other classes -- movers, maps, etc.
+   """
+   def __init__(self,
+                num_elements=0,
+                start_pos=(0.0,0.0,0.0),
+                release_time=datetime.datetime(2000,1,1,1),
+                uncertain=False):
+       """
+       initilize a simple spill container (instantaneous point release)
+       """
+       SpillContainer.__init__(self, uncertain=uncertain)
 
-        spill = gnome.spill.SurfaceReleaseSpill(num_elements,
-                                                start_pos,    
-                                                release_time)
-        self.spills.add(spill)
-        self.release_elements(release_time)
+       spill = gnome.spill.SurfaceReleaseSpill(num_elements,
+                                               start_pos,    
+                                               release_time)
+       self.spills.add(spill)
+       self.release_elements(release_time)
 
 
 
