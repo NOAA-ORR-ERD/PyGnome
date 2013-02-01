@@ -163,9 +163,22 @@ define([
             // Override
         },
 
+        bindData: function() {
+            if (this.rivets) {
+                this.rivets.unbind();
+            }
+
+            var bindings = this.getDataBindings();
+
+            if (bindings) {
+                this.rivets = rivets.bind(this.$el, bindings);
+            }
+        },
+
         show: function() {
             this.prepareForm();
             this.clearErrors();
+            this.bindData();
             $('#main-content').addClass('hidden');
             this.$el.removeClass('hidden');
         },
@@ -218,6 +231,8 @@ define([
         },
 
         getDateFields: function(target) {
+            target = $(target);
+
             if (target.length === 0) {
                 return;
             }
@@ -283,7 +298,7 @@ define([
         },
 
         clearForm: function() {
-            var inputs = this.$el.find('select,input');
+            var inputs = this.$el.find('select,input,textarea');
 
             if (!inputs.length) {
                 return;
@@ -295,13 +310,12 @@ define([
         },
 
         setupModelEvents: function() {
-            this.model.on('error', this.handleServerError);
+            this.model.unbind('error');
+            this.model.bind('error', this.handleServerError);
+        },
 
-            if (this.rivets) {
-               rivets.unbind();
-            }
-
-            this.rivets = rivets.bind(this.$el, {model: this.model});
+        getDataBindings: function() {
+            return {model: this.model};
         },
 
         getModel: function(id) {
@@ -401,12 +415,14 @@ define([
             JQueryUIModalFormView.__super__.submit.apply(this, arguments);
         },
 
-        reload: function() {
-            JQueryUIModalFormView.__super__.reload.apply(this, arguments);
-
+        setupModelEvents: function() {
             if (this.model) {
                 this.model.on('sync', this.closeDialog);
             }
+            if (this.collection) {
+                this.collection.on('sync', this.closeDialog);
+            }
+            JQueryUIModalFormView.__super__.setupModelEvents.apply(this, arguments);
         },
 
         /*
@@ -418,6 +434,7 @@ define([
             this.prepareForm();
             this.$el.dialog('open');
             this.$el.removeClass('hide');
+            this.bindData();
         },
 
         hide: function() {
@@ -425,7 +442,6 @@ define([
         },
 
         close: function() {
-            this.clearForm();
             this.closeDialog();
             this.resetModel();
         },
@@ -607,20 +623,11 @@ define([
             'change select[name="source_type"]': 'sourceTypeChanged'
         },
 
-        setupModelEvents: function() {
-            var wind = this.model.get('wind');
-
-            this.model.off('error');
-            this.model.on('error', this.handleServerError);
-
-            if (this.rivets) {
-                this.rivets.unbind();
-            }
-
-            this.rivets = rivets.bind(this.$el, {
+        getDataBindings: function() {
+            return {
                 mover: this.model,
-                wind: wind
-            });
+                wind: this.model.get('wind')
+            };
         },
 
 
@@ -856,12 +863,6 @@ define([
             });
 
             return valuesWithErrors;
-        },
-
-        clearInputs: function(form) {
-            $(form).find(':input').each(function() {
-                $(this).val('').prop('checked', false);
-            });
         },
 
         renderTimeTable: function() {
@@ -1337,84 +1338,28 @@ define([
 
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
-            this.surfaceReleaseSpills = options.surfaceReleaseSpills;
-            this.defaults = this.getFormData();
         },
 
-        events: {
-            'click .edit-spill-name': 'editSpillNameClicked',
-            'click .save-spill-name': 'saveSpillNameButtonClicked',
-            'change input[name="name"]': 'spillNameChanged'
+        getDataBindings: function() {
+            return {spill: this.model};
         },
 
         prepareForm: function(form, data) {
-            if (_.has(data, 'windage_range')) {
-                data['windage_min'] = data['windage_range'][0];
-                data['windage_max'] = data['windage_range'][1];
-            }
-
-            if (_.has(data, 'start_position')) {
-                var pos = data['start_position'];
-                data['start_position_x'] = pos[0];
-                data['start_position_y'] = pos[1];
-                data['start_position_z'] = pos[2];
-            }
-
+            this.setDateFields('.release_time_container', this.model.get('release_time'));
             SurfaceReleaseSpillFormView.__super__.prepareForm.apply(this, arguments);
-
-            var timeContainer = form.find('.release_time_container');
-            var releaseTime = this.getFormDate(timeContainer);
-            this.setDateFields(timeContainer, releaseTime);
         },
 
         show: function(coords) {
             if (coords) {
-                var coordInputs = this.$el.find('.coordinate');
-                $(coordInputs[0]).val(coords[0]);
-                $(coordInputs[1]).val(coords[1]);
+                this.model.set('start_position', [coords[0], coords[1]]);
             }
 
             SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
         },
 
-        editSpillNameClicked: function(event) {
-            event.preventDefault();
-            var link = $(event.target);
-            var form = link.closest('.form');
-            form.find('.top-form').removeClass('hidden');
-            form.find('.page-header h3').addClass('hidden');
-        },
-
-        saveSpillNameButtonClicked: function(event) {
-            event.preventDefault();
-            var link = $(event.target);
-            var form = link.closest('.form');
-            form.find('.top-form').addClass('hidden');
-            form.find('.page-header h3').removeClass('hidden');
-        },
-
-        spillNameChanged: function(event) {
-            var input = $(event.target);
-            var form = input.closest('.form');
-            var header = form.find('.page-header').find('a');
-            header.text(input.val());
-        },
-
         submit: function() {
-            var data = this.getFormData();
-
-            data['release_time'] = this.getFormDate(this.getForm());
-            data['is_active'] = data['is_active'];
-            data['windage_range'] = [
-                data['windage_min'], data['windage_max']
-            ];
-            data['start_position'] = [
-                data['start_position_x'], data['start_position_y'],
-                data['start_position_z']
-            ];
-
-            this.collection.add(this.model);
-            this.model.save(data);
+            this.model.set('release_time', this.getFormDate(this.getForm()));
+            this.model.save();
         },
 
         cancel: function() {
@@ -1440,14 +1385,14 @@ define([
         },
 
         show: function(coords) {
-            this.model = new models.SurfaceReleaseSpill();
+            this.model = new models.SurfaceReleaseSpill(this.defaults);
             this.setupModelEvents();
             AddSurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
+        },
 
-            if (coords) {
-                this.$el.find('#start_position_x').val(coords[0]);
-                this.$el.find('#start_position_y').val(coords[1]);
-            }
+        submit: function() {
+            this.collection.add(this.model);
+            AddSurfaceReleaseSpillFormView.__super__.submit.apply(this, arguments);
         }
     });
 
@@ -1464,15 +1409,19 @@ define([
             ModelSettingsFormView.__super__.initialize.apply(this, [opts]);
         },
 
-        // Always return the same model
+        // Always return the same model.
         getModel: function(id) {
             return this.model;
         },
 
+        // Never reset the model.
+        resetModel: function() {
+            return;
+        },
+
         submit: function() {
-            var data = this.getFormData();
-            data['start_time'] = this.getFormDate(this.getForm());
-            this.model.save(data);
+            this.model.set('start_time', this.getFormDate(this.getForm()));
+            this.model.save();
         },
 
         show: function() {
@@ -1497,21 +1446,18 @@ define([
 
         show: function() {
             RandomMoverFormView.__super__.show.apply(this, arguments);
-            var isActiveStart = this.$el.find('.active_start_container');
-            var isActiveStop = this.$el.find('.active_stop_container');
-            this.setDateFields(isActiveStart, this.getFormDate(isActiveStart));
-            this.setDateFields(isActiveStop, this.getFormDate(isActiveStop));
+            this.setDateFields('.active_start_container', this.model.get('active_start'));
+            this.setDateFields('.active_stop_container', this.model.get('active_stop'));
         },
 
         submit: function() {
-            var data = this.getFormData();
-            var isActiveStart = this.$el.find('.active_start_container');
-            var isActiveStop = this.$el.find('.active_stop_container');
+            this.model.set('active_start',  this.getFormDate('.active_start_container'));
+            this.model.set('active_stop',  this.getFormDate('.active_stop_container'));
+            this.model.save();
+        },
 
-            data['active_start'] = this.getFormDate(isActiveStart);
-            data['active_stop'] = this.getFormDate(isActiveStop);
-
-            this.model.save(data);
+        getDataBindings: function() {
+            return {mover: this.model}
         }
     });
 
@@ -1530,16 +1476,14 @@ define([
         },
 
         show: function() {
-            this.model = new models.RandomMover();
+            this.model = new models.RandomMover(this.defaults);
             this.setupModelEvents();
-
             AddRandomMoverFormView.__super__.show.apply(this, arguments);
         },
 
         submit: function() {
-            var data = this.getFormData();
             this.collection.add(this.model);
-            this.model.save(data);
+            AddRandomMoverFormView.__super__.submit.call(this, arguments);
         }
     });
 

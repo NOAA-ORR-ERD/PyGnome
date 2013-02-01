@@ -1,5 +1,5 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="default_wind, form_id, mover=None"/>
+<%page args="form_id"/>
 
 <div class="wind form page hide" id="${form_id}">
     <form action="" class="form-horizontal" method="POST">
@@ -97,12 +97,12 @@
             <div class="tab-pane data-source" id="${form_id}_data_source">
                 <div class="span4">
                     <% from webgnome.model_manager import WebWind %>
-                    ${defs.form_control(h.select('source_type', default_wind.source_type,
+                    ${defs.form_control(h.select('source_type', 'manual',
                                                  WebWind.source_types, label='Source Type',
                                                  class_='input-medium', data_value='wind.source_type'),
                                         label="Data Source")}
                     ${defs.form_control(h.text('source', class_='input-small', data_value='wind.source'), label='Source ID')}
-                     ${defs.form_control(h.text('latitude', class_='input-small', data_value='wind.latitude'), label='Latitude')}
+                    ${defs.form_control(h.text('latitude', class_='input-small', data_value='wind.latitude'), label='Latitude')}
                     ${defs.form_control(h.text('longitude', class_='input-small', data_value='wind.longitude'), label='Longitude')}
                     ${defs.datetime_control('updated_at', date_label="Last Updated")}
                     ${defs.form_control(h.textarea('description', class_='input-medium', data_value='wind.description'), label='Description')}

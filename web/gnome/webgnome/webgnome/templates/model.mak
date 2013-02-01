@@ -121,16 +121,12 @@
         ## Mover forms
         <%include file="forms/wind_mover.mak" args="form_id='add_wind_mover'"/>
         <%include file="forms/wind_mover.mak" args="form_id='edit_wind_mover'"/>
-         <%include file="forms/random_mover.mak"
-            args="mover=default_random_mover, form_id='add_random_mover'"/>
-         <%include file="forms/random_mover.mak"
-            args="mover=default_random_mover, form_id='edit_random_mover'"/>
+        <%include file="forms/random_mover.mak" args="form_id='add_random_mover'"/>
+        <%include file="forms/random_mover.mak" args="form_id='edit_random_mover'"/>
 
         ## Spill forms
-        <%include file="forms/surface_release_spill.mak"
-            args="spill=default_surface_release_spill, form_id='add_surface_release_spill'"/>
-        <%include file="forms/surface_release_spill.mak"
-            args="spill=default_surface_release_spill, form_id='edit_surface_release_spill'"/>
+        <%include file="forms/surface_release_spill.mak" args="form_id='add_surface_release_spill'"/>
+        <%include file="forms/surface_release_spill.mak", args="form_id='edit_surface_release_spill'"/>
     </div>
 </%block>
 
@@ -166,7 +162,7 @@
                     },
                     publish: function(obj, keypath, value) {
                         obj.set(keypath, value);
-                }
+                    }
                 }
             });
 
@@ -182,13 +178,17 @@
                     backgroundImageUrl: "${background_image_url | n}",
                     currentTimeStep: ${current_time_step},
                     surfaceReleaseSpills: ${surface_release_spills | n},
+                    defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
                     windMovers: ${wind_movers | n},
                     defaultWindMover: ${default_wind_mover | n},
                     defaultWindTimeseriesValue: ${default_timeseries_value | n},
                     randomMovers: ${random_movers | n},
+                    defaultRandomMover: ${default_random_mover | n},
                     modelId: "${model_id}",
                     modelSettings: ${model_settings | n},
                     map: ${map_data | n},
+                    // No default map data yet, so use the current map data
+                    defaultMap: ${map_data | n},
                     mapIsLoaded: ${"true" if map_is_loaded else "false"},
                     animationThreshold: 10 // Milliseconds
                 });

@@ -52,9 +52,10 @@ define([
                 apiRoot: this.apiRoot,
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
-                surfaceReleaseSpills: this.surfaceReleaseSpills,
-                windMovers: this.windMovers,
-                map: this.map
+                map: this.map,
+                collections: [
+                    this.windMovers, this.randomMovers, this.surfaceReleaseSpills
+                ]
             });
 
             this.treeControlView = new views.TreeControlView({
@@ -252,7 +253,8 @@ define([
 
             this.editMapFormView = new forms.MapFormView({
                 id: 'edit_map',
-                model: this.map
+                model: this.map,
+                defaults: this.options.defaultMap
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
@@ -271,22 +273,26 @@ define([
 
             this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
                 id: 'add_random_mover',
-                collection: this.randomMovers
+                collection: this.randomMovers,
+                defaults: this.options.defaultRandomMover,
             });
 
             this.editRandomMoverFormView = new forms.RandomMoverFormView({
                 id: 'edit_random_mover',
-                collection: this.randomMovers
-            });           
+                collection: this.randomMovers,
+                defaults: this.options.defaultRandomMover,
+            });
 
             this.addSurfaceReleaseSpillFormView = new forms.AddSurfaceReleaseSpillFormView({
                 id: 'add_surface_release_spill',
-                collection: this.surfaceReleaseSpills
+                collection: this.surfaceReleaseSpills,
+                defaults: this.options.defaultSurfaceReleaseSpill,
             });
 
             this.editSurfaceReleaseSpillFormView = new forms.SurfaceReleaseSpillFormView({
                 id: 'edit_surface_release_spill',
-                collection: this.surfaceReleaseSpills
+                collection: this.surfaceReleaseSpills,
+                defaults: this.options.defaultSurfaceReleaseSpill
             });
 
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);

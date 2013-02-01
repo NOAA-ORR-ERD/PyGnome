@@ -335,7 +335,7 @@ define([
             this.rewind();
             this.reset();
             this.expectedTimeSteps = [];
-        },
+        }
     }, {
         // Class constants
         ZOOM_IN: 'zoom_in',
@@ -497,9 +497,25 @@ define([
     });
 
 
+    function arrayHelper(field_name, index) {
+        return function() {
+            var value = this.get(field_name);
+            if (value && value.length >= index) {
+                return value[index];
+            }
+        }
+    }
+
+
     // Spills
     var SurfaceReleaseSpill = BaseModel.extend({
-        dateFields: ['release_time']
+        dateFields: ['release_time'],
+
+        start_position_x: arrayHelper('start_position', 0),
+        start_position_y: arrayHelper('start_position', 1),
+        start_position_z: arrayHelper('start_position', 2),
+        windage_range_min: arrayHelper('windage_range', 0),
+        windage_range_max: arrayHelper('windage_range', 1)
     });
 
 
@@ -596,8 +612,12 @@ define([
     
     
     var RandomMoverCollection = BaseCollection.extend({
-        model: RandomMover
-    });   
+        model: RandomMover,
+
+        comparator: function(mover) {
+            return this.get('active_start');
+        }
+    });
 
 
     var Map = BaseModel.extend({

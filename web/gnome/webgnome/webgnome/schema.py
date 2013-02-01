@@ -223,7 +223,7 @@ class SurfaceReleaseSpillSchema(MappingSchema):
                               validator=convertable_to_seconds)
     start_position = PositionSchema(default=(0, 0, 0))
     windage_range = WindageRangeSchema(default=(0.01, 0.04))
-    windage_persist = SchemaNode(Float(), default=900)
+    windage_persist = SchemaNode(Float(), default=900, missing=900)
     is_active = SchemaNode(Bool(), default=True)
 
 

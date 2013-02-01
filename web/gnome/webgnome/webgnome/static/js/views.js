@@ -662,6 +662,7 @@ define([
      */
     var TreeView = Backbone.View.extend({
         initialize: function() {
+            var _this = this;
             _.bindAll(this);
             this.treeEl = this.options.treeEl;
             this.url = this.options.apiRoot + "/tree";
@@ -671,12 +672,12 @@ define([
             $.ui.dynatree.nodedatadefaults["icon"] = false;
             this.tree = this.setupDynatree();
 
-            this.options.windMovers.on('sync', this.reload);
-            this.options.windMovers.on('add', this.reload);
-            this.options.windMovers.on('destroy', this.reload);
-            this.options.surfaceReleaseSpills.on('sync', this.reload);
-            this.options.surfaceReleaseSpills.on('add', this.reload);
-            this.options.surfaceReleaseSpills.on('destroy', this.reload);
+            _.each(this.options.collections, function(collection) {
+                collection.on('sync', _this.reload);
+                collection.on('add', _this.reload);
+                collection.on('destroy', _this.reload);
+            });
+
             this.options.modelSettings.on('sync', this.reload);
             this.options.map.on('sync', this.reload);
         },

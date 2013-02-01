@@ -239,8 +239,10 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
         'release_time',
         'start_position',
         'windage_range',
+        'windage_persist',
         'name',
-        'num_elements'
+        'num_elements',
+        'is_active'
     ]
 
     @property
@@ -306,6 +308,8 @@ class WebModel(Model, BaseWebObject):
     """
     A subclass of :class:`gnome.model.Model` that provides webgnome-specific
     functionality.
+
+    TODO: Use Serializable mixin's to_dict and from_dict mechanism.
     """
     mover_keys = {
         WebWindMover: 'wind_movers',
@@ -409,14 +413,19 @@ class WebModel(Model, BaseWebObject):
         Return a dictionary representation of this model. Includes subtrees
         (lists of dictionaries) for any movers and spills configured.
         """
+        if self.map and hasattr(self.map, 'to_dict'):
+            _map = self.map.to_dict()
+        else:
+            _map = None
+
         data = {
             'is_uncertain': self.is_uncertain,
             'time_step': (self.time_step / 60.0) / 60.0,
             'start_time': self.start_time,
             'duration_days': 0,
             'duration_hours': 0,
-            'map': self.map.to_dict() if self.map else None,
-            'id': self.id
+            'id': self.id,
+            'map': _map
         }
 
         if self.duration.days:
