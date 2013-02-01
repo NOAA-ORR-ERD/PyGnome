@@ -284,9 +284,9 @@ class Model(GnomeObject):
             self.move_elements()
             self.step_is_done()
         self.current_time_step += 1        
-        self._spill_container.release_elements(self.model_time)
+        self._spill_container.release_elements(self.model_time,self.time_step)
         if self.is_uncertain:
-            self._uncertain_spill_container.release_elements(self.model_time)
+            self._uncertain_spill_container.release_elements(self.model_time,self.time_step)
         return True
 
     def __iter__(self):
