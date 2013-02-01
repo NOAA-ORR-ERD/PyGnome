@@ -189,8 +189,8 @@ class UncertainSpillContainerPair(object):
         
         """
         self.spill_container  = SpillContainer()
+        self._uncertain = uncertain
         if uncertain:
-            self._uncertain = uncertain
             self.u_spill_container = SpillContainer(uncertain=True)
             
     
@@ -230,15 +230,15 @@ class UncertainSpillContainerPair(object):
     def replace(self, ident, new_spill):
         self.spill_container.spills[ident] = new_spill
         if self.uncertain:
-            idx  = self.spill_container.index(ident)
-            u_obj= [s for s in self.u_spill_container][idx]
+            idx  = self.spill_container.spills.index(ident)
+            u_obj= [s for s in self.u_spill_container.spills][idx]
             self.u_spill_container.spills[u_obj.id] = copy.deepcopy(new_spill)
     
     def __getitem__(self, ident):
         spill = [self.spill_container.spills[ident]]
         if self.uncertain:
-            idx = self.spill_container.index(ident)
-            spill.append( [s for s in self.u_spill_container][idx])
+            idx = self.spill_container.spills.index(ident)
+            spill.append( [s for s in self.u_spill_container.spills][idx])
             
         return tuple(spill)
     
@@ -251,6 +251,10 @@ class UncertainSpillContainerPair(object):
     def __iadd__(self, rop):
         self.add(rop)
         return self
+    
+    def __iter__(self):
+        for sp in self.spill_container.spills:
+            yield self.__getitem__(sp.id)
     
     def items(self):
         return (self.spill_container, self.u_spill_container)
