@@ -408,7 +408,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	}
 #else
 	// code goes here, find a place to keep the year data
-	YHdl = (YEARDATAHDL)_NewHandle(0);
+	/*YHdl = (YEARDATAHDL)_NewHandle(0);
 	amtYearData = 0;
 	try
 	{
@@ -418,11 +418,11 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	catch (...)
 	{
 		TechError("TShioTimeValue::GetTimeValue()", "new double()", 0); return -1;
-	}
-	/*char msgStr[256];
+	}*/
+	//char msgStr[256];
 	GetYearDataDirectory(directoryPath);	// put full path together
-	sprintf(msgStr,"Path for year data = %s\n",directoryPath);
-	printNote(msgStr);
+	//sprintf(msgStr,"Path for year data = %s\n",directoryPath);
+	//printNote(msgStr);
 	yearData = ReadYearData(beginDate.year,directoryPath,errStr);	
 	if (errStr[0] != 0) printNote(errStr);
 	if(!yearData)  { TechError("TShioTimeValue::GetTimeValue()", "GetYearData()", 0); return -1; }
@@ -444,7 +444,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			XODE[i] = yearData->XODE[i];
 			VPU[i] = yearData->VPU[i];
 		}
-	}*/
+	}
 	//GetYearDataDirectory(directoryPath);	// put full path together	
 	//yearData = ReadYearData(beginDate.year,directoryPath,errStr);
 #endif
