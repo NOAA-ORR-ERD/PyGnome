@@ -144,7 +144,6 @@ def test_reset_array_types():
     sp1.reset() # make sure that we're reset from previous tests
 
     sp2 = FloatingSpill()
-    sp3 = Spill()
     sp4 = FloatingSpill()
     sp5 = Spill()
 

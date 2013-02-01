@@ -115,7 +115,6 @@ def test_variance1(start_loc, time_step):
     expected = 2.0 * (D * 1e-4) * num_steps * time_step # D converted to meters^s/s
 
     assert np.allclose(var, (expected, expected, 0.0), rtol= 0.1 )
-
        
 if __name__=="__main__":
     tw = TestRandomMover()

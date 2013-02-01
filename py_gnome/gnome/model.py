@@ -13,32 +13,40 @@ class Model(GnomeObject):
     PyGNOME Model Class
     
     """
-    def __init__(self):
+    def __init__(self,
+                 time_step=900, # 15 minutes in seconds
+                 start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
+                 duration=timedelta(days=1),
+                 map=gnome.map.GnomeMap(),
+                 output_map=None,
+                 uncertain=False,
+                 ):
         """ 
-        Initializes model attributes. 
+        Initializes model. 
 
         All this does is call reset() which initializes eveything to defaults
         """
-        self._uncertain = False # sets whether uncertainty is on or not.
-        self.output_map = None
-        self._map = None
-        self.winds = OrderedCollection(dtype=gnome.weather.Wind)  #list of wind objects
+        # making sure basic stuff is in place before properties are set
+        self.winds = OrderedCollection(dtype=gnome.weather.Wind)  
         self.movers = OrderedCollection(dtype=gnome.movers.Mover)
         self._spill_container = gnome.spill_container.SpillContainer()
         self._uncertain_spill_container = None
-        
-        self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
-        self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
-        self.time_step = timedelta(minutes=15).total_seconds()
 
-        self.rewind()
+        self._start_time = start_time # default to now, rounded to the nearest hour
+        self._duration = duration
+        self._map = map
+        self.output_map = output_map
+        self._uncertain = uncertain # sets whether uncertainty is on or not.
 
-    def reset(self):
+        self.time_step = time_step # this calls rewind() !
+
+    def reset(self, **kwargs):
         """
         Resets model to defaults -- Caution -- clears all movers, spills, etc.
-        
+
+        Takes same keyword arguments as __init__
         """
-        self.__init__()
+        self.__init__(**kwargs)
 
     def rewind(self):
         """
