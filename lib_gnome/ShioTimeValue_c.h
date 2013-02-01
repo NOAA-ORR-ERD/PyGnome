@@ -33,6 +33,7 @@
 	YEARDATAHDL yearDataHdl;
 } ShioYearInfo;
 */
+#define kMAXNUMSAVEDYEARS 30
 typedef struct
 {
 	Seconds time;

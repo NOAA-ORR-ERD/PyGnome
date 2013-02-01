@@ -66,6 +66,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
         self.cats.SetTimeDep(cy_shio.shio)
         self.cats.SetRefPosition(cy_shio.shio.GetRefWorldPoint(), 0)
         self.cats.bTimeFileActive = True
+        self.cats.scaleType = 1
         return True
         
     def set_ossm(self, CyOSSMTime ossm):
