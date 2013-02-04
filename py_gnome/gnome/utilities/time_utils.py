@@ -81,16 +81,16 @@ def round_time(dt=None, roundTo=60): # IGNORE:W0621
 
     :returns: either an array with rounded values or just a single value if only 1 value was input
 
-   Author: Thierry Husson 2012 - Use it as you want but don't blame me.
-   
-   found on : http://stackoverflow.com
-   """
-   if dt is None :
-       dt = datetime.datetime.now()
-   
-   dt = numpy.asarray(dt, dtype='datetime64[s]').reshape(-1)
+    Author: Thierry Husson 2012 - Use it as you want but don't blame me.
+    
+    found on : http://stackoverflow.com
+    """
+    if dt is None :
+        dt = datetime.datetime.now()
+    
+    dt = numpy.asarray(dt, dtype='datetime64[s]').reshape(-1)
 
-
+    
     for li in range(len(dt)):
         date = dt[li].astype(object)
         seconds = (date - date.min).seconds

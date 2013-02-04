@@ -162,79 +162,78 @@ class TestWind:
         # have been overloaded with, say, a uuid1() generator.
         #assert id(all_winds['wind']) == all_winds['wind'].id
         pass
-
-   def test_get_timeseries(self, all_winds):
-       """
-       Initialize from timeseries and test the get_time_value method 
-       """
-       # check get_time_value()
-       gtime_val = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction)
-       assert np.all(gtime_val['time'] == all_winds['rq'].time)
-       assert np.allclose(gtime_val['value'], all_winds['rq'].value, atol, rtol)
-       
-       
-   def test_get_timeseries_uv(self, all_winds):
-       """
-       Initialize from timeseries and test the get_time_value method 
-       """
-       gtime_val = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.wind_uv).view(dtype=np.recarray)
-       assert np.all(gtime_val.time == all_winds['uv'].time)
-       assert np.allclose(gtime_val.value, all_winds['uv'].value, atol, rtol)
-       
-   def test_get_timeseries_by_time(self, all_winds):
-       """
-       get time series, but this time provide it with the datetime values for which you want timeseries
-       """
-       gtime_val = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction, datetime=all_winds['rq'].time).view(dtype=np.recarray)
-       assert np.all(gtime_val.time == all_winds['rq'].time)
-       assert np.allclose(gtime_val.value, all_winds['rq'].value, atol, rtol)
-       
-   def test_get_timeseries_by_time_scalar(self, all_winds):
-      """
-      get single time value in the middle of the 0th and 1st index of the timeseries. 
-      Read the value (wind velocity) for this time.
-      
-      Output should be an interpolated value between the values of the 0th and 1st index of timeseries.
-      """
-      dt = all_winds['rq'].time[0].astype(object) + (all_winds['rq'].time[1]-all_winds['rq'].time[0]).astype(object)/2
-      get_rq = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction, datetime=dt).view(dtype=np.recarray)
-      get_uv = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.wind_uv, datetime=dt).view(dtype=np.recarray)
-      
-      np.set_printoptions(precision=4)
-      print
-      print "=================================================="
-      print "(u,v):" 
-      print  str( all_winds['uv'].value[:2,:])
-      print
-      print "get_uv:\t{0}".format(get_uv.value[0])
-      print "time:  \t{0}".format(dt)
-      print "-----------------"
-      print "u-bounds: ({0:0.4f},{1:0.4f});\t computed-u: ({2:0.4f})".format(min(all_winds['uv'].value[:2,0]), max(all_winds['uv'].value[:2,0]), get_uv.value[0,0])
-      print "v-bounds: ({0:0.4f},{1:0.4f});\t computed-v: ({2:0.4f})".format(min(all_winds['uv'].value[:2,1]), max(all_winds['uv'].value[:2,1]), get_uv.value[0,1])
-      print "-----------------"
-      print "FOR INFO ONLY: INTERPOLATION IS DONE IN (u,v) SPACE"
-      print "(r,theta): " 
-      print  str( all_winds['rq'].value[:2,:])
-      print
-      print "get_rq:\t{0}".format(get_rq.value[0])
-      print "-----------------"
-      print "r-bounds: ({0:0.4f},{1:0.4f});\t computed-r: ({2:0.4f})".format( min(all_winds['rq'].value[:2,0]), max(all_winds['rq'].value[:2,0]), get_rq.value[0,0])
-      print "q-bounds: ({0:0.4f},{1:0.4f});\t computed-q: ({2:0.4f})".format( min(all_winds['rq'].value[:2,1]), max(all_winds['rq'].value[:2,1]), get_rq.value[0,1])
-      print "-----------------"       
-      print "NOTE: This test fails at times for randomly generated (r,theta)"
-      print "      Still trying to understand how the hermite interpolation should work"
-      
-      assert get_uv.time[0].astype(object) == dt
-      assert get_uv.value[0,0] > np.min( all_winds['uv'].value[:2,0]) \
-         and get_uv.value[0,0] < np.max( all_winds['uv'].value[:2,0])
-      assert get_uv.value[0,1] > np.min( all_winds['uv'].value[:2,1]) \
-         and get_uv.value[0,1] < np.max( all_winds['uv'].value[:2,1])
-      #=========================================================================
-      ## FOLLOWING DOES NOT WORK
-      # assert get_rq.value[0,0] > all_winds['rq'].value[0,0] and get_rq.value[0,0] < all_winds['rq'].value[1,0]
-      # assert get_rq.value[0,1] > all_winds['rq'].value[1,0] and get_rq.value[0,1] < all_winds['rq'].value[1,1]
-      #=========================================================================
-
+    
+    def test_get_timeseries(self, all_winds):
+        """
+        Initialize from timeseries and test the get_time_value method 
+        """
+        # check get_time_value()
+        gtime_val = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction)
+        assert np.all(gtime_val['time'] == all_winds['rq'].time)
+        assert np.allclose(gtime_val['value'], all_winds['rq'].value, atol, rtol)
+        
+        
+    def test_get_timeseries_uv(self, all_winds):
+        """
+        Initialize from timeseries and test the get_time_value method 
+        """
+        gtime_val = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.wind_uv).view(dtype=np.recarray)
+        assert np.all(gtime_val.time == all_winds['uv'].time)
+        assert np.allclose(gtime_val.value, all_winds['uv'].value, atol, rtol)
+        
+    def test_get_timeseries_by_time(self, all_winds):
+        """
+        get time series, but this time provide it with the datetime values for which you want timeseries
+        """
+        gtime_val = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction, datetime=all_winds['rq'].time).view(dtype=np.recarray)
+        assert np.all(gtime_val.time == all_winds['rq'].time)
+        assert np.allclose(gtime_val.value, all_winds['rq'].value, atol, rtol)
+        
+    def test_get_timeseries_by_time_scalar(self, all_winds):
+        """
+        get single time value in the middle of the 0th and 1st index of the timeseries. 
+        Read the value (wind velocity) for this time.
+        
+        Output should be an interpolated value between the values of the 0th and 1st index of timeseries.
+        """
+        dt = all_winds['rq'].time[0].astype(object) + (all_winds['rq'].time[1]-all_winds['rq'].time[0]).astype(object)/2
+        get_rq = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction, datetime=dt).view(dtype=np.recarray)
+        get_uv = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.wind_uv, datetime=dt).view(dtype=np.recarray)
+        
+        np.set_printoptions(precision=4)
+        print
+        print "=================================================="
+        print "(u,v):" 
+        print  str( all_winds['uv'].value[:2,:])
+        print
+        print "get_uv:\t{0}".format(get_uv.value[0])
+        print "time:  \t{0}".format(dt)
+        print "-----------------"
+        print "u-bounds: ({0:0.4f},{1:0.4f});\t computed-u: ({2:0.4f})".format(min(all_winds['uv'].value[:2,0]), max(all_winds['uv'].value[:2,0]), get_uv.value[0,0])
+        print "v-bounds: ({0:0.4f},{1:0.4f});\t computed-v: ({2:0.4f})".format(min(all_winds['uv'].value[:2,1]), max(all_winds['uv'].value[:2,1]), get_uv.value[0,1])
+        print "-----------------"
+        print "FOR INFO ONLY: INTERPOLATION IS DONE IN (u,v) SPACE"
+        print "(r,theta): " 
+        print  str( all_winds['rq'].value[:2,:])
+        print
+        print "get_rq:\t{0}".format(get_rq.value[0])
+        print "-----------------"
+        print "r-bounds: ({0:0.4f},{1:0.4f});\t computed-r: ({2:0.4f})".format( min(all_winds['rq'].value[:2,0]), max(all_winds['rq'].value[:2,0]), get_rq.value[0,0])
+        print "q-bounds: ({0:0.4f},{1:0.4f});\t computed-q: ({2:0.4f})".format( min(all_winds['rq'].value[:2,1]), max(all_winds['rq'].value[:2,1]), get_rq.value[0,1])
+        print "-----------------"       
+        print "NOTE: This test fails at times for randomly generated (r,theta)"
+        print "      Still trying to understand how the hermite interpolation should work"
+        
+        assert get_uv.time[0].astype(object) == dt
+        assert get_uv.value[0,0] > np.min( all_winds['uv'].value[:2,0]) \
+           and get_uv.value[0,0] < np.max( all_winds['uv'].value[:2,0])
+        assert get_uv.value[0,1] > np.min( all_winds['uv'].value[:2,1]) \
+           and get_uv.value[0,1] < np.max( all_winds['uv'].value[:2,1])
+        #=========================================================================
+        ## FOLLOWING DOES NOT WORK
+        # assert get_rq.value[0,0] > all_winds['rq'].value[0,0] and get_rq.value[0,0] < all_winds['rq'].value[1,0]
+        # assert get_rq.value[0,1] > all_winds['rq'].value[1,0] and get_rq.value[0,1] < all_winds['rq'].value[1,1]
+        #=========================================================================
 
 def test_constant_wind():
     """

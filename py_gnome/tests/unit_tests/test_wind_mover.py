@@ -207,8 +207,8 @@ def test_timespan():
     time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
     time_val['time']  = np.datetime64( rel_time.isoformat() )
     time_val['value'] = (2., 25.)
-    wind = weather.Wind(timeseries=time_val, units='meters per second')
 
+    wind = weather.Wind(timeseries=time_val, units='meters per second')
     wm = movers.WindMover(wind, active_start=model_time+timedelta(seconds=time_step))
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
