@@ -7,11 +7,8 @@ designed to be run with py.test
 import numpy as np
 
 from gnome import basic_types
-from gnome.cy_gnome import cy_random_mover
-from gnome.utilities import time_utils
-from gnome.cy_gnome import cy_helpers
-
-import datetime
+from gnome.cy_gnome import cy_random_mover,cy_helpers
+import cy_fixtures
 
 import pytest
 
@@ -23,34 +20,9 @@ def test_exceptions():
     with pytest.raises(ValueError):
         cy_random_mover.CyRandomMover(diffusion_coef=0)
 
-class Common():
-    """
-    test setting up and moving four particles
-    
-    Base class that initializes stuff that is common for multiple cy_wind_mover objects
-    """
-    
-    #################
-    # create arrays #
-    #################
-    num_le = 4  # test on 4 LEs
-    ref  =  np.zeros((num_le,), dtype=basic_types.world_point)   # LEs - initial locations
-    status = np.empty((num_le,), dtype=basic_types.status_code_type)
-    
-    time_step = 60
-    
-    def __init__(self):
-        time = datetime.datetime(2012, 8, 20, 13)
-        self.model_time = time_utils.date_to_sec( time)
-        ################
-        # init. arrays #
-        ################
-        self.ref[:] = 1.
-        self.ref[:]['z'] = 0 # on surface by default
-        self.status[:] = basic_types.oil_status.in_water
     
 class TestRandom():
-    cm = Common()
+    cm = cy_fixtures.CyTestMove()
     rm = cy_random_mover.CyRandomMover(diffusion_coef=100000)    
     def move(self, delta): 
         self.rm.prepare_for_model_run()
@@ -68,14 +40,13 @@ class TestRandom():
         """
         test that it moved
         """
-        delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
-        self.move(delta)
+        self.move(self.cm.delta)
         np.set_printoptions(precision=4)
         print 
         print  "diffusion_coef = {0:0.1f}".format(self.rm.diffusion_coef) + " get_move output:"
-        print  delta.view(dtype=np.float64).reshape(-1,3)
-        assert np.all(delta['lat'] != 0)
-        assert np.all(delta['long'] != 0)
+        print  self.cm.delta.view(dtype=np.float64).reshape(-1,3)
+        assert np.all(self.cm.delta['lat'] != 0)
+        assert np.all(self.cm.delta['long'] != 0)
         
     def test_zero_coef(self):
         """
@@ -92,7 +63,7 @@ class TestRandom():
         Test that the move is different from original move since diffusion coefficient is different
         use the py.test -s flag to view the difference between the two
         """
-        cy_helpers.srand(1)
+        #cy_helpers.srand(1)    # this now happens in conftest.py before every test
         np.set_printoptions(precision=6)
         delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(delta)    # get the move before changing the coefficient
@@ -120,7 +91,7 @@ class TestRandom():
         """
         Since seed is not reset, the move should be repeatable
         """
-        cy_helpers.srand(1)
+        #cy_helpers.srand(1)    # this now happens in conftest.py before every test
         delta = np.zeros((self.cm.num_le,), dtype=basic_types.world_point)
         self.move(delta)
         cy_helpers.srand(1)

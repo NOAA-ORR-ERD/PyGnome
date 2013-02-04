@@ -107,6 +107,8 @@ class ModelRunner(BaseResource):
         """
         step = None
         model = self.request.validated['model']
+        if not os.path.exists(model.data_dir):
+            util.mkdir_p(model.data_dir)
 
         try:
             curr_step, file_path, timestamp = model.next_image(model.data_dir)
@@ -114,7 +116,7 @@ class ModelRunner(BaseResource):
             image_url = self.request.static_url(
                 'webgnome:static/%s/%s/%s/%s' % (
                     self.settings['model_images_url_path'],
-                    model.id, 'data', filename))
+                    model.id, model.runtime, filename))
 
             step = {
                 'id': curr_step,
@@ -141,8 +143,11 @@ class ModelRunner(BaseResource):
         model.runtime = util.get_runtime()
         model.rewind()
         model.time_steps = []
-        first_step = self._get_next_step()
 
+        # Make the directory for the current model run if it doesn't exist.
+        util.mkdir_p(model.data_dir)
+
+        first_step = self._get_next_step()
         model.time_steps.append(first_step)
 
         data['expected_time_steps'] = timestamps
@@ -156,12 +161,21 @@ class ModelRunner(BaseResource):
         Get the next step in the model run.
         """
         step = self._get_next_step()
+        model = self.request.validated['model']
+        data = {}
 
         if not step:
             raise HTTPNotFound
 
-        self.request.validated['model'].time_steps.append(step)
+        # The model rewound itself. Reset web-specific caches
+        # and send the list of expected timestamps.
+        if step['id'] == 0:
+            model.time_steps = []
+            model.timestamps = self._get_timestamps()
+            model.runtime = util.get_runtime()
+            data['expected_time_steps'] = self._get_timestamps()
 
-        return {
-            'time_step': step
-        }
+        self.request.validated['model'].time_steps.append(step)
+        data['time_step'] = step
+
+        return data

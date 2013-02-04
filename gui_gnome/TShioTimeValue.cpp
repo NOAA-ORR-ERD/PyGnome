@@ -1047,7 +1047,7 @@ Error:
 /////////////////////////////////////////////////
 
 
-#define kMAXNUMSAVEDYEARS 30
+//#define kMAXNUMSAVEDYEARS 30
 YEARDATAHDL gYearDataHdl1990Plus[kMAXNUMSAVEDYEARS];
 
 // will need to read from text file instead
@@ -1144,7 +1144,7 @@ YEARDATAHDL GetYearData(short year)
 	return(yrHdl);
 }
 /////////////////////////////////////////////////
-YEARDATA2* gYearDataHdl1990Plus2[kMAXNUMSAVEDYEARS];
+/*YEARDATA2* gYearDataHdl1990Plus2[kMAXNUMSAVEDYEARS];
 
 YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
 
@@ -1245,5 +1245,5 @@ YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
 	
 	return result;
 
-}
+}*/
 

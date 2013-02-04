@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 import os
 from datetime import datetime, timedelta
-import copy
-
-import numpy as np
 
 import gnome
 
@@ -12,37 +9,44 @@ from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.gnomeobject import GnomeObject
 
 class Model(GnomeObject):
-    
     """ 
     PyGNOME Model Class
     
     """
-    def __init__(self):
+    def __init__(self,
+                 time_step=900, # 15 minutes in seconds
+                 start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
+                 duration=timedelta(days=1),
+                 map=gnome.map.GnomeMap(),
+                 output_map=None,
+                 uncertain=False,
+                 ):
         """ 
-        Initializes model attributes. 
+        Initializes model. 
 
         All this does is call reset() which initializes eveything to defaults
         """
-        self.reset() # initializes everything to defaults/nothing
-
-    def reset(self):
-        """
-        Resets model to defaults -- Caution -- clears all movers, spills, etc.
-        
-        """
-        self._uncertain = False # sets whether uncertainty is on or not.
-        self.output_map = None
-        self._map = None
-        self.winds = OrderedCollection(dtype=gnome.weather.Wind)  #list of wind objects
+        # making sure basic stuff is in place before properties are set
+        self.winds = OrderedCollection(dtype=gnome.weather.Wind)  
         self.movers = OrderedCollection(dtype=gnome.movers.Mover)
         self._spill_container = gnome.spill_container.SpillContainer()
         self._uncertain_spill_container = None
-        
-        self._start_time = round_time(datetime.now(), 3600) # default to now, rounded to the nearest hour
-        self._duration = timedelta(days=2) # fixme: should round to multiple of time_step?
-        self.time_step = timedelta(minutes=15).total_seconds()
 
-        self.rewind()
+        self._start_time = start_time # default to now, rounded to the nearest hour
+        self._duration = duration
+        self._map = map
+        self.output_map = output_map
+        self._uncertain = uncertain # sets whether uncertainty is on or not.
+
+        self.time_step = time_step # this calls rewind() !
+
+    def reset(self, **kwargs):
+        """
+        Resets model to defaults -- Caution -- clears all movers, spills, etc.
+
+        Takes same keyword arguments as __init__
+        """
+        self.__init__(**kwargs)
 
     def rewind(self):
         """
@@ -131,16 +135,20 @@ class Model(GnomeObject):
     def map(self):
         return self._map
     @map.setter
-    def map(self, map):
-        self._map = map
+    def map(self, map_in):
+        self._map = map_in
         self.rewind()
+
+    @property
+    def num_time_steps(self):
+        return self._num_time_steps
 
     def get_spill(self, spill_id):
         """
         Return a :class:`gnome.spill.Spill` in the ``self._spills`` dict with
         the key ``spill_id`` if one exists.
         """
-        return self._spill_container.get_spill(spill_id)
+        return self._spill_container.spills[spill_id]
 
     def add_spill(self, spill):
         """
@@ -159,7 +167,7 @@ class Model(GnomeObject):
         remove the passed-in spill from the spill list
         """
         ##fixme: what if we want to remove by reference, rather than id?
-        self._spill_container.remove_spill_by_id(spill_id)
+        del self._spill_container.spills[spill_id]
 
     def setup_model_run(self):
         """
@@ -171,7 +179,7 @@ class Model(GnomeObject):
             mover.prepare_for_model_run()
         self._spill_container.reset()
         if self._uncertain:
-            self._uncertain_spill_container = self._spill_container.copy(uncertain=True)
+            self._uncertain_spill_container = self._spill_container.uncertain_copy()
         else:
             self._uncertain_spill_container = None
 
@@ -198,23 +206,25 @@ class Model(GnomeObject):
          - sets the new position
         """
         ## if there are no spills, there is nothing to do:
+
         if self._spill_container.spills:
             containers = [ self._spill_container ]
             if self.is_uncertain:
                 containers.append( self._uncertain_spill_container )
             for sc in containers: # either one or two, depending on uncertaintly or not
-                # reset next_positions
-                sc['next_positions'][:] = sc['positions']
+                if sc.num_elements > 0: # no reason to do any of this if there are no elements
+                    # reset next_positions
+                    sc['next_positions'][:] = sc['positions']
 
-                # loop through the movers
-                for mover in self.movers:
-                    delta = mover.get_move(sc, self.time_step, self.model_time)
-                    sc['next_positions'] += delta
-            
-                self.map.beach_elements(sc)
+                    # loop through the movers
+                    for mover in self.movers:
+                        delta = mover.get_move(sc, self.time_step, self.model_time)
+                        sc['next_positions'] += delta
+                
+                    self.map.beach_elements(sc)
 
-                # the final move to the new positions
-                sc['positions'][:] = sc['next_positions']
+                    # the final move to the new positions
+                    sc['positions'][:] = sc['next_positions']
 
     def step_is_done(self):
         """
@@ -274,9 +284,9 @@ class Model(GnomeObject):
             self.move_elements()
             self.step_is_done()
         self.current_time_step += 1        
-        self._spill_container.release_elements(self.model_time)
+        self._spill_container.release_elements(self.model_time,self.time_step)
         if self.is_uncertain:
-            self._uncertain_spill_container.release_elements(self.model_time)
+            self._uncertain_spill_container.release_elements(self.model_time,self.time_step)
         return True
 
     def __iter__(self):
@@ -323,7 +333,7 @@ class Model(GnomeObject):
         # run the model
         while True:
             try:
-                image_info = model.next_image()
+                self.next_image(output_dir)
             except StopIteration:
                 print "Done with the model run"
                 break

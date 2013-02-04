@@ -283,12 +283,14 @@ long	ShioTimeValue_c::GetNumHighLowValues()
  	long numHighLowValues = _GetHandleSize((Handle)fHighLowDataHdl)/sizeof(**fHighLowDataHdl);
 	return numHighLowValues;
 }
-#ifndef pyGNOME
+//#ifndef pyGNOME
 void GetYearDataDirectory(char* directoryPath)
 {
 
 	char applicationFolderPath[256];
-
+#ifdef pyGNOME
+	strcpy(directoryPath,"SampleData/Data/yeardata/");
+#else
 #ifdef MAC
 //#include <sys/syslimits.h>
 	CFURLRef appURL = CFBundleCopyBundleURL(CFBundleGetMainBundle());
@@ -302,10 +304,10 @@ void GetYearDataDirectory(char* directoryPath)
 	strcpy(directoryPath,applicationFolderPath);
 	strcat(directoryPath,"Data\\yeardata\\");
 #endif
-
+#endif
 	return;
 }
-#endif
+//#endif
 
 OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 {
@@ -406,7 +408,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	}
 #else
 	// code goes here, find a place to keep the year data
-	YHdl = (YEARDATAHDL)_NewHandle(0);
+	/*YHdl = (YEARDATAHDL)_NewHandle(0);
 	amtYearData = 0;
 	try
 	{
@@ -416,6 +418,32 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	catch (...)
 	{
 		TechError("TShioTimeValue::GetTimeValue()", "new double()", 0); return -1;
+	}*/
+	//char msgStr[256];
+	GetYearDataDirectory(directoryPath);	// put full path together
+	//sprintf(msgStr,"Path for year data = %s\n",directoryPath);
+	//printNote(msgStr);
+	yearData = ReadYearData(beginDate.year,directoryPath,errStr);	
+	if (errStr[0] != 0) printNote(errStr);
+	if(!yearData)  { TechError("TShioTimeValue::GetTimeValue()", "GetYearData()", 0); return -1; }
+	
+	if (yearData) amtYearData = yearData->numElements;
+	try
+	{
+		XODE = new double[amtYearData];
+		VPU = new double[amtYearData];
+	}
+	catch (...)
+	{
+		TechError("TShioTimeValue::GetTimeValue()", "new double()", 0); return -1;
+	}
+	if (yearData)
+	{
+		for (i = 0; i<amtYearData; i++)
+		{
+			XODE[i] = yearData->XODE[i];
+			VPU[i] = yearData->VPU[i];
+		}
 	}
 	//GetYearDataDirectory(directoryPath);	// put full path together	
 	//yearData = ReadYearData(beginDate.year,directoryPath,errStr);
@@ -1108,12 +1136,11 @@ WorldPoint ShioTimeValue_c::GetRefWorldPoint (void)
 	return wp;
 }
 
-#ifndef pyGNOME
 /////////////////////////////////////////////////
-OSErr ShioTimeValue_c::GetLocationInTideCycle(short *ebbFloodType, float *fraction)
+OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds& model_time, short *ebbFloodType, float *fraction)
 {
 	
-	Seconds time = model->GetModelTime(), ebbFloodTime;	
+	Seconds time = model_time, ebbFloodTime;	
 	EbbFloodData ebbFloodData1, ebbFloodData2;
 	long i, numValues;
 	short type;
@@ -1266,7 +1293,6 @@ OSErr ShioTimeValue_c::GetLocationInTideCycle(short *ebbFloodType, float *fracti
 	return 0;
 }
 
-#endif
 void ShioTimeValue_c::ProgrammerError(char* routine)
 {
 	char str[256];
@@ -1458,3 +1484,107 @@ Error:
 	return -1;
 	
 }
+/////////////////////////////////////////////////
+YEARDATA2* gYearDataHdl1990Plus2[kMAXNUMSAVEDYEARS];
+
+YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
+
+{
+	// Get year data which are amplitude corrections XODE and epoc correcton VPU
+	
+	// NOTE: as per Andy & Mikes code, this func provides only a single year's
+	// data: it does not handle requests spanning years. Both Andy and Mike would
+	// just ask for the year at the start of the data request.
+	
+	// Each year has its own file of data, named "#2002" for year 2002, for example
+	
+	// NOTE: you must pass in the file path because it is platform specific:
+	// the files live in the sub-directory "yeardata"
+	// - on Mac the path is ":yeardata:#2002" and works off the app dir as current directory
+	// - on Mac running in python in terminal, the path is "yeardata/#2002"
+	
+	// if errStr not empty then don't bother, something has already gone wrong
+	
+	YEARDATA2	*result = 0;
+	FILE		*stream = 0;
+	double		*xode = 0;
+	double		*vpu = 0;
+	double		data1, data2;
+	char		filePathName[256];
+	short		cnt, numPoints = 0, err = 0;
+	
+	short yearMinus1990 = year-1990;
+	
+	if(0<= yearMinus1990 && yearMinus1990 <kMAXNUMSAVEDYEARS)
+	{
+		if(gYearDataHdl1990Plus2[yearMinus1990]) return gYearDataHdl1990Plus2[yearMinus1990];
+	}
+	//if (errStr[0] != 0) return 0;
+	errStr[0] = 0;
+	
+	// create the filename of the proper year data file
+	sprintf(filePathName, "%s#%d", path, year);
+	
+	// It appears that there are 128 data values for XODE and VPU in each file
+	// NOTE: we only collect the first 128 data points (BUG if any more ever get added)
+	
+	try
+	{
+		result = new YEARDATA2;
+		xode = new double[128];
+		vpu = new double[128];
+	}
+	catch (...)
+	{
+		err = -1;
+		strcpy(errStr, "Memory error in ReadYearData");
+	}
+	
+	if (!err) stream = fopen(filePathName, "r");
+	
+	if (stream)
+	{
+		for (cnt = 0; cnt < 128; cnt++)
+		{
+			if (fscanf(stream, "%lf %lf", &data1, &data2) == 2)	// assigned 2 values
+			{
+				numPoints++;
+				xode[cnt] = data1;
+				vpu[cnt] = data2;
+			}
+			else	// we are not getting data points, init to zero
+			{
+				xode[cnt] = 0.0;
+				vpu[cnt] = 0.0;
+			}
+		}
+		fclose(stream);
+	}
+	else
+	{
+		err = -1;
+		sprintf(errStr, "Could not open file '%s'", filePathName);
+	}
+	
+	if (err)
+		
+	{
+		if (vpu) delete [] vpu;
+		if (xode) delete [] xode;
+		if (result) delete result;
+		return 0;
+	}	
+	
+	result->numElements = numPoints;
+	result->XODE = xode;
+	result->VPU = vpu;
+	
+	if(result && 0<= yearMinus1990 && yearMinus1990 <kMAXNUMSAVEDYEARS)
+	{
+		gYearDataHdl1990Plus2[yearMinus1990] = result;
+	}
+	
+	return result;
+	
+}
+

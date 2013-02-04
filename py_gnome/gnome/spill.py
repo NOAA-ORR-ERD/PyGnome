@@ -11,8 +11,6 @@ This is the "magic" class -- it handles the smart allocation of arrays, etc.
 these are managed by the SpillContainer class
 """
 
-import sys
-import copy
 import numpy as np
 from gnome import basic_types
 from gnome.gnomeobject import GnomeObject
@@ -22,9 +20,9 @@ class Spill(GnomeObject):
     base class for a source of elements
 
 
-    NOTE: It's important to dereive all Spills from this base class, as all sorts of
+    NOTE: It's important to derive all Spills from this base class, as all sorts of
           trickery to keep track of spill spill_nums, and what instances there are of
-          derived classes, so that we can keep track of whatdata arrays are needed, etc.
+          derived classes, so that we can keep track of what data arrays are needed, etc.
 
     """
 
@@ -37,15 +35,23 @@ class Spill(GnomeObject):
     _array_info = {}
 
     __all_spill_nums = set() # set of all the in-use spill_nums
-    __all_subclasses = {} # keys are the instance spill_num -- values are the subclass object
+    __all_instances = {} # keys are the instance spill_num -- values are the subclass object
+
+    def __new__(cls, *args, **kwargs):
+        obj = super(Spill, cls).__new__(cls, *args, **kwargs)
+        cls.__all_instances[ id(obj) ] = cls
+        return obj
+
     def __init__(self, num_elements=0):
 
         self.num_elements = num_elements
 
-        self.is_active = True       # sets whether the spill is active or not
+        self.on = True       # sets whether the spill is active or not
 
         self.__set_spill_num()
-        self.__all_subclasses[ id(self) ] = self.__class__
+        # note: this puts one entry for each instance, so there will be multiple entries for
+        # each subclass == but we need to know all of the instances
+        #self.__all_instances[ id(self) ] = self.__class__
         Spill.reset_array_types()
 
     def __deepcopy__(self, memo=None):
@@ -62,6 +68,7 @@ class Spill(GnomeObject):
         """
         obj_copy = super(Spill, self).__deepcopy__(memo)
         obj_copy.__set_spill_num()
+        #obj_copy.__all_instances[ id(obj_copy) ] = self.__class__
         return obj_copy
 
     def __copy__(self):
@@ -70,13 +77,29 @@ class Spill(GnomeObject):
         """
         obj_copy = super(Spill, self).__copy__()
         obj_copy.__set_spill_num()
+        #obj_copy.__all_instances[ id(obj_copy) ] = self.__class__
         return obj_copy
+
+    def uncertain_copy(self):
+        """
+        Returns a copy of this spill for the uncertainty runs
+
+        The copy has eveything the same, including the spill_num,
+        but should have a new id.
+
+        Not much to this method, but it could be overridden to do something
+        fancier in the future or a subclass.
+        """
+        u_copy = super(Spill, self).__copy__()
+        #u_copy.__all_instances[ id(u_copy) ] = self.__class__
+        return u_copy
 
 
     @classmethod
     def reset_array_types(cls):
         cls._array_info.clear()
-        for subclass in cls.__all_subclasses.values():
+        all_subclasses = set(cls.__all_instances.values())
+        for subclass in all_subclasses:
             subclass.add_array_types()
 
     @classmethod
@@ -92,10 +115,15 @@ class Spill(GnomeObject):
         """
         returns an spill_num that is not already in use
 
+        This approach will assure that all the spills within one python instance have
+        unique spills numbers, but also that they will be small numbers.
+
         inefficient, but who cares?
+        TODO: managing a unique list of id's for spills could probably be handled
+              by the spill container
         """
         spill_num = 1
-        while spill_num < 65536: # just so it will eventually terminate!
+        while spill_num < 65536: # just so it will eventually terminate! (and fit into an int16)
             if spill_num not in self.__all_spill_nums:
                 self.spill_num = spill_num
                 self.__all_spill_nums.add(spill_num)
@@ -103,7 +131,7 @@ class Spill(GnomeObject):
             else:
                 spill_num+=1
         else:
-            raise ValueError("There are no more spill_nums aavailable to spills!")
+            raise ValueError("There are no more spill_nums available to spills!")
 
     def __del__(self):
         """
@@ -111,8 +139,12 @@ class Spill(GnomeObject):
 
         removes its spill_num from Spill.__all_spill_nums and instance from Spill.__all_subclass_instances
         """
-        self.__all_spill_nums.remove(self.spill_num)
-        del self.__all_subclasses[ id(self) ]
+        try:
+            self.__all_spill_nums.remove(self.spill_num)
+        except KeyError:
+            # this one is already deleted (uncertain spills have same spill_num)
+            pass
+        del self.__all_instances[ id(self) ]
 
     def reset(self):
         """
@@ -158,6 +190,8 @@ class FloatingSpill(Spill):
                  windage_persist=900):
 
         super(FloatingSpill, self).__init__()
+        self.windage_range = windage_range
+        self.windage_persist = windage_persist
 
         self.add_array_types()
 
@@ -212,10 +246,6 @@ class SurfaceReleaseSpill(FloatingSpill):
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
 
-#        if windage_persist <= 0:
-#            # if it is anything less than 0, treat it as -1 flag
-#            self.update_windage(0)
-
         self.num_released = 0
         self.prev_release_pos = self.start_position
 
@@ -227,15 +257,20 @@ class SurfaceReleaseSpill(FloatingSpill):
         super(SurfaceReleaseSpill, self).initialize_new_elements(arrays)
         arrays['positions'][:] = self.start_position
 
-    def release_elements(self, current_time, time_step=None):
+    def release_elements(self, current_time, time_step):
         """
         Release any new elements to be added to the SpillContainer
 
         :param current_time: datetime object for current time
-        :param time_step: the time step, in seconds -- this version doesn't use this
+        :param time_step: the time step, in seconds -- used to decide how many should get released.
 
         :returns : None if there are no new elements released
                    a dict of arrays if there are new elements
+
+        For a continuous release, this releases the number of elements that
+        should have been released by the end of the current time step -- so
+        that the first set do get released at the instant of the beginning of
+        the release.
 
         NOTE: this version releases elements spread out along the line from
               start_position to end_position. If the release spans multiple
@@ -243,7 +278,6 @@ class SurfaceReleaseSpill(FloatingSpill):
               there will be an element released at botht he start and end,
               but no duplicate points. 
         """
-
         if current_time >= self.release_time:
             if self.num_released >= self.num_elements:
                 return None
@@ -255,12 +289,11 @@ class SurfaceReleaseSpill(FloatingSpill):
             if current_time >= self.end_release_time:
                 dt = release_delta
             else:
-                dt = max( (current_time - self.release_time).total_seconds(), 0.0)
-            
+                dt = max( (current_time - self.release_time).total_seconds() + time_step, 0.0)
             # this here in case there is less than one released per time step.
-            # or if the relase time is before the model start time
+            # or if the release time is before the model start time
             if release_delta == 0: #instantaneous release
-                num = self.num_elements - self.num_released #num_released shoudl always be 0?
+                num = self.num_elements - self.num_released #num_released should always be 0?
             else:
                 total_num = (dt / release_delta) * self.num_elements
                 num = int(total_num - self.num_released)
@@ -302,13 +335,13 @@ class SurfaceReleaseSpill(FloatingSpill):
             return None
 
     def reset(self):
-       """
-       reset to initial conditions -- i.e. nothing released. 
-       """
-       super(SurfaceReleaseSpill, self).reset()
+        """
+        reset to initial conditions -- i.e. nothing released. 
+        """
+        super(SurfaceReleaseSpill, self).reset()
 
-       self.num_released = 0
-       self.prev_release_pos = self.start_position
+        self.num_released = 0
+        self.prev_release_pos = self.start_position
 
 class SpatialReleaseSpill(FloatingSpill):
     """
@@ -371,10 +404,10 @@ class SpatialReleaseSpill(FloatingSpill):
             return None
 
     def reset(self):
-       """
-       reset to initial conditions -- i.e. nothing released. 
-       """
-       super(SpatialReleaseSpill, self).reset()
+        """
+        reset to initial conditions -- i.e. nothing released. 
+        """
+        super(SpatialReleaseSpill, self).reset()
 
 
 

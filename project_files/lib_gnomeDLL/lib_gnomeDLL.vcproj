@@ -61,8 +61,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="netcdf.lib"
 				OutputFile="..\..\py_gnome\gnome\cy_gnome\$(ProjectName).dll"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\..\third_party_lib\vs2008"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -117,7 +119,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\..\lib_gnome"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LIB_GNOMEDLL_EXPORTS;pyGNOME;ibmpyGNOME"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LIB_GNOMEDLL_EXPORTS;pyGNOME;ibmpyGNOME;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -135,9 +137,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="netcdf.lib"
 				ShowProgress="2"
 				OutputFile="..\..\py_gnome\gnome\cy_gnome\$(ProjectName).dll"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\..\third_party_lib\vs2008"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -185,10 +189,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\lib_gnome\CMYLIST.CPP"
-				>
-			</File>
-			<File
 				RelativePath="..\..\lib_gnome\CompFunctions.cpp"
 				>
 			</File>
@@ -205,11 +205,23 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\lib_gnome\GEOMETR2.CPP"
+				RelativePath="..\..\lib_gnome\GEOMETRY.CPP"
 				>
 			</File>
 			<File
-				RelativePath="..\..\lib_gnome\GEOMETRY.CPP"
+				RelativePath="..\..\lib_gnome\GridCurrentMover_c.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\GridWindMover_c.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\MakeDagTree.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\MakeTriangles.cpp"
 				>
 			</File>
 			<File
@@ -218,10 +230,6 @@
 			</File>
 			<File
 				RelativePath="..\..\lib_gnome\Mover_c.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\lib_gnome\MYRANDOM.CPP"
 				>
 			</File>
 			<File
@@ -266,6 +274,14 @@
 			</File>
 			<File
 				RelativePath="..\..\lib_gnome\StringFunctions.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\TimeGridVel_c.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\TimeGridWind_c.cpp"
 				>
 			</File>
 			<File

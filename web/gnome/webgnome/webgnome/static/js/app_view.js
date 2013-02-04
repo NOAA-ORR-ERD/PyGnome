@@ -40,16 +40,22 @@ define([
             });
 
             this.sidebarEl = '#sidebar';
-            $(this.sidebarEl).resizable({handles: 'e, w'});
+            $(this.sidebarEl).resizable({
+                handles: 'e, w',
+                resize: function (event, ui) {
+                    $(this).css("height", '100%');
+                }
+            });
 
             this.treeView = new views.TreeView({
                 treeEl: "#tree",
                 apiRoot: this.apiRoot,
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
-                pointReleaseSpills: this.pointReleaseSpills,
-                windMovers: this.windMovers,
-                map: this.map
+                map: this.map,
+                collections: [
+                    this.windMovers, this.randomMovers, this.surfaceReleaseSpills
+                ]
             });
 
             this.treeControlView = new views.TreeControlView({
@@ -66,11 +72,13 @@ define([
                 frameClass: 'frame',
                 activeFrameClass: 'active',
                 modelRun: this.modelRun,
-                model: this.map
+                model: this.map,
+                animationThreshold: this.options.animationThreshold
             });
 
             this.mapControlView = new views.MapControlView({
                 sliderEl: "#slider",
+                sliderShadedEl: '#slider-shaded',
                 playButtonEl: "#play-button",
                 pauseButtonEl: "#pause-button",
                 backButtonEl: "#back-button",
@@ -90,7 +98,7 @@ define([
             this.messageView = new views.MessageView({
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
-                pointReleaseSpills: this.pointReleaseSpills,
+                surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers
             });
 
@@ -104,16 +112,23 @@ define([
                     changeYear: true
                 });
             });
+
+            $('.error').tooltip({selector: "a"});
         },
 
         setupEventHandlers: function() {
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.SERVER_RESET, this.rewind);
 
-            this.pointReleaseSpills.on("sync", this.spillUpdated);
-            this.pointReleaseSpills.on('sync', this.drawSpills);
+            this.surfaceReleaseSpills.on("sync", this.spillUpdated);
+            this.surfaceReleaseSpills.on('sync', this.drawSpills);
+            this.surfaceReleaseSpills.on('add', this.drawSpills);
+            this.surfaceReleaseSpills.on('remove', this.drawSpills);
 
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
-            this.editPointReleaseSpillFormView.on(forms.PointReleaseSpillFormView.CANCELED, this.drawSpills);
+            this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
+
+            this.formViews.on(forms.FormView.MESSAGE_READY, this.displayMessage);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
@@ -164,7 +179,7 @@ define([
         },
 
         drawSpills: function() {
-            this.mapView.drawSpills(this.pointReleaseSpills);
+            this.mapView.drawSpills(this.surfaceReleaseSpills);
         },
 
         setupKeyboardHandlers: function() {
@@ -198,7 +213,7 @@ define([
 
             Mousetrap.bind('n p', function() {
                 _this.formViews.hideAll();
-                _this.showFormWithId('add_point_release_spill');
+                _this.showFormWithId('add_surface_release_spill');
             });
 
             Mousetrap.bind('s f', function() {
@@ -238,27 +253,46 @@ define([
 
             this.editMapFormView = new forms.MapFormView({
                 id: 'edit_map',
-                model: this.map
+                model: this.map,
+                defaults: this.options.defaultMap
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
                 id: 'add_wind_mover',
-                collection: this.windMovers
+                collection: this.windMovers,
+                defaults: this.options.defaultWindMover,
+                defaultTimeseriesValue: this.options.defaultWindTimeseriesValue
             });
 
             this.editWindMoverFormView = new forms.WindMoverFormView({
                 id: 'edit_wind_mover',
-                collection: this.windMovers
+                collection: this.windMovers,
+                defaults: this.options.defaultWindMover,
+                defaultTimeseriesValue: this.options.defaultWindTimeseriesValue
             });
 
-            this.addPointReleaseSpillFormView = new forms.AddPointReleaseSpillFormView({
-                id: 'add_point_release_spill',
-                collection: this.pointReleaseSpills
+            this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
+                id: 'add_random_mover',
+                collection: this.randomMovers,
+                defaults: this.options.defaultRandomMover,
             });
 
-            this.editPointReleaseSpillFormView = new forms.PointReleaseSpillFormView({
-                id: 'edit_point_release_spill',
-                collection: this.pointReleaseSpills
+            this.editRandomMoverFormView = new forms.RandomMoverFormView({
+                id: 'edit_random_mover',
+                collection: this.randomMovers,
+                defaults: this.options.defaultRandomMover,
+            });
+
+            this.addSurfaceReleaseSpillFormView = new forms.AddSurfaceReleaseSpillFormView({
+                id: 'add_surface_release_spill',
+                collection: this.surfaceReleaseSpills,
+                defaults: this.options.defaultSurfaceReleaseSpill,
+            });
+
+            this.editSurfaceReleaseSpillFormView = new forms.SurfaceReleaseSpillFormView({
+                id: 'edit_surface_release_spill',
+                collection: this.surfaceReleaseSpills,
+                defaults: this.options.defaultSurfaceReleaseSpill
             });
 
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
@@ -268,10 +302,12 @@ define([
             this.formViews.add(this.addSpillFormView);
             this.formViews.add(this.addMapFormView);
             this.formViews.add(this.addWindMoverFormView);
-            this.formViews.add(this.addPointReleaseSpillFormView);
+            this.formViews.add(this.addRandomMoverFormView);
+            this.formViews.add(this.addSurfaceReleaseSpillFormView);
             this.formViews.add(this.modelSettingsFormView);
             this.formViews.add(this.editWindMoverFormView);
-            this.formViews.add(this.editPointReleaseSpillFormView);
+            this.formViews.add(this.editRandomMoverFormView);
+            this.formViews.add(this.editSurfaceReleaseSpillFormView);
             this.formViews.add(this.editMapFormView);
         },
 
@@ -280,15 +316,21 @@ define([
                 url: this.apiRoot + '/map'
             });
 
-            this.pointReleaseSpills = new models.PointReleaseSpillCollection(
-                this.options.pointReleaseSpills, {
-                    url: this.apiRoot + "/spill/point_release"
+            this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
+                this.options.surfaceReleaseSpills, {
+                    url: this.apiRoot + "/spill/surface_release"
                 }
             );
 
             this.windMovers = new models.WindMoverCollection(
                 this.options.windMovers, {
                     url: this.apiRoot + "/mover/wind"
+                }
+            );
+
+            this.randomMovers = new models.RandomMoverCollection(
+                this.options.randomMovers, {
+                    url: this.apiRoot + "/mover/random"
                 }
             );
 
@@ -304,6 +346,10 @@ define([
                 bounds: this.options.mapBounds || [],
                 modelSettings: this.modelSettings
             });
+        },
+
+        displayMessage: function(message) {
+            this.messageView.displayMessage(message);
         },
 
         modelRunError: function() {
@@ -426,7 +472,6 @@ define([
         },
 
         sliderChanged: function(newStepNum) {
-
             // No need to do anything if the slider is on the current time step.
             if (newStepNum === this.modelRun.currentTimeStep) {
                 return;
@@ -462,6 +507,11 @@ define([
             this.mapView.clear();
             this.modelRun.clearData();
             this.mapControlView.reset();
+
+            if (this.map.id) {
+                this.mapControlView.enableControls(
+                    this.mapControlView.mapControls);
+            }
         },
 
         /*
@@ -517,7 +567,16 @@ define([
             this.formViews.hideAll();
 
             if (node.data.object_id) {
-                formView.reload(node.data.object_id);
+                try {
+                    formView.reload(node.data.object_id);
+                } catch (e) {
+                    if (e instanceof forms.ModelNotFoundException) {
+                        window.alert('That item is unavailable right now. ' +
+                            'Please refresh the page and try again.');
+
+                        return;
+                    }
+                }
             }
 
             formView.show();
@@ -555,7 +614,7 @@ define([
             var node = this.treeView.getActiveItem();
 
             function error() {
-                alert('Error! Could not delete ' + node.data.title + '.');
+                return alert('That item cannot be removed.')
             }
 
             if (!node.data.object_id || !node.data.object_type) {
@@ -563,8 +622,9 @@ define([
             }
 
             var collections = {
-                'point_release_spill': this.pointReleaseSpills,
-                'wind_mover': this.windMovers
+                'surface_release_spill': this.surfaceReleaseSpills,
+                'wind_mover': this.windMovers,
+                'random_mover': this.randomMovers
             };
 
             if (!_.has(collections, node.data.object_type)) {
@@ -592,6 +652,7 @@ define([
                 return;
             }
 
+            formView.reload();
             formView.show();
         },
 
@@ -602,6 +663,7 @@ define([
                 return;
             }
 
+            formView.reload();
             formView.show(coords);
         }
     });

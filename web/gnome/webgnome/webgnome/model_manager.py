@@ -5,6 +5,7 @@ import datetime
 
 import os
 from hazpy.file_tools import haz_files
+import numpy
 from webgnome import util
 
 # XXX: This except block should not be necessary.
@@ -23,20 +24,177 @@ except ImportError:
     sys.path.append('../../../py_gnome')
 
 import gnome.utilities.map_canvas
+from gnome import basic_types
 from gnome.model import Model
-from gnome.movers import WindMover
-from gnome.spill import PointReleaseSpill
+from gnome.movers import WindMover, RandomMover
+from gnome.spill import SurfaceReleaseSpill
+from gnome.weather import Wind
 from gnome.map import MapFromBNA
 
 
-class WebWindMover(WindMover):
+class Serializable(object):
+    serializable_fields = []
+
+    def to_dict(self):
+        """
+        Return a dictionary containing the serialized representation of this
+        object, using `self.serializable_fields` to look up fields on the object
+        that the dictionary should contain.
+
+        For every field, if there is a method defined on the object such that
+        the method name is `{field_name}_to_dict`, use the return value of that
+        method as the field value.
+
+        Note: any field in `self.serializable_fields` that does not exist on the
+        object and does not have a to_dict method will raise an AttributeError.
+        """
+        data = {}
+
+        for key in self.serializable_fields:
+            to_dict_fn_name = '%s_to_dict' % key
+
+            if hasattr(self, to_dict_fn_name):
+                value = getattr(self, to_dict_fn_name)()
+            else:
+                value = getattr(self, key)
+
+            if hasattr(value, 'to_dict'):
+                value = value.to_dict()
+
+            data[key] = value
+
+        return data
+
+    def from_dict(self, data):
+        """
+        Set the state of this object using the dictionary ``data`` by looking up
+        the value of each key in ``data`` that is also in
+        `self.serializable_fields`.
+
+        For every field, the choice of how to set the field is as follows:
+
+        If there is a method defined on the object such that the method name is
+        `{field_name}_from_dict`, call that method with the field's data.
+
+        If the field on the object has a ``from_dict`` method, then use that
+        method instead.
+
+        If neither method exists, then set the field with the value from
+        ``data`` directly on the object.
+        """
+        for key in self.serializable_fields:
+            if not key in data:
+                continue
+
+            from_dict_fn_name = '%s_from_dict' % key
+            field = getattr(self, key)
+            value = data[key]
+
+            if hasattr(self, from_dict_fn_name):
+                getattr(self, from_dict_fn_name)(value)
+            elif hasattr(field, 'from_dict'):
+                field.from_dict(value)
+            else:
+                setattr(self, key, value)
+
+        return self
+
+
+class BaseWebObject(Serializable):
+    @property
+    def name(self):
+        if self._name:
+            return self._name
+        return super(BaseWebObject, self).__repr__()
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+
+
+class WebWind(Wind, BaseWebObject):
+    default_name = 'Wind'
+    source_types = (
+        ('manual', 'Manual Data'),
+        ('nws', 'NWS Wind Data'),
+        ('buoy', 'Buoy Station ID'),
+    )
+    serializable_fields = [
+        'id',
+        'units', # set the units before timeseries
+        'timeseries',
+        'latitude',
+        'longitude',
+        'description',
+        'source',
+        'source_type',
+        'updated_at'
+    ]
+
+    def __init__(self, *args, **kwargs):
+        self.name = kwargs.pop('name', 'Wind')
+        self.description = kwargs.pop('description', None)
+        self.source_type = kwargs.pop('source_type', None)
+        self.source = kwargs.pop('source', None)
+        self.longitude = kwargs.pop('longitude', None)
+        self.latitude = kwargs.pop('latitude', None)
+        self.updated_at = kwargs.pop('updated_at', None)
+
+        super(WebWind, self).__init__(*args, **kwargs)
+
+    @property
+    def units(self):
+        return self._user_units
+
+    @units.setter
+    def units(self, value):
+        self._user_units = value
+
+    @property
+    def timeseries(self):
+        return self.get_timeseries(units=self.user_units)
+
+    @timeseries.setter
+    def timeseries(self, value):
+        self.set_timeseries(value, units=self.user_units)
+
+    def timeseries_to_dict(self):
+        series = []
+
+        for wind_value in self.timeseries:
+            dt = wind_value[0].astype(object)
+            series.append(
+                dict(datetime=dt, speed=wind_value[1][0],
+                          direction=wind_value[1][1])
+            )
+
+        return series
+
+
+class WebWindMover(WindMover, BaseWebObject):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
     webgnome-specific functionality.
     """
+    default_name = 'Wind Mover'
+    serializable_fields = [
+        'id',
+        'wind',
+        'on',
+        'name',
+        'active_start',
+        'active_stop',
+        'uncertain_duration',
+        'uncertain_speed_scale',
+        'uncertain_angle_scale',
+        'uncertain_angle_scale_units',
+        'uncertain_time_delay'
+    ]
+
     def __init__(self, *args, **kwargs):
-        self._name = kwargs.pop('name', 'Wind Mover')
         self.is_constant = kwargs.pop('is_constant', True)
+        self.on = kwargs.pop('on', True)
+        self.name = kwargs.pop('name', 'Wind Mover')
 
         # TODO: What to do with this value? Conversion?
         self.uncertain_angle_scale_units = kwargs.pop(
@@ -44,63 +202,29 @@ class WebWindMover(WindMover):
 
         super(WebWindMover, self).__init__(*args, **kwargs)
 
-    def from_dict(self, data):
-        """
-        Set this object's properties from a dict ``data`` that has all the
-        necessaries.
-        """
-        self.wind = data['wind']
-        self._name = data['name']
-        self.is_active = data['is_active']
-        self.uncertain_duration = data['uncertain_duration']
-        self.uncertain_speed_scale = data['uncertain_speed_scale']
-        self.uncertain_angle_scale = data['uncertain_angle_scale']
-        self.uncertain_time_delay = data['uncertain_time_delay']
 
-        # TODO: What to do here?
-        self.uncertain_angle_scale_units = 'deg'
+class WebRandomMover(RandomMover, BaseWebObject):
+    """
+    A subclass of :class:`gnome.movers.RandomMover` that provides
+    webgnome-specific functionality.
+    """
+    default_name = 'Random Mover'
+    serializable_fields = [
+        'id',
+        'on',
+        'name',
+        'active_start',
+        'active_stop',
+        'diffusion_coef'
+    ]
 
-        return self
-
-    def to_dict(self):
-        """
-        Return a dict representation of this object.
-        """
-        series = []
-
-        for timeseries in self.wind.get_timeseries(units=self.wind.user_units):
-            dt = timeseries[0].astype(object)
-            series.append(
-                dict(datetime=dt, speed=timeseries[1][0],
-                          direction=timeseries[1][1])
-            )
-
-        return {
-            'wind': {
-                'timeseries': series,
-                'units': self.wind.user_units
-            },
-
-            'id': self.id,
-            'name': self.name,
-            'is_active': self.is_active,
-            'uncertain_duration': self.uncertain_duration,
-            'uncertain_time_delay': self.uncertain_time_delay,
-            'uncertain_speed_scale': self.uncertain_speed_scale,
-            'uncertain_angle_scale': self.uncertain_angle_scale,
-
-            # XXX: Does WindMover always return the angle scale in degrees?
-            'uncertain_angle_scale_units': self.uncertain_angle_scale_units
-        }
-
-    @property
-    def name(self):
-        if self._name:
-            return self._name
-        return super(WebWindMover, self).__repr__()
+    def __init__(self, *args, **kwargs):
+        self.on = kwargs.pop('on', True)
+        self.name = kwargs.pop('name', 'Random Mover')
+        super(WebRandomMover, self).__init__(*args, **kwargs)
 
 
-class WebPointReleaseSpill(PointReleaseSpill):
+class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
     webgnome-specific functionality.
@@ -108,7 +232,18 @@ class WebPointReleaseSpill(PointReleaseSpill):
     def __init__(self, *args, **kwargs):
         self._name = kwargs.pop('name', None)
         self.is_active = kwargs.pop('is_active', True)
-        super(WebPointReleaseSpill, self).__init__(*args, **kwargs)
+        super(WebSurfaceReleaseSpill, self).__init__(*args, **kwargs)
+
+    serializable_fields = [
+        'id',
+        'release_time',
+        'start_position',
+        'windage_range',
+        'windage_persist',
+        'name',
+        'num_elements',
+        'is_active'
+    ]
 
     @property
     def hour(self):
@@ -138,118 +273,75 @@ class WebPointReleaseSpill(PointReleaseSpill):
     def windage_max(self):
         return self.windage_range[1]
 
-    @property
-    def name(self):
-        if self._name:
-            return self._name
-        return super(WebPointReleaseSpill, self).__repr__()
+    def start_position_from_dict(self, start_position):
+        self.start_position = numpy.asarray(
+            start_position,
+            dtype=basic_types.world_point_type).reshape((3,))
 
-    def from_dict(self, data):
-        """
-        Set this object's properties from a dict ``data`` that has all the
-        necessaries.
-        """
-        self.release_time = data['release_time']
-        self.start_position = data['start_position']
-        self.windage_range = data['windage']
-        self._name = data['name']
-        self.is_uncertain = data['uncertain']
-        self.num_LEs = data['num_LEs']
-
-        return self
-
-    def to_dict(self):
-        """
-        Return a dict representation of this mover.
-        """
-        return {
-            'id': self.id,
-            'release_time': self.release_time,
-            'start_position': self.start_position,
-            'windage': self.windage_range,
-            'name': self._name,
-            'uncertain': self.is_uncertain,
-            'num_LEs': self.num_LEs
-        }
+    def start_position_to_dict(self):
+        return self.start_position.tolist()
 
 
-class WebMapFromBNA(MapFromBNA):
+class WebMapFromBNA(MapFromBNA, BaseWebObject):
     """
     A subclass of :class:`gnome.map.MapFromBNA` that provides
     webgnome-specific functionality.
     """
+    serializable_fields = [
+        'id',
+        'filename',
+        'name',
+        'map_bounds',
+        'refloat_halflife'
+    ]
+
+    def map_bounds_to_dict(self):
+        return self.map_bounds.tolist()
+
     def __init__(self, *args, **kwargs):
-        self._name = kwargs.pop('name', None)
+        self.name = kwargs.pop('name', None)
         self.filename = args[0]
         super(WebMapFromBNA, self).__init__(*args, **kwargs)
 
-    @property
-    def name(self):
-        """
-        Return the user-specified name of this map.
-        """
-        return self._name
 
-    def to_dict(self):
-        """
-        Return a dict representation of this map.
-        """
-        return {
-            'id': self.id,
-            'filename': self.filename,
-            'name': self.name,
-            'bounds': self.map_bounds.tolist(),
-            'refloat_halflife': self.refloat_halflife
-        }
-
-
-class WebModel(Model):
+class WebModel(Model, BaseWebObject):
     """
     A subclass of :class:`gnome.model.Model` that provides webgnome-specific
     functionality.
+
+    TODO: Use Serializable mixin's to_dict and from_dict mechanism.
     """
     mover_keys = {
-        WebWindMover: 'wind_movers'
+        WebWindMover: 'wind_movers',
+        WebRandomMover: 'random_movers'
     }
 
     spill_keys = {
-        WebPointReleaseSpill: 'point_release_spills'
+        WebSurfaceReleaseSpill: 'surface_release_spills'
     }
 
     def __init__(self, *args, **kwargs):
-        self.base_dir = self._make_base_dir(kwargs.pop('model_images_dir'))
-        self.data_dir = self._make_data_dir()
+        # Create the base directory for all of the model's data.
+        self.base_dir = os.path.join(kwargs.pop('model_images_dir'),
+                                     str(self.id))
+        util.mkdir_p(self.base_dir)
 
         super(WebModel, self).__init__()
 
         # Patch the object with an empty ``time_steps`` array for the time being.
-        # TODO: Add output caching in the model.
+        # TODO: Add output caching in the model?
         self.time_steps = []
         self.runtime = None
 
-    def _make_base_dir(self, dir):
+    @property
+    def data_dir(self):
         """
-        Create the base directory for this model's data files if it does not
-        already exist, using ``dir`` as the directory prefix.
-
-        Return the created path.
+        Return the expected path to the files for the current run of the model.
         """
-        base_dir = os.path.join(dir, str(self.id))
-        util.mkdir_p(base_dir)
-        return base_dir
+        if not self.runtime:
+            return
 
-    def _make_data_dir(self):
-        """
-        Create a directory to contain files related to the current run.
-
-        Return the created path.
-        """
-        data_dir = os.path.join(self.base_dir, 'data')
-
-        if not os.path.exists(data_dir):
-            os.mkdir(data_dir)
-
-        return data_dir
+        return os.path.join(self.base_dir, self.runtime)
 
     @property
     def background_image(self):
@@ -321,14 +413,19 @@ class WebModel(Model):
         Return a dictionary representation of this model. Includes subtrees
         (lists of dictionaries) for any movers and spills configured.
         """
+        if self.map and hasattr(self.map, 'to_dict'):
+            _map = self.map.to_dict()
+        else:
+            _map = None
+
         data = {
-            'uncertain': self.uncertain,
-            'time_step': self.time_step,
+            'is_uncertain': self.is_uncertain,
+            'time_step': (self.time_step / 60.0) / 60.0,
             'start_time': self.start_time,
             'duration_days': 0,
             'duration_hours': 0,
-            'map': self.map.to_dict() if self.map else None,
-            'id': self.id
+            'id': self.id,
+            'map': _map
         }
 
         if self.duration.days:
@@ -351,9 +448,9 @@ class WebModel(Model):
 
         Note: does not set movers or spills.
         """
-        self.uncertain = data['uncertain']
+        self.is_uncertain = data['is_uncertain']
         self.start_time = data['start_time']
-        self.time_step = data['time_step']
+        self.time_step = data['time_step'] * 60 * 60
         self.duration = datetime.timedelta(
             days=data['duration_days'],
             seconds=data['duration_hours'] * 60 * 60)

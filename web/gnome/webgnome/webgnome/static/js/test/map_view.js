@@ -9,25 +9,19 @@ define([
     // Test helpers
 
     var testUrl = "/test";
+    var testUrl2 = "/test2";
 
-    var model = new models.ModelRun([], {
+    var modelRun = new models.ModelRun([], {
         url: testUrl,
         expectedTimeSteps: [],
         currentTimeStep: 0
     });
 
-
-    function makeMap(el, placeholderEl) {
-        return new views.MapView({
-            mapEl: el || '#map-empty',
-            placeholderEl: placeholderEl || '#placeholder-empty',
-            backgroundImageUrl: '/static/js/test/fixtures/background_map.png',
-            frameClass: 'frame',
-            activeFrameClass: 'active',
-            model: model
-        });
-
-    }
+    var map = new models.Map({
+        map_bounds: makeBounds()
+    }, {
+        url: testUrl2
+    });
 
     function makeBounds() {
         // Use bounds from the Long Island Sound script.
@@ -37,6 +31,19 @@ define([
             [-72.336334, 41.330833], // Top right
             [-72.336334, 40.922832]  // Bottom right
         ];
+    }
+
+    function makeMap(el, placeholderEl) {
+        return new views.MapView({
+            mapEl: el || '#map-empty',
+            placeholderEl: placeholderEl || '#placeholder-empty',
+            backgroundImageUrl: '/static/js/test/fixtures/background_map.png',
+            frameClass: 'frame',
+            activeFrameClass: 'active',
+            modelRun: modelRun,
+            model: map
+        });
+
     }
 
     function makeRect(x1, y1, x2, y2) {
@@ -107,14 +114,13 @@ define([
         assertRectIsEqual(newRect, expected);
     });
 
+
     test('pixelsFromCoordinates should transform a lat/long coordinate into pixels', function() {
         var el = '#map-loaded';
         var map = makeMap(el);
         var frame = $(el).find('.frame').first();
         // Set an "active" image
         frame.addClass('active');
-
-        map.latLongBounds = makeBounds();
 
         // Use coordinates for the spill in the Long Island Sound script.
         var orig = {lat: 41.202120, long: -72.419992};
@@ -130,8 +136,6 @@ define([
         var frame = $(el).find('.frame').first();
         // Set an "active" image
         frame.addClass('active');
-
-        map.latLongBounds = makeBounds();
 
         // Approximate spill coordinates from the Long Island Sound script.
         var orig = {x: 710, y: 411};

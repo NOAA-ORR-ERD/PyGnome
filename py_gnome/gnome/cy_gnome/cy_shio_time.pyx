@@ -61,22 +61,22 @@ cdef class CyShioTime(object):
     id = property( lambda self: id(self)) 
     
     def __repr__(self):
-      """
-      Return an unambiguous representation of this object so it can be recreated 
-      """
-      # Tried the following, but eval(repr( obj_instance)) would not work on it so updated it to hard code the class name
-      # '{0.__class__}( "{0.filename}", daylight_savings_off={1})'.format(self, self.shio.daylight_savings_off)
-      return 'CyShioTime( "{0.filename}", daylight_savings_off={1})'.format(self, self.shio.daylight_savings_off)
+        """
+        Return an unambiguous representation of this object so it can be recreated 
+        """
+        # Tried the following, but eval(repr( obj_instance)) would not work on it so updated it to hard code the class name
+        # '{0.__class__}( "{0.filename}", daylight_savings_off={1})'.format(self, self.shio.daylight_savings_off)
+        return 'CyShioTime( "{0.filename}", daylight_savings_off={1})'.format(self, self.shio.daylight_savings_off)
       
     def __str__(self):
-       """Return string representation of this object"""
-       """info = {'Long': round(g_wp[0]['long'], 2),'Lat': round( g_wp[0]['lat'], 2),
-               'StationName': sName, 'StationType': sType,
-               'DaylightSavingsOff': self.shio.daylight_savings_off}"""
-       
-       info  = "CyShioTime object - Info read from file:\n  File: {1.filename} \n  StationName : {0[StationName]},  StationType : {0[StationType]}\n  (Long, Lat) : ({0[Long]}, {0[Lat]})\n  DaylightSavingsOff : {0[DaylightSavingsOff]}".format(self.get_info(),self)
-       
-       return info
+        """Return string representation of this object"""
+        """info = {'Long': round(g_wp[0]['long'], 2),'Lat': round( g_wp[0]['lat'], 2),
+                'StationName': sName, 'StationType': sType,
+                'DaylightSavingsOff': self.shio.daylight_savings_off}"""
+        
+        info  = "CyShioTime object - Info read from file:\n  File: {1.filename} \n  StationName : {0[StationName]},  StationType : {0[StationType]}\n  (Long, Lat) : ({0[Long]}, {0[Lat]})\n  DaylightSavingsOff : {0[DaylightSavingsOff]}".format(self.get_info(),self)
+        
+        return info
     
     def get_time_value(self, modelTime):
         """
@@ -96,9 +96,9 @@ cdef class CyShioTime(object):
         vel_rec = np.empty((modelTimeArray.size,), dtype=basic_types.velocity_rec)
         
         for i in range( 0, modelTimeArray.size):
-           err = self.shio.GetTimeValue( modelTimeArray[i], &vel_rec[i])
-           if err != 0:
-               raise ValueError("Error invoking ShioTimeValue_c.GetTimeValue method in CyShioTime: C++ OSERR = " + str(err))
+            err = self.shio.GetTimeValue( modelTimeArray[i], &vel_rec[i])
+            if err != 0:
+                raise ValueError("Error invoking ShioTimeValue_c.GetTimeValue method in CyShioTime: C++ OSERR = " + str(err))
             
         return vel_rec
     

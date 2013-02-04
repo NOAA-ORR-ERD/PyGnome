@@ -1,6 +1,7 @@
 """
 util.py: Utility function for the webgnome package.
 """
+import colander
 import datetime
 import inspect
 import json
@@ -12,12 +13,13 @@ import uuid
 from functools import wraps
 from itertools import chain
 import errno
+import colander
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
 
 
-def make_message(type, text):
+def make_message(type_in, text):
     """
     Create a dictionary suitable to be returned in a JSON response as a
     "message" sent to the JavaScript client.
@@ -27,7 +29,7 @@ def make_message(type, text):
     a ``type`` field and ``text`` field, it will display the message to the
     user.
     """
-    return dict(type=type, text=text)
+    return dict(type=type_in, text=text)
 
 
 def encode_json_date(obj):
@@ -50,6 +52,8 @@ def json_encoder(obj):
 
     if date_str:
         return date_str
+    elif obj is colander.null:
+        return None
     else:
         return str(obj)
 
@@ -105,37 +109,51 @@ class SchemaForm(object):
         else:
             raise AttributeError(name)
 
-    def get_field_value(self, field, parents=None):
-        value = None
-        parents = parents or []
+    def __get__(self, name):
+        return self._fields[name]
 
-        if self.obj:
-            target = self.obj
+    def get_default_field_value(self, field):
+        value = field.default
 
-            for parent in parents:
-                if isinstance(target, dict):
-                    target = target.get(parent, None)
-                else:
-                    target = getattr(target, parent, None)
+        if value is colander.null and field.children:
+            fields = []
+            for sub_field in field.children:
+                sub_field_value = self.get_default_field_value(sub_field)
+                fields.append((sub_field.name, sub_field_value))
+            value = dict(fields)
 
-            if isinstance(target, dict):
-                value = target.get(field.name, None)
-            elif hasattr(target, field.name):
-                value = getattr(target, field.name, None)
+        return value
+
+    def make_value_object(self, value):
+        fields = []
+        for key, val in value.items():
+            if isinstance(val, dict):
+                val = self.make_value_object(val)
+            fields.append((key, val))
+        return self.ObjectValue(fields)
+
+    def get_field_value(self, field, target=None):
+        """
+        Return a value for a Colander field object ``field``.
+
+        If ``target`` is provided and is an object or dictionary, then
+        attempt to look up the value by the name of ``field`` on ``target``.
+
+        Otherwise, or if the value was not found on ``target``, use the field's
+        default value if provided, falling back to None.
+        """
+        if isinstance(target, dict):
+            value = target.get(field.name, None)
         else:
-            # Use schema default. Catch defaults of 0 by checking against None.
-            if field.default is not None:
-                value = field.default
+            value = getattr(target, field.name, None)
 
-        value = field.serialize(value) if value is not None else ''
+        if value is None:
+            value = self.get_default_field_value(field)
+        else:
+            value = field.serialize(value)
 
         if isinstance(value, dict):
-            fields = []
-            for key, val in value.items():
-                if isinstance(val, dict):
-                    val = self.get_field_value(val)
-                fields.append((key, val))
-            return self.ObjectValue(fields)
+            value = self.make_value_object(value)
 
         return value
 
@@ -147,10 +165,10 @@ class SchemaForm(object):
         field by looking it up by name on ``obj``, either as a field or a key
         in a dict-like object.
 
-        If ``obj`` was not given, look up the form defaults in ``self.schema``.
+        If ``obj`` was not given, look up field defaults.
         """
         for field in self.schema.children:
-            self._fields[field.name] = self.get_field_value(field)
+            self._fields[field.name] = self.get_field_value(field, self.obj)
 
 
 def get_model_from_session(request):
@@ -276,6 +294,30 @@ def valid_spill_id(request):
         request.errors.status = 404
 
 
+def valid_coordinate_pair(request):
+    """
+    A Cornice validator that looks for a coordinate pair sent as `lat` and
+    `lon` GET parameters.
+    """
+    lat = request.GET.get('lat', None)
+    lon = request.GET.get('lon', None)
+
+    if lat is None:
+        request.errors.add('body', 'coordinates', 'Latitude is required as '
+                                                  '"lat" GET parameter.')
+        request.errors.status = 400
+
+    if lon is None:
+        request.errors.add('body', 'coordinates', 'Longitude is required as '
+                                                  '"lon" GET parameter.')
+        request.errors.status = 400
+
+    request.validated['coordinates'] = {
+        'lat': lat,
+        'lon': lon
+    }
+
+
 def require_model(f):
     """
     Wrap a JSON view in a precondition that ensures the user has a valid model
@@ -396,6 +438,3 @@ def mkdir_p(path):
 
 velocity_unit_values = list(chain.from_iterable(
     [item[1] for item in ConvertDataUnits['Velocity'].values()]))
-
-velocity_unit_options = [(values[1][0], values[1][0]) for label, values in
-                         ConvertDataUnits['Velocity'].items()]

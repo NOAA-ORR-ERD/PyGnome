@@ -58,29 +58,29 @@ Map3D_c::Map3D_c(char* name, WorldRect bounds) : Map_c(name, bounds)
 	fBoundaryTypeH = 0;
 	fBoundaryPointsH = 0;
 
-	bDrawLandBitMap = false;	// combined option for now
-	bDrawWaterBitMap = false;
+	//bDrawLandBitMap = false;	// combined option for now
+	//bDrawWaterBitMap = false;
 	
-	bShowLegend = true;
-	bShowGrid = false;
-	bShowDepthContours = false;
+	//bShowLegend = true;
+	//bShowGrid = false;
+	//bShowDepthContours = false;
 	
-	bDrawContours = true;
+	//bDrawContours = true;
 	
-	fDropletSizesH = 0;
+	//fDropletSizesH = 0;
 	
-	memset(&fLegendRect,0,sizeof(fLegendRect)); 
+	//memset(&fLegendRect,0,sizeof(fLegendRect)); 
 	
-	fWaterDensity = 1020;
-	fMixedLayerDepth = 10.;	//meters
-	fBreakingWaveHeight = 1.;	// meters
-	fDiagnosticStrType = 0;
+	//fWaterDensity = 1020;
+	//fMixedLayerDepth = 10.;	//meters
+	//fBreakingWaveHeight = 1.;	// meters
+	//fDiagnosticStrType = 0;
 	
 	fMinDistOffshore = 0.;	//km - use bounds to set default
-	bUseLineCrossAlgorithm = false;
-	bUseSmoothing = false;
+	//bUseLineCrossAlgorithm = false;
+	//bUseSmoothing = false;
 	
-	fWaveHtInput = 0;	// default compute from wind speed
+	//fWaveHtInput = 0;	// default compute from wind speed
 
 	fVerticalGridType = TWO_D;
 	fGridType = CURVILINEAR;
@@ -214,7 +214,7 @@ Boolean Map3D_c::ThereIsADispersedSpill()
 	return false;
 }
 
-double Map3D_c::GetSpillStartDepth()
+/*double Map3D_c::GetSpillStartDepth()
 {
 	long i, n;
 	TLEList *thisLEList;
@@ -227,7 +227,7 @@ double Map3D_c::GetSpillStartDepth()
 	{
 		model->LESetsList->GetListItem((Ptr)&thisLEList, i);
 		leType = thisLEList -> GetLEType();
-		if(leType == UNCERTAINTY_LE /*&& !this->IsUncertain()*/) continue;
+		if(leType == UNCERTAINTY_LE) continue;
 		//if ((*(TOLEList*)thisLEList).fDispersantData.bDisperseOil || (*(TOLEList*)thisLEList).fAdiosDataH)
 		//return true;
 		// will need to consider spill set below the surface
@@ -235,7 +235,7 @@ double Map3D_c::GetSpillStartDepth()
 			return (*(dynamic_cast<TOLEList*>(thisLEList))).fSetSummary.z;
 	}
 	return spillStartDepth;
-}
+}*/
 
 
 Boolean Map3D_c::CanReFloat(Seconds time, LERec *theLE) 
@@ -614,7 +614,7 @@ WorldPoint3D Map3D_c::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,World
 
 /////////////////////////////////////////////////
 
-double Map3D_c::GetBreakingWaveHeight(void)
+/*double Map3D_c::GetBreakingWaveHeight(void)
 {
 	double velAt10meters=0, windStress, significantWaveHt, breakingWaveHt = 0;
 	VelocityRec windVel;
@@ -644,7 +644,7 @@ double Map3D_c::GetBreakingWaveHeight(void)
 	}
 	
 	return breakingWaveHt;
-}
+}*/
 
 long Map3D_c::GetNumBoundarySegs(void)
 {
@@ -673,13 +673,13 @@ Boolean Map3D_c::IsBoundaryPoint(long pt)
 	return pt < GetNumBoundaryPts();
 }
 
-long Map3D_c::GetNumContourLevels(void)
+/*long Map3D_c::GetNumContourLevels(void)
 {
 	long numInHdl = 0;
 	if (fContourLevelsH) numInHdl = _GetHandleSize((Handle)fContourLevelsH)/sizeof(**fContourLevelsH);
 	
 	return numInHdl;
-}
+}*/
 
 
 OSErr Map3D_c::InitMap()
@@ -690,39 +690,3 @@ OSErr Map3D_c::InitMap()
 }
 
 
-void Map3D_c::FindNearestBoundary(WorldPoint wp, long *verNum, long *segNo)
-{
-	long startVer = 0,i,jseg;
-	//WorldPoint wp = ScreenToWorldPoint(where, MapDrawingRect(), settings.currentView);
-	WorldPoint wp2;
-	LongPoint lp;
-	long lastVer = GetNumBoundaryPts();
-	//long nbounds = GetNumBoundaries();
-	long nSegs = GetNumBoundarySegs();	
-	float wdist = LatToDistance(ScreenToWorldDistance(4));
-	LongPointHdl ptsHdl = GetPointsHdl();
-	if(!ptsHdl) return;
-	*verNum= -1;
-	*segNo =-1;
-	for(i = 0; i < lastVer; i++)
-	{
-		//wp2 = (*gVertices)[i];
-		lp = (*ptsHdl)[i];
-		wp2.pLat = lp.v;
-		wp2.pLong = lp.h;
-		
-		if(WPointNearWPoint(wp,wp2 ,wdist))
-		{
-			//for(jseg = 0; jseg < nbounds; jseg++)
-			for(jseg = 0; jseg < nSegs; jseg++)
-			{
-				if(i <= (*fBoundarySegmentsH)[jseg])
-				{
-					*verNum  = i;
-					*segNo = jseg;
-					break;
-				}
-			}
-		}
-	} 
-}

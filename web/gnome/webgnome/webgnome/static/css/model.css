@@ -31,6 +31,19 @@ ul.dynatree-container {
     padding-top: 0;
 }
 
+#slider-shaded {
+    position: absolute;
+    height: 100%;
+    width: 0;
+    top: 0;
+    left: 0;
+    background-color: gray;
+}
+
+#main-content {
+    margin-left: 10px;
+}
+
 .ui-slider .ui-slider-handle {
     height: 1em;
 }
@@ -101,6 +114,14 @@ legend {
     max-width: 700px;
 }
 
+.add-time-forms {
+    margin-right: 5px;
+}
+
+.edit-time-forms {
+    overflow: auto;
+}
+
 .edit-time-forms th {
     padding: 0 8px 8px 8px;
 }
@@ -163,8 +184,7 @@ legend {
 }
 
 .wind-values {
-    overflow: scroll;
-    max-height: 400px;
+    max-height: 280px;
 }
 
 .wind form {
@@ -175,12 +195,69 @@ legend {
     width: 120px;
 }
 
+#map_canvas img, .nws-map-canvas img {
+    max-width: none !important;
+}
+
 #map_canvas {
     height: 500px;
     width: 700px;
+}
+
+.nws-map-canvas {
+    height: 300px;
+    width: 300px;
 }
 
 .modal-body {
     max-height: 800px;
 }
 
+.form.wind .span4 {
+    width: 370px;
+}
+
+.show-compass {
+    color: blue!important;
+}
+
+.wind-mover-nav {
+    margin-left: 70px;
+    margin-bottom: 20px;
+}
+
+.wind-mover-header {
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+.icon-warning-sign.error {
+    color: red;
+}
+
+.ui-tooltip {
+    padding: 8px;
+    position: absolute;
+    z-index: 9999;
+    max-width: 300px;
+    -webkit-box-shadow: 0 0 5px #aaa;
+    box-shadow: 0 0 5px #aaa;
+}
+
+/* Fades and background-images don't work well together in IE6, drop the image */
+* html .ui-tooltip {
+    background-image: none;
+}
+
+body .ui-tooltip {
+    border-width: 2px;
+}
+
+#description {
+ width: 130px;
+ height: 50px;
+}
+
+table.time-list td {
+    padding: 2px;
+}

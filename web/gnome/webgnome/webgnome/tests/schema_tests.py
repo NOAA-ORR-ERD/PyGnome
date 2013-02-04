@@ -1,3 +1,4 @@
+import colander
 import datetime
 import numpy
 
@@ -18,7 +19,7 @@ class WindValueSchemaTests(TestCase):
             'direction': 180.5
         }
 
-        wind_value = schema.WindValueSchema().serialize(data)
+        wind_value = schema.TimeseriesValueSchema().serialize(data)
 
         self.assertEqual(wind_value['direction'], str(data['direction']))
         self.assertEqual(wind_value['speed'], str(data['speed']))
@@ -34,11 +35,21 @@ class WindValueSchemaTests(TestCase):
             'direction': '180.5'
         }
 
-        wind_value = schema.WindValueSchema().deserialize(data)
+        wind_value = schema.TimeseriesValueSchema().deserialize(data)
 
         self.assertEqual(wind_value['direction'], float(data['direction']))
         self.assertEqual(wind_value['speed'], float(data['speed']))
         self.assertEqual(wind_value['datetime'], dt_without_tz)
+
+    def test_speed_must_be_nonzero(self):
+        data = {
+            'datetime': datetime.datetime.now(),
+            'speed': 0,
+            'direction': 180.5
+        }
+
+        self.assertRaises(colander.Invalid,
+                          schema.TimeseriesValueSchema().deserialize, data)
 
 
 class WindSchemaTests(TestCase):

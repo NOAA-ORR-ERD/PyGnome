@@ -6,7 +6,7 @@ class NavigationTree(object):
     def __init__(self, model):
         self.model = model
 
-    def _get_value_title(self, name, value, max_chars=50):
+    def _get_value_title(self, name, value, max_chars=200):
         """
         Return a title string that combines ``name`` and ``value``, with value
         shortened if it is longer than ``max_chars``.
@@ -32,7 +32,7 @@ class NavigationTree(object):
         """
         children = []
         for node in nodes:
-            node_id = node['id'] if 'id' in node else None
+            node_id = node.pop('id') if 'id' in node else None
 
             item = {
                 'form_id': form_id,
@@ -76,10 +76,15 @@ class NavigationTree(object):
                                   object_type='wind_mover',
                                   form_id='edit_wind_mover'))
 
+        movers['children'].extend(
+            self._render_children(data.pop('random_movers', []),
+                                  object_type='random_mover',
+                                  form_id='edit_random_mover'))
+
         spills['children'].extend(
-            self._render_children(data.pop('point_release_spills', []),
-                                  object_type='point_release_spill',
-                                  form_id='edit_point_release_spill'))
+            self._render_children(data.pop('surface_release_spills', []),
+                                  object_type='surface_release_spill',
+                                  form_id='edit_surface_release_spill'))
 
          # Add the map manually as the first model setting
         map_data = data.pop('map')
@@ -92,7 +97,7 @@ class NavigationTree(object):
         })
 
         settings['children'].extend(self._render_children(
-            [dict(name=self._get_value_title(key, value))
+            [dict(name=self._get_value_title(key, value), id=self.model.id)
              for key, value in data.items()], form_id='model_settings'))
 
         return [settings, movers, spills]

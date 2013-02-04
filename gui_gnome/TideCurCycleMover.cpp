@@ -1364,6 +1364,7 @@ OSErr TideCurCycleMover::TextRead(char *path, TMap **newMap, char *topFilePath)
 		//code goes here, come up with a graceful way to pass the message of the topology file path
 		//{strcpy(fTopFilePath,"resnum 10009"); err = ReadTopology(fTopFilePath,newMap); goto done;}
 	{if (topFilePath[0]) {strcpy(fTopFilePath,topFilePath); err = ReadTopology(fTopFilePath,newMap); goto done;}}
+	if (topFilePath[0]) {err = ReadTopology(topFilePath,newMap); goto done;}
 	//if (model->fWizard->HaveOpenWizardFile())
 	//{	// there is a location file
 	//if (fTopPath[0]) err = ReadTopology(topPath,newMap);	// if location file specified path don't ask

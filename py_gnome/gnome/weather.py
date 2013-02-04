@@ -2,12 +2,15 @@
 module contains objects that contain weather related data. For example,
 the Wind object defines the Wind conditions for the spill
 """
+
+import datetime
+
+import numpy as np
+
 from gnome import basic_types, GnomeObject
 from gnome.utilities import transforms, time_utils, convert
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from hazpy import unit_conversion
-
-import numpy as np
 
 class Wind(GnomeObject):
     """
@@ -85,13 +88,13 @@ class Wind(GnomeObject):
             raise ValueError('timeseries must contain unique entries. Number of duplicate entries ' + str(len(timeseries)-len(unique) ) )
         
     def __repr__(self):
-       """
-       Return an unambiguous representation of this `Wind object` so it can be recreated
-       
-       This timeseries are not output. eval(repr(wind)) does not work for this object and the timeseries could be long
-       so only the syntax for obtaining the timeseries is given in repr
-       """
-       return "Wind( timeseries=Wind.get_timeseries(basic_types.data_format.wind_uv), data_format=basic_types.data_format.wind_uv)" \
+        """
+        Return an unambiguous representation of this `Wind object` so it can be recreated
+        
+        This timeseries are not output. eval(repr(wind)) does not work for this object and the timeseries could be long
+        so only the syntax for obtaining the timeseries is given in repr
+        """
+        return "Wind( timeseries=Wind.get_timeseries(basic_types.data_format.wind_uv), data_format=basic_types.data_format.wind_uv)" \
     
     def __str__(self):
         """
@@ -130,9 +133,9 @@ class Wind(GnomeObject):
             datetimeval = convert.to_datetime_value_2d(timeval, data_format)
         
         if units is not None:
-           datetimeval['value'] = self._convert_units(datetimeval['value'], data_format, 'meter per second', units)
+            datetimeval['value'] = self._convert_units(datetimeval['value'], data_format, 'meter per second', units)
         else:
-           datetimeval['value'] = self._convert_units(datetimeval['value'], data_format, 'meter per second', self.user_units)
+            datetimeval['value'] = self._convert_units(datetimeval['value'], data_format, 'meter per second', self.user_units)
             
         return datetimeval
     
@@ -154,22 +157,21 @@ class Wind(GnomeObject):
         timeval = convert.to_time_value_pair(datetime_value_2d, data_format)
         self.ossm.timeseries = timeval
     
-    
-def constant_wind(speed, direction, units):
-    """
-    utility to create a constant wind
 
+def ConstantWind(speed, direction, units='m/s'):
+    """
+    utility to create a constant wind "timeseries"
+    
     :param speed: speed of wind 
     :param direction: direction -- degrees True, direction wind is from( degrees True )
     :param unit='m/s': units for speed, as a string, i.e. "knots", "m/s", "cm/s", etc.
     """
-    series = np.zeros((1,), dtype=basic_types.datetime_value_2d)
-    series['value'][0] = (speed, direction)
-    return Wind( timeseries=series, 
-                 units=units)
-
-
-
-
+    wind_vel = np.zeros((1,), dtype=basic_types.datetime_value_2d)
+    wind_vel['time'][0] = datetime.datetime.now() # jsut to have a time 
+    wind_vel['value'][0] = (speed, direction)
+    
+    return Wind(timeseries=wind_vel,
+                data_format=basic_types.data_format.magnitude_direction,
+                units=units)
 
         

@@ -39,8 +39,10 @@
 
 <div class="container-fluid outer-wrapper">
     <div class="row-fluid inner-wrapper">
-        <div class="span2" id="sidebar">
-            <%block name="sidebar"> </%block>
+        <div class="" id="sidebar">
+            <div id="sidebar-container">
+                <%block name="sidebar"> </%block>
+            </div>
         </div>
         <div class="span8" id="content">
             <%block name="content"> </%block>

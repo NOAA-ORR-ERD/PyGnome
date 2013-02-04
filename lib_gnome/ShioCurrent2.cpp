@@ -403,12 +403,13 @@ short GetRefCurrent(CONSTITUENT *constituent,	// Amplitude-phase array structs
 			j=i-actualNoOfConst;
 		}
 		
-#ifdef pyGNOME
+/*#ifdef pyGNOME
 		AMPAPtr[i] = constituent[i].H ;// AH 03/21/2012 * XODE[j];
-#else
+		epochPtr[i] = - constituent[i].kPrime;	// TODO: Until we get YearData
+#else*/
 	 	AMPAPtr[i] = constituent[i].H * XODE[j];
-#endif
 		epochPtr[i] = VPU[j] - constituent[i].kPrime;
+//#endif
 	}
 	
 	// OK now time step and compute currents for reference

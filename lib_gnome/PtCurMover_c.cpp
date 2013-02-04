@@ -151,13 +151,13 @@ OSErr PtCurMover_c::PrepareForModelStep(const Seconds& model_time,const Seconds&
 	 ((TTriGridVel3D*)fGrid)->ClearOutputHandles();
 	 }
 	 }*/
+	if (bIsFirstStep)
+		fModelStartTime = model_time;
+	
 	if (!bActive) return 0; 
 	err = this -> SetInterval(errmsg, model_time); // AH 07/17/2012
 	
 	if(err) goto done;
-	
-	if (bIsFirstStep)
-		fModelStartTime = model_time;
 	
 	if (uncertain)
 	{

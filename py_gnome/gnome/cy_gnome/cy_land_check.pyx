@@ -51,9 +51,9 @@ cdef int32_t c_overlap_grid(int32_t m,
     elif y1 < 0 and y2 < 0: # both below 
         return 0
     elif x1 >= m and x2 >= m: # both right
-         return 0 
+        return 0 
     elif y1 >= n and y2 >= n: # both above
-         return 0
+        return 0
     else:
         return 1
 
@@ -203,7 +203,7 @@ def find_first_pixel(grid, pt1, pt2):
     if result:
         return (prev_x, prev_y), (hit_x, hit_y)
     else:
-       return None
+        return None
 
 ## called by a method in gnome.map.RasterMap class
 from gnome.basic_types import world_point_type, oil_status

@@ -353,7 +353,6 @@
     save: function(key, val, options) {
       var attrs, current, done;
 
-
       // Handle both `"key", value` and `{key: value}` -style arguments.
       if (key == null || _.isObject(key)) {
         attrs = key;

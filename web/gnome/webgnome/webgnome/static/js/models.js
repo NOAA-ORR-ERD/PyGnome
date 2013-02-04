@@ -108,14 +108,23 @@ define([
             }
 
             this.dirty = false;
-            this.expectedTimeSteps = data.expected_time_steps;
 
-            if (_.has(data, 'time_step')) {
-                this.addTimeStep(data.time_step)                ;
+            var isFirstStep = data.time_step.id === 0;
+
+            // The Gnome model was reset on the server without our knowledge,
+            // so reset the client-side model to stay in sync.
+            if (isFirstStep && this.currentTimeStep) {
+                this.rewind();
+                this.trigger(ModelRun.SERVER_RESET);
             }
 
-            this.trigger(ModelRun.RUN_BEGAN, data);
-            this.getNextTimeStep();
+            this.addTimeStep(data.time_step);
+
+            if (isFirstStep) {
+                this.expectedTimeSteps = data.expected_time_steps;
+                this.trigger(ModelRun.RUN_BEGAN, data);
+            }
+
             return true;
         },
 
@@ -172,11 +181,9 @@ define([
                 runUntilTimeStep: this.runUntilTimeStep
             }, opts);
 
-            if (options.runUntilTimeStep) {
-                this.runUntilTimeStep = options.runUntilTimeStep;
-            }
+            this.runUntilTimeStep = options.runUntilTimeStep || null;
 
-            if (this.dirty) {
+            if (this.dirty || this.runUntilTimeStep) {
                 this.doRun(options);
                 return;
             }
@@ -196,6 +203,9 @@ define([
          */
         addTimeStep: function(timeStepJson) {
             var timeStep = new TimeStep(timeStepJson);
+            var now = new Date().getTime();
+            var requestBegan = this.timeStepRequestBegin || now;
+            timeStep.set('requestTime', now - requestBegan);
             this.add(timeStep);
             this.setCurrentTimeStep(timeStep.id);
         },
@@ -255,34 +265,16 @@ define([
                 return;
             }
 
+            this.timeStepRequestBegin = new Date().getTime();
+
             // Request the next step from the server.
             $.ajax({
                 type: "GET",
                 url: this.url,
-                success: this.timeStepRequestSuccess,
+                success: this.runSuccess,
                 error: this.timeStepRequestFailure
             });
         },
-
-        timeStepRequestSuccess: function(data) {
-            var message = util.parseMessage(data);
-
-            if (message) {
-                this.trigger(ModelRun.MESSAGE_RECEIVED, message);
-
-                if (message.error) {
-                    this.trigger(ModelRun.RUN_ERROR);
-                    return;
-                }
-            }
-
-            if (!data.time_step) {
-                this.trigger(ModelRun.RUN_ERROR);
-                return;
-            }
-
-            this.addTimeStep(data.time_step);
-       },
 
        timeStepRequestFailure: function(xhr, textStatus, errorThrown) {
            if (xhr.status === 500) {
@@ -343,7 +335,7 @@ define([
             this.rewind();
             this.reset();
             this.expectedTimeSteps = [];
-        },
+        }
     }, {
         // Class constants
         ZOOM_IN: 'zoom_in',
@@ -356,7 +348,8 @@ define([
         RUN_FINISHED: 'model:modelRunFinished',
         RUN_ERROR: 'model:runError',
         NEXT_TIME_STEP_READY: 'model:nextTimeStepReady',
-        MESSAGE_RECEIVED: 'model:messageReceived'
+        MESSAGE_RECEIVED: 'model:messageReceived',
+        SERVER_RESET: 'model:serverReset'
     });
 
 
@@ -365,10 +358,78 @@ define([
         // during `toJSON` calls and to `moment` objects during `get` calls.
         dateFields: null,
 
+        initialize: function() {
+            this.bind('change', this.onIndexChange, this)
+        },
+
+        onIndexChange: function() {
+            if (this.collection) {
+                this.collection.sort({silent: true});
+            }
+        },
+
+        change: function() {
+            this.dirty = true;
+
+            BaseModel.__super__.change.apply(this, arguments)
+        },
+
+        save: function(attrs, options) {
+            options = options || {};
+
+            if (!_.has(options, 'wait')) {
+                options.wait = true;
+            }
+
+            if (!_.has(options, 'success')) {
+                options.success = this.success;
+            }
+
+            if (!_.has(options, 'error')) {
+                options.error = this.error;
+            }
+
+            BaseModel.__super__.save.apply(this, [attrs, options]);
+        },
+
+        success: function(model, response, options) {
+            model.errors = null;
+            model.dirty = false;
+        },
+
+        error: function(model, response, options) {
+            try {
+                response = $.parseJSON(response.responseText);
+            } catch(e) {
+                response.errors = [{
+                    name: 'server',
+                    description: 'A server error prevented saving the model.'
+                }];
+            }
+
+            if (response.errors.length) {
+                model.errors = response.errors;
+                model.set(model.previousAttributes());
+            }
+        },
+
+        fetch: function(options) {
+            options = options || {};
+            var _this = this;
+
+            if (!_.has(options, 'success')) {
+                options.success = function() {
+                    _this.dirty = false;
+                };
+            }
+
+            BaseModel.__super__.fetch.apply(this, [options]);
+        },
+
         parse: function(response) {
             var message = util.parseMessage(response);
             if (message) {
-                this.trigger(this.constructor.__super__.MESSAGE_RECEIVED, message);
+                this.trigger(BaseModel.__super__.MESSAGE_RECEIVED, message);
             }
 
             var data = BaseModel.__super__.parse.apply(this, arguments);
@@ -416,6 +477,13 @@ define([
     }, {
         MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
     });
+    
+    
+    var BaseCollection = Backbone.Collection.extend({
+        initialize: function (objs, opts) {
+            this.url = opts.url;
+        }       
+    });
 
 
     var Model = BaseModel.extend({
@@ -429,57 +497,83 @@ define([
     });
 
 
-    // Spills
+    function arrayHelper(field_name, index) {
+        return function() {
+            var value = this.get(field_name);
+            if (value && value.length >= index) {
+                return value[index];
+            }
+        }
+    }
 
-    var PointReleaseSpill = BaseModel.extend({
-        dateFields: ['release_time']
+
+    // Spills
+    var SurfaceReleaseSpill = BaseModel.extend({
+        dateFields: ['release_time'],
+
+        start_position_x: arrayHelper('start_position', 0),
+        start_position_y: arrayHelper('start_position', 1),
+        start_position_z: arrayHelper('start_position', 2),
+        windage_range_min: arrayHelper('windage_range', 0),
+        windage_range_max: arrayHelper('windage_range', 1)
     });
 
 
-    var PointReleaseSpillCollection = Backbone.Collection.extend({
-        model: PointReleaseSpill,
+    var SurfaceReleaseSpillCollection = BaseCollection.extend({
+        model: SurfaceReleaseSpill,
 
-        initialize: function(spills, opts) {
-            this.url = opts.url;
+        comparator: function(spill) {
+            return moment(spill.get('release_time')).valueOf();
         }
     });
 
 
     // Movers
-    var WindValue = BaseModel.extend({
-        dateFields: ['datetime']
-    });
-
-    var WindValueCollection = Backbone.Collection.extend({
-        model: WindValue,
-
-        comparator: function(item) {
-            return item.get('datetime');
-        }
-    });
-
 
     var Wind = BaseModel.extend({
-        initialize: function(attrs) {
-            var timeseries = [];
-            if (attrs && _.has(attrs, 'timeseries')) {
-                timeseries = attrs['timeseries'];
-                delete(attrs['timeseries']);
+        dateFields: ['updated_at'],
+
+        initialize: function(attrs, options) {
+            if (!attrs || !attrs.timeseries) {
+                this.set('timeseries', []);
             }
-            this.set('timeseries', new WindValueCollection(timeseries));
+        },
+
+        /*
+         Whenever `timeseries` is set, sort it by datetime.
+         */
+        set: function(key, val, options) {
+            if (key.timeseries && key.timeseries.length) {
+                key.timeseries = _.sortBy(key.timeseries, 'datetime');
+            } else if (key === 'timeseries' && val && val.length) {
+                val = _.sortBy(val, 'datetime');
+            }
+
+            return Wind.__super__.set.apply(this, [key, val, options]);
         }
     });
 
 
-    var WindMover = BaseModel.extend({
+    var BaseMover = BaseModel.extend({
+        dateFields: ['active_start', 'active_stop']
+    });
+
+
+    var WindMover = BaseMover.extend({
+
         /*
          If the user passed an object for `key`, as when setting multiple
          attributes at once, then make sure the 'wind' field is a `Wind`
          object.
          */
         set: function(key, val, options) {
-            if (key && _.isObject(key) && _.has(key, 'wind')) {
-                key['wind'] = new Wind(key['wind']);
+            if (key && key.wind) {
+                // Assume an object with a `get` method is a Model; otherwise
+                // assume the value is JSON that we need to send to a Wind
+                // constructor.
+                if (key['wind'].get === undefined) {
+                    key['wind'] = new Wind(key['wind']);
+                }
             } else if (this.get('wind') === undefined) {
                 key['wind'] = new Wind();
             }
@@ -488,22 +582,40 @@ define([
             return this;
         },
 
-        parse: function(response) {
-            var attrs = WindMover.__super__.parse.apply(this, [response]);
-            var wind = {};
-            if (attrs && _.has(attrs, 'wind')) {
-                attrs['wind'] = new Wind(wind);
+        type: function() {
+            var timeseries = this.get('wind.timeseries');
+
+            if (timeseries && timeseries.length > 1) {
+                return 'variable-wind';
+            } else {
+                return 'constant-wind';
             }
-            return attrs;
         }
     });
 
 
-    var WindMoverCollection = Backbone.Collection.extend({
+    var WindMoverCollection = BaseCollection.extend({
         model: WindMover,
 
-        initialize: function(movers, opts) {
-            this.url = opts.url;
+        comparator: function(mover) {
+            var wind = mover.get('wind');
+            var timeseries = wind.get('timeseries');
+
+            if (timeseries.length) {
+                return moment(timeseries[0].datetime).valueOf();
+            }
+        }
+    });
+    
+    
+    var RandomMover = BaseMover.extend({});
+    
+    
+    var RandomMoverCollection = BaseCollection.extend({
+        model: RandomMover,
+
+        comparator: function(mover) {
+            return this.get('active_start');
         }
     });
 
@@ -515,16 +627,28 @@ define([
     });
 
 
+    function getNwsWind(coords, success) {
+        var url = '/nws/wind?lat=' + coords.latitude + '&lon=' + coords.longitude;
+        $.ajax({
+            url: url,
+            success: success,
+            dataType: 'json'
+        });
+    }
+      
+
     return {
         TimeStep: TimeStep,
         ModelRun: ModelRun,
         Model: Model,
-        PointReleaseSpill: PointReleaseSpill,
-        PointReleaseSpillCollection: PointReleaseSpillCollection,
+        SurfaceReleaseSpill: SurfaceReleaseSpill,
+        SurfaceReleaseSpillCollection: SurfaceReleaseSpillCollection,
         WindMover: WindMover,
         WindMoverCollection: WindMoverCollection,
-        WindValue: WindValue,
-        Map: Map
+        RandomMover: RandomMover,
+        RandomMoverCollection: RandomMoverCollection,
+        Map: Map,
+        getNwsWind: getNwsWind
     };
 
 });

@@ -1,35 +1,35 @@
 from cornice.resource import resource, view
 
 from webgnome import util
-from webgnome.model_manager import WebPointReleaseSpill
-from webgnome.schema import PointReleaseSpillSchema
+from webgnome.model_manager import WebSurfaceReleaseSpill
+from webgnome.schema import SurfaceReleaseSpillSchema
 from webgnome.views.services.base import BaseResource
 
 
-@resource(collection_path='/model/{model_id}/spill/point_release',
-          path='/model/{model_id}/spill/point_release/{id}',
-          renderer='gnome_json', description='A point release spill.')
-class PointReleaseSpill(BaseResource):
+@resource(collection_path='/model/{model_id}/spill/surface_release',
+          path='/model/{model_id}/spill/surface_release/{id}',
+          renderer='gnome_json', description='A surface release spill.')
+class SurfaceReleaseSpill(BaseResource):
 
     @view(validators=util.valid_model_id)
     def collection_get(self):
         """
-        Return a list of existing PointReleaseSpills.
+        Return a list of existing SurfaceReleaseSpills.
         """
         data = self.request.validated
         model = data.pop('model')
         model_data = model.to_dict(include_spills=True)
 
-        return model_data['point_release_spills']
+        return model_data['surface_release_spills']
 
-    @view(validators=util.valid_model_id, schema=PointReleaseSpillSchema)
+    @view(validators=util.valid_model_id, schema=SurfaceReleaseSpillSchema)
     def collection_post(self):
         """
-        Create a PointReleaseSpill from a JSON representation.
+        Create a SurfaceReleaseSpill from a JSON representation.
         """
         data = self.request.validated
         model = data.pop('model')
-        spill = WebPointReleaseSpill(**data)
+        spill = WebSurfaceReleaseSpill(**data)
         model.spills.add(spill)
 
         return spill.to_dict()
@@ -37,27 +37,31 @@ class PointReleaseSpill(BaseResource):
     @view(validators=util.valid_spill_id)
     def get(self):
         """
-        Return a JSON representation of the PointReleaseSpill matching the
+        Return a JSON representation of the SurfaceReleaseSpill matching the
         ``id`` matchdict value.
         """
         spill = self.request.validated['model'].spills.get(self.id)
         return spill.to_dict()
 
-    @view(validators=util.valid_spill_id, schema=PointReleaseSpillSchema)
+    @view(validators=util.valid_spill_id, schema=SurfaceReleaseSpillSchema)
     def put(self):
         """
-        Update an existing PointReleaseSpill from a JSON representation.
+        Update an existing SurfaceReleaseSpill from a JSON representation.
         """
         data = self.request.validated
         model = data.pop('model')
-        spill = WebPointReleaseSpill(**data)
-        model.spills[self.id] = spill
+        spill = model.spills.get(self.id)
+        spill.from_dict(data)
+        model.rewind()
+
         return spill.to_dict()
 
     @view(validators=util.valid_spill_id)
     def delete(self):
         """
-        Delete a PointReleaseSpill.
+        Delete a SurfaceReleaseSpill.
         """
-        self.request.validated['model'].spills.remove(self.id)
+        model = self.request.validated['model']
+        model.spills.remove(self.id)
+        model.rewind()
 

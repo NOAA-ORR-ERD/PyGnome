@@ -210,9 +210,7 @@ OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	
 	//err = this -> UpdateUncertainty();
 	//if(err) return err;
-	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
-	
 	
 	if(useEddyUncertainty)
 	{
@@ -282,11 +280,12 @@ OSErr CATSMover_c::PrepareForModelRun()
 OSErr CATSMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err =0;
-	if (!bActive) return noErr;
 	
 	if (err = CurrentMover_c::PrepareForModelStep(model_time, time_step, uncertain, numLESets, LESetsSizesList)) 
 		return err; // note: this calls UpdateUncertainty()
 	
+	if (!bActive) return noErr;
+
 	err = this -> ComputeVelocityScale(model_time);	// AH 07/10/2012
 	
 	this -> fOptimize.isOptimizedForStep = true;
@@ -509,7 +508,7 @@ OSErr CATSMover_c::ReadTopology(char* path/*, TMap **newMap*/)
 	errmsg[0]=0;
 	
 	if (!path || !path[0]) return 0;
-	
+
 	//	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
 	//		TechError("TCATSMover::ReadTopology()", "ReadFileContents()", err);
 	//		goto done;

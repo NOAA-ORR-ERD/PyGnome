@@ -6,9 +6,11 @@ define([
     'models',
     'util',
     'lib/geo',
+    'lib/rivets',
     'lib/moment',
-    'lib/compass-ui'
-], function($, _, Backbone, models, util, geo) {
+    'lib/compass-ui',
+    'lib/bootstrap-tab'
+], function($, _, Backbone, models, util, geo, rivets) {
 
     var FormViewContainer = Backbone.View.extend({
         initialize: function() {
@@ -25,6 +27,9 @@ define([
             view.on(FormView.REFRESHED, function(form) {
                 _this.trigger(FormView.REFRESHED, form);
             });
+            view.on(FormView.MESSAGE_READY, function(message) {
+                _this.trigger(FormView.MESSAGE_READY, message);
+            });
         },
 
         get: function(formId) {
@@ -37,6 +42,11 @@ define([
             });
         }
     });
+
+    function ModelNotFoundException(message) {
+        this.message = message;
+        this.name = "ModelNotFoundException";
+    }
 
     /*
      `FormView` is the base class for forms intended to wrap Backbone models.
@@ -52,11 +62,67 @@ define([
             this.id = this.options.id;
             this.model = this.options.model;
             this.collection = this.options.collection;
-            this.setupDatePickers();
 
             if (this.options.id) {
                 this.$el = $('#' + this.options.id);
             }
+
+            this.defaults = this.options.defaults;
+            this.setupDatePickers();
+        },
+
+        showErrorForField: function(field, error) {
+            var errorDiv;
+
+            if (!field.length) {
+                alert(error.description);
+                return;
+            }
+
+            var group = field.closest('.control-group');
+
+            if (group.length) {
+                group.addClass('error');
+                errorDiv = group.find('a.error')
+            }
+
+            // If there is no error div, then report the error to the user.
+            if (errorDiv.length) {
+                errorDiv.attr('title', error.description);
+                errorDiv.removeClass('hidden');
+            } else {
+                alert(error.description);
+            }
+        },
+
+        handleFieldError: function(error) {
+            var field = this.$el.find('*[name="' + error.name + '"]').not('.hidden');
+            this.showErrorForField(field, error);
+        },
+
+        /*
+         Transform an error object into an input ID.
+         */
+        getFieldIdForError: function(error) {
+            return '#' + error.name;
+        },
+
+        /*
+         Handle a server-side error.
+
+         This will find any fields that directly match `item.location`. Form
+         classes can provide their own more advanced error handling with
+         `handleFieldError` and `getFieldIdForError`.
+         */
+        handleServerError: function() {
+            var _this = this;
+
+            _.each(this.model.errors, function(error) {
+                _this.handleFieldError(error);
+            });
+
+            // Clear out the errors now that we've handled them.
+            this.model.errors = null;
         },
 
         setupDatePickers: function() {
@@ -73,7 +139,46 @@ define([
             return this.$el.find('form');
         },
 
+        getByName: function(name, container, type) {
+            container = container && container.length ? container : this.$el;
+            type = type ? type : '*';
+            return container.find(type + '[name="' + name + '"]');
+        },
+
+        clearErrors: function() {
+            var groups = this.$el.find('.control-group');
+            var errors = this.$el.find('a.error');
+
+            if (groups.length) {
+                groups.removeClass('error');
+            }
+
+            if (errors.length) {
+                errors.attr('title', '');
+                errors.addClass('hidden');
+            }
+        },
+
+        prepareForm: function() {
+            // Override
+        },
+
+        bindData: function() {
+            if (this.rivets) {
+                this.rivets.unbind();
+            }
+
+            var bindings = this.getDataBindings();
+
+            if (bindings) {
+                this.rivets = rivets.bind(this.$el, bindings);
+            }
+        },
+
         show: function() {
+            this.prepareForm();
+            this.clearErrors();
+            this.bindData();
             $('#main-content').addClass('hidden');
             this.$el.removeClass('hidden');
         },
@@ -84,21 +189,34 @@ define([
         },
 
         submit: function() {
-            // Override this in your subclass.
+            var data = this.getFormData();
+            this.model.save(data);
         },
 
         cancel: function() {
-            // Override this in your subclass.
+            this.resetModel();
         },
 
-        formHasDateFields: function(form) {
-            var fields = this.getFormDateFields(form);
+        resetModel: function() {
+            if (this.model && this.model.id) {
+                this.model.fetch();
+                this.model = null;
+            }
+        },
+
+        sendMessage: function(message) {
+            this.trigger(FormView.MESSAGE_READY, message);
+        },
+
+        hasDateFields: function(target) {
+            var fields = this.getDateFields(target);
             return fields.date && fields.hour && fields.minute;
         },
 
         setForm: function(form, data) {
+            var _this = this;
             _.each(data, function(dataVal, fieldName) {
-                var input = form.find('#' + fieldName);
+                var input = _this.getByName(fieldName, form);
 
                 if (!input.length) {
                     return;
@@ -110,25 +228,28 @@ define([
                     input.val(dataVal);
                 }
             });
-
-            // Include only the date in the date field, reformat it, and move
-            // time values into the hour and minute fields.
-            if (this.formHasDateFields(form)) {
-                var datetime = this.getFormDate(form);
-                this.setFormDate(form, datetime);
-            }
         },
 
-        getFormDateFields: function(form) {
+        getDateFields: function(target) {
+            target = $(target);
+
+            if (target.length === 0) {
+                return;
+            }
+
             return {
-                date: form.find('.date'),
-                hour: form.find('.hour'),
-                minute: form.find('.minute')
+                date: target.find('.date'),
+                hour: target.find('.hour'),
+                minute: target.find('.minute')
             }
         },
 
-        getFormDate: function(form) {
-            var fields = this.getFormDateFields(form);
+        getFormDate: function(target) {
+            if (target.length === 0) {
+                return;
+            }
+
+            var fields = this.getDateFields(target);
             var date = fields.date.val();
             var hour = fields.hour.val();
             var minute = fields.minute.val();
@@ -143,11 +264,16 @@ define([
             }
         },
 
-        setFormDate: function(form, datetime) {
-            if (!datetime) {
+        setDateFields: function(target, datetime) {
+            if (typeof target === 'string') {
+                target = this.$el.find(target);
+            }
+
+            if (!datetime || target.length === 0) {
                 return;
             }
-            var fields = this.getFormDateFields(form);
+
+            var fields = this.getDateFields(target);
             fields.date.val(datetime.format("MM/DD/YYYY"));
             fields.hour.val(datetime.format('HH'));
             fields.minute.val(datetime.format('mm'));
@@ -172,7 +298,7 @@ define([
         },
 
         clearForm: function() {
-            var inputs = this.$el.find('select,input');
+            var inputs = this.$el.find('select,input,textarea');
 
             if (!inputs.length) {
                 return;
@@ -183,20 +309,49 @@ define([
             });
         },
 
-        reset: function() {
-            this.model = null;
-            this.clearForm();
+        setupModelEvents: function() {
+            this.model.unbind('error');
+            this.model.bind('error', this.handleServerError);
+        },
+
+        getDataBindings: function() {
+            return {model: this.model};
+        },
+
+        getModel: function(id) {
+            if (!id) {
+                return;
+            }
+
+            var model = null;
+
+            if (this.collection) {
+                model = this.collection.get(id);
+            }
+
+            return model;
         },
 
         reload: function(id) {
-            var model = this.collection.get(id);
+            if (!id) {
+                return;
+            }
+
+            var model = this.getModel(id);
+
+            if (!model) {
+                throw new ModelNotFoundException('Model missing on reload.');
+            }
+
             if (model) {
                 this.model = model;
+                this.setupModelEvents();
             }
         }
     }, {
         CANCELED: 'formView:canceled',
-        REFRESHED: 'formView:refreshed'
+        REFRESHED: 'formView:refreshed',
+        MESSAGE_READY: 'formView:messageReady'
     });
 
 
@@ -217,15 +372,14 @@ define([
                 buttons: {
                     Cancel: function() {
                         _this.cancel();
-                        $(this).dialog("close");
                     },
 
                     Save: function() {
                         _this.submit();
-                        $(this).dialog("close");
                     }
                 },
-                close: this.close
+                close: this.close,
+                beforeClose: this.beforeClose
             }, options.dialog || this.dialog || {});
 
             this.$el.dialog(opts);
@@ -236,12 +390,51 @@ define([
                 '<input type="text"/></span>').prependTo(this.$el);
         },
 
+        beforeClose: function() {
+            if (!this.wasCancelled && this.model && this.model.dirty) {
+                if (!window.confirm('You have unsaved changes. Really close?')) {
+                    return false;
+                }
+            }
+
+            return true;
+        },
+
+        cancel: function() {
+            this.wasCancelled = true;
+            this.closeDialog();
+            JQueryUIModalFormView.__super__.cancel.apply(this, arguments);
+        },
+
+        submit: function() {
+            // Close if the form isn't using a model. If the form IS using a
+            // model, it will close when the model saves without error.
+            if (!this.model) {
+                this.$el.dialog("close");
+            }
+            JQueryUIModalFormView.__super__.submit.apply(this, arguments);
+        },
+
+        setupModelEvents: function() {
+            if (this.model) {
+                this.model.on('sync', this.closeDialog);
+            }
+            if (this.collection) {
+                this.collection.on('sync', this.closeDialog);
+            }
+            JQueryUIModalFormView.__super__.setupModelEvents.apply(this, arguments);
+        },
+
         /*
          Hide any other visible modals and show this one.
          */
         show: function() {
+            this.wasCancelled = false;
+            this.clearErrors();
+            this.prepareForm();
             this.$el.dialog('open');
             this.$el.removeClass('hide');
+            this.bindData();
         },
 
         hide: function() {
@@ -249,11 +442,22 @@ define([
         },
 
         close: function() {
-            // Override for custom behavior after the dialog has closed.
+            this.closeDialog();
+            this.resetModel();
+        },
+
+        closeDialog: function() {
+            this.$el.dialog('close');
         }
     });
 
 
+    /*
+     A base class for modal forms that ask the user to choose from a list of
+     object types that are themselves represented by a `FormView` instance.
+
+     TODO: Should this extend a non-FormView class?
+     */
     var ChooseObjectTypeFormView = JQueryUIModalFormView.extend({
         initialize: function(options) {
             var _this = this;
@@ -287,8 +491,7 @@ define([
      */
     var AddMoverFormView = ChooseObjectTypeFormView.extend({
         submit: function() {
-            var form = this.getForm();
-            var moverType = form.find('select[name="mover_type"]').val();
+            var moverType = this.getByName('mover_type').val();
 
             if (moverType) {
                 this.trigger(AddMoverFormView.MOVER_CHOSEN, moverType);
@@ -318,8 +521,7 @@ define([
         },
 
         submit: function() {
-            var form = this.getForm();
-            var spillType = form.find('select[name="spill_type"]').val();
+            var spillType = this.getByName('spill_type').val();
 
             if (spillType) {
                 this.trigger(AddSpillFormView.SPILL_CHOSEN, spillType, this.coords);
@@ -345,10 +547,12 @@ define([
             var option = this.$el.find('#map_file');
             var file = option.find('option:selected');
             if (file) {
-                this.model.set('name', file.text());
-                this.model.set('filename', file.val());
-                this.model.set('refloat_halflife', 6 * 3600);
-                this.model.save();
+                var data = {
+                    name: file.text(),
+                    filename: file.val(),
+                    refloat_halflife: 6 * 3600 // TODO: Allow user to set?
+                };
+                this.model.save(data);
             }
         }
     });
@@ -364,10 +568,15 @@ define([
             }, options);
 
             MapFormView.__super__.initialize.apply(this, [opts]);
+
+            // Have to set these manually since we override `reload`
+            this.model.on('error', this.handleServerError);
+            this.model.on('sync', this.closeDialog);
         },
 
-        reload: function(id) {
-            // Do nothing - we always use the same map object.
+        // Always use the same model
+        getModel: function(id) {
+            return this.model;
         }
     });
 
@@ -379,17 +588,20 @@ define([
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
-                    width: 850,
-                    height: 705,
+                    width: 750,
+                    height: 550,
                     title: "Edit Wind Mover"
                 }
             }, options);
 
             WindMoverFormView.__super__.initialize.apply(this, [opts]);
 
-            this.defaults = this.getFormDefaults();
+            this.defaultTimeseriesValue = options.defaultTimeseriesValue;
             this.windMovers = options.windMovers;
             this.setupCompass();
+            this.setupWindMap();
+
+            this.$el.find('.data-source-link').on('shown', this.resizeWindMap);
 
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
@@ -401,11 +613,171 @@ define([
             'click input[name="name"]': 'moverNameChanged',
             'click .add-time': 'addButtonClicked',
             'click .edit-time': 'editButtonClicked',
+            'click .show-compass': 'showCompass',
             'click .cancel': 'cancelButtonClicked',
             'click .save': 'saveButtonClicked',
             'click .delete-time': 'trashButtonClicked',
+            'click .query-source': 'querySource',
             'change .units': 'renderTimeTable',
-            'change .type': 'typeChanged'
+            'change .type': 'typeChanged',
+            'change select[name="source_type"]': 'sourceTypeChanged'
+        },
+
+        getDataBindings: function() {
+            return {
+                mover: this.model,
+                wind: this.model.get('wind')
+            };
+        },
+
+
+        resizeWindMap: function() {
+            google.maps.event.trigger(this.windMap, 'resize');
+            this.windMap.setCenter(this.windMapCenter.getCenter());
+        },
+
+        nwsWindsReceived: function(data) {
+            var desc = this.getByName('description');
+            var type = this.getByName('type');
+
+            desc.val(data.description);
+            desc.change();
+
+            type.find('option[value="variable-wind"]').attr('selected', 'selected');
+            type.change();
+
+            this.setDateFields('.updated_at_container', moment());
+
+            var wind = this.model.get('wind');
+            var timeseries = [];
+
+            _.each(data.results, function(windData) {
+                timeseries.push({
+                    datetime: windData[0],
+                    speed: windData[1],
+                    direction: windData[2]
+                });
+            });
+
+            wind.set('timeseries', timeseries);
+
+            // NWS data is in knots, so the entire wind mover data set will have
+            // to use knots, since we don't have a way of setting it per value.
+            wind.set('units', 'knots');
+
+            this.renderTimeTable();
+
+            this.sendMessage({
+                type: 'success',
+                text: 'Wind data refreshed from current NWS forecasts.'
+            });
+        },
+
+
+        /*
+         Run a function to query an external data source for wind data, given
+         a valid data source chosen for the 'source' field.
+         */
+        querySource: function(event) {
+            event.preventDefault();
+
+            var dataSourceFns = {
+                nws: this.queryNws
+            };
+
+            var source = this.getByName('source_type').find('option:selected').val();
+
+            if (dataSourceFns[source]) {
+                dataSourceFns[source]();
+            } else {
+                window.alert('That data source does not exist.');
+            }
+        },
+
+        queryNws: function() {
+            var lat = this.getByName('latitude');
+            var lon = this.getByName('longitude');
+            var coords = {
+                latitude: lat.val(),
+                longitude: lon.val()
+            };
+
+            if (!coords.latitude || !coords.longitude) {
+                alert('Please enter both a latitude and longitude value.');
+                return;
+            }
+
+            if (!window.confirm('Reset wind data from current NWS forecasts?')) {
+                return;
+            }
+
+            models.getNwsWind(coords, this.nwsWindsReceived);
+        },
+
+        setupWindMap: function() {
+            var lat = this.getByName('latitude');
+            var lon = this.getByName('longitude');
+
+            this.windMapCenter = new google.maps.LatLngBounds(
+                new google.maps.LatLng(13, 144),
+                new google.maps.LatLng(40, -30)
+            );
+
+            var myOptions = {
+                center: this.windMapCenter.getCenter(),
+                zoom: 2,
+                mapTypeId: google.maps.MapTypeId.HYBRID,
+                streetViewControl: false
+            };
+
+            var latlngInit = new google.maps.LatLng(lat.val(), lon.val());
+
+            var map = new google.maps.Map(
+                this.$el.find('.nws-map-canvas')[0], myOptions);
+
+            var point = new google.maps.Marker({
+                position: latlngInit,
+                editable: true,
+                draggable: true
+            });
+            
+            point.setMap(map);
+            point.setVisible(false);
+
+            google.maps.event.addListener(map, 'click', function(event) {
+                var ulatlng = event.latLng;
+                point.setPosition(ulatlng);
+                point.setVisible(true);
+
+                lat.val(Math.round(ulatlng.lat() * 1000) / 1000);
+                lon.val(Math.round(ulatlng.lng() * 1000) / 1000);
+
+                lat.change();
+                lon.change();
+            });
+
+            google.maps.event.addListener(point, 'dragend', function(event) {
+                var ulatlng = event.latLng;
+
+                point.setPosition(ulatlng);
+                point.setVisible(true);
+
+                lat.val(Math.round(ulatlng.lat() * 1000) / 1000);
+                lon.val(Math.round(ulatlng.lng() * 1000) / 1000);
+
+                lat.change();
+                lon.change();
+            });
+
+            this.windMap = map;
+        },
+        
+        nwsCoordinatesChanged: function() {
+            var ulatlng = new google.maps.LatLng(
+                this.getByName('latitude').val(),
+                this.getByName('longitude').val());
+            this.nwsPoint.setPosition(ulatlng);
+            this.nwsPoint.setVisible(true);
         },
 
         typeChanged: function() {
@@ -414,9 +786,24 @@ define([
             var otherDivs = this.$el.find(
                 '.tab-pane.wind > div').not(typeDiv);
 
-            console.log(otherDivs.length)
             typeDiv.removeClass('hidden');
             otherDivs.addClass('hidden');
+        },
+
+        sourceTypeChanged: function() {
+            var sourceType = this.model.get('wind').get('source_type');
+            var queryButton = $('.query-source');
+
+            if (sourceType === 'manual') {
+                queryButton.attr('disabled', true);
+            } else {
+                queryButton.attr('disabled', false);
+            }
+        },
+
+        showCompass: function() {
+            this.compass.compassUI('reset');
+            this.compassDialog.dialog('open');
         },
 
         compassChanged: function(magnitude, direction) {
@@ -442,16 +829,40 @@ define([
                     _this.compassChanged(magnitude, direction);
                 }
             });
+
+            this.compassDialog = this.$el.find('.compass-container').dialog({
+                width: 250,
+                title: "Compass",
+                zIndex: 6000,
+                autoOpen: false,
+                buttons: {
+                    Close: function () {
+                        $(this).dialog("close");
+                    }
+                }
+            });
         },
 
         getTimesTable: function() {
             return this.$el.find('.time-list');
         },
 
-        clearInputs: function(form) {
-            $(form).find(':input').each(function() {
-                $(this).val('').prop('checked', false);
+        getWindIdsWithErrors: function() {
+            var valuesWithErrors = [];
+
+            if (!this.model.errors) {
+               return valuesWithErrors;
+            }
+
+            _.each(this.model.errors, function(error) {
+                var parts = error.name.split('.');
+
+                if (parts.length > 1 && parts[1] === 'timeseries') {
+                    valuesWithErrors.push(parts[2]);
+                }
             });
+
+            return valuesWithErrors;
         },
 
         renderTimeTable: function() {
@@ -460,14 +871,15 @@ define([
             var timeseries = wind.get('timeseries');
             var units = this.$el.find('.units').find('option:selected').val();
             var rows = [];
+            var IdsWithErrors = this.getWindIdsWithErrors();
 
             // Clear out any existing rows.
             this.getTimesTable().find('tr').not('.table-header').remove();
 
-            timeseries.forEach(function(windValue) {
+            _.each(timeseries, function(windValue, index) {
                 var tmpl = _.template($("#time-series-row").html());
-                var direction = windValue.get('direction');
-                var speed = windValue.get('speed');
+                var direction = windValue.direction;
+                var speed = windValue.speed;
 
                 if (typeof(direction) === 'number') {
                     direction = direction.toFixed(1);
@@ -477,17 +889,24 @@ define([
                     speed = speed.toFixed(1);
                 }
 
-                var datetime = moment(windValue.get('datetime'));
+                var datetime = moment(windValue.datetime);
                 // TODO: Error handling
                 var error = null;
-
-                rows.push($(tmpl({
+                var row = $(tmpl({
                     error: error ? 'error' : '',
                     date: datetime.format('MM/DD/YYYY'),
                     time: datetime.format('HH:mm'),
                     direction: direction + ' &deg;',
                     speed: speed + ' ' + units
-                })).data('data-wind-id', windValue.cid));
+                }));
+
+                row.attr('data-wind-id', index);
+
+                if (_.contains(IdsWithErrors, index)) {
+                    row.addClass('error');
+                }
+
+                rows.push(row);
             });
 
             _.each(rows, function(row) {
@@ -496,47 +915,42 @@ define([
         },
 
         /*
-         Prepare `data` with the wind timeseries values needed to save a
-         constant wind mover.
+         Get wind timeseries values needed to save a constant wind mover.
          */
-        prepareConstantWindData: function(data) {
-            var timeseries = this.model.get('wind').get('timeseries');
-            var values = {
+        getConstantWindData: function() {
+            var form = this.getAddForm();
+            var speed = form.find('input[name="speed"]');
+            var direction = form.find('input[name="direction"]');
+            return {
                 // A 'datetime' field is required, but it will be ignored for a
                 // constant wind mover during the model run, so we just use the
                 // current time.
-                datetime: moment(),
-                direction: data.direction,
-                speed: data.speed
+                datetime: moment().format(),
+                direction: direction.val(),
+                speed: speed.val()
             };
-
-            if (timeseries.length === 1) {
-                // Update an existing time series value.
-                var time = timeseries.at(0);
-                time.set(values);
-            } else {
-                // Add the first (and only) time series value.
-                timeseries.reset([]);
-                timeseries.add(values);
-            }
-
-            delete(data.speed);
-            delete(data.direction);
-
-            return data
         },
 
         submit: function() {
-            var data = this.getFormData();
+            // Clear the add time form in the variable wind div as those
+            // values must be "saved" in order to mean anything.
+            var variable = this.$el.find('.variable-wind');
+            variable.find('input').val('');
+            variable.find('input:checkbox').prop('checked', false);
+
             var wind = this.model.get('wind');
+            var windUpdatedAt = this.getFormDate(
+                this.$el.find('.updated_at_container'));
+
+            if(windUpdatedAt) {
+                wind.set('updated_at', windUpdatedAt);
+            }
+
             var timeseries = wind.get('timeseries');
+            var constantWindSelected = this.$el.find('.type').find(
+                'option:selected').val() === 'constant-wind';
 
-            wind.set('units', data.units);
-            delete(data.units);
-
-            if (this.$el.find('.type').val() === 'constant-wind'
-                    && timeseries.length > 1) {
-
+            if (constantWindSelected && timeseries.length > 1) {
                 var message = 'Changing this mover to use constant wind will ' +
                     'delete variable wind data. Go ahead?';
 
@@ -546,11 +960,20 @@ define([
             }
 
             // A constant wind mover has these values.
-            if (data.direction !== undefined && data.speed !== undefined) {
-                data = this.prepareConstantWindData(data);
+            if (constantWindSelected) {
+                var windData = this.getConstantWindData();
+
+                if (timeseries.length === 1) {
+                    // Update an existing time series value.
+                    timeseries[0] = windData
+                } else {
+                    // Add the first (and only) time series value.
+                    timeseries = [windData];
+                }
+
+                wind.set('timeseries', timeseries);
             }
 
-            this.model.set(data);
             this.collection.add(this.model);
             this.model.save();
         },
@@ -578,22 +1001,6 @@ define([
             header.text(input.val());
         },
 
-        modelChanged: function() {
-            WindMoverFormView.__super__.modelChanged.apply(this, arguments);
-            this.renderTimeTable();
-            this.setupCompass();
-
-            var hasErrors = this.$el.find(
-                '.time-list').find('tr.error').length > 0;
-
-            if (hasErrors) {
-                alert('At least one of your time series values had errors in ' +
-                     'it. The rows with errors will be marked in red.');
-            }
-
-            this.setupCompass();
-        },
-
         getMoverType: function() {
             return this.$el.find('.type').val();
         },
@@ -609,19 +1016,23 @@ define([
 
         trashButtonClicked: function(event) {
             event.preventDefault();
-            var windId = $(event.target).closest('tr').data('data-wind-id');
+            var windId = $(event.target).closest('tr').attr('data-wind-id');
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
-            var windValue = timeseries.getByCid(windId);
+            var windValue = timeseries[windId];
             var addForm = this.getAddForm();
 
-            if (addForm.data('data-wind-id') === windValue.cid) {
+            if (addForm.attr('data-wind-id') === windId) {
                 this.setFormDefaults();
                 addForm.find('.add-time-buttons').removeClass('hidden');
                 addForm.find('.edit-time-buttons').addClass('hidden');
             }
 
-            timeseries.remove(windValue);
+            if (windValue) {
+                // Remove the wind value from the timeseries array.
+                timeseries.splice(windId, 1);
+            }
+
             this.renderTimeTable();
         },
 
@@ -633,48 +1044,53 @@ define([
             return value;
         },
 
-        findDuplicate: function(timeseries, datetime, existingWindId) {
-            var duplicate = timeseries.filter(function(time) {
-                return time.get('datetime').format() == datetime.format();
+        /*
+         Search `timeseries` array for a value whose datetime matches `datetime`.
+
+         Skip any duplicate found at index `ignoreId`.
+
+         Return an array containing the index of each duplicate found.
+         */
+        findDuplicates: function(timeseries, datetime, ignoreIndex) {
+            var duplicateIndexes = [];
+
+            _.each(timeseries, function(value, index) {
+                if (moment(value.datetime).format() == datetime.format()
+                        && index !== parseInt(ignoreIndex)) {
+                    duplicateIndexes.push(index);
+                }
             });
 
-            window.timeseries = timeseries;
-
-            if (existingWindId) {
-                duplicate = _.reject(duplicate, function(item) {
-                    return item.cid === existingWindId;
-                });
-            }
-
-            return duplicate;
+            return duplicateIndexes;
         },
 
         saveButtonClicked: function(event) {
             event.preventDefault();
             var wind = this.model.get('wind');
-            var timeseries = wind.get('timeseries');
+            var timeseries = _.clone(wind.get('timeseries'));
             var addForm = this.getAddForm();
             var datetime = this.getFormDate(addForm);
-            var windId = addForm.data('data-wind-id');
-            var windValue = timeseries.getByCid(windId);
+            var windId = addForm.attr('data-wind-id');
             var direction = addForm.find('#direction').val();
-            var duplicate = this.findDuplicate(timeseries, datetime, windId);
+            var duplicates = this.findDuplicates(timeseries, datetime, windId);
             var message = 'Wind data for that date and time exists. Replace it?';
 
-            if (duplicate.length) {
+            if (duplicates.length) {
                 if (window.confirm(message)) {
-                    timeseries.remove(duplicate);
+                    timeseries.remove(duplicates[0]);
                     this.renderTimeTable();
                 } else {
                     return;
                 }
             }
 
-            windValue.set({
-                datetime: datetime,
+            timeseries[windId] = {
+                datetime: datetime.format(),
                 direction: this.getCardinalAngle(direction),
                 speed: addForm.find('#speed').val()
-            });
+            };
+
+            wind.set('timeseries', timeseries);
 
             this.setFormDefaults();
             addForm.find('.add-time-buttons').removeClass('hidden');
@@ -694,48 +1110,68 @@ define([
             this.renderTimeTable();
         },
 
+        getRowForWindId: function(windId) {
+            return this.$el.find('tr[data-wind-id="' + windId + '"]')
+        },
+
+        showEditFormForWind: function(windId) {
+            var row = this.getRowForWindId(windId);
+            var wind = this.model.get('wind');
+            var timeseries = wind.get('timeseries');
+            var windValue = timeseries[windId];
+            var addForm = this.getAddForm();
+
+            addForm.attr('data-wind-id', windId);
+            addForm.find('.add-time-buttons').addClass('hidden');
+            addForm.find('.edit-time-buttons').removeClass('hidden');
+            this.setForm(addForm, windValue);
+            this.getTimesTable().find('tr').removeClass('info');
+            row.removeClass('error').removeClass('warning').addClass('info');
+        },
+
         editButtonClicked: function(event) {
             event.preventDefault();
             var row = $(event.target).closest('tr');
-            var wind = this.model.get('wind');
-            var timeseries = wind.get('timeseries');
-            var windId = row.data('data-wind-id');
-            var windValue = timeseries.getByCid(windId);
-            var addForm = this.getAddForm();
-
-            addForm.data('data-wind-id', windValue.cid);
-            addForm.find('.add-time-buttons').addClass('hidden');
-            addForm.find('.edit-time-buttons').removeClass('hidden');
-            this.setForm(addForm, windValue.toJSON());
-            this.getTimesTable().find('tr').removeClass('info');
-            row.removeClass('error').removeClass('warning').addClass('info');
+            var windId = row.attr('data-wind-id');
+            if(windId !== null) {
+                this.showEditFormForWind(windId);
+            }
         },
         
         addButtonClicked: function(event) {
             event.preventDefault();
             var wind = this.model.get('wind');
-            var timeseries = wind.get('timeseries');
+            var timeseries = _.clone(wind.get('timeseries'));
             var addForm = this.getAddForm();
             var datetime = this.getFormDate(addForm);
             var direction = addForm.find('#direction').val();
-            var duplicate = this.findDuplicate(timeseries, datetime);
-            var message = 'Wind data for that date and time exists. Replace it?';
 
-            if (duplicate.length) {
-                if (window.confirm(message)) {
-                    timeseries.remove(duplicate);
+            // TODO: Handle this with a field validation plugin.
+            if (datetime === undefined) {
+                window.alert('Please enter a date and time.');
+                return;
+            }
+
+            var duplicates = this.findDuplicates(timeseries, datetime);
+            var windValue = {
+                datetime: datetime.format(),
+                direction: this.getCardinalAngle(direction),
+                speed: addForm.find('#speed').val()
+            };
+            var warning = 'Wind data for that date and time exists. Replace it?';
+
+            if (duplicates.length) {
+                if (window.confirm(warning)) {
+                    timeseries[duplicates[0]] = windValue;
                     this.renderTimeTable();
                 } else {
                     return;
                 }
+            } else {
+                timeseries.push(windValue);
             }
 
-            timeseries.add({
-                datetime: datetime,
-                direction: this.getCardinalAngle(direction),
-                speed: addForm.find('#speed').val()
-            });
-
+            wind.set('timeseries', timeseries);
             this.renderTimeTable();
             this.compass.compassUI('reset');
 
@@ -745,107 +1181,37 @@ define([
             // value was provided.
             if (autoIncrementBy) {
                 var nextDatetime = datetime.clone().add('hours', autoIncrementBy);
-                this.setFormDate(addForm, nextDatetime);
+                this.setDateFields(addForm, nextDatetime);
             }
         },
 
-        getBaseFormData: function() {
-            return {
-                name: this.$el.find('#name').val(),
-                units: this.$el.find('#units').val(),
-                is_active: this.$el.find('#is_active').prop('checked')
-            };
-        },
-
-        getFormDataForDiv: function(div) {
-            var data = {};
-            var inputs = div.find('input,select');
-
-            _.each(inputs, function(input) {
-                input = $(input);
-                var name = input.attr('name');
-                var val;
-
-                if (input.is(':checkbox')) {
-                    val = input.prop('checked');
-                } else {
-                    val = input.val();
-                }
-
-                if (name && val !== undefined && val !== '') {
-                    data[name] = val;
-                }
-            });
-
-            return data;
-        },
-
-        getFormDefaults: function() {
-            var data = this.getBaseFormData();
-            var constant = this.$el.find('.constant-wind');
-            var variable = this.$el.find('.variable-wind');
-            var uncertainty = this.$el.find('.uncertainty');
-
-            data['moverTypes'] = {
-                'constant-wind': this.getFormDataForDiv(constant),
-                'variable-wind': this.getFormDataForDiv(variable)
-            };
-
-            data['uncertainty'] = this.getFormDataForDiv(uncertainty);
-
-            return data;
-        },
-
-        getFormData: function() {
-            // Clear the add time form in the variable wind div as those
-            // values must be "saved" in order to mean anything.
-            var variable = $('.variable-wind');
-            variable.find('input').val('');
-            variable.find('input:checkbox').prop('checked', false);
-
-            var data = this.getBaseFormData();
-            var moverTypeDiv = this.getMoverTypeDiv();
-            var divData = this.getFormDataForDiv(moverTypeDiv);
-            var uncertainty = this.$el.find('.uncertainty');
-            var uncertaintyData = this.getFormDataForDiv(uncertainty);
-            data = $.extend(data, divData, uncertaintyData);
-            return data;
-        },
-
+        /*
+         Set all fields for which a default value exists.
+         */
         setFormDefaults: function() {
-            var _this = this;
-            var data = this.defaults;
+            this.setDateFields('.datetime_container',
+                moment(this.defaultTimeseriesValue.datetime));
 
-            this.$el.find('#name').val(data.name);
-            this.$el.find('#is_active').prop('checked', data.is_active);
-            this.$el.find('#units').val(data.units);
+            this.$el.find('input[name="speed"]').val(
+                this.defaultTimeseriesValue.speed);
+            this.$el.find('input[name="direction"]').val(
+                this.defaultTimeseriesValue.direction);
 
-            _.each(data['moverTypes'], function(moverData, typeName) {
-                var form = _this.getAddForm(typeName);
-
-                if (!form.length) {
-                    return;
-                }
-
-                _this.setForm(form, moverData);
-            });
-
-            var uncertainty = this.$el.find('.uncertainty');
-            this.setForm(uncertainty, data['uncertainty']);
+            this.clearErrors();
         },
 
+        /*
+         Set all fields with the current values of `self.model`.
+         */
         setInputsFromModel: function() {
             var wind = this.model.get('wind');
-            var timeseries = wind.get('timeseries');
-
-            this.$el.find('#name').val(this.model.get('name'));
-            this.$el.find('#is_active').prop('checked', this.model.get('active'));
-            this.$el.find('#units').val(wind.get('units'));
-
-            var constantAddForm = this.getAddForm('constant-wind');
-            var firstTimeValue = timeseries.at(0);
+            this.setDateFields('.active_start_container', this.model.get('active_start'));
+            this.setDateFields('.active_stop_container', this.model.get('active_stop'));
+            this.setDateFields('.updated_at_container', wind.get('updated_at'));
 
             var moverType = this.$el.find('.type');
+            var timeseries = wind.get('timeseries');
+            var firstTimeValue = timeseries[0];
 
             if (timeseries.length > 1) {
                 moverType.val('variable-wind');
@@ -856,31 +1222,76 @@ define([
             this.typeChanged();
 
             if (firstTimeValue) {
-                var formData = firstTimeValue.toJSON();
-                this.setForm(constantAddForm, formData);
+                this.setForm(this.getAddForm('constant-wind'), firstTimeValue);
             }
         },
 
-        close: function() {
-            this.model = null;
-            WindMoverFormView.__super__.close.apply(this, arguments);
-        },
-
-        show: function() {
-            if (this.model === undefined) {
-                window.alert('That mover was not found. Please refresh the page.')
-                console.log('Mover undefined.');
-                return;
-            }
-
+        /*
+         Prepare this form for display.
+         */
+        prepareForm: function() {
             this.renderTimeTable();
             this.setFormDefaults();
 
-            if (this.model.id) {
+            if (this.model && this.model.id) {
                 this.setInputsFromModel();
+            } else {
+                this.typeChanged();
+            }
+        },
+
+        handleFieldError: function(error) {
+            if (error.name.indexOf('wind.') === 0) {
+                var parts = error.name.split('.');
+                var fieldName = parts[1];
+                var field = this.$el.find('*[name="' + fieldName + '"]').not('.hidden');
+
+                this.showErrorForField(field, error);
+                return;
             }
 
-            WindMoverFormView.__super__.show.apply(this, arguments);
+            WindMoverFormView.__super__.handleFieldError.apply(this, arguments);
+        },
+
+        /*
+         Restore the model's wind value and its timeseries values to their
+         previous state if there was a server-side error, and render the wind
+         values table, in case one of the wind values is erroneous.
+         */
+        handleServerError: function() {
+            var _this = this;
+            var wind = this.model.get('wind');
+            var timeseries = wind.get('timeseries');
+
+            this.renderTimeTable();
+
+            var windIdsWithErrors = this.getWindIdsWithErrors();
+
+            if (windIdsWithErrors.length) {
+                window.alert('Your wind data has errors. The errors have been' +
+                    ' highlighted. Please resolve them and save again.');
+
+                this.$el.find('.wind-data-link').find('a').tab('show');
+
+                if (timeseries.length > 1) {
+                    this.showEditFormForWind(windIdsWithErrors[0]);
+                }
+
+                // Always mark up the table because a user with a constant
+                // wind mover could switch to variable wind and edit the value.
+                _.each(windIdsWithErrors, function(id) {
+                    var row = _this.getRowForWindId(id);
+
+                    if (row.length) {
+                        row.addClass('error');
+                    }
+                });
+            }
+
+            this.$el.dialog('option', 'height', 600);
+
+            // After this is called, model.errors will be null.
+            WindMoverFormView.__super__.handleServerError.apply(this, arguments);
         }
     });
 
@@ -889,8 +1300,8 @@ define([
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
-                    width: 850,
-                    height: 705,
+                    width: 750,
+                    height: 550,
                     title: "Add Wind Mover"
                 }
             }, options);
@@ -900,152 +1311,88 @@ define([
 
         /*
          Use a new WindMover every time the form is opened.
+
+         This breaks any event handlers called in superclasses before this
+         method is called, so we need to reapply them.
          */
         show: function() {
-            this.model = null;
-            this.model = new models.WindMover();
+            this.model = new models.WindMover(this.defaults);
+            this.setupModelEvents();
+            this.model.on('sync', this.closeDialog);
             AddWindMoverFormView.__super__.show.apply(this);
-        },
-
-        /*
-         Reset the form when it closes and clear out the model.
-        */
-        close: function() {
-            this.model = null;
-            this.clearForm();
         }
     });
 
 
-    var PointReleaseSpillFormView = JQueryUIModalFormView.extend({
+    var SurfaceReleaseSpillFormView = JQueryUIModalFormView.extend({
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
                     width: 400,
                     height: 420,
-                    title: "Edit Point Release Spill"
+                    title: "Edit Surface Release Spill"
                 }
             }, options);
 
-            PointReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
+            SurfaceReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
 
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
-            this.pointReleaseSpills = options.pointReleaseSpills;
-            this.defaults = this.getFormData();
         },
 
-        events: {
-            'click .edit-spill-name': 'editSpillNameClicked',
-            'click .save-spill-name': 'saveSpillNameButtonClicked',
-            'change input[name="name"]': 'spillNameChanged'
+        getDataBindings: function() {
+            return {spill: this.model};
         },
 
-        setForm: function(form, data) {
-            if (_.has(data, 'windage')) {
-                data['windage_min'] = data['windage'][0];
-                data['windage_max'] = data['windage'][1];
-            }
-
-            if (_.has(data, 'start_position')) {
-                var pos = data['start_position'];
-                data['start_position_x'] = pos[0];
-                data['start_position_y'] = pos[1];
-                data['start_position_z'] = pos[2];
-            }
-
-            PointReleaseSpillFormView.__super__.setForm.apply(this, arguments);
+        prepareForm: function(form, data) {
+            this.setDateFields('.release_time_container', this.model.get('release_time'));
+            SurfaceReleaseSpillFormView.__super__.prepareForm.apply(this, arguments);
         },
 
         show: function(coords) {
-            var form = this.getForm();
-
-            if (this.model && this.model.id) {
-                this.setForm(form, this.model.toJSON());
-            } else {
-                this.setForm(form, this.defaults);
-            }
-
             if (coords) {
-                var coordInputs = this.$el.find('.coordinate');
-                $(coordInputs[0]).val(coords[0]);
-                $(coordInputs[1]).val(coords[1]);
+                this.model.set('start_position', [coords[0], coords[1]]);
             }
 
-            PointReleaseSpillFormView.__super__.show.apply(this, arguments);
-        },
-
-        editSpillNameClicked: function(event) {
-            event.preventDefault();
-            var link = $(event.target);
-            var form = link.closest('.form');
-            form.find('.top-form').removeClass('hidden');
-            form.find('.page-header h3').addClass('hidden');
-        },
-
-        saveSpillNameButtonClicked: function(event) {
-            event.preventDefault();
-            var link = $(event.target);
-            var form = link.closest('.form');
-            form.find('.top-form').addClass('hidden');
-            form.find('.page-header h3').removeClass('hidden');
-        },
-
-        spillNameChanged: function(event) {
-            var input = $(event.target);
-            var form = input.closest('.form');
-            var header = form.find('.page-header').find('a');
-            header.text(input.val());
+            SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
         },
 
         submit: function() {
-            var data = this.getFormData();
-
-            data['release_time'] = this.getFormDate(this.getForm());
-            data['is_active'] = data['active'];
-            data['windage'] = [
-                data['windage_min'], data['windage_max']
-            ];
-            data['start_position'] = [
-                data['start_position_x'], data['start_position_y'],
-                data['start_position_z']
-            ];
-
-            this.model.set(data);
-            this.collection.add(this.model);
+            this.model.set('release_time', this.getFormDate(this.getForm()));
             this.model.save();
         },
 
         cancel: function() {
-            console.log('cancel')
-            this.trigger(PointReleaseSpillFormView.CANCELED, this);
+            this.trigger(SurfaceReleaseSpillFormView.CANCELED, this);
+            SurfaceReleaseSpillFormView.__super__.cancel.apply(this, arguments);
         }
     }, {
-        CANCELED: 'pointReleaseSpillForm:canceled'
+        CANCELED: 'surfaceReleaseSpillForm:canceled'
     });
 
 
-    var AddPointReleaseSpillFormView = PointReleaseSpillFormView.extend({
+    var AddSurfaceReleaseSpillFormView = SurfaceReleaseSpillFormView.extend({
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
                     width: 400,
                     height: 420,
-                    title: "Add Point Release Spill"
+                    title: "Add Surface Release Spill"
                 }
             }, options);
 
-            AddPointReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
+            AddSurfaceReleaseSpillFormView.__super__.initialize.apply(this, [opts]);
         },
 
-        show: function() {
-            this.model = new models.PointReleaseSpill();
-            AddPointReleaseSpillFormView.__super__.show.apply(this, arguments);
+        show: function(coords) {
+            this.model = new models.SurfaceReleaseSpill(this.defaults);
+            this.setupModelEvents();
+            AddSurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
         },
 
-        close: function() {
-            this.model = null;
-            this.clearForm();
+        submit: function() {
+            this.collection.add(this.model);
+            AddSurfaceReleaseSpillFormView.__super__.submit.apply(this, arguments);
         }
     });
 
@@ -1062,23 +1409,81 @@ define([
             ModelSettingsFormView.__super__.initialize.apply(this, [opts]);
         },
 
+        // Always return the same model.
+        getModel: function(id) {
+            return this.model;
+        },
+
+        // Never reset the model.
+        resetModel: function() {
+            return;
+        },
+
         submit: function() {
-            var data = this.getFormData();
-            data['start_time'] = this.getFormDate(this.getForm());
-            this.model.set(data);
+            this.model.set('start_time', this.getFormDate(this.getForm()));
             this.model.save();
         },
 
-        show: function(coords) {
-            var form = this.getForm();
-
-            if (this.model && this.model.id) {
-                this.setForm(form, this.model.toJSON());
-            } else {
-                this.setForm(form, this.defaults);
-            }
-
+        show: function() {
             ModelSettingsFormView.__super__.show.apply(this, arguments);
+            this.setDateFields('.start_time_container', moment(this.model.get('start_time')));
+        }
+    });
+
+
+    var RandomMoverFormView = JQueryUIModalFormView.extend({
+        initialize: function(options) {
+            var opts = _.extend({
+                dialog: {
+                    height: 350,
+                    width: 380,
+                    title: "Edit Random Mover"
+                }
+            }, options);
+
+            RandomMoverFormView.__super__.initialize.apply(this, [opts]);
+        },
+
+        show: function() {
+            RandomMoverFormView.__super__.show.apply(this, arguments);
+            this.setDateFields('.active_start_container', this.model.get('active_start'));
+            this.setDateFields('.active_stop_container', this.model.get('active_stop'));
+        },
+
+        submit: function() {
+            this.model.set('active_start',  this.getFormDate('.active_start_container'));
+            this.model.set('active_stop',  this.getFormDate('.active_stop_container'));
+            this.model.save();
+        },
+
+        getDataBindings: function() {
+            return {mover: this.model}
+        }
+    });
+
+
+    var AddRandomMoverFormView = RandomMoverFormView.extend({
+        initialize: function(options) {
+            var opts = _.extend({
+                dialog: {
+                    height: 350,
+                    width: 380,
+                    title: "Add Random Mover"
+                }
+            }, options);
+
+            AddRandomMoverFormView.__super__.initialize.apply(this, [opts]);
+        },
+
+        show: function() {
+            this.model = new models.RandomMover(this.defaults);
+            this.setupModelEvents();
+            AddRandomMoverFormView.__super__.show.apply(this, arguments);
+        },
+
+        submit: function() {
+            this.collection.add(this.model);
+            AddRandomMoverFormView.__super__.submit.call(this, arguments);
         }
     });
 
@@ -1088,13 +1493,16 @@ define([
         AddMoverFormView: AddMoverFormView,
         AddSpillFormView: AddSpillFormView,
         AddWindMoverFormView: AddWindMoverFormView,
-        AddPointReleaseSpillFormView: AddPointReleaseSpillFormView,
+        AddRandomMoverFormView: AddRandomMoverFormView,
+        AddSurfaceReleaseSpillFormView: AddSurfaceReleaseSpillFormView,
         MapFormView: MapFormView,
         WindMoverFormView: WindMoverFormView,
-        PointReleaseSpillFormView: PointReleaseSpillFormView,
+        RandomMoverFormView: RandomMoverFormView,
+        SurfaceReleaseSpillFormView: SurfaceReleaseSpillFormView,
         FormView: FormView,
         FormViewContainer: FormViewContainer,
-        ModelSettingsFormView: ModelSettingsFormView
+        ModelSettingsFormView: ModelSettingsFormView,
+        ModelNotFoundException: ModelNotFoundException
     };
 
 });

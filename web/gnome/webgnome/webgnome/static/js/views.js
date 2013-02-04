@@ -7,8 +7,8 @@ define([
     'util',
     'lib/gmaps-amd',
     'lib/jquery.imagesloaded.min',
-    'lib/jquery.dynatree.min',
-    'lib/bootstrap',
+    'lib/jquery.dynatree',
+    'lib/bootstrap-dropdown',
 ], function($, _, Backbone, models, util, GMap) {
      /*
      `MessageView` is responsible for displaying messages sent back from the server
@@ -23,8 +23,8 @@ define([
                 models.ModelRun.MESSAGE_RECEIVED, this.displayMessage);
             this.options.modelSettings.on(
                 models.Model.MESSAGE_RECEIVED, this.displayMessage);
-            this.options.pointReleaseSpills.on(
-                models.PointReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.surfaceReleaseSpills.on(
+                models.SurfaceReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
             this.options.windMovers.on(
                 models.WindMover.MESSAGE_RECEIVED, this.displayMessage);
 
@@ -78,7 +78,7 @@ define([
             this.placeholderClass = this.options.placeholderClass;
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
-            this.imageTimeout = this.options.imageTimeout || 10;
+            this.animationThreshold = this.options.animationThreshold;
             this.canDrawSpill = false;
 
             this.makeImagesClickable();
@@ -231,9 +231,25 @@ define([
             this.trigger(MapView.FRAME_CHANGED);
         },
 
+        /*
+         Given the length of time the last timestep request took `requestTime`,
+         calculate the timeout value for displaying that step.
+
+         If `requestTime` was less than the threshold, then use the difference
+         between the threshold value and `requestTime` as the timeout.
+         Otherwise, use a timeout of 0, since the request has taken long enough.
+          */
+        getAnimationTimeout: function(requestTime) {
+            // Get the number of MS the last request took.
+            requestTime = requestTime || 0;
+            var threshold = this.animationThreshold;
+            return requestTime < threshold ? threshold - requestTime : 0;
+        },
+
         addImageForTimeStep: function(timeStep) {
             var _this = this;
             var map = $(this.mapEl);
+            var requestTime = timeStep.get('requestTime');
 
             var img = $('<img>').attr({
                 'class': 'frame',
@@ -250,7 +266,7 @@ define([
 
                 // TODO: Make the timeout value configurable.
                 setTimeout(_this.showImageForTimeStep,
-                           this.imageTimeout,
+                           _this.getAnimationTimeout(requestTime),
                            [timeStep.id]);
             });
         },
@@ -262,7 +278,8 @@ define([
             // exists. In all other cases the image should NOT exist.
             if (imageExists) {
                 setTimeout(this.showImageForTimeStep,
-                           this.imageTimeout,
+                           // Use 0 since this was a cached time step.
+                           this.getAnimationTimeout(0),
                            [timeStep.id]);
                 return;
             }
@@ -280,8 +297,6 @@ define([
             } else {
                 map.find('img').not('.background').remove();
             }
-
-            map.find('canvas').remove();
         },
 
         getBackground: function() {
@@ -468,8 +483,6 @@ define([
         },
 
         /*
-         Create a background canvas and paint lines for all spills on the page.
-
          Create a foreground canvas and setup event handlers to capture new
          spills added to the map. This canvas is cleared entirely during line
          additions (as the line position changes) and when the form container
@@ -478,6 +491,14 @@ define([
         createCanvases: function() {
             var _this = this;
             var background = $(this.mapEl).find('.background');
+
+            if (this.backgroundCanvas) {
+                $(this.backgroundCanvas).remove();
+            }
+
+            if (this.foregroundCanvas) {
+                $(this.foregroundCanvas).remove();
+            }
 
             this.backgroundCanvas = $('<canvas>').attr({
                 id: 'canvas-background',
@@ -572,7 +593,7 @@ define([
 
         pixelsFromCoordinates: function(point) {
             var size = this.getSize();
-            var bounds = this.model.get('bounds');
+            var bounds = this.model.get('map_bounds');
 
             if (!size.height || !size.width) {
                 throw new MapViewException('No current image size detected.');
@@ -598,7 +619,7 @@ define([
 
         coordinatesFromPixels: function(point) {
             var size = this.getSize();
-            var bounds = this.model.get('bounds');
+            var bounds = this.model.get('map_bounds');
 
             if (!size.height || !size.width) {
                 throw new MapViewException('No current image size detected.');
@@ -641,6 +662,7 @@ define([
      */
     var TreeView = Backbone.View.extend({
         initialize: function() {
+            var _this = this;
             _.bindAll(this);
             this.treeEl = this.options.treeEl;
             this.url = this.options.apiRoot + "/tree";
@@ -650,12 +672,12 @@ define([
             $.ui.dynatree.nodedatadefaults["icon"] = false;
             this.tree = this.setupDynatree();
 
-            this.options.windMovers.on('sync', this.reload);
-            this.options.windMovers.on('add', this.reload);
-            this.options.windMovers.on('destroy', this.reload);
-            this.options.pointReleaseSpills.on('sync', this.reload);
-            this.options.pointReleaseSpills.on('add', this.reload);
-            this.options.pointReleaseSpills.on('destroy', this.reload);
+            _.each(this.options.collections, function(collection) {
+                collection.on('sync', _this.reload);
+                collection.on('add', _this.reload);
+                collection.on('destroy', _this.reload);
+            });
+
             this.options.modelSettings.on('sync', this.reload);
             this.options.map.on('sync', this.reload);
         },
@@ -672,6 +694,11 @@ define([
                     // isReloading is true if status was read from existing cookies.
                     // isError is only used in Ajax mode
                     this.reactivate();
+
+                     // Expand all items
+                    this.getRoot().visit(function (node) {
+                        node.expand(true);
+                    });
                 },
                 onDblClick: function(node, event) {
                     _this.trigger(TreeView.ITEM_DOUBLE_CLICKED, node);
@@ -679,7 +706,7 @@ define([
                 initAjax: {
                     url: _this.url
                 },
-                persist: true
+                windage_persist: true
             });
         },
 
@@ -779,6 +806,7 @@ define([
             this.fullscreenButtonEl = this.options.fullscreenButtonEl;
             this.resizeButtonEl = this.options.resizeButtonEl;
             this.spillButtonEl = this.options.spillButtonEl;
+            this.sliderShadedEl = this.options.sliderShadedEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
             this.modelRun = this.options.modelRun;
@@ -823,9 +851,11 @@ define([
             }
 
             this.setupClickEvents();
+            this.updateCachedPercentage();
 
             this.modelRun.on(models.ModelRun.RUN_BEGAN, this.runBegan);
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
+            this.modelRun.on(models.ModelRun.NEXT_TIME_STEP_READY, this.updateCachedPercentage);
             this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
             this.modelRun.on(models.ModelRun.CREATED, this.modelCreated);
 
@@ -879,6 +909,11 @@ define([
             }
 
             this.trigger(MapControlView.SLIDER_MOVED, ui.value);
+        },
+
+        updateCachedPercentage: function() {
+            this.setCachedPercentage(
+                100*(this.modelRun.length / this.modelRun.expectedTimeSteps.length))
         },
 
         runBegan: function() {
@@ -1057,6 +1092,10 @@ define([
 
         getTimeStep: function() {
             $(this.sliderEl).slider('value');
+        },
+
+        setCachedPercentage: function(percentage) {
+            $(this.sliderShadedEl).css('width', percentage + '%');
         },
 
         reset: function() {

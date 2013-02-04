@@ -1,4 +1,4 @@
-import os
+import sys, os
 
 from setuptools import setup, find_packages
 
@@ -6,9 +6,20 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.txt')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
+if "cleanall" in "".join(sys.argv[1:]):
+    print "Deleting files .."
+    os.system(r'find . -name \*.pyc -exec rm -v {} \;')
+    os.system('rm -rv webgnome.egg-info')
+    os.system('rm -v OilLibrary.db')
+    sys.argv[1] = 'clean'   # this is what distutils understands
+
 requires = [
     'pyramid',
+    'SQLAlchemy',
+    'transaction',
+    'pyramid_tm',
     'pyramid_debugtoolbar',
+    'zope.sqlalchemy',
     'waitress',
     'wtforms',
 ]
@@ -36,6 +47,8 @@ setup(name='webgnome',
       entry_points = """\
       [paste.app_factory]
       main = webgnome:main
+      [console_scripts]
+      initialize_webgnome_db = gnome.db.oil_library.initializedb:main
       """,
       )
 

@@ -1,123 +1,103 @@
 cimport numpy as cnp
 import numpy as np
+import os
 
 from type_defs cimport *
-
-from movers cimport CATSMover_c
+from movers cimport CATSMover_c,Mover_c
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
+cimport cy_mover,cy_ossm_time
 
-cdef class CyCatsMover:
+"""
+Dynamic casts are not currently supported in Cython - define it here instead.
+Since this function is custom for each mover, just keep it with the definition for each mover
+"""
+cdef extern from *:
+    CATSMover_c* dynamic_cast_ptr "dynamic_cast<CATSMover_c *>" (Mover_c *) except NULL
 
-    cdef CATSMover_c *mover
+
+cdef class CyCatsMover(cy_mover.CyMover):
+
+    cdef CATSMover_c *cats
     
     def __cinit__(self):
         self.mover = new CATSMover_c()
+        self.cats = dynamic_cast_ptr(self.mover)
     
     def __dealloc__(self):
-        del self.mover
+        del self.mover  # since this is allocated in this class, free memory here as well
+        self.cats = NULL
     
-    def __init__(self, scale_type=0, scale_value=1, diffusion_coefficient=1):
+    def __init__(self, scale_type=0, scale_value=1, diffusion_coefficient=0):
         cdef WorldPoint p
-        self.mover.scaleType = scale_type
-        self.mover.scaleValue = scale_value
-        self.mover.fEddyDiffusion = diffusion_coefficient
+        self.cats.scaleType = scale_type
+        self.cats.scaleValue = scale_value
+        self.cats.fEddyDiffusion = diffusion_coefficient
         ## should not have to do this manually.
         ## make-shifting for now.
-        #self.mover.fOptimize.isOptimizedForStep = 0
-        #self.mover.fOptimize.isFirstStep = 1
+        #self.cats.fOptimize.isOptimizedForStep = 0
+        #self.cats.fOptimize.isFirstStep = 1
 
 
     property scale_type:
         def __get__(self):
-            return self.mover.scaleType
+            return self.cats.scaleType
         
         def __set__(self,value):
-            self.mover.scaleType = value
+            self.cats.scaleType = value
     
     property scale_value:
         def __get__(self):
-            return self.mover.scaleValue
+            return self.cats.scaleValue
         
         def __set__(self,value):
-            self.mover.scaleValue = value
+            self.cats.scaleValue = value
             
     property eddy_diffusion:
         def __get__(self):
-            return self.mover.fEddyDiffusion
+            return self.cats.fEddyDiffusion
         
         def __set__(self,value):
-            self.mover.fEddyDiffusion = value    
+            self.cats.fEddyDiffusion = value    
 
          
     def set_shio(self, CyShioTime cy_shio):
-        self.mover.SetTimeDep(cy_shio.shio)
-        self.mover.SetRefPosition(cy_shio.shio.GetRefWorldPoint(), 0)
-        self.mover.bTimeFileActive = True
+        self.cats.SetTimeDep(cy_shio.shio)
+        self.cats.SetRefPosition(cy_shio.shio.GetRefWorldPoint(), 0)
+        self.cats.bTimeFileActive = True
+        self.cats.scaleType = 1
         return True
         
     def set_ossm(self, CyOSSMTime ossm):
-        self.mover.SetTimeDep(ossm.time_dep)
-        self.mover.bTimeFileActive = True   # What is this?
+        self.cats.SetTimeDep(ossm.time_dep)
+        self.cats.bTimeFileActive = True   # What is this?
         return True
         
     def set_ref_point(self, ref_point):
         cdef WorldPoint p
         p.pLong = ref_point[0]*10**6    # should this happen in C++?
         p.pLat = ref_point[1]*10**6
-        self.mover.SetRefPosition(p, 0)
+        self.cats.SetRefPosition(p, 0)
             
-    #===========================================================================
-    # TODO: don't have map - is this required?
-    # def read_topology(self, path):
-    #    cdef Map_c **naught
-    #    if(self.mover.ReadTopology(path, naught)):
-    #        return False
-    #    return True
-    #===========================================================================
-    
-    def prepare_for_model_run(self):
-        """
-        .. function::prepare_for_model_run
-        
-        """
-        self.mover.PrepareForModelRun()
-
-        
-    def prepare_for_model_step(self, model_time, step_len, numSets=0, cnp.ndarray[cnp.npy_int] setSizes=None):
-        """
-        .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
-        
-        prepares the mover for time step, calls the underlying C++ mover objects PrepareForModelStep(..)
-        
-        :param model_time: current model time.
-        :param step_len: length of the time step over which the get move will be computed
-        """
+    def read_topology(self, path):
         cdef OSErr err
-        if numSets == 0:
-            err = self.mover.PrepareForModelStep(model_time, step_len, False, 0, NULL)
+        if os.path.exists(path):
+            err = self.cats.ReadTopology(path)
+            if err != False:
+                raise ValueError("CATSMover.ReadTopology(..) returned an error. OSErr: {0}".format(err))
         else:
-            err = self.mover.PrepareForModelStep(model_time, step_len, True, numSets, <int *>&setSizes[0])
-            
-        if err != 0:
-            """
-            For now just raise an OSError - until the types of possible errors are defined and enumerated
-            """
-            raise OSError("WindMover_c.PreareForModelStep returned an error.")
+            raise IOError("No such file: " + path)
         
-    def model_step_is_done(self):
-        """
-        invoke C++ model step is done functionality
-        """
-        self.mover.ModelStepIsDone()
+        return True
+    
 
     def get_move(self, model_time, step_len, cnp.ndarray[WorldPoint3D, ndim=1] ref_points, cnp.ndarray[WorldPoint3D, ndim=1] delta, cnp.ndarray[cnp.npy_int16] LE_status, LEType spill_type, long spill_ID):
         cdef OSErr err
             
         N = len(ref_points)
  
-        err = self.mover.get_move(N, model_time, step_len, &ref_points[0], &delta[0], <short *>&LE_status[0], spill_type, spill_ID)
+        err = self.cats.get_move(N, model_time, step_len, &ref_points[0], &delta[0], <short *>&LE_status[0], spill_type, spill_ID)
         if err == 1:
             raise ValueError("Make sure numpy arrays for ref_points, delta and windages are defined")
         

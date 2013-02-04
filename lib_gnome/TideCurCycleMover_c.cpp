@@ -226,10 +226,15 @@ OSErr TideCurCycleMover_c::PrepareForModelStep(const Seconds& model_time, const 
 	//if (fOptimize.isFirstStep) model_start_time = model_time;	// use fModelStartTime in current mover
 
 	//check to see that the time interval is loaded and set if necessary
-	if (!bActive) return noErr;
 	if (bIsFirstStep)
+	{
+		VelocityRec dummyValue;
 		fModelStartTime = model_time;
-	err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
+		if (timeDep) err = timeDep->GetTimeValue(model_time,&dummyValue);
+	}
+	if (!bActive) return noErr;
+	//err = dynamic_cast<TideCurCycleMover *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
+	SetInterval(errmsg, model_time);
 	
 	if(err) goto done;
 	
@@ -427,7 +432,7 @@ WorldPoint3D TideCurCycleMover_c::GetMove(const Seconds& model_time, Seconds tim
 	long ptIndex1,ptIndex2,ptIndex3; 
 	long index = -1; 
 	Seconds startTime,endTime;
-	Seconds time = model->GetModelTime();
+	Seconds time = model_time;
 	InterpolationVal interpolationVal;
 	VelocityRec scaledPatVelocity, timeValue = {1, 1};
 	Boolean useEddyUncertainty = false, isDry = false;	
@@ -1142,7 +1147,7 @@ Boolean TideCurCycleMover_c::CheckInterval(long &timeDataInterval, const Seconds
 		{
 			short ebbFloodType;
 			float fraction;
-			timeFile->GetLocationInTideCycle(&ebbFloodType,&fraction);
+			timeFile->GetLocationInTideCycle(model_time,&ebbFloodType,&fraction);
 			if (ebbFloodType>=fPatternStartPoint)
 			{
 				offset = ebbFloodType - fPatternStartPoint;

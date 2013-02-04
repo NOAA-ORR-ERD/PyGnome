@@ -108,7 +108,7 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 		return 0; 
 	}
 	
-	// only two elements => use linear interopolation
+	// only two elements => use linear interpolation
 	if (n == 2) { a = 0; b = 1; linear = TRUE; }
 	
 	if (forTime < INDEXH(timeValues, 0).time) 
