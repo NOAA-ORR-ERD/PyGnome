@@ -11,7 +11,6 @@ This is the "magic" class -- it handles the smart allocation of arrays, etc.
 
 """
 import datetime
-import copy
 
 import numpy as np
 
@@ -199,7 +198,8 @@ class UncertainSpillContainerPair(object):
         reset spill_collections
         """
         self.spill_container.reset()
-        self.u_spill_container.reset()
+        if self.uncertain:
+            self.u_spill_container.reset()
     
     @property
     def uncertain(self):
@@ -210,10 +210,10 @@ class UncertainSpillContainerPair(object):
         if type(value) is not bool:
             raise TypeError("uncertain property must be a bool (True/False)")
         if self._uncertain == True and value == False:
-            del self.u_spill_container
+            del self.u_spill_container  # delete if it exists
             self.reset()    # Not sure if we want to do this?
         elif self._uncertain == False and value == True:
-            self.u_spill_container = copy.deepcopy(self.spill_container)
+            self.u_spill_container = self.spill_container.uncertain_copy()
             self.reset()
             
         self._uncertain = value
@@ -222,9 +222,17 @@ class UncertainSpillContainerPair(object):
         self.spill_container.spills += spill
         if self.uncertain:
             # todo: make sure spill_num for copied spill are the same as original
-            self.u_spill_container.spills += copy.deepcopy(spill)
+            self.u_spill_container.spills += spill.uncertain_copy()
     
     def remove(self, ident):
+        """
+        remove object from spill_container.spills and the corresponding uncertainty spill
+        as well
+        """
+        if self.uncertain:
+            idx  = self.spill_container.spills.index(ident)
+            u_ident= [s for s in self.u_spill_container.spills][idx]
+            del self.u_spill_container.spills[u_ident.id]
         del self.spill_container.spills[ident]
     
     def replace(self, ident, new_spill):
@@ -232,7 +240,7 @@ class UncertainSpillContainerPair(object):
         if self.uncertain:
             idx  = self.spill_container.spills.index(ident)
             u_obj= [s for s in self.u_spill_container.spills][idx]
-            self.u_spill_container.spills[u_obj.id] = copy.deepcopy(new_spill)
+            self.u_spill_container.spills[u_obj.id] = spill.uncertain_copy()
     
     def __getitem__(self, ident):
         spill = [self.spill_container.spills[ident]]
@@ -257,8 +265,18 @@ class UncertainSpillContainerPair(object):
             yield self.__getitem__(sp.id)
     
     def items(self):
-        return (self.spill_container, self.u_spill_container)
+        if self.uncertain:
+            return (self.spill_container, self.u_spill_container)
+        else:
+            return (self.spill_container, )
     
+    def __len__(self):
+        """        
+        It refers to the total number of spills that have been added
+        The uncertain and certain spill containers will contain the same number of spills
+        return the length of spill_container.spills
+        """
+        return len(self.spill_container.spills)
     
 class TestSpillContainer(SpillContainer):
    """
