@@ -176,7 +176,7 @@ class Model(GnomeObject):
             mover.prepare_for_model_run()
         
         self.spills.uncertain = self._uncertain
-        self.spills.reset()
+        self.spills.rewind()
         #=======================================================================
         # self._spill_container.reset()
         # if self._uncertain:
