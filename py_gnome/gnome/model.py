@@ -59,7 +59,7 @@ class Model(GnomeObject):
         self.model_time = self._start_time
         ## note: this may be redundant -- they will get reset in setup_model_run() anyway..
         #self._spill_container.reset()
-        self.spills.reset()
+        self.spills.rewind()
         #=======================================================================
         # try:
         #    self._uncertain_spill_container.reset()

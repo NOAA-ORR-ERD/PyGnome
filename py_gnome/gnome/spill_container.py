@@ -180,12 +180,19 @@ class SpillContainer(object):
 
 class UncertainSpillContainerPair(object):
     """
-    Container holds two Spill
+    Container holds two SpillContainers, one contains the certain spills while the other contains
+    uncertainty spills if model uncertainty is on.
     """
     
     def __init__(self, uncertain=False):
         """
+        initialize object: 
+        init spill_container, _uncertain and u_spill_container if uncertain
         
+        Note: all operations like add, remove, replace and __iter__ are exposed to user
+        for the spill_container.spills OrderedCollection
+        
+        Since spill_container.spills are 
         """
         self.spill_container  = SpillContainer()
         self._uncertain = uncertain
@@ -193,13 +200,20 @@ class UncertainSpillContainerPair(object):
             self.u_spill_container = SpillContainer(uncertain=True)
             
     
-    def reset(self):
+    def rewind(self):
         """
-        reset spill_collections
+        rewind spills in spill_container
         """
         self.spill_container.reset()
         if self.uncertain:
             self.u_spill_container.reset()
+    
+    def __repr__(self):
+        """
+        unambiguous repr
+        """
+        info = "{0.__class__},\n  uncertain={0.uncertain}\n  Spills: {1}".format(self, self.spill_container.spills)
+        return info
     
     @property
     def uncertain(self):
@@ -211,14 +225,17 @@ class UncertainSpillContainerPair(object):
             raise TypeError("uncertain property must be a bool (True/False)")
         if self._uncertain == True and value == False:
             del self.u_spill_container  # delete if it exists
-            self.reset()    # Not sure if we want to do this?
+            self.rewind()    # Not sure if we want to do this?
         elif self._uncertain == False and value == True:
             self.u_spill_container = self.spill_container.uncertain_copy()
-            self.reset()
+            self.rewind()
             
         self._uncertain = value
         
     def add(self, spill):
+        """
+        add spill to spill_container and make copy in u_spill_container if uncertainty is on
+        """
         self.spill_container.spills += spill
         if self.uncertain:
             # todo: make sure spill_num for copied spill are the same as original
@@ -236,6 +253,9 @@ class UncertainSpillContainerPair(object):
         del self.spill_container.spills[ident]
     
     def replace(self, ident, new_spill):
+        """
+        replace spill in spill_container and make copy in u_spill_container if uncertainty is on
+        """
         self.spill_container.spills[ident] = new_spill
         if self.uncertain:
             idx  = self.spill_container.spills.index(ident)
@@ -243,12 +263,11 @@ class UncertainSpillContainerPair(object):
             self.u_spill_container.spills[u_obj.id] = spill.uncertain_copy()
     
     def __getitem__(self, ident):
-        spill = [self.spill_container.spills[ident]]
-        if self.uncertain:
-            idx = self.spill_container.spills.index(ident)
-            spill.append( [s for s in self.u_spill_container.spills][idx])
-            
-        return tuple(spill)
+        """
+        only return the certain spill
+        """
+        spill = self.spill_container.spills[ident]
+        return spill
     
     def __setitem__(self, ident, new_spill):
         self.replace(ident, new_spill)
@@ -261,6 +280,9 @@ class UncertainSpillContainerPair(object):
         return self
     
     def __iter__(self):
+        """
+        iterates over the spills defined in spill_container
+        """
         for sp in self.spill_container.spills:
             yield self.__getitem__(sp.id)
     
