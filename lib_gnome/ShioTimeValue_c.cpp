@@ -48,6 +48,7 @@ ShioTimeValue_c::ShioTimeValue_c() : OSSMTimeValue_c()
 {
 	daylight_savings_off = true;	// JS: What is this for?
 	this->InitInstanceVariables();
+	this->fYearDataPath[0] = 0;
 }
 
 ShioTimeValue_c::ShioTimeValue_c(TMover *theOwner,TimeValuePairH tvals) : OSSMTimeValue_c(theOwner)
@@ -284,12 +285,21 @@ long	ShioTimeValue_c::GetNumHighLowValues()
 	return numHighLowValues;
 }
 //#ifndef pyGNOME
-void GetYearDataDirectory(char* directoryPath)
+void ShioTimeValue_c::GetYearDataDirectory(char* directoryPath)
 {
-
 	char applicationFolderPath[256];
+	//char errmsg[256];
 #ifdef pyGNOME
-	strcpy(directoryPath,"SampleData/Data/yeardata/");
+	GetYearDataPath(applicationFolderPath);
+	//sprintf(errmsg,"The year data path was set to %s\n",applicationFolderPath);
+	//printNote(errmsg);
+	if (applicationFolderPath[0]==0)
+		//strcpy(directoryPath,"SampleData/Data/yeardata/");
+		printNote("The year data directory has not been set\n");
+	else 
+		strcpy(directoryPath,applicationFolderPath);
+	//sprintf(errmsg,"The year data path being used is %s\n",directoryPath);
+	//printNote(errmsg);
 #else
 #ifdef MAC
 //#include <sys/syslimits.h>
@@ -309,6 +319,18 @@ void GetYearDataDirectory(char* directoryPath)
 }
 //#endif
 
+/////////////////////////////////////////////////
+OSErr ShioTimeValue_c::SetYearDataPath(char *pathName)
+{
+	strcpy(this->fYearDataPath,pathName);
+	return noErr;
+}
+/////////////////////////////////////////////////
+void ShioTimeValue_c::GetYearDataPath(char *pathName)
+{
+	strcpy(pathName,this->fYearDataPath);
+}
+/////////////////////////////////////////////////
 OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *value)
 {
 	OSErr err = 0;

@@ -68,6 +68,7 @@ cdef extern from "ShioTimeValue_c.h":
         HighLowDataH    fHighLowDataHdl
         
         OSErr       ReadTimeValues (char *path)
+        OSErr       SetYearDataPath (char *path)
         WorldPoint  GetRefWorldPoint()
         
         # Not Sure if Following are required/used
