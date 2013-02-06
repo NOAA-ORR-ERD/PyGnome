@@ -220,12 +220,13 @@ class WindMover(CyMover):
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4):
         """
-        :param wind: wind object
-        :param active: active flag
-        :param uncertain_duration:     Used by the cython wind mover.
-        :param uncertain_time_delay:   Used by the cython wind mover.
-        :param uncertain_speed_scale:  Used by the cython wind mover.
-        :param uncertain_angle_scale:  Used by the cython wind mover.
+        :param wind: wind object  -- provides the wind time series for the mover
+        :param active_start: datetime object for when the mover starts being active.
+        :param active_start: datetime object for when the mover stops being active.
+        :param uncertain_duration:  (seconds) how often does a given uncertian windage get re-set
+        :param uncertain_time_delay:   when does the uncertainly kick in.
+        :param uncertain_speed_scale:  Scale for how uncertain the wind speed is
+        :param uncertain_angle_scale:  Scale for how uncertain the wind direction is
         """
         self.wind = wind
         self.mover = CyWindMover(uncertain_duration=uncertain_duration, 

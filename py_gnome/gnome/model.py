@@ -51,7 +51,7 @@ class Model(GnomeObject):
 
     def rewind(self):
         """
-        Resets the model to the beginning (start_time)
+        Rewinds the model to the beginning (start_time)
         """
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
 
