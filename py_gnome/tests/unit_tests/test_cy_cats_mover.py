@@ -15,9 +15,11 @@ class CatsMove(cy_fixtures.CyTestMove):
         file_ = r"SampleData/long_island_sound/CLISShio.txt"
         self.shio = cy_shio_time.CyShioTime(file_)
         top_file=r"SampleData/long_island_sound/tidesWAC.CUR"
+        yeardata_path=r"SampleData/Data/yeardata/"
         self.cats = cy_cats_mover.CyCatsMover()
         self.cats.set_shio(self.shio)
         self.cats.read_topology(top_file)
+        self.shio.set_shio_yeardata_path(yeardata_path)
         
         super(CatsMove,self).__init__()
         self.ref[:] = (-72.5, 41.17, 0)

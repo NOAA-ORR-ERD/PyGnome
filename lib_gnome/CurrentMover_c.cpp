@@ -140,7 +140,7 @@ OSErr CurrentMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESet
 {
 	OSErr err = noErr;
 	long i;
-	Boolean needToReInit = false;
+	Boolean needToReInit = false, needToReAllocate = false;
 	
 	//Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime) && model->IsUncertain();
 	Boolean bAddUncertainty = (elapsedTime >= fUncertainStartTime);
@@ -163,10 +163,10 @@ OSErr CurrentMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESet
 	
 	if(fLESetSizesH)
 	{	// check the LE sets are still the same, JLM 9/18/98
-		TLEList *list;
-		long numrec;
-		i = _GetHandleSize((Handle)fLESetSizesH)/sizeof(long);
-		if(numLESets != i) needToReInit = true;
+		//TLEList *list;
+		long numrec, uncertListSize = 0, numLESetsStored;;
+		numLESetsStored = _GetHandleSize((Handle)fLESetSizesH)/sizeof(long);
+		if(numLESets != numLESetsStored) needToReInit = true;
 		else
 		{
 			for (i = 0,numrec=0; i < numLESets ; i++) {
@@ -177,8 +177,60 @@ OSErr CurrentMover_c::UpdateUncertainty(const Seconds& elapsedTime, int numLESet
 				}
 				numrec += LESetsSizesList[i];
 			}
+			uncertListSize = _GetHandleSize((Handle)fUncertaintyListH)/sizeof(LEUncertainRec); 
+			if (numrec != uncertListSize)// this should not happen for gui gnome
+			{
+#ifdef pyGNOME
+				if (numrec > uncertListSize)
+					needToReAllocate = true;
+				else 
+					needToReInit = true;
+#else
+				needToReInit = true;
+#endif
+				//break;
+			}// need to check
 		}
 		
+		if (needToReAllocate)
+		{	// move to separate function, and probably should combine with 
+			//char errmsg[256] = "";
+			_SetHandleSize((Handle)fUncertaintyListH, numrec*sizeof(LEUncertainRec));
+			//sprintf(errmsg,"Num LEs to Allocate = %ld, previous Size = %ld\n",numrec,uncertListSize);
+			//printNote(errmsg);
+			//for pyGNOME there should only be one uncertainty spill so fLESetSizes has only 1 value which is zero and doesn't need to be updated.
+			if (numLESets != 1 || numLESetsStored != 1) {printError("num uncertainty spills not equal 1\n"); return -1;}
+			if (needToReInit) printNote("Uncertainty arrays are being reset\n");	// this shouldn't happen
+			//if(elapsedTime >= fTimeUncertaintyWasSet + fDuration) // we exceeded the persistance, time to update - either update whole list or just add on
+			for(i=uncertListSize;i<numrec;i++)
+			{
+				LEUncertainRec localCopy;
+				memset(&localCopy,0,sizeof(LEUncertainRec));
+				
+				if(fDownCurUncertainty<fUpCurUncertainty)
+				{
+					localCopy.downStream = 
+					GetRandomFloat(fDownCurUncertainty,fUpCurUncertainty);
+				}
+				else
+				{
+					localCopy.downStream = 
+					GetRandomFloat(fUpCurUncertainty,fDownCurUncertainty);
+				}
+				if(fLeftCurUncertainty<fRightCurUncertainty)
+				{
+					localCopy.crossStream = 
+					GetRandomFloat(fLeftCurUncertainty,fRightCurUncertainty);
+				}
+				else
+				{
+					localCopy.crossStream = 
+					GetRandomFloat(fRightCurUncertainty,fLeftCurUncertainty);
+				}
+				INDEXH(fUncertaintyListH,i) = localCopy;
+				
+			}	
+		}
 	}
 	
 	if(needToReInit)

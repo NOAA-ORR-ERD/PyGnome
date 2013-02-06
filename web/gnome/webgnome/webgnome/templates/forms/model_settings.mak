@@ -1,19 +1,16 @@
 <%namespace name="defs" file="../defs.mak"/>
-<%page args="model"/>
 
 <div class="form page hide" id="model_settings" title="Model Settings">
     <div class="page-body">
         <form action="" class="form-horizontal model-settings" method="POST">
             <%
-                duration_days = h.text('duration_days', model.duration_days, class_="input-extra-small")
-                duration_hours = h.text('duration_hours', model.duration_hours, class_="input-extra-small")
-                is_uncertain = h.checkbox('is_uncertain', checked=model.is_uncertain)
-                computation_time_step = h.text('time_step', model.time_step, class_="input-extra-small")
+                duration_days = h.text('duration_days', data_value='model.duration_days', class_="input-extra-small")
+                duration_hours = h.text('duration_hours', data_value='model.duration_hours', class_="input-extra-small")
+                is_uncertain = h.checkbox('is_uncertain', data_checked='model.is_uncertain')
+                computation_time_step = h.text('time_step', data_value='model.time_step', class_="input-extra-small")
             %>
 
-            ${defs.datetime_control(model.start_time, 'start_time',
-                                    date_label='Model Start Date',
-                                    hour_label='Model Start Time')}
+            ${defs.datetime_control('start_time', date_label='Model Start Date', hour_label='Model Start Time')}
 
             <div class="control-group">
                 <label class="control-label" for="duration_days">Model

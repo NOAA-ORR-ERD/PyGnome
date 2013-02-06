@@ -257,3 +257,7 @@ body .ui-tooltip {
  width: 130px;
  height: 50px;
 }
+
+table.time-list td {
+    padding: 2px;
+}

@@ -19,7 +19,7 @@ class WindValueSchemaTests(TestCase):
             'direction': 180.5
         }
 
-        wind_value = schema.WindValueSchema().serialize(data)
+        wind_value = schema.TimeseriesValueSchema().serialize(data)
 
         self.assertEqual(wind_value['direction'], str(data['direction']))
         self.assertEqual(wind_value['speed'], str(data['speed']))
@@ -35,7 +35,7 @@ class WindValueSchemaTests(TestCase):
             'direction': '180.5'
         }
 
-        wind_value = schema.WindValueSchema().deserialize(data)
+        wind_value = schema.TimeseriesValueSchema().deserialize(data)
 
         self.assertEqual(wind_value['direction'], float(data['direction']))
         self.assertEqual(wind_value['speed'], float(data['speed']))
@@ -49,7 +49,7 @@ class WindValueSchemaTests(TestCase):
         }
 
         self.assertRaises(colander.Invalid,
-                          schema.WindValueSchema().deserialize, data)
+                          schema.TimeseriesValueSchema().deserialize, data)
 
 
 class WindSchemaTests(TestCase):

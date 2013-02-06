@@ -33,6 +33,7 @@
 	YEARDATAHDL yearDataHdl;
 } ShioYearInfo;
 */
+#define kMAXNUMSAVEDYEARS 30
 typedef struct
 {
 	Seconds time;
@@ -85,6 +86,7 @@ public:
 	bool					daylight_savings_off;	// AH 07/09/2012
 	EbbFloodDataH			fEbbFloodDataHdl;	// values to show on list for tidal currents
 	HighLowDataH			fHighLowDataHdl;	// values to show on list for tidal heights
+	char					fYearDataPath[kMaxNameLen];
 
 							ShioTimeValue_c ();
 							ShioTimeValue_c (TMover *theOwner);
@@ -105,6 +107,9 @@ public:
 	virtual OSErr			InitTimeFunc ();
 			Boolean			DaylightSavingTimeInEffect(DateTimeRec *dateStdTime);	// AH 07/09/2012
 	
+	OSErr					SetYearDataPath(char *pathName);
+	void					GetYearDataPath(char *pathName);
+	void					GetYearDataDirectory(char* directoryPath);
 	
 };
 

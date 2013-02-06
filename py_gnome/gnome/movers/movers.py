@@ -379,7 +379,7 @@ class RandomMover(CyMover):
 
 class CatsMover(CyMover):
     
-    def __init__(self, curr_file, shio_file=None,
+    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None,
                  active_start= datetime( *gmtime(0)[:6] ), 
                  active_stop = datetime(2038,1,18,0,0,0)):
         """
@@ -398,6 +398,14 @@ class CatsMover(CyMover):
             else:
                 self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
                 self.mover.set_shio(self.shio)
+                #self.shio.set_shio_yeardata_path(shio_yeardata_file)
+            if shio_yeardata_file is not None:
+                if not os.path.exists(shio_yeardata_file):
+                    raise ValueError("Path for Shio Year Data does not exist: {0}".format(shio_yeardata_file))
+                else:
+                    self.shio.set_shio_yeardata_path(shio_yeardata_file)
+            else:
+                raise ValueError("Shio data requires path for Shio Year Data: {0}".format(shio_yeardata_file))
         
         super(CatsMover,self).__init__(active_start, active_stop)
         

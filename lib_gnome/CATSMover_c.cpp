@@ -210,9 +210,7 @@ OSErr CATSMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	
 	//err = this -> UpdateUncertainty();
 	//if(err) return err;
-	
 	if(!fUncertaintyListH || !fLESetSizesH) return 0; // this is our clue to not add uncertainty
-	
 	
 	if(useEddyUncertainty)
 	{
@@ -510,7 +508,7 @@ OSErr CATSMover_c::ReadTopology(char* path/*, TMap **newMap*/)
 	errmsg[0]=0;
 	
 	if (!path || !path[0]) return 0;
-	
+
 	//	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f)) {
 	//		TechError("TCATSMover::ReadTopology()", "ReadFileContents()", err);
 	//		goto done;
