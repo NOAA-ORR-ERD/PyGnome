@@ -141,7 +141,7 @@ def test_reset_array_types():
           may keep references around that defeats this. So test this by itself
     """
     sp1 = Spill()
-    sp1.reset() # make sure that we're reset from previous tests
+    sp1.rewind() # make sure that we're reset from previous tests
 
     sp2 = FloatingSpill()
     sp4 = FloatingSpill()
@@ -156,13 +156,13 @@ def test_reset_array_types():
     arrays = sp1.create_new_elements(1)
     assert 'windages' in arrays
 
-    sp1.reset()
+    sp1.rewind()
     # windages still there
     arrays = sp1.create_new_elements(1)
     assert 'windages' in arrays
 
     del sp4
-    sp5.reset()
+    sp5.rewind()
     #windages should no longer be there
     #print Spill._Spill__all_subclasses
     arrays = sp1.create_new_elements(1)
@@ -204,7 +204,7 @@ class Test_SurfaceReleaseSpill():
         assert arrays is None
 
         # reset and try again
-        sp.reset()
+        sp.rewind()
         assert sp.num_released == 0
         arrays = sp.release_elements(self.release_time - datetime.timedelta(10), timestep)
         assert arrays is None
@@ -246,7 +246,7 @@ class Test_SurfaceReleaseSpill():
         assert arrays['positions'].shape == (75,3)
         assert sp.num_released == 100
 
-        sp.reset()
+        sp.rewind()
 
         ## 360 second time step: first LE
         arrays = sp.release_elements(self.release_time, 360)

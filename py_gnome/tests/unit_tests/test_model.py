@@ -47,6 +47,12 @@ def test_timestep():
     model.duration = dur
     assert model._duration == dur
 
+def test_end_time():
+    """
+    test if the duration is properly computed when the end_time property is set.
+    """
+    
+
 def test_simple_run():
     """
     pretty much all this tests is that the model will run

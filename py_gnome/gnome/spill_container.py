@@ -39,7 +39,7 @@ class SpillContainer(object):
         self.on = True       # sets whether the spill is active or not
         
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
-        self.reset()
+        self.rewind()
 
 
     def __getitem__(self, data_name):
@@ -131,13 +131,13 @@ class SpillContainer(object):
     #             return spill
     #     return None
 
-    def reset(self):
+    def rewind(self):
         """
-        resets all the spills and stored arrays are cleared, then replaced with
+        rewinds all the spills and the stored arrays are cleared, then replaced with
         appropriate empty arrays
         """
         for spill in self.spills:
-            spill.reset()
+            spill.rewind()
         # this should create a full set of zero-sized arrays
         # it creates a temporary Spill object, that should reflect
         # the arrays types of all existing Spills

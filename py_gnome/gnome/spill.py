@@ -146,9 +146,9 @@ class Spill(GnomeObject):
             pass
         del self.__all_instances[ id(self) ]
 
-    def reset(self):
+    def rewind(self):
         """
-        reset the Spill to original status
+        rewinds the Spill to original status (before anything has been released)
         """
         Spill.reset_array_types()        
 
@@ -334,11 +334,11 @@ class SurfaceReleaseSpill(FloatingSpill):
         else:
             return None
 
-    def reset(self):
+    def rewind(self):
         """
-        reset to initial conditions -- i.e. nothing released. 
+        rewind to initial conditions -- i.e. nothing released. 
         """
-        super(SurfaceReleaseSpill, self).reset()
+        super(SurfaceReleaseSpill, self).rewind()
 
         self.num_released = 0
         self.prev_release_pos = self.start_position
@@ -402,12 +402,12 @@ class SpatialReleaseSpill(FloatingSpill):
             return arrays
         else:
             return None
-
-    def reset(self):
-        """
-        reset to initial conditions -- i.e. nothing released. 
-        """
-        super(SpatialReleaseSpill, self).reset()
+    # do-nothing override -- why bother.
+    # def rewind(self):
+    #     """
+    #     reset to initial conditions -- i.e. nothing released. 
+    #     """
+    #     super(SpatialReleaseSpill, self).reset()
 
 
 
