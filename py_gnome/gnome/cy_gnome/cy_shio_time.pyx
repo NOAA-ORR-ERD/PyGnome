@@ -164,13 +164,8 @@ cdef class CyShioTime(object):
         
         this is currently only used for testing
         """
-        # This 2D world point is just used here and this method is only for testing.
-        # Move it to basic_types if structure gets reused
-        w_point = np.dtype([('long', basic_types.world_point_type),
-                           ('lat', basic_types.world_point_type)])
-                           
         cdef cnp.ndarray[WorldPoint, ndim=1] wp
-        wp = np.zeros((1,), dtype=w_point)
+        wp = np.zeros((1,), dtype=basic_types.w_point_2d)
         
         wp[0] = self.shio.GetRefWorldPoint()
         wp['lat'][:] = wp['lat'][:]/1.e6    # correct C++ scaling here

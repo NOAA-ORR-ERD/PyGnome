@@ -415,6 +415,17 @@ class CatsMover(CyMover):
         """
         info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.shio.filename)
         return info
+     
+    # Properties
+    scale = property( lambda self: bool(self.mover.scale_type),
+                      lambda self, val: setattr(self.mover,'scale_type', int(val)) ) 
+       
+    #===========================================================================
+    # @property
+    # def scale_refpoint(self):
+    #    return self.mover.
+    #===========================================================================
+        
         
 class WeatheringMover(Mover):
     """

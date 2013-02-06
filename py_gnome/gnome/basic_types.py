@@ -24,7 +24,7 @@ datetime_value_2d = np.dtype([('time', np.datetime64),
                            ('value', mover_type,(2,))], align=True)
 
 #----------------------------------------------------------------
-# Mirror C++ structures, following are used by cython code
+# Mirror C++ structures, following are used by cython code to access C++ methods/classes
 seconds = np.uint32 # model time is going to be given in seconds
 world_point = np.dtype([('long', world_point_type),
                         ('lat', world_point_type),
@@ -33,6 +33,10 @@ world_point = np.dtype([('long', world_point_type),
 velocity_rec       = np.dtype([('u', np.double), ('v', np.double),], align=True)
 time_value_pair    = np.dtype([('time', seconds), ('value', velocity_rec),], align=True)
 ebb_flood_data    = np.dtype([('time', seconds), ('scale', np.float64),('type',np.int16)], align=True)
+
+# This 2D world point is just used by shio and Cats at present
+w_point_2d = np.dtype([('long', world_point_type),
+                       ('lat', world_point_type)])                           
 
 # In the C++ TypeDefs.h, the enum type for LEStatus is defined as a short
 # this is also consistent with the definition in type_defs.pxd .. define it here to keep things consistent

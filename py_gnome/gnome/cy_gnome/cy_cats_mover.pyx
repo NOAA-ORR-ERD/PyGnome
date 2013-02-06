@@ -60,7 +60,13 @@ cdef class CyCatsMover(cy_mover.CyMover):
         
         def __set__(self,value):
             self.cats.fEddyDiffusion = value    
-
+    
+    property ref_point:
+        def __get__(self):
+            return self.get_ref_point()
+    
+        def __set__(self,value):
+            self.set_ref_point(value)
          
     def set_shio(self, CyShioTime cy_shio):
         self.cats.SetTimeDep(cy_shio.shio)
@@ -79,6 +85,23 @@ cdef class CyCatsMover(cy_mover.CyMover):
         p.pLong = ref_point[0]*10**6    # should this happen in C++?
         p.pLat = ref_point[1]*10**6
         self.cats.SetRefPosition(p, 0)
+    
+    def get_ref_point(self):
+        cdef cnp.ndarray[WorldPoint, ndim=1] wp
+        #cdef cnp.ndarray[cnp.npy_longlong, ndim=1] z
+        cdef long *z
+        wp = np.zeros((1,), dtype=basic_types.w_point_2d)
+        #z  = np.zeros((1,), dtype=np.long)
+        #self.cats.GetRefPosition ( &wp[0], &z[0])
+        self.cats.GetRefPosition ( &wp[0], z)
+        
+        wp['lat'][:] = wp['lat'][:]/1.e6    # correct C++ scaling here
+        wp['long'][:] = wp['long'][:]/1.e6    # correct C++ scaling here
+        
+        g_wp = np.zeros((1,),dtype=basic_types.world_point) 
+        g_wp[0] = (wp['long'],wp['lat'],0)
+        
+        return g_wp[0] 
             
     def read_topology(self, path):
         cdef OSErr err
