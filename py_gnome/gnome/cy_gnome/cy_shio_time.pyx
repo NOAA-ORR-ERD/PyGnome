@@ -44,6 +44,19 @@ cdef class CyShioTime(object):
             raise IOError("No such file: " + path)
     
     
+    def set_shio_yeardata_path(self, yeardata_path):
+        """
+        .. function::set_shio_yeardata_path
+        
+        """
+        cdef OSErr err
+        if os.path.exists(yeardata_path):
+            err = self.shio.SetYearDataPath(yeardata_path)
+#             if err != 0:
+#                 raise ValueError("Path could not be correctly be set by ShioTimeValue_c.SetYearDataPath(...)")
+        else:
+            raise IOError("No such file: " + yeardata_path)
+
     property daylight_savings_off:
         def __get__(self):
             return self.shio.daylight_savings_off

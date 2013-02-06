@@ -1,5 +1,6 @@
 """
 helpers.py: Provide WebHelpers HTML tag generation functions.
 """
+import sys
 
-from webhelpers.html.tags import *
+from webhelpers2.html.tags import *

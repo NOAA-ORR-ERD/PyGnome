@@ -2,7 +2,7 @@ from cornice.resource import resource, view
 from pyramid.httpexceptions import HTTPBadRequest
 
 from webgnome import util
-from webgnome.model_manager import WebWindMover, WebRandomMover
+from webgnome.model_manager import WebWindMover, WebRandomMover, WebWind
 from webgnome.schema import WindMoverSchema, RandomMoverSchema
 from webgnome.views.services.base import BaseResource
 
@@ -20,6 +20,7 @@ class WindMover(BaseResource):
         """
         data = self.prepare(self.request.validated)
         model = data.pop('model')
+        data['wind'] = WebWind(**data.pop('wind'))
         mover = WebWindMover(**data)
         model.movers.add(mover)
 

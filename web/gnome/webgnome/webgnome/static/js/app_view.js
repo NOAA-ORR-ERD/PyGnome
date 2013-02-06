@@ -52,9 +52,10 @@ define([
                 apiRoot: this.apiRoot,
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
-                surfaceReleaseSpills: this.surfaceReleaseSpills,
-                windMovers: this.windMovers,
-                map: this.map
+                map: this.map,
+                collections: [
+                    this.windMovers, this.randomMovers, this.surfaceReleaseSpills
+                ]
             });
 
             this.treeControlView = new views.TreeControlView({
@@ -252,37 +253,46 @@ define([
 
             this.editMapFormView = new forms.MapFormView({
                 id: 'edit_map',
-                model: this.map
+                model: this.map,
+                defaults: this.options.defaultMap
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
                 id: 'add_wind_mover',
-                collection: this.windMovers
+                collection: this.windMovers,
+                defaults: this.options.defaultWindMover,
+                defaultTimeseriesValue: this.options.defaultWindTimeseriesValue
             });
 
             this.editWindMoverFormView = new forms.WindMoverFormView({
                 id: 'edit_wind_mover',
-                collection: this.windMovers
+                collection: this.windMovers,
+                defaults: this.options.defaultWindMover,
+                defaultTimeseriesValue: this.options.defaultWindTimeseriesValue
             });
 
             this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
                 id: 'add_random_mover',
-                collection: this.randomMovers
+                collection: this.randomMovers,
+                defaults: this.options.defaultRandomMover,
             });
 
             this.editRandomMoverFormView = new forms.RandomMoverFormView({
                 id: 'edit_random_mover',
-                collection: this.randomMovers
-            });           
+                collection: this.randomMovers,
+                defaults: this.options.defaultRandomMover,
+            });
 
             this.addSurfaceReleaseSpillFormView = new forms.AddSurfaceReleaseSpillFormView({
                 id: 'add_surface_release_spill',
-                collection: this.surfaceReleaseSpills
+                collection: this.surfaceReleaseSpills,
+                defaults: this.options.defaultSurfaceReleaseSpill,
             });
 
             this.editSurfaceReleaseSpillFormView = new forms.SurfaceReleaseSpillFormView({
                 id: 'edit_surface_release_spill',
-                collection: this.surfaceReleaseSpills
+                collection: this.surfaceReleaseSpills,
+                defaults: this.options.defaultSurfaceReleaseSpill
             });
 
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
@@ -557,7 +567,16 @@ define([
             this.formViews.hideAll();
 
             if (node.data.object_id) {
-                formView.reload(node.data.object_id);
+                try {
+                    formView.reload(node.data.object_id);
+                } catch (e) {
+                    if (e instanceof forms.ModelNotFoundException) {
+                        window.alert('That item is unavailable right now. ' +
+                            'Please refresh the page and try again.');
+
+                        return;
+                    }
+                }
             }
 
             formView.show();
