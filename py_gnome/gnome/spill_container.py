@@ -204,9 +204,9 @@ class UncertainSpillContainerPair(object):
         """
         rewind spills in spill_container
         """
-        self.__spill_container.reset()
+        self.__spill_container.rewind()
         if self.uncertain:
-            self.__u_spill_container.reset()
+            self.__u_spill_container.rewind()
     
     def __repr__(self):
         """
