@@ -31,13 +31,13 @@ class Model(GnomeObject):
         self.movers = OrderedCollection(dtype=gnome.movers.Mover)
         #self._spill_container = gnome.spill_container.SpillContainer()
         #self._uncertain_spill_container = None
-        self.spills = gnome.spill_container.UncertainSpillContainerPair()   # contains both certain/uncertain spills 
+        self.spills = gnome.spill_container.UncertainSpillContainerPair(uncertain)   # contains both certain/uncertain spills 
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
         self.output_map = output_map
-        self._uncertain = uncertain # sets whether uncertainty is on or not.
+        #self._uncertain = uncertain # sets whether uncertainty is on or not.
 
         self.time_step = time_step # this calls rewind() !
 
@@ -71,16 +71,21 @@ class Model(GnomeObject):
     ### Assorted properties
     @property
     def is_uncertain(self):
-        return self._uncertain
+        return self.spills.uncertain
     @is_uncertain.setter
     def is_uncertain(self, uncertain_value):
         """
         only if uncertainty switch is toggled, then restart model
         """
-        if self._uncertain != uncertain_value:
-            self._uncertain = uncertain_value
+        if self.spills.uncertain != uncertain_value:
             self.spills.uncertain = uncertain_value # update uncertainty
-            self.rewind()           
+            self.rewind()
+        #=======================================================================
+        # if self._uncertain != uncertain_value:
+        #    self._uncertain = uncertain_value
+        #    self.spills.uncertain = uncertain_value # update uncertainty
+        #    self.rewind()           
+        #=======================================================================
 
     @property
     def start_time(self):
@@ -175,7 +180,7 @@ class Model(GnomeObject):
         for mover in self.movers:
             mover.prepare_for_model_run()
         
-        self.spills.uncertain = self._uncertain
+        #self.spills.uncertain = self._uncertain
         self.spills.rewind()
         #=======================================================================
         # self._spill_container.reset()

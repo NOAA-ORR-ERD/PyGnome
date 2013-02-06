@@ -357,13 +357,13 @@ def test_all_movers(start_time, release_delay, duration):
         
     # test release happens correctly for all cases
     if release_delay < duration:    # at least one get_move has been called after release
-        assert np.all(model.spills.spill_container['positions'][:,:2] != start_loc[:2])
+        assert np.all(model.spills.LE('positions')[:,:2] != start_loc[:2])
        
     elif release_delay == duration: # particles are released after last step so no motion, only initial state
-        assert np.all(model.spills.spill_container['positions'] == start_loc)
+        assert np.all(model.spills.LE('positions') == start_loc)
         
     else:                           # release_delay > duration so nothing released though model ran
-        assert len(model.spills.spill_container['positions']) == 0
+        assert len(model.spills.LE('positions') ) == 0
         
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
     
