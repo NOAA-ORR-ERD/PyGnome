@@ -6,7 +6,7 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNO
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime       #@UnresolvedImport @UnusedImport IGNORE:W0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time
-from gnome import weather
+from gnome import environment
 from gnome.utilities import rand    # not to confuse with python random module
 
 import os
@@ -341,7 +341,7 @@ def wind_mover_from_file(filename, **kwargs):
 
     :returns mover: returns a wind mover, built from the file
     """
-    w = weather.Wind(file=filename,
+    w = environment.Wind(file=filename,
                      data_format=basic_types.data_format.magnitude_direction)
     ts = w.get_timeseries(data_format=basic_types.data_format.magnitude_direction)
     wm = WindMover(w, **kwargs)
