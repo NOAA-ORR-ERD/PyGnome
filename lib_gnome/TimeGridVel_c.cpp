@@ -7426,14 +7426,14 @@ OSErr TimeGridCurRect_c::ReadHeaderLines(char *path, WorldRect *bounds)
 		long numFiles = (numLinesInText - (line - 1))/3;	// 3 lines for each file - filename, starttime, endtime
 		//strcpy(fPathName,s+strlen("[FILE]\t"));
 		strcpy(fVar.pathName,s+strlen("[FILE] "));
-		sprintf(errmsg,"pathName = %s\n",fVar.pathName);
-		printNote(errmsg);
+		//sprintf(errmsg,"pathName = %s\n",fVar.pathName);
+		//printNote(errmsg);
 		RemoveLeadingAndTrailingWhiteSpace(fVar.pathName);
 		ResolvePathFromInputFile(path,fVar.pathName); // JLM 6/8/10
-		sprintf(errmsg,"pathName = %s\n",path);
-		printNote(errmsg);
-		sprintf(errmsg,"resolved pathName = %s\n",fVar.pathName);
-		printNote(errmsg);
+		//sprintf(errmsg,"pathName = %s\n",path);
+		//printNote(errmsg);
+		//sprintf(errmsg,"resolved pathName = %s\n",fVar.pathName);
+		//printNote(errmsg);
 		if(fVar.pathName[0] && FileExists(0,0,fVar.pathName))
 		{
 			err = ScanFileForTimes(fVar.pathName,&fTimeDataHdl,&fTimeHdl);	// AH 07/17/2012
