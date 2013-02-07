@@ -88,6 +88,40 @@ def test_certain_uncertain():
     assert np.all(delta[:,:2] != u_delta[:,:2])
     assert np.all(delta[:,2] == u_delta[:,2])
 
+c_cats = movers.CatsMover(curr_file)
+def test_default_props():
+    """
+    test default properties
+    """
+    assert c_cats.scale == False
+    assert c_cats.scale_value == 1
+    
+def test_scale():  
+    """
+    test setting / getting properties
+    """
+    c_cats.scale = True
+    print c_cats.scale
+    assert c_cats.scale == True
+
+def test_scale_value():
+    """
+    test setting / getting properties
+    """
+    c_cats.scale_value = 0
+    print c_cats.scale_value
+    assert c_cats.scale_value == 0
+    
+def test_scale_refpoint():
+    """
+    test setting / getting properties
+    """
+    tgt = (1,2,3)
+    c_cats.scale_refpoint = tgt  # can be a list or a tuple
+    assert c_cats.scale_refpoint == tuple(tgt)
+    c_cats.scale_refpoint = list(tgt)  # can be a list or a tuple
+    assert c_cats.scale_refpoint == tuple(tgt)
+
 # Helper functions for tests
 def _assert_move(delta):
     """
