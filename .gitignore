@@ -8,7 +8,7 @@ node_modules
 *~
 *.idea
 *.ropeproject
-._.DS_Store
+*._.DS_Store
 
 # ignore binaries generated during build
 *.egg-info
