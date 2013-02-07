@@ -18,25 +18,14 @@ from gnome.gnomeobject import GnomeObject
 class Spill(GnomeObject):
     """
     base class for a source of elements
-
-
-    NOTE: It's important to derive all Spills from this base class, as all sorts of
-          trickery to keep track of spill spill_nums, and what instances there are of
-          derived classes, so that we can keep track of what data arrays are needed, etc.
-
     """
-
-    # info about the array types
-    # used to construct and expand data arrays.
-    # this specifies both what arrays are there, and their types, etc.
-    # this kept as a class atrribure so all properties are accesable everywhere.
-    # subclasses should add new particle properties to this dict
-    #             name           shape (not including first axis)       dtype         
-    _array_info = {}
-
-    __all_spill_nums = set() # set of all the in-use spill_nums
-    __all_instances = {} # keys are the instance spill_num -- values are the subclass object
-
+    array_types = {'positions':      ( (3,), basic_types.world_point_type),
+                   'next_positions': ( (3,), basic_types.world_point_type),
+                   'last_water_positions': ( (3,), basic_types.world_point_type),
+                   'status_codes': ( (), basic_types.status_code_type),
+                   'spill_num': ( (), basic_types.id_type)
+                   }
+        
     def __new__(cls, *args, **kwargs):
         obj = super(Spill, cls).__new__(cls, *args, **kwargs)
         cls.__all_instances[ id(obj) ] = cls
@@ -95,43 +84,36 @@ class Spill(GnomeObject):
         return u_copy
 
 
-    @classmethod
-    def reset_array_types(cls):
-        cls._array_info.clear()
-        all_subclasses = set(cls.__all_instances.values())
-        for subclass in all_subclasses:
-            subclass.add_array_types()
+    #===========================================================================
+    # @classmethod
+    # def reset_array_types(cls):
+    #    cls._array_info.clear()
+    #    all_subclasses = set(cls.__all_instances.values())
+    #    for subclass in all_subclasses:
+    #        subclass.add_array_types()
+    #===========================================================================
 
-    @classmethod
-    def add_array_types(cls):
-        cls._array_info.update({'positions':      ( (3,), basic_types.world_point_type),
-                                'next_positions': ( (3,), basic_types.world_point_type),
-                                'last_water_positions': ( (3,), basic_types.world_point_type),
-                                'status_codes': ( (), basic_types.status_code_type),
-                                'spill_num': ( (), basic_types.id_type)
-                                })
-
-    def __set_spill_num(self):
-        """
-        returns an spill_num that is not already in use
-
-        This approach will assure that all the spills within one python instance have
-        unique spills numbers, but also that they will be small numbers.
-
-        inefficient, but who cares?
-        TODO: managing a unique list of id's for spills could probably be handled
-              by the spill container
-        """
-        spill_num = 1
-        while spill_num < 65536: # just so it will eventually terminate! (and fit into an int16)
-            if spill_num not in self.__all_spill_nums:
-                self.spill_num = spill_num
-                self.__all_spill_nums.add(spill_num)
-                break
-            else:
-                spill_num+=1
-        else:
-            raise ValueError("There are no more spill_nums available to spills!")
+#    def __set_spill_num(self):
+#        """
+#        returns an spill_num that is not already in use
+#
+#        This approach will assure that all the spills within one python instance have
+#        unique spills numbers, but also that they will be small numbers.
+#
+#        inefficient, but who cares?
+#        TODO: managing a unique list of id's for spills could probably be handled
+#              by the spill container
+#        """
+#        spill_num = 1
+#        while spill_num < 65536: # just so it will eventually terminate! (and fit into an int16)
+#            if spill_num not in self.__all_spill_nums:
+#                self.spill_num = spill_num
+#                self.__all_spill_nums.add(spill_num)
+#                break
+#            else:
+#                spill_num+=1
+#        else:
+#            raise ValueError("There are no more spill_nums available to spills!")
 
     def __del__(self):
         """
@@ -139,11 +121,13 @@ class Spill(GnomeObject):
 
         removes its spill_num from Spill.__all_spill_nums and instance from Spill.__all_subclass_instances
         """
-        try:
-            self.__all_spill_nums.remove(self.spill_num)
-        except KeyError:
-            # this one is already deleted (uncertain spills have same spill_num)
-            pass
+        #=======================================================================
+        # try:
+        #    self.__all_spill_nums.remove(self.spill_num)
+        # except KeyError:
+        #    # this one is already deleted (uncertain spills have same spill_num)
+        #    pass
+        #=======================================================================
         del self.__all_instances[ id(self) ]
 
     def rewind(self):
@@ -185,6 +169,10 @@ class FloatingSpill(Spill):
 
     all this does is add the 'windage' parameter
     """
+    array_types = copy.copy(Spill.array_types)
+    array_types.update( ( ('windages', ( (), basic_types.windage_type)), 
+                          ) )
+    
     def __init__(self,
                  windage_range=(0.01, 0.04),
                  windage_persist=900):
@@ -194,13 +182,15 @@ class FloatingSpill(Spill):
         self.windage_persist = windage_persist
 
         self.add_array_types()
+        Spill.array_types.update()
 
-    @classmethod
-    def add_array_types(cls):
-        # need to get the superclasses types added too.
-        super(FloatingSpill, cls).add_array_types()
-        cls._array_info['windages'] = ( (), basic_types.windage_type )
-
+    #===========================================================================
+    # @classmethod
+    # def add_array_types(cls):
+    #    # need to get the superclasses types added too.
+    #    super(FloatingSpill, cls).add_array_types()
+    #    cls._array_info['windages'] = ( (), basic_types.windage_type )
+    #===========================================================================
 
 class SurfaceReleaseSpill(FloatingSpill):
     """

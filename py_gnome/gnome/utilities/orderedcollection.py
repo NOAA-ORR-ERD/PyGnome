@@ -33,10 +33,7 @@ class OrderedCollection(object):
         self._elems = elems[:]
 
     def get(self, ident):
-        try:
-            return self._elems[self._index[ident]]
-        except KeyError:
-            return self._elems[self._index[str(ident)]]
+        return self._elems[self._index[ident]]
 
     def add(self, elem):
         ''' Add an object to the collection '''
@@ -88,12 +85,12 @@ class OrderedCollection(object):
             self._index[id(new_elem)] = idx
         self._elems[idx] = new_elem
 
-    def index(self, ident):
-        try:
-            idx = self._index[ident]
-        except KeyError:
-            idx = self._index[str(ident)]
-        return sorted(self._index.values()).index(idx)
+    def index(self, ident, renumber=True):
+        idx = self._index[ident]
+        if renumber:
+            return sorted(self._index.values()).index(idx)
+        else:
+            return idx
 
     def __len__(self):
         return len(self._index.keys())

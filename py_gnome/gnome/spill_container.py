@@ -35,8 +35,8 @@ class SpillContainer(object):
     """
     def __init__(self, uncertain=False):
         
-        self.is_uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
-        self.on = True       # sets whether the spill is active or not
+        self.is_uncertain = uncertain  # uncertainty spill - same information as basic_types.spill_type
+        self.on = True  # sets whether the spill is active or not
         
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
@@ -66,10 +66,10 @@ class SpillContainer(object):
         
         if data_name in self._data_arrays:
             # if the array is already here, the type should match        
-            if array.dtype !=  self._data_arrays[data_name].dtype:
+            if array.dtype != self._data_arrays[data_name].dtype:
                 raise ValueError("new data array must be the same type")
             # and the shape should match        
-            if array.shape !=  self._data_arrays[data_name].shape:
+            if array.shape != self._data_arrays[data_name].shape:
                 raise ValueError("new data array must be the same shape")
                     
         self._data_arrays[data_name] = array
@@ -78,7 +78,7 @@ class SpillContainer(object):
         """
         The number of elements currently in the SpillContainer
         """
-        return len(self['positions']) # every spill should have a postitions data array
+        return len(self['positions'])  # every spill should have a postitions data array
 
     def uncertain_copy(self):
         """
@@ -161,20 +161,21 @@ class SpillContainer(object):
         
         """
         for spill in self.spills:
-            new_data = spill.release_elements(current_time, time_step)
-            if new_data is not None:
-                for name in new_data:
-                    if name in self._data_arrays:
-                        self._data_arrays[name] = np.r_[ self._data_arrays[name], new_data[name] ]
-                    else:
-                        self._data_arrays[name] = new_data[name]
+            if spill.on:
+                new_data = spill.release_elements(current_time, time_step)
+                if new_data is not None:
+                    for name in new_data:
+                        if name in self._data_arrays:
+                            self._data_arrays[name] = np.r_[ self._data_arrays[name], new_data[name] ]
+                        else:
+                            self._data_arrays[name] = new_data[name]
 
 
     def __str__(self):
-        msg = "gnome.spill_container.SpillContainer\nspill LE attributes: %s"%self._data_arrays.keys()
+        msg = "gnome.spill_container.SpillContainer\nspill LE attributes: %s" % self._data_arrays.keys()
         return msg
 
-    __repr__ = __str__ # should write a better one, I suppose
+    __repr__ = __str__  # should write a better one, I suppose
 
         
 
@@ -194,10 +195,19 @@ class UncertainSpillContainerPair(object):
         
         Since spill_container.spills are 
         """
-        self.__spill_container  = SpillContainer()  # name mangling just to make it more difficult for user to find
+        self.__spill_container = SpillContainer()  # name mangling just to make it more difficult for user to find
         self._uncertain = uncertain
         if uncertain:
             self.__u_spill_container = SpillContainer(uncertain=True)
+            
+        # info about the array types
+        # used to construct and expand data arrays.
+        # this specifies both what arrays are there, and their types, etc.
+        # this kept as a class atrribure so all properties are accesable everywhere.
+        # subclasses should add new particle properties to this dict
+        #             name           shape (not including first axis)       dtype      
+        self._array_info = {}
+        self.__all_instances = {} # keys are the instance spill_num -- values are the subclass object
             
     
     def rewind(self):
@@ -225,7 +235,7 @@ class UncertainSpillContainerPair(object):
             raise TypeError("uncertain property must be a bool (True/False)")
         if self._uncertain == True and value == False:
             del self.__u_spill_container  # delete if it exists
-            self.rewind()    # Not sure if we want to do this?
+            self.rewind()  # Not sure if we want to do this?
         elif self._uncertain == False and value == True:
             self.__u_spill_container = self.__spill_container.uncertain_copy()
             self.rewind()
@@ -237,9 +247,18 @@ class UncertainSpillContainerPair(object):
         add spill to spill_container and make copy in u_spill_container if uncertainty is on
         """
         self.__spill_container.spills += spill
+        spill.spill_num = self.__spill_container.spills.index(spill.id, renumber=False)
         if self.uncertain:
             # todo: make sure spill_num for copied spill are the same as original
             self.__u_spill_container.spills += spill.uncertain_copy()
+            
+        self.__all_instances[spill.spill_num] = spill.__class__  
+    
+    def reset_array_types(self):
+        self._array_info.clear()
+        self.all_subclasses = set(self.__all_instances.values())
+        for subclass in self.all_subclasses:
+            self._array_info.update( subclass.array_types)
     
     def remove(self, ident):
         """
@@ -247,20 +266,22 @@ class UncertainSpillContainerPair(object):
         as well
         """
         if self.uncertain:
-            idx  = self.__spill_container.spills.index(ident)
-            u_ident= [s for s in self.__u_spill_container.spills][idx]
+            idx = self.__spill_container.spills.index(ident)
+            u_ident = [s for s in self.__u_spill_container.spills][idx]
             del self.__u_spill_container.spills[u_ident.id]
         del self.__spill_container.spills[ident]
     
-    def replace(self, ident, new_spill):
-        """
-        replace spill in spill_container and make copy in u_spill_container if uncertainty is on
-        """
-        self.__spill_container.spills[ident] = new_spill
-        if self.uncertain:
-            idx  = self.__spill_container.spills.index(ident)
-            u_obj= [s for s in self.__u_spill_container.spills][idx]
-            self.__u_spill_container.spills[u_obj.id] = spill.uncertain_copy()
+    #===========================================================================
+    # def replace(self, ident, new_spill):
+    #    """
+    #    replace spill in spill_container and make copy in u_spill_container if uncertainty is on
+    #    """
+    #    self.__spill_container.spills[ident] = new_spill
+    #    if self.uncertain:
+    #        idx = self.__spill_container.spills.index(ident)
+    #        u_obj = [s for s in self.__u_spill_container.spills][idx]
+    #        self.__u_spill_container.spills[u_obj.id] = spill.uncertain_copy()
+    #===========================================================================
     
     def __getitem__(self, ident):
         """
@@ -269,8 +290,8 @@ class UncertainSpillContainerPair(object):
         spill = self.__spill_container.spills[ident]
         return spill
     
-    def __setitem__(self, ident, new_spill):
-        self.replace(ident, new_spill)
+    #def __setitem__(self, ident, new_spill):
+    #    self.replace(ident, new_spill)
     
     def __delitem__(self, ident):
         self.remove(ident)
@@ -298,9 +319,9 @@ class UncertainSpillContainerPair(object):
         if self.uncertain:
             return (self.__spill_container, self.__u_spill_container)
         else:
-            return (self.__spill_container, )
+            return (self.__spill_container,)
         
-    LE_data = property( lambda self: self.__spill_container._data_arrays.keys())    
+    LE_data = property(lambda self: self.__spill_container._data_arrays.keys())    
             
     def LE(self, prop_name, uncertain=False):
         if uncertain:
@@ -317,8 +338,8 @@ class TestSpillContainer(SpillContainer):
    """
    def __init__(self,
                 num_elements=0,
-                start_pos=(0.0,0.0,0.0),
-                release_time=datetime.datetime(2000,1,1,1),
+                start_pos=(0.0, 0.0, 0.0),
+                release_time=datetime.datetime(2000, 1, 1, 1),
                 uncertain=False):
        """
        initilize a simple spill container (instantaneous point release)
@@ -326,7 +347,7 @@ class TestSpillContainer(SpillContainer):
        SpillContainer.__init__(self, uncertain=uncertain)
 
        spill = gnome.spill.SurfaceReleaseSpill(num_elements,
-                                               start_pos,    
+                                               start_pos,
                                                release_time)
        self.spills.add(spill)
        self.release_elements(release_time)
