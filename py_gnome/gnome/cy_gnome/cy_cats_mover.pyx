@@ -63,10 +63,28 @@ cdef class CyCatsMover(cy_mover.CyMover):
     
     property ref_point:
         def __get__(self):
-            return self.get_ref_point()
+            """
+            returns a tuple 
+            
+            todo: make sure this is consistent with the format of CyShioTime.ref_point
+            """
+            return (self.cats.refP.pLong/1.e6, self.cats.refP.pLat/1.e6, self.cats.refZ)
     
-        def __set__(self,value):
-            self.set_ref_point(value)
+        def __set__(self,ref_point):
+            """
+            accepts a list or a tuple
+            will not work with a numpy array since indexing assumes a list or a tuple
+            
+            todo: make sure this is consistent with the format of CyShioTime.ref_point 
+            """
+            ref_point = np.asarray(ref_point)   # make it a numpy array
+            cdef WorldPoint p
+            p.pLong = ref_point[0]*10**6    # should this happen in C++?
+            p.pLat = ref_point[1]*10**6
+            if len(ref_point) == 2:
+                self.cats.SetRefPosition(p, 0)
+            else:
+                self.cats.SetRefPosition(p, ref_point[2])
          
     def set_shio(self, CyShioTime cy_shio):
         self.cats.SetTimeDep(cy_shio.shio)
@@ -79,29 +97,6 @@ cdef class CyCatsMover(cy_mover.CyMover):
         self.cats.SetTimeDep(ossm.time_dep)
         self.cats.bTimeFileActive = True   # What is this?
         return True
-        
-    def set_ref_point(self, ref_point):
-        cdef WorldPoint p
-        p.pLong = ref_point[0]*10**6    # should this happen in C++?
-        p.pLat = ref_point[1]*10**6
-        self.cats.SetRefPosition(p, 0)
-    
-    def get_ref_point(self):
-        cdef cnp.ndarray[WorldPoint, ndim=1] wp
-        #cdef cnp.ndarray[cnp.npy_longlong, ndim=1] z
-        cdef long *z
-        wp = np.zeros((1,), dtype=basic_types.w_point_2d)
-        #z  = np.zeros((1,), dtype=np.long)
-        #self.cats.GetRefPosition ( &wp[0], &z[0])
-        self.cats.GetRefPosition ( &wp[0], z)
-        
-        wp['lat'][:] = wp['lat'][:]/1.e6    # correct C++ scaling here
-        wp['long'][:] = wp['long'][:]/1.e6    # correct C++ scaling here
-        
-        g_wp = np.zeros((1,),dtype=basic_types.world_point) 
-        g_wp[0] = (wp['long'],wp['lat'],0)
-        
-        return g_wp[0] 
             
     def read_topology(self, path):
         cdef OSErr err

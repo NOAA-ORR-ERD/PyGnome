@@ -92,10 +92,10 @@ cdef extern from "CATSMover_c.h":
         short           scaleType                 
         double          scaleValue
         Boolean         bTimeFileActive
+        WorldPoint      refP
+        long            refZ
         #=======================================================================
-        # WorldPoint      refP                
-        # GridVel_c       *fGrid    
-        # long            refZ                     
+        # GridVel_c       *fGrid                         
         # char            scaleOtherFile[32]
         # double          refScale
         # Boolean         bRefPointOpen
@@ -111,7 +111,6 @@ cdef extern from "CATSMover_c.h":
        
         int   ReadTopology(char* path)
         void  SetRefPosition (WorldPoint p, long z)    # Could we use WorldPoint3D for this?
-        void  GetRefPosition (WorldPoint* p, long* z)    # Could we use WorldPoint3D for this?
         #OSErr ComputeVelocityScale(Seconds&)    # seems to require TMap, TCATSMover
        
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)

@@ -419,12 +419,11 @@ class CatsMover(CyMover):
     # Properties
     scale = property( lambda self: bool(self.mover.scale_type),
                       lambda self, val: setattr(self.mover,'scale_type', int(val)) ) 
-       
-    #===========================================================================
-    # @property
-    # def scale_refpoint(self):
-    #    return self.mover.
-    #===========================================================================
+    scale_refpoint = property( lambda self: self.mover.ref_point, 
+                               lambda self,val: setattr(self.mover, 'ref_point', val) )
+     
+    scale_value = property( lambda self: self.mover.scale_value, 
+                            lambda self,val: setattr(self.mover, 'scale_value', val) )
         
         
 class WeatheringMover(Mover):
