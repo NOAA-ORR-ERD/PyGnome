@@ -54,34 +54,34 @@ def test_exceptions(wind_ts,invalid_rq):
     test exceptions
     """
     with pytest.raises(ValueError):
-        convert.to_time_value_pair(wind_ts['tv'], basic_types.data_format.magnitude_direction)
+        convert.to_time_value_pair(wind_ts['tv'], basic_types.ts_format.magnitude_direction)
         convert.to_time_value_pair(wind_ts['dtv'], -1)
         convert.to_datetime_value_2d(wind_ts['tv'], -1)
-        convert.to_datetime_value_2d(wind_ts['tv'], basic_types.data_format.magnitude_direction)
+        convert.to_datetime_value_2d(wind_ts['tv'], basic_types.ts_format.magnitude_direction)
 
     # following also raises ValueError. This gives invalid (r,theta) inputs which are rejected
     # by the transforms.r_theta_to_uv_wind method. It tests the inner exception is correct
     with pytest.raises(ValueError):
         invalid_dtv_rq = np.zeros((len(invalid_rq['rq']),), dtype=basic_types.datetime_value_2d)
         invalid_dtv_rq['value'] = invalid_rq['rq']
-        convert.to_time_value_pair( invalid_dtv_rq, basic_types.data_format.magnitude_direction)
+        convert.to_time_value_pair( invalid_dtv_rq, basic_types.ts_format.magnitude_direction)
 
 # tolerance for numpy.allclose(...)
 atol = 1e-14
 rtol = 0
         
 def test_to_time_value_pair(wind_ts):
-    out_tv = convert.to_time_value_pair(wind_ts['dtv_rq'], in_data_format=basic_types.data_format.magnitude_direction).view(dtype=np.recarray)
+    out_tv = convert.to_time_value_pair(wind_ts['dtv_rq'], in_ts_format=basic_types.ts_format.magnitude_direction).view(dtype=np.recarray)
     assert np.all( wind_ts['tv'].time == out_tv.time)
     assert np.allclose( wind_ts['tv'].value.u, out_tv.value.u, atol, rtol)
     assert np.allclose( wind_ts['tv'].value.v, out_tv.value.v, atol, rtol)
     
 def test_to_datetime_value_2d_rq(wind_ts):
-    out_dtval = convert.to_datetime_value_2d(wind_ts['tv'], out_data_format=basic_types.data_format.magnitude_direction).view(dtype=np.recarray)
+    out_dtval = convert.to_datetime_value_2d(wind_ts['tv'], out_ts_format=basic_types.ts_format.magnitude_direction).view(dtype=np.recarray)
     assert np.all( out_dtval.time == wind_ts['dtv_rq'].time)
     assert np.allclose( out_dtval.value, wind_ts['dtv_rq'].value, atol, rtol) 
 
 def test_to_datetime_value_2d_uv(wind_ts):
-    out_dtval = convert.to_datetime_value_2d(wind_ts['tv'], out_data_format=basic_types.data_format.wind_uv).view(dtype=np.recarray)
+    out_dtval = convert.to_datetime_value_2d(wind_ts['tv'], out_ts_format=basic_types.ts_format.uv).view(dtype=np.recarray)
     assert np.all( out_dtval.time == wind_ts['dtv_rq'].time)
     assert np.allclose( out_dtval.value, wind_ts['dtv_uv'].value, atol, rtol)

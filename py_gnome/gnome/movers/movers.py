@@ -342,8 +342,8 @@ def wind_mover_from_file(filename, **kwargs):
     :returns mover: returns a wind mover, built from the file
     """
     w = environment.Wind(file=filename,
-                     data_format=basic_types.data_format.magnitude_direction)
-    ts = w.get_timeseries(data_format=basic_types.data_format.magnitude_direction)
+                     ts_format=basic_types.ts_format.magnitude_direction)
+    ts = w.get_timeseries(ts_format=basic_types.ts_format.magnitude_direction)
     wm = WindMover(w, **kwargs)
 
     return wm

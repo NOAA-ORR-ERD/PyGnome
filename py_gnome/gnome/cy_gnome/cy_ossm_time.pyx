@@ -40,7 +40,7 @@ cdef class CyOSSMTime:
         
         if path is not None:
             if file_contains is None:
-                raise ValueError('Unknown file contents - need a valid basic_types.data_format.* value')
+                raise ValueError('Unknown file contents - need a valid basic_types.ts_format.* value')
             
             if os.path.exists(path):
                 self._read_time_values(path, file_contains, -1) # user_units should be read from the file

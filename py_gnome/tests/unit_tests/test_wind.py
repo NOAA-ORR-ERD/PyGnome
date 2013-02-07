@@ -13,14 +13,14 @@ def test_exceptions(invalid_rq):
     with pytest.raises(ValueError):
         environment.Wind()
         wind_vel = np.zeros((1,), basic_types.velocity_rec)
-        environment.Wind(timeseries=wind_vel, data_format=basic_types.data_format.wind_uv, units='meters per second')
+        environment.Wind(timeseries=wind_vel, ts_format=basic_types.ts_format.uv, units='meters per second')
         
     # following also raises ValueError. This gives invalid (r,theta) inputs which are rejected
     # by the transforms.r_theta_to_uv_wind method. It tests the inner exception is correct
     with pytest.raises(ValueError):
         invalid_dtv_rq = np.zeros((len(invalid_rq['rq']),), dtype=basic_types.datetime_value_2d)
         invalid_dtv_rq['value'] = invalid_rq['rq']
-        environment.Wind(timeseries=invalid_dtv_rq, data_format=basic_types.data_format.magnitude_direction, units='meters per second')
+        environment.Wind(timeseries=invalid_dtv_rq, ts_format=basic_types.ts_format.magnitude_direction, units='meters per second')
         
     # exception raised if datetime values are not in ascending order or not unique
     with pytest.raises(ValueError):
@@ -79,12 +79,12 @@ def test_init(wind_circ):
     wm = wind_circ['wind']
     
     # output is in knots
-    gtime_val = wm.get_timeseries(data_format=basic_types.data_format.wind_uv).view(dtype=np.recarray)
+    gtime_val = wm.get_timeseries(ts_format=basic_types.ts_format.uv).view(dtype=np.recarray)
     assert np.all( gtime_val.time == wind_circ['uv'].time)
     assert np.allclose(gtime_val.value, wind_circ['uv'].value, atol, rtol)
     
     # output is in meters per second
-    gtime_val = wm.get_timeseries(data_format=basic_types.data_format.wind_uv, units='meters per second').view(dtype=np.recarray)
+    gtime_val = wm.get_timeseries(ts_format=basic_types.ts_format.uv, units='meters per second').view(dtype=np.recarray)
     expected = unit_conversion.convert('Velocity',wm.user_units,'meters per second',wind_circ['uv'].value)
     assert np.all(gtime_val.time == wind_circ['uv'].time)
     assert np.allclose(gtime_val.value, expected, atol, rtol)
@@ -108,7 +108,7 @@ def wind_rand(rq_rand):
     dtv_uv.time = dtv_rq.time
     dtv_uv.value = transforms.r_theta_to_uv_wind( rq_rand['rq'])
 
-    wm  = environment.Wind(timeseries=dtv_rq,data_format=basic_types.data_format.magnitude_direction,units='meters per second')
+    wm  = environment.Wind(timeseries=dtv_rq,ts_format=basic_types.ts_format.magnitude_direction,units='meters per second')
     return {'wind':wm, 'rq': dtv_rq, 'uv': dtv_uv}
 
 
@@ -145,7 +145,7 @@ class TestWind:
 
         Also check that init doesn't fail if timeseries given in (u,v) format
         """
-        environment.Wind(timeseries=all_winds['uv'],data_format=basic_types.data_format.wind_uv, units='meters per second')
+        environment.Wind(timeseries=all_winds['uv'],ts_format=basic_types.ts_format.uv, units='meters per second')
         assert True
 
     def test_str_repr_no_errors(self, all_winds):
@@ -168,7 +168,7 @@ class TestWind:
         Initialize from timeseries and test the get_time_value method 
         """
         # check get_time_value()
-        gtime_val = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction)
+        gtime_val = all_winds['wind'].get_timeseries(ts_format=basic_types.ts_format.magnitude_direction)
         assert np.all(gtime_val['time'] == all_winds['rq'].time)
         assert np.allclose(gtime_val['value'], all_winds['rq'].value, atol, rtol)
 
@@ -177,7 +177,7 @@ class TestWind:
         """
         Initialize from timeseries and test the get_time_value method 
         """
-        gtime_val = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.wind_uv).view(dtype=np.recarray)
+        gtime_val = all_winds['wind'].get_timeseries(ts_format=basic_types.ts_format.uv).view(dtype=np.recarray)
         assert np.all(gtime_val.time == all_winds['uv'].time)
         assert np.allclose(gtime_val.value, all_winds['uv'].value, atol, rtol)
 
@@ -185,7 +185,7 @@ class TestWind:
         """
         get time series, but this time provide it with the datetime values for which you want timeseries
         """
-        gtime_val = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction, datetime=all_winds['rq'].time).view(dtype=np.recarray)
+        gtime_val = all_winds['wind'].get_timeseries(ts_format=basic_types.ts_format.magnitude_direction, datetime=all_winds['rq'].time).view(dtype=np.recarray)
         assert np.all(gtime_val.time == all_winds['rq'].time)
         assert np.allclose(gtime_val.value, all_winds['rq'].value, atol, rtol)
 
@@ -197,8 +197,8 @@ class TestWind:
         Output should be an interpolated value between the values of the 0th and 1st index of timeseries.
         """
         dt = all_winds['rq'].time[0].astype(object) + (all_winds['rq'].time[1]-all_winds['rq'].time[0]).astype(object)/2
-        get_rq = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.magnitude_direction, datetime=dt).view(dtype=np.recarray)
-        get_uv = all_winds['wind'].get_timeseries(data_format=basic_types.data_format.wind_uv, datetime=dt).view(dtype=np.recarray)
+        get_rq = all_winds['wind'].get_timeseries(ts_format=basic_types.ts_format.magnitude_direction, datetime=dt).view(dtype=np.recarray)
+        get_uv = all_winds['wind'].get_timeseries(ts_format=basic_types.ts_format.uv, datetime=dt).view(dtype=np.recarray)
 
         np.set_printoptions(precision=4)
         print
