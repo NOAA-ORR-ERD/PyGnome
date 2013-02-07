@@ -28,7 +28,7 @@ from gnome import basic_types
 from gnome.model import Model
 from gnome.movers import WindMover, RandomMover
 from gnome.spill import SurfaceReleaseSpill
-from gnome.weather import Wind
+from gnome.environment import Wind
 from gnome.map import MapFromBNA
 
 
