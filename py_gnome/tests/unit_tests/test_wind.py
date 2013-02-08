@@ -1,5 +1,5 @@
 import os
-from gnome import basic_types, weather
+from gnome import basic_types, environment
 from datetime import datetime
 import numpy as np
 import pytest
@@ -11,40 +11,40 @@ def test_exceptions(invalid_rq):
     Test TypeError thrown if units are not given - so they are None
     """
     with pytest.raises(ValueError):
-        weather.Wind()
+        environment.Wind()
         wind_vel = np.zeros((1,), basic_types.velocity_rec)
-        weather.Wind(timeseries=wind_vel, data_format=basic_types.data_format.wind_uv, units='meters per second')
+        environment.Wind(timeseries=wind_vel, data_format=basic_types.data_format.wind_uv, units='meters per second')
         
     # following also raises ValueError. This gives invalid (r,theta) inputs which are rejected
     # by the transforms.r_theta_to_uv_wind method. It tests the inner exception is correct
     with pytest.raises(ValueError):
         invalid_dtv_rq = np.zeros((len(invalid_rq['rq']),), dtype=basic_types.datetime_value_2d)
         invalid_dtv_rq['value'] = invalid_rq['rq']
-        weather.Wind(timeseries=invalid_dtv_rq, data_format=basic_types.data_format.magnitude_direction, units='meters per second')
+        environment.Wind(timeseries=invalid_dtv_rq, data_format=basic_types.data_format.magnitude_direction, units='meters per second')
         
     # exception raised if datetime values are not in ascending order or not unique
     with pytest.raises(ValueError):
         # not unique datetime values
         dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
         dtv_rq.value = (1,0)
-        weather.Wind(timeseries=dtv_rq, units='meters per second')
+        environment.Wind(timeseries=dtv_rq, units='meters per second')
         
         # not in ascending order
         dtv_rq.time[:len(dtv_rq)-1] = [datetime(2012,11,06,20,10+i,30) for i in range(len(dtv_rq)-1)]
-        weather.Wind(timeseries=dtv_rq, units='meters per second')
+        environment.Wind(timeseries=dtv_rq, units='meters per second')
 
     # exception raised since no units given for timeseries during init or set_timeseries
     with pytest.raises(ValueError):
         dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
         dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(4)]
         dtv_rq.value = (1,0)
-        weather.Wind(timeseries=dtv_rq)
+        environment.Wind(timeseries=dtv_rq)
 
     with pytest.raises(TypeError):
         dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
         dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(4)]
         dtv_rq.value = (1,0)
-        wind = weather.Wind(timeseries=dtv_rq,units='meters per second')
+        wind = environment.Wind(timeseries=dtv_rq,units='meters per second')
         wind.set_timeseries(dtv_rq) # IGNORE:E1120
 
     # invalid units
@@ -52,7 +52,7 @@ def test_exceptions(invalid_rq):
         dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
         dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(4)]
         dtv_rq.value = (1,0)
-        wind = weather.Wind(timeseries=dtv_rq,units='met per second')
+        wind = environment.Wind(timeseries=dtv_rq,units='met per second')
         wind.set_timeseries(dtv_rq) # IGNORE:E1120
 
 def test_read_file_init():
@@ -60,7 +60,7 @@ def test_read_file_init():
     initialize from a long wind file
     """
     filepath = os.path.join(os.path.dirname(__file__), r"SampleData/WindDataFromGnome.WND")
-    wm = weather.Wind(file=filepath)
+    wm = environment.Wind(file=filepath)
     print
     print "----------------------------------"
     print "Units: " + str(wm.user_units)
@@ -108,7 +108,7 @@ def wind_rand(rq_rand):
     dtv_uv.time = dtv_rq.time
     dtv_uv.value = transforms.r_theta_to_uv_wind( rq_rand['rq'])
 
-    wm  = weather.Wind(timeseries=dtv_rq,data_format=basic_types.data_format.magnitude_direction,units='meters per second')
+    wm  = environment.Wind(timeseries=dtv_rq,data_format=basic_types.data_format.magnitude_direction,units='meters per second')
     return {'wind':wm, 'rq': dtv_rq, 'uv': dtv_uv}
 
 
@@ -145,7 +145,7 @@ class TestWind:
 
         Also check that init doesn't fail if timeseries given in (u,v) format
         """
-        weather.Wind(timeseries=all_winds['uv'],data_format=basic_types.data_format.wind_uv, units='meters per second')
+        environment.Wind(timeseries=all_winds['uv'],data_format=basic_types.data_format.wind_uv, units='meters per second')
         assert True
 
     def test_str_repr_no_errors(self, all_winds):
@@ -239,7 +239,7 @@ def test_constant_wind():
     """
     tests the utility function for creating a constant wind
     """
-    wind = weather.ConstantWind(10, 45, 'knots')
+    wind = environment.ConstantWind(10, 45, 'knots')
 
     assert np.allclose(wind.get_timeseries(datetime=datetime(2013,1,10,12,0), units='knots' )[0][1],
                        (10, 45))

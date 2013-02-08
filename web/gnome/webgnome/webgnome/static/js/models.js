@@ -359,13 +359,37 @@ define([
         dateFields: null,
 
         initialize: function() {
-            this.bind('change', this.onIndexChange, this)
+            this.bind('change', this.onIndexChange, this);
+            BaseModel.__super__.initialize.apply(this, arguments)
         },
 
         onIndexChange: function() {
             if (this.collection) {
                 this.collection.sort({silent: true});
             }
+        },
+
+        /*
+         Keep an array field on the model in sync with a field that represents
+         one item in the array.
+
+         E.g. given a `start_position` field that is an array, the model might
+         have a `start_position_x` field that we use for easier data binding
+         in views. The following usage of `syncArrayField` will keep
+         `start_position` up to date with the latest value of `start_position_x`:
+         at index 0:
+
+                syncArrayField('start_position', 'start_position_x', 0);
+         */
+        syncArrayField: function(arrayFieldName, arrayItemFieldName, index) {
+
+            function setArrayField(model) {
+                var arrayField = this.get(arrayFieldName);
+                arrayField[index] = model.get(arrayItemFieldName);
+                this.set(arrayFieldName, arrayField);
+            }
+
+            this.on('change:' + arrayItemFieldName, setArrayField);
         },
 
         change: function() {
@@ -429,7 +453,7 @@ define([
         parse: function(response) {
             var message = util.parseMessage(response);
             if (message) {
-                this.trigger(BaseModel.__super__.MESSAGE_RECEIVED, message);
+                this.trigger(BaseModel.MESSAGE_RECEIVED, message);
             }
 
             var data = BaseModel.__super__.parse.apply(this, arguments);
@@ -497,25 +521,39 @@ define([
     });
 
 
-    function arrayHelper(field_name, index) {
-        return function() {
-            var value = this.get(field_name);
-            if (value && value.length >= index) {
-                return value[index];
-            }
-        }
-    }
-
-
     // Spills
     var SurfaceReleaseSpill = BaseModel.extend({
         dateFields: ['release_time'],
 
-        start_position_x: arrayHelper('start_position', 0),
-        start_position_y: arrayHelper('start_position', 1),
-        start_position_z: arrayHelper('start_position', 2),
-        windage_range_min: arrayHelper('windage_range', 0),
-        windage_range_max: arrayHelper('windage_range', 1)
+        fixStartPosition: function() {
+            var pos = this.get('start_position');
+            this.set('start_position_x', pos[0]);
+            this.set('start_position_y', pos[1]);
+            this.set('start_position_z', pos[2]);
+        },
+
+        fixWindageRange: function() {
+            var range = this.get('windage_range');
+            this.set('windage_range_min', range[0]);
+            this.set('windage_range_max', range[1]);
+        },
+
+        initialize: function() {
+            this.syncArrayField('start_position', 'start_position_x', 0);
+            this.syncArrayField('start_position', 'start_position_y', 1);
+            this.syncArrayField('start_position', 'start_position_z', 2);
+
+            this.syncArrayField('windage_range', 'windage_range_min', 0);
+            this.syncArrayField('windage_range', 'windage_range_max', 1);
+
+            this.on('change:start_position', this.fixStartPosition);
+            this.on('change:windage_range', this.fixWindageRange);
+
+            SurfaceReleaseSpill.__super__.initialize.apply(this, arguments);
+
+            this.fixWindageRange();
+            this.fixStartPosition();
+        }
     });
 
 
@@ -544,13 +582,17 @@ define([
          */
         set: function(key, val, options) {
             if (key.timeseries && key.timeseries.length) {
-                key.timeseries = _.sortBy(key.timeseries, 'datetime');
+                key.timeseries = _.sortBy(key.timeseries, function(item) {
+                    return item[0];
+                });
             } else if (key === 'timeseries' && val && val.length) {
-                val = _.sortBy(val, 'datetime');
+                val = _.sortBy(val, function(item) {
+                    return item[0];
+                });
             }
 
             return Wind.__super__.set.apply(this, [key, val, options]);
-        }
+        },
     });
 
 
@@ -582,13 +624,37 @@ define([
             return this;
         },
 
+        getTimeseries: function() {
+            return this.get('wind').get('timeseries');
+        },
+
         type: function() {
-            var timeseries = this.get('wind.timeseries');
+            var timeseries = this.getTimeseries();
 
             if (timeseries && timeseries.length > 1) {
                 return 'variable-wind';
             } else {
                 return 'constant-wind';
+            }
+        },
+
+        constantSpeed: function() {
+            var timeseries = this.getTimeseries();
+
+            if (timeseries && timeseries.length) {
+                return timeseries[0][1];
+            } else {
+                return 0;
+            }
+        },
+
+        constantDirection: function() {
+            var timeseries = this.getTimeseries();
+
+            if (timeseries && timeseries.length) {
+                return timeseries[0][2];
+            } else {
+                return 0;
             }
         }
     });
@@ -627,6 +693,13 @@ define([
     });
 
 
+    var CustomMap = BaseModel.extend({
+        initialize: function(options) {
+            this.url = options.url;
+        }
+    });
+
+
     function getNwsWind(coords, success) {
         var url = '/nws/wind?lat=' + coords.latitude + '&lon=' + coords.longitude;
         $.ajax({
@@ -648,6 +721,7 @@ define([
         RandomMover: RandomMover,
         RandomMoverCollection: RandomMoverCollection,
         Map: Map,
+        CustomMap: CustomMap,
         getNwsWind: getNwsWind
     };
 

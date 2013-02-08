@@ -113,14 +113,14 @@ def wind_circ(rq_wind):
     :returns: a dict containing following three keys: 'wind', 'rq', 'uv'
               'wind' object, timeseries in (r,theta) format 'rq', timeseries in (u,v) format 'uv'. 
     """
-    from gnome import weather
+    from gnome import environment
     dtv_rq = np.zeros((len(rq_wind['rq']),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
     dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(len(dtv_rq))]
     dtv_rq.value = rq_wind['rq']
     dtv_uv = np.zeros((len(dtv_rq),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
     dtv_uv.time = dtv_rq.time
     dtv_uv.value= rq_wind['uv']
-    wm  = weather.Wind(timeseries=dtv_rq,data_format=basic_types.data_format.magnitude_direction,units='meters per second')
+    wm  = environment.Wind(timeseries=dtv_rq,data_format=basic_types.data_format.magnitude_direction,units='meters per second')
     return {'wind':wm, 'rq': dtv_rq, 'uv': dtv_uv}
 
 """

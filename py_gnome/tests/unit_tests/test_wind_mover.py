@@ -1,7 +1,7 @@
 import os
 from gnome import movers
 
-from gnome import basic_types, weather
+from gnome import basic_types, environment
 from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils, transforms, convert
 from gnome.utilities import projections
@@ -24,7 +24,7 @@ def test_exceptions():
 
     with pytest.raises(ValueError):
         file_ = r"SampleData/WindDataFromGnome.WND"
-        wind = weather.Wind(file=file_)
+        wind = environment.Wind(file=file_)
         now = datetime.now()
         movers.WindMover(wind, active_start=now, active_stop=now)
 
@@ -37,7 +37,7 @@ def test_read_file_init():
     initialize from a long wind file
     """
     file_ = r"SampleData/WindDataFromGnome.WND"
-    wind = weather.Wind(file=file_)
+    wind = environment.Wind(file=file_)
     wm = movers.WindMover(wind)
     wind_ts = wind.get_timeseries(data_format=basic_types.data_format.wind_uv, units='meter per second')
     _defaults(wm)   # check defaults set correctly
@@ -125,7 +125,7 @@ class TestWindMover:
         #model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
         
         time_val = np.array((rel_time, (2., 25.)), dtype=basic_types.datetime_value_2d).reshape(1,)
-        wind = weather.Wind(timeseries=time_val, units='meters per second')
+        wind = environment.Wind(timeseries=time_val, units='meters per second')
         self.wm = movers.WindMover(wind)
 
     def test_string_repr_no_errors(self):
@@ -207,8 +207,8 @@ def test_timespan():
     time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
     time_val['time']  = np.datetime64( rel_time.isoformat() )
     time_val['value'] = (2., 25.)
+    wind = environment.Wind(timeseries=time_val, units='meters per second')
 
-    wind = weather.Wind(timeseries=time_val, units='meters per second')
     wm = movers.WindMover(wind, active_start=model_time+timedelta(seconds=time_step))
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)

@@ -240,5 +240,5 @@ if __name__ == "__main__":
     through Visual Studio
     """
     tgc = TestGridCurrentMover()
-    tgc.test_move()
+    tgc.test_move_reg()
     tgc.test_move_curv()

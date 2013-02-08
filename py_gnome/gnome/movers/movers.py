@@ -6,7 +6,7 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNO
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime       #@UnresolvedImport @UnusedImport IGNORE:W0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time
-from gnome import weather
+from gnome import environment
 from gnome.utilities import rand    # not to confuse with python random module
 
 import os
@@ -220,12 +220,13 @@ class WindMover(CyMover):
                  uncertain_speed_scale=2.,
                  uncertain_angle_scale=0.4):
         """
-        :param wind: wind object
-        :param active: active flag
-        :param uncertain_duration:     Used by the cython wind mover.
-        :param uncertain_time_delay:   Used by the cython wind mover.
-        :param uncertain_speed_scale:  Used by the cython wind mover.
-        :param uncertain_angle_scale:  Used by the cython wind mover.
+        :param wind: wind object  -- provides the wind time series for the mover
+        :param active_start: datetime object for when the mover starts being active.
+        :param active_start: datetime object for when the mover stops being active.
+        :param uncertain_duration:  (seconds) how often does a given uncertian windage get re-set
+        :param uncertain_time_delay:   when does the uncertainly kick in.
+        :param uncertain_speed_scale:  Scale for how uncertain the wind speed is
+        :param uncertain_angle_scale:  Scale for how uncertain the wind direction is
         """
         self.wind = wind
         self.mover = CyWindMover(uncertain_duration=uncertain_duration, 
@@ -340,7 +341,7 @@ def wind_mover_from_file(filename, **kwargs):
 
     :returns mover: returns a wind mover, built from the file
     """
-    w = weather.Wind(file=filename,
+    w = environment.Wind(file=filename,
                      data_format=basic_types.data_format.magnitude_direction)
     ts = w.get_timeseries(data_format=basic_types.data_format.magnitude_direction)
     wm = WindMover(w, **kwargs)
@@ -378,7 +379,7 @@ class RandomMover(CyMover):
 
 class CatsMover(CyMover):
     
-    def __init__(self, curr_file, shio_file=None,
+    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None,
                  active_start= datetime( *gmtime(0)[:6] ), 
                  active_stop = datetime(2038,1,18,0,0,0)):
         """
@@ -397,6 +398,14 @@ class CatsMover(CyMover):
             else:
                 self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
                 self.mover.set_shio(self.shio)
+                #self.shio.set_shio_yeardata_path(shio_yeardata_file)
+            if shio_yeardata_file is not None:
+                if not os.path.exists(shio_yeardata_file):
+                    raise ValueError("Path for Shio Year Data does not exist: {0}".format(shio_yeardata_file))
+                else:
+                    self.shio.set_shio_yeardata_path(shio_yeardata_file)
+            else:
+                raise ValueError("Shio data requires path for Shio Year Data: {0}".format(shio_yeardata_file))
         
         super(CatsMover,self).__init__(active_start, active_stop)
         
@@ -406,6 +415,16 @@ class CatsMover(CyMover):
         """
         info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.shio.filename)
         return info
+     
+    # Properties
+    scale = property( lambda self: bool(self.mover.scale_type),
+                      lambda self, val: setattr(self.mover,'scale_type', int(val)) ) 
+    scale_refpoint = property( lambda self: self.mover.ref_point, 
+                               lambda self,val: setattr(self.mover, 'ref_point', val) )
+     
+    scale_value = property( lambda self: self.mover.scale_value, 
+                            lambda self,val: setattr(self.mover, 'scale_value', val) )
+        
         
 class WeatheringMover(Mover):
     """

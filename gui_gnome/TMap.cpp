@@ -871,7 +871,7 @@ OSErr TMap::AddItem(ListItem item)
 							case TYPE_GRIDCURMOVER:
 							case TYPE_PTCURMOVER:
 							case TYPE_TRICURMOVER:
-								//err = newMover->SettingsDialog();
+								err = newMover->SettingsDialog();
 								break;
 							default:
 								printError("bad type in TMap::AddItem");

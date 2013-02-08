@@ -1,6 +1,6 @@
 <%namespace name="defs" file="../defs.mak"/>
 
-<div class="form page hide" id="model_settings" title="Model Settings">
+<div class="form page hide" id="model-settings" title="Model Settings">
     <div class="page-body">
         <form action="" class="form-horizontal model-settings" method="POST">
             <%

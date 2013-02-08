@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import gnome.model
 import gnome.map
-from gnome import movers, weather
+from gnome import movers, environment
 import gnome.spill
 from gnome.spill import SpatialReleaseSpill
 
@@ -46,6 +46,12 @@ def test_timestep():
     dur = timedelta(days=3)
     model.duration = dur
     assert model._duration == dur
+
+def test_end_time():
+    """
+    test if the duration is properly computed when the end_time property is set.
+    """
+    
 
 def test_simple_run():
     """
@@ -341,7 +347,7 @@ def test_all_movers(start_time, release_delay, duration):
 
     # wind mover
     series = np.array( (start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
-    model.movers += gnome.movers.WindMover(weather.Wind(timeseries=series, units='meter per second'))
+    model.movers += gnome.movers.WindMover(environment.Wind(timeseries=series, units='meter per second'))
     assert len(model.movers) == 3
     
     # add CATS mover

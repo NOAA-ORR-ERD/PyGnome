@@ -239,6 +239,19 @@ def valid_map(request):
         request.errors.status = 404
 
 
+def valid_location_file(request):
+    valid_model_id(request)
+    data_dir = os.path.join(request.registry.settings.package_root, 'data',
+                            request.matchdict['location'])
+
+    if not os.path.exists(data_dir):
+        request.errors.add('body', 'location_file', 'Location file not found.')
+        request.errors.status = 404
+        return
+
+    request.validated['location_dir'] = data_dir
+
+
 def map_filename_exists(request):
     """
     A Cornice validator that returns an error if the filename specified in a
@@ -419,6 +432,28 @@ def get_runtime():
     for all images generated during a model run.
     """
     return time.strftime("%Y-%m-%d-%H-%M-%S")
+
+
+def delete_keys_from_dict(target_dict, keys):
+    """
+    Recursively delete keys in `keys` from ``target_dict``.
+    """
+    def walk(value):
+        if isinstance(value, dict):
+            delete_keys_from_dict(value, keys)
+        elif hasattr(value, '__iter__'):
+            for val in value:
+                walk(val)
+
+    for k in keys:
+        try:
+            del target_dict[k]
+        except KeyError:
+            pass
+    for value in target_dict.values():
+        walk(value)
+
+    return target_dict
 
 
 def mkdir_p(path):

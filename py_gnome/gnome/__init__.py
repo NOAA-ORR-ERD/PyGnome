@@ -12,6 +12,6 @@ from . import map
 from . import spill
 from . import spill_container
 from . import movers
-from . import weather
+from . import environment
 from . import model
 

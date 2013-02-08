@@ -53,6 +53,7 @@ define([
                 modelRun: this.modelRun,
                 modelSettings: this.modelSettings,
                 map: this.map,
+                customMap: this.customMap,
                 collections: [
                     this.windMovers, this.randomMovers, this.surfaceReleaseSpills
                 ]
@@ -117,6 +118,10 @@ define([
         },
 
         setupEventHandlers: function() {
+            var _this = this;
+
+            this.customMap.on('sync', function() { _this.map.fetch(); });
+
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
             this.modelRun.on(models.ModelRun.SERVER_RESET, this.rewind);
 
@@ -165,7 +170,7 @@ define([
          parameters from the Long Island Sound script, then reload the page.
          */
         loadLongIsland: function() {
-            $.get('/long_island', function() {
+            $.post(this.apiRoot + '/location_file/long_island', function() {
                 window.location.reload();
             });
         },
@@ -208,12 +213,12 @@ define([
 
             Mousetrap.bind('n w', function() {
                 _this.formViews.hideAll();
-                _this.showFormWithId('add_wind_mover');
+                _this.showFormWithId('add-wind-mover');
             });
 
             Mousetrap.bind('n p', function() {
                 _this.formViews.hideAll();
-                _this.showFormWithId('add_surface_release_spill');
+                _this.showFormWithId('add-surface-release-spill');
             });
 
             Mousetrap.bind('s f', function() {
@@ -234,69 +239,76 @@ define([
             });
 
             this.addMoverFormView = new forms.AddMoverFormView({
-                id: 'add_mover'
+                id: 'add-mover'
             });
 
             this.addSpillFormView = new forms.AddSpillFormView({
-                id: 'add_spill'
+                id: 'add-spill'
             });
 
             this.addMapFormView = new forms.AddMapFormView({
-                id: 'add_map',
+                id: 'add-map',
                 model: this.map
             });
 
-            this.modelSettingsFormView = new forms.ModelSettingsFormView({
-                id: 'model_settings',
-                model: this.modelSettings
-            });
-
             this.editMapFormView = new forms.MapFormView({
-                id: 'edit_map',
+                id: 'edit-map',
                 model: this.map,
                 defaults: this.options.defaultMap
             });
 
+            this.addCustomMapFormView = new forms.AddCustomMapFormView({
+                id: 'add-custom-map',
+                model: this.customMap,
+                defaults: this.options.defaultCustomMap
+            });
+
+            this.modelSettingsFormView = new forms.ModelSettingsFormView({
+                id: 'model-settings',
+                model: this.modelSettings
+            });
+
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
-                id: 'add_wind_mover',
+                id: 'add-wind-mover',
                 collection: this.windMovers,
                 defaults: this.options.defaultWindMover,
-                defaultTimeseriesValue: this.options.defaultWindTimeseriesValue
+                defaultWindTimeseriesValue: this.options.defaultWindTimeseriesValue
             });
 
             this.editWindMoverFormView = new forms.WindMoverFormView({
-                id: 'edit_wind_mover',
+                id: 'edit-wind-mover',
                 collection: this.windMovers,
                 defaults: this.options.defaultWindMover,
-                defaultTimeseriesValue: this.options.defaultWindTimeseriesValue
+                defaultWindTimeseriesValue: this.options.defaultWindTimeseriesValue
             });
 
             this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
-                id: 'add_random_mover',
+                id: 'add-random-mover',
                 collection: this.randomMovers,
                 defaults: this.options.defaultRandomMover,
             });
 
             this.editRandomMoverFormView = new forms.RandomMoverFormView({
-                id: 'edit_random_mover',
+                id: 'edit-random-mover',
                 collection: this.randomMovers,
                 defaults: this.options.defaultRandomMover,
             });
 
             this.addSurfaceReleaseSpillFormView = new forms.AddSurfaceReleaseSpillFormView({
-                id: 'add_surface_release_spill',
+                id: 'add-surface-release-spill',
                 collection: this.surfaceReleaseSpills,
                 defaults: this.options.defaultSurfaceReleaseSpill,
             });
 
             this.editSurfaceReleaseSpillFormView = new forms.SurfaceReleaseSpillFormView({
-                id: 'edit_surface_release_spill',
+                id: 'edit-surface-release-spill',
                 collection: this.surfaceReleaseSpills,
                 defaults: this.options.defaultSurfaceReleaseSpill
             });
 
             this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
             this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
+            this.addMapFormView.on(forms.AddMapFormView.SOURCE_CHOSEN, this.mapSourceChosen);
 
             this.formViews.add(this.addMoverFormView);
             this.formViews.add(this.addSpillFormView);
@@ -309,11 +321,16 @@ define([
             this.formViews.add(this.editRandomMoverFormView);
             this.formViews.add(this.editSurfaceReleaseSpillFormView);
             this.formViews.add(this.editMapFormView);
+            this.formViews.add(this.addCustomMapFormView);
         },
 
         setupModels: function() {
-             this.map = new models.Map(this.options.map, {
+            this.map = new models.Map(this.options.map, {
                 url: this.apiRoot + '/map'
+            });
+
+            this.customMap = new models.CustomMap({
+                url: this.apiRoot + '/custom_map'
             });
 
             this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
@@ -621,6 +638,10 @@ define([
                 return error();
             }
 
+            if (node.data.object_type === 'map') {
+                this.map.destroy();
+            }
+
             var collections = {
                 'surface_release_spill': this.surfaceReleaseSpills,
                 'wind_mover': this.windMovers,
@@ -665,6 +686,16 @@ define([
 
             formView.reload();
             formView.show(coords);
+        },
+
+        mapSourceChosen: function(source) {
+            var formView = this.formViews.get(source);
+
+            if (formView === undefined) {
+                return;
+            }
+
+            formView.show();
         }
     });
 
