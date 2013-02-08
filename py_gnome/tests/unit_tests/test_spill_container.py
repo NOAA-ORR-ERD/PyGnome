@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Tests the SpillContainer class
 """
@@ -315,10 +317,8 @@ def test_ordered_collection_api():
 
 
 
-
 if __name__ == "__main__":
-    test_rewind2()
-
+    pass
 
 
     

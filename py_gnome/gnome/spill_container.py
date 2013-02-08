@@ -17,8 +17,86 @@ import numpy as np
 import gnome.spill
 from gnome.utilities.orderedcollection import OrderedCollection
 
+class SpillContainerData(object):
+    """
+    A really simple SpillContainer -- holds the data arrays,
+    but doesn't manage spills, etc.
+    
+    Think of it as a read-only SpillContainer.
 
-class SpillContainer(object):
+    Designed primarily to hold data retrieved from cache
+
+    """
+    def __init__(self, uncertain=False, data_arrays=None):
+        """
+        Initilize a SimpleSpillContainer.
+
+        :param uncertain=False: flag indicating whether this holds uncertainty
+                                elements or not 
+        :param data_arrays=None: A dict of all the data arrays you want to hold.
+                                 NOTE: no error checking! theyshould be correctly
+                                       aligned, etc.
+        """        
+        self.is_uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
+        self.on = True       # sets whether the spill is active or not
+        
+        if data_arrays is not None:
+            self._data_arrays = data_arrays
+
+    def __getitem__(self, data_name):
+        """
+        The basic way to access data for the LEs
+        
+        :param data_name: the name of the array to be returned
+
+        example:  a_spill_container['positions'] give you the
+                  (x,y,z positions array of the elements)
+
+        :raises KeyError: raised if the data is not there
+        """
+        return self._data_arrays[data_name]
+    
+    def __setitem__(self, data_name, array):
+        
+        """
+        sets the data item
+        
+        careful! -- this should probably only be used for testing!
+        as all arrays need to be compatible
+        
+        It will be checked to at least be size-consistent with the rest of the
+        data, and type-consistent if the data array is being replaced
+        """
+
+        array = np.asarray(array)
+        
+        if data_name in self._data_arrays:
+            # if the array is already here, the type should match        
+            if array.dtype !=  self._data_arrays[data_name].dtype:
+                raise ValueError("new data array must be the same type")
+            # and the shape should match        
+            if array.shape !=  self._data_arrays[data_name].shape:
+                raise ValueError("new data array must be the same shape")
+                    
+        self._data_arrays[data_name] = array
+
+    @property
+    def num_elements(self):
+        """
+        The number of elements currently in the SpillContainer
+        """
+        return len(self['positions']) # every spill should have a postitions data array
+
+    @property
+    def data_arrays_dict(self):
+        """
+        Returns a dict of the all the data arrays 
+        """
+        ## this is a propery in case we want change the internal implimentation
+        return self._data_arrays
+
+
+class SpillContainer(SpillContainerData):
     """
     Container class for all spills -- it takes care of capturing the released LEs from
     all the spills, putting them all in a single set of arrays.
@@ -34,9 +112,7 @@ class SpillContainer(object):
     
     """
     def __init__(self, uncertain=False):
-        
-        self.is_uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
-        self.on = True       # sets whether the spill is active or not
+        super(SpillContainer, self).__init__(self, uncertain)
         
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
@@ -73,12 +149,6 @@ class SpillContainer(object):
                 raise ValueError("new data array must be the same shape")
                     
         self._data_arrays[data_name] = array
-    @property
-    def num_elements(self):
-        """
-        The number of elements currently in the SpillContainer
-        """
-        return len(self['positions']) # every spill should have a postitions data array
 
     def uncertain_copy(self):
         """
@@ -92,44 +162,6 @@ class SpillContainer(object):
             u_sc.spills += sp.uncertain_copy()
         return u_sc
 
-
-    # def add_spill(self, spill):
-    #     self.spills.add(spill)
-
-    # def remove_spill(self, spill):
-    #     """
-    #     remove the given spill from the collection
-
-    #     :param spill: the spill object to remove
-    #     """
-    #     self.spills.remove(spill)
-
-    # def remove_spill_by_id(self, spill_id):
-    #     """
-    #     remove the spill that has the given id
-
-    #     :param id: the id of the spill you want to remove
-    #     """
-
-    #     for spill in self.spills:
-    #         if spill.id == spill_id:
-    #             self.spills.remove(spill)
-    #             break
-
-    
-    # def get_spill(self, id):
-    #     """
-    #     return the spill with a given id
-        
-    #     :param id: the id of the spill desired
-
-    #     returns None if there is no spill with that id
-    #     """
-    #     # fixme: used an ordered_dict for efficiency?
-    #     for spill in self.spills:
-    #         if spill.id == id:
-    #             return spill
-    #     return None
 
     def rewind(self):
         """
@@ -170,6 +202,7 @@ class SpillContainer(object):
                         self._data_arrays[name] = new_data[name]
 
 
+
     def __str__(self):
         msg = "gnome.spill_container.SpillContainer\nspill LE attributes: %s"%self._data_arrays.keys()
         return msg
@@ -182,7 +215,7 @@ class TestSpillContainer(SpillContainer):
     """
     A really simple spill container, pre-initialized with LEs at a point.
 
-    This make sit easy to use for tesing other classes -- movers, maps, etc.
+    This makes it easy to use for tesing other classes -- movers, maps, etc.
     """
     def __init__(self,
                  num_elements=0,
