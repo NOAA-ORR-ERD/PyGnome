@@ -35,6 +35,10 @@ class Map(BaseResource):
         model.add_bna_map(filename, data)
         return model.map.to_dict()
 
+    @view(validators=util.valid_model_id)
+    def delete(self):
+        self.request.validated['model'].remove_map()
+
 
 @resource(path='/model/{model_id}/custom_map',
           renderer='gnome_json', description='A custom map from GOODS data.')

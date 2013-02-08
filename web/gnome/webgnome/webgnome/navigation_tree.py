@@ -93,6 +93,7 @@ class NavigationTree(object):
         settings['children'].append({
             'form_id': map_form_id,
             'object_id': map_data['id'] if map_data else None,
+            'object_type': 'map',
             'title': 'Map: %s' % (map_data['name'] if map_data else 'None')
         })
 

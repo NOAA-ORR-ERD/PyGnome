@@ -94,21 +94,25 @@ define([
             this.modelRun.on(models.ModelRun.CREATED, this.reset);
             
             this.model = this.options.model;
-
-            this.model.on('sync', function() {
+            this.model.on('sync', this.resetBackground);
+            this.model.on('destroy', function () {
+                _this.backgroundImageUrl = null;
+                _this.map.empty();
                 _this.reset();
-                _this.loadMapFromUrl(_this.backgroundImageUrl);
+                $('#map_canvas').imagesLoaded(_this.centerPlaceholderMap);
             });
 
+            this.placeholderCenter = new google.maps.LatLng(-34.397, 150.644);
+
             var gmapOptions = {
-                center: new google.maps.LatLng(-34.397, 150.644),
+                center: this.placeholderCenter,
                 zoom: 1,
                 scrollwheel: true,
                 scaleControl: true,
                 mapTypeId: google.maps.MapTypeId.HYBRID,
             };
 
-            self.googleMap = new google.maps.Map($('#map_canvas')[0], gmapOptions);
+            this.googleMap = new google.maps.Map($('#map_canvas')[0], gmapOptions);
 
             // Map is loaded
             if (this.model.id) {
@@ -119,6 +123,19 @@ define([
 
             if (this.modelRun.hasCachedTimeStep(this.modelRun.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
+            }
+        },
+
+        centerPlaceholderMap: function() {
+            google.maps.event.trigger(this.googleMap, 'resize');
+            this.googleMap.setCenter(this.placeholderCenter);
+        },
+
+        resetBackground: function() {
+            this.reset();
+
+            if (this.backgroundImageUrl) {
+                this.loadMapFromUrl(this.backgroundImageUrl);
             }
         },
 

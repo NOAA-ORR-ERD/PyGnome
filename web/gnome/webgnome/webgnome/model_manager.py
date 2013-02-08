@@ -377,6 +377,11 @@ class WebModel(Model, BaseWebObject):
         self.output_map.draw_background()
         self.output_map.save_background(self.background_image)
 
+    def remove_map(self):
+        self.map = None
+        self.output_map = None
+        self.rewind()
+
     def build_subtree(self, data, objs, keys):
         """
         Build a subtree of dicts for spills and movers on the model.

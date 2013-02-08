@@ -627,6 +627,14 @@ define([
             this.showFormForActiveTreeItem();
         },
 
+        deleteObjectForNode: function(object, node) {
+            if (confirm('Remove ' + node.data.title + '?') === false) {
+                return;
+            }
+
+            object.destroy();
+        },
+
         removeButtonClicked: function() {
             var node = this.treeView.getActiveItem();
 
@@ -639,7 +647,8 @@ define([
             }
 
             if (node.data.object_type === 'map') {
-                this.map.destroy();
+                this.deleteObjectForNode(this.map, node);
+                return;
             }
 
             var collections = {
@@ -659,11 +668,7 @@ define([
                 return error();
             }
 
-            if (confirm('Remove ' + node.data.title + '?') === false) {
-                return;
-            }
-
-            object.destroy();
+            this.deleteObjectForNode(object, node);
         },
 
         moverChosen: function(moverType) {
