@@ -13,9 +13,14 @@ from webgnome import main
 
 
 class GnomeTestCase(unittest.TestCase):
+    def setUp(self):
+        self.project_root = os.path.abspath(
+            os.path.dirname(os.path.dirname(__file__)))
+
     def get_settings(self, config_file='../../test.ini'):
         dirname = os.path.dirname(__file__)
         return appconfig('config:%s' % config_file, relative_to=dirname)
+
 
 class FunctionalTestBase(GnomeTestCase):
     def setUp(self):
@@ -23,14 +28,15 @@ class FunctionalTestBase(GnomeTestCase):
         app = main(None, **self.settings)
         self.testapp = TestApp(app)
 
+        super(FunctionalTestBase, self).setUp()
+
     def tearDown(self):
         """
         Clean up any images the model generated after running tests.
         """
-        project_root = os.path.abspath(
-            os.path.dirname(os.path.dirname(__file__)))
         test_images_dir = os.path.join(
-            project_root, 'static', 'img', self.settings['model_images_dir'])
+            self.project_root, 'static', 'img',
+            self.settings['model_images_dir'])
         shutil.rmtree(test_images_dir, ignore_errors=True)
 
 
@@ -38,6 +44,8 @@ class UnitTestBase(GnomeTestCase):
     def setUp(self):
         self.config = testing.setUp()
         self.settings = self.get_settings()
+
+        super(UnitTestBase, self).setUp()
 
     def tearDown(self):
         testing.tearDown()

@@ -20,8 +20,7 @@ requires = [
     'pyramid_tm',
     'pyramid_debugtoolbar',
     'zope.sqlalchemy',
-    'waitress',
-    'wtforms',
+    'waitress'
 ]
 
 setup(name='webgnome',
@@ -49,6 +48,7 @@ setup(name='webgnome',
       main = webgnome:main
       [console_scripts]
       initialize_webgnome_db = gnome.db.oil_library.initializedb:main
+      create_location_file = webgnome.scripts.create_location_file:main
       """,
       )
 

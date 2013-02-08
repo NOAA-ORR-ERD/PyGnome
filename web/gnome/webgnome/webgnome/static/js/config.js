@@ -7,6 +7,7 @@ requirejs.config({
         async: 'lib/async'
     },
     shim: {
+        'map_generator': ['jquery'],
         'lib/gmaps-amd': {
             exports: "google"
         },

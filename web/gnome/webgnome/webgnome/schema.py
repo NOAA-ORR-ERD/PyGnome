@@ -17,8 +17,9 @@ from colander import (
     Invalid,
     Sequence,
     TupleSchema,
-    deferred
-)
+    deferred,
+    null,
+    Tuple)
 
 from webgnome import util
 from webgnome.model_manager import WebWind
@@ -126,13 +127,32 @@ class LocalDateTime(DateTime):
         return self.strip_timezone(dt)
 
 
-class TimeseriesValueSchema(MappingSchema):
+class DefaultTuple(Tuple):
+    """
+    A Tuple subclass that provides defaults from child nodes.
+
+    Required because Tuple returns `colander.null` by default when ``appstruct``
+    is not provided, instead of creating a Tuple of default values.
+    """
+    def serialize(self, node, appstruct):
+        items = super(DefaultTuple, self).serialize(node, appstruct)
+
+        if items is null and node.children:
+            items = tuple([field.default for field in node.children])
+
+        return items
+
+
+class DefaultTupleSchema(TupleSchema):
+    schema_type = DefaultTuple
+
+
+class TimeseriesValueSchema(DefaultTupleSchema):
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
                           validator=convertable_to_seconds)
     speed = SchemaNode(Float(), default=0, validator=zero_or_greater)
     # TODO: Validate string and float or just float?
-    direction = SchemaNode(Float(), default=0,
-                           validator=degrees_true)
+    direction = SchemaNode(Float(), default=0, validator=degrees_true)
 
 
 class DatetimeValue2dArray(Sequence):
@@ -148,10 +168,8 @@ class DatetimeValue2dArray(Sequence):
                                  dtype=gnome.basic_types.datetime_value_2d)
 
         for idx, value in enumerate(items):
-            direction = value['direction']
-            datetime = value['datetime']
-            timeseries['time'][idx] = datetime
-            timeseries['value'][idx] = (value['speed'], direction)
+            timeseries['time'][idx] = value[0]
+            timeseries['value'][idx] = (value[1], value[2])
 
         return timeseries
 
@@ -161,12 +179,12 @@ class DatetimeValue2dArraySchema(SequenceSchema):
 
 
 class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
-    value = TimeseriesValueSchema()
+    value = TimeseriesValueSchema(default=(datetime.datetime.now(), 0, 0))
 
 
 class WindSchema(MappingSchema):
     source = SchemaNode(String(), default=None, missing=None)
-    source_type = SchemaNode(String(), default=None, missing=None,
+    source_type = SchemaNode(String(), default='manual', missing='manual',
                              validator=OneOf([source[0] for source in
                                               WebWind.source_types]))
     description = SchemaNode(String(), default=None, missing=None)
@@ -235,12 +253,22 @@ class WindMoversSchema(SequenceSchema):
     mover = WindMoverSchema()
 
 
+class RandomMoversSchema(SequenceSchema):
+    mover = RandomMoverSchema()
+
+
 class MapBoundarySchema(TupleSchema):
     x = SchemaNode(Float())
     y = SchemaNode(Float())
 
 
 class MapBoundsSchema(SequenceSchema):
+    """
+    Bounds of a map.
+
+    TODO: A sequence schema accepts a variable-length list. Should this be
+    a Tuple instead and accept only four items?
+    """
     boundary = MapBoundarySchema()
 
 
@@ -258,6 +286,28 @@ class MapSchema(MappingSchema):
                                  missing=default_map_bounds)
 
 
+# Input values GOODS expects for the `resolution` field on a custom map form.
+custom_map_resolutions = [
+    'c', # course
+    'l', # low
+    'i', # intermediate
+    'h', # high
+    'f'  # full
+]
+
+
+class CustomMapSchema(MappingSchema):
+    name = SchemaNode(String(), default="Map")
+    north_lat = SchemaNode(Float())
+    west_lon = SchemaNode(Float())
+    east_lon = SchemaNode(Float())
+    south_lat = SchemaNode(Float())
+    cross_dateline = SchemaNode(Bool(), missing=False, default=False)
+    resolution = SchemaNode(String(), validator=OneOf(custom_map_resolutions),
+                            default='i', missing='i')
+    refloat_halflife = SchemaNode(Float(), default=1)
+
+
 class ModelSettingsSchema(MappingSchema):
     start_time = SchemaNode(LocalDateTime(), default=now,
                             validator=convertable_to_seconds)
@@ -270,3 +320,5 @@ class ModelSettingsSchema(MappingSchema):
 class ModelSchema(ModelSettingsSchema):
     surface_release_spills = SurfaceReleaseSpillsSchema(default=[])
     wind_movers = WindMoversSchema(default=[])
+    random_movers = RandomMoversSchema(default=[])
+    map = MapSchema()
