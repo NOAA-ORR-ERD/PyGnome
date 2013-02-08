@@ -43,6 +43,7 @@ def main(global_config, **settings):
 
     config.add_route('show_model', '/')
     config.add_route('long_island', '/long_island')
+    config.add_route('long_island_manual', '/long_island_manual')
 
     config.include("cornice")
 

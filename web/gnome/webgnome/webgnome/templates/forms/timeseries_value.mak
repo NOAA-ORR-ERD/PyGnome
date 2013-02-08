@@ -14,8 +14,9 @@
 %>
 
 ${defs.form_control(
-    h.text('direction', class_="direction input-small"),
+    h.text('direction', class_="direction input-small", data_value='mover:constantSpeed < mover.wind'),
     label='Direction', help_text=help_text)}
 
 ${defs.form_control(
-    h.text('speed', class_="speed"), label='Speed')}
+    h.text('speed', class_="speed", data_value='mover:constantDirection < mover.wind'),
+    label='Speed')}

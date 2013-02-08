@@ -5,11 +5,12 @@ define([
     'lib/backbone',
     'models',
     'util',
-    'lib/gmaps-amd',
+    'map_generator',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree',
     'lib/bootstrap-dropdown',
-], function($, _, Backbone, models, util, GMap) {
+    'async!http://maps.googleapis.com/maps/api/js?key=AIzaSyATcDk4cEYobGp9mq75DeZKaEdeppPnSlk&sensor=false&libraries=drawing'
+], function($, _, Backbone, models, util) {
      /*
      `MessageView` is responsible for displaying messages sent back from the server
      during AJAX form submissions. These are non-form error conditions, usually,
@@ -680,6 +681,7 @@ define([
 
             this.options.modelSettings.on('sync', this.reload);
             this.options.map.on('sync', this.reload);
+            this.options.map.on('change', this.reload);
         },
 
         setupDynatree: function() {

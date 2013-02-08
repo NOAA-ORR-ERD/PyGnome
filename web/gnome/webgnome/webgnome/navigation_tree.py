@@ -67,28 +67,28 @@ class NavigationTree(object):
 
     def render(self):
         data = self.model.to_dict()
-        movers = self._render_root_node('Movers', 'add_mover')
+        movers = self._render_root_node('Movers', 'add-mover')
         spills = self._render_root_node('Spills', 'add_spill')
-        settings = self._render_root_node('Model Settings', 'model_settings')
+        settings = self._render_root_node('Model Settings', 'model-settings')
 
         movers['children'].extend(
             self._render_children(data.pop('wind_movers', []),
                                   object_type='wind_mover',
-                                  form_id='edit_wind_mover'))
+                                  form_id='edit-wind-mover'))
 
         movers['children'].extend(
             self._render_children(data.pop('random_movers', []),
                                   object_type='random_mover',
-                                  form_id='edit_random_mover'))
+                                  form_id='edit-random-mover'))
 
         spills['children'].extend(
             self._render_children(data.pop('surface_release_spills', []),
                                   object_type='surface_release_spill',
-                                  form_id='edit_surface_release_spill'))
+                                  form_id='edit-surface-release-spill'))
 
          # Add the map manually as the first model setting
         map_data = data.pop('map')
-        map_form_id = 'edit_map' if map_data else 'add_map'
+        map_form_id = 'edit-map' if map_data else 'add-map'
 
         settings['children'].append({
             'form_id': map_form_id,
@@ -98,6 +98,6 @@ class NavigationTree(object):
 
         settings['children'].extend(self._render_children(
             [dict(name=self._get_value_title(key, value), id=self.model.id)
-             for key, value in data.items()], form_id='model_settings'))
+             for key, value in data.items()], form_id='model-settings'))
 
         return [settings, movers, spills]

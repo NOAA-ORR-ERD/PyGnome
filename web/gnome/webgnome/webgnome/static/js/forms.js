@@ -491,7 +491,7 @@ define([
      */
     var AddMoverFormView = ChooseObjectTypeFormView.extend({
         submit: function() {
-            var moverType = this.getByName('mover_type').val();
+            var moverType = this.getByName('mover-type').val();
 
             if (moverType) {
                 this.trigger(AddMoverFormView.MOVER_CHOSEN, moverType);
@@ -521,7 +521,7 @@ define([
         },
 
         submit: function() {
-            var spillType = this.getByName('spill_type').val();
+            var spillType = this.getByName('spill-type').val();
 
             if (spillType) {
                 this.trigger(AddSpillFormView.SPILL_CHOSEN, spillType, this.coords);
@@ -544,17 +544,14 @@ define([
 
     var AddMapFormView = ChooseObjectTypeFormView.extend({
         submit: function() {
-            var option = this.$el.find('#map_file');
-            var file = option.find('option:selected');
-            if (file) {
-                var data = {
-                    name: file.text(),
-                    filename: file.val(),
-                    refloat_halflife: 6 * 3600 // TODO: Allow user to set?
-                };
-                this.model.save(data);
+            var source = this.getByName('map-source').val();
+            if (source) {
+                this.trigger(AddMapFormView.SOURCE_CHOSEN, source);
             }
         }
+    }, {
+        // Event constants
+        SOURCE_CHOSEN: 'addMapFormView:sourceChosen'
     });
 
 
@@ -577,6 +574,57 @@ define([
         // Always use the same model
         getModel: function(id) {
             return this.model;
+        },
+
+        getDataBindings: function() {
+            return {map: this.model};
+        }
+    });
+
+
+    var AddCustomMapFormView = JQueryUIModalFormView.extend({
+        initialize: function(options) {
+            var opts = _.extend({
+                dialog: {
+                    height: 450,
+                    width: 700
+                }
+            }, options);
+
+            AddCustomMapFormView.__super__.initialize.apply(this, [opts]);
+
+            // Have to set these manually since we override `reload`
+            this.model.on('error', this.handleServerError);
+            this.model.on('sync', this.closeDialog);
+
+            this.map = this.$el.find('#custom-map').mapGenerator({
+                change: this.updateSelection
+            });
+        },
+
+        updateSelection: function(rect) {
+            var _this = this;
+            _.each(rect, function(value, key) {
+                var field = _this.$el.find('#' + key);
+                if (field.length) {
+                    field.val(value);
+                }
+            });
+        },
+
+        // Always use the same model
+        getModel: function(id) {
+            return this.model;
+        },
+
+        getDataBindings: function() {
+            return {map: this.model};
+        },
+
+        show: function() {
+            this.model.set(this.defaults);
+            AddCustomMapFormView.__super__.show.apply(this);
+            this.map.resize();
         }
     });
 
@@ -596,7 +644,7 @@ define([
 
             WindMoverFormView.__super__.initialize.apply(this, [opts]);
 
-            this.defaultTimeseriesValue = options.defaultTimeseriesValue;
+            this.defaultWindTimeseriesValue = options.defaultWindTimeseriesValue;
             this.windMovers = options.windMovers;
             this.setupCompass();
             this.setupWindMap();
@@ -630,6 +678,10 @@ define([
             };
         },
 
+        close: function() {
+            WindMoverFormView.__super__.close.apply(this, arguments);
+            this.compassDialog.dialog('close');
+        },
 
         resizeWindMap: function() {
             google.maps.event.trigger(this.windMap, 'resize');
@@ -652,11 +704,7 @@ define([
             var timeseries = [];
 
             _.each(data.results, function(windData) {
-                timeseries.push({
-                    datetime: windData[0],
-                    speed: windData[1],
-                    direction: windData[2]
-                });
+                timeseries.push([windData[0], windData[1], windData[2]]);
             });
 
             wind.set('timeseries', timeseries);
@@ -878,8 +926,8 @@ define([
 
             _.each(timeseries, function(windValue, index) {
                 var tmpl = _.template($("#time-series-row").html());
-                var direction = windValue.direction;
-                var speed = windValue.speed;
+                var speed = windValue[1];
+                var direction = windValue[2];
 
                 if (typeof(direction) === 'number') {
                     direction = direction.toFixed(1);
@@ -889,7 +937,7 @@ define([
                     speed = speed.toFixed(1);
                 }
 
-                var datetime = moment(windValue.datetime);
+                var datetime = moment(windValue[0]);
                 // TODO: Error handling
                 var error = null;
                 var row = $(tmpl({
@@ -921,14 +969,11 @@ define([
             var form = this.getAddForm();
             var speed = form.find('input[name="speed"]');
             var direction = form.find('input[name="direction"]');
-            return {
-                // A 'datetime' field is required, but it will be ignored for a
-                // constant wind mover during the model run, so we just use the
-                // current time.
-                datetime: moment().format(),
-                direction: direction.val(),
-                speed: speed.val()
-            };
+
+            // A datetime is required, but it will be ignored for a constant
+            // wind mover during the model run, so we just use the current
+            // time.
+            return [moment().format(), speed.val(), direction.val()];
         },
 
         submit: function() {
@@ -1055,7 +1100,7 @@ define([
             var duplicateIndexes = [];
 
             _.each(timeseries, function(value, index) {
-                if (moment(value.datetime).format() == datetime.format()
+                if (moment(value[0]).format() == datetime.format()
                         && index !== parseInt(ignoreIndex)) {
                     duplicateIndexes.push(index);
                 }
@@ -1084,11 +1129,11 @@ define([
                 }
             }
 
-            timeseries[windId] = {
-                datetime: datetime.format(),
-                direction: this.getCardinalAngle(direction),
-                speed: addForm.find('#speed').val()
-            };
+            timeseries[windId] = [
+                datetime.format(),
+                addForm.find('#speed').val(),
+                this.getCardinalAngle(direction)
+            ];
 
             wind.set('timeseries', timeseries);
 
@@ -1153,11 +1198,11 @@ define([
             }
 
             var duplicates = this.findDuplicates(timeseries, datetime);
-            var windValue = {
-                datetime: datetime.format(),
-                direction: this.getCardinalAngle(direction),
-                speed: addForm.find('#speed').val()
-            };
+            var windValue = [
+                datetime.format(),
+                addForm.find('#speed').val(),
+                this.getCardinalAngle(direction)
+            ];
             var warning = 'Wind data for that date and time exists. Replace it?';
 
             if (duplicates.length) {
@@ -1190,12 +1235,12 @@ define([
          */
         setFormDefaults: function() {
             this.setDateFields('.datetime_container',
-                moment(this.defaultTimeseriesValue.datetime));
+                moment(this.defaultWindTimeseriesValue[0]));
 
             this.$el.find('input[name="speed"]').val(
-                this.defaultTimeseriesValue.speed);
+                this.defaultWindTimeseriesValue[1]);
             this.$el.find('input[name="direction"]').val(
-                this.defaultTimeseriesValue.direction);
+                this.defaultWindTimeseriesValue[2]);
 
             this.clearErrors();
         },
@@ -1351,7 +1396,11 @@ define([
 
         show: function(coords) {
             if (coords) {
-                this.model.set('start_position', [coords[0], coords[1]]);
+                this.model.set({
+                    start_position_x: coords[0],
+                    start_position_y: coords[1],
+                    start_position_z: 0
+                });
             }
 
             SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
@@ -1496,6 +1545,7 @@ define([
         AddRandomMoverFormView: AddRandomMoverFormView,
         AddSurfaceReleaseSpillFormView: AddSurfaceReleaseSpillFormView,
         MapFormView: MapFormView,
+        AddCustomMapFormView: AddCustomMapFormView,
         WindMoverFormView: WindMoverFormView,
         RandomMoverFormView: RandomMoverFormView,
         SurfaceReleaseSpillFormView: SurfaceReleaseSpillFormView,
