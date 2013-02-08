@@ -20,7 +20,7 @@ def date_to_sec(date_time):
     
     The epoch is as defined in python: Jan 1, 1970
     """
-    d_array = numpy.asarray(date_time, dtype=numpy.datetime64).reshape(-1)
+    d_array = numpy.asarray(date_time, dtype='datetime64[s]').reshape(-1)
     t_array = numpy.zeros(numpy.shape(d_array), dtype=numpy.uint32)
     
     for li in range(len(d_array)):
@@ -46,7 +46,7 @@ def sec_to_date(seconds):
     that it works in the same way as the lib_gnome C++ cython wrapper 
     """   
     t_array = numpy.asarray(seconds, dtype=numpy.uint32).reshape(-1)
-    d_array = numpy.zeros(numpy.shape(t_array), dtype=numpy.datetime64)
+    d_array = numpy.zeros(numpy.shape(t_array), dtype='datetime64[s]')
     
     for li in range(len(t_array)):    
         t = sec_to_timestruct(t_array[li])
@@ -82,15 +82,15 @@ def round_time(dt=None, roundTo=60): # IGNORE:W0621
     :returns: either an array with rounded values or just a single value if only 1 value was input
 
     Author: Thierry Husson 2012 - Use it as you want but don't blame me.
-
+    
     found on : http://stackoverflow.com
     """
     if dt is None :
         dt = datetime.datetime.now()
+    
+    dt = numpy.asarray(dt, dtype='datetime64[s]').reshape(-1)
 
-    dt = numpy.asarray(dt, dtype=numpy.datetime64).reshape(-1)
-
-
+    
     for li in range(len(dt)):
         date = dt[li].astype(object)
         seconds = (date - date.min).seconds
