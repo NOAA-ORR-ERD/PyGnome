@@ -4,9 +4,10 @@ import os
 import gnome
 import gnome.basic_types
 import gnome.utilities.map_canvas
-from hazpy.file_tools import haz_files
+import logging
 import numpy
 
+from hazpy.file_tools import haz_files
 from pyramid.view import view_config
 from webgnome import schema
 from webgnome import util
@@ -17,11 +18,48 @@ from webgnome.model_manager import (
     WebWindMover,
     WebWind
 )
-from webgnome.schema import ModelSchema
+
+
+log = logging.getLogger(__name__)
 
 
 def _default_schema(schema):
     return json.dumps(schema().bind().serialize(), default=util.json_encoder)
+
+
+def _get_location_file_data(request):
+    location_files = []
+    listing = []
+    location_file_dir = request.registry.settings.location_file_dir
+
+    try:
+        listing = os.listdir(location_file_dir)
+    except OSError as e:
+        log.error('Could not access location file at path: %s. Error: %s' % (
+            location_file_dir, e))
+
+    for location_file in listing:
+        config = os.path.join(location_file_dir, location_file, 'config.json')
+
+        if not os.path.exists(config):
+            log.error(
+                'Location file does not contain a conf.json file: '
+                '%s. Path: %s' % (location_file, config))
+            continue
+
+        with open(config) as f:
+            try:
+                data = json.loads(f.read())
+            except TypeError:
+                log.error(
+                    'TypeError reading conf.json file for location: %s' % config)
+                continue
+            else:
+                data['filename'] = location_file
+                location_files.append(data)
+                log.debug('Loaded location file: %s' % location_file)
+
+    return json.dumps(location_files)
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -75,6 +113,7 @@ def show_model(request):
         'default_random_mover': default_random_mover,
         'default_map': default_map,
         'default_custom_map': default_custom_map,
+        'location_files': _get_location_file_data(request),
 
         # JSON data to bootstrap the JS application.
         'map_data': util.to_json(map_data),

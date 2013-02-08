@@ -16,15 +16,14 @@ class LocationFile(BaseResource):
     def post(self):
         data = self.request.validated
         model = data['model']
-        raw_data = open(
-            os.path.join(data['location_dir'], 'location.json')).read()
+        raw_data = open(data['location_file']).read()
         location_data = json.loads(raw_data)
         validated = ModelSchema().bind().deserialize(location_data)
         _map = validated.get('map', None)
 
         if _map and _map['filename']:
-            _map['filename'] = '%s/%s' % (
-                data['location_dir'], _map['filename'])
+            _map['filename'] = os.path.join(data['location_dir'],
+                                            _map['filename'])
 
         model.from_dict(validated)
 

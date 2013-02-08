@@ -35,8 +35,7 @@ define([
                 newItemEl: "#menu-new",
                 runItemEl: "#menu-run",
                 stepItemEl: "#menu-step",
-                runUntilItemEl: "#menu-run-until",
-                longIslandItemEl: "#long-island"
+                runUntilItemEl: "#menu-run-until"
             });
 
             this.sidebarEl = '#sidebar';
@@ -74,7 +73,8 @@ define([
                 activeFrameClass: 'active',
                 modelRun: this.modelRun,
                 model: this.map,
-                animationThreshold: this.options.animationThreshold
+                animationThreshold: this.options.animationThreshold,
+                locationFiles: this.options.locationFiles
             });
 
             this.mapControlView = new views.MapControlView({
@@ -162,16 +162,27 @@ define([
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
-            this.menuView.on(views.MenuView.LONG_ISLAND_ITEM_CLICKED, this.loadLongIsland);
+            this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.loadLocation);
+
+            $('.placeholder').on('click', '.load-location-file', function(event) {
+                event.preventDefault();
+                var location = $(event.target).data('location');
+                if (location) {
+                    _this.loadLocation(location);
+                }
+            });
         },
 
-        /*
-         Ping a server-side URL that will set the current model up with the
-         parameters from the Long Island Sound script, then reload the page.
-         */
-        loadLongIsland: function() {
-            $.post(this.apiRoot + '/location_file/long_island', function() {
-                window.location.reload();
+        loadLocation: function(location) {
+            $.ajax({
+                type: 'POST',
+                url: this.apiRoot + '/location_file/' + location,
+                success: function() {
+                    window.location.reload();
+                },
+                error: function() {
+                    alert('That location file does not exist yet.');
+                }
             });
         },
 

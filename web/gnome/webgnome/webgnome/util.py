@@ -241,15 +241,17 @@ def valid_map(request):
 
 def valid_location_file(request):
     valid_model_id(request)
-    data_dir = os.path.join(request.registry.settings.package_root, 'data',
+    data_dir = os.path.join(request.registry.settings.location_file_dir,
                             request.matchdict['location'])
+    location_file = os.path.join(data_dir, 'location.json')
 
-    if not os.path.exists(data_dir):
+    if not os.path.exists(location_file):
         request.errors.add('body', 'location_file', 'Location file not found.')
         request.errors.status = 404
         return
 
     request.validated['location_dir'] = data_dir
+    request.validated['location_file'] = location_file
 
 
 def map_filename_exists(request):

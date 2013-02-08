@@ -29,6 +29,9 @@ def main(global_config, **settings):
 
     settings['package_root'] = os.path.abspath(os.path.dirname(__file__))
     settings['project_root'] = os.path.dirname(settings['package_root'])
+    settings['data_dir'] = os.path.join(settings['package_root'], 'data')
+    settings['location_file_dir'] = os.path.join(settings['data_dir'],
+                                                  'location_files')
     settings['model_images_url_path'] = 'img/%s' % settings['model_images_dir']
     settings['model_images_dir'] = os.path.join(
         settings['package_root'], 'static', 'img', settings['model_images_dir'])

@@ -80,6 +80,7 @@ define([
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
             this.animationThreshold = this.options.animationThreshold;
+            this.locationFiles = this.options.locationFiles;
             this.canDrawSpill = false;
 
             this.makeImagesClickable();
@@ -92,6 +93,7 @@ define([
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
             this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
             this.modelRun.on(models.ModelRun.CREATED, this.reset);
+            this.mapCanvas = $('#map_canvas');
             
             this.model = this.options.model;
             this.model.on('sync', this.resetBackground);
@@ -99,22 +101,12 @@ define([
                 _this.backgroundImageUrl = null;
                 _this.map.empty();
                 _this.reset();
-                $('#map_canvas').imagesLoaded(_this.centerPlaceholderMap);
+                _this.mapCanvas.imagesLoaded(_this.centerPlaceholderMap);
             });
 
-            this.placeholderCenter = new google.maps.LatLng(-34.397, 150.644);
+            this.setupLocationFileMap();
 
-            var gmapOptions = {
-                center: this.placeholderCenter,
-                zoom: 1,
-                scrollwheel: true,
-                scaleControl: true,
-                mapTypeId: google.maps.MapTypeId.HYBRID,
-            };
-
-            this.googleMap = new google.maps.Map($('#map_canvas')[0], gmapOptions);
-
-            // Map is loaded
+            // Map is loaded in the model if it has an ID
             if (this.model.id) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
             } else {
@@ -126,9 +118,43 @@ define([
             }
         },
 
+        setupLocationFileMap: function() {
+            var _this = this;
+            this.placeholderCenter = new google.maps.LatLng(-34.397, 150.644);
+            var infoWindow = new google.maps.InfoWindow();
+            var gmapOptions = {
+                center: this.placeholderCenter,
+                backgroundColor: '#212E68',
+                zoom: 1,
+                scrollwheel: true,
+                scaleControl: true,
+                mapTypeId: google.maps.MapTypeId.HYBRID,
+            };
+
+            this.locationFileMap = new google.maps.Map(
+                this.mapCanvas[0], gmapOptions);
+
+            _.each(this.locationFiles, function(location) {
+                var latLng = new google.maps.LatLng(
+                    location.latitude, location.longitude);
+
+                var marker = new google.maps.Marker({
+                    position: latLng,
+                    map: _this.locationFileMap
+                });
+
+                google.maps.event.addListener(marker, 'click', function() {
+                    var template = _.template(
+                        $('#location-file-template').text());
+                    infoWindow.setContent(template(location));
+                    infoWindow.open(_this.locationFileMap, marker);
+                });
+            });
+        },
+
         centerPlaceholderMap: function() {
-            google.maps.event.trigger(this.googleMap, 'resize');
-            this.googleMap.setCenter(this.placeholderCenter);
+            google.maps.event.trigger(this.locationFileMap, 'resize');
+            this.locationFileMap.setCenter(this.placeholderCenter);
         },
 
         resetBackground: function() {
@@ -1181,7 +1207,8 @@ define([
             $(this.newItemEl).click(this.newItemClicked);
             $(this.runItemEl).click(this.runItemClicked);
             $(this.runUntilItemEl).click(this.runUntilItemClicked);
-            $(this.longIslandItemEl).click(this.longIslandItemClicked);
+
+            $('ul.nav').on('click', '.location-file-item', this.locationFileItemClicked);
         },
 
         hideDropdown: function() {
@@ -1203,16 +1230,18 @@ define([
             this.trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
         },
 
-        longIslandItemClicked: function(event) {
+        locationFileItemClicked: function(event) {
+            event.preventDefault();
             this.hideDropdown();
-            this.trigger(MenuView.LONG_ISLAND_ITEM_CLICKED);
+            var location = $(event.target).data('location');
+            this.trigger(MenuView.LOCATION_FILE_ITEM_CLICKED, location);
         }
     }, {
         // Event constants
         NEW_ITEM_CLICKED: "menuView:newMenuItemClicked",
         RUN_ITEM_CLICKED: "menuView:runMenuItemClicked",
         RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked",
-        LONG_ISLAND_ITEM_CLICKED: "menuView:longIslandItemClicked"
+        LOCATION_FILE_ITEM_CLICKED: "menuView:locationFileItemClicked"
     });
 
     return {

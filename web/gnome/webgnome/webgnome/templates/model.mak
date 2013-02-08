@@ -17,7 +17,7 @@
                 <li><a tabindex="-1" href="javascript:">Load from file</a></li>
                 <li class="dropdown-submenu"><a tabindex="-1" href="javascript:">Load example...</a>
                     <ul class="dropdown-menu">
-                        <li><a tabindex="-1" id="long-island" href="javascript:">Long Island Sound</a></li>
+                        <li><a tabindex="-1" class='location-file-item' data-location='long_island' href="javascript:">Long Island Sound</a></li>
                     </ul>
                 </li>
                 <li><a tabindex="-1" href="javascript:">Save</a></li>
@@ -192,9 +192,18 @@
                     defaultMap: ${default_map | n},
                     defaultCustomMap: ${default_custom_map | n},
                     mapIsLoaded: ${"true" if map_is_loaded else "false"},
+                    locationFiles: ${location_files | n},
                     animationThreshold: 10 // Milliseconds
                 });
             });
         });
     </script>
+
+    <!-- A template Location File content windows. -->
+     <script type="text/template" id="location-file-template">
+        <h4>{{ name }}</h4>
+        <p>Latitude: {{ latitude }}</p>
+        <p>Longitude: {{ longitude }}</p>
+        <a class="btn btn-primary load-location-file" data-location="{{ filename }}">Load Location File</a>
+     </script>
 </%block>
