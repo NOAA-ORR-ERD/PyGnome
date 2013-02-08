@@ -593,6 +593,18 @@ define([
 
             return Wind.__super__.set.apply(this, [key, val, options]);
         },
+
+        isManual: function() {
+            return this.get('source_type') === 'manual';
+        },
+
+        isNws: function() {
+            return this.get('source_type') === 'nws';
+        },
+
+        isBuoy: function() {
+            return this.get('source_type') === 'buoy';
+        }
     });
 
 

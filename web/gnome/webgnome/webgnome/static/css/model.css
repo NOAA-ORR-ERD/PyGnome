@@ -270,3 +270,13 @@ table.time-list td {
 .map-resolution {
     width: 110px;
 }
+
+form .required label:after {
+    color: #e32;
+    content: '*';
+    display: inline;
+}
+
+input.required {
+    border: 1px solid red;
+}

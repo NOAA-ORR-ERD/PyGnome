@@ -184,7 +184,7 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
 
 class WindSchema(MappingSchema):
     source = SchemaNode(String(), default=None, missing=None)
-    source_type = SchemaNode(String(), default=None, missing=None,
+    source_type = SchemaNode(String(), default='manual', missing='manual',
                              validator=OneOf([source[0] for source in
                                               WebWind.source_types]))
     description = SchemaNode(String(), default=None, missing=None)

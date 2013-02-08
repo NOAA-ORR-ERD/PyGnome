@@ -668,7 +668,6 @@ define([
             'click .query-source': 'querySource',
             'change .units': 'renderTimeTable',
             'change .type': 'typeChanged',
-            'change select[name="source_type"]': 'sourceTypeChanged'
         },
 
         getDataBindings: function() {
@@ -836,17 +835,6 @@ define([
 
             typeDiv.removeClass('hidden');
             otherDivs.addClass('hidden');
-        },
-
-        sourceTypeChanged: function() {
-            var sourceType = this.model.get('wind').get('source_type');
-            var queryButton = $('.query-source');
-
-            if (sourceType === 'manual') {
-                queryButton.attr('disabled', true);
-            } else {
-                queryButton.attr('disabled', false);
-            }
         },
 
         showCompass: function() {
