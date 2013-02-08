@@ -9,6 +9,7 @@ node_modules
 *.idea
 *.ropeproject
 *._.DS_Store
+empty_BW_image.png
 
 # ignore binaries generated during build
 *.egg-info
