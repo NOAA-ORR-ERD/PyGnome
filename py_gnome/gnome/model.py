@@ -27,7 +27,7 @@ class Model(GnomeObject):
         All this does is call reset() which initializes eveything to defaults
         """
         # making sure basic stuff is in place before properties are set
-        self.winds = OrderedCollection(dtype=gnome.weather.Wind)  
+        self.winds = OrderedCollection(dtype=gnome.environment.Wind)  
         self.movers = OrderedCollection(dtype=gnome.movers.Mover)
         self._spill_container = gnome.spill_container.SpillContainer()
         self._uncertain_spill_container = None
@@ -50,16 +50,16 @@ class Model(GnomeObject):
 
     def rewind(self):
         """
-        Resets the model to the beginning (start_time)
+        Rewinds the model to the beginning (start_time)
         """
         ## fixme: do the movers need re-setting? -- or wait for prepare_for_model_run?
 
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
-        ## note: this may be redundant -- they will get reset in setup_model_run() anyway..
-        self._spill_container.reset()
+        ## note: this may be redundant -- they will get rewound in setup_model_run() anyway..
+        self._spill_container.rewind()
         try:
-            self._uncertain_spill_container.reset()
+            self._uncertain_spill_container.rewind()
         except AttributeError:
             pass # there must not be one...
 
@@ -177,7 +177,7 @@ class Model(GnomeObject):
         """
         for mover in self.movers:
             mover.prepare_for_model_run()
-        self._spill_container.reset()
+        self._spill_container.rewind()
         if self._uncertain:
             self._uncertain_spill_container = self._spill_container.uncertain_copy()
         else:

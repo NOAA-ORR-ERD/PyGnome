@@ -15,9 +15,11 @@ class CatsMove(cy_fixtures.CyTestMove):
         file_ = r"SampleData/long_island_sound/CLISShio.txt"
         self.shio = cy_shio_time.CyShioTime(file_)
         top_file=r"SampleData/long_island_sound/tidesWAC.CUR"
+        yeardata_path=r"SampleData/Data/yeardata/"
         self.cats = cy_cats_mover.CyCatsMover()
         self.cats.set_shio(self.shio)
         self.cats.read_topology(top_file)
+        self.shio.set_shio_yeardata_path(yeardata_path)
         
         super(CatsMove,self).__init__()
         self.ref[:] = (-72.5, 41.17, 0)
@@ -96,6 +98,40 @@ def test_uncertain_move():
     assert np.all(tgt.u_delta['lat'] != 0)
     assert np.all(tgt.u_delta['long'] != 0)
     assert np.all(tgt.u_delta['z'] == 0)
+
+c_cats = cy_cats_mover.CyCatsMover()
+def test_default_props():
+    """
+    test default properties
+    """
+    assert c_cats.scale_type == 0
+    assert c_cats.scale_value == 1
+    
+def test_scale_type():  
+    """
+    test setting / getting properties
+    """
+    c_cats.scale_type = 1
+    print c_cats.scale_type
+    assert c_cats.scale_type == 1
+
+def test_scale_value():
+    """
+    test setting / getting properties
+    """
+    c_cats.scale_value = 0
+    print c_cats.scale_value
+    assert c_cats.scale_value == 0
+    
+def test_ref_point():
+    """
+    test setting / getting properties
+    """
+    tgt = (1,2,3)
+    c_cats.ref_point = tgt  # can be a list or a tuple
+    assert c_cats.ref_point == tuple(tgt)
+    c_cats.ref_point = list(tgt)  # can be a list or a tuple
+    assert c_cats.ref_point == tuple(tgt)
 
 if __name__=="__main__":
     test_move()

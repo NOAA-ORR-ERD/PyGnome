@@ -4671,7 +4671,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	}
 	else
 		this->writeNC = false;	message->GetParameterString("NETCDFPATH", ncOutputPath, 256);
-	if(ncOutputPath[0]) {
+/*	if(ncOutputPath[0]) {
 		int tLen;
 		char *p, classicPath[256];
 		this->writeNC = true;
@@ -4723,7 +4723,7 @@ OSErr TModel::HandleRunMessage(TModelMessage *message)
 	}
 	else
 		this->writeNC = false;
-
+*/
 	gRunSpillNoteStr[0] = 0;
 	message->GetParameterString("note",gRunSpillNoteStr,256);// this parameter is optional
 	

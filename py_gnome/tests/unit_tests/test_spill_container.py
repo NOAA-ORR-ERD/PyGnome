@@ -90,7 +90,7 @@ def test_multiple_spills():
         sc.spills[spill.id] is None # it shouldn't be there anymore.
 
 
-def test_reset():
+def test_rewind():
     start_time = datetime(2012, 1, 1, 12)
     start_time2 = datetime(2012, 1, 2, 12)
     start_position = (23.0, -78.5, 0.0)
@@ -109,13 +109,13 @@ def test_reset():
     sc.prepare_for_model_step(start_time)
     sc.prepare_for_model_step(start_time + timedelta(hours=24) )
 
-    sc.reset()
+    sc.rewind()
     assert spill.num_released == 0
     assert spill2.num_released == 0
 
-def test_reset2():
+def test_rewind2():
     """
-    test that extra arrays are removed on a reset
+    test that extra arrays are removed on a rewind
 
     # not much of a test, really -- add more?
     """
@@ -138,7 +138,7 @@ def test_reset2():
 
     sc.spills.remove(spill.id)
 
-    sc.reset()
+    sc.rewind()
     print "id of spill 2", spill2.id
     assert spill2.num_released == 0
 
@@ -317,7 +317,7 @@ def test_ordered_collection_api():
 
 
 if __name__ == "__main__":
-    test_reset2()
+    test_rewind2()
 
 
 
