@@ -12,42 +12,25 @@ class WindValueSchemaTests(TestCase):
     def test_serialize_strips_timezone(self):
         dt = datetime.datetime.now(timezone('US/Pacific'))
         dt_without_tz = dt.replace(tzinfo=None)
-
-        data = {
-            'datetime': dt,
-            'speed': 10.5,
-            'direction': 180.5
-        }
-
+        data = [dt, 10.5, 180.5]
         wind_value = schema.TimeseriesValueSchema().serialize(data)
 
-        self.assertEqual(wind_value['direction'], str(data['direction']))
-        self.assertEqual(wind_value['speed'], str(data['speed']))
-        self.assertEqual(wind_value['datetime'], dt_without_tz.isoformat())
+        self.assertEqual(wind_value[0], dt_without_tz.isoformat())
+        self.assertEqual(wind_value[1], str(data[1]))
+        self.assertEqual(wind_value[2], str(data[2]))
 
     def test_deserialize_strips_timezone(self):
         dt = datetime.datetime.now(timezone('US/Pacific'))
         dt_without_tz = dt.replace(tzinfo=None)
-
-        data = {
-            'datetime': dt.isoformat(),
-            'speed': '10.5',
-            'direction': '180.5'
-        }
-
+        data = [dt.isoformat(), '10.5','180.5']
         wind_value = schema.TimeseriesValueSchema().deserialize(data)
 
-        self.assertEqual(wind_value['direction'], float(data['direction']))
-        self.assertEqual(wind_value['speed'], float(data['speed']))
-        self.assertEqual(wind_value['datetime'], dt_without_tz)
+        self.assertEqual(wind_value[0], dt_without_tz)
+        self.assertEqual(wind_value[1], float(data[1]))
+        self.assertEqual(wind_value[2], float(data[2]))
 
     def test_speed_must_be_nonzero(self):
-        data = {
-            'datetime': datetime.datetime.now(),
-            'speed': 0,
-            'direction': 180.5
-        }
-
+        data = [datetime.datetime.now(), 0, 180.5]
         self.assertRaises(colander.Invalid,
                           schema.TimeseriesValueSchema().deserialize, data)
 
@@ -56,20 +39,20 @@ class WindSchemaTests(TestCase):
 
     def get_test_data(self):
         timeseries = [
-            {
-                'datetime': datetime.datetime(year=2013, month=1, day=1,
+            [
+                datetime.datetime(year=2013, month=1, day=1,
                                               hour=12, minute=30,
                                               tzinfo=timezone('US/Pacific')),
-                'speed': 20.5,
-                'direction': 300.5
-            },
-            {
-                'datetime': datetime.datetime(year=2013, month=2, day=1,
+                20.5,
+                300.5
+            ],
+            [
+                datetime.datetime(year=2013, month=2, day=1,
                                               hour=1, minute=30,
                                               tzinfo=timezone('US/Pacific')),
-                'speed': 20.5,
-                'direction': 300.5
-            },
+                20.5,
+                300.5
+            ],
         ]
 
         return {
@@ -83,29 +66,30 @@ class WindSchemaTests(TestCase):
 
         for idx, wind_value in enumerate(serialized_wind['timeseries']):
             test_val = data['timeseries'][idx]
-            self.assertEqual(wind_value['direction'], str(test_val['direction']))
-            self.assertEqual(wind_value['speed'], str(test_val['speed']))
-            self.assertEqual(wind_value['datetime'],
-                             test_val['datetime'].replace(
-                                 tzinfo=None).isoformat())
+            self.assertEqual(wind_value[0],
+                             test_val[0].replace(tzinfo=None).isoformat())
+            self.assertEqual(wind_value[1], str(test_val[1]))
+            self.assertEqual(wind_value[2], str(test_val[2]))
+
 
     def test_deserialize(self):
         data = self.get_test_data()
+        expected_datetimes = []
 
         for idx, wind_value in enumerate(data['timeseries']):
             # Save a timezone-unaware version so we can more easily test it as
             # the expected result after deserializing.
-            data['timeseries'][idx]['expected_datetime'] = \
-                str(wind_value['datetime'].replace(tzinfo=None))
-            data['timeseries'][idx]['datetime'] = str(wind_value['datetime'])
-            data['timeseries'][idx]['speed'] = str(wind_value['speed'])
-            data['timeseries'][idx]['direction'] = str(wind_value['direction'])
+            expected_datetimes.append(str(wind_value[0].replace(tzinfo=None)))
+            data['timeseries'][idx][0] = str(wind_value[0])
+            data['timeseries'][idx][1] = str(wind_value[1])
+            data['timeseries'][idx][2] = str(wind_value[2])
 
         wind = schema.WindSchema().deserialize(data)
 
         for idx, wind_value in enumerate(wind['timeseries']):
             test_values= data['timeseries'][idx]
-            self.assertEqual(wind_value[1][0], float(test_values['speed']))
-            self.assertEqual(wind_value[1][1], float(test_values['direction']))
             self.assertEqual(wind_value[0],
-                             numpy.datetime64(test_values['expected_datetime']))
+                             numpy.datetime64(expected_datetimes[idx]))
+            self.assertEqual(wind_value[1][0], float(test_values[1]))
+            self.assertEqual(wind_value[1][1], float(test_values[2]))
+

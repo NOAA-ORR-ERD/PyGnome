@@ -126,7 +126,7 @@ class Wind(GnomeObject):
         if datetime is None:
             datetimeval = convert.to_datetime_value_2d(self.ossm.timeseries, data_format)
         else:
-            datetime = np.asarray(datetime, dtype=np.datetime64).reshape(-1,)
+            datetime = np.asarray(datetime, dtype='datetime64[s]').reshape(-1,)
             timeval = np.zeros((len(datetime),),dtype=basic_types.time_value_pair)
             timeval['time'] = time_utils.date_to_sec(datetime)
             timeval['value'] = self.ossm.get_time_value(timeval['time'])

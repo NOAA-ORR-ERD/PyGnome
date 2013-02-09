@@ -17,7 +17,7 @@
                 <li><a tabindex="-1" href="javascript:">Load from file</a></li>
                 <li class="dropdown-submenu"><a tabindex="-1" href="javascript:">Load example...</a>
                     <ul class="dropdown-menu">
-                        <li><a tabindex="-1" id="long-island" href="javascript:">Long Island Sound</a></li>
+                        <li><a tabindex="-1" class='location-file-item' data-location='long_island' href="javascript:">Long Island Sound</a></li>
                     </ul>
                 </li>
                 <li><a tabindex="-1" href="javascript:">Save</a></li>
@@ -115,18 +115,20 @@
         <%include file="forms/add_mover.mak"/>
         <%include file="forms/add_spill.mak"/>
         <%include file="forms/add_map.mak"/>
-        <%include file="forms/map.mak"/>
         <%include file="forms/model_settings.mak"/>
 
+        <%include file="forms/map.mak"/>
+        <%include file="forms/custom_map.mak"/>
+
         ## Mover forms
-        <%include file="forms/wind_mover.mak" args="form_id='add_wind_mover'"/>
-        <%include file="forms/wind_mover.mak" args="form_id='edit_wind_mover'"/>
-        <%include file="forms/random_mover.mak" args="form_id='add_random_mover'"/>
-        <%include file="forms/random_mover.mak" args="form_id='edit_random_mover'"/>
+        <%include file="forms/wind_mover.mak" args="form_id='add-wind-mover'"/>
+        <%include file="forms/wind_mover.mak" args="form_id='edit-wind-mover'"/>
+        <%include file="forms/random_mover.mak" args="form_id='add-random-mover'"/>
+        <%include file="forms/random_mover.mak" args="form_id='edit-random-mover'"/>
 
         ## Spill forms
-        <%include file="forms/surface_release_spill.mak" args="form_id='add_surface_release_spill'"/>
-        <%include file="forms/surface_release_spill.mak", args="form_id='edit_surface_release_spill'"/>
+        <%include file="forms/surface_release_spill.mak" args="form_id='add-surface-release-spill'"/>
+        <%include file="forms/surface_release_spill.mak", args="form_id='edit-surface-release-spill'"/>
     </div>
 </%block>
 
@@ -181,18 +183,27 @@
                     defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
                     windMovers: ${wind_movers | n},
                     defaultWindMover: ${default_wind_mover | n},
-                    defaultWindTimeseriesValue: ${default_timeseries_value | n},
+                    defaultWindTimeseriesValue: ${default_wind_timeseries_value | n},
                     randomMovers: ${random_movers | n},
                     defaultRandomMover: ${default_random_mover | n},
                     modelId: "${model_id}",
                     modelSettings: ${model_settings | n},
                     map: ${map_data | n},
-                    // No default map data yet, so use the current map data
-                    defaultMap: ${map_data | n},
+                    defaultMap: ${default_map | n},
+                    defaultCustomMap: ${default_custom_map | n},
                     mapIsLoaded: ${"true" if map_is_loaded else "false"},
+                    locationFiles: ${location_files | n},
                     animationThreshold: 10 // Milliseconds
                 });
             });
         });
     </script>
+
+    <!-- A template Location File content windows. -->
+     <script type="text/template" id="location-file-template">
+        <h4>{{ name }}</h4>
+        <p>Latitude: {{ latitude }}</p>
+        <p>Longitude: {{ longitude }}</p>
+        <a class="btn btn-primary load-location-file" data-location="{{ filename }}">Load Location File</a>
+     </script>
 </%block>

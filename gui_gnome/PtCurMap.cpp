@@ -4376,6 +4376,56 @@ outputDataHdl gOilConcHdl=0;
 float *gDepthSlice = 0;
 short gTableType = 1;
  
+OSErr ExportDepthTable(char* path)
+{
+	OSErr err = 0;
+	double conc;
+	outputData data;
+	long numOutputValues,i,j,numDepths,depth;
+	char buffer[512],concStr[64], depthStr[64];
+	BFPB bfpb;
+	
+	
+	(void)hdelete(0, 0, path);
+	if (err = hcreate(0, 0, path, 'ttxt', 'TEXT'))
+	{ TechError("WriteToPath()", "hcreate()", err); return err; }
+	if (err = FSOpenBuf(0, 0, path, &bfpb, 100000, FALSE))
+	{ TechError("WriteToPath()", "FSOpenBuf()", err); return err; }
+	
+	//strcpy(buffer,"Depth range (m)\t Concentration (ppm)");
+	strcpy(buffer,"Depth (m)\t Concentration (ppm)");
+	strcat(buffer,NEWLINESTRING);
+	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+
+	numDepths = gDepthSlice[0];
+	for (j=0;j<numDepths;j++)
+	{
+		conc = gDepthSlice[j+1];
+		depth = j;
+		// Write out the times and values
+		// add header line
+		//strcpy(buffer,"Day Mo Yr Hr Min\t\tAv Conc\tMax Conc");
+		//sprintf(depthStr,"%ld - %ld",j,j+1);
+		StringWithoutTrailingZeros(depthStr,depth,3);
+		StringWithoutTrailingZeros(concStr,conc,3);
+		/////
+		strcpy(buffer,depthStr);
+		//strcat(buffer,"		");
+		strcat(buffer,"\t");
+		strcat(buffer,concStr);
+		strcat(buffer,NEWLINESTRING);
+		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	}
+	
+done:
+	// 
+	FSCloseBuf(&bfpb);
+	if(err) {	
+		// the user has already been told there was a problem
+		(void)hdelete(0, 0, path); // don't leave them with a partial file
+	}
+	return err;
+}
 OSErr PrintTableToFile(void)
 {
 	char path[256];
@@ -4400,8 +4450,10 @@ OSErr PrintTableToFile(void)
 		err = AskUserForSaveFilename(suggestedFileName,path,".DAT",TRUE);
 		if(err) return err; // note: might be user cancel
 	
-		if (gOilConcHdl) err = triGrid ->ExportOilConcHdl(path);
+		if (gOilConcHdl && gTableType == 1) err = triGrid ->ExportOilConcHdl(path);
 		//else if (areaHdl) err = triGrid ->ExportTriAreaHdl(path, map->GetNumContourLevels());
+	
+		else if (gDepthSlice && gTableType == 2) err = ExportDepthTable(path);
 		goto done;
 	//}
 done:
@@ -4477,7 +4529,7 @@ static void ConcTableInit(DialogPtr d, VLISTPTR L)
 		mysetitext(d,CONCTABLE_TIMETITLE,"Depth");
 		mysetitext(d,CONCTABLE_AVTITLE,"Conc (ppm)");
 		ShowHideDialogItem(d, CONCTABLE_MAXTITLE, false); 
-		ShowHideDialogItem(d, CONCTABLE_SAVETOFILE, false); // don't save depth data
+		//ShowHideDialogItem(d, CONCTABLE_SAVETOFILE, false); // don't save depth data
 	}
 	r = GetDialogItemBox(d,CONCTABLE_TIMETITLE);
 	timeH = r.left;

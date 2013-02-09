@@ -101,14 +101,17 @@
                                                  WebWind.source_types, label='Source Type',
                                                  class_='input-medium', data_value='wind.source_type'),
                                         label="Data Source")}
-                    ${defs.form_control(h.text('source', class_='input-small', data_value='wind.source'), label='Source ID')}
-                    ${defs.form_control(h.text('latitude', class_='input-small', data_value='wind.latitude'), label='Latitude')}
-                    ${defs.form_control(h.text('longitude', class_='input-small', data_value='wind.longitude'), label='Longitude')}
+                    ${defs.form_control(h.text('source', class_='input-small', data_class_required='wind:isBuoy < wind.source_type',
+                                        data_value='wind.source'), label='Source ID')}
+                    ${defs.form_control(h.text('latitude', class_='input-small', data_class_required='wind:isNws < wind.source_type',
+                                        data_value='wind.latitude'), label='Latitude')}
+                    ${defs.form_control(h.text('longitude', class_='input-small', data_class_required='wind:isNws < wind.source_type',
+                                        data_value='wind.longitude'), label='Longitude')}
                     ${defs.datetime_control('updated_at', date_label="Last Updated")}
                     ${defs.form_control(h.textarea('description', class_='input-medium', data_value='wind.description'), label='Description')}
                     <div class='control-group'>
                         <div class="controls">
-                            <button class="btn query-source">Get Latest</button>
+                            <button class="btn query-source" data-disabled='wind:isManual < wind.source_type'>Get Latest</button>
                         </div>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ model_manager.py: Manage a pool of running models.
 import datetime
 
 import os
+import uuid
 from hazpy.file_tools import haz_files
 import numpy
 from webgnome import util
@@ -62,7 +63,6 @@ class Serializable(object):
                 value = value.to_dict()
 
             data[key] = value
-
         return data
 
     def from_dict(self, data):
@@ -163,10 +163,7 @@ class WebWind(Wind, BaseWebObject):
 
         for wind_value in self.timeseries:
             dt = wind_value[0].astype(object)
-            series.append(
-                dict(datetime=dt, speed=wind_value[1][0],
-                          direction=wind_value[1][1])
-            )
+            series.append((dt, wind_value[1][0], wind_value[1][1]))
 
         return series
 
@@ -289,7 +286,6 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
     """
     serializable_fields = [
         'id',
-        'filename',
         'name',
         'map_bounds',
         'refloat_halflife'
@@ -299,8 +295,7 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
         return self.map_bounds.tolist()
 
     def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', None)
-        self.filename = args[0]
+        self.name = kwargs.pop('name', 'Map')
         super(WebMapFromBNA, self).__init__(*args, **kwargs)
 
 
@@ -382,6 +377,11 @@ class WebModel(Model, BaseWebObject):
         self.output_map.draw_background()
         self.output_map.save_background(self.background_image)
 
+    def remove_map(self):
+        self.map = None
+        self.output_map = None
+        self.rewind()
+
     def build_subtree(self, data, objs, keys):
         """
         Build a subtree of dicts for spills and movers on the model.
@@ -448,12 +448,52 @@ class WebModel(Model, BaseWebObject):
 
         Note: does not set movers or spills.
         """
+        def add_mover(data, cls):
+            _id = data.pop('id', None)
+            data = cls(**data)
+            if _id:
+                data._id = uuid.UUID(_id)
+            self.movers.add(data)
+
+        def add_spill(data, cls):
+            _id = data.pop('id', None)
+            spill = cls(**data)
+            if _id:
+                spill._id = uuid.UUID(_id)
+            self.spills.add(spill)
+
         self.is_uncertain = data['is_uncertain']
         self.start_time = data['start_time']
         self.time_step = data['time_step'] * 60 * 60
         self.duration = datetime.timedelta(
             days=data['duration_days'],
             seconds=data['duration_hours'] * 60 * 60)
+
+        map_data = data.get('map', None)
+        wind_movers = data.get('wind_movers', None)
+        random_movers = data.get('random_movers', None)
+        surface_spills = data.get('surface_release_spills', None)
+
+        if map_data:
+            filename = map_data.pop('filename')
+            # Ignore map bounds - will be set from the source file.
+            map_data.pop('map_bounds', None)
+            self.add_bna_map(filename, map_data)
+
+        if wind_movers:
+            for mover_data in wind_movers:
+                mover_data['wind'] = WebWind(**mover_data.pop('wind'))
+                add_mover(mover_data, WebWindMover)
+
+        if random_movers:
+            for mover_data in random_movers:
+                add_mover(mover_data, WebRandomMover)
+
+        if surface_spills:
+            for spill_data in surface_spills:
+                add_spill(spill_data, WebSurfaceReleaseSpill)
+
+        return self
 
 
 class ModelManager(object):

@@ -261,3 +261,22 @@ body .ui-tooltip {
 table.time-list td {
     padding: 2px;
 }
+
+#custom-map {
+    width: 325px;
+    height: 310px;
+}
+
+.map-resolution {
+    width: 110px;
+}
+
+form .required label:after {
+    color: #e32;
+    content: '*';
+    display: inline;
+}
+
+input.required {
+    border: 1px solid red;
+}
