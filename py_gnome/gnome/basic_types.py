@@ -19,6 +19,7 @@ from cy_gnome.cy_basic_types import * # pull everything from the cython code
 mover_type = np.float64
 world_point_type = np.float64
 windage_type = np.float64
+water_current_type = np.float64
 
 datetime_value_2d = np.dtype([('time', np.datetime64), 
                            ('value', mover_type,(2,))], align=True)
