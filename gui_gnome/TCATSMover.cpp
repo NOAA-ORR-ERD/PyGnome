@@ -2565,7 +2565,7 @@ OSErr TCATSMover::ExportTopology(char* path)
 	
 	
 	// Write out values
-	strcpy(buffer,"DAG 1.0");
+	strcpy(buffer,"DAG 1.0\n");
 	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
 	//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points

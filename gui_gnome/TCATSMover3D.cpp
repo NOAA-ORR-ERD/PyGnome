@@ -1387,6 +1387,8 @@ OSErr TCATSMover3D::ExportTopology(char* path)
 	{ printError("2"); TechError("WriteToPath()", "FSOpenBuf()", err); return err; }
 	
 	
+	strcpy(buffer,"CATS3D\n");
+	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	// Write out values
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
 	//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points

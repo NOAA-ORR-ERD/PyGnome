@@ -5,11 +5,12 @@ define([
     'lib/backbone',
     'models',
     'util',
-    'lib/gmaps-amd',
+    'map_generator',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree',
     'lib/bootstrap-dropdown',
-], function($, _, Backbone, models, util, GMap) {
+    'async!http://maps.googleapis.com/maps/api/js?key=AIzaSyATcDk4cEYobGp9mq75DeZKaEdeppPnSlk&sensor=false&libraries=drawing'
+], function($, _, Backbone, models, util) {
      /*
      `MessageView` is responsible for displaying messages sent back from the server
      during AJAX form submissions. These are non-form error conditions, usually,
@@ -79,6 +80,7 @@ define([
             this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
             this.animationThreshold = this.options.animationThreshold;
+            this.locationFiles = this.options.locationFiles;
             this.canDrawSpill = false;
 
             this.makeImagesClickable();
@@ -91,25 +93,20 @@ define([
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
             this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
             this.modelRun.on(models.ModelRun.CREATED, this.reset);
+            this.mapCanvas = $('#map_canvas');
             
             this.model = this.options.model;
-
-            this.model.on('sync', function() {
+            this.model.on('sync', this.resetBackground);
+            this.model.on('destroy', function () {
+                _this.backgroundImageUrl = null;
+                _this.map.empty();
                 _this.reset();
-                _this.loadMapFromUrl(_this.backgroundImageUrl);
+                _this.mapCanvas.imagesLoaded(_this.centerPlaceholderMap);
             });
 
-            var gmapOptions = {
-                center: new google.maps.LatLng(-34.397, 150.644),
-                zoom: 1,
-                scrollwheel: true,
-                scaleControl: true,
-                mapTypeId: google.maps.MapTypeId.HYBRID,
-            };
+            this.setupLocationFileMap();
 
-            self.googleMap = new google.maps.Map($('#map_canvas')[0], gmapOptions);
-
-            // Map is loaded
+            // Map is loaded in the model if it has an ID
             if (this.model.id) {
                 this.loadMapFromUrl(this.backgroundImageUrl);
             } else {
@@ -118,6 +115,53 @@ define([
 
             if (this.modelRun.hasCachedTimeStep(this.modelRun.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
+            }
+        },
+
+        setupLocationFileMap: function() {
+            var _this = this;
+            this.placeholderCenter = new google.maps.LatLng(-34.397, 150.644);
+            var infoWindow = new google.maps.InfoWindow();
+            var gmapOptions = {
+                center: this.placeholderCenter,
+                backgroundColor: '#212E68',
+                zoom: 1,
+                scrollwheel: true,
+                scaleControl: true,
+                mapTypeId: google.maps.MapTypeId.HYBRID,
+            };
+
+            this.locationFileMap = new google.maps.Map(
+                this.mapCanvas[0], gmapOptions);
+
+            _.each(this.locationFiles, function(location) {
+                var latLng = new google.maps.LatLng(
+                    location.latitude, location.longitude);
+
+                var marker = new google.maps.Marker({
+                    position: latLng,
+                    map: _this.locationFileMap
+                });
+
+                google.maps.event.addListener(marker, 'click', function() {
+                    var template = _.template(
+                        $('#location-file-template').text());
+                    infoWindow.setContent(template(location));
+                    infoWindow.open(_this.locationFileMap, marker);
+                });
+            });
+        },
+
+        centerPlaceholderMap: function() {
+            google.maps.event.trigger(this.locationFileMap, 'resize');
+            this.locationFileMap.setCenter(this.placeholderCenter);
+        },
+
+        resetBackground: function() {
+            this.reset();
+
+            if (this.backgroundImageUrl) {
+                this.loadMapFromUrl(this.backgroundImageUrl);
             }
         },
 
@@ -680,6 +724,7 @@ define([
 
             this.options.modelSettings.on('sync', this.reload);
             this.options.map.on('sync', this.reload);
+            this.options.map.on('change', this.reload);
         },
 
         setupDynatree: function() {
@@ -1162,7 +1207,8 @@ define([
             $(this.newItemEl).click(this.newItemClicked);
             $(this.runItemEl).click(this.runItemClicked);
             $(this.runUntilItemEl).click(this.runUntilItemClicked);
-            $(this.longIslandItemEl).click(this.longIslandItemClicked);
+
+            $('ul.nav').on('click', '.location-file-item', this.locationFileItemClicked);
         },
 
         hideDropdown: function() {
@@ -1184,16 +1230,18 @@ define([
             this.trigger(MenuView.RUN_UNTIL_ITEM_CLICKED);
         },
 
-        longIslandItemClicked: function(event) {
+        locationFileItemClicked: function(event) {
+            event.preventDefault();
             this.hideDropdown();
-            this.trigger(MenuView.LONG_ISLAND_ITEM_CLICKED);
+            var location = $(event.target).data('location');
+            this.trigger(MenuView.LOCATION_FILE_ITEM_CLICKED, location);
         }
     }, {
         // Event constants
         NEW_ITEM_CLICKED: "menuView:newMenuItemClicked",
         RUN_ITEM_CLICKED: "menuView:runMenuItemClicked",
         RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked",
-        LONG_ISLAND_ITEM_CLICKED: "menuView:longIslandItemClicked"
+        LOCATION_FILE_ITEM_CLICKED: "menuView:locationFileItemClicked"
     });
 
     return {
