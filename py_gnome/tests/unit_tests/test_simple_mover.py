@@ -18,14 +18,18 @@ from gnome.utilities.projections import FlatEarthProjection as proj
 
 def test_basic_move():
     sp = TestSpillContainer(num_elements=5) #initilizes to long, lat, z = 0.0, 0.0, 0.0
-        
+    print "is_uncertain:", 
+    print sp.is_uncertain
     mover = simple_mover.SimpleMover(velocity=(1.0, 10.0, 0.0) )
 
     delta = mover.get_move(sp, time_step=100.0, model_time=None)
-
+    print delta
+    
     expected = np.zeros_like(delta)
     expected = proj.meters_to_lonlat((100.0, 1000.0, 0.0), (0.0, 0.0, 0.0))
+    
     assert np.alltrue(delta == expected)
+
     
 def test_north():
     sp = TestSpillContainer(num_elements=10,

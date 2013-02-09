@@ -36,7 +36,10 @@ class SpillContainerData(object):
         :param data_arrays=None: A dict of all the data arrays you want to hold.
                                  NOTE: no error checking! theyshould be correctly
                                        aligned, etc.
-        """        
+        """
+        print "in SpillContainerData.__init__"
+        print uncertain
+        
         self.is_uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
         self.on = True       # sets whether the spill is active or not
         
@@ -112,7 +115,7 @@ class SpillContainer(SpillContainerData):
     
     """
     def __init__(self, uncertain=False):
-        super(SpillContainer, self).__init__(self, uncertain)
+        super(SpillContainer, self).__init__(uncertain)
         
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
@@ -225,7 +228,7 @@ class TestSpillContainer(SpillContainer):
         """
         initilize a simple spill container (instantaneous point release)
         """
-        SpillContainer.__init__(self, uncertain=uncertain)
+        super(TestSpillContainer, self).__init__(uncertain=uncertain)
 
         spill = gnome.spill.SurfaceReleaseSpill(num_elements,
                                                 start_pos,    
