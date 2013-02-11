@@ -29,14 +29,15 @@ class Model(GnomeObject):
         # making sure basic stuff is in place before properties are set
         self.winds = OrderedCollection(dtype=gnome.environment.Wind)  
         self.movers = OrderedCollection(dtype=gnome.movers.Mover)
-        self._spill_container = gnome.spill_container.SpillContainer()
-        self._uncertain_spill_container = None
+        #self._spill_container = gnome.spill_container.SpillContainer()
+        #self._uncertain_spill_container = None
+        self.spills = gnome.spill_container.UncertainSpillContainerPair(uncertain)   # contains both certain/uncertain spills 
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
         self.output_map = output_map
-        self._uncertain = uncertain # sets whether uncertainty is on or not.
+        #self._uncertain = uncertain # sets whether uncertainty is on or not.
 
         self.time_step = time_step # this calls rewind() !
 
@@ -56,36 +57,35 @@ class Model(GnomeObject):
 
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
-        ## note: this may be redundant -- they will get rewound in setup_model_run() anyway..
-        self._spill_container.rewind()
-        try:
-            self._uncertain_spill_container.rewind()
-        except AttributeError:
-            pass # there must not be one...
+        ## note: this may be redundant -- they will get reset in setup_model_run() anyway..
+        #self._spill_container.reset()
+        self.spills.rewind()
+        #=======================================================================
+        # try:
+        #    self._uncertain_spill_container.reset()
+        # except AttributeError:
+        #    pass # there must not be one...
+        #=======================================================================
 
 
     ### Assorted properties
     @property
     def is_uncertain(self):
-        return self._uncertain
+        return self.spills.uncertain
     @is_uncertain.setter
     def is_uncertain(self, uncertain_value):
         """
         only if uncertainty switch is toggled, then restart model
         """
-        if self._uncertain != uncertain_value:
-            self._uncertain = uncertain_value
-            self.rewind()   
-
-    @property
-    def spills(self):
-        """
-        Return a list of the spills added to this model, in order of insertion.
-
-        :return: a list of spills
-        """
-        return self._spill_container.spills
-        
+        if self.spills.uncertain != uncertain_value:
+            self.spills.uncertain = uncertain_value # update uncertainty
+            self.rewind()
+        #=======================================================================
+        # if self._uncertain != uncertain_value:
+        #    self._uncertain = uncertain_value
+        #    self.spills.uncertain = uncertain_value # update uncertainty
+        #    self.rewind()           
+        #=======================================================================
 
     @property
     def start_time(self):
@@ -143,31 +143,33 @@ class Model(GnomeObject):
     def num_time_steps(self):
         return self._num_time_steps
 
-    def get_spill(self, spill_id):
-        """
-        Return a :class:`gnome.spill.Spill` in the ``self._spills`` dict with
-        the key ``spill_id`` if one exists.
-        """
-        return self._spill_container.spills[spill_id]
-
-    def add_spill(self, spill):
-        """
-        add a spill to the model
-
-        :param spill: an instance of one of the gnome.spill classes
-
-        """
-        #fixme: where should we check if a spill is in a valid location on the map?
-        self._spill_container.spills += spill
-        ## fixme -- this may not be strictly required, but it's safer.
-        self.rewind() 
-
-    def remove_spill(self, spill_id):
-        """
-        remove the passed-in spill from the spill list
-        """
-        ##fixme: what if we want to remove by reference, rather than id?
-        del self._spill_container.spills[spill_id]
+#===============================================================================
+#    def get_spill(self, spill_id):
+#        """
+#        Return a :class:`gnome.spill.Spill` in the ``self._spills`` dict with
+#        the key ``spill_id`` if one exists.
+#        """
+#        return self._spill_container.spills[spill_id]
+# 
+#    def add_spill(self, spill):
+#        """
+#        add a spill to the model
+# 
+#        :param spill: an instance of one of the gnome.spill classes
+# 
+#        """
+#        #fixme: where should we check if a spill is in a valid location on the map?
+#        self._spill_container.spills += spill
+#        ## fixme -- this may not be strictly required, but it's safer.
+#        self.rewind() 
+# 
+#    def remove_spill(self, spill_id):
+#        """
+#        remove the passed-in spill from the spill list
+#        """
+#        ##fixme: what if we want to remove by reference, rather than id?
+#        del self._spill_container.spills[spill_id]
+#===============================================================================
 
     def setup_model_run(self):
         """
@@ -177,11 +179,16 @@ class Model(GnomeObject):
         """
         for mover in self.movers:
             mover.prepare_for_model_run()
-        self._spill_container.rewind()
-        if self._uncertain:
-            self._uncertain_spill_container = self._spill_container.uncertain_copy()
-        else:
-            self._uncertain_spill_container = None
+        
+        #self.spills.uncertain = self._uncertain
+        self.spills.rewind()
+        #=======================================================================
+        # self._spill_container.reset()
+        # if self._uncertain:
+        #    self._uncertain_spill_container = self._spill_container.uncertain_copy()
+        # else:
+        #    self._uncertain_spill_container = None
+        #=======================================================================
 
     def setup_time_step(self):
         """
@@ -192,9 +199,13 @@ class Model(GnomeObject):
         
         # initialize movers differently if model uncertainty is on
         for mover in self.movers:
-            mover.prepare_for_model_step(self._spill_container, self.time_step, self.model_time)
-            if self.is_uncertain:
-                mover.prepare_for_model_step(self._uncertain_spill_container, self.time_step, self.model_time)
+            for sc in self.spills.items():
+                mover.prepare_for_model_step(sc, self.time_step, self.model_time)
+            #===================================================================
+            # mover.prepare_for_model_step(self._spill_container, self.time_step, self.model_time)
+            # if self.is_uncertain:
+            #    mover.prepare_for_model_step(self._uncertain_spill_container, self.time_step, self.model_time)
+            #===================================================================
                                 
     def move_elements(self):
         """
@@ -206,13 +217,9 @@ class Model(GnomeObject):
          - sets the new position
         """
         ## if there are no spills, there is nothing to do:
-
-        if self._spill_container.spills:
-            containers = [ self._spill_container ]
-            if self.is_uncertain:
-                containers.append( self._uncertain_spill_container )
-            for sc in containers: # either one or two, depending on uncertaintly or not
-                if sc.num_elements > 0: # no reason to do any of this if there are no elements
+        if len(self.spills) > 0:        # can this check be removed?
+            for sc in self.spills.items():
+                if sc.num_elements > 0: # can this check be removed?
                     # reset next_positions
                     sc['next_positions'][:] = sc['positions']
 
@@ -225,6 +232,27 @@ class Model(GnomeObject):
 
                     # the final move to the new positions
                     sc['positions'][:] = sc['next_positions']
+            
+#===============================================================================
+#        if self._spill_container.spills:
+#            containers = [ self._spill_container ]
+#            if self.is_uncertain:
+#                containers.append( self._uncertain_spill_container )
+#            for sc in containers: # either one or two, depending on uncertaintly or not
+#                if sc.num_elements > 0: # no reason to do any of this if there are no elements
+#                    # reset next_positions
+#                    sc['next_positions'][:] = sc['positions']
+# 
+#                    # loop through the movers
+#                    for mover in self.movers:
+#                        delta = mover.get_move(sc, self.time_step, self.model_time)
+#                        sc['next_positions'] += delta
+#                
+#                    self.map.beach_elements(sc)
+# 
+#                    # the final move to the new positions
+#                    sc['positions'][:] = sc['next_positions']
+#===============================================================================
 
     def step_is_done(self):
         """
@@ -263,9 +291,13 @@ class Model(GnomeObject):
 
         self.output_map.create_foreground_image()
 
-        if self.is_uncertain:
-            self.output_map.draw_elements(self._uncertain_spill_container)
-        self.output_map.draw_elements(self._spill_container)
+        for sc in self.spills.items():
+            self.output_map.draw_elements(sc)
+        #=======================================================================
+        # if self.is_uncertain:
+        #    self.output_map.draw_elements(self._uncertain_spill_container)
+        # self.output_map.draw_elements(self._spill_container)
+        #=======================================================================
         self.output_map.save_foreground(filename)
 
         return filename
@@ -284,9 +316,13 @@ class Model(GnomeObject):
             self.move_elements()
             self.step_is_done()
         self.current_time_step += 1        
-        self._spill_container.release_elements(self.model_time,self.time_step)
-        if self.is_uncertain:
-            self._uncertain_spill_container.release_elements(self.model_time,self.time_step)
+        for sc in self.spills.items():
+            sc.release_elements(self.model_time)
+        #=======================================================================
+        # self._spill_container.release_elements(self.model_time)
+        # if self.is_uncertain:
+        #    self._uncertain_spill_container.release_elements(self.model_time)
+        #=======================================================================
         return True
 
     def __iter__(self):

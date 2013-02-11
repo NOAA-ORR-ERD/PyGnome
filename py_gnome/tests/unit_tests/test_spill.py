@@ -17,42 +17,23 @@ from gnome.spill import Spill, FloatingSpill, SurfaceReleaseSpill, SpatialReleas
 
 def test_init_Spill():
     """
-    the base class does not do much
+    each spill class maintains a static dict of data types referenced by a 'property name'
+    which correspond to the properties that LEs will have when released by the spill
     """
     sp = Spill()
+    for k in ('positions', 'next_positions', 'last_water_positions', 'status_codes', 'spill_num',):
+        assert k in sp.array_types
 
-    assert  sp.spill_num > 0
+    sp = FloatingSpill()
+    for k in ('positions', 'next_positions', 'last_water_positions', 'status_codes', 'spill_num', 'windages'):
+        assert k in sp.array_types
 
+    # check that the FloatingSpill did not affect the Spill Base class array types
+    sp = Spill()
+    for k in ('positions', 'next_positions', 'last_water_positions', 'status_codes', 'spill_num',):
+        assert k in sp.array_types
+    assert 'windages' not in sp.array_types
 
-def test_set_spill_num():
-    """
-    spill_nums should get set, and stay unique as you delete and create spills
-    """
-
-    spills = [Spill() for i in range(10)]
-
-    # the spill_nums are unique
-    assert len( set([spill.spill_num for spill in spills]) ) == len(spills)
-
-    #delete and create a few:
-    del spills[3]
-    del spills[5]
-
-    spills.extend(  [FloatingSpill() for i in range(5)] ) 
-
-    # spill_nums still unique
-    assert len( set([spill.spill_num for spill in spills]) ) == len(spills)
-
-    del spills[10]
-    del spills[4]
-
-    spills.extend(  [SurfaceReleaseSpill(5, (0,0,0), None ) for i in range(5)] ) 
-
-    # spill_nums still unique
-    assert len( set([spill.spill_num for spill in spills]) ) == len(spills)
-
-    #print [spill.spill_num for spill in spills]
-    #assert False
 
 def test_deepcopy():
     """
@@ -60,26 +41,25 @@ def test_deepcopy():
 
     test_spill_container does test some other issues.
     """
-    spill1 = Spill() 
-    spill2 = copy.deepcopy(spill1)
-    assert spill1 is not spill2
-    assert spill1.spill_num != spill2.spill_num
+    sp1 = Spill()
+    sp2 = copy.deepcopy(sp1)
+    assert sp1 is not sp2
 
     #try deleting the copy, and see if any errors result
-    del spill2
-    del spill1
+    del sp2
+    del sp1
 
 def test_copy():
     """
     only tests that the spill_nums work -- not sure about anything else...
     """
-    spill1 = Spill() 
-    spill2 = copy.copy(spill1)
-    assert spill1 is not spill2
-    assert spill1.spill_num != spill2.spill_num
+    sp1 = Spill()
+    sp2 = copy.copy(sp1)
+    assert sp1 is not sp2
+
     #try deleting the copy, and see if any errors result
-    del spill1
-    del spill2
+    del sp1
+    del sp2
 
 
 def test_uncertain_copy():
@@ -97,12 +77,10 @@ def test_uncertain_copy():
     u_spill = spill.uncertain_copy() 
 
     assert u_spill is not spill
-    assert u_spill.spill_num == spill.spill_num
     assert np.array_equal(u_spill.start_position, spill.start_position)
     del spill
     del u_spill
     #assert False
-
 
 
 def test_new_elements():
@@ -118,6 +96,7 @@ def test_new_elements():
         assert len(array) == 3
     # what else to test???
 
+
 def test_FloatingSpill():
     """
     see if the right arrays get created
@@ -131,47 +110,7 @@ def test_FloatingSpill():
     assert np.alltrue( data['status_codes'] == basic_types.oil_status.in_water )
 
 
-def test_reset_array_types():
-    """
-    tests to make sure that after resetting, only arrays that are
-    used by existing spills are created
-
-    NOTE: This test is sensitive to other tests 
-          I suspect that when other tests have been run, the test harness
-          may keep references around that defeats this. So test this by itself
-    """
-    sp1 = Spill()
-    sp1.rewind() # make sure that we're reset from previous tests
-
-    sp2 = FloatingSpill()
-    sp4 = FloatingSpill()
-    sp5 = Spill()
-
-    arrays = sp1.create_new_elements(1)
-    assert 'windages' in arrays
-
-    # delete the FloatingSpill
-    del sp2
-    # windages still there
-    arrays = sp1.create_new_elements(1)
-    assert 'windages' in arrays
-
-    sp1.rewind()
-    # windages still there
-    arrays = sp1.create_new_elements(1)
-    assert 'windages' in arrays
-
-    del sp4
-    sp5.rewind()
-    #windages should no longer be there
-    #print Spill._Spill__all_subclasses
-    arrays = sp1.create_new_elements(1)
-    print "This test can fail if others have been run before it -- leaving dangling references"
-    print "Fix other tests first"
-    assert 'windages' not in arrays
-
-
-class Test_SurfaceReleaseSpill():
+class Test_SurfaceReleaseSpill(object):
     num_elements = 10
     start_position = (-128.3, 28.5, 0)
     release_time=datetime.datetime(2012, 8, 20, 13)
@@ -214,10 +153,6 @@ class Test_SurfaceReleaseSpill():
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['positions'] == self.start_position )
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
-
-        # assert arrays['status_codes'].shape == (10,)
-        # assert arrays['positions'].shape == (10,3)
-        # assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
 
     def test_cont_release(self):
         sp = SurfaceReleaseSpill(num_elements = 100,
@@ -267,12 +202,12 @@ class Test_SurfaceReleaseSpill():
                                   )
         timestep = 600 # ten minutes in seconds         
         arrays = sp.release_elements(self.release_time + datetime.timedelta(hours=1), timestep)
-        
+
         assert arrays['positions'].shape == (11,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
         assert np.array_equal( arrays['positions'][:,0], np.linspace(-128, -129, 11) )
         assert np.array_equal( arrays['positions'][:,1], np.linspace(28, 29, 11) )
-        
+
         assert sp.num_released == 11
 
     def test_cont_line_release1(self):
@@ -290,12 +225,12 @@ class Test_SurfaceReleaseSpill():
         timestep = 100 * 60       
         # first the full release over one time step
         arrays = sp.release_elements(self.release_time, timestep )
-        
+
         assert arrays['positions'].shape == (11,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
         assert np.array_equal( arrays['positions'][:,0], np.linspace(-128, -129, 11) )
         assert np.array_equal( arrays['positions'][:,1], np.linspace(28, 29, 11) )
-        
+
         assert sp.num_released == 11
 
     def test_cont_line_release2(self):
@@ -310,10 +245,10 @@ class Test_SurfaceReleaseSpill():
                                  end_position = (-129.0, 29.0, 0),
                                  end_release_time = self.release_time + datetime.timedelta(minutes=100)
                                  )
-        
+
         # release at release time with time step of 1/10 of release_time
         arrays = sp.release_elements(self.release_time, 10*60)
-        
+
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
         assert np.array_equal( arrays['positions'][:,0], np.linspace(-128, -128.1, 10))
@@ -322,7 +257,7 @@ class Test_SurfaceReleaseSpill():
 
         # second time step release:
         arrays = sp.release_elements(self.release_time + datetime.timedelta(minutes=10), 10*60 )
-        
+
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
         assert np.array_equal( arrays['positions'][:,0], np.linspace(-128.1, -128.2, 11)[1:])
@@ -341,7 +276,7 @@ class Test_SurfaceReleaseSpill():
                                  end_position = (-129.0, 30.0, 0),
                                  end_release_time = self.release_time + datetime.timedelta(minutes=50)
                                  )
-        
+
         #start before release
         time = self.release_time - datetime.timedelta(minutes=10)
         delta_t = datetime.timedelta(minutes=10)
@@ -372,7 +307,7 @@ class Test_SurfaceReleaseSpill():
                                  end_position = (-129.0, 31.0, 0),
                                  end_release_time = self.release_time + datetime.timedelta(minutes=50)
                                  )
-        
+
         #start before release
         time = self.release_time - datetime.timedelta(minutes=10)
         delta_t = datetime.timedelta(minutes=2)
@@ -412,7 +347,7 @@ class Test_SurfaceReleaseSpill():
                                  end_position = end_position,
                                  end_release_time = self.release_time + datetime.timedelta(minutes=50)
                                  )
-        
+
         #start before release
         time = self.release_time - datetime.timedelta(minutes=10)
         delta_t = datetime.timedelta(minutes=10)
@@ -442,6 +377,7 @@ class Test_SurfaceReleaseSpill():
                                      release_time = self.release_time,
                                      end_release_time = self.release_time - datetime.timedelta(seconds=1),
                                      )
+            print sp
 
 def test_SpatialReleaseSpill():
     """
