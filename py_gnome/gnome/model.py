@@ -4,9 +4,12 @@ from datetime import datetime, timedelta
 
 import gnome
 
+from gnome.gnomeobject import GnomeObject
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.gnomeobject import GnomeObject
+from gnome.environment import Wind
+from gnome.movers import Mover
+from gnome.spill_container import UncertainSpillContainerPair
 
 class Model(GnomeObject):
     """ 
@@ -27,11 +30,11 @@ class Model(GnomeObject):
         All this does is call reset() which initializes eveything to defaults
         """
         # making sure basic stuff is in place before properties are set
-        self.winds = OrderedCollection(dtype=gnome.environment.Wind)  
-        self.movers = OrderedCollection(dtype=gnome.movers.Mover)
+        self.winds = OrderedCollection(dtype=Wind)  
+        self.movers = OrderedCollection(dtype=Mover)
         #self._spill_container = gnome.spill_container.SpillContainer()
         #self._uncertain_spill_container = None
-        self.spills = gnome.spill_container.UncertainSpillContainerPair(uncertain)   # contains both certain/uncertain spills 
+        self.spills = UncertainSpillContainerPair(uncertain)   # contains both certain/uncertain spills 
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
