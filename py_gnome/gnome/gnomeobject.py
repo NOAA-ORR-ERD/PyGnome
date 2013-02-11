@@ -29,7 +29,7 @@ class GnomeObject(object):
         Used only for deep copy. 
         Used to make a new object which is a copy of the original.
         """
-        self._id = uuid1()
+        self._id = str(uuid1())
 
     def __deepcopy__(self, memo=None):
         """
