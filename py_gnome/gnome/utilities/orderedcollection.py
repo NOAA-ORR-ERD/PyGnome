@@ -29,7 +29,7 @@ class OrderedCollection(object):
         # a bunch of Gnome classes have an id property defined, which we will prefer
         # otherwise, we just take the id(e) value
         # NOTE: we stringify the e.id value since it could be of a type that is hard to reference as a key
-        self._index = dict([(str(e.id) if hasattr(e, 'id') else id(e), idx) for e, idx in zip(elems, range(len(elems)))])
+        self._index = dict([(str(e.id) if hasattr(e, 'id') else id(e), idx) for idx, e in enumerate(elems)])
         self._elems = elems[:]
 
     def get(self, ident):
