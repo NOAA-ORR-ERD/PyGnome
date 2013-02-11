@@ -369,6 +369,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 	
 	// else we need to re-compute the values
 	this->SetTimeValueHandle(nil);
+	errStr[0] = 0;
 	
 	// calculate the values every hour for the interval containing the model run time
 	//SecondsToDate(modelStartTime,&beginDate);
@@ -1542,7 +1543,7 @@ YEARDATA2* ReadYearData(short year, const char *path, char *errStr)
 		if(gYearDataHdl1990Plus2[yearMinus1990]) return gYearDataHdl1990Plus2[yearMinus1990];
 	}
 	//if (errStr[0] != 0) return 0;
-	errStr[0] = 0;
+	//errStr[0] = 0;
 	
 	// create the filename of the proper year data file
 	sprintf(filePathName, "%s#%d", path, year);
