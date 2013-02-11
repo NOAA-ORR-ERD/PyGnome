@@ -31,6 +31,7 @@ class SpillContainer(object):
     """
 
     def __init__(self, uncertain=False):
+        self.all_array_types = {}
         self._data_arrays = {}
         self.is_uncertain = uncertain  # uncertainty spill - same information as basic_types.spill_type
         self.on = True  # sets whether the spill is active or not
@@ -91,6 +92,28 @@ class SpillContainer(object):
         """
         return len(self['positions'])  # every spill should have a postitions data array
 
+    def reconcile_data_arrays(self):
+        self.update_all_array_types()
+
+        # if a spill was added with new properties, we need to
+        # create the new property and back-fill the array
+        for name, dtype in self.all_array_types.iteritems():
+            if name not in self._data_arrays:
+                array_type = dict( ((name, dtype),) )
+                data_arrays = gnome.spill.Spill().create_new_elements(self.num_elements, array_type)
+                self._data_arrays[name] = data_arrays[name]
+
+        # if a spill was deleted, it may have had properties
+        # that are not needed anymore
+        for k in self._data_arrays.keys()[:]:
+            if k not in self.all_array_types:
+                del self._data_arrays[k]
+
+    def update_all_array_types(self):
+        self.all_array_types = {}
+        for spill in self.spills:
+            self.all_array_types.update(spill.array_types)
+
     def uncertain_copy(self):
         """
         Returns a copy of the spill_container suitable for uncertainty
@@ -118,30 +141,12 @@ class SpillContainer(object):
         This calls release_elements on all of the contained spills, and adds
         the elements to the data arrays
         """
-        # find the union of existing properties for all spills
-        all_array_types = {}
-        for spill in self.spills:
-            all_array_types.update(spill.array_types)
-
-        # if a spill was added with new properties, we need to
-        # create the new property and back-fill the array
-        # - the initialization of the values can be generic
-        #   since the previous spills were not handling them anyway.
-        for name, dtype in all_array_types.iteritems():
-            if name not in self._data_arrays:
-                array_type = dict( ((name, dtype),) )
-                data_arrays = gnome.spill.Spill().create_new_elements(self.num_elements, array_type)
-                self._data_arrays[name] = data_arrays[name]
-
-        # if a spill was deleted, it may have had properties
-        # that are not needed anymore
-        for k in self._data_arrays.keys()[:]:
-            if k not in all_array_types:
-                del self._data_arrays[k]
+        self.reconcile_data_arrays()
 
         for spill in self.spills:
             if spill.on:
-                new_data = spill.release_elements(current_time, time_step=time_step, array_types=all_array_types)
+                new_data = spill.release_elements(current_time, time_step=time_step,
+                                                  array_types=self.all_array_types)
                 if new_data is not None:
                     if 'spill_num' in new_data:
                         new_data['spill_num'][:] = self.spills.index(spill.id, renumber=False)
