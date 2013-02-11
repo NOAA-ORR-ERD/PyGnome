@@ -39,14 +39,14 @@ def test_read_file_init():
     file_ = r"SampleData/WindDataFromGnome.WND"
     wind = environment.Wind(file=file_)
     wm = movers.WindMover(wind)
-    wind_ts = wind.get_timeseries(data_format=basic_types.data_format.wind_uv, units='meter per second')
+    wind_ts = wind.get_timeseries(format='uv', units='meter per second')
     _defaults(wm)   # check defaults set correctly
     cpp_timeseries = _get_timeseries_from_cpp(wm)
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
 
     # make sure default user_units is correct and correctly called
     # NOTE: Following functionality is already tested in test_wind.py, but what the heck - do it here too.
-    wind_ts = wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
+    wind_ts = wind.get_timeseries(format=basic_types.ts_format.uv)
     cpp_timeseries['value'] = unit_conversion.convert('Velocity','meter per second',wind.user_units,cpp_timeseries['value'])
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
    
@@ -85,11 +85,11 @@ def test_update_wind(wind_circ):
     o_wind = wind_circ['wind']      # original wind value
     wm  = movers.WindMover(o_wind)  # define wind mover
     
-    # update wind timeseries - default data_format is magnitude_direction
+    # update wind timeseries - default format is magnitude_direction
     t_dtv = np.zeros((3,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
     t_dtv.time = [datetime(2012,11,06,20,0+i,30) for i in range(3)]
     t_dtv.value= np.random.uniform(1,5, (3,2) )
-    o_wind.set_timeseries(t_dtv, units='meters per second', data_format=basic_types.data_format.wind_uv)
+    o_wind.set_timeseries(t_dtv, units='meters per second', format='uv')
     
     cpp_timeseries = _get_timeseries_from_cpp(wm)
     assert np.all(cpp_timeseries['time'] == t_dtv.time)
@@ -241,17 +241,17 @@ def _get_timeseries_from_cpp(windmover):
     This should be the same as the timeseries stored in the self.wind object
 
     Data is returned as a datetime_value_2d array in units of meters per second in 
-    data_format = wind_uv
+    format = uv
 
     This is simply used for testing.
     """
-    dtv = windmover.wind.get_timeseries(data_format=basic_types.data_format.wind_uv)
-    tv  = convert.to_time_value_pair(dtv, basic_types.data_format.wind_uv)
+    dtv = windmover.wind.get_timeseries(format=basic_types.ts_format.uv)
+    tv  = convert.to_time_value_pair(dtv, basic_types.ts_format.uv)
     val = windmover.mover.get_time_value(tv['time'])
     tv['value']['u'] = val['u']
     tv['value']['v'] = val['v']
 
-    return convert.to_datetime_value_2d( tv, basic_types.data_format.wind_uv)
+    return convert.to_datetime_value_2d( tv, basic_types.ts_format.uv)
 
 def _assert_timeseries_equivalence(cpp_timeseries, wind_ts):
     """
