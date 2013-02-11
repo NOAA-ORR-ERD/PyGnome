@@ -40,7 +40,11 @@ cdef class CyOSSMTime:
         
         if path is not None:
             if file_contains is None:
-                raise ValueError('Unknown file contents - need a valid basic_types.data_format.* value')
+                raise ValueError('Unknown file contents - need a valid basic_types.ts_format.* value')
+            
+            # check file_contains is valid parameter - both magnitude_direction and uv are valid inputs
+            if file_contains not in basic_types.ts_format._int:
+                raise ValueError("file_contains can only contain integers 5, or 1; also defined by basic_types.ts_format.<magnitude_direction or uv>")
             
             if os.path.exists(path):
                 self._read_time_values(path, file_contains, -1) # user_units should be read from the file
