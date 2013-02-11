@@ -20,6 +20,9 @@ def test_exceptions():
         cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, "WindDataFromGnome.WNDX"), file_contains=basic_types.ts_format.magnitude_direction)    # bad path
         cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, "WindDataFromGnome.WND"))    # insufficient input info
         cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, "WindDataFromGnome_BadUnits.WND"), file_contains=basic_types.ts_format.magnitude_direction)    # insufficient input info
+    
+    with pytest.raises(ValueError):
+        cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, "WindDataFromGnome.WND"), file_contains=0)   # file_contains has wrong int type    
 
 def test_init_units():
     """
