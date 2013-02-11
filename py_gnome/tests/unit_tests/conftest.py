@@ -120,7 +120,7 @@ def wind_circ(rq_wind):
     dtv_uv = np.zeros((len(dtv_rq),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
     dtv_uv.time = dtv_rq.time
     dtv_uv.value= rq_wind['uv']
-    wm  = environment.Wind(timeseries=dtv_rq,ts_format=basic_types.ts_format.magnitude_direction,units='meters per second')
+    wm  = environment.Wind(timeseries=dtv_rq,format='r-theta',units='meters per second')
     return {'wind':wm, 'rq': dtv_rq, 'uv': dtv_uv}
 
 """
