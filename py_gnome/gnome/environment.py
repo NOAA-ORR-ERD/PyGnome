@@ -53,7 +53,7 @@ class Wind(GnomeObject):
             self._user_units = units
         else:
             ts_format = convert.tsformat(format)
-            self.ossm = CyOSSMTime(path=file,file_contains=ts_format)
+            self.ossm = CyOSSMTime(file=file,file_contains=ts_format)
             self._user_units = self.ossm.user_units
         
     def _convert_units(self, data, ts_format, from_unit, to_unit):
@@ -96,7 +96,7 @@ class Wind(GnomeObject):
         This timeseries are not output. eval(repr(wind)) does not work for this object and the timeseries could be long
         so only the syntax for obtaining the timeseries is given in repr
         """
-        return "Wind( timeseries=Wind.get_timeseries(basic_types.ts_format.uv), ts_format=basic_types.ts_format.uv)" \
+        return "Wind( timeseries=Wind.get_timeseries('uv'), format='uv')" \
     
     def __str__(self):
         """
@@ -105,6 +105,18 @@ class Wind(GnomeObject):
         return "Wind Object"
     
     user_units = property( lambda self: self._user_units)   
+    filename = property( lambda self: self.ossm.fileName)
+    
+    # Add following meta-data about timeseries
+    @property
+    def name(self):
+        return self.name
+    
+    @name.setter
+    def name(self, val):
+        self.name = val
+        
+    
     
     def get_timeseries(self, datetime=None, units=None, format='r-theta'):
         """
