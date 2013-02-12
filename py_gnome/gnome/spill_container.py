@@ -215,7 +215,8 @@ class SpillContainer(SpillContainerData):
 
         for spill in self.spills:
             if spill.on:
-                new_data = spill.release_elements(current_time, time_step=time_step,
+                new_data = spill.release_elements(current_time,
+                                                  time_step=time_step,
                                                   array_types=self.all_array_types)
                 if new_data is not None:
                     if 'spill_num' in new_data:
@@ -317,16 +318,6 @@ class SpillContainerPair(SpillContainerPairData):
 
         super(SpillContainerPair, self).__init__(sc, u_sc)
 
-        # info about the array types
-        # used to construct and expand data arrays.
-        # this specifies both what arrays are there, and their types, etc.
-        # this kept as a class atrribure so all properties are accesable everywhere.
-        # subclasses should add new particle properties to this dict
-        #             name           shape (not including first axis)       dtype      
-        self._array_info = {}
-        self.__all_instances = {} # keys are the instance spill_num -- values are the subclass object
-
-
     def rewind(self):
         """
         rewind spills in spill_container
@@ -369,14 +360,6 @@ class SpillContainerPair(SpillContainerPairData):
             # todo: make sure spill_num for copied spill are the same as original
             self._u_spill_container.spills += spill.uncertain_copy()
 
-        self.__all_instances[spill.spill_num] = spill.__class__
-
-    def reset_array_types(self):
-        self._array_info.clear()
-        self.all_subclasses = set(self.__all_instances.values())
-        for subclass in self.all_subclasses:
-            self._array_info.update( subclass.array_types)
-
     def remove(self, ident):
         """
         remove object from spill_container.spills and the corresponding uncertainty spill
@@ -394,9 +377,6 @@ class SpillContainerPair(SpillContainerPairData):
         """
         spill = self._spill_container.spills[ident]
         return spill
-
-    #def __setitem__(self, ident, new_spill):
-    #    self.replace(ident, new_spill)
 
     def __delitem__(self, ident):
         self.remove(ident)
