@@ -31,7 +31,7 @@ class Model(GnomeObject):
         self.movers = OrderedCollection(dtype=gnome.movers.Mover)
         #self._spill_container = gnome.spill_container.SpillContainer()
         #self._uncertain_spill_container = None
-        self.spills = gnome.spill_container.UncertainSpillContainerPair(uncertain)   # contains both certain/uncertain spills 
+        self.spills = gnome.spill_container.SpillContainerPair(uncertain)   # contains both certain/uncertain spills 
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration

@@ -31,11 +31,11 @@ class SpillContainerData(object):
         :param uncertain=False: flag indicating whether this holds uncertainty
                                 elements or not 
         :param data_arrays=None: A dict of all the data arrays you want to hold.
-                                 NOTE: no error checking! theyshould be correctly
+                                 NOTE: no error checking! they should be correctly
                                        aligned, etc.
+
+        The common use-case for this is for loading from cache for re-rendering, etc.
         """
-        print "in SpillContainerData.__init__"
-        print uncertain
         
         self.is_uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
         self.on = True       # sets whether the spill is active or not
@@ -232,8 +232,69 @@ class SpillContainer(SpillContainerData):
 
     __repr__ = __str__  # should write a better one, I suppose
 
+class SpillContainerPairData(object):
+    """
+    A really simple SpillContainerPair
+      - holds SpillContainerPairData objects,
+        but doen't manage spills, etc.
+    
+    Think of it as a read-only SpillContainerPair.
 
-class UncertainSpillContainerPair(object):
+    Designed primarily to hold data retrieved from cache
+
+    """
+    def __init__(self, sc, u_sc=None):
+        """
+        initialize object with the spill_containers passed in.
+        """
+        
+        self._spill_container = sc  # name mangling just to make it more difficult for user to find
+        
+        if u_sc is None:
+            self._uncertain = False
+        else:
+            self._uncertain = True
+            self._u_spill_container = u_sc
+
+    def __repr__(self):
+        """
+        unambiguous repr
+        """
+        info = "{0.__class__},\n  uncertain={0.uncertain}\n "
+        return info
+
+    @property
+    def uncertain(self):
+        return self._uncertain
+
+    def items(self):
+        """
+        returns a tuple of the enclosed spill containers
+
+        if uncertainty is off, jsut one is in the tuple
+        if uncertainly is on -- then it is a two-tuple:
+            (certain_container, uncertain_container)
+
+        To act on both:
+            for sc in spill_container_pair.items():
+                do_something_with(sc)
+        """
+        if self.uncertain:
+            return (self._spill_container, self._u_spill_container)
+        else:
+            return (self._spill_container,)
+
+    LE_data = property(lambda self: self._spill_container._data_arrays.keys())    
+    
+    def LE(self, prop_name, uncertain=False):
+        if uncertain:
+            return self._u_spill_container[prop_name]
+        else:
+            return self._spill_container[prop_name]
+
+
+
+class SpillContainerPair(SpillContainerPairData):
     """
     Container holds two SpillContainers, one contains the certain spills while the other contains
     uncertainty spills if model uncertainty is on.
@@ -248,10 +309,13 @@ class UncertainSpillContainerPair(object):
 
         Since spill_container.spills are 
         """
-        self.__spill_container = SpillContainer()  # name mangling just to make it more difficult for user to find
-        self._uncertain = uncertain
+        sc = SpillContainer()
         if uncertain:
-            self.__u_spill_container = SpillContainer(uncertain=True)
+            u_sc = SpillContainer(uncertain=True)
+        else:
+            u_sc = None
+
+        super(SpillContainerPair, self).__init__(sc, u_sc)
 
         # info about the array types
         # used to construct and expand data arrays.
@@ -262,19 +326,20 @@ class UncertainSpillContainerPair(object):
         self._array_info = {}
         self.__all_instances = {} # keys are the instance spill_num -- values are the subclass object
 
+
     def rewind(self):
         """
         rewind spills in spill_container
         """
-        self.__spill_container.rewind()
+        self._spill_container.rewind()
         if self.uncertain:
-            self.__u_spill_container.rewind()
+            self._u_spill_container.rewind()
 
     def __repr__(self):
         """
         unambiguous repr
         """
-        info = "{0.__class__},\n  uncertain={0.uncertain}\n  Spills: {1}".format(self, self.__spill_container.spills)
+        info = "{0.__class__},\n  uncertain={0.uncertain}\n  Spills: {1}".format(self, self._spill_container.spills)
         return info
 
     @property
@@ -286,10 +351,10 @@ class UncertainSpillContainerPair(object):
         if type(value) is not bool:
             raise TypeError("uncertain property must be a bool (True/False)")
         if self._uncertain == True and value == False:
-            del self.__u_spill_container  # delete if it exists
+            del self._u_spill_container  # delete if it exists
             self.rewind()  # Not sure if we want to do this?
         elif self._uncertain == False and value == True:
-            self.__u_spill_container = self.__spill_container.uncertain_copy()
+            self._u_spill_container = self._spill_container.uncertain_copy()
             self.rewind()
 
         self._uncertain = value
@@ -298,11 +363,11 @@ class UncertainSpillContainerPair(object):
         """
         add spill to spill_container and make copy in u_spill_container if uncertainty is on
         """
-        self.__spill_container.spills += spill
-        spill.spill_num = self.__spill_container.spills.index(spill.id, renumber=False)
+        self._spill_container.spills += spill
+        spill.spill_num = self._spill_container.spills.index(spill.id, renumber=False)
         if self.uncertain:
             # todo: make sure spill_num for copied spill are the same as original
-            self.__u_spill_container.spills += spill.uncertain_copy()
+            self._u_spill_container.spills += spill.uncertain_copy()
 
         self.__all_instances[spill.spill_num] = spill.__class__
 
@@ -318,16 +383,16 @@ class UncertainSpillContainerPair(object):
         as well
         """
         if self.uncertain:
-            idx = self.__spill_container.spills.index(ident)
-            u_ident = [s for s in self.__u_spill_container.spills][idx]
-            del self.__u_spill_container.spills[u_ident.id]
-        del self.__spill_container.spills[ident]
+            idx = self._spill_container.spills.index(ident)
+            u_ident = [s for s in self._u_spill_container.spills][idx]
+            del self._u_spill_container.spills[u_ident.id]
+        del self._spill_container.spills[ident]
 
     def __getitem__(self, ident):
         """
         only return the certain spill
         """
-        spill = self.__spill_container.spills[ident]
+        spill = self._spill_container.spills[ident]
         return spill
 
     #def __setitem__(self, ident, new_spill):
@@ -344,7 +409,7 @@ class UncertainSpillContainerPair(object):
         """
         iterates over the spills defined in spill_container
         """
-        for sp in self.__spill_container.spills:
+        for sp in self._spill_container.spills:
             yield self.__getitem__(sp.id)
 
     def __len__(self):
@@ -353,21 +418,9 @@ class UncertainSpillContainerPair(object):
         The uncertain and certain spill containers will contain the same number of spills
         return the length of spill_container.spills
         """
-        return len(self.__spill_container.spills)    
+        return len(self._spill_container.spills)    
 
-    def items(self):
-        if self.uncertain:
-            return (self.__spill_container, self.__u_spill_container)
-        else:
-            return (self.__spill_container,)
 
-    LE_data = property(lambda self: self.__spill_container._data_arrays.keys())    
-
-    def LE(self, prop_name, uncertain=False):
-        if uncertain:
-            return self.__u_spill_container[prop_name]
-        else:
-            return self.__spill_container[prop_name]
 
 
 class TestSpillContainer(SpillContainer):

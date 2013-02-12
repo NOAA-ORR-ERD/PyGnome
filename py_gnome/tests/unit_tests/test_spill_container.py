@@ -10,7 +10,7 @@ import pytest
 import numpy as np
 
 from gnome import basic_types
-from gnome.spill_container import SpillContainer, TestSpillContainer
+from gnome.spill_container import SpillContainer, TestSpillContainer, SpillContainerPair
 from gnome.spill import Spill, SurfaceReleaseSpill, SubsurfaceReleaseSpill
 
 def test_simple_init():
@@ -403,6 +403,19 @@ def test_ordered_collection_api():
                                      start_position,
                                      start_time)
     assert len(sc.spills) == 1
+
+## SpillContainerPairData tests.
+
+def test_init_SpillContainerPair():
+    """
+    all this does is test that it can be initilized
+    """
+    scp = SpillContainerPair()
+    u_scp = SpillContainerPair(True)
+
+    assert True
+
+
 
 
 if __name__ == "__main__":
