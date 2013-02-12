@@ -78,7 +78,7 @@ class SimpleMover(Mover):
         if self.active and self.on:
             delta[in_water_mask] = self.velocity * time_step
             # add some random stuff if uncertainty is on
-            if spill.is_uncertain:
+            if spill.uncertain:
                 num = sum(in_water_mask)
                 scale = self.uncertainty_scale * self.velocity * time_step
                 delta[in_water_mask,0] += random.uniform( -scale[0], scale[0], num )

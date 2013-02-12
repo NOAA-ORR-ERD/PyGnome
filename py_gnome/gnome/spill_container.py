@@ -33,7 +33,7 @@ class SpillContainer(object):
     def __init__(self, uncertain=False):
         self.all_array_types = {}
         self._data_arrays = {}
-        self.is_uncertain = uncertain  # uncertainty spill - same information as basic_types.spill_type
+        self.uncertain = uncertain  # uncertainty spill - same information as basic_types.spill_type
         self.on = True  # sets whether the spill is active or not
 
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
@@ -118,7 +118,7 @@ class SpillContainer(object):
         """
         Returns a copy of the spill_container suitable for uncertainty
 
-        It has all the same spills, with the same ids, and the is_uncertain
+        It has all the same spills, with the same ids, and the uncertain
         flag set to True
         """
         u_sc = SpillContainer(uncertain=True)

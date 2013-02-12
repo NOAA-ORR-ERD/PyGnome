@@ -346,7 +346,7 @@ def test_uncertain_copy():
 
     u_sc = sc.uncertain_copy()
 
-    assert u_sc.is_uncertain
+    assert u_sc.uncertain
     assert len(sc.spills) == len(u_sc.spills)
 
     # make sure they aren't references to the same spills

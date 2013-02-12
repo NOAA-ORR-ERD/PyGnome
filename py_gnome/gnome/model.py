@@ -73,10 +73,10 @@ class Model(GnomeObject):
 
     ### Assorted properties
     @property
-    def is_uncertain(self):
+    def uncertain(self):
         return self.spills.uncertain
-    @is_uncertain.setter
-    def is_uncertain(self, uncertain_value):
+    @uncertain.setter
+    def uncertain(self, uncertain_value):
         """
         only if uncertainty switch is toggled, then restart model
         """
