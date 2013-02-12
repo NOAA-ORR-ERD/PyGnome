@@ -1,0 +1,42 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Jacksonville
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 1
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.1;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME Jacksonville Map;PATH resnum 10003;
+--
+MESSAGE setfield;TO diffusion; coverage 10000;
+--
+MESSAGE createMover;TO Jacksonville Map;TYPE Cats; NAME Tides.cur;PATH resnum 10004;
+MESSAGE setfield;TO Tides.cur; scaleType constant;refP 81.385833 W 30.400333 N; scaleValue 1;timeFile resNum 10005; EddyDiffusion 100000;
+--
+MESSAGE createMover;TO Jacksonville Map;TYPE Cats; NAME Offshore.cur;PATH resnum 10006;
+MESSAGE setfield;TO Offshore.cur; scaleType constant;refP 81.3713921 W 30.337140 N; scaleValue -0.15; 
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT St. John's River;
+-------------------------------------------
+

@@ -1,0 +1,41 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Apra Harbor
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 1
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.25;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME Guam Map;PATH resnum 10003;
+--
+MESSAGE setfield;TO diffusion; coverage 50000;
+--
+MESSAGE createMover;TO Guam Map;TYPE Cats; NAME WAC Flood Tide.cur;PATH resnum 10004;
+MESSAGE setfield;TO WAC Flood Tide.cur; scaleType constant;refP 144.621667 E 13.45 N; scaleValue 1;timeFile resNum 10005; EddyDiffusion 100000; scaleFactor 1.1864;
+MESSAGE createMover;TO Guam Map;TYPE Cats; NAME Outside WAC.cur;PATH resnum 10006;
+MESSAGE setfield;TO Outside WAC.cur; scaleType constant;refP 144.601 E 13.42 N; scaleValue 0.15; 
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Apra Harbor;
+-------------------------------------------
+

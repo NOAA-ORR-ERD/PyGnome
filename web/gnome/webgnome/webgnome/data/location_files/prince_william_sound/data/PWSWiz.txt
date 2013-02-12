@@ -1,0 +1,57 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Prince William Sound
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 1
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.25;
+MESSAGE setfield;TO Variable Wind;windage  0.02 0.03;UncertaintySpeedScale 1.5;UncertaintyAngleScale .3;UncertaintyDuration 2;UncertaintyStartTime 1;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE setfield;TO diffusion; coverage 500000;uncertaintyFactor 2
+--
+MESSAGE createMap;TO model;TYPE vector; NAME Prince William Sound Map;PATH resnum 10003
+--
+MESSAGE createMover;TO Prince William Sound Map;TYPE Cats; NAME Mean flow.CUR;PATH resnum 10004
+MESSAGE setfield;TO Mean flow.CUR; scaleType constant;refP 147.5335 W 60.3505 N; scaleValue .25; 
+--
+MESSAGE createMover;TO Prince William Sound Map;TYPE Cats; NAME Hinchinbrook Tide.CUR;PATH resnum 10005
+MESSAGE setfield;TO Hinchinbrook Tide.CUR; scaleType constant;refP 146.74833 W 60.18667 N; scaleValue 1; timeFile resNum 10008;
+MESSAGE setfield;TO Hinchinbrook Tide.CUR; EddyV0 0.1; EddyDiffusion 1000000;
+--
+MESSAGE createMover;TO Prince William Sound Map;TYPE Cats; NAME Valdez Tide.CUR;PATH resnum 10006
+MESSAGE setfield;TO Valdez Tide.CUR; scaleType constant;refP 146.66861 W 61.066944 N; scaleValue 1; timeFile resNum 10009;
+MESSAGE setfield;TO Valdez Tide.CUR; EddyV0 0.1; EddyDiffusion 1000000;
+--
+MESSAGE createMover;TO Prince William Sound Map;TYPE Cats; NAME Montegue Tide.CUR; PATH resnum 10010
+MESSAGE setfield;TO Montegue Tide.CUR; scaleType constant;refP 147.861167 W  59.947833 N; scaleValue -1; timeFile resNum 10011;
+MESSAGE setfield;TO Montegue Tide.CUR; EddyV0 0.1; EddyDiffusion 1000000;
+--
+MESSAGE createMover;TO Prince William Sound Map;TYPE Cats; NAME Port Wells.CUR;PATH resnum 10014
+MESSAGE setfield;TO Port Wells.CUR; scaleType constant;refP 148.14000 W 60.772833 N; scaleValue 1; timeFile resNum 10015;
+MESSAGE setfield;TO Port Wells.CUR; EddyV0 0.1; EddyDiffusion 1000000;
+-------------------------------------------
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Prince William Sound;
+-------------------------------------------
+
+
