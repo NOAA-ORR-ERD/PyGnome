@@ -3,8 +3,12 @@
 """
 simple_mover.py
 
-This is a an example mover class -- not really useful, but about as simple as
+This is an example mover class -- not really useful, but about as simple as
 can be, for testing and demonstration purposes
+
+It's a steady, uniform current -- one velocity and direction for everywhere
+at all time.
+
 
 """
 
@@ -62,20 +66,20 @@ class SimpleMover(Mover):
         :returns delta: Nx3 numpy array of movement -- in (long, lat, meters) units
         
         """
-        # Get the data:
-        try:
-            positions      = spill['positions']
-            status_codes   = spill['status_codes']
-        except KeyError, err:
-            raise ValueError("The spill does not have the required data arrays\n"+err.message)
-        
-        # which ones should we move?
-        in_water_mask =  (status_codes == basic_types.oil_status.in_water)
-                
-        # compute the move
-        delta = np.zeros_like(positions)
-        
         if self.active and self.on:
+            # Get the data:
+            try:
+                positions      = spill['positions']
+                status_codes   = spill['status_codes']
+            except KeyError, err:
+                raise ValueError("The spill does not have the required data arrays\n"+err.message)
+        
+            # which ones should we move?
+            in_water_mask =  (status_codes == basic_types.oil_status.in_water)
+                
+            # compute the move
+            delta = np.zeros_like(positions)
+        
             delta[in_water_mask] = self.velocity * time_step
             # add some random stuff if uncertainty is on
             if spill.uncertain:
@@ -85,6 +89,8 @@ class SimpleMover(Mover):
                 delta[in_water_mask,1] += random.uniform( -scale[1], scale[1], num )
                 delta[in_water_mask,2] += random.uniform( -scale[2], scale[2], num )
         # scale for projection
+        print "delta:"
+        print delta
         delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
         
         return delta
