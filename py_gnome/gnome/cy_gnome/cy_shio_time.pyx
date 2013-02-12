@@ -71,8 +71,6 @@ cdef class CyShioTime(object):
             fileName = self.shio.fileName
             return fileName
     
-    id = property( lambda self: id(self)) 
-    
     def __repr__(self):
         """
         Return an unambiguous representation of this object so it can be recreated 
