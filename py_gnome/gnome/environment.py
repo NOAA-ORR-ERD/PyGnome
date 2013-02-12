@@ -4,13 +4,14 @@ the Wind object defines the Wind conditions for the spill
 """
 
 import datetime
+import string
 
 import numpy as np
+from hazpy import unit_conversion
 
 from gnome import basic_types, GnomeObject
 from gnome.utilities import transforms, time_utils, convert
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
-from hazpy import unit_conversion
+from gnome.cy_gnome import cy_ossm_time, cy_shio_time
 
 class Wind(GnomeObject):
     """
@@ -49,11 +50,11 @@ class Wind(GnomeObject):
             timeseries['value'] = self._convert_units(timeseries['value'], format, units, 'meter per second')
             time_value_pair = convert.to_time_value_pair(timeseries, format)   # ts_format is checked during conversion
                 
-            self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
+            self.ossm = cy_ossm_time.CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             self._user_units = units
         else:
             ts_format = convert.tsformat(format)
-            self.ossm = CyOSSMTime(path=file,file_contains=ts_format)
+            self.ossm = cy_ossm_time.CyOSSMTime(path=file,file_contains=ts_format)
             self._user_units = self.ossm.user_units
         
     def _convert_units(self, data, ts_format, from_unit, to_unit):
@@ -191,14 +192,13 @@ class Tides(GnomeObject):
         """
         Tide information can be obtained from a file or set as a timeseries
         
-        :param timeseries: (Required) numpy array containing time_value_pair
+        :param timeseries: (Required) numpy array containing datetime_value_2d, ts_format is always uv
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         :param file: path to a long wind file from which to read wind data
         :param units: units associated with the timeseries data. If 'file' is given, then units are read in from the file. 
                       unit_conversion - NOT IMPLEMENTED YET
         :type units:  string, for example: 'knot', 'meter per second', 'mile per hour' etc
         """
-        self.ossm_format = basic_types.ts_format.uv
         if( timeseries is None and file is None):
             raise ValueError("Either provide timeseries or a valid file containing Tide data")
         
@@ -206,13 +206,38 @@ class Tides(GnomeObject):
             if units is None:
                 raise ValueError("Provide valid units as string or unicode for timeseries")
             
-            self._check_timeseries(timeseries, units)
+            #self._check_timeseries(timeseries, units)    # will probably need to move this function out
             
-            timeseries['value'] = self._convert_units(timeseries['value'], ts_format, units, 'meter per second')
-            time_value_pair = convert.to_time_value_pair(timeseries, ts_format)   # ts_format is checked during conversion
+            time_value_pair = convert.to_time_value_pair(timeseries, basic_types.data_format.wind_uv)   # data_format is checked during conversion
                 
-            self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
+            self.cy_obj = cy_ossm_time.CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             self._user_units = units
         else:
-            self.ossm = CyOSSMTime(path=file,file_contains=ts_format)
-            self._user_units = self.ossm.user_units
+            self.cy_obj = self._obj_to_create(file)
+            
+            
+    def _obj_to_create(self, file_):
+        """
+        open file, read a few lines to determine if it is an ossm file or a shio file
+        """
+        fh = open(file_, 'r')
+        lines = [fh.readline() for i in range(4)]   # depends on line endings - this does not work for '\r'
+        
+        if len(lines[1]) == 0:
+            # look for \r for lines instead of \n
+            lines = string.split(lines[0],'\r',4) 
+            
+        if len(lines[1]) == 0:
+            # if this is still 0, then throw an error!
+            raise ValueError("This does not appear to be a valid file format that can be read by OSSM or Shio to get tide information")
+        
+        shio_file = ['[StationInfo]', 'Type=', 'Name=', 'Latitude=']
+        
+        if all( [shio_file[i] == lines[i][:len(shio_file[i])] for i in range(4)]):
+            return cy_shio_time.CyShioTime(file_)
+        
+        elif len(string.split(lines[3],',')) == 7:
+            #if float( string.split(lines[3],',')[-1]) != 0.0:    # maybe log / display a warning that v=0 for tide file and will be ignored
+            return cy_ossm_time.CyOSSMTime(file_, data_format=basic_types.data_format.uv)
+        else:
+            raise ValueError("This does not appear to be a valid file format that can be read by OSSM or Shio to get tide information") 
