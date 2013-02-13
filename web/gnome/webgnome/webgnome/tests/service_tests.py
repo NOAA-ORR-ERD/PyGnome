@@ -1,4 +1,6 @@
 import datetime
+import os
+import shutil
 
 from time import gmtime
 from gnome.utilities.time_utils import round_time
@@ -361,10 +363,23 @@ class MapServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.create_model()
         self.url = self.model_url('map')
 
+    def copy_map(self, location_file, map_name, destination_name=None):
+        filename = '%s.bna' % map_name
+        destination_name = destination_name or filename
+        original_file = os.path.join(self.project_root, 'data',
+                                     'location_files', location_file, 'data',
+                                     map_name)
+        test_file = os.path.join(self.project_root, 'static', 'uploads',
+                                 destination_name)
+        shutil.copy(original_file, test_file)
+
+        return filename
+
     def test_create_map(self):
+        filename = self.copy_map('long_island', 'LongIslandSoundMap.BNA')
         data = {
-            'filename': '/data/lakeerie.bna',
-            'name': 'Lake Eerie',
+            'filename': filename,
+            'name': 'Long Island',
             'refloat_halflife': 6 * 3600
         }
         resp = self.testapp.post_json(self.url, data)
@@ -372,20 +387,46 @@ class MapServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         self.assertEqual(data['name'], resp_data['name'])
         self.assertEqual(data['refloat_halflife'], resp_data['refloat_halflife'])
+        self.assertEqual(resp_data['map_bounds'],
+                         [[-73.083328, 40.922832], [-73.083328, 41.330833],
+                          [-72.336334, 41.330833], [-72.336334, 40.922832]])
 
-    def test_get_map(self):
+    def test_update_map(self):
+        filename = self.copy_map('long_island', 'LongIslandSoundMap.BNA')
         data = {
-            'filename': '/data/lakeerie.bna',
-            'name': 'Lake Eerie',
+            'filename': filename,
+            'name': 'Long Island',
             'refloat_halflife': 6 * 3600
         }
-        resp = self.testapp.post_json(self.url, data)
-        self.assertTrue(resp.json_body['id'])
+        self.testapp.post_json(self.url, data)
+
+        data['name'] = 'Long Island 2'
+        data['refloat_halflife'] = 10
+
+        resp = self.testapp.put_json(self.url, data)
+        resp_data = resp.json_body
+
+        self.assertEqual(data['name'], resp_data['name'])
+        self.assertEqual(data['refloat_halflife'],
+                         resp_data['refloat_halflife'])
+
+    def test_get_map(self):
+        filename = self.copy_map('long_island', 'LongIslandSoundMap.BNA')
+        data = {
+            'filename': filename,
+            'name': 'Long Island',
+            'refloat_halflife': 6 * 3600
+        }
+        self.testapp.post_json(self.url, data)
 
         resp = self.testapp.get(self.url)
         resp_data = resp.json_body
+
         self.assertEqual(data['name'], resp_data['name'])
         self.assertEqual(data['refloat_halflife'], resp_data['refloat_halflife'])
+        self.assertEqual(resp_data['map_bounds'],
+                         [[-73.083328, 40.922832], [-73.083328, 41.330833],
+                          [-72.336334, 41.330833], [-72.336334, 40.922832]])
 
 
 class CustomMapServiceTests(FunctionalTestBase, ModelHelperMixin):
@@ -458,7 +499,7 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
                     u'uncertain_time_delay': 0.0,
                     u'wind': {
                         u'units': u'mps', u'description': None,
-                        u'source_type': None, u'updated_at': None,
+                        u'source_type': u'manual', u'updated_at': None,
                         u'longitude': None, u'source': None,
                         u'timeseries': [[u'2013-02-05T17:00:00', 30.0, 50.0],
                                         [u'2013-02-06T11:00:00', 30.0, 50.0],

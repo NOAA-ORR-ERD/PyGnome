@@ -49,6 +49,8 @@ setup(name='webgnome',
       [console_scripts]
       initialize_webgnome_db = gnome.db.oil_library.initializedb:main
       create_location_file = webgnome.scripts.create_location_file:main
+      clean_model_images = webgnome.scripts.clean_model_images:main
+      clean_file_uploads = webgnome.scripts.clean_file_uploads:main
       """,
       )
 

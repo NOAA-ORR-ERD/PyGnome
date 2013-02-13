@@ -29,6 +29,8 @@ def main(global_config, **settings):
 
     settings['package_root'] = os.path.abspath(os.path.dirname(__file__))
     settings['project_root'] = os.path.dirname(settings['package_root'])
+    settings['upload_dir'] = os.path.join(settings['package_root'], 'static',
+                                          'uploads')
     settings['data_dir'] = os.path.join(settings['package_root'], 'data')
     settings['location_file_dir'] = os.path.join(settings['data_dir'],
                                                   'location_files')

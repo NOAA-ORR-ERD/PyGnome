@@ -68,7 +68,6 @@ define([
             this.mapView = new views.MapView({
                 mapEl: '#map',
                 placeholderClass: 'placeholder',
-                backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
                 modelRun: this.modelRun,
@@ -119,8 +118,9 @@ define([
 
         setupEventHandlers: function() {
             var _this = this;
-
-            this.customMap.on('sync', function() { _this.map.fetch(); });
+            this.customMap.on('sync', function() {
+                _this.map.fetch();
+            });
 
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
             this.modelRun.on(models.ModelRun.SERVER_RESET, this.rewind);
@@ -258,8 +258,7 @@ define([
             });
 
             this.addMapFormView = new forms.AddMapFormView({
-                id: 'add-map',
-                model: this.map
+                id: 'add-map'
             });
 
             this.editMapFormView = new forms.MapFormView({
@@ -272,6 +271,12 @@ define([
                 id: 'add-custom-map',
                 model: this.customMap,
                 defaults: this.options.defaultCustomMap
+            });
+
+            this.addMapFromUploadFormView = new forms.AddMapFromUploadFormView({
+                id: 'add-map-from-upload',
+                model: this.map,
+                uploadUrl: this.apiRoot + '/file_upload'
             });
 
             this.modelSettingsFormView = new forms.ModelSettingsFormView({
@@ -324,6 +329,7 @@ define([
             this.formViews.add(this.addMoverFormView);
             this.formViews.add(this.addSpillFormView);
             this.formViews.add(this.addMapFormView);
+            this.formViews.add(this.addMapFromUploadFormView);
             this.formViews.add(this.addWindMoverFormView);
             this.formViews.add(this.addRandomMoverFormView);
             this.formViews.add(this.addSurfaceReleaseSpillFormView);

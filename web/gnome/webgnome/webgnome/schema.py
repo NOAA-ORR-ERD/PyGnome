@@ -27,7 +27,7 @@ from webgnome.model_manager import WebWind
 
 def get_direction_degree(direction):
     """
-    Convert user input for direction into degree.
+    Convert user input for direction into degrees.
     """
     if direction.isalpha():
         return util.DirectionConverter.get_degree(direction)
@@ -280,7 +280,7 @@ default_map_bounds = ((-360, 90),
 
 class MapSchema(MappingSchema):
     name = SchemaNode(String(), default="Map")
-    filename = SchemaNode(String())
+    filename = SchemaNode(String(), default=None, missing=None)
     refloat_halflife = SchemaNode(Float(), default=1)
     map_bounds = MapBoundsSchema(default=default_map_bounds,
                                  missing=default_map_bounds)

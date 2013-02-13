@@ -1,6 +1,8 @@
 """
 util.py: Utility function for the webgnome package.
 """
+import argparse
+import shutil
 import colander
 import datetime
 import inspect
@@ -17,6 +19,7 @@ import colander
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
+import sys
 
 
 def make_message(type_in, text):
@@ -254,10 +257,14 @@ def valid_location_file(request):
     request.validated['location_file'] = location_file
 
 
-def map_filename_exists(request):
+def valid_uploaded_file(request):
     """
     A Cornice validator that returns an error if the filename specified in a
     Map resource POST does not exist in the web application's filesystem.
+
+    `filename` should be the name of a file (not its path) that exists in
+    the configured `upload_dir`. Once validated, the absolute path of the file
+    will be added to the `request.validated` dictionary.
     """
     valid_model_id(request)
 
@@ -265,11 +272,12 @@ def map_filename_exists(request):
         return
 
     filename_parts = request.validated['filename'].split('/')
-    abs_filename = os.path.join(request.registry.settings.package_root,
+    abs_filename = os.path.join(request.registry.settings.upload_dir,
                                 *filename_parts)
 
     if not os.path.exists(abs_filename):
-        request.errors.add('body', 'map', 'Map filename does not exist.')
+        request.errors.add('body', 'filename',
+                           'A file with that filename does not exist.')
         request.errors.status = 400
 
     request.validated['filename'] = abs_filename
@@ -475,3 +483,29 @@ def mkdir_p(path):
 
 velocity_unit_values = list(chain.from_iterable(
     [item[1] for item in ConvertDataUnits['Velocity'].values()]))
+
+
+class CleanDirectoryCommand(object):
+    def __init__(self, directory, description):
+        self.directory = directory
+        self.description = description
+
+    def __call__(self):
+        parser = argparse.ArgumentParser(description=self.description)
+        parser.add_argument('--simulate', action='store_true', dest='simulate')
+
+        args = parser.parse_args()
+
+        if not os.path.exists(self.directory):
+            print >> sys.stderr, \
+                'Directory does not exist: %s' % self.directory
+
+        files = os.listdir(self.directory)
+        files.sort()
+
+        if not args.simulate:
+            shutil.rmtree(self.directory)
+            os.mkdir(self.directory)
+
+        print 'Files and directories deleted:\n%s' % '\n'.join(files)
+        print 'Total (top-level): %s' % len(files)
