@@ -240,7 +240,7 @@ def test_simple_run_with_image_output_uncertainty():
     model.start_time = spill.release_time
     #image_info = model.next_image()
 
-    model.is_uncertain = True
+    model.uncertain = True
 
     num_steps_output = 0
     while True:

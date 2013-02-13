@@ -9,7 +9,7 @@ from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.environment import Wind
 from gnome.movers import Mover
-from gnome.spill_container import UncertainSpillContainerPair
+from gnome.spill_container import SpillContainerPair
 
 class Model(GnomeObject):
     """ 
@@ -34,7 +34,7 @@ class Model(GnomeObject):
         self.movers = OrderedCollection(dtype=Mover)
         #self._spill_container = gnome.spill_container.SpillContainer()
         #self._uncertain_spill_container = None
-        self.spills = UncertainSpillContainerPair(uncertain)   # contains both certain/uncertain spills 
+        self.spills = SpillContainerPair(uncertain)   # contains both certain/uncertain spills 
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
@@ -73,10 +73,10 @@ class Model(GnomeObject):
 
     ### Assorted properties
     @property
-    def is_uncertain(self):
+    def uncertain(self):
         return self.spills.uncertain
-    @is_uncertain.setter
-    def is_uncertain(self, uncertain_value):
+    @uncertain.setter
+    def uncertain(self, uncertain_value):
         """
         only if uncertainty switch is toggled, then restart model
         """

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Tests the SpillContainer class
 """
@@ -8,7 +10,7 @@ import pytest
 import numpy as np
 
 from gnome import basic_types
-from gnome.spill_container import SpillContainer, TestSpillContainer
+from gnome.spill_container import SpillContainer, TestSpillContainer, SpillContainerPair
 from gnome.spill import Spill, SurfaceReleaseSpill, SubsurfaceReleaseSpill
 
 def test_simple_init():
@@ -346,7 +348,7 @@ def test_uncertain_copy():
 
     u_sc = sc.uncertain_copy()
 
-    assert u_sc.is_uncertain
+    assert u_sc.uncertain
     assert len(sc.spills) == len(u_sc.spills)
 
     # make sure they aren't references to the same spills
@@ -401,6 +403,19 @@ def test_ordered_collection_api():
                                      start_position,
                                      start_time)
     assert len(sc.spills) == 1
+
+## SpillContainerPairData tests.
+
+def test_init_SpillContainerPair():
+    """
+    all this does is test that it can be initilized
+    """
+    scp = SpillContainerPair()
+    u_scp = SpillContainerPair(True)
+
+    assert True
+
+
 
 
 if __name__ == "__main__":
