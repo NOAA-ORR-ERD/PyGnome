@@ -184,7 +184,7 @@ def configure_long_island(request, model):
     model.map = WebMapFromBNA(
         map_file, refloat_halflife=6 * 3600, name="Long Island Sound")
 
-    model.is_uncertain = False
+    model.uncertain = False
 
     canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
     polygons = haz_files.ReadBNA(map_file, "PolygonSet")

@@ -43,7 +43,7 @@
         "active_stop": "2038-01-18T00:00:00",
         "diffusion_coef": "500000.0"
     }
-], "is_uncertain": "false", "surface_release_spills": [
+], "uncertain": "false", "surface_release_spills": [
     {
         "num_elements": "1000",
         "windage_range": ["0.01", "0.04"],

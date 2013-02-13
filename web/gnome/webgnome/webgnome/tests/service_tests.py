@@ -27,7 +27,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
         data = resp.json_body
         iso_rounded_now = round_time(datetime.datetime.now(), 3600).isoformat()
 
-        self.assertEqual(data['is_uncertain'], False)
+        self.assertEqual(data['uncertain'], False)
         self.assertEqual(data['start_time'], iso_rounded_now)
         self.assertEqual(data['time_step'], 0.25)
         self.assertEqual(data['duration_days'], 1)
@@ -77,7 +77,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         data = {
             'start_time': start.isoformat(),
-            'is_uncertain': True,
+            'uncertain': True,
             'time_step': 200,
             'duration_days': 20,
             'duration_hours': 1
@@ -88,7 +88,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         resp = self.testapp.get(self.base_url)
 
-        self.assertEqual(resp.json_body['is_uncertain'], True)
+        self.assertEqual(resp.json_body['uncertain'], True)
         self.assertEqual(resp.json_body['start_time'], start.isoformat())
         self.assertEqual(resp.json_body['time_step'], 200.0)
         self.assertEqual(resp.json_body['duration_days'], 20)
@@ -313,7 +313,7 @@ class SurfaceReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
             'start_position': [10, 100, 0],
             'windage_range': [1.2, 4.2],
             'windage_persist': 900,
-            'is_uncertain': False
+            'uncertain': False
         }
 
         if kwargs:
@@ -529,7 +529,7 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
                     u'active_stop': u'2038-01-18T00:00:00',
                 }
             ],
-            u'is_uncertain': False,
+            u'uncertain': False,
             u'surface_release_spills': [
                 {
                     u'windage_range': [0.01, 0.04],

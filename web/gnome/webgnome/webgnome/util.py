@@ -311,8 +311,9 @@ def valid_spill_id(request):
         return
 
     model = request.validated['model']
-
-    if not request.matchdict['id'] in model.spills:
+    try:
+        spill = model.spills[request.matchdict['id']]
+    except KeyError:
         request.errors.add('body', 'spill', 'Spill not found.')
         request.errors.status = 404
 

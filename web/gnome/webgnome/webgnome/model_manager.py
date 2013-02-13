@@ -438,7 +438,7 @@ class WebModel(Model, BaseWebObject):
             _map = None
 
         data = {
-            'is_uncertain': self.is_uncertain,
+            'uncertain': self.uncertain,
             'time_step': (self.time_step / 60.0) / 60.0,
             'start_time': self.start_time,
             'duration_days': 0,
@@ -481,7 +481,7 @@ class WebModel(Model, BaseWebObject):
                 spill._id = uuid.UUID(_id)
             self.spills.add(spill)
 
-        self.is_uncertain = data['is_uncertain']
+        self.uncertain = data['uncertain']
         self.start_time = data['start_time']
         self.time_step = data['time_step'] * 60 * 60
         self.duration = datetime.timedelta(

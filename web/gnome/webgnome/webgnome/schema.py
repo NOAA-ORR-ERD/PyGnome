@@ -313,7 +313,7 @@ class ModelSettingsSchema(MappingSchema):
                             validator=convertable_to_seconds)
     duration_days = SchemaNode(Int(), default=1, validator=Range(min=0))
     duration_hours = SchemaNode(Int(),default=0, validator=Range(min=0))
-    is_uncertain = SchemaNode(Bool(), default=False)
+    uncertain = SchemaNode(Bool(), default=False)
     time_step = SchemaNode(Float(), default=0.1)
 
 
