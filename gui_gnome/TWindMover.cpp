@@ -838,7 +838,8 @@ OSErr TWindMover::ExportVariableWind(char* path)
 	{ TechError("WriteToPath()", "FSOpenBuf()", err); return err; }
 	
 	
-	sprintf(hdrStr,"OSSM Long Wind from GNOME\n");	// station name
+	//sprintf(hdrStr,"OSSM Long Wind from GNOME\n");	// station name
+	sprintf(hdrStr,"OSSM Wind from GNOME\n");	// station name
 	strcpy(buffer,hdrStr);
 	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	sprintf(hdrStr,"Station Position unknown\n");	// station position - may want to use -1,-1,-1,-1 or something in the right format
@@ -848,12 +849,12 @@ OSErr TWindMover::ExportVariableWind(char* path)
 	sprintf(hdrStr,"%s\n",hdrStr); // units
 	strcpy(buffer,hdrStr);
 	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-	sprintf(hdrStr,"LTIME\n");	// local time
-	strcpy(buffer,hdrStr);
-	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-	sprintf(hdrStr,"0,0,0,0,0,0,0,0\n");	// grid
-	strcpy(buffer,hdrStr);
-	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	//sprintf(hdrStr,"LTIME\n");	// local time
+	//strcpy(buffer,hdrStr);
+	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	//sprintf(hdrStr,"0,0,0,0,0,0,0,0\n");	// grid
+	//strcpy(buffer,hdrStr);
+	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	// Write out the times and values
 	numTimeValuePairs = timeDep->GetNumValues();
 	for(i = 0; i< numTimeValuePairs;i++)
