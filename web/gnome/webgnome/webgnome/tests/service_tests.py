@@ -500,7 +500,7 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
                     u'wind': {
                         u'units': u'mps', u'description': None,
                         u'source_type': u'manual', u'updated_at': None,
-                        u'longitude': None, u'source': None,
+                        u'longitude': None, u'source_id': None,
                         u'timeseries': [[u'2013-02-05T17:00:00', 30.0, 50.0],
                                         [u'2013-02-06T11:00:00', 30.0, 50.0],
                                         [u'2013-02-06T23:00:00',

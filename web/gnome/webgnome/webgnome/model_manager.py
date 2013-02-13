@@ -131,7 +131,7 @@ class WebWind(Wind, BaseWebObject):
         'latitude',
         'longitude',
         'description',
-        'source',
+        'source_id',
         'source_type',
         'updated_at'
     ]
@@ -140,7 +140,7 @@ class WebWind(Wind, BaseWebObject):
         self.name = kwargs.pop('name', 'Wind')
         self.description = kwargs.pop('description', None)
         self.source_type = kwargs.pop('source_type', None)
-        self.source = kwargs.pop('source', None)
+        self.source_id = kwargs.pop('source_id', None)
         self.longitude = kwargs.pop('longitude', None)
         self.latitude = kwargs.pop('latitude', None)
         self.updated_at = kwargs.pop('updated_at', None)
