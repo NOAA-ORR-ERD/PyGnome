@@ -218,7 +218,13 @@ def GetNextBNAPolygon(f, dtype=np.float):
         return None
     while header and not header.strip(): # skip blank lines
         header = f.readline()
-    name, rest = header.strip().split('","')
+    try:
+        header = header.replace('", "', '","') # some bnas have an extra space
+        name, rest = header.strip().split('","')
+    except ValueError:
+        print header.strip()
+        print header.strip().split('","')
+        raise ValueError("something wrong with header line: %s "%header)
     name = name[1:]
     sname, num_points = rest.split('",')
     num_points = int(num_points)
