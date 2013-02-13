@@ -842,7 +842,7 @@ OSErr TWindMover::ExportVariableWind(char* path)
 	sprintf(hdrStr,"OSSM Wind from GNOME\n");	// station name
 	strcpy(buffer,hdrStr);
 	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-	sprintf(hdrStr,"Station Position unknown\n");	// station position - may want to use -1,-1,-1,-1 or something in the right format
+	sprintf(hdrStr,"Station Location unknown\n");	// station position - may want to use -1,-1,-1,-1 or something in the right format
 	strcpy(buffer,hdrStr);
 	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	SpeedUnitsToStr(selectedUnits, hdrStr);

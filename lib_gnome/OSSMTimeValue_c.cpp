@@ -401,8 +401,11 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	// maybe a OSSMTideFileor HYDROLOGY file
 	if(numLines >= 3 && !isLongWindFile)
 	{
-		if(IsOSSMTideFile(path,&selectedUnits))
+		if(IsOSSMTimeFile(path,&selectedUnits))
+		{
 			numHeaderLines = 3;
+			ReadOSSMTimeHeader(path);
+		}
 		else if(isHydrologyFile = IsHydrologyFile(path))	// ask for scale factor, but not units
 		{
 			SetFileType(HYDROLOGYFILE);
@@ -641,6 +644,72 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader (char *path)
 	else if (!strcmpnocase(strLine,"CFS")) fUserUnits = kCFS;
 	else if (!strcmpnocase(strLine,"KCFS")) fUserUnits = kKCFS;
 	else err = -1;
+	
+done:
+	return err;
+}
+
+OSErr OSSMTimeValue_c::ReadOSSMTimeHeader (char *path)
+{
+	OSErr	err = noErr;
+	long	line = 0;
+	char	strLine [512];
+	char	firstPartOfFile [512];
+	long lenToRead,fileLength,numScanned;
+	float latdeg, latmin, longdeg, longmin/*, z = 0*/;
+	WorldPoint wp = {0,0};
+	short selectedUnits;
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return err;
+	
+	lenToRead = _min(512,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	if (err) return err;
+	
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString		
+	NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512);    // station name
+	RemoveLeadingAndTrailingWhiteSpace(strLine);
+	//if (!strcmpnocase(strLine,"Station Name"))
+		// what to use for default ?
+	//else
+		strcpy(fStationName, strLine);
+	NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512);   // station position - lat deg, lat min, long deg, long min
+	RemoveLeadingAndTrailingWhiteSpace(strLine);
+	if (!strcmpnocase(strLine,"Station Location"))
+		fStationPosition = wp;
+		// what to use for default ?
+	else
+	{
+		StringSubstitute(strLine, ',', ' ');
+		
+		numScanned=sscanf(strLine, "%f %f %f %f", &latdeg, &latmin, &longdeg, &longmin);
+		
+		if (numScanned==4)
+		{	// support old OSSM style
+			wp.pLat = (latdeg + latmin/60.) * 1000000;
+			wp.pLong = -(longdeg + longmin/60.) * 1000000;	// need to have header include direction...
+			//bOSSMStyle = true;
+		}
+		else if (numScanned==2)
+		{
+			wp.pLat = latdeg * 1000000;
+			wp.pLong = latmin * 1000000;
+			//bOSSMStyle = false;
+		}
+		else
+		{ wp.pLat = 0; wp.pLong = 0; /*err = -1; TechError("TOSSMTimeValue::ReadOSSMTimeHeader()", "sscanf() == 2", 0); goto done;*/ }
+		
+		fStationPosition = wp;
+	}
+	NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512);   // units
+	RemoveLeadingAndTrailingWhiteSpace(strLine);
+	selectedUnits = StrToSpeedUnits(strLine);// note we are not supporting cm/sec in gnome
+	if(selectedUnits == kUndefined)
+		err = -1;
+	else 
+		fUserUnits = selectedUnits;
 	
 done:
 	return err;

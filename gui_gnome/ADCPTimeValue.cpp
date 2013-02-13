@@ -13,7 +13,7 @@
 #include "EditWindsDialog.h"
 
 //Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP);
-//Boolean IsOSSMTideFile(char* path,short *selectedUnitsP);
+//Boolean IsOSSMTimeFile(char* path,short *selectedUnitsP);
 //Boolean IsHydrologyFile(char* path);
 
 
@@ -659,7 +659,7 @@ done:
 		numHeaderLines = 5;
 	}
 	
-	else if(IsOSSMTideFile(path,&selectedUnits))
+	else if(IsOSSMTimeFile(path,&selectedUnits))
 		numHeaderLines = 3;
 	
 	else if(isHydrologyFile = IsHydrologyFile(path))	// ask for scale factor, but not units

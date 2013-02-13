@@ -1570,7 +1570,7 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 				if(timeFile->GetClassID () == TYPE_SHIOTIMEVALUES)
 				{	// it is a SHIO mover
 					TShioTimeValue * shioTimeValue = (TShioTimeValue*)timeFile; // typecast
-					WorldPoint wp = shioTimeValue -> GetRefWorldPoint();
+					WorldPoint wp = shioTimeValue -> GetStationLocation();
 					VelocityRec vel;
 					short btnHit;
 					char msg[256], latS[20], longS[20];
