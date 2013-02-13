@@ -39,6 +39,7 @@ public:
 	double fSigmaTheta; 		// time dependent std for angle
 	Boolean bIsFirstStep;
 	Seconds fModelStartTime;
+	double fUncertaintyDiffusion;
 	
 	Boolean fIsConstantWind;
 	VelocityRec fConstantValue;
