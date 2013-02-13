@@ -125,7 +125,7 @@ cdef class CyShioTime(object):
         cdef cnp.ndarray[WorldPoint, ndim=1] wp
         wp = np.zeros((1,), dtype=basic_types.w_point_2d)
         
-        wp[0] = self.shio.GetRefWorldPoint()
+        wp[0] = self.shio.GetStationLocation()
         wp['lat'][:] = wp['lat'][:]/1.e6    # correct C++ scaling here
         wp['long'][:] = wp['long'][:]/1.e6    # correct C++ scaling here
         
