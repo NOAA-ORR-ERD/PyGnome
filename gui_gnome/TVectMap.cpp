@@ -289,7 +289,8 @@ void LandBitMapWidthHeight(WorldRect wRect, long *width, long* height)
 	double fraction,latDist,lngDist;
 	long w,h;
 	
-	if (gHighRes) desiredNumBits = 40000000L;
+	//if (gHighRes) desiredNumBits = 40000000L;
+	if (gHighRes) desiredNumBits = 100000000L;	// try something bigger 2/14/13
 	center.pLat = (wRect.loLat + wRect.hiLat)/2; 
 	center.pLong = (wRect.loLong + wRect.hiLong)/2; 
 	
@@ -2551,9 +2552,11 @@ OSErr TVectorMap::ExportAsBNAFileForGnomeAnalyst(char* path)
 	char latStr[32],lngStr[32];
 	char *p;
 	
+	//if(this -> thisMapLayer)
 	if(this -> thisMapLayer)
 	{
 		thisObjectList = this -> thisMapLayer -> GetLayerObjectList ();
+		//thisObjectList = this -> mapBoundsLayer -> GetLayerObjectList ();
 		objectCount = thisObjectList -> GetItemCount ();
 	}
 	
@@ -2648,6 +2651,152 @@ OSErr TVectorMap::ExportAsBNAFileForGnomeAnalyst(char* path)
 		}
 	}
 
+done:
+	// 
+	FSCloseBuf(&bfpb);
+	if(err) {	
+		// the user has already been told there was a problem
+		(void)hdelete(0, 0, path); // don't leave them with a partial file
+	}
+	return err;
+}
+
+OSErr TVectorMap::ExportAsBNAFile(char* path)
+{
+	// include the spillable area layer and mapbounds layer
+	char buffer[512];
+	long numChar;
+	long objectIndex;
+	OSType thisObjectType;
+	CMyList * thisObjectList =0;
+	long objectCount = 0;
+	ObjectRecHdl thisObjectHdl = 0;
+	long numPts;
+	Boolean isWaterPoly;
+	LongPoint** thisPointsHdl =0;
+	LongPoint longPt;
+	long i, j, numLayers = 3;	// probably won't add any more but leave the option
+	PolyObjectHdl thisObjectHdlAsPolyObjectHdl =0;
+	char theTypeChar;
+	BFPB bfpb;
+	OSErr err = 0;
+	double lat,lng;
+	char latStr[32],lngStr[32];
+	char *p;
+	
+	/*if (objectCount <= 0)
+	{
+		printError("This map has no polygons to export.");
+		return -1;
+	}*/
+	
+	(void)hdelete(0, 0, path);
+	if (err = hcreate(0, 0, path, 'ttxt', 'TEXT'))
+		{ TechError("WriteToPath()", "hcreate()", err); return err; }
+	if (err = FSOpenBuf(0, 0, path, &bfpb, 100000, FALSE))
+		{ TechError("WriteToPath()", "FSOpenBuf()", err); return err; }
+
+
+	for (j=0; j<numLayers; j++)
+	{
+		if (j==0)
+		{
+			if(this -> mapBoundsLayer)
+			{
+				thisObjectList = this -> mapBoundsLayer -> GetLayerObjectList ();
+				objectCount = thisObjectList -> GetItemCount ();
+			}
+		}
+		else if (j==1)
+		{
+			if(this -> thisMapLayer)
+			{
+				thisObjectList = this -> thisMapLayer -> GetLayerObjectList ();
+				objectCount = thisObjectList -> GetItemCount ();
+			}
+		}
+		else if (j==2)
+		{
+			if(this -> allowableSpillLayer)
+			{
+				thisObjectList = this -> allowableSpillLayer -> GetLayerObjectList ();
+				objectCount = thisObjectList -> GetItemCount ();
+			}
+		}	
+		if (objectCount <= 0) continue;
+		for (objectIndex = 0; objectIndex < objectCount; objectIndex++)
+		{
+			thisObjectList -> GetListItem ((Ptr) &thisObjectHdl, objectIndex);
+			
+			GetObjectType (thisObjectHdl, &thisObjectType);
+			if(thisObjectType != kPolyType)
+			{
+				printError("Unexpected thisObjectType found.");
+				err = -1; goto done;
+			}
+							
+			thisObjectHdlAsPolyObjectHdl = (PolyObjectHdl) thisObjectHdl;
+			numPts = (**thisObjectHdlAsPolyObjectHdl).pointCount;
+			thisPointsHdl = (LongPoint**) (**thisObjectHdlAsPolyObjectHdl).objectDataHdl;
+			isWaterPoly = (**thisObjectHdlAsPolyObjectHdl).bWaterPoly;
+				
+			if(numPts > 0 && thisPointsHdl)
+			{
+				LongPoint firstPt,lastPt;
+				long numPtsToWrite = numPts;
+				
+				if(isWaterPoly) 
+					theTypeChar = '2';
+				else 
+					theTypeChar = '1';
+					
+				firstPt = INDEXH(thisPointsHdl,0);
+				lastPt = INDEXH(thisPointsHdl,numPts-1);
+				
+				#define ADDCLOSINGPOINT TRUE // specifies we want to add a closing point equal to the first point in the BNA file
+				if(ADDCLOSINGPOINT)
+				{
+					if(firstPt.h != lastPt.h || firstPt.v != lastPt.v)
+					{	// add a closing point equal to the first point
+						numPtsToWrite += 1;
+					}
+				}
+				if (j==0)
+					numChar = sprintf(buffer,"\"Map Bounds\",\"%c\",%ld%s",theTypeChar,numPtsToWrite,NEWLINESTRING);
+				else if (j==1)
+					numChar = sprintf(buffer,"\"%ld\",\"%c\",%ld%s",objectIndex,theTypeChar,numPtsToWrite,NEWLINESTRING);
+				else if (j==2)
+					numChar = sprintf(buffer,"\"SpillableArea\",\"%c\",%ld%s",theTypeChar,numPtsToWrite,NEWLINESTRING);
+				
+				if (err = WriteMacValue(&bfpb, buffer, numChar)) goto done;
+	
+				for(i = 0; i< numPtsToWrite;i++)
+				{
+					if(i < numPts)
+						longPt = INDEXH(thisPointsHdl,i);
+					else
+						longPt = firstPt; // used when numPtsToWrite > numPts (i.e to close off the polygon)
+						
+					lat = longPt.h/1000000.;
+					lng = longPt.v/1000000.;
+					StringWithoutTrailingZeros(latStr,lat,6);
+					StringWithoutTrailingZeros(lngStr,lng,6);
+					// some programs may expect the decimal place to be there
+					// so make sure we have the decimal point and at least one decimal place
+					p = strchr(latStr,'.');
+					if(!p) strcat(latStr,".0");
+					p = strchr(lngStr,'.');
+					if(!p) strcat(lngStr,".0");
+					/////
+					strcpy(buffer,latStr);
+					strcat(buffer,",");
+					strcat(buffer,lngStr);
+					strcat(buffer,NEWLINESTRING);
+					if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+				}
+			}
+		}
+	}
 done:
 	// 
 	FSCloseBuf(&bfpb);

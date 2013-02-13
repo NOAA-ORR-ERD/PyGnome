@@ -73,9 +73,9 @@ def test_simple_run():
                                             release_time = start_time,
                                             )
     
-    # model.spills += spill
-    # assert len(model.spills) == 1
-    model.add_spill(spill) 
+    model.spills += spill
+    assert len(model.spills) == 1
+    #model.add_spill(spill) 
 
     model.start_time = spill.release_time
 
@@ -114,8 +114,8 @@ def test_simple_run_with_map():
                                             release_time = start_time,
                                             )
     
-    #model.spills += spill
-    model.add_spill(spill)
+    model.spills += spill
+    #model.add_spill(spill)
     assert len(model.spills) == 1
     model.start_time = spill.release_time
     
@@ -175,8 +175,8 @@ def test_simple_run_with_image_output():
                                             release_time = start_time,
                                             )
     
-    #model.spills += spill
-    model.add_spill(spill)
+    model.spills += spill
+    #model.add_spill(spill)
     assert len(model.spills) == 1
 
     model.start_time = spill.release_time
@@ -235,11 +235,12 @@ def test_simple_run_with_image_output_uncertainty():
                                             release_time = start_time,
                                             )
 
-    model.add_spill(spill)
+    model.spills += spill
+    #model.add_spill(spill)
     model.start_time = spill.release_time
     #image_info = model.next_image()
 
-    model.is_uncertain = True
+    model.uncertain = True
 
     num_steps_output = 0
     while True:
@@ -324,10 +325,10 @@ def test_all_movers(start_time, release_delay, duration):
     start_loc = (1.0, 2.0, 0.0) # random non-zero starting points
     
     # a spill - release after 5 timesteps
-    model.add_spill(gnome.spill.SurfaceReleaseSpill(num_elements=10,
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements=10,
                                                     start_position=start_loc,
                                                     release_time  = start_time + timedelta(seconds=model.time_step*release_delay),
-                                                    ) )
+                                                    )
     # model.spills += gnome.spill.PointReleaseSpill(num_LEs=10,
     #                                               start_position = (0.0, 0.0, 0.0),
     #                                               release_time = start_time,
@@ -362,13 +363,13 @@ def test_all_movers(start_time, release_delay, duration):
         
     # test release happens correctly for all cases
     if release_delay < duration:    # at least one get_move has been called after release
-        assert np.all(model._spill_container['positions'][:,:2] != start_loc[:2])
+        assert np.all(model.spills.LE('positions')[:,:2] != start_loc[:2])
        
     elif release_delay == duration: # particles are released after last step so no motion, only initial state
-        assert np.all(model._spill_container['positions'] == start_loc)
+        assert np.all(model.spills.LE('positions') == start_loc)
         
     else:                           # release_delay > duration so nothing released though model ran
-        assert len(model._spill_container['positions']) == 0
+        assert len(model.spills.LE('positions') ) == 0
         
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
     

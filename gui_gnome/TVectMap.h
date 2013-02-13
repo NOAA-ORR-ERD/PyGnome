@@ -57,6 +57,7 @@ public:
 	virtual OSErr 		Read  (BFPB *bfpb); // read from the current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to the current position
 	OSErr 				ExportAsBNAFileForGnomeAnalyst(char* path);
+	OSErr 				ExportAsBNAFile(char* path);
 	virtual void		GetSuggestedFileName(char* suggestedFileName,char* extension);
 	OSErr 				ImportESIData (char *path);
 	virtual OSErr 		ReplaceMap();

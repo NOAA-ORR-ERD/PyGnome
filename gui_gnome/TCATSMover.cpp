@@ -1570,7 +1570,7 @@ short CATSClick(DialogPtr dialog, short itemNum, long lParam, VOIDPTR data)
 				if(timeFile->GetClassID () == TYPE_SHIOTIMEVALUES)
 				{	// it is a SHIO mover
 					TShioTimeValue * shioTimeValue = (TShioTimeValue*)timeFile; // typecast
-					WorldPoint wp = shioTimeValue -> GetRefWorldPoint();
+					WorldPoint wp = shioTimeValue -> GetStationLocation();
 					VelocityRec vel;
 					short btnHit;
 					char msg[256], latS[20], longS[20];
@@ -2565,7 +2565,7 @@ OSErr TCATSMover::ExportTopology(char* path)
 	
 	
 	// Write out values
-	strcpy(buffer,"DAG 1.0");
+	strcpy(buffer,"DAG 1.0\n");
 	if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
 	//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points

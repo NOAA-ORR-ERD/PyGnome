@@ -69,7 +69,7 @@ cdef extern from "ShioTimeValue_c.h":
         
         OSErr       ReadTimeValues (char *path)
         OSErr       SetYearDataPath (char *path)
-        WorldPoint  GetRefWorldPoint()
+        WorldPoint  GetStationLocation()
         
         # Not Sure if Following are required/used
         OSErr       GetConvertedHeightValue(Seconds  , VelocityRec *)

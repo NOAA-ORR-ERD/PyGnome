@@ -1,0 +1,68 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+10011
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Lower Mississippi River
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.01;
+-------------------------------------------
+
+
+[AFTER]
+-------------------------------------------
+minkilometersperinch 4;
+MESSAGE setfield; TO Diffusion; coefficient 10000; uncertaintyFactor 1;
+MESSAGE createMap;TO model;TYPE vector; NAME Lower Mississippi Map;PATH resnum 10003
+--
+MESSAGE createMover;TO Lower Mississippi Map;TYPE Cats; NAME Miss River.CUR;PATH resnum 10004
+MESSAGE setfield;TO Miss River.CUR;CrossCurUncertainty 0.01;
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Lower Mississippi River;
+-------------------------------------------
+
+
+[WMSG 10010]
+------------------------------------------- 
+if $V7<2
+    set StageHt  $10
+    set term1 {0.0011*{StageHt}}*{StageHt}
+    set term2 0.15*{StageHt}
+    set speedInKnots {{term1}+{term2}}+0.3868
+    set MissRiv {speedInKnots}*.5144
+else
+	set MissRiv $13
+endif
+
+MESSAGE setfield; TO Miss River.CUR; scaleType constant; refP 89.699944 W 29.494558 N; scaleValue {MissRiv};
+-------------------------------------------
+IF $V7<2
+  LHSTEXT River stage height: {StageHt} feet;
+ELSE
+  set units1 knots
+  set units2 m/s
+  set units3 cm/s
+  set unitScale1 1.9438445
+  set unitScale2 1
+  set unitScale3 100
+  LHSTEXT River flow: {{MissRiv}*{unitScale$V13}} {units$V13};
+ENDIF

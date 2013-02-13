@@ -1,0 +1,41 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR San Juan PR
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 1
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.25;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME San Juan Map;PATH resnum 10003;
+MESSAGE setfield;TO San Juan Map;ExtendedHiLat 18.55;
+--
+MESSAGE createMover;TO San Juan Map;TYPE Cats; NAME Offshore.cur;PATH resnum 10006;
+MESSAGE setfield;TO Offshore.cur; scaleType constant;refP 66.084333333 W 18.46966667 N; scaleValue 0.1;
+--
+MESSAGE createMover;TO San Juan Map;TYPE Cats; NAME Ebb tides.cur;PATH resnum 10004;
+MESSAGE setfield;TO Ebb tides.cur; scaleType constant;refP 66.116667 W 18.458333 N; scaleValue 1; timeFile resNum 10005;scaleFactor 0.15;
+MESSAGE setfield;TO Ebb tides.cur; EddyDiffusion 100000; EddyV0 0.1;
+--
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT San Juan PR;
+-------------------------------------------
+

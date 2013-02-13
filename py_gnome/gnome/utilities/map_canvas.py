@@ -148,7 +148,7 @@ class MapCanvas(object):
         """
         ##fixme: add checks for the status flag (beached, etc)!
         if spill.num_elements > 0: # nothing to draw if no elements
-            if spill.is_uncertain:
+            if spill.uncertain:
                 color = self.colors['uncert_LE']
             else:
                 color = self.colors['LE']

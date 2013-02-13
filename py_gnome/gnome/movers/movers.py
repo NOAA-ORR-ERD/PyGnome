@@ -134,8 +134,8 @@ class CyMover(Mover):
         super(CyMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
         if self.active and self.on:
             uncertain_spill_count = 0
-            uncertain_spill_size = np.array( (0,) ) # only useful if spill.is_uncertain
-            if sc.is_uncertain:
+            uncertain_spill_size = np.array( (0,) ) # only useful if spill.uncertain
+            if sc.uncertain:
                 uncertain_spill_count = 1
                 uncertain_spill_size = np.array( (sc.num_elements,) )
             
@@ -180,7 +180,7 @@ class CyMover(Mover):
         except KeyError, err:
             raise ValueError("The spill container does not have the required data arrays\n" + err.message)
 
-        if sc.is_uncertain:
+        if sc.uncertain:
             self.spill_type = basic_types.spill_type.uncertainty
         else:
             self.spill_type = basic_types.spill_type.forecast
@@ -286,15 +286,15 @@ class WindMover(CyMover):
         if len(sc['positions']) == 0:
             return
         
-        if (not WindMover._windage_is_set and not sc.is_uncertain) or (not WindMover._uspill_windage_is_set and sc.is_uncertain):
+        if (not WindMover._windage_is_set and not sc.uncertain) or (not WindMover._uspill_windage_is_set and sc.uncertain):
             for spill in sc.spills:
-                ix = sc['spill_num'] == spill.spill_num   # matching indices
+                ix = sc['spill_num'] == sc.spills.index(spill.id)   # matching indices
                 sc['windages'][ix] = rand.random_with_persistance(spill.windage_range[0],
                                                                   spill.windage_range[1],
                                                                   spill.windage_persist,
                                                                   time_step,
                                                                   array_len=len(ix) )
-            if sc.is_uncertain:
+            if sc.uncertain:
                 WindMover._uspill_windage_is_set = True
             else:
                 WindMover._windage_is_set = True
@@ -342,8 +342,8 @@ def wind_mover_from_file(filename, **kwargs):
     :returns mover: returns a wind mover, built from the file
     """
     w = environment.Wind(file=filename,
-                     data_format=basic_types.data_format.magnitude_direction)
-    ts = w.get_timeseries(data_format=basic_types.data_format.magnitude_direction)
+                     ts_format=basic_types.ts_format.magnitude_direction)
+    ts = w.get_timeseries(ts_format=basic_types.ts_format.magnitude_direction)
     wm = WindMover(w, **kwargs)
 
     return wm
@@ -468,7 +468,7 @@ class WeatheringMover(Mover):
         # create an array of position deltas
         self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
 
-        if spill.is_uncertain:
+        if spill.uncertain:
             self.spill_type = basic_types.spill_type.uncertainty
         else:
             self.spill_type = basic_types.spill_type.forecast

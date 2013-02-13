@@ -10,8 +10,14 @@ from type_defs cimport *
 def enum(**enums):
     """
     Just found a clever way to do enums in python
+    returns a new type called Enum whose attributes are given by the input in 'enums'
+    also append two more attributes called:
+      _attr - contains the list keywords in the input
+      _int - contains the list of int values for this enum
+    These can be helpful for error checking
     """
-    return type('Enum', (), enums)
+    enums.update({'_attr':enums.keys(),'_int':enums.values()})    # append keys and int to dict
+    return type('Enum', (), enums)  
 
 """
 LE Status as an enum type
@@ -43,12 +49,16 @@ spill_type = enum(forecast = FORECAST_LE,
                 
 
 """
-Contains enum type for the contents of a data file. For instance,
-a standard wind file would contain magnitude and direction info
-data_format.magnitude_direction = 5
+Contains enum type for the timeseries (ts) either given directly or read from datafile, 
+by OSSMTimeValue. 
+For instance, a standard wind file would contain magnitude and direction info
+  ts_format.magnitude_direction = 5
+
+It could also contain uv info. Tides would contain uv with v == 0
+Hydrology file would also contain uv format
 """
-data_format = enum(magnitude_direction=M19MAGNITUDEDIRECTION,
-                   wind_uv=M19REALREAL)
+ts_format = enum(magnitude_direction=M19MAGNITUDEDIRECTION,
+                   uv=M19REALREAL)
 
 """
 Lets define error codes here as well, may want to 
