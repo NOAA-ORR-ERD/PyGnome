@@ -59,11 +59,11 @@ def test_exceptions(invalid_rq):
     with pytest.raises(unit_conversion.InvalidUnitError):
         wind = environment.Wind(timeseries=dtv,units='met per second')
 
+filepath = os.path.join(os.path.dirname(__file__), r"SampleData/WindDataFromGnome.WND")
 def test_read_file_init():
     """
     initialize from a long wind file
     """
-    filepath = os.path.join(os.path.dirname(__file__), r"SampleData/WindDataFromGnome.WND")
     wm = environment.Wind(file=filepath)
     print
     print "----------------------------------"
@@ -276,3 +276,41 @@ def test_constant_wind():
     assert np.allclose(wind.get_timeseries(datetime=datetime(2020,1,10,12,0), units='knots' )[0][1],
                        (10, 45))
 
+
+def test_to_dict():
+    """
+    test to_dict function for Wind object
+    create a new wind object and make sure it has same properties
+    """
+    wm = environment.Wind(file=filepath)
+    wm_dict = wm.to_dict()
+    wm2 = environment.Wind(**wm_dict)
+    
+    for key in wm_dict.keys():
+        if key != 'filename' and key != 'timeseries':
+            assert wm.__getattribute__(key) == wm2.__getattribute__(key)
+        
+    assert wm.id != wm2.id
+    assert wm2.filename == ''   # this should be empty for now
+    assert np.all( wm.timeseries['time'] == wm2.timeseries['time'])
+    assert np.allclose(wm.timeseries['value'], wm2.timeseries['value'], atol, rtol)
+    
+def test_from_dict():
+    """
+    test from_dict function for Wind object
+    update existing wind object from_dict
+    """
+    wm = environment.Wind(file=filepath)
+    wm_dict = wm.to_dict()
+    
+    # following are not settable parameters
+    wm_dict.pop('units')
+    wm_dict.pop('filename')
+    
+    # let's update timeseries 
+    wm_dict['timeseries'][0]['value'][:] = np.array( (10., 180.))
+    wm.from_dict(wm_dict)
+    for key in wm_dict.keys():
+        if key != 'filename' and key != 'timeseries':
+            assert wm.__getattribute__(key) == wm_dict.__getitem__(key)
+        
