@@ -21,6 +21,7 @@ class Wind(GnomeObject):
     # id, filename and units cannot be updated - read only properties
     # therefore, Wind.from_dict() will fail if units, id and filename are part of the list
     serializable_fields = [
+        'id',
         'latitude',
         'longitude',
         'description',
@@ -51,16 +52,18 @@ class Wind(GnomeObject):
                       unit_conversion.GetUnitNames('Velocity') 
         :type units:  string, for example: 'knot', 'meter per second', 'mile per hour' etc
         
-        :param format: default timeseries format is magnitude direction: 'r-theta'
+        :param format: (Optional) default timeseries format is magnitude direction: 'r-theta'
         :type format: string 'r-theta' or 'uv'. Converts string to integer defined by gnome.basic_types.ts_format.*
         
-        :param name: human readable string for wind object name. Default is filename if data is from file or "Wind Object"
+        :param name: (Optional) human readable string for wind object name. Default is filename if data is from file or "Wind Object"
         
-        :param source_type: Default is undefined, but can be one of the following: ['buoy', 'manual', 'undefined', 'file', 'nws']
+        :param source_type: (Optional) Default is undefined, but can be one of the following: ['buoy', 'manual', 'undefined', 'file', 'nws']
                             If data is read from file, then it is 'file'
                             
-        :param latitude: latitude of station or location where wind data is obtained from NWS
-        :param longitude: longitude of station or location where wind data is obtained from NWS
+        :param latitude: (Optional) latitude of station or location where wind data is obtained from NWS
+        :param longitude: (Optional) longitude of station or location where wind data is obtained from NWS
+        
+        :param filename: (Optional) timeseries could have come from a file and user may want to store that as meta data
         """
         
         if 'timeseries' in kwargs and 'file' in kwargs:

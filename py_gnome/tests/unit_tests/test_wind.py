@@ -287,7 +287,7 @@ def test_to_dict():
     wm2 = environment.Wind(**wm_dict)
     
     for key in wm_dict.keys():
-        if key != 'filename' and key != 'timeseries':
+        if key != 'filename' and key != 'timeseries' and key != 'id':   # not settable properties
             assert wm.__getattribute__(key) == wm2.__getattribute__(key)
         
     assert wm.id != wm2.id
@@ -304,6 +304,7 @@ def test_from_dict():
     wm_dict = wm.to_dict()
     
     # following are not settable parameters
+    wm_dict.pop('id')
     wm_dict.pop('units')
     wm_dict.pop('filename')
     

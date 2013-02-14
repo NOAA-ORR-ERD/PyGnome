@@ -1,10 +1,15 @@
-import numpy as np
 import os 
 
-cimport numpy as cnp
-from libc.string cimport memcpy
+import numpy as np
+import cython
 
 from gnome import basic_types
+
+
+from libc.string cimport memcpy
+from libcpp.string cimport string
+
+cimport numpy as cnp
 
 from type_defs cimport * 
 from utils cimport _NewHandle, _GetHandleSize
@@ -86,9 +91,17 @@ cdef class CyOSSMTime(object):
     
     property filename:
         def __get__(self):
-            cdef bytes fileName
-            fileName = self.time_dep.fileName
-            return fileName
+            return <bytes>self.time_dep.fileName
+        
+        def __set__(self, value):
+            max_ = cython.sizeof(self.time_dep.fileName)
+            if len(value) > max_:
+                print "Only first 256 char will be written: {0}\n".format(value[:max_])
+                
+            for i, char_ in enumerate(value):
+                print i, char_
+                self.time_dep.fileName[i] = char_
+                #self.time_dep.fileName[i] = char_
         
     property station_location:
         def __get__(self):
