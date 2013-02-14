@@ -282,8 +282,6 @@ class SpillContainerPairData(object):
             for sc in spill_container_pair.items():
                 do_something_with(sc)
         """
-        print "in items()"
-        print self._spill_container.uncertain
         ## NOTE: cache code counts on the uncertain SpillContainer being last
         if self.uncertain:
             return (self._spill_container, self._u_spill_container)
