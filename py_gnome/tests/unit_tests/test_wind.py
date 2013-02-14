@@ -10,8 +10,21 @@ def test_exceptions(invalid_rq):
     Test ValueError exception thrown if improper input arguments
     Test TypeError thrown if units are not given - so they are None
     """
-    with pytest.raises(ValueError):
+    # valid timeseries for testing
+    dtv = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
+    dtv.time = [datetime(2012,11,06,20,10+i,30) for i in range(4)]
+    dtv.value = (1,0)
+    
+    # both timeseries and file are given
+    with pytest.raises(TypeError):
+        environment.Wind(timeseries=dtv,file='')
+        
+    # nether timeseries, nor file are give
+    with pytest.raises(TypeError):
         environment.Wind()
+        
+    # incorrect type of numpy array for init    
+    with pytest.raises(ValueError):
         wind_vel = np.zeros((1,), basic_types.velocity_rec)
         environment.Wind(timeseries=wind_vel, format="uv", units='meters per second')
         
@@ -33,27 +46,18 @@ def test_exceptions(invalid_rq):
         dtv_rq.time[:len(dtv_rq)-1] = [datetime(2012,11,06,20,10+i,30) for i in range(len(dtv_rq)-1)]
         environment.Wind(timeseries=dtv_rq, units='meters per second')
 
-    # exception raised since no units given for timeseries during init or set_timeseries
-    with pytest.raises(ValueError):
-        dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-        dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(4)]
-        dtv_rq.value = (1,0)
-        environment.Wind(timeseries=dtv_rq)
-
+    # exception raised since no units given for timeseries during init 
     with pytest.raises(TypeError):
-        dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-        dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(4)]
-        dtv_rq.value = (1,0)
-        wind = environment.Wind(timeseries=dtv_rq,units='meters per second')
-        wind.set_timeseries(dtv_rq) # IGNORE:E1120
+        environment.Wind(timeseries=dtv)
+
+    # no units during set_timeseries
+    with pytest.raises(TypeError):
+        wind = environment.Wind(timeseries=dtv,units='meters per second')
+        wind.set_timeseries(dtv)
 
     # invalid units
     with pytest.raises(unit_conversion.InvalidUnitError):
-        dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-        dtv_rq.time = [datetime(2012,11,06,20,10+i,30) for i in range(4)]
-        dtv_rq.value = (1,0)
-        wind = environment.Wind(timeseries=dtv_rq,units='met per second')
-        wind.set_timeseries(dtv_rq) # IGNORE:E1120
+        wind = environment.Wind(timeseries=dtv,units='met per second')
 
 def test_read_file_init():
     """
@@ -63,7 +67,7 @@ def test_read_file_init():
     wm = environment.Wind(file=filepath)
     print
     print "----------------------------------"
-    print "Units: " + str(wm.user_units)
+    print "Units: " + str(wm.units)
     assert True
 
 # tolerance for np.allclose(..) function. Results are almost the same but not quite so needed to add tolerance.
@@ -85,7 +89,7 @@ def test_init(wind_circ):
     
     # output is in meters per second
     gtime_val = wm.get_timeseries(format="uv", units='meters per second').view(dtype=np.recarray)
-    expected = unit_conversion.convert('Velocity',wm.user_units,'meters per second',wind_circ['uv'].value)
+    expected = unit_conversion.convert('Velocity',wm.units,'meters per second',wind_circ['uv'].value)
     assert np.all(gtime_val.time == wind_circ['uv'].time)
     assert np.allclose(gtime_val.value, expected, atol, rtol)
     

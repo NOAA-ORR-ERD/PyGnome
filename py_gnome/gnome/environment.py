@@ -4,6 +4,7 @@ the Wind object defines the Wind conditions for the spill
 """
 
 import datetime
+import os
 
 import numpy as np
 
@@ -16,33 +17,68 @@ class Wind(GnomeObject):
     """
     Defines the Wind conditions for a spill
     """
-    def __init__(self, 
-                 timeseries=None, 
-                 file=None,
-                 format='r-theta',
-                 units=None):
+    serializable_fields = [
+        'id',
+        'latitude',
+        'longitude',
+        'description',
+        'source_id',
+        'source_type',
+        'updated_at',
+        'units', # this must be set before timeseries property
+        'timeseries',
+        'filename',
+        ]
+    
+    def __init__(self, **kwargs):
         """
-        Initializes a wind object. It requires a numpy array containing 
-        gnome.basic_types.datetime_value_2d which defines the wind velocity
+        Initializes a wind object. It only takes keyword arguments as input, these
+        are defined below. It requires one of the following to initialize:
+              1. 'timeseries' along with 'units' or
+              2. a 'file' containing a header that defines units amongst other meta data
+               
+        All other keywords are optional.
         
         :param timeseries: (Required) numpy array containing time_value_pair
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
+        
         :param file: path to a long wind file from which to read wind data
-        :param format: default timeseries format is magnitude_direction
-        :type format: string "r-theta" or "uv". 
-                      Converts string to integer defined by gnome.basic_types.ts_format.*
         :param units: units associated with the timeseries data. If 'file' is given, then units are read in from the file. 
+                      get_timeseries() will use these as default units to output data, unless user specifies otherwise.
                       These units must be valid as defined in the hazpy unit_conversion module: 
                       unit_conversion.GetUnitNames('Velocity') 
         :type units:  string, for example: 'knot', 'meter per second', 'mile per hour' etc
+        
+        :param format: default timeseries format is magnitude direction: 'r-theta'
+        :type format: string 'r-theta' or 'uv'. Converts string to integer defined by gnome.basic_types.ts_format.*
+        
+        :param name: human readable string for wind object name. Default is filename if data is from file or "Wind Object"
+        
+        :param source_type: Default is undefined, but can be one of the following: ['buoy', 'manual', 'undefined', 'file', 'nws']
+                            If data is read from file, then it is 'file'
+                            
+        :param latitude: latitude of station or location where wind data is obtained from NWS
+        :param longitude: longitude of station or location where wind data is obtained from NWS
         """
         
-        if( timeseries is None and file is None):
-            raise ValueError("Either provide timeseries or a valid long file")
+        if 'timeseries' in kwargs and 'file' in kwargs:
+            raise TypeError("Cannot instantiate Wind object with both timeseries and file as input")
         
-        if( timeseries is not None):
-            if units is None:
-                raise ValueError("Provide valid units as string or unicode for timeseries")
+        if 'timeseries' not in kwargs and 'file' not in kwargs:
+            raise TypeError("Either provide a timeseries or a wind file with a header, containing wind data")
+        
+        # default lat/long
+        self.longitude = 'unknown'
+        self.latitude = 'unknown'
+        
+        # format of data 'uv' or 'r-theta'. Default is 'r-theta'
+        format = kwargs.pop('format', 'r-theta')
+        self.description = kwargs.pop('description','Wind Object')
+        if 'timeseries' in kwargs:
+            if 'units' not in kwargs:
+                raise TypeError("Provide 'units' argument with the 'timeseries' input")
+            timeseries = kwargs.pop('timeseries')
+            units = kwargs.pop('units')
             
             self._check_timeseries(timeseries, units)
             
@@ -50,11 +86,29 @@ class Wind(GnomeObject):
             time_value_pair = convert.to_time_value_pair(timeseries, format)   # ts_format is checked during conversion
                 
             self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
-            self._user_units = units
+            self._user_units = units    # do not set ossm.user_units since that only has a subset of possible units
+            
+            self.name = kwargs.pop('name','Wind Object')
+            self.source_type= kwargs.pop('source_type') if kwargs.get('source_type') in basic_types.wind_datasource._attr else 'undefined'
+            
         else:
             ts_format = convert.tsformat(format)
-            self.ossm = CyOSSMTime(file=file,file_contains=ts_format)
+            self.ossm = CyOSSMTime(file=kwargs.pop("file"),file_contains=ts_format)
             self._user_units = self.ossm.user_units
+            
+            self.name = kwargs.pop('name',os.path.split(self.ossm.filename)[1])
+            self.source_type = 'file'   # this must be file
+        
+        # For default: if read from file and filename exists, then use last modified time of file
+        #              else default to datetime.datetime.now
+        # not sure if this should be datetime or string
+        self.updated_at = kwargs.pop('updated_at', 
+                                     time_utils.sec_to_date( os.path.getmtime(self.ossm.filename)) \
+                                     if self.ossm.filename else datetime.datetime.now() )
+        self.source_id = kwargs.pop('source_id','undefined')
+        self.longitude = kwargs.pop('longitude',self.longitude)
+        self.latitude = kwargs.pop('latitude',self.latitude)
+        
         
     def _convert_units(self, data, ts_format, from_unit, to_unit):
         """
@@ -104,19 +158,10 @@ class Wind(GnomeObject):
         """
         return "Wind Object"
     
-    user_units = property( lambda self: self._user_units)   
-    filename = property( lambda self: self.ossm.fileName)
-    
-    # Add following meta-data about timeseries
-    @property
-    def name(self):
-        return self.name
-    
-    @name.setter
-    def name(self, val):
-        self.name = val
-        
-    
+    units = property( lambda self: self._user_units)   
+    filename = property( lambda self: self.ossm.filename)
+    timeseries = property( lambda self: self.get_timeseries(),
+                           lambda self, val: self.set_timeseries(val, units=self.units) )
     
     def get_timeseries(self, datetime=None, units=None, format='r-theta'):
         """
@@ -129,7 +174,7 @@ class Wind(GnomeObject):
 
         :param datetime: [optional] datetime object or list of datetime objects for which the value is desired
         :type datetime: datetime object
-        :param units: [optional] outputs data in these units. Default is to output data in user_units
+        :param units: [optional] outputs data in these units. Default is to output data in units
         :type units: string. Uses the hazpy.unit_conversion module
         :param format: output format for the times series: either 'r-theta' or 'uv'
         :type format: either string or integer value defined by basic_types.ts_format.* (see cy_basic_types.pyx)
@@ -149,7 +194,7 @@ class Wind(GnomeObject):
         if units is not None:
             datetimeval['value'] = self._convert_units(datetimeval['value'], format, 'meter per second', units)
         else:
-            datetimeval['value'] = self._convert_units(datetimeval['value'], format, 'meter per second', self.user_units)
+            datetimeval['value'] = self._convert_units(datetimeval['value'], format, 'meter per second', self.units)
             
         return datetimeval
     

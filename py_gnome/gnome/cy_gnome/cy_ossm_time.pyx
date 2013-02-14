@@ -89,6 +89,13 @@ cdef class CyOSSMTime(object):
             cdef bytes fileName
             fileName = self.time_dep.fileName
             return fileName
+        
+    property station_location:
+        def __get__(self):
+            return np.array((0,0,0), dtype=basic_types.world_point)    # will replace this once OSSMTime contains values
+        
+        def __set__(self, value):
+            self.station_location = value
     
     def __repr__(self):
         """
