@@ -218,7 +218,7 @@ Boolean IsHydrologyFile(char* path)
 	return bIsValid;
 }
 
-Boolean IsOSSMTideFile(char* path,short *selectedUnitsP)
+Boolean IsOSSMTimeFile(char* path,short *selectedUnitsP)
 {
 	Boolean	bIsValid = false;
 	OSErr	err = noErr;

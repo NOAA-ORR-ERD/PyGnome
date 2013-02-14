@@ -119,6 +119,7 @@
 
         <%include file="forms/map.mak"/>
         <%include file="forms/custom_map.mak"/>
+        <%include file="forms/map_from_upload.mak"/>
 
         ## Mover forms
         <%include file="forms/wind_mover.mak" args="form_id='add-wind-mover'"/>
@@ -177,7 +178,6 @@
                 new app_view.AppView({
                     generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                     expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
-                    backgroundImageUrl: "${background_image_url | n}",
                     currentTimeStep: ${current_time_step},
                     surfaceReleaseSpills: ${surface_release_spills | n},
                     defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},

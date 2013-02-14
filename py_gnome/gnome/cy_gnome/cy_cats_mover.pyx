@@ -88,7 +88,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
          
     def set_shio(self, CyShioTime cy_shio):
         self.cats.SetTimeDep(cy_shio.shio)
-        self.cats.SetRefPosition(cy_shio.shio.GetRefWorldPoint(), 0)
+        self.cats.SetRefPosition(cy_shio.shio.GetStationLocation(), 0)
         self.cats.bTimeFileActive = True
         self.cats.scaleType = 1
         return True

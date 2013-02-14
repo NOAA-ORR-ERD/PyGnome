@@ -2,11 +2,12 @@
 model_manager.py: Manage a pool of running models.
 """
 import datetime
-
+import logging
 import os
 import uuid
-from hazpy.file_tools import haz_files
 import numpy
+
+from hazpy.file_tools import haz_files
 from webgnome import util
 
 # XXX: This except block should not be necessary.
@@ -31,6 +32,9 @@ from gnome.movers import WindMover, RandomMover
 from gnome.spill import SurfaceReleaseSpill
 from gnome.environment import Wind
 from gnome.map import MapFromBNA
+
+
+log = logging.getLogger(__name__)
 
 
 class Serializable(object):
@@ -121,12 +125,13 @@ class WebWind(Wind, BaseWebObject):
     )
     serializable_fields = [
         'id',
-        'units', # set the units before timeseries
+        # set the units before timeseries, as timeseries relies on units
+        'units',
         'timeseries',
         'latitude',
         'longitude',
         'description',
-        'source',
+        'source_id',
         'source_type',
         'updated_at'
     ]
@@ -135,7 +140,7 @@ class WebWind(Wind, BaseWebObject):
         self.name = kwargs.pop('name', 'Wind')
         self.description = kwargs.pop('description', None)
         self.source_type = kwargs.pop('source_type', None)
-        self.source = kwargs.pop('source', None)
+        self.source_id = kwargs.pop('source_id', None)
         self.longitude = kwargs.pop('longitude', None)
         self.latitude = kwargs.pop('latitude', None)
         self.updated_at = kwargs.pop('updated_at', None)
@@ -292,7 +297,14 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
     ]
 
     def map_bounds_to_dict(self):
-        return self.map_bounds.tolist()
+        """
+        Map bounds may be a tuple, if it's the default value provided by
+        :class:`webgnome.schema.MapSchema`, or it may be a NumPy list,
+        in which case we should call the tolist() method to get a list.
+        """
+        if self.map_bounds is not None and hasattr(self.map_bounds, 'tolist'):
+            return self.map_bounds.tolist()
+        return self.map_bounds
 
     def __init__(self, *args, **kwargs):
         self.name = kwargs.pop('name', 'Map')
@@ -327,6 +339,7 @@ class WebModel(Model, BaseWebObject):
         # TODO: Add output caching in the model?
         self.time_steps = []
         self.runtime = None
+        self.background_image = None
 
     @property
     def data_dir(self):
@@ -339,15 +352,11 @@ class WebModel(Model, BaseWebObject):
         return os.path.join(self.base_dir, self.runtime)
 
     @property
-    def background_image(self):
-        """
-        Return the path to the file containing the background image for the
-        current map.
-        """
-        if not self.output_map:
+    def background_image_path(self):
+        if not self.background_image:
             return
 
-        return os.path.join(self.base_dir, 'background_map.png')
+        return os.path.join(self.base_dir, self.background_image)
 
     @property
     def duration_hours(self):
@@ -373,12 +382,22 @@ class WebModel(Model, BaseWebObject):
         canvas.set_land(polygons)
         self.output_map = canvas
 
+        # Delete an existing background image file.
+        if self.background_image and os.path.exists(self.background_image_path):
+            try:
+                os.remove(self.background_image_path)
+            except OSError as e:
+                log.error('Could not delete file: %s. Error was: %s' % (
+                    self.background_image, e))
+
         # Save the background image.
+        self.background_image = 'background_image_%s.png' % util.get_runtime()
         self.output_map.draw_background()
-        self.output_map.save_background(self.background_image)
+        self.output_map.save_background(self.background_image_path)
 
     def remove_map(self):
         self.map = None
+        self.background_image = None
         self.output_map = None
         self.rewind()
 
@@ -419,7 +438,7 @@ class WebModel(Model, BaseWebObject):
             _map = None
 
         data = {
-            'is_uncertain': self.is_uncertain,
+            'uncertain': self.uncertain,
             'time_step': (self.time_step / 60.0) / 60.0,
             'start_time': self.start_time,
             'duration_days': 0,
@@ -462,7 +481,7 @@ class WebModel(Model, BaseWebObject):
                 spill._id = uuid.UUID(_id)
             self.spills.add(spill)
 
-        self.is_uncertain = data['is_uncertain']
+        self.uncertain = data['uncertain']
         self.start_time = data['start_time']
         self.time_step = data['time_step'] * 60 * 60
         self.duration = datetime.timedelta(

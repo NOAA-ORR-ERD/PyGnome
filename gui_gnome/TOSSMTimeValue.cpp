@@ -13,7 +13,7 @@
 
 //Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP);
 //Boolean IsHydrologyFile(char* path);
-//Boolean IsOSSMTideFile(char* path,short *selectedUnitsP);
+//Boolean IsOSSMTimeFile(char* path,short *selectedUnitsP);
 
 TOSSMTimeValue::TOSSMTimeValue(TMover *theOwner,TimeValuePairH tvals,short userUnits) : TTimeValue(theOwner) 
 { 

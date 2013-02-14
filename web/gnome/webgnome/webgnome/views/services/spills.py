@@ -40,7 +40,7 @@ class SurfaceReleaseSpill(BaseResource):
         Return a JSON representation of the SurfaceReleaseSpill matching the
         ``id`` matchdict value.
         """
-        spill = self.request.validated['model'].spills.get(self.id)
+        spill = self.request.validated['model'].spills[self.id]
         return spill.to_dict()
 
     @view(validators=util.valid_spill_id, schema=SurfaceReleaseSpillSchema)
@@ -50,7 +50,7 @@ class SurfaceReleaseSpill(BaseResource):
         """
         data = self.request.validated
         model = data.pop('model')
-        spill = model.spills.get(self.id)
+        spill = model.spills[self.id]
         spill.from_dict(data)
         model.rewind()
 
