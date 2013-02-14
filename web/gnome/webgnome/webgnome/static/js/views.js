@@ -77,7 +77,6 @@ define([
             this.frameClass = this.options.frameClass;
             this.activeFrameClass = this.options.activeFrameClass;
             this.placeholderClass = this.options.placeholderClass;
-            this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
             this.animationThreshold = this.options.animationThreshold;
             this.locationFiles = this.options.locationFiles;
@@ -96,19 +95,20 @@ define([
             this.mapCanvas = $('#map_canvas');
             
             this.model = this.options.model;
-            this.model.on('sync', this.resetBackground);
+            this.model.on('change:background_image_url', function() {
+                _this.resetBackground();
+            });
             this.model.on('destroy', function () {
-                _this.backgroundImageUrl = null;
-                _this.map.empty();
                 _this.reset();
                 _this.mapCanvas.imagesLoaded(_this.centerPlaceholderMap);
+                _this.map.empty();
             });
 
             this.setupLocationFileMap();
 
             // Map is loaded in the model if it has an ID
             if (this.model.id) {
-                this.loadMapFromUrl(this.backgroundImageUrl);
+                this.loadMapFromUrl(this.model.get('background_image_url'));
             } else {
                 this.showPlaceholder();
             }
@@ -160,8 +160,14 @@ define([
         resetBackground: function() {
             this.reset();
 
-            if (this.backgroundImageUrl) {
-                this.loadMapFromUrl(this.backgroundImageUrl);
+            if (!this.model.id) {
+                return;
+            }
+
+            var backgroundImageUrl = this.model.get('background_image_url');
+
+            if (backgroundImageUrl) {
+                this.loadMapFromUrl(backgroundImageUrl);
             }
         },
 
@@ -616,7 +622,7 @@ define([
         },
 
         modelRunBegan: function() {
-            this.loadMapFromUrl(this.backgroundImageUrl);
+            this.loadMapFromUrl(this.model.get('background_image_url'));
         },
 
         modelRunError: function() {
@@ -724,7 +730,7 @@ define([
 
             this.options.modelSettings.on('sync', this.reload);
             this.options.map.on('sync', this.reload);
-            this.options.map.on('change', this.reload);
+            this.options.map.on('change:filename', this.reload);
         },
 
         setupDynatree: function() {
@@ -1243,6 +1249,7 @@ define([
         RUN_UNTIL_ITEM_CLICKED: "menuView:runUntilMenuItemClicked",
         LOCATION_FILE_ITEM_CLICKED: "menuView:locationFileItemClicked"
     });
+
 
     return {
         MessageView: MessageView,

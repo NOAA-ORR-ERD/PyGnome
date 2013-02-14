@@ -65,6 +65,7 @@ void WindMover_c::Init()
 	fSigma2 =0;
 	fSigmaTheta =  0; 
 	//conversion = 1.0;// JLM , I think this field should be removed
+	fUncertaintyDiffusion = 0;
 	bTimeFileOpen = FALSE;
 	bUncertaintyPointOpen=false;
 	bSubsurfaceActive = false;
@@ -300,14 +301,23 @@ OSErr WindMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *patVe
 	double sqs,m,dtheta,x,w,s,t,costheta,sintheta;
 	double norm;
 	LEWindUncertainRec unrec;
+	float rand1,rand2, eddyDiffusion = 100000, value;
 	OSErr err = 0;
 	
 	if(!fWindUncertaintyList || !fLESetSizes) 
 		return 0; // this is our clue to not add uncertainty
 	
 	norm = sqrt(tempV.v*tempV.v + tempV.u*tempV.u);
-	if(abs(norm) < 1e-6)
+	//if(fabs(norm) < 1e-6)
+	if(norm < 1)
+	{	// try some small diffusion rather than nothing 2/13/13
+		rand1 = GetRandomFloat(-1.0, 1.0);
+		rand2 = GetRandomFloat(-1.0, 1.0);
+		//value = sqrt(6*(eddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
+		patVel->u = tempV.u + fUncertaintyDiffusion * rand1;
+		patVel->v = tempV.v + fUncertaintyDiffusion * rand2;
 		return 0;
+	}
 	
 	unrec=(*fWindUncertaintyList)[(*fLESetSizes)[setIndex]+leIndex];
 	w=norm;
@@ -384,7 +394,10 @@ OSErr WindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds&
 	if (uncertain)
 	{
 		Seconds elapsed_time = model_time - fModelStartTime;	// code goes here, how to set start time
+		double eddyDiffusion = 1000000;
 		err = this->UpdateUncertainty(elapsed_time, numLESets, LESetsSizesList);
+		fUncertaintyDiffusion = sqrt(6*(eddyDiffusion/10000)/time_step); // in m/s, note: DIVIDED by timestep because this is later multiplied by the timestep
+
 	}
 	err = this -> GetTimeValue (model_time,&this->current_time_value);	// AH 07/16/2012
 	if (err) printError("An error occurred in TWindMover::PrepareForModelStep");

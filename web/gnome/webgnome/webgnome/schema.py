@@ -27,7 +27,7 @@ from webgnome.model_manager import WebWind
 
 def get_direction_degree(direction):
     """
-    Convert user input for direction into degree.
+    Convert user input for direction into degrees.
     """
     if direction.isalpha():
         return util.DirectionConverter.get_degree(direction)
@@ -183,7 +183,7 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
 
 
 class WindSchema(MappingSchema):
-    source = SchemaNode(String(), default=None, missing=None)
+    source_id = SchemaNode(String(), default=None, missing=None)
     source_type = SchemaNode(String(), default='manual', missing='manual',
                              validator=OneOf([source[0] for source in
                                               WebWind.source_types]))
@@ -280,7 +280,7 @@ default_map_bounds = ((-360, 90),
 
 class MapSchema(MappingSchema):
     name = SchemaNode(String(), default="Map")
-    filename = SchemaNode(String())
+    filename = SchemaNode(String(), default=None, missing=None)
     refloat_halflife = SchemaNode(Float(), default=1)
     map_bounds = MapBoundsSchema(default=default_map_bounds,
                                  missing=default_map_bounds)
@@ -313,7 +313,7 @@ class ModelSettingsSchema(MappingSchema):
                             validator=convertable_to_seconds)
     duration_days = SchemaNode(Int(), default=1, validator=Range(min=0))
     duration_hours = SchemaNode(Int(),default=0, validator=Range(min=0))
-    is_uncertain = SchemaNode(Bool(), default=False)
+    uncertain = SchemaNode(Bool(), default=False)
     time_step = SchemaNode(Float(), default=0.1)
 
 

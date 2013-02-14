@@ -1151,7 +1151,7 @@ OSErr ShioTimeValue_c::GetProgressiveWaveValue(const Seconds& forTime, VelocityR
 	return err;
 }
 
-WorldPoint ShioTimeValue_c::GetRefWorldPoint (void)
+WorldPoint ShioTimeValue_c::GetStationLocation (void)
 {
 	WorldPoint wp;
 	wp.pLat = fLatitude * 1000000;
