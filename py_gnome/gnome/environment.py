@@ -17,8 +17,10 @@ class Wind(GnomeObject):
     """
     Defines the Wind conditions for a spill
     """
+    # removed 'id' from list below
+    # id, filename and units cannot be updated - read only properties
+    # therefore, Wind.from_dict() will fail if units, id and filename are part of the list
     serializable_fields = [
-        'id',
         'latitude',
         'longitude',
         'description',
