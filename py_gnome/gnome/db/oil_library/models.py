@@ -1,4 +1,3 @@
-from pyramid.security import Allow, Authenticated
 from sqlalchemy import (
     Table,
     Column,
@@ -19,18 +18,10 @@ from sqlalchemy.orm import (
     relationship,
     )
 
-from zope.sqlalchemy import ZopeTransactionExtension #@UnresolvedImport IGNORE:E0611
+from zope.sqlalchemy import ZopeTransactionExtension
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
-
-class RootFactory(object):
-    __acl__ = [
-            (Allow, Authenticated, 'view'),
-            (Allow, 'group:editors', 'edit'),
-            ]
-    def __init__(self, request):
-        pass
 
 # UNMAPPED association table (Oil <--many-to-many--> Synonym)
 oil_to_synonym = Table('oil_to_synonym', Base.metadata,
@@ -178,6 +169,10 @@ class Oil(Base):
             If we are using dynamic viscosities, we calculate the
             kinematic viscosity from the density that is closest
             to the respective reference temperature
+            TODO: Chris would like calculated properties, at least the very complex,
+                  to be moved to a subclass
+                  - maybe we create a class like OilProperties(Oil) that is either
+                    derived from Oil or contains an oil object.
         '''
         # first we get the kinematic viscosities if they exist
         ret = []

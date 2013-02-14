@@ -22,19 +22,18 @@ class LibFile(object):
                 - The rest of the lines in the file contain table data.
 
     '''
-    def __init__(self, name, lineDelim='\r', fieldDelim='\t'):
-        self.fileobj = open(name, 'r')
-        self.lineDelim = lineDelim
-        self.fieldDelim = fieldDelim
+    def __init__(self, name, line_delim='\r', field_delim='\t'):
+        self.file_columns = None
+        self.file_columns_lu = None
+        self.num_columns = None
 
-        # we will consume the header upon opening.
+        self.fileobj = open(name, 'r')
+        self.line_delim = line_delim
+        self.field_delim = field_delim
+
         self.__version__ = self.readline(32)
         self._check_version_hdr()
-
-        # we will next consume the column fields upon opening.
-        self.fileColumns = self.readline()
-        self.fileColumnsLU = dict(zip(self.fileColumns, range(len(self.fileColumns))))
-        self.numFileColumns = len(self.fileColumns)
+        self._set_table_columns()
 
     def _check_version_hdr(self):
         ''' check that the file has a proper header.
@@ -46,45 +45,35 @@ class LibFile(object):
         elif self.__version__[-1] != 'adios':
             raise Exception('Bad file header: did not find product field!!')
 
-    def _parse_row(self, buff):
-        ret = unicode(str(buff), encoding='utf_8', errors='replace').split(self.fieldDelim)  # split fields
-        ret = [c if len(c) > 0 else None for c in ret]  # replace empty fields with None
-        return ret
+    def _set_table_columns(self):
+        self.file_columns = self.readline()
+        self.file_columns_lu = dict(zip(self.file_columns, range(len(self.file_columns))))
+        self.num_columns = len(self.file_columns)
 
+    def _parse_row(self, buff):
+        if len(buff) > 0:
+            row = unicode(str(buff), encoding='utf_8', errors='replace').split(self.field_delim)
+            row = [c if len(c) > 0 else None for c in row]
+        else:
+            row = []
+        return row
 
     def readline(self, size=None):
-        ''' Read the next line in the file that is delimited by our
-            specified line delimiter
-            - We split the lines based on our field delimiter and
-              return a list of fields.
-        '''
         buff = bytearray()
         while True:
             c = self.fileobj.read(1)
-            if (len(c) < 1 or c == self.lineDelim) or (size and len(buff) >= size):
+            if (len(c) < 1 or c == self.line_delim) or (size and len(buff) >= size):
                 return self._parse_row(buff)
             else:
                 buff += c
 
     def readlines(self):
-        ''' Sequentially read the lines that are delimited by our
-            specified line delimiter.
-            - This works as a generator so we can iterate over the lines.
-            - We split the lines based on our field delimiter and
-              return a list of fields.
-        '''
-        buff = bytearray()
         while True:
-            c = self.fileobj.read(1)
-            if len(c) < 1:
-                if len(buff) > 0:
-                    yield self._parse_row(buff)
-                break
-            elif c == self.lineDelim:
+            buff = self.readline()
+            if len(buff) > 0:
                 yield self._parse_row(buff)
-                buff = bytearray()
             else:
-                buff += c
+                break
 
 
 
@@ -130,11 +119,11 @@ Required:
 
         if options.verbose:
             print '-'*50
-            print 'Number of Fields/Header Columns: %d/%d' % (len(r), fd.numFileColumns)
+            print 'Number of Fields/Header Columns: %d/%d' % (len(r), fd.num_columns)
 
         if options.fields:
             fields = options.fields.split(',')
-            matchingFields = set(fields).intersection(fd.fileColumns)
+            matchingFields = set(fields).intersection(fd.file_columns)
             if options.verbose:
                 print 'fields specified:', fields
                 print 'fields matching columns:', matchingFields
@@ -144,12 +133,12 @@ Required:
         elif len(matchingFields) > 0:
             # we just display the fields we want
             for f in matchingFields:
-                print '\t%-20s\t%s' % (f + ':', (r[fd.fileColumnsLU[f]],))
+                print '\t%-20s\t%s' % (f + ':', (r[fd.file_columns_lu[f]],))
         else:
             # we display all fields
             for f, i in zip(r, range(len(r))):
-                if i < fd.numFileColumns:
-                    fieldName = fd.fileColumns[i]
+                if i < fd.num_columns:
+                    fieldName = fd.file_columns[i]
                     print '\t%-20s\t%s' % (fieldName + ':', (f,))
                 else:
                     print '\t%-20s\t%s' % ('extra field:', (f,))

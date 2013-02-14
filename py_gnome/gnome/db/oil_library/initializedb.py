@@ -62,7 +62,7 @@ def main():
         rowcount = 0
         for r in fd.readlines():
             # 3a. for each row, we populate the Oil object
-            initargs = dict(zip(fd.fileColumns, r))
+            initargs = dict(zip(fd.file_columns, r))
             transaction.begin()
             oil = Oil(**initargs) #IGNORE:W0142
 
