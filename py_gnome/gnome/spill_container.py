@@ -400,7 +400,12 @@ class SpillContainerPair(SpillContainerPairData):
         """
         return len(self._spill_container.spills)    
 
-
+    def __contains__(self, ident):
+        """
+        looks to see if ident which is the id of a spill belongs in the _spill_container.spills 
+        OrderedCollection
+        """
+        return ident in self._spill_container.spills
 
 
 class TestSpillContainer(SpillContainer):
