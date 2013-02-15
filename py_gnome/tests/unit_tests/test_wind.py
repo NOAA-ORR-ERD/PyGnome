@@ -67,7 +67,7 @@ def test_read_file_init():
     wm = environment.Wind(file=filepath)
     print
     print "----------------------------------"
-    print "Units: " + str(wm.units)
+    print "Units: " + str(wm.user_units)
     assert True
 
 # tolerance for np.allclose(..) function. Results are almost the same but not quite so needed to add tolerance.
@@ -89,7 +89,7 @@ def test_init(wind_circ):
     
     # output is in meters per second
     gtime_val = wm.get_timeseries(format="uv", units='meters per second').view(dtype=np.recarray)
-    expected = unit_conversion.convert('Velocity',wm.units,'meters per second',wind_circ['uv'].value)
+    expected = unit_conversion.convert('Velocity',wm.user_units,'meters per second',wind_circ['uv'].value)
     assert np.all(gtime_val.time == wind_circ['uv'].time)
     assert np.allclose(gtime_val.value, expected, atol, rtol)
     
@@ -277,21 +277,20 @@ def test_constant_wind():
                        (10, 45))
 
 
-def test_to_dict():
+def test_new_from_dict():
     """
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
     wm = environment.Wind(file=filepath)
     wm_dict = wm.to_dict()
-    wm2 = environment.Wind(**wm_dict)
+    #wm2 = environment.Wind(**wm_dict)
+    wm2 = environment.Wind.new_from_dict(wm_dict)   # this does not catch two objects with same ID
     
     for key in wm_dict.keys():
-        if key != 'filename' and key != 'timeseries' and key != 'id':   # not settable properties
+        if key != 'timeseries':   # not settable properties
             assert wm.__getattribute__(key) == wm2.__getattribute__(key)
-        
-    assert wm.id != wm2.id
-    assert wm2.filename == ''   # this should be empty for now
+            
     assert np.all( wm.timeseries['time'] == wm2.timeseries['time'])
     assert np.allclose(wm.timeseries['value'], wm2.timeseries['value'], atol, rtol)
     
@@ -305,13 +304,11 @@ def test_from_dict():
     
     # following are not settable parameters
     wm_dict.pop('id')
-    wm_dict.pop('units')
-    wm_dict.pop('filename')
+    wm_dict.pop('user_units')
     
     # let's update timeseries 
     wm_dict['timeseries'][0]['value'][:] = np.array( (10., 180.))
     wm.from_dict(wm_dict)
     for key in wm_dict.keys():
-        if key != 'filename' and key != 'timeseries':
+        if key != 'timeseries':
             assert wm.__getattribute__(key) == wm_dict.__getitem__(key)
-        

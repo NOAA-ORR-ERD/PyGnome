@@ -9,6 +9,19 @@ class Serializable(object):
     """
     serializable_fields = []
 
+    @classmethod
+    def new_from_dict(cls, dict):
+        """
+        creates a new object from dictionary
+        
+        This is base implementation and can be over-ridden by classes using mixin
+        """
+        new_obj = cls(**dict)
+        if dict.get('id'):
+            new_obj.id = dict.get('id')  # let's assign this as well?
+            
+        return new_obj
+
     def to_dict(self):
         """
         Return a dictionary containing the serialized representation of this

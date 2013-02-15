@@ -93,17 +93,6 @@ cdef class CyOSSMTime(object):
         def __get__(self):
             return <bytes>self.time_dep.fileName
         
-        #=======================================================================
-        # def __set__(self, value):
-        #    max_ = cython.sizeof(self.time_dep.fileName)
-        #    if len(value) > max_:
-        #        print "Only first 256 char will be written: {0}\n".format(value[:max_])
-        #        
-        #    for i, char_ in enumerate(value):
-        #        print i, char_
-        #        self.time_dep.fileName[i] = 'char_'
-        #=======================================================================
-        
     property station_location:
         def __get__(self):
             return np.array((0,0,0), dtype=basic_types.world_point)    # will replace this once OSSMTime contains values

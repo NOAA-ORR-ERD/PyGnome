@@ -47,7 +47,7 @@ def test_read_file_init():
     # make sure default units is correct and correctly called
     # NOTE: Following functionality is already tested in test_wind.py, but what the heck - do it here too.
     wind_ts = wind.get_timeseries(format=basic_types.ts_format.uv)
-    cpp_timeseries['value'] = unit_conversion.convert('Velocity','meter per second',wind.units,cpp_timeseries['value'])
+    cpp_timeseries['value'] = unit_conversion.convert('Velocity','meter per second',wind.user_units,cpp_timeseries['value'])
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
    
 def test_timeseries_init(wind_circ):

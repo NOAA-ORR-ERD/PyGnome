@@ -38,10 +38,16 @@ class Wind( GnomeObject, serializable.Serializable):
         create a new Wind object from a dictionary
         
         Note: 'user_units' need to be updated to 'units' then passed into init method since units for timeseries data are now 'user_units'
+              'user_units' are read only parameter
         """
-        dict
-        new_object = cls(**dict)
-        return new_object        
+        if not dict.get('units'):
+            dict.update({'units':dict.get('user_units')})
+            new_obj = super(Wind,cls).new_from_dict(dict)
+            dict.pop('units')   # put dict back in original state
+            return new_obj
+        else:
+            return super(Wind,cls).new_from_dict(dict)
+        
 
     def __init__(self, **kwargs):
         """
@@ -209,7 +215,7 @@ class Wind( GnomeObject, serializable.Serializable):
         if units is not None:
             datetimeval['value'] = self._convert_units(datetimeval['value'], format, 'meter per second', units)
         else:
-            datetimeval['value'] = self._convert_units(datetimeval['value'], format, 'meter per second', self.units)
+            datetimeval['value'] = self._convert_units(datetimeval['value'], format, 'meter per second', self.user_units)
             
         return datetimeval
     
@@ -221,7 +227,7 @@ class Wind( GnomeObject, serializable.Serializable):
         
         :param datetime_value_2d: timeseries of wind data defined in a numpy array
         :type datetime_value_2d: numpy array of dtype basic_types.datetime_value_2d
-        :param user_units: XXX user units
+        :param units: units associated with the data
         :param format: output format for the times series; as defined by basic_types.format.
         :type format: either string or integer value defined by basic_types.format.* (see cy_basic_types.pyx)
         """
