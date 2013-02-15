@@ -76,6 +76,7 @@ def show_model(request):
     Render all forms, JSON and HTML needed to load the JavaScript app on the
     model page.
     """
+    deleted = request.cookies.get('model_deleted', False)
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
     model_images_dir = request.registry.settings['model_images_dir']
@@ -104,6 +105,7 @@ def show_model(request):
     data = {
         'model': model_settings,
         'model_id': model.id,
+        'created': created,
         'map_bounds': [],
         'map_is_loaded': False,
         'current_time_step': model.current_time_step,
@@ -127,7 +129,8 @@ def show_model(request):
 
     if created:
         request.session[settings.model_session_key] = model.id
-        if model_id:
+
+        if model_id and not deleted:
             data['warning'] = 'The model you were working on is no longer ' \
                               'available. We created a new one for you.'
 

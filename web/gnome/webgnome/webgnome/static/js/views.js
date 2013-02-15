@@ -92,82 +92,32 @@ define([
             this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
             this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
             this.modelRun.on(models.ModelRun.CREATED, this.reset);
-            this.mapCanvas = $('#map_canvas');
-            
+
             this.model = this.options.model;
             this.model.on('change:background_image_url', function() {
-                _this.resetBackground();
+                _this.reset();
             });
             this.model.on('destroy', function () {
                 _this.reset();
-                _this.mapCanvas.imagesLoaded(_this.centerPlaceholderMap);
                 _this.map.empty();
             });
-
-            this.setupLocationFileMap();
-
-            // Map is loaded in the model if it has an ID
-            if (this.model.id) {
-                this.loadMapFromUrl(this.model.get('background_image_url'));
-            } else {
-                this.showPlaceholder();
-            }
 
             if (this.modelRun.hasCachedTimeStep(this.modelRun.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
             }
         },
 
-        setupLocationFileMap: function() {
-            var _this = this;
-            this.placeholderCenter = new google.maps.LatLng(-34.397, 150.644);
-            var infoWindow = new google.maps.InfoWindow();
-            var gmapOptions = {
-                center: this.placeholderCenter,
-                backgroundColor: '#212E68',
-                zoom: 1,
-                scrollwheel: true,
-                scaleControl: true,
-                mapTypeId: google.maps.MapTypeId.HYBRID,
-            };
-
-            this.locationFileMap = new google.maps.Map(
-                this.mapCanvas[0], gmapOptions);
-
-            _.each(this.locationFiles, function(location) {
-                var latLng = new google.maps.LatLng(
-                    location.latitude, location.longitude);
-
-                var marker = new google.maps.Marker({
-                    position: latLng,
-                    map: _this.locationFileMap
-                });
-
-                google.maps.event.addListener(marker, 'click', function() {
-                    var template = _.template(
-                        $('#location-file-template').text());
-                    infoWindow.setContent(template(location));
-                    infoWindow.open(_this.locationFileMap, marker);
-                });
-            });
+        show: function() {
+            this.setBackground();
         },
 
-        centerPlaceholderMap: function() {
-            google.maps.event.trigger(this.locationFileMap, 'resize');
-            this.locationFileMap.setCenter(this.placeholderCenter);
-        },
-
-        resetBackground: function() {
-            this.reset();
-
-            if (!this.model.id) {
-                return;
-            }
-
+        setBackground: function() {
             var backgroundImageUrl = this.model.get('background_image_url');
 
             if (backgroundImageUrl) {
                 this.loadMapFromUrl(backgroundImageUrl);
+            } else {
+                this.showPlaceholder();
             }
         },
 
@@ -456,7 +406,6 @@ define([
             background.imagesLoaded(function() {
                 _this.createCanvases();
                 _this.trigger(MapView.READY);
-//                _this.drawSpills();
             });
 
             background.appendTo(map);
@@ -635,9 +584,7 @@ define([
 
         reset: function() {
             this.clear({clearBackground: true});
-            if (!$(this.mapEl).find('.background').length) {
-                this.showPlaceholder();
-            }
+            this.setBackground();
             this.setStopped();
         },
 
@@ -728,9 +675,10 @@ define([
                 collection.on('destroy', _this.reload);
             });
 
-            this.options.modelSettings.on('sync', this.reload);
+            this.modelSettings = this.options.modelSettings;
+            this.modelSettings.on('sync', this.reload);
+
             this.options.map.on('sync', this.reload);
-            this.options.map.on('change:filename', this.reload);
         },
 
         setupDynatree: function() {
@@ -766,6 +714,9 @@ define([
         },
 
         reload: function() {
+            if (this.modelSettings && this.modelSettings.wasDeleted) {
+                return;
+            }
             this.tree.dynatree('getTree').reload();
         }
     }, {
@@ -1251,13 +1202,133 @@ define([
     });
 
 
+    var SplashView = Backbone.View.extend({
+        initialize: function() {
+            this.router = this.options.router;
+        },
+
+        events: {
+            'click .choose-location': 'chooseLocation',
+            'click .build-model': 'buildModel'
+        },
+
+        chooseLocation: function(event) {
+            event.preventDefault();
+            this.router.navigate('location_map', true);
+        },
+
+        buildModel: function(event) {
+            event.preventDefault();
+            this.router.navigate('model', true);
+        },
+
+        show: function() {
+            this.$el.removeClass('hidden');
+        },
+
+        hide: function() {
+            this.$el.addClass('hidden');
+        }
+    });
+
+
+    var LocationFileMapView = Backbone.View.extend({
+        events: {
+            'click .load-location-file': 'locationChosen'
+        },
+
+        initialize: function() {
+            _.bindAll(this);
+            this.router = this.options.router;
+            this.apiRoot = this.options.apiRoot;
+            this.mapCanvas = $(this.options.mapCanvas);
+            this.locationFiles = this.options.locationFiles;
+
+            this.setupLocationFileMap();
+        },
+
+        locationChosen: function(event) {
+            event.preventDefault();
+            var location = $(event.target).data('location');
+            if (location) {
+                this.router.navigate('location/' + location, true);
+            }
+        },
+
+        setupLocationFileMap: function() {
+            var _this = this;
+            this.center = new google.maps.LatLng(-34.397, 150.644);
+            var infoWindow = new google.maps.InfoWindow();
+            var gmapOptions = {
+                center: this.center,
+                backgroundColor: '#212E68',
+                zoom: 1,
+                scrollwheel: true,
+                scaleControl: true,
+                mapTypeId: google.maps.MapTypeId.HYBRID,
+            };
+
+            this.locationFileMap = new google.maps.Map(
+                this.mapCanvas[0], gmapOptions);
+
+            _.each(this.locationFiles, function(location) {
+                var latLng = new google.maps.LatLng(
+                    location.latitude, location.longitude);
+
+                var marker = new google.maps.Marker({
+                    position: latLng,
+                    map: _this.locationFileMap
+                });
+
+                google.maps.event.addListener(marker, 'click', function() {
+                    var template = _.template(
+                        $('#location-file-template').text());
+                    infoWindow.setContent(template(location));
+                    infoWindow.open(_this.locationFileMap, marker);
+                });
+            });
+        },
+
+        centerMap: function() {
+            google.maps.event.trigger(this.locationFileMap, 'resize');
+            this.locationFileMap.setCenter(this.center);
+        },
+
+        loadLocationFile: function(location) {
+             $.ajax({
+                 type: 'POST',
+                 url: this.apiRoot + '/location_file/' + location,
+                 success: function() {
+                     window.location = window.location.origin;
+                 },
+                 error: function() {
+                     alert('That location file does not exist yet.');
+                 }
+             });
+         },
+
+        show: function() {
+            this.$el.imagesLoaded(this.centerMap);
+            this.$el.removeClass('hidden');
+        },
+
+        hide: function() {
+            this.$el.addClass('hidden');
+        }
+    }, {
+        LOCATION_CHOSEN: 'locationFileMapView:locationChosen'
+    });
+
+
     return {
         MessageView: MessageView,
         MapView: MapView,
         TreeView: TreeView,
         TreeControlView: TreeControlView,
         MapControlView: MapControlView,
-        MenuView: MenuView
+        MenuView: MenuView,
+        SplashView: SplashView,
+        LocationFileMapView: LocationFileMapView
     };
 
 });

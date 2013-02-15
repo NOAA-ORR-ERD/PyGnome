@@ -22,8 +22,7 @@ define([
     var AppView = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
-
-            this.apiRoot = "/model/" + this.options.modelId;
+            this.apiRoot = this.options.apiRoot;
 
             this.setupModels();
             this.setupForms();
@@ -73,7 +72,7 @@ define([
                 modelRun: this.modelRun,
                 model: this.map,
                 animationThreshold: this.options.animationThreshold,
-                locationFiles: this.options.locationFiles
+                newModel: this.options.newModel
             });
 
             this.mapControlView = new views.MapControlView({
@@ -104,16 +103,7 @@ define([
 
             this.setupEventHandlers();
             this.setupKeyboardHandlers();
-
-            // Setup datepickers
-            _.each($('.date'), function(field) {
-                $(field).datepicker({
-                    changeMonth: true,
-                    changeYear: true
-                });
-            });
-
-            $('.error').tooltip({selector: "a"});
+            this.router = this.options.router;
         },
 
         setupEventHandlers: function() {
@@ -162,28 +152,11 @@ define([
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
-            this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.loadLocation);
-
-            $('.placeholder').on('click', '.load-location-file', function(event) {
-                event.preventDefault();
-                var location = $(event.target).data('location');
-                if (location) {
-                    _this.loadLocation(location);
-                }
-            });
+            this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.setLocation);
         },
 
-        loadLocation: function(location) {
-            $.ajax({
-                type: 'POST',
-                url: this.apiRoot + '/location_file/' + location,
-                success: function() {
-                    window.location.reload();
-                },
-                error: function() {
-                    alert('That location file does not exist yet.');
-                }
-            });
+        setLocation: function(location) {
+            this.router.navigate('location/' + location, true);
         },
 
         /*
@@ -368,7 +341,6 @@ define([
                 }
             );
 
-            this.options.modelSettings['id'] = this.options.modelId;
             this.modelSettings = new models.Model(this.options.modelSettings);
 
             // Initialize the model with any previously-generated time step data the
@@ -407,15 +379,11 @@ define([
                 return;
             }
 
-            var _this = this;
-            var model = new models.Model({}, {url: this.apiRoot});
-            _this.modelSettings.destroy({
+            this.modelSettings.wasDeleted = true;
+            this.modelSettings.destroy({
                 success: function() {
-                    model.save(null, {
-                        success: function() {
-                            window.location.reload(true);
-                        }
-                    });
+                    util.Cookies.setItem('model_deleted', true);
+                    window.location = window.location.origin;
                 }
             });
         },
@@ -551,9 +519,6 @@ define([
         /*
          Jump to the last LOADED frame of the animation. This will stop at
          whatever frame was the last received from the server.
-
-         TODO: This should probably do something fancier, like block and load
-         all of the remaining frames if they don't exist, until the end.
          */
         jumpToLastFrame: function() {
             var lastFrame = this.modelRun.length - 1;
@@ -718,6 +683,15 @@ define([
             }
 
             formView.show();
+        },
+
+        show: function() {
+            this.mapView.show();
+            this.$el.removeClass('hidden');
+        },
+
+        hide: function() {
+            this.$el.addClass('hidden');
         }
     });
 
