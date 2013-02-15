@@ -1407,6 +1407,20 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 			this->fStationType = 'C'; break;
 		case 'h': case 'H': 
 			this->fStationType = 'H'; 
+#ifndef pyGNOME
+			if (unitsIfKnownInAdvance!=-2)	// not a location file
+			{
+				Boolean bStandingWave = true;
+				float scaleFactor = fScaleFactor;
+				err = ShioHtsDialog(&bStandingWave,&scaleFactor,mapWindow);
+				if (!err)
+				{
+					if (!bStandingWave) this->fStationType = 'P';
+					//this->fScaleFactor = scaleFactor;
+				}
+			}
+#endif
+			break;
 		case 'p': case 'P': 
 			this->fStationType = 'P';	// for now assume progressive waves selected in file, maybe change to user input
 			
