@@ -33,6 +33,11 @@ class Wind(GnomeObject):
         'filename',
         ]
     
+    @classmethod
+    def new_from_dict(cls, dict):
+        new_object = cls(**dict)
+        return new_object        
+
     def __init__(self, **kwargs):
         """
         Initializes a wind object. It only takes keyword arguments as input, these
