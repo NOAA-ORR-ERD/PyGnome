@@ -1407,8 +1407,6 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 			this->fStationType = 'C'; break;
 		case 'h': case 'H': 
 			this->fStationType = 'H'; 
-			cout << "Not handling station type 'H'.\n";
-			return -1;
 		case 'p': case 'P': 
 			this->fStationType = 'P';	// for now assume progressive waves selected in file, maybe change to user input
 			
