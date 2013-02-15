@@ -10,22 +10,13 @@ define([
             '': 'index',
             'model': 'model',
             'splash': 'splash',
-            'location_map': 'locationMap',
-            'location/:location': 'setLocation'
+            'location_map': 'locationMap'
         },
 
         initialize: function(options) {
             this.newModel = options.newModel;
-
             options.appOptions.router = this;
-            options.splashOptions.router = this;
-            options.locationMapOptions.router = this;
-
-            this.splashView = new views.SplashView(options.splashOptions);
             this.appView = new app_view.AppView(options.appOptions);
-            this.locationFileMapView = new views.LocationFileMapView(
-                options.locationMapOptions
-            );
         },
 
         index: function() {
@@ -38,26 +29,15 @@ define([
         
         model: function() {
             this.newModel = false;
-            this.splashView.hide();
-            this.locationFileMapView.hide();
-            this.appView.mapView.hidePlaceholder();
-            this.appView.show();
+            this.appView.showSection('model');
         },
 
         locationMap: function() {
-            this.splashView.hide();
-            this.appView.hide();
-            this.locationFileMapView.show();
+            this.appView.showSection('location-file-map')
         },
 
-        setLocation: function(location) {
-            this.locationFileMapView.loadLocationFile(location);
-        },
-        
         splash: function() {
-            this.appView.hide();
-            this.locationFileMapView.hide();
-            this.splashView.show();
+            this.appView.showSection('splash-page')
         }
     });
 

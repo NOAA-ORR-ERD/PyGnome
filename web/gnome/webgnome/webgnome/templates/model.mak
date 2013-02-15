@@ -75,7 +75,7 @@
     </div>
 
     <div id="main-content" class="row">
-        <div id="app" class='hidden'>
+        <div id="model" class='section hidden'>
             <div class="btn-toolbar">
                 <div class="btn-group">
                     <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
@@ -107,7 +107,7 @@
             <div class="placeholder"></div>
         </div>
 
-        <div id="splash-page" class='hidden'>
+        <div id="splash-page" class='section hidden'>
              <img alt="GNOME model output depicting relative distribution of oil."
                  src="http://response.restoration.noaa.gov/sites/default/files/gnome_output_0.png"
                     style="float:right;">
@@ -141,7 +141,7 @@
             </div>
         </div>
 
-        <div id="location-file-map" class='hidden'>
+        <div id="location-file-map" class='section hidden'>
             <div id="map_canvas"></div>
         </div>
     </div>
@@ -210,11 +210,9 @@
                 interpolate: /\{\{(.+?)\}\}/g
             };
 
-            var apiRoot = "/model/" + "${model_id}";
-
             var appOptions = {
                 el: $('#app'),
-                apiRoot: apiRoot,
+                modelId: "${model_id}",
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                 currentTimeStep: ${current_time_step},
@@ -230,26 +228,14 @@
                 defaultMap: ${default_map | n},
                 defaultCustomMap: ${default_custom_map | n},
                 mapIsLoaded: ${"true" if map_is_loaded else "false"},
+                locationFiles: ${location_files | n},
                 animationThreshold: 10 // Milliseconds
-            };
-
-            var splashOptions = {
-                el: $('#splash-page')
-            };
-
-            var locationMapOptions = {
-                apiRoot: apiRoot,
-                el: $('#location-file-map'),
-                mapCanvas: '#map_canvas',
-                locationFiles: ${location_files | n}
             };
 
             $('#map').imagesLoaded(function() {
                 new router.Router({
                     newModel: ${"true" if created else "false"},
-                    appOptions: appOptions,
-                    splashOptions: splashOptions,
-                    locationMapOptions: locationMapOptions
+                    appOptions: appOptions
                 });
 
                 Backbone.history.start();
