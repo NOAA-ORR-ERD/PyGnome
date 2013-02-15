@@ -9,11 +9,11 @@ import os
 import numpy as np
 
 from gnome import basic_types, GnomeObject
-from gnome.utilities import transforms, time_utils, convert
+from gnome.utilities import transforms, time_utils, convert, serializable
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from hazpy import unit_conversion
 
-class Wind(GnomeObject):
+class Wind( GnomeObject, serializable.Serializable):
     """
     Defines the Wind conditions for a spill
     """
@@ -28,13 +28,18 @@ class Wind(GnomeObject):
         'source_id',
         'source_type',
         'updated_at',
-        'units', # this must be set before timeseries property
+        'user_units', # this must be set before timeseries property
         'timeseries',
-        'filename',
         ]
     
     @classmethod
     def new_from_dict(cls, dict):
+        """
+        create a new Wind object from a dictionary
+        
+        Note: 'user_units' need to be updated to 'units' then passed into init method since units for timeseries data are now 'user_units'
+        """
+        dict
         new_object = cls(**dict)
         return new_object        
 
@@ -168,10 +173,10 @@ class Wind(GnomeObject):
         """
         return "Wind Object"
     
-    units = property( lambda self: self._user_units)   
+    user_units = property( lambda self: self._user_units)   
     filename = property( lambda self: self.ossm.filename)
     timeseries = property( lambda self: self.get_timeseries(),
-                           lambda self, val: self.set_timeseries(val, units=self.units) )
+                           lambda self, val: self.set_timeseries(val, units=self.user_units) )
     
     def get_timeseries(self, datetime=None, units=None, format='r-theta'):
         """
