@@ -75,38 +75,73 @@
     </div>
 
     <div id="main-content" class="row">
-        <div class="btn-toolbar">
-            <div class="btn-group">
-                <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
-            </div>
-            <div class="btn-group">
-                <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
-            </div>
-            <div class="btn-group">
-                <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
-                <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
-                <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
-                <a class="btn disabled" id="spill-button" href="javascript:"><i class="icon-tint"></i></a>
-            </div>
-            <div class="btn-group">
-                <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
-
-                <div class="btn disabled" id="slider-container">
-                    <span id="time">00:00</span>
-
-                    <div id="slider"><div id="slider-shaded"></div></div>
+        <div id="app" class='hidden'>
+            <div class="btn-toolbar">
+                <div class="btn-group">
+                    <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
                 </div>
-                <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
-                <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
-                <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
+                <div class="btn-group">
+                    <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
+                </div>
+                <div class="btn-group">
+                    <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
+                    <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
+                    <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
+                    <a class="btn disabled" id="spill-button" href="javascript:"><i class="icon-tint"></i></a>
+                </div>
+                <div class="btn-group">
+                    <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
+
+                    <div class="btn disabled" id="slider-container">
+                        <span id="time">00:00</span>
+
+                        <div id="slider"><div id="slider-shaded"></div></div>
+                    </div>
+                    <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
+                    <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
+                    <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
+                </div>
+            </div>
+
+            <div id="map"> </div>
+            <div class="placeholder"></div>
+        </div>
+
+        <div id="splash-page" class='hidden'>
+             <img alt="GNOME model output depicting relative distribution of oil."
+                 src="http://response.restoration.noaa.gov/sites/default/files/gnome_output_0.png"
+                    style="float:right;">
+
+            <h3>About Gnome</h3>
+
+            <p>
+                GNOME (General NOAA Operational Modeling Environment) is the
+                modeling tool the Office of Response and Restoration's (OR&R)
+                Emergency Response Division uses to predict the possible route,
+                or trajectory, a pollutant might follow in or on a body of
+                water, such as in an oil spill.
+            </p>
+
+            <h3>Get Started Now</h3>
+
+            <div>
+                <p>
+                    <a class="choose-location btn btn-large btn-primary" href="javascript:">Choose a location</a>
+                </p>
+            </div>
+            <div>
+                <p>
+                    <a class="build-model btn btn-large btn-primary" href="javascript:">Build your own model</a>
+                </p>
+            </div>
+            <div>
+                <p>
+                    <a class="btn btn-large btn-primary">Load a save file</a>
+                </p>
             </div>
         </div>
 
-
-        <div id="map">
-        </div>
-
-        <div class="placeholder" class="hidden">
+        <div id="location-file-map" class='hidden'>
             <div id="map_canvas"></div>
         </div>
     </div>
@@ -140,11 +175,12 @@
         require([
             'jquery',
             'lib/underscore',
-            'app_view',
+            'lib/backbone',
+            'router',
             'util',
             'lib/rivets',
             'lib/jquery.imagesloaded.min',
-        ], function($, _, app_view, util, rivets) {
+        ], function($, _, Backbone, router, util, rivets) {
             "use strict";
 
             // Configure a Rivets adapter to work with Backbone
@@ -174,27 +210,49 @@
                 interpolate: /\{\{(.+?)\}\}/g
             };
 
+            var apiRoot = "/model/" + "${model_id}";
+
+            var appOptions = {
+                el: $('#app'),
+                apiRoot: apiRoot,
+                generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
+                expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
+                currentTimeStep: ${current_time_step},
+                surfaceReleaseSpills: ${surface_release_spills | n},
+                defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
+                windMovers: ${wind_movers | n},
+                defaultWindMover: ${default_wind_mover | n},
+                defaultWindTimeseriesValue: ${default_wind_timeseries_value | n},
+                randomMovers: ${random_movers | n},
+                defaultRandomMover: ${default_random_mover | n},
+                modelSettings: ${model_settings | n},
+                map: ${map_data | n},
+                defaultMap: ${default_map | n},
+                defaultCustomMap: ${default_custom_map | n},
+                mapIsLoaded: ${"true" if map_is_loaded else "false"},
+                animationThreshold: 10 // Milliseconds
+            };
+
+            var splashOptions = {
+                el: $('#splash-page')
+            };
+
+            var locationMapOptions = {
+                apiRoot: apiRoot,
+                el: $('#location-file-map'),
+                mapCanvas: '#map_canvas',
+                locationFiles: ${location_files | n}
+            };
+
             $('#map').imagesLoaded(function() {
-                new app_view.AppView({
-                    generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
-                    expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
-                    currentTimeStep: ${current_time_step},
-                    surfaceReleaseSpills: ${surface_release_spills | n},
-                    defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
-                    windMovers: ${wind_movers | n},
-                    defaultWindMover: ${default_wind_mover | n},
-                    defaultWindTimeseriesValue: ${default_wind_timeseries_value | n},
-                    randomMovers: ${random_movers | n},
-                    defaultRandomMover: ${default_random_mover | n},
-                    modelId: "${model_id}",
-                    modelSettings: ${model_settings | n},
-                    map: ${map_data | n},
-                    defaultMap: ${default_map | n},
-                    defaultCustomMap: ${default_custom_map | n},
-                    mapIsLoaded: ${"true" if map_is_loaded else "false"},
-                    locationFiles: ${location_files | n},
-                    animationThreshold: 10 // Milliseconds
+                new router.Router({
+                    newModel: ${"true" if created else "false"},
+                    appOptions: appOptions,
+                    splashOptions: splashOptions,
+                    locationMapOptions: locationMapOptions
                 });
+
+                Backbone.history.start();
             });
         });
     </script>
