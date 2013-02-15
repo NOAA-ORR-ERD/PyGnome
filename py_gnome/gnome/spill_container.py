@@ -24,9 +24,9 @@ class SpillContainerData(object):
     Designed primarily to hold data retrieved from cache
 
     """
-    def __init__(self, data_arrays={}, uncertain=False):
+    def __init__(self, data_arrays=None, uncertain=False):
         """
-        Initilize a SimpleSpillContainer.
+        Initialize a SimpleSpillContainer.
 
         :param uncertain=False: flag indicating whether this holds uncertainty
                                 elements or not 
@@ -39,6 +39,8 @@ class SpillContainerData(object):
         self.uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
         self.on = True       # sets whether the spill is active or not
         
+        if not data_arrays:
+            data_arrays = {}
         self._data_arrays = data_arrays
 
     def __getitem__(self, data_name):
@@ -131,36 +133,6 @@ class SpillContainer(SpillContainerData):
         # the arrays types of all existing Spills
         self._data_arrays = gnome.spill.Spill().create_new_elements(0)
 
-    def __getitem__(self, data_name):
-        """
-        The basic way to access data for the LEs
-
-        a KeyError will be raised if the data is not there
-        """
-        return self._data_arrays[data_name]
-
-    def __setitem__(self, data_name, array):
-        """
-        sets the data item
-
-        careful! -- this should probably only be used for testing!
-        as all arrays need to be compatible
-
-        It will be checked to at least be size-consistent with the rest of the
-        data, and type-consistent if the data array is being replaced
-        """
-        array = np.asarray(array)
-
-        if data_name in self._data_arrays:
-            # if the array is already here, the type should match        
-            if array.dtype != self._data_arrays[data_name].dtype:
-                raise ValueError("new data array must be the same type")
-            # and the shape should match        
-            if array.shape != self._data_arrays[data_name].shape:
-                raise ValueError("new data array must be the same shape")
-
-        self._data_arrays[data_name] = array
-
     def reconcile_data_arrays(self):
         self.update_all_array_types()
 
@@ -230,6 +202,7 @@ class SpillContainer(SpillContainerData):
         return msg
 
     __repr__ = __str__  # should write a better one, I suppose
+
 
 class SpillContainerPairData(object):
     """
