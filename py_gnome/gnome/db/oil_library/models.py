@@ -1,3 +1,4 @@
+
 from sqlalchemy import (
     Table,
     Column,
@@ -22,6 +23,7 @@ from zope.sqlalchemy import ZopeTransactionExtension
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
+
 
 # UNMAPPED association table (Oil <--many-to-many--> Synonym)
 oil_to_synonym = Table('oil_to_synonym', Base.metadata,
@@ -329,7 +331,4 @@ class Toxicity(Base):
 
     def __repr__(self):
         return "<Cut('%s')>" % (self.id)
-
-
-
 

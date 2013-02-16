@@ -5,8 +5,8 @@
 import sys
 from optparse import OptionParser
 
-class LibFile(object):
-    ''' LibFile - A specialized file reader for the
+class OilLibraryFile(object):
+    ''' OilLibraryFile - A specialized file reader for the
                   OilLib and CustLib flat datafiles.
                 - These files use a different character to designate
                   a line of text ('\r').
@@ -69,9 +69,9 @@ class LibFile(object):
 
     def readlines(self):
         while True:
-            buff = self.readline()
-            if len(buff) > 0:
-                yield self._parse_row(buff)
+            line = self.readline()
+            if len(line) > 0:
+                yield line
             else:
                 break
 
@@ -110,7 +110,7 @@ Required:
 
     if options.verbose:
         print 'opening:', (filename,)
-    fd = LibFile(filename)
+    fd = OilLibraryFile(filename)
     if options.verbose:
         print fd.__version__
 

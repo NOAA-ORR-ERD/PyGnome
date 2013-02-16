@@ -1,22 +1,21 @@
-import os
-import pytest
-
-ROOT_PATH = os.path.dirname(__file__)
-
 """
 Defines test fixtures
 
 The scope="module" on the fixtures ensures it is only invoked once per test module
 """
-import numpy as np
+import sys, os, imp
 from datetime import datetime
+
+import numpy as np
+import pytest
+
 from gnome import basic_types
 from gnome.utilities import rand
 
-"""
-Skip slow tests
-"""
 def pytest_addoption(parser):
+    '''
+    Skip slow tests
+    '''
     parser.addoption("--runslow", action="store_true",
         help="run slow tests")
 
@@ -36,28 +35,24 @@ def pytest_runtest_setup(item):
     rand.seed(1)
 
 
-'''
-'''
 def pytest_sessionstart():
     from py.test import config
 
     # Only run database setup on master (in case of xdist/multiproc mode)
     if not hasattr(config, 'slaveinput'):
-        from gnome.db.oil_library.models import initialize_sql
-        from pyramid.config import Configurator
-        from paste.deploy.loadwsgi import appconfig
-        from sqlalchemy import engine_from_config
-        import os
+        try:
+            imp.find_module('sqlalchemy')
+            from pyramid.paster import get_appsettings
+            from gnome.db.oil_library.initializedb import initialize_sql, load_database
 
-        ROOT_PATH = os.path.dirname(__file__)
-        settings = appconfig('config:' + os.path.join(ROOT_PATH, 'test.ini'))
-        engine = engine_from_config(settings, prefix='sqlalchemy.')
+            ROOT_PATH = os.path.dirname(__file__)
+            config_uri = os.path.join(ROOT_PATH, r'SampleData/oil_library/test.ini')
 
-        print 'Creating the tables on the test database %s' % engine
-
-        config = Configurator(settings=settings)
-        initialize_sql(settings, config)
-
+            settings = get_appsettings(config_uri)
+            initialize_sql(settings)
+            load_database(settings)
+        except ImportError:
+            print "Warning: Required modules for database unit-testing not found."
 
 
 """
