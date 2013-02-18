@@ -79,7 +79,17 @@ class MapCanvas(object):
         self.projection = projection_class(((-180,-85),(180, 85)), self.image_size) # BB will be re-set
         self.map_BB = None
         self.land_polygons = None
-   
+    
+    def set_viewport(self, viewport_BB):
+        """
+        Sets the viewport of the map: what gets drawn at what scale
+
+        :param viewport_BB: the new viewport, as a BBox object, or in the form:
+                            ( (min_long, min_lat),
+                              (max_long, max_lat) )
+        """
+        self.projection.set_scale(viewport_BB)
+
     def set_land(self, polygons, BB=None):
         """
         sets the land polygons and optionally reset projection to fit

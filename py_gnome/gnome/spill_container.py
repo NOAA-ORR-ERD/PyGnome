@@ -24,9 +24,9 @@ class SpillContainerData(object):
     Designed primarily to hold data retrieved from cache
 
     """
-    def __init__(self, uncertain=False, data_arrays=None):
+    def __init__(self, data_arrays=None, uncertain=False):
         """
-        Initilize a SimpleSpillContainer.
+        Initialize a SimpleSpillContainer.
 
         :param uncertain=False: flag indicating whether this holds uncertainty
                                 elements or not 
@@ -36,12 +36,12 @@ class SpillContainerData(object):
 
         The common use-case for this is for loading from cache for re-rendering, etc.
         """
-        
         self.uncertain = uncertain   # uncertainty spill - same information as basic_types.spill_type
         self.on = True       # sets whether the spill is active or not
         
-        if data_arrays is not None:
-            self._data_arrays = data_arrays
+        if not data_arrays:
+            data_arrays = {}
+        self._data_arrays = data_arrays
 
     def __getitem__(self, data_name):
         """
@@ -112,7 +112,7 @@ class SpillContainer(SpillContainerData):
     """
 
     def __init__(self, uncertain=False):
-        super(SpillContainer, self).__init__(uncertain)
+        super(SpillContainer, self).__init__(uncertain=uncertain)
         
         self.all_array_types = {}
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
@@ -132,36 +132,6 @@ class SpillContainer(SpillContainerData):
         # it creates a temporary Spill object, that should reflect
         # the arrays types of all existing Spills
         self._data_arrays = gnome.spill.Spill().create_new_elements(0)
-
-    def __getitem__(self, data_name):
-        """
-        The basic way to access data for the LEs
-
-        a KeyError will be raised if the data is not there
-        """
-        return self._data_arrays[data_name]
-
-    def __setitem__(self, data_name, array):
-        """
-        sets the data item
-
-        careful! -- this should probably only be used for testing!
-        as all arrays need to be compatible
-
-        It will be checked to at least be size-consistent with the rest of the
-        data, and type-consistent if the data array is being replaced
-        """
-        array = np.asarray(array)
-
-        if data_name in self._data_arrays:
-            # if the array is already here, the type should match        
-            if array.dtype != self._data_arrays[data_name].dtype:
-                raise ValueError("new data array must be the same type")
-            # and the shape should match        
-            if array.shape != self._data_arrays[data_name].shape:
-                raise ValueError("new data array must be the same shape")
-
-        self._data_arrays[data_name] = array
 
     def reconcile_data_arrays(self):
         self.update_all_array_types()
@@ -233,6 +203,7 @@ class SpillContainer(SpillContainerData):
 
     __repr__ = __str__  # should write a better one, I suppose
 
+
 class SpillContainerPairData(object):
     """
     A really simple SpillContainerPair
@@ -249,19 +220,23 @@ class SpillContainerPairData(object):
         initialize object with the spill_containers passed in.
         """
         
+        if sc.uncertain:
+            raise ValueError("sc is an uncertain SpillContainer")
         self._spill_container = sc  # name mangling just to make it more difficult for user to find
         
         if u_sc is None:
             self._uncertain = False
         else:
             self._uncertain = True
+            if not u_sc.uncertain:
+                raise ValueError("u_sc is not an uncertain SpillContainer")
             self._u_spill_container = u_sc
 
     def __repr__(self):
         """
         unambiguous repr
         """
-        info = "{0.__class__},\n  uncertain={0.uncertain}\n "
+        info = "{0.__class__},\n  uncertain={0.uncertain}\n ".format(self)
         return info
 
     @property
@@ -272,7 +247,7 @@ class SpillContainerPairData(object):
         """
         returns a tuple of the enclosed spill containers
 
-        if uncertainty is off, jsut one is in the tuple
+        if uncertainty is off, just one is in the tuple
         if uncertainly is on -- then it is a two-tuple:
             (certain_container, uncertain_container)
 
@@ -280,6 +255,7 @@ class SpillContainerPairData(object):
             for sc in spill_container_pair.items():
                 do_something_with(sc)
         """
+        ## NOTE: cache code counts on the uncertain SpillContainer being last
         if self.uncertain:
             return (self._spill_container, self._u_spill_container)
         else:
@@ -400,7 +376,12 @@ class SpillContainerPair(SpillContainerPairData):
         """
         return len(self._spill_container.spills)    
 
-
+    def __contains__(self, ident):
+        """
+        looks to see if ident which is the id of a spill belongs in the _spill_container.spills 
+        OrderedCollection
+        """
+        return ident in self._spill_container.spills
 
 
 class TestSpillContainer(SpillContainer):

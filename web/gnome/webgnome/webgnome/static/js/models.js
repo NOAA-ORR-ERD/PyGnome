@@ -421,6 +421,16 @@ define([
             model.dirty = false;
         },
 
+        destroy: function(options) {
+            options = options || {};
+
+            if (!_.has(options, 'wait')) {
+                options.wait = true;
+            }
+
+            BaseModel.__super__.destroy.apply(this, [options]);
+        },
+
         error: function(model, response, options) {
             try {
                 response = $.parseJSON(response.responseText);

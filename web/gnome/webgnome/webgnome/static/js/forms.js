@@ -82,6 +82,7 @@ define([
 
             this.defaults = this.options.defaults;
             this.setupDatePickers();
+            $('.error').tooltip({selector: "a"});
         },
 
         showErrorForField: function(field, error) {
@@ -645,13 +646,7 @@ define([
             AddMapFromUploadFormView.__super__.initialize.apply(this, [opts]);
 
             this.uploadUrl = options.uploadUrl;
-            var fileInput = this.getByName('file');
-
-            // A hidden input that we use to record the filename we saved on
-            // the server for the user's file. This is the name of a temporary
-            // file that will be deleted after we create the map on submit.
             var uploadInput = this.$el.find('.fileupload');
-
             var saveButton = this.$el.parent().find('button:contains("Save")');
             uploadInput.attr('data-url', this.uploadUrl);
 

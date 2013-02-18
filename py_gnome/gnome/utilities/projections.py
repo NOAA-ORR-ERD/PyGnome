@@ -32,7 +32,10 @@ class NoProjection(object):
         """
         pass
     
-    def set_scale(self, bounding_box, image_size):
+    def set_scale(self, bounding_box, image_size=None):
+        """
+        Does nothing
+        """ 
         pass
 
     def to_pixel(self, coords, asint=False):
@@ -84,26 +87,38 @@ class GeoProjection(object):
 
         Projection(bounding_box, image_size)
     
-        bounding_box: the bounding box of the map:
+        :param bounding_box: the bounding box of the map:
            ( (min_long, min_lat),
              (max_lon,  max_lat) )
         
         (or a BoundingBox Object)
         
-        image_size: the size of the map image -- (width, height)
+        :param image_size: the size of the map image -- (width, height)
+                                
         """
         self.center = None
         self.offset = None
         self.scale = None
+        self.image_size = image_size
         self.set_scale(bounding_box, image_size)
     
-    def set_scale(self, bounding_box, image_size):
+    def set_scale(self, bounding_box, image_size=None):
         """
-        set (or reset) the scaling, etc. of the projection
+        set the scaling, etc. of the projection
         
-        This should be called whenever the view, bounding box, or size of image is changed.
+        This should be called whenever the bounding box of the map,
+        or the size of the image is changed
+
+        :param bounding_box: bounding box of the visual portion of the map
+                             in the form:  ( (min_long, min_lat),
+                                             (max_long, max_lat) )
+        :param image_size=None: the size of the image that will be drawn to.
+                                if not given, the previous size will be used.
         """
+        if image_size is None:
+            image_size = self.image_size
         
+
         bounding_box = np.asarray(bounding_box, dtype=np.float64)
 
         self.center = np.mean(bounding_box, axis=0)
@@ -118,6 +133,8 @@ class GeoProjection(object):
         else:
             s = image_size[1] / h
         self.scale = (s, -s)
+        # doing this at the end, in case there is a problem with the input.
+        self.image_size = image_size
 
     def to_pixel(self, coords, asint=False):
         """
@@ -225,8 +242,8 @@ class FlatEarthProjection(GeoProjection):
     class to define a "flat earth" projection:
         longitude is scaled to the cos of the mid-latitude -- but that's it.
         
-        not conforming to eaual area, distance, bearing, or any other nifty
-        map properties -- but easy to compute
+        not conforming to equal area, distance, bearing, or any other nifty
+        map properties -- but easy to compute, and it looks OK.
         
     """
     
@@ -327,14 +344,22 @@ class FlatEarthProjection(GeoProjection):
         
         return lonout, latout
     
-    def set_scale(self, bounding_box, image_size):
+    def set_scale(self, bounding_box, image_size=None):
         """
-        set the scaling, etc of the projection
+        set the scaling, etc. of the projection
         
-        This should be called whenever the boudnign box of the map,
+        This should be called whenever the bounding box of the map,
         or the size of the image is changed
+
+        :param bounding_box: bounding box of the visual portion of the map
+                             in the form:  ( (min_long, min_lat),
+                                             (max_long, max_lat) )
+        :param image_size=None: the size of the image that will be drawn to.
+                                if not given, the previous size will be used.
         """
-        
+        if image_size is None:
+            image_size = self.image_size
+
         bounding_box = np.asarray(bounding_box, dtype=np.float64)
 
         self.center = np.mean(bounding_box, axis=0)
@@ -353,5 +378,7 @@ class FlatEarthProjection(GeoProjection):
         else:
             s = image_size[1] / h
             self.scale = (s*lon_scale, -s)
-        
+        # doing this at the end, in case there is a problem with the input.
+        self.image_size = image_size
+
 
