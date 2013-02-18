@@ -1,9 +1,11 @@
 import os
-from gnome import basic_types, environment
 from datetime import datetime
+
 import numpy as np
 import pytest
 from hazpy import unit_conversion
+
+from gnome import basic_types, environment
 
 def test_exceptions(invalid_rq):
     """
@@ -283,16 +285,18 @@ def test_new_from_dict():
     create a new wind object and make sure it has same properties
     """
     wm = environment.Wind(file=filepath)
-    wm_dict = wm.to_dict()
-    #wm2 = environment.Wind(**wm_dict)
-    wm2 = environment.Wind.new_from_dict(wm_dict)   # this does not catch two objects with same ID
+    wm_state = wm.state_to_dict()
+    print wm_state
+    wm2 = environment.Wind.new_from_dict(wm_state)   # this does not catch two objects with same ID
     
-    for key in wm_dict.keys():
-        if key != 'timeseries':   # not settable properties
+     
+    for key in wm_state.keys():
+        if key != 'timeseries' and key != 'units':   # not settable properties
             assert wm.__getattribute__(key) == wm2.__getattribute__(key)
             
     assert np.all( wm.timeseries['time'] == wm2.timeseries['time'])
     assert np.allclose(wm.timeseries['value'], wm2.timeseries['value'], atol, rtol)
+    assert wm.user_units == wm2.user_units
     
 def test_from_dict():
     """
@@ -302,13 +306,13 @@ def test_from_dict():
     wm = environment.Wind(file=filepath)
     wm_dict = wm.to_dict()
     
-    # following are not settable parameters
-    wm_dict.pop('id')
-    wm_dict.pop('user_units')
-    
     # let's update timeseries 
-    wm_dict['timeseries'][0]['value'][:] = np.array( (10., 180.))
+    update_value = np.array( (10., 180.))
+    wm_dict['timeseries'][0]['value'][:] = update_value 
     wm.from_dict(wm_dict)
+    
     for key in wm_dict.keys():
         if key != 'timeseries':
             assert wm.__getattribute__(key) == wm_dict.__getitem__(key)
+    
+    assert np.all( wm.timeseries['value'][0] == update_value)

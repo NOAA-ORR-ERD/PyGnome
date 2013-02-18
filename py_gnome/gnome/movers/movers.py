@@ -1,6 +1,11 @@
+import os
+import copy
+from datetime import datetime, timedelta
+from time import gmtime
+
 import numpy as np
 
-from gnome.utilities import time_utils, transforms, convert
+from gnome.utilities import time_utils, transforms, convert, serializable
 from gnome import basic_types, GnomeObject
 from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime       #@UnresolvedImport @UnusedImport IGNORE:W0611
@@ -8,11 +13,6 @@ from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNO
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time
 from gnome import environment
 from gnome.utilities import rand    # not to confuse with python random module
-
-import os
-
-from datetime import datetime, timedelta
-from time import gmtime
 
 class Mover(GnomeObject):
     """
@@ -22,19 +22,19 @@ class Mover(GnomeObject):
     It defines the interface for a Python mover. The model expects the methods defined here. 
     The get_move(...) method needs to be implemented by the derived class.  
     """
-    def __init__(self, 
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0)):   # default min + max values for timespan
+    def __init__(self, *args, **kwargs):   # default min + max values for timespan
         """
         During init, it defaults active = True
         """
         self._active = True  # initialize to True, though this is set in prepare_for_model_step for each step
-        self.on = True          # turn the mover on / off for the run
+        self.on = kwargs.pop('on',True)  # turn the mover on / off for the run
+        active_start = kwargs.pop('active_start',datetime( *gmtime(0)[:6] ))
+        active_stop  = kwargs.pop('active_stop', datetime(2038,1,18,0,0,0))
         if active_stop <= active_start:
             raise ValueError("active_start should be a python datetime object strictly smaller than active_stop")
         
         self.active_start = active_start
-        self.active_stop  = active_stop
+        self.active_stop = active_stop
 
     # Methods for active property definition
     @property
@@ -105,8 +105,8 @@ class CyMover(Mover):
     We assumes any derived class will instantiate a 'mover' object that
     has methods like: prepare_for_model_run, prepare_for_model_step,
     """
-    def __init__(self, active_start= datetime( *gmtime(0)[:6] ), active_stop = datetime(2038,1,18,0,0,0)):
-        super(CyMover,self).__init__(active_start, active_stop)
+    def __init__(self, *args, **kwargs):
+        super(CyMover,self).__init__(*args, **kwargs)
         
         # initialize variables for readability, tough self.mover = None produces errors, so that is not init here
         self.model_time = 0 
@@ -199,7 +199,7 @@ class CyMover(Mover):
         if self.active and self.on:
             self.mover.model_step_is_done()
 
-class WindMover(CyMover):
+class WindMover(CyMover, serializable.Serializable):
     """
     Python wrapper around the Cython wind_mover module.
     This class inherits from CyMover and contains CyWindMover 
@@ -212,13 +212,42 @@ class WindMover(CyMover):
     # Another way to state this, is the get_move operation is linear. This is why the following class level attributes are defined.
     _windage_is_set = False         # class scope, independent of instances of WindMover  
     _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
-    def __init__(self, wind, 
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0),
-                 uncertain_duration=10800,
-                 uncertain_time_delay=0, 
-                 uncertain_speed_scale=2.,
-                 uncertain_angle_scale=0.4):
+    
+    # fields that go in both serializable_readwrite and serializable_state
+    _common_fields=['uncertain_duration',
+                    'uncertain_time_delay',
+                    'uncertain_time_delay',
+                    'uncertain_angle_scale', 
+                    'on',
+                    'active_start',
+                    'active_stop',
+                    ]
+    serializable_readwrite= ['wind']
+    serializable_readwrite.extend(_common_fields)
+    
+    serializable_state = copy.copy(serializable.Serializable.serializable_state)
+    serializable_state.extend(_common_fields)
+    serializable_state.extend(['wind_id',])    # used in construction of new object
+    
+    @classmethod
+    def new_from_dict(cls, dict):
+        """
+        define in WindMover and check wind_id matches wind
+        """
+        wind_id = dict.pop('wind_id')
+        if dict.get('wind').id != wind_id:
+            raise ValueError("id of wind object does not match the wind_id parameter")
+        
+        return super(WindMover,cls).new_from_dict(dict)
+    
+    def wind_id_to_dict(self):
+        """
+        used only for storing state so no wind_id_from_dict is defined. This
+        is not a read/write attribute. Only defined for serializable_state
+        """
+        return self.wind.id
+    
+    def __init__(self, wind, **kwargs):
         """
         :param wind: wind object  -- provides the wind time series for the mover
         :param active_start: datetime object for when the mover starts being active.
@@ -227,14 +256,16 @@ class WindMover(CyMover):
         :param uncertain_time_delay:   when does the uncertainly kick in.
         :param uncertain_speed_scale:  Scale for how uncertain the wind speed is
         :param uncertain_angle_scale:  Scale for how uncertain the wind direction is
+        :param active_start: mover active after this time: defaults to datetime( *gmtime(0)[:6] ), 
+        :param active_stop: mover inactive after this time: defaults to datetime(2038,1,18,0,0,0),
         """
         self.wind = wind
-        self.mover = CyWindMover(uncertain_duration=uncertain_duration, 
-                                 uncertain_time_delay=uncertain_time_delay, 
-                                 uncertain_speed_scale=uncertain_speed_scale,  
-                                 uncertain_angle_scale=uncertain_angle_scale)
+        self.mover = CyWindMover(uncertain_duration=kwargs.pop('uncertain_duration',10800), 
+                                 uncertain_time_delay=kwargs.pop('uncertain_time_delay',0), 
+                                 uncertain_speed_scale=kwargs.pop('uncertain_speed_scale',2.),  
+                                 uncertain_angle_scale=kwargs.pop('uncertain_angle_scale',0.4) )
         self.mover.set_ossm(self.wind.ossm)
-        super(WindMover,self).__init__(active_start, active_stop)
+        super(WindMover,self).__init__(**kwargs)
 
     def __repr__(self):
         """
@@ -356,6 +387,14 @@ class RandomMover(CyMover):
     The real work is done by CyRandomMover.
     CyMover sets everything up that is common to all movers.
     """
+    serializable_fields = [
+        'id',
+        'on',
+        'active_start',
+        'active_stop',
+        'diffusion_coef',
+        ]
+    
     def __init__(self, diffusion_coef=100000, 
                  active_start= datetime( *gmtime(0)[:6] ), 
                  active_stop = datetime(2038,1,18,0,0,0)):

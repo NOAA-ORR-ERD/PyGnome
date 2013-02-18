@@ -14,6 +14,7 @@ import pytest
 from hazpy import unit_conversion
 
 datadir = os.path.join(os.path.dirname(__file__), r'SampleData')
+file_ = os.path.join(datadir,r'WindDataFromGnome.WND')
 
 def test_exceptions():
     """
@@ -23,7 +24,6 @@ def test_exceptions():
         movers.WindMover()
 
     with pytest.raises(ValueError):
-        file_ = r"SampleData/WindDataFromGnome.WND"
         wind = environment.Wind(file=file_)
         now = datetime.now()
         movers.WindMover(wind, active_start=now, active_stop=now)
@@ -36,7 +36,6 @@ def test_read_file_init():
     """
     initialize from a long wind file
     """
-    file_ = r"SampleData/WindDataFromGnome.WND"
     wind = environment.Wind(file=file_)
     wm = movers.WindMover(wind)
     wind_ts = wind.get_timeseries(format='uv', units='meter per second')
@@ -222,9 +221,39 @@ def test_timespan():
     assert np.all(delta[:,:2] != 0)   # model_time + time_step > active_start
 
 
-#
-#Helper methods for this module
-#
+def test_new_from_dict():
+    """
+    Currently only checks that new object can be created from dict
+    It does not check equality of objects
+    """
+    wind = environment.Wind(file=file_)
+    wm = movers.WindMover(wind) # WindMover does not modify Wind object!
+    wm_state = wm.state_to_dict()
+    # must create a Wind object and add this to wm_state dict
+    wind2 = environment.Wind.new_from_dict(wind.state_to_dict())
+    wm_state.update({'wind':wind2})
+    wm2 = movers.WindMover.new_from_dict(wm_state)
+    
+    # check serializable state is correct
+    assert all([wm.__getattribute__(k) == wm2.__getattribute__(k) for k in movers.WindMover.serializable_state if k != 'wind_id'])
+    assert wm.wind.id == wm2.wind.id 
+    
+def test_exception_new_from_dict():
+    wm = movers.WindMover(environment.Wind(file=file_)) # WindMover does not modify Wind object!
+    wm_state = wm.state_to_dict()
+    wm_state.update({'wind':environment.Wind(file=file_)})
+    with pytest.raises(ValueError):
+        movers.WindMover.new_from_dict(wm_state)
+    
+
+def test_from_dict():
+    wm = movers.WindMover(environment.Wind(file=file_)) # WindMover does not modify Wind object!
+    wm_dict = wm.to_dict()
+    
+    
+"""
+Helper methods for this module
+"""
 def _defaults(wm):
     """
     checks the default properties of the WindMover object as given in the input are as expected

@@ -5,6 +5,7 @@ the Wind object defines the Wind conditions for the spill
 
 import datetime
 import os
+import copy
 
 import numpy as np
 
@@ -17,37 +18,40 @@ class Wind( GnomeObject, serializable.Serializable):
     """
     Defines the Wind conditions for a spill
     """
-    # removed 'id' from list below
-    # id, filename and units cannot be updated - read only properties
+    # removed 'id' from list below. id, filename and units cannot be updated - read only properties
     # therefore, Wind.from_dict() will fail if units, id and filename are part of the list
-    serializable_fields = [
-        'id',
-        'latitude',
-        'longitude',
-        'description',
-        'source_id',
-        'source_type',
-        'updated_at',
-        'user_units', # this must be set before timeseries property
-        'timeseries',
-        ]
+    serializable_readwrite=['name',
+                            'latitude',
+                            'longitude',
+                            'description',
+                            'source_id',
+                            'source_type',
+                            'updated_at',
+                            'timeseries',
+                             ]
+    serializable_readonly =['user_units','filename']
     
-    @classmethod
-    def new_from_dict(cls, dict):
-        """
-        create a new Wind object from a dictionary
-        
-        Note: 'user_units' need to be updated to 'units' then passed into init method since units for timeseries data are now 'user_units'
-              'user_units' are read only parameter
-        """
-        if not dict.get('units'):
-            dict.update({'units':dict.get('user_units')})
-            new_obj = super(Wind,cls).new_from_dict(dict)
-            dict.pop('units')   # put dict back in original state
-            return new_obj
-        else:
-            return super(Wind,cls).new_from_dict(dict)
-        
+    serializable_state = copy.copy(serializable.Serializable.serializable_state)
+    serializable_state.extend(['units',])    # used in construction of new object
+    serializable_state.extend(serializable_readwrite)
+    
+    #===========================================================================
+    # @classmethod
+    # def new_from_dict(cls, dict):
+    #    """
+    #    create a new Wind object from a dictionary
+    #    
+    #    Note: 'user_units' need to be updated to 'units' then passed into init method since units for timeseries data are now 'user_units'
+    #          'user_units' are read only parameter
+    #    """
+    #    if not dict.get('units'):
+    #        dict.update({'units':dict.get('user_units')})
+    #        new_obj = super(Wind,cls).new_from_dict(dict)
+    #        dict.pop('units')   # put dict back in original state
+    #        return new_obj
+    #    else:
+    #        return super(Wind,cls).new_from_dict(dict)
+    #===========================================================================
 
     def __init__(self, **kwargs):
         """
@@ -183,6 +187,36 @@ class Wind( GnomeObject, serializable.Serializable):
     filename = property( lambda self: self.ossm.filename)
     timeseries = property( lambda self: self.get_timeseries(),
                            lambda self, val: self.set_timeseries(val, units=self.user_units) )
+    
+    def units_to_dict(self):
+        """
+        Store user_units as units for the data. Timeseries will be output in these units
+        and it will be used to initialize the new object
+        
+        There is no corresponding units_from_dict since this is not part of
+        serializable_readwrite list 
+        """
+        return self.user_units
+    
+    
+    #===========================================================================
+    # def timeseries_to_dict(self):
+    #    """
+    #    There are methods get_timeseries and set_timeseries
+    #    
+    #    Use this method to store timeseries to dict
+    #    """
+    #    return self.get_timeseries()
+    # 
+    # def timeseries_from_dict(self, value):
+    #    """
+    #    There are methods get_timeseries and set_timeseries
+    #    
+    #    Use this method to read timeseries from dict. The units
+    #    are consistent with timeseries_to_dict 
+    #    """
+    #    self.set_timeseries(value, units=self.user_units)
+    #===========================================================================
     
     def get_timeseries(self, datetime=None, units=None, format='r-theta'):
         """
