@@ -112,7 +112,8 @@ class TestWindMover:
     time_val = np.array((rel_time, (2., 25.)), dtype=basic_types.datetime_value_2d).reshape(1,)
     wind = environment.Wind(timeseries=time_val, units='meters per second')
     wm = movers.WindMover(wind)
-
+    wm.prepare_for_model_run()
+    
     def test_string_repr_no_errors(self):
         print
         print "======================"
@@ -145,6 +146,8 @@ class TestWindMover:
             print "Time step [sec]: \t" + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
             print "C++ delta-move: " ; print str(delta)
             print "Expected delta-move: "; print str(actual)
+            
+        self.wm.model_step_is_done()
 
     def test_get_move_exceptions(self):
         curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step))
@@ -173,7 +176,6 @@ class TestWindMover:
         xform = projections.FlatEarthProjection.meters_to_lonlat(exp, self.spill['positions'])
         return xform
 
-@pytest.mark.xfail
 def test_timespan():
     """
     Ensure the active flag is being set correctly and checked, such that if active=False, the delta produced by get_move = 0
@@ -197,15 +199,18 @@ def test_timespan():
 
     wm = movers.WindMover(environment.Wind(timeseries=time_val, units='meters per second'), 
                           active_start=model_time+timedelta(seconds=time_step))
+    wm.prepare_for_model_run()
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
-    
+    wm.model_step_is_done()
     assert wm.active == False
     assert np.all(delta == 0)   # model_time + time_step = active_start
 
     wm.active_start = model_time + timedelta(seconds=time_step/2)
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
+    wm.model_step_is_done()
+    
     assert wm.active == True
     print "\n test_timespan: delta \n{0}".format(delta)
     assert np.all(delta[:,:2] != 0)   # model_time + time_step > active_start
