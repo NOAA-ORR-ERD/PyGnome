@@ -1,17 +1,16 @@
 import os
-from gnome import movers
+from datetime import timedelta, datetime
 
+import numpy as np
+import pytest
+from hazpy import unit_conversion
+
+
+from gnome import movers
 from gnome import basic_types, environment
 from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils, transforms, convert
 from gnome.utilities import projections
-
-import numpy as np
-
-from datetime import timedelta, datetime
-import pytest
-
-from hazpy import unit_conversion
 
 datadir = os.path.join(os.path.dirname(__file__), r'SampleData')
 
