@@ -24,7 +24,7 @@ cdef class CyOSSMTime:
     def __dealloc__(self):
         del self.time_dep
     
-    def __init__(self, path=None, file_contains=None, cnp.ndarray[TimeValuePair, ndim=1] timeseries=None):
+    def __init__(self, path=None, file_contains=None, cnp.ndarray[TimeValuePair, ndim=1] timeseries=None, scale_factor = 1):
         """
         Initialize object - takes either path or time value pair to initialize
         :param path: path to file containing time series data. It valid user_units are defined in the file, it uses them; otherwise,
@@ -56,6 +56,7 @@ cdef class CyOSSMTime:
             self.time_dep.SetUserUnits(-1)  # UserUnits for velocity assumed to be meter per second. 
                                             # Leave undefined because the timeseries could be something other than velocity
                                             # TODO: check if OSSMTimeValue_c is only used for velocity data?
+        self.time_dep.fScaleFactor = scale_factor
     property user_units:
         def __get__(self):
             """
@@ -85,6 +86,13 @@ cdef class CyOSSMTime:
         def __set__(self, value):
             self._set_time_value_handle(value)
     
+    property scale_factor:
+        def __get__(self):
+            return self.time_dep.fScaleFactor
+        
+        def __set__(self,value):
+            self.time_dep.fScaleFactor = value
+            
     def get_time_value(self, modelTime):
         """
           GetTimeValue - for a specified modelTime or array of model times, it returns the values
