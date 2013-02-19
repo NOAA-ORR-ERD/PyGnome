@@ -222,7 +222,10 @@ class Model(GnomeObject):
         ## if there are no spills, there is nothing to do:
         if len(self.spills) > 0:        # can this check be removed?
             for sc in self.spills.items():
-                if sc.num_elements > 0: # can this check be removed?
+                if sc.num_elements > 0: # can this check be removed? , time_step
+                    # possibly refloat elements
+                    self.map.refloat_elements(sc,self.time_step)
+                    
                     # reset next_positions
                     sc['next_positions'][:] = sc['positions']
 

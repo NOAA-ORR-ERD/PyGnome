@@ -119,7 +119,7 @@ class GnomeMap(GnomeObject):
         """
         return None
 
-    def refloat_elements(self, spill):
+    def refloat_elements(self, spill, time_step):
         """
         This method performs the re-float logic -- changing the element status flag,
         and moving the element to the last known water position
@@ -345,6 +345,40 @@ class RasterMap(GnomeMap):
         ##fixme -- add off-map check here
 
 
+    def refloat_elements(self, spill, time_step):
+        """
+        This method performs the re-float logic -- changing the element status flag,
+        and moving the element to the last known water position
+        
+        .. note::
+            This map class has no land, and so is a no-op.
+        
+        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
+            This object holds the elements that need refloating
+        """
+        current_pos   = spill['positions']
+        status_codes  = spill['status_codes']
+        last_water_positions = spill['last_water_positions']
+#       loop over the num_elements
+#		for i in range( len(current_pos) ):
+#			if status_codes[i] == basic_types.oil_status.on_land
+# 				#float probOfRefloatingThisTimeStep,x
+# 				
+# 				if self.refloat_halflife <= 0.0
+# 					refloat = true
+# 				else
+# 					probOfRefloatingThisTimeStep = 1.0 - pow(0.5,time_step/self.refloat_halflife) #in seconds
+# 					x = GetRandomFloat(0, 1.0)
+# 					if x <= probOfRefloatingThisTimeStep 
+# 						refloat = true
+# 					else 
+# 						refloat = false
+# 					break
+# 			if(refloat)
+#				positions[i] = last_water_positions[i]
+#				status_codes[i] = basic_types.oil_status.in_water
+        pass
+        
     def check_land(self, raster_map, positions, end_positions, status_codes, last_water_positions):
         """
         Do the actual land-checking.  This method calls a Cython version:
