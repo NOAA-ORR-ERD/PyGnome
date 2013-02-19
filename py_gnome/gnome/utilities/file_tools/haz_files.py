@@ -276,8 +276,10 @@ def WriteBNA(filename, polyset):
 
 def ReadBNA(filename, polytype = "list", dtype=np.float):
     """
-    read a bna file.
-    
+    Read a BNA file.
+
+    ``filename`` may be a path to a file or an open file object.
+
     Results are returned as one of:
     
     "list": a list of tuples:
@@ -292,11 +294,12 @@ def ReadBNA(filename, polytype = "list", dtype=np.float):
       data in -- it defaults to np.float (C double)
 
     """
-    file = open(filename,'rU')
+    _file = filename if type(filename) is file else open(filename, 'rU')
+
     if polytype == "list":
         Output = []
         while True:
-            poly = GetNextBNAPolygon(file, dtype=dtype)
+            poly = GetNextBNAPolygon(_file, dtype=dtype)
             if poly is None:
                 break 
             Output.append(poly)
@@ -304,7 +307,7 @@ def ReadBNA(filename, polytype = "list", dtype=np.float):
         from ..geometry import polygons
         Output = polygons.PolygonSet(dtype=dtype)
         while True:
-            poly = GetNextBNAPolygon(file)
+            poly = GetNextBNAPolygon(_file)
             if poly is None:
                 break 
             ##fixme: should this be a dict, instead?
@@ -316,7 +319,7 @@ def ReadBNA(filename, polytype = "list", dtype=np.float):
         Types = []
         Names = []
         while 1:
-            line = file.readline()
+            line = _file.readline()
             if not line:
                 break
             line = line.strip()
@@ -328,12 +331,12 @@ def ReadBNA(filename, polytype = "list", dtype=np.float):
             Names.append(Name)
             polygon = np.zeros((num_points,2),np.float)
             for i in range(num_points):
-                polygon[i,:] = map(float,file.readline().split(','))
+                polygon[i,:] = map(float,_file.readline().split(','))
             polys.append(polygon)
         Output = BNAData(polys, Names, Types, os.path.abspath(filename) )
     else:
         raise('polytype must be either "BNADataClass", "list" or "PolygonSet')
 
-    file.close()
+    _file.close()
     return Output
 

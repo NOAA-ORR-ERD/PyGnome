@@ -126,6 +126,21 @@ class Test_bna_list:
         for p in polys:
             assert p[0].dtype == np.float32
 
+    def test_read_bna_from_filename(self):
+        polys = haz_files.ReadBNA("test.bna")
+
+        assert polys[0][2] == 'Another Name'
+        assert polys[1][2] == "A third 'name'"
+        assert polys[2][2] == 'A name with, a comma'
+
+    def test_read_bna_from_open_file(self):
+        polys = haz_files.ReadBNA(open("test.bna"))
+
+        assert polys[0][2] == 'Another Name'
+        assert polys[1][2] == "A third 'name'"
+        assert polys[2][2] == 'A name with, a comma'
+
+
 class Test_bna_polygonset:    
     polys = haz_files.ReadBNA("test.bna", "PolygonSet")
 
