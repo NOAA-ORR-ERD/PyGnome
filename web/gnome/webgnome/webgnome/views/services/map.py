@@ -16,7 +16,15 @@ logger = logging.getLogger(__name__)
 
 
 class MapResource(BaseResource):
+    """
+    A base class for Map services.
+    """
     def get_map_data(self, model):
+        """
+        A helper that returns a dict of data for the model's current map, with
+        the background image changed into a URL so the client can use it to
+        request the background image.
+        """
         map_data = model.map.to_dict()
 
         if model.background_image:
