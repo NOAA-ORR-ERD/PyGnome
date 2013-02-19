@@ -1220,14 +1220,6 @@ define([
         buildModel: function(event) {
             event.preventDefault();
             this.router.navigate('model', true);
-        },
-
-        show: function() {
-            this.$el.removeClass('hidden');
-        },
-
-        hide: function() {
-            this.$el.addClass('hidden');
         }
     });
 
@@ -1239,7 +1231,6 @@ define([
 
         initialize: function() {
             _.bindAll(this);
-            this.router = this.options.router;
             this.apiRoot = this.options.apiRoot;
             this.mapCanvas = $(this.options.mapCanvas);
             this.locationFiles = this.options.locationFiles;
@@ -1251,7 +1242,7 @@ define([
             event.preventDefault();
             var location = $(event.target).data('location');
             if (location) {
-                this.router.navigate('location/' + location, true);
+                this.loadLocationFile(location);
             }
         },
 
@@ -1309,11 +1300,6 @@ define([
 
         show: function() {
             this.$el.imagesLoaded(this.centerMap);
-            this.$el.removeClass('hidden');
-        },
-
-        hide: function() {
-            this.$el.addClass('hidden');
         }
     }, {
         LOCATION_CHOSEN: 'locationFileMapView:locationChosen'

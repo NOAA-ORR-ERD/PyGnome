@@ -22,7 +22,10 @@ define([
     var AppView = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
-            this.apiRoot = this.options.apiRoot;
+
+            // Used to construct model and other server-side URLs.
+            this.apiRoot = "/model/" + this.options.modelId;
+            this.router = this.options.router;
 
             this.setupModels();
             this.setupForms();
@@ -101,9 +104,20 @@ define([
                 windMovers: this.windMovers
             });
 
+            this.splashView = new views.SplashView({
+                el: $('#splash-page'),
+                router: this.router
+            });
+
+            this.locationFileMapView = new views.LocationFileMapView({
+                el: $('#location-file-map'),
+                apiRoot: this.apiRoot,
+                mapCanvas: '#map_canvas',
+                locationFiles: this.options.locationFiles
+            });
+
             this.setupEventHandlers();
             this.setupKeyboardHandlers();
-            this.router = this.options.router;
         },
 
         setupEventHandlers: function() {
@@ -156,7 +170,7 @@ define([
         },
 
         setLocation: function(location) {
-            this.router.navigate('location/' + location, true);
+            this.locationFileMapView.loadLocationFile(location);
         },
 
         /*
@@ -685,13 +699,23 @@ define([
             formView.show();
         },
 
-        show: function() {
-            this.mapView.show();
-            this.$el.removeClass('hidden');
-        },
+        showSection: function(section) {
+            var sectionViews = {
+                'splash-page': this.splashView,
+                'model': this.mapView,
+                'location-file-map': this.locationFileMapView
+            };
 
-        hide: function() {
-            this.$el.addClass('hidden');
+            if (section in sectionViews) {
+                var sectionSel = '#' + section;
+                var view = sectionViews[section];
+
+                $('.section').not(sectionSel).addClass('hidden');
+                $(sectionSel).removeClass('hidden');
+                if (view.show) {
+                    view.show();
+                }
+            }
         }
     });
 
