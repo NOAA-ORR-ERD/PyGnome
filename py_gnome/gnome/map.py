@@ -365,12 +365,14 @@ class RasterMap(GnomeMap):
         if self.refloat_halflife > 0.0:
             # refloat particles based on probability
             refloat_probability = 1.0 - 0.5**(float(time_step)/self.refloat_halflife)
-            rnd = np.random.uniform(0,1,len(r_idx))/32767.  # TODO: FIX THIS HACK - JUST TESTING  
+            rnd = np.random.uniform(0,1,len(r_idx))  
             
             # subset of indices that will refloat 
             # maybe we should rename refloat_probability since rnd <= refloat_probability to 
             # refloat, maybe call it stay_on_land_probability
             r_idx = r_idx[ np.where(rnd <= refloat_probability)[0] ]
+            
+        #print "\n len(r_idx):{0} \n".format(len(r_idx))
             
         if r_idx.size > 0:
             # check is not required, but why do this operation if no particles need to be refloated

@@ -216,7 +216,7 @@ class TestRefloat:
     A raster map with only water is used, but since there isn't a land check, this
     is irrelevant
     """
-    time_step = 1.   # make time_step = refloat_halflife so 50% probability of refloat
+    time_step = 3600.   # make time_step = refloat_halflife so 50% probability of refloat
     map = RasterMap(refloat_halflife = time_step, #hours
                     bitmap_array= np.zeros((20, 12), dtype=np.uint8),   # land/water irrelevant for this test
                     map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
@@ -261,7 +261,7 @@ class TestRefloat:
         """
         self.reset()
         self.spill['status_codes'][:] = basic_types.oil_status.in_water
-        self.map.refloat_halflife = 6
+        self.map.refloat_halflife = 3*self.time_step
         # say 500 out of 1000 are on_land, and we expect about 50% of these to refloat
         init_ix = int(round(.25*self.num_les))  # initial 25% LEs on_land
         last_ix = self.num_les-( int(round( .5*self.num_les)) - init_ix) # last 25% of LEs on_land
@@ -272,7 +272,7 @@ class TestRefloat:
         self.spill['status_codes'][ix] = basic_types.oil_status.on_land
         self.map.refloat_elements(self.spill, self.time_step)
         print "Expect {0}% refloat, actual refloated: {1}%".format(round(1.0-0.5**(self.time_step/self.map.refloat_halflife),2)*100, 
-                                                                   np.count_nonzero( self.spill['status_codes'][ix] == basic_types.oil_status.in_water)/500*100 )
+                                                                   np.count_nonzero( self.spill['status_codes'][ix] == basic_types.oil_status.in_water)/(self.num_les/2)*100 )
         
         # ensure some of the elements that were on land are back on water
         assert np.count_nonzero( self.spill['status_codes'][ix] == basic_types.oil_status.in_water) > 0
