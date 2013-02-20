@@ -132,13 +132,8 @@ class Oil(Base):
         self.oil_water_interfacial_tension_ref_temp = kwargs.get('Oil/Water Interfacial Tension Ref Temp (K)')
         self.oil_seawater_interfacial_tension = kwargs.get('Oil/Seawater Interfacial Tension (N/m)')
         self.oil_seawater_interfacial_tension_ref_temp = kwargs.get('Oil/Seawater Interfacial Tension Ref Temp (K)')
-        # DONE - populate densities
-        # DONE - populate kvis
-        # DONE - populate dvis
-        # DONE - populate cuts
         self.cut_units = kwargs.get('Cut Units')
         self.oil_class = kwargs.get('Oil Class')
-        # DONE - populate toxicity
         self.adhesion = kwargs.get('Adhesion')
         self.benezene = kwargs.get('Benezene')
         self.naphthenes = kwargs.get('Naphthenes')
@@ -330,5 +325,5 @@ class Toxicity(Base):
         self.after_96_hours = kwargs.get('96h')
 
     def __repr__(self):
-        return "<Cut('%s')>" % (self.id)
+        return "<Toxicity('%s')>" % (self.id)
 
