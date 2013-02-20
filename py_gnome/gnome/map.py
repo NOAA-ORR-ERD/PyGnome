@@ -357,7 +357,7 @@ class RasterMap(GnomeMap):
             This object holds the elements that need refloating
         """
         # index into array of particles on_land
-        r_idx = np.where( spill['status_codes'] == basic_types.oil_status.on_land)
+        r_idx = np.where( spill['status_codes'] == gnome.basic_types.oil_status.on_land)[0]
         
         if self.refloat_halflife > 0.0:
             # refloat particles based on probability
@@ -367,10 +367,11 @@ class RasterMap(GnomeMap):
             # subset of indices that will refloat 
             # maybe we should rename refloat_probability since rnd <= refloat_probability to 
             # refloat, maybe call it stay_on_land_probability
-            r_idx = r_idx[ np.where(rnd <= refloat_probability)]
+            r_idx = r_idx[ np.where(rnd <= refloat_probability)[0] ]
+            print r_idx
             
         spill['positions'][r_idx] = spill['last_water_positions'][r_idx]
-        spill['status_codes'][r_idx] = basic_types.oil_status.in_water
+        spill['status_codes'][r_idx] = gnome.basic_types.oil_status.in_water
         
 #        current_pos   = spill['positions']
 #        status_codes  = spill['status_codes']
