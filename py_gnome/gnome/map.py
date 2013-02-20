@@ -359,6 +359,9 @@ class RasterMap(GnomeMap):
         # index into array of particles on_land
         r_idx = np.where( spill['status_codes'] == gnome.basic_types.oil_status.on_land)[0]
         
+        if r_idx.size == 0:  # no particles on land
+            return
+        
         if self.refloat_halflife > 0.0:
             # refloat particles based on probability
             refloat_probability = 1.0 - 0.5**(float(time_step)/self.refloat_halflife)
@@ -373,29 +376,6 @@ class RasterMap(GnomeMap):
             # check is not required, but why do this operation if no particles need to be refloated
             spill['positions'][r_idx] = spill['last_water_positions'][r_idx]
             spill['status_codes'][r_idx] = gnome.basic_types.oil_status.in_water
-        
-#        current_pos   = spill['positions']
-#        status_codes  = spill['status_codes']
-#        last_water_positions = spill['last_water_positions']
-            
-#       loop over the num_elements
-#		for i in range( len(current_pos) ):
-#			if status_codes[i] == basic_types.oil_status.on_land
-# 				#float probOfRefloatingThisTimeStep,x
-# 				
-# 				if self.refloat_halflife <= 0.0
-# 					refloat = true
-# 				else
-# 					probOfRefloatingThisTimeStep = 1.0 - pow(0.5,time_step/self.refloat_halflife) #in seconds
-# 					x = GetRandomFloat(0, 1.0)
-# 					if x <= probOfRefloatingThisTimeStep 
-# 						refloat = true
-# 					else 
-# 						refloat = false
-# 					break
-# 			if(refloat)
-#				positions[i] = last_water_positions[i]
-#				status_codes[i] = basic_types.oil_status.in_water
         
     def check_land(self, raster_map, positions, end_positions, status_codes, last_water_positions):
         """
