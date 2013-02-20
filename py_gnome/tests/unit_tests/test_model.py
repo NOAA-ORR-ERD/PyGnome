@@ -397,7 +397,7 @@ def test_linearity_of_wind_movers():
     series2= np.array( (start_time, (  6,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     series3= np.array( (start_time, (  3,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     
-    model1= gnome.model.Model(uncertain=True)
+    model1= gnome.model.Model()
     model1.duration = timedelta(hours=3)
     model1.time_step = timedelta(hours = 1)
     model1.start_time = start_time
@@ -407,7 +407,7 @@ def test_linearity_of_wind_movers():
                                                      )
     model1.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series1, units='meter per second'))
     
-    model2= gnome.model.Model(uncertain=True)
+    model2= gnome.model.Model()
     model2.duration = timedelta(hours=3)
     model2.time_step = timedelta(hours = 1)
     model2.start_time = start_time
