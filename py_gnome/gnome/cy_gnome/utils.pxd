@@ -28,7 +28,8 @@ cdef extern from "OSSMTimeValue_c.h":
     cdef cppclass OSSMTimeValue_c:
         OSSMTimeValue_c() except +    
         # Members
-        char  fileName[256]
+        string  fileName
+        double  fScaleFactor
         
         # Methods
         OSErr   GetTimeValue(Seconds &, VelocityRec *)

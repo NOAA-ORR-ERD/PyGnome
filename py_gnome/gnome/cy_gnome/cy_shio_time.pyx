@@ -24,7 +24,8 @@ cdef class CyShioTime(object):
         
     def __init__(self,
                  path, 
-                 daylight_savings_off=True):
+                 daylight_savings_off=True,
+                 scale_factor = 1):
         """
         Init CyShioTime with defaults
         """
@@ -70,6 +71,12 @@ cdef class CyShioTime(object):
             cdef bytes fileName
             fileName = self.shio.fileName
             return fileName
+    
+    property scale_factor:
+        def __get__(self):
+            return self.shio.fScaleFactor
+        def __set__(self,value):
+            self.shio.fScaleFactor = value
     
     def __repr__(self):
         """

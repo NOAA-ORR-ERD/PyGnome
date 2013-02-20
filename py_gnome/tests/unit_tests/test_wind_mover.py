@@ -1,17 +1,16 @@
 import os
-from gnome import movers
+from datetime import timedelta, datetime
 
+import numpy as np
+import pytest
+from hazpy import unit_conversion
+
+
+from gnome import movers
 from gnome import basic_types, environment
 from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils, transforms, convert
 from gnome.utilities import projections
-
-import numpy as np
-
-from datetime import timedelta, datetime
-import pytest
-
-from hazpy import unit_conversion
 
 datadir = os.path.join(os.path.dirname(__file__), r'SampleData')
 file_ = os.path.join(datadir,r'WindDataFromGnome.WND')
@@ -100,33 +99,20 @@ def test_update_wind(wind_circ):
     assert np.all(cpp_timeseries['time'] == wind_circ['uv']['time'])
     assert np.allclose(cpp_timeseries['value'], wind_circ['uv']['value'], atol, rtol)
   
-def spill_ex():
-    """
-    example point release spill with 5 particles for testing
-    """
-    num_le = 5
-    #start_pos = np.zeros((num_le,3), dtype=basic_types.world_point_type)
-    start_pos = (3., 6., 0.)
-    rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
-    #pSpill = TestSpillContainer(num_le, start_pos, rel_time, persist=-1)
-    #fixme: what to do about persistance?
-    pSpill = TestSpillContainer(num_le, start_pos, rel_time)
-    return pSpill
-
 class TestWindMover:
     """
     gnome.WindMover() test
     """
-    def __init__(self):
-        #time_step = 15 * 60 # seconds
-        self.spill = spill_ex()
-        rel_time = self.spill.spills[0].release_time # digging a bit deep...
-        #model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
-        
-        time_val = np.array((rel_time, (2., 25.)), dtype=basic_types.datetime_value_2d).reshape(1,)
-        wind = environment.Wind(timeseries=time_val, units='meters per second')
-        self.wm = movers.WindMover(wind)
-
+    time_step = 15 * 60 # seconds
+    rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
+    spill = TestSpillContainer(5, (3., 6., 0.), rel_time)
+    model_time = rel_time
+    
+    time_val = np.array((rel_time, (2., 25.)), dtype=basic_types.datetime_value_2d).reshape(1,)
+    wind = environment.Wind(timeseries=time_val, units='meters per second')
+    wm = movers.WindMover(wind)
+    wm.prepare_for_model_run()
+    
     def test_string_repr_no_errors(self):
         print
         print "======================"
@@ -159,6 +145,8 @@ class TestWindMover:
             print "Time step [sec]: \t" + str( time_utils.date_to_sec(curr_time)-time_utils.date_to_sec(self.model_time))
             print "C++ delta-move: " ; print str(delta)
             print "Expected delta-move: "; print str(actual)
+            
+        self.wm.model_step_is_done()
 
     def test_get_move_exceptions(self):
         curr_time = time_utils.sec_to_date(time_utils.date_to_sec(self.model_time)+(self.time_step))
@@ -200,24 +188,30 @@ def test_timespan():
     spill = TestSpillContainer(5, start_pos, rel_time)
     spill.release_elements(datetime.now())
 
-    model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
+    #model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
+    model_time = rel_time
     spill.prepare_for_model_step(model_time, time_step)   # release particles
 
     time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
     time_val['time']  = np.datetime64( rel_time.isoformat() )
     time_val['value'] = (2., 25.)
-    wind = environment.Wind(timeseries=time_val, units='meters per second')
 
-    wm = movers.WindMover(wind, active_start=model_time+timedelta(seconds=time_step))
+    wm = movers.WindMover(environment.Wind(timeseries=time_val, units='meters per second'), 
+                          active_start=model_time+timedelta(seconds=time_step))
+    wm.prepare_for_model_run()
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
+    wm.model_step_is_done()
     assert wm.active == False
     assert np.all(delta == 0)   # model_time + time_step = active_start
 
     wm.active_start = model_time + timedelta(seconds=time_step/2)
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
+    wm.model_step_is_done()
+    
     assert wm.active == True
+    print "\n test_timespan: delta \n{0}".format(delta)
     assert np.all(delta[:,:2] != 0)   # model_time + time_step > active_start
 
 

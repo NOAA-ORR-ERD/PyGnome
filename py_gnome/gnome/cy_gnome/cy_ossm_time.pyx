@@ -1,15 +1,10 @@
+import numpy as np
 import os 
 
-import numpy as np
-import cython
+cimport numpy as cnp
+from libc.string cimport memcpy
 
 from gnome import basic_types
-
-
-from libc.string cimport memcpy
-from libcpp.string cimport string
-
-cimport numpy as cnp
 
 from type_defs cimport * 
 from utils cimport _NewHandle, _GetHandleSize
@@ -60,6 +55,7 @@ cdef class CyOSSMTime(object):
             self.time_dep.SetUserUnits(-1)  # UserUnits for velocity assumed to be meter per second. 
                                             # Leave undefined because the timeseries could be something other than velocity
                                             # TODO: check if OSSMTimeValue_c is only used for velocity data?
+        self.time_dep.fScaleFactor = scale_factor
     property user_units:
         def __get__(self):
             """
@@ -92,7 +88,15 @@ cdef class CyOSSMTime(object):
     property filename:
         def __get__(self):
             return <bytes>self.time_dep.fileName
+
+    property scale_factor:
+        def __get__(self):
+            return self.time_dep.fScaleFactor
         
+        def __set__(self,value):
+            self.time_dep.fScaleFactor = value        
+
+
     property station_location:
         def __get__(self):
             return np.array((0,0,0), dtype=basic_types.world_point)    # will replace this once OSSMTime contains values
