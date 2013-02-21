@@ -135,6 +135,7 @@ define([
             this.surfaceReleaseSpills.on('remove', this.drawSpills);
 
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
+            this.addSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
             this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
 
             this.formViews.on(forms.FormView.MESSAGE_READY, this.displayMessage);
@@ -227,8 +228,8 @@ define([
             });
         },
 
-        spillDrawn: function(x, y) {
-            this.addSpillFormView.show([x, y]);
+        spillDrawn: function(startCoords, endCoords) {
+            this.addSpillFormView.show(startCoords, endCoords);
         },
 
         setupForms: function() {
@@ -574,7 +575,6 @@ define([
                 return;
             }
 
-
             // This has to come before we show the form because form views
             // may set their models to null when hiding.
             this.formViews.hideAll();
@@ -638,33 +638,17 @@ define([
                 return alert('That item cannot be removed.')
             }
 
-            if (!node.data.object_id || !node.data.object_type) {
+            if (!node.data.object_id || !node.data.form_id) {
                 return error();
             }
 
-            if (node.data.object_type === 'map') {
-                this.deleteObjectForNode(this.map, node);
-                return;
-            }
+            var formView = this.formViews.get(node.data.form_id);
 
-            var collections = {
-                'surface_release_spill': this.surfaceReleaseSpills,
-                'wind_mover': this.windMovers,
-                'random_mover': this.randomMovers
-            };
-
-            if (!_.has(collections, node.data.object_type)) {
+            if (!formView || !formView.model) {
                 return error();
             }
 
-            var object = collections[node.data.object_type].get(
-                node.data.object_id);
-
-            if (!object) {
-                return error();
-            }
-
-            this.deleteObjectForNode(object, node);
+            this.deleteObjectForNode(formView.model, node);
         },
 
         moverChosen: function(moverType) {
@@ -678,7 +662,7 @@ define([
             formView.show();
         },
 
-        spillChosen: function(spillType, coords) {
+        spillChosen: function(spillType, startCoords, endCoords) {
             var formView = this.formViews.get(spillType);
 
             if (formView === undefined) {
@@ -686,7 +670,7 @@ define([
             }
 
             formView.reload();
-            formView.show(coords);
+            formView.show(startCoords, endCoords);
         },
 
         mapSourceChosen: function(source) {

@@ -541,6 +541,13 @@ define([
             this.set('start_position_y', pos[1]);
             this.set('start_position_z', pos[2]);
         },
+        
+        fixEndPosition: function() {
+            var pos = this.get('end_position');
+            this.set('end_position_x', pos[0]);
+            this.set('end_position_y', pos[1]);
+            this.set('end_position_z', pos[2]);           
+        },
 
         fixWindageRange: function() {
             var range = this.get('windage_range');
@@ -553,16 +560,22 @@ define([
             this.syncArrayField('start_position', 'start_position_y', 1);
             this.syncArrayField('start_position', 'start_position_z', 2);
 
+            this.syncArrayField('end_position', 'end_position_x', 0);
+            this.syncArrayField('end_position', 'end_position_y', 1);
+            this.syncArrayField('end_position', 'end_position_z', 2);
+            
             this.syncArrayField('windage_range', 'windage_range_min', 0);
             this.syncArrayField('windage_range', 'windage_range_max', 1);
 
             this.on('change:start_position', this.fixStartPosition);
+            this.on('change:end_position', this.fixEndPosition);
             this.on('change:windage_range', this.fixWindageRange);
 
             SurfaceReleaseSpill.__super__.initialize.apply(this, arguments);
 
             this.fixWindageRange();
             this.fixStartPosition();
+            this.fixEndPosition();
         }
     });
 

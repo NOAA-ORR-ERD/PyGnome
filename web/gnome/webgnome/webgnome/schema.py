@@ -19,7 +19,9 @@ from colander import (
     TupleSchema,
     deferred,
     null,
-    Tuple)
+    drop,
+    Tuple
+)
 
 from webgnome import util
 from webgnome.model_manager import WebWind
@@ -238,8 +240,12 @@ class SurfaceReleaseSpillSchema(MappingSchema):
     name = SchemaNode(String(), default=default_name, missing=default_name)
     num_elements = SchemaNode(Int(), default=0, validator=positive)
     release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
-                              validator=convertable_to_seconds)
+                              missing=now, validator=convertable_to_seconds)
+    end_release_time = SchemaNode(LocalDateTime(default_tzinfo=None),
+                                  default=now, missing=drop,
+                                  validator=convertable_to_seconds)
     start_position = PositionSchema(default=(0, 0, 0))
+    end_position = PositionSchema(default=(0, 0, 0), missing=drop)
     windage_range = WindageRangeSchema(default=(0.01, 0.04))
     windage_persist = SchemaNode(Float(), default=900, missing=900)
     is_active = SchemaNode(Bool(), default=True)
