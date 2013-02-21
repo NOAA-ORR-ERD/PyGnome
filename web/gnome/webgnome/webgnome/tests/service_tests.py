@@ -338,7 +338,7 @@ class SurfaceReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         spill_id = resp.json_body['id']
 
         data['is_active'] = False
-        data['release_Time'] = datetime.datetime.now().isoformat()
+        data['release_time'] = datetime.datetime.now().isoformat()
 
         spill_url = self.get_spill_url(spill_id)
 

@@ -16,7 +16,7 @@ class NavigationTree(object):
         value = value if len(value) <= max_chars else '%s ...' % value[:max_chars]
         return '%s: %s' % (name, value)
 
-    def _render_children(self, nodes, form_id, object_type=None):
+    def _render_children(self, nodes, form_id):
         """
         Render a list of dictionaries ``nodes`` as child nodes of a root node.
 
@@ -42,8 +42,6 @@ class NavigationTree(object):
 
             if node_id:
                 item['object_id'] = node_id
-            if object_type:
-                item['object_type'] = object_type
 
             for name, value in node.items():
                 sub_item = {
@@ -68,22 +66,19 @@ class NavigationTree(object):
     def render(self):
         data = self.model.to_dict()
         movers = self._render_root_node('Movers', 'add-mover')
-        spills = self._render_root_node('Spills', 'add_spill')
+        spills = self._render_root_node('Spills', 'add-spill')
         settings = self._render_root_node('Model Settings', 'model-settings')
 
         movers['children'].extend(
             self._render_children(data.pop('wind_movers', []),
-                                  object_type='wind_mover',
                                   form_id='edit-wind-mover'))
 
         movers['children'].extend(
             self._render_children(data.pop('random_movers', []),
-                                  object_type='random_mover',
                                   form_id='edit-random-mover'))
 
         spills['children'].extend(
             self._render_children(data.pop('surface_release_spills', []),
-                                  object_type='surface_release_spill',
                                   form_id='edit-surface-release-spill'))
 
          # Add the map manually as the first model setting
@@ -93,7 +88,6 @@ class NavigationTree(object):
         settings['children'].append({
             'form_id': map_form_id,
             'object_id': map_data['id'] if map_data else None,
-            'object_type': 'map',
             'title': 'Map: %s' % (map_data['name'] if map_data else 'None')
         })
 

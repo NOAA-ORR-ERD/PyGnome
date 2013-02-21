@@ -127,7 +127,7 @@ define([
         var point = map.pixelsFromCoordinates(orig);
 
         ok(point.x === 710);
-        ok(point.y === 411);
+        ok(point.y === 189);
     });
 
     test('coordinatesFromPixels should transform a pixel coordinate into lat/long',function() {
@@ -141,7 +141,7 @@ define([
         var orig = {x: 710, y: 411};
         var point = map.coordinatesFromPixels(orig);
 
-        ok(point.lat === 41.202312684999995);
+        ok(point.lat === 41.051352315);
         ok(point.long === -72.42037082499999);
     });
 

@@ -126,6 +126,7 @@ class Test_bna_list:
         for p in polys:
             assert p[0].dtype == np.float32
 
+
 class Test_bna_polygonset:    
     polys = haz_files.ReadBNA("test.bna", "PolygonSet")
 

@@ -423,7 +423,7 @@ define([
         },
 
         drawSpill: function(spill) {
-            var ctx = this.foregroundCanvas[0].getContext('2d');
+            var ctx = this.backgroundCanvas[0].getContext('2d');
             var startX, startY, startZ, endX, endY, endZ;
             var start = spill.get('start_position');
             var end = spill.get('end_position');
@@ -453,24 +453,28 @@ define([
             });
 
             if (startX === endX && startY === endY) {
-                pixelEnd.x += 5;
-                pixelEnd.y += 5;
+                pixelEnd.x += 2;
+                pixelEnd.y += 2;
             }
 
-            this.drawLine(ctx, pixelStart.x, pixelStart.y, pixelStart.x, pixelEnd.y);
+            this.drawLine(ctx, pixelStart.x, pixelStart.y, pixelEnd.x, pixelEnd.y);
+        },
+        
+        clearCanvas: function(canvas) {
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);           
         },
 
         // Draw a mark on the map for each existing spill.
         drawSpills: function(spills) {
             var _this = this;
 
-            if (!this.foregroundCanvas) {
+            if (!this.backgroundCanvas || !this.foregroundCanvas) {
                 return;
             }
 
-            var canvas = this.foregroundCanvas[0];
-            var ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            this.clearCanvas(this.backgroundCanvas[0]);
+            this.clearCanvas(this.foregroundCanvas[0]);
 
             if (spills === undefined || !spills.length) {
                 return;
@@ -486,6 +490,8 @@ define([
          spills added to the map. This canvas is cleared entirely during line
          additions (as the line position changes) and when the form container
          refreshes.
+
+         TODO: Update canvas sizes when window changes.
          */
         createCanvases: function() {
             var _this = this;
@@ -501,18 +507,18 @@ define([
 
             this.backgroundCanvas = $('<canvas>').attr({
                 id: 'canvas-background',
+                class: 'drawable-background',
                 height: background.height(),
                 width: background.width()
             });
 
             this.foregroundCanvas = $('<canvas>').attr({
                 id: 'canvas-foreground',
-                class: 'drawable',
+                class: 'drawable-foreground',
                 height: background.height(),
                 width: background.width()
             });
 
-            // TODO: Update canvas sizes when window changes.
             this.foregroundCanvas.mousedown(function(ev) {
                 if (!_this.canDrawSpill) {
                     return;
@@ -548,20 +554,32 @@ define([
                     ycurr = ev.originalEvent.y;
                 }
 
-                // TODO: Draw a line for each spill. Redraw when changed.
                 ctx.clearRect(0, 0, this.width, this.height);
                 _this.drawLine(ctx, this.x0, this.y0, xcurr, ycurr);
             });
 
             $(this.foregroundCanvas).mouseup(function(ev) {
+                var canvas = _this.backgroundCanvas[0];
+                var ctx = canvas.getContext('2d');
                 var offset = $(this).offset();
+                var endX = ev.clientX - offset.left;
+                var endY = ev.clientY - offset.top;
+
+                _this.drawLine(ctx, this.x0, this.y0, endX, endY);
+                _this.clearCanvas(_this.foregroundCanvas[0]);
 
                 if (this.pressed && this.moved) {
-                    var coords = _this.coordinatesFromPixels({
-                        x: ev.clientX - offset.left,
-                        y: ev.clientY - offset.top
+                    var start = _this.coordinatesFromPixels({
+                        x: this.x0,
+                        y: this.y0
                     });
-                    _this.trigger(MapView.SPILL_DRAWN, coords.long, coords.lat);
+                    var end = _this.coordinatesFromPixels({
+                        x: endX,
+                        y: endY
+                    });
+
+                    _this.trigger(MapView.SPILL_DRAWN, [start.long, start.lat],
+                                  [end.long, end.lat]);
                 }
                 this.pressed = this.moved = false;
             });

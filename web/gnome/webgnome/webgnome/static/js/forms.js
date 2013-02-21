@@ -508,10 +508,9 @@ define([
      selection to display another, spill-specific form.
      */
     var AddSpillFormView = ChooseObjectTypeFormView.extend({
-        show: function(coords) {
-            if (coords) {
-                this.coords = coords;
-            }
+        show: function(startCoords, endCoords) {
+            this.startCoords = startCoords;
+            this.endCoords = endCoords;
 
             AddSpillFormView.__super__.show.apply(this);
         },
@@ -520,7 +519,7 @@ define([
             var spillType = this.getByName('spill-type').val();
 
             if (spillType) {
-                this.trigger(AddSpillFormView.SPILL_CHOSEN, spillType, this.coords);
+                this.trigger(AddSpillFormView.SPILL_CHOSEN, spillType, this.startCoords, this.endCoords);
                 this.coords = null;
                 this.hide();
             }
@@ -1392,7 +1391,7 @@ define([
             var opts = _.extend({
                 dialog: {
                     width: 400,
-                    height: 420,
+                    height: 525,
                     title: "Edit Surface Release Spill"
                 }
             }, options);
@@ -1412,15 +1411,13 @@ define([
             SurfaceReleaseSpillFormView.__super__.prepareForm.apply(this, arguments);
         },
 
-        show: function(coords) {
-            if (coords) {
-                this.model.set({
-                    start_position_x: coords[0],
-                    start_position_y: coords[1],
-                    start_position_z: 0
-                });
+        show: function(startCoords, endCoords) {
+            if (startCoords) {
+                this.model.set('start_position', [startCoords[0], startCoords[1], 0]);
             }
-
+            if (endCoords) {
+                this.model.set('end_position', [endCoords[0], endCoords[1], 0]);
+            }
             SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
         },
 
@@ -1432,6 +1429,39 @@ define([
         cancel: function() {
             this.trigger(SurfaceReleaseSpillFormView.CANCELED, this);
             SurfaceReleaseSpillFormView.__super__.cancel.apply(this, arguments);
+        },
+
+        handleFieldError: function(error) {
+            var field;
+            var fieldName = error.name.split('.')[1];
+            var positions = {
+                0: 'x',
+                1: 'y',
+                2: 'z'
+            };
+            var windage = {
+                0: 'min',
+                1: 'max'
+            };
+
+            if (error.name.indexOf('start_position.') === 0) {
+                fieldName = 'start_position_' + positions[fieldName];
+            } else if(error.name.indexOf('end_position.') === 0) {
+                fieldName = 'end_position_' + positions[fieldName];
+            } else if (error.name.indexOf('windage_range.') === 0) {
+                fieldName = 'windage_' + windage[fieldName];
+            }
+
+            if (fieldName) {
+                field = this.$el.find('*[name="' + fieldName + '"]');
+            }
+
+            if (field) {
+                this.showErrorForField(field, error);
+                return;
+            }
+
+            SurfaceReleaseSpillFormView.__super__.handleFieldError.apply(this, arguments);
         }
     }, {
         CANCELED: 'surfaceReleaseSpillForm:canceled'
@@ -1443,7 +1473,7 @@ define([
             var opts = _.extend({
                 dialog: {
                     width: 400,
-                    height: 420,
+                    height: 525,
                     title: "Add Surface Release Spill"
                 }
             }, options);

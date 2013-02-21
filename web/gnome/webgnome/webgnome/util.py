@@ -2,24 +2,23 @@
 util.py: Utility function for the webgnome package.
 """
 import argparse
-import shutil
+import errno
 import colander
 import datetime
 import inspect
 import json
 import math
 import os
+import shutil
+import sys
 import time
 import uuid
 
 from functools import wraps
 from itertools import chain
-import errno
-import colander
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
-import sys
 
 
 def make_message(type_in, text):

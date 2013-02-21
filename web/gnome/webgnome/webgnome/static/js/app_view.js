@@ -135,6 +135,7 @@ define([
             this.surfaceReleaseSpills.on('remove', this.drawSpills);
 
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
+            this.addSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
             this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
 
             this.formViews.on(forms.FormView.MESSAGE_READY, this.displayMessage);
@@ -149,6 +150,7 @@ define([
             this.mapControlView.on(views.MapControlView.PAUSE_BUTTON_CLICKED, this.pause);
             this.mapControlView.on(views.MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
             this.mapControlView.on(views.MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
+            this.mapControlView.on(views.MapControlView.SLIDER_MOVED, this.sliderMoved);
             this.mapControlView.on(views.MapControlView.SLIDER_CHANGED, this.sliderChanged);
             this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.rewind);
             this.mapControlView.on(views.MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
@@ -227,8 +229,8 @@ define([
             });
         },
 
-        spillDrawn: function(x, y) {
-            this.addSpillFormView.show([x, y]);
+        spillDrawn: function(startCoords, endCoords) {
+            this.addSpillFormView.show(startCoords, endCoords);
         },
 
         setupForms: function() {
@@ -487,7 +489,7 @@ define([
             this.mapControlView.enableControls();
         },
 
-        sliderChanged: function(newStepNum) {
+        sliderMoved: function(newStepNum) {
             // No need to do anything if the slider is on the current time step.
             if (newStepNum === this.modelRun.currentTimeStep) {
                 return;
@@ -497,13 +499,23 @@ define([
             if (this.modelRun.hasCachedTimeStep(newStepNum) &&
                     this.mapView.timeStepIsLoaded(newStepNum)) {
                 this.modelRun.setCurrentTimeStep(newStepNum);
+            }
+        },
+
+        sliderChanged: function(newStepNum) {
+            // No need to do anything if the slider is on the current time step.
+            if (newStepNum === this.modelRun.currentTimeStep) {
                 return;
             }
 
-            // Otherwise, we need to run until the new time step.
-            this.play({
-                runUntilTimeStep: newStepNum
-            });
+            // If the model and map view don't have the time step,
+            // we need to run until the new time step.
+            if (!this.modelRun.hasCachedTimeStep(newStepNum)
+                    || !this.mapView.timeStepIsLoaded(newStepNum)) {
+                this.play({
+                    runUntilTimeStep: newStepNum
+                });
+            }
         },
 
         frameChanged: function() {
@@ -574,7 +586,6 @@ define([
                 return;
             }
 
-
             // This has to come before we show the form because form views
             // may set their models to null when hiding.
             this.formViews.hideAll();
@@ -638,33 +649,18 @@ define([
                 return alert('That item cannot be removed.')
             }
 
-            if (!node.data.object_id || !node.data.object_type) {
+            if (!node.data.object_id || !node.data.form_id) {
                 return error();
             }
 
-            if (node.data.object_type === 'map') {
-                this.deleteObjectForNode(this.map, node);
-                return;
-            }
+            var formView = this.formViews.get(node.data.form_id);
+            var model = formView.getModel(node.data.object_id);
 
-            var collections = {
-                'surface_release_spill': this.surfaceReleaseSpills,
-                'wind_mover': this.windMovers,
-                'random_mover': this.randomMovers
-            };
-
-            if (!_.has(collections, node.data.object_type)) {
+            if (!formView || !model) {
                 return error();
             }
 
-            var object = collections[node.data.object_type].get(
-                node.data.object_id);
-
-            if (!object) {
-                return error();
-            }
-
-            this.deleteObjectForNode(object, node);
+            this.deleteObjectForNode(model, node);
         },
 
         moverChosen: function(moverType) {
@@ -678,7 +674,7 @@ define([
             formView.show();
         },
 
-        spillChosen: function(spillType, coords) {
+        spillChosen: function(spillType, startCoords, endCoords) {
             var formView = this.formViews.get(spillType);
 
             if (formView === undefined) {
@@ -686,7 +682,7 @@ define([
             }
 
             formView.reload();
-            formView.show(coords);
+            formView.show(startCoords, endCoords);
         },
 
         mapSourceChosen: function(source) {
