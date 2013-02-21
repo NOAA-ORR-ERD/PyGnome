@@ -1,11 +1,7 @@
 import os
 
-import pytest
-import unittest
-from pyramid import testing
+import unittest, pytest
 from pyramid.paster import get_appsettings
-
-#from mock import Mock
 
 from sqlalchemy import engine_from_config
 from sqlalchemy.exc import IntegrityError
@@ -42,10 +38,23 @@ class BaseTestCase(unittest.TestCase):
         # for unit testing, we throw away any modifications we may have made.
         transaction.abort()
         self.session.close()
-    
+
+    def add_objs_and_assert_ids(self, objs):
+        if type(objs) is list:
+            for o in objs:
+                self.session.add(o)
+            self.session.flush()
+            for o in objs:
+                assert o.id is not None
+        else:
+            self.session.add(objs)
+            self.session.flush()
+            assert objs.id is not None
+
 
 class OilTestCase(BaseTestCase):
-    def get_mock_oil_file_record(self):
+    @classmethod
+    def get_mock_oil_file_record(cls):
         return {u'Oil Name': u'Test Oil',
                 u'ADIOS Oil ID': u'AD99999',
                 u'Location': u'Sand Point',
@@ -137,18 +146,14 @@ class OilTestCase(BaseTestCase):
         oil_obj = Oil()
         assert oil_obj is not None
         assert oil_obj.id is None
-        self.session.add(oil_obj)
-        self.session.flush()
-        # TODO: is it a good idea to allow an uninitialized object to be added???
-        assert oil_obj.id is not None
+        with pytest.raises(IntegrityError):
+            self.session.add(oil_obj)
+            self.session.flush()
 
     def test_init_with_args(self):
         oil_obj = Oil(**self.get_mock_oil_file_record())
         self.assert_mock_oil_object(oil_obj)
-        assert oil_obj is not None
-        self.session.add(oil_obj)
-        self.session.flush()
-        assert oil_obj.id is not None
+        self.add_objs_and_assert_ids(oil_obj)
 
     def test_init_with_less_than_pour_point_min(self):
         oil_args = self.get_mock_oil_file_record()
@@ -156,9 +161,7 @@ class OilTestCase(BaseTestCase):
         oil_obj = Oil(**oil_args)  # IGNORE:W0142
         assert oil_obj.pour_point_min == None
         assert oil_obj.pour_point_min_indicator == u'<'
-        self.session.add(oil_obj)
-        self.session.flush()
-        assert oil_obj.id is not None
+        self.add_objs_and_assert_ids(oil_obj)
 
     def test_init_with_greater_than_pour_point_min(self):
         oil_args = self.get_mock_oil_file_record()
@@ -166,9 +169,7 @@ class OilTestCase(BaseTestCase):
         oil_obj = Oil(**oil_args)  # IGNORE:W0142
         assert oil_obj.pour_point_min == None
         assert oil_obj.pour_point_min_indicator == u'>'
-        self.session.add(oil_obj)
-        self.session.flush()
-        assert oil_obj.id is not None
+        self.add_objs_and_assert_ids(oil_obj)
 
     def test_init_with_less_than_flash_point_min(self):
         oil_args = self.get_mock_oil_file_record()
@@ -176,9 +177,7 @@ class OilTestCase(BaseTestCase):
         oil_obj = Oil(**oil_args)  # IGNORE:W0142
         assert oil_obj.flash_point_min == None
         assert oil_obj.flash_point_min_indicator == u'<'
-        self.session.add(oil_obj)
-        self.session.flush()
-        assert oil_obj.id is not None
+        self.add_objs_and_assert_ids(oil_obj)
 
     def test_init_with_greater_than_flash_point_min(self):
         oil_args = self.get_mock_oil_file_record()
@@ -186,9 +185,7 @@ class OilTestCase(BaseTestCase):
         oil_obj = Oil(**oil_args)  # IGNORE:W0142
         assert oil_obj.flash_point_min == None
         assert oil_obj.flash_point_min_indicator == u'>'
-        self.session.add(oil_obj)
-        self.session.flush()
-        assert oil_obj.id is not None
+        self.add_objs_and_assert_ids(oil_obj)
 
 
 class SynonymTestCase(BaseTestCase):
@@ -197,17 +194,21 @@ class SynonymTestCase(BaseTestCase):
         comes when integrated in many-to-many relationships
         with the Oil object
     '''
+    def test_init_no_args(self):
+        with pytest.raises(TypeError):
+            synonym_obj = Synonym()
+            assert synonym_obj is not None
+
     def test_init_with_args(self):
         synonym_obj = Synonym('synonym')
         assert synonym_obj is not None
         assert synonym_obj.name == 'synonym'
-        self.session.add(synonym_obj)
-        self.session.flush()
-        assert synonym_obj.id is not None
+        self.add_objs_and_assert_ids(synonym_obj)
 
 
 class DensityTestCase(BaseTestCase):
-    def get_mock_density_file_record(self):
+    @classmethod
+    def get_mock_density_file_record(cls):
         return {u'(kg/m^3)': u'9.037e2',
                 u'Ref Temp (K)': u'2.7315e2',
                 u'Weathering': u'0e0'
@@ -220,19 +221,17 @@ class DensityTestCase(BaseTestCase):
 
     def test_init_no_args(self):
         density_obj = Density()
-        assert density_obj is not None
+        self.add_objs_and_assert_ids(density_obj)
 
     def test_init_with_args(self):
         density_obj = Density(**self.get_mock_density_file_record())
         self.assert_mock_density_object(density_obj)
-        assert density_obj is not None
-        self.session.add(density_obj)
-        self.session.flush()
-        assert density_obj.id is not None
+        self.add_objs_and_assert_ids(density_obj)
 
 
 class KVisTestCase(BaseTestCase):
-    def get_mock_kvis_file_record(self):
+    @classmethod
+    def get_mock_kvis_file_record(cls):
         return {u'(m^2/s)': u'5.59e-5',
                 u'Ref Temp (K)': u'2.7315e2',
                 u'Weathering': u'0e0'
@@ -245,18 +244,17 @@ class KVisTestCase(BaseTestCase):
     
     def test_init_no_args(self):
         kvis_obj = KVis()
-        assert kvis_obj is not None
+        self.add_objs_and_assert_ids(kvis_obj)
     
     def test_init_with_args(self):
         kvis_obj = KVis(**self.get_mock_kvis_file_record())
         self.assert_mock_kvis_object(kvis_obj)
-        self.session.add(kvis_obj)
-        self.session.flush()
-        assert kvis_obj.id is not None
+        self.add_objs_and_assert_ids(kvis_obj)
 
 
 class DVisTestCase(BaseTestCase):
-    def get_mock_dvis_file_record(self):
+    @classmethod
+    def get_mock_dvis_file_record(cls):
         return {u'(kg/ms)': u'4.73e-2',
                 u'Ref Temp (K)': u'2.7315e2',
                 u'Weathering': u'0e0'
@@ -269,18 +267,17 @@ class DVisTestCase(BaseTestCase):
 
     def test_init_no_args(self):
         dvis_obj = DVis()
-        assert dvis_obj is not None
+        self.add_objs_and_assert_ids(dvis_obj)
 
     def test_init_with_args(self):
         dvis_obj = DVis(**self.get_mock_dvis_file_record())
         self.assert_mock_dvis_object(dvis_obj)
-        self.session.add(dvis_obj)
-        self.session.flush()
-        assert dvis_obj.id is not None
+        self.add_objs_and_assert_ids(dvis_obj)
 
 
 class CutTestCase(BaseTestCase):
-    def get_mock_cut_file_record(self):
+    @classmethod
+    def get_mock_cut_file_record(cls):
         return {u'Vapor Temp (K)': u'3.1015e2',
                 u'Liquid Temp (K)': u'3.8815e2',
                 u'Fraction': u'1e-2'
@@ -293,18 +290,17 @@ class CutTestCase(BaseTestCase):
 
     def test_init_no_args(self):
         cut_obj = Cut()
-        assert cut_obj is not None
+        self.add_objs_and_assert_ids(cut_obj)
 
     def test_init_with_args(self):
         cut_obj = Cut(**self.get_mock_cut_file_record())
         self.assert_mock_cut_object(cut_obj)
-        self.session.add(cut_obj)
-        self.session.flush()
-        assert cut_obj.id is not None
+        self.add_objs_and_assert_ids(cut_obj)
 
 
 class ToxicityTestCase(BaseTestCase):
-    def get_mock_toxicity_file_record(self):
+    @classmethod
+    def get_mock_toxicity_file_record(cls):
         return {u'Species': u'Daphnia Magna',
                 u'Toxicity Type': u'EC',
                 u'24h': None,
@@ -322,13 +318,14 @@ class ToxicityTestCase(BaseTestCase):
     def test_init_no_args(self):
         toxicity_obj = Toxicity()
         assert toxicity_obj is not None
+        with pytest.raises(IntegrityError):
+            self.session.add(toxicity_obj)
+            self.session.flush()
 
     def test_init_with_args(self):
         toxicity_obj = Toxicity(**self.get_mock_toxicity_file_record())
         self.assert_mock_toxicity_object(toxicity_obj)
-        self.session.add(toxicity_obj)
-        self.session.flush()
-        assert toxicity_obj.id is not None
+        self.add_objs_and_assert_ids(toxicity_obj)
 
     def test_init_with_invalid_type(self):
         toxicity_args = self.get_mock_toxicity_file_record()
@@ -339,6 +336,79 @@ class ToxicityTestCase(BaseTestCase):
             self.session.flush()
 
 
+class IntegrationTestCase(BaseTestCase):
+    def test_add_synonym_to_oil(self):
+        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        synonym_obj = Synonym('test oil')
 
+        oil_obj.synonyms.append(synonym_obj)  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
 
+        self.add_objs_and_assert_ids([oil_obj, synonym_obj])
+        assert oil_obj.synonyms == [synonym_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        assert synonym_obj.oils == [oil_obj]  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
 
+    def test_oils_that_share_a_synonym(self):
+        oil_args = OilTestCase.get_mock_oil_file_record()
+        oil_obj1 = Oil(**oil_args)
+        oil_args.update({u'Oil Name': u'Test Oil 2',
+                         u'ADIOS Oil ID': u'AD99998'})
+        oil_obj2 = Oil(**oil_args)
+        synonym_obj = Synonym('test oil')
+
+        oil_obj1.synonyms.append(synonym_obj)  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        oil_obj2.synonyms.append(synonym_obj)  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+
+        self.add_objs_and_assert_ids([oil_obj1, oil_obj2, synonym_obj])
+        assert oil_obj1.synonyms == [synonym_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        assert oil_obj2.synonyms == [synonym_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        assert synonym_obj.oils == [oil_obj1, oil_obj2]  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+
+    def test_add_density_to_oil(self):
+        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        density_obj = Density(**DensityTestCase.get_mock_density_file_record())
+
+        oil_obj.densities.append(density_obj)  #IGNORE:E1101 - densities is a sqlalchemy dynamic property
+
+        self.add_objs_and_assert_ids([oil_obj, density_obj])
+        assert oil_obj.densities == [density_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        assert density_obj.oil == oil_obj  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+
+    def test_add_kvis_to_oil(self):
+        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        kvis_obj = KVis(**KVisTestCase.get_mock_kvis_file_record())
+
+        oil_obj.kvis.append(kvis_obj)  #IGNORE:E1101 - densities is a sqlalchemy dynamic property
+
+        self.add_objs_and_assert_ids([oil_obj, kvis_obj])
+        assert oil_obj.kvis == [kvis_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        assert kvis_obj.oil == oil_obj  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+
+    def test_add_dvis_to_oil(self):
+        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        dvis_obj = DVis(**DVisTestCase.get_mock_dvis_file_record())
+
+        oil_obj.dvis.append(dvis_obj)  #IGNORE:E1101 - densities is a sqlalchemy dynamic property
+
+        self.add_objs_and_assert_ids([oil_obj, dvis_obj])
+        assert oil_obj.dvis == [dvis_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        assert dvis_obj.oil == oil_obj  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+
+    def test_add_cut_to_oil(self):
+        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        cut_obj = Cut(**CutTestCase.get_mock_cut_file_record())
+
+        oil_obj.cuts.append(cut_obj)  #IGNORE:E1101 - densities is a sqlalchemy dynamic property
+
+        self.add_objs_and_assert_ids([oil_obj, cut_obj])
+        assert oil_obj.cuts == [cut_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        assert cut_obj.oil == oil_obj  #IGNORE:E1101 - oils is a sqlalchemy dynamic property
+
+    def test_add_toxicity_to_oil(self):
+        oil_obj = Oil(**OilTestCase.get_mock_oil_file_record())
+        toxicity_obj = Toxicity(**ToxicityTestCase.get_mock_toxicity_file_record())
+
+        oil_obj.toxicities.append(toxicity_obj)  #IGNORE:E1101 - densities is a sqlalchemy dynamic property
+
+        self.add_objs_and_assert_ids([oil_obj, toxicity_obj])
+        assert oil_obj.toxicities == [toxicity_obj]  #IGNORE:E1101 - synonyms is a sqlalchemy dynamic property
+        assert toxicity_obj.oil == oil_obj  #IGNORE:E1101 - oils is a sqlalchemy dynamic property

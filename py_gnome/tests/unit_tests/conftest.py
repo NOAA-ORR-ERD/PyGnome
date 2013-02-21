@@ -34,7 +34,6 @@ def pytest_runtest_setup(item):
     print "Seed C++, python, numpy random number generator to 1"
     rand.seed(1)
 
-
 def pytest_sessionstart():
     from py.test import config
 

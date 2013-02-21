@@ -34,8 +34,8 @@ oil_to_synonym = Table('oil_to_synonym', Base.metadata,
 class Oil(Base):
     __tablename__ = 'oils'
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), unique=True)
-    adios_oil_id = Column(String(16), unique=True)
+    name = Column(String(100), unique=True, nullable=False)
+    adios_oil_id = Column(String(16), unique=True, nullable=False)
 
     # demographic fields
     custom = Column(Boolean, default=False)
@@ -311,7 +311,7 @@ class Toxicity(Base):
     oil_id  = Column(Integer, ForeignKey('oils.id'))
 
     # demographics
-    tox_type = Column(Enum('EC','LC'))
+    tox_type = Column(Enum('EC','LC'), nullable=False)
     species = Column(String(16))
     after_24_hours = Column(Float(53))
     after_48_hours = Column(Float(53))
