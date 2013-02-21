@@ -1,8 +1,15 @@
+# PyGnome
 setuptools
-#numpy>=1.7.0   # not released yet, so need to manually installed
+numpy>=1.7.0   
 PIL>=1.1.7
 Cython>=0.17.1
 Pyrex>=0.9.8.6
 pytest>=2.3.4
 sphinx
 -e svn+https://svn.orr.noaa.gov/svn/Hazpy/trunk#egg=Hazpy
+
+# Oil Library database
+pyramid
+sqlalchemy
+transaction
+zope.sqlalchemy

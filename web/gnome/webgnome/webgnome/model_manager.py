@@ -239,7 +239,9 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
     serializable_fields = [
         'id',
         'release_time',
+        'end_release_time',
         'start_position',
+        'end_position',
         'windage_range',
         'windage_persist',
         'name',
@@ -255,33 +257,21 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
     def minute(self):
         return self.release_time.minute
 
-    @property
-    def start_position_x(self):
-        return self.start_position[0]
-
-    @property
-    def start_position_y(self):
-        return self.start_position[1]
-
-    @property
-    def start_position_z(self):
-        return self.start_position[2]
-
-    @property
-    def windage_min(self):
-        return self.windage_range[0]
-
-    @property
-    def windage_max(self):
-        return self.windage_range[1]
+    def _reshape(self, lst):
+        return numpy.asarray(
+            lst, dtype=basic_types.world_point_type).reshape((len(lst),))
 
     def start_position_from_dict(self, start_position):
-        self.start_position = numpy.asarray(
-            start_position,
-            dtype=basic_types.world_point_type).reshape((3,))
+        self.start_position = self._reshape(start_position)
+
+    def end_position_from_dict(self, end_position):
+        self.end_position = self._reshape(end_position)
 
     def start_position_to_dict(self):
         return self.start_position.tolist()
+
+    def end_position_to_dict(self):
+        return self.end_position.tolist()
 
 
 class WebMapFromBNA(MapFromBNA, BaseWebObject):
