@@ -3,13 +3,13 @@ define([
     'test/fixtures/timesteps',
 ], function(models, data) {
 
-    module('Model');
+    module('Gnome');
 
     var origAjax = $.ajax;
     var testUrl = "http://localhost/test";
 
     function makeModel(timeSteps, expectedTimeSteps) {
-        return new models.ModelRun(timeSteps || [], {
+        return new models.GnomeRun(timeSteps || [], {
             url: testUrl,
             expectedTimeSteps: expectedTimeSteps || []
         });
