@@ -11,7 +11,7 @@ define([
     var testUrl = "/test";
     var testUrl2 = "/test2";
 
-    var modelRun = new models.ModelRun([], {
+    var gnomeRun = new models.GnomeRun([], {
         url: testUrl,
         expectedTimeSteps: [],
         currentTimeStep: 0
@@ -40,7 +40,7 @@ define([
             backgroundImageUrl: '/static/js/test/fixtures/background_map.png',
             frameClass: 'frame',
             activeFrameClass: 'active',
-            modelRun: modelRun,
+            gnomeRun: gnomeRun,
             model: map
         });
 

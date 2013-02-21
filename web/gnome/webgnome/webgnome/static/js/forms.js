@@ -1489,7 +1489,7 @@ define([
     });
 
 
-    var ModelSettingsFormView = JQueryUIModalFormView.extend({
+    var GnomeSettingsFormView = JQueryUIModalFormView.extend({
         initialize: function(options) {
             var opts = _.extend({
                 dialog: {
@@ -1498,7 +1498,7 @@ define([
                 }
             }, options);
 
-            ModelSettingsFormView.__super__.initialize.apply(this, [opts]);
+            GnomeSettingsFormView.__super__.initialize.apply(this, [opts]);
         },
 
         // Always return the same model.
@@ -1513,11 +1513,11 @@ define([
 
         submit: function() {
             this.model.set('start_time', this.getFormDate(this.getForm()));
-            ModelSettingsFormView.__super__.submit.apply(this, arguments);
+            GnomeSettingsFormView.__super__.submit.apply(this, arguments);
         },
 
         show: function() {
-            ModelSettingsFormView.__super__.show.apply(this, arguments);
+            GnomeSettingsFormView.__super__.show.apply(this, arguments);
             this.setDateFields('.start_time_container', moment(this.model.get('start_time')));
         }
     });
@@ -1595,7 +1595,7 @@ define([
         SurfaceReleaseSpillFormView: SurfaceReleaseSpillFormView,
         FormView: FormView,
         FormViewContainer: FormViewContainer,
-        ModelSettingsFormView: ModelSettingsFormView,
+        GnomeSettingsFormView: GnomeSettingsFormView,
         ModelNotFoundException: ModelNotFoundException
     };
 

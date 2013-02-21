@@ -51,8 +51,8 @@ define([
             this.treeView = new views.TreeView({
                 treeEl: "#tree",
                 apiRoot: this.apiRoot,
-                modelRun: this.modelRun,
-                modelSettings: this.modelSettings,
+                gnomeRun: this.gnomeRun,
+                gnomeSettings: this.gnomeSettings,
                 map: this.map,
                 customMap: this.customMap,
                 collections: [
@@ -72,7 +72,7 @@ define([
                 placeholderClass: 'placeholder',
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                modelRun: this.modelRun,
+                gnomeRun: this.gnomeRun,
                 model: this.map,
                 animationThreshold: this.options.animationThreshold,
                 newModel: this.options.newModel
@@ -92,14 +92,14 @@ define([
                 resizeButtonEl: "#resize-button",
                 spillButtonEl: "#spill-button",
                 timeEl: "#time",
-                modelRun: this.modelRun,
+                gnomeRun: this.gnomeRun,
                 mapView: this.mapView,
                 model: this.map
             });
 
             this.messageView = new views.MessageView({
-                modelRun: this.modelRun,
-                modelSettings: this.modelSettings,
+                gnomeRun: this.gnomeRun,
+                gnomeSettings: this.gnomeSettings,
                 surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers
             });
@@ -126,8 +126,8 @@ define([
                 _this.map.fetch();
             });
 
-            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
-            this.modelRun.on(models.ModelRun.SERVER_RESET, this.rewind);
+            this.gnomeRun.on(models.GnomeRun.RUN_ERROR, this.gnomeRunError);
+            this.gnomeRun.on(models.GnomeRun.SERVER_RESET, this.rewind);
 
             this.surfaceReleaseSpills.on("sync", this.spillUpdated);
             this.surfaceReleaseSpills.on('sync', this.drawSpills);
@@ -268,9 +268,9 @@ define([
                 uploadUrl: this.apiRoot + '/file_upload'
             });
 
-            this.modelSettingsFormView = new forms.ModelSettingsFormView({
+            this.gnomeSettingsFormView = new forms.GnomeSettingsFormView({
                 id: 'model-settings',
-                model: this.modelSettings
+                model: this.gnomeSettings
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
@@ -322,7 +322,7 @@ define([
             this.formViews.add(this.addWindMoverFormView);
             this.formViews.add(this.addRandomMoverFormView);
             this.formViews.add(this.addSurfaceReleaseSpillFormView);
-            this.formViews.add(this.modelSettingsFormView);
+            this.formViews.add(this.gnomeSettingsFormView);
             this.formViews.add(this.editWindMoverFormView);
             this.formViews.add(this.editRandomMoverFormView);
             this.formViews.add(this.editSurfaceReleaseSpillFormView);
@@ -357,16 +357,16 @@ define([
                 }
             );
 
-            this.modelSettings = new models.Model(this.options.modelSettings);
+            this.gnomeSettings = new models.Gnome(this.options.gnomeSettings);
 
             // Initialize the model with any previously-generated time step data the
             // server had available.
-            this.modelRun = new models.ModelRun(this.options.generatedTimeSteps, {
+            this.gnomeRun = new models.GnomeRun(this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
                 currentTimeStep: this.options.currentTimeStep,
                 bounds: this.options.mapBounds || [],
-                modelSettings: this.modelSettings
+                gnomeSettings: this.gnomeSettings
             });
         },
 
@@ -374,7 +374,7 @@ define([
             this.messageView.displayMessage(message);
         },
 
-        modelRunError: function() {
+        gnomeRunError: function() {
             this.messageView.displayMessage({
                 type: 'error',
                 text: 'Model run failed.'
@@ -395,8 +395,8 @@ define([
                 return;
             }
 
-            this.modelSettings.wasDeleted = true;
-            this.modelSettings.destroy({
+            this.gnomeSettings.wasDeleted = true;
+            this.gnomeSettings.destroy({
                 success: function() {
                     util.Cookies.setItem('model_deleted', true);
                     window.location = window.location.origin;
@@ -415,11 +415,11 @@ define([
             this.mapControlView.setPlaying();
             this.mapView.setPlaying();
 
-            if (this.modelRun.isOnLastTimeStep()) {
-                this.modelRun.rewind();
+            if (this.gnomeRun.isOnLastTimeStep()) {
+                this.gnomeRun.rewind();
             }
 
-            this.modelRun.run(opts);
+            this.gnomeRun.run(opts);
         },
 
         playButtonClicked: function() {
@@ -427,7 +427,7 @@ define([
         },
 
         enableZoomIn: function() {
-            if (this.modelRun.hasData() === false) {
+            if (this.gnomeRun.hasData() === false) {
                 return;
             }
 
@@ -438,7 +438,7 @@ define([
         },
 
         enableZoomOut: function() {
-            if (this.modelRun.hasData() === false) {
+            if (this.gnomeRun.hasData() === false) {
                 return;
             }
 
@@ -454,7 +454,7 @@ define([
         zoomIn: function(startPosition, endPosition) {
             this.mapView.setPaused();
             this.mapControlView.setPaused();
-            this.modelRun.rewind();
+            this.gnomeRun.rewind();
 
             if (endPosition) {
                 var rect = {start: startPosition, end: endPosition};
@@ -463,23 +463,23 @@ define([
                 // If we are at zoom level 0 and there is no map portion outside of
                 // the visible area, then adjust the coordinates of the selected
                 // rectangle to the on-screen pixel bounds.
-                if (!isInsideMap && this.modelRun.zoomLevel === 0) {
+                if (!isInsideMap && this.gnomeRun.zoomLevel === 0) {
                     rect = this.mapView.getAdjustedRect(rect);
                 }
 
-                this.modelRun.zoomFromRect(rect, models.ModelRun.ZOOM_IN);
+                this.gnomeRun.zoomFromRect(rect, models.GnomeRun.ZOOM_IN);
             } else {
-                this.modelRun.zoomFromPoint(startPosition, models.ModelRun.ZOOM_IN);
+                this.gnomeRun.zoomFromPoint(startPosition, models.GnomeRun.ZOOM_IN);
             }
 
             this.mapView.setRegularCursor();
         },
 
         zoomOut: function(point) {
-            this.modelRun.rewind();
+            this.gnomeRun.rewind();
             this.mapView.setPaused();
             this.mapControlView.setPaused();
-            this.modelRun.zoomFromPoint(point, models.ModelRun.ZOOM_OUT);
+            this.gnomeRun.zoomFromPoint(point, models.GnomeRun.ZOOM_OUT);
             this.mapView.setRegularCursor();
         },
 
@@ -491,26 +491,26 @@ define([
 
         sliderMoved: function(newStepNum) {
             // No need to do anything if the slider is on the current time step.
-            if (newStepNum === this.modelRun.currentTimeStep) {
+            if (newStepNum === this.gnomeRun.currentTimeStep) {
                 return;
             }
 
             // If the model and map view have the time step, display it.
-            if (this.modelRun.hasCachedTimeStep(newStepNum) &&
+            if (this.gnomeRun.hasCachedTimeStep(newStepNum) &&
                     this.mapView.timeStepIsLoaded(newStepNum)) {
-                this.modelRun.setCurrentTimeStep(newStepNum);
+                this.gnomeRun.setCurrentTimeStep(newStepNum);
             }
         },
 
         sliderChanged: function(newStepNum) {
             // No need to do anything if the slider is on the current time step.
-            if (newStepNum === this.modelRun.currentTimeStep) {
+            if (newStepNum === this.gnomeRun.currentTimeStep) {
                 return;
             }
 
             // If the model and map view don't have the time step,
             // we need to run until the new time step.
-            if (!this.modelRun.hasCachedTimeStep(newStepNum)
+            if (!this.gnomeRun.hasCachedTimeStep(newStepNum)
                     || !this.mapView.timeStepIsLoaded(newStepNum)) {
                 this.play({
                     runUntilTimeStep: newStepNum
@@ -522,18 +522,18 @@ define([
             if (this.mapView.isPaused() || this.mapView.isStopped()) {
                 return;
             }
-            this.modelRun.getNextTimeStep();
+            this.gnomeRun.getNextTimeStep();
         },
 
         reset: function() {
             this.mapView.reset();
-            this.modelRun.clearData();
+            this.gnomeRun.clearData();
             this.mapControlView.reset();
         },
 
         rewind: function() {
             this.mapView.clear();
-            this.modelRun.clearData();
+            this.gnomeRun.clearData();
             this.mapControlView.reset();
 
             if (this.map.id) {
@@ -547,8 +547,8 @@ define([
          whatever frame was the last received from the server.
          */
         jumpToLastFrame: function() {
-            var lastFrame = this.modelRun.length - 1;
-            this.modelRun.setCurrentTimeStep(lastFrame);
+            var lastFrame = this.gnomeRun.length - 1;
+            this.gnomeRun.setCurrentTimeStep(lastFrame);
         },
 
         useFullscreen: function() {

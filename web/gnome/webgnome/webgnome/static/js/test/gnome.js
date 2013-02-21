@@ -15,8 +15,6 @@ define([
         });
     }
 
-    // Tests
-
     test('hasData should return false if expectedTimeSteps is empty', function() {
         var model = makeModel();
         ok(model.hasData() === false);
@@ -36,7 +34,7 @@ define([
         var model = makeModel(data.timeSteps, data.expectedTimeSteps);
         ok(model.hasCachedTimeStep(data.timeSteps.length + 1) === false);
     });
-    
+
     test('serverHasTimeStep should be true if the server expects to generate the time step', function() {
         var model = makeModel(data.timeSteps, data.expectedTimeSteps);
         ok(model.serverHasTimeStep(2) === true);
@@ -45,7 +43,7 @@ define([
     test('serverHasTimeStep should be true if the server does not expect to generate the time step', function() {
         var model = makeModel(data.timeSteps, data.expectedTimeSteps);
         ok(model.serverHasTimeStep(data.timeSteps.length + 1) === false);
-    });   
+    });
 
 
     test('getTimestampForExpectedStep should return a timestamp if step exists', function() {
@@ -69,4 +67,6 @@ define([
         ok(timeStep.get('id') === 1);
         ok(timeStep.get('timestamp') === '12/07/2012 12:15');
     });
+
+    $.ajax = origAjax;
 });

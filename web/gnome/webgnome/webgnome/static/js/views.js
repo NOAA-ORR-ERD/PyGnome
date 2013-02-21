@@ -20,10 +20,10 @@ define([
         initialize: function() {
             _.bindAll(this);
 
-            this.options.modelRun.on(
-                models.ModelRun.MESSAGE_RECEIVED, this.displayMessage);
-            this.options.modelSettings.on(
-                models.Model.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.gnomeRun.on(
+                models.GnomeRun.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.gnomeSettings.on(
+                models.Gnome.MESSAGE_RECEIVED, this.displayMessage);
             this.options.surfaceReleaseSpills.on(
                 models.SurfaceReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
             this.options.windMovers.on(
@@ -86,12 +86,12 @@ define([
             this.status = MapView.STOPPED;
             this.map = $(this.mapEl);
 
-            this.modelRun = this.options.modelRun;
-            this.modelRun.on(models.ModelRun.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
-            this.modelRun.on(models.ModelRun.RUN_BEGAN, this.modelRunBegan);
-            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
-            this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
-            this.modelRun.on(models.ModelRun.CREATED, this.reset);
+            this.gnomeRun = this.options.gnomeRun;
+            this.gnomeRun.on(models.GnomeRun.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+            this.gnomeRun.on(models.GnomeRun.RUN_BEGAN, this.gnomeRunBegan);
+            this.gnomeRun.on(models.GnomeRun.RUN_ERROR, this.gnomeRunError);
+            this.gnomeRun.on(models.GnomeRun.RUN_FINISHED, this.gnomeRunFinished);
+            this.gnomeRun.on(models.GnomeRun.CREATED, this.reset);
 
             this.model = this.options.model;
             this.model.on('change:background_image_url', function() {
@@ -102,7 +102,7 @@ define([
                 _this.map.empty();
             });
 
-            if (this.modelRun.hasCachedTimeStep(this.modelRun.getCurrentTimeStep())) {
+            if (this.gnomeRun.hasCachedTimeStep(this.gnomeRun.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
             }
         },
@@ -387,7 +387,7 @@ define([
         },
 
         nextTimeStepReady: function() {
-            this.addTimeStep(this.modelRun.getCurrentTimeStep());
+            this.addTimeStep(this.gnomeRun.getCurrentTimeStep());
         },
 
         loadMapFromUrl: function(url) {
@@ -588,15 +588,15 @@ define([
             this.foregroundCanvas.appendTo(map);
         },
 
-        modelRunBegan: function() {
+        gnomeRunBegan: function() {
             this.loadMapFromUrl(this.model.get('background_image_url'));
         },
 
-        modelRunError: function() {
+        gnomeRunError: function() {
             this.setStopped();
         },
 
-        modelRunFinished: function() {
+        gnomeRunFinished: function() {
             this.setStopped();
         },
 
@@ -693,8 +693,8 @@ define([
                 collection.on('destroy', _this.reload);
             });
 
-            this.modelSettings = this.options.modelSettings;
-            this.modelSettings.on('sync', this.reload);
+            this.gnomeSettings = this.options.gnomeSettings;
+            this.gnomeSettings.on('sync', this.reload);
 
             this.options.map.on('sync', this.reload);
         },
@@ -732,7 +732,7 @@ define([
         },
 
         reload: function() {
-            if (this.modelSettings && this.modelSettings.wasDeleted) {
+            if (this.gnomeSettings && this.gnomeSettings.wasDeleted) {
                 return;
             }
             this.tree.dynatree('getTree').reload();
@@ -829,7 +829,7 @@ define([
             this.sliderShadedEl = this.options.sliderShadedEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
-            this.modelRun = this.options.modelRun;
+            this.gnomeRun = this.options.gnomeRun;
             this.model = this.options.model;
 
             this.animationControls = [
@@ -865,19 +865,19 @@ define([
                 disabled: true
             });
 
-            if (this.modelRun.expectedTimeSteps.length) {
-                this.setTimeSteps(this.modelRun.expectedTimeSteps);
+            if (this.gnomeRun.expectedTimeSteps.length) {
+                this.setTimeSteps(this.gnomeRun.expectedTimeSteps);
                 this.enableControls();
             }
 
             this.setupClickEvents();
             this.updateCachedPercentage();
 
-            this.modelRun.on(models.ModelRun.RUN_BEGAN, this.runBegan);
-            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
-            this.modelRun.on(models.ModelRun.NEXT_TIME_STEP_READY, this.updateCachedPercentage);
-            this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
-            this.modelRun.on(models.ModelRun.CREATED, this.modelCreated);
+            this.gnomeRun.on(models.GnomeRun.RUN_BEGAN, this.runBegan);
+            this.gnomeRun.on(models.GnomeRun.RUN_ERROR, this.gnomeRunError);
+            this.gnomeRun.on(models.GnomeRun.NEXT_TIME_STEP_READY, this.updateCachedPercentage);
+            this.gnomeRun.on(models.GnomeRun.RUN_FINISHED, this.gnomeRunFinished);
+            this.gnomeRun.on(models.GnomeRun.CREATED, this.modelCreated);
 
             this.options.mapView.on(MapView.FRAME_CHANGED, this.mapViewFrameChanged);
         },
@@ -919,7 +919,7 @@ define([
         },
 
         sliderMoved: function(event, ui) {
-            var timestamp = this.modelRun.getTimestampForExpectedStep(ui.value);
+            var timestamp = this.gnomeRun.getTimestampForExpectedStep(ui.value);
 
             if (timestamp) {
                 this.setTime(timestamp);
@@ -933,20 +933,20 @@ define([
 
         updateCachedPercentage: function() {
             this.setCachedPercentage(
-                100*(this.modelRun.length / this.modelRun.expectedTimeSteps.length))
+                100*(this.gnomeRun.length / this.gnomeRun.expectedTimeSteps.length))
         },
 
         runBegan: function() {
-            if (this.modelRun.dirty) {
+            if (this.gnomeRun.dirty) {
                 // TODO: Is this really what we want to do here?
                 this.reset();
             }
 
-            this.setTimeSteps(this.modelRun.expectedTimeSteps);
+            this.setTimeSteps(this.gnomeRun.expectedTimeSteps);
         },
 
         mapViewFrameChanged: function() {
-            var timeStep = this.modelRun.getCurrentTimeStep();
+            var timeStep = this.gnomeRun.getCurrentTimeStep();
             this.setTimeStep(timeStep.id);
             this.setTime(timeStep.get('timestamp'));
         },
@@ -956,11 +956,11 @@ define([
             this.enableControls();
         },
 
-        modelRunError: function() {
+        gnomeRunError: function() {
             this.stop();
         },
 
-        modelRunFinished: function() {
+        gnomeRunFinished: function() {
             this.disableControls();
             this.stop();
         },

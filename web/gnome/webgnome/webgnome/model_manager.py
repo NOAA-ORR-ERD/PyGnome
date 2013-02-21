@@ -380,7 +380,7 @@ class WebModel(Model, BaseWebObject):
                 log.error('Could not delete file: %s. Error was: %s' % (
                     self.background_image, e))
 
-        # Save the background image.
+        # Save the backgrsinon-1.6.0ound image.
         self.background_image = 'background_image_%s.png' % util.get_runtime()
         self.output_map.draw_background()
         self.output_map.save_background(self.background_image_path)
