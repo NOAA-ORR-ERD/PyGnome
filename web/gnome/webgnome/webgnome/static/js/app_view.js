@@ -643,12 +643,13 @@ define([
             }
 
             var formView = this.formViews.get(node.data.form_id);
+            var model = formView.getModel(node.data.object_id);
 
-            if (!formView || !formView.model) {
+            if (!formView || !model) {
                 return error();
             }
 
-            this.deleteObjectForNode(formView.model, node);
+            this.deleteObjectForNode(model, node);
         },
 
         moverChosen: function(moverType) {
