@@ -1,4 +1,4 @@
-from pyramid.security import Allow, Authenticated
+
 from sqlalchemy import (
     Table,
     Column,
@@ -19,18 +19,11 @@ from sqlalchemy.orm import (
     relationship,
     )
 
-from zope.sqlalchemy import ZopeTransactionExtension #@UnresolvedImport IGNORE:E0611
+from zope.sqlalchemy import ZopeTransactionExtension
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
 
-class RootFactory(object):
-    __acl__ = [
-            (Allow, Authenticated, 'view'),
-            (Allow, 'group:editors', 'edit'),
-            ]
-    def __init__(self, request):
-        pass
 
 # UNMAPPED association table (Oil <--many-to-many--> Synonym)
 oil_to_synonym = Table('oil_to_synonym', Base.metadata,
@@ -41,8 +34,8 @@ oil_to_synonym = Table('oil_to_synonym', Base.metadata,
 class Oil(Base):
     __tablename__ = 'oils'
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), unique=True)
-    adios_oil_id = Column(String(16), unique=True)
+    name = Column(String(100), unique=True, nullable=False)
+    adios_oil_id = Column(String(16), unique=True, nullable=False)
 
     # demographic fields
     custom = Column(Boolean, default=False)
@@ -139,13 +132,8 @@ class Oil(Base):
         self.oil_water_interfacial_tension_ref_temp = kwargs.get('Oil/Water Interfacial Tension Ref Temp (K)')
         self.oil_seawater_interfacial_tension = kwargs.get('Oil/Seawater Interfacial Tension (N/m)')
         self.oil_seawater_interfacial_tension_ref_temp = kwargs.get('Oil/Seawater Interfacial Tension Ref Temp (K)')
-        # DONE - populate densities
-        # DONE - populate kvis
-        # DONE - populate dvis
-        # DONE - populate cuts
         self.cut_units = kwargs.get('Cut Units')
         self.oil_class = kwargs.get('Oil Class')
-        # DONE - populate toxicity
         self.adhesion = kwargs.get('Adhesion')
         self.benezene = kwargs.get('Benezene')
         self.naphthenes = kwargs.get('Naphthenes')
@@ -178,6 +166,10 @@ class Oil(Base):
             If we are using dynamic viscosities, we calculate the
             kinematic viscosity from the density that is closest
             to the respective reference temperature
+            TODO: Chris would like calculated properties, at least the very complex,
+                  to be moved to a subclass
+                  - maybe we create a class like OilProperties(Oil) that is either
+                    derived from Oil or contains an oil object.
         '''
         # first we get the kinematic viscosities if they exist
         ret = []
@@ -319,7 +311,7 @@ class Toxicity(Base):
     oil_id  = Column(Integer, ForeignKey('oils.id'))
 
     # demographics
-    tox_type = Column(Enum('EC','LC'))
+    tox_type = Column(Enum('EC','LC'), nullable=False)
     species = Column(String(16))
     after_24_hours = Column(Float(53))
     after_48_hours = Column(Float(53))
@@ -333,8 +325,5 @@ class Toxicity(Base):
         self.after_96_hours = kwargs.get('96h')
 
     def __repr__(self):
-        return "<Cut('%s')>" % (self.id)
-
-
-
+        return "<Toxicity('%s')>" % (self.id)
 

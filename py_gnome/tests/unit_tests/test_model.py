@@ -372,6 +372,77 @@ def test_all_movers(start_time, release_delay, duration):
         assert len(model.spills.LE('positions') ) == 0
         
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+
+
+def test_linearity_of_wind_movers():
+    """
+    WindMover is defined as a linear operation - defining a model
+    with a single WindMover with 15 knot wind is equivalent to defining
+    a model with three WindMovers each with 5 knot wind. Or any number of
+    WindMover's such that the sum of their magnitude is 15knots and the
+    direction of wind is the same for both cases.
+    
+    Current implementation defines a class variable (WindMover._windage_is_set)
+    that is set during prepare_for_model_step and reset during model_step_is_done
+    
+    Below is an example which defines two models and runs them in one thread so the 
+    model loop defined by model.step() runs for each model without coupling from 
+    the second model. So, although this works and shows linearity of the WindMover as
+    it is currently implemented, it is not thread safe - see comments towards bottom of this example.
+    
+    To make it thread safe, the model loop (model.step()) must be made thread safe. 
+    """
+    start_time = datetime(2012, 1, 1, 0, 0)
+    series1= np.array( (start_time, ( 15,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
+    series2= np.array( (start_time, (  6,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
+    series3= np.array( (start_time, (  3,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
+    
+    model1= gnome.model.Model()
+    model1.duration = timedelta(hours=3)
+    model1.time_step = timedelta(hours = 1)
+    model1.start_time = start_time
+    model1.spills += gnome.spill.SurfaceReleaseSpill(num_elements=5,
+                                                     start_position=(1.,2.,0.),
+                                                     release_time  = start_time,
+                                                     )
+    model1.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series1, units='meter per second'))
+    
+    model2= gnome.model.Model()
+    model2.duration = timedelta(hours=3)
+    model2.time_step = timedelta(hours = 1)
+    model2.start_time = start_time
+    model2.spills += gnome.spill.SurfaceReleaseSpill(num_elements=5,
+                                                     start_position=(1.,2.,0.),
+                                                     release_time  = start_time,
+                                                     )
+    model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series2, units='meter per second'))
+    model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series2, units='meter per second'))
+    model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series3, units='meter per second'))
+    
+    # tolerance for np.allclose(..) function
+    atol = 1e-14
+    rtol = 0
+    
+    for i in range(int(model1.num_time_steps)+1):
+        gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
+        model1.step()
+        gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
+        model2.step()
+        assert np.allclose(model1.spills.LE('positions'), model2.spills.LE('positions'), atol, rtol)
+    
+    
+    """
+    NOTE:
+    The above works because both models are running in a single thread. If both models were running
+    on separate threads and the model.step() is not thread safe, this will not work correctly. 
+    As an example, note that setting the _windage_is_set flag effects the class attribute
+    WindMover objects in both models as one would expect.
+    """
+    lmv = [model1.movers[m.id] for m in model1.movers]
+    lmv2= [model2.movers[m.id] for m in model2.movers]
+    
+    lmv[0].__class__._windage_is_set = True
+    assert lmv2[0].__class__._windage_is_set == True    # PROBLEM!
     
 if __name__ == "__main__":
     test_all_movers()
