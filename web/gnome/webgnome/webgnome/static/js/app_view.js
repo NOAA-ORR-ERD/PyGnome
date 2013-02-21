@@ -150,6 +150,7 @@ define([
             this.mapControlView.on(views.MapControlView.PAUSE_BUTTON_CLICKED, this.pause);
             this.mapControlView.on(views.MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
             this.mapControlView.on(views.MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
+            this.mapControlView.on(views.MapControlView.SLIDER_MOVED, this.sliderMoved);
             this.mapControlView.on(views.MapControlView.SLIDER_CHANGED, this.sliderChanged);
             this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.rewind);
             this.mapControlView.on(views.MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
@@ -488,7 +489,7 @@ define([
             this.mapControlView.enableControls();
         },
 
-        sliderChanged: function(newStepNum) {
+        sliderMoved: function(newStepNum) {
             // No need to do anything if the slider is on the current time step.
             if (newStepNum === this.modelRun.currentTimeStep) {
                 return;
@@ -498,13 +499,23 @@ define([
             if (this.modelRun.hasCachedTimeStep(newStepNum) &&
                     this.mapView.timeStepIsLoaded(newStepNum)) {
                 this.modelRun.setCurrentTimeStep(newStepNum);
+            }
+        },
+
+        sliderChanged: function(newStepNum) {
+            // No need to do anything if the slider is on the current time step.
+            if (newStepNum === this.modelRun.currentTimeStep) {
                 return;
             }
 
-            // Otherwise, we need to run until the new time step.
-            this.play({
-                runUntilTimeStep: newStepNum
-            });
+            // If the model and map view don't have the time step,
+            // we need to run until the new time step.
+            if (!this.modelRun.hasCachedTimeStep(newStepNum)
+                    || !this.mapView.timeStepIsLoaded(newStepNum)) {
+                this.play({
+                    runUntilTimeStep: newStepNum
+                });
+            }
         },
 
         frameChanged: function() {
