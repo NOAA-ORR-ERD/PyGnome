@@ -208,6 +208,83 @@ class Test_RasterMap():
         # outside polygon, off land:
         assert not map.allowable_spill_position((3.0, 3.0, 0.0))
 
+class TestRefloat:
+    """
+    only tests the refloat_elements interface and functionality
+    for borderline cases like all elements in water, refloat_halflife = 0
+    
+    A raster map with only water is used, but since there isn't a land check, this
+    is irrelevant
+    """
+    time_step = 3600.   # make time_step = refloat_halflife so 50% probability of refloat
+    map = RasterMap(refloat_halflife = time_step, #hours
+                    bitmap_array= np.zeros((20, 12), dtype=np.uint8),   # land/water irrelevant for this test
+                    map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
+                    projection=projections.NoProjection(),
+                    )
+    num_les= 1000
+    spill = TestSpillContainer(num_les)
+    orig_pos = np.random.uniform(0, num_les, spill['positions'].shape)
+    last_water= (1.,2.,0.)
+    spill['positions'][:] = orig_pos
+    spill['last_water_positions'] += last_water 
+    
+    def reset(self):
+        self.spill['positions'][:] = self.orig_pos
+        self.spill['last_water_positions'][:] = self.last_water
+        self.map.refloat_halflife = self.time_step
+    
+    def test_all_elementsinwater(self):
+        """
+        all elements in water so do nothing
+        """
+        self.reset()    # reset state
+        self.spill['status_codes'][:] = basic_types.oil_status.in_water
+        self.map.refloat_elements(self.spill, self.time_step)
+        assert np.all( self.spill['positions'] == self.orig_pos) 
+        assert np.all( self.spill['status_codes'] == basic_types.oil_status.in_water)
+       
+    def test_refloat_halflife_0(self):
+        """
+        refloat_halflife is 0 so refloat all elements on land
+        """
+        self.reset()
+        self.map.refloat_halflife = 0
+        self.spill['status_codes'][5:] = basic_types.oil_status.on_land
+        self.map.refloat_elements(self.spill, self.time_step)
+        assert np.all( self.spill['positions'][:5] == self.orig_pos[:5])
+        assert np.all( self.spill['positions'][5:] == self.last_water)
+        
+    def test_refloat_some_onland(self):
+        """
+        refloat elements on land based on probability
+        """
+        self.reset()
+        self.spill['status_codes'][:] = basic_types.oil_status.in_water
+        self.map.refloat_halflife = 3*self.time_step
+        # say 500 out of 1000 are on_land, and we expect about 50% of these to refloat
+        init_ix = int(round(.25*self.num_les))  # initial 25% LEs on_land
+        last_ix = self.num_les-( int(round( .5*self.num_les)) - init_ix) # last 25% of LEs on_land
+        ix = range(init_ix)   # choose first 25% of indices
+        ix.extend(range( last_ix, self.num_les, 1)) # choose last 25% of indices
+        ix = np.asarray( ix)
+        
+        self.spill['status_codes'][ix] = basic_types.oil_status.on_land
+        self.map.refloat_elements(self.spill, self.time_step)
+        print "Expect {0}% refloat, actual refloated: {1}%".format(round(1.0-0.5**(self.time_step/self.map.refloat_halflife),2)*100, 
+                                                                   np.count_nonzero( self.spill['status_codes'][ix] == basic_types.oil_status.in_water)/(self.num_les/2)*100 )
+        
+        # ensure some of the elements that were on land are back on water
+        assert np.count_nonzero( self.spill['status_codes'][ix] == basic_types.oil_status.in_water) > 0
+        refloat_ix = ix[np.where( self.spill['status_codes'][ix] == basic_types.oil_status.in_water)[0]]
+        assert np.all( self.spill['positions'][refloat_ix] == self.last_water)                      # refloated elements
+        assert np.all( self.spill['status_codes'][refloat_ix] == basic_types.oil_status.in_water)   # status is back in water
+        
+        # ensure elements that were in_water are not changed
+        mask = np.array([i not in refloat_ix for i in range(self.num_les)], dtype=bool)  # these are original values that are not refloated
+        assert np.all( self.spill['positions'][mask,:] == self.orig_pos[mask,:])
+        
+
 from gnome.map import MapFromBNA
 class Test_MapfromBNA:
     bna_map = MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6, raster_size=1000)
