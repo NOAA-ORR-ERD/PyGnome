@@ -223,7 +223,7 @@
                 defaultWindTimeseriesValue: ${default_wind_timeseries_value | n},
                 randomMovers: ${random_movers | n},
                 defaultRandomMover: ${default_random_mover | n},
-                modelSettings: ${model_settings | n},
+                gnomeSettings: ${model_settings | n},
                 map: ${map_data | n},
                 defaultMap: ${default_map | n},
                 defaultCustomMap: ${default_custom_map | n},

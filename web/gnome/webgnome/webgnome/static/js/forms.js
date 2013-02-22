@@ -602,6 +602,7 @@ define([
                 var field = _this.$el.find('#' + key);
                 if (field.length) {
                     field.val(value);
+                    field.change();
                 }
             });
         },
@@ -1391,7 +1392,7 @@ define([
             var opts = _.extend({
                 dialog: {
                     width: 400,
-                    height: 525,
+                    height: 550,
                     title: "Edit Surface Release Spill"
                 }
             }, options);
@@ -1473,7 +1474,7 @@ define([
             var opts = _.extend({
                 dialog: {
                     width: 400,
-                    height: 525,
+                    height: 550,
                     title: "Add Surface Release Spill"
                 }
             }, options);
