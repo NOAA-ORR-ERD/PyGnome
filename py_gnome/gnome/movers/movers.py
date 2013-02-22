@@ -6,6 +6,7 @@ from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNO
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime       #@UnresolvedImport @UnusedImport IGNORE:W0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time
+from gnome.cy_gnome import cy_gridcurrent_mover
 from gnome import environment
 from gnome.utilities import rand    # not to confuse with python random module
 
@@ -504,4 +505,40 @@ class WeatheringMover(Mover):
 
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+
+class GridCurrentMover(CyMover):
+    
+    def __init__(self, curr_file, topology_file=None,
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0)):
+        """
+        
+        """
+        if not os.path.exists(curr_file):
+            raise ValueError("Path for current file does not exist: {0}".format(curr_file))
+        
+        if topology_file is not None:
+            if not os.path.exists(topology_file):
+                raise ValueError("Path for Topology file does not exist: {0}".format(topology_file))
+
+        self.curr_file = curr_file  # check if this is stored with cy_gridcurrent_mover?
+        self.mover = cy_gridcurrent_mover.CyGridCurrentMover()
+        self.mover.text_read(curr_file,topology_file)
+        
+        super(GridCurrentMover,self).__init__(active_start, active_stop)
+        
+#     def __repr__(self):
+#         """
+#         not sure what to do here
+#         unambiguous representation of object
+#         """
+#         info = "GridCurrentMover(curr_file={0},topology_file={1})".format(self.curr_mover, self.curr_mover)
+#         return info
+#      
+#     # Properties
+# Will eventually need some properties, depending on what user gets to set
+#     scale_value = property( lambda self: self.mover.scale_value, 
+#                             lambda self,val: setattr(self.mover, 'scale_value', val) )
+#         
+        
 
