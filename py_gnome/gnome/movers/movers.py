@@ -296,7 +296,7 @@ class WindMover(CyMover):
                                                                       spill.windage_range[1],
                                                                       spill.windage_persist,
                                                                       time_step,
-                                                                      array_len=len(ix) )
+                                                                      array_len=len(np.where(ix)[0]))
             if sc.uncertain:
                 WindMover._uspill_windage_is_set = True
             else:
