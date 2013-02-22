@@ -222,7 +222,7 @@ class Model(GnomeObject):
         ## if there are no spills, there is nothing to do:
         if len(self.spills) > 0:        # can this check be removed?
             for sc in self.spills.items():
-                if sc.num_elements > 0: # can this check be removed? , time_step
+                if sc.num_elements > 0: # can this check be removed?
                     # possibly refloat elements
                     self.map.refloat_elements(sc,self.time_step)
                     
@@ -323,12 +323,7 @@ class Model(GnomeObject):
             self.step_is_done()
         self.current_time_step += 1        
         for sc in self.spills.items():
-            sc.release_elements(self.model_time)
-        #=======================================================================
-        # self._spill_container.release_elements(self.model_time)
-        # if self.is_uncertain:
-        #    self._uncertain_spill_container.release_elements(self.model_time)
-        #=======================================================================
+            sc.release_elements(self.model_time, self.time_step)
         return True
 
     def __iter__(self):

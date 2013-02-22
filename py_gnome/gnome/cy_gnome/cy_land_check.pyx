@@ -231,6 +231,9 @@ def check_land(cnp.ndarray[uint8_t, ndim=2, mode='c'] grid not None,
         n = grid.shape[1]
 
         for i in range(num_le):
+            if status_codes[i] == type_defs.OILSTAT_ONLAND:
+                continue
+            
             did_hit = c_find_first_pixel(grid,
                                          m,
                                          n,

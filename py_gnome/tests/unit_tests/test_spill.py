@@ -394,7 +394,7 @@ def test_SpatialReleaseSpill():
                              windage_range=(0.01, 0.04),
                              windage_persist=900,
                              )
-    data = sp.release_elements(release_time)
+    data = sp.release_elements(release_time, time_step=600)
 
     assert 'windages' in data
 
@@ -417,10 +417,10 @@ def test_SpatialReleaseSpill2():
                              windage_range=(0.01, 0.04),
                              windage_persist=900,
                              )
-    data = sp.release_elements(release_time)
+    data = sp.release_elements(release_time, time_step=600)
 
     assert data['positions'].shape == (4,3)
-    data = sp.release_elements(release_time+datetime.timedelta(hours=1))
+    data = sp.release_elements(release_time+datetime.timedelta(hours=1), time_step=600)
 
 
 

@@ -78,7 +78,7 @@ class Spill(GnomeObject):
         """
         pass
 
-    def release_elements(self, current_time, time_step=None, array_types=None):  # IGNORE:W0613
+    def release_elements(self, current_time, time_step, array_types=None):
         """
         probably overridden by a subclass
         """
@@ -198,12 +198,13 @@ class SurfaceReleaseSpill(FloatingSpill):
         super(SurfaceReleaseSpill, self).initialize_new_elements(arrays)
         arrays['positions'][:] = self.start_position
 
-    def release_elements(self, current_time, time_step=None, array_types=None):
+    def release_elements(self, current_time, time_step, array_types=None):
         """
         Release any new elements to be added to the SpillContainer
 
         :param current_time: datetime object for current time
-        :param time_step: the time step, in seconds -- used to decide how many should get released.
+        :param time_step: the time step, in seconds --
+                          sometimes used to decide how many should get released.
 
         :returns : None if there are no new elements released
                    a dict of arrays if there are new elements
@@ -329,7 +330,7 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
         super(SubsurfaceReleaseSpill, self).initialize_new_elements(arrays)
         arrays['positions'][:] = self.start_position
 
-    def release_elements(self, current_time, time_step=None, array_types=None):
+    def release_elements(self, current_time, time_step, array_types=None):
         """
         Release any new elements to be added to the SpillContainer
 
@@ -449,13 +450,14 @@ class SpatialReleaseSpill(FloatingSpill):
         super(SpatialReleaseSpill, self).initialize_new_elements(arrays)
         #arrays['positions'][:] = self.start_position
 
-    def release_elements(self, current_time, time_step=None, array_types=None):
+    def release_elements(self, current_time, time_step, array_types=None):
         """
         Release any new elements to be added to the SpillContainer
 
         :param current_time: datetime object for current time
-        :param time_step: the time step, in seconds -- this version doesn't use this
-
+        :param time_step=None: the time step, in seconds --
+                          this version doesn't use this, but it's part of the API
+        :param array_types=None:
         :returns : None if there are no new elements released
                    a dict of arrays if there are new elements
 
