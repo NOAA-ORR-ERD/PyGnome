@@ -324,5 +324,53 @@ define([
         ok(coll.models[1] === second);
         ok(coll.models[2] === third);
     });
+
+
+    module('Wind');
+
+    test('initialize sets timeseries to empty array if not provided', function() {
+        var wind = new models.Wind();
+        var timeseries = wind.get('timeseries');
+        ok(timeseries && timeseries.length === 0);
+    });
+
+    test('set sorts a timeseries array by datetime (index position 0)', function() {
+        var now = moment();
+        var first = [now];
+        var second = [now.clone().add('hours', 1)];
+        var third = [now.clone().add('hours', 2)];
+        var wind = new models.Wind({timeseries: [third, first, second]});
+        var timeseries = wind.get('timeseries');
+
+        ok(timeseries[0] === first);
+        ok(timeseries[1] === second);
+        ok(timeseries[2] === third);
+
+        // test the other way to set a field
+        wind.set('timeseries', null);
+        wind.set('timeseries', [third, first, second]);
+        timeseries = wind.get('timeseries');
+
+        ok(timeseries[0] === first);
+        ok(timeseries[1] === second);
+        ok(timeseries[2] === third);
+    });
+
+    test('isManual works', function() {
+        var wind = new models.Wind({source_type: 'manual'});
+        ok(wind.isManual());
+    });
+
+    test('isNws works', function() {
+        var wind = new models.Wind({source_type: 'nws'});
+        ok(wind.isNws());
+    });
+
+    test('isBuoy works', function() {
+        var wind = new models.Wind({source_type: 'buoy'});
+        ok(wind.isBuoy());
+    });
+
+
 });
 

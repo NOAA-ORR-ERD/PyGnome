@@ -742,6 +742,7 @@ define([
         BaseCollection: BaseCollection,
         SurfaceReleaseSpill: SurfaceReleaseSpill,
         SurfaceReleaseSpillCollection: SurfaceReleaseSpillCollection,
+        Wind: Wind,
         WindMover: WindMover,
         WindMoverCollection: WindMoverCollection,
         RandomMover: RandomMover,
