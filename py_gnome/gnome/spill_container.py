@@ -403,6 +403,7 @@ class TestSpillContainer(SpillContainer):
         spill = gnome.spill.SurfaceReleaseSpill(num_elements,
                                                 start_pos,
                                                 release_time)
+        spill.spill_num = 0
         self.spills.add(spill)
         self.release_elements(release_time)
 
