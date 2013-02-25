@@ -558,6 +558,7 @@ define([
 
         disableFullscreen: function() {
             this.mapControlView.switchToNormalScreen();
+            $(this.sidebarEl).removeClass('hidden');
             $(this.sidebarEl).show('slow');
         },
 

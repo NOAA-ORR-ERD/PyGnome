@@ -2,6 +2,10 @@ html, body {
     height: 100%;
 }
 
+.navbar {
+    margin-bottom: 0;
+}
+
 .outer-wrapper {
     height: 100%;
 }
@@ -25,7 +29,7 @@ div.nav-collapse > div.btn-toolbar {
 }
 
 #sidebar-container {
-    padding-top: 60px;
+    padding-top: 20px;
 }
 
 .inner-wrapper {
@@ -34,7 +38,7 @@ div.nav-collapse > div.btn-toolbar {
 
 #content {
     height: 100%;
-    padding-top: 60px;
+    padding-top: 20px;
 }
 
 .caption {

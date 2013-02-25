@@ -562,8 +562,8 @@ define([
                 var canvas = _this.backgroundCanvas[0];
                 var ctx = canvas.getContext('2d');
                 var offset = $(this).offset();
-                var endX = ev.clientX - offset.left;
-                var endY = ev.clientY - offset.top;
+                var endX = ev.pageX - offset.left;
+                var endY = ev.pageY - offset.top;
 
                 _this.drawLine(ctx, this.x0, this.y0, endX, endY);
                 _this.clearCanvas(_this.foregroundCanvas[0]);

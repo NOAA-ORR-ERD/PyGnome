@@ -461,12 +461,9 @@ define([
 
         fetch: function(options) {
             options = options || {};
-            var _this = this;
 
             if (!_.has(options, 'success')) {
-                options.success = function() {
-                    _this.dirty = false;
-                };
+                options.success = this.success
             }
 
             BaseModel.__super__.fetch.apply(this, [options]);
@@ -495,7 +492,13 @@ define([
          // Return a `moment` object for any date field.
         get: function(attr) {
             if(this.dateFields && _.contains(this.dateFields, attr)) {
-                return moment(this.attributes[attr]);
+                var val = this.attributes[attr];
+                var date = moment(val);
+                if (date.isValid()) {
+                    return date;
+                } else {
+                    return val;
+                }
             }
 
             return BaseModel.__super__.get.apply(this, arguments);
@@ -527,8 +530,10 @@ define([
     
     var BaseCollection = Backbone.Collection.extend({
         initialize: function (objs, opts) {
-            this.url = opts.url;
-        }       
+            if (opts && opts.url) {
+                this.url = opts.url;
+            }
+        }
     });
 
 
@@ -734,8 +739,10 @@ define([
         GnomeRun: GnomeRun,
         Gnome: Gnome,
         BaseModel: BaseModel,
+        BaseCollection: BaseCollection,
         SurfaceReleaseSpill: SurfaceReleaseSpill,
         SurfaceReleaseSpillCollection: SurfaceReleaseSpillCollection,
+        Wind: Wind,
         WindMover: WindMover,
         WindMoverCollection: WindMoverCollection,
         RandomMover: RandomMover,
