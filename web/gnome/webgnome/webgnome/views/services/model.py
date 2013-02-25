@@ -78,7 +78,7 @@ class ModelTree(BaseResource):
     
 @resource(path='/model/{model_id}/runner', renderer='gnome_json',
           description='Run the current model.')
-class ModelRunner(BaseResource):
+class GnomeRunner(BaseResource):
     def _get_timestamps(self):
         """
         Get the expected timestamps for a model run.

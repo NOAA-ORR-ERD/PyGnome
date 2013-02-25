@@ -443,7 +443,41 @@ def test_linearity_of_wind_movers():
     
     lmv[0].__class__._windage_is_set = True
     assert lmv2[0].__class__._windage_is_set == True    # PROBLEM!
-    
+
+def test_model_release_after_start():
+    """
+
+    This runs the model for a simple spill, that starts after the model starts
+
+    """
+    start_time = datetime(2013, 2, 22, 0)
+
+    model = gnome.model.Model(time_step=60*30, # 30 minutes in seconds
+                              start_time=start_time, # default to now, rounded to the nearest hour
+                              duration=timedelta(hours=3),
+                              )
+
+    # add a spill that starts after the run begins.
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements = 5,
+                                                    start_position = (0, 0, 0),
+                                                    release_time=start_time+timedelta(hours=1))
+
+    # and another that starts later..
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements = 4,
+                                                    start_position = (0, 0, 0),
+                                                    release_time=start_time+timedelta(hours=2))
+
+    # Add a Wind mover:
+    series = np.array( (start_time, ( 10,   45) ),
+                      dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
+    model.movers += gnome.movers.WindMover(environment.Wind(timeseries=series,
+                                           units='meter per second'))
+
+    for step in model:
+        print "running a step"
+        for sc in model.spills.items():
+            print "num_LEs", len(sc['positions'])
+
 if __name__ == "__main__":
     test_all_movers()
     

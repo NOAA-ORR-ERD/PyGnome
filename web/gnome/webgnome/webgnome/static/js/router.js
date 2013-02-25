@@ -28,6 +28,7 @@ define([
         },
         
         model: function() {
+            this.appView.disableFullscreen();
             this.newModel = false;
             this.appView.showSection('model');
         },

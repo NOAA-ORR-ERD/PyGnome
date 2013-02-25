@@ -95,7 +95,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(resp.json_body['duration_hours'], 1)
 
 
-class ModelRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
+class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_first_step(self):
         self.create_model()
