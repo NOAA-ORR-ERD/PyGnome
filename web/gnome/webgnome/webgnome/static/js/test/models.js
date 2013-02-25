@@ -255,6 +255,16 @@ define([
         ok(model.get('date').unix() === date.unix());
     });
 
+    test('get ignores null datefields', function() {
+        var model = new models.BaseModel();
+        model.dateFields = ['date'];
+        var date = moment();
+
+        model.set('date', null);
+
+        ok(model.get('date') === null);
+    });
+
     test('get returns the actual value of a field if it is a dateField and moment.js cannot parse it', function() {
         var model = new models.BaseModel();
         model.dateFields = ['date'];
@@ -372,5 +382,130 @@ define([
     });
 
 
+    module('WindMover');
+
+    test('set creates an empty Wind object if "wind" property is undefined', function() {
+        var mover = new models.WindMover();
+        ok(JSON.stringify(mover.get('wind')) == JSON.stringify(new models.Wind()));
+    });
+
+    test('set accepts a Wind object as a value in the attrs object', function() {
+        var wind = new models.Wind({thing: 1});
+        var mover = new models.WindMover({wind: wind});
+        ok(JSON.stringify(mover.get('wind')) == JSON.stringify(wind));
+    });
+
+    test('set accepts a Wind object as a value for the "wind" key', function() {
+        var wind = new models.Wind({thing: 1});
+        var mover = new models.WindMover();
+        mover.set('wind', wind);
+        ok(JSON.stringify(mover.get('wind')) == JSON.stringify(wind));
+    });
+
+    test('getTimeseries returns the timeseries of the wind object', function() {
+        var wind = new models.Wind({timeseries: [1, 2, 3]});
+        var mover = new models.WindMover({wind: wind});
+        ok(mover.getTimeseries() == wind.get('timeseries'));
+    });
+
+    test('type reports "constant-wind" if wind has one timeseries value', function() {
+        var wind = new models.Wind({timeseries: [1]});
+        var mover = new models.WindMover({wind: wind});
+        ok(mover.type() === 'constant-wind');
+    });
+
+    test('type reports "variable-wind" if wind has multiple timeseries values', function() {
+        var wind = new models.Wind({timeseries: [1, 2]});
+        var mover = new models.WindMover({wind: wind});
+        ok(mover.type() === 'variable-wind');
+    });
+
+    test('constantSpeed reports the speed of the first wind timeseries', function() {
+        var wind = new models.Wind({timeseries: [
+            [1, 2, 3]
+        ]});
+        var mover = new models.WindMover({wind: wind});
+        ok(mover.constantSpeed() === wind.get('timeseries')[0][1]);
+    });
+
+    test('constantDirection reports the speed of the first wind timeseries', function() {
+        var wind = new models.Wind({timeseries: [
+            [1, 2, 3]
+        ]});
+        var mover = new models.WindMover({wind: wind});
+        ok(mover.constantDirection() === wind.get('timeseries')[0][2]);
+    });
+
+
+    module('WindMoverCollection');
+
+    test('WindMoverCollection is sortable by the first wind timeseries date', function() {
+        var winds = [
+            new models.Wind({timeseries: [ [moment('1/1/2013'), 1, 1] ]}),
+            new models.Wind({timeseries: [ [moment('1/2/2013'), 2, 2] ]}),
+            new models.Wind({timeseries: [ [moment('1/3/2013'), 3, 3] ]})
+        ];
+
+        var movers = new models.WindMoverCollection([
+            {wind: winds[2]},
+            {wind: winds[0]},
+            {wind: winds[1]}
+        ]);
+
+        movers.sort();
+
+        ok(movers.at(0).get('wind').cid  === winds[0].cid);
+        ok(movers.at(1).get('wind').cid  === winds[1].cid);
+        ok(movers.at(2).get('wind').cid  === winds[2].cid);
+    });
+
+
+    module('RandomMoverCollection', function() {
+        var movers = [
+            new models.RandomMover({active_start: moment('1/1/2013')}),
+            new models.RandomMover({active_start: moment('1/3/2013')}),
+            new models.RandomMover({active_start: moment('1/2/2013')}),
+        ];
+        var collection = new models.WindMoverCollection(movers);
+
+        collection.sort();
+
+        ok(collection.at(0).cid === movers[0].cid);
+        ok(collection.at(1).cid === movers[1].cid);
+        ok(collection.at(2).cid === movers[2].cid);
+    });
+
+
+    module('Map');
+
+    test('init accepts a url', function() {
+        var map = new models.Map({}, {url: '/test'});
+        ok(map.url === '/test');
+    });
+
+
+    module('CustomMap');
+
+    test('init accepts a url', function() {
+        var map = new models.CustomMap({}, {url: '/test'});
+        ok(map.url === '/test');
+    });
+
+
+    module('getNwsWind');
+
+    asyncTest('getNwsWind returns values', function() {
+        var coords = {
+            longitude: -72.419992,
+            latitude: 41.20212
+        };
+        models.getNwsWind(coords, {
+            success: function(data) {
+                ok(data.description === "23NM WSW New London CT");
+                start();
+            }
+        })
+    });
 });
+
 
