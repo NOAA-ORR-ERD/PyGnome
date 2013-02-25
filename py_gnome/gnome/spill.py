@@ -34,10 +34,10 @@ class Spill(GnomeObject):
 
     @property
     def array_types(self):
-        return [(name, getattr(self, name))
+        return dict([(name, getattr(self, name))
                 for name in dir(self)
                 if name != 'array_types'
-                and type(getattr(self, name)) == ArrayType]
+                and type(getattr(self, name)) == ArrayType])
 
     def __new__(cls, *args, **kwargs):
         obj = super(Spill, cls).__new__(cls, *args, **kwargs)
@@ -101,7 +101,7 @@ class Spill(GnomeObject):
         if not array_types:
             array_types = self.array_types
 
-        for name, array_type in array_types:
+        for name, array_type in array_types.iteritems():
             arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
         self.initialize_new_elements(arrays, array_types)
         return arrays
@@ -110,8 +110,8 @@ class Spill(GnomeObject):
         if not array_types:
             array_types = self.array_types
 
-        for name, array_type in array_types:
-            if array_type.initial_value:
+        for name, array_type in array_types.iteritems():
+            if array_type.initial_value != None:
                 arrays[name][:] = array_type.initial_value
 
 class FloatingSpill(Spill):
