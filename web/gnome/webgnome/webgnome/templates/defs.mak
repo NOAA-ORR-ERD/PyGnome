@@ -16,7 +16,7 @@
     Render a Bootstrap form control around ``field``.
 </%doc>
     % if inline:
-        <span class="control-group ${'hidden' if hidden else ''} ${'form-inline'} if inline else ''">
+        <span class="control-group ${'hidden' if hidden else ''} ${'form-inline' if inline else ''}">
              % if label:
                 <label class="${label_class}"> ${label} </label>
             % endif
