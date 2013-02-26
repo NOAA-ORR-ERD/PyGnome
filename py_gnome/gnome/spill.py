@@ -10,23 +10,35 @@ This is the "magic" class -- it handles the smart allocation of arrays, etc.
 
 these are managed by the SpillContainer class
 """
-import copy
-
 import numpy as np
 from gnome import basic_types
 from gnome.gnomeobject import GnomeObject
+
+class ArrayType(object):
+    def __init__(self, shape, dtype, initial_value=None):
+        self.shape = shape
+        self.dtype = dtype
+        self.initial_value = initial_value
+
 
 class Spill(GnomeObject):
     """
     base class for a source of elements
     """
-    array_types = {'positions':      ( (3,), basic_types.world_point_type),
-                   'next_positions': ( (3,), basic_types.world_point_type),
-                   'last_water_positions': ( (3,), basic_types.world_point_type),
-                   'status_codes': ( (), basic_types.status_code_type),
-                   'spill_num': ( (), basic_types.id_type)
-                   }
-        
+    positions = ArrayType( (3,), basic_types.world_point_type)
+    next_positions = ArrayType( (3,), basic_types.world_point_type)
+    last_water_positions = ArrayType( (3,), basic_types.world_point_type)
+    status_codes = ArrayType( (), basic_types.status_code_type,
+                              basic_types.oil_status.in_water)
+    spill_num = ArrayType( (), basic_types.id_type)
+
+    @property
+    def array_types(self):
+        return dict([(name, getattr(self, name))
+                for name in dir(self)
+                if name != 'array_types'
+                and type(getattr(self, name)) == ArrayType])
+
     def __new__(cls, *args, **kwargs):
         obj = super(Spill, cls).__new__(cls, *args, **kwargs)
         return obj
@@ -85,28 +97,22 @@ class Spill(GnomeObject):
         return None
 
     def create_new_elements(self, num_elements, array_types=None):
-        """
-        create new arrays for the various types and 
-        return a dict of the set
-
-        :param num_elements: number of new elements to add
-        """
         arrays = {}
         if not array_types:
             array_types = self.array_types
 
-        for name, (shape, dtype) in array_types.iteritems():
-            arrays[name] = np.zeros( (num_elements,)+shape, dtype=dtype)
-        self.initialize_new_elements(arrays)
+        for name, array_type in array_types.iteritems():
+            arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
+        self.initialize_new_elements(arrays, array_types)
         return arrays
 
-    def initialize_new_elements(self, arrays):
-        """
-        initilize the new elements just created
-        This is probably need to be extended by subclasses
-        """
-        if 'status_codes' in arrays:
-            arrays['status_codes'][:] = basic_types.oil_status.in_water
+    def initialize_new_elements(self, arrays, array_types=None):
+        if not array_types:
+            array_types = self.array_types
+
+        for name, array_type in array_types.iteritems():
+            if array_type.initial_value != None:
+                arrays[name][:] = array_type.initial_value
 
 class FloatingSpill(Spill):
     """
@@ -114,9 +120,7 @@ class FloatingSpill(Spill):
 
     all this does is add the 'windage' parameter
     """
-    array_types = copy.copy(Spill.array_types)
-    array_types.update( ( ('windages', ( (), basic_types.windage_type)), 
-                          ) )
+    windages = ArrayType( (), basic_types.windage_type)
     
     def __init__(self,
                  windage_range=(0.01, 0.04),
@@ -126,29 +130,12 @@ class FloatingSpill(Spill):
         self.windage_range = windage_range
         self.windage_persist = windage_persist
 
-class SubsurfaceSpill(Spill):
-    """
-    spill for underwater objects
-
-    all this does is add the 'water_currents' parameter
-    """
-    array_types = copy.copy(Spill.array_types)
-    array_types.update( ( ('water_currents', ( (3,), basic_types.water_current_type)),
-                          ) )
-
-    def __init__(self):
-        super(SubsurfaceSpill, self).__init__()
-        # it is not clear yet (to me anyway) what we will want to add to a subsurface spill
-
-
 class SurfaceReleaseSpill(FloatingSpill):
     """
     The simplest spill source class  --  a point release of floating
     non-weathering particles
 
     """
-    array_types = copy.copy(FloatingSpill.array_types)
-
     def __init__(self,
                  num_elements,
                  start_position,
@@ -184,19 +171,13 @@ class SurfaceReleaseSpill(FloatingSpill):
             end_position = start_position
         self.start_position = np.asarray(start_position, dtype=basic_types.world_point_type).reshape((3,))
         self.end_position = np.asarray(end_position, dtype=basic_types.world_point_type).reshape((3,))
+        self.positions.initial_value = self.start_position
+
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
 
         self.num_released = 0
         self.prev_release_pos = self.start_position
-
-    def initialize_new_elements(self, arrays):
-        """
-        initilize the new elements just created
-        This is probably need to be extended by subclasses
-        """
-        super(SurfaceReleaseSpill, self).initialize_new_elements(arrays)
-        arrays['positions'][:] = self.start_position
 
     def release_elements(self, current_time, time_step, array_types=None):
         """
@@ -276,6 +257,20 @@ class SurfaceReleaseSpill(FloatingSpill):
         self.num_released = 0
         self.prev_release_pos = self.start_position
 
+
+class SubsurfaceSpill(Spill):
+    """
+    spill for underwater objects
+
+    all this does is add the 'water_currents' parameter
+    """
+    water_currents = ArrayType( (3,), basic_types.water_current_type)
+
+    def __init__(self):
+        super(SubsurfaceSpill, self).__init__()
+        # it is not clear yet (to me anyway) what we will want to add to a subsurface spill
+
+
 class SubsurfaceReleaseSpill(SubsurfaceSpill):
     """
     The second simplest spill source class  --  a point release of underwater
@@ -286,8 +281,6 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
         for now we will just keep the in_water status, but we will probably want to change this
         in the future.
     """
-    array_types = copy.copy(SubsurfaceSpill.array_types)
-
     def __init__(self,
                  num_elements,
                  start_position,
@@ -318,17 +311,10 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
             end_position = start_position
         self.start_position = np.asarray(start_position, dtype=basic_types.world_point_type).reshape((3,))
         self.end_position = np.asarray(end_position, dtype=basic_types.world_point_type).reshape((3,))
+        self.positions.initial_value = self.start_position
 
         self.num_released = 0
         self.prev_release_pos = self.start_position
-
-    def initialize_new_elements(self, arrays):
-        """
-        initilize the new elements just created
-        This is probably need to be extended by subclasses
-        """
-        super(SubsurfaceReleaseSpill, self).initialize_new_elements(arrays)
-        arrays['positions'][:] = self.start_position
 
     def release_elements(self, current_time, time_step, array_types=None):
         """
@@ -408,14 +394,13 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
         self.num_released = 0
         self.prev_release_pos = self.start_position
 
+
 class SpatialReleaseSpill(FloatingSpill):
     """
     A simple spill  class  --  a release of floating non-weathering particles,
     with their initial positions pre-specified
 
     """
-    array_types = copy.copy(FloatingSpill.array_types)
-
     def __init__(self,
                  start_positions,
                  release_time,
@@ -441,14 +426,6 @@ class SpatialReleaseSpill(FloatingSpill):
 
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
-
-    def initialize_new_elements(self, arrays):
-        """
-        initilize the new elements just created (i.e set their default values)
-        This is probably need to be extended by subclasses
-        """
-        super(SpatialReleaseSpill, self).initialize_new_elements(arrays)
-        #arrays['positions'][:] = self.start_position
 
     def release_elements(self, current_time, time_step, array_types=None):
         """
