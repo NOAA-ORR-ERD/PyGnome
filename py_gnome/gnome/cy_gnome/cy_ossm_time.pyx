@@ -23,7 +23,7 @@ cdef class CyOSSMTime(object):
     def __dealloc__(self):
         del self.time_dep
     
-    def __init__(self, file=None, file_contains=None, cnp.ndarray[TimeValuePair, ndim=1] timeseries=None):
+    def __init__(self, file=None, file_contains=None, cnp.ndarray[TimeValuePair, ndim=1] timeseries=None, scale_factor=1):
         """
         Initialize object - takes either file or time value pair to initialize
         :param file: path to file containing time series data. It valid user_units are defined in the file, it uses them; otherwise,
