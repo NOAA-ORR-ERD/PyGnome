@@ -289,14 +289,13 @@ class WindMover(CyMover):
         
         if (not WindMover._windage_is_set and not sc.uncertain) or (not WindMover._uspill_windage_is_set and sc.uncertain):
             for spill in sc.spills:
-                # ix = sc['spill_num'] == sc.spills.index(spill.id, renumber=False)   # matching indices
-                ix = sc['spill_num'] == spill.spill_num
-                if np.any(ix):
-                    sc['windages'][ix] = rand.random_with_persistance(spill.windage_range[0],
+                spill_mask = sc.get_spill_mask(spill)
+                if np.any(spill_mask):
+                    sc['windages'][spill_mask] = rand.random_with_persistance(spill.windage_range[0],
                                                                       spill.windage_range[1],
                                                                       spill.windage_persist,
                                                                       time_step,
-                                                                      array_len=len(np.where(ix)[0]))
+                                                                      array_len=len(np.where(spill_mask)[0]))
             if sc.uncertain:
                 WindMover._uspill_windage_is_set = True
             else:
