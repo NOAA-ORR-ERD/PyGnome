@@ -190,6 +190,20 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 	
 	if (err = GetTimeChange(a, b, &dt)) return err;
 	
+
+	// use linear interpolation for pyGNOME, default is HERMITE
+	if (fInterpolationType==LINEAR) {
+		//if (err = GetTimeChange(a, b, &dt)) return err;
+		
+		//dv = UorV(INDEXH(timeValues, b).value, index) - UorV(INDEXH(timeValues, a).value, index);
+		slope = dv / dt;
+		intercept = UorV(INDEXH(timeValues, a).value, index) - slope * INDEXH(timeValues, a).time;
+		(*value) = slope * forTime + intercept;
+		
+		return 0;
+	}
+	
+	
 	// interpolated value is between positions a and b
 	
 	// compute slopes before using Hermite()
