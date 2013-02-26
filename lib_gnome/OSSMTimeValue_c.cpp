@@ -39,6 +39,11 @@ OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(nil)
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
+#ifdef pyGNOME
+	fInterpolationType = LINEAR;
+#else
+	fInterpolationType = HERMITE;
+#endif
 }
 
 
@@ -55,6 +60,7 @@ OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner)
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
+	fInterpolationType = HERMITE;	// pyGNOME doesn't use this constructor
 }
 
 OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
