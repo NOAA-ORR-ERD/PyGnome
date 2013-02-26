@@ -17,12 +17,12 @@ datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
 def test_exceptions():
     with pytest.raises(ValueError):
         cy_ossm_time.CyOSSMTime()  # no inputs
-        cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, "WindDataFromGnome.WNDX"), file_contains=basic_types.ts_format.magnitude_direction)    # bad path
-        cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, "WindDataFromGnome.WND"))    # insufficient input info
-        cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, "WindDataFromGnome_BadUnits.WND"), file_contains=basic_types.ts_format.magnitude_direction)    # insufficient input info
+        cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, "WindDataFromGnome.WNDX"), file_contains=basic_types.ts_format.magnitude_direction)    # bad path
+        cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, "WindDataFromGnome.WND"))    # insufficient input info
+        cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, "WindDataFromGnome_BadUnits.WND"), file_contains=basic_types.ts_format.magnitude_direction)    # insufficient input info
     
     with pytest.raises(ValueError):
-        cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, "WindDataFromGnome.WND"), file_contains=0)   # file_contains has wrong int type    
+        cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, "WindDataFromGnome.WND"), file_contains=0)   # file_contains has wrong int type    
 
 def test_init_units():
     """
@@ -30,19 +30,14 @@ def test_init_units():
     - correct path 
     Updated so the user units are read from file
     """
-    ossmT2 = cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, "WindDataFromGnome.WND"), file_contains=basic_types.ts_format.magnitude_direction)
+    ossmT2 = cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, "WindDataFromGnome.WND"), file_contains=basic_types.ts_format.magnitude_direction)
     assert ossmT2.user_units == "knot"
 
 class TestTimeSeriesInit():
     """
     Test __init__ method and the exceptions it throws for CyOSSMTime
     """
-    tval = np.empty((2,), dtype=basic_types.time_value_pair)
-    tval['time'][0] = 0
-    tval['value'][0]=(1,2)
-
-    tval['time'][1] = 1
-    tval['value'][1]=(2,3)
+    tval = np.array([(0,(1,2)),(1,(2,3))], dtype=basic_types.time_value_pair)
 
     def test_init_timeseries(self):
         """
@@ -76,7 +71,7 @@ class TestGetTimeValues():
     Test get_time_value method for CyOSSMTime
     """
     # sample data generated and stored via Gnome GUI
-    ossmT = cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, 'WindDataFromGnome.WND'),
+    ossmT = cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, 'WindDataFromGnome.WND'),
                                       file_contains=basic_types.ts_format.magnitude_direction)
     
     
@@ -140,7 +135,7 @@ class TestReadFileWithConstantWind():
     """
     Read contents for a file that contains a constant wind, this will be just 1 line in the text file.
     """
-    ossmT = cy_ossm_time.CyOSSMTime(path=os.path.join(datadir, 'WindDataFromGnomeConstantWind.WND'),
+    ossmT = cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, 'WindDataFromGnomeConstantWind.WND'),
                                       file_contains=basic_types.ts_format.magnitude_direction)
     
     def test_get_time_value(self):
