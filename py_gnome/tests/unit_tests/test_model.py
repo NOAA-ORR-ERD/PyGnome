@@ -311,6 +311,8 @@ test_cases = [(datetime(2012, 1, 1, 0, 0), 0, 12 ), # model start_time, No. of t
               (datetime(2012, 1, 1, 0, 0), 12, 12),
               (datetime(2012, 1, 1, 0, 0), 13, 12)]
 
+#test_cases = [(datetime(2012, 1, 1, 0, 0), 13, 12)]
+
 @pytest.mark.parametrize(("start_time", "release_delay", "duration"), test_cases)
 def test_all_movers(start_time, release_delay, duration):
     """
@@ -329,6 +331,9 @@ def test_all_movers(start_time, release_delay, duration):
                                                     start_position=start_loc,
                                                     release_time  = start_time + timedelta(seconds=model.time_step*release_delay),
                                                     )
+    print "release_delay: {0}".format(release_delay)
+    print "LE positions:"
+    print model.spills.LE('positions')
     # model.spills += gnome.spill.PointReleaseSpill(num_LEs=10,
     #                                               start_position = (0.0, 0.0, 0.0),
     #                                               release_time = start_time,

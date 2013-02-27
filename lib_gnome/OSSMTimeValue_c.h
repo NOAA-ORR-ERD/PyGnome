@@ -34,6 +34,7 @@ public:
 	Boolean					bOSSMStyle;
 	double					fTransport;
 	double					fVelAtRefPt;
+	short					fInterpolationType;
 	
 	virtual void 			GetTimeFileName (char *theName) { strcpy (theName, fileName); }
 	virtual short			GetFileType	() { if (fFileType == PROGRESSIVETIDEFILE) return SHIOHEIGHTSFILE; else return fFileType; }
