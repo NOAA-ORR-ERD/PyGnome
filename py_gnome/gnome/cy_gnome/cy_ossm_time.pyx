@@ -10,7 +10,7 @@ from type_defs cimport *
 from utils cimport _NewHandle, _GetHandleSize
 from utils cimport OSSMTimeValue_c
 
-cdef class CyOSSMTime:
+cdef class CyOSSMTime(object):
 
     # underlying C++ object that is instantiated
     # declared in pxd file
@@ -18,16 +18,15 @@ cdef class CyOSSMTime:
     
 
     def __cinit__(self):
-        """ TODO: Update it so it can take path as input argument"""
         self.time_dep = new OSSMTimeValue_c()
         
     def __dealloc__(self):
         del self.time_dep
     
-    def __init__(self, path=None, file_contains=None, cnp.ndarray[TimeValuePair, ndim=1] timeseries=None, scale_factor = 1):
+    def __init__(self, file=None, file_contains=None, cnp.ndarray[TimeValuePair, ndim=1] timeseries=None, scale_factor=1):
         """
-        Initialize object - takes either path or time value pair to initialize
-        :param path: path to file containing time series data. It valid user_units are defined in the file, it uses them; otherwise,
+        Initialize object - takes either file or time value pair to initialize
+        :param file: path to file containing time series data. It valid user_units are defined in the file, it uses them; otherwise,
         it defaults the user_units to meters_per_sec.
         :param file_contains: enum type defined in cy_basic_types to define contents of data file
         :param timeseries: numpy array containing time series data in time_value_pair structure as defined in type_defs
@@ -35,10 +34,10 @@ cdef class CyOSSMTime:
         
         NOTE: If timeseries are given, and data is velocity, it is always assumed to be in meters_per_sec
         """
-        if path is None and timeseries is None:
-            raise ValueError("Object needs either a path to the time series file or timeseries")   # TODO: check error
+        if file is None and timeseries is None:
+            raise ValueError("Object needs either a file to the time series file or timeseries")   # TODO: check error
         
-        if path is not None:
+        if file is not None:
             if file_contains is None:
                 raise ValueError('Unknown file contents - need a valid basic_types.ts_format.* value')
             
@@ -46,10 +45,10 @@ cdef class CyOSSMTime:
             if file_contains not in basic_types.ts_format._int:
                 raise ValueError("file_contains can only contain integers 5, or 1; also defined by basic_types.ts_format.<magnitude_direction or uv>")
             
-            if os.path.exists(path):
-                self._read_time_values(path, file_contains, -1) # user_units should be read from the file
+            if os.path.exists(file):
+                self._read_time_values(file, file_contains, -1) # user_units should be read from the file
             else:
-                raise IOError("No such file: " + path)
+                raise IOError("No such file: " + file)
         
         elif timeseries is not None:
             self._set_time_value_handle(timeseries)
@@ -93,6 +92,26 @@ cdef class CyOSSMTime:
         def __set__(self,value):
             self.time_dep.fScaleFactor = value
             
+    property filename:
+        def __get__(self):
+            cdef bytes fileName
+            fileName = self.time_dep.fileName
+            return fileName
+    
+    def __repr__(self):
+        """
+        Return an unambiguous representation of this object so it can be recreated 
+        """
+        # Tried the following, but eval(repr( obj_instance)) would not work on it so updated it to hard code the class name
+        # '{0.__class__}( "{0.filename}", daylight_savings_off={1})'.format(self, self.shio.daylight_savings_off)
+        return 'CyOSSMTime( filename="{0.filename}", timeseries=<see timeseries attribute>)'.format(self)
+      
+    def __str__(self):
+        """Return string info about the object"""
+        info  = "CyOSSMTime object - filename={0.filename}, timeseries=<see timeseries attribute>".format(self)
+        
+        return info
+
     def get_time_value(self, modelTime):
         """
           GetTimeValue - for a specified modelTime or array of model times, it returns the values

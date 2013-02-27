@@ -68,7 +68,7 @@ class MapCanvas(object):
         """
         create a new map image from scratch -- specifying the size:
         
-        :param size: (width, height) tuple of the image size
+        :param size: (width, height) tuple of the image size in pixels
         :param projection_class: gnome.utilities.projections class to use.
         :param mode='RGB': image mode to use -- format of image. Options are: 'RGB', 'palette', 'B&W'
         
@@ -79,7 +79,29 @@ class MapCanvas(object):
         self.projection = projection_class(((-180,-85),(180, 85)), self.image_size) # BB will be re-set
         self.map_BB = None
         self.land_polygons = None
-    
+
+    @classmethod
+    def empty_map(cls, size, bounding_box):
+        """
+        Alternative constructor for a map_canvas with no land
+        
+        :param size: the size of the image: (width, height) in pixels 
+        
+        :param bounding_box: the bounding box you want the map to cover, in teh form:
+                             ( (min_lon, min_lat),
+                               (max_lon, max_lat) )
+        """
+        mc = cls.__new__(cls)
+        mc.image_size = size
+        mc.back_image = PIL.Image.new('P', size, color=cls.colors['background'])
+        mc.back_image.putpalette(mc.palette)
+        mc.projection = projections.FlatEarthProjection(bounding_box, size)
+        mc.map_BB = bounding_box 
+        mc.land_polygons=None 
+
+        return mc
+
+
     def set_viewport(self, viewport_BB):
         """
         Sets the viewport of the map: what gets drawn at what scale
@@ -121,29 +143,30 @@ class MapCanvas(object):
         Draws the land map to the internal background image.
         
         """
-        self.back_image.save("empty_BW_image.png")
-        # project the data:
-        polygons = self.land_polygons.Copy()
-        polygons.TransformData(self.projection.to_pixel_2D)
+        #self.back_image.save("empty_BW_image.png")
+        if self.land_polygons: # is there any land to draw?
+            # project the data:
+            polygons = self.land_polygons.Copy()
+            polygons.TransformData(self.projection.to_pixel_2D)
         
-        drawer = PIL.ImageDraw.Draw(self.back_image)
+            drawer = PIL.ImageDraw.Draw(self.back_image)
 
-        #fixme: should we make sure to draw the lakes after the land???
-        for p in polygons:
-            if p.metadata[1].strip().lower() == "map bounds":
-                #Draw the map bounds polygon
-                poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                drawer.polygon(poly, outline=self.colors['map_bounds'])
-            elif p.metadata[1].strip().lower() == "spillablearea":
-                # don't draw the spillable area polygon
-                continue
-            elif p.metadata[2] == "2": #this is a lake
-                poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                drawer.polygon(poly, fill=self.colors['lake'])
-            else:
-                poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                drawer.polygon(poly, fill=self.colors['land'])
-        return
+            #fixme: should we make sure to draw the lakes after the land???
+            for p in polygons:
+                if p.metadata[1].strip().lower() == "map bounds":
+                    #Draw the map bounds polygon
+                    poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
+                    drawer.polygon(poly, outline=self.colors['map_bounds'])
+                elif p.metadata[1].strip().lower() == "spillablearea":
+                    # don't draw the spillable area polygon
+                    continue
+                elif p.metadata[2] == "2": #this is a lake
+                    poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
+                    drawer.polygon(poly, fill=self.colors['lake'])
+                else:
+                    poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
+                    drawer.polygon(poly, fill=self.colors['land'])
+        return None
     
     def create_foreground_image(self):
         self.fore_image_array = np.zeros((self.image_size[1],self.image_size[0]), np.uint8)
