@@ -91,10 +91,8 @@ def test_new_elements():
 
     arrays = sp.create_new_elements(3)
 
-    print arrays
     for array in arrays.values():
         assert len(array) == 3
-    # what else to test???
 
 
 def test_FloatingSpill():
@@ -196,10 +194,10 @@ class Test_SurfaceReleaseSpill(object):
 
     def test_inst_line_release(self):
         sp = SurfaceReleaseSpill(num_elements = 11, # so it's easy to compute where they should be!
-                                  start_position = (-128.0, 28.0, 0),
-                                  release_time = self.release_time,
-                                  end_position = (-129.0, 29.0, 0)
-                                  )
+                                 start_position = (-128.0, 28.0, 0),
+                                 release_time = self.release_time,
+                                 end_position = (-129.0, 29.0, 0)
+                                 )
         timestep = 600 # ten minutes in seconds         
         arrays = sp.release_elements(self.release_time + datetime.timedelta(hours=1), timestep)
 
@@ -223,8 +221,8 @@ class Test_SurfaceReleaseSpill(object):
                                  end_release_time = self.release_time + datetime.timedelta(minutes=100)
                                  )
         timestep = 100 * 60       
-        # first the full release over one time step
-        arrays = sp.release_elements(self.release_time, timestep )
+        #  the full release over one time step(plus a tiny bit to get the last one)
+        arrays = sp.release_elements(self.release_time, timestep+1 )
 
         assert arrays['positions'].shape == (11,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
@@ -245,14 +243,15 @@ class Test_SurfaceReleaseSpill(object):
                                  end_position = (-129.0, 29.0, 0),
                                  end_release_time = self.release_time + datetime.timedelta(minutes=100)
                                  )
-
+        lats = np.linspace(-128, -129, 100)
+        lons = np.linspace(28, 29, 100)
         # release at release time with time step of 1/10 of release_time
         arrays = sp.release_elements(self.release_time, 10*60)
 
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
-        assert np.array_equal( arrays['positions'][:,0], np.linspace(-128, -128.1, 10))
-        assert np.array_equal( arrays['positions'][:,1], np.linspace(28, 28.1, 10))
+        assert np.array_equal( arrays['positions'][:,0], lats[:10])
+        assert np.array_equal( arrays['positions'][:,1], lons[:10])
         assert sp.num_released == 10
 
         # second time step release:
@@ -260,8 +259,8 @@ class Test_SurfaceReleaseSpill(object):
 
         assert arrays['positions'].shape == (10,3)
         assert np.alltrue( arrays['status_codes'] == basic_types.oil_status.in_water)
-        assert np.array_equal( arrays['positions'][:,0], np.linspace(-128.1, -128.2, 11)[1:])
-        assert np.array_equal( arrays['positions'][:,1], np.linspace(28.1, 28.2, 11)[1:])
+        assert np.array_equal( arrays['positions'][:,0], lats[10:20])
+        assert np.array_equal( arrays['positions'][:,1], lons[10:20])
         assert sp.num_released == 20
 
     def test_cont_line_release3(self):
@@ -316,7 +315,6 @@ class Test_SurfaceReleaseSpill(object):
         # end after release
         while time < self.release_time + datetime.timedelta(minutes=100):
             arrays = sp.release_elements(time, timestep)
-            print arrays
             if arrays is not None:
                 positions = np.r_[positions, arrays['positions'] ]
             time += delta_t
@@ -329,17 +327,17 @@ class Test_SurfaceReleaseSpill(object):
         diff = np.diff(positions[:,:2], axis=0)
         assert np.alltrue( np.abs(np.diff ( diff[:,0] / diff[:,1] ) ) < 1e-10 )
 
-    positions = [( (128.0, 2.0, 0), (128.0, -2.0, 0)), # south
-                 ( (128.0, 2.0, 0), (128.0, 4.0, 0)), # north
-                 ( (128.0, 2.0, 0), (125.0, 2.0, 0)), # west
-                 ( (-128.0, 2.0, 0), (-120.0, 2.0, 0) ), # east
-                 ( (-128.0, 2.0, 0), (-120.0, 2.01, 0) ), # almost east
+    positions = [( (128.0, 2.0, 0.0), (128.0, -2.0, 0.0)), # south
+                 ( (128.0, 2.0, 0.0), (128.0, 4.0, 0.0)), # north
+                 ( (128.0, 2.0, 0.0), (125.0, 2.0, 0.0)), # west
+                 ( (-128.0, 2.0, 0.0), (-120.0, 2.0, 0.0) ), # east
+                 ( (-128.0, 2.0, 0.0), (-120.0, 2.01, 0.0) ), # almost east
                  ]
     @pytest.mark.parametrize( ('start_position', 'end_position'), positions )
     def test_south_line(self, start_position, end_position):
         """
         testing a line release to the north
-        making sure it's right for the full release -- mutiple elements per step
+        making sure it's right for the full release -- multiple elements per step
         """
         sp = SurfaceReleaseSpill(num_elements = 50, 
                                  start_position = start_position,
@@ -353,6 +351,7 @@ class Test_SurfaceReleaseSpill(object):
         delta_t = datetime.timedelta(minutes=10)
         timestep = delta_t.total_seconds()
         positions = np.zeros((0,3), dtype=np.float64)
+        
         # end after release
         while time < self.release_time + datetime.timedelta(minutes=100):
             arrays = sp.release_elements(time, timestep)
@@ -361,8 +360,8 @@ class Test_SurfaceReleaseSpill(object):
             time += delta_t
         assert positions.shape == (50,3)
         assert np.array_equal(positions[0], start_position )
-        assert np.array_equal(positions[-1], end_position )
-        # check if they are all close to the same line (constant slope)
+        assert np.allclose(positions[-1], end_position )
+        ##check if they are all close to the same line (constant slope)
         diff = np.diff(positions[:,:2], axis=0)
         if start_position[1] == end_position[1]:
             #horizontal line -- infinite slope
@@ -377,7 +376,95 @@ class Test_SurfaceReleaseSpill(object):
                                      release_time = self.release_time,
                                      end_release_time = self.release_time - datetime.timedelta(seconds=1),
                                      )
-            print sp
+
+
+num_elements = ((998,),
+                (100,),
+                (11,),
+                (10,),
+                (5,),
+                (4,),
+                (3,),
+                (2,),
+                )
+
+@pytest.mark.parametrize( ('num_elements', ), num_elements )
+def test_single_line(num_elements):
+    """
+    various numbers of elemenets over ten time steps, so release
+    is less than one, one and more than one per time step.
+    """
+    print "using num_elements:", num_elements
+    start_time = datetime.datetime(2012,1,1)
+    end_time = start_time + datetime.timedelta(seconds=100)
+    time_step = datetime.timedelta(seconds=10)
+    start_pos = np.array((0.0, 0.0, 0.0),)
+    end_pos   = np.array((1.0, 2.0, 0.0),)
+    sp = SurfaceReleaseSpill(num_elements = num_elements, 
+                             start_position = start_pos,
+                             release_time = start_time,
+                             end_position = end_pos,
+                             end_release_time = end_time,
+                             )
+    
+    time = start_time
+    positions = []
+    while time <= end_time+(time_step*2):
+        data = sp.release_elements(time, time_step.total_seconds() )
+        if data is not None:
+            positions.extend(data['positions'])
+        time += time_step
+    positions = np.array(positions)
+    assert len(positions) == num_elements
+    assert np.allclose(positions[0], start_pos)
+    assert np.allclose(positions[-1], end_pos)
+    assert np.allclose(positions[:,0], np.linspace(start_pos[0], end_pos[0], num_elements))
+ 
+def test_line_release_with_one_element():
+    """
+    one element with a line release
+    -- doesn't really make sense, but it shouldn't crash
+    """
+    start_time = datetime.datetime(2012,1,1)
+    end_time = start_time + datetime.timedelta(seconds=100)
+    time_step = datetime.timedelta(seconds=10)
+    start_pos = np.array((0.0, 0.0, 0.0),)
+    end_pos   = np.array((1.0, 2.0, 0.0),)
+    sp = SurfaceReleaseSpill(num_elements = 1, 
+                             start_position = start_pos,
+                             release_time = start_time,
+                             end_position = end_pos,
+                             end_release_time = end_time,
+                             )
+    
+    time = start_time - time_step
+    assert sp.release_elements(time, time_step.total_seconds() ) is None
+    time += time_step
+    data = sp.release_elements(time, time_step.total_seconds() )
+
+    assert np.array_equal(data['positions'], [start_pos,])
+
+def test_line_release_with_big_timestep():
+    """
+    a line release: where the timestpe spans before to after the release time
+    """
+    start_time = datetime.datetime(2012,1,1)
+    end_time = start_time + datetime.timedelta(seconds=100)
+    time_step = datetime.timedelta(seconds=300)
+    start_pos = np.array((0.0, 0.0, 0.0),)
+    end_pos   = np.array((1.0, 2.0, 0.0),)
+    sp = SurfaceReleaseSpill(num_elements = 10, 
+                             start_position = start_pos,
+                             release_time = start_time,
+                             end_position = end_pos,
+                             end_release_time = end_time,
+                             )
+    
+    data = sp.release_elements(start_time-datetime.timedelta(seconds=100),
+                               time_step.total_seconds() )
+
+    assert np.array_equal( data['positions'][:,0], np.linspace(0.0, 1.0, 10) )
+    assert np.array_equal( data['positions'][:,1], np.linspace(0.0, 2.0, 10) )
 
 def test_SpatialReleaseSpill():
     """
@@ -425,7 +512,6 @@ def test_SpatialReleaseSpill2():
 
 
 if __name__ == "__main__":
-    test_uncertain_copy()
-    #test_reset_array_types()
+    test_single_line_two_le_per_timestep()
 
 

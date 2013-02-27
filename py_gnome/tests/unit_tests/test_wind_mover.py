@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from hazpy import unit_conversion
 
-
+import gnome
 from gnome import movers
 from gnome import basic_types, environment
 from gnome.spill_container import TestSpillContainer
@@ -175,6 +175,42 @@ class TestWindMover:
         xform = projections.FlatEarthProjection.meters_to_lonlat(exp, self.spill['positions'])
         return xform
 
+
+def test_windage_index():
+    """
+    A very simple test to make sure windage is set for the correct spill if staggered release
+    """
+    sc = gnome.spill_container.SpillContainer()
+    rel_time = datetime(2013,1,1,0,0)
+    timestep = 30
+    for i in range(2):
+        spill = gnome.spill.SurfaceReleaseSpill(num_elements=5,
+                                                start_position=(0.0,0.0,0.0),
+                                                release_time=rel_time + i*timedelta(hours=1),
+                                                windage_range=(i*.01+0.01, i*.01+0.01),
+                                                windage_persist=900)
+        sc.spills.add(spill)
+    
+    sc.release_elements(rel_time, timestep)
+    wm = movers.WindMover(environment.ConstantWind(5,0))
+    wm.prepare_for_model_step(sc, timestep, rel_time)
+    wm.model_step_is_done() # need this to toggle _windage_is_set_flag
+    
+    def _check_index(sc):
+        """internal function for doing the test after windage is set - called twice so made a function"""
+        # only 1st spill is released
+        for sp in sc.spills:
+            mask = sc.get_spill_mask(sp)
+            if np.any(mask):
+                assert np.all( sc['windages'][mask] == sp.windage_range[0])
+                
+    # only 1st spill is released
+    _check_index(sc)    # 1st ASSERT
+    
+    sc.release_elements(rel_time+timedelta(hours=1), timestep)
+    wm.prepare_for_model_step(sc, timestep, rel_time)
+    _check_index(sc)    # 2nd ASSERT
+
 def test_timespan():
     """
     Ensure the active flag is being set correctly and checked, such that if active=False, the delta produced by get_move = 0
@@ -186,7 +222,7 @@ def test_timespan():
     rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
     #fixme: what to do about persistance?
     spill = TestSpillContainer(5, start_pos, rel_time)
-    spill.release_elements(datetime.now())
+    spill.release_elements(datetime.now(), time_step=100)
 
     #model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
     model_time = rel_time

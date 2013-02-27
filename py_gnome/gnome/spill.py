@@ -12,21 +12,37 @@ these are managed by the SpillContainer class
 """
 import copy
 
+import math
+from datetime import timedelta
 import numpy as np
 from gnome import basic_types
 from gnome.gnomeobject import GnomeObject
+
+class ArrayType(object):
+    def __init__(self, shape, dtype, initial_value=None):
+        self.shape = shape
+        self.dtype = dtype
+        self.initial_value = initial_value
+
 
 class Spill(GnomeObject):
     """
     base class for a source of elements
     """
-    array_types = {'positions':      ( (3,), basic_types.world_point_type),
-                   'next_positions': ( (3,), basic_types.world_point_type),
-                   'last_water_positions': ( (3,), basic_types.world_point_type),
-                   'status_codes': ( (), basic_types.status_code_type),
-                   'spill_num': ( (), basic_types.id_type)
-                   }
-        
+    positions = ArrayType( (3,), basic_types.world_point_type)
+    next_positions = ArrayType( (3,), basic_types.world_point_type)
+    last_water_positions = ArrayType( (3,), basic_types.world_point_type)
+    status_codes = ArrayType( (), basic_types.status_code_type,
+                              basic_types.oil_status.in_water)
+    spill_num = ArrayType( (), basic_types.id_type)
+
+    @property
+    def array_types(self):
+        return dict([(name, getattr(self, name))
+                for name in dir(self)
+                if name != 'array_types'
+                and type(getattr(self, name)) == ArrayType])
+
     def __new__(cls, *args, **kwargs):
         obj = super(Spill, cls).__new__(cls, *args, **kwargs)
         return obj
@@ -85,28 +101,22 @@ class Spill(GnomeObject):
         return None
 
     def create_new_elements(self, num_elements, array_types=None):
-        """
-        create new arrays for the various types and 
-        return a dict of the set
-
-        :param num_elements: number of new elements to add
-        """
         arrays = {}
         if not array_types:
             array_types = self.array_types
 
-        for name, (shape, dtype) in array_types.iteritems():
-            arrays[name] = np.zeros( (num_elements,)+shape, dtype=dtype)
-        self.initialize_new_elements(arrays)
+        for name, array_type in array_types.iteritems():
+            arrays[name] = np.zeros( (num_elements,)+array_type.shape, dtype=array_type.dtype)
+        self.initialize_new_elements(arrays, array_types)
         return arrays
 
-    def initialize_new_elements(self, arrays):
-        """
-        initilize the new elements just created
-        This is probably need to be extended by subclasses
-        """
-        if 'status_codes' in arrays:
-            arrays['status_codes'][:] = basic_types.oil_status.in_water
+    def initialize_new_elements(self, arrays, array_types=None):
+        if not array_types:
+            array_types = self.array_types
+
+        for name, array_type in array_types.iteritems():
+            if array_type.initial_value != None:
+                arrays[name][:] = array_type.initial_value
 
 class FloatingSpill(Spill):
     """
@@ -114,9 +124,7 @@ class FloatingSpill(Spill):
 
     all this does is add the 'windage' parameter
     """
-    array_types = copy.copy(Spill.array_types)
-    array_types.update( ( ('windages', ( (), basic_types.windage_type)), 
-                          ) )
+    windages = ArrayType( (), basic_types.windage_type)
     
     def __init__(self,
                  windage_range=(0.01, 0.04),
@@ -126,29 +134,12 @@ class FloatingSpill(Spill):
         self.windage_range = windage_range
         self.windage_persist = windage_persist
 
-class SubsurfaceSpill(Spill):
-    """
-    spill for underwater objects
-
-    all this does is add the 'water_currents' parameter
-    """
-    array_types = copy.copy(Spill.array_types)
-    array_types.update( ( ('water_currents', ( (3,), basic_types.water_current_type)),
-                          ) )
-
-    def __init__(self):
-        super(SubsurfaceSpill, self).__init__()
-        # it is not clear yet (to me anyway) what we will want to add to a subsurface spill
-
-
 class SurfaceReleaseSpill(FloatingSpill):
     """
     The simplest spill source class  --  a point release of floating
     non-weathering particles
 
     """
-    array_types = copy.copy(FloatingSpill.array_types)
-
     def __init__(self,
                  num_elements,
                  start_position,
@@ -182,21 +173,22 @@ class SurfaceReleaseSpill(FloatingSpill):
 
         if end_position is None:
             end_position = start_position
+        self.start_position = np.array(start_position, dtype=basic_types.world_point_type).reshape((3,))
+        self.end_position = np.array(end_position, dtype=basic_types.world_point_type).reshape((3,))
+        if self.num_elements == 1:
+            self.delta_pos = np.array( (0.0,0.0,0.0) , dtype=basic_types.world_point_type)
+        else:
+            self.delta_pos = (self.end_position - self.start_position) / (self.num_elements-1)
+        self.delta_release = (self.end_release_time - self.release_time).total_seconds() 
         self.start_position = np.asarray(start_position, dtype=basic_types.world_point_type).reshape((3,))
         self.end_position = np.asarray(end_position, dtype=basic_types.world_point_type).reshape((3,))
+        #self.positions.initial_value = self.start_position
+
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
 
         self.num_released = 0
-        self.prev_release_pos = self.start_position
-
-    def initialize_new_elements(self, arrays):
-        """
-        initilize the new elements just created
-        This is probably need to be extended by subclasses
-        """
-        super(SurfaceReleaseSpill, self).initialize_new_elements(arrays)
-        arrays['positions'][:] = self.start_position
+        self.prev_release_pos = self.start_position.copy()
 
     def release_elements(self, current_time, time_step, array_types=None):
         """
@@ -209,63 +201,58 @@ class SurfaceReleaseSpill(FloatingSpill):
         :returns : None if there are no new elements released
                    a dict of arrays if there are new elements
         """
+        if time_step is None:
+            time_step = 360 # jsut to give it a default
         if not array_types:
             array_types = self.array_types
 
-        if current_time >= self.release_time:
-            if self.num_released >= self.num_elements:
-                return None
-
-            #total release time
-            release_delta = (self.end_release_time - self.release_time).total_seconds()
-
-            # time since release began
-            if current_time >= self.end_release_time:
-                dt = release_delta
-            else:
-                dt = max( (current_time - self.release_time).total_seconds() + time_step, 0.0)
-            # this here in case there is less than one released per time step.
-            # or if the release time is before the model start time
-            if release_delta == 0: #instantaneous release
-                num = self.num_elements - self.num_released #num_released should always be 0?
-            else:
-                total_num = (dt / release_delta) * self.num_elements
-                num = int(total_num - self.num_released)
-
-            if num <= 0:
-                return None
-
-            self.num_released += num
-
-            arrays = self.create_new_elements(num, array_types)
-
-            #compute the position of the elements:
-            if release_delta == 0: # all released at once:
-                x1, y1 = self.start_position[:2]
-                x2, y2 = self.end_position[:2]
-                arrays['positions'][:,0] = np.linspace(x1, x2, num)
-                arrays['positions'][:,1] = np.linspace(y1, y2, num)
-            else:
-                x1, y1 = self.prev_release_pos[:2]
-                dx = self.end_position[0] - self.start_position[0]
-                dy = self.end_position[1] - self.start_position[1]
-
-                fraction = min (1, dt / release_delta)
-                x2 = (fraction * dx) + self.start_position[0]
-                y2 = (fraction * dy) + self.start_position[1]
-
-                if np.array_equal(self.prev_release_pos, self.start_position):
-                    # we want both the first and last points
-                    arrays['positions'][:,0] = np.linspace(x1, x2, num)
-                    arrays['positions'][:,1] = np.linspace(y1, y2, num)
-                else:
-                    # we don't want to duplicate the first point.
-                    arrays['positions'][:,0] = np.linspace(x1, x2, num+1)[1:]
-                    arrays['positions'][:,1] = np.linspace(y1, y2, num+1)[1:]
-                self.prev_release_pos = (x2, y2, 0.0)
-            return arrays
-        else:
+        if current_time+timedelta(seconds=time_step) <= self.release_time: # don't want to barely pick it up...
+            # not there yet...
             return None
+        if self.num_released >= self.num_elements:
+            # nothing left to release
+            return None
+        if self.delta_release <= 0:
+            num = self.num_elements
+            arrays = self.create_new_elements(num, array_types)
+            self.num_released = num
+            if np.array_equal(self.delta_pos, (0.0,0.0,0.0)):
+                #point release
+                arrays['positions'][:,:] = self.start_position
+            else:
+                arrays['positions'][:,0] = np.linspace(self.start_position[0],self.end_position[0] , num)
+                arrays['positions'][:,1] = np.linspace(self.start_position[1],self.end_position[1] , num)
+                arrays['positions'][:,2] = np.linspace(self.start_position[2],self.end_position[2] , num)
+            return arrays
+
+        n_0 = self.num_released # always want to start at previous released
+        #index of end of current time step
+        n_1 = int( ( (current_time - self.release_time).total_seconds() + time_step) /
+                      self.delta_release * (self.num_elements-1) ) # a tiny bit to make it open on the right.
+
+        n_1 = min(n_1, self.num_elements-1) # don't want to go over the end.
+        if n_1 == self.num_released-1: # indexes from zero
+            # none to release this time step
+            return None
+
+        num = n_1 - n_0 + 1
+        self.num_released = n_1+1 # indexes from zero
+        
+        arrays = self.create_new_elements(num, array_types)
+
+        #compute the position of the elements:
+        if np.array_equal(self.delta_pos, (0.0,0.0,0.0) ):
+            # point release
+            arrays['positions'][:,:] = self.start_position
+        else:
+            n = np.arange(n_0, n_1+1).reshape((-1,1))
+            if self.num_elements == 1: # special case this one
+                pos = np.array( [self.start_position,] )
+            else:
+                pos = self.start_position + n*self.delta_pos
+            arrays['positions'] = pos
+
+        return arrays
 
     def rewind(self):
         """
@@ -275,6 +262,20 @@ class SurfaceReleaseSpill(FloatingSpill):
 
         self.num_released = 0
         self.prev_release_pos = self.start_position
+
+
+class SubsurfaceSpill(Spill):
+    """
+    spill for underwater objects
+
+    all this does is add the 'water_currents' parameter
+    """
+    water_currents = ArrayType( (3,), basic_types.water_current_type)
+
+    def __init__(self):
+        super(SubsurfaceSpill, self).__init__()
+        # it is not clear yet (to me anyway) what we will want to add to a subsurface spill
+
 
 class SubsurfaceReleaseSpill(SubsurfaceSpill):
     """
@@ -286,8 +287,6 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
         for now we will just keep the in_water status, but we will probably want to change this
         in the future.
     """
-    array_types = copy.copy(SubsurfaceSpill.array_types)
-
     def __init__(self,
                  num_elements,
                  start_position,
@@ -318,17 +317,10 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
             end_position = start_position
         self.start_position = np.asarray(start_position, dtype=basic_types.world_point_type).reshape((3,))
         self.end_position = np.asarray(end_position, dtype=basic_types.world_point_type).reshape((3,))
+        #self.positions.initial_value = self.start_position
 
         self.num_released = 0
         self.prev_release_pos = self.start_position
-
-    def initialize_new_elements(self, arrays):
-        """
-        initilize the new elements just created
-        This is probably need to be extended by subclasses
-        """
-        super(SubsurfaceReleaseSpill, self).initialize_new_elements(arrays)
-        arrays['positions'][:] = self.start_position
 
     def release_elements(self, current_time, time_step, array_types=None):
         """
@@ -349,21 +341,18 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
 
             #total release time
             release_delta = (self.end_release_time - self.release_time).total_seconds()
-
-            # time since release began
-            if current_time >= self.end_release_time:
-                dt = release_delta
-            else:
-                dt = max( (current_time - self.release_time).total_seconds() + time_step, 0.0)
-            # this here in case there is less than one released per time step.
-            # or if the release time is before the model start time
             if release_delta == 0: #instantaneous release
                 num = self.num_elements - self.num_released #num_released should always be 0?
             else:
-                total_num = (dt / release_delta) * self.num_elements
-                num = int(total_num - self.num_released)
+                # time since release began
+                if current_time >= self.end_release_time:
+                    dt = release_delta
+                else:
+                    dt = max( (current_time - self.release_time).total_seconds() + time_step, 0.0)
+                    total_num = (dt / release_delta) * self.num_elements
+                    num = int(total_num - self.num_released)
 
-            if num <= 0:
+            if num <= 0: # all released
                 return None
 
             self.num_released += num
@@ -408,14 +397,13 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
         self.num_released = 0
         self.prev_release_pos = self.start_position
 
+
 class SpatialReleaseSpill(FloatingSpill):
     """
     A simple spill  class  --  a release of floating non-weathering particles,
     with their initial positions pre-specified
 
     """
-    array_types = copy.copy(FloatingSpill.array_types)
-
     def __init__(self,
                  start_positions,
                  release_time,
@@ -441,14 +429,6 @@ class SpatialReleaseSpill(FloatingSpill):
 
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
-
-    def initialize_new_elements(self, arrays):
-        """
-        initilize the new elements just created (i.e set their default values)
-        This is probably need to be extended by subclasses
-        """
-        super(SpatialReleaseSpill, self).initialize_new_elements(arrays)
-        #arrays['positions'][:] = self.start_position
 
     def release_elements(self, current_time, time_step, array_types=None):
         """

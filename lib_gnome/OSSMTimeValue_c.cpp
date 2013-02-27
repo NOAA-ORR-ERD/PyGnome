@@ -39,6 +39,11 @@ OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(nil)
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
+#ifdef pyGNOME
+	fInterpolationType = LINEAR;
+#else
+	fInterpolationType = HERMITE;
+#endif
 }
 
 
@@ -55,6 +60,7 @@ OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner)
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
+	fInterpolationType = HERMITE;	// pyGNOME doesn't use this constructor
 }
 
 OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
@@ -183,6 +189,20 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 	{ (*value) = UorV(INDEXH(timeValues, b).value, index); return 0; }
 	
 	if (err = GetTimeChange(a, b, &dt)) return err;
+	
+
+	// use linear interpolation for pyGNOME, default is HERMITE
+	if (fInterpolationType==LINEAR) {
+		//if (err = GetTimeChange(a, b, &dt)) return err;
+		
+		//dv = UorV(INDEXH(timeValues, b).value, index) - UorV(INDEXH(timeValues, a).value, index);
+		slope = dv / dt;
+		intercept = UorV(INDEXH(timeValues, a).value, index) - slope * INDEXH(timeValues, a).time;
+		(*value) = slope * forTime + intercept;
+		
+		return 0;
+	}
+	
 	
 	// interpolated value is between positions a and b
 	

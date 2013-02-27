@@ -155,6 +155,9 @@ class SpillContainer(SpillContainerData):
         for spill in self.spills:
             self.all_array_types.update(spill.array_types)
 
+    def get_spill_mask(self, spill):
+        return self['spill_num'] == self.spills.index(spill.id)
+
     def uncertain_copy(self):
         """
         Returns a copy of the spill_container suitable for uncertainty
@@ -174,7 +177,7 @@ class SpillContainer(SpillContainerData):
         """
         pass
 
-    def release_elements(self, current_time, time_step=None):
+    def release_elements(self, current_time, time_step):
         """
         Called at the end of a time step
 
@@ -331,7 +334,7 @@ class SpillContainerPair(SpillContainerPairData):
         add spill to spill_container and make copy in u_spill_container if uncertainty is on
         """
         self._spill_container.spills += spill
-        spill.spill_num = self._spill_container.spills.index(spill.id, renumber=False)
+        spill.spill_num.initial_value = self._spill_container.spills.index(spill.id, renumber=False)
         if self.uncertain:
             # todo: make sure spill_num for copied spill are the same as original
             self._u_spill_container.spills += spill.uncertain_copy()
@@ -403,6 +406,8 @@ class TestSpillContainer(SpillContainer):
         spill = gnome.spill.SurfaceReleaseSpill(num_elements,
                                                 start_pos,
                                                 release_time)
+        spill.spill_num.initial_value = 0
         self.spills.add(spill)
-        self.release_elements(release_time)
+        self.release_elements(release_time, 360)
+
 

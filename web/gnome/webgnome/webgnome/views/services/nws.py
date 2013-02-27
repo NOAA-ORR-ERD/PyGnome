@@ -18,7 +18,8 @@ class Wind(BaseResource):
         r = requests.get(url)
 
         if r.status_code != 200:
-            raise HTTPServerError('Could not contact NWS wind data service.')
+            self.request.response.status = 500
+            return {'error': 'Could not contact NWS wind data service.'}
 
         try:
             doc = etree.fromstring(r.content)
@@ -30,6 +31,7 @@ class Wind(BaseResource):
             results = {'description': ' '.join(description),
                        'results': zip(times, speeds, directions)}
         except etree.XMLSyntaxError:
-            raise HTTPServerError('XML syntax error in NWS wind data response.')
+            self.request.response.status = 500
+            return {'error': 'XML syntax error in NWS wind data response.'}
 
         return results
