@@ -9,6 +9,7 @@ from colander import (
     Bool,
     String,
     OneOf,
+    Float,
     #===========================================================================
     # Bool,
     # Int,
@@ -48,8 +49,8 @@ class WindReadWrite(MappingSchema):
     validate data before it is given back to pyGnome's from_dict to set state of object
     """
     description = SchemaNode(String() )
-    latitude = SchemaNode(String() )
-    longitude = SchemaNode(String() )
+    latitude = SchemaNode(Float(), default=None, missing=None)
+    longitude = SchemaNode(Float(), default=None, missing=None)
     name = SchemaNode(String() )
     source_id = SchemaNode(String() )
     source_type = SchemaNode(String(), validator=OneOf(gnome.basic_types.wind_datasource._attr))
@@ -59,6 +60,8 @@ class WindReadWrite(MappingSchema):
 
 class WindState( Id, WindReadWrite):
     """
+    todo: Is Id required? Can we have just one schema for the Wind object?
+    
     Likely to be used when validating the state of the object read in from a save file.
     The resulting dict is used in new_from_dict(dict) method to construct a new object with same
     state as originally saved object

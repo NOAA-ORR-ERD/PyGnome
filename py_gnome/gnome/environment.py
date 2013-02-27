@@ -92,9 +92,9 @@ class Wind( GnomeObject, serializable.Serializable):
         if 'timeseries' not in kwargs and 'file' not in kwargs:
             raise TypeError("Either provide a timeseries or a wind file with a header, containing wind data")
         
-        # default lat/long
-        self.longitude = 'unknown'
-        self.latitude = 'unknown'
+        # default lat/long - can these be set from reading data in the file?
+        self.longitude = None
+        self.latitude = None
         
         # format of data 'uv' or 'r-theta'. Default is 'r-theta'
         format = kwargs.pop('format', 'r-theta')
