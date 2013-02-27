@@ -201,6 +201,8 @@ class SurfaceReleaseSpill(FloatingSpill):
         :returns : None if there are no new elements released
                    a dict of arrays if there are new elements
         """
+        if time_step is None:
+            time_step = 360 # jsut to give it a default
         if not array_types:
             array_types = self.array_types
 

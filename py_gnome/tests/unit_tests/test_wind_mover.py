@@ -223,7 +223,7 @@ def test_timespan():
     rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
     #fixme: what to do about persistance?
     spill = TestSpillContainer(5, start_pos, rel_time)
-    spill.release_elements(datetime.now())
+    spill.release_elements(datetime.now(), time_step=100)
 
     #model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
     model_time = rel_time
