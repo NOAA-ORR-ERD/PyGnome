@@ -494,7 +494,7 @@ define([
             if(this.dateFields && _.contains(this.dateFields, attr)) {
                 var val = this.attributes[attr];
                 var date = moment(val);
-                if (date.isValid()) {
+                if (date && date.isValid()) {
                     return date;
                 } else {
                     return val;
@@ -628,20 +628,20 @@ define([
     var WindMover = BaseMover.extend({
 
         /*
-         If the user passed an object for `key`, as when setting multiple
-         attributes at once, then make sure the 'wind' field is a `Wind`
-         object.
+         Make sure the 'wind' field is a `Wind` object.
+
+         Assume an object with a `get` method is a Wind object; otherwise
+         assume it is an object of attrs that we can use to create a new Wind.
          */
         set: function(key, val, options) {
             if (key && key.wind) {
-                // Assume an object with a `get` method is a Model; otherwise
-                // assume the value is JSON that we need to send to a Wind
-                // constructor.
-                if (key['wind'].get === undefined) {
-                    key['wind'] = new Wind(key['wind']);
+                if (key.wind.get === undefined) {
+                    key.wind = new Wind(key.wind);
                 }
+            } else if (key === 'wind' && val && val.get === undefined) {
+                key.wind = new Wind(val);
             } else if (this.get('wind') === undefined) {
-                key['wind'] = new Wind();
+                key.wind = new Wind();
             }
 
             WindMover.__super__.set.apply(this, [key, val, options]);
@@ -692,7 +692,7 @@ define([
             var timeseries = wind.get('timeseries');
 
             if (timeseries.length) {
-                return moment(timeseries[0].datetime).valueOf();
+                return moment(timeseries[0][0]).valueOf();
             }
         }
     });
@@ -718,17 +718,31 @@ define([
 
 
     var CustomMap = BaseModel.extend({
-        initialize: function(options) {
+        initialize: function(attrs, options) {
             this.url = options.url;
         }
     });
 
 
-    function getNwsWind(coords, success) {
+    function nwsWindError(resp) {
+        var error;
+        var defaultError = 'Could not contact the National Weather Service.';
+        try {
+            error = JSON.parse(resp.responseText).error;
+        } catch (e) {
+            error = defaultError;
+        }
+        window.alert(error);
+    }
+
+    function getNwsWind(coords, opts) {
         var url = '/nws/wind?lat=' + coords.latitude + '&lon=' + coords.longitude;
+        var error = opts.error | nwsWindError;
+        var success = opts.success;
         $.ajax({
             url: url,
             success: success,
+            error: error,
             dataType: 'json'
         });
     }

@@ -697,6 +697,21 @@ define([
             this.gnomeSettings.on('sync', this.reload);
 
             this.options.map.on('sync', this.reload);
+
+            $(window).bind('resize', function() {
+                _this.resize();
+            });
+
+            this.resize();
+        },
+
+        /*
+         Adjust the sidebar height to stay at 100% of the page minus the navbar.
+         */
+        resize: function() {
+            var windowHeight = $(window).height();
+            var navbarHeight = $('.navbar').height();
+            $('#sidebar').height(windowHeight - navbarHeight);
         },
 
         setupDynatree: function() {
