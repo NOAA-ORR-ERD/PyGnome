@@ -14,6 +14,8 @@ def includeme(config):
 
      - Add each location file directory as a Mako template directory.
 
+     - Add each location file directory as a static files view.
+
      - Each location file may provide location-specific Pyramid configuration
        changes via the __init__ module in the location file directory.
 
@@ -21,17 +23,14 @@ def includeme(config):
        function will have that function added to the Registry in the
        `location_file_handlers` dictionary, using the location name as the key.
     """
-    location_files_dir = os.path.dirname(__file__)
-    location_files = util.dirnames(location_files_dir)
+    settings = config.get_settings()
+    location_files = util.get_location_files(settings.location_file_dir)
 
     for location in location_files:
         location_import_path = 'webgnome.location_files.%s' % location
-        settings = config.get_settings()
-        settings['mako.directories'].append(
-            'webgnome.location_files:%s' % location)
-
-        print settings['mako.directories']
-
+        config.add_static_view('static/location/%s' % location,
+                               'webgnome.location_files:%s' % location,
+                               cache_max_age=3600)
         try:
             config.include(location_import_path)
         except ConfigurationError as e:

@@ -246,7 +246,6 @@ def valid_map(request):
 
 
 def valid_location_file(request):
-    valid_model_id(request)
     data_dir = os.path.join(request.registry.settings.location_file_dir,
                             request.matchdict['location'])
     location_file = os.path.join(data_dir, 'location.json')
@@ -574,25 +573,14 @@ def dirnames(path):
 
 def get_location_file_data(location_file_dir):
     """
-    Return
+    Return a list of dictionaries containing configuration data for each valid
+    location file found in ``location_file_dir``, keyed to location file
+    directory name.
     """
     location_files = []
-    listing = []
 
-    try:
-        listing = dirnames(location_file_dir)
-    except OSError as e:
-        logger.error('Could not access location file at path: %s. Error: %s' % (
-            location_file_dir, e))
-
-    for location_file in listing:
+    for location_file in get_location_files(location_file_dir):
         config = os.path.join(location_file_dir, location_file, 'config.json')
-
-        if not os.path.exists(config):
-            logger.error(
-                'Location file does not contain a conf.json file: '
-                '%s. Path: %s' % (location_file, config))
-            continue
 
         with open(config) as f:
             try:
@@ -605,5 +593,37 @@ def get_location_file_data(location_file_dir):
                 data['filename'] = location_file
                 location_files.append(data)
                 logger.info('Loaded location file: %s' % location_file)
+
+    return location_files
+
+
+def get_location_files(location_file_dir):
+    """
+    Return a list of valid location file names -- the names of directories found
+    in the path ``location_files_dir`` which contain a `config.json` file.
+
+    Ignores the `templates` directory.
+    """
+    listing = []
+    location_files = []
+
+    try:
+        listing = dirnames(location_file_dir)
+    except OSError as e:
+        logger.error('Could not access location file at path: %s. Error: %s' % (
+            location_file_dir, e))
+
+    listing.pop(listing.index('templates'))
+
+    for location_file in listing:
+        config = os.path.join(location_file_dir, location_file, 'config.json')
+
+        if not os.path.exists(config):
+            logger.error(
+                'Location file does not contain a conf.json file: '
+                '%s. Path: %s' % (location_file, config))
+            continue
+
+        location_files.append(location_file)
 
     return location_files

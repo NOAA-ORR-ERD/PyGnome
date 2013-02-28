@@ -701,17 +701,15 @@ define([
             $(window).bind('resize', function() {
                 _this.resize();
             });
-
-            this.resize();
         },
 
         /*
          Adjust the sidebar height to stay at 100% of the page minus the navbar.
          */
         resize: function() {
-            var windowHeight = $(window).height();
+            var documentHeight = $(document).height();
             var navbarHeight = $('.navbar').height();
-            $('#sidebar').height(windowHeight - navbarHeight);
+            $('#sidebar').height(documentHeight - navbarHeight);
         },
 
         setupDynatree: function() {
@@ -747,14 +745,19 @@ define([
         },
 
         reload: function() {
+            var _this = this;
             if (this.gnomeSettings && this.gnomeSettings.wasDeleted) {
                 return;
             }
-            this.tree.dynatree('getTree').reload();
+            this.tree.dynatree('getTree').reload(function () {
+                _this.trigger(TreeView.RELOADED);
+                _this.resize();
+            });
         }
     }, {
-        ITEM_ACTIVATED: 'gnome:treeItemActivated',
-        ITEM_DOUBLE_CLICKED: 'gnome:treeItemDoubleClicked'
+        ITEM_ACTIVATED: 'treeView:treeItemActivated',
+        ITEM_DOUBLE_CLICKED: 'treeView:treeItemDoubleClicked',
+        RELOADED: 'treeView:reloaded'
     });
 
 

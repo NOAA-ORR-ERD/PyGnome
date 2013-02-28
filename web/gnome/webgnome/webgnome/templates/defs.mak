@@ -10,6 +10,35 @@
 </%def>
 
 
+<%def name="cancel_btn(text='Cancel')">
+        <a class="button cancel">${text}</a>
+</%def>
+
+
+<%def name="next_btn(text='Next')">
+    <a class="button next primary">${text}</a>
+</%def>
+
+
+<%def name="back_btn(text='Back')">
+    <a class="button back primary">${text}</a>
+</%def>
+
+<%def name="step(num, form_reference=None)">
+    <div class="step" data-step=${num}
+            ${'data-form-reference="%s"' % form_reference if form_reference else ''}>
+
+        ## Let the caller use this def like a tag, within interior content.
+        ${caller.body()}
+    </div>
+</%def>
+
+
+<%def name="references_btn(text='Show references')">
+    <a class="button show-references">${text}</a>
+</%def>
+
+
 <%def name="form_control(field, help_text=None, label=None, label_class=None,
                          hidden=False, extra_classes=None, inline=False)">
 <%doc>

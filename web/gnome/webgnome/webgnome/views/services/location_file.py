@@ -2,6 +2,7 @@ import json
 import os
 
 from cornice.resource import resource, view
+from pyramid.renderers import render
 from webgnome.schema import ModelSchema
 from webgnome.views.services.base import BaseResource
 from webgnome import util
@@ -12,7 +13,7 @@ from webgnome import util
           description='Add a location file to the current model')
 class LocationFile(BaseResource):
 
-    @view(validators=util.valid_location_file)
+    @view(validators=[util.valid_model_id, util.valid_location_file])
     def post(self):
         data = self.request.validated
         model = data['model']
@@ -35,3 +36,18 @@ class LocationFile(BaseResource):
             handler(data)
 
         return model.to_dict()
+
+
+@resource(path='/location/{location}/wizard',
+          renderer='gnome_json',
+          description='Get HTML for a location file wizard.')
+class LocationFileWizard(BaseResource):
+
+    @view(validators=util.valid_location_file)
+    def get(self):
+        location = self.request.matchdict['location']
+        html = render('webgnome:location_files/%s/wizard.mak' % location, {})
+
+        return {
+            'html': html
+        }
