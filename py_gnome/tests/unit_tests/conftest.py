@@ -51,9 +51,11 @@ def pytest_sessionstart():
                         }
             initialize_sql(settings)
             load_database(settings)
-        except ImportError:
+        except ImportError as ie:
             print "\nWarning: Required modules for database unit-testing not found."
             dependant_modules = ('sqlalchemy','zope.sqlalchemy','transaction')
+            print ie
+            print "Also may need:",
             print '\t {0}\n'.format([m for m in dependant_modules if not m in sys.modules])
 
 def get_data_dir():
