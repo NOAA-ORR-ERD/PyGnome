@@ -107,15 +107,7 @@ class Wind(GnomeObject):
     user_units = property( lambda self: self._user_units)   
     filename = property( lambda self: self.ossm.fileName)
     
-    # Add following meta-data about timeseries
-    @property
-    def name(self):
-        return self._name
-    
-    @name.setter
-    def name(self, val):
-        self._name = val
-        
+       
     
     
     def get_timeseries(self, datetime=None, units=None, format='r-theta'):

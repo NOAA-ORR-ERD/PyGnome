@@ -188,6 +188,7 @@ class SurfaceReleaseSpill(FloatingSpill):
         self.windage_persist  = windage_persist
 
         self.num_released = 0
+        self.not_called_yet = True
         self.prev_release_pos = self.start_position.copy()
 
     def release_elements(self, current_time, time_step, array_types=None):
@@ -201,17 +202,25 @@ class SurfaceReleaseSpill(FloatingSpill):
         :returns : None if there are no new elements released
                    a dict of arrays if there are new elements
         """
-        if time_step is None:
-            time_step = 360 # jsut to give it a default
         if not array_types:
             array_types = self.array_types
 
-        if current_time+timedelta(seconds=time_step) <= self.release_time: # don't want to barely pick it up...
-            # not there yet...
-            return None
         if self.num_released >= self.num_elements:
             # nothing left to release
             return None
+
+        if current_time > self.release_time and self.not_called_yet:
+            #first call after release time -- don't release anything
+            #self.not_called_yet = False
+            return None
+        # it's been called before the release_time
+        self.not_called_yet = False
+
+        if current_time+timedelta(seconds=time_step) <= self.release_time: # don't want to barely pick it up...
+            # not there yet...
+            print "not time to release yet"
+            return None
+
         if self.delta_release <= 0:
             num = self.num_elements
             arrays = self.create_new_elements(num, array_types)
@@ -261,6 +270,7 @@ class SurfaceReleaseSpill(FloatingSpill):
         super(SurfaceReleaseSpill, self).rewind()
 
         self.num_released = 0
+        self.not_called_yet = True
         self.prev_release_pos = self.start_position
 
 
@@ -400,7 +410,7 @@ class SubsurfaceReleaseSpill(SubsurfaceSpill):
 
 class SpatialReleaseSpill(FloatingSpill):
     """
-    A simple spill  class  --  a release of floating non-weathering particles,
+    A simple spill class  --  a release of floating non-weathering particles,
     with their initial positions pre-specified
 
     """
@@ -426,7 +436,7 @@ class SpatialReleaseSpill(FloatingSpill):
         self.release_time = release_time
 
         self.elements_not_released = True
-
+        self.not_called_yet = True
         self.windage_range    = windage_range[0:2]
         self.windage_persist  = windage_persist
 
@@ -446,6 +456,12 @@ class SpatialReleaseSpill(FloatingSpill):
         if not array_types:
             array_types = self.array_types
 
+        if current_time > self.release_time and self.not_called_yet:
+            #first call after release time -- don't release anything
+            return None
+        # it's been called before the release_time
+        self.not_called_yet = False
+
         if self.elements_not_released and current_time >= self.release_time:
             self.elements_not_released = False
             arrays = self.create_new_elements(self.num_elements, array_types)
@@ -453,3 +469,7 @@ class SpatialReleaseSpill(FloatingSpill):
             return arrays
         else:
             return None
+
+    def rewind(self):
+        self.elements_not_released = True
+        self.not_called_yet = True
