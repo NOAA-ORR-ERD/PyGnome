@@ -483,9 +483,49 @@ def test_model_release_after_start():
         for sc in model.spills.items():
             print "num_LEs", len(sc['positions'])
 
-if __name__ == "__main__":
-    test_all_movers()
+def test_release_at_right_time():
+    """
+    Tests that the elements get released when they should
     
+    There are issues in that we want the elements to show
+    up in the output for a given time step if they were
+    supposed to be released then. Particularly for the
+    first time step of the model.
+
+    """
+    start_time = datetime(2013, 1, 1, 0)
+    time_step = 2*60*60 # 2 hour in seconds
+
+    model = gnome.model.Model(time_step=time_step,
+                              start_time=start_time, # default to now, rounded to the nearest hour
+                              duration=timedelta(hours=12),
+                              )
+
+    # add a spill that starts right when the run begins
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements=12,
+                                                    start_position=(0, 0, 0),
+                                                    release_time=datetime(2013, 1, 1, 0),
+                                                    end_release_time=datetime(2013, 1, 1, 6),
+                                                    )
+    # before the run:
+    assert model.spills.items()[0].num_elements == 0
+
+    model.step()
+    assert model.spills.items()[0].num_elements == 4
+
+    model.step()
+    assert model.spills.items()[0].num_elements == 8
+
+    model.step()
+    assert model.spills.items()[0].num_elements == 12
+
+    model.step()
+    assert model.spills.items()[0].num_elements == 12
+
+
+if __name__ == "__main__":
+    #test_all_movers()
+    test_release_at_right_time()
     
     
 

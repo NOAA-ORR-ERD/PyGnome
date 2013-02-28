@@ -321,7 +321,9 @@ class Model(GnomeObject):
             self.setup_time_step()
             self.move_elements()
             self.step_is_done()
-        self.current_time_step += 1        
+        self.current_time_step += 1
+        ## release_elements after the time step increment so that they will be there
+        ## but not yet moved, at the beginning of the release time.
         for sc in self.spills.items():
             sc.release_elements(self.model_time, self.time_step)
         return True
