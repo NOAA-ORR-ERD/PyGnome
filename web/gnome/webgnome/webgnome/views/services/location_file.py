@@ -27,4 +27,11 @@ class LocationFile(BaseResource):
 
         model.from_dict(validated)
 
+        location_handlers = self.settings.get('location_handlers', {})
+        handler = location_handlers.get(
+            self.request.matchdict['location'], None)
+
+        if handler and hasattr(handler, '__call__'):
+            handler(data)
+
         return model.to_dict()

@@ -31,18 +31,27 @@ def main(global_config, **settings):
     settings['project_root'] = os.path.dirname(settings['package_root'])
     settings['upload_dir'] = os.path.join(settings['package_root'], 'static',
                                           'uploads')
-    settings['data_dir'] = os.path.join(settings['package_root'], 'data')
-    settings['location_file_dir'] = os.path.join(settings['data_dir'],
+    settings['location_file_dir'] = os.path.join(settings['package_root'],
                                                   'location_files')
+    settings['data_dir'] = os.path.join(settings['package_root'], 'data')
     settings['model_images_url_path'] = 'img/%s' % settings['model_images_dir']
     settings['model_images_dir'] = os.path.join(
         settings['package_root'], 'static', 'img', settings['model_images_dir'])
+
+    settings['location_file_data'] = util.get_location_file_data(
+        settings['location_file_dir'])
+    settings['location_handlers'] = {}
+
+    mako_dirs = settings['mako.directories']
+    settings['mako.directories'] = mako_dirs if type(
+        mako_dirs) is list else [mako_dirs]
 
     # Create the output directory if it does not exist.
     if not os.path.isdir(settings['model_images_dir']):
         os.mkdir(settings['model_images_dir'])
 
     config = Configurator(settings=settings, session_factory=session_factory)
+
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_renderer('gnome_json', gnome_json)
 

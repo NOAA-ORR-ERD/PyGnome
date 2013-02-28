@@ -475,6 +475,66 @@ class CustomMapServiceTests(FunctionalTestBase, ModelHelperMixin):
 
 
 class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
+    long_island = {
+        u'wind_movers': [
+            {
+                u'on': True, u'name': u'Wind Mover',
+                u'uncertain_angle_scale': 0.4,
+                u'uncertain_duration': 10800.0,
+                u'active_start': u'1970-01-01T00:00:00',
+                u'active_stop': u'2038-01-18T00:00:00',
+                u'uncertain_angle_scale_units': u'rad',
+                u'uncertain_time_delay': 0.0,
+                u'wind': {
+                    u'units': u'mps', u'description': None,
+                    u'source_type': u'manual', u'updated_at': None,
+                    u'longitude': None, u'source_id': None,
+                    u'timeseries': [[u'2013-02-05T17:00:00', 30.0, 50.0],
+                                    [u'2013-02-06T11:00:00', 30.0, 50.0],
+                                    [u'2013-02-06T23:00:00',
+                                     20.000000000000004, 25.0],
+                                    [u'2013-02-07T11:00:00', 25.0, 10.0],
+                                    [u'2013-02-07T23:00:00', 25.0, 180.0]],
+                    u'latitude': None,
+                },
+                u'uncertain_speed_scale': 2.0
+            }
+        ],
+        u'map': {
+            u'map_bounds': [[-73.083328, 40.922832],
+                            [-73.083328, 41.330833],
+                            [-72.336334, 41.330833],
+                            [-72.336334, 40.922832]],
+            u'name': u'Long Island Sound', u'refloat_halflife': 21600.0
+        },
+        u'start_time': u'2013-02-05T17:00:00',
+        u'random_movers': [
+            {
+                u'diffusion_coef': 500000.0,
+                u'name': u'Random Mover',
+                u'on': True,
+                u'active_start': u'1970-01-01T00:00:00',
+                u'active_stop': u'2038-01-18T00:00:00',
+            }
+        ],
+        u'uncertain': False,
+        u'surface_release_spills': [
+            {
+                u'end_position': [-72.419992, 41.20212, 0.0],
+                u'end_release_time': u'2013-02-05T17:00:00',
+                u'is_active': True,
+                u'windage_range': [0.01, 0.04],
+                u'num_elements': 1000,
+                u'name': u'Long Island Spill',
+                u'start_position': [-72.419992, 41.20212, 0.0],
+                u'release_time': u'2013-02-05T17:00:00',
+                u'windage_persist': 900.0,
+            }
+        ],
+        u'time_step': 0.25, u'duration_hours': 0,
+        u'duration_days': 1,
+    }
+
     def setUp(self):
         super(LocationFileServiceTests, self).setUp()
         self.create_model()
@@ -486,63 +546,4 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.post(url)
         body = resp.json_body
         util.delete_keys_from_dict(body, [u'id'])
-
-        expected = {
-            u'wind_movers': [
-                {
-                    u'on': True, u'name': u'Wind Mover',
-                    u'uncertain_angle_scale': 0.4,
-                    u'uncertain_duration': 10800.0,
-                    u'active_start': u'1970-01-01T00:00:00',
-                    u'active_stop': u'2038-01-18T00:00:00',
-                    u'uncertain_angle_scale_units': u'rad',
-                    u'uncertain_time_delay': 0.0,
-                    u'wind': {
-                        u'units': u'mps', u'description': None,
-                        u'source_type': u'manual', u'updated_at': None,
-                        u'longitude': None, u'source_id': None,
-                        u'timeseries': [[u'2013-02-05T17:00:00', 30.0, 50.0],
-                                        [u'2013-02-06T11:00:00', 30.0, 50.0],
-                                        [u'2013-02-06T23:00:00',
-                                         20.000000000000004, 25.0],
-                                        [u'2013-02-07T11:00:00', 25.0, 10.0],
-                                        [u'2013-02-07T23:00:00', 25.0, 180.0]],
-                        u'latitude': None,
-                    },
-                    u'uncertain_speed_scale': 2.0
-                }
-            ],
-            u'map': {
-                u'map_bounds': [[-73.083328, 40.922832],
-                                [-73.083328, 41.330833],
-                                [-72.336334, 41.330833],
-                                [-72.336334, 40.922832]],
-                u'name': u'Long Island Sound', u'refloat_halflife': 21600.0
-            },
-            u'start_time': u'2013-02-05T17:00:00',
-            u'random_movers': [
-                {
-                    u'diffusion_coef': 500000.0,
-                    u'name': u'Random Mover',
-                    u'on': True,
-                    u'active_start': u'1970-01-01T00:00:00',
-                    u'active_stop': u'2038-01-18T00:00:00',
-                }
-            ],
-            u'uncertain': False,
-            u'surface_release_spills': [
-                {
-                    u'windage_range': [0.01, 0.04],
-                    u'num_elements': 1000,
-                    u'name': u'Long Island Spill',
-                    u'is_active': True,
-                    u'start_position': [-72.419992, 41.20212, 0.0],
-                    u'release_time': u'2013-02-05T17:00:00',
-                    u'windage_persist': 900.0,
-                }
-            ],
-            u'time_step': 0.25, u'duration_hours': 0,
-            u'duration_days': 1,
-        }
-
-        self.assertEqual(body, expected)
+        self.assertEqual(body, self.long_island)

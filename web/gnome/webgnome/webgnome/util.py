@@ -7,6 +7,7 @@ import colander
 import datetime
 import inspect
 import json
+import logging
 import math
 import os
 import shutil
@@ -19,6 +20,9 @@ from itertools import chain
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
+
+
+logger = logging.getLogger(__file__)
 
 
 def make_message(type_in, text):
@@ -558,3 +562,48 @@ class CleanDirectoryCommand(object):
 
         print 'Files and directories deleted:\n%s' % '\n'.join(files)
         print 'Total (top-level): %s' % len(files)
+
+
+def dirnames(path):
+    """
+    Return a list of the names of all directories found in ``path``.
+    """
+    return [name for name in os.listdir(path) if
+            os.path.isdir(os.path.join(path, name))]
+
+
+def get_location_file_data(location_file_dir):
+    """
+    Return
+    """
+    location_files = []
+    listing = []
+
+    try:
+        listing = dirnames(location_file_dir)
+    except OSError as e:
+        logger.error('Could not access location file at path: %s. Error: %s' % (
+            location_file_dir, e))
+
+    for location_file in listing:
+        config = os.path.join(location_file_dir, location_file, 'config.json')
+
+        if not os.path.exists(config):
+            logger.error(
+                'Location file does not contain a conf.json file: '
+                '%s. Path: %s' % (location_file, config))
+            continue
+
+        with open(config) as f:
+            try:
+                data = json.loads(f.read())
+            except TypeError:
+                logger.error(
+                    'TypeError reading conf.json file for location: %s' % config)
+                continue
+            else:
+                data['filename'] = location_file
+                location_files.append(data)
+                logger.info('Loaded location file: %s' % location_file)
+
+    return location_files

@@ -34,7 +34,7 @@ from gnome.environment import Wind
 from gnome.map import MapFromBNA
 
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Serializable(object):
@@ -116,7 +116,7 @@ class BaseWebObject(Serializable):
         self._name = name
 
 
-class WebWind(Wind, BaseWebObject):
+class WebWind(Wind, Serializable):
     default_name = 'Wind'
     source_types = (
         ('manual', 'Manual Data'),
@@ -377,7 +377,7 @@ class WebModel(Model, BaseWebObject):
             try:
                 os.remove(self.background_image_path)
             except OSError as e:
-                log.error('Could not delete file: %s. Error was: %s' % (
+                logger.error('Could not delete file: %s. Error was: %s' % (
                     self.background_image, e))
 
         # Save the backgrsinon-1.6.0ound image.
