@@ -289,14 +289,17 @@ def test_new_from_dict():
     print wm_state
     wm2 = environment.Wind.new_from_dict(wm_state)   # this does not catch two objects with same ID
     
+    assert wm == wm2
      
-    for key in wm_state.keys():
-        if key != 'timeseries' and key != 'units':   # not settable properties
-            assert wm.__getattribute__(key) == wm2.__getattribute__(key)
-            
-    assert np.all( wm.timeseries['time'] == wm2.timeseries['time'])
-    assert np.allclose(wm.timeseries['value'], wm2.timeseries['value'], atol, rtol)
-    assert wm.user_units == wm2.user_units
+    #===========================================================================
+    # for key in wm_state.keys():
+    #    if key != 'timeseries' and key != 'units':   # not settable properties
+    #        assert wm.__getattribute__(key) == wm2.__getattribute__(key)
+    #        
+    # assert np.all( wm.timeseries['time'] == wm2.timeseries['time'])
+    # assert np.allclose(wm.timeseries['value'], wm2.timeseries['value'], atol, rtol)
+    # assert wm.user_units == wm2.user_units
+    #===========================================================================
     
 def test_from_dict():
     """

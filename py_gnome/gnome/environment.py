@@ -34,24 +34,6 @@ class Wind( GnomeObject, serializable.Serializable):
     state.add(read  =['user_units','filename'],
               create=_create,
               update=_update)   # no need to copy parent's state in tis case
-    
-    #===========================================================================
-    # @classmethod
-    # def new_from_dict(cls, dict):
-    #    """
-    #    create a new Wind object from a dictionary
-    #    
-    #    Note: 'user_units' need to be updated to 'units' then passed into init method since units for timeseries data are now 'user_units'
-    #          'user_units' are read only parameter
-    #    """
-    #    if not dict.get('units'):
-    #        dict.update({'units':dict.get('user_units')})
-    #        new_obj = super(Wind,cls).new_from_dict(dict)
-    #        dict.pop('units')   # put dict back in original state
-    #        return new_obj
-    #    else:
-    #        return super(Wind,cls).new_from_dict(dict)
-    #===========================================================================
 
     def __init__(self, **kwargs):
         """
@@ -183,6 +165,26 @@ class Wind( GnomeObject, serializable.Serializable):
         """
         return "Wind Object"
     
+    
+    def __eq__(self,other):
+        # since this has numpy array - need to compare that as well
+        # By default, tolerance for comparison is atol=1e-10, rtol=0
+        # persisting data requires unit conversions and finite precision, both of which will
+        # introduce a difference between two objects
+        check = super(Wind,self).__eq__(other)
+        
+        if check:
+            if (self.timeseries['time'] != other.timeseries['time']).all():
+                return False
+            else:
+                return np.allclose(self.timeseries['value'], other.timeseries['value'], 1e-10, 0)
+        
+        # user_units is also not part of state.create list so do explicit check here
+        if self.user_units != other.user_units:
+            return False
+                
+        return check
+        
     user_units = property( lambda self: self._user_units)   
     filename = property( lambda self: self.ossm.filename)
     timeseries = property( lambda self: self.get_timeseries(),

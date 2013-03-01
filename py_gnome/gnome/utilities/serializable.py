@@ -2,6 +2,8 @@
 Created on Feb 15, 2013
 '''
 
+import numpy
+
 class State(object):
     def __init__(self, **kwargs):
         """
@@ -219,3 +221,32 @@ class Serializable(object):
                 #===============================================================
                     
         #return self    # not required
+        
+    def __eq__(self, other):
+        """
+        Since this class is designed as a mixin with one function being to save state of the object,
+        then recreate a new object with the same state.
+        
+        Let's define a base implementation of __eq__ in this class. It can be overridden by the class
+        with which it is mixed
+        
+        It calls to_dict(self.state.create) on both and checks the plain python types match. Since attributes
+        defined in state.create maybe different from attributes defined in the object, to_dict is used
+        
+        It does not compare numpy arrays - only the plain python types         
+        
+        NOTE: This class does not have __init__ method and super is not used.
+        """
+        if type(self) != type(other):
+            return False
+        
+        self_dict = self.to_dict('create')
+        other_dict= other.to_dict('create')
+        
+        for val in self_dict:
+            if not isinstance( self_dict[val], numpy.ndarray):
+                if self_dict[val] != other_dict[val]:
+                    return False 
+                
+        return True
+            
