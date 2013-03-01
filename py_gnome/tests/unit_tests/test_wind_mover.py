@@ -250,6 +250,28 @@ def test_timespan():
     print "\n test_timespan: delta \n{0}".format(delta)
     assert np.all(delta[:,:2] != 0)   # model_time + time_step > active_start
 
+def test_constant_wind_mover():
+    """
+    tests the constant_wind_mover utility function
+    """
+
+    with pytest.raises(Exception): # it should raise an InvalidUnitError, but I don't want to have to miport  unit_conversion jsut for that...
+        wm = movers.constant_wind_mover(10, 45, units='some_random_string')
+
+    wm = movers.constant_wind_mover(10, 45, units='m/s')
+    
+    spill = TestSpillContainer(1)
+
+    print wm
+    print repr(wm.wind)
+    print wm.wind.get_timeseries()
+    time_step = 1000
+    model_time = datetime(2013, 3, 1, 0)
+    wm.prepare_for_model_step(spill, time_step, model_time)
+    delta = wm.get_move(spill, time_step, model_time)
+    print "delta:", delta
+    assert delta[0][0] == delta[0][1] # 45 degree wind at the equator -- u,v should be the same
+
 
 def test_new_from_dict():
     """
