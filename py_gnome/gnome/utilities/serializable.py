@@ -5,6 +5,9 @@ Created on Feb 15, 2013
 class State(object):
     def __init__(self, **kwargs):
         """
+        object keeps the list of properties that are output by Serializable.to_dict() method
+        Each list is accompanied by a keyword as defined below
+        
         'update' is list of properties that can be updated, so read/write capapble
         'read'   is list of properties that are for info, so readonly. This is not required for creating new element
         'create' is list of properties that are required to create new object when JSON is read from save file
@@ -22,13 +25,15 @@ class State(object):
         
     def add(self,**kwargs):
         """
-        should there be a check to make sure these sets are disjoint?
+        There is no check to make sure the lists of properties are disjoint.
+        Takes the same keyword, value pairs as __init__ method:
+        add(update=['prop_name'] to add prop_name to list containing properties that can be updated
         """
         self._add_to_lists(**kwargs)
         
     def _add_to_lists(self, **kwargs):
         """
-        Make sure update and read lists are disjoint
+        Make sure update list and read lists are disjoint
         """
         if not all([isinstance(vals,list) for vals in kwargs.values()]):
             raise ValueError("inputs for State object must be a list of strings")
@@ -46,10 +51,24 @@ class State(object):
         
         
     def get(self):
+        """
+        Returns a dict containing the 'update', 'read' and 'create' lists 
+        """
         return {'update':self.update,'read':self.read,'create':self.create}
 
 
 class Serializable(object):
+    """
+    contains the to_dict and from_dict method to output properties of object in a list.
+    
+    This class is intented as a mixin so to_dict and from_dict become part of the object
+    and the object must define a state attribute of type State().
+    
+    The default state=State() is a static variable for this class
+    It uses the same convention as State to obtain the lists, 'update' for updating 
+    properties, 'read' for readonly properties and 'create' for a list of properties
+    required to create new object.
+    """
     state = State()
     #===========================================================================
     # @classmethod
@@ -104,9 +123,11 @@ class Serializable(object):
     def to_dict(self,do='update'):
         """
         returns a dictionary containing the serialized representation of this
-        object
+        object. By default it converts the 'update' list of the state object to dict;
+        however, do='create' or do='read' will return the dict with the corresponding
+        list.
         
-        Under the hood, it calls _to_dict(self.state.update)
+        Under the hood, it calls _to_dict(self.state.update) if do='update'
         """
         if do == 'update':
             return self._to_dict(self.state.update)
@@ -122,6 +143,7 @@ class Serializable(object):
     def from_dict(self, data):
         """
         modifies state of the object using dictionary 'data'. 
+        Only the self.state.update list contains properties that can me modified for existing object
         
         Under the hood, it calls _from_dict(self.state.update, data)
         """
