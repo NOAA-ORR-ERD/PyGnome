@@ -351,6 +351,26 @@ def wind_mover_from_file(filename, **kwargs):
 
     return wm
 
+def constant_wind_mover(speed, dir, units='m/s'):
+    """
+    utility function to create a mover with a constant wind
+
+    :param speed: wind speed
+    :param dir:   wind direction in degrees true
+                  (direction from, following the meteorological convention)
+    :param units='m/s': the units that the input wind speed is in.
+                        options: 'm/s', 'knot', 'mph', others...
+
+
+    :returns WindMover: returns a gnome.movers.WindMover object all set up.
+    """
+    series = np.zeros((1,), dtype=basic_types.datetime_value_2d)
+    # note: if there is ony one entry, the time is arbitrary
+    series[0] = (datetime.now(), ( speed, dir) )
+    wind = environment.Wind(timeseries=series, units=units)
+    w_mover = WindMover(wind)
+    return w_mover
+
 
 class RandomMover(CyMover):
     """
