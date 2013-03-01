@@ -24,6 +24,10 @@ class Mover(GnomeObject):
     It defines the interface for a Python mover. The model expects the methods defined here. 
     The get_move(...) method needs to be implemented by the derived class.  
     """
+    state = serializable.State(update=['on','active_start','active_stop'],
+                               create=['on','active_start','active_stop'],
+                               read=['active'] )
+    
     def __init__(self, *args, **kwargs):   # default min + max values for timespan
         """
         During init, it defaults active = True
@@ -215,21 +219,14 @@ class WindMover(CyMover, serializable.Serializable):
     _windage_is_set = False         # class scope, independent of instances of WindMover  
     _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
     
-    # fields that go in both serializable_readwrite and serializable_state
-    _common_fields=['uncertain_duration',
-                    'uncertain_time_delay',
-                    'uncertain_time_delay',
-                    'uncertain_angle_scale', 
-                    'on',
-                    'active_start',
-                    'active_stop',
-                    ]
-    serializable_readwrite= ['wind']
-    serializable_readwrite.extend(_common_fields)
+    _common = ['uncertain_duration','uncertain_time_delay','uncertain_time_delay','uncertain_angle_scale']
+    _update = ['wind']
+    _update.extend(_common)
+    _create = ['wind_id']
+    _create.extend(_common)
     
-    serializable_state = copy.copy(serializable.Serializable.serializable_state)
-    serializable_state.extend(_common_fields)
-    serializable_state.extend(['wind_id',])    # used in construction of new object
+    state = copy.deepcopy(CyMover.state)
+    state.add(update=_update, create=_create)
     
     @classmethod
     def new_from_dict(cls, dict):
@@ -383,20 +380,15 @@ def wind_mover_from_file(filename, **kwargs):
     return wm
 
 
-class RandomMover(CyMover):
+class RandomMover(CyMover, serializable.Serializable):
     """
     This mover class inherits from CyMover and contains CyRandomMover
 
     The real work is done by CyRandomMover.
     CyMover sets everything up that is common to all movers.
     """
-    serializable_fields = [
-        'id',
-        'on',
-        'active_start',
-        'active_stop',
-        'diffusion_coef',
-        ]
+    state = copy.deepcopy(CyMover.state)
+    state.add(update=['diffusion_coef'], create=['diffusion_coef'])
     
     def __init__(self, diffusion_coef=100000, 
                  active_start= datetime( *gmtime(0)[:6] ), 

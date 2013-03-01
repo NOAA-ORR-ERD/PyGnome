@@ -106,18 +106,15 @@ class DatetimeValue2dArray(Sequence):
     
     def deserialize(self, *args, **kwargs):
         items = super(DatetimeValue2dArray, self).deserialize(*args, **kwargs)
-#===============================================================================
-#        num_timeseries = len(items)
-#        timeseries = numpy.zeros((num_timeseries,),
-#                                 dtype=gnome.basic_types.datetime_value_2d)
-# 
-#        for idx, value in enumerate(items):
-#            timeseries['time'][idx] = value[0]
-#            timeseries['value'][idx] = (value[1], value[2])
-# 
-#        return timeseries
-#===============================================================================
-        return util.list_to_datetime_value_2d(items)    # validator requires numpy array
+        num_timeseries = len(items)
+        timeseries = numpy.zeros((num_timeseries,),
+                                 dtype=gnome.basic_types.datetime_value_2d)
+ 
+        for idx, value in enumerate(items):
+            timeseries['time'][idx] = value[0]
+            timeseries['value'][idx] = (value[1], value[2])
+ 
+        return timeseries   # validator requires numpy array
 
 
 class DatetimeValue2dArraySchema(SequenceSchema):

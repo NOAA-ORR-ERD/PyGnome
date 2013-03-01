@@ -258,19 +258,19 @@ def test_new_from_dict():
     """
     wind = environment.Wind(file=file_)
     wm = movers.WindMover(wind) # WindMover does not modify Wind object!
-    wm_state = wm.state_to_dict()
+    wm_state = wm.to_dict('create')
     # must create a Wind object and add this to wm_state dict
-    wind2 = environment.Wind.new_from_dict(wind.state_to_dict())
+    wind2 = environment.Wind.new_from_dict(wind.to_dict('create'))
     wm_state.update({'wind':wind2})
     wm2 = movers.WindMover.new_from_dict(wm_state)
     
     # check serializable state is correct
-    assert all([wm.__getattribute__(k) == wm2.__getattribute__(k) for k in movers.WindMover.serializable_state if k != 'wind_id'])
+    assert all([wm.__getattribute__(k) == wm2.__getattribute__(k) for k in movers.WindMover.state.create if k != 'wind_id'])
     assert wm.wind.id == wm2.wind.id 
     
 def test_exception_new_from_dict():
     wm = movers.WindMover(environment.Wind(file=file_)) # WindMover does not modify Wind object!
-    wm_state = wm.state_to_dict()
+    wm_state = wm.to_dict('create')
     wm_state.update({'wind':environment.Wind(file=file_)})
     with pytest.raises(ValueError):
         movers.WindMover.new_from_dict(wm_state)

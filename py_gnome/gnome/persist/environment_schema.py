@@ -35,18 +35,23 @@ from gnome.persist.schema import DatetimeValue2dArraySchema, LocalDateTime, Time
 
 
 class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
+    """
+    not sure why this is requied?
+    """
     value = TimeseriesValueSchema(default=(datetime.datetime.now(), 0, 0))
 
-class Mover(MappingSchema):
-    on = SchemaNode(Bool(), default=True, missing=True)
-    active_start = SchemaNode(LocalDateTime(), default=None, missing=None,
-                              validator=convertable_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), default=None, missing=None,
-                             validator=convertable_to_seconds)
 
-class WindReadWrite(MappingSchema):
+#===============================================================================
+# class ReadWind(MappingSchema):
+#    """
+#    creates valid json schema for readonly fields of Wind object
+#    """
+#===============================================================================
+    
+class UpdateWind(MappingSchema):
     """
-    validate data before it is given back to pyGnome's from_dict to set state of object
+    validate data after deserialize, before it is given back to pyGnome's 
+    from_dict to set state of object
     """
     description = SchemaNode(String() )
     latitude = SchemaNode(Float(), default=None, missing=None)
@@ -58,7 +63,7 @@ class WindReadWrite(MappingSchema):
     timeseries = WindTimeSeriesSchema(default=[], validator=no_duplicates)
     updated_at = SchemaNode(LocalDateTime(), default=None, missing=None, )
 
-class WindState( Id, WindReadWrite):
+class CreateWind( Id, UpdateWind):
     """
     todo: Is Id required? Can we have just one schema for the Wind object?
     

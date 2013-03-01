@@ -285,7 +285,7 @@ def test_new_from_dict():
     create a new wind object and make sure it has same properties
     """
     wm = environment.Wind(file=filepath)
-    wm_state = wm.state_to_dict()
+    wm_state = wm.to_dict('create')
     print wm_state
     wm2 = environment.Wind.new_from_dict(wm_state)   # this does not catch two objects with same ID
     

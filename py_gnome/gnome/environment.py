@@ -19,21 +19,21 @@ class Wind( GnomeObject, serializable.Serializable):
     Defines the Wind conditions for a spill
     """
     # removed 'id' from list below. id, filename and units cannot be updated - read only properties
-    # therefore, Wind.from_dict() will fail if units, id and filename are part of the list
-    serializable_readwrite=['name',
-                            'latitude',
-                            'longitude',
-                            'description',
-                            'source_id',
-                            'source_type',
-                            'updated_at',
-                            'timeseries',
-                             ]
-    serializable_readonly =['user_units','filename']
+    _update = [ 'name',
+                'latitude',
+                'longitude',
+                'description',
+                'source_id',
+                'source_type',
+                'updated_at',
+                'timeseries']
+    _create = ['units']
+    _create.extend(_update)
     
-    serializable_state = copy.copy(serializable.Serializable.serializable_state)
-    serializable_state.extend(['units',])    # used in construction of new object
-    serializable_state.extend(serializable_readwrite)
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add(read  =['user_units','filename'],
+              create=_create,
+              update=_update)   # no need to copy parent's state in tis case
     
     #===========================================================================
     # @classmethod
