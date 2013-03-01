@@ -4,7 +4,7 @@ import json
 
 import gnome.basic_types
 from gnome import environment
-from gnome.persist import environment_schema, util
+from gnome.persist import environment_schema
 
 """
 helper functions to dump/load json or json like data to file

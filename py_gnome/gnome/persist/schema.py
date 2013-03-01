@@ -25,8 +25,6 @@ from colander import (
 import gnome.basic_types
 from gnome.persist.validators import no_duplicates, convertable_to_seconds, zero_or_greater, degrees_true
 
-from gnome.persist import util
-
 @deferred
 def now(node, kw):
     """
