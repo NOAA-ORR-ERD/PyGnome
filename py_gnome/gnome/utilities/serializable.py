@@ -2,15 +2,92 @@
 Created on Feb 15, 2013
 '''
 
-class Serializable(object):
-    """
-    Designed as a mix-in for adding to Gnome objects
-    if they should have to_dict and from_dict methods
-    """
-    serializable_state = ['id'] # store id of each object
-    serializable_readwrite = [] # fields that are are both read/write capable
-    serializable_readonly = []  # fields that are read only attributes of object
+class State(object):
+    def __init__(self, **kwargs):
+        """
+        'update' is list of properties that can be updated, so read/write capapble
+        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
+        'create' is list of properties that are required to create new object when JSON is read from save file
+                 The readonly properties are not saved in a file
+                 
+        NOTE: Since this object only contains lists, standard copy and deepcopy work fine.
+              copy will create a new State object but reference original lists
+              deepcopy will create new State object and new lists for the attributes
+        """
+        self.update = []
+        self.create = ['id']
+        self.read = []
+        self._add_to_lists(**kwargs)
+        
+        
+    def add(self,**kwargs):
+        """
+        should there be a check to make sure these sets are disjoint?
+        """
+        self._add_to_lists(**kwargs)
+        
+    def _add_to_lists(self, **kwargs):
+        """
+        Make sure update and read lists are disjoint
+        """
+        if not all([isinstance(vals,list) for vals in kwargs.values()]):
+            raise ValueError("inputs for State object must be a list of strings")
+        
+        update_ = list( set( kwargs.pop('update',[])))
+        read_ = list( set( kwargs.pop('read',[])))
+        create_ = list( set(kwargs.pop('create',[])))
+        
+        if len( set(update_).intersection(set(read_)) ) > 0:
+            raise ValueError('update (read/write properties) and read (readonly props) lists lists must be disjoint')
+        
+        self.update.extend( update_ )  # unique elements
+        self.read.extend( read_)
+        self.create.extend( create_)
+        
+        
+    def get(self):
+        return {'update':self.update,'read':self.read,'create':self.create}
 
+
+class Serializable(object):
+    state = State()
+    #===========================================================================
+    # @classmethod
+    # def add_state(cls, **kwargs):
+    #    """
+    #    Each class that mixes-in Serializable will contain a state attribute of type State.
+    #    The state should be a static member for each subclass. It is static because instances
+    #    of the class will all have the same field names for the state. 
+    #    
+    #    In addition, the state of the child class extends the state of the parent class.
+    #    
+    #    As such, this classmethod is available and used by each subclass in __init__ 
+    #    to extend the definition of the parent class state attribute
+    #    
+    #    It recursively looks for 'state' attribute in base classes (cls.__bases__);
+    #    gets the ('read','update','create') lists from each base class and adds;
+    #    and creates a new State() object with its own lists and the lists of the parents
+    #    
+    #    NOTE: removes duplicates (repeated fields) from list. The lists in State refer to 
+    #    attributes of the object. By default ['id'] in create list will end up duplicated 
+    #    if one of the base classes of cls already contained 'state' attribute
+    #    """
+    #    print "add_state"
+    #    update = kwargs.pop('update',[])
+    #    create = kwargs.pop('create',[])
+    #    read   = kwargs.pop('read',[])
+    #    for obj in cls.__bases__:
+    #        if 'state' in obj.__dict__:
+    #            update.extend( obj.state.get()['update'] )
+    #            create.extend( obj.state.get()['create'] )
+    #            read.extend( obj.state.get()['read'] )
+    #            
+    #    update = list( set(update) )
+    #    create = list( set(create) )
+    #    read = list( set(read) )
+    #    cls.state = State(update=update, create=create, read=read)
+    #===========================================================================
+        
     @classmethod
     def new_from_dict(cls, dict):
         """
@@ -24,48 +101,31 @@ class Serializable(object):
 
         return new_obj
     
-    def state_to_dict(self):
+    def to_dict(self,do='update'):
         """
         returns a dictionary containing the serialized representation of this
-        object, using self.serializable_state as a list of fields to be stored in the
-        dict. 
+        object
         
-        Under the hood, it calls _to_dict(serializable_state)
+        Under the hood, it calls _to_dict(self.state.update)
         """
-        return self._to_dict(self.serializable_state)
-    
-    def readonly_to_dict(self):
-        """
-        returns a dictionary containing the serialized representation of this
-        object's read only attributes, using self.serializable_readonly as a list of fields 
-        to be stored in the dict. 
+        if do == 'update':
+            return self._to_dict(self.state.update)
         
-        Under the hood, it calls _to_dict(serializable_readonly)
+        elif do == 'create':
+            return self._to_dict(self.state.create)
         
-        Note: This returns a dict that contains readonly fields
-        """
-        return self._to_dict(self.serializable_readonly)
-    
-    def to_dict(self):
-        """
-        returns a dictionary containing the serialized representation of this
-        object, using self.serializable_readwrite as a list of fields to be stored in the
-        dict. 
-        
-        Under the hood, it calls _to_dict(serializable_readwrite)
-        
-        Note: This returns a dict that contains both read/write fields
-        """
-        return self._to_dict(self.serializable_readwrite)
+        elif do == 'read':
+            return self._to_dict(self.state.read)
+        else:
+            raise ValueError("input not understood. String must be one of following: 'update', 'create' or 'readonly'.")
         
     def from_dict(self, data):
         """
-        sets state of the object using dictionary 'data'. The keys in 'data' must
-        be a subset of the items in self.serializale_readwrite
+        modifies state of the object using dictionary 'data'. 
         
-        Under the hood, it calls _from_dict(serializable_readwrite, data)
+        Under the hood, it calls _from_dict(self.state.update, data)
         """
-        self._from_dict(self.serializable_readwrite, data)
+        return self._from_dict(self.state.update, data)
         
     def _to_dict(self, list_):
         """
@@ -136,4 +196,4 @@ class Serializable(object):
                 #    raise AttributeError("Failed to set {0}".format(key))
                 #===============================================================
                     
-        return self
+        #return self    # not required
