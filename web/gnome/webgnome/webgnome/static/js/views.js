@@ -5,12 +5,13 @@ define([
     'lib/backbone',
     'models',
     'util',
+    'forms',
     'map_generator',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree',
     'lib/bootstrap-dropdown',
     'async!http://maps.googleapis.com/maps/api/js?key=AIzaSyATcDk4cEYobGp9mq75DeZKaEdeppPnSlk&sensor=false&libraries=drawing'
-], function($, _, Backbone, models, util) {
+], function($, _, Backbone, models, util, forms) {
      /*
      `MessageView` is responsible for displaying messages sent back from the server
      during AJAX form submissions. These are non-form error conditions, usually,
@@ -701,6 +702,8 @@ define([
             $(window).bind('resize', function() {
                 _this.resize();
             });
+
+            _this.resize();
         },
 
         /*
@@ -1278,14 +1281,15 @@ define([
             event.preventDefault();
             var location = $(event.target).data('location');
             if (location) {
-                this.loadLocationFile(location);
+                this.trigger(LocationFileMapView.LOCATION_CHOSEN, location);
             }
+            this.infoWindow.close();
         },
 
         setupLocationFileMap: function() {
             var _this = this;
             this.center = new google.maps.LatLng(-34.397, 150.644);
-            var infoWindow = new google.maps.InfoWindow();
+            this.infoWindow = new google.maps.InfoWindow();
             var gmapOptions = {
                 center: this.center,
                 backgroundColor: '#212E68',
@@ -1310,8 +1314,8 @@ define([
                 google.maps.event.addListener(marker, 'click', function() {
                     var template = _.template(
                         $('#location-file-template').text());
-                    infoWindow.setContent(template(location));
-                    infoWindow.open(_this.locationFileMap, marker);
+                    _this.infoWindow.setContent(template(location));
+                    _this.infoWindow.open(_this.locationFileMap, marker);
                 });
             });
         },
@@ -1320,19 +1324,6 @@ define([
             google.maps.event.trigger(this.locationFileMap, 'resize');
             this.locationFileMap.setCenter(this.center);
         },
-
-        loadLocationFile: function(location) {
-             $.ajax({
-                 type: 'POST',
-                 url: this.apiRoot + '/location_file/' + location,
-                 success: function() {
-                     window.location = window.location.origin;
-                 },
-                 error: function() {
-                     alert('That location file does not exist yet.');
-                 }
-             });
-         },
 
         show: function() {
             this.$el.imagesLoaded(this.centerMap);

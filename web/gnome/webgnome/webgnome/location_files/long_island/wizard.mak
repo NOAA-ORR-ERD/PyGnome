@@ -1,9 +1,13 @@
 <%inherit file='webgnome:location_files/templates/base.mak'/>
 <%namespace name='defs' file='webgnome:templates/defs.mak'/>
 
-<%block name='title'>Welcome to Boston and vicinity</%block>
+<%def name='title()'>Welcome to Boston and vicinity</%def>
+<%def name='form_id()'>boston_wizard</%def>
+<%def name='references()'>
+    Some references.
+</%def>
 
-<%block name='intro'>
+<%def name='intro()'>
     <p>You will need to do the following in order to set up the General
         NOAA Operational Modeling Environment for Boston and vicinity:</p>
 
@@ -12,13 +16,24 @@
         <li>Input the wind conditions</li>
         <li>Choose whether or not to add effects from sewage outfall</li>
     </ol>
-</%block>
+</%def>
 
-<%defs:step num='2' form_reference='model-settings'></%defs:step>
-<%defs:step num='3' form_reference='add-wind-mover'></%defs:step>
+<%defs:step reference_form='model-settings'>
+    <%defs:buttons>
+        ${defs.back_btn()}
+        ${defs.next_btn()}
+    </%defs:buttons>
+</%defs:step>
 
-<%defs:step num='4'>
-    <h2>Sewage Outflow</h2>
+<%defs:step reference_form='add-wind-mover'>
+    <%defs:buttons>
+        ${defs.back_btn()}
+        ${defs.next_btn()}
+    </%defs:buttons>
+</%defs:step>
+
+<%defs:step>
+    <h5>Sewage Outflow</h5>
 
     <p>Wastewater effluent will begin to flow into Massachusetts Bay through
         the Massachusetts Water Resource Authority's Effluent Outfall Tunnel
@@ -37,4 +52,9 @@
         ('no', 'No surface outfall effects'),
         ('yes', 'Add surface outfall effects')),
         class_='type input-small', data_value='wizard.add_sewage_outfall'))}
+
+    <%defs:buttons>
+        ${defs.back_btn()}
+        ${defs.next_btn()}
+    </%defs:buttons>
 </%defs:step>

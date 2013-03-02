@@ -165,14 +165,49 @@ define([
             this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
             this.mapView.on(views.MapView.READY, this.drawSpills);
 
+            this.locationFileMapView.on(views.LocationFileMapView.LOCATION_CHOSEN, this.loadLocationFileWizard);
+
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
-            this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.setLocation);
+            this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.loadLocationFileWizard);
         },
 
-        setLocation: function(location) {
-            this.locationFileMapView.loadLocationFile(location);
+        showForm: function(formId, success, cancel) {
+            var formView = this.formViews.get(formId);
+            if (formView) {
+                formView.on(forms.FormView.SUBMITTED, success);
+                formView.on(forms.FormView.CANCELED, cancel);
+                formView.reload();
+                formView.show();
+            }
+        },
+
+        loadLocationFileWizardSuccess: function(data) {
+            var html = $(data.html);
+            html.appendTo($('#modal-container'));
+
+            var formView = new forms.LocationFileWizardFormView({
+                id: html.attr('id')
+            });
+
+            formView.on(forms.LocationFileWizardFormView.SHOW_FORM, this.showForm);
+            formView.show();
+        },
+
+        loadLocationFileWizard: function(location) {
+            models.getLocationFileWizard(
+                this.apiRoot, location, {
+                    success: this.loadLocationFileWizardSuccess
+            });
+        },
+
+        loadLocationFile: function(location) {
+            models.setLocationFile(this.apiRoot, location, {
+                success: function() {
+                    window.location = window.location.origin;
+                }
+            });
         },
 
         /*

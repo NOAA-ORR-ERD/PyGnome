@@ -38,7 +38,7 @@ class LocationFile(BaseResource):
         return model.to_dict()
 
 
-@resource(path='/location/{location}/wizard',
+@resource(path='/location_file/{location}/wizard',
           renderer='gnome_json',
           description='Get HTML for a location file wizard.')
 class LocationFileWizard(BaseResource):

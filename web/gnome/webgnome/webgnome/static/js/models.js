@@ -412,12 +412,20 @@ define([
 
         save: function(attrs, options) {
             options = options || {};
+            var _this = this;
 
             if (!_.has(options, 'wait')) {
                 options.wait = true;
             }
 
-            if (!_.has(options, 'success')) {
+            if (_.has(options, 'success')) {
+                var success = options.success;
+
+                options.success = function(model, response, options) {
+                    _this.success(model, response, options);
+                    success(model, response, options);
+                }
+            } else {
                 options.success = this.success;
             }
 
@@ -735,6 +743,7 @@ define([
         window.alert(error);
     }
 
+
     function getNwsWind(coords, opts) {
         var url = '/nws/wind?lat=' + coords.latitude + '&lon=' + coords.longitude;
         var error = opts.error | nwsWindError;
@@ -746,7 +755,33 @@ define([
             dataType: 'json'
         });
     }
-      
+
+
+    function setLocationFile(apiRoot, location, options) {
+        var opts = $.extend({
+            type: 'POST',
+            url: apiRoot + '/location_file/' + location,
+            error: function() {
+                alert('That location file does not exist yet.');
+            }
+        }, options);
+
+        $.ajax(opts);
+    }
+
+
+    function getLocationFileWizard(apiRoot, location, options) {
+        var opts = $.extend({
+            type: 'GET',
+            url: '/location_file/' + location + '/wizard',
+            error: function() {
+                alert('That location file does not exist yet.');
+            }
+        }, options);
+
+        $.ajax(opts);
+    }
+
 
     return {
         TimeStep: TimeStep,
@@ -763,7 +798,9 @@ define([
         RandomMoverCollection: RandomMoverCollection,
         Map: Map,
         CustomMap: CustomMap,
-        getNwsWind: getNwsWind
+        getNwsWind: getNwsWind,
+        getLocationFileWizard: getLocationFileWizard,
+        setLocationFile: setLocationFile
     };
 
 });

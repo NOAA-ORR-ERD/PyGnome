@@ -4,38 +4,56 @@
 <%doc>
      Return True if the current request path is equal to ``url``.
 </%doc>
-    % if request.path == url:
-        active
-    % endif
+% if request.path == url:
+    active
+% endif
+</%def>
+
+
+<%def name="btn(text, classes='')">
+    <button type="button" class="ui-button ui-widget ui-corner-all ui-button-text-only ${classes}" role="button">
+        <span class="ui-button-text">${text}</span>
+    </button>
 </%def>
 
 
 <%def name="cancel_btn(text='Cancel')">
-        <a class="button cancel">${text}</a>
+    ${btn(text, 'cancel')}
 </%def>
 
 
 <%def name="next_btn(text='Next')">
-    <a class="button next primary">${text}</a>
+    ${btn(text, 'next ui-button-primary')}
 </%def>
 
 
 <%def name="back_btn(text='Back')">
-    <a class="button back primary">${text}</a>
+    ${btn(text, 'back ui-button-primary')}
 </%def>
 
-<%def name="step(num, form_reference=None)">
-    <div class="step" data-step=${num}
-            ${'data-form-reference="%s"' % form_reference if form_reference else ''}>
 
-        ## Let the caller use this def like a tag, within interior content.
+<%def name="finish_btn(text='To the map window')">
+    ${btn(text, 'finish ui-button-primary')}
+</%def>
+
+
+<%def name="references_btn(text='Show references')">
+    ${btn(text, 'references ui-button-primary')}
+</%def>
+
+
+<%def name="buttons()">
+    <div class="ui-dialog-buttonset custom-dialog-buttons hidden">
         ${caller.body()}
     </div>
 </%def>
 
 
-<%def name="references_btn(text='Show references')">
-    <a class="button show-references">${text}</a>
+<%def name="step(reference_form=None)">
+    <div class="step hidden" ${'data-reference-form=%s' % reference_form if reference_form else ''}>
+        ## Let the caller use this def like a tag, within interior content.
+        ${caller.body()}
+    </div>
 </%def>
 
 
