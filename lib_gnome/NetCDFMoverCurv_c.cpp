@@ -442,6 +442,30 @@ float NetCDFMoverCurv_c::GetTotalDepthFromTriIndex(long triNum)
 	return totalDepth;
 	
 }
+float NetCDFMoverCurv_c::GetTotalDepth2(WorldPoint refPoint)
+{
+	long index;
+	float totalDepth = 0;
+	if (fGrid) 
+	{
+		// for now just use the u,v at left and bottom midpoints of grid box as velocity over entire gridbox
+		if (bIsCOOPSWaterMask)
+		{
+			//index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols);// curvilinear grid
+			InterpolationVal interpolationVal = fGrid -> GetInterpolationValues(refPoint);
+			if (interpolationVal.ptIndex1<0) return totalDepth;
+			//ptIndex1 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];	
+			//ptIndex2 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex2];
+			//ptIndex3 =  (*fVerdatToNetCDFH)[interpolationVal.ptIndex3];
+			index = (*fVerdatToNetCDFH)[interpolationVal.ptIndex1];
+		}
+		else
+			index = ((TTriGridVel*)fGrid)->GetRectIndexFromTriIndex(refPoint,fVerdatToNetCDFH,fNumCols+1);// curvilinear grid
+		if (fDepthsH) totalDepth = INDEXH(fDepthsH,index);
+	}
+	return totalDepth;
+}
+
 float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 {
 	long index1, index2, index3, index4, numDepths;
