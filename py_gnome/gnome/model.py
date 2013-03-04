@@ -44,6 +44,8 @@ class Model(GnomeObject):
 
         self.time_step = time_step # this calls rewind() !
 
+        self._cache = gnome.utilities.cache.ElementCache
+
     def reset(self, **kwargs):
         """
         Resets model to defaults -- Caution -- clears all movers, spills, etc.
@@ -326,6 +328,9 @@ class Model(GnomeObject):
         ## but not yet moved, at the beginning of the release time.
         for sc in self.spills.items():
             sc.release_elements(self.model_time, self.time_step)
+        # cache the results
+        self._cache.save_timestep(self.current_time_step, self.spills)
+
         return True
 
     def __iter__(self):
