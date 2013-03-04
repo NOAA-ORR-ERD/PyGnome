@@ -62,13 +62,14 @@ class UpdateWind(MappingSchema):
     
     timeseries = WindTimeSeriesSchema(default=[], validator=no_duplicates)
     updated_at = SchemaNode(LocalDateTime(), default=None, missing=None, )
+    units = SchemaNode(String() )
 
 class CreateWind( Id, UpdateWind):
     """
-    todo: Is Id required? Can we have just one schema for the Wind object?
-    
     Likely to be used when validating the state of the object read in from a save file.
     The resulting dict is used in new_from_dict(dict) method to construct a new object with same
     state as originally saved object
+    
+    This is a union of the properties in UpdateWind and Id
     """
-    units = SchemaNode(String() )
+    pass
