@@ -45,7 +45,7 @@ def test_read_file_init():
     # make sure default units is correct and correctly called
     # NOTE: Following functionality is already tested in test_wind.py, but what the heck - do it here too.
     wind_ts = wind.get_timeseries(format=basic_types.ts_format.uv)
-    cpp_timeseries['value'] = unit_conversion.convert('Velocity','meter per second',wind.user_units,cpp_timeseries['value'])
+    cpp_timeseries['value'] = unit_conversion.convert('Velocity','meter per second',wind.units,cpp_timeseries['value'])
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
    
 def test_timeseries_init(wind_circ):
@@ -87,14 +87,14 @@ def test_update_wind(wind_circ):
     t_dtv = np.zeros((3,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
     t_dtv.time = [datetime(2012,11,06,20,0+i,30) for i in range(3)]
     t_dtv.value= np.random.uniform(1,5, (3,2) )
-    o_wind.set_timeseries(t_dtv, units='meters per second', format='uv')
+    o_wind.set_timeseries(t_dtv, units='meter per second', format='uv')
     
     cpp_timeseries = _get_timeseries_from_cpp(wm)
     assert np.all(cpp_timeseries['time'] == t_dtv.time)
     assert np.allclose(cpp_timeseries['value'], t_dtv.value, atol, rtol)
     
     # set the wind timeseries back to test fixture values
-    o_wind.set_timeseries(wind_circ['rq'], units='meters per second')
+    o_wind.set_timeseries(wind_circ['rq'], units='meter per second')
     cpp_timeseries = _get_timeseries_from_cpp(wm)
     assert np.all(cpp_timeseries['time'] == wind_circ['uv']['time'])
     assert np.allclose(cpp_timeseries['value'], wind_circ['uv']['value'], atol, rtol)
@@ -109,7 +109,7 @@ class TestWindMover:
     model_time = rel_time
     
     time_val = np.array((rel_time, (2., 25.)), dtype=basic_types.datetime_value_2d).reshape(1,)
-    wind = environment.Wind(timeseries=time_val, units='meters per second')
+    wind = environment.Wind(timeseries=time_val, units='meter per second')
     wm = movers.WindMover(wind)
     wm.prepare_for_model_run()
     
@@ -158,7 +158,7 @@ class TestWindMover:
 
     def test_update_wind_vel(self):
         self.time_val['value'] = (1., 120.) # now given as (r, theta)
-        self.wind.set_timeseries( self.time_val, units='meters per second')
+        self.wind.set_timeseries( self.time_val, units='meter per second')
         self.test_get_move()
         self.test_get_move_exceptions()
    
@@ -232,7 +232,7 @@ def test_timespan():
     time_val['time']  = np.datetime64( rel_time.isoformat() )
     time_val['value'] = (2., 25.)
 
-    wm = movers.WindMover(environment.Wind(timeseries=time_val, units='meters per second'), 
+    wm = movers.WindMover(environment.Wind(timeseries=time_val, units='meter per second'), 
                           active_start=model_time+timedelta(seconds=time_step))
     wm.prepare_for_model_run()
     wm.prepare_for_model_step(spill, time_step, model_time)
@@ -321,7 +321,7 @@ def _get_timeseries_from_cpp(windmover):
     local method for tests - returns the timeseries used internally by the C++ WindMover_c object.
     This should be the same as the timeseries stored in the self.wind object
 
-    Data is returned as a datetime_value_2d array in units of meters per second in 
+    Data is returned as a datetime_value_2d array in units of meter per second in 
     format = uv
 
     This is simply used for testing.

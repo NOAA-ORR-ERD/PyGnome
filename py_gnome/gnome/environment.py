@@ -26,14 +26,19 @@ class Wind( GnomeObject, serializable.Serializable):
                 'source_id',
                 'source_type',
                 'updated_at',
-                'timeseries']
-    _create = ['units']
+                'timeseries',
+                'units']    # default units for input/output data
+    _create = []
     _create.extend(_update)
     
     state = copy.deepcopy(serializable.Serializable.state)
-    state.add(read  =['user_units','filename'],
+    state.add(read  =['filename'],
               create=_create,
               update=_update)   # no need to copy parent's state in tis case
+
+    # list of valid velocity units for timeseries
+    valid_vel_units = unit_conversion.GetUnitNames('Velocity')
+    valid_vel_units.extend([unit_conversion.GetUnitAbbreviation('Velocity',unit_) for unit_ in unit_conversion.GetUnitNames('Velocity')])
 
     def __init__(self, **kwargs):
         """
@@ -52,7 +57,7 @@ class Wind( GnomeObject, serializable.Serializable):
                       get_timeseries() will use these as default units to output data, unless user specifies otherwise.
                       These units must be valid as defined in the hazpy unit_conversion module: 
                       unit_conversion.GetUnitNames('Velocity') 
-        :type units:  string, for example: 'knot', 'meter per second', 'mile per hour' etc
+        :type units:  string, for example: 'knot', 'meter per second', 'mile per hour' etc. Default units for input/output timeseries data
         
         :param format: (Optional) default timeseries format is magnitude direction: 'r-theta'
         :type format: string 'r-theta' or 'uv'. Converts string to integer defined by gnome.basic_types.ts_format.*
@@ -87,6 +92,7 @@ class Wind( GnomeObject, serializable.Serializable):
             timeseries = kwargs.pop('timeseries')
             units = kwargs.pop('units')
             
+            self._check_units(units)
             self._check_timeseries(timeseries, units)
             
             timeseries['value'] = self._convert_units(timeseries['value'], format, units, 'meter per second')
@@ -128,6 +134,13 @@ class Wind( GnomeObject, serializable.Serializable):
         
         return data
     
+    def _check_units(self, units):
+        """
+        Checks the user provided units are in list Wind.valid_vel_units 
+        """
+        if units not in Wind.valid_vel_units:
+            raise unit_conversion.InvalidUnitError('Velocity units must be from following list to be valid: {0}'.format(Wind.valid_vel_units))
+        
     def _check_timeseries(self, timeseries, units):
         """
         Run some checks to make sure timeseries is valid
@@ -180,45 +193,32 @@ class Wind( GnomeObject, serializable.Serializable):
                 return np.allclose(self.timeseries['value'], other.timeseries['value'], 1e-10, 0)
         
         # user_units is also not part of state.create list so do explicit check here
-        if self.user_units != other.user_units:
-            return False
+        #if self.user_units != other.user_units:
+        #    return False
                 
         return check
         
-    user_units = property( lambda self: self._user_units)   
+    #user_units = property( lambda self: self._user_units)
+    
+    @property
+    def units(self):
+        return self._user_units
+    
+    @units.setter
+    def units(self, value):
+        """
+        User can set default units for input/output data
+        
+        These are given as string and must be one of the units defined in
+        unit_conversion.GetUnitNames('Velocity') or one of the associated abbreviations
+        unit_conversion.GetUnitAbbreviation()
+        """
+        self._check_units(value)
+        self._user_units = value
+    
     filename = property( lambda self: self.ossm.filename)
     timeseries = property( lambda self: self.get_timeseries(),
-                           lambda self, val: self.set_timeseries(val, units=self.user_units) )
-    
-    def units_to_dict(self):
-        """
-        Store user_units as units for the data. Timeseries will be output in these units
-        and it will be used to initialize the new object
-        
-        There is no corresponding units_from_dict since this is not part of
-        serializable_readwrite list 
-        """
-        return self.user_units
-    
-    
-    #===========================================================================
-    # def timeseries_to_dict(self):
-    #    """
-    #    There are methods get_timeseries and set_timeseries
-    #    
-    #    Use this method to store timeseries to dict
-    #    """
-    #    return self.get_timeseries()
-    # 
-    # def timeseries_from_dict(self, value):
-    #    """
-    #    There are methods get_timeseries and set_timeseries
-    #    
-    #    Use this method to read timeseries from dict. The units
-    #    are consistent with timeseries_to_dict 
-    #    """
-    #    self.set_timeseries(value, units=self.user_units)
-    #===========================================================================
+                           lambda self, val: self.set_timeseries(val, units=self.units) )
     
     def get_timeseries(self, datetime=None, units=None, format='r-theta'):
         """
@@ -232,7 +232,7 @@ class Wind( GnomeObject, serializable.Serializable):
         :param datetime: [optional] datetime object or list of datetime objects for which the value is desired
         :type datetime: datetime object
         :param units: [optional] outputs data in these units. Default is to output data in units
-        :type units: string. Uses the hazpy.unit_conversion module
+        :type units: string. Uses the hazpy.unit_conversion module. hazpy.unit_conversion throws error for invalid units
         :param format: output format for the times series: either 'r-theta' or 'uv'
         :type format: either string or integer value defined by basic_types.ts_format.* (see cy_basic_types.pyx)
 
@@ -251,7 +251,7 @@ class Wind( GnomeObject, serializable.Serializable):
         if units is not None:
             datetimeval['value'] = self._convert_units(datetimeval['value'], format, 'meter per second', units)
         else:
-            datetimeval['value'] = self._convert_units(datetimeval['value'], format, 'meter per second', self.user_units)
+            datetimeval['value'] = self._convert_units(datetimeval['value'], format, 'meter per second', self.units)
             
         return datetimeval
     
@@ -263,10 +263,11 @@ class Wind( GnomeObject, serializable.Serializable):
         
         :param datetime_value_2d: timeseries of wind data defined in a numpy array
         :type datetime_value_2d: numpy array of dtype basic_types.datetime_value_2d
-        :param units: units associated with the data
+        :param units: units associated with the data. Valid units defined in Wind.valid_vel_units list
         :param format: output format for the times series; as defined by basic_types.format.
         :type format: either string or integer value defined by basic_types.format.* (see cy_basic_types.pyx)
         """
+        self._check_units(units)
         self._check_timeseries(datetime_value_2d, units)
         datetime_value_2d['value'] = self._convert_units(datetime_value_2d['value'], format, units, 'meter per second')
         

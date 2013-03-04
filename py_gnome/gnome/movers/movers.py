@@ -410,11 +410,9 @@ class RandomMover(CyMover, serializable.Serializable):
     state = copy.deepcopy(CyMover.state)
     state.add(update=['diffusion_coef'], create=['diffusion_coef'])
     
-    def __init__(self, diffusion_coef=100000, 
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0)):
-        self.mover = CyRandomMover(diffusion_coef=diffusion_coef)
-        super(RandomMover,self).__init__(active_start, active_stop)
+    def __init__(self, *args, **kwargs):
+        self.mover = CyRandomMover(diffusion_coef=kwargs.pop('diffusion_coef',100000))
+        super(RandomMover,self).__init__(*args, **kwargs)
 
     @property
     def diffusion_coef(self):

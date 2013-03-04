@@ -28,25 +28,25 @@ def test_exceptions(invalid_rq):
     # incorrect type of numpy array for init    
     with pytest.raises(ValueError):
         wind_vel = np.zeros((1,), basic_types.velocity_rec)
-        environment.Wind(timeseries=wind_vel, format="uv", units='meters per second')
+        environment.Wind(timeseries=wind_vel, format="uv", units='meter per second')
         
     # following also raises ValueError. This gives invalid (r,theta) inputs which are rejected
     # by the transforms.r_theta_to_uv_wind method. It tests the inner exception is correct
     with pytest.raises(ValueError):
         invalid_dtv_rq = np.zeros((len(invalid_rq['rq']),), dtype=basic_types.datetime_value_2d)
         invalid_dtv_rq['value'] = invalid_rq['rq']
-        environment.Wind(timeseries=invalid_dtv_rq, format="r-theta", units='meters per second')
+        environment.Wind(timeseries=invalid_dtv_rq, format="r-theta", units='meter per second')
         
     # exception raised if datetime values are not in ascending order or not unique
     with pytest.raises(ValueError):
         # not unique datetime values
         dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
         dtv_rq.value = (1,0)
-        environment.Wind(timeseries=dtv_rq, units='meters per second')
+        environment.Wind(timeseries=dtv_rq, units='meter per second')
         
         # not in ascending order
         dtv_rq.time[:len(dtv_rq)-1] = [datetime(2012,11,06,20,10+i,30) for i in range(len(dtv_rq)-1)]
-        environment.Wind(timeseries=dtv_rq, units='meters per second')
+        environment.Wind(timeseries=dtv_rq, units='meter per second')
 
     # exception raised since no units given for timeseries during init 
     with pytest.raises(TypeError):
@@ -54,7 +54,7 @@ def test_exceptions(invalid_rq):
 
     # no units during set_timeseries
     with pytest.raises(TypeError):
-        wind = environment.Wind(timeseries=dtv,units='meters per second')
+        wind = environment.Wind(timeseries=dtv,units='meter per second')
         wind.set_timeseries(dtv)
 
     # invalid units
@@ -69,7 +69,7 @@ def test_read_file_init():
     wm = environment.Wind(file=filepath)
     print
     print "----------------------------------"
-    print "Units: " + str(wm.user_units)
+    print "Units: " + str(wm.units)
     assert True
 
 # tolerance for np.allclose(..) function. Results are almost the same but not quite so needed to add tolerance.
@@ -77,6 +77,17 @@ def test_read_file_init():
 atol = 1e-14
 rtol = 0
 
+
+def test_units():
+    """
+    just make sure there are no errors
+    """
+    wm = environment.Wind(file=filepath)
+    new_units = "meter per second"
+    assert wm.units != new_units
+    wm.units = new_units
+    assert wm.units == new_units
+    
 
 def test_init(wind_circ):
     """
@@ -89,9 +100,9 @@ def test_init(wind_circ):
     assert np.all( gtime_val.time == wind_circ['uv'].time)
     assert np.allclose(gtime_val.value, wind_circ['uv'].value, atol, rtol)
     
-    # output is in meters per second
-    gtime_val = wm.get_timeseries(format="uv", units='meters per second').view(dtype=np.recarray)
-    expected = unit_conversion.convert('Velocity',wm.user_units,'meters per second',wind_circ['uv'].value)
+    # output is in meter per second
+    gtime_val = wm.get_timeseries(format="uv", units='meter per second').view(dtype=np.recarray)
+    expected = unit_conversion.convert('Velocity',wm.units,'meter per second',wind_circ['uv'].value)
     assert np.all(gtime_val.time == wind_circ['uv'].time)
     assert np.allclose(gtime_val.value, expected, atol, rtol)
     
@@ -114,7 +125,7 @@ def wind_rand(rq_rand):
     dtv_uv.time = dtv_rq.time
     dtv_uv.value = transforms.r_theta_to_uv_wind( rq_rand['rq'])
 
-    wm  = environment.Wind(timeseries=dtv_rq,format="r-theta",units='meters per second')
+    wm  = environment.Wind(timeseries=dtv_rq,format="r-theta",units='meter per second')
     return {'wind':wm, 'rq': dtv_rq, 'uv': dtv_uv}
 
 
@@ -151,7 +162,7 @@ class TestWind:
 
         Also check that init doesn't fail if timeseries given in (u,v) format
         """
-        environment.Wind(timeseries=all_winds['uv'],format="uv", units='meters per second')
+        environment.Wind(timeseries=all_winds['uv'],format="uv", units='meter per second')
         assert True
 
     def test_str_repr_no_errors(self, all_winds):
@@ -183,7 +194,7 @@ class TestWind:
         get_timeseries with default output format 
         """
         # check get_time_value()
-        wm  = environment.Wind(timeseries=all_winds['wind'].get_timeseries(),format='r-theta',units='meters per second')
+        wm  = environment.Wind(timeseries=all_winds['wind'].get_timeseries(),format='r-theta',units='meter per second')
         gtime_val = wm.get_timeseries()
         x = gtime_val[:2]
         x['value'] = [(1,10),(2,20)]
@@ -298,7 +309,7 @@ def test_new_from_dict():
     #        
     # assert np.all( wm.timeseries['time'] == wm2.timeseries['time'])
     # assert np.allclose(wm.timeseries['value'], wm2.timeseries['value'], atol, rtol)
-    # assert wm.user_units == wm2.user_units
+    # assert wm.units == wm2.units
     #===========================================================================
     
 def test_from_dict():
