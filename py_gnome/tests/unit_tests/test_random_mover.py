@@ -116,6 +116,17 @@ def test_variance1(start_loc, time_step):
 
     assert np.allclose(var, (expected, expected, 0.0), rtol= 0.1 )
        
+def test_new_from_dict():
+    """
+    test to_dict function for Wind object
+    create a new wind object and make sure it has same properties
+    """
+    rm = movers.RandomMover()
+    print rm.to_dict('create')
+    rm2 = movers.RandomMover.new_from_dict(rm.to_dict('create'))
+    assert rm == rm2
+    
+       
 if __name__=="__main__":
     tw = TestRandomMover()
     tw.test_prepare_for_model_step()

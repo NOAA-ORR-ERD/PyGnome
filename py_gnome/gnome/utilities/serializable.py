@@ -10,7 +10,7 @@ class State(object):
         object keeps the list of properties that are output by Serializable.to_dict() method
         Each list is accompanied by a keyword as defined below
         
-        'update' is list of properties that can be updated, so read/write capapble
+        'update' is list of properties that can be updated, so read/write capable
         'read'   is list of properties that are for info, so readonly. This is not required for creating new element
         'create' is list of properties that are required to create new object when JSON is read from save file
                  The readonly properties are not saved in a file
@@ -224,11 +224,11 @@ class Serializable(object):
         
     def __eq__(self, other):
         """
-        Since this class is designed as a mixin with one function being to save state of the object,
+        Since this class is designed as a mixin with one objective being to save state of the object,
         then recreate a new object with the same state.
         
-        Let's define a base implementation of __eq__ in this class. It can be overridden by the class
-        with which it is mixed
+        Define a base implementation of __eq__ so an object before persistence can be compared with a
+        new object created after it is persisted. It can be overridden by the class with which it is mixed.
         
         It calls to_dict(self.state.create) on both and checks the plain python types match. Since attributes
         defined in state.create maybe different from attributes defined in the object, to_dict is used
