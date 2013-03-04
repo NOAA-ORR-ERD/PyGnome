@@ -219,7 +219,7 @@ class WindMover(CyMover, serializable.Serializable):
     _windage_is_set = False         # class scope, independent of instances of WindMover  
     _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
     
-    _common = ['uncertain_duration','uncertain_time_delay','uncertain_time_delay','uncertain_angle_scale']
+    _common = ['uncertain_duration','uncertain_time_delay','uncertain_speed_scale','uncertain_angle_scale']
     _update = ['wind']
     _update.extend(_common)
     _create = ['wind_id']
