@@ -186,6 +186,10 @@ legend {
     margin-left: 170px;
 }
 
+.control-group.form-inline {
+    display: inline-block;
+}
+
 .table tbody tr.info td {
     background-color: #B5DAEC;
 }

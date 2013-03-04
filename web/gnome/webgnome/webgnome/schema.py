@@ -3,6 +3,9 @@ import datetime
 import numpy
 import time
 
+from webgnome import util
+util.monkey_patch_colander()
+
 from colander import (
     MappingSchema,
     SchemaNode,
@@ -23,7 +26,6 @@ from colander import (
     Tuple
 )
 
-from webgnome import util
 from webgnome.model_manager import WebWind
 
 

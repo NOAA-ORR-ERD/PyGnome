@@ -3,7 +3,7 @@ Defines test fixtures
 
 The scope="module" on the fixtures ensures it is only invoked once per test module
 """
-import sys, os, imp
+import sys, os
 from datetime import datetime
 
 import numpy as np
@@ -40,19 +40,27 @@ def pytest_sessionstart():
     # Only run database setup on master (in case of xdist/multiproc mode)
     if not hasattr(config, 'slaveinput'):
         try:
-            imp.find_module('sqlalchemy')
-            from pyramid.paster import get_appsettings
             from gnome.db.oil_library.initializedb import initialize_sql, load_database
 
-            ROOT_PATH = os.path.dirname(__file__)
-            config_uri = os.path.join(ROOT_PATH, r'SampleData/oil_library/test.ini')
-
-            settings = get_appsettings(config_uri)
+            data_dir = get_data_dir()
+            oillib_file = os.path.join(data_dir, r'OilLib.smaller')
+            db_file = os.path.join(data_dir, r'OilLibrary.db')
+            sqlalchemy_url = 'sqlite:///{0}'.format(db_file)
+            settings = {'sqlalchemy.url': sqlalchemy_url,
+                        'oillib.file': oillib_file
+                        }
             initialize_sql(settings)
             load_database(settings)
-        except ImportError:
-            print "Warning: Required modules for database unit-testing not found."
+        except ImportError as ie:
+            print "\nWarning: Required modules for database unit-testing not found."
+            dependant_modules = ('sqlalchemy','zope.sqlalchemy','transaction')
+            print ie
+            print "Also may need:",
+            print '\t {0}\n'.format([m for m in dependant_modules if not m in sys.modules])
 
+def get_data_dir():
+    data_dir = os.path.dirname(__file__)
+    return os.path.join(data_dir, r'SampleData/oil_library')
 
 """
 ====================================

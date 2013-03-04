@@ -177,7 +177,7 @@ class SpillContainer(SpillContainerData):
         """
         pass
 
-    def release_elements(self, current_time, time_step=None):
+    def release_elements(self, current_time, time_step):
         """
         Called at the end of a time step
 
@@ -408,5 +408,6 @@ class TestSpillContainer(SpillContainer):
                                                 release_time)
         spill.spill_num.initial_value = 0
         self.spills.add(spill)
-        self.release_elements(release_time)
+        self.release_elements(release_time, 360)
+
 

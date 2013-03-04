@@ -335,7 +335,7 @@ define([
                 url: this.apiRoot + '/map'
             });
 
-            this.customMap = new models.CustomMap({
+            this.customMap = new models.CustomMap({}, {
                 url: this.apiRoot + '/custom_map'
             });
 

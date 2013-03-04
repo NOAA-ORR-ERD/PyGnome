@@ -1,11 +1,14 @@
 import os
 
 import unittest, pytest
-from pyramid.paster import get_appsettings
 
-from sqlalchemy import engine_from_config
+sqlalchemy = pytest.importorskip('sqlalchemy')
+zope = pytest.importorskip('zope')
+zope.sqlalchemy = pytest.importorskip('zope.sqlalchemy')
+transaction = pytest.importorskip('transaction')
+
+from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
-import transaction
 
 from gnome.db.oil_library.models import (
     DBSession,
@@ -20,13 +23,13 @@ from gnome.db.oil_library.models import (
     )
 
 here = os.path.dirname(__file__)
-config_uri = os.path.join(here, r'SampleData/oil_library/test.ini')
-settings = get_appsettings(config_uri)
+db_file = os.path.join(here, r'SampleData/oil_library/OilLibrary.db')
+sqlalchemy_url = 'sqlite:///%s' % (db_file)
 
 class BaseTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.engine = engine_from_config(settings, prefix='sqlalchemy.')
+        cls.engine = create_engine(sqlalchemy_url)
         DBSession.configure(bind=cls.engine)
         Base.metadata.create_all(cls.engine) #@UndefinedVariableFromImport
 

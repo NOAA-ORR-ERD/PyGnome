@@ -89,8 +89,6 @@ class SimpleMover(Mover):
                 delta[in_water_mask,1] += random.uniform( -scale[1], scale[1], num )
                 delta[in_water_mask,2] += random.uniform( -scale[2], scale[2], num )
         # scale for projection
-        print "delta:"
-        print delta
         delta = proj.meters_to_lonlat(delta, positions) # just the lat-lon...
         
         return delta
