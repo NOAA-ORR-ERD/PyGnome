@@ -10,43 +10,44 @@ from colander import (
     String,
     OneOf,
     Float,
-    #===========================================================================
-    # Bool,
-    # Int,
-    # Float,
-    # Range,
-    # DateTime,
-    # String,
-    # SequenceSchema,
-    # OneOf,
-    # Invalid,
-    # Sequence,
-    # TupleSchema,
-    # deferred,
-    # null,
-    # #drop,
-    # Tuple
-    #===========================================================================
+    Range,
 )
 
 import gnome
-from gnome.persist.validators import convertable_to_seconds,no_duplicates
-from gnome.persist.schema import DatetimeValue2dArraySchema, LocalDateTime, TimeseriesValueSchema, Id
+from gnome.persist import validators
+
+from gnome.persist.schema import  Id,now
+from gnome.persist.types import LocalDateTime,DatetimeValue2dArray,DatetimeValue2dArraySchema,DefaultTupleSchema
+
+
+class WindTupleSchema(DefaultTupleSchema):
+    """
+    Schema for each tuple in WindTimeSeries list
+    """
+    datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
+                          validator=validators.convertable_to_seconds)
+    speed = SchemaNode(Float(), 
+                       default=0, 
+                       validator=Range(min=0,min_err="wind speed must be greater than or equal to 0"))
+    direction = SchemaNode(Float(), default=0, 
+                           validator=Range(0,360,
+                                           min_err="wind direction must be greater than or equal to 0",
+                                           max_err="wind direction must be less than or equal to 360deg"))
 
 
 class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
     """
-    not sure why this is requied?
+    Schema for list of Wind tuples, to make the wind timeseries
     """
-    value = TimeseriesValueSchema(default=(datetime.datetime.now(), 0, 0))
+    value = WindTupleSchema(default=(datetime.datetime.now(), 0, 0))
 
+    def validator(self, node, cstruct):
+        """
+        validate wind timeseries numpy array
+        """
+        validators.no_duplicate_datetime(node, cstruct)
+        validators.ascending_datetime(node, cstruct)
 
-#===============================================================================
-# class ReadWind(MappingSchema):
-#    """
-#    creates valid json schema for readonly fields of Wind object
-#    """
-#===============================================================================
     
 class UpdateWind(MappingSchema):
     """
@@ -60,9 +61,10 @@ class UpdateWind(MappingSchema):
     source_id = SchemaNode(String() )
     source_type = SchemaNode(String(), validator=OneOf(gnome.basic_types.wind_datasource._attr))
     
-    timeseries = WindTimeSeriesSchema(default=[], validator=no_duplicates)
     updated_at = SchemaNode(LocalDateTime(), default=None, missing=None, )
     units = SchemaNode(String() )
+ 
+    timeseries = WindTimeSeriesSchema()
 
 class CreateWind( Id, UpdateWind):
     """

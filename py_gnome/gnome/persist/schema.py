@@ -8,7 +8,7 @@ from colander import (
     #Bool,
     #Int,
     Float,
-    #Range,
+    Range,
     DateTime,
     String,
     SequenceSchema,
@@ -23,7 +23,8 @@ from colander import (
 )
 
 import gnome.basic_types
-from gnome.persist.validators import no_duplicates, convertable_to_seconds, zero_or_greater, degrees_true
+from gnome.persist import validators
+from gnome.persist import types
 
 @deferred
 def now(node, kw):
@@ -33,31 +34,10 @@ def now(node, kw):
     return datetime.datetime.now()
 
 
-class DefaultTupleSchema(TupleSchema):
-    schema_type = DefaultTuple
-
-
-class TimeseriesValueSchema(DefaultTupleSchema):
-    datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
-                          validator=convertable_to_seconds)
-    speed = SchemaNode(Float(), default=0, validator=zero_or_greater)
-    # TODO: Validate string and float or just float?
-    direction = SchemaNode(Float(), default=0, validator=degrees_true)
-
-
-class DatetimeValue2dArraySchema(SequenceSchema):
-    schema_type = DatetimeValue2dArray
-    
-    def validator(self, node, cstruct):
-        # place validator for this type in the class
-        # just testing it here - incase there is more validation for this type,
-        # it can be added here
-        no_duplicates(node, cstruct)
-        
-
 class Id(MappingSchema):
-    # validation only happens during deserialize
-    # need to make sure it is valid UUID?
+    """
+    any need to ensure it is valid UUID?
+    """
     id = SchemaNode(String() )
 
     

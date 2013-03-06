@@ -39,9 +39,11 @@ def positive(node, value):
         raise Invalid(node, 'Value must be greater than zero.')
 
 
-def zero_or_greater(node, value):
-    if value < 0:
-        raise Invalid(node, 'Value must be zero or greater.')
+#===============================================================================
+# def zero_or_greater(node, value):
+#    if value < 0:
+#        raise Invalid(node, 'Value must be zero or greater.')
+#===============================================================================
 
 
 def convertable_to_seconds(node, value):
@@ -51,18 +53,23 @@ def convertable_to_seconds(node, value):
         raise Invalid(node, 'Invalid date.')
 
 
-def degrees_true(node, direction):
-    if 0 > direction > 360:
-        raise Invalid(
-            node, 'Direction in degrees true must be between 0 and 360.')
+#===============================================================================
+# def degrees_true(node, direction):
+#    if 0 > direction > 360:
+#        raise Invalid(
+#            node, 'Direction in degrees true must be between 0 and 360.')
+#===============================================================================
 
 
-def no_duplicates(node, values):
+def no_duplicate_datetime(node, values):
     """
+    Check for duplicate datetime values in numpy structured array like datetime_value_2d
     Reject ``values`` if it contains duplicates.
     """
+    
+    # check for duplicate entries
     try:
-        unique = numpy.unique(values)
+        unique = numpy.unique(values['time'])
     except AttributeError:
         return
 
@@ -70,8 +77,16 @@ def no_duplicates(node, values):
 
     if num_dups:
         raise Invalid(
-            node, 'Duplicates are not allowed. Found %s duplicates.' % num_dups)
+            node, 'Duplicate time entries are not allowed. Found %s duplicates.' % num_dups)
 
+def ascending_datetime(node, values):
+    """
+    Check the datetime values in numpy structured array (like datetime_value_2d)
+    are in ascending order
+    """
+    # check to make sure the time values are in ascending order
+    if numpy.any( values['time'][numpy.argsort( values['time'])] != values['time']):
+        raise Invalid(node, 'The datetime values in the timeseries must be in ascending order')
 
 def valid_direction(node, value):
     """

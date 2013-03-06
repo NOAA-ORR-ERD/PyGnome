@@ -11,12 +11,15 @@ from colander import (
     DateTime,
     Sequence,
     null,
-    Tuple
+    Tuple,
+    TupleSchema,
+    SequenceSchema
 )
 
 import gnome.basic_types
-from gnome.persist.validators import no_duplicates, convertable_to_seconds, zero_or_greater, degrees_true
-
+"""
+Following extend colander's basic types for serialization/deserialization
+"""
 class LocalDateTime(DateTime):
     def __init__(self, *args, **kwargs):
         kwargs['default_tzinfo'] = kwargs.get('default_tzinfo', None)
@@ -58,14 +61,14 @@ class DatetimeValue2dArray(Sequence):
     A subclass of :class:`colander.Sequence` that converts itself to a numpy
     array using :class:`gnome.basic_types.datetime_value_2d` as the data type.
     """
-    def __init__(self, *args, **kwargs):
-        super(DatetimeValue2dArray, self).__init__(*args, **kwargs)
+    #def __init__(self, *args, **kwargs):
+    #    super(DatetimeValue2dArray, self).__init__(*args, **kwargs)
     
     def serialize(self, node, appstruct):
-        """
-        This is not used for validation - would be used to converting to JSON
-        if monkey-patch is applied and this outputs valid JSON data types
-        """
+        
+        if appstruct is null:   # colander.null
+            return null
+        
         series = []
         
         for wind_value in appstruct:
@@ -75,8 +78,11 @@ class DatetimeValue2dArray(Sequence):
         
         return super(DatetimeValue2dArray,self).serialize(node, appstruct)
     
-    def deserialize(self, *args, **kwargs):
-        items = super(DatetimeValue2dArray, self).deserialize(*args, **kwargs)
+    def deserialize(self, node, cstruct):
+        if cstruct is null:
+            return null
+        
+        items = super(DatetimeValue2dArray, self).deserialize(node, cstruct, accept_scalar=False)
         num_timeseries = len(items)
         timeseries = numpy.zeros((num_timeseries,),
                                  dtype=gnome.basic_types.datetime_value_2d)
@@ -99,4 +105,15 @@ class TimeDelta(Float):
         sec = super(TimeDelta,self).deserialize(*args, **kwargs)
         return datetime.timedelta(seconds=sec)
         
-    
+"""
+Following define new schemas for above custom types. This is so serialize/deserialize 
+is called correctly.
+
+Specifically a new DefaultTypeSchema and a DatetimeValue2dArraySchema
+"""
+class DefaultTupleSchema(TupleSchema):
+    schema_type = DefaultTuple
+
+
+class DatetimeValue2dArraySchema(SequenceSchema):
+    schema_type = DatetimeValue2dArray
