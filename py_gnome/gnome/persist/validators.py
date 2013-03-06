@@ -12,38 +12,10 @@ from colander import (
                       Invalid,
                       OneOf,
                       )
-#from webgnome import util
-#from webgnome.model_manager import WebWind
-
-
-#===============================================================================
-# def get_direction_degree(direction):
-#    """
-#    Convert user input for direction into degrees.
-#    """
-#    if direction.isalpha():
-#        return util.DirectionConverter.get_degree(direction)
-#    else:
-#        return direction
-# 
-# def cardinal_direction(node, direction):
-#    if not util.DirectionConverter.is_cardinal_direction(direction):
-#        raise Invalid(
-#            node, 'A cardinal directions must be one of: %s' % ', '.join(
-#                util.DirectionConverter.DIRECTIONS))
-#===============================================================================
-
 
 def positive(node, value):
     if value <= 0:
         raise Invalid(node, 'Value must be greater than zero.')
-
-
-#===============================================================================
-# def zero_or_greater(node, value):
-#    if value < 0:
-#        raise Invalid(node, 'Value must be zero or greater.')
-#===============================================================================
 
 
 def convertable_to_seconds(node, value):
@@ -53,21 +25,11 @@ def convertable_to_seconds(node, value):
         raise Invalid(node, 'Invalid date.')
 
 
-#===============================================================================
-# def degrees_true(node, direction):
-#    if 0 > direction > 360:
-#        raise Invalid(
-#            node, 'Direction in degrees true must be between 0 and 360.')
-#===============================================================================
-
-
 def no_duplicate_datetime(node, values):
     """
     Check for duplicate datetime values in numpy structured array like datetime_value_2d
     Reject ``values`` if it contains duplicates.
     """
-    
-    # check for duplicate entries
     try:
         unique = numpy.unique(values['time'])
     except AttributeError:
@@ -88,11 +50,35 @@ def ascending_datetime(node, values):
     if numpy.any( values['time'][numpy.argsort( values['time'])] != values['time']):
         raise Invalid(node, 'The datetime values in the timeseries must be in ascending order')
 
-def valid_direction(node, value):
-    """
-    Unused.
-    """
-    try:
-        degrees_true(node, float(value))
-    except ValueError:
-        cardinal_direction(node, value.upper())
+
+#===============================================================================
+# def degrees_true(node, direction):
+#    if 0 > direction > 360:
+#        raise Invalid(
+#            node, 'Direction in degrees true must be between 0 and 360.')
+# 
+# 
+# def get_direction_degree(direction):
+#   """
+#   Convert user input for direction into degrees.
+#   """
+#   if direction.isalpha():
+#       return util.DirectionConverter.get_degree(direction)
+#   else:
+#       return direction
+# 
+# def cardinal_direction(node, direction):
+#   if not util.DirectionConverter.is_cardinal_direction(direction):
+#       raise Invalid(
+#           node, 'A cardinal directions must be one of: %s' % ', '.join(
+#               util.DirectionConverter.DIRECTIONS))
+# 
+# def valid_direction(node, value):
+#    """
+#    Unused.
+#    """
+#    try:
+#        degrees_true(node, float(value))
+#    except ValueError:
+#        cardinal_direction(node, value.upper())
+#===============================================================================
