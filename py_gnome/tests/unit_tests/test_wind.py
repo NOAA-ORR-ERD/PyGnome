@@ -40,11 +40,15 @@ def test_exceptions(invalid_rq):
     # exception raised if datetime values are not in ascending order or not unique
     with pytest.raises(ValueError):
         # not unique datetime values
-        dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
-        dtv_rq.value = (1,0)
+        dtv_rq = np.zeros((2,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
+        dtv_rq.value[0][:] = (1,0)
+        dtv_rq.value[1][:] = (1,10)
         environment.Wind(timeseries=dtv_rq, units='meter per second')
         
         # not in ascending order
+    with pytest.raises(ValueError):
+        dtv_rq = np.zeros((4,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
+        dtv_rq.value = (1,0)
         dtv_rq.time[:len(dtv_rq)-1] = [datetime(2012,11,06,20,10+i,30) for i in range(len(dtv_rq)-1)]
         environment.Wind(timeseries=dtv_rq, units='meter per second')
 

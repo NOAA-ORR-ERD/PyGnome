@@ -159,9 +159,9 @@ class Wind( GnomeObject, serializable.Serializable):
             raise ValueError('timeseries are not in ascending order. The datetime values in the array must be in ascending order')
         
         # check for duplicate entries
-        unique = np.unique( timeseries)
-        if len( unique) != len(timeseries):
-            raise ValueError('timeseries must contain unique entries. Number of duplicate entries ' + str(len(timeseries)-len(unique) ) )
+        unique = np.unique( timeseries['time'])
+        if len( unique) != len(timeseries['time']):
+            raise ValueError('timeseries must contain unique time entries. Number of duplicate entries ' + str(len(timeseries)-len(unique) ) )
         
     def __repr__(self):
         """
