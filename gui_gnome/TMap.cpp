@@ -342,6 +342,13 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 				}
 				else
 				{
+					//else
+					//{
+						char topFilePath[256];
+						message->GetParameterString("topFile",topFilePath,256);
+						if (topFilePath[0]) ResolvePath(topFilePath);
+						//newMover = CreateAndInitLocationFileCurrentsMover (dynamic_cast<TMap *>(this),netcdfFilePath,moverName,&newMap,topFilePath);
+					//}*/
 					if (IsNetCDFFile(netcdfFilePath,&gridType) || IsNetCDFPathsFile(netcdfFilePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 					{
 						NetCDFWindMover *newWindMover=nil;
@@ -350,7 +357,7 @@ OSErr TMap::CheckAndPassOnMessage(TModelMessage *message)
 						{
 							newWindMover = new NetCDFWindMoverCurv(dynamic_cast<TMap *>(this),moverName);
 							TMap *newMap = 0;
-							err =  (dynamic_cast<NetCDFWindMoverCurv *>(newWindMover)) -> TextRead(netcdfFilePath,&newMap);
+							err =  (dynamic_cast<NetCDFWindMoverCurv *>(newWindMover)) -> TextRead(netcdfFilePath,&newMap,topFilePath);
 						}
 						else
 						{
@@ -1031,9 +1038,11 @@ OSErr TMap::AddItem(ListItem item)
 						
 						if (gridType == CURVILINEAR)
 						{
+							char topFilePath[256];
+							topFilePath[0] = 0;
 							newMover = new NetCDFWindMoverCurv(dynamic_cast<TMap *>(this),"");
 							TMap *newMap = 0;
-							 err = (dynamic_cast<NetCDFWindMoverCurv *>(newMover)) -> TextRead(path,&newMap);
+							 err = (dynamic_cast<NetCDFWindMoverCurv *>(newMover)) -> TextRead(path,&newMap,topFilePath);
 						}
 						else
 						{

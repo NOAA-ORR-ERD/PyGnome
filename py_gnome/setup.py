@@ -19,14 +19,17 @@ It needs to be imported before any other extensions (which happens in the gnome.
 """
 
 ## NOTE: this works with "distribute" package, but not with setuptools.
+import os
+import glob
+import shutil
+import sys
+import subprocess
+
 from setuptools import setup # to support "develop" mode: 
 from distutils.extension import Extension
-from Cython.Distutils import build_ext
-import subprocess 
+from Cython.Distutils import build_ext 
 
 import numpy as np
-import os
-import sys
 
 if "clean" in "".join(sys.argv[1:]):
     target = 'clean'
@@ -35,12 +38,18 @@ else:
 
 if "cleanall" in "".join(sys.argv[1:]):
     target = 'clean'
-    print "Deleting cython files .."
-    os.system('rm -v gnome/cy_gnome/cy_*.so')
-    os.system('rm -v gnome/cy_gnome/cy_*.pyd')
-    os.system('rm -v gnome/cy_gnome/cy_*.cpp')
-    os.system('rm -rv build')
-    os.system('rm -rv pyGnome.egg-info')
+    rm_files = ['gnome/cy_gnome/cy_*.so','gnome/cy_gnome/cy_*.pyd','gnome/cy_gnome/cy_*.cpp']
+    
+    for files_ in rm_files:
+        for file_ in glob.glob(files_):
+            print "Deleting auto-generated files: {0}".format(file_)
+            os.remove(file_)
+    
+    rm_dir = ['pyGnome.egg-info','build']
+    for dir_ in rm_dir:
+        print "Deleting auto-generated directory: {0}".format(dir_)
+        shutil.rmtree(dir_)
+        
     sys.argv[1] = 'clean'   # this is what distutils understands
 
 # only for windows

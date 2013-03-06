@@ -65,6 +65,7 @@ public:
 	void 				GetDepthIndices(long ptIndex, float depthAtPoint, float totalDepth, long *depthIndex1, long *depthIndex2);
 	float		GetTotalDepthFromTriIndex(long triIndex);
 	float		GetTotalDepth(WorldPoint refPoint,long ptIndex);
+	float		GetTotalDepth2(WorldPoint refPoint);
 
 	
 
