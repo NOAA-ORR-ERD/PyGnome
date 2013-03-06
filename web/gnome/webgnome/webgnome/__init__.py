@@ -1,3 +1,4 @@
+import json
 import os
 
 from pyramid.config import Configurator
@@ -35,8 +36,10 @@ def main(global_config, **settings):
     settings['model_data_dir'] = os.path.join(
         settings['package_root'], 'static', settings['model_data_dir'])
 
+    settings['ignored_location_files'] = settings[
+        'ignored_location_files'].strip().split(',')
     settings['location_file_data'] = util.get_location_file_data(
-        settings['location_file_dir'])
+        settings['location_file_dir'], settings['ignored_location_files'])
     settings['location_handlers'] = {}
 
     settings['Model'] = ModelManager(data_dir=settings['model_data_dir'],

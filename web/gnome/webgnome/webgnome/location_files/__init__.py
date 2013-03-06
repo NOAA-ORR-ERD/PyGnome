@@ -24,7 +24,8 @@ def includeme(config):
        `location_file_handlers` dictionary, using the location name as the key.
     """
     settings = config.get_settings()
-    location_files = util.get_location_files(settings.location_file_dir)
+    location_files = util.get_location_files(settings.location_file_dir,
+                                             settings.ignored_location_files)
 
     for location in location_files:
         location_import_path = 'webgnome.location_files.%s' % location
@@ -39,7 +40,7 @@ def includeme(config):
         try:
             handler = __import__('%s.wizard' % location_import_path,
                                  fromlist=['handle_input']).handle_input
-        except ImportError:
+        except (ImportError, AttributeError):
             logger.debug('Did not find a wizard input handler for location '
                         'file: %s.' % location)
             continue

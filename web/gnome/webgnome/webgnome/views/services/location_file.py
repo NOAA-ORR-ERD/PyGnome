@@ -62,16 +62,13 @@ class LocationFileWizard(BaseResource):
             'html': html
         }
 
-    @view(validators=[util.valid_model_id, util.valid_location_file])
+    @view(validators=[util.valid_model_id, util.valid_location_file,
+                      util.valid_location_file_wizard])
     def post(self):
-        location = self.request.matchdict['location']
-        location_handlers = self.settings.get('location_handlers', {})
-        handler = location_handlers.get(location, None)
-
-        if handler and hasattr(handler, '__call__'):
-            handler(self.request.validated)
+        self.request.validated['wizard_handler'](
+            self.request.validated['model'], self.request.json_body)
 
         return {
-            'location': location
+            'location': self.request.matchdict['location']
         }
 

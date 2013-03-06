@@ -570,8 +570,25 @@ class LocationFileWizardServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.create_model()
 
     def test_get_wizard(self):
-        wizard_url = self.model_url('/location_file/boston/wizard')
+        wizard_url = self.model_url('/location_file/test/wizard')
         resp = self.testapp.get(wizard_url)
         data = resp.json_body
-        print data
 
+        self.assertIn("""<form class='wizard form page hide' id="test_wizard" title="Test Location File">""",
+                      data['html'])
+        self.assertIn('<div class="step hidden" data-reference-form=model-settings>',
+                      data['html'])
+        self.assertIn('<select class="type input-small" data-value="wizard.custom_stuff" id="custom_stuff" name="custom_stuff">',
+                      data['html'])
+
+    def test_post_wizard(self):
+        resp = self.testapp.get(self.base_url)
+        model_data = resp.json_body
+        self.assertEqual(model_data['duration_days'], 1)
+
+        wizard_url = self.model_url('/location_file/test/wizard')
+        resp = self.testapp.post_json(wizard_url, {'use_custom_thing': 'yes'})
+
+        resp = self.testapp.get(self.base_url)
+        model_data = resp.json_body
+        self.assertEqual(model_data['duration_days'], 10)

@@ -260,6 +260,20 @@ def valid_location_file(request):
     request.validated['location_file'] = location_file
 
 
+def valid_location_file_wizard(request):
+    location = request.matchdict['location']
+    location_handlers = request.registry.settings.get('location_handlers', {})
+    handler = location_handlers.get(location, None)
+
+    if not handler or not hasattr(handler, '__call__'):
+        request.errors.add('body', 'location_file_wizard',
+                           'An input handler for the wizard was not found.')
+        request.errors.status = 404
+        return
+
+    request.validated['wizard_handler'] = handler
+
+
 def valid_new_location_file(request):
     data_dir = os.path.join(request.registry.settings.location_file_dir,
                             request.matchdict['location'])
@@ -605,7 +619,7 @@ def dirnames(path):
             os.path.isdir(os.path.join(path, name))]
 
 
-def get_location_file_data(location_file_dir):
+def get_location_file_data(location_file_dir, ignored_files=None):
     """
     Return a list of dictionaries containing configuration data for each valid
     location file found in ``location_file_dir``, keyed to location file
@@ -613,7 +627,7 @@ def get_location_file_data(location_file_dir):
     """
     location_files = []
 
-    for location_file in get_location_files(location_file_dir):
+    for location_file in get_location_files(location_file_dir, ignored_files):
         config = os.path.join(location_file_dir, location_file, 'config.json')
 
         with open(config) as f:
@@ -631,7 +645,7 @@ def get_location_file_data(location_file_dir):
     return location_files
 
 
-def get_location_files(location_file_dir):
+def get_location_files(location_file_dir, ignored_files=None):
     """
     Return a list of valid location file names -- the names of directories found
     in the path ``location_files_dir`` which contain a `config.json` file.
@@ -640,6 +654,7 @@ def get_location_files(location_file_dir):
     """
     listing = []
     location_files = []
+    ignored_files = ignored_files or []
 
     try:
         listing = dirnames(location_file_dir)
@@ -647,7 +662,8 @@ def get_location_files(location_file_dir):
         logger.error('Could not access location file at path: %s. Error: %s' % (
             location_file_dir, e))
 
-    listing.pop(listing.index('templates'))
+    for ignored in ignored_files:
+        listing.pop(listing.index(ignored))
 
     for location_file in listing:
         config = os.path.join(location_file_dir, location_file, 'config.json')

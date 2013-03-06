@@ -1,0 +1,39 @@
+								   [ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Central Long Island Sound
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.10;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE setfield;TO Diffusion; coefficient 100000;uncertaintyFactor 2
+--
+MESSAGE createMap;TO model;TYPE vector; NAME Long Island Sound Map;PATH resnum 10003
+--
+MESSAGE createMover;TO Long Island Sound Map;TYPE Cats; NAME LongIslandWAC.CUR;PATH resnum 10004
+MESSAGE setfield;TO LongIslandWAC.CUR; scaleType constant;refP 72.705 W 41.2275 N; scaleValue 1; timeFile resNum 10008;
+MESSAGE setfield;TO LongIslandWAC.CUR; EddyV0 0.1; EddyDiffusion 1000000;
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Central Long Island Sound;
+-------------------------------------------
