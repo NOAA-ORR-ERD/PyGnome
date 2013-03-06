@@ -173,25 +173,19 @@ define([
             this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.loadLocationFileWizard);
         },
 
-        showForm: function(formId, success, cancel) {
-            var formView = this.formViews.get(formId);
-            if (formView) {
-                formView.on(forms.FormView.SUBMITTED, success);
-                formView.on(forms.FormView.CANCELED, cancel);
-                formView.reload();
-                formView.show();
-            }
-        },
-
         loadLocationFileWizardSuccess: function(data) {
             var html = $(data.html);
             html.appendTo($('#modal-container'));
+            var id = html.attr('id');
 
-            var formView = new forms.LocationFileWizardFormView({
-                id: html.attr('id')
-            });
+            var formView = this.formViews.remove(id);
+            if (formView) {
+                formView.remove();
+            }
 
-            formView.on(forms.LocationFileWizardFormView.SHOW_FORM, this.showForm);
+            formView = new forms.LocationFileWizardFormView({ id: id });
+            this.formViews.add(formView);
+
             formView.show();
         },
 

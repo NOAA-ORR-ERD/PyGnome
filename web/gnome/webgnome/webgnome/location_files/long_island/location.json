@@ -34,7 +34,7 @@
     ],
     "refloat_halflife": "21600.0",
     "name": "Long Island Sound",
-    "filename": "data/LongIslandSoundMap.BNA"
+    "filename": "location_files/long_island/data/LongIslandSoundMap.BNA"
 }, "start_time": "2013-02-05T17:00:00", "random_movers": [
     {
         "on": "true",

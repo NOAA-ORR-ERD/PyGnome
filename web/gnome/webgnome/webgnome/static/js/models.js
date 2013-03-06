@@ -31,7 +31,8 @@ define([
         model: TimeStep,
 
         initialize: function(timeSteps, opts) {
-            _.bindAll(this);
+            _.bindAll(this, 'runSuccess', 'timeStepRequestFailure');
+
             this.url = opts.url + '/runner';
             this.currentTimeStep = opts.currentTimeStep || 0;
             this.nextTimeStep = this.currentTimeStep ? this.currentTimeStep + 1 : 0;
@@ -755,6 +756,10 @@ define([
             dataType: 'json'
         });
     }
+
+
+    var LocationFile = BaseModel.extend({
+    });
 
 
     function setLocationFile(apiRoot, location, options) {

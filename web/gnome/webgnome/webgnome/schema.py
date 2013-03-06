@@ -292,6 +292,7 @@ class MapSchema(MappingSchema):
     refloat_halflife = SchemaNode(Float(), default=1)
     map_bounds = MapBoundsSchema(default=default_map_bounds,
                                  missing=default_map_bounds)
+    relative_path = SchemaNode(String(), default=None, missing=drop)
 
 
 # Input values GOODS expects for the `resolution` field on a custom map form.
@@ -316,17 +317,22 @@ class CustomMapSchema(MappingSchema):
     refloat_halflife = SchemaNode(Float(), default=1)
 
 
-class ModelSettingsSchema(MappingSchema):
+class ModelSchema(MappingSchema):
     start_time = SchemaNode(LocalDateTime(), default=now,
                             validator=convertable_to_seconds)
     duration_days = SchemaNode(Int(), default=1, validator=Range(min=0))
     duration_hours = SchemaNode(Int(),default=0, validator=Range(min=0))
     uncertain = SchemaNode(Bool(), default=False)
     time_step = SchemaNode(Float(), default=0.1)
+    surface_release_spills = SurfaceReleaseSpillsSchema(default=[], missing=drop)
+    wind_movers = WindMoversSchema(default=[], missing=drop)
+    random_movers = RandomMoversSchema(default=[], missing=drop)
+    map = MapSchema(missing=drop)
 
 
-class ModelSchema(ModelSettingsSchema):
-    surface_release_spills = SurfaceReleaseSpillsSchema(default=[])
-    wind_movers = WindMoversSchema(default=[])
-    random_movers = RandomMoversSchema(default=[])
-    map = MapSchema()
+class LocationFileSchema(MappingSchema):
+    name = SchemaNode(String())
+    latitude = SchemaNode(Float())
+    longitude = SchemaNode(Float())
+    model_data = ModelSchema()
+

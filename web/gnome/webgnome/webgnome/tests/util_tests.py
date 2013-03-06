@@ -1,3 +1,4 @@
+import os
 import webgnome.util as util
 import datetime
 
@@ -6,12 +7,17 @@ from base import UnitTestBase
 
 
 class JsonRequireModelTests(UnitTestBase):
+    def setUp(self):
+        self.package_root = os.path.abspath(os.path.dirname(__file__))
+        super(JsonRequireModelTests, self).setUp()
+
     def make_request(self):
         request = self.get_request()
         request.registry.settings.model_session_key = \
             self.settings['model_session_key']
-        request.registry.settings.model_images_dir = \
-            self.settings['model_images_dir']
+        request.registry.settings.model_data_dir = \
+            self.settings['model_data_dir']
+        request.registry.settings.package_root = self.package_root
         request.registry.settings.Model = ModelManager()
         request.context = self.get_resource()
         return request
@@ -47,7 +53,8 @@ class JsonRequireModelTests(UnitTestBase):
 
         request = self.make_request()
         model = request.registry.settings.Model.create(
-            model_images_dir=self.settings['model_images_dir'])
+            data_dir=self.settings['model_data_dir'],
+            package_root=self.package_root)
         request.session[self.settings['model_session_key']] = model.id
         response = mock_view(request)
         self.assertEqual(response, model)
@@ -64,7 +71,8 @@ class JsonRequireModelTests(UnitTestBase):
 
         request = self.make_request()
         model = request.registry.settings.Model.create(
-            model_images_dir=self.settings['model_images_dir'])
+            data_dir=self.settings['model_data_dir'],
+            package_root=self.package_root)
         request.session[self.settings['model_session_key']] = model.id
         response = MockView(request).method()
         self.assertEqual(response, model)
@@ -98,8 +106,8 @@ class EncodeJsonDateTests(UnitTestBase):
 
 class JsonEncoderTests(UnitTestBase):
     def test_can_encode_datetime(self):
-        date_time = datetime.datetime(year=2012, month=1, day=1, hour=1,
-            minute=1, second=1)
+        date_time = datetime.datetime(
+            year=2012, month=1, day=1, hour=1, minute=1, second=1)
         encoded = util.json_encoder(date_time)
         self.assertEqual(encoded, "2012-01-01T01:01:01")
 
@@ -115,4 +123,3 @@ class JsonEncoderTests(UnitTestBase):
 
         obj = CustomObject()
         self.assertEqual(util.json_encoder(obj), "Wahoo")
-

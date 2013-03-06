@@ -25,6 +25,7 @@ define([
         add: function(view) {
             var _this = this;
             this.formViews[view.id] = view;
+
             view.on(FormView.CANCELED, function(form) {
                 _this.trigger(FormView.CANCELED, form);
             });
@@ -34,6 +35,19 @@ define([
             view.on(FormView.MESSAGE_READY, function(message) {
                 _this.trigger(FormView.MESSAGE_READY, message);
             });
+
+            view.on(FormView.SHOW_FORM, this.show);
+
+            return view;
+        },
+
+        remove: function(id) {
+            if (_.has(id, 'id')) {
+                id = id.id;
+            }
+            var view = this.formViews[id];
+            delete this.formViews[id];
+            return view;
         },
 
         get: function(formId) {
@@ -44,7 +58,18 @@ define([
             _.each(this.formViews, function(formView, key) {
                 formView.hide();
             });
-        }
+        },
+
+        show: function(formId, success, cancel) {
+            var formView = this.get(formId);
+
+            if (formView) {
+                formView.once(FormView.SUBMITTED, success);
+                formView.once(FormView.CANCELED, cancel);
+                formView.reload();
+                formView.show();
+            }
+        },
     });
 
     function ModelNotFoundException(message) {
@@ -349,7 +374,8 @@ define([
         SUBMITTED: 'formView.submitted',
         CANCELED: 'formView:canceled',
         REFRESHED: 'formView:refreshed',
-        MESSAGE_READY: 'formView:messageReady'
+        MESSAGE_READY: 'formView:messageReady',
+        SHOW_FORM: 'formView:showForm'
     });
 
 
@@ -471,9 +497,6 @@ define([
             MultiStepFormView.__super__.initialize.apply(this, [opts]);
 
             this.annotateSteps();
-
-            var stepNum = options.step || 0;
-            this.showStep(this.getStep(stepNum));
         },
 
         /*
@@ -512,6 +535,11 @@ define([
             return this.getStep(previousStepNum);
         },
 
+        show: function() {
+            this.showStep(this.getStep(0));
+            MultiStepFormView.__super__.show.apply(this, arguments);
+        },
+
         showStep: function(step) {
             if (step.length) {
                 this.$el.find('.step').not(step).addClass('hidden');
@@ -534,10 +562,16 @@ define([
     var LocationFileWizardFormView = MultiStepFormView.extend({
         initialize: function(options) {
             LocationFileWizardFormView.__super__.initialize.apply(this, arguments);
+
             _.bindAll(this);
 
-            this.setCustomButtons();
-            this.id = this.$el.attr('id');
+            this.widget = this.$el.dialog('widget');
+            this.widget.on('click', '.ui-button.next', this.next);
+            this.widget.on('click', '.ui-button.back', this.back);
+            this.widget.on('click', '.ui-button.cancel', this.cancel);
+            this.widget.on('click', '.ui-button.finish', this.finish);
+            this.widget.on('click', '.ui-button.references', this.showReferences);
+
             this.references = this.$el.find('div.references').dialog({
                 autoOpen: false,
                 buttons: {
@@ -547,12 +581,7 @@ define([
                 }
             });
 
-            var widget = this.$el.dialog('widget');
-            widget.on('click', '.ui-button.next', this.next);
-            widget.on('click', '.ui-button.back', this.back);
-            widget.on('click', '.ui-button.cancel', this.cancel);
-            widget.on('click', '.ui-button.finish', this.finish);
-            widget.on('click', '.ui-button.references', this.showReferences);
+            this.setCustomButtons();
         },
 
         getDataBindings: function() {
@@ -565,8 +594,7 @@ define([
 
         close: function() {
             LocationFileWizardFormView.__super__.close.apply(this, arguments);
-            $(this.id).remove();
-            this.$el.remove();
+            this.remove();
         },
 
         showReferences: function() {
@@ -577,8 +605,7 @@ define([
             var step = this.getCurrentStep();
             var buttons = step.find('.custom-dialog-buttons');
             if (buttons.length) {
-                var widget = this.$el.dialog('widget');
-                var buttonPane = widget.find('.ui-dialog-buttonpane');
+                var buttonPane = this.widget.find('.ui-dialog-buttonpane');
                 buttonPane.empty();
                 buttons.clone().appendTo(buttonPane).removeClass('hidden');
             }
@@ -590,31 +617,23 @@ define([
 
             var referenceForm = step.data('reference-form');
             if (referenceForm) {
+                this.widget.hide();
                 this.showReferenceForm(referenceForm);
+            } else {
+                this.widget.show();
             }
         },
 
         showReferenceForm: function(referenceForm) {
             var _this = this;
-            var widget = this.$el.dialog('widget');
-
-            widget.hide();
-
             function showNextForm() {
                 _this.next();
-                widget.show();
             }
-
             function cancel() {
                 _this.back();
-                widget.show();
             }
-
-            this.trigger(LocationFileWizardFormView.SHOW_FORM,
-                         referenceForm, showNextForm, cancel);
+            this.trigger(FormView.SHOW_FORM, referenceForm, showNextForm, cancel);
         }
-    }, {
-        SHOW_FORM: 'locationFileWizardFormView:showForm'
     });
 
 

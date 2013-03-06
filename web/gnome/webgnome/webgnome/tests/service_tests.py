@@ -11,10 +11,15 @@ from webgnome import util
 class ModelHelperMixin(object):
     def create_model(self):
         resp = self.testapp.post('/model')
-        self.base_url = str('/model/%s' % resp.json_body['id'])
+        self.model_id = resp.json_body['id']
+        self.base_url = str('/model/%s' % self.model_id)
         return resp
 
     def model_url(self, postfix):
+        """
+        Return a URL specific to the running model. The URL will include the
+        model's base URL (/model/{id}) followed by ``postfix``.
+        """
         postfix = '/%s' % postfix if postfix[0] not in ('/', '?') else postfix
         return str('%s%s' % (self.base_url, postfix))
 
@@ -102,7 +107,9 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
         url = self.model_url('/location_file/long_island')
 
         # Load the Long Island script parameters into the model.
-        self.testapp.post(url)
+        location_url = self.model_url('/location_file/long_island')
+        resp = self.testapp.get(location_url)
+        self.testapp.put_json(self.base_url, resp.json_body)
 
         # Post to runner URL to get the first step.
         resp = self.testapp.post_json(self.model_url('runner'))
@@ -112,28 +119,29 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_additional_steps(self):
         self.create_model()
-        url = self.model_url('/location_file/long_island')
 
         # Load the Long Island script parameters into the model.
-        self.testapp.post(url)
+        location_url = self.model_url('/location_file/long_island')
+        resp = self.testapp.get(location_url)
+        self.testapp.put_json(self.base_url, resp.json_body)
 
         # Post to runner URL to get the first step and expected # of time steps.
-        url = self.model_url('runner')
-        resp = self.testapp.post_json(url)
+        runner_url = self.model_url('runner')
+        resp = self.testapp.post_json(runner_url)
         num_steps = len(resp.json_body['expected_time_steps'])
 
         for step in range(num_steps):
             # Skip the first step because we received it in the POST.
             if step == 0:
                 continue
-            resp = self.testapp.get(url)
+            resp = self.testapp.get(runner_url)
             data = resp.json_body
             # TODO: Add more value tests here.
             self.assertEqual(data['time_step']['id'], step)
 
         # The model should now be exhausted and return a 404 if the user tries
         # to run it.
-        resp = self.testapp.get(url, status=404)
+        resp = self.testapp.get(runner_url, status=404)
         self.assertEqual(resp.status_code, 404)
 
     def test_restart_runner_after_finished(self):
@@ -141,7 +149,9 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
         url = self.model_url('/location_file/long_island')
 
         # Load the Long Island script parameters into the model.
-        self.testapp.post(url)
+        location_url = self.model_url('/location_file/long_island')
+        resp = self.testapp.get(location_url)
+        self.testapp.put_json(self.base_url, resp.json_body)
 
         # Post to runner URL to get the first step and expected # of time steps.
         url = self.model_url('runner')
@@ -364,16 +374,21 @@ class MapServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.url = self.model_url('map')
 
     def copy_map(self, location_file, map_name, destination_name=None):
-        filename = '%s.bna' % map_name
-        destination_name = destination_name or filename
-        original_file = os.path.join(self.project_root, 'data',
-                                     'location_files', location_file, 'data',
-                                     map_name)
-        test_file = os.path.join(self.project_root, 'static', 'uploads',
-                                 destination_name)
-        shutil.copy(original_file, test_file)
+        """
+        Copy a map with the filename ``map_name`` from the location file
+        ``location_file`` to the current model's data directory.
 
-        return filename
+        If ``destination_name`` is None, use ``map_name`` as the new filename.
+        """
+        destination_name = destination_name or map_name
+        original_file = os.path.join(self.project_root, 'location_files',
+                                     location_file, 'data', map_name)
+        destination_file = os.path.join(self.project_root, 'static',
+                                        self.settings['model_data_dir'],
+                                        self.model_id, 'data', destination_name)
+        shutil.copy(original_file, destination_file)
+
+        return destination_name
 
     def test_create_map(self):
         filename = self.copy_map('long_island', 'LongIslandSoundMap.BNA')
@@ -505,7 +520,8 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
                             [-73.083328, 41.330833],
                             [-72.336334, 41.330833],
                             [-72.336334, 40.922832]],
-            u'name': u'Long Island Sound', u'refloat_halflife': 21600.0
+            u'name': u'Long Island Sound', u'refloat_halflife': 21600.0,
+            u'relative_path': u'location_files/long_island/data/LongIslandSoundMap.BNA'
         },
         u'start_time': u'2013-02-05T17:00:00',
         u'random_movers': [
@@ -543,7 +559,8 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_add_long_island(self):
         url = self.model_url('/location_file/long_island')
-        resp = self.testapp.post(url)
+        resp = self.testapp.get(url)
+        resp = self.testapp.put_json(self.base_url, resp.json_body)
         body = resp.json_body
         util.delete_keys_from_dict(body, [u'id'])
         self.assertEqual(body, self.long_island)

@@ -43,14 +43,14 @@ def show_model(request):
     deleted = request.cookies.get('model_deleted', False)
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
-    model_images_dir = request.registry.settings['model_images_dir']
+    model_data_dir = request.registry.settings['model_data_dir']
     model, created = settings.Model.get_or_create(
-        model_id, model_images_dir=model_images_dir)
+        model_id, model_data_dir=model_data_dir)
     model_data = model.to_dict()
     surface_release_spills = model_data.pop('surface_release_spills')
     wind_movers = model_data.pop('wind_movers')
     random_movers = model_data.pop('random_movers')
-    model_settings = util.SchemaForm(schema.ModelSettingsSchema, model_data)
+    model_settings = util.SchemaForm(schema.ModelSchema, model_data)
     map_data = model_data['map']
 
     # JSON defaults for initializing JavaScript models

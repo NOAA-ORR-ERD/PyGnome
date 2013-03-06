@@ -6,7 +6,7 @@ from pyramid.httpexceptions import HTTPNotFound
 
 from webgnome import util
 from webgnome.navigation_tree import NavigationTree
-from webgnome.schema import ModelSettingsSchema
+from webgnome.schema import ModelSchema
 from webgnome.views.services.base import BaseResource
 
 
@@ -30,7 +30,7 @@ class Model(BaseResource):
 
         return model_settings
     
-    @view(schema=ModelSettingsSchema, validators=util.valid_model_id)
+    @view(schema=ModelSchema, validators=util.valid_model_id)
     def put(self):
         """
         Update settings for the current model.
@@ -53,7 +53,8 @@ class Model(BaseResource):
         Create a new model with default settings.
         """
         model = self.settings.Model.create(
-            model_images_dir=self.settings['model_images_dir'])
+            data_dir=self.settings.model_data_dir,
+            package_root=self.settings.package_root)
 
         self.request.session[self.settings['model_session_key']] = model.id
 

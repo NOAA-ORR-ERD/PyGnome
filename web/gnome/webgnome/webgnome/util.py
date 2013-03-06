@@ -8,6 +8,7 @@ import datetime
 import inspect
 import json
 import logging
+import posixpath
 import math
 import os
 import shutil
@@ -259,30 +260,64 @@ def valid_location_file(request):
     request.validated['location_file'] = location_file
 
 
-def valid_uploaded_file(request):
-    """
-    A Cornice validator that returns an error if the filename specified in a
-    Map resource POST does not exist in the web application's filesystem.
+def valid_new_location_file(request):
+    data_dir = os.path.join(request.registry.settings.location_file_dir,
+                            request.matchdict['location'])
 
-    `filename` should be the name of a file (not its path) that exists in
-    the configured `upload_dir`. Once validated, the absolute path of the file
-    will be added to the `request.validated` dictionary.
+    if os.path.exists(data_dir):
+        request.errors.add('body', 'location_file',
+                           'Location file already exists.')
+        request.errors.status = 400
+        return
+
+    request.validated['location_dir'] = data_dir
+
+
+def valid_filename(request):
+    """
+    A Cornice validator that verifies that a 'filename' in ``request``
+    be used safely to upload a file into the model's data directory.
     """
     valid_model_id(request)
 
     if request.errors:
         return
 
-    filename_parts = request.validated['filename'].split('/')
-    abs_filename = os.path.join(request.registry.settings.upload_dir,
-                                *filename_parts)
+    model = request.validated['model']
+    filename = request.POST['filename'].filename
+
+    if not filename:
+        request.errors.add('body', 'filename', 'Illegal filename.')
+        request.errors.status = 400
+        return
+
+    return safe_join(model.base_dir, filename)
+
+
+def valid_uploaded_file(request):
+    """
+    A Cornice validator that verifies that a 'filename' specified in ``request``
+    exists in the data directory of the user's current model.
+
+    Once validated, the absolute path of the file will be added to the
+    `request.validated` dictionary.
+    """
+    valid_model_id(request)
+
+    if request.errors:
+        return
+
+    model = request.validated['model']
+    filename = request.validated['filename']
+    abs_filename = os.path.join(model.static_data_dir, filename)
+    relative_filename = os.path.join('data', filename)
 
     if not os.path.exists(abs_filename):
-        request.errors.add('body', 'filename',
-                           'A file with that filename does not exist.')
+        request.errors.add('body', 'filename', 'File does not exist.')
         request.errors.status = 400
+        return
 
-    request.validated['filename'] = abs_filename
+    request.validated['filename'] = relative_filename
 
 
 def valid_mover_id(request):
@@ -364,7 +399,8 @@ def require_model(f):
             settings = self.request.registry.settings
             if model is None:
                 model = settings.Model.create(
-                    model_images_dir=settings.model_images_dir)
+                    data_dir=settings.model_data_dir,
+                    package_root=settings.package_root)
             return f(self, model, *args, **kwargs)
         wrapper = inner_method
     else:
@@ -374,7 +410,8 @@ def require_model(f):
             settings = request.registry.settings
             if model is None:
                 model = settings.Model.create(
-                    model_images_dir=settings.model_images_dir)
+                    data_dir=settings.model_data_dir,
+                    package_root=settings.package_root)
             return f(request, model, *args, **kwargs)
         wrapper = inner_fn
     return wrapper
@@ -433,7 +470,7 @@ def get_model_image_url(request, model, filename):
 
     These are files in the model's base directory.
     """
-    return request.static_url('webgnome:static/%s/%s/%s' % (
+    return request.static_url('webgnome:static/%s/%s/img/%s' % (
         request.registry.settings['model_images_url_path'],
         model.id,
         filename))
@@ -481,7 +518,8 @@ def mkdir_p(path):
     except OSError as exc: # Python >2.5
         if exc.errno == errno.EEXIST and os.path.isdir(path):
             pass
-        else: raise
+        else:
+            raise
 
 
 def monkey_patch_colander():
@@ -627,3 +665,52 @@ def get_location_files(location_file_dir):
         location_files.append(location_file)
 
     return location_files
+
+
+class LocationFileExists(OSError):
+    pass
+
+
+def create_location_file(path, **data):
+    """
+    Create a Location File directory at ``path`` and populate it with a skeleton
+    of required files.
+    """
+    if os.path.exists(path):
+        raise LocationFileExists
+
+    json_config = json.dumps(data)
+
+    mkdir_p(path)
+    mkdir_p(os.path.join(path, 'data'))
+
+    # Make the directory a Python package.
+    with open(os.path.join(path, '__init__.py'), 'wb') as f:
+        f.write('')
+
+    with open(os.path.join(path, 'config.json'), 'wb') as f:
+        f.write(json_config)
+
+    return json_config
+
+
+def safe_join(directory, filename):
+    """Safely join `directory` and `filename`.  If this cannot be done,
+    this function returns ``None``.
+
+    :param directory: the base directory.
+    :param filename: the untrusted filename relative to that directory.
+
+    :copyright: (c) 2011 by the Werkzeug Team, see AUTHORS for more details.
+    :license: BSD, see LICENSE for more details.
+    """
+    _os_alt_seps = list(sep for sep in [os.path.sep, os.path.altsep]
+                    if sep not in (None, '/'))
+    filename = posixpath.normpath(filename)
+    for sep in _os_alt_seps:
+        if sep in filename:
+            return None
+    if os.path.isabs(filename) or filename.startswith('../'):
+        return None
+    return os.path.join(directory, filename)
+

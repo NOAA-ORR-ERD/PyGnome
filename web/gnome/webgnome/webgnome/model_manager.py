@@ -283,8 +283,14 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
         'id',
         'name',
         'map_bounds',
-        'refloat_halflife'
+        'refloat_halflife',
+        'relative_path'
     ]
+
+    def __init__(self, *args, **kwargs):
+        self.name = kwargs.pop('name', 'Map')
+        self.relative_path = kwargs.pop('relative_path', None)
+        super(WebMapFromBNA, self).__init__(*args, **kwargs)
 
     def map_bounds_to_dict(self):
         """
@@ -295,10 +301,6 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
         if self.map_bounds is not None and hasattr(self.map_bounds, 'tolist'):
             return self.map_bounds.tolist()
         return self.map_bounds
-
-    def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', 'Map')
-        super(WebMapFromBNA, self).__init__(*args, **kwargs)
 
 
 class WebModel(Model, BaseWebObject):
@@ -318,10 +320,16 @@ class WebModel(Model, BaseWebObject):
     }
 
     def __init__(self, *args, **kwargs):
+        data_dir = kwargs.pop('data_dir')
+
+        self.package_root = kwargs.pop('package_root')
+        self.base_dir = os.path.join(self.package_root, data_dir, str(self.id))
+        self.base_dir_relative = os.path.join(data_dir, str(self.id))
+        self.static_data_dir = os.path.join(self.base_dir, 'data')
+
         # Create the base directory for all of the model's data.
-        self.base_dir = os.path.join(kwargs.pop('model_images_dir'),
-                                     str(self.id))
         util.mkdir_p(self.base_dir)
+        util.mkdir_p(self.static_data_dir)
 
         super(WebModel, self).__init__()
 
@@ -355,20 +363,23 @@ class WebModel(Model, BaseWebObject):
 
     def add_bna_map(self, filename, map_data):
         """
-        Add a BNA map that exists at ``filename``, a path relative to the base
-        directory for the model.
+        Adds a BNA map that exists at ``filename``, a path relative to the
+        webgnome package directory.
+
+        This might be a map file in a location file or in a running model's
+        data directory.
 
         Creates the land-water map and the canvas, and saves the background
         image for the map.
         """
-        map_file = os.path.join(self.base_dir, filename)
+        map_file = os.path.join(self.package_root, filename)
 
         # Create the land-water map
-        self.map = WebMapFromBNA(map_file, **map_data)
+        self.map = WebMapFromBNA(map_file, relative_path=filename, **map_data)
 
         # TODO: Should size be user-configurable?
         canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
-        polygons = haz_files.ReadBNA(filename, "PolygonSet")
+        polygons = haz_files.ReadBNA(map_file, "PolygonSet")
         canvas.set_land(polygons)
         self.output_map = canvas
 
@@ -380,7 +391,7 @@ class WebModel(Model, BaseWebObject):
                 logger.error('Could not delete file: %s. Error was: %s' % (
                     self.background_image, e))
 
-        # Save the backgrsinon-1.6.0ound image.
+        # Save the background image.
         self.background_image = 'background_image_%s.png' % util.get_runtime()
         self.output_map.draw_background()
         self.output_map.save_background(self.background_image_path)
