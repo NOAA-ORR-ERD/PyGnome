@@ -1,30 +1,11 @@
 import datetime
-import time
 
-import numpy
 from colander import (
     MappingSchema,
     SchemaNode,
-    #Bool,
-    #Int,
-    Float,
-    Range,
-    DateTime,
     String,
-    SequenceSchema,
-    #OneOf,
-    #Invalid,
-    Sequence,
-    TupleSchema,
-    deferred,
-    null,
-    #drop,
-    Tuple
+    deferred
 )
-
-import gnome.basic_types
-from gnome.persist import validators
-from gnome.persist import types
 
 @deferred
 def now(node, kw):
