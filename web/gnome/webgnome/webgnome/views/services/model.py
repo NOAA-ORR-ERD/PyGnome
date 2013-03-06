@@ -52,10 +52,7 @@ class Model(BaseResource):
         """
         Create a new model with default settings.
         """
-        model = self.settings.Model.create(
-            data_dir=self.settings.model_data_dir,
-            package_root=self.settings.package_root)
-
+        model = self.settings.Model.create()
         self.request.session[self.settings['model_session_key']] = model.id
 
         data = model.to_dict()

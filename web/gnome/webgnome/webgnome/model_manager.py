@@ -524,7 +524,9 @@ class ModelManager(object):
     class DoesNotExist(Exception):
         pass
 
-    def __init__(self):
+    def __init__(self, data_dir, package_root):
+        self.data_dir = data_dir
+        self.package_root = package_root
         self.running_models = {}
 
     def create(self, **kwargs):
@@ -532,6 +534,11 @@ class ModelManager(object):
         Create a new :class:`WebModel`, adds it to the `running_models` dict
         and returns the new object.
         """
+        if 'package_root' not in kwargs:
+            kwargs['package_root'] = self.package_root
+        if 'data_dir' not in kwargs:
+            kwargs['data_dir'] = self.data_dir
+
         model = WebModel(**kwargs)
         self.running_models[str(model.id)] = model
         return model

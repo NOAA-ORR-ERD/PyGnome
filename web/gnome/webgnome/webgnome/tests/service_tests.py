@@ -104,7 +104,6 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_first_step(self):
         self.create_model()
-        url = self.model_url('/location_file/long_island')
 
         # Load the Long Island script parameters into the model.
         location_url = self.model_url('/location_file/long_island')
@@ -146,7 +145,6 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_restart_runner_after_finished(self):
         self.create_model()
-        url = self.model_url('/location_file/long_island')
 
         # Load the Long Island script parameters into the model.
         location_url = self.model_url('/location_file/long_island')
@@ -564,3 +562,16 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
         body = resp.json_body
         util.delete_keys_from_dict(body, [u'id'])
         self.assertEqual(body, self.long_island)
+
+
+class LocationFileWizardServiceTests(FunctionalTestBase, ModelHelperMixin):
+    def setUp(self):
+        super(LocationFileWizardServiceTests, self).setUp()
+        self.create_model()
+
+    def test_get_wizard(self):
+        wizard_url = self.model_url('/location_file/boston/wizard')
+        resp = self.testapp.get(wizard_url)
+        data = resp.json_body
+        print data
+

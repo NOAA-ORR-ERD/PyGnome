@@ -18,7 +18,9 @@ class JsonRequireModelTests(UnitTestBase):
         request.registry.settings.model_data_dir = \
             self.settings['model_data_dir']
         request.registry.settings.package_root = self.package_root
-        request.registry.settings.Model = ModelManager()
+        request.registry.settings.Model = ModelManager(
+            data_dir=self.settings['model_data_dir'],
+            package_root=self.package_root)
         request.context = self.get_resource()
         return request
 
@@ -52,9 +54,7 @@ class JsonRequireModelTests(UnitTestBase):
             return model
 
         request = self.make_request()
-        model = request.registry.settings.Model.create(
-            data_dir=self.settings['model_data_dir'],
-            package_root=self.package_root)
+        model = request.registry.settings.Model.create()
         request.session[self.settings['model_session_key']] = model.id
         response = mock_view(request)
         self.assertEqual(response, model)

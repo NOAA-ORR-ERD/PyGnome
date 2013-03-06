@@ -10,7 +10,8 @@ from webgnome.util import json_date_adapter, gnome_json
 
 
 # TODO: Replace with Beaker.
-session_factory = UnencryptedCookieSessionFactoryConfig('ibjas45u3$@#$++slkjf__22134bbb')
+session_factory = UnencryptedCookieSessionFactoryConfig(
+    'ibjas45u3$@#$++slkjf__22134bbb')
 
 
 def add_renderer_globals(event):
@@ -25,8 +26,6 @@ def main(global_config, **settings):
     """
     This function returns a Pyramid WSGI application.
     """
-    settings['Model'] = ModelManager()
-
     settings['package_root'] = os.path.abspath(os.path.dirname(__file__))
     settings['project_root'] = os.path.dirname(settings['package_root'])
     settings['location_file_dir'] = os.path.join(settings['package_root'],
@@ -39,6 +38,9 @@ def main(global_config, **settings):
     settings['location_file_data'] = util.get_location_file_data(
         settings['location_file_dir'])
     settings['location_handlers'] = {}
+
+    settings['Model'] = ModelManager(data_dir=settings['model_data_dir'],
+                                     package_root=settings['package_root'])
 
     mako_dirs = settings['mako.directories']
     settings['mako.directories'] = mako_dirs if type(

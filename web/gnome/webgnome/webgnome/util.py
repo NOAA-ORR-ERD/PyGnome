@@ -398,9 +398,7 @@ def require_model(f):
             model = get_model_from_session(self.request)
             settings = self.request.registry.settings
             if model is None:
-                model = settings.Model.create(
-                    data_dir=settings.model_data_dir,
-                    package_root=settings.package_root)
+                model = settings.Model.create()
             return f(self, model, *args, **kwargs)
         wrapper = inner_method
     else:
@@ -409,9 +407,7 @@ def require_model(f):
             model = get_model_from_session(request)
             settings = request.registry.settings
             if model is None:
-                model = settings.Model.create(
-                    data_dir=settings.model_data_dir,
-                    package_root=settings.package_root)
+                model = settings.Model.create()
             return f(request, model, *args, **kwargs)
         wrapper = inner_fn
     return wrapper

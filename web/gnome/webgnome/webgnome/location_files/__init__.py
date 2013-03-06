@@ -33,15 +33,15 @@ def includeme(config):
                                cache_max_age=3600)
         try:
             config.include(location_import_path)
-        except ConfigurationError as e:
-            logger.debug('Did not find extra configuration for location file: '
-                        '%s. Caught ConfigurationError: %s)' % (location, e))
+        except ConfigurationError:
+            logger.debug('No extra configuration for location file: %s.'
+                         % location)
         try:
             handler = __import__('%s.wizard' % location_import_path,
                                  fromlist=['handle_input']).handle_input
-        except ImportError as e:
+        except ImportError:
             logger.debug('Did not find a wizard input handler for location '
-                        'file: %s. Caught ImportError: %s' % (location, e))
+                        'file: %s.' % location)
             continue
         else:
             settings.location_handlers[location] = handler
