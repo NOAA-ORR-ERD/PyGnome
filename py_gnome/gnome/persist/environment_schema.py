@@ -16,8 +16,8 @@ from colander import (
 import gnome
 from gnome.persist import validators
 
-from gnome.persist.schema import  Id,now
-from gnome.persist.types import LocalDateTime,DatetimeValue2dArray,DatetimeValue2dArraySchema,DefaultTupleSchema
+from gnome.persist.base_schema import  Id,now
+from gnome.persist.extend_colander import LocalDateTime,DatetimeValue2dArray,DatetimeValue2dArraySchema,DefaultTupleSchema
 
 
 class WindTupleSchema(DefaultTupleSchema):
