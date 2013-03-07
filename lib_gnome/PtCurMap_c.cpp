@@ -547,21 +547,29 @@ Boolean PtCurMap_c::InVerticalMap(WorldPoint3D wp)
 	else
 	{
 		if (!triGrid) return false; // some error alert, no depth info to check
-		interpolationVal = triGrid->GetInterpolationValues(wp.p);
-		depthsHdl = triGrid->GetDepths();
-		//depthsHdl = triGrid->GetBathymetry();
-		if (!depthsHdl) return false;	// some error alert, no depth info to check
-		if (interpolationVal.ptIndex1<0)	
+		if (mover && mover->IAm(TYPE_NETCDFMOVERCURV))
 		{
-			//printError("Couldn't find point in dagtree"); 
-			return false;
+			depthAtPoint = ((NetCDFMoverCurv*)mover)->GetTotalDepth2(wp.p);
 		}
-		
-		depth1 = (*depthsHdl)[interpolationVal.ptIndex1];
-		depth2 = (*depthsHdl)[interpolationVal.ptIndex2];
-		depth3 = (*depthsHdl)[interpolationVal.ptIndex3];
-		depthAtPoint = interpolationVal.alpha1*depth1 + interpolationVal.alpha2*depth2 + interpolationVal.alpha3*depth3;
+		else
+		{
+			interpolationVal = triGrid->GetInterpolationValues(wp.p);
+			depthsHdl = triGrid->GetDepths();
+			//depthsHdl = triGrid->GetBathymetry();
+			if (!depthsHdl) return false;	// some error alert, no depth info to check
+			if (interpolationVal.ptIndex1<0)	
+			{
+				//printError("Couldn't find point in dagtree"); 
+				return false;
+			}
+			
+			depth1 = (*depthsHdl)[interpolationVal.ptIndex1];
+			depth2 = (*depthsHdl)[interpolationVal.ptIndex2];
+			depth3 = (*depthsHdl)[interpolationVal.ptIndex3];
+			depthAtPoint = interpolationVal.alpha1*depth1 + interpolationVal.alpha2*depth2 + interpolationVal.alpha3*depth3;
+		}
 	}
+			
 	if (wp.z >= depthAtPoint || wp.z < 0)	// allow surface but not bottom
 		return false;
 	else
@@ -582,6 +590,9 @@ double PtCurMap_c::DepthAtPoint(WorldPoint wp)
 	if (mover && mover->IAm(TYPE_NETCDFMOVERCURV) && ((NetCDFMoverCurv*)mover)->fVar.gridType==SIGMA_ROMS)
 		return ((NetCDFMoverCurv*)mover)->GetTotalDepth(wp,-1);
 	
+	if (mover && mover->IAm(TYPE_NETCDFMOVERCURV))
+		return ((NetCDFMoverCurv*)mover)->GetTotalDepth2(wp);
+
 	if (!triGrid) return -1; // some error alert, no depth info to check
 	interpolationVal = triGrid->GetInterpolationValues(wp);
 	depthsHdl = triGrid->GetDepths();
