@@ -42,7 +42,7 @@ class Model(GnomeObject, serializable.Serializable):
         All this does is call reset() which initializes eveything to defaults
         """
         # making sure basic stuff is in place before properties are set
-        self.environment = OrderedCollection(dtype=gnome.environment)  
+        self.environment = OrderedCollection(dtype=Wind)  
         self.movers = OrderedCollection(dtype=Mover)
         #self._spill_container = gnome.spill_container.SpillContainer()
         #self._uncertain_spill_container = None
