@@ -23,7 +23,7 @@ def save(model, saveloc=None):
     # first save model info
     model_to_json = gnome.persist.model_schema.CreateModel().serialize( model.to_dict('create') )
     _save_to_file(model_to_json,
-                  os.path.join( saveloc, 'model_{0}.txt'.format(model.id)))
+                  os.path.join( saveloc, '{0}_{1}.txt'.format( model.__class__.__name__, model.id)))
     
     _save_collection(model.movers,'movers_schema',saveloc)
     _save_collection(model.environment, 'environment_schema', saveloc)
@@ -39,7 +39,7 @@ def load(saveloc, filename=None):
         raise ValueError("Invalid location for saving scenario. {0} does not exist".format(saveloc))
     
     if filename is None:
-        model_file = glob.glob(os.path.join(saveloc,'model_*.txt'))
+        model_file = glob.glob(os.path.join(saveloc,'Model_*.txt'))
         if len(model_file) > 1:
             raise ValueError("multiple model_*.txt files found in {0}. Please provide 'filename'".format(saveloc))
         else:

@@ -20,6 +20,7 @@ class UpdateModel(MappingSchema):
     duration = SchemaNode(extend_colander.TimeDelta() )   # put a constraint for max duration?
     movers = base_schema.OrderedCollection()
     environment = base_schema.OrderedCollection()
+    uncertain = SchemaNode( Bool() )
     
 class CreateModel(base_schema.Id, UpdateModel):
     """

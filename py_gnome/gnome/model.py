@@ -21,7 +21,8 @@ class Model(GnomeObject, serializable.Serializable):
                'start_time',
                'duration',
                'movers',
-               'environment']
+               'environment',
+               'uncertain']
     _create = []
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
