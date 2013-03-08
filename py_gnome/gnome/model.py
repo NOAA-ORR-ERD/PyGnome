@@ -36,7 +36,7 @@ class Model(GnomeObject, serializable.Serializable):
                  map=gnome.map.GnomeMap(),
                  output_map=None,
                  uncertain=False,
-                 ):
+                 **kwargs):
         """ 
         Initializes model. 
 

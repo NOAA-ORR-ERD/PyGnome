@@ -29,14 +29,7 @@ model.environment += gnome.environment.Wind(timeseries=series, units='meter per 
 
 model.movers += gnome.movers.WindMover( [w for w in model.environment][0] )
 
-#===============================================================================
-# print "serializing .."
-# m_json = gnome.persist.model_schema.CreateModel().serialize( model.to_dict('create'))
-# print "deserializing .."
-# gnome.persist.model_schema.CreateModel().deserialize(m_json)
-#===============================================================================
-
 print "saving .."
 scenario.save(model,saveloc)
-# Load is currently not working
-#scenario.load(saveloc,'model_{0}.txt'.format(model.id))
+print "loading .."
+model2 = scenario.load(saveloc,'model_{0}.txt'.format(model.id))
