@@ -110,15 +110,15 @@ class Serializable(object):
     #===========================================================================
         
     @classmethod
-    def new_from_dict(cls, dict):
+    def new_from_dict(cls, dict_):
         """
         creates a new object from dictionary
         
         This is base implementation and can be over-ridden by classes using mixin
         """
-        new_obj = cls(**dict)
-        if dict.get('id'):
-            new_obj.id = dict.get('id')  # let's assign this as well?
+        new_obj = cls(**dict_)
+        if dict_.get('id'):
+            new_obj.id = dict_.get('id')  # let's assign this as well?
 
         return new_obj
     
