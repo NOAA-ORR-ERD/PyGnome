@@ -21,7 +21,7 @@ model = gnome.model.Model(start_time = start_time,
                         )
 
 #need a scenario for SimpleMover
-#model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
 model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
 
 series = np.array( (start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))

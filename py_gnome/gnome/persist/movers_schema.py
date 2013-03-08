@@ -8,6 +8,7 @@ from colander import (
     Bool,
     Float,
     String,
+    TupleSchema,
     )
 
 import gnome
@@ -43,3 +44,14 @@ class UpdateRandomMover(Mover):
 class CreateRandomMover(Id,UpdateRandomMover):
     pass
     
+class SimpleMoverVelocity(TupleSchema):
+    vel_x = SchemaNode( Float() )
+    vel_y = SchemaNode( Float() )
+    vel_z = SchemaNode( Float() )
+
+class UpdateSimpleMover(Mover):
+    uncertainty_scale = SchemaNode( Float() )
+    velocity = SimpleMoverVelocity()
+    
+class CreateSimpleMover(Id, UpdateSimpleMover):
+    pass
