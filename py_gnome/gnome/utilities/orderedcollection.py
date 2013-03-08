@@ -139,9 +139,10 @@ class OrderedCollection(object):
             
         This method assumes object has an ID
         """
-        dict_ = {'dtype':oc.dtype,'id':[]}
+        dict_ = {'dtype':oc.dtype,'id_list':[]}
         
         for obj in oc:
-            dict_['id'].append(obj.id)
+            obj_type = "{0.__module__}.{0.__class__.__name__}".format( obj)
+            dict_['id_list'].append(( obj_type, obj.id))
         
         return dict_

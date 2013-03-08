@@ -4,7 +4,9 @@ from colander import (
     MappingSchema,
     SchemaNode,
     String,
-    deferred
+    deferred,
+    SequenceSchema,
+    TupleSchema
 )
 
 @deferred
@@ -21,4 +23,14 @@ class Id(MappingSchema):
     """
     id = SchemaNode(String() )
 
+class OrderedCollectionIdListItem(TupleSchema):
+    obj_type = SchemaNode(String() )  
+    obj_id = SchemaNode(String() )
+
+class OrderedCollectionIdList(SequenceSchema):
+    id_list = OrderedCollectionIdListItem() 
+    
+class OrderedCollection(MappingSchema):
+    dtype = SchemaNode( String() )
+    id_list = OrderedCollectionIdList(missing=None)
     
