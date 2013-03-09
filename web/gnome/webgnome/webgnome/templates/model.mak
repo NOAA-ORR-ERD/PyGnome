@@ -1,5 +1,6 @@
 <%inherit file="base.mak"/>
 
+
 <%block name="extra_head">
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
@@ -17,7 +18,12 @@
                 <li><a tabindex="-1" href="javascript:">Load from file</a></li>
                 <li class="dropdown-submenu"><a tabindex="-1" href="javascript:">Load example...</a>
                     <ul class="dropdown-menu">
-                        <li><a tabindex="-1" class='location-file-item' data-location='long_island' href="javascript:">Long Island Sound</a></li>
+                        % for location_file in location_files:
+                            <li><a tabindex="-1" class='location-file-item'
+                                   data-location='${location_file['filename']}'
+                                   href="javascript:">${location_file['name']}</a>
+                            </li>
+                        % endfor
                     </ul>
                 </li>
                 <li><a tabindex="-1" href="javascript:">Save</a></li>
@@ -165,6 +171,12 @@
         ## Spill forms
         <%include file="forms/surface_release_spill.mak" args="form_id='add-surface-release-spill'"/>
         <%include file="forms/surface_release_spill.mak", args="form_id='edit-surface-release-spill'"/>
+
+        % for location_file in location_files:
+            % if 'wizard_html' in location_file:
+                ${location_file['wizard_html'] | n}
+            % endif
+        % endfor
     </div>
 </%block>
 
@@ -228,7 +240,7 @@
                 defaultMap: ${default_map | n},
                 defaultCustomMap: ${default_custom_map | n},
                 mapIsLoaded: ${"true" if map_is_loaded else "false"},
-                locationFiles: ${location_files | n},
+                locationFiles: ${location_file_json | n},
                 animationThreshold: 10 // Milliseconds
             };
 

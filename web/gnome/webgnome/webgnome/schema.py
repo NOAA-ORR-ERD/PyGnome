@@ -297,11 +297,11 @@ class MapSchema(MappingSchema):
 
 # Input values GOODS expects for the `resolution` field on a custom map form.
 custom_map_resolutions = [
-    'c', # course
-    'l', # low
-    'i', # intermediate
-    'h', # high
-    'f'  # full
+    'c',  # course
+    'l',  # low
+    'i',  # intermediate
+    'h',  # high
+    'f'   # full
 ]
 
 

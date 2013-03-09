@@ -60,16 +60,23 @@ define([
             });
         },
 
+        /*
+         Show the form with `formId`.
+         */
         show: function(formId, success, cancel) {
             var formView = this.get(formId);
 
             if (formView) {
-                formView.once(FormView.SUBMITTED, success);
-                formView.once(FormView.CANCELED, cancel);
+                if (success) {
+                    formView.once(FormView.SUBMITTED, success);
+                }
+                if (cancel) {
+                    formView.once(FormView.CANCELED, cancel);
+                }
                 formView.reload();
                 formView.show();
             }
-        },
+        }
     });
 
     function ModelNotFoundException(message) {
@@ -592,11 +599,6 @@ define([
             console.log('Finished');
         },
 
-        close: function() {
-            LocationFileWizardFormView.__super__.close.apply(this, arguments);
-            this.remove();
-        },
-
         showReferences: function() {
             this.references.dialog('open');
         },
@@ -864,7 +866,6 @@ define([
             return {map: this.model};
         }
     });
-
 
 
     /*

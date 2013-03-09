@@ -23,8 +23,8 @@ define([
 
             this.options.gnomeRun.on(
                 models.GnomeRun.MESSAGE_RECEIVED, this.displayMessage);
-            this.options.gnomeSettings.on(
-                models.Gnome.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.gnomeModel.on(
+                models.GnomeModel.MESSAGE_RECEIVED, this.displayMessage);
             this.options.surfaceReleaseSpills.on(
                 models.SurfaceReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
             this.options.windMovers.on(
@@ -694,8 +694,8 @@ define([
                 collection.on('destroy', _this.reload);
             });
 
-            this.gnomeSettings = this.options.gnomeSettings;
-            this.gnomeSettings.on('sync', this.reload);
+            this.gnomeModel = this.options.gnomeModel;
+            this.gnomeModel.on('sync', this.reload);
 
             this.options.map.on('sync', this.reload);
 
@@ -749,7 +749,7 @@ define([
 
         reload: function() {
             var _this = this;
-            if (this.gnomeSettings && this.gnomeSettings.wasDeleted) {
+            if (this.gnomeModel && this.gnomeModel.wasDeleted) {
                 return;
             }
             this.tree.dynatree('getTree').reload(function () {
@@ -1270,7 +1270,6 @@ define([
 
         initialize: function() {
             _.bindAll(this);
-            this.apiRoot = this.options.apiRoot;
             this.mapCanvas = $(this.options.mapCanvas);
             this.locationFiles = this.options.locationFiles;
 
@@ -1302,9 +1301,9 @@ define([
             this.locationFileMap = new google.maps.Map(
                 this.mapCanvas[0], gmapOptions);
 
-            _.each(this.locationFiles, function(location) {
+            this.locationFiles.each(function(location) {
                 var latLng = new google.maps.LatLng(
-                    location.latitude, location.longitude);
+                    location.get('latitude'), location.get('longitude'));
 
                 var marker = new google.maps.Marker({
                     position: latLng,
@@ -1314,7 +1313,7 @@ define([
                 google.maps.event.addListener(marker, 'click', function() {
                     var template = _.template(
                         $('#location-file-template').text());
-                    _this.infoWindow.setContent(template(location));
+                    _this.infoWindow.setContent(template(location.toJSON()));
                     _this.infoWindow.open(_this.locationFileMap, marker);
                 });
             });

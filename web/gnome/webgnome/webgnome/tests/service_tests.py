@@ -555,7 +555,7 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.url = self.model_url('location_file')
         self.maxDiff = 5000
 
-    def test_add_long_island(self):
+    def test_post_to_long_island_updates_the_model_configuration(self):
         url = self.model_url('/location_file/long_island')
         resp = self.testapp.get(url)
         resp = self.testapp.put_json(self.base_url, resp.json_body)
@@ -569,7 +569,7 @@ class LocationFileWizardServiceTests(FunctionalTestBase, ModelHelperMixin):
         super(LocationFileWizardServiceTests, self).setUp()
         self.create_model()
 
-    def test_get_wizard(self):
+    def test_get_wizard_returns_html_fragment(self):
         wizard_url = self.model_url('/location_file/test/wizard')
         resp = self.testapp.get(wizard_url)
         data = resp.json_body
@@ -581,13 +581,13 @@ class LocationFileWizardServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertIn('<select class="type input-small" data-value="wizard.custom_stuff" id="custom_stuff" name="custom_stuff">',
                       data['html'])
 
-    def test_post_wizard(self):
+    def test_post_to_test_wizard_changes_model(self):
         resp = self.testapp.get(self.base_url)
         model_data = resp.json_body
         self.assertEqual(model_data['duration_days'], 1)
 
         wizard_url = self.model_url('/location_file/test/wizard')
-        resp = self.testapp.post_json(wizard_url, {'use_custom_thing': 'yes'})
+        resp = self.testapp.put_json(wizard_url, {'use_custom_thing': 'yes'})
 
         resp = self.testapp.get(self.base_url)
         model_data = resp.json_body

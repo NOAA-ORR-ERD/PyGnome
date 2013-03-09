@@ -2,8 +2,6 @@ import json
 import os
 
 from cornice.resource import resource, view
-from pyramid.renderers import render
-from webgnome.schema import ModelSchema
 from webgnome.views.services.base import BaseResource
 from webgnome import util, schema
 
@@ -16,7 +14,7 @@ class LocationFile(BaseResource):
 
     @view(validators=util.valid_location_file)
     def get(self):
-       with open(self.request.validated['location_file']) as f:
+        with open(self.request.validated['location_file']) as f:
             return json.loads(f.read())
 
     @view(validators=[util.valid_model_id, util.valid_new_location_file],
@@ -52,23 +50,19 @@ class LocationFile(BaseResource):
           description='Get location file wizard HTML. Post user options for '
                       'the wizard to apply them to the model.')
 class LocationFileWizard(BaseResource):
-
-    @view(validators=util.valid_location_file)
+    @view(validators=[util.valid_location_file,
+                      util.valid_location_file_wizard])
     def get(self):
-        location = self.request.matchdict['location']
-        html = render('webgnome:location_files/%s/wizard.mak' % location, {})
-
         return {
-            'html': html
+            'html': self.request.validated['wizard_html']
         }
 
     @view(validators=[util.valid_model_id, util.valid_location_file,
                       util.valid_location_file_wizard])
-    def post(self):
+    def put(self):
         self.request.validated['wizard_handler'](
             self.request.validated['model'], self.request.json_body)
 
         return {
             'location': self.request.matchdict['location']
         }
-

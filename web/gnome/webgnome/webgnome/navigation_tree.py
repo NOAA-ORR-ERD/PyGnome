@@ -82,7 +82,7 @@ class NavigationTree(object):
                                   form_id='edit-surface-release-spill'))
 
          # Add the map manually as the first model setting
-        map_data = data.pop('map')
+        map_data = data.pop('map', None)
         map_form_id = 'edit-map' if map_data else 'add-map'
 
         settings['children'].append({

@@ -262,16 +262,19 @@ def valid_location_file(request):
 
 def valid_location_file_wizard(request):
     location = request.matchdict['location']
-    location_handlers = request.registry.settings.get('location_handlers', {})
+    location_handlers = request.registry.settings.get('location_handlers')
+    location_data = request.registry.settings.get('location_file_data')
     handler = location_handlers.get(location, None)
+    wizard_html = location_data.get(location, None).get('wizard_html', None)
 
-    if not handler or not hasattr(handler, '__call__'):
+    if not wizard_html or not handler or not hasattr(handler, '__call__'):
         request.errors.add('body', 'location_file_wizard',
                            'An input handler for the wizard was not found.')
         request.errors.status = 404
         return
 
     request.validated['wizard_handler'] = handler
+    request.validated['wizard_html'] = wizard_html
 
 
 def valid_new_location_file(request):
@@ -619,32 +622,6 @@ def dirnames(path):
             os.path.isdir(os.path.join(path, name))]
 
 
-def get_location_file_data(location_file_dir, ignored_files=None):
-    """
-    Return a list of dictionaries containing configuration data for each valid
-    location file found in ``location_file_dir``, keyed to location file
-    directory name.
-    """
-    location_files = []
-
-    for location_file in get_location_files(location_file_dir, ignored_files):
-        config = os.path.join(location_file_dir, location_file, 'config.json')
-
-        with open(config) as f:
-            try:
-                data = json.loads(f.read())
-            except TypeError:
-                logger.error(
-                    'TypeError reading conf.json file for location: %s' % config)
-                continue
-            else:
-                data['filename'] = location_file
-                location_files.append(data)
-                logger.info('Loaded location file: %s' % location_file)
-
-    return location_files
-
-
 def get_location_files(location_file_dir, ignored_files=None):
     """
     Return a list of valid location file names -- the names of directories found
@@ -707,7 +684,8 @@ def create_location_file(path, **data):
 
 
 def safe_join(directory, filename):
-    """Safely join `directory` and `filename`.  If this cannot be done,
+    """
+    Safely join `directory` and `filename`.  If this cannot be done,
     this function returns ``None``.
 
     :param directory: the base directory.
@@ -725,4 +703,3 @@ def safe_join(directory, filename):
     if os.path.isabs(filename) or filename.startswith('../'):
         return None
     return os.path.join(directory, filename)
-

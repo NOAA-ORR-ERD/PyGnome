@@ -355,13 +355,19 @@ define([
 
 
     var BaseModel = Backbone.Model.extend({
-        // Add an array of field names here that should be converted to strings
-        // during `toJSON` calls and to `moment` objects during `get` calls.
+        /*
+         Add an array of field names here that should be converted to strings
+         during `toJSON` calls and to `moment` objects during `get` calls.
+         */
         dateFields: null,
 
-        initialize: function() {
+        initialize: function(attrs, opts) {
             this.dirty = false;
             this.bind('change:id', this.onIndexChange, this);
+
+            if (opts && opts.gnomeModel) {
+                this.gnomeModel = opts.gnomeModel;
+            }
             BaseModel.__super__.initialize.apply(this, arguments)
         },
 
@@ -434,7 +440,7 @@ define([
                 options.error = this.error;
             }
 
-            BaseModel.__super__.save.apply(this, [attrs, options]);
+            return BaseModel.__super__.save.apply(this, [attrs, options]);
         },
 
         success: function(model, response, options) {
@@ -539,20 +545,19 @@ define([
     
     var BaseCollection = Backbone.Collection.extend({
         initialize: function (objs, opts) {
-            if (opts && opts.url) {
-                this.url = opts.url;
+            if (opts && opts.gnomeModel) {
+                this.gnomeModel = opts.gnomeModel;
             }
         }
     });
 
 
-    var Gnome = BaseModel.extend({
+    var GnomeModel = BaseModel.extend({
         dateFields: ['start_time'],
 
         url: function() {
             var id = this.id ? '/' + this.id : '';
-            return '/model' + id +
-                "?include_movers=false&include_spills=false";
+            return '/model' + id;
         }
     });
 
@@ -583,6 +588,10 @@ define([
 
         comparator: function(spill) {
             return moment(spill.get('release_time')).valueOf();
+        },
+
+        url: function() {
+            return this.gnomeModel.url() + '/spill/surface_release';
         }
     });
 
@@ -635,6 +644,9 @@ define([
 
 
     var WindMover = BaseMover.extend({
+        url: function() {
+            return this.gnomeModel.url() + '/movers/wind';
+        },
 
         /*
          Make sure the 'wind' field is a `Wind` object.
@@ -713,6 +725,10 @@ define([
     var RandomMoverCollection = BaseCollection.extend({
         model: RandomMover,
 
+        url: function() {
+            return this.gnomeModel.url() + '/mover/random';
+        },
+
         comparator: function(mover) {
             return this.get('active_start');
         }
@@ -720,15 +736,42 @@ define([
 
 
     var Map = BaseModel.extend({
-        initialize: function(attrs, options) {
-            this.url = options.url;
+        url: function() {
+            return this.gnomeModel.url() + '/map';
         }
     });
 
 
     var CustomMap = BaseModel.extend({
-        initialize: function(attrs, options) {
-            this.url = options.url;
+        url: function() {
+            return this.gnomeModel.url() + '/custom_map';
+        }
+    });
+
+
+    var LocationFile = BaseModel.extend({
+        idAttribute: 'filename'
+    });
+
+    var LocationFileCollection = BaseCollection.extend({
+        model: LocationFile,
+
+        url: function() {
+            return this.gnomeModel.url() + '/location_file';
+        }
+    });
+
+    var LocationFileWizard = BaseModel.extend({
+        url: function() {
+            return this.collection.url() + '/' + this.id + '/wizard'
+        }
+    });
+
+    var LocationFileWizardCollection = BaseCollection.extend({
+        model: LocationFileWizard,
+
+        url: function() {
+            return this.gnomeModel.url() + '/location_file';
         }
     });
 
@@ -756,11 +799,6 @@ define([
             dataType: 'json'
         });
     }
-
-
-    var LocationFile = BaseModel.extend({
-    });
-
 
     function setLocationFile(apiRoot, location, options) {
         var opts = $.extend({
@@ -791,7 +829,7 @@ define([
     return {
         TimeStep: TimeStep,
         GnomeRun: GnomeRun,
-        Gnome: Gnome,
+        GnomeModel: GnomeModel,
         BaseModel: BaseModel,
         BaseCollection: BaseCollection,
         SurfaceReleaseSpill: SurfaceReleaseSpill,
@@ -803,9 +841,11 @@ define([
         RandomMoverCollection: RandomMoverCollection,
         Map: Map,
         CustomMap: CustomMap,
-        getNwsWind: getNwsWind,
-        getLocationFileWizard: getLocationFileWizard,
-        setLocationFile: setLocationFile
+        LocationFile: LocationFile,
+        LocationFileCollection: LocationFileCollection,
+        LocationFileWizard: LocationFileWizard,
+        LocationFileWizardCollection: LocationFileWizardCollection,
+        getNwsWind: getNwsWind
     };
 
 });

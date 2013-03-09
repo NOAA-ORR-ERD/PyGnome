@@ -1,4 +1,3 @@
-import json
 import os
 
 from pyramid.config import Configurator
@@ -6,7 +5,11 @@ from pyramid.events import BeforeRender
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
 
 from webgnome import helpers
-from webgnome.model_manager import ModelManager, WebWindMover, WebSurfaceReleaseSpill
+from webgnome.model_manager import (
+    ModelManager,
+    WebWindMover,
+    WebSurfaceReleaseSpill
+)
 from webgnome.util import json_date_adapter, gnome_json
 
 
@@ -35,12 +38,6 @@ def main(global_config, **settings):
     settings['model_images_url_path'] = settings['model_data_dir']
     settings['model_data_dir'] = os.path.join(
         settings['package_root'], 'static', settings['model_data_dir'])
-
-    settings['ignored_location_files'] = settings[
-        'ignored_location_files'].strip().split(',')
-    settings['location_file_data'] = util.get_location_file_data(
-        settings['location_file_dir'], settings['ignored_location_files'])
-    settings['location_handlers'] = {}
 
     settings['Model'] = ModelManager(data_dir=settings['model_data_dir'],
                                      package_root=settings['package_root'])

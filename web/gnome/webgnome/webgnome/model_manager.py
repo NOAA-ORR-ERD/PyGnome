@@ -433,11 +433,6 @@ class WebModel(Model, BaseWebObject):
         Return a dictionary representation of this model. Includes subtrees
         (lists of dictionaries) for any movers and spills configured.
         """
-        if self.map and hasattr(self.map, 'to_dict'):
-            _map = self.map.to_dict()
-        else:
-            _map = None
-
         data = {
             'uncertain': self.uncertain,
             'time_step': (self.time_step / 60.0) / 60.0,
@@ -445,8 +440,10 @@ class WebModel(Model, BaseWebObject):
             'duration_days': 0,
             'duration_hours': 0,
             'id': self.id,
-            'map': _map
         }
+
+        if self.map and hasattr(self.map, 'to_dict'):
+            data['map'] = self.map.to_dict()
 
         if self.duration.days:
             data['duration_days'] = self.duration.days

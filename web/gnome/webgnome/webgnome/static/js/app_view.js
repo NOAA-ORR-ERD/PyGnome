@@ -37,7 +37,8 @@ define([
                 newItemEl: "#menu-new",
                 runItemEl: "#menu-run",
                 stepItemEl: "#menu-step",
-                runUntilItemEl: "#menu-run-until"
+                runUntilItemEl: "#menu-run-until",
+                locationFiles: this.locationFiles
             });
 
             this.sidebarEl = '#sidebar';
@@ -52,7 +53,7 @@ define([
                 treeEl: "#tree",
                 apiRoot: this.apiRoot,
                 gnomeRun: this.gnomeRun,
-                gnomeSettings: this.gnomeSettings,
+                gnomeModel: this.gnomeModel,
                 map: this.map,
                 customMap: this.customMap,
                 collections: [
@@ -99,7 +100,7 @@ define([
 
             this.messageView = new views.MessageView({
                 gnomeRun: this.gnomeRun,
-                gnomeSettings: this.gnomeSettings,
+                gnomeModel: this.gnomeModel,
                 surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers
             });
@@ -111,9 +112,8 @@ define([
 
             this.locationFileMapView = new views.LocationFileMapView({
                 el: $('#location-file-map'),
-                apiRoot: this.apiRoot,
                 mapCanvas: '#map_canvas',
-                locationFiles: this.options.locationFiles
+                locationFiles: this.locationFiles
             });
 
             this.setupEventHandlers();
@@ -173,34 +173,33 @@ define([
             this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.loadLocationFileWizard);
         },
 
-        loadLocationFileWizardSuccess: function(data) {
-            var html = $(data.html);
-            html.appendTo($('#modal-container'));
+        showLocationFileWizard: function(locationFile) {
+            var html = $(locationFile.get('wizard_html'));
             var id = html.attr('id');
+            var formView = this.formViews.get(id);
 
-            var formView = this.formViews.remove(id);
             if (formView) {
-                formView.remove();
+                formView.show();
+            } else {
+                window.alert('That location file is not available yet.');
             }
-
-            formView = new forms.LocationFileWizardFormView({ id: id });
-            this.formViews.add(formView);
-
-            formView.show();
         },
 
         loadLocationFileWizard: function(location) {
-            models.getLocationFileWizard(
-                this.apiRoot, location, {
-                    success: this.loadLocationFileWizardSuccess
-            });
+            var locationFile = this.locationFiles.get(location);
+
+            if (locationFile) {
+                this.showLocationFileWizard(locationFile);
+            } else {
+                alert('That location file is not available yet.');
+            }
         },
 
-        loadLocationFile: function(location) {
-            models.setLocationFile(this.apiRoot, location, {
-                success: function() {
-                    window.location = window.location.origin;
-                }
+        loadLocationFile: function(formView) {
+            var locationFileWizard = formView.model;
+            var locationFile = this.locationFiles.get(locationFileWizard.id);
+            locationFile.save().then(function() {
+                window.location = window.location.origin;
             });
         },
 
@@ -263,6 +262,8 @@ define([
         },
 
         setupForms: function() {
+            var _this = this;
+
             this.formViews = new forms.FormViewContainer({
                 id: 'modal-container'
             });
@@ -299,7 +300,7 @@ define([
 
             this.gnomeSettingsFormView = new forms.GnomeSettingsFormView({
                 id: 'model-settings',
-                model: this.gnomeSettings
+                model: this.gnomeModel
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
@@ -344,6 +345,17 @@ define([
             this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
             this.addMapFormView.on(forms.AddMapFormView.SOURCE_CHOSEN, this.mapSourceChosen);
 
+            this.locationFiles.each(function(locationFile) {
+                var html = $(locationFile.get('wizard_html'));
+                var id = html.attr('id');
+
+                if (html.length && id) {
+                    var formView = new forms.LocationFileWizardFormView({ id: id });
+                    formView.on(forms.FormView.SUBMITTED, this.loadLocationFile);
+                    _this.formViews.add(formView);
+                }
+            });
+
             this.formViews.add(this.addMoverFormView);
             this.formViews.add(this.addSpillFormView);
             this.formViews.add(this.addMapFormView);
@@ -360,33 +372,9 @@ define([
         },
 
         setupModels: function() {
-            this.map = new models.Map(this.options.map, {
-                url: this.apiRoot + '/map'
-            });
+            var _this = this;
 
-            this.customMap = new models.CustomMap({}, {
-                url: this.apiRoot + '/custom_map'
-            });
-
-            this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
-                this.options.surfaceReleaseSpills, {
-                    url: this.apiRoot + "/spill/surface_release"
-                }
-            );
-
-            this.windMovers = new models.WindMoverCollection(
-                this.options.windMovers, {
-                    url: this.apiRoot + "/mover/wind"
-                }
-            );
-
-            this.randomMovers = new models.RandomMoverCollection(
-                this.options.randomMovers, {
-                    url: this.apiRoot + "/mover/random"
-                }
-            );
-
-            this.gnomeSettings = new models.Gnome(this.options.gnomeSettings);
+            this.gnomeModel = new models.GnomeModel(this.options.gnomeSettings);
 
             // Initialize the model with any previously-generated time step data the
             // server had available.
@@ -395,7 +383,51 @@ define([
                 expectedTimeSteps: this.options.expectedTimeSteps,
                 currentTimeStep: this.options.currentTimeStep,
                 bounds: this.options.mapBounds || [],
-                gnomeSettings: this.gnomeSettings
+                gnomeModel: this.gnomeModel
+            });
+
+            this.map = new models.Map(this.options.map, {
+                gnomeModel: this.gnomeModel
+            });
+
+            this.customMap = new models.CustomMap({}, {
+                gnomeModel: this.gnomeModel
+            });
+
+            this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
+                this.options.surfaceReleaseSpills, {
+                    gnomeModel: this.gnomeModel
+                }
+            );
+
+            this.windMovers = new models.WindMoverCollection(
+                this.options.windMovers, {
+                    gnomeModel: this.gnomeModel
+                }
+            );
+
+            this.randomMovers = new models.RandomMoverCollection(
+                this.options.randomMovers, {
+                    gnomeModel: this.gnomeModel
+                }
+            );
+
+
+            this.locationFiles = new models.LocationFileCollection(
+                this.options.locationFiles, {
+                    gnomeModel: this.gnomeModel
+                }
+            );
+
+            this.locationFileWizards = new models.LocationFileWizardCollection([], {
+                gnomeModel: this.gnomeModel
+            });
+
+            // Create a LocationFileWizard for every LocationFile
+            this.locationFiles.each(function(location) {
+                _this.locationFileWizards.add({
+                    id: location.id
+                });
             });
         },
 
@@ -424,8 +456,8 @@ define([
                 return;
             }
 
-            this.gnomeSettings.wasDeleted = true;
-            this.gnomeSettings.destroy({
+            this.gnomeModel.wasDeleted = true;
+            this.gnomeModel.destroy({
                 success: function() {
                     util.Cookies.setItem('model_deleted', true);
                     window.location = window.location.origin;

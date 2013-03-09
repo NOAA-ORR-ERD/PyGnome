@@ -23,7 +23,8 @@ def _default_schema_json(schema_cls):
     """
     Return a JSON object that contains default values for ``schema_cls``.
     """
-    return json.dumps(schema_cls().bind().serialize(), default=util.json_encoder)
+    return json.dumps(schema_cls().bind().serialize(),
+                      default=util.json_encoder)
 
 
 @view_config(route_name='show_model', renderer='model.mak')
@@ -49,11 +50,12 @@ def show_model(request):
     wind_movers = model_data.pop('wind_movers')
     random_movers = model_data.pop('random_movers')
     model_settings = util.SchemaForm(schema.ModelSchema, model_data)
-    map_data = model_data['map']
+    map_data = model_data.get('map', None)
 
     # JSON defaults for initializing JavaScript models
     default_wind_mover = _default_schema_json(schema.WindMoverSchema)
-    default_wind_timeseries_value = _default_schema_json(schema.TimeseriesValueSchema)
+    default_wind_timeseries_value = _default_schema_json(
+        schema.TimeseriesValueSchema)
     default_random_mover = _default_schema_json(schema.RandomMoverSchema)
     default_surface_release_spill = _default_schema_json(
         schema.SurfaceReleaseSpillSchema)
@@ -79,15 +81,18 @@ def show_model(request):
         'default_random_mover': default_random_mover,
         'default_map': default_map,
         'default_custom_map': default_custom_map,
-        'location_files': json.dumps(
-            request.registry.settings.location_file_data),
 
         # JSON data to bootstrap the JS application.
         'map_data': util.to_json(map_data),
         'surface_release_spills': util.to_json(surface_release_spills),
         'wind_movers': util.to_json(wind_movers),
         'random_movers': util.to_json(random_movers),
-        'model_settings': util.to_json(model_data)
+        'model_settings': util.to_json(model_data),
+        'location_files': sorted(
+            request.registry.settings.location_file_data.values(),
+            key=lambda location_file: location_file['name']),
+        'location_file_json': json.dumps(
+            request.registry.settings.location_file_data.values())
     }
 
     if created:

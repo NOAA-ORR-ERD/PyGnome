@@ -1,3 +1,3 @@
 
-def handle_input(data):
+def handle_input(model, data):
     pass
