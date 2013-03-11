@@ -1,0 +1,41 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Casco Bay
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.25;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME Casco Bay Map;PATH resnum 10003;
+--
+minkilometersperinch 2.2;
+-------------------------------------------
+MESSAGE setfield;TO Diffusion;coefficient 50000;
+-------------------------------------------
+MESSAGE createMover;TO Casco Bay Map;TYPE Cats; NAME WACFlood.cur;PATH resnum 10004;
+MESSAGE setfield;TO WACFlood.cur; scaleType constant; refP 70.211667 W 43.631667 N; scaleValue 1;timeFile resNum 10005; EddyDiffusion 100000; 
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Casco Bay;
+-------------------------------------------
+

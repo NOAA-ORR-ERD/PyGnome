@@ -1,0 +1,77 @@
+[ORDER] 
+------------------------------------------- 
+10002 
+MODEL 
+10011 
+10010 
+WIND 
+ALMOSTDONE 
+------------------------------------------- 
+
+
+[VERSION] 
+------------------------------------------- 
+LOCATIONFILEIDSTR Detroit River 
+LOCATIONFILEFORMAT 0 
+LOCATIONFILEVERSION 0 
+-- starting with zero makes it backwardly compatible 
+------------------------------------------- 
+
+
+[BEFORE] 
+------------------------------------------- 
+MESSAGE setfield;TO model;timeStep  0.01; 
+------------------------------------------- 
+
+
+[AFTER] 
+------------------------------------------- 
+MESSAGE setfield; TO DIffusion; coefficient 10000; uncertaintyFactor 1; 
+MESSAGE createMap;TO model;TYPE vector; NAME Detroit River Map;PATH resnum 10003 
+-- 
+MESSAGE createMover;TO Detroit River Map;TYPE Cats; NAME Erie.ver.CUR;PATH resnum 10004; 
+MESSAGE setfield;TO Erie.ver.CUR;CrossCurUncertainty 0.01; 
+------------------------------------------- 
+
+
+[WMSG 10002] 
+------------------------------------------- 
+LHSTEXT Detroit River; 
+------------------------------------------- 
+
+
+[WMSG 10011] 
+------------------------------------------- 
+if $V7<2 
+    set StageHt1  $10 
+                                set StageHt2 $15 
+         set term1 {StageHt1}-{StageHt2} 
+    set DetroitRiv {term1} / .58 
+else 
+        set flow1  .5 
+        set flow2  .9 
+        set flow3  1.3 
+ set flowDefault1 Low 
+ set flowDefault2 Medium 
+ set flowDefault3 High 
+        set DetroitRiv flow{$V12} 
+endif 
+
+--MESSAGE setfield; TO Erie.ver.CUR; scaleType constant; refP 83.04132 W 42.323132 N; scaleValue {DetroitRiv}; 
+------------------------------------------- 
+IF $V7<2 
+  set units1 feet 
+  set units2 meters 
+  set unitScale1 3.281 
+  set unitScale2 1 
+ set DetroitRiv {{DetroitRiv}/{unitScale$V15}} 
+ --- LHSTEXT River stage height: {{DetroitRiv}/{unitScale$V15}} {units$V15}; 
+  LHSTEXT Windmill Point stage height: {StageHt1} {units$V10}; 
+  LHSTEXT Gibraltar stage height: {StageHt2} {units$V15}; 
+ELSE 
+ -- LHSTEXT River Flow: {DetroitRiv} m/s; 
+  LHSTEXT River Flow: {flowDefault$V12} - {DetroitRiv} m/s; 
+ENDIF 
+
+--MESSAGE setfield; TO Erie.ver.CUR; scaleType constant; refP 83.04132 W 42.323132 N; scaleValue {{DetroitRiv}/{unitScale$V15}}; 
+MESSAGE setfield; TO Erie.ver.CUR; scaleType constant; refP 83.04132 W 42.323132 N; scaleValue {DetroitRiv};

@@ -1,0 +1,107 @@
+[ORDER]
+-------------------------------------------
+10002
+10010
+MODEL
+10011
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Mobile Bay
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.10;
+-------------------------------------------
+
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME Mobile Bay Map;PATH resnum 10003;
+MESSAGE setfield;TO Mobile Bay Map;ExtendedLoLat 30.083333;
+--
+MESSAGE createMover;TO Mobile Bay Map;TYPE Cats; NAME Mobile RIver.CUR;PATH resnum 10004
+--
+MESSAGE createMover;TO Mobile Bay Map;TYPE Cats; NAME Mobile Tides.CUR;PATH resnum 10005
+MESSAGE setfield;TO Mobile Tides.CUR; scaleType constant;refP 88.03500 W 30.226667 N; scaleValue 1; timeFile resNum 10008;
+--
+MESSAGE createMover; TO Mobile Bay Map; TYPE Component; NAME Wind Driven Currents; SCALETYPE Wind Stress;
+MESSAGE createMover; TO Wind Driven Currents; TYPE Cats; PATTERN 1; NAME Wind S 4.1 mps.cur;PATH resnum 10009;
+MESSAGE setfield; TO Wind Driven Currents; scaleType WINDMOVER; refP 87.9585 W 30.65625 N;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 2; NAME Wind E 4.1 mps clip8.cur;PATH resnum 10010;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 87.9585 W 30.65625 N ; 
+MESSAGE setfield;TO Wind Driven Currents;scaleBy WindStress;
+ -------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Mobile Bay;
+-------------------------------------------
+
+
+[WMSG 10010]
+-------------------------------------------
+if $V10 < 4
+-- flow is in kcfs
+	set flow1  200 
+	set flow2  80 
+	set flow3  30 
+	set transport flow{$V10}
+else
+	-- user entered values for stage height via UNIT popup 5
+	-- $5 is Barry Steam plant stage height in feet
+	-- transport is still in kcfs
+	Set Barry $5
+	set a7 {1.30783535/10} * {pow {Barry} 7}
+	set a6 {-9.30220602} * {pow {Barry} 6}
+	set a5 {2.77541373*100} * {pow {Barry} 5}
+	set a4 {-4.48728702*1000} * {pow {Barry} 4}
+	set a3 {4.21967977*10000} * {pow {Barry} 3}
+	set a2 {-2.28915462*100000} * {pow {Barry} 2}
+	set a1 {6.87589384*100000} * {Barry}
+	set a0 {-8.24448766*100000}
+	set b1 {a7} + {a6}
+         set b2 {a5} + {a4}
+	set b3 {a3} + {a2}
+         set b4 {a1} + {a0}
+         set transport {{b4}+{b3}}+{{b1}+{b2}}
+         set transport {transport}/1000
+endif
+LHSTEXT River flow: {ROUND {transport}} kcfs;
+set scale  7.6 / 1157 
+set v_scale  {scale} * {transport} 
+MESSAGE setfield;TO Mobile River.CUR;scaleValue {v_scale}; scaleType constant;refP 88.040333 W 30.7151 N;
+--DEBUGSTR v_scale = {v_scale}
+-------------------------------------------
+if {transport} < 106
+	-- river input is relatively low so wind influence high
+	set wind_scale  1
+else 
+	if {transport} < 141
+			-- river input increasing, wind influence decreasing
+			set wind_scale  {141 - {transport}}/35 
+	else
+      -- river input very high and wind influence no longer significant
+			set wind_scale 0
+	endif
+endif
+set w1_scale 0.098605 * {wind_scale}
+set w2_scale 0.096878 * {wind_scale}
+MESSAGE setfield;TO Wind Driven Currents; pat1Angle 0; pat1Speed 4.1;  pat1ScaleToValue {w1_scale};
+MESSAGE setfield;TO Wind Driven Currents; pat2Angle 90; pat2Speed 4.1;  pat2ScaleToValue {w2_scale};
+--DEBUGSTR wind_scale = {wind_scale}
+--DEBUGSTR w1_scale = {w1_scale}
+--DEBUGSTR w2_scale = {w2_scale}
+--DEBUGSTR transport = {transport}
+-------------------------------------------
+

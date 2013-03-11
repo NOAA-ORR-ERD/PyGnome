@@ -1,0 +1,7 @@
+Sara Long Bridge - 43 5.32 N, 70 45.72 W  (unscaled val = .859034)
+Furber Strait - 43 5.47 N, 70 51.68 W (unscaled val = 1)
+General Sullivan Bridge 43 7.07 N, 70 49.56 W (unscaled val = .8066)
+Portsmouth Entrance - 43 3.74 N, 70 42.32 (unscaled val = .291185)
+Gulf of Maine DAC - ref pt scaling, see PortsmouthWiz.txt
+
+Others scale to 1 at ref pt

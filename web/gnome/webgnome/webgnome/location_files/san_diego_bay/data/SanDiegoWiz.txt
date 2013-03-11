@@ -1,0 +1,49 @@
+														  [ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR San Diego
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 1
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.25;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME San Diego Map;PATH resnum 10003;
+--
+MESSAGE createMover;TO San Diego Map;TYPE Cats; NAME offshore.cur;PATH resnum 10006;
+MESSAGE setfield;TO offshore.cur; scaleType constant;refP 117.239 W 32.64983 N; scaleValue -0.1; 
+--
+MESSAGE createMover;TO San Diego Map;TYPE Cats; NAME tides.cur;PATH resnum 10004;
+MESSAGE setfield;TO tides.cur; scaleType constant;refP 117.2300 W 32.681667 N; scaleValue 1; timeFile resNum 10005; EddyDiffusion 10000;
+--
+MESSAGE createMover;TO San Diego Map;TYPE Component; NAME Wind Driven Currents; 
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 1; NAME NNWat15kt.cur;PATH resnum 10007;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 117.1295 W 32.644333 N; 
+MESSAGE setfield;TO Wind Driven Currents; pat1Angle 337.5; pat1Speed 15; pat1SpeedUnits knots; pat1ScaleToValue 0.082049;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 2; NAME WSWat15kt.cur;PATH resnum 10008;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 117.1295 W 32.644333 ; 
+MESSAGE setfield;TO Wind Driven Currents; pat2Angle 247.5; pat2Speed 15; pat2SpeedUnits knots; pat2ScaleToValue 0.023113;
+MESSAGE setfield;TO Wind Driven Currents; scaleBy windStress;
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT San Diego;
+-------------------------------------------
+

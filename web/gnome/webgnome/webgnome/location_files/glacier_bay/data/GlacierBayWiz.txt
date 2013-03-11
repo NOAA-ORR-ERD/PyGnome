@@ -1,0 +1,43 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+10005
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Glacier Bay
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.1;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME Glacier Bay Map;PATH resnum 10003;
+--
+minkilometersperinch 2.2;
+-------------------------------------------
+MESSAGE setfield;TO Diffusion;coefficient 100000;
+-------------------------------------------
+MESSAGE createMover;TO Glacier Bay Map;TYPE Cats; NAME WACFlood.cur;PATH resnum 10004;
+MESSAGE setfield;TO WACFlood.cur; scaleType constant; refP 136.033333 W 58.466667 N; scaleValue 1;timeFile resNum 10005; EddyDiffusion 100000; 
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Glacier Bay;
+-------------------------------------------
+
+

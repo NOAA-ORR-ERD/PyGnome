@@ -1,0 +1,47 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR ROPME Sea Area
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.25;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+minkilometersperinch 20;
+--
+MESSAGE createMap;TO model;TYPE vector; NAME ROPME Sea Area Map;PATH resnum 10003;
+--
+MESSAGE createMover;TO ROPME Sea Area Map;TYPE Cats; NAME Reverse Estuary;PATH resnum 10004;
+MESSAGE setfield;TO Reverse Estuary; scaleType constant;refP 56.23757 E 26.574903 N; scaleValue  0.2; 
+--
+MESSAGE createMover;TO ROPME Sea Area Map;TYPE Cats; NAME River Flow;PATH resnum 10005;
+MESSAGE setfield;TO River Flow; scaleType constant;refP 48.908577 E 30.293734 N; scaleValue .25; 
+--
+MESSAGE createMover;TO ROPME Sea Area Map;TYPE Component; NAME Wind Driven Currents;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 1; NAME NNW10;PATH resnum 10006;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 49.744965 E 27.285172 N; 
+MESSAGE setfield;TO Wind Driven Currents; pat1Angle 337.5; pat1Speed 10; pat1SpeedUnits knots; pat1ScaleToValue 0.15;
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT ROPME Sea Area;
+-------------------------------------------
+
