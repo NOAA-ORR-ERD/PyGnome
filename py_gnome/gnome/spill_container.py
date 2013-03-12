@@ -387,6 +387,16 @@ class SpillContainerPair(SpillContainerPairData):
         return ident in self._spill_container.spills
 
 
+    @staticmethod
+    def to_dict(scp):
+        """
+        static method takes an instance of SpillContainerPair class
+        and outputs a dict with:
+            spills: dict containing the spills ordered collection converted to a dict
+            data: ??
+        """
+        return None
+
 class TestSpillContainer(SpillContainer):
     """
     A really simple spill container, pre-initialized with LEs at a point.
