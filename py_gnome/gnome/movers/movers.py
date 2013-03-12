@@ -19,6 +19,7 @@ from gnome.utilities import rand    # not to confuse with python random module
 class Mover(GnomeObject):
     """
     Base class from which all Python movers can inherit
+    :param on: boolean as to whether the object is on or not
     :param active_start: datetime when the mover should be active
     :param active_stop: datetime after which the mover should be inactive
     It defines the interface for a Python mover. The model expects the methods defined here. 
@@ -431,9 +432,7 @@ class RandomMover(CyMover, serializable.Serializable):
 
 class CatsMover(CyMover):
     
-    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None,
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0)):
+    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None, ossm_file=None, *args, **kwargs):
         """
         
         """
@@ -444,28 +443,38 @@ class CatsMover(CyMover):
         self.mover = cy_cats_mover.CyCatsMover()
         self.mover.read_topology(curr_file)
         
+        if shio_file is not None and ossm_file is not None:
+            raise ValueError("Cannot provide both OSSM and Shio file for tides.")
+        
         if shio_file is not None:
             if not os.path.exists(shio_file):
                 raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
             else:
-                self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
-                self.mover.set_shio(self.shio)
-                #self.shio.set_shio_yeardata_path(shio_yeardata_file)
+                self.tides = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
+                self.mover.set_shio(self.tides)
+                #self.tides.set_shio_yeardata_path(shio_yeardata_file)
             if shio_yeardata_file is not None:
                 if not os.path.exists(shio_yeardata_file):
                     raise ValueError("Path for Shio Year Data does not exist: {0}".format(shio_yeardata_file))
                 else:
-                    self.shio.set_shio_yeardata_path(shio_yeardata_file)
+                    self.tides.set_shio_yeardata_path(shio_yeardata_file)
             else:
                 raise ValueError("Shio data requires path for Shio Year Data: {0}".format(shio_yeardata_file))
         
-        super(CatsMover,self).__init__(active_start, active_stop)
+        if ossm_file is not None:
+            if not os.path.exists(ossm_file):
+                raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
+            else:
+                self.tides = CyOSSMTime(file=ossm_file,file_contains=ts_format)
+                self.mover.set_ossm(self.tides)
+        
+        super(CatsMover,self).__init__(*args, **kwargs)
         
     def __repr__(self):
         """
         unambiguous representation of object
         """
-        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.shio.filename)
+        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.tides.filename)
         return info
      
     # Properties
