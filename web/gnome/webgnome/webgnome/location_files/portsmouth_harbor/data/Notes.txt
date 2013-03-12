@@ -5,3 +5,5 @@ Portsmouth Entrance - 43 3.74 N, 70 42.32 (unscaled val = .291185)
 Gulf of Maine DAC - ref pt scaling, see PortsmouthWiz.txt
 
 Others scale to 1 at ref pt
+
+The spillable area has a missing sliver - zoom in at 43.04736N, 70.714336W
