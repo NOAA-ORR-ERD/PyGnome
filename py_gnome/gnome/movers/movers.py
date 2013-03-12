@@ -432,7 +432,7 @@ class RandomMover(CyMover, serializable.Serializable):
 
 class CatsMover(CyMover):
     
-    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None, ossm_file=None, *args, **kwargs):
+    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None, ossm_file=None, format='uv', *args, **kwargs):
         """
         
         """
@@ -465,6 +465,7 @@ class CatsMover(CyMover):
             if not os.path.exists(ossm_file):
                 raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
             else:
+                ts_format = convert.tsformat(format)
                 self.tides = CyOSSMTime(file=ossm_file,file_contains=ts_format)
                 self.mover.set_ossm(self.tides)
         
