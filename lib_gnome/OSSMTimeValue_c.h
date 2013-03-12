@@ -61,6 +61,7 @@ public:
 	virtual void			SetUserUnits(short userUnits){fUserUnits=userUnits;}
 	virtual double			GetMaxValue();
 	virtual OSErr			InitTimeFunc ();
+	virtual OSErr			ReadNDBCWind (char *path);
 	virtual OSErr			ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance);
 	OSErr					ReadOSSMTimeHeader (char *path);
 	OSErr					ReadHydrologyHeader (char *path);
