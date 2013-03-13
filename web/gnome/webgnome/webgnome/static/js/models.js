@@ -645,7 +645,7 @@ define([
 
     var WindMover = BaseMover.extend({
         url: function() {
-            return this.gnomeModel.url() + '/movers/wind';
+            return this.gnomeModel.url() + '/mover/wind';
         },
 
         /*
@@ -750,7 +750,9 @@ define([
 
 
     var LocationFile = BaseModel.extend({
-        idAttribute: 'filename'
+        idAttribute: 'filename',
+
+        
     });
 
     var LocationFileCollection = BaseCollection.extend({
@@ -763,7 +765,7 @@ define([
 
     var LocationFileWizard = BaseModel.extend({
         url: function() {
-            return this.collection.url() + '/' + this.id + '/wizard'
+            return this.collection.url() + '/' + this.id + '/wizard';
         }
     });
 
@@ -772,6 +774,14 @@ define([
 
         url: function() {
             return this.gnomeModel.url() + '/location_file';
+        }
+
+    });
+
+
+    var GnomeModelFromLocationFile = BaseModel.extend({
+        url: function() {
+            return '/model/from_location_file/' + this.id;
         }
     });
 
@@ -830,6 +840,7 @@ define([
         TimeStep: TimeStep,
         GnomeRun: GnomeRun,
         GnomeModel: GnomeModel,
+        GnomeModelFromLocationFile: GnomeModelFromLocationFile,
         BaseModel: BaseModel,
         BaseCollection: BaseCollection,
         SurfaceReleaseSpill: SurfaceReleaseSpill,

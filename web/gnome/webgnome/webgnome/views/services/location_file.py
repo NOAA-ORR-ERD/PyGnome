@@ -14,8 +14,10 @@ class LocationFile(BaseResource):
 
     @view(validators=util.valid_location_file)
     def get(self):
-        with open(self.request.validated['location_file']) as f:
-            return json.loads(f.read())
+        model_schema = schema.ModelSchema().bind()
+        data = model_schema.deserialize(
+            self.request.validated['location_file_model_data'])
+        return model_schema.serialize(data)
 
     @view(validators=[util.valid_model_id, util.valid_new_location_file],
           schema=schema.LocationFileSchema)
@@ -30,7 +32,6 @@ class LocationFile(BaseResource):
         util.create_location_file(location_dir, **data)
 
         # If a map was specified, move it into the new location file directory.
-
         if _map and _map['filename']:
             filename = _map['filename']
             old = os.path.join(model.base_dir, filename)

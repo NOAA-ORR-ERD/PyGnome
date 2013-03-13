@@ -1,56 +1,52 @@
 {"wind_movers": [
     {
-        "on": "true",
+        "on": true,
         "name": "Wind Mover",
-        "uncertain_angle_scale": "0.4",
-        "uncertain_duration": "10800.0",
+        "uncertain_angle_scale": 0.4,
+        "uncertain_duration": 10800.0,
         "active_start": "1970-01-01T00:00:00",
         "active_stop": "2038-01-18T00:00:00",
-        "uncertain_angle_scale_units": null,
-        "uncertain_time_delay": "0.0",
+        "uncertain_time_delay": 0.0,
         "wind": {
-            "description": null,
-            "latitude": null,
-            "updated_at": null,
-            "longitude": null,
-            "source_type": null,
+            "units": "mps",
             "timeseries": [
-                ["2013-02-05T17:00:00", "30.0", "50.0"],
-                ["2013-02-06T11:00:00", "30.0", "50.0"],
-                ["2013-02-06T23:00:00", "20.0", "25.0"],
-                ["2013-02-07T11:00:00", "25.0", "10.0"],
-                ["2013-02-07T23:00:00", "25.0", "180.0"]
-            ],
-            "units": "mps"
+                ["2013-03-11T13:00:00", 30.0, 50.0],
+                ["2013-03-12T07:00:00", 30.0, 50.0],
+                ["2013-03-12T19:00:00", 20.0, 25.0],
+                ["2013-03-13T07:00:00", 25.0, 10.0],
+                ["2013-03-13T19:00:00", 25.0, 180.0]
+            ]
         },
-        "uncertain_speed_scale": "2.0"
+        "uncertain_speed_scale": 2.0
     }
 ], "map": {
     "map_bounds": [
-        ["-73.083328", "40.922832"],
-        ["-73.083328", "41.330833"],
-        ["-72.336334", "41.330833"],
-        ["-72.336334", "40.922832"]
+        [-73.083328, 40.922832],
+        [-73.083328, 41.330833],
+        [-72.336334, 41.330833],
+        [-72.336334, 40.922832]
     ],
-    "refloat_halflife": "21600.0",
-    "name": "Test Location File",
-    "filename": "location_files/long_island/data/LongIslandSoundMap.BNA"
-}, "start_time": "2013-02-05T17:00:00", "random_movers": [
+    "refloat_halflife": 21600.0,
+    "name": "Long Island Sound",
+    "relative_path": "location_files/long_island/data/LongIslandSoundMap.BNA"
+}, "uncertain": false, "start_time": "2013-03-11T13:00:00", "random_movers": [
     {
-        "on": "true",
+        "on": true,
         "active_start": "1970-01-01T00:00:00",
         "name": "Random Mover",
         "active_stop": "2038-01-18T00:00:00",
-        "diffusion_coef": "500000.0"
+        "diffusion_coef": 500000.0
     }
-], "uncertain": "false", "surface_release_spills": [
+], "surface_release_spills": [
     {
-        "num_elements": "1000",
-        "windage_range": ["0.01", "0.04"],
+        "num_elements": 1000,
+        "windage_range": [0.01, 0.04],
         "name": "Long Island Spill",
-        "is_active": "true",
-        "start_position": ["-72.419992", "41.20212", "0.0"],
-        "windage_persist": "900.0",
-        "release_time": "2013-02-05T17:00:00"
+        "is_active": true,
+        "end_position": [-72.419992, 41.20212, 0.0],
+        "start_position": [-72.419992, 41.20212, 0.0],
+        "release_time": "2013-03-11T13:00:00",
+        "windage_persist": 900.0,
+        "end_release_time": "2013-03-11T13:00:00"
     }
-], "time_step": "0.25", "duration_hours": "0", "duration_days": "1"}
+], "time_step": 0.25, "duration_hours": 0, "duration_days": 1}

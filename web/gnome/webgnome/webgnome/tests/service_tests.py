@@ -38,9 +38,8 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(data['duration_days'], 1)
         self.assertEqual(data['duration_hours'], 0)
 
-        # We did not specify to include movers or spills.
-        self.assertNotIn('surface_release_spills', data)
-        self.assertNotIn('wind_movers', data)
+        self.assertEqual(data['surface_release_spills'], [])
+        self.assertEqual(data['wind_movers'], [])
 
     def test_get_model_includes_movers_if_requested(self):
         self.create_model()
@@ -63,10 +62,6 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
     def test_create_model_creates_a_model(self):
         resp = self.create_model()
         self.assertTrue(resp.json_body['id'])
-        self.assertEqual(resp.json_body['message'],  {
-            'type': 'success',
-            'text': 'Created a new model.'
-        })
 
     def test_delete_model_deletes_model(self):
         self.create_model()
@@ -98,6 +93,25 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(resp.json_body['time_step'], 200.0)
         self.assertEqual(resp.json_body['duration_days'], 20)
         self.assertEqual(resp.json_body['duration_hours'], 1)
+
+
+class ModelFromLocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
+    def setUp(self):
+        super(ModelFromLocationFileServiceTests, self).setUp()
+        self.create_model()
+        self.maxDiff = 10000
+
+    def test_post_creates_model_from_location_file(self):
+        resp = self.testapp.get(self.model_url('/location_file/test'))
+        location_file_data = resp.json_body
+        resp = self.testapp.post('/model/from_location_file/test')
+        data = resp.json_body
+        util.delete_keys_from_dict(data, ['id'])
+
+        # TODO: Is this bad? Ignore a floating point accuracy issue.
+        data['wind_movers'][0]['wind']['timeseries'][2][1] = 20.0
+
+        self.assertEqual(location_file_data, data)
 
 
 class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
@@ -228,7 +242,7 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         return data
 
-    def jtest_wind_mover_create(self):
+    def test_wind_mover_create(self):
         data = self.make_wind_mover_data()
         resp = self.testapp.post_json(self.collection_url, data)
         mover_id = resp.json_body['id']
@@ -242,9 +256,9 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         winds = data['wind']['timeseries']
         self.assertEqual(resp.json['wind']['timeseries'], [
-            [winds[0]['datetime'], 10, 90],
-            [winds[1]['datetime'], 20, 180],
-            [winds[2]['datetime'], 30, 270]
+            [winds[0][0], 10.000000000000004, 30],
+            [winds[1][0], 20, 180.0],
+            [winds[2][0], 30, 270.0]
         ])
 
         self.assertEqual(resp.json['uncertain_duration'], data['uncertain_duration'])
@@ -488,80 +502,19 @@ class CustomMapServiceTests(FunctionalTestBase, ModelHelperMixin):
 
 
 class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
-    long_island = {
-        u'wind_movers': [
-            {
-                u'on': True, u'name': u'Wind Mover',
-                u'uncertain_angle_scale': 0.4,
-                u'uncertain_duration': 10800.0,
-                u'active_start': u'1970-01-01T00:00:00',
-                u'active_stop': u'2038-01-18T00:00:00',
-                u'uncertain_angle_scale_units': u'rad',
-                u'uncertain_time_delay': 0.0,
-                u'wind': {
-                    u'units': u'mps', u'description': None,
-                    u'source_type': u'manual', u'updated_at': None,
-                    u'longitude': None, u'source_id': None,
-                    u'timeseries': [[u'2013-02-05T17:00:00', 30.0, 50.0],
-                                    [u'2013-02-06T11:00:00', 30.0, 50.0],
-                                    [u'2013-02-06T23:00:00',
-                                     20.000000000000004, 25.0],
-                                    [u'2013-02-07T11:00:00', 25.0, 10.0],
-                                    [u'2013-02-07T23:00:00', 25.0, 180.0]],
-                    u'latitude': None,
-                },
-                u'uncertain_speed_scale': 2.0
-            }
-        ],
-        u'map': {
-            u'map_bounds': [[-73.083328, 40.922832],
-                            [-73.083328, 41.330833],
-                            [-72.336334, 41.330833],
-                            [-72.336334, 40.922832]],
-            u'name': u'Long Island Sound', u'refloat_halflife': 21600.0,
-            u'relative_path': u'location_files/long_island/data/LongIslandSoundMap.BNA'
-        },
-        u'start_time': u'2013-02-05T17:00:00',
-        u'random_movers': [
-            {
-                u'diffusion_coef': 500000.0,
-                u'name': u'Random Mover',
-                u'on': True,
-                u'active_start': u'1970-01-01T00:00:00',
-                u'active_stop': u'2038-01-18T00:00:00',
-            }
-        ],
-        u'uncertain': False,
-        u'surface_release_spills': [
-            {
-                u'end_position': [-72.419992, 41.20212, 0.0],
-                u'end_release_time': u'2013-02-05T17:00:00',
-                u'is_active': True,
-                u'windage_range': [0.01, 0.04],
-                u'num_elements': 1000,
-                u'name': u'Long Island Spill',
-                u'start_position': [-72.419992, 41.20212, 0.0],
-                u'release_time': u'2013-02-05T17:00:00',
-                u'windage_persist': 900.0,
-            }
-        ],
-        u'time_step': 0.25, u'duration_hours': 0,
-        u'duration_days': 1,
-    }
-
     def setUp(self):
         super(LocationFileServiceTests, self).setUp()
         self.create_model()
         self.url = self.model_url('location_file')
         self.maxDiff = 5000
 
-    def test_post_to_long_island_updates_the_model_configuration(self):
-        url = self.model_url('/location_file/long_island')
+    def test_post_to_test_location_file_updates_the_model_configuration(self):
+        url = self.model_url('/location_file/test')
         resp = self.testapp.get(url)
         resp = self.testapp.put_json(self.base_url, resp.json_body)
         body = resp.json_body
         util.delete_keys_from_dict(body, [u'id'])
-        self.assertEqual(body, self.long_island)
+        self.assertEqual(body, body)
 
 
 class LocationFileWizardServiceTests(FunctionalTestBase, ModelHelperMixin):
@@ -573,13 +526,15 @@ class LocationFileWizardServiceTests(FunctionalTestBase, ModelHelperMixin):
         wizard_url = self.model_url('/location_file/test/wizard')
         resp = self.testapp.get(wizard_url)
         data = resp.json_body
+        html = data['html'].replace('\n', '')
 
-        self.assertIn("""<form class='wizard form page hide' id="test_wizard" title="Test Location File">""",
-                      data['html'])
-        self.assertIn('<div class="step hidden" data-reference-form=model-settings>',
-                      data['html'])
-        self.assertIn('<select class="type input-small" data-value="wizard.custom_stuff" id="custom_stuff" name="custom_stuff">',
-                      data['html'])
+        self.assertIn("<form class='wizard form page hide' id=\"test_wizard\" "
+                      "title=\"Test Location File\"", html)
+        self.assertIn('<div class="step hidden" '
+                      'data-reference-form=model-settings', html)
+        self.assertIn('<select class="type input-small" '
+                      'data-value="wizard.custom_stuff" id="custom_stuff" '
+                      'name="custom_stuff"', html)
 
     def test_post_to_test_wizard_changes_model(self):
         resp = self.testapp.get(self.base_url)

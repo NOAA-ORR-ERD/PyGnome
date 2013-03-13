@@ -1,7 +1,12 @@
 <%namespace name='defs' file='webgnome:templates/defs.mak'/>
 
 
-<form class='wizard form page hide' id="${self.form_id()}" title="${self.title()}">
+<%def name='height()'>350</%def>
+<%def name='width()'>350</%def>
+<%def name='references()'></%def>
+
+<form class='wizard form page hide' id="${self.form_id()}" title="${self.title()}"
+        data-height="${self.height()}" data-width="${self.width()}">
     <%defs:step>
         ${self.intro()}
 

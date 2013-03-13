@@ -2,7 +2,9 @@
 <%namespace name='defs' file='webgnome:templates/defs.mak'/>
 
 <%def name='title()'>Welcome to Boston and vicinity</%def>
-<%def name='form_id()'>boston_wizard</%def>
+<%def name='form_id()'>boston-wizard</%def>
+<%def name='height()'>475</%def>
+<%def name='width()'>350</%def>
 <%def name='references()'>
     Some references.
 </%def>

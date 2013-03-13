@@ -283,19 +283,22 @@ define([
             this.editMapFormView = new forms.MapFormView({
                 id: 'edit-map',
                 model: this.map,
-                defaults: this.options.defaultMap
+                defaults: this.options.defaultMap,
+                gnomeModel: this.gnomeModel
             });
 
             this.addCustomMapFormView = new forms.AddCustomMapFormView({
                 id: 'add-custom-map',
                 model: this.customMap,
-                defaults: this.options.defaultCustomMap
+                defaults: this.options.defaultCustomMap,
+                gnomeModel: this.gnomeModel
             });
 
             this.addMapFromUploadFormView = new forms.AddMapFromUploadFormView({
                 id: 'add-map-from-upload',
                 model: this.map,
-                uploadUrl: this.apiRoot + '/file_upload'
+                uploadUrl: this.apiRoot + '/file_upload',
+                gnomeModel: this.gnomeModel
             });
 
             this.gnomeSettingsFormView = new forms.GnomeSettingsFormView({
@@ -307,7 +310,8 @@ define([
                 id: 'add-wind-mover',
                 collection: this.windMovers,
                 defaults: this.options.defaultWindMover,
-                defaultWindTimeseriesValue: this.options.defaultWindTimeseriesValue
+                defaultWindTimeseriesValue: this.options.defaultWindTimeseriesValue,
+                gnomeModel: this.gnomeModel
             });
 
             this.editWindMoverFormView = new forms.WindMoverFormView({
@@ -321,6 +325,7 @@ define([
                 id: 'add-random-mover',
                 collection: this.randomMovers,
                 defaults: this.options.defaultRandomMover,
+                gnomeModel: this.gnomeModel
             });
 
             this.editRandomMoverFormView = new forms.RandomMoverFormView({
@@ -333,6 +338,7 @@ define([
                 id: 'add-surface-release-spill',
                 collection: this.surfaceReleaseSpills,
                 defaults: this.options.defaultSurfaceReleaseSpill,
+                gnomeModel: this.gnomeModel
             });
 
             this.editSurfaceReleaseSpillFormView = new forms.SurfaceReleaseSpillFormView({
@@ -348,9 +354,13 @@ define([
             this.locationFiles.each(function(locationFile) {
                 var html = $(locationFile.get('wizard_html'));
                 var id = html.attr('id');
+                var wizard = _this.locationFileWizards.get(locationFile.id);
 
                 if (html.length && id) {
-                    var formView = new forms.LocationFileWizardFormView({ id: id });
+                    var formView = new forms.LocationFileWizardFormView({
+                        id: id,
+                        model: wizard
+                    });
                     formView.on(forms.FormView.SUBMITTED, this.loadLocationFile);
                     _this.formViews.add(formView);
                 }

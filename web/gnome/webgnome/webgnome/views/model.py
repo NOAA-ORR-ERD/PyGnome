@@ -150,24 +150,14 @@ def configure_long_island(request, model):
     model.movers.add(w_mover)
 
     map_file = os.path.join(
-        request.registry.settings['project_root'],
-        'sample_data',
-        'LongIslandSoundMap.BNA')
+        'location_files', 'long_island', 'data', 'LongIslandSoundMap.BNA')
 
-    # the land-water map
-    model.map = WebMapFromBNA(
-        map_file, refloat_halflife=6 * 3600, name="Long Island Sound")
+    model.add_bna_map(map_file, {
+        'refloat_halflife': 6 * 3600,
+        'name': "Long Island Sound"
+    })
 
     model.uncertain = False
-
-    canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
-    polygons = haz_files.ReadBNA(map_file, "PolygonSet")
-    canvas.set_land(polygons)
-    model.output_map = canvas
-
-    # Save the background image.
-    model.output_map.draw_background()
-    model.output_map.save_background(model.background_image)
 
     return {
         'success': True

@@ -1,9 +1,8 @@
 from cornice.resource import resource, view
-from pyramid.httpexceptions import HTTPBadRequest
 
 from webgnome import util
 from webgnome.model_manager import WebWindMover, WebRandomMover, WebWind
-from webgnome.schema import WindMoverSchema, RandomMoverSchema
+from webgnome import schema
 from webgnome.views.services.base import BaseResource
 
 
@@ -13,7 +12,7 @@ from webgnome.views.services.base import BaseResource
 class WindMover(BaseResource):
     optional_fields = ['active_start', 'active_stop']
 
-    @view(validators=util.valid_model_id, schema=WindMoverSchema)
+    @view(validators=util.valid_model_id, schema=schema.WindMoverSchema)
     def collection_post(self):
         """
         Create a WindMover from a JSON representation.
@@ -24,7 +23,7 @@ class WindMover(BaseResource):
         mover = WebWindMover(**data)
         model.movers.add(mover)
 
-        return mover.to_dict()
+        return schema.WindMoverSchema().bind().serialize(mover.to_dict())
 
     @view(validators=util.valid_model_id)
     def collection_get(self):
@@ -35,7 +34,8 @@ class WindMover(BaseResource):
         model = data.pop('model')
         model_data = model.to_dict(include_movers=True)
 
-        return model_data['wind_movers']
+        return schema.WindMoversSchema().bind().serialize(
+            model_data['wind_movers'])
 
     @view(validators=util.valid_mover_id)
     def get(self):
@@ -44,9 +44,11 @@ class WindMover(BaseResource):
         value.
         """
         model = self.request.validated.pop('model')
-        return model.movers.get(self.id).to_dict()
+        mover = model.movers.get(self.id)
 
-    @view(validators=util.valid_mover_id, schema=WindMoverSchema)
+        return schema.WindMoverSchema().bind().serialize(mover.to_dict())
+
+    @view(validators=util.valid_mover_id, schema=schema.WindMoverSchema)
     def put(self):
         """
         Update an existing WindMover from a JSON representation.
@@ -55,7 +57,7 @@ class WindMover(BaseResource):
         model = data.pop('model')
         mover = model.movers.get(self.id).from_dict(data)
 
-        return mover.to_dict()
+        return schema.WindMoverSchema().bind().serialize(mover.to_dict())
 
     @view(validators=util.valid_mover_id)
     def delete(self):
@@ -71,7 +73,7 @@ class WindMover(BaseResource):
 class RandomMover(BaseResource):
     optional_fields = ['active_start', 'active_stop']
 
-    @view(validators=util.valid_model_id, schema=RandomMoverSchema)
+    @view(validators=util.valid_model_id, schema=schema.RandomMoverSchema)
     def collection_post(self):
         """
         Create a RandomMover from a JSON representation.
@@ -81,7 +83,7 @@ class RandomMover(BaseResource):
         mover = WebRandomMover(**data)
         model.movers.add(mover)
 
-        return mover.to_dict()
+        return schema.RandomMoverSchema().bind().serialize(mover.to_dict())
 
     @view(validators=util.valid_model_id)
     def collection_get(self):
@@ -92,7 +94,8 @@ class RandomMover(BaseResource):
         model = data.pop('model')
         model_data = model.to_dict(include_movers=True)
 
-        return model_data['wind_movers']
+        return schema.RandomMoversSchema().bind().serialize(
+            model_data['random_movers'])
 
     @view(validators=util.valid_mover_id)
     def get(self):
@@ -103,7 +106,7 @@ class RandomMover(BaseResource):
         model = self.request.validated.pop('model')
         return model.movers.get(self.id).to_dict()
 
-    @view(validators=util.valid_mover_id, schema=RandomMoverSchema)
+    @view(validators=util.valid_mover_id, schema=schema.RandomMoverSchema)
     def put(self):
         """
         Update an existing RandomMover from a JSON representation.
@@ -112,7 +115,7 @@ class RandomMover(BaseResource):
         model = data.pop('model')
         mover = model.movers.get(self.id).from_dict(data)
 
-        return mover.to_dict()
+        return schema.RandomMoverSchema().bind().serialize(mover.to_dict())
 
     @view(validators=util.valid_mover_id)
     def delete(self):

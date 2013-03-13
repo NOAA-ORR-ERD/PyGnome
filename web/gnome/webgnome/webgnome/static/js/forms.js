@@ -113,6 +113,8 @@ define([
             }
 
             this.defaults = this.options.defaults;
+            this.gnomeModel = this.options.gnomeModel;
+
             this.setupDatePickers();
             $('.error').tooltip({selector: "a"});
         },
@@ -393,6 +395,8 @@ define([
         initialize: function(options) {
             JQueryUIModalFormView.__super__.initialize.apply(this, [options]);
             var _this = this;
+            var height = this.$el.attr('data-height');
+            var width = this.$el.attr('data-width');
 
             // The default set of UI Dialog widget options. A 'dialog' field
             // may be passed in with `options` containing additional options,
@@ -400,6 +404,8 @@ define([
             var opts = $.extend({
                 zIndex: 5000,
                 autoOpen: false,
+                height: height,
+                width: width,
                 buttons: {
                     Cancel: function() {
                         _this.cancel();
@@ -490,18 +496,11 @@ define([
         },
 
         initialize: function(options) {
-            var opts = _.extend({
-                dialog: {
-                    height: 350,
-                    width: 350
-                }
-            }, options);
-
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
 
             // Have to initialize super super before showing current step.
-            MultiStepFormView.__super__.initialize.apply(this, [opts]);
+            MultiStepFormView.__super__.initialize.apply(this, arguments);
 
             this.annotateSteps();
         },
@@ -595,8 +594,17 @@ define([
             return {wizard: this.model};
         },
 
+        loadLocationFile: function() {
+            new models.GnomeModelFromLocationFile({
+                id: this.model.id
+            }).save().then(function() {
+                this.trigger(LocationFileWizardFormView.FINISHED);
+            });
+        },
+
         finish: function() {
             console.log('Finished');
+            this.model.save().then(this.loadLocationFile);
         },
 
         showReferences: function() {
@@ -1569,7 +1577,9 @@ define([
          method is called, so we need to reapply them.
          */
         show: function() {
-            this.model = new models.WindMover(this.defaults);
+            this.model = new models.WindMover(this.defaults, {
+                gnomeModel: this.gnomeModel
+            });
             this.setupModelEvents();
             this.model.on('sync', this.closeDialog);
             AddWindMoverFormView.__super__.show.apply(this);
@@ -1673,7 +1683,9 @@ define([
         },
 
         show: function(coords) {
-            this.model = new models.SurfaceReleaseSpill(this.defaults);
+            this.model = new models.SurfaceReleaseSpill(this.defaults, {
+                gnomeModel: this.gnomeModel
+            });
             this.setupModelEvents();
             AddSurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
         }
@@ -1764,7 +1776,9 @@ define([
         },
 
         show: function() {
-            this.model = new models.RandomMover(this.defaults);
+            this.model = new models.RandomMover(this.defaults, {
+                gnomeModel: this.gnomeModel
+            });
             this.setupModelEvents();
             AddRandomMoverFormView.__super__.show.apply(this, arguments);
         },

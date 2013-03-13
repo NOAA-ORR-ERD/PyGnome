@@ -163,15 +163,6 @@ class WebWind(Wind, Serializable):
     def timeseries(self, value):
         self.set_timeseries(value, units=self.user_units)
 
-    def timeseries_to_dict(self):
-        series = []
-
-        for wind_value in self.timeseries:
-            dt = wind_value[0].astype(object)
-            series.append((dt, wind_value[1][0], wind_value[1][1]))
-
-        return series
-
 
 class WebWindMover(WindMover, BaseWebObject):
     """
@@ -492,10 +483,11 @@ class WebModel(Model, BaseWebObject):
         surface_spills = data.get('surface_release_spills', None)
 
         if map_data:
-            filename = map_data.pop('filename')
-            # Ignore map bounds - will be set from the source file.
+            relative_path = map_data.pop('relative_path')
+            # Ignore map bounds and filename - will be set from the source file.
             map_data.pop('map_bounds', None)
-            self.add_bna_map(filename, map_data)
+            map_data.pop('filename', None)
+            self.add_bna_map(relative_path, map_data)
 
         if wind_movers:
             for mover_data in wind_movers:
