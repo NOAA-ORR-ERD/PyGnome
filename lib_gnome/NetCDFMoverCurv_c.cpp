@@ -243,8 +243,8 @@ Boolean NetCDFMoverCurv_c::VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticS
 				this->className, uStr, vStr, fNumRows-indices.v-1, indices.h);
 		//if (depthIndex1>0 || !(depthIndex2==UNASSIGNEDINDEX))
 		if (fVar.gridType!=TWO_D)
-			sprintf(diagnosticStr, " [grid: %s, u vel: %s m/s, v vel: %s m/s], file indices : [%ld, %ld, %ld]",
-					this->className, uStr, vStr, fNumRows-indices.v-1, indices.h, depthIndex1);
+			sprintf(diagnosticStr, " [grid: %s, u vel: %s m/s, v vel: %s m/s], file indices : [%ld, %ld, %ld], total depth : %lf",
+					this->className, uStr, vStr, fNumRows-indices.v-1, indices.h, depthIndex1, totalDepth);
 	}
 	else
 	{
@@ -498,8 +498,30 @@ float NetCDFMoverCurv_c::GetTotalDepth(WorldPoint refPoint,long ptIndex)
 	}
 	else 
 	{
-		if (fDepthsH) totalDepth = INDEXH(fDepthsH,ptIndex);
-	}
+		double depthAtPoint = 0;
+		long ptIndex1,ptIndex2,ptIndex3; 
+		float depth1,depth2,depth3;
+		InterpolationVal interpolationVal;
+		FLOATH depthsHdl = 0;
+		
+		interpolationVal = ((TTriGridVel*)fGrid)->GetInterpolationValues(refPoint);
+		depthsHdl = ((TTriGridVel3D*)fGrid)->GetDepths();
+		if (!depthsHdl || interpolationVal.ptIndex1<0 ) 
+			//return -1;	// some error alert, no depth info to check
+		{if (fDepthsH) totalDepth = INDEXH(fDepthsH,ptIndex); 
+			return totalDepth;}
+		//if (fDepthsH)
+		{
+			depth1 = (*depthsHdl)[interpolationVal.ptIndex1];
+			depth2 = (*depthsHdl)[interpolationVal.ptIndex2];
+			depth3 = (*depthsHdl)[interpolationVal.ptIndex3];
+			totalDepth = interpolationVal.alpha1*depth1 + interpolationVal.alpha2*depth2 + interpolationVal.alpha3*depth3;
+		}
+	}	
+	//else 
+	//{
+		//if (fDepthsH) totalDepth = INDEXH(fDepthsH,ptIndex);
+	//}
 	return totalDepth;
 	
 }

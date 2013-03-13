@@ -389,8 +389,7 @@ OSErr OSSMTimeValue_c::ReadNDBCWind (char *path)
 	
 	numDataLines = numLines - numHeaderLines;
 	
-    this->SetUserUnits(kKnots);	//check this
-	conversionFactor = KNOTSTOMETERSPERSEC;
+    this->SetUserUnits(kMetersPerSec);	//check this
 	
 	timeValues = (TimeValuePairH)_NewHandle(numDataLines * sizeof(TimeValuePair));
 	if (!timeValues)
