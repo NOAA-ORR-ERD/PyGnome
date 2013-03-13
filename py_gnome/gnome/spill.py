@@ -17,6 +17,7 @@ from datetime import timedelta
 import numpy as np
 from gnome import basic_types
 from gnome.gnomeobject import GnomeObject
+from gnome.utilities import serializable
 
 class ArrayType(object):
     def __init__(self, shape, dtype, initial_value=None):
@@ -35,6 +36,14 @@ class Spill(GnomeObject):
     status_codes = ArrayType( (), basic_types.status_code_type,
                               basic_types.oil_status.in_water)
     spill_num = ArrayType( (), basic_types.id_type)
+
+
+    # Should ArrayType objects be saved? Can they be updated?
+    _update = ['num_elements','on']
+    _create = []
+    _create.extend(_update)
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add( create=_create, update=_update)
 
     @property
     def array_types(self):
@@ -118,13 +127,18 @@ class Spill(GnomeObject):
             if array_type.initial_value != None:
                 arrays[name][:] = array_type.initial_value
 
-class FloatingSpill(Spill):
+class FloatingSpill(Spill, serializable.Serializable):
     """
     spill for floating objects
 
     all this does is add the 'windage' parameter
     """
     windages = ArrayType( (), basic_types.windage_type)
+    
+    _update= ['windage_range','windage_persist']
+    _create= []
+    _create.extend(_update) 
+    state  = copy.deepcopy(Spill.state)
     
     def __init__(self,
                  windage_range=(0.01, 0.04),
@@ -140,6 +154,13 @@ class SurfaceReleaseSpill(FloatingSpill):
     non-weathering particles
 
     """
+    _update= ['start_position','release_time','end_position','end_release_time',
+              'num_released', 'not_called_yet', 'prev_release_pos','delta_pos']
+    _create= []
+    _create.extend(_update)
+    state  = copy.deepcopy(FloatingSpill.state)
+    state.add(update=_update, create=_create)
+     
     def __init__(self,
                  num_elements,
                  start_position,
