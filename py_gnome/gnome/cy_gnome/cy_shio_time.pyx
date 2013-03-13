@@ -78,9 +78,6 @@ cdef class CyShioTime(object):
         def __set__(self,value):
             self.shio.fScaleFactor = value
     
-        
-    id = property( lambda self: id(self)) 
-    
     def __repr__(self):
         """
         Return an unambiguous representation of this object so it can be recreated 

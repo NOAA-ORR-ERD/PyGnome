@@ -24,6 +24,13 @@ water_current_type = np.float64
 datetime_value_2d = np.dtype([('time', 'datetime64[s]'), 
                               ('value', mover_type,(2,))], align=True)
 
+# enums that are same as C++ values are defined in cy_basic_types
+# Define enums that are independent of C++ here so we don't have to recompile code
+"""
+Define enum for type of wind_source
+"""
+wind_datasource = enum(undefined=0, file=1, manual=2, nws=3, buoy=4)
+
 #----------------------------------------------------------------
 # Mirror C++ structures, following are used by cython code to access C++ methods/classes
 seconds = np.uint32 # model time is going to be given in seconds
