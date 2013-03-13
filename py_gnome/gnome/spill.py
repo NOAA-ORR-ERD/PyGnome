@@ -139,6 +139,7 @@ class FloatingSpill(Spill, serializable.Serializable):
     _create= []
     _create.extend(_update) 
     state  = copy.deepcopy(Spill.state)
+    state.add(update=_update, create=_create)
     
     def __init__(self,
                  windage_range=(0.01, 0.04),
@@ -148,18 +149,32 @@ class FloatingSpill(Spill, serializable.Serializable):
         self.windage_range = windage_range
         self.windage_persist = windage_persist
 
-class SurfaceReleaseSpill(FloatingSpill):
+class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
     """
     The simplest spill source class  --  a point release of floating
     non-weathering particles
 
     """
-    _update= ['start_position','release_time','end_position','end_release_time',
-              'num_released', 'not_called_yet', 'prev_release_pos','delta_pos']
-    _create= []
+    _update= ['start_position','release_time','end_position','end_release_time']
+    _create= ['num_released', 'not_called_yet', 'prev_release_pos','delta_pos'] # not sure these should be user update able
     _create.extend(_update)
     state  = copy.deepcopy(FloatingSpill.state)
     state.add(update=_update, create=_create)
+    
+    @classmethod
+    def new_from_dict(cls, dict_):
+        new_obj = cls(num_elements=dict_.pop('num_elements'),
+                      start_position=dict_.pop('start_position'),
+                      release_time=dict_.pop('release_time'),
+                      end_position=dict_.pop('end_position',None),
+                      end_release_time=dict_.pop('end_release_time',None),
+                      windage_range=dict_.pop('windage_range'),
+                      windage_persist=dict_.pop('windage_persist'))
+        
+        for key in dict_.keys():
+            setattr(new_obj, key, dict_[key])
+            
+        return new_obj
      
     def __init__(self,
                  num_elements,
