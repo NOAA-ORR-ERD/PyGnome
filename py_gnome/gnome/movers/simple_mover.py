@@ -11,19 +11,17 @@ at all time.
 
 
 """
+import copy
 
 import numpy as np
 from numpy import random
 
 from gnome import basic_types
 from gnome.movers import Mover
-
-## this allows for this to be changed in the future.
 from gnome.utilities.projections import FlatEarthProjection as proj
-from datetime import datetime
-from time import gmtime
+from gnome.utilities import serializable
 
-class SimpleMover(Mover):
+class SimpleMover(Mover, serializable.Serializable):
     """
     simple_mover
     
@@ -31,9 +29,11 @@ class SimpleMover(Mover):
     
     (not all that different than a constant wind mover, now that I think about it)    
     """
-    def __init__(self, velocity, uncertainty_scale=0.5,
-                 active_start= datetime( *gmtime(0)[:7] ), 
-                 active_stop = datetime.max):
+    state = copy.deepcopy(Mover.state)
+    state.add(update=['uncertainty_scale','velocity'], 
+              create=['uncertainty_scale','velocity'])
+    
+    def __init__(self, velocity, uncertainty_scale=0.5, *args, **kwargs):
         """
         simple_mover (velocity)
 
@@ -46,10 +46,16 @@ class SimpleMover(Mover):
                                     dtype = basic_types.mover_type, # use this, to be compatible with whatever we are using for location
                                     ).reshape((3,))
         self.uncertainty_scale = uncertainty_scale
-        super(SimpleMover,self).__init__(active_start, active_stop)
+        super(SimpleMover,self).__init__( *args, **kwargs)
     def __repr__(self):
         return 'SimpleMover(<%s>)' % (self.id)
 
+    def velocity_to_dict(self):
+        """
+        convert velocity back into a tuple
+        """
+        return tuple( self.velocity.tolist() )
+        
     def get_move(self, spill, time_step, model_time, uncertain_spill_number=0):
         """
         moves the particles defined in the spill object

@@ -1,6 +1,11 @@
+import os
+import copy
+from datetime import datetime, timedelta
+from time import gmtime
+
 import numpy as np
 
-from gnome.utilities import time_utils, transforms, convert
+from gnome.utilities import time_utils, transforms, convert, serializable
 from gnome import basic_types, GnomeObject
 from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime       #@UnresolvedImport @UnusedImport IGNORE:W0611
@@ -11,32 +16,32 @@ from gnome.cy_gnome import cy_gridwind_mover
 from gnome import environment
 from gnome.utilities import rand    # not to confuse with python random module
 
-import os
-
-from datetime import datetime, timedelta
-from time import gmtime
-
 class Mover(GnomeObject):
     """
     Base class from which all Python movers can inherit
+    :param on: boolean as to whether the object is on or not
     :param active_start: datetime when the mover should be active
     :param active_stop: datetime after which the mover should be inactive
     It defines the interface for a Python mover. The model expects the methods defined here. 
     The get_move(...) method needs to be implemented by the derived class.  
     """
-    def __init__(self, 
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0)):   # default min + max values for timespan
+    state = serializable.State(update=['on','active_start','active_stop'],
+                               create=['on','active_start','active_stop'],
+                               read=['active'] )
+    
+    def __init__(self, *args, **kwargs):   # default min + max values for timespan
         """
         During init, it defaults active = True
         """
         self._active = True  # initialize to True, though this is set in prepare_for_model_step for each step
-        self.on = True          # turn the mover on / off for the run
+        self.on = kwargs.pop('on',True)  # turn the mover on / off for the run
+        active_start = kwargs.pop('active_start',datetime( *gmtime(0)[:6] ))
+        active_stop  = kwargs.pop('active_stop', datetime(2038,1,18,0,0,0))
         if active_stop <= active_start:
             raise ValueError("active_start should be a python datetime object strictly smaller than active_stop")
         
         self.active_start = active_start
-        self.active_stop  = active_stop
+        self.active_stop = active_stop
 
     # Methods for active property definition
     @property
@@ -107,8 +112,8 @@ class CyMover(Mover):
     We assumes any derived class will instantiate a 'mover' object that
     has methods like: prepare_for_model_run, prepare_for_model_step,
     """
-    def __init__(self, active_start= datetime( *gmtime(0)[:6] ), active_stop = datetime(2038,1,18,0,0,0)):
-        super(CyMover,self).__init__(active_start, active_stop)
+    def __init__(self, *args, **kwargs):
+        super(CyMover,self).__init__(*args, **kwargs)
         
         # initialize variables for readability, tough self.mover = None produces errors, so that is not init here
         self.model_time = 0 
@@ -201,7 +206,7 @@ class CyMover(Mover):
         if self.active and self.on:
             self.mover.model_step_is_done()
 
-class WindMover(CyMover):
+class WindMover(CyMover, serializable.Serializable):
     """
     Python wrapper around the Cython wind_mover module.
     This class inherits from CyMover and contains CyWindMover 
@@ -214,13 +219,35 @@ class WindMover(CyMover):
     # Another way to state this, is the get_move operation is linear. This is why the following class level attributes are defined.
     _windage_is_set = False         # class scope, independent of instances of WindMover  
     _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
-    def __init__(self, wind, 
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0),
-                 uncertain_duration=10800,
-                 uncertain_time_delay=0, 
-                 uncertain_speed_scale=2.,
-                 uncertain_angle_scale=0.4):
+    
+    _common = ['uncertain_duration','uncertain_time_delay','uncertain_speed_scale','uncertain_angle_scale']
+    _update = ['wind']
+    _update.extend(_common)
+    _create = ['wind_id']
+    _create.extend(_common)
+    
+    state = copy.deepcopy(CyMover.state)
+    state.add(update=_update, create=_create)
+    
+    @classmethod
+    def new_from_dict(cls, dict):
+        """
+        define in WindMover and check wind_id matches wind
+        """
+        wind_id = dict.pop('wind_id')
+        if dict.get('wind').id != wind_id:
+            raise ValueError("id of wind object does not match the wind_id parameter")
+        
+        return super(WindMover,cls).new_from_dict(dict)
+    
+    def wind_id_to_dict(self):
+        """
+        used only for storing state so no wind_id_from_dict is defined. This
+        is not a read/write attribute. Only defined for serializable_state
+        """
+        return self.wind.id
+    
+    def __init__(self, wind, **kwargs):
         """
         :param wind: wind object  -- provides the wind time series for the mover
         :param active_start: datetime object for when the mover starts being active.
@@ -229,14 +256,16 @@ class WindMover(CyMover):
         :param uncertain_time_delay:   when does the uncertainly kick in.
         :param uncertain_speed_scale:  Scale for how uncertain the wind speed is
         :param uncertain_angle_scale:  Scale for how uncertain the wind direction is
+        :param active_start: mover active after this time: defaults to datetime( *gmtime(0)[:6] ), 
+        :param active_stop: mover inactive after this time: defaults to datetime(2038,1,18,0,0,0),
         """
         self.wind = wind
-        self.mover = CyWindMover(uncertain_duration=uncertain_duration, 
-                                 uncertain_time_delay=uncertain_time_delay, 
-                                 uncertain_speed_scale=uncertain_speed_scale,  
-                                 uncertain_angle_scale=uncertain_angle_scale)
+        self.mover = CyWindMover(uncertain_duration=kwargs.pop('uncertain_duration',10800), 
+                                 uncertain_time_delay=kwargs.pop('uncertain_time_delay',0), 
+                                 uncertain_speed_scale=kwargs.pop('uncertain_speed_scale',2.),  
+                                 uncertain_angle_scale=kwargs.pop('uncertain_angle_scale',0.4) )
         self.mover.set_ossm(self.wind.ossm)
-        super(WindMover,self).__init__(active_start, active_stop)
+        super(WindMover,self).__init__(**kwargs)
 
     def __repr__(self):
         """
@@ -351,19 +380,40 @@ def wind_mover_from_file(filename, **kwargs):
 
     return wm
 
+def constant_wind_mover(speed, dir, units='m/s'):
+    """
+    utility function to create a mover with a constant wind
 
-class RandomMover(CyMover):
+    :param speed: wind speed
+    :param dir:   wind direction in degrees true
+                  (direction from, following the meteorological convention)
+    :param units='m/s': the units that the input wind speed is in.
+                        options: 'm/s', 'knot', 'mph', others...
+
+
+    :returns WindMover: returns a gnome.movers.WindMover object all set up.
+    """
+    series = np.zeros((1,), dtype=basic_types.datetime_value_2d)
+    # note: if there is ony one entry, the time is arbitrary
+    series[0] = (datetime.now(), ( speed, dir) )
+    wind = environment.Wind(timeseries=series, units=units)
+    w_mover = WindMover(wind)
+    return w_mover
+
+
+class RandomMover(CyMover, serializable.Serializable):
     """
     This mover class inherits from CyMover and contains CyRandomMover
 
     The real work is done by CyRandomMover.
     CyMover sets everything up that is common to all movers.
     """
-    def __init__(self, diffusion_coef=100000, 
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0)):
-        self.mover = CyRandomMover(diffusion_coef=diffusion_coef)
-        super(RandomMover,self).__init__(active_start, active_stop)
+    state = copy.deepcopy(CyMover.state)
+    state.add(update=['diffusion_coef'], create=['diffusion_coef'])
+    
+    def __init__(self, *args, **kwargs):
+        self.mover = CyRandomMover(diffusion_coef=kwargs.pop('diffusion_coef',100000))
+        super(RandomMover,self).__init__(*args, **kwargs)
 
     @property
     def diffusion_coef(self):
@@ -382,9 +432,7 @@ class RandomMover(CyMover):
 
 class CatsMover(CyMover):
     
-    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None,
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0)):
+    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None, ossm_file=None, format='uv', *args, **kwargs):
         """
         
         """
@@ -395,28 +443,39 @@ class CatsMover(CyMover):
         self.mover = cy_cats_mover.CyCatsMover()
         self.mover.read_topology(curr_file)
         
+        if shio_file is not None and ossm_file is not None:
+            raise ValueError("Cannot provide both OSSM and Shio file for tides.")
+        
         if shio_file is not None:
             if not os.path.exists(shio_file):
                 raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
             else:
-                self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
-                self.mover.set_shio(self.shio)
-                #self.shio.set_shio_yeardata_path(shio_yeardata_file)
+                self.tides = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
+                self.mover.set_shio(self.tides)
+                #self.tides.set_shio_yeardata_path(shio_yeardata_file)
             if shio_yeardata_file is not None:
                 if not os.path.exists(shio_yeardata_file):
                     raise ValueError("Path for Shio Year Data does not exist: {0}".format(shio_yeardata_file))
                 else:
-                    self.shio.set_shio_yeardata_path(shio_yeardata_file)
+                    self.tides.set_shio_yeardata_path(shio_yeardata_file)
             else:
                 raise ValueError("Shio data requires path for Shio Year Data: {0}".format(shio_yeardata_file))
         
-        super(CatsMover,self).__init__(active_start, active_stop)
+        if ossm_file is not None:
+            if not os.path.exists(ossm_file):
+                raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
+            else:
+                ts_format = convert.tsformat(format)
+                self.tides = CyOSSMTime(file=ossm_file,file_contains=ts_format)
+                self.mover.set_ossm(self.tides)
+        
+        super(CatsMover,self).__init__(*args, **kwargs)
         
     def __repr__(self):
         """
         unambiguous representation of object
         """
-        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.shio.filename)
+        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.tides.filename)
         return info
      
     # Properties

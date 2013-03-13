@@ -110,11 +110,11 @@ class Wind(GnomeObject):
     # Add following meta-data about timeseries
     @property
     def name(self):
-        return self._name
+        return self.name
     
     @name.setter
     def name(self, val):
-        self._name = val
+        self.name = val
         
     
     

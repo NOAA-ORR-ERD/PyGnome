@@ -2,9 +2,13 @@ import os
 
 import unittest, pytest
 
+sqlalchemy = pytest.importorskip('sqlalchemy')
+zope = pytest.importorskip('zope')
+zope.sqlalchemy = pytest.importorskip('zope.sqlalchemy')
+transaction = pytest.importorskip('transaction')
+
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
-import transaction
 
 from gnome.db.oil_library.models import (
     DBSession,

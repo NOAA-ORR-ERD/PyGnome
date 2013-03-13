@@ -85,18 +85,24 @@ cdef class CyOSSMTime(object):
         def __set__(self, value):
             self._set_time_value_handle(value)
     
+    property filename:
+        def __get__(self):
+            return <bytes>self.time_dep.fileName
+
     property scale_factor:
         def __get__(self):
             return self.time_dep.fScaleFactor
         
         def __set__(self,value):
-            self.time_dep.fScaleFactor = value
-            
-    property filename:
+            self.time_dep.fScaleFactor = value        
+
+
+    property station_location:
         def __get__(self):
-            cdef bytes fileName
-            fileName = self.time_dep.fileName
-            return fileName
+            return np.array((0,0,0), dtype=basic_types.world_point)    # will replace this once OSSMTime contains values
+        
+        def __set__(self, value):
+            self.station_location = value
     
     def __repr__(self):
         """
@@ -111,7 +117,7 @@ cdef class CyOSSMTime(object):
         info  = "CyOSSMTime object - filename={0.filename}, timeseries=<see timeseries attribute>".format(self)
         
         return info
-
+    
     def get_time_value(self, modelTime):
         """
           GetTimeValue - for a specified modelTime or array of model times, it returns the values
