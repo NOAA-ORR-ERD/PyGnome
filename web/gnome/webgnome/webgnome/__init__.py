@@ -33,7 +33,7 @@ def main(global_config, **settings):
     settings['package_root'] = os.path.abspath(os.path.dirname(__file__))
     settings['project_root'] = os.path.dirname(settings['package_root'])
     settings['location_file_dir'] = os.path.join(settings['package_root'],
-                                                  'location_files')
+                                                 'location_files')
     settings['data_dir'] = os.path.join(settings['package_root'], 'data')
     settings['model_images_url_path'] = settings['model_data_dir']
     settings['model_data_dir'] = os.path.join(
@@ -57,7 +57,6 @@ def main(global_config, **settings):
 
     config.add_route('show_model', '/')
     config.add_route('long_island', '/long_island')
-    config.add_route('long_island_manual', '/long_island_manual')
 
     config.include("cornice")
 

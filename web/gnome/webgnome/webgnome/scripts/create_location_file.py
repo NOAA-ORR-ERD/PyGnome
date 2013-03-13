@@ -1,7 +1,6 @@
 import argparse
 import sys
 import os
-import errno
 
 from pyramid.paster import bootstrap
 from webgnome import util

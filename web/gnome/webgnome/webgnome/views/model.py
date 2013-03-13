@@ -3,7 +3,6 @@ import json
 import os
 import gnome
 import gnome.basic_types
-import gnome.utilities.map_canvas
 import numpy
 
 from hazpy.file_tools import haz_files
@@ -11,7 +10,6 @@ from pyramid.view import view_config
 from webgnome import schema
 from webgnome import util
 from webgnome.model_manager import (
-    WebMapFromBNA,
     WebRandomMover,
     WebSurfaceReleaseSpill,
     WebWindMover,
@@ -113,52 +111,3 @@ def show_model(request):
         data['expected_time_steps_json'] = util.to_json(model.timestamps)
 
     return data
-
-
-@view_config(route_name='long_island_manual', renderer='gnome_json')
-@util.require_model
-def configure_long_island(request, model):
-    """
-    Configure the user's current model with the parameters of the Long Island
-    script.
-
-    XXX: Deprecated, but still useful to generate the Long Island save-file
-    for testing. At least until we have a better way to create that file ...
-    """
-    spill = WebSurfaceReleaseSpill(
-        name="Long Island Spill",
-        num_elements=1000,
-        start_position=(-72.419992, 41.202120, 0.0),
-        release_time=model.start_time)
-
-    model.spills.add(spill)
-
-    start_time = model.start_time
-
-    r_mover = WebRandomMover(diffusion_coef=500000)
-    model.movers.add(r_mover)
-
-    series = numpy.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
-    series[0] = (start_time, (30, 50) )
-    series[1] = (start_time + datetime.timedelta(hours=18), (30, 50))
-    series[2] = (start_time + datetime.timedelta(hours=30), (20, 25))
-    series[3] = (start_time + datetime.timedelta(hours=42), (25, 10))
-    series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
-
-    wind = WebWind(units='mps', timeseries=series)
-    w_mover = WebWindMover(wind=wind, is_constant=False)
-    model.movers.add(w_mover)
-
-    map_file = os.path.join(
-        'location_files', 'long_island', 'data', 'LongIslandSoundMap.BNA')
-
-    model.add_bna_map(map_file, {
-        'refloat_halflife': 6 * 3600,
-        'name': "Long Island Sound"
-    })
-
-    model.uncertain = False
-
-    return {
-        'success': True
-    }
