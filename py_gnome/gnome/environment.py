@@ -6,6 +6,7 @@ the Wind object defines the Wind conditions for the spill
 import datetime
 import os
 import copy
+from itertools import chain
 
 import numpy as np
 
@@ -37,8 +38,10 @@ class Wind( GnomeObject, serializable.Serializable):
               update=_update)   # no need to copy parent's state in tis case
 
     # list of valid velocity units for timeseries
-    valid_vel_units = unit_conversion.GetUnitNames('Velocity')
-    valid_vel_units.extend([unit_conversion.GetUnitAbbreviation('Velocity',unit_) for unit_ in unit_conversion.GetUnitNames('Velocity')])
+    #valid_vel_units = unit_conversion.GetUnitNames('Velocity')
+    #valid_vel_units.extend([unit_conversion.GetUnitAbbreviation('Velocity',unit_) for unit_ in unit_conversion.GetUnitNames('Velocity')])
+    valid_vel_units = list(chain.from_iterable([item[1] for item in unit_conversion.ConvertDataUnits['Velocity'].values()]))
+    valid_vel_units.extend(unit_conversion.GetUnitNames('Velocity'))
 
     def __init__(self, **kwargs):
         """
