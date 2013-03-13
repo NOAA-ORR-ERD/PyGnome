@@ -1,6 +1,7 @@
 """
 model_manager.py: Manage a pool of running models.
 """
+import copy
 import datetime
 import logging
 import os
@@ -148,20 +149,12 @@ class WebWind(Wind, Serializable):
         super(WebWind, self).__init__(*args, **kwargs)
 
     @property
-    def units(self):
-        return self._user_units
-
-    @units.setter
-    def units(self, value):
-        self._user_units = value
-
-    @property
     def timeseries(self):
-        return self.get_timeseries(units=self.user_units)
+        return self.get_timeseries(units=self.units)
 
     @timeseries.setter
     def timeseries(self, value):
-        self.set_timeseries(value, units=self.user_units)
+        self.set_timeseries(value, units=self.units)
 
 
 class WebWindMover(WindMover, BaseWebObject):
@@ -183,6 +176,10 @@ class WebWindMover(WindMover, BaseWebObject):
         'uncertain_angle_scale_units',
         'uncertain_time_delay'
     ]
+
+    state = copy.deepcopy(WindMover.state)
+    state.add(create=['uncertain_angle_scale_units'],
+              update=['uncertain_angle_scale_units'])
 
     def __init__(self, *args, **kwargs):
         self.is_constant = kwargs.pop('is_constant', True)

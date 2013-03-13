@@ -255,20 +255,24 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(resp.json['wind']['units'], 'mps')
 
         winds = data['wind']['timeseries']
-        self.assertEqual(resp.json['wind']['timeseries'], [
-            [winds[0][0], 10.000000000000004, 30],
-            [winds[1][0], 20, 180.0],
-            [winds[2][0], 30, 270.0]
-        ])
+        json_winds = resp.json['wind']['timeseries']
 
-        self.assertEqual(resp.json['uncertain_duration'], data['uncertain_duration'])
-        self.assertEqual(resp.json['uncertain_time_delay'], data['uncertain_time_delay'])
-        self.assertEqual(resp.json['uncertain_angle_scale'], data['uncertain_angle_scale'])
-        self.assertEqual(resp.json['uncertain_angle_scale_units'], 'deg')
+        for i in range(3):
+            for x in range(3):
+                self.assertAlmostEqual(winds[i][x], json_winds[i][x])
+
+        self.assertEqual(resp.json['uncertain_duration'],
+                         data['uncertain_duration'])
+        self.assertEqual(resp.json['uncertain_time_delay'],
+                         data['uncertain_time_delay'])
+        self.assertEqual(resp.json['uncertain_angle_scale'],
+                         data['uncertain_angle_scale'])
+        self.assertEqual(resp.json['uncertain_angle_scale_units'],
+                         data['uncertain_angle_scale_units'])
         self.assertEqual(resp.json['active_start'],
                          datetime.datetime(*gmtime(0)[:6]).isoformat())
         self.assertEqual(resp.json['active_stop'],
-                         datetime.datetime(2038,1,18,0,0,0).isoformat())
+                         datetime.datetime(2038, 1, 18, 0, 0, 0).isoformat())
 
     def test_wind_mover_update(self):
         data = self.make_wind_mover_data()

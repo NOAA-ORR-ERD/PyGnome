@@ -19,11 +19,14 @@ class WindMover(BaseResource):
         """
         data = self.prepare(self.request.validated)
         model = data.pop('model')
-        data['wind'] = WebWind(**data.pop('wind'))
+        wind_data = data.pop('wind')
+        data['wind'] = WebWind(**wind_data)
         mover = WebWindMover(**data)
         model.movers.add(mover)
+        mover_data = mover.to_dict(do='create')
+        mover_data['wind'] = wind_data
 
-        return schema.WindMoverSchema().bind().serialize(mover.to_dict())
+        return schema.WindMoverSchema().bind().serialize(mover_data)
 
     @view(validators=util.valid_model_id)
     def collection_get(self):
@@ -55,9 +58,11 @@ class WindMover(BaseResource):
         """
         data = self.request.validated
         model = data.pop('model')
-        mover = model.movers.get(self.id).from_dict(data)
+        mover = model.movers.get(self.id)
+        mover.from_dict(data)
+        mover_data = mover.to_dict(do='create')
 
-        return schema.WindMoverSchema().bind().serialize(mover.to_dict())
+        return schema.WindMoverSchema().bind().serialize(mover_data)
 
     @view(validators=util.valid_mover_id)
     def delete(self):
