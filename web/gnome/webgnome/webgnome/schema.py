@@ -211,9 +211,13 @@ class WindSchema(MappingSchema):
 
 class BaseMoverSchema(MappingSchema):
     on = SchemaNode(Bool(), default=True, missing=True)
-    active_start = SchemaNode(LocalDateTime(), default=None, missing=None,
+    active_start = SchemaNode(LocalDateTime(),
+                              default=datetime.datetime(*time.gmtime(0)[:6]),
+                              missing=datetime.datetime(*time.gmtime(0)[:6]),
                               validator=convertable_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), default=None, missing=None,
+    active_stop = SchemaNode(LocalDateTime(),
+                             default=datetime.datetime(2038, 1, 18, 0, 0, 0),
+                             missing=datetime.datetime(2038, 1, 18, 0, 0, 0),
                              validator=convertable_to_seconds)
 
 

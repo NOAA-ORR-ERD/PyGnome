@@ -291,6 +291,7 @@ def valid_location_file_wizard(request):
     handler = location_handlers.get(location, None)
     location_data = location_data.get(location, {})
     wizard_html = location_data.get('wizard_html', None)
+    wizard_json = location_data.get('wizard_json', '')
 
     if not wizard_html or not handler or not hasattr(handler, '__call__'):
         request.errors.add('body', 'location_file_wizard',
@@ -300,6 +301,7 @@ def valid_location_file_wizard(request):
 
     request.validated['wizard_handler'] = handler
     request.validated['wizard_html'] = wizard_html
+    request.validated['wizard_json'] = wizard_json
 
 
 def valid_new_location_file(request):

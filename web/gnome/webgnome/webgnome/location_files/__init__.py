@@ -3,9 +3,9 @@ import logging
 import os
 
 from mako.exceptions import TopLevelLookupException
-from mako.template import Template
 from pyramid.exceptions import ConfigurationError
 from pyramid.mako_templating import PkgResourceTemplateLookup
+from pyramid.path import AssetResolver
 from webgnome import util, helpers
 
 
@@ -16,7 +16,8 @@ def get_location_file_wizard(location):
     """
     Render a wizard file for ``location`` and return the rendered HTML.
     """
-    wizard_file = 'webgnome:location_files/%s/wizard.mak' % location
+    asset_spec = 'webgnome:location_files/%s' % location
+    wizard_file = '%s/wizard.mak' % asset_spec
     lookup = PkgResourceTemplateLookup(
         directories=[wizard_file, 'webgnome:templates'])
 
@@ -24,9 +25,22 @@ def get_location_file_wizard(location):
         template = lookup.get_template(wizard_file)
         html = template.render(h=helpers)
     except (IOError, TopLevelLookupException):
-        html = None
+        html = ''
 
-    return html
+    json_path = AssetResolver().resolve('%s/wizard.json' % location).abspath()
+
+    try:
+        with open(json_path) as f:
+            json_data = json.loads(f.read())
+    except (OSError, IOError, TypeError):
+        json_data = {}
+        if os.path.exists(json_path):
+            logger.exception('Could not open wizard file: %s' % json_path)
+
+    return {
+        'html': html,
+        'json': json_data
+    }
 
 
 def get_location_file_config(location_file_dir, location):
@@ -48,10 +62,11 @@ def get_location_file_config(location_file_dir, location):
             return None
 
     data['filename'] = location
-    html = get_location_file_wizard(location)
+    wizard_data = get_location_file_wizard(location)
 
-    if html:
-        data['wizard_html'] = html
+    if wizard_data:
+        data['wizard_html'] = wizard_data['html']
+        data['wizard_json'] = wizard_data['json']
 
     return data
 
@@ -92,6 +107,10 @@ def includeme(config):
     ignored_location_files = settings['ignored_location_files'].split(',')
     location_files = util.get_location_files(settings.location_file_dir,
                                              ignored_location_files)
+
+    config.add_static_view('static/location_file/images',
+                           'webgnome.location_files:images',
+                           cache_max_age=3600)
 
     for location in location_files:
         data = get_location_file_config(settings.location_file_dir, location)

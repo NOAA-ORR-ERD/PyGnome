@@ -50,8 +50,12 @@ def main():
     series[1] = (start_time + datetime.timedelta(hours=18), (5, 180))
 
     wind = WebWind(timeseries=series, units='m/s')
-    w_mover = gnome.movers.WindMover(wind)
+    w_mover = WebWindMover(wind)
     model.movers += w_mover
+
+    # adding a random mover
+    random_mover = WebRandomMover(diffusion_coef=100000)
+    model.movers += random_mover
 
     # adding a cats shio mover:
 
@@ -67,19 +71,23 @@ def main():
 
     # adding a cats ossm mover
 
-    # ossm_file = os.path.join(boston_data, 'MerrimackMassCoastOSSM.txt')
-    # curr_file = os.path.join(boston_data, 'MerrimackMassCoast.CUR')
-    # c_mover = gnome.movers.CatsMover(curr_file, ossm_file=ossm_file)
-    # # but do need to scale (based on river stage)
-    # c_mover.scale = True
-    # c_mover.scale_refpoint = (-70.65, 42.58333)
-    # c_mover.scale_value = 1.
-    # model.movers += c_mover
+    ossm_file = os.path.join(boston_data, 'MerrimackMassCoastOSSM.txt')
+    curr_file = os.path.join(boston_data, 'MerrimackMassCoast.CUR')
+    c_mover = gnome.movers.CatsMover(curr_file, ossm_file=ossm_file)
+    # but do need to scale (based on river stage)
+    c_mover.scale = True
+    c_mover.scale_refpoint = (-70.65, 42.58333)
+    c_mover.scale_value = 1.
+    model.movers += c_mover
 
     # adding a cats mover
 
+    class NamedCatsMover(gnome.movers.CatsMover):
+        def __create_id(self):
+            self._id = 'sewage_outfall'
+
     curr_file = os.path.join(boston_data, 'MassBaySewage.CUR')
-    c_mover = gnome.movers.CatsMover(curr_file)
+    c_mover = NamedCatsMover(curr_file)
     # but do need to scale (based on river stage)
     c_mover.scale = True
     c_mover.scale_refpoint = (-70.78333, 42.39333)
@@ -93,10 +101,10 @@ def main():
 
     # adding a spill
 
-    spill = gnome.spill.SurfaceReleaseSpill(num_elements=1000,
-                                            start_position=(
-                                                -70.911432, 42.369142, 0.0),
-                                            release_time=start_time)
+    spill = WebSurfaceReleaseSpill(num_elements=1000,
+                                   start_position=(
+                                       -70.911432, 42.369142, 0.0),
+                                   release_time=start_time)
 
     model.spills += spill
 

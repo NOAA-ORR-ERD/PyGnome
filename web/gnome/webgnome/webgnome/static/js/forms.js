@@ -407,13 +407,13 @@ define([
                 height: height,
                 width: width,
                 buttons: {
+                    Save: function() {
+                        _this.submit();
+                    },
+
                     Cancel: function() {
                         _this.cancel();
                     },
-
-                    Save: function() {
-                        _this.submit();
-                    }
                 },
                 close: this.close,
                 beforeClose: this.beforeClose
@@ -632,6 +632,15 @@ define([
                 this.showReferenceForm(referenceForm);
             } else {
                 this.widget.show();
+                var height = step.data('height');
+                var width = step.data('width');
+
+                if (height) {
+                    this.$el.dialog('option', 'height', parseInt(height));
+                }
+                if (width) {
+                    this.$el.dialog('option', 'width', parseInt(width));
+                }
             }
         },
 

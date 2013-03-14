@@ -55,7 +55,8 @@ class LocationFileWizard(BaseResource):
                       util.valid_location_file_wizard])
     def get(self):
         return {
-            'html': self.request.validated['wizard_html']
+            'html': self.request.validated['wizard_html'],
+            'json': self.request.validated['wizard_json']
         }
 
     @view(validators=[util.valid_model_id, util.valid_location_file,

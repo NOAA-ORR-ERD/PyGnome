@@ -437,9 +437,9 @@ define([
 
             // Create a LocationFileWizard for every LocationFile
             this.locationFiles.each(function(location) {
-                _this.locationFileWizards.add({
-                    id: location.id
-                });
+                var wizard_json = location.get('wizard_json') || {};
+                wizard_json.id = location.id;
+                _this.locationFileWizards.add(wizard_json);
             });
         },
 

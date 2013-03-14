@@ -30,6 +30,7 @@ class Model(BaseResource):
         Update settings for the current model.
         """
         model = self.request.validated['model']
+        self.request.validated.pop('map', None)
         model.from_dict(self.request.validated)
 
         return schema.ModelSchema().bind().serialize(model.to_dict())

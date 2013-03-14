@@ -49,8 +49,11 @@
 </%def>
 
 
-<%def name="step(reference_form=None)">
-    <div class="step hidden" ${'data-reference-form=%s' % reference_form if reference_form else ''}>
+<%def name="step(height=None, width=None, reference_form=None)">
+    <div class="step hidden"
+        ${'data-height=%s' % height if height else ''}
+        ${'data-width=%s' % width if width else ''}
+        ${'data-reference-form=%s' % reference_form if reference_form else ''}>
         ## Let the caller use this def like a tag, within interior content.
         ${caller.body()}
     </div>

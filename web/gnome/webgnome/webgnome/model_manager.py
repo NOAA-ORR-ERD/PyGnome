@@ -286,7 +286,8 @@ class WebModel(Model, BaseWebObject):
     """
     mover_keys = {
         WebWindMover: 'wind_movers',
-        WebRandomMover: 'random_movers'
+        WebRandomMover: 'random_movers',
+        # gnome.movers.CatsMover: 'cats_movers'
     }
 
     spill_keys = {

@@ -3,10 +3,8 @@
 
 <%def name='title()'>Welcome to Boston and vicinity</%def>
 <%def name='form_id()'>boston-wizard</%def>
-<%def name='height()'>475</%def>
-<%def name='width()'>350</%def>
 <%def name='references()'>
-    Some references.
+    References show up in a dialog.
 </%def>
 
 <%def name='intro()'>
@@ -34,16 +32,16 @@
     </%defs:buttons>
 </%defs:step>
 
-<%defs:step>
+<%defs:step height="383" width="480">
     <h5>Sewage Outflow</h5>
 
     <p>Wastewater effluent will begin to flow into Massachusetts Bay through
         the Massachusetts Water Resource Authority's Effluent Outfall Tunnel
         in September, 2000.</p>
 
-    <img class='align-left' src='/static/location/boston/outfall.jpg'/>
+    <img style="float:right;" src='/static/location_file/boston/outfall.jpg'/>
 
-    <p>The sewage outfall is predicted to have very minimal effects limited
+    <p> The sewage outfall is predicted to have very minimal effects limited
         to the highlighted area in the picture. Any outfall driven currents
         would most likely be weak and noticed only in winter during low wind
         conditions.</p>
@@ -53,7 +51,7 @@
     ${defs.form_control(h.select('sewage_outfall', 'no', (
         ('no', 'No surface outfall effects'),
         ('yes', 'Add surface outfall effects')),
-        class_='type input-small', data_value='wizard.add_sewage_outfall'))}
+        data_value='wizard.add_sewage_outfall'))}
 
     <%defs:buttons>
         ${defs.back_btn()}

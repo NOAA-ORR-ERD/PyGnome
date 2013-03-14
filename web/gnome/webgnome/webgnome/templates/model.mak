@@ -241,7 +241,7 @@
                 defaultCustomMap: ${default_custom_map | n},
                 mapIsLoaded: ${"true" if map_is_loaded else "false"},
                 locationFiles: ${location_file_json | n},
-                animationThreshold: 10 // Milliseconds
+                animationThreshold: 30 // Milliseconds
             };
 
             $('#map').imagesLoaded(function() {
