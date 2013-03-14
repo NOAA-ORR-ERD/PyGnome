@@ -289,7 +289,8 @@ def valid_location_file_wizard(request):
     location_handlers = request.registry.settings.get('location_handlers')
     location_data = request.registry.settings.get('location_file_data')
     handler = location_handlers.get(location, None)
-    wizard_html = location_data.get(location, None).get('wizard_html', None)
+    location_data = location_data.get(location, {})
+    wizard_html = location_data.get('wizard_html', None)
 
     if not wizard_html or not handler or not hasattr(handler, '__call__'):
         request.errors.add('body', 'location_file_wizard',
@@ -507,7 +508,7 @@ def get_model_image_url(request, model, filename):
 
     These are files in the model's base directory.
     """
-    return request.static_url('webgnome:static/%s/%s/img/%s' % (
+    return request.static_url('webgnome:static/%s/%s/%s' % (
         request.registry.settings['model_images_url_path'],
         model.id,
         filename))

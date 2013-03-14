@@ -25,6 +25,10 @@ def _default_schema_json(schema_cls):
                       default=util.json_encoder)
 
 
+def _serialize(objs, schema):
+    return [schema().bind().serialize(obj) for obj in objs]
+
+
 @view_config(route_name='show_model', renderer='model.mak')
 def show_model(request):
     """
@@ -44,8 +48,11 @@ def show_model(request):
     model_id = request.session.get(settings.model_session_key, None)
     model, created = settings.Model.get_or_create(model_id)
     model_data = model.to_dict()
-    surface_release_spills = model_data.pop('surface_release_spills')
-    wind_movers = model_data.pop('wind_movers')
+    surface_release_spills = _serialize(
+        model_data.pop('surface_release_spills'),
+        schema.SurfaceReleaseSpillSchema)
+    wind_movers = _serialize(
+        model_data.pop('wind_movers'), schema.WindMoverSchema)
     random_movers = model_data.pop('random_movers')
     model_settings = util.SchemaForm(schema.ModelSchema, model_data)
     map_data = model_data.get('map', None)

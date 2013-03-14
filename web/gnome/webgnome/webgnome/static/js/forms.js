@@ -595,15 +595,16 @@ define([
         },
 
         loadLocationFile: function() {
+            var _this = this;
+
             new models.GnomeModelFromLocationFile({
-                id: this.model.id
+                location_name: this.model.id
             }).save().then(function() {
-                this.trigger(LocationFileWizardFormView.FINISHED);
+                _this.trigger(LocationFileWizardFormView.FINISHED);
             });
         },
 
         finish: function() {
-            console.log('Finished');
             this.model.save().then(this.loadLocationFile);
         },
 
@@ -644,6 +645,8 @@ define([
             }
             this.trigger(FormView.SHOW_FORM, referenceForm, showNextForm, cancel);
         }
+    }, {
+        FINISHED: 'locationFileWizardFormView:finished'
     });
 
 
@@ -1751,8 +1754,10 @@ define([
         },
 
         submit: function() {
-            this.model.set('active_start',  this.getFormDate('.active_start_container'));
-            this.model.set('active_stop',  this.getFormDate('.active_stop_container'));
+            this.model.set('active_start',  this.getFormDate(
+                this.$el.find('.active_start_container')));
+            this.model.set('active_stop',  this.getFormDate(
+                this.$el.find('.active_stop_container')));
             RandomMoverFormView.__super__.submit.apply(this, arguments);
         },
 

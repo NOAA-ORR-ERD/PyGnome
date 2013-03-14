@@ -644,9 +644,6 @@ define([
 
 
     var WindMover = BaseMover.extend({
-        url: function() {
-            return this.gnomeModel.url() + '/mover/wind';
-        },
 
         /*
          Make sure the 'wind' field is a `Wind` object.
@@ -715,6 +712,10 @@ define([
             if (timeseries.length) {
                 return moment(timeseries[0][0]).valueOf();
             }
+        },
+
+        url: function() {
+            return this.gnomeModel.url() + '/mover/wind';
         }
     });
     
@@ -750,9 +751,7 @@ define([
 
 
     var LocationFile = BaseModel.extend({
-        idAttribute: 'filename',
-
-        
+        idAttribute: 'filename'
     });
 
     var LocationFileCollection = BaseCollection.extend({
@@ -781,7 +780,7 @@ define([
 
     var GnomeModelFromLocationFile = BaseModel.extend({
         url: function() {
-            return '/model/from_location_file/' + this.id;
+            return '/model/from_location_file/' + this.get('location_name')
         }
     });
 
@@ -808,31 +807,6 @@ define([
             error: error,
             dataType: 'json'
         });
-    }
-
-    function setLocationFile(apiRoot, location, options) {
-        var opts = $.extend({
-            type: 'POST',
-            url: apiRoot + '/location_file/' + location,
-            error: function() {
-                alert('That location file does not exist yet.');
-            }
-        }, options);
-
-        $.ajax(opts);
-    }
-
-
-    function getLocationFileWizard(apiRoot, location, options) {
-        var opts = $.extend({
-            type: 'GET',
-            url: '/location_file/' + location + '/wizard',
-            error: function() {
-                alert('That location file does not exist yet.');
-            }
-        }, options);
-
-        $.ajax(opts);
     }
 
 

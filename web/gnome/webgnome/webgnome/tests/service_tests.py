@@ -108,10 +108,14 @@ class ModelFromLocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
         data = resp.json_body
         util.delete_keys_from_dict(data, ['id'])
 
-        # TODO: Is this bad? Ignore a floating point accuracy issue.
-        data['wind_movers'][0]['wind']['timeseries'][2][1] = 20.0
+        for key in ['map', 'uncertain', 'start_time', 'time_step',
+                    'duration_hours', 'duration_days']:
+            self.assertEqual(location_file_data[key], data[key])
 
-        self.assertEqual(location_file_data, data)
+        self.assertEqual(len(location_file_data['wind_movers']),
+                         len(data['wind_movers']))
+        self.assertEqual(len(location_file_data['surface_release_spills']),
+                         len(data['surface_release_spills']))
 
 
 class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):

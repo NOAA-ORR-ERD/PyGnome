@@ -67,14 +67,14 @@ def main():
 
     # adding a cats ossm mover
 
-    ossm_file = os.path.join(boston_data, 'MerrimackMassCoastOSSM.txt')
-    curr_file = os.path.join(boston_data, 'MerrimackMassCoast.CUR')
-    c_mover = gnome.movers.CatsMover(curr_file, ossm_file=ossm_file)
-    # but do need to scale (based on river stage)
-    c_mover.scale = True
-    c_mover.scale_refpoint = (-70.65, 42.58333)
-    c_mover.scale_value = 1.
-    model.movers += c_mover
+    # ossm_file = os.path.join(boston_data, 'MerrimackMassCoastOSSM.txt')
+    # curr_file = os.path.join(boston_data, 'MerrimackMassCoast.CUR')
+    # c_mover = gnome.movers.CatsMover(curr_file, ossm_file=ossm_file)
+    # # but do need to scale (based on river stage)
+    # c_mover.scale = True
+    # c_mover.scale_refpoint = (-70.65, 42.58333)
+    # c_mover.scale_value = 1.
+    # model.movers += c_mover
 
     # adding a cats mover
 

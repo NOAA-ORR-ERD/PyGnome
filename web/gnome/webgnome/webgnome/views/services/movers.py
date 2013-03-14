@@ -118,7 +118,8 @@ class RandomMover(BaseResource):
         """
         data = self.request.validated
         model = data.pop('model')
-        mover = model.movers.get(self.id).from_dict(data)
+        mover = model.movers.get(self.id)
+        mover.from_dict(data)
 
         return schema.RandomMoverSchema().bind().serialize(mover.to_dict())
 

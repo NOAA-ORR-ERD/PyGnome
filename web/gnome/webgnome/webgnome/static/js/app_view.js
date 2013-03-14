@@ -181,7 +181,7 @@ define([
             if (formView) {
                 formView.show();
             } else {
-                window.alert('That location file is not available yet.');
+                this.loadLocationFile(locationFile);
             }
         },
 
@@ -195,10 +195,10 @@ define([
             }
         },
 
-        loadLocationFile: function(formView) {
-            var locationFileWizard = formView.model;
-            var locationFile = this.locationFiles.get(locationFileWizard.id);
-            locationFile.save().then(function() {
+        loadLocationFile: function(locationFile) {
+            new models.GnomeModelFromLocationFile({
+                location_name: locationFile.id
+            }).save().then(function() {
                 window.location = window.location.origin;
             });
         },
@@ -361,7 +361,9 @@ define([
                         id: id,
                         model: wizard
                     });
-                    formView.on(forms.FormView.SUBMITTED, this.loadLocationFile);
+                    formView.on(forms.LocationFileWizardFormView.FINISHED, function() {
+                        window.location = window.location.origin;
+                    });
                     _this.formViews.add(formView);
                 }
             });

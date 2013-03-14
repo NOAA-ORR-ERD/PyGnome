@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class Serializable(object):
     serializable_fields = []
 
-    def to_dict(self):
+    def to_dict(self, *args, **kwargs):
         """
         Return a dictionary containing the serialized representation of this
         object, using `self.serializable_fields` to look up fields on the object
@@ -70,7 +70,7 @@ class Serializable(object):
             data[key] = value
         return data
 
-    def from_dict(self, data):
+    def from_dict(self, data, *args, **kwargs):
         """
         Set the state of this object using the dictionary ``data`` by looking up
         the value of each key in ``data`` that is also in
@@ -100,7 +100,12 @@ class Serializable(object):
             elif hasattr(field, 'from_dict'):
                 field.from_dict(value)
             else:
-                setattr(self, key, value)
+                try:
+                    setattr(self, key, value)
+                except ValueError:
+                    logger.exception(
+                        'Could not set %s with value %s on %s' % (
+                        key, value, self))
 
         return self
 
@@ -120,6 +125,7 @@ class BaseWebObject(Serializable):
 class WebWind(Wind, Serializable):
     default_name = 'Wind'
     source_types = (
+        ('undefined', 'Undefined'),
         ('manual', 'Manual Data'),
         ('nws', 'NWS Wind Data'),
         ('buoy', 'Buoy Station ID'),
@@ -163,23 +169,9 @@ class WebWindMover(WindMover, BaseWebObject):
     webgnome-specific functionality.
     """
     default_name = 'Wind Mover'
-    serializable_fields = [
-        'id',
-        'wind',
-        'on',
-        'name',
-        'active_start',
-        'active_stop',
-        'uncertain_duration',
-        'uncertain_speed_scale',
-        'uncertain_angle_scale',
-        'uncertain_angle_scale_units',
-        'uncertain_time_delay'
-    ]
-
     state = copy.deepcopy(WindMover.state)
-    state.add(create=['uncertain_angle_scale_units'],
-              update=['uncertain_angle_scale_units'])
+    state.add(create=['uncertain_angle_scale_units', 'name'],
+              update=['uncertain_angle_scale_units', 'name'])
 
     def __init__(self, *args, **kwargs):
         self.is_constant = kwargs.pop('is_constant', True)
@@ -199,14 +191,8 @@ class WebRandomMover(RandomMover, BaseWebObject):
     webgnome-specific functionality.
     """
     default_name = 'Random Mover'
-    serializable_fields = [
-        'id',
-        'on',
-        'name',
-        'active_start',
-        'active_stop',
-        'diffusion_coef'
-    ]
+    state = copy.deepcopy(RandomMover.state)
+    state.add(create=['name'], update=['name'])
 
     def __init__(self, *args, **kwargs):
         self.on = kwargs.pop('on', True)
@@ -412,7 +398,13 @@ class WebModel(Model, BaseWebObject):
             if key not in data:
                 data[key] = []
 
-            data[key].append(obj.to_dict())
+            obj_data = obj.to_dict(do='create')
+
+            # XXX: Temporary hack to fix new Serializable code
+            if hasattr(obj, 'wind'):
+                obj_data['wind'] = obj.wind.to_dict(do='create')
+
+            data[key].append(obj_data)
 
         return data
     
@@ -463,8 +455,9 @@ class WebModel(Model, BaseWebObject):
         def add_spill(data, cls):
             _id = data.pop('id', None)
             spill = cls(**data)
-            if _id:
-                spill._id = uuid.UUID(_id)
+            # TODO: Why doesn't this work anymore?
+            # if _id:
+            #     spill._id = uuid.UUID(_id)
             self.spills.add(spill)
 
         self.uncertain = data['uncertain']
