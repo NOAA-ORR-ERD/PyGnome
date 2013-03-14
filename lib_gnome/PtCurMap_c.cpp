@@ -547,11 +547,11 @@ Boolean PtCurMap_c::InVerticalMap(WorldPoint3D wp)
 	else
 	{
 		if (!triGrid) return false; // some error alert, no depth info to check
-		if (mover && mover->IAm(TYPE_NETCDFMOVERCURV))
+		/*if (mover && mover->IAm(TYPE_NETCDFMOVERCURV))
 		{
 			depthAtPoint = ((NetCDFMoverCurv*)mover)->GetTotalDepth2(wp.p);
 		}
-		else
+		else*/
 		{
 			interpolationVal = triGrid->GetInterpolationValues(wp.p);
 			depthsHdl = triGrid->GetDepths();
@@ -590,8 +590,8 @@ double PtCurMap_c::DepthAtPoint(WorldPoint wp)
 	if (mover && mover->IAm(TYPE_NETCDFMOVERCURV) && ((NetCDFMoverCurv*)mover)->fVar.gridType==SIGMA_ROMS)
 		return ((NetCDFMoverCurv*)mover)->GetTotalDepth(wp,-1);
 	
-	if (mover && mover->IAm(TYPE_NETCDFMOVERCURV))
-		return ((NetCDFMoverCurv*)mover)->GetTotalDepth2(wp);
+	//if (mover && mover->IAm(TYPE_NETCDFMOVERCURV))
+		//return ((NetCDFMoverCurv*)mover)->GetTotalDepth2(wp);
 
 	if (!triGrid) return -1; // some error alert, no depth info to check
 	interpolationVal = triGrid->GetInterpolationValues(wp);
@@ -851,7 +851,14 @@ WorldPoint3D PtCurMap_c::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,Wo
 		}
 		//if (depthAtPt==0)
 		//movedPoint.z = .1;
-		if (movedPoint.z > depthAtPt) movedPoint.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+		if (movedPoint.z > depthAtPt) 
+		{	// instead try movedPoint.z = depthAtPt - (movedPoint.z - depthAtPt);
+			if (depthAtPt > 1.)
+				movedPoint.z = GetRandomFloat(depthAtPt-1.,.9999999*depthAtPt);
+			else
+				movedPoint.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+			//movedPoint.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+		}
 		//if (movedPoint.z > depthAtPt) movedPoint.z = GetRandomFloat(.7*depthAtPt,.99*depthAtPt);
 		//if (movedPoint.z <= 0) movedPoint.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
 		if (movedPoint.z <= 0) 
