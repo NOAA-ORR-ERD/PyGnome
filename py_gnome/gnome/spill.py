@@ -29,6 +29,8 @@ class ArrayType(object):
 class Spill(GnomeObject):
     """
     base class for a source of elements
+    
+    NOTE: This class is not serializable since it can't be used in PyGnome
     """
     positions = ArrayType( (3,), basic_types.world_point_type)
     next_positions = ArrayType( (3,), basic_types.world_point_type)
@@ -52,9 +54,12 @@ class Spill(GnomeObject):
                 if name != 'array_types'
                 and type(getattr(self, name)) == ArrayType])
 
-    def __new__(cls, *args, **kwargs):
-        obj = super(Spill, cls).__new__(cls, *args, **kwargs)
-        return obj
+    # no longer required
+    #===========================================================================
+    # def __new__(cls, *args, **kwargs):
+    #    obj = super(Spill, cls).__new__(cls, *args, **kwargs)
+    #    return obj
+    #===========================================================================
 
     def __init__(self, num_elements=0):
         self.num_elements = num_elements
@@ -127,11 +132,13 @@ class Spill(GnomeObject):
             if array_type.initial_value != None:
                 arrays[name][:] = array_type.initial_value
 
-class FloatingSpill(Spill, serializable.Serializable):
+class FloatingSpill(Spill):
     """
     spill for floating objects
 
     all this does is add the 'windage' parameter
+    
+    NOTE: This class is not serializable since it can't be used in PyGnome
     """
     windages = ArrayType( (), basic_types.windage_type)
     
@@ -170,6 +177,7 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
                       end_release_time=dict_.pop('end_release_time',None),
                       windage_range=dict_.pop('windage_range'),
                       windage_persist=dict_.pop('windage_persist'))
+        new_obj.id = dict_.get('id')
         
         for key in dict_.keys():
             setattr(new_obj, key, dict_[key])

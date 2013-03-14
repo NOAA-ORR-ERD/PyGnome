@@ -25,9 +25,10 @@ class Mover(GnomeObject):
     It defines the interface for a Python mover. The model expects the methods defined here. 
     The get_move(...) method needs to be implemented by the derived class.  
     """
-    state = serializable.State(update=['on','active_start','active_stop'],
-                               create=['on','active_start','active_stop'],
-                               read=['active'] )
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add(update=['on','active_start','active_stop'],
+              create=['on','active_start','active_stop'],
+              read=['active'] )
     
     def __init__(self, *args, **kwargs):   # default min + max values for timespan
         """
