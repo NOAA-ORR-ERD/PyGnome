@@ -17,12 +17,14 @@ New features:
  - land raster is only as big as the land -- if the map bounds are bigger, extra space is not in the land map
     Question: what if map-bounds is smaller than land? wasted bitmap space? (though it should work)
 """
+import copy
+import os
  
 import numpy as np
 
 import gnome.cy_gnome.cy_land_check
 from gnome import GnomeObject
-from gnome.utilities import map_canvas
+from gnome.utilities import map_canvas, serializable
 from gnome.basic_types import world_point_type, oil_status
 
 from gnome.utilities.file_tools import haz_files
@@ -32,13 +34,17 @@ from gnome.utilities.geometry.PinP import CrossingsTest as point_in_poly
 from gnome.utilities.geometry.polygons import PolygonSet
 
             
-class GnomeMap(GnomeObject):
+class GnomeMap(GnomeObject, serializable.Serializable):
     """
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
     
     This also serves as a description of the interface
     """
+    _update = ['map_bounds']
+    _create = []
+    _create.extend(_update)
+    state = serializable.State( create=_create, update=_update)
     
     refloat_halflife = None # note -- no land, so never used
 
@@ -142,8 +148,8 @@ class RasterMap(GnomeMap):
     It requires a constant refloat half-life
     
     This will usually be initialized in a sub-class (from a BNA, etc)
-    """
-
+    NOTE: Not serializable since initialized from sub-class
+    """    
     ## NOTE: spillable area can be both larger and smaller than land raster:
     ##       map bounds can also be larger or smaller:
     ##            both are done with a point in polygon check
@@ -468,10 +474,20 @@ class RasterMap(GnomeMap):
 #        
 
         
-class MapFromBNA(RasterMap):
+class MapFromBNA(RasterMap, serializable.Serializable):
     """
     A raster land-water map, created from a BNA file
     """
+    _update = ['refloat_halflife','bna_filename']
+    _create = []
+    _create.extend(_update)
+    state = copy.deepcopy(RasterMap.state)
+    state.add( create=_create, update=_update)
+    
+    #@classmethod
+    #def new_from_dict(cls):
+        
+    
     def __init__(self,
                  bna_filename,
                  refloat_halflife, #seconds
@@ -486,6 +502,7 @@ class MapFromBNA(RasterMap):
         :param raster_size: the total number of pixels (bytes) to make the raster -- the actual size
         will match the aspect ratio of the bounding box of the land
         """
+        self.bna_filename = os.path.abspath(bna_filename)
         polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
 
         # find the spillable area and map bounds:
