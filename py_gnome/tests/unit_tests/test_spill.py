@@ -618,7 +618,7 @@ def test_SurfaceReleaseSpill_from_dict():
                                 end_release_time = datetime(2013, 2, 13, 9, 0) + timedelta(hours=6)
                                 )
     sp_dict = spill.to_dict()
-     
+    sp_dict['windage_range'] = [.02, .03]
     spill.from_dict(sp_dict)
     
     for key in sp_dict.keys():
