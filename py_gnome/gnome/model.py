@@ -20,9 +20,10 @@ class Model(GnomeObject, serializable.Serializable):
     _update = ['time_step',
                'start_time',
                'duration',
+               'uncertain',
                'movers',
                'environment',
-               'uncertain']
+               ]
     _create = []
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
@@ -401,3 +402,29 @@ class Model(GnomeObject, serializable.Serializable):
         call OrderedCollection.to_dict static method
         """
         return OrderedCollection.to_dict(self.environment)
+
+
+    def __eq__(self, other):
+        """
+        override serializable.Serializable.__eq__() method
+        
+        In addition to checking properties, also check the equality of
+        objects in each collection
+        """
+        check = super(Wind,self).__eq__(other)
+        
+        #=======================================================================
+        # if check:
+        #    """check ordered collections are equal. Currently not implemented"""
+        #    if not self.movers == other.movers:
+        #        return False
+        #    
+        #    if not self.environment == other.environment:
+        #        return False
+        #    
+        #    if not self.spills == other.spills:
+        #        return False
+        #=======================================================================
+        
+        return check
+        
