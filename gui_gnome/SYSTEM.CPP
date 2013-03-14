@@ -751,6 +751,27 @@ OSErr CommonInit()
 		InitAnalysisMenu();
 	}
 	
+	if (!gNoaaVersion)
+	{	// windows 7 is very strict about where apps can access files - put the noaa.ver in designated app data folder
+		// where the settings.osm file is and have gnome check for it there
+#ifdef IBM
+		char szPath[MAX_PATH];
+		long size;
+		
+		if(SUCCEEDED(SHGetFolderPath(NULL, 
+									 CSIDL_LOCAL_APPDATA|CSIDL_FLAG_CREATE, 
+									 NULL, 
+									 0, 							 
+									 szPath)))
+		{
+			AddDelimiterAtEndIfNeeded(szPath);
+			strcat(szPath,"noaa.ver");
+			if (!MyGetFileSize(0, 0, szPath, &size))
+				if (size>0) {gNoaaVersion = true; InitAnalysisMenu();}
+		}
+#endif
+	}
+
 	/// check if noaa version
 	if(FileExists(TATvRefNum, TATdirID,"mearns.txt"))
 	{
