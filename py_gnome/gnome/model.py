@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta
 
 import gnome
+import gnome.utilities.cache
 
 from gnome.gnomeobject import GnomeObject
 from gnome.utilities.time_utils import round_time
@@ -17,34 +18,40 @@ class Model(GnomeObject):
     
     """
     def __init__(self,
-                 time_step=900, # 15 minutes in seconds
+                 time_step=timedelta(minutes=15), 
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
                  duration=timedelta(days=1),
                  map=gnome.map.GnomeMap(),
                  output_map=None,
                  uncertain=False,
+                 cache_enabled=False,
                  ):
         """ 
-        Initializes model. 
+        Initializes a model. 
 
-        All this does is call reset() which initializes eveything to defaults
+        :param time_step=timedelta(minutes=15): model time step in seconds or as a timedelta object
+        :param start_time=datetime.now(): start time of model, datetime object
+        :param duration=timedelta(days=1): how long to run the model, a timedelta object
+        :param map=gnome.map.GnomeMap(): the land-water map, default is a map with no land-water
+        :param output_map=None: map for drawing output
+        :param uncertain=False: flag for setting uncertainty
+        :param cache_enabled=False: flag for setting whether the mocel should cache results to disk.
+
         """
         # making sure basic stuff is in place before properties are set
         self.winds = OrderedCollection(dtype=Wind)  
         self.movers = OrderedCollection(dtype=Mover)
-        #self._spill_container = gnome.spill_container.SpillContainer()
-        #self._uncertain_spill_container = None
         self.spills = SpillContainerPair(uncertain)   # contains both certain/uncertain spills 
+        self._cache = gnome.utilities.cache.ElementCache()
+        self._cache.enabled = cache_enabled
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
         self.output_map = output_map
-        #self._uncertain = uncertain # sets whether uncertainty is on or not.
 
         self.time_step = time_step # this calls rewind() !
 
-        self._cache = gnome.utilities.cache.ElementCache
 
     def reset(self, **kwargs):
         """
@@ -63,15 +70,9 @@ class Model(GnomeObject):
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
         ## note: this may be redundant -- they will get reset in setup_model_run() anyway..
-        #self._spill_container.reset()
         self.spills.rewind()
-        #=======================================================================
-        # try:
-        #    self._uncertain_spill_container.reset()
-        # except AttributeError:
-        #    pass # there must not be one...
-        #=======================================================================
-
+        #clear the cache:
+        self._cache.rewind()
 
     ### Assorted properties
     @property
@@ -85,12 +86,13 @@ class Model(GnomeObject):
         if self.spills.uncertain != uncertain_value:
             self.spills.uncertain = uncertain_value # update uncertainty
             self.rewind()
-        #=======================================================================
-        # if self._uncertain != uncertain_value:
-        #    self._uncertain = uncertain_value
-        #    self.spills.uncertain = uncertain_value # update uncertainty
-        #    self.rewind()           
-        #=======================================================================
+
+    @property
+    def cache_enabled(self):
+        return self._cache.enabled
+    @cache_enabled.setter
+    def cache_enabled(self, enabled):
+        self._cache.enabled = enabled
 
     @property
     def start_time(self):
@@ -148,34 +150,6 @@ class Model(GnomeObject):
     def num_time_steps(self):
         return self._num_time_steps
 
-#===============================================================================
-#    def get_spill(self, spill_id):
-#        """
-#        Return a :class:`gnome.spill.Spill` in the ``self._spills`` dict with
-#        the key ``spill_id`` if one exists.
-#        """
-#        return self._spill_container.spills[spill_id]
-# 
-#    def add_spill(self, spill):
-#        """
-#        add a spill to the model
-# 
-#        :param spill: an instance of one of the gnome.spill classes
-# 
-#        """
-#        #fixme: where should we check if a spill is in a valid location on the map?
-#        self._spill_container.spills += spill
-#        ## fixme -- this may not be strictly required, but it's safer.
-#        self.rewind() 
-# 
-#    def remove_spill(self, spill_id):
-#        """
-#        remove the passed-in spill from the spill list
-#        """
-#        ##fixme: what if we want to remove by reference, rather than id?
-#        del self._spill_container.spills[spill_id]
-#===============================================================================
-
     def setup_model_run(self):
         """
         Sets up each mover for the model run
@@ -185,15 +159,7 @@ class Model(GnomeObject):
         for mover in self.movers:
             mover.prepare_for_model_run()
         
-        #self.spills.uncertain = self._uncertain
         self.spills.rewind()
-        #=======================================================================
-        # self._spill_container.reset()
-        # if self._uncertain:
-        #    self._uncertain_spill_container = self._spill_container.uncertain_copy()
-        # else:
-        #    self._uncertain_spill_container = None
-        #=======================================================================
 
     def setup_time_step(self):
         """
@@ -206,11 +172,6 @@ class Model(GnomeObject):
         for mover in self.movers:
             for sc in self.spills.items():
                 mover.prepare_for_model_step(sc, self.time_step, self.model_time)
-            #===================================================================
-            # mover.prepare_for_model_step(self._spill_container, self.time_step, self.model_time)
-            # if self.is_uncertain:
-            #    mover.prepare_for_model_step(self._uncertain_spill_container, self.time_step, self.model_time)
-            #===================================================================
                                 
     def move_elements(self):
         """
@@ -240,27 +201,7 @@ class Model(GnomeObject):
 
                     # the final move to the new positions
                     sc['positions'][:] = sc['next_positions']
-            
-#===============================================================================
-#        if self._spill_container.spills:
-#            containers = [ self._spill_container ]
-#            if self.is_uncertain:
-#                containers.append( self._uncertain_spill_container )
-#            for sc in containers: # either one or two, depending on uncertaintly or not
-#                if sc.num_elements > 0: # no reason to do any of this if there are no elements
-#                    # reset next_positions
-#                    sc['next_positions'][:] = sc['positions']
-# 
-#                    # loop through the movers
-#                    for mover in self.movers:
-#                        delta = mover.get_move(sc, self.time_step, self.model_time)
-#                        sc['next_positions'] += delta
-#                
-#                    self.map.beach_elements(sc)
-# 
-#                    # the final move to the new positions
-#                    sc['positions'][:] = sc['next_positions']
-#===============================================================================
+
 
     def step_is_done(self):
         """
@@ -290,7 +231,7 @@ class Model(GnomeObject):
         :param images_dir: directory to write the image to.
         """
         if self.output_map is None:
-            raise ValueError("You must have an ouput map to use the image output")
+            raise ValueError("You must have an output map to use the image output")
         if self.current_time_step == 0:
             self.output_map.draw_background()
             self.output_map.save_background(os.path.join(images_dir, "background_map.png"))
@@ -301,11 +242,10 @@ class Model(GnomeObject):
 
         for sc in self.spills.items():
             self.output_map.draw_elements(sc)
-        #=======================================================================
-        # if self.is_uncertain:
-        #    self.output_map.draw_elements(self._uncertain_spill_container)
-        # self.output_map.draw_elements(self._spill_container)
-        #=======================================================================
+        # pull the data from cache:
+        for sc in self._cache.load_timestep(self.current_time_step).items():
+            self.output_map.draw_elements(sc)
+
         self.output_map.save_foreground(filename)
 
         return filename
