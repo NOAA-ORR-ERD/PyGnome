@@ -14,4 +14,5 @@ from . import spill_container
 from . import movers
 from . import environment
 from . import model
+from . import outputters
 

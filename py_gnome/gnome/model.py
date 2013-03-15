@@ -44,12 +44,12 @@ class Model(GnomeObject):
         self.spills = SpillContainerPair(uncertain)   # contains both certain/uncertain spills 
         self._cache = gnome.utilities.cache.ElementCache()
         self._cache.enabled = cache_enabled
+        self.outputters = [] # list of ouput objects
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
         self.output_map = output_map
-
         self.time_step = time_step # this calls rewind() !
 
 
@@ -73,6 +73,8 @@ class Model(GnomeObject):
         self.spills.rewind()
         #clear the cache:
         self._cache.rewind()
+        [outputter.rewind() for outputter in self.outputters]
+
 
     ### Assorted properties
     @property
@@ -154,10 +156,9 @@ class Model(GnomeObject):
         """
         Sets up each mover for the model run
 
-        Currently, only movers need to initialize at the beginning of the run
         """
-        for mover in self.movers:
-            mover.prepare_for_model_run()
+        [mover.prepare_for_model_run() for mover in self.movers]
+        [outputter.prepare_for_model_run() for outputter in self.outputters]
         
         self.spills.rewind()
 
@@ -172,6 +173,8 @@ class Model(GnomeObject):
         for mover in self.movers:
             for sc in self.spills.items():
                 mover.prepare_for_model_step(sc, self.time_step, self.model_time)
+        [outputter.prepare_for_model_step() for outputter in self.outputters]
+
                                 
     def move_elements(self):
         """
@@ -210,6 +213,7 @@ class Model(GnomeObject):
 
         for mover in self.movers:
             mover.model_step_is_done()
+        [outputter.model_step_is_done() for outputter in self.outputters]
 
     # def write_output(self):
     #     """
@@ -223,8 +227,7 @@ class Model(GnomeObject):
     #             raise ValueError("%s output type not supported"%output_method)
     #     return (self.current_time_step, filename, self.model_time.isoformat())
 
-    def write_image(self, images_dir):
-        ##fixme: put this in an "Output" class?
+    def write_image(self):
         """
         Render the map image, according to current parameters
 
@@ -232,21 +235,7 @@ class Model(GnomeObject):
         """
         if self.output_map is None:
             raise ValueError("You must have an output map to use the image output")
-        if self.current_time_step == 0:
-            self.output_map.draw_background()
-            self.output_map.save_background(os.path.join(images_dir, "background_map.png"))
-
-        filename = os.path.join(images_dir, 'foreground_%05i.png'%self.current_time_step)
-
-        self.output_map.create_foreground_image()
-
-        for sc in self.spills.items():
-            self.output_map.draw_elements(sc)
-        # pull the data from cache:
-        for sc in self._cache.load_timestep(self.current_time_step).items():
-            self.output_map.draw_elements(sc)
-
-        self.output_map.save_foreground(filename)
+        filename = self.output_map.write_step(self.current_time_step, self._cache)
 
         return filename
 
@@ -296,7 +285,7 @@ class Model(GnomeObject):
         return self.current_time_step
 
 
-    def next_image(self, images_dir):
+    def next_image(self):
         """
         Compute the next model step, render an image, and return info about the
         step rendered
@@ -306,7 +295,7 @@ class Model(GnomeObject):
         # run the next step:
         if not self.step():
             raise StopIteration
-        filename = self.write_image(images_dir)
+        filename = self.write_image()
         return (self.current_time_step, filename, self.model_time.isoformat())
 
     def full_run_with_image_output(self, output_dir):

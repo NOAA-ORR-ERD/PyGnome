@@ -157,11 +157,10 @@ def test_simple_run_with_image_output():
                                       refloat_halflife=6*3600, #seconds
                                      )
     # the image output map
-    map = gnome.utilities.map_canvas.MapCanvas((400, 300))
-    polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
-    map.set_land(polygons)
-    model.output_map = map
-    
+    model.output_map = gnome.outputters.ImageOutputter(mapfile,
+                                                       images_dir,
+                                                       size=(400, 300))
+
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
     assert len(model.movers) == 1
@@ -186,7 +185,7 @@ def test_simple_run_with_image_output():
     while True:
         print "calling next_image"
         try:
-            image_info = model.next_image(images_dir)
+            image_info = model.next_image()
             num_steps_output += 1
             print image_info
         except StopIteration:
@@ -218,10 +217,10 @@ def test_simple_run_with_image_output_uncertainty():
                                       refloat_halflife=6*3600, #seconds
                                      )
     # the image output map
-    l__map = gnome.utilities.map_canvas.MapCanvas((400, 300))
-    polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
-    l__map.set_land(polygons)
-    model.output_map = l__map
+    # the image output map
+    model.output_map = gnome.outputters.ImageOutputter(mapfile,
+                                                       images_dir,
+                                                       size=(400, 300))
 
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
@@ -245,7 +244,7 @@ def test_simple_run_with_image_output_uncertainty():
     num_steps_output = 0
     while True:
         try:
-            image_info = model.next_image(images_dir)
+            image_info = model.next_image()
             num_steps_output += 1
             print image_info
         except StopIteration:
@@ -525,8 +524,8 @@ def test_release_at_right_time():
 
 if __name__ == "__main__":
     #test_all_movers()
-    test_release_at_right_time()
-    
+    #test_release_at_right_time()
+    test_simple_run_with_image_output()
     
 
     
