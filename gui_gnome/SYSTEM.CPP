@@ -766,8 +766,10 @@ OSErr CommonInit()
 		{
 			AddDelimiterAtEndIfNeeded(szPath);
 			strcat(szPath,"noaa.ver");
-			if (!MyGetFileSize(0, 0, szPath, &size))
-				if (size>0) {gNoaaVersion = true; InitAnalysisMenu();}
+			if (FileExists(0, 0, szPath))
+				{gNoaaVersion = true; InitAnalysisMenu();}
+			//if (!MyGetFileSize(0, 0, szPath, &size))
+				//if (size>0) {gNoaaVersion = true; InitAnalysisMenu();}
 		}
 #endif
 	}
