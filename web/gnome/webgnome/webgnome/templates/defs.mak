@@ -10,35 +10,39 @@
 </%def>
 
 
-<%def name="btn(text, classes='')">
-    <button type="button" class="ui-button ui-widget ui-corner-all ui-button-text-only ${classes}" role="button">
-        <span class="ui-button-text">${text}</span>
+<%def name="btn(text, classes='', function_name='')">
+    <button type="button" class="ui-button ui-widget ui-corner-all ui-button-text-only ${classes}"
+            ${'data-function-name="%s"' % function_name if function_name else ''}
+            role="button">
+        <span class="ui-button-text">
+            ${text}
+        </span>
     </button>
 </%def>
 
 
-<%def name="cancel_btn(text='Cancel')">
-    ${btn(text, 'cancel')}
+<%def name="cancel_btn(text='Cancel', **kwargs)">
+    ${btn(text, 'cancel', **kwargs)}
 </%def>
 
 
-<%def name="next_btn(text='Next')">
-    ${btn(text, 'next ui-button-primary')}
+<%def name="next_btn(text='Next', **kwargs)">
+    ${btn(text, 'next ui-button-primary', **kwargs)}
 </%def>
 
 
-<%def name="back_btn(text='Back')">
-    ${btn(text, 'back ui-button-primary')}
+<%def name="back_btn(text='Back', **kwargs)">
+    ${btn(text, 'back ui-button-primary', **kwargs)}
 </%def>
 
 
-<%def name="finish_btn(text='To the map window')">
-    ${btn(text, 'finish ui-button-primary')}
+<%def name="finish_btn(text='To the map window', **kwargs)">
+    ${btn(text, 'finish ui-button-primary', **kwargs)}
 </%def>
 
 
-<%def name="references_btn(text='Show references')">
-    ${btn(text, 'references ui-button-primary')}
+<%def name="references_btn(text='Show references', **kwargs)">
+    ${btn(text, 'references ui-button-primary', **kwargs)}
 </%def>
 
 

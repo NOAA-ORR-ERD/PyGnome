@@ -63,7 +63,7 @@ define([
         /*
          Show the form with `formId`.
          */
-        show: function(formId, success, cancel) {
+        show: function(formId, success, cancel, customButtons) {
             var formView = this.get(formId);
 
             if (formView) {
@@ -72,6 +72,9 @@ define([
                 }
                 if (cancel) {
                     formView.once(FormView.CANCELED, cancel);
+                }
+                if (customButtons && customButtons.length) {
+                    formView.setCustomButtons(customButtons);
                 }
                 formView.reload();
                 formView.show();
@@ -480,11 +483,35 @@ define([
 
         close: function() {
             this.closeDialog();
+            if (this.originalButtons) {
+                this.$el.dialog('option', 'buttons', this.originalButtons);
+            }
             this.resetModel();
         },
 
         closeDialog: function() {
             this.$el.dialog('close');
+        },
+
+        setCustomButtons: function(buttonDefinitions) {
+            var buttons = [];
+            var _this = this;
+
+            if (!buttonDefinitions || !buttonDefinitions.length) {
+                return;
+            }
+
+            _.each(buttonDefinitions, function(button, index, list) {
+                buttons.push({
+                    text: button.text,
+                    click: function() {
+                        _this[button.fnName]();
+                    }
+                });
+            });
+
+            this.originalButtons = this.$el.dialog('option', 'buttons');
+            this.$el.dialog('option', 'buttons', buttons);
         }
     });
 
@@ -587,7 +614,7 @@ define([
                 }
             });
 
-            this.setCustomButtons();
+            this.setButtons();
         },
 
         setStepSize: function() {
@@ -625,7 +652,7 @@ define([
             this.references.dialog('open');
         },
 
-        setCustomButtons: function() {
+        setButtons: function() {
             var step = this.getCurrentStep();
             var buttons = step.find('.custom-dialog-buttons');
             if (buttons.length) {
@@ -635,21 +662,42 @@ define([
             }
         },
 
+        getCustomStepButtons: function(step, formView) {
+            var buttons = [];
+            var customFormButtons = step.find('.custom-dialog-buttons').find(
+                '.ui-button');
+
+            if (customFormButtons.length) {
+                _.each(customFormButtons, function(el, index, list) {
+                    var fnName = $(el).data('function-name');
+                    if (!fnName) {
+                        return;
+                    }
+                    buttons.push({
+                        text: $(el).text(),
+                        fnName: fnName
+                    });
+                })
+            }
+
+            return buttons;
+        },
+
         showStep: function(step) {
             LocationFileWizardFormView.__super__.showStep.apply(this, [step]);
-            this.setCustomButtons();
+            this.setButtons();
 
             var form = step.data('show-form');
             if (form) {
                 this.widget.addClass('hidden');
-                this.showForm(form);
+                this.showForm(form, this.getCustomStepButtons(step));
             } else {
                 this.widget.removeClass('hidden');
                 this.setStepSize();
             }
         },
 
-        showForm: function(form) {
+        showForm: function(form, customButtons) {
             var _this = this;
             var nextStep = this.getNextStep();
             var previousStep = this.getPreviousStep();
@@ -664,7 +712,7 @@ define([
             }
 
             this.trigger(FormView.SHOW_FORM, form, showNextStep,
-                         showPreviousStep);
+                         showPreviousStep, customButtons);
         }
     }, {
         FINISHED: 'locationFileWizardFormView:finished'

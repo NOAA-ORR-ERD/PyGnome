@@ -20,15 +20,15 @@
 
 <%defs:step show_form='model-settings'>
     <%defs:buttons>
-        ${defs.back_btn()}
-        ${defs.next_btn()}
+        ${defs.back_btn(function_name="cancel")}
+        ${defs.next_btn(function_name="submit")}
     </%defs:buttons>
 </%defs:step>
 
 <%defs:step show_form='add-wind-mover'>
     <%defs:buttons>
-        ${defs.back_btn()}
-        ${defs.next_btn()}
+        ${defs.back_btn(function_name="cancel")}
+        ${defs.next_btn(function_name="submit")}
     </%defs:buttons>
 </%defs:step>
 
