@@ -23,7 +23,7 @@
 
     ${self.body()}
 
-    <%defs:step width="445" height="420">
+    <%defs:step height="423" width="445">
         <p>You are ready to move to the Map Window to start your spill and
             run the model. Here are the tools you'll use:</p>
 

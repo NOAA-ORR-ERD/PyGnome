@@ -18,14 +18,14 @@
     </ol>
 </%def>
 
-<%defs:step reference_form='model-settings'>
+<%defs:step show_form='model-settings'>
     <%defs:buttons>
         ${defs.back_btn()}
         ${defs.next_btn()}
     </%defs:buttons>
 </%defs:step>
 
-<%defs:step reference_form='add-wind-mover'>
+<%defs:step show_form='add-wind-mover'>
     <%defs:buttons>
         ${defs.back_btn()}
         ${defs.next_btn()}

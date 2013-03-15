@@ -636,29 +636,35 @@ define([
         },
 
         showStep: function(step) {
-            window.dialog = this.$el;
             LocationFileWizardFormView.__super__.showStep.apply(this, [step]);
             this.setCustomButtons();
 
-            var referenceForm = step.data('reference-form');
-            if (referenceForm) {
+            var form = step.data('show-form');
+            if (form) {
                 this.widget.addClass('hidden');
-                this.showReferenceForm(referenceForm);
+                this.showForm(form);
             } else {
                 this.widget.removeClass('hidden');
                 this.setStepSize();
             }
         },
 
-        showReferenceForm: function(referenceForm) {
+        showForm: function(form) {
             var _this = this;
-            function showNextForm() {
-                _this.next();
+            var nextStep = this.getNextStep();
+            var previousStep = this.getPreviousStep();
+
+            // Use closures so we know we're always referencing the correct
+            // next and previous steps when the callback fires.
+            function showNextStep() {
+                _this.showStep(nextStep)
             }
-            function cancel() {
-                _this.back();
+            function showPreviousStep() {
+                _this.showStep(previousStep);
             }
-            this.trigger(FormView.SHOW_FORM, referenceForm, showNextForm, cancel);
+
+            this.trigger(FormView.SHOW_FORM, form, showNextStep,
+                         showPreviousStep);
         }
     }, {
         FINISHED: 'locationFileWizardFormView:finished'
