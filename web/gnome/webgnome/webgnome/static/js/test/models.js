@@ -308,11 +308,12 @@ define([
 
     module('Gnome');
 
-    test('url returns get params with the model ID', function() {
-        var gnome = new models.Gnome({
-            id: '123'
-        });
-        ok(gnome.url() === '/model/123?include_movers=false&include_spills=false');
+    test('url includes ID if present', function() {
+        var gnome = new models.GnomeModel();
+        ok(gnome.url() == '/model');
+
+        gnome.id = 123;
+        ok(gnome.url() === '/model/123');
     });
 
 
@@ -478,17 +479,27 @@ define([
 
     module('Map');
 
-    test('init accepts a url', function() {
-        var map = new models.Map({}, {url: '/test'});
-        ok(map.url === '/test');
+    test('url includes the gnomeModel URL', function() {
+        var gnome = new models.GnomeModel({
+            id: 123
+        });
+        var map = new models.Map({}, {
+            gnomeModel: gnome
+        });
+        ok(map.url() === '/model/123/map');
     });
 
 
     module('CustomMap');
 
-    test('init accepts a url', function() {
-        var map = new models.CustomMap({}, {url: '/test'});
-        ok(map.url === '/test');
+    test('url includes the gnomeModel URL', function() {
+        var gnome = new models.GnomeModel({
+            id: 123
+        });
+        var map = new models.CustomMap({}, {
+            gnomeModel: gnome
+        });
+        ok(map.url() === '/model/123/custom_map');
     });
 
 

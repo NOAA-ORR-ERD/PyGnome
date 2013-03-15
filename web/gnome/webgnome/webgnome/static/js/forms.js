@@ -590,6 +590,19 @@ define([
             this.setCustomButtons();
         },
 
+        setStepSize: function() {
+            var step = this.getCurrentStep();
+            var height = step.data('height');
+            var width = step.data('width');
+
+            if (height) {
+                this.$el.dialog('option', 'height', parseInt(height));
+            }
+            if (width) {
+                this.$el.dialog('option', 'width', parseInt(width));
+            }
+        },
+
         getDataBindings: function() {
             return {wizard: this.model};
         },
@@ -623,24 +636,17 @@ define([
         },
 
         showStep: function(step) {
+            window.dialog = this.$el;
             LocationFileWizardFormView.__super__.showStep.apply(this, [step]);
             this.setCustomButtons();
 
             var referenceForm = step.data('reference-form');
             if (referenceForm) {
-                this.widget.hide();
+                this.widget.addClass('hidden');
                 this.showReferenceForm(referenceForm);
             } else {
-                this.widget.show();
-                var height = step.data('height');
-                var width = step.data('width');
-
-                if (height) {
-                    this.$el.dialog('option', 'height', parseInt(height));
-                }
-                if (width) {
-                    this.$el.dialog('option', 'width', parseInt(width));
-                }
+                this.widget.removeClass('hidden');
+                this.setStepSize();
             }
         },
 
@@ -1014,7 +1020,9 @@ define([
                 return;
             }
 
-            models.getNwsWind(coords, this.nwsWindsReceived);
+            models.getNwsWind(coords, {
+                success: this.nwsWindsReceived
+            });
         },
 
         setupWindMap: function() {

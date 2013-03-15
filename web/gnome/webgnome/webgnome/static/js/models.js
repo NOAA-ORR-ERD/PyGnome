@@ -363,6 +363,7 @@ define([
 
         initialize: function(attrs, opts) {
             this.dirty = false;
+            this.bind('change', this.change, this);
             this.bind('change:id', this.onIndexChange, this);
 
             if (opts && opts.gnomeModel) {
@@ -414,7 +415,6 @@ define([
 
         change: function() {
             this.dirty = true;
-            BaseModel.__super__.change.apply(this, arguments)
         },
 
         save: function(attrs, options) {
@@ -506,8 +506,9 @@ define([
 
          // Return a `moment` object for any date field.
         get: function(attr) {
+            var val = BaseModel.__super__.get.apply(this, arguments);
+
             if(this.dateFields && _.contains(this.dateFields, attr)) {
-                var val = this.attributes[attr];
                 var date = moment(val);
                 if (date && date.isValid()) {
                     return date;
@@ -516,7 +517,7 @@ define([
                 }
             }
 
-            return BaseModel.__super__.get.apply(this, arguments);
+            return val;
         },
 
         // Call .format() on any date fields when preparing them for JSON
@@ -605,6 +606,8 @@ define([
             if (!attrs || !attrs.timeseries) {
                 this.set('timeseries', []);
             }
+
+            Wind.__super__.set.apply(this, arguments);
         },
 
         /*

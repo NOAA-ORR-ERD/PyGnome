@@ -289,7 +289,7 @@ form .required label:after {
 }
 
 input.required {
-    border: 1px solid red;
+    border: 2px solid red;
 }
 
 .placeholder {

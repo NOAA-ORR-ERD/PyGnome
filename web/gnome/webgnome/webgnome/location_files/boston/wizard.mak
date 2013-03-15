@@ -32,7 +32,7 @@
     </%defs:buttons>
 </%defs:step>
 
-<%defs:step height="383" width="480">
+<%defs:step height="432" width="420">
     <h5>Sewage Outflow</h5>
 
     <p>Wastewater effluent will begin to flow into Massachusetts Bay through
