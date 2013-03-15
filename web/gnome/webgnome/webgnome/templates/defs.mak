@@ -10,10 +10,10 @@
 </%def>
 
 
-<%def name="btn(text, classes='', function_name='')">
+<%def name="btn(text, classes='', function_name='', deferred=False)">
     <button type="button" class="ui-button ui-widget ui-corner-all ui-button-text-only ${classes}"
             ${'data-function-name="%s"' % function_name if function_name else ''}
-            role="button">
+            data-deferred="${'true' if deferred else 'false'}" role="button">
         <span class="ui-button-text">
             ${text}
         </span>

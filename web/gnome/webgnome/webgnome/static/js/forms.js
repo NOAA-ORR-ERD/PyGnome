@@ -16,6 +16,26 @@ define([
     'lib/bootstrap.file-input'
 ], function($, _, Backbone, models, util, geo, rivets) {
 
+
+    var DeferredManager = function() {
+        this.deferreds = [];
+    };
+
+    DeferredManager.prototype = {
+        add: function(fn) {
+            this.deferreds.push(fn);
+        },
+
+        run: function() {
+            _.each(this.deferreds, function(fn, index, list) {
+                fn();
+            })
+
+            this.deferreds = [];
+        }
+    };
+
+
     var FormViewContainer = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
@@ -100,6 +120,7 @@ define([
             _.bindAll(this);
             this.wasCancelled = false;
             this.id = this.options.id;
+            this.deferred = new DeferredManager();
 
             this.model = this.options.model;
 
@@ -505,7 +526,28 @@ define([
                 buttons.push({
                     text: button.text,
                     click: function() {
-                        _this[button.fnName]();
+                        if (button.deferred) {
+                            _this.deferred.add(function() {
+                                _this[button.fnName]();
+                            });
+
+                            _this.close();
+
+                            // XXX: Do we really want to trigger these events
+                            // for deferred methods? Right now we have to because
+                            // FormViewContainer is listening to them so we can
+                            // continue in a Wizard-style form; however, is there
+                            // a better way of handling that? And if we do want
+                            // to trigger these events, should they realy be
+                            // hard-coded like this?
+                            if (button.fnName === 'submit') {
+                                _this.trigger(FormView.SUBMITTED);
+                            } else if (button.fnName === 'cancel') {
+                                _this.trigger(FormView.CANCELED);
+                            }
+                        } else {
+                            _this[button.fnName]();
+                        }
                     }
                 });
             });
@@ -662,7 +704,7 @@ define([
             }
         },
 
-        getCustomStepButtons: function(step, formView) {
+        getCustomStepButtons: function(step) {
             var buttons = [];
             var customFormButtons = step.find('.custom-dialog-buttons').find(
                 '.ui-button');
@@ -674,6 +716,7 @@ define([
                         return;
                     }
                     buttons.push({
+                        deferred: $(el).data('deferred'),
                         text: $(el).text(),
                         fnName: fnName
                     });
