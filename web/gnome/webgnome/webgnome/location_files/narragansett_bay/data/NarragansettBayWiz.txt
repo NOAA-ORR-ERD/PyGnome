@@ -1,0 +1,49 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Narragansett Bay
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.25;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME Narragansett Bay Map;PATH resnum 10003;
+--
+MESSAGE createMover;TO Narragansett Bay Map;TYPE Cats; NAME WAC.tides.amps.0319.CUR;PATH resnum 10004;
+MESSAGE setfield;TO WAC.tides.amps.0319.CUR; scaleType constant;refP 71.395667 W 41.5835 N; scaleValue 1; timeFile resNum 10005; EddyDiffusion 100000;
+--
+MESSAGE createMover;TO Narragansett Bay Map;TYPE Component; NAME Wind Driven Currents;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 1; NAME WACLinWind20ktN.2e-3.CUR;PATH resnum 10007;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 71.4 W 41.55 N; 
+MESSAGE setfield;TO Wind Driven Currents; pat1Angle 0; pat1Speed 20; pat1SpeedUnits knots; pat1ScaleToValue 0.2;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 2; NAME WACLinWind20ktE.2e-3.CUR;PATH resnum 10008;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 71.4 W 41.55 N; 
+MESSAGE setfield;TO Wind Driven Currents; pat2Angle 90; pat2Speed 20; pat2SpeedUnits knots; pat2ScaleToValue 0.05;
+MESSAGE setfield;TO Wind Driven Currents;scaleBy WindStress;
+--
+MESSAGE createMover;TO Narragansett Bay Map;TYPE Cats; NAME WACProvRiverOutflow.CUR;PATH resnum 10009;  
+MESSAGE setfield;TO WACProvRiverOutflow.CUR; scaleType constant; refP 71.38333 W 41.76667 N; scaleValue 0.11;
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Narragansett Bay;
+-------------------------------------------
+

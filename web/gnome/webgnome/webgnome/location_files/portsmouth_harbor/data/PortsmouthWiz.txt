@@ -1,0 +1,71 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+--10011
+10003
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Portsmouth Harbor
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+--MESSAGE open; TO model; PATH :Portsmouth Harbor.SAV;
+
+MESSAGE setfield;TO model;timeStep  .1;
+-------------------------------------------
+
+
+[AFTER]
+-------------------------------------------
+--MESSAGE open; TO model; PATH :Portsmouth Harbor.SAV;
+MESSAGE open; TO model; PATH resnum 10004;
+MESSAGE setfield;TO Diffusion; coefficient 10000;uncertaintyFactor 2
+--
+--------------
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Portsmouth Harbor;
+-------------------------------------------
+[WMSG 10003]
+-------------------------------------------
+--uncertainty values for DAC pattern
+-------------------------------------------
+set  cross1 .062662
+set  cross2 .041447
+set  cross3 .14926
+set  cross4 .31283
+set  cross5 .41998
+set  cross6 .20874
+set  cross7 .22059
+set  cross8 .19128
+set  cross9 .21991
+set  cross10 .34319
+set  cross11 .15323
+set  cross12 .33535
+set  along1 .53122
+set  along2 .65457
+set  along3 .649
+set  along4 .78413
+set  along5 .93995
+set  along6 .71497
+set  along7 .31548
+set  along8 .36108
+set  along9 .23067
+set  along10 .0081869
+set  along11 .15497
+set  along12 .079681
+set uncertaintyCross cross{$6}
+set uncertaintyAlong along{$6}
+MESSAGE setfield;TO GulfMaineDAC.CUR;LeftCurUncertainty {uncertaintyCross};DownCurUncertainty {uncertaintyAlong};

@@ -1,0 +1,132 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+--10010
+10011
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR New York Harbor
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  .1;
+-------------------------------------------
+
+
+[AFTER]
+-------------------------------------------
+MESSAGE setfield;TO Diffusion; coefficient 10000;uncertaintyFactor 2
+--
+--minkilometersperinch 100;
+--
+
+MESSAGE createMap;TO model;TYPE vector; NAME New York Harbor Map;PATH resnum 10005;
+MESSAGE setfield;TO New York Harbor Map;RefloatHalfLifeInHrs 6;
+--------------
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME Brooklyn.CUR;PATH resnum 10007;
+
+MESSAGE setfield;TO Brooklyn.CUR; scaleType constant;refP 73.9975 W 40.707 N; scaleValue 1; timeFile resNum 10006;
+MESSAGE setfield;TO Brooklyn.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO Brooklyn.CUR; CrossCurUncertainty .20;
+--------------
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME Ambrose3.CUR;PATH resnum 10009;
+
+MESSAGE setfield;TO Ambrose3.CUR; scaleType constant;refP 73.944666 W 40.51666 N; scaleValue 1; timeFile resNum 10008;
+MESSAGE setfield;TO Ambrose3.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO Ambrose3.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME HellsGate.CUR;PATH resnum 10011;
+
+MESSAGE setfield;TO HellsGate.CUR; scaleType constant;refP 73.938333 W 40.778333 N; scaleValue 1; timeFile resNum 10010;
+MESSAGE setfield;TO HellsGate.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO HellsGate.CUR; CrossCurUncertainty .20;
+--------------
+
+
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME BergenPoint.CUR;PATH resnum 10015;
+
+MESSAGE setfield;TO BergenPoint.CUR; scaleType constant;refP 74.124666 W 40.640333 N; scaleValue 1; timeFile resNum 10014;
+MESSAGE setfield;TO BergenPoint.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO BergenPoint.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME NewarkBay.CUR;PATH resnum 10017;
+
+MESSAGE setfield;TO NewarkBay.CUR; scaleType constant;refP 74.144333 W 40.657666 N; scaleValue 1; timeFile resNum 10016;
+MESSAGE setfield;TO NewarkBay.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO NewarkBay.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME ElizabethPort.CUR;PATH resnum 10019;
+
+MESSAGE setfield;TO ElizabethPort.CUR; scaleType constant;refP 74.181666 W 40.646666 N; scaleValue 1; timeFile resNum 10018;
+MESSAGE setfield;TO ElizabethPort.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO ElizabethPort.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME TremelyPtReach.CUR;PATH resnum 10021;
+
+MESSAGE setfield;TO TremelyPtReach.CUR; scaleType constant;refP 74.207333 W 40.586166 N; scaleValue 1; timeFile resNum 10020;
+MESSAGE setfield;TO TremelyPtReach.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO TremelyPtReach.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME TuftsPtSmokingPt.CUR;PATH resnum 10023;
+
+MESSAGE setfield;TO TuftsPtSmokingPt.CUR; scaleType constant;refP 74.223333 W 40.556666 N; scaleValue 1; timeFile resNum 10022;
+MESSAGE setfield;TO TuftsPtSmokingPt.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO TuftsPtSmokingPt.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME WardPt3.CUR;PATH resnum 10025;
+
+MESSAGE setfield;TO WardPt3.CUR; scaleType constant;refP 74.224833 W 40.488500 N; scaleValue 1; timeFile resNum 10024;
+MESSAGE setfield;TO WardPt3.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO WardPt3.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME Narrows4.CUR;PATH resnum 10027;
+
+MESSAGE setfield;TO Narrows4.CUR; scaleType constant;refP 74.046166 W 40.609333 N; scaleValue 1; timeFile resNum 10026;
+MESSAGE setfield;TO Narrows4.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO Narrows4.CUR; CrossCurUncertainty .20;
+--------------
+
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME GeorgeWashingtonBridge.CUR;PATH resnum 10029;
+
+MESSAGE setfield;TO GeorgeWashingtonBridge.CUR; scaleType constant;refP 73.972666 W 40.808000 N; scaleValue 1; timeFile resNum 10028;
+MESSAGE setfield;TO GeorgeWashingtonBridge.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO GeorgeWashingtonBridge.CUR; CrossCurUncertainty .20;
+--------------
+--------------
+
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME ConeyI.CUR;PATH resnum 10031;
+
+MESSAGE setfield;TO ConeyI.CUR; scaleType constant;refP 74.005000 W 40.551666 N; scaleValue 1; timeFile resNum 10030;
+MESSAGE setfield;TO ConeyI.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO ConeyI.CUR; CrossCurUncertainty .20;
+--------------
+MESSAGE createMover;TO New York Harbor Map;TYPE Cats; NAME StatueOfLiberty.CUR;PATH resnum 10033;
+
+MESSAGE setfield;TO StatueOfLiberty.CUR; scaleType constant;refP 74.050000 W 40.666666 N; scaleValue 1; timeFile resNum 10032;
+MESSAGE setfield;TO StatueOfLiberty.CUR; DownCurUncertainty .50;
+MESSAGE setfield;TO StatueOfLiberty.CUR; CrossCurUncertainty .20;
+--------------
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT New York Harbor;
+-------------------------------------------
+
+

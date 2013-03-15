@@ -1,0 +1,44 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+--10010
+10011
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Passamaquoddy Bay
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  .1;
+-------------------------------------------
+
+
+[AFTER]
+-------------------------------------------
+MESSAGE setfield;TO Diffusion; coefficient 30000;uncertaintyFactor 2
+--
+--minkilometersperinch 100;
+--
+--MESSAGE createMover;TO Universal Map;TYPE TideCur; NAME Passamaquoddy Bay.CUR;PATH resnum 10007;topFile resnum 10009;
+MESSAGE createMap;TO model;TYPE vector; NAME Passamaquoddy Bay Map;PATH resnum 10005;
+MESSAGE createMover;TO Passamaquoddy Bay Map;TYPE TideCur; NAME Passamaquoddy Bay.CUR;PATH resnum 10007;topFile resnum 10009;
+--MESSAGE setfield;TO Passamaquoddy Bay.cur;TYPTE TideCur; NAME Pasamaquoddy Model Currents; PATH 10007; topFile resnum 10009;scaleType constant;refP 66.995666 W 44.888 N; scaleValue 1; timeFile resNum 10006;
+MESSAGE setfield;TO Passamaquoddy Bay.cur; scaleType constant;refP 66.995666 W 44.888 N; scaleValue 1; timeFile resNum 10006;
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Passamaquoddy Bay;
+-------------------------------------------
+
