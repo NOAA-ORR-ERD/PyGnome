@@ -590,6 +590,44 @@ def test_SpatialReleaseSpill3():
     data = sp.release_elements(release_time, time_step=600)
     assert data['positions'].shape == (4,3)
 
+def test_SurfaceReleaseSpill_new_from_dict():
+    """
+    test to_dict function for Wind object
+    create a new wind object and make sure it has same properties
+    """
+    spill = SurfaceReleaseSpill(num_elements=1000,
+                                start_position = (144.664166, 13.441944, 0.0),
+                                release_time = datetime(2013, 2, 13, 9, 0),
+                                end_release_time = datetime(2013, 2, 13, 9, 0) + timedelta(hours=6)
+                                )
+    sp_state = spill.to_dict('create')
+    print sp_state
+    sp2 = SurfaceReleaseSpill.new_from_dict(sp_state)   # this does not catch two objects with same ID
+    
+    assert spill == sp2
+     
+    
+def test_SurfaceReleaseSpill_from_dict():
+    """
+    test from_dict function for Wind object
+    update existing wind object from_dict
+    """
+    spill = SurfaceReleaseSpill(num_elements=1000,
+                                start_position = (144.664166, 13.441944, 0.0),
+                                release_time = datetime(2013, 2, 13, 9, 0),
+                                end_release_time = datetime(2013, 2, 13, 9, 0) + timedelta(hours=6)
+                                )
+    sp_dict = spill.to_dict()
+    sp_dict['windage_range'] = [.02, .03]
+    spill.from_dict(sp_dict)
+    
+    for key in sp_dict.keys():
+        if isinstance( spill.__getattribute__(key), np.ndarray):
+            np.testing.assert_equal( sp_dict.__getitem__(key), spill.__getattribute__(key) )
+        else:
+            assert spill.__getattribute__(key) == sp_dict.__getitem__(key)
+            
+
 
 if __name__ == "__main__":
     #TC = Test_SurfaceReleaseSpill()
