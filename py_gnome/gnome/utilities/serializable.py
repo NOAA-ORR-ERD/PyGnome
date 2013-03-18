@@ -119,11 +119,7 @@ class Serializable(object):
         
         This is base implementation and can be over-ridden by classes using mixin
         """
-        new_obj = cls(**dict_)
-        if dict_.get('id'):
-            new_obj.id = dict_.get('id')  # let's assign this as well?
-
-        return new_obj
+        return cls(**dict_)
     
     def to_dict(self,do='update'):
         """

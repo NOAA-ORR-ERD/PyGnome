@@ -10,12 +10,27 @@ from itertools import chain
 
 import numpy as np
 
-from gnome import basic_types, GnomeObject
+from gnome import basic_types, GnomeId
 from gnome.utilities import transforms, time_utils, convert, serializable
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime
 from hazpy import unit_conversion
 
-class Wind( GnomeObject, serializable.Serializable):
+class Environment(object):
+    """
+    A base class for all classes in environment module
+    
+    This is primarily to define a dtype such that the OrderedCollection defined in the Model
+    object requires it. 
+    
+    This base class just defines the id property 
+    """
+    def __init__(self, **kwargs):
+        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+        
+    id = property( lambda self: self._gnome_id.id)
+    
+
+class Wind( Environment, serializable.Serializable):
     """
     Defines the Wind conditions for a spill
     """
@@ -46,7 +61,11 @@ class Wind( GnomeObject, serializable.Serializable):
     def __init__(self, **kwargs):
         """
         Initializes a wind object. It only takes keyword arguments as input, these
-        are defined below. It requires one of the following to initialize:
+        are defined below. 
+        
+        Invokes super(Wind,self).__init__(**kwargs) for parent class initialization
+        
+        It requires one of the following to initialize:
               1. 'timeseries' along with 'units' or
               2. a 'file' containing a header that defines units amongst other meta data
                
@@ -124,6 +143,7 @@ class Wind( GnomeObject, serializable.Serializable):
         self.source_id = kwargs.pop('source_id','undefined')
         self.longitude = kwargs.pop('longitude',self.longitude)
         self.latitude = kwargs.pop('latitude',self.latitude)
+        super(Wind,self).__init__(**kwargs)
         
         
     def _convert_units(self, data, ts_format, from_unit, to_unit):
@@ -295,7 +315,7 @@ def ConstantWind(speed, direction, units='m/s'):
                 units=units)
 
         
-class Tides(GnomeObject):
+class Tides(Environment):
     """
     Define the tides for a spill
     
@@ -305,9 +325,11 @@ class Tides(GnomeObject):
     def __init__(self,
                  timeseries=None,
                  file=None,
-                 units=None):
+                 units=None, **kwargs):
         """
         Tide information can be obtained from a file or set as a timeseries
+        
+        Invokes super(Tides,self).__init__(**kwargs) for parent class initialization
         
         :param timeseries: (Required) numpy array containing time_value_pair
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
@@ -334,3 +356,5 @@ class Tides(GnomeObject):
         else:
             self.ossm = CyOSSMTime(path=file,file_contains=ts_format)
             self._user_units = self.ossm.user_units
+            
+        super(Tides,self).__init__(**kwargs)

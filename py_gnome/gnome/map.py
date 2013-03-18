@@ -23,7 +23,7 @@ import os
 import numpy as np
 
 import gnome.cy_gnome.cy_land_check
-from gnome import GnomeObject
+from gnome import GnomeId
 from gnome.utilities import map_canvas, serializable
 from gnome.basic_types import world_point_type, oil_status
 
@@ -34,7 +34,7 @@ from gnome.utilities.geometry.PinP import CrossingsTest as point_in_poly
 from gnome.utilities.geometry.polygons import PolygonSet
 
             
-class GnomeMap(GnomeObject, serializable.Serializable):
+class GnomeMap(serializable.Serializable):
     """
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
@@ -48,7 +48,7 @@ class GnomeMap(GnomeObject, serializable.Serializable):
     
     refloat_halflife = None # note -- no land, so never used
 
-    def __init__(self, map_bounds = None):
+    def __init__(self, map_bounds = None, **kwargs):
         """
         This __init__ will be different for other implementations
         
@@ -67,6 +67,9 @@ class GnomeMap(GnomeObject, serializable.Serializable):
                                           ( 360, -90),
                                           (-360, -90),
                                           ), dtype=np.float64 )
+        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+
+    id = property( lambda self: self._gnome_id.id)
 
     def on_map(self, coord):
         """
@@ -168,7 +171,7 @@ class RasterMap(GnomeMap):
                  projection,
                  map_bounds = None,   # defaults to bounding box of raster
                  spillable_area=None, # defaults to any water
-                 ):
+                 **kwargs):
         """
         create a new RasterMap
         
@@ -195,6 +198,8 @@ class RasterMap(GnomeMap):
             self.spillable_area = np.asarray(spillable_area, dtype=np.float64).reshape(-1, 2)
         else:
             self.spillable_area = None
+            
+        self._gnome_id = GnomeId(id=kwargs.pop('id',None))  # TODO: not sure this is best way - maybe refactor
 
     def _on_land_pixel(self, coord):
         """
@@ -492,7 +497,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
                  bna_filename,
                  refloat_halflife, #seconds
                  raster_size = 1024*1024, # default to 1MB raster
-                 ):
+                 **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a bna file.
         It is expected that you will get the spillable area and map bounds from the BNA -- if they exist
@@ -501,6 +506,8 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         :param refloat_halflife: the half-life (in seconds) for the re-floating.
         :param raster_size: the total number of pixels (bytes) to make the raster -- the actual size
         will match the aspect ratio of the bounding box of the land
+        
+        todo: fix init so it handles kwargs cleanly
         """
         self.bna_filename = os.path.abspath(bna_filename)
         polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
@@ -511,7 +518,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         #      or a gnome_map_data object...
         just_land = PolygonSet() # and lakes....
         spillable_area = None
-        map_bounds = None
+        map_bounds = kwargs.pop('map_bounds',None)  # this isn't really used - just popped out so it isn't duplicated
         for p in polygons:
             if p.metadata[1].lower() == "spillablearea":
                 spillable_area = p
@@ -548,7 +555,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
                            canvas.projection,
                            map_bounds, 
                            spillable_area, 
-                           )
+                           **kwargs)
         
         return None
 
