@@ -7,7 +7,7 @@ import gnome
 from gnome import GnomeId
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.environment import Wind
+from gnome.environment import Environment, Wind
 from gnome.movers import Mover
 from gnome.spill_container import SpillContainerPair
 from gnome.utilities import serializable
@@ -44,7 +44,7 @@ class Model(serializable.Serializable):
         All this does is call reset() which initializes eveything to defaults
         """
         # making sure basic stuff is in place before properties are set
-        self.environment = OrderedCollection(dtype=Wind)  
+        self.environment = OrderedCollection(dtype=Environment)  
         self.movers = OrderedCollection(dtype=Mover)
         #self._spill_container = gnome.spill_container.SpillContainer()
         #self._uncertain_spill_container = None
