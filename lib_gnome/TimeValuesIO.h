@@ -12,4 +12,5 @@ Boolean IsOSSMHeightFile(char* path,short *selectedUnitsP);
 Boolean IsOSSMTimeFile(char* path,short *selectedUnitsP);
 Boolean IsHydrologyFile(char* path);
 Boolean IsNDBCWindFile(char* path);
+Boolean IsNCDCWindFile(char* path);
 Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP);
