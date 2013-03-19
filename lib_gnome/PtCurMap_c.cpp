@@ -862,7 +862,7 @@ WorldPoint3D PtCurMap_c::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,Wo
 		//if (movedPoint.z > depthAtPt) movedPoint.z = GetRandomFloat(.7*depthAtPt,.99*depthAtPt);
 		//if (movedPoint.z <= 0) movedPoint.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
 		if (movedPoint.z <= 0) 
-			//movedPoint.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
+			//movedPoint.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);	// may want to use this for dispersed oil
 			movedPoint.z = 0;	// let points surface or resurface (redispersing is taken care of in TRandom3D)
 		//movedPoint.z = fromWPt.z;	// try not changing depth
 		//if (!InVerticalMap(movedPoint))
