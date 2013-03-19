@@ -20,6 +20,14 @@ model = gnome.model.Model(start_time = start_time,
                         uncertain = False,
                         )
 
+print "adding a spill"
+
+model.spills += gnome.spill.SurfaceReleaseSpill(num_elements=1000,
+                                        start_position = (144.664166, 13.441944, 0.0),
+                                        release_time = start_time,
+                                        end_release_time = start_time + timedelta(hours=6)
+                                        )
+
 #need a scenario for SimpleMover
 model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
 model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
@@ -32,4 +40,4 @@ model.movers += gnome.movers.WindMover( [w for w in model.environment][0] )
 print "saving .."
 scenario.save(model,saveloc)
 print "loading .."
-model2 = scenario.load(saveloc,'model_{0}.txt'.format(model.id))
+#model2 = scenario.load(saveloc,'model_{0}.txt'.format(model.id))

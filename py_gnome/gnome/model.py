@@ -23,6 +23,7 @@ class Model(serializable.Serializable):
                'uncertain',
                'movers',
                'environment',
+               'spills'
                ]
     _create = []
     _create.extend(_update)
@@ -409,6 +410,8 @@ class Model(serializable.Serializable):
         """
         return OrderedCollection.to_dict(self.environment)
 
+    def spills_to_dict(self):
+        return SpillContainerPair.to_dict(self.spills)
 
     def __eq__(self, other):
         """

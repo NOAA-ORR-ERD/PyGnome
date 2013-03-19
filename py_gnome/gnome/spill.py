@@ -19,7 +19,18 @@ from gnome import basic_types
 from gnome import GnomeId
 from gnome.utilities import serializable
 
-class ArrayType(object):
+class ArrayType(object):#,serializable.Serializable):
+    """
+    Not sure if this needs to be serialized?
+    """
+    #===========================================================================
+    # _update= ['shape','dtype','initial_value']
+    # _create= [] # not sure these should be user update able
+    # _create.extend(_update)
+    # state  = serializable.State()
+    # state.add(update=_update, create=_create)
+    #===========================================================================
+    
     def __init__(self, shape, dtype, initial_value=None):
         self.shape = shape
         self.dtype = dtype

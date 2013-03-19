@@ -23,7 +23,8 @@ def save(model, saveloc=None):
         raise ValueError("Invalid location for saving scenario. {0} does not exist".format(saveloc))
     
     # first save model info
-    model_to_json = gnome.persist.model_schema.CreateModel().serialize( model.to_dict('create') )
+    dict_ = model.to_dict('create')
+    model_to_json = gnome.persist.model_schema.CreateModel().serialize( dict_ )
     _save_to_file(model_to_json,
                   os.path.join( saveloc, '{0}_{1}.txt'.format( model.__class__.__name__, model.id)))
     
