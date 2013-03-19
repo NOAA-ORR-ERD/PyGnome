@@ -1,40 +1,47 @@
+import os
+import copy
+from datetime import datetime, timedelta
+from time import gmtime
+
 import numpy as np
 
-from gnome.utilities import time_utils, transforms, convert
+from gnome.utilities import time_utils, transforms, convert, serializable
 from gnome import basic_types, GnomeObject
 from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome.cy_ossm_time import CyOSSMTime       #@UnresolvedImport @UnusedImport IGNORE:W0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time
+from gnome.cy_gnome import cy_gridcurrent_mover
+from gnome.cy_gnome import cy_gridwind_mover
 from gnome import environment
 from gnome.utilities import rand    # not to confuse with python random module
-
-import os
-
-from datetime import datetime, timedelta
-from time import gmtime
 
 class Mover(GnomeObject):
     """
     Base class from which all Python movers can inherit
+    :param on: boolean as to whether the object is on or not
     :param active_start: datetime when the mover should be active
     :param active_stop: datetime after which the mover should be inactive
     It defines the interface for a Python mover. The model expects the methods defined here. 
     The get_move(...) method needs to be implemented by the derived class.  
     """
-    def __init__(self, 
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0)):   # default min + max values for timespan
+    state = serializable.State(update=['on','active_start','active_stop'],
+                               create=['on','active_start','active_stop'],
+                               read=['active'] )
+    
+    def __init__(self, *args, **kwargs):   # default min + max values for timespan
         """
         During init, it defaults active = True
         """
         self._active = True  # initialize to True, though this is set in prepare_for_model_step for each step
-        self.on = True          # turn the mover on / off for the run
+        self.on = kwargs.pop('on',True)  # turn the mover on / off for the run
+        active_start = kwargs.pop('active_start',datetime( *gmtime(0)[:6] ))
+        active_stop  = kwargs.pop('active_stop', datetime(2038,1,18,0,0,0))
         if active_stop <= active_start:
             raise ValueError("active_start should be a python datetime object strictly smaller than active_stop")
         
         self.active_start = active_start
-        self.active_stop  = active_stop
+        self.active_stop = active_stop
 
     # Methods for active property definition
     @property
@@ -105,8 +112,8 @@ class CyMover(Mover):
     We assumes any derived class will instantiate a 'mover' object that
     has methods like: prepare_for_model_run, prepare_for_model_step,
     """
-    def __init__(self, active_start= datetime( *gmtime(0)[:6] ), active_stop = datetime(2038,1,18,0,0,0)):
-        super(CyMover,self).__init__(active_start, active_stop)
+    def __init__(self, *args, **kwargs):
+        super(CyMover,self).__init__(*args, **kwargs)
         
         # initialize variables for readability, tough self.mover = None produces errors, so that is not init here
         self.model_time = 0 
@@ -134,8 +141,8 @@ class CyMover(Mover):
         super(CyMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
         if self.active and self.on:
             uncertain_spill_count = 0
-            uncertain_spill_size = np.array( (0,) ) # only useful if spill.is_uncertain
-            if sc.is_uncertain:
+            uncertain_spill_size = np.array( (0,) ) # only useful if spill.uncertain
+            if sc.uncertain:
                 uncertain_spill_count = 1
                 uncertain_spill_size = np.array( (sc.num_elements,) )
             
@@ -180,7 +187,7 @@ class CyMover(Mover):
         except KeyError, err:
             raise ValueError("The spill container does not have the required data arrays\n" + err.message)
 
-        if sc.is_uncertain:
+        if sc.uncertain:
             self.spill_type = basic_types.spill_type.uncertainty
         else:
             self.spill_type = basic_types.spill_type.forecast
@@ -199,7 +206,7 @@ class CyMover(Mover):
         if self.active and self.on:
             self.mover.model_step_is_done()
 
-class WindMover(CyMover):
+class WindMover(CyMover, serializable.Serializable):
     """
     Python wrapper around the Cython wind_mover module.
     This class inherits from CyMover and contains CyWindMover 
@@ -212,13 +219,35 @@ class WindMover(CyMover):
     # Another way to state this, is the get_move operation is linear. This is why the following class level attributes are defined.
     _windage_is_set = False         # class scope, independent of instances of WindMover  
     _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
-    def __init__(self, wind, 
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0),
-                 uncertain_duration=10800,
-                 uncertain_time_delay=0, 
-                 uncertain_speed_scale=2.,
-                 uncertain_angle_scale=0.4):
+    
+    _common = ['uncertain_duration','uncertain_time_delay','uncertain_speed_scale','uncertain_angle_scale']
+    _update = ['wind']
+    _update.extend(_common)
+    _create = ['wind_id']
+    _create.extend(_common)
+    
+    state = copy.deepcopy(CyMover.state)
+    state.add(update=_update, create=_create)
+    
+    @classmethod
+    def new_from_dict(cls, dict):
+        """
+        define in WindMover and check wind_id matches wind
+        """
+        wind_id = dict.pop('wind_id')
+        if dict.get('wind').id != wind_id:
+            raise ValueError("id of wind object does not match the wind_id parameter")
+        
+        return super(WindMover,cls).new_from_dict(dict)
+    
+    def wind_id_to_dict(self):
+        """
+        used only for storing state so no wind_id_from_dict is defined. This
+        is not a read/write attribute. Only defined for serializable_state
+        """
+        return self.wind.id
+    
+    def __init__(self, wind, **kwargs):
         """
         :param wind: wind object  -- provides the wind time series for the mover
         :param active_start: datetime object for when the mover starts being active.
@@ -227,14 +256,16 @@ class WindMover(CyMover):
         :param uncertain_time_delay:   when does the uncertainly kick in.
         :param uncertain_speed_scale:  Scale for how uncertain the wind speed is
         :param uncertain_angle_scale:  Scale for how uncertain the wind direction is
+        :param active_start: mover active after this time: defaults to datetime( *gmtime(0)[:6] ), 
+        :param active_stop: mover inactive after this time: defaults to datetime(2038,1,18,0,0,0),
         """
         self.wind = wind
-        self.mover = CyWindMover(uncertain_duration=uncertain_duration, 
-                                 uncertain_time_delay=uncertain_time_delay, 
-                                 uncertain_speed_scale=uncertain_speed_scale,  
-                                 uncertain_angle_scale=uncertain_angle_scale)
+        self.mover = CyWindMover(uncertain_duration=kwargs.pop('uncertain_duration',10800), 
+                                 uncertain_time_delay=kwargs.pop('uncertain_time_delay',0), 
+                                 uncertain_speed_scale=kwargs.pop('uncertain_speed_scale',2.),  
+                                 uncertain_angle_scale=kwargs.pop('uncertain_angle_scale',0.4) )
         self.mover.set_ossm(self.wind.ossm)
-        super(WindMover,self).__init__(active_start, active_stop)
+        super(WindMover,self).__init__(**kwargs)
 
     def __repr__(self):
         """
@@ -286,15 +317,16 @@ class WindMover(CyMover):
         if len(sc['positions']) == 0:
             return
         
-        if (not WindMover._windage_is_set and not sc.is_uncertain) or (not WindMover._uspill_windage_is_set and sc.is_uncertain):
+        if (not WindMover._windage_is_set and not sc.uncertain) or (not WindMover._uspill_windage_is_set and sc.uncertain):
             for spill in sc.spills:
-                ix = sc['spill_num'] == sc.spills.index(spill.id)   # matching indices
-                sc['windages'][ix] = rand.random_with_persistance(spill.windage_range[0],
-                                                                  spill.windage_range[1],
-                                                                  spill.windage_persist,
-                                                                  time_step,
-                                                                  array_len=len(ix) )
-            if sc.is_uncertain:
+                spill_mask = sc.get_spill_mask(spill)
+                if np.any(spill_mask):
+                    sc['windages'][spill_mask] = rand.random_with_persistance(spill.windage_range[0],
+                                                                      spill.windage_range[1],
+                                                                      spill.windage_persist,
+                                                                      time_step,
+                                                                      array_len=np.count_nonzero(spill_mask))
+            if sc.uncertain:
                 WindMover._uspill_windage_is_set = True
             else:
                 WindMover._windage_is_set = True
@@ -348,19 +380,40 @@ def wind_mover_from_file(filename, **kwargs):
 
     return wm
 
+def constant_wind_mover(speed, dir, units='m/s'):
+    """
+    utility function to create a mover with a constant wind
 
-class RandomMover(CyMover):
+    :param speed: wind speed
+    :param dir:   wind direction in degrees true
+                  (direction from, following the meteorological convention)
+    :param units='m/s': the units that the input wind speed is in.
+                        options: 'm/s', 'knot', 'mph', others...
+
+
+    :returns WindMover: returns a gnome.movers.WindMover object all set up.
+    """
+    series = np.zeros((1,), dtype=basic_types.datetime_value_2d)
+    # note: if there is ony one entry, the time is arbitrary
+    series[0] = (datetime.now(), ( speed, dir) )
+    wind = environment.Wind(timeseries=series, units=units)
+    w_mover = WindMover(wind)
+    return w_mover
+
+
+class RandomMover(CyMover, serializable.Serializable):
     """
     This mover class inherits from CyMover and contains CyRandomMover
 
     The real work is done by CyRandomMover.
     CyMover sets everything up that is common to all movers.
     """
-    def __init__(self, diffusion_coef=100000, 
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0)):
-        self.mover = CyRandomMover(diffusion_coef=diffusion_coef)
-        super(RandomMover,self).__init__(active_start, active_stop)
+    state = copy.deepcopy(CyMover.state)
+    state.add(update=['diffusion_coef'], create=['diffusion_coef'])
+    
+    def __init__(self, *args, **kwargs):
+        self.mover = CyRandomMover(diffusion_coef=kwargs.pop('diffusion_coef',100000))
+        super(RandomMover,self).__init__(*args, **kwargs)
 
     @property
     def diffusion_coef(self):
@@ -379,9 +432,7 @@ class RandomMover(CyMover):
 
 class CatsMover(CyMover):
     
-    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None,
-                 active_start= datetime( *gmtime(0)[:6] ), 
-                 active_stop = datetime(2038,1,18,0,0,0)):
+    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None, ossm_file=None, format='uv', *args, **kwargs):
         """
         
         """
@@ -392,28 +443,39 @@ class CatsMover(CyMover):
         self.mover = cy_cats_mover.CyCatsMover()
         self.mover.read_topology(curr_file)
         
+        if shio_file is not None and ossm_file is not None:
+            raise ValueError("Cannot provide both OSSM and Shio file for tides.")
+        
         if shio_file is not None:
             if not os.path.exists(shio_file):
                 raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
             else:
-                self.shio = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
-                self.mover.set_shio(self.shio)
-                #self.shio.set_shio_yeardata_path(shio_yeardata_file)
+                self.tides = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
+                self.mover.set_shio(self.tides)
+                #self.tides.set_shio_yeardata_path(shio_yeardata_file)
             if shio_yeardata_file is not None:
                 if not os.path.exists(shio_yeardata_file):
                     raise ValueError("Path for Shio Year Data does not exist: {0}".format(shio_yeardata_file))
                 else:
-                    self.shio.set_shio_yeardata_path(shio_yeardata_file)
+                    self.tides.set_shio_yeardata_path(shio_yeardata_file)
             else:
                 raise ValueError("Shio data requires path for Shio Year Data: {0}".format(shio_yeardata_file))
         
-        super(CatsMover,self).__init__(active_start, active_stop)
+        if ossm_file is not None:
+            if not os.path.exists(ossm_file):
+                raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
+            else:
+                ts_format = convert.tsformat(format)
+                self.tides = CyOSSMTime(file=ossm_file,file_contains=ts_format)
+                self.mover.set_ossm(self.tides)
+        
+        super(CatsMover,self).__init__(*args, **kwargs)
         
     def __repr__(self):
         """
         unambiguous representation of object
         """
-        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.shio.filename)
+        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.tides.filename)
         return info
      
     # Properties
@@ -468,7 +530,7 @@ class WeatheringMover(Mover):
         # create an array of position deltas
         self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
 
-        if spill.is_uncertain:
+        if spill.uncertain:
             self.spill_type = basic_types.spill_type.uncertainty
         else:
             self.spill_type = basic_types.spill_type.forecast
@@ -504,4 +566,198 @@ class WeatheringMover(Mover):
 
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+
+class GridCurrentMover(CyMover):
+    
+    def __init__(self, curr_file, topology_file=None,
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0)):
+        """
+        will need to add uncertainty parameters and other dialog fields
+        """
+        if not os.path.exists(curr_file):
+            raise ValueError("Path for current file does not exist: {0}".format(curr_file))
+        
+        if topology_file is not None:
+            if not os.path.exists(topology_file):
+                raise ValueError("Path for Topology file does not exist: {0}".format(topology_file))
+
+        self.curr_file = curr_file  # check if this is stored with cy_gridcurrent_mover?
+        self.mover = cy_gridcurrent_mover.CyGridCurrentMover()
+        self.mover.text_read(curr_file,topology_file)
+        
+        super(GridCurrentMover,self).__init__(active_start, active_stop)
+        
+#     def __repr__(self):
+#         """
+#         not sure what to do here
+#         unambiguous representation of object
+#         """
+#         info = "GridCurrentMover(curr_file={0},topology_file={1})".format(self.curr_mover, self.curr_mover)
+#         return info
+#      
+#     # Properties
+# Will eventually need some properties, depending on what user gets to set
+#     scale_value = property( lambda self: self.mover.scale_value, 
+#                             lambda self,val: setattr(self.mover, 'scale_value', val) )
+#         
+        
+
+class GridWindMover(CyMover):
+    
+#     def __init__(self, wind_file, topology_file=None,
+#                  active_start= datetime( *gmtime(0)[:6] ), 
+#                  active_stop = datetime(2038,1,18,0,0,0)):
+#         """
+#         
+#         """
+#         if not os.path.exists(wind_file):
+#             raise ValueError("Path for wind file does not exist: {0}".format(wind_file))
+#         
+#         if topology_file is not None:
+#             if not os.path.exists(topology_file):
+#                 raise ValueError("Path for Topology file does not exist: {0}".format(topology_file))
+# 
+#         self.wind_file = wind_file  # check if this is stored with cy_gridwind_mover?
+#         self.mover = cy_gridwind_mover.CyGridWindMover()
+#         self.mover.text_read(wind_file,topology_file)
+#         
+#         super(GridWindMover,self).__init__(active_start, active_stop)
+        
+    _windage_is_set = False         # class scope, independent of instances of GridWindMover  
+    _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
+    def __init__(self, wind_file, topology_file=None, 
+                 active_start= datetime( *gmtime(0)[:6] ), 
+                 active_stop = datetime(2038,1,18,0,0,0),
+                 uncertain_duration=10800,
+                 uncertain_time_delay=0, 
+                 uncertain_speed_scale=2.,
+                 uncertain_angle_scale=0.4):
+        """
+        :param active_start: datetime object for when the mover starts being active.
+        :param active_start: datetime object for when the mover stops being active.
+        :param uncertain_duration:  (seconds) how often does a given uncertian windage get re-set
+        :param uncertain_time_delay:   when does the uncertainly kick in.
+        :param uncertain_speed_scale:  Scale for how uncertain the wind speed is
+        :param uncertain_angle_scale:  Scale for how uncertain the wind direction is
+        """
+
+        """
+        .. todo::
+            We will need the uncertainty parameters.
+            The c++ mover derives from windmover. Here the windmover code is repeated
+        """
+        if not os.path.exists(wind_file):
+            raise ValueError("Path for wind file does not exist: {0}".format(wind_file))
+        
+        if topology_file is not None:
+            if not os.path.exists(topology_file):
+                raise ValueError("Path for Topology file does not exist: {0}".format(topology_file))
+
+        self.wind_file = wind_file  # check if this is stored with cy_gridwind_mover?
+        self.mover = cy_gridwind_mover.CyGridWindMover()
+        self.mover.text_read(wind_file,topology_file)
+        
+#         self.mover = CyGridWindMover(uncertain_duration=uncertain_duration, 
+#                                  uncertain_time_delay=uncertain_time_delay, 
+#                                  uncertain_speed_scale=uncertain_speed_scale,  
+#                                  uncertain_angle_scale=uncertain_angle_scale)
+        super(GridWindMover,self).__init__(active_start, active_stop)
+
+    def __repr__(self):
+        """
+        .. todo::
+            We probably want to include more information.
+        """
+        info="GridWindMover( uncertain_duration={0.uncertain_duration}," +\
+        "uncertain_time_delay={0.uncertain_time_delay}, uncertain_speed_scale={0.uncertain_speed_scale}," + \
+        "uncertain_angle_scale={0.uncertain_angle_scale}, active_start={1.active_start}, active_stop={1.active_stop}, on={1.on})" \
+        
+        return info.format(self.mover, self)
+               
+
+    def __str__(self):
+        info = "GridWindMover - current state.\n" + \
+               "  uncertain_duration={0.uncertain_duration}\n" + \
+               "  uncertain_time_delay={0.uncertain_time_delay}\n" + \
+               "  uncertain_speed_scale={0.uncertain_speed_scale}\n" + \
+               "  uncertain_angle_scale={0.uncertain_angle_scale}" + \
+               "  active_start time={1.active_start}" + \
+               "  active_stop time={1.active_stop}" + \
+               "  current on/off status={1.on}" 
+        return info.format(self.mover, self)
+
+    # Define properties using lambda functions: uses lambda function, which are accessible via fget/fset as follows:
+    uncertain_duration = property( lambda self: self.mover.uncertain_duration,
+                                   lambda self, val: setattr(self.mover,'uncertain_duration', val))
+
+    uncertain_time_delay = property( lambda self: self.mover.uncertain_time_delay,
+                                     lambda self, val: setattr(self.mover,'uncertain_time_delay', val))
+
+    uncertain_speed_scale = property( lambda self: self.mover.uncertain_speed_scale,
+                                      lambda self, val: setattr(self.mover,'uncertain_speed_scale', val))
+
+    uncertain_angle_scale = property( lambda self: self.mover.uncertain_angle_scale,
+                                      lambda self, val: setattr(self.mover,'uncertain_angle_scale', val))
+
+    def prepare_for_model_step(self, sc, time_step, model_time_datetime):
+        """
+        Call base class method and also update windage for this timestep
+         
+        :param sc: an instance of the gnome.spill_container.SpillContainer class
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as a date time object
+        """
+        super(GridWindMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
+        
+        # if no particles released, then no need for windage
+        if len(sc['positions']) == 0:
+            return
+        
+        if (not GridWindMover._windage_is_set and not sc.uncertain) or (not GridWindMover._uspill_windage_is_set and sc.uncertain):
+            for spill in sc.spills:
+                spill_mask = sc.get_spill_mask(spill)
+                if np.any(spill_mask):
+                    sc['windages'][spill_mask] = rand.random_with_persistance(spill.windage_range[0],
+                                                                      spill.windage_range[1],
+                                                                      spill.windage_persist,
+                                                                      time_step,
+                                                                      array_len=np.count_nonzero(spill_mask))
+            if sc.uncertain:
+                GridWindMover._uspill_windage_is_set = True
+            else:
+                GridWindMover._windage_is_set = True
+        
+    
+    def get_move(self, sc, time_step, model_time_datetime):
+        """
+        Override base class functionality because mover has a different get_move signature
+        
+        :param sc: an instance of the gnome.SpillContainer class
+        :param time_step: time step in seconds
+        :param model_time_datetime: current time of the model as a date time object
+        """
+        self.prepare_data_for_get_move(sc, model_time_datetime)
+        
+        if self.active and self.on and len(self.positions) > 0: 
+            self.mover.get_move(  self.model_time,
+                                  time_step, 
+                                  self.positions,
+                                  self.delta,
+                                  sc['windages'],
+                                  self.status_codes,
+                                  self.spill_type,
+                                  0)    # only ever 1 spill_container so this is always 0!
+            
+        return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+
+    def model_step_is_done(self):
+        """
+        Set _windage_is_set flag back to False
+        """
+        if GridWindMover._windage_is_set:
+            GridWindMover._windage_is_set = False
+        if GridWindMover._uspill_windage_is_set:
+            GridWindMover._uspill_windage_is_set = False
+        super(GridWindMover,self).model_step_is_done() 
 

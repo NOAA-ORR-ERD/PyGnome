@@ -23,7 +23,9 @@ define([
         initialize: function() {
             _.bindAll(this);
 
+            // Used to construct model and other server-side URLs.
             this.apiRoot = "/model/" + this.options.modelId;
+            this.router = this.options.router;
 
             this.setupModels();
             this.setupForms();
@@ -49,8 +51,8 @@ define([
             this.treeView = new views.TreeView({
                 treeEl: "#tree",
                 apiRoot: this.apiRoot,
-                modelRun: this.modelRun,
-                modelSettings: this.modelSettings,
+                gnomeRun: this.gnomeRun,
+                gnomeSettings: this.gnomeSettings,
                 map: this.map,
                 customMap: this.customMap,
                 collections: [
@@ -68,13 +70,12 @@ define([
             this.mapView = new views.MapView({
                 mapEl: '#map',
                 placeholderClass: 'placeholder',
-                backgroundImageUrl: this.options.backgroundImageUrl,
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                modelRun: this.modelRun,
+                gnomeRun: this.gnomeRun,
                 model: this.map,
                 animationThreshold: this.options.animationThreshold,
-                locationFiles: this.options.locationFiles
+                newModel: this.options.newModel
             });
 
             this.mapControlView = new views.MapControlView({
@@ -91,39 +92,42 @@ define([
                 resizeButtonEl: "#resize-button",
                 spillButtonEl: "#spill-button",
                 timeEl: "#time",
-                modelRun: this.modelRun,
+                gnomeRun: this.gnomeRun,
                 mapView: this.mapView,
                 model: this.map
             });
 
             this.messageView = new views.MessageView({
-                modelRun: this.modelRun,
-                modelSettings: this.modelSettings,
+                gnomeRun: this.gnomeRun,
+                gnomeSettings: this.gnomeSettings,
                 surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers
             });
 
-            this.setupEventHandlers();
-            this.setupKeyboardHandlers();
-
-            // Setup datepickers
-            _.each($('.date'), function(field) {
-                $(field).datepicker({
-                    changeMonth: true,
-                    changeYear: true
-                });
+            this.splashView = new views.SplashView({
+                el: $('#splash-page'),
+                router: this.router
             });
 
-            $('.error').tooltip({selector: "a"});
+            this.locationFileMapView = new views.LocationFileMapView({
+                el: $('#location-file-map'),
+                apiRoot: this.apiRoot,
+                mapCanvas: '#map_canvas',
+                locationFiles: this.options.locationFiles
+            });
+
+            this.setupEventHandlers();
+            this.setupKeyboardHandlers();
         },
 
         setupEventHandlers: function() {
             var _this = this;
+            this.customMap.on('sync', function() {
+                _this.map.fetch();
+            });
 
-            this.customMap.on('sync', function() { _this.map.fetch(); });
-
-            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
-            this.modelRun.on(models.ModelRun.SERVER_RESET, this.rewind);
+            this.gnomeRun.on(models.GnomeRun.RUN_ERROR, this.gnomeRunError);
+            this.gnomeRun.on(models.GnomeRun.SERVER_RESET, this.rewind);
 
             this.surfaceReleaseSpills.on("sync", this.spillUpdated);
             this.surfaceReleaseSpills.on('sync', this.drawSpills);
@@ -131,6 +135,7 @@ define([
             this.surfaceReleaseSpills.on('remove', this.drawSpills);
 
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
+            this.addSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
             this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
 
             this.formViews.on(forms.FormView.MESSAGE_READY, this.displayMessage);
@@ -145,6 +150,7 @@ define([
             this.mapControlView.on(views.MapControlView.PAUSE_BUTTON_CLICKED, this.pause);
             this.mapControlView.on(views.MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
             this.mapControlView.on(views.MapControlView.ZOOM_OUT_BUTTON_CLICKED, this.enableZoomOut);
+            this.mapControlView.on(views.MapControlView.SLIDER_MOVED, this.sliderMoved);
             this.mapControlView.on(views.MapControlView.SLIDER_CHANGED, this.sliderChanged);
             this.mapControlView.on(views.MapControlView.BACK_BUTTON_CLICKED, this.rewind);
             this.mapControlView.on(views.MapControlView.FORWARD_BUTTON_CLICKED, this.jumpToLastFrame);
@@ -162,28 +168,11 @@ define([
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
-            this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.loadLocation);
-
-            $('.placeholder').on('click', '.load-location-file', function(event) {
-                event.preventDefault();
-                var location = $(event.target).data('location');
-                if (location) {
-                    _this.loadLocation(location);
-                }
-            });
+            this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.setLocation);
         },
 
-        loadLocation: function(location) {
-            $.ajax({
-                type: 'POST',
-                url: this.apiRoot + '/location_file/' + location,
-                success: function() {
-                    window.location.reload();
-                },
-                error: function() {
-                    alert('That location file does not exist yet.');
-                }
-            });
+        setLocation: function(location) {
+            this.locationFileMapView.loadLocationFile(location);
         },
 
         /*
@@ -240,8 +229,8 @@ define([
             });
         },
 
-        spillDrawn: function(x, y) {
-            this.addSpillFormView.show([x, y]);
+        spillDrawn: function(startCoords, endCoords) {
+            this.addSpillFormView.show(startCoords, endCoords);
         },
 
         setupForms: function() {
@@ -258,8 +247,7 @@ define([
             });
 
             this.addMapFormView = new forms.AddMapFormView({
-                id: 'add-map',
-                model: this.map
+                id: 'add-map'
             });
 
             this.editMapFormView = new forms.MapFormView({
@@ -274,9 +262,15 @@ define([
                 defaults: this.options.defaultCustomMap
             });
 
-            this.modelSettingsFormView = new forms.ModelSettingsFormView({
+            this.addMapFromUploadFormView = new forms.AddMapFromUploadFormView({
+                id: 'add-map-from-upload',
+                model: this.map,
+                uploadUrl: this.apiRoot + '/file_upload'
+            });
+
+            this.gnomeSettingsFormView = new forms.GnomeSettingsFormView({
                 id: 'model-settings',
-                model: this.modelSettings
+                model: this.gnomeSettings
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
@@ -324,10 +318,11 @@ define([
             this.formViews.add(this.addMoverFormView);
             this.formViews.add(this.addSpillFormView);
             this.formViews.add(this.addMapFormView);
+            this.formViews.add(this.addMapFromUploadFormView);
             this.formViews.add(this.addWindMoverFormView);
             this.formViews.add(this.addRandomMoverFormView);
             this.formViews.add(this.addSurfaceReleaseSpillFormView);
-            this.formViews.add(this.modelSettingsFormView);
+            this.formViews.add(this.gnomeSettingsFormView);
             this.formViews.add(this.editWindMoverFormView);
             this.formViews.add(this.editRandomMoverFormView);
             this.formViews.add(this.editSurfaceReleaseSpillFormView);
@@ -340,7 +335,7 @@ define([
                 url: this.apiRoot + '/map'
             });
 
-            this.customMap = new models.CustomMap({
+            this.customMap = new models.CustomMap({}, {
                 url: this.apiRoot + '/custom_map'
             });
 
@@ -362,17 +357,16 @@ define([
                 }
             );
 
-            this.options.modelSettings['id'] = this.options.modelId;
-            this.modelSettings = new models.Model(this.options.modelSettings);
+            this.gnomeSettings = new models.Gnome(this.options.gnomeSettings);
 
             // Initialize the model with any previously-generated time step data the
             // server had available.
-            this.modelRun = new models.ModelRun(this.options.generatedTimeSteps, {
+            this.gnomeRun = new models.GnomeRun(this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
                 currentTimeStep: this.options.currentTimeStep,
                 bounds: this.options.mapBounds || [],
-                modelSettings: this.modelSettings
+                gnomeSettings: this.gnomeSettings
             });
         },
 
@@ -380,7 +374,7 @@ define([
             this.messageView.displayMessage(message);
         },
 
-        modelRunError: function() {
+        gnomeRunError: function() {
             this.messageView.displayMessage({
                 type: 'error',
                 text: 'Model run failed.'
@@ -401,15 +395,11 @@ define([
                 return;
             }
 
-            var _this = this;
-            var model = new models.Model({}, {url: this.apiRoot});
-            _this.modelSettings.destroy({
+            this.gnomeSettings.wasDeleted = true;
+            this.gnomeSettings.destroy({
                 success: function() {
-                    model.save(null, {
-                        success: function() {
-                            window.location.reload(true);
-                        }
-                    });
+                    util.Cookies.setItem('model_deleted', true);
+                    window.location = window.location.origin;
                 }
             });
         },
@@ -425,11 +415,11 @@ define([
             this.mapControlView.setPlaying();
             this.mapView.setPlaying();
 
-            if (this.modelRun.isOnLastTimeStep()) {
-                this.modelRun.rewind();
+            if (this.gnomeRun.isOnLastTimeStep()) {
+                this.gnomeRun.rewind();
             }
 
-            this.modelRun.run(opts);
+            this.gnomeRun.run(opts);
         },
 
         playButtonClicked: function() {
@@ -437,7 +427,7 @@ define([
         },
 
         enableZoomIn: function() {
-            if (this.modelRun.hasData() === false) {
+            if (this.gnomeRun.hasData() === false) {
                 return;
             }
 
@@ -448,7 +438,7 @@ define([
         },
 
         enableZoomOut: function() {
-            if (this.modelRun.hasData() === false) {
+            if (this.gnomeRun.hasData() === false) {
                 return;
             }
 
@@ -464,7 +454,7 @@ define([
         zoomIn: function(startPosition, endPosition) {
             this.mapView.setPaused();
             this.mapControlView.setPaused();
-            this.modelRun.rewind();
+            this.gnomeRun.rewind();
 
             if (endPosition) {
                 var rect = {start: startPosition, end: endPosition};
@@ -473,23 +463,23 @@ define([
                 // If we are at zoom level 0 and there is no map portion outside of
                 // the visible area, then adjust the coordinates of the selected
                 // rectangle to the on-screen pixel bounds.
-                if (!isInsideMap && this.modelRun.zoomLevel === 0) {
+                if (!isInsideMap && this.gnomeRun.zoomLevel === 0) {
                     rect = this.mapView.getAdjustedRect(rect);
                 }
 
-                this.modelRun.zoomFromRect(rect, models.ModelRun.ZOOM_IN);
+                this.gnomeRun.zoomFromRect(rect, models.GnomeRun.ZOOM_IN);
             } else {
-                this.modelRun.zoomFromPoint(startPosition, models.ModelRun.ZOOM_IN);
+                this.gnomeRun.zoomFromPoint(startPosition, models.GnomeRun.ZOOM_IN);
             }
 
             this.mapView.setRegularCursor();
         },
 
         zoomOut: function(point) {
-            this.modelRun.rewind();
+            this.gnomeRun.rewind();
             this.mapView.setPaused();
             this.mapControlView.setPaused();
-            this.modelRun.zoomFromPoint(point, models.ModelRun.ZOOM_OUT);
+            this.gnomeRun.zoomFromPoint(point, models.GnomeRun.ZOOM_OUT);
             this.mapView.setRegularCursor();
         },
 
@@ -499,41 +489,51 @@ define([
             this.mapControlView.enableControls();
         },
 
-        sliderChanged: function(newStepNum) {
+        sliderMoved: function(newStepNum) {
             // No need to do anything if the slider is on the current time step.
-            if (newStepNum === this.modelRun.currentTimeStep) {
+            if (newStepNum === this.gnomeRun.currentTimeStep) {
                 return;
             }
 
             // If the model and map view have the time step, display it.
-            if (this.modelRun.hasCachedTimeStep(newStepNum) &&
+            if (this.gnomeRun.hasCachedTimeStep(newStepNum) &&
                     this.mapView.timeStepIsLoaded(newStepNum)) {
-                this.modelRun.setCurrentTimeStep(newStepNum);
+                this.gnomeRun.setCurrentTimeStep(newStepNum);
+            }
+        },
+
+        sliderChanged: function(newStepNum) {
+            // No need to do anything if the slider is on the current time step.
+            if (newStepNum === this.gnomeRun.currentTimeStep) {
                 return;
             }
 
-            // Otherwise, we need to run until the new time step.
-            this.play({
-                runUntilTimeStep: newStepNum
-            });
+            // If the model and map view don't have the time step,
+            // we need to run until the new time step.
+            if (!this.gnomeRun.hasCachedTimeStep(newStepNum)
+                    || !this.mapView.timeStepIsLoaded(newStepNum)) {
+                this.play({
+                    runUntilTimeStep: newStepNum
+                });
+            }
         },
 
         frameChanged: function() {
             if (this.mapView.isPaused() || this.mapView.isStopped()) {
                 return;
             }
-            this.modelRun.getNextTimeStep();
+            this.gnomeRun.getNextTimeStep();
         },
 
         reset: function() {
             this.mapView.reset();
-            this.modelRun.clearData();
+            this.gnomeRun.clearData();
             this.mapControlView.reset();
         },
 
         rewind: function() {
             this.mapView.clear();
-            this.modelRun.clearData();
+            this.gnomeRun.clearData();
             this.mapControlView.reset();
 
             if (this.map.id) {
@@ -545,13 +545,10 @@ define([
         /*
          Jump to the last LOADED frame of the animation. This will stop at
          whatever frame was the last received from the server.
-
-         TODO: This should probably do something fancier, like block and load
-         all of the remaining frames if they don't exist, until the end.
          */
         jumpToLastFrame: function() {
-            var lastFrame = this.modelRun.length - 1;
-            this.modelRun.setCurrentTimeStep(lastFrame);
+            var lastFrame = this.gnomeRun.length - 1;
+            this.gnomeRun.setCurrentTimeStep(lastFrame);
         },
 
         useFullscreen: function() {
@@ -561,6 +558,7 @@ define([
 
         disableFullscreen: function() {
             this.mapControlView.switchToNormalScreen();
+            $(this.sidebarEl).removeClass('hidden');
             $(this.sidebarEl).show('slow');
         },
 
@@ -588,7 +586,6 @@ define([
             if (formView === undefined) {
                 return;
             }
-
 
             // This has to come before we show the form because form views
             // may set their models to null when hiding.
@@ -653,33 +650,18 @@ define([
                 return alert('That item cannot be removed.')
             }
 
-            if (!node.data.object_id || !node.data.object_type) {
+            if (!node.data.object_id || !node.data.form_id) {
                 return error();
             }
 
-            if (node.data.object_type === 'map') {
-                this.deleteObjectForNode(this.map, node);
-                return;
-            }
+            var formView = this.formViews.get(node.data.form_id);
+            var model = formView.getModel(node.data.object_id);
 
-            var collections = {
-                'surface_release_spill': this.surfaceReleaseSpills,
-                'wind_mover': this.windMovers,
-                'random_mover': this.randomMovers
-            };
-
-            if (!_.has(collections, node.data.object_type)) {
+            if (!formView || !model) {
                 return error();
             }
 
-            var object = collections[node.data.object_type].get(
-                node.data.object_id);
-
-            if (!object) {
-                return error();
-            }
-
-            this.deleteObjectForNode(object, node);
+            this.deleteObjectForNode(model, node);
         },
 
         moverChosen: function(moverType) {
@@ -693,7 +675,7 @@ define([
             formView.show();
         },
 
-        spillChosen: function(spillType, coords) {
+        spillChosen: function(spillType, startCoords, endCoords) {
             var formView = this.formViews.get(spillType);
 
             if (formView === undefined) {
@@ -701,7 +683,7 @@ define([
             }
 
             formView.reload();
-            formView.show(coords);
+            formView.show(startCoords, endCoords);
         },
 
         mapSourceChosen: function(source) {
@@ -712,6 +694,25 @@ define([
             }
 
             formView.show();
+        },
+
+        showSection: function(section) {
+            var sectionViews = {
+                'splash-page': this.splashView,
+                'model': this.mapView,
+                'location-file-map': this.locationFileMapView
+            };
+
+            if (section in sectionViews) {
+                var sectionSel = '#' + section;
+                var view = sectionViews[section];
+
+                $('.section').not(sectionSel).addClass('hidden');
+                $(sectionSel).removeClass('hidden');
+                if (view.show) {
+                    view.show();
+                }
+            }
         }
     });
 

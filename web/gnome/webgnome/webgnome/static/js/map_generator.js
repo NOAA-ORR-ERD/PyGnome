@@ -20,19 +20,15 @@
 
         // Private state variables
         var state = {};
-        window.state = state
-
         var mapCanvas = this;
         var rect = settings.rect;
 
-        // Set in `init`
         init();
-
 
         // Public methods
 
         // update the rect to `new_rect`
-        this.update_rect = function(new_rect) {
+        this.updateRect = function(new_rect) {
             var new_bounds = new google.maps.LatLngBounds(
                 new google.maps.LatLng(new_rect.southlat, new_rect.westlon),
                 new google.maps.LatLng(new_rect.northlat, new_rect.eastlon)
@@ -45,6 +41,10 @@
         this.resize = function() {
             google.maps.event.trigger(state.map, 'resize');
             state.map.setCenter(state.mapCenter.getCenter());
+        };
+
+        this.clearSelection = function() {
+            state.selector_rect.setVisible(false);
         };
 
 

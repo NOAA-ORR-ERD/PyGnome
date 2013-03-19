@@ -240,7 +240,7 @@ def test_simple_run_with_image_output_uncertainty():
     model.start_time = spill.release_time
     #image_info = model.next_image()
 
-    model.is_uncertain = True
+    model.uncertain = True
 
     num_steps_output = 0
     while True:
@@ -311,6 +311,8 @@ test_cases = [(datetime(2012, 1, 1, 0, 0), 0, 12 ), # model start_time, No. of t
               (datetime(2012, 1, 1, 0, 0), 12, 12),
               (datetime(2012, 1, 1, 0, 0), 13, 12)]
 
+#test_cases = [(datetime(2012, 1, 1, 0, 0), 13, 12)]
+
 @pytest.mark.parametrize(("start_time", "release_delay", "duration"), test_cases)
 def test_all_movers(start_time, release_delay, duration):
     """
@@ -329,6 +331,9 @@ def test_all_movers(start_time, release_delay, duration):
                                                     start_position=start_loc,
                                                     release_time  = start_time + timedelta(seconds=model.time_step*release_delay),
                                                     )
+    print "release_delay: {0}".format(release_delay)
+    print "LE positions:"
+    print model.spills.LE('positions')
     # model.spills += gnome.spill.PointReleaseSpill(num_LEs=10,
     #                                               start_position = (0.0, 0.0, 0.0),
     #                                               release_time = start_time,
@@ -372,10 +377,155 @@ def test_all_movers(start_time, release_delay, duration):
         assert len(model.spills.LE('positions') ) == 0
         
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+
+
+def test_linearity_of_wind_movers():
+    """
+    WindMover is defined as a linear operation - defining a model
+    with a single WindMover with 15 knot wind is equivalent to defining
+    a model with three WindMovers each with 5 knot wind. Or any number of
+    WindMover's such that the sum of their magnitude is 15knots and the
+    direction of wind is the same for both cases.
     
+    Current implementation defines a class variable (WindMover._windage_is_set)
+    that is set during prepare_for_model_step and reset during model_step_is_done
+    
+    Below is an example which defines two models and runs them in one thread so the 
+    model loop defined by model.step() runs for each model without coupling from 
+    the second model. So, although this works and shows linearity of the WindMover as
+    it is currently implemented, it is not thread safe - see comments towards bottom of this example.
+    
+    To make it thread safe, the model loop (model.step()) must be made thread safe. 
+    """
+    start_time = datetime(2012, 1, 1, 0, 0)
+    series1= np.array( (start_time, ( 15,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
+    series2= np.array( (start_time, (  6,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
+    series3= np.array( (start_time, (  3,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
+    
+    model1= gnome.model.Model()
+    model1.duration = timedelta(hours=3)
+    model1.time_step = timedelta(hours = 1)
+    model1.start_time = start_time
+    model1.spills += gnome.spill.SurfaceReleaseSpill(num_elements=5,
+                                                     start_position=(1.,2.,0.),
+                                                     release_time  = start_time,
+                                                     )
+    model1.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series1, units='meter per second'))
+    
+    model2= gnome.model.Model()
+    model2.duration = timedelta(hours=3)
+    model2.time_step = timedelta(hours = 1)
+    model2.start_time = start_time
+    model2.spills += gnome.spill.SurfaceReleaseSpill(num_elements=5,
+                                                     start_position=(1.,2.,0.),
+                                                     release_time  = start_time,
+                                                     )
+    model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series2, units='meter per second'))
+    model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series2, units='meter per second'))
+    model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series3, units='meter per second'))
+    
+    # tolerance for np.allclose(..) function
+    atol = 1e-14
+    rtol = 0
+    
+    for i in range(int(model1.num_time_steps)+1):
+        gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
+        model1.step()
+        gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
+        model2.step()
+        assert np.allclose(model1.spills.LE('positions'), model2.spills.LE('positions'), atol, rtol)
+    
+    
+    """
+    NOTE:
+    The above works because both models are running in a single thread. If both models were running
+    on separate threads and the model.step() is not thread safe, this will not work correctly. 
+    As an example, note that setting the _windage_is_set flag effects the class attribute
+    WindMover objects in both models as one would expect.
+    """
+    lmv = [model1.movers[m.id] for m in model1.movers]
+    lmv2= [model2.movers[m.id] for m in model2.movers]
+    
+    lmv[0].__class__._windage_is_set = True
+    assert lmv2[0].__class__._windage_is_set == True    # PROBLEM!
+
+def test_model_release_after_start():
+    """
+
+    This runs the model for a simple spill, that starts after the model starts
+
+    """
+    start_time = datetime(2013, 2, 22, 0)
+
+    model = gnome.model.Model(time_step=60*30, # 30 minutes in seconds
+                              start_time=start_time, # default to now, rounded to the nearest hour
+                              duration=timedelta(hours=3),
+                              )
+
+    # add a spill that starts after the run begins.
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements = 5,
+                                                    start_position = (0, 0, 0),
+                                                    release_time=start_time+timedelta(hours=1))
+
+    # and another that starts later..
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements = 4,
+                                                    start_position = (0, 0, 0),
+                                                    release_time=start_time+timedelta(hours=2))
+
+    # Add a Wind mover:
+    series = np.array( (start_time, ( 10,   45) ),
+                      dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
+    model.movers += gnome.movers.WindMover(environment.Wind(timeseries=series,
+                                           units='meter per second'))
+
+    for step in model:
+        print "running a step"
+        for sc in model.spills.items():
+            print "num_LEs", len(sc['positions'])
+
+def test_release_at_right_time():
+    """
+    Tests that the elements get released when they should
+    
+    There are issues in that we want the elements to show
+    up in the output for a given time step if they were
+    supposed to be released then. Particularly for the
+    first time step of the model.
+
+    """
+    start_time = datetime(2013, 1, 1, 0)
+    time_step = 2*60*60 # 2 hour in seconds
+
+    model = gnome.model.Model(time_step=time_step,
+                              start_time=start_time, # default to now, rounded to the nearest hour
+                              duration=timedelta(hours=12),
+                              )
+
+    # add a spill that starts right when the run begins
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements=12,
+                                                    start_position=(0, 0, 0),
+                                                    release_time=datetime(2013, 1, 1, 0),
+                                                    end_release_time=datetime(2013, 1, 1, 6),
+                                                    )
+    # before the run:
+    assert model.spills.items()[0].num_elements == 0
+
+    model.step()
+    assert model.spills.items()[0].num_elements == 4
+
+    model.step()
+    assert model.spills.items()[0].num_elements == 8
+
+    model.step()
+    assert model.spills.items()[0].num_elements == 12
+
+    model.step()
+    assert model.spills.items()[0].num_elements == 12
+
+
 if __name__ == "__main__":
-    test_all_movers()
-    
+    #test_all_movers()
+    test_release_at_right_time()
     
     
 

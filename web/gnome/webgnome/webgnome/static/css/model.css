@@ -91,8 +91,15 @@ legend {
     display: inline-block;
 }
 
-.drawable {
+.drawable-foreground {
     z-index: 1025;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.drawable-background {
+    z-index: 1020;
     position: absolute;
     top: 0;
     left: 0;
@@ -177,6 +184,10 @@ legend {
 
 .model-settings .controls {
     margin-left: 170px;
+}
+
+.control-group.form-inline {
+    display: inline-block;
 }
 
 .table tbody tr.info td {
@@ -278,5 +289,9 @@ form .required label:after {
 }
 
 input.required {
-    border: 1px solid red;
+    border: 4px solid red;
+}
+
+.placeholder {
+    background-image: url('/static/img/placeholder.gif');
 }

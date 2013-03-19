@@ -88,8 +88,8 @@ class WindSchemaTests(TestCase):
 
         for idx, wind_value in enumerate(wind['timeseries']):
             test_values= data['timeseries'][idx]
-            self.assertEqual(wind_value[0],
-                             numpy.datetime64(expected_datetimes[idx]))
+            self.assertEqual(str(wind_value[0]),
+                             str(numpy.datetime64(expected_datetimes[idx])))
             self.assertEqual(wind_value[1][0], float(test_values[1]))
             self.assertEqual(wind_value[1][1], float(test_values[2]))
 

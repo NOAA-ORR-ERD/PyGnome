@@ -126,7 +126,7 @@ OSErr NetCDFWindMoverCurv::CheckAndPassOnMessage(TModelMessage *message)
 	return NetCDFWindMover::CheckAndPassOnMessage(message); 
 }
 
-OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a map  
+OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap, char *topFilePath) // don't want a map  
 {
 	// this code is for curvilinear grids
 	OSErr err = 0;
@@ -418,6 +418,7 @@ OSErr NetCDFWindMoverCurv::TextRead(char *path, TMap **newMap) // don't want a m
 	// for now ask for an ascii file, output from Topology save option
 	// need dialog to ask for file
 	//if (fIsNavy)	// for now don't allow for wind files
+	{if (topFilePath[0]) {err = ReadTopology(topFilePath,newMap); goto done;}}
 	{
 		short buttonSelected;
 		buttonSelected  = MULTICHOICEALERT(1688,"Do you have an extended topology file to load?",FALSE);

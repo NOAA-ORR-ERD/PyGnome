@@ -24,7 +24,8 @@ cdef class CyShioTime(object):
         
     def __init__(self,
                  path, 
-                 daylight_savings_off=True):
+                 daylight_savings_off=True,
+                 scale_factor = 1):
         """
         Init CyShioTime with defaults
         """
@@ -71,7 +72,11 @@ cdef class CyShioTime(object):
             fileName = self.shio.fileName
             return fileName
     
-    id = property( lambda self: id(self)) 
+    property scale_factor:
+        def __get__(self):
+            return self.shio.fScaleFactor
+        def __set__(self,value):
+            self.shio.fScaleFactor = value
     
     def __repr__(self):
         """
@@ -125,7 +130,7 @@ cdef class CyShioTime(object):
         cdef cnp.ndarray[WorldPoint, ndim=1] wp
         wp = np.zeros((1,), dtype=basic_types.w_point_2d)
         
-        wp[0] = self.shio.GetRefWorldPoint()
+        wp[0] = self.shio.GetStationLocation()
         wp['lat'][:] = wp['lat'][:]/1.e6    # correct C++ scaling here
         wp['long'][:] = wp['long'][:]/1.e6    # correct C++ scaling here
         

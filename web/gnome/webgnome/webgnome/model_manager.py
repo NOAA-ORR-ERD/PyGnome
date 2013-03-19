@@ -2,11 +2,12 @@
 model_manager.py: Manage a pool of running models.
 """
 import datetime
-
+import logging
 import os
 import uuid
-from hazpy.file_tools import haz_files
 import numpy
+
+from hazpy.file_tools import haz_files
 from webgnome import util
 
 # XXX: This except block should not be necessary.
@@ -31,6 +32,9 @@ from gnome.movers import WindMover, RandomMover
 from gnome.spill import SurfaceReleaseSpill
 from gnome.environment import Wind
 from gnome.map import MapFromBNA
+
+
+log = logging.getLogger(__name__)
 
 
 class Serializable(object):
@@ -121,12 +125,13 @@ class WebWind(Wind, BaseWebObject):
     )
     serializable_fields = [
         'id',
-        'units', # set the units before timeseries
+        # set the units before timeseries, as timeseries relies on units
+        'units',
         'timeseries',
         'latitude',
         'longitude',
         'description',
-        'source',
+        'source_id',
         'source_type',
         'updated_at'
     ]
@@ -135,7 +140,7 @@ class WebWind(Wind, BaseWebObject):
         self.name = kwargs.pop('name', 'Wind')
         self.description = kwargs.pop('description', None)
         self.source_type = kwargs.pop('source_type', None)
-        self.source = kwargs.pop('source', None)
+        self.source_id = kwargs.pop('source_id', None)
         self.longitude = kwargs.pop('longitude', None)
         self.latitude = kwargs.pop('latitude', None)
         self.updated_at = kwargs.pop('updated_at', None)
@@ -234,7 +239,9 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
     serializable_fields = [
         'id',
         'release_time',
+        'end_release_time',
         'start_position',
+        'end_position',
         'windage_range',
         'windage_persist',
         'name',
@@ -250,33 +257,21 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
     def minute(self):
         return self.release_time.minute
 
-    @property
-    def start_position_x(self):
-        return self.start_position[0]
-
-    @property
-    def start_position_y(self):
-        return self.start_position[1]
-
-    @property
-    def start_position_z(self):
-        return self.start_position[2]
-
-    @property
-    def windage_min(self):
-        return self.windage_range[0]
-
-    @property
-    def windage_max(self):
-        return self.windage_range[1]
+    def _reshape(self, lst):
+        return numpy.asarray(
+            lst, dtype=basic_types.world_point_type).reshape((len(lst),))
 
     def start_position_from_dict(self, start_position):
-        self.start_position = numpy.asarray(
-            start_position,
-            dtype=basic_types.world_point_type).reshape((3,))
+        self.start_position = self._reshape(start_position)
+
+    def end_position_from_dict(self, end_position):
+        self.end_position = self._reshape(end_position)
 
     def start_position_to_dict(self):
         return self.start_position.tolist()
+
+    def end_position_to_dict(self):
+        return self.end_position.tolist()
 
 
 class WebMapFromBNA(MapFromBNA, BaseWebObject):
@@ -292,7 +287,14 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
     ]
 
     def map_bounds_to_dict(self):
-        return self.map_bounds.tolist()
+        """
+        Map bounds may be a tuple, if it's the default value provided by
+        :class:`webgnome.schema.MapSchema`, or it may be a NumPy list,
+        in which case we should call the tolist() method to get a list.
+        """
+        if self.map_bounds is not None and hasattr(self.map_bounds, 'tolist'):
+            return self.map_bounds.tolist()
+        return self.map_bounds
 
     def __init__(self, *args, **kwargs):
         self.name = kwargs.pop('name', 'Map')
@@ -327,6 +329,7 @@ class WebModel(Model, BaseWebObject):
         # TODO: Add output caching in the model?
         self.time_steps = []
         self.runtime = None
+        self.background_image = None
 
     @property
     def data_dir(self):
@@ -339,15 +342,11 @@ class WebModel(Model, BaseWebObject):
         return os.path.join(self.base_dir, self.runtime)
 
     @property
-    def background_image(self):
-        """
-        Return the path to the file containing the background image for the
-        current map.
-        """
-        if not self.output_map:
+    def background_image_path(self):
+        if not self.background_image:
             return
 
-        return os.path.join(self.base_dir, 'background_map.png')
+        return os.path.join(self.base_dir, self.background_image)
 
     @property
     def duration_hours(self):
@@ -373,12 +372,22 @@ class WebModel(Model, BaseWebObject):
         canvas.set_land(polygons)
         self.output_map = canvas
 
-        # Save the background image.
+        # Delete an existing background image file.
+        if self.background_image and os.path.exists(self.background_image_path):
+            try:
+                os.remove(self.background_image_path)
+            except OSError as e:
+                log.error('Could not delete file: %s. Error was: %s' % (
+                    self.background_image, e))
+
+        # Save the backgrsinon-1.6.0ound image.
+        self.background_image = 'background_image_%s.png' % util.get_runtime()
         self.output_map.draw_background()
-        self.output_map.save_background(self.background_image)
+        self.output_map.save_background(self.background_image_path)
 
     def remove_map(self):
         self.map = None
+        self.background_image = None
         self.output_map = None
         self.rewind()
 
@@ -419,7 +428,7 @@ class WebModel(Model, BaseWebObject):
             _map = None
 
         data = {
-            'is_uncertain': self.is_uncertain,
+            'uncertain': self.uncertain,
             'time_step': (self.time_step / 60.0) / 60.0,
             'start_time': self.start_time,
             'duration_days': 0,
@@ -462,7 +471,7 @@ class WebModel(Model, BaseWebObject):
                 spill._id = uuid.UUID(_id)
             self.spills.add(spill)
 
-        self.is_uncertain = data['is_uncertain']
+        self.uncertain = data['uncertain']
         self.start_time = data['start_time']
         self.time_step = data['time_step'] * 60 * 60
         self.duration = datetime.timedelta(

@@ -34,6 +34,7 @@ public:
 	Boolean					bOSSMStyle;
 	double					fTransport;
 	double					fVelAtRefPt;
+	short					fInterpolationType;
 	
 	virtual void 			GetTimeFileName (char *theName) { strcpy (theName, fileName); }
 	virtual short			GetFileType	() { if (fFileType == PROGRESSIVETIDEFILE) return SHIOHEIGHTSFILE; else return fFileType; }
@@ -55,12 +56,16 @@ public:
 	virtual TimeValuePairH	GetTimeValueHandle () { return timeValues; }
 	virtual void			SetTimeValueHandle (TimeValuePairH t) ;
 	
+	virtual WorldPoint		GetStationLocation (void) {return fStationPosition;}
 	virtual short			GetUserUnits(){return fUserUnits;}
 	virtual void			SetUserUnits(short userUnits){fUserUnits=userUnits;}
 	virtual double			GetMaxValue();
 	virtual OSErr			InitTimeFunc ();
+	virtual OSErr			ReadNDBCWind (char *path);
+	virtual OSErr			ReadNCDCWind (char *path);
 	virtual OSErr			ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance);
-			OSErr 			ReadHydrologyHeader (char *path);
+	OSErr					ReadOSSMTimeHeader (char *path);
+	OSErr					ReadHydrologyHeader (char *path);
 
 	
 protected:

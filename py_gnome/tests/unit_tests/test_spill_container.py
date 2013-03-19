@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Tests the SpillContainer class
 """
@@ -8,7 +10,7 @@ import pytest
 import numpy as np
 
 from gnome import basic_types
-from gnome.spill_container import SpillContainer, TestSpillContainer
+from gnome.spill_container import SpillContainer, TestSpillContainer, SpillContainerPair
 from gnome.spill import Spill, SurfaceReleaseSpill, SubsurfaceReleaseSpill
 
 def test_simple_init():
@@ -36,7 +38,7 @@ def test_one_simple_spill():
                                 start_position,
                                 start_time)
     sc.spills.add(spill)
-    sc.release_elements(start_time)
+    sc.release_elements(start_time,1)
 
     assert sc.num_elements == num_elements
 
@@ -62,18 +64,18 @@ def test_multiple_spills():
                                 start_time)
 
     sp2 = SurfaceReleaseSpill(num_elements,
-                                start_position,
-                                start_time2)
+                              start_position,
+                              start_time2)
 
     sc.spills += [spill, sp2]
     print sc.spills
 
-    sc.release_elements(start_time)
+    sc.release_elements(start_time, time_step=100)
 
     assert sc['positions'].shape == (num_elements, 3)
     assert sc['last_water_positions'].shape == (num_elements, 3)
 
-    sc.release_elements(start_time + timedelta(hours=24) )
+    sc.release_elements(start_time + timedelta(hours=24), time_step=100)
 
     assert sc['positions'].shape == (num_elements*2, 3)
     assert sc['last_water_positions'].shape == (num_elements*2, 3)
@@ -264,7 +266,7 @@ def test_data_arrays():
 
     # as we move forward in time, the spills will release LEs
     # in an expected way
-    sc.release_elements(start_time1)
+    sc.release_elements(start_time1, time_step=100)
 
     assert sc['positions'].shape == (num_elements, 3)
     assert sc['last_water_positions'].shape == (num_elements, 3)
@@ -272,7 +274,7 @@ def test_data_arrays():
     with pytest.raises(KeyError):
         assert sc['water_currents'].shape == (num_elements, 3)  # it shouldn't be there.
 
-    sc.release_elements(start_time1 + timedelta(hours=24))
+    sc.release_elements(start_time1 + timedelta(hours=24), time_step=100)
 
     assert sc['positions'].shape == (num_elements*2, 3)
     assert sc['last_water_positions'].shape == (num_elements*2, 3)
@@ -280,7 +282,7 @@ def test_data_arrays():
     with pytest.raises(KeyError):
         assert sc['water_currents'].shape == (num_elements*2, 3)  # it shouldn't be there.
 
-    sc.release_elements(start_time2 + timedelta(hours=24))
+    sc.release_elements(start_time2 + timedelta(hours=24), time_step=100)
 
     assert sc['positions'].shape == (num_elements*3, 3)
     assert sc['last_water_positions'].shape == (num_elements*3, 3)
@@ -297,7 +299,7 @@ def test_data_arrays():
     #   previously released LEs
     del sc.spills[sp2.id]
     sc.spills += sp4
-    sc.release_elements(start_time3 + timedelta(hours=24))
+    sc.release_elements(start_time3 + timedelta(hours=24), time_step=100)
 
     assert sc['positions'].shape == (num_elements*4, 3)
     assert sc['last_water_positions'].shape == (num_elements*4, 3)
@@ -310,7 +312,7 @@ def test_data_arrays():
     #   release after the delete.
     del sc.spills[sp4.id]
     sc.spills += sp5
-    sc.release_elements(start_time4 + timedelta(hours=24))
+    sc.release_elements(start_time4 + timedelta(hours=24), time_step=100)
 
     assert sc['positions'].shape == (num_elements*5, 3)
     assert sc['last_water_positions'].shape == (num_elements*5, 3)
@@ -346,7 +348,7 @@ def test_uncertain_copy():
 
     u_sc = sc.uncertain_copy()
 
-    assert u_sc.is_uncertain
+    assert u_sc.uncertain
     assert len(sc.spills) == len(u_sc.spills)
 
     # make sure they aren't references to the same spills
@@ -361,7 +363,7 @@ def test_uncertain_copy():
 
     # do the spills work?
 
-    sc.release_elements(start_time)
+    sc.release_elements(start_time, time_step=100)
 
     assert sc['positions'].shape == (num_elements, 3)
     assert sc['last_water_positions'].shape == (num_elements, 3)
@@ -370,13 +372,13 @@ def test_uncertain_copy():
     assert u_sc['positions'].shape[0] == 0
 
     # now release second set:
-    u_sc.release_elements(start_time)
+    u_sc.release_elements(start_time, time_step=100)
     # elements should be there.
     assert u_sc['positions'].shape == (num_elements, 3)
     assert u_sc['last_water_positions'].shape == (num_elements, 3)
 
     # next release:
-    sc.release_elements(start_time + timedelta(hours=24) )
+    sc.release_elements(start_time + timedelta(hours=24), time_step=100 )
 
     assert sc['positions'].shape == (num_elements*2, 3)
     assert sc['last_water_positions'].shape == (num_elements*2, 3)
@@ -386,7 +388,7 @@ def test_uncertain_copy():
     assert u_sc['last_water_positions'].shape == (num_elements, 3)
 
     # release second set
-    u_sc.release_elements(start_time + timedelta(hours=24) )
+    u_sc.release_elements(start_time + timedelta(hours=24), time_step=100 )
     assert u_sc['positions'].shape == (num_elements*2, 3)
     assert u_sc['last_water_positions'].shape == (num_elements*2, 3)
 
@@ -401,6 +403,19 @@ def test_ordered_collection_api():
                                      start_position,
                                      start_time)
     assert len(sc.spills) == 1
+
+## SpillContainerPairData tests.
+
+def test_init_SpillContainerPair():
+    """
+    all this does is test that it can be initilized
+    """
+    scp = SpillContainerPair()
+    u_scp = SpillContainerPair(True)
+
+    assert True
+
+
 
 
 if __name__ == "__main__":

@@ -218,10 +218,22 @@ def GetNextBNAPolygon(f, dtype=np.float):
         return None
     while header and not header.strip(): # skip blank lines
         header = f.readline()
-    name, rest = header.strip().split('","')
-    name = name[1:]
-    sname, num_points = rest.split('",')
-    num_points = int(num_points)
+    try:
+        # #find the quotes:
+        # quote2 = header.find('"', 1)
+        # quote3 = header.find('"', quote2+1)
+        # quote4 = header.find('"', quote3+1)
+        # name = header[1:quote2]
+        # sname = header[quote3+1:quote4]
+        # num_points = int(header[quote4+1:].strip()[1:])
+        fields = header.split('"')
+        name = fields[1]
+        sname=fields[3]
+        num_points = int(fields[4].strip()[1:])
+        #header = header.replace('", "', '","') # some bnas have an extra space
+        #name, rest = header.strip().split('","')
+    except ValueError:
+        raise ValueError("something wrong with header line: %s "%header)
     if num_points < 0 or num_points == 2:
         poly_type = 'polyline'
         num_points = abs(num_points)

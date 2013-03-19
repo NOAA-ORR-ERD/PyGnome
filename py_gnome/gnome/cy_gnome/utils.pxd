@@ -29,6 +29,7 @@ cdef extern from "OSSMTimeValue_c.h":
         OSSMTimeValue_c() except +    
         # Members
         string  fileName
+        double  fScaleFactor
         
         # Methods
         OSErr   GetTimeValue(Seconds &, VelocityRec *)
@@ -69,7 +70,7 @@ cdef extern from "ShioTimeValue_c.h":
         
         OSErr       ReadTimeValues (char *path)
         OSErr       SetYearDataPath (char *path)
-        WorldPoint  GetRefWorldPoint()
+        WorldPoint  GetStationLocation()
         
         # Not Sure if Following are required/used
         OSErr       GetConvertedHeightValue(Seconds  , VelocityRec *)

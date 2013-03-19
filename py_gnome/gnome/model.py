@@ -1,21 +1,35 @@
 #!/usr/bin/env python
 import os
 from datetime import datetime, timedelta
+import copy
 
 import gnome
-
 from gnome.gnomeobject import GnomeObject
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.environment import Wind
 from gnome.movers import Mover
-from gnome.spill_container import UncertainSpillContainerPair
+from gnome.spill_container import SpillContainerPair
+from gnome.utilities import serializable
 
-class Model(GnomeObject):
+class Model(GnomeObject, serializable.Serializable):
     """ 
     PyGNOME Model Class
     
     """
+    _update = ['time_step',
+               'start_time',
+               'duration',
+               'uncertain',
+               'movers',
+               'environment',
+               ]
+    _create = []
+    _create.extend(_update)
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add(create=_create,
+              update=_update)   # no need to copy parent's state in tis case
+    
     def __init__(self,
                  time_step=900, # 15 minutes in seconds
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
@@ -23,18 +37,18 @@ class Model(GnomeObject):
                  map=gnome.map.GnomeMap(),
                  output_map=None,
                  uncertain=False,
-                 ):
+                 **kwargs):
         """ 
         Initializes model. 
 
         All this does is call reset() which initializes eveything to defaults
         """
         # making sure basic stuff is in place before properties are set
-        self.winds = OrderedCollection(dtype=Wind)  
+        self.environment = OrderedCollection(dtype=Wind)  
         self.movers = OrderedCollection(dtype=Mover)
         #self._spill_container = gnome.spill_container.SpillContainer()
         #self._uncertain_spill_container = None
-        self.spills = UncertainSpillContainerPair(uncertain)   # contains both certain/uncertain spills 
+        self.spills = SpillContainerPair(uncertain)   # contains both certain/uncertain spills 
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
@@ -73,10 +87,10 @@ class Model(GnomeObject):
 
     ### Assorted properties
     @property
-    def is_uncertain(self):
+    def uncertain(self):
         return self.spills.uncertain
-    @is_uncertain.setter
-    def is_uncertain(self, uncertain_value):
+    @uncertain.setter
+    def uncertain(self, uncertain_value):
         """
         only if uncertainty switch is toggled, then restart model
         """
@@ -223,6 +237,9 @@ class Model(GnomeObject):
         if len(self.spills) > 0:        # can this check be removed?
             for sc in self.spills.items():
                 if sc.num_elements > 0: # can this check be removed?
+                    # possibly refloat elements
+                    self.map.refloat_elements(sc,self.time_step)
+                    
                     # reset next_positions
                     sc['next_positions'][:] = sc['positions']
 
@@ -318,14 +335,11 @@ class Model(GnomeObject):
             self.setup_time_step()
             self.move_elements()
             self.step_is_done()
-        self.current_time_step += 1        
+        self.current_time_step += 1
+        ## release_elements after the time step increment so that they will be there
+        ## but not yet moved, at the beginning of the release time.
         for sc in self.spills.items():
-            sc.release_elements(self.model_time)
-        #=======================================================================
-        # self._spill_container.release_elements(self.model_time)
-        # if self.is_uncertain:
-        #    self._uncertain_spill_container.release_elements(self.model_time)
-        #=======================================================================
+            sc.release_elements(self.model_time, self.time_step)
         return True
 
     def __iter__(self):
@@ -377,3 +391,40 @@ class Model(GnomeObject):
                 print "Done with the model run"
                 break
 
+    def movers_to_dict(self):
+        """
+        call OrderedCollection.to_dict static method
+        """
+        return OrderedCollection.to_dict(self.movers)
+    
+    def environment_to_dict(self):
+        """
+        call OrderedCollection.to_dict static method
+        """
+        return OrderedCollection.to_dict(self.environment)
+
+
+    def __eq__(self, other):
+        """
+        override serializable.Serializable.__eq__() method
+        
+        In addition to checking properties, also check the equality of
+        objects in each collection
+        """
+        check = super(Wind,self).__eq__(other)
+        
+        #=======================================================================
+        # if check:
+        #    """check ordered collections are equal. Currently not implemented"""
+        #    if not self.movers == other.movers:
+        #        return False
+        #    
+        #    if not self.environment == other.environment:
+        #        return False
+        #    
+        #    if not self.spills == other.spills:
+        #        return False
+        #=======================================================================
+        
+        return check
+        

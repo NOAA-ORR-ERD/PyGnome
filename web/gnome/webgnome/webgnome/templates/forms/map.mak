@@ -3,7 +3,7 @@
 <div class="map form page hide" id='edit-map' title="Edit Map">
     <form action="" class="form-horizontal" method="POST">
         <div class="page-body">
-            <div class="span3">
+            <div class="span4">
                 <%
                     name = h.text('name', data_value='map.name')
                     refloat_halflife = h.text('refloat_halflife',

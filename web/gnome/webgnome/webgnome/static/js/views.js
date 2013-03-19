@@ -20,10 +20,10 @@ define([
         initialize: function() {
             _.bindAll(this);
 
-            this.options.modelRun.on(
-                models.ModelRun.MESSAGE_RECEIVED, this.displayMessage);
-            this.options.modelSettings.on(
-                models.Model.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.gnomeRun.on(
+                models.GnomeRun.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.gnomeSettings.on(
+                models.Gnome.MESSAGE_RECEIVED, this.displayMessage);
             this.options.surfaceReleaseSpills.on(
                 models.SurfaceReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
             this.options.windMovers.on(
@@ -77,7 +77,6 @@ define([
             this.frameClass = this.options.frameClass;
             this.activeFrameClass = this.options.activeFrameClass;
             this.placeholderClass = this.options.placeholderClass;
-            this.backgroundImageUrl = this.options.backgroundImageUrl;
             this.latLongBounds = this.options.latLongBounds;
             this.animationThreshold = this.options.animationThreshold;
             this.locationFiles = this.options.locationFiles;
@@ -87,81 +86,38 @@ define([
             this.status = MapView.STOPPED;
             this.map = $(this.mapEl);
 
-            this.modelRun = this.options.modelRun;
-            this.modelRun.on(models.ModelRun.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
-            this.modelRun.on(models.ModelRun.RUN_BEGAN, this.modelRunBegan);
-            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
-            this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
-            this.modelRun.on(models.ModelRun.CREATED, this.reset);
-            this.mapCanvas = $('#map_canvas');
-            
+            this.gnomeRun = this.options.gnomeRun;
+            this.gnomeRun.on(models.GnomeRun.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+            this.gnomeRun.on(models.GnomeRun.RUN_BEGAN, this.gnomeRunBegan);
+            this.gnomeRun.on(models.GnomeRun.RUN_ERROR, this.gnomeRunError);
+            this.gnomeRun.on(models.GnomeRun.RUN_FINISHED, this.gnomeRunFinished);
+            this.gnomeRun.on(models.GnomeRun.CREATED, this.reset);
+
             this.model = this.options.model;
-            this.model.on('sync', this.resetBackground);
-            this.model.on('destroy', function () {
-                _this.backgroundImageUrl = null;
-                _this.map.empty();
+            this.model.on('change:background_image_url', function() {
                 _this.reset();
-                _this.mapCanvas.imagesLoaded(_this.centerPlaceholderMap);
+            });
+            this.model.on('destroy', function () {
+                _this.reset();
+                _this.map.empty();
             });
 
-            this.setupLocationFileMap();
-
-            // Map is loaded in the model if it has an ID
-            if (this.model.id) {
-                this.loadMapFromUrl(this.backgroundImageUrl);
-            } else {
-                this.showPlaceholder();
-            }
-
-            if (this.modelRun.hasCachedTimeStep(this.modelRun.getCurrentTimeStep())) {
+            if (this.gnomeRun.hasCachedTimeStep(this.gnomeRun.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
             }
         },
 
-        setupLocationFileMap: function() {
-            var _this = this;
-            this.placeholderCenter = new google.maps.LatLng(-34.397, 150.644);
-            var infoWindow = new google.maps.InfoWindow();
-            var gmapOptions = {
-                center: this.placeholderCenter,
-                backgroundColor: '#212E68',
-                zoom: 1,
-                scrollwheel: true,
-                scaleControl: true,
-                mapTypeId: google.maps.MapTypeId.HYBRID,
-            };
-
-            this.locationFileMap = new google.maps.Map(
-                this.mapCanvas[0], gmapOptions);
-
-            _.each(this.locationFiles, function(location) {
-                var latLng = new google.maps.LatLng(
-                    location.latitude, location.longitude);
-
-                var marker = new google.maps.Marker({
-                    position: latLng,
-                    map: _this.locationFileMap
-                });
-
-                google.maps.event.addListener(marker, 'click', function() {
-                    var template = _.template(
-                        $('#location-file-template').text());
-                    infoWindow.setContent(template(location));
-                    infoWindow.open(_this.locationFileMap, marker);
-                });
-            });
+        show: function() {
+            this.setBackground();
         },
 
-        centerPlaceholderMap: function() {
-            google.maps.event.trigger(this.locationFileMap, 'resize');
-            this.locationFileMap.setCenter(this.placeholderCenter);
-        },
+        setBackground: function() {
+            var backgroundImageUrl = this.model.get('background_image_url');
 
-        resetBackground: function() {
-            this.reset();
-
-            if (this.backgroundImageUrl) {
-                this.loadMapFromUrl(this.backgroundImageUrl);
+            if (backgroundImageUrl) {
+                this.loadMapFromUrl(backgroundImageUrl);
+            } else {
+                this.showPlaceholder();
             }
         },
 
@@ -431,7 +387,7 @@ define([
         },
 
         nextTimeStepReady: function() {
-            this.addTimeStep(this.modelRun.getCurrentTimeStep());
+            this.addTimeStep(this.gnomeRun.getCurrentTimeStep());
         },
 
         loadMapFromUrl: function(url) {
@@ -450,7 +406,6 @@ define([
             background.imagesLoaded(function() {
                 _this.createCanvases();
                 _this.trigger(MapView.READY);
-//                _this.drawSpills();
             });
 
             background.appendTo(map);
@@ -468,7 +423,7 @@ define([
         },
 
         drawSpill: function(spill) {
-            var ctx = this.foregroundCanvas[0].getContext('2d');
+            var ctx = this.backgroundCanvas[0].getContext('2d');
             var startX, startY, startZ, endX, endY, endZ;
             var start = spill.get('start_position');
             var end = spill.get('end_position');
@@ -498,24 +453,28 @@ define([
             });
 
             if (startX === endX && startY === endY) {
-                pixelEnd.x += 5;
-                pixelEnd.y += 5;
+                pixelEnd.x += 2;
+                pixelEnd.y += 2;
             }
 
-            this.drawLine(ctx, pixelStart.x, pixelStart.y, pixelStart.x, pixelEnd.y);
+            this.drawLine(ctx, pixelStart.x, pixelStart.y, pixelEnd.x, pixelEnd.y);
+        },
+        
+        clearCanvas: function(canvas) {
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);           
         },
 
         // Draw a mark on the map for each existing spill.
         drawSpills: function(spills) {
             var _this = this;
 
-            if (!this.foregroundCanvas) {
+            if (!this.backgroundCanvas || !this.foregroundCanvas) {
                 return;
             }
 
-            var canvas = this.foregroundCanvas[0];
-            var ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            this.clearCanvas(this.backgroundCanvas[0]);
+            this.clearCanvas(this.foregroundCanvas[0]);
 
             if (spills === undefined || !spills.length) {
                 return;
@@ -531,6 +490,8 @@ define([
          spills added to the map. This canvas is cleared entirely during line
          additions (as the line position changes) and when the form container
          refreshes.
+
+         TODO: Update canvas sizes when window changes.
          */
         createCanvases: function() {
             var _this = this;
@@ -546,18 +507,18 @@ define([
 
             this.backgroundCanvas = $('<canvas>').attr({
                 id: 'canvas-background',
+                class: 'drawable-background',
                 height: background.height(),
                 width: background.width()
             });
 
             this.foregroundCanvas = $('<canvas>').attr({
                 id: 'canvas-foreground',
-                class: 'drawable',
+                class: 'drawable-foreground',
                 height: background.height(),
                 width: background.width()
             });
 
-            // TODO: Update canvas sizes when window changes.
             this.foregroundCanvas.mousedown(function(ev) {
                 if (!_this.canDrawSpill) {
                     return;
@@ -593,20 +554,32 @@ define([
                     ycurr = ev.originalEvent.y;
                 }
 
-                // TODO: Draw a line for each spill. Redraw when changed.
                 ctx.clearRect(0, 0, this.width, this.height);
                 _this.drawLine(ctx, this.x0, this.y0, xcurr, ycurr);
             });
 
             $(this.foregroundCanvas).mouseup(function(ev) {
+                var canvas = _this.backgroundCanvas[0];
+                var ctx = canvas.getContext('2d');
                 var offset = $(this).offset();
+                var endX = ev.pageX - offset.left;
+                var endY = ev.pageY - offset.top;
+
+                _this.drawLine(ctx, this.x0, this.y0, endX, endY);
+                _this.clearCanvas(_this.foregroundCanvas[0]);
 
                 if (this.pressed && this.moved) {
-                    var coords = _this.coordinatesFromPixels({
-                        x: ev.clientX - offset.left,
-                        y: ev.clientY - offset.top
+                    var start = _this.coordinatesFromPixels({
+                        x: this.x0,
+                        y: this.y0
                     });
-                    _this.trigger(MapView.SPILL_DRAWN, coords.long, coords.lat);
+                    var end = _this.coordinatesFromPixels({
+                        x: endX,
+                        y: endY
+                    });
+
+                    _this.trigger(MapView.SPILL_DRAWN, [start.long, start.lat],
+                                  [end.long, end.lat]);
                 }
                 this.pressed = this.moved = false;
             });
@@ -615,23 +588,21 @@ define([
             this.foregroundCanvas.appendTo(map);
         },
 
-        modelRunBegan: function() {
-            this.loadMapFromUrl(this.backgroundImageUrl);
+        gnomeRunBegan: function() {
+            this.loadMapFromUrl(this.model.get('background_image_url'));
         },
 
-        modelRunError: function() {
+        gnomeRunError: function() {
             this.setStopped();
         },
 
-        modelRunFinished: function() {
+        gnomeRunFinished: function() {
             this.setStopped();
         },
 
         reset: function() {
             this.clear({clearBackground: true});
-            if (!$(this.mapEl).find('.background').length) {
-                this.showPlaceholder();
-            }
+            this.setBackground();
             this.setStopped();
         },
 
@@ -722,9 +693,25 @@ define([
                 collection.on('destroy', _this.reload);
             });
 
-            this.options.modelSettings.on('sync', this.reload);
+            this.gnomeSettings = this.options.gnomeSettings;
+            this.gnomeSettings.on('sync', this.reload);
+
             this.options.map.on('sync', this.reload);
-            this.options.map.on('change', this.reload);
+
+            $(window).bind('resize', function() {
+                _this.resize();
+            });
+
+            this.resize();
+        },
+
+        /*
+         Adjust the sidebar height to stay at 100% of the page minus the navbar.
+         */
+        resize: function() {
+            var windowHeight = $(window).height();
+            var navbarHeight = $('.navbar').height();
+            $('#sidebar').height(windowHeight - navbarHeight);
         },
 
         setupDynatree: function() {
@@ -760,6 +747,9 @@ define([
         },
 
         reload: function() {
+            if (this.gnomeSettings && this.gnomeSettings.wasDeleted) {
+                return;
+            }
             this.tree.dynatree('getTree').reload();
         }
     }, {
@@ -854,7 +844,7 @@ define([
             this.sliderShadedEl = this.options.sliderShadedEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
-            this.modelRun = this.options.modelRun;
+            this.gnomeRun = this.options.gnomeRun;
             this.model = this.options.model;
 
             this.animationControls = [
@@ -890,19 +880,19 @@ define([
                 disabled: true
             });
 
-            if (this.modelRun.expectedTimeSteps.length) {
-                this.setTimeSteps(this.modelRun.expectedTimeSteps);
+            if (this.gnomeRun.expectedTimeSteps.length) {
+                this.setTimeSteps(this.gnomeRun.expectedTimeSteps);
                 this.enableControls();
             }
 
             this.setupClickEvents();
             this.updateCachedPercentage();
 
-            this.modelRun.on(models.ModelRun.RUN_BEGAN, this.runBegan);
-            this.modelRun.on(models.ModelRun.RUN_ERROR, this.modelRunError);
-            this.modelRun.on(models.ModelRun.NEXT_TIME_STEP_READY, this.updateCachedPercentage);
-            this.modelRun.on(models.ModelRun.RUN_FINISHED, this.modelRunFinished);
-            this.modelRun.on(models.ModelRun.CREATED, this.modelCreated);
+            this.gnomeRun.on(models.GnomeRun.RUN_BEGAN, this.runBegan);
+            this.gnomeRun.on(models.GnomeRun.RUN_ERROR, this.gnomeRunError);
+            this.gnomeRun.on(models.GnomeRun.NEXT_TIME_STEP_READY, this.updateCachedPercentage);
+            this.gnomeRun.on(models.GnomeRun.RUN_FINISHED, this.gnomeRunFinished);
+            this.gnomeRun.on(models.GnomeRun.CREATED, this.modelCreated);
 
             this.options.mapView.on(MapView.FRAME_CHANGED, this.mapViewFrameChanged);
         },
@@ -944,7 +934,7 @@ define([
         },
 
         sliderMoved: function(event, ui) {
-            var timestamp = this.modelRun.getTimestampForExpectedStep(ui.value);
+            var timestamp = this.gnomeRun.getTimestampForExpectedStep(ui.value);
 
             if (timestamp) {
                 this.setTime(timestamp);
@@ -958,20 +948,20 @@ define([
 
         updateCachedPercentage: function() {
             this.setCachedPercentage(
-                100*(this.modelRun.length / this.modelRun.expectedTimeSteps.length))
+                100*(this.gnomeRun.length / this.gnomeRun.expectedTimeSteps.length))
         },
 
         runBegan: function() {
-            if (this.modelRun.dirty) {
+            if (this.gnomeRun.dirty) {
                 // TODO: Is this really what we want to do here?
                 this.reset();
             }
 
-            this.setTimeSteps(this.modelRun.expectedTimeSteps);
+            this.setTimeSteps(this.gnomeRun.expectedTimeSteps);
         },
 
         mapViewFrameChanged: function() {
-            var timeStep = this.modelRun.getCurrentTimeStep();
+            var timeStep = this.gnomeRun.getCurrentTimeStep();
             this.setTimeStep(timeStep.id);
             this.setTime(timeStep.get('timestamp'));
         },
@@ -981,11 +971,11 @@ define([
             this.enableControls();
         },
 
-        modelRunError: function() {
+        gnomeRunError: function() {
             this.stop();
         },
 
-        modelRunFinished: function() {
+        gnomeRunFinished: function() {
             this.disableControls();
             this.stop();
         },
@@ -1244,13 +1234,120 @@ define([
         LOCATION_FILE_ITEM_CLICKED: "menuView:locationFileItemClicked"
     });
 
+
+    var SplashView = Backbone.View.extend({
+        initialize: function() {
+            this.router = this.options.router;
+        },
+
+        events: {
+            'click .choose-location': 'chooseLocation',
+            'click .build-model': 'buildModel'
+        },
+
+        chooseLocation: function(event) {
+            event.preventDefault();
+            this.router.navigate('location_map', true);
+        },
+
+        buildModel: function(event) {
+            event.preventDefault();
+            this.router.navigate('model', true);
+        }
+    });
+
+
+    var LocationFileMapView = Backbone.View.extend({
+        events: {
+            'click .load-location-file': 'locationChosen'
+        },
+
+        initialize: function() {
+            _.bindAll(this);
+            this.apiRoot = this.options.apiRoot;
+            this.mapCanvas = $(this.options.mapCanvas);
+            this.locationFiles = this.options.locationFiles;
+
+            this.setupLocationFileMap();
+        },
+
+        locationChosen: function(event) {
+            event.preventDefault();
+            var location = $(event.target).data('location');
+            if (location) {
+                this.loadLocationFile(location);
+            }
+        },
+
+        setupLocationFileMap: function() {
+            var _this = this;
+            this.center = new google.maps.LatLng(-34.397, 150.644);
+            var infoWindow = new google.maps.InfoWindow();
+            var gmapOptions = {
+                center: this.center,
+                backgroundColor: '#212E68',
+                zoom: 1,
+                scrollwheel: true,
+                scaleControl: true,
+                mapTypeId: google.maps.MapTypeId.HYBRID,
+            };
+
+            this.locationFileMap = new google.maps.Map(
+                this.mapCanvas[0], gmapOptions);
+
+            _.each(this.locationFiles, function(location) {
+                var latLng = new google.maps.LatLng(
+                    location.latitude, location.longitude);
+
+                var marker = new google.maps.Marker({
+                    position: latLng,
+                    map: _this.locationFileMap
+                });
+
+                google.maps.event.addListener(marker, 'click', function() {
+                    var template = _.template(
+                        $('#location-file-template').text());
+                    infoWindow.setContent(template(location));
+                    infoWindow.open(_this.locationFileMap, marker);
+                });
+            });
+        },
+
+        centerMap: function() {
+            google.maps.event.trigger(this.locationFileMap, 'resize');
+            this.locationFileMap.setCenter(this.center);
+        },
+
+        loadLocationFile: function(location) {
+             $.ajax({
+                 type: 'POST',
+                 url: this.apiRoot + '/location_file/' + location,
+                 success: function() {
+                     window.location = window.location.origin;
+                 },
+                 error: function() {
+                     alert('That location file does not exist yet.');
+                 }
+             });
+         },
+
+        show: function() {
+            this.$el.imagesLoaded(this.centerMap);
+        }
+    }, {
+        LOCATION_CHOSEN: 'locationFileMapView:locationChosen'
+    });
+
+
     return {
         MessageView: MessageView,
         MapView: MapView,
         TreeView: TreeView,
         TreeControlView: TreeControlView,
         MapControlView: MapControlView,
-        MenuView: MenuView
+        MenuView: MenuView,
+        SplashView: SplashView,
+        LocationFileMapView: LocationFileMapView
     };
 
 });

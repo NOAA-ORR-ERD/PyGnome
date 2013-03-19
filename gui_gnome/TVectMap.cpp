@@ -289,7 +289,8 @@ void LandBitMapWidthHeight(WorldRect wRect, long *width, long* height)
 	double fraction,latDist,lngDist;
 	long w,h;
 	
-	if (gHighRes) desiredNumBits = 40000000L;
+	//if (gHighRes) desiredNumBits = 40000000L;
+	if (gHighRes) desiredNumBits = 100000000L;	// try something bigger 2/14/13
 	center.pLat = (wRect.loLat + wRect.hiLat)/2; 
 	center.pLong = (wRect.loLong + wRect.hiLong)/2; 
 	
@@ -2674,7 +2675,7 @@ OSErr TVectorMap::ExportAsBNAFile(char* path)
 	Boolean isWaterPoly;
 	LongPoint** thisPointsHdl =0;
 	LongPoint longPt;
-	long i, j;
+	long i, j, numLayers = 3;	// probably won't add any more but leave the option
 	PolyObjectHdl thisObjectHdlAsPolyObjectHdl =0;
 	char theTypeChar;
 	BFPB bfpb;

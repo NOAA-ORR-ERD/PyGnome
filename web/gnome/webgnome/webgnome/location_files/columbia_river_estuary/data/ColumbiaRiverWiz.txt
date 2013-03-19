@@ -1,0 +1,87 @@
+[ORDER]
+-------------------------------------------
+10002
+10010
+MODEL
+10011
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Columbia River Estuary
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.10;
+-------------------------------------------
+
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME CR Estuary Map;PATH resnum 10003
+--
+MESSAGE createMover;TO CR Estuary Map;TYPE Cats; NAME River Flow.CUR;PATH resnum 10004
+--
+MESSAGE createMover;TO CR Estuary Map;TYPE Cats; NAME CR Tides.CUR;PATH resnum 10005
+MESSAGE setfield;TO CR Tides.CUR; scaleType constant;refP 123.7667 W 46.219167 N; scaleValue -1; timeFile resNum 10008;
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Columbia River Estuary;
+-------------------------------------------
+
+
+[WMSG 10010]
+-------------------------------------------
+if $V10 < 4
+	set flow1  500 
+	set flow2  290 
+	set flow3  125 
+	set transport flow{$V10}
+else
+	-- user entered values for the two rivers via UNIT popups 5 and 14
+	-- $5 is Bonn and $14 is Will
+	Set Bonn $5
+	Set Will $14
+	IF {{Bonn} <= 200}*{{Will} <= 90}
+		-- both low
+		set transport {{4.139+{1.003*{Bonn}}} +{1.632*{Will}}}
+	ELSE
+		-- one is high
+		set transport {{103+{1.084*{Bonn}}}+{1.757*{Will}}}
+	ENDIF
+ENDIF
+set v_background .2
+set scale  0.2725 / 223.027 
+set v_tongue_point  {scale} * {transport} 
+set v_scale  {v_tongue_point} - {v_background} 
+MESSAGE setfield;TO River Flow.CUR;scaleValue {v_scale}; scaleType constant;refP 123.7667 W 46.219167 N;
+--DEBUGSTR v_scale = {v_scale}
+--DEBUGSTR transport = {transport}
+----------------------------------------------
+IF FALSE
+	-- use kcfs all the time
+	LHSTEXT River flow: {ROUND {transport}*} kcfs;
+ELSE
+	-- use the units of the first popup
+	set units1  kcfs 
+	set units2  ft3/s 
+	set units3  m3/s
+	set unitsScale1  1 
+	set unitsScale2  1000 
+	set unitsScale3  28.31738121 
+	LHSTEXT River flow: {ROUND {{transport}*{unitsScale$V5}}} {units$V5};
+ENDIF
+-------------------------------------------
+
+

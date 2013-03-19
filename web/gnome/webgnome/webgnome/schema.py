@@ -3,6 +3,9 @@ import datetime
 import numpy
 import time
 
+from webgnome import util
+util.monkey_patch_colander()
+
 from colander import (
     MappingSchema,
     SchemaNode,
@@ -19,15 +22,16 @@ from colander import (
     TupleSchema,
     deferred,
     null,
-    Tuple)
+    drop,
+    Tuple
+)
 
-from webgnome import util
 from webgnome.model_manager import WebWind
 
 
 def get_direction_degree(direction):
     """
-    Convert user input for direction into degree.
+    Convert user input for direction into degrees.
     """
     if direction.isalpha():
         return util.DirectionConverter.get_degree(direction)
@@ -183,7 +187,7 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
 
 
 class WindSchema(MappingSchema):
-    source = SchemaNode(String(), default=None, missing=None)
+    source_id = SchemaNode(String(), default=None, missing=None)
     source_type = SchemaNode(String(), default='manual', missing='manual',
                              validator=OneOf([source[0] for source in
                                               WebWind.source_types]))
@@ -238,8 +242,12 @@ class SurfaceReleaseSpillSchema(MappingSchema):
     name = SchemaNode(String(), default=default_name, missing=default_name)
     num_elements = SchemaNode(Int(), default=0, validator=positive)
     release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
-                              validator=convertable_to_seconds)
+                              missing=now, validator=convertable_to_seconds)
+    end_release_time = SchemaNode(LocalDateTime(default_tzinfo=None),
+                                  default=now, missing=drop,
+                                  validator=convertable_to_seconds)
     start_position = PositionSchema(default=(0, 0, 0))
+    end_position = PositionSchema(default=(0, 0, 0), missing=drop)
     windage_range = WindageRangeSchema(default=(0.01, 0.04))
     windage_persist = SchemaNode(Float(), default=900, missing=900)
     is_active = SchemaNode(Bool(), default=True)
@@ -280,7 +288,7 @@ default_map_bounds = ((-360, 90),
 
 class MapSchema(MappingSchema):
     name = SchemaNode(String(), default="Map")
-    filename = SchemaNode(String())
+    filename = SchemaNode(String(), default=None, missing=None)
     refloat_halflife = SchemaNode(Float(), default=1)
     map_bounds = MapBoundsSchema(default=default_map_bounds,
                                  missing=default_map_bounds)
@@ -313,7 +321,7 @@ class ModelSettingsSchema(MappingSchema):
                             validator=convertable_to_seconds)
     duration_days = SchemaNode(Int(), default=1, validator=Range(min=0))
     duration_hours = SchemaNode(Int(),default=0, validator=Range(min=0))
-    is_uncertain = SchemaNode(Bool(), default=False)
+    uncertain = SchemaNode(Bool(), default=False)
     time_step = SchemaNode(Float(), default=0.1)
 
 

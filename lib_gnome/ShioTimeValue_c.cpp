@@ -1151,7 +1151,7 @@ OSErr ShioTimeValue_c::GetProgressiveWaveValue(const Seconds& forTime, VelocityR
 	return err;
 }
 
-WorldPoint ShioTimeValue_c::GetRefWorldPoint (void)
+WorldPoint ShioTimeValue_c::GetStationLocation (void)
 {
 	WorldPoint wp;
 	wp.pLat = fLatitude * 1000000;
@@ -1346,6 +1346,7 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 	// code goes here, use unitsIfKnownInAdvance to tell if we're coming from a location file, 
 	// if not and it's a heights file ask if progressive or standing wave (add new field or track as 'P')
 	//#pragma unused(unitsIfKnownInAdvance)	
+	// Note : this is a subset of the TShioTimeValue::ReadTimeValues, should look at combining the two...
 	char strLine[kMaxKeyedLineLength];
 	long i,numValues;
 	double value1, value2, magnitude, degrees;
@@ -1407,8 +1408,20 @@ OSErr ShioTimeValue_c::ReadTimeValues (char *path)
 			this->fStationType = 'C'; break;
 		case 'h': case 'H': 
 			this->fStationType = 'H'; 
-			cout << "Not handling station type 'H'.\n";
-			return -1;
+/*#ifndef pyGNOME
+			if (unitsIfKnownInAdvance!=-2)	// not a location file
+			{
+				Boolean bStandingWave = true;
+				float scaleFactor = fScaleFactor;
+				err = ShioHtsDialog(&bStandingWave,&scaleFactor,mapWindow);
+				if (!err)
+				{
+					if (!bStandingWave) this->fStationType = 'P';
+					//this->fScaleFactor = scaleFactor;
+				}
+			}
+#endif*/
+			break;
 		case 'p': case 'P': 
 			this->fStationType = 'P';	// for now assume progressive waves selected in file, maybe change to user input
 			

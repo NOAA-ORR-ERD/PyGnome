@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from uuid import uuid1
+from uuid import uuid1,UUID
 import copy
 
 class GnomeObject(object):
@@ -21,6 +21,26 @@ class GnomeObject(object):
         if not self._id:
             self.__create_new_id()
         return self._id
+    
+    @id.setter
+    def id(self, value):
+        """
+        Define setter, but need to ask if this is what we want to do
+        
+        This can only be assigned if object does not yet have an id
+        Do we want to on accept strings that are valid uuids?
+        """
+        # make sure string is valid UUID in string format
+        if isinstance(value, str):
+            UUID(value) # this will throw error if not a valid ID
+            
+        elif isinstance(value, UUID):
+            value = str(value)
+            
+        if not self._id:
+            self._id = value
+        else:
+            raise ValueError("UUID already assigned to object - cannot assign a new UUID")
 
     def __create_new_id(self):
         """

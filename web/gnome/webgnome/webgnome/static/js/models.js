@@ -24,10 +24,10 @@ define([
 
 
     /*
-     `ModelRun` is a collection of `TimeStep` objects representing a run of
-     the user's active model.
+     `GnomeRun` is a collection of `TimeStep` objects representing a run of
+     the user's active Gnome model.
      */
-    var ModelRun = Backbone.Collection.extend({
+    var GnomeRun = Backbone.Collection.extend({
         model: TimeStep,
 
         initialize: function(timeSteps, opts) {
@@ -99,10 +99,10 @@ define([
             var message = util.parseMessage(data);
 
             if (message) {
-                this.trigger(ModelRun.MESSAGE_RECEIVED, message);
+                this.trigger(GnomeRun.MESSAGE_RECEIVED, message);
 
                 if (message.error) {
-                    this.trigger(ModelRun.RUN_ERROR);
+                    this.trigger(GnomeRun.RUN_ERROR);
                     return false;
                 }
             }
@@ -115,14 +115,14 @@ define([
             // so reset the client-side model to stay in sync.
             if (isFirstStep && this.currentTimeStep) {
                 this.rewind();
-                this.trigger(ModelRun.SERVER_RESET);
+                this.trigger(GnomeRun.SERVER_RESET);
             }
 
             this.addTimeStep(data.time_step);
 
             if (isFirstStep) {
                 this.expectedTimeSteps = data.expected_time_steps;
-                this.trigger(ModelRun.RUN_BEGAN, data);
+                this.trigger(GnomeRun.RUN_BEGAN, data);
             }
 
             return true;
@@ -177,7 +177,7 @@ define([
         run: function(opts) {
             var options = $.extend({}, {
                 zoomLevel: this.zoomLevel,
-                zoomDirection: ModelRun.ZOOM_NONE,
+                zoomDirection: GnomeRun.ZOOM_NONE,
                 runUntilTimeStep: this.runUntilTimeStep
             }, opts);
 
@@ -223,12 +223,12 @@ define([
 
             if (this.currentTimeStep === this.runUntilTimeStep ||
                     this.currentTimeStep === _.last(this.expectedTimeSteps)) {
-                this.trigger(ModelRun.RUN_FINISHED);
+                this.trigger(GnomeRun.RUN_FINISHED);
                 this.runUntilTimeStep = null;
                 return;
              }
 
-             this.trigger(ModelRun.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
+             this.trigger(GnomeRun.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
         },
 
         isOnLastTimeStep: function() {
@@ -244,7 +244,7 @@ define([
         finishRun: function() {
             this.rewind();
             this.runUntilTimeStep = null;
-            this.trigger(ModelRun.RUN_FINISHED);
+            this.trigger(GnomeRun.RUN_FINISHED);
         },
 
         /*
@@ -344,8 +344,8 @@ define([
 
         // Class events
         CREATED: 'model:Created',
-        RUN_BEGAN: 'model:modelRunBegan',
-        RUN_FINISHED: 'model:modelRunFinished',
+        RUN_BEGAN: 'model:gnomeRunBegan',
+        RUN_FINISHED: 'model:gnomeRunFinished',
         RUN_ERROR: 'model:runError',
         NEXT_TIME_STEP_READY: 'model:nextTimeStepReady',
         MESSAGE_RECEIVED: 'model:messageReceived',
@@ -359,7 +359,8 @@ define([
         dateFields: null,
 
         initialize: function() {
-            this.bind('change', this.onIndexChange, this);
+            this.dirty = false;
+            this.bind('change:id', this.onIndexChange, this);
             BaseModel.__super__.initialize.apply(this, arguments)
         },
 
@@ -377,24 +378,35 @@ define([
          have a `start_position_x` field that we use for easier data binding
          in views. The following usage of `syncArrayField` will keep
          `start_position` up to date with the latest value of `start_position_x`:
-         at index 0:
+         at index 0 and vice versa.
 
                 syncArrayField('start_position', 'start_position_x', 0);
          */
         syncArrayField: function(arrayFieldName, arrayItemFieldName, index) {
 
             function setArrayField(model) {
-                var arrayField = this.get(arrayFieldName);
+                var arrayField = model.get(arrayFieldName);
                 arrayField[index] = model.get(arrayItemFieldName);
                 this.set(arrayFieldName, arrayField);
             }
 
+            function setArrayItemField(model) {
+                var arrayField = model.get(arrayFieldName);
+                model.set(arrayItemFieldName, arrayField[index]);
+            }
+
             this.on('change:' + arrayItemFieldName, setArrayField);
+            this.on('change:' + arrayFieldName, setArrayItemField);
+
+            var arrayField = this.get(arrayFieldName);
+
+            if (arrayField && arrayField.length) {
+                setArrayItemField(this);
+            }
         },
 
         change: function() {
             this.dirty = true;
-
             BaseModel.__super__.change.apply(this, arguments)
         },
 
@@ -421,6 +433,16 @@ define([
             model.dirty = false;
         },
 
+        destroy: function(options) {
+            options = options || {};
+
+            if (!_.has(options, 'wait')) {
+                options.wait = true;
+            }
+
+            BaseModel.__super__.destroy.apply(this, [options]);
+        },
+
         error: function(model, response, options) {
             try {
                 response = $.parseJSON(response.responseText);
@@ -439,12 +461,9 @@ define([
 
         fetch: function(options) {
             options = options || {};
-            var _this = this;
 
             if (!_.has(options, 'success')) {
-                options.success = function() {
-                    _this.dirty = false;
-                };
+                options.success = this.success
             }
 
             BaseModel.__super__.fetch.apply(this, [options]);
@@ -473,7 +492,13 @@ define([
          // Return a `moment` object for any date field.
         get: function(attr) {
             if(this.dateFields && _.contains(this.dateFields, attr)) {
-                return moment(this.attributes[attr]);
+                var val = this.attributes[attr];
+                var date = moment(val);
+                if (date && date.isValid()) {
+                    return date;
+                } else {
+                    return val;
+                }
             }
 
             return BaseModel.__super__.get.apply(this, arguments);
@@ -505,12 +530,14 @@ define([
     
     var BaseCollection = Backbone.Collection.extend({
         initialize: function (objs, opts) {
-            this.url = opts.url;
-        }       
+            if (opts && opts.url) {
+                this.url = opts.url;
+            }
+        }
     });
 
 
-    var Model = BaseModel.extend({
+    var Gnome = BaseModel.extend({
         dateFields: ['start_time'],
 
         url: function() {
@@ -525,34 +552,19 @@ define([
     var SurfaceReleaseSpill = BaseModel.extend({
         dateFields: ['release_time'],
 
-        fixStartPosition: function() {
-            var pos = this.get('start_position');
-            this.set('start_position_x', pos[0]);
-            this.set('start_position_y', pos[1]);
-            this.set('start_position_z', pos[2]);
-        },
-
-        fixWindageRange: function() {
-            var range = this.get('windage_range');
-            this.set('windage_range_min', range[0]);
-            this.set('windage_range_max', range[1]);
-        },
-
         initialize: function() {
             this.syncArrayField('start_position', 'start_position_x', 0);
             this.syncArrayField('start_position', 'start_position_y', 1);
             this.syncArrayField('start_position', 'start_position_z', 2);
 
+            this.syncArrayField('end_position', 'end_position_x', 0);
+            this.syncArrayField('end_position', 'end_position_y', 1);
+            this.syncArrayField('end_position', 'end_position_z', 2);
+            
             this.syncArrayField('windage_range', 'windage_range_min', 0);
             this.syncArrayField('windage_range', 'windage_range_max', 1);
 
-            this.on('change:start_position', this.fixStartPosition);
-            this.on('change:windage_range', this.fixWindageRange);
-
             SurfaceReleaseSpill.__super__.initialize.apply(this, arguments);
-
-            this.fixWindageRange();
-            this.fixStartPosition();
         }
     });
 
@@ -616,20 +628,20 @@ define([
     var WindMover = BaseMover.extend({
 
         /*
-         If the user passed an object for `key`, as when setting multiple
-         attributes at once, then make sure the 'wind' field is a `Wind`
-         object.
+         Make sure the 'wind' field is a `Wind` object.
+
+         Assume an object with a `get` method is a Wind object; otherwise
+         assume it is an object of attrs that we can use to create a new Wind.
          */
         set: function(key, val, options) {
             if (key && key.wind) {
-                // Assume an object with a `get` method is a Model; otherwise
-                // assume the value is JSON that we need to send to a Wind
-                // constructor.
-                if (key['wind'].get === undefined) {
-                    key['wind'] = new Wind(key['wind']);
+                if (key.wind.get === undefined) {
+                    key.wind = new Wind(key.wind);
                 }
+            } else if (key === 'wind' && val && val.get === undefined) {
+                key.wind = new Wind(val);
             } else if (this.get('wind') === undefined) {
-                key['wind'] = new Wind();
+                key.wind = new Wind();
             }
 
             WindMover.__super__.set.apply(this, [key, val, options]);
@@ -680,7 +692,7 @@ define([
             var timeseries = wind.get('timeseries');
 
             if (timeseries.length) {
-                return moment(timeseries[0].datetime).valueOf();
+                return moment(timeseries[0][0]).valueOf();
             }
         }
     });
@@ -706,17 +718,31 @@ define([
 
 
     var CustomMap = BaseModel.extend({
-        initialize: function(options) {
+        initialize: function(attrs, options) {
             this.url = options.url;
         }
     });
 
 
-    function getNwsWind(coords, success) {
+    function nwsWindError(resp) {
+        var error;
+        var defaultError = 'Could not contact the National Weather Service.';
+        try {
+            error = JSON.parse(resp.responseText).error;
+        } catch (e) {
+            error = defaultError;
+        }
+        window.alert(error);
+    }
+
+    function getNwsWind(coords, opts) {
         var url = '/nws/wind?lat=' + coords.latitude + '&lon=' + coords.longitude;
+        var error = opts.error | nwsWindError;
+        var success = opts.success;
         $.ajax({
             url: url,
             success: success,
+            error: error,
             dataType: 'json'
         });
     }
@@ -724,10 +750,13 @@ define([
 
     return {
         TimeStep: TimeStep,
-        ModelRun: ModelRun,
-        Model: Model,
+        GnomeRun: GnomeRun,
+        Gnome: Gnome,
+        BaseModel: BaseModel,
+        BaseCollection: BaseCollection,
         SurfaceReleaseSpill: SurfaceReleaseSpill,
         SurfaceReleaseSpillCollection: SurfaceReleaseSpillCollection,
+        Wind: Wind,
         WindMover: WindMover,
         WindMoverCollection: WindMoverCollection,
         RandomMover: RandomMover,

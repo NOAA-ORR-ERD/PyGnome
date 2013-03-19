@@ -151,6 +151,109 @@ Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP)
 	return bIsValid;
 }
 
+Boolean IsNDBCWindFile(char* path)
+{
+	Boolean	bIsValid = false;
+	OSErr	err = noErr;
+	long	line;
+	char	strLine [512];
+	char	firstPartOfFile [512];
+	long lenToRead,fileLength;
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return false;
+	
+	lenToRead = _min(512,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	if (!err)
+	{
+		DateTimeRec time;
+		char value1S[256], value2S[256];
+		char * strToMatch = "YYYY";
+		char * str2ToMatch = "YY";
+		long numScanned;
+		// we check 
+		// the header line 
+		// that the 2nd line can scan 16 values (at least 6...)
+		line = 0;
+		/////////////////////////////////////////////////
+		
+		// first line , header - YYYY MM DD hh WD   WSPD GST  WVHT  DPD   APD  MWD  BAR    ATMP  WTMP  DEWP  VIS
+		NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); 
+		RemoveLeadingAndTrailingWhiteSpace(strLine);
+		if (!strncmp (strLine,strToMatch,strlen(strToMatch)) || !strncmp (strLine,str2ToMatch,strlen(str2ToMatch)))
+			bIsValid = true;
+		else {bIsValid = false; return bIsValid;}
+		/////////////////////////////////////////////////
+		
+		// second line, data
+		/*NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); 
+		//StringSubstitute(strLine, ',', ' ');
+		numScanned = sscanf(strLine, "%hd %hd %hd %hd %hd %s %s",
+							&time.year, &time.month, &time.day,
+							&time.hour, value1S, value2S);
+		if (numScanned != 6)	
+			bIsValid = false;*/
+		/////////////////////////////////////////////////
+	}
+	
+	return bIsValid;
+}
+
+Boolean IsNCDCWindFile(char* path)
+{
+	Boolean	bIsValid = false;
+	OSErr	err = noErr;
+	long	line;
+	char	strLine [512];
+	char	firstPartOfFile [512];
+	long lenToRead,fileLength;
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return false;
+	
+	lenToRead = _min(512,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	if (!err)
+	{
+		DateTimeRec time;
+		char value1S[256], value2S[256];
+		char * strToMatch = "USAF";
+		//char * str2ToMatch = "YY";
+		long numScanned;
+		// we check 
+		// the header line 
+		// that the 2nd line can scan 33 values (at least 5...)
+		line = 0;
+		/////////////////////////////////////////////////
+		
+		// first line , header - USAF  WBAN YR--MODAHRMN DIR SPD GUS CLG SKC L M H  VSB MW MW MW MW AW AW AW AW W TEMP DEWP    SLP   ALT    STP MAX MIN PCP01 PCP06 PCP24 PCPXX SD
+
+		NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); 
+		RemoveLeadingAndTrailingWhiteSpace(strLine);
+		if (!strncmp (strLine,strToMatch,strlen(strToMatch)))
+			bIsValid = true;
+		else {bIsValid = false; return bIsValid;}
+		/////////////////////////////////////////////////
+		
+		// second line, data
+		/*NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); 
+		 //StringSubstitute(strLine, ',', ' ');
+		 numScanned = sscanf(strLine, "%hd %hd %hd %hd %hd %s %s",
+		 &time.year, &time.month, &time.day,
+		 &time.hour, value1S, value2S);
+		 if (numScanned != 6)	
+		 bIsValid = false;*/
+		/////////////////////////////////////////////////
+	}
+	
+	return bIsValid;
+}
+
 Boolean IsHydrologyFile(char* path)
 {
 	Boolean	bIsValid = false;
@@ -218,7 +321,7 @@ Boolean IsHydrologyFile(char* path)
 	return bIsValid;
 }
 
-Boolean IsOSSMTideFile(char* path,short *selectedUnitsP)
+Boolean IsOSSMTimeFile(char* path,short *selectedUnitsP)
 {
 	Boolean	bIsValid = false;
 	OSErr	err = noErr;

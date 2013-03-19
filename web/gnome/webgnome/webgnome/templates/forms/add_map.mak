@@ -9,7 +9,8 @@
                 </label>
 
                 <div class="controls">
-                    ${h.select('map-source', 'add-custom-map', (('add-custom-map', 'Custom'),))}
+                    ${h.select('map-source', 'add-custom-map', (('add-custom-map', 'Custom'),
+                                                                ('add-map-from-upload', 'From Upload')))}
                 </div>
             </div>
         </div>

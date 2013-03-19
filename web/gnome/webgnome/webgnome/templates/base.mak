@@ -20,8 +20,9 @@
 
 <body>
 
-<div class="navbar navbar-fixed-top">
-    <div class="navbar-inner">
+##<div class="navbar navbar-fixed-top">
+<div class="navbar">
+<div class="navbar-inner">
         <div class="container-fluid">
            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
                 <span class="icon-bar"></span>
@@ -39,7 +40,7 @@
 
 <div class="container-fluid outer-wrapper">
     <div class="row-fluid inner-wrapper">
-        <div class="" id="sidebar">
+        <div class="hidden" id="sidebar">
             <div id="sidebar-container">
                 <%block name="sidebar"> </%block>
             </div>

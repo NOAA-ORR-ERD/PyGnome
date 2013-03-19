@@ -76,6 +76,7 @@ def show_model(request):
     Render all forms, JSON and HTML needed to load the JavaScript app on the
     model page.
     """
+    deleted = request.cookies.get('model_deleted', False)
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
     model_images_dir = request.registry.settings['model_images_dir']
@@ -87,7 +88,6 @@ def show_model(request):
     random_movers = model_data.pop('random_movers')
     model_settings = util.SchemaForm(schema.ModelSettingsSchema, model_data)
     map_data = model_data['map']
-    map_settings = util.SchemaForm(schema.MapSchema, map_data)
 
     # JSON defaults for initializing JavaScript models
     default_wind_mover = _default_schema(schema.WindMoverSchema)
@@ -98,10 +98,14 @@ def show_model(request):
     default_map = _default_schema(schema.MapSchema)
     default_custom_map = _default_schema(schema.CustomMapSchema)
 
+    if map_data and model.background_image:
+        map_data['background_image_url'] = util.get_model_image_url(
+            request, model, model.background_image)
+
     data = {
         'model': model_settings,
         'model_id': model.id,
-        '_map': map_settings,
+        'created': created,
         'map_bounds': [],
         'map_is_loaded': False,
         'current_time_step': model.current_time_step,
@@ -120,14 +124,13 @@ def show_model(request):
         'surface_release_spills': util.to_json(surface_release_spills),
         'wind_movers': util.to_json(wind_movers),
         'random_movers': util.to_json(random_movers),
-        'model_settings': util.to_json(model_data),
-        'background_image_url': util.get_model_image_url(
-            request, model, 'background_map.png')
+        'model_settings': util.to_json(model_data)
     }
 
     if created:
         request.session[settings.model_session_key] = model.id
-        if model_id:
+
+        if model_id and not deleted:
             data['warning'] = 'The model you were working on is no longer ' \
                               'available. We created a new one for you.'
 
@@ -184,7 +187,7 @@ def configure_long_island(request, model):
     model.map = WebMapFromBNA(
         map_file, refloat_halflife=6 * 3600, name="Long Island Sound")
 
-    model.is_uncertain = False
+    model.uncertain = False
 
     canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
     polygons = haz_files.ReadBNA(map_file, "PolygonSet")

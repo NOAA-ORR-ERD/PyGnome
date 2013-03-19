@@ -101,8 +101,8 @@
                                                  WebWind.source_types, label='Source Type',
                                                  class_='input-medium', data_value='wind.source_type'),
                                         label="Data Source")}
-                    ${defs.form_control(h.text('source', class_='input-small', data_class_required='wind:isBuoy < wind.source_type',
-                                        data_value='wind.source'), label='Source ID')}
+                    ${defs.form_control(h.text('source_id', class_='input-small', data_class_required='wind:isBuoy < wind.source_type',
+                                        data_value='wind.source_id'), label='Source ID')}
                     ${defs.form_control(h.text('latitude', class_='input-small', data_class_required='wind:isNws < wind.source_type',
                                         data_value='wind.latitude'), label='Latitude')}
                     ${defs.form_control(h.text('longitude', class_='input-small', data_class_required='wind:isNws < wind.source_type',

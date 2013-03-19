@@ -39,6 +39,11 @@ OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(nil)
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
+#ifdef pyGNOME
+	fInterpolationType = LINEAR;
+#else
+	fInterpolationType = HERMITE;
+#endif
 }
 
 
@@ -55,6 +60,7 @@ OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner)
 	bOSSMStyle = true;
 	fTransport = 0;
 	fVelAtRefPt = 0;
+	fInterpolationType = HERMITE;	// pyGNOME doesn't use this constructor
 }
 
 OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
@@ -183,6 +189,20 @@ OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds forTime, double *value, 
 	{ (*value) = UorV(INDEXH(timeValues, b).value, index); return 0; }
 	
 	if (err = GetTimeChange(a, b, &dt)) return err;
+	
+
+	// use linear interpolation for pyGNOME, default is HERMITE
+	if (fInterpolationType==LINEAR) {
+		//if (err = GetTimeChange(a, b, &dt)) return err;
+		
+		//dv = UorV(INDEXH(timeValues, b).value, index) - UorV(INDEXH(timeValues, a).value, index);
+		slope = dv / dt;
+		intercept = UorV(INDEXH(timeValues, a).value, index) - slope * INDEXH(timeValues, a).time;
+		(*value) = slope * forTime + intercept;
+		
+		return 0;
+	}
+	
 	
 	// interpolated value is between positions a and b
 	
@@ -344,6 +364,299 @@ OSErr OSSMTimeValue_c::InitTimeFunc ()
 	
 }
 
+OSErr OSSMTimeValue_c::ReadNCDCWind (char *path)
+{
+	char s[512], value1S[256], value2S[256], timeStr[256], stationStr[256], hdrStr[256];
+	long i,numValues,numLines,numScanned;
+	double value1, value2, magnitude, degrees;
+	CHARH f;
+	DateTimeRec time;
+	TimeValuePair pair;
+	OSErr scanErr;
+	double conversionFactor = MILESTOMETERSPERSEC;	// file speeds are in miles per hour
+	OSErr err = noErr;
+	//Boolean askForUnits = TRUE; 
+	//Boolean isLongWindFile = FALSE, isHydrologyFile = FALSE;
+	//short selectedUnits = unitsIfKnownInAdvance;
+	long numDataLines;
+	long numHeaderLines = 1;
+	short format = M19DEGREESMAGNITUDE;
+	
+	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f))
+	{ TechError("TOSSMTimeValue::ReadNCDCWind()", "ReadFileContents()", 0); goto done; }
+	
+	numLines = NumLinesInText(*f);
+	
+	numDataLines = numLines - numHeaderLines;
+	
+    this->SetUserUnits(kMilesPerHour);	//check this
+	
+	timeValues = (TimeValuePairH)_NewHandle(numDataLines * sizeof(TimeValuePair));
+	if (!timeValues)
+	{ err = -1; TechError("TOSSMTimeValue::ReadNCDCWind()", "_NewHandle()", 0); goto done; }
+	
+	time.second = 0;
+	//996410 99999 201201010000 130  36
+	numValues = 0;
+	for (i = 0 ; i < numLines ; i++) {
+		NthLineInTextOptimized(*f, i, s, 512); // day, month, year, hour, min, value1, value2
+		if(i < numHeaderLines)
+			continue; // skip any header lines
+		if(i%200 == 0) MySpinCursor(); 
+		RemoveLeadingAndTrailingWhiteSpace(s);
+		if(s[0] == 0) continue; // it's a blank line, allow this and skip the line
+		//StringSubstitute(s, ',', ' ');
+		
+		numScanned=sscanf(s, "%s %s %s %s %s",
+						  stationStr, hdrStr, timeStr,
+						  value1S, value2S) ;
+		if (numScanned<5)	
+			// scan will allow comment at end of line, for now just ignore 
+		{ err = -1; TechError("TOSSMTimeValue::ReadNDBCWind()", "sscanf() < 6", 0); goto done; }
+		// check if last line all zeros (an OSSM requirement) if so ignore the line
+		//if (i==numLines-1 && time.day==0 && time.month==0 && time.year==0 && time.hour==0 && time.minute==0)
+		//continue;
+		// check date is valid
+		// scan date
+		if (!strncmp (value1S,"***",strlen("***")) || !strncmp (value2S,"***",strlen("***")))
+			continue;
+
+		numScanned=sscanf(timeStr, "%4d %2d %2d %2d %2d",
+						  &time.year, &time.month, &time.day,
+						  &time.hour, &time.minute) ;
+		if (numScanned<5)	
+			// scan will allow comment at end of line, for now just ignore 
+		{ err = -1; TechError("TOSSMTimeValue::ReadNDBCWind()", "sscanf() < 6", 0); goto done; }
+		
+		
+		time.minute = time.second = 0;
+		if (time.day<1 || time.day>31 || time.month<1 || time.month>12)
+		{
+			err = -1;
+			printError("Invalid data in time file");
+			goto done;
+		}
+		else if (time.year < 1900)					// two digit date, so fix it
+		{
+			if (time.year >= 40 && time.year <= 99)	// JLM
+				time.year += 1900;
+			else
+				time.year += 2000;					// correct for year 2000 (00 to 40)
+		}
+		
+		switch (format) {
+			case M19REALREAL:
+				scanErr =  StringToDouble(value1S,&value1);
+				scanErr =  StringToDouble(value2S,&value2);
+				value1*= conversionFactor;//JLM
+				value2*= conversionFactor;//JLM
+				break;
+			case M19MAGNITUDEDEGREES:
+				scanErr =  StringToDouble(value1S,&magnitude);
+				scanErr =  StringToDouble(value2S,&degrees);
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, degrees, &value1, &value2);
+				break;
+			case M19DEGREESMAGNITUDE:
+				scanErr =  StringToDouble(value1S,&degrees);
+				scanErr =  StringToDouble(value2S,&magnitude);
+				if (magnitude == 99.0) continue;
+				if (degrees > 360) continue;
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, degrees, &value1, &value2);
+				break;
+			case M19MAGNITUDEDIRECTION:
+				scanErr =  StringToDouble(value1S,&magnitude);
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, ConvertToDegrees(value2S), &value1, &value2);
+				break;
+			case M19DIRECTIONMAGNITUDE:
+				scanErr =  StringToDouble(value2S,&magnitude);
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, ConvertToDegrees(value1S), &value1, &value2);
+		}
+		
+		memset(&pair,0,sizeof(pair));
+		DateToSeconds (&time, &pair.time);
+		pair.value.u = value1;
+		pair.value.v = value2;
+		
+		if (numValues>0)
+		{
+			Seconds timeVal = INDEXH(timeValues, numValues-1).time;
+			if (pair.time < timeVal) 
+			{
+				err=-1;
+				printError("Time values are out of order");
+				goto done;
+			}
+		}
+		
+		INDEXH(timeValues, numValues++) = pair;
+	}
+	
+	if(numValues > 0)
+	{
+		// JS: 9/17/12 - Following does not work for cython.
+		// Leave it commented so we can repro and try to do debugging
+		//long actualSize = numValues*(long)sizeof(**timeValues);
+		long sz = (long)sizeof(**timeValues);
+		long actualSize = numValues*sz;
+		_SetHandleSize((Handle)timeValues,actualSize);
+		err = _MemError();
+	}
+	else {
+		printError("No lines were found");
+		err = true;
+	}
+done:
+	if(f) {DisposeHandle((Handle)f); f = 0;}
+	if(err &&timeValues)  {DisposeHandle((Handle)timeValues); timeValues = 0;}
+	
+	return err;
+	
+}
+
+OSErr OSSMTimeValue_c::ReadNDBCWind (char *path)
+{
+	char s[512], value1S[256], value2S[256];
+	long i,numValues,numLines,numScanned;
+	double value1, value2, magnitude, degrees;
+	CHARH f;
+	DateTimeRec time;
+	TimeValuePair pair;
+	OSErr scanErr;
+	double conversionFactor = 1.0;	// wind speeds are in mps
+	OSErr err = noErr;
+	//Boolean askForUnits = TRUE; 
+	//Boolean isLongWindFile = FALSE, isHydrologyFile = FALSE;
+	//short selectedUnits = unitsIfKnownInAdvance;
+	long numDataLines;
+	long numHeaderLines = 1;
+	short format = M19DEGREESMAGNITUDE;
+
+	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f))
+	{ TechError("TOSSMTimeValue::ReadNDBCWind()", "ReadFileContents()", 0); goto done; }
+	
+	numLines = NumLinesInText(*f);
+	
+	numDataLines = numLines - numHeaderLines;
+	
+    this->SetUserUnits(kMetersPerSec);	//check this
+	
+	timeValues = (TimeValuePairH)_NewHandle(numDataLines * sizeof(TimeValuePair));
+	if (!timeValues)
+	{ err = -1; TechError("TOSSMTimeValue::ReadNDBCWind()", "_NewHandle()", 0); goto done; }
+	
+	time.second = 0;
+	
+	numValues = 0;
+	for (i = 0 ; i < numLines ; i++) {
+		NthLineInTextOptimized(*f, i, s, 512); // day, month, year, hour, min, value1, value2
+		if(i < numHeaderLines)
+			continue; // skip any header lines
+		if(i%200 == 0) MySpinCursor(); 
+		RemoveLeadingAndTrailingWhiteSpace(s);
+		if(s[0] == 0) continue; // it's a blank line, allow this and skip the line
+		//StringSubstitute(s, ',', ' ');
+		
+		numScanned=sscanf(s, "%hd %hd %hd %hd %s %s",
+						  &time.year, &time.month, &time.day,
+						  &time.hour, value1S, value2S) ;
+		if (numScanned<6)	
+			// scan will allow comment at end of line, for now just ignore 
+		{ err = -1; TechError("TOSSMTimeValue::ReadNDBCWind()", "sscanf() < 6", 0); goto done; }
+		// check if last line all zeros (an OSSM requirement) if so ignore the line
+		//if (i==numLines-1 && time.day==0 && time.month==0 && time.year==0 && time.hour==0 && time.minute==0)
+			//continue;
+		// check date is valid
+		time.minute = time.second = 0;
+		if (time.day<1 || time.day>31 || time.month<1 || time.month>12)
+		{
+			err = -1;
+			printError("Invalid data in time file");
+			goto done;
+		}
+		else if (time.year < 1900)					// two digit date, so fix it
+		{
+			if (time.year >= 40 && time.year <= 99)	// JLM
+				time.year += 1900;
+			else
+				time.year += 2000;					// correct for year 2000 (00 to 40)
+		}
+		
+		switch (format) {
+			case M19REALREAL:
+				scanErr =  StringToDouble(value1S,&value1);
+				scanErr =  StringToDouble(value2S,&value2);
+				value1*= conversionFactor;//JLM
+				value2*= conversionFactor;//JLM
+				break;
+			case M19MAGNITUDEDEGREES:
+				scanErr =  StringToDouble(value1S,&magnitude);
+				scanErr =  StringToDouble(value2S,&degrees);
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, degrees, &value1, &value2);
+				break;
+			case M19DEGREESMAGNITUDE:
+				scanErr =  StringToDouble(value1S,&degrees);
+				scanErr =  StringToDouble(value2S,&magnitude);
+				if (magnitude == 99.0) continue;
+				if (degrees > 360) continue;
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, degrees, &value1, &value2);
+				break;
+			case M19MAGNITUDEDIRECTION:
+				scanErr =  StringToDouble(value1S,&magnitude);
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, ConvertToDegrees(value2S), &value1, &value2);
+				break;
+			case M19DIRECTIONMAGNITUDE:
+				scanErr =  StringToDouble(value2S,&magnitude);
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, ConvertToDegrees(value1S), &value1, &value2);
+		}
+		
+		memset(&pair,0,sizeof(pair));
+		DateToSeconds (&time, &pair.time);
+		pair.value.u = value1;
+		pair.value.v = value2;
+		
+		if (numValues>0)
+		{
+			Seconds timeVal = INDEXH(timeValues, numValues-1).time;
+			if (pair.time < timeVal) 
+			{
+				err=-1;
+				printError("Time values are out of order");
+				goto done;
+			}
+		}
+		
+		INDEXH(timeValues, numValues++) = pair;
+	}
+	
+	if(numValues > 0)
+	{
+		// JS: 9/17/12 - Following does not work for cython.
+		// Leave it commented so we can repro and try to do debugging
+		//long actualSize = numValues*(long)sizeof(**timeValues);
+		long sz = (long)sizeof(**timeValues);
+		long actualSize = numValues*sz;
+		_SetHandleSize((Handle)timeValues,actualSize);
+		err = _MemError();
+	}
+	else {
+		printError("No lines were found");
+		err = true;
+	}
+done:
+	if(f) {DisposeHandle((Handle)f); f = 0;}
+	if(err &&timeValues)  {DisposeHandle((Handle)timeValues); timeValues = 0;}
+	
+	return err;
+	
+}
 
 OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKnownInAdvance)
 {
@@ -377,7 +690,27 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	//////////////////////////////////////////
 	///**/ paramtext(fileName, "", "", ""); /**/
 	//////////////////////////////////////////
-
+	
+	if (IsNDBCWindFile(path)) 
+	{
+		err = ReadNDBCWind(path); 
+		return err;
+		// or
+		// selectedUnits = kMetersPerSec;
+		// isNDBC = true // scan is different
+		// numHeaderLines = 1;
+	}	// units/format always the same
+	
+	if (IsNCDCWindFile(path)) 
+	{
+		err = ReadNCDCWind(path); 
+		return err;
+		// or
+		// selectedUnits = kMetersPerSec;
+		// isNDBC = true // scan is different
+		// numHeaderLines = 1;
+	}	// units/format always the same
+	
 	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f))
 	{ TechError("TOSSMTimeValue::ReadTimeValues()", "ReadFileContents()", 0); goto done; }
 
@@ -401,8 +734,11 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	// maybe a OSSMTideFileor HYDROLOGY file
 	if(numLines >= 3 && !isLongWindFile)
 	{
-		if(IsOSSMTideFile(path,&selectedUnits))
+		if(IsOSSMTimeFile(path,&selectedUnits))
+		{
 			numHeaderLines = 3;
+			ReadOSSMTimeHeader(path);
+		}
 		else if(isHydrologyFile = IsHydrologyFile(path))	// ask for scale factor, but not units
 		{
 			SetFileType(HYDROLOGYFILE);
@@ -641,6 +977,72 @@ OSErr OSSMTimeValue_c::ReadHydrologyHeader (char *path)
 	else if (!strcmpnocase(strLine,"CFS")) fUserUnits = kCFS;
 	else if (!strcmpnocase(strLine,"KCFS")) fUserUnits = kKCFS;
 	else err = -1;
+	
+done:
+	return err;
+}
+
+OSErr OSSMTimeValue_c::ReadOSSMTimeHeader (char *path)
+{
+	OSErr	err = noErr;
+	long	line = 0;
+	char	strLine [512];
+	char	firstPartOfFile [512];
+	long lenToRead,fileLength,numScanned;
+	float latdeg, latmin, longdeg, longmin/*, z = 0*/;
+	WorldPoint wp = {0,0};
+	short selectedUnits;
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return err;
+	
+	lenToRead = _min(512,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	if (err) return err;
+	
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString		
+	NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512);    // station name
+	RemoveLeadingAndTrailingWhiteSpace(strLine);
+	//if (!strcmpnocase(strLine,"Station Name"))
+		// what to use for default ?
+	//else
+		strcpy(fStationName, strLine);
+	NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512);   // station position - lat deg, lat min, long deg, long min
+	RemoveLeadingAndTrailingWhiteSpace(strLine);
+	if (!strcmpnocase(strLine,"Station Location"))
+		fStationPosition = wp;
+		// what to use for default ?
+	else
+	{
+		StringSubstitute(strLine, ',', ' ');
+		
+		numScanned=sscanf(strLine, "%f %f %f %f", &latdeg, &latmin, &longdeg, &longmin);
+		
+		if (numScanned==4)
+		{	// support old OSSM style
+			wp.pLat = (latdeg + latmin/60.) * 1000000;
+			wp.pLong = -(longdeg + longmin/60.) * 1000000;	// need to have header include direction...
+			//bOSSMStyle = true;
+		}
+		else if (numScanned==2)
+		{
+			wp.pLat = latdeg * 1000000;
+			wp.pLong = latmin * 1000000;
+			//bOSSMStyle = false;
+		}
+		else
+		{ wp.pLat = 0; wp.pLong = 0; /*err = -1; TechError("TOSSMTimeValue::ReadOSSMTimeHeader()", "sscanf() == 2", 0); goto done;*/ }
+		
+		fStationPosition = wp;
+	}
+	NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512);   // units
+	RemoveLeadingAndTrailingWhiteSpace(strLine);
+	selectedUnits = StrToSpeedUnits(strLine);// note we are not supporting cm/sec in gnome
+	if(selectedUnits == kUndefined)
+		err = -1;
+	else 
+		fUserUnits = selectedUnits;
 	
 done:
 	return err;

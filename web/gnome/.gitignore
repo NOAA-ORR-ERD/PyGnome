@@ -8,3 +8,7 @@
 /lib
 /.Python
 OilLibrary.db
+
+# Directories that hold app-generated content.
+webgnome/webgnome/static/uploads/*
+webgnome/webgnome/static/img/model_images/*

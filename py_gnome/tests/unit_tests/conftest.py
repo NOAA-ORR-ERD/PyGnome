@@ -1,19 +1,21 @@
-import pytest
-
 """
 Defines test fixtures
 
 The scope="module" on the fixtures ensures it is only invoked once per test module
 """
-import numpy as np
+import sys, os
 from datetime import datetime
+
+import numpy as np
+import pytest
+
 from gnome import basic_types
 from gnome.utilities import rand
 
-"""
-Skip slow tests
-"""
 def pytest_addoption(parser):
+    '''
+    Skip slow tests
+    '''
     parser.addoption("--runslow", action="store_true",
         help="run slow tests")
 
@@ -32,6 +34,33 @@ def pytest_runtest_setup(item):
     print "Seed C++, python, numpy random number generator to 1"
     rand.seed(1)
 
+def pytest_sessionstart():
+    from py.test import config
+
+    # Only run database setup on master (in case of xdist/multiproc mode)
+    if not hasattr(config, 'slaveinput'):
+        try:
+            from gnome.db.oil_library.initializedb import initialize_sql, load_database
+
+            data_dir = get_data_dir()
+            oillib_file = os.path.join(data_dir, r'OilLib.smaller')
+            db_file = os.path.join(data_dir, r'OilLibrary.db')
+            sqlalchemy_url = 'sqlite:///{0}'.format(db_file)
+            settings = {'sqlalchemy.url': sqlalchemy_url,
+                        'oillib.file': oillib_file
+                        }
+            initialize_sql(settings)
+            load_database(settings)
+        except ImportError as ie:
+            print "\nWarning: Required modules for database unit-testing not found."
+            dependant_modules = ('sqlalchemy','zope.sqlalchemy','transaction')
+            print ie
+            print "Also may need:",
+            print '\t {0}\n'.format([m for m in dependant_modules if not m in sys.modules])
+
+def get_data_dir():
+    data_dir = os.path.dirname(__file__)
+    return os.path.join(data_dir, r'SampleData/oil_library')
 
 """
 ====================================
@@ -120,7 +149,7 @@ def wind_circ(rq_wind):
     dtv_uv = np.zeros((len(dtv_rq),), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
     dtv_uv.time = dtv_rq.time
     dtv_uv.value= rq_wind['uv']
-    wm  = environment.Wind(timeseries=dtv_rq,format='r-theta',units='meters per second')
+    wm  = environment.Wind(timeseries=dtv_rq,format='r-theta',units='meter per second')
     return {'wind':wm, 'rq': dtv_rq, 'uv': dtv_uv}
 
 """

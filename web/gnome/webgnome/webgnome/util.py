@@ -1,19 +1,21 @@
 """
 util.py: Utility function for the webgnome package.
 """
+import argparse
+import errno
 import colander
 import datetime
 import inspect
 import json
 import math
 import os
+import shutil
+import sys
 import time
 import uuid
 
 from functools import wraps
 from itertools import chain
-import errno
-import colander
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
@@ -254,10 +256,14 @@ def valid_location_file(request):
     request.validated['location_file'] = location_file
 
 
-def map_filename_exists(request):
+def valid_uploaded_file(request):
     """
     A Cornice validator that returns an error if the filename specified in a
     Map resource POST does not exist in the web application's filesystem.
+
+    `filename` should be the name of a file (not its path) that exists in
+    the configured `upload_dir`. Once validated, the absolute path of the file
+    will be added to the `request.validated` dictionary.
     """
     valid_model_id(request)
 
@@ -265,11 +271,12 @@ def map_filename_exists(request):
         return
 
     filename_parts = request.validated['filename'].split('/')
-    abs_filename = os.path.join(request.registry.settings.package_root,
+    abs_filename = os.path.join(request.registry.settings.upload_dir,
                                 *filename_parts)
 
     if not os.path.exists(abs_filename):
-        request.errors.add('body', 'map', 'Map filename does not exist.')
+        request.errors.add('body', 'filename',
+                           'A file with that filename does not exist.')
         request.errors.status = 400
 
     request.validated['filename'] = abs_filename
@@ -303,8 +310,9 @@ def valid_spill_id(request):
         return
 
     model = request.validated['model']
-
-    if not request.matchdict['id'] in model.spills:
+    try:
+        spill = model.spills[request.matchdict['id']]
+    except KeyError:
         request.errors.add('body', 'spill', 'Spill not found.')
         request.errors.status = 404
 
@@ -473,5 +481,80 @@ def mkdir_p(path):
         else: raise
 
 
+def monkey_patch_colander():
+    import colander
+
+    # Recover boolean values which were coerced into strings.
+    serialize_boolean = getattr(colander.Boolean, 'serialize')
+
+    def patched_boolean_serialization(*args, **kwds):
+        result = serialize_boolean(*args, **kwds)
+        if result is not colander.null:
+            result = result == 'true'
+        return result
+
+    setattr(colander.Boolean, 'serialize', patched_boolean_serialization)
+
+    # Recover float values which were coerced into strings.
+    serialize_float = getattr(colander.Float, 'serialize')
+
+    def patched_float_serialization(*args, **kwds):
+        result = serialize_float(*args, **kwds)
+        if result is not colander.null:
+            result = float(result)
+        return result
+
+    setattr(colander.Float, 'serialize', patched_float_serialization)
+
+    # Recover integer values which were coerced into strings.
+    serialize_int = getattr(colander.Int, 'serialize')
+
+    def patched_int_serialization(*args, **kwds):
+        result = serialize_int(*args, **kwds)
+        if result is not colander.null:
+            result = int(result)
+        return result
+
+    setattr(colander.Int, 'serialize', patched_int_serialization)
+
+    # Remove optional mapping keys which were associated with 'colander.null'.
+    serialize_mapping = getattr(colander.MappingSchema, 'serialize')
+
+    def patched_mapping_serialization(*args, **kwds):
+        result = serialize_mapping(*args, **kwds)
+        if result is not colander.null:
+            result = {k: v for k, v in result.iteritems() if
+                      v is not colander.null}
+        return result
+
+    setattr(colander.MappingSchema, 'serialize', patched_mapping_serialization)
+
+
 velocity_unit_values = list(chain.from_iterable(
     [item[1] for item in ConvertDataUnits['Velocity'].values()]))
+
+
+class CleanDirectoryCommand(object):
+    def __init__(self, directory, description):
+        self.directory = directory
+        self.description = description
+
+    def __call__(self):
+        parser = argparse.ArgumentParser(description=self.description)
+        parser.add_argument('--simulate', action='store_true', dest='simulate')
+
+        args = parser.parse_args()
+
+        if not os.path.exists(self.directory):
+            print >> sys.stderr, \
+                'Directory does not exist: %s' % self.directory
+
+        files = os.listdir(self.directory)
+        files.sort()
+
+        if not args.simulate:
+            shutil.rmtree(self.directory)
+            os.mkdir(self.directory)
+
+        print 'Files and directories deleted:\n%s' % '\n'.join(files)
+        print 'Total (top-level): %s' % len(files)

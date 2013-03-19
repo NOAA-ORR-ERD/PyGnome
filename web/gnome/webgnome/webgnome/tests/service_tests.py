@@ -1,4 +1,6 @@
 import datetime
+import os
+import shutil
 
 from time import gmtime
 from gnome.utilities.time_utils import round_time
@@ -25,7 +27,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
         data = resp.json_body
         iso_rounded_now = round_time(datetime.datetime.now(), 3600).isoformat()
 
-        self.assertEqual(data['is_uncertain'], False)
+        self.assertEqual(data['uncertain'], False)
         self.assertEqual(data['start_time'], iso_rounded_now)
         self.assertEqual(data['time_step'], 0.25)
         self.assertEqual(data['duration_days'], 1)
@@ -75,7 +77,7 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         data = {
             'start_time': start.isoformat(),
-            'is_uncertain': True,
+            'uncertain': True,
             'time_step': 200,
             'duration_days': 20,
             'duration_hours': 1
@@ -86,14 +88,14 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         resp = self.testapp.get(self.base_url)
 
-        self.assertEqual(resp.json_body['is_uncertain'], True)
+        self.assertEqual(resp.json_body['uncertain'], True)
         self.assertEqual(resp.json_body['start_time'], start.isoformat())
         self.assertEqual(resp.json_body['time_step'], 200.0)
         self.assertEqual(resp.json_body['duration_days'], 20)
         self.assertEqual(resp.json_body['duration_hours'], 1)
 
 
-class ModelRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
+class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_first_step(self):
         self.create_model()
@@ -311,7 +313,7 @@ class SurfaceReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
             'start_position': [10, 100, 0],
             'windage_range': [1.2, 4.2],
             'windage_persist': 900,
-            'is_uncertain': False
+            'uncertain': False
         }
 
         if kwargs:
@@ -336,7 +338,7 @@ class SurfaceReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         spill_id = resp.json_body['id']
 
         data['is_active'] = False
-        data['release_Time'] = datetime.datetime.now().isoformat()
+        data['release_time'] = datetime.datetime.now().isoformat()
 
         spill_url = self.get_spill_url(spill_id)
 
@@ -361,10 +363,23 @@ class MapServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.create_model()
         self.url = self.model_url('map')
 
+    def copy_map(self, location_file, map_name, destination_name=None):
+        filename = '%s.bna' % map_name
+        destination_name = destination_name or filename
+        original_file = os.path.join(self.project_root, 'data',
+                                     'location_files', location_file, 'data',
+                                     map_name)
+        test_file = os.path.join(self.project_root, 'static', 'uploads',
+                                 destination_name)
+        shutil.copy(original_file, test_file)
+
+        return filename
+
     def test_create_map(self):
+        filename = self.copy_map('long_island', 'LongIslandSoundMap.BNA')
         data = {
-            'filename': '/data/lakeerie.bna',
-            'name': 'Lake Eerie',
+            'filename': filename,
+            'name': 'Long Island',
             'refloat_halflife': 6 * 3600
         }
         resp = self.testapp.post_json(self.url, data)
@@ -372,20 +387,46 @@ class MapServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         self.assertEqual(data['name'], resp_data['name'])
         self.assertEqual(data['refloat_halflife'], resp_data['refloat_halflife'])
+        self.assertEqual(resp_data['map_bounds'],
+                         [[-73.083328, 40.922832], [-73.083328, 41.330833],
+                          [-72.336334, 41.330833], [-72.336334, 40.922832]])
 
-    def test_get_map(self):
+    def test_update_map(self):
+        filename = self.copy_map('long_island', 'LongIslandSoundMap.BNA')
         data = {
-            'filename': '/data/lakeerie.bna',
-            'name': 'Lake Eerie',
+            'filename': filename,
+            'name': 'Long Island',
             'refloat_halflife': 6 * 3600
         }
-        resp = self.testapp.post_json(self.url, data)
-        self.assertTrue(resp.json_body['id'])
+        self.testapp.post_json(self.url, data)
+
+        data['name'] = 'Long Island 2'
+        data['refloat_halflife'] = 10
+
+        resp = self.testapp.put_json(self.url, data)
+        resp_data = resp.json_body
+
+        self.assertEqual(data['name'], resp_data['name'])
+        self.assertEqual(data['refloat_halflife'],
+                         resp_data['refloat_halflife'])
+
+    def test_get_map(self):
+        filename = self.copy_map('long_island', 'LongIslandSoundMap.BNA')
+        data = {
+            'filename': filename,
+            'name': 'Long Island',
+            'refloat_halflife': 6 * 3600
+        }
+        self.testapp.post_json(self.url, data)
 
         resp = self.testapp.get(self.url)
         resp_data = resp.json_body
+
         self.assertEqual(data['name'], resp_data['name'])
         self.assertEqual(data['refloat_halflife'], resp_data['refloat_halflife'])
+        self.assertEqual(resp_data['map_bounds'],
+                         [[-73.083328, 40.922832], [-73.083328, 41.330833],
+                          [-72.336334, 41.330833], [-72.336334, 40.922832]])
 
 
 class CustomMapServiceTests(FunctionalTestBase, ModelHelperMixin):
@@ -458,8 +499,8 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
                     u'uncertain_time_delay': 0.0,
                     u'wind': {
                         u'units': u'mps', u'description': None,
-                        u'source_type': None, u'updated_at': None,
-                        u'longitude': None, u'source': None,
+                        u'source_type': u'manual', u'updated_at': None,
+                        u'longitude': None, u'source_id': None,
                         u'timeseries': [[u'2013-02-05T17:00:00', 30.0, 50.0],
                                         [u'2013-02-06T11:00:00', 30.0, 50.0],
                                         [u'2013-02-06T23:00:00',
@@ -488,7 +529,7 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
                     u'active_stop': u'2038-01-18T00:00:00',
                 }
             ],
-            u'is_uncertain': False,
+            u'uncertain': False,
             u'surface_release_spills': [
                 {
                     u'windage_range': [0.01, 0.04],

@@ -119,7 +119,7 @@ class GnomeMap(GnomeObject):
         """
         return None
 
-    def refloat_elements(self, spill):
+    def refloat_elements(self, spill, time_step):
         """
         This method performs the re-float logic -- changing the element status flag,
         and moving the element to the last known water position
@@ -176,7 +176,7 @@ class RasterMap(GnomeMap):
         :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
         """
         
-        self.refloat_halflife = refloat_halflife
+        self.refloat_halflife = float(refloat_halflife)
         self.bitmap = bitmap_array
         self.projection = projection
         if map_bounds is not None:
@@ -345,6 +345,40 @@ class RasterMap(GnomeMap):
         ##fixme -- add off-map check here
 
 
+    def refloat_elements(self, spill, time_step):
+        """
+        This method performs the re-float logic -- changing the element status flag,
+        and moving the element to the last known water position
+        
+        .. note::
+            This map class has no land, and so is a no-op.
+        
+        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
+            This object holds the elements that need refloating
+        """
+        # index into array of particles on_land
+        r_idx = np.where( spill['status_codes'] == gnome.basic_types.oil_status.on_land)[0]
+        
+        if r_idx.size == 0:  # no particles on land
+            return
+        
+        if self.refloat_halflife > 0.0:
+            # refloat particles based on probability
+            refloat_probability = 1.0 - 0.5**(float(time_step)/self.refloat_halflife)
+            rnd = np.random.uniform(0,1,len(r_idx))  
+            
+            # subset of indices that will refloat 
+            # maybe we should rename refloat_probability since rnd <= refloat_probability to 
+            # refloat, maybe call it stay_on_land_probability
+            r_idx = r_idx[ np.where(rnd <= refloat_probability)[0] ]
+            
+        #print "\n len(r_idx):{0} \n".format(len(r_idx))
+            
+        if r_idx.size > 0:
+            # check is not required, but why do this operation if no particles need to be refloated
+            spill['positions'][r_idx] = spill['last_water_positions'][r_idx]
+            spill['status_codes'][r_idx] = gnome.basic_types.oil_status.in_water
+        
     def check_land(self, raster_map, positions, end_positions, status_codes, last_water_positions):
         """
         Do the actual land-checking.  This method calls a Cython version:

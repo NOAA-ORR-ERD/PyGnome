@@ -69,7 +69,7 @@ TOSSMTimeValue* CreateTOSSMTimeValue(TMover *theOwner,char* path, char* shortFil
 		if(err) { delete timeValObj; timeValObj = nil; return nil;}
 		return timeValObj;
 	}
-	else if (IsTimeFile(path) || IsHydrologyFile(path) || IsOSSMTideFile(path, &unitsIfKnownInAdvance))
+	else if (IsTimeFile(path) || IsHydrologyFile(path) || IsOSSMTimeFile(path, &unitsIfKnownInAdvance))
 	{
 		TOSSMTimeValue *timeValObj = new TOSSMTimeValue(theOwner);
 		

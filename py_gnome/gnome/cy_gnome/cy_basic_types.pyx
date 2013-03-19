@@ -9,10 +9,14 @@ from type_defs cimport *
 
 def enum(**enums):
     """
+    Usage: x = enum(a=1, b=2, c=3)
+           x.a = 1, x.b = 2, x.c = 3
+           x._attr = ['a','b','c'], x._int = [ 1, 2, 3]
+            
     Just found a clever way to do enums in python
     returns a new type called Enum whose attributes are given by the input in 'enums'
     also append two more attributes called:
-      _attr - contains the list keywords in the input
+      _attr - contains the list of keywords in the input
       _int - contains the list of int values for this enum
     These can be helpful for error checking
     """
@@ -59,12 +63,3 @@ Hydrology file would also contain uv format
 """
 ts_format = enum(magnitude_direction=M19MAGNITUDEDIRECTION,
                    uv=M19REALREAL)
-
-"""
-Lets define error codes here as well, may want to 
-group these under an ErrCodes class if it makes sense - but for now, let's see
-how many error codes we get.
-"""
-err_codes = enum(undefined_units=1)
-#class ErrCodes:
-#    undefined = enum(units=1)

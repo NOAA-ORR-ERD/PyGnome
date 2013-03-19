@@ -1314,11 +1314,21 @@ done:
 					
 					if (!InVerticalMap(toWPt))	// check z is ok, else use original z, or entire fromWPt
 					{
-						toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+						if (depthAtPt > 1.)
+							toWPt.z = GetRandomFloat(depthAtPt-1.,.9999999*depthAtPt);
+						else
+							toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+						//toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
 					}	
 				}
 				else
-					toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+				{	// instead try toWPt.z = depthAtPt - (toWPt.z - depthAtPt);
+					if (depthAtPt > 1.)
+						toWPt.z = GetRandomFloat(depthAtPt-1.,.9999999*depthAtPt);
+					else
+						toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+					//toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+				}
 			}
 			if (toWPt.z <= 0) 
 			{

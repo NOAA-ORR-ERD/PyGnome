@@ -3,6 +3,17 @@
 
 % if is_variable:
     ${defs.datetime_control('datetime', date_label="Date")}
+    <%
+        direction = h.text('direction', class_="direction input-small",
+                           data_value='mover:constantDirection < mover.wind')
+        speed = h.text('speed', class_="speed",
+                       data_value='mover:constantSpeed < mover.wind')
+    %>
+% else:
+    <%
+        direction = h.text('direction', class_="direction input-small")
+        speed = h.text('speed', class_="speed")
+    %>
 % endif
 
 <%
@@ -13,10 +24,5 @@
         help_text =''
 %>
 
-${defs.form_control(
-    h.text('direction', class_="direction input-small", data_value='mover:constantSpeed < mover.wind'),
-    label='Direction', help_text=help_text)}
-
-${defs.form_control(
-    h.text('speed', class_="speed", data_value='mover:constantDirection < mover.wind'),
-    label='Speed')}
+${defs.form_control(direction,  label='Direction', help_text=help_text)}
+${defs.form_control(speed, label='Speed')}

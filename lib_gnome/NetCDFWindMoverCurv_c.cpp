@@ -141,6 +141,8 @@ WorldPoint3D NetCDFWindMoverCurv_c::GetMove(const Seconds& model_time, Seconds t
 	OSErr err = 0;
 	char errmsg[256];
 	
+	if ((*theLE).z > 0) return deltaPoint; // wind doesn't act below surface
+
 	if(!fIsOptimizedForStep) 
 	{
 		err = dynamic_cast<NetCDFWindMoverCurv *>(this) -> SetInterval(errmsg, model_time); // AH 07/17/2012
