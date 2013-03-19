@@ -450,7 +450,7 @@ class CatsMover(CyMover):
     
     def __init__(self, 
                  curr_file, 
-                 *args, **kwargs):
+                 **kwargs):
         """
         Uses super to invoke base class __init__ method
         """
