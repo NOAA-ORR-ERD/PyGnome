@@ -461,7 +461,7 @@ class CatsMover(CyMover):
         self.mover = cy_cats_mover.CyCatsMover()
         self.mover.read_topology(curr_file)
         
-        self.tides = kwargs.pop('tides',None)
+        self.tide = kwargs.pop('tide',None)
         
         super(CatsMover,self).__init__(**kwargs)
         
@@ -469,7 +469,7 @@ class CatsMover(CyMover):
         """
         unambiguous representation of object
         """
-        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.tides.filename)
+        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.tide.filename)
         return info
      
     # Properties

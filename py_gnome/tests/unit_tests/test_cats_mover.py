@@ -19,7 +19,7 @@ def test_exceptions():
 
 
 curr_file=r"SampleData/long_island_sound/tidesWAC.CUR"
-td = environment.Tides(file=r"SampleData/long_island_sound/CLISShio.txt")
+td = environment.Tide(file=r"SampleData/long_island_sound/CLISShio.txt")
 
 num_le = 3
 start_pos = (-72.5, 41.17, 0)
@@ -47,7 +47,7 @@ def test_loop():
     also checks the motion is same for all LEs
     """
     pSpill = TestSpillContainer(num_le, start_pos, rel_time)
-    cats   = movers.CatsMover(curr_file, tides=td)
+    cats   = movers.CatsMover(curr_file, tide=td)
     delta  = _certain_loop(pSpill, cats)
     
     _assert_move(delta)
@@ -64,7 +64,7 @@ def test_uncertain_loop():
     checks there is non-zero motion.
     """
     pSpill = TestSpillContainer(num_le, start_pos, rel_time, uncertain=True) 
-    cats = movers.CatsMover(curr_file, tides=td)
+    cats = movers.CatsMover(curr_file, tide=td)
     u_delta = _uncertain_loop(pSpill,cats)
     
     _assert_move(u_delta)

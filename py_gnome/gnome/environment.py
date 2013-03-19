@@ -317,9 +317,9 @@ def ConstantWind(speed, direction, units='m/s'):
                 units=units)
 
         
-class Tides(Environment):
+class Tide(Environment):
     """
-    Define the tides for a spill
+    Define the tide for a spill
     
     Currently, this internally defines and uses the CyShioTime object, which is
     a cython wrapper around the C++ Shio object
@@ -367,7 +367,7 @@ class Tides(Environment):
         else:
             self.cy_obj = self._obj_to_create(file)
 
-        super(Tides,self).__init__(**kwargs)    
+        super(Tide,self).__init__(**kwargs)    
             
     def _obj_to_create(self, file_):
         """
