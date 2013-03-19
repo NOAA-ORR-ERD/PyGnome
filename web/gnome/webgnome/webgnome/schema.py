@@ -73,7 +73,7 @@ def convertable_to_seconds(node, value):
 
 
 def degrees_true(node, direction):
-    if 0 > direction > 360:
+    if 0 > direction or direction > 360:
         raise Invalid(
             node, 'Direction in degrees true must be between 0 and 360.')
 
@@ -165,8 +165,8 @@ class DatetimeValue2dArray(Sequence):
     array using :class:`gnome.basic_types.datetime_value_2d` as the data type.
     """
 
-    def deserialize(self, node, appstruct):
-        items = super(DatetimeValue2dArray, self).deserialize(node, appstruct)
+    def deserialize(self, node, cstruct, accept_scalar=None):
+        items = super(DatetimeValue2dArray, self).deserialize(node, cstruct)
         num_timeseries = len(items)
         timeseries = numpy.zeros((num_timeseries,),
                                  dtype=gnome.basic_types.datetime_value_2d)
@@ -177,7 +177,7 @@ class DatetimeValue2dArray(Sequence):
 
         return timeseries
 
-    def serialize(self, node, appstruct):
+    def serialize(self, node, appstruct, accept_scalar=None):
         series = []
 
         for wind_value in appstruct:

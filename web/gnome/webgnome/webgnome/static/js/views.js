@@ -80,7 +80,7 @@ define([
             this.placeholderClass = this.options.placeholderClass;
             this.latLongBounds = this.options.latLongBounds;
             this.animationThreshold = this.options.animationThreshold;
-            this.locationFiles = this.options.locationFiles;
+            this.locationFilesMeta = this.options.locationFilesMeta;
             this.canDrawSpill = false;
 
             this.makeImagesClickable();
@@ -681,7 +681,8 @@ define([
             var _this = this;
             _.bindAll(this);
             this.treeEl = this.options.treeEl;
-            this.url = this.options.apiRoot + "/tree";
+            this.gnomeModel = this.options.gnomeModel;
+            this.url = this.gnomeModel.url() + "/tree";
 
             // Turn off node icons. A [+] icon will still appear for nodes
             // that have children.
@@ -694,9 +695,7 @@ define([
                 collection.on('destroy', _this.reload);
             });
 
-            this.gnomeModel = this.options.gnomeModel;
             this.gnomeModel.on('sync', this.reload);
-
             this.options.map.on('sync', this.reload);
 
             $(window).bind('resize', function() {
@@ -1271,7 +1270,7 @@ define([
         initialize: function() {
             _.bindAll(this);
             this.mapCanvas = $(this.options.mapCanvas);
-            this.locationFiles = this.options.locationFiles;
+            this.locationFilesMeta = this.options.locationFilesMeta;
 
             this.setupLocationFileMap();
         },
@@ -1301,7 +1300,7 @@ define([
             this.locationFileMap = new google.maps.Map(
                 this.mapCanvas[0], gmapOptions);
 
-            this.locationFiles.each(function(location) {
+            this.locationFilesMeta.each(function(location) {
                 var latLng = new google.maps.LatLng(
                     location.get('latitude'), location.get('longitude'));
 

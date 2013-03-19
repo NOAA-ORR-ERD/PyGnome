@@ -754,22 +754,32 @@ define([
 
 
     var LocationFile = BaseModel.extend({
+        url: function() {
+            return this.gnomeModel.url() + '/location_file/' + this.get('filename')
+        }
+    });
+
+
+    var LocationFileMeta = BaseModel.extend({
         idAttribute: 'filename'
     });
 
-    var LocationFileCollection = BaseCollection.extend({
-        model: LocationFile,
+
+    var LocationFileMetaCollection = BaseCollection.extend({
+        model: LocationFileMeta,
 
         url: function() {
-            return this.gnomeModel.url() + '/location_file';
+            return this.gnomeModel.url() + '/location_file_meta';
         }
     });
+
 
     var LocationFileWizard = BaseModel.extend({
         url: function() {
             return this.collection.url() + '/' + this.id + '/wizard';
         }
     });
+
 
     var LocationFileWizardCollection = BaseCollection.extend({
         model: LocationFileWizard,
@@ -783,7 +793,7 @@ define([
 
     var GnomeModelFromLocationFile = BaseModel.extend({
         url: function() {
-            return '/model/from_location_file/' + this.get('location_name')
+            return this.gnomeModel.url() + '/from_location_file/' + this.get('location_name')
         }
     });
 
@@ -830,7 +840,8 @@ define([
         Map: Map,
         CustomMap: CustomMap,
         LocationFile: LocationFile,
-        LocationFileCollection: LocationFileCollection,
+        LocationFileMeta: LocationFileMeta,
+        LocationFileMetaCollection: LocationFileMetaCollection,
         LocationFileWizard: LocationFileWizard,
         LocationFileWizardCollection: LocationFileWizardCollection,
         getNwsWind: getNwsWind

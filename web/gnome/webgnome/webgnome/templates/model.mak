@@ -240,7 +240,7 @@
                 defaultMap: ${default_map | n},
                 defaultCustomMap: ${default_custom_map | n},
                 mapIsLoaded: ${"true" if map_is_loaded else "false"},
-                locationFiles: ${location_file_json | n},
+                locationFilesMeta: ${location_file_json | n},
                 animationThreshold: 30 // Milliseconds
             };
 

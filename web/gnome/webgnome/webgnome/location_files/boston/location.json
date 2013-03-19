@@ -73,7 +73,7 @@
                 0.01, 
                 0.04
             ], 
-            "name": "<webgnome.model_manager.WebSurfaceReleaseSpill object at 0x1674e10>", 
+            "name": "Surface Release Spill",
             "is_active": true, 
             "end_position": [
                 -70.911432, 

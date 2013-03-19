@@ -175,12 +175,7 @@ class GnomeRunner(BaseResource):
           description='Create a new model from a location file.')
 class ModelFromLocationFile(BaseResource):
 
-    @view(validators=util.valid_location_file)
-    def post(self):
-        """
-        Create a new model using settings from a location file.
-        """
-        model = self.settings.Model.create()
+    def apply_location_file_to_model(self, model):
         self.request.session[self.settings['model_session_key']] = model.id
         model_schema = schema.ModelSchema().bind()
 
@@ -190,3 +185,22 @@ class ModelFromLocationFile(BaseResource):
         data = model.to_dict()
 
         return model_schema.serialize(data)
+
+    @view(validators=util.valid_location_file)
+    def post(self):
+        """
+        Create a new model using settings from a location file.
+        """
+        model = self.settings.Model.create()
+        return self.apply_location_file_to_model(model)
+
+
+@resource(path='/model/{model_id}/from_location_file/{location}',
+          renderer='gnome_json',
+          description='Apply a location file to an existing model.')
+class ExistingModelFromLocationFile(ModelFromLocationFile):
+
+    @view(validators=[util.valid_model_id, util.valid_location_file])
+    def post(self):
+        model = self.request.validated['model']
+        return self.apply_location_file_to_model(model)

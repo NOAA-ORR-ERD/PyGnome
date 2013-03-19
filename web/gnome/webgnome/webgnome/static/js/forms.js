@@ -26,14 +26,39 @@ define([
             this.deferreds.push(fn);
         },
 
-        run: function() {
-            _.each(this.deferreds, function(fn, index, list) {
-                fn();
-            })
+        /*
+         Loop through the "deferred" function calls in `this.deferreds` and call
+         them. If they returned a result, assume it was a $.Deferred object
+         and add it to the local `deferreds` array.
 
-            this.deferreds = [];
+         Finally, attach `done` and `fail` handlers to the list of deferreds, so
+         that when all deferreds complete, we resolve the call to `run` via
+         a $.Deferred object `dfd`, or if any fail, we fail `dfd`.
+         */
+        run: function() {
+            var dfd = $.Deferred();
+            var deferreds = [];
+
+            _.each(this.deferreds, function(fn) {
+                var result = fn();
+
+                if (result && typeof result.done === 'function') {
+                    deferreds.push(result);
+                }
+            });
+
+            $.when.apply(null, deferreds).done(function() {
+                dfd.resolve();
+            }).fail(function() {
+                dfd.fail();
+            });
+
+            return dfd;
         }
     };
+
+
+    var deferreds = new DeferredManager();
 
 
     var FormViewContainer = Backbone.View.extend({
@@ -83,7 +108,7 @@ define([
         /*
          Show the form with `formId`.
          */
-        show: function(formId, success, cancel, customButtons) {
+        show: function(formId, success, cancel, customButtons, defaults) {
             var formView = this.get(formId);
 
             if (formView) {
@@ -96,6 +121,10 @@ define([
                 if (customButtons && customButtons.length) {
                     formView.setCustomButtons(customButtons);
                 }
+                if (defaults) {
+                    formView.defaults = defaults;
+                }
+
                 formView.reload();
                 formView.show();
             }
@@ -120,7 +149,6 @@ define([
             _.bindAll(this);
             this.wasCancelled = false;
             this.id = this.options.id;
-            this.deferred = new DeferredManager();
 
             this.model = this.options.model;
 
@@ -258,10 +286,13 @@ define([
 
         submit: function() {
             var _this = this;
+
             if (this.collection) {
                 this.collection.add(this.model);
             }
-            this.model.save(null, {
+
+            // Return a jQuery Promise object.
+            return this.model.save(null, {
                 success: function() {
                     _this.trigger(FormView.SUBMITTED);
                 }
@@ -452,7 +483,8 @@ define([
         },
 
         beforeClose: function() {
-            if (!this.wasCancelled && this.model && this.model.dirty) {
+            if (!this.wasCancelled && this.model && this.model.dirty
+                    && !this.isDeferred) {
                 if (!window.confirm('You have unsaved changes. Really close?')) {
                     return false;
                 }
@@ -473,7 +505,7 @@ define([
             if (!this.model) {
                 this.$el.dialog("close");
             }
-            JQueryUIModalFormView.__super__.submit.apply(this, arguments);
+            return JQueryUIModalFormView.__super__.submit.apply(this, arguments);
         },
 
         setupModelEvents: function() {
@@ -491,6 +523,11 @@ define([
          */
         show: function() {
             this.wasCancelled = false;
+
+            if (this.defaults && this.model) {
+                this.model.set(this.defaults);
+            }
+
             this.clearErrors();
             this.prepareForm();
             this.$el.dialog('open');
@@ -514,6 +551,32 @@ define([
             this.$el.dialog('close');
         },
 
+        addDeferredButton: function(button) {
+            deferreds.add(function() {
+                // The result of the function may be a jQuery
+                // Deferred object, e.g. a 'submit' function,
+                // so return the result (a Deferred or Promise).
+                var val = this[button.fnName]();
+                this.isDeferred = false;
+                return val;
+            });
+
+            this.close();
+
+            // XXX: Do we really want to trigger these events
+            // for deferred methods? Right now we have to because
+            // FormViewContainer is listening to them so we can
+            // continue in a Wizard-style form; however, is there
+            // a better way of handling that? And if we do want
+            // to trigger these events, should they really be
+            // hard-coded like this?
+            if (button.fnName === 'submit') {
+                this.trigger(FormView.SUBMITTED);
+            } else if (button.fnName === 'cancel') {
+                this.trigger(FormView.CANCELED);
+            }
+        },
+
         setCustomButtons: function(buttonDefinitions) {
             var buttons = [];
             var _this = this;
@@ -526,28 +589,16 @@ define([
                 buttons.push({
                     text: button.text,
                     click: function() {
-                        if (button.deferred) {
-                            _this.deferred.add(function() {
-                                _this[button.fnName]();
-                            });
-
-                            _this.close();
-
-                            // XXX: Do we really want to trigger these events
-                            // for deferred methods? Right now we have to because
-                            // FormViewContainer is listening to them so we can
-                            // continue in a Wizard-style form; however, is there
-                            // a better way of handling that? And if we do want
-                            // to trigger these events, should they realy be
-                            // hard-coded like this?
-                            if (button.fnName === 'submit') {
-                                _this.trigger(FormView.SUBMITTED);
-                            } else if (button.fnName === 'cancel') {
-                                _this.trigger(FormView.CANCELED);
-                            }
-                        } else {
+                        if (!button.deferred) {
                             _this[button.fnName]();
+                            return;
                         }
+
+                        _this.isDeferred = true;
+
+                        _this.validate().done(function() {
+                            _this.addDeferredButton(button);
+                        });
                     }
                 });
             });
@@ -647,6 +698,8 @@ define([
             this.widget.on('click', '.ui-button.finish', this.finish);
             this.widget.on('click', '.ui-button.references', this.showReferences);
 
+            this.locationFileMeta = this.options.locationFileMeta;
+
             this.references = this.$el.find('div.references').dialog({
                 autoOpen: false,
                 buttons: {
@@ -676,18 +729,32 @@ define([
             return {wizard: this.model};
         },
 
-        loadLocationFile: function() {
+        finish: function() {
             var _this = this;
 
-            new models.GnomeModelFromLocationFile({
-                location_name: this.model.id
-            }).save().then(function() {
-                _this.trigger(LocationFileWizardFormView.FINISHED);
+            // TODO: Handle server-side errors.
+            this.loadLocationFile().done(function() {
+                 deferreds.run().done(function() {
+                     _this.model.save().done(function() {
+                         // TODO: Trigger event, let AppView handle this.
+                         window.location = window.location.origin;
+                     }).fail(function() {
+                         alert('Saving the wizard model failed');
+                     });
+                 }).fail(function() {
+                     alert('Error saving deferred callback.');
+                 });
             });
         },
 
-        finish: function() {
-            this.model.save().then(this.loadLocationFile);
+        loadLocationFile: function() {
+            var model = new models.GnomeModelFromLocationFile({
+                location_name: this.locationFileMeta.get('filename')
+            }, {
+                gnomeModel: this.gnomeModel
+            });
+
+            return model.save();
         },
 
         showReferences: function() {
@@ -745,20 +812,38 @@ define([
             var nextStep = this.getNextStep();
             var previousStep = this.getPreviousStep();
 
-            // Use closures so we know we're always referencing the correct
-            // next and previous steps when the callback fires.
+            // Close over the `nextStep` and `previousStep` variables.
             function showNextStep() {
                 _this.showStep(nextStep)
             }
+
             function showPreviousStep() {
                 _this.showStep(previousStep);
             }
 
-            this.trigger(FormView.SHOW_FORM, form, showNextStep,
-                         showPreviousStep, customButtons);
+            function trigger(defaults) {
+                _this.trigger(FormView.SHOW_FORM, form, showNextStep,
+                    showPreviousStep, customButtons, defaults);
+            }
+
+            if (form === 'model-settings') {
+                var locationFile = new models.LocationFile({
+                    filename: this.locationFileMeta.get('filename')
+                }, {
+                    gnomeModel: this.gnomeModel
+                });
+
+                locationFile.fetch({
+                    success: function() {
+                        trigger(locationFile.attributes);
+                    }
+                });
+            } else {
+                trigger();
+            }
         }
     }, {
-        FINISHED: 'locationFileWizardFormView:finished'
+        LOCATION_CHOSEN: 'locationFileWizardFormView:locationChosen'
     });
 
 
@@ -937,7 +1022,6 @@ define([
 
         show: function() {
             this.model.clear();
-            this.model.set(this.defaults);
             this.map.clearSelection();
             // Have to set these manually since reload() doesn't get called
             this.setupModelEvents();
@@ -1368,7 +1452,7 @@ define([
                 wind.set('timeseries', timeseries);
             }
 
-            WindMoverFormView.__super__.submit.apply(this, arguments);
+            return WindMoverFormView.__super__.submit.apply(this, arguments);
         },
 
         getMoverType: function() {
@@ -1741,7 +1825,7 @@ define([
 
         submit: function() {
             this.model.set('release_time', this.getFormDate(this.getForm()));
-            SurfaceReleaseSpillFormView.__super__.submit.apply(this, arguments);
+            return SurfaceReleaseSpillFormView.__super__.submit.apply(this, arguments);
         },
 
         cancel: function() {
@@ -1838,7 +1922,7 @@ define([
 
         submit: function() {
             this.model.set('start_time', this.getFormDate(this.getForm()));
-            GnomeSettingsFormView.__super__.submit.apply(this, arguments);
+            return GnomeSettingsFormView.__super__.submit.apply(this, arguments);
         },
 
         show: function() {
@@ -1872,7 +1956,7 @@ define([
                 this.$el.find('.active_start_container')));
             this.model.set('active_stop',  this.getFormDate(
                 this.$el.find('.active_stop_container')));
-            RandomMoverFormView.__super__.submit.apply(this, arguments);
+            return RandomMoverFormView.__super__.submit.apply(this, arguments);
         },
 
         getDataBindings: function() {
@@ -1904,7 +1988,7 @@ define([
 
         submit: function() {
             this.collection.add(this.model);
-            AddRandomMoverFormView.__super__.submit.apply(this, arguments);
+            return AddRandomMoverFormView.__super__.submit.apply(this, arguments);
         }
     });
 
@@ -1927,7 +2011,8 @@ define([
         GnomeSettingsFormView: GnomeSettingsFormView,
         MultiStepFormView: MultiStepFormView,
         LocationFileWizardFormView: LocationFileWizardFormView,
-        ModelNotFoundException: ModelNotFoundException
+        ModelNotFoundException: ModelNotFoundException,
+        deferreds: deferreds
     };
 
 });

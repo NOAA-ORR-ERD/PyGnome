@@ -17,6 +17,10 @@ class LocationFile(BaseResource):
         model_schema = schema.ModelSchema().bind()
         data = model_schema.deserialize(
             self.request.validated['location_file_model_data'])
+
+        # We don't need this.
+        del data['id']
+
         return model_schema.serialize(data)
 
     @view(validators=[util.valid_model_id, util.valid_new_location_file],

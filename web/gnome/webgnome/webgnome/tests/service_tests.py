@@ -118,6 +118,32 @@ class ModelFromLocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
                          len(data['surface_release_spills']))
 
 
+class ExistingModelFromLocationFileServiceTests(FunctionalTestBase,
+                                                ModelHelperMixin):
+    def setUp(self):
+        super(ExistingModelFromLocationFileServiceTests, self).setUp()
+        self.create_model()
+        self.maxDiff = 10000
+
+    def test_post_updates_existing_model_from_location_file(self):
+        resp = self.testapp.get(self.model_url('/location_file/test'))
+        location_file_data = resp.json_body
+        resp = self.testapp.post(self.model_url('from_location_file/test'))
+        data = resp.json_body
+
+        self.assertEqual(data['id'], self.model_id)
+        util.delete_keys_from_dict(data, ['id'])
+
+        for key in ['map', 'uncertain', 'start_time', 'time_step',
+                    'duration_hours', 'duration_days']:
+            self.assertEqual(location_file_data[key], data[key])
+
+        self.assertEqual(len(location_file_data['wind_movers']),
+                         len(data['wind_movers']))
+        self.assertEqual(len(location_file_data['surface_release_spills']),
+                         len(data['surface_release_spills']))
+
+
 class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_first_step(self):

@@ -21,14 +21,14 @@
 <%defs:step show_form='model-settings'>
     <%defs:buttons>
         ${defs.back_btn(function_name="cancel")}
-        ${defs.next_btn(function_name="submit", deferred=True, close=True)}
+        ${defs.next_btn(function_name="submit", deferred=True)}
     </%defs:buttons>
 </%defs:step>
 
 <%defs:step show_form='add-wind-mover'>
     <%defs:buttons>
         ${defs.back_btn(function_name="cancel")}
-        ${defs.next_btn(function_name="submit", deferred=True, close=True)}
+        ${defs.next_btn(function_name="submit", deferred=True)}
     </%defs:buttons>
 </%defs:step>
 

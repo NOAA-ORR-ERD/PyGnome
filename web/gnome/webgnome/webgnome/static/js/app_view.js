@@ -38,7 +38,7 @@ define([
                 runItemEl: "#menu-run",
                 stepItemEl: "#menu-step",
                 runUntilItemEl: "#menu-run-until",
-                locationFiles: this.locationFiles
+                locationFilesMeta: this.locationFilesMeta
             });
 
             this.sidebarEl = '#sidebar';
@@ -51,7 +51,6 @@ define([
 
             this.treeView = new views.TreeView({
                 treeEl: "#tree",
-                apiRoot: this.apiRoot,
                 gnomeRun: this.gnomeRun,
                 gnomeModel: this.gnomeModel,
                 map: this.map,
@@ -113,7 +112,7 @@ define([
             this.locationFileMapView = new views.LocationFileMapView({
                 el: $('#location-file-map'),
                 mapCanvas: '#map_canvas',
-                locationFiles: this.locationFiles
+                locationFilesMeta: this.locationFilesMeta
             });
 
             this.setupEventHandlers();
@@ -173,32 +172,36 @@ define([
             this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.loadLocationFileWizard);
         },
 
-        showLocationFileWizard: function(locationFile) {
-            var html = $(locationFile.get('wizard_html'));
+        showLocationFileWizard: function(locationFileMeta) {
+            var html = $(locationFileMeta.get('wizard_html'));
             var id = html.attr('id');
             var formView = this.formViews.get(id);
 
             if (formView) {
                 formView.show();
             } else {
-                this.loadLocationFile(locationFile);
+                this.loadLocationFile(locationFileMeta);
             }
         },
 
         loadLocationFileWizard: function(location) {
-            var locationFile = this.locationFiles.get(location);
+            var locationFileMeta = this.locationFilesMeta.get(location);
 
-            if (locationFile) {
-                this.showLocationFileWizard(locationFile);
+            if (locationFileMeta) {
+                this.showLocationFileWizard(locationFileMeta);
             } else {
                 alert('That location file is not available yet.');
             }
         },
 
-        loadLocationFile: function(locationFile) {
-            new models.GnomeModelFromLocationFile({
-                location_name: locationFile.id
-            }).save().then(function() {
+        loadLocationFile: function(locationName) {
+            var model = new models.GnomeModelFromLocationFile({
+                location_name: locationName
+            }, {
+                gnomeModel: this.gnomeModel
+            })
+
+            model.save().then(function() {
                 window.location = window.location.origin;
             });
         },
@@ -351,19 +354,21 @@ define([
             this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
             this.addMapFormView.on(forms.AddMapFormView.SOURCE_CHOSEN, this.mapSourceChosen);
 
-            this.locationFiles.each(function(locationFile) {
-                var html = $(locationFile.get('wizard_html'));
+            // Create a LocationFileWizardFormView for each LocationFile that
+            // has wizard HTML.
+            this.locationFilesMeta.each(function(locationFileMeta) {
+                var html = $(locationFileMeta.get('wizard_html'));
                 var id = html.attr('id');
-                var wizard = _this.locationFileWizards.get(locationFile.id);
+                var wizard = _this.locationFileWizards.get(locationFileMeta.id);
 
                 if (html.length && id) {
                     var formView = new forms.LocationFileWizardFormView({
                         id: id,
-                        model: wizard
+                        model: wizard,
+                        gnomeModel: _this.gnomeModel,
+                        locationFileMeta: locationFileMeta
                     });
-                    formView.on(forms.LocationFileWizardFormView.FINISHED, function() {
-                        window.location = window.location.origin;
-                    });
+
                     _this.formViews.add(formView);
                 }
             });
@@ -424,9 +429,8 @@ define([
                 }
             );
 
-
-            this.locationFiles = new models.LocationFileCollection(
-                this.options.locationFiles, {
+            this.locationFilesMeta = new models.LocationFileMetaCollection(
+                this.options.locationFilesMeta, {
                     gnomeModel: this.gnomeModel
                 }
             );
@@ -436,7 +440,7 @@ define([
             });
 
             // Create a LocationFileWizard for every LocationFile
-            this.locationFiles.each(function(location) {
+            this.locationFilesMeta.each(function(location) {
                 var wizard_json = location.get('wizard_json') || {};
                 wizard_json.id = location.id;
                 _this.locationFileWizards.add(wizard_json);
