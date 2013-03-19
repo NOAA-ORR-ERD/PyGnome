@@ -2495,7 +2495,8 @@ Boolean TOLEList::FunctionEnabled(ListItem item, short buttonID)
 				if (!model->LESetsList->IsItemInList((Ptr)&item.owner, &i)) return FALSE;
 				switch (buttonID) {
 					case UPBUTTON: return i > 0;
-					case DOWNBUTTON: return i < (model->LESetsList->GetItemCount()/2 - 1);
+					//case DOWNBUTTON: return i < (model->LESetsList->GetItemCount()/2 - 1);
+					case DOWNBUTTON: return i < (model->LESetsList->GetItemCount() - 3); // spills are 0,2,4,...
 			}
 		}
 	}

@@ -1332,7 +1332,10 @@ done:
 			}
 			if (toWPt.z <= 0) 
 			{
-				toWPt.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
+				if (isDispersed)
+					toWPt.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
+				else
+					toWPt.z = 0;	// let LEs refloat - except for dispersed oil...
 			}
 			//toWPt.z = fromWPt.z;
 			//if (!InVerticalMap(toWPt))	
