@@ -432,42 +432,20 @@ class RandomMover(CyMover, serializable.Serializable):
 
 class CatsMover(CyMover):
     
-    def __init__(self, curr_file, shio_file=None, shio_yeardata_file=None, ossm_file=None, format='uv', *args, **kwargs):
+    def __init__(self, 
+                 curr_file, 
+                 *args, **kwargs):
         """
         
         """
         if not os.path.exists(curr_file):
-            raise ValueError("Path for Cats file does not exist: {0}".format(curr_file))
+            raise ValueError("Path for Cats curr_file does not exist: {0}".format(curr_file))
         
         self.curr_file = curr_file  # check if this is stored with cy_cats_mover?
         self.mover = cy_cats_mover.CyCatsMover()
         self.mover.read_topology(curr_file)
         
-        if shio_file is not None and ossm_file is not None:
-            raise ValueError("Cannot provide both OSSM and Shio file for tides.")
-        
-        if shio_file is not None:
-            if not os.path.exists(shio_file):
-                raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
-            else:
-                self.tides = cy_shio_time.CyShioTime(shio_file)   # not sure if this should be managed externally?
-                self.mover.set_shio(self.tides)
-                #self.tides.set_shio_yeardata_path(shio_yeardata_file)
-            if shio_yeardata_file is not None:
-                if not os.path.exists(shio_yeardata_file):
-                    raise ValueError("Path for Shio Year Data does not exist: {0}".format(shio_yeardata_file))
-                else:
-                    self.tides.set_shio_yeardata_path(shio_yeardata_file)
-            else:
-                raise ValueError("Shio data requires path for Shio Year Data: {0}".format(shio_yeardata_file))
-        
-        if ossm_file is not None:
-            if not os.path.exists(ossm_file):
-                raise ValueError("Path for Shio file does not exist: {0}".format(shio_file))
-            else:
-                ts_format = convert.tsformat(format)
-                self.tides = CyOSSMTime(file=ossm_file,file_contains=ts_format)
-                self.mover.set_ossm(self.tides)
+        self.tides = kwargs.pop('tides',None)
         
         super(CatsMover,self).__init__(*args, **kwargs)
         

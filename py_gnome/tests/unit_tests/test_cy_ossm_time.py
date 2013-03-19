@@ -15,9 +15,11 @@ import pytest
 datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
 
 def test_exceptions():
+    with pytest.raises(IOError):
+        cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, "WindDataFromGnome.WNDX"), file_contains=basic_types.ts_format.magnitude_direction)    # bad path
+        
     with pytest.raises(ValueError):
         cy_ossm_time.CyOSSMTime()  # no inputs
-        cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, "WindDataFromGnome.WNDX"), file_contains=basic_types.ts_format.magnitude_direction)    # bad path
         cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, "WindDataFromGnome.WND"))    # insufficient input info
         cy_ossm_time.CyOSSMTime(file=os.path.join(datadir, "WindDataFromGnome_BadUnits.WND"), file_contains=basic_types.ts_format.magnitude_direction)    # insufficient input info
     

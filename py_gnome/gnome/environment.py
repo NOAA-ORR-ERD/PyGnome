@@ -15,7 +15,7 @@ from hazpy import unit_conversion
 from gnome import basic_types, GnomeObject
 from gnome.utilities import transforms, time_utils, convert, serializable
 from gnome.cy_gnome import cy_ossm_time, cy_shio_time
-from hazpy import unit_conversion
+import gnome
 
 class Wind( GnomeObject, serializable.Serializable):
     """
@@ -103,7 +103,7 @@ class Wind( GnomeObject, serializable.Serializable):
             timeseries['value'] = self._convert_units(timeseries['value'], format, units, 'meter per second')
             time_value_pair = convert.to_time_value_pair(timeseries, format)   # ts_format is checked during conversion
                 
-            self.ossm = CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
+            self.ossm = cy_ossm_time.CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             self._user_units = units    # do not set ossm.user_units since that only has a subset of possible units
             
             self.name = kwargs.pop('name','Wind Object')
@@ -111,7 +111,7 @@ class Wind( GnomeObject, serializable.Serializable):
             
         else:
             ts_format = convert.tsformat(format)
-            self.ossm = CyOSSMTime(file=kwargs.pop("file"),file_contains=ts_format)
+            self.ossm = cy_ossm_time.CyOSSMTime(file=kwargs.pop("file"),file_contains=ts_format)
             self._user_units = self.ossm.user_units
             
             self.name = kwargs.pop('name',os.path.split(self.ossm.filename)[1])
@@ -305,21 +305,33 @@ class Tides(GnomeObject):
     a cython wrapper around the C++ Shio object
     """
     def __init__(self,
-                 timeseries=None,
                  file=None,
-                 units=None):
+                 timeseries=None,
+                 **kwargs):
         """
         Tide information can be obtained from a file or set as a timeseries
+        Either a file or timeseries must be giving, both cannot be None.
         
-        :param timeseries: (Required) numpy array containing datetime_value_2d, ts_format is always uv
+        :param timeseries: numpy array containing datetime_value_2d, ts_format is always 'uv'
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
-        :param file: path to a long wind file from which to read wind data
         :param units: units associated with the timeseries data. If 'file' is given, then units are read in from the file. 
                       unit_conversion - NOT IMPLEMENTED YET
-        :type units:  string, for example: 'knot', 'meter per second', 'mile per hour' etc
+        :type units:  (Optional) string, for example: 'knot', 'meter per second', 'mile per hour' etc
+                      Default is None for now
+        
+        :param file: path to a long wind file from which to read wind data
+        
+        :param yeardata: (Optional) path to yeardata used for Shio data files. Default location
+                         is gnome/data/yeardata/
         """
         if( timeseries is None and file is None):
             raise ValueError("Either provide timeseries or a valid file containing Tide data")
+        
+        # should probably put this at some central location
+        self.yeardata = kwargs.pop('yeardata',os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/'))
+        
+        if not os.path.exists(self.yeardata):
+            raise IOError("Path to yeardata files does not exist: {0}".format(self.yeardata))
         
         if( timeseries is not None):
             if units is None:
@@ -327,10 +339,10 @@ class Tides(GnomeObject):
             
             #self._check_timeseries(timeseries, units)    # will probably need to move this function out
             
-            time_value_pair = convert.to_time_value_pair(timeseries, basic_types.data_format.wind_uv)   # data_format is checked during conversion
+            time_value_pair = convert.to_time_value_pair(timeseries, convert.tsformat('uv'))   # data_format is checked during conversion
                 
             self.cy_obj = cy_ossm_time.CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
-            self._user_units = units
+            self._user_units = kwargs.pop('units',None)    # not sure what these should be
         else:
             self.cy_obj = self._obj_to_create(file)
             
@@ -357,6 +369,6 @@ class Tides(GnomeObject):
         
         elif len(string.split(lines[3],',')) == 7:
             #if float( string.split(lines[3],',')[-1]) != 0.0:    # maybe log / display a warning that v=0 for tide file and will be ignored
-            return cy_ossm_time.CyOSSMTime(file_, data_format=basic_types.data_format.uv)
+            return cy_ossm_time.CyOSSMTime(file_, file_contains=convert.tsformat('uv'))
         else:
             raise ValueError("This does not appear to be a valid file format that can be read by OSSM or Shio to get tide information") 
