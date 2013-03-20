@@ -317,39 +317,48 @@ def ConstantWind(speed, direction, units='m/s'):
                 units=units)
 
         
-class Tide(Environment):
+class Tide(Environment, serializable.Serializable):
     """
     Define the tide for a spill
     
     Currently, this internally defines and uses the CyShioTime object, which is
     a cython wrapper around the C++ Shio object
     """
+    _update = ['filename','yeardata']    # default units for input/output data
+    _create = []
+    _create.extend(_update)
+    
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add(create=_create,
+              update=_update)   # no need to copy parent's state in tis case
+    
     def __init__(self,
-                 file=None,
+                 filename=None,
                  timeseries=None,
                  **kwargs):
         """
-        Tide information can be obtained from a file or set as a timeseries
-        Either a file or timeseries must be giving, both cannot be None.
+        Tide information can be obtained from a filename or set as a timeseries
+        Either a filename or timeseries must be giving, both cannot be None.
         
-	Invokes super(Tides,self).__init__(**kwargs) for parent class initialization
+	    Invokes super(Tides,self).__init__(**kwargs) for parent class initialization
+	    
         :param timeseries: numpy array containing datetime_value_2d, ts_format is always 'uv'
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
-        :param units: units associated with the timeseries data. If 'file' is given, then units are read in from the file. 
+        :param units: units associated with the timeseries data. If 'filename' is given, then units are read in from the filename. 
                       unit_conversion - NOT IMPLEMENTED YET
         :type units:  (Optional) string, for example: 'knot', 'meter per second', 'mile per hour' etc
                       Default is None for now
         
-        :param file: path to a long wind file from which to read wind data
+        :param filename: path to a long wind filename from which to read wind data
         
-        :param yeardata: (Optional) path to yeardata used for Shio data files. Default location
+        :param yeardata: (Optional) path to yeardata used for Shio data filenames. Default location
                          is gnome/data/yeardata/
         """
-        if( timeseries is None and file is None):
-            raise ValueError("Either provide timeseries or a valid file containing Tide data")
+        if( timeseries is None and filename is None):
+            raise ValueError("Either provide timeseries or a valid filename containing Tide data")
         
         # should probably put this at some central location
-        self.yeardata = kwargs.pop('yeardata',os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/'))
+        self.yeardata = os.path.abspath( kwargs.pop('yeardata',os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/')) )
         
         if not os.path.exists(self.yeardata):
             raise IOError("Path to yeardata files does not exist: {0}".format(self.yeardata))
@@ -365,15 +374,16 @@ class Tide(Environment):
             self.cy_obj = cy_ossm_time.CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             self._user_units = kwargs.pop('units',None)    # not sure what these should be
         else:
-            self.cy_obj = self._obj_to_create(file)
+            self.filename = os.path.abspath( filename)
+            self.cy_obj = self._obj_to_create()
 
         super(Tide,self).__init__(**kwargs)    
             
-    def _obj_to_create(self, file_):
+    def _obj_to_create(self):
         """
         open file, read a few lines to determine if it is an ossm file or a shio file
         """
-        fh = open(file_, 'r')
+        fh = open(self.filename, 'r')
         lines = [fh.readline() for i in range(4)]   # depends on line endings - this does not work for '\r'
         
         if len(lines[1]) == 0:
@@ -387,10 +397,10 @@ class Tide(Environment):
         shio_file = ['[StationInfo]', 'Type=', 'Name=', 'Latitude=']
         
         if all( [shio_file[i] == lines[i][:len(shio_file[i])] for i in range(4)]):
-            return cy_shio_time.CyShioTime(file_)
+            return cy_shio_time.CyShioTime(self.filename)
         
         elif len(string.split(lines[3],',')) == 7:
             #if float( string.split(lines[3],',')[-1]) != 0.0:    # maybe log / display a warning that v=0 for tide file and will be ignored
-            return cy_ossm_time.CyOSSMTime(file_, file_contains=convert.tsformat('uv'))
+            return cy_ossm_time.CyOSSMTime(self.filename, file_contains=convert.tsformat('uv'))
         else:
             raise ValueError("This does not appear to be a valid file format that can be read by OSSM or Shio to get tide information") 

@@ -19,7 +19,7 @@ def test_exceptions():
 
 
 curr_file=r"SampleData/long_island_sound/tidesWAC.CUR"
-td = environment.Tide(file=r"SampleData/long_island_sound/CLISShio.txt")
+td = environment.Tide(filename=r"SampleData/long_island_sound/CLISShio.txt")
 
 num_le = 3
 start_pos = (-72.5, 41.17, 0)

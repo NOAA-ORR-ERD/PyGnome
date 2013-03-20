@@ -75,3 +75,10 @@ class CreateWind( Id, UpdateWind):
     This is a union of the properties in UpdateWind and Id
     """
     pass
+
+class UpdateTide(MappingSchema):
+    filename = SchemaNode( String(), missing=None)
+    yeardata = SchemaNode( String() )
+    
+class CreateTide(Id, UpdateTide):
+    pass

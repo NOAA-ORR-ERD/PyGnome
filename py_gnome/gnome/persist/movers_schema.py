@@ -55,3 +55,22 @@ class UpdateSimpleMover(Mover):
     
 class CreateSimpleMover(Id, UpdateSimpleMover):
     pass
+
+class WorldPoint(TupleSchema):
+    long = SchemaNode( Float() )
+    lat = SchemaNode( Float() )
+    z = SchemaNode( Float(), default=0.0)
+    
+class UpdateCatsMover(Mover):
+    """
+    Contains properties required by UpdateWindMover and CreateWindMover
+    """
+    filename = SchemaNode(String() )
+    scale = SchemaNode(Bool() )
+    scale_refpoint = WorldPoint()
+    scale_value = SchemaNode(Float() )
+    tide_id = SchemaNode(String(), missing=None)
+    
+
+class CreateCatsMover(Id, UpdateCatsMover):
+    pass

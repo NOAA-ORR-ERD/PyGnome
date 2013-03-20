@@ -237,17 +237,17 @@ class WindMover(CyMover, serializable.Serializable):
     state.add(update=_update, create=_create)
     
     @classmethod
-    def new_from_dict(cls, dict):
+    def new_from_dict(cls, dict_):
         """
         define in WindMover and check wind_id matches wind
         
-        invokes: super(WindMover,cls).new_from_dict(dict)
+        invokes: super(WindMover,cls).new_from_dict(dict_)
         """
-        wind_id = dict.pop('wind_id')
-        if dict.get('wind').id != wind_id:
+        wind_id = dict_.pop('wind_id')
+        if dict_.get('wind').id != wind_id:
             raise ValueError("id of wind object does not match the wind_id parameter")
         
-        return super(WindMover,cls).new_from_dict(dict)
+        return super(WindMover,cls).new_from_dict(dict_)
     
     def wind_id_to_dict(self):
         """
@@ -446,22 +446,51 @@ class RandomMover(CyMover, serializable.Serializable):
         return "RandomMover(diffusion_coef=%s,active_start=%s, active_stop=%s, on=%s)" % (self.diffusion_coef,self.active_start, self.active_stop, self.on)
 
 
-class CatsMover(CyMover):
+class CatsMover(CyMover, serializable.Serializable):
+    
+    state = copy.deepcopy(CyMover.state)
+    
+    # follow the same convention as WindMover for now. Though this will likely change
+    _common = ['filename','scale','scale_refpoint','scale_value']
+    _update = ['tide']
+    _update.extend(_common)
+    _create = ['tide_id']
+    _create.extend(_common)
+    state.add(update=_update, create=_create)
+    
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """
+        define in WindMover and check wind_id matches wind
+        
+        invokes: super(WindMover,cls).new_from_dict(dict_)
+        """
+        tide_id = dict_.pop('tide_id')
+        if tide_id is not None:
+            if dict_.get('tide').id != tide_id:
+                raise ValueError("id of tide object does not match the tide_id parameter")
+        
+        return super(CatsMover,cls).new_from_dict(dict_)
+    
     
     def __init__(self, 
-                 curr_file, 
+                 filename, 
                  **kwargs):
         """
         Uses super to invoke base class __init__ method
         """
-        if not os.path.exists(curr_file):
-            raise ValueError("Path for Cats curr_file does not exist: {0}".format(curr_file))
+        if not os.path.exists(filename):
+            raise ValueError("Path for Cats filename does not exist: {0}".format(filename))
         
-        self.curr_file = curr_file  # check if this is stored with cy_cats_mover?
+        self.filename = filename  # check if this is stored with cy_cats_mover?
         self.mover = cy_cats_mover.CyCatsMover()
-        self.mover.read_topology(curr_file)
+        self.mover.read_topology(filename)
         
         self.tide = kwargs.pop('tide',None)
+        
+        self.scale = kwargs.pop('scale', self.mover.scale_type)
+        self.scale_value = kwargs.get('scale_value', self.mover.scale_value)
+        self.scale_refpoint = kwargs.pop('scale_refpoint', self.mover.ref_point)
         
         super(CatsMover,self).__init__(**kwargs)
         
@@ -469,7 +498,7 @@ class CatsMover(CyMover):
         """
         unambiguous representation of object
         """
-        info = "CatsMover(curr_file={0},shio_file={1})".format(self.curr_mover, self.tide.filename)
+        info = "CatsMover(filename={0},tide_id={1})".format(self.filename, self.tide.id)
         return info
      
     # Properties
@@ -480,7 +509,12 @@ class CatsMover(CyMover):
      
     scale_value = property( lambda self: self.mover.scale_value, 
                             lambda self,val: setattr(self.mover, 'scale_value', val) )
-        
+    
+    def tide_id_to_dict(self):
+        if self.tide is None:
+            return None
+        else:
+            return self.tide.id    
         
 class WeatheringMover(Mover):
     """
@@ -561,21 +595,21 @@ class WeatheringMover(Mover):
 
 class GridCurrentMover(CyMover):
     
-    def __init__(self, curr_file, topology_file=None, **kwargs):
+    def __init__(self, filename, topology_file=None, **kwargs):
         """
         will need to add uncertainty parameters and other dialog fields
         use super with kwargs to invoke base class __init__
         """
-        if not os.path.exists(curr_file):
-            raise ValueError("Path for current file does not exist: {0}".format(curr_file))
+        if not os.path.exists(filename):
+            raise ValueError("Path for current file does not exist: {0}".format(filename))
         
         if topology_file is not None:
             if not os.path.exists(topology_file):
                 raise ValueError("Path for Topology file does not exist: {0}".format(topology_file))
 
-        self.curr_file = curr_file  # check if this is stored with cy_gridcurrent_mover?
+        self.filename = filename  # check if this is stored with cy_gridcurrent_mover?
         self.mover = cy_gridcurrent_mover.CyGridCurrentMover()
-        self.mover.text_read(curr_file,topology_file)
+        self.mover.text_read(filename,topology_file)
         
         super(GridCurrentMover,self).__init__(**kwargs)
         
@@ -584,7 +618,7 @@ class GridCurrentMover(CyMover):
 #         not sure what to do here
 #         unambiguous representation of object
 #         """
-#         info = "GridCurrentMover(curr_file={0},topology_file={1})".format(self.curr_mover, self.curr_mover)
+#         info = "GridCurrentMover(filename={0},topology_file={1})".format(self.curr_mover, self.curr_mover)
 #         return info
 #      
 #     # Properties
