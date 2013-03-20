@@ -46,7 +46,7 @@ class Wind( Environment, serializable.Serializable):
                 'updated_at',
                 'timeseries',
                 'units']    # default units for input/output data
-    _create = []
+    _create = ['filename']  # used to create new obj or as readonly parameter
     _create.extend(_update)
     
     state = copy.deepcopy(serializable.Serializable.state)
@@ -69,15 +69,15 @@ class Wind( Environment, serializable.Serializable):
         
         It requires one of the following to initialize:
               1. 'timeseries' along with 'units' or
-              2. a 'file' containing a header that defines units amongst other meta data
+              2. a 'filename' containing a header that defines units amongst other meta data
                
         All other keywords are optional.
         
         :param timeseries: (Required) numpy array containing time_value_pair
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         
-        :param file: path to a long wind file from which to read wind data
-        :param units: units associated with the timeseries data. If 'file' is given, then units are read in from the file. 
+        :param filename: path to a long wind file from which to read wind data
+        :param units: units associated with the timeseries data. If 'filename' is given, then units are read in from the file. 
                       get_timeseries() will use these as default units to output data, unless user specifies otherwise.
                       These units must be valid as defined in the hazpy unit_conversion module: 
                       unit_conversion.GetUnitNames('Velocity') 
@@ -93,14 +93,12 @@ class Wind( Environment, serializable.Serializable):
                             
         :param latitude: (Optional) latitude of station or location where wind data is obtained from NWS
         :param longitude: (Optional) longitude of station or location where wind data is obtained from NWS
-        
-        :param filename: (Optional) timeseries could have come from a file and user may want to store that as meta data
         """
         
-        if 'timeseries' in kwargs and 'file' in kwargs:
+        if 'timeseries' in kwargs and 'filename' in kwargs:
             raise TypeError("Cannot instantiate Wind object with both timeseries and file as input")
         
-        if 'timeseries' not in kwargs and 'file' not in kwargs:
+        if 'timeseries' not in kwargs and 'filename' not in kwargs:
             raise TypeError("Either provide a timeseries or a wind file with a header, containing wind data")
         
         # default lat/long - can these be set from reading data in the file?
@@ -130,7 +128,7 @@ class Wind( Environment, serializable.Serializable):
             
         else:
             ts_format = convert.tsformat(format)
-            self.ossm = cy_ossm_time.CyOSSMTime(file=kwargs.pop("file"),file_contains=ts_format)
+            self.ossm = cy_ossm_time.CyOSSMTime(file=kwargs.pop("filename"),file_contains=ts_format)
             self._user_units = self.ossm.user_units
             
             self.name = kwargs.pop('name',os.path.split(self.ossm.filename)[1])
@@ -241,7 +239,7 @@ class Wind( Environment, serializable.Serializable):
         self._check_units(value)
         self._user_units = value
     
-    filename = property( lambda self: self.ossm.filename)
+    filename = property( lambda self: (self.ossm.filename, None)[self.ossm.filename == ''])
     timeseries = property( lambda self: self.get_timeseries(),
                            lambda self, val: self.set_timeseries(val, units=self.units) )
     
@@ -299,6 +297,24 @@ class Wind( Environment, serializable.Serializable):
         timeval = convert.to_time_value_pair(datetime_value_2d, format)
         self.ossm.timeseries = timeval
     
+    def to_dict(self, do='update'):
+        """
+        Call base class to_dict using super
+        
+        Then if to_dict is used to 'create' a dict for a save file and 'filename' is given,
+        then remove 'timeseries' from the dict. Only timeseries or filename need to be saved
+        to recreate the original object. If both are given, then 'filename' takes
+        precedence 
+        """
+        dict_ = super(Wind,self).to_dict(do)
+        
+        if do == 'create':
+            if self.filename is None:
+                dict_.pop('filename')
+            else:
+                dict_.pop('timeseries')
+        
+        return dict_
 
 def ConstantWind(speed, direction, units='m/s'):
     """
@@ -324,8 +340,9 @@ class Tide(Environment, serializable.Serializable):
     Currently, this internally defines and uses the CyShioTime object, which is
     a cython wrapper around the C++ Shio object
     """
-    _update = ['filename','yeardata']    # default units for input/output data
-    _create = []
+    _read = ['filename']
+    _update = ['yeardata']    # default units for input/output data
+    _create = ['filename']
     _create.extend(_update)
     
     state = copy.deepcopy(serializable.Serializable.state)

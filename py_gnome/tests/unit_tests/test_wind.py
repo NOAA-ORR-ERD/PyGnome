@@ -19,7 +19,7 @@ def test_exceptions(invalid_rq):
     
     # both timeseries and file are given
     with pytest.raises(TypeError):
-        environment.Wind(timeseries=dtv,file='')
+        environment.Wind(timeseries=dtv,filename='')
         
     # nether timeseries, nor file are give
     with pytest.raises(TypeError):
@@ -65,12 +65,12 @@ def test_exceptions(invalid_rq):
     with pytest.raises(unit_conversion.InvalidUnitError):
         wind = environment.Wind(timeseries=dtv,units='met per second')
 
-filepath = os.path.join(os.path.dirname(__file__), r"SampleData/WindDataFromGnome.WND")
+wind_file = os.path.join(os.path.dirname(__file__), r"SampleData/WindDataFromGnome.WND")
 def test_read_file_init():
     """
     initialize from a long wind file
     """
-    wm = environment.Wind(file=filepath)
+    wm = environment.Wind(filename=wind_file)
     print
     print "----------------------------------"
     print "Units: " + str(wm.units)
@@ -86,7 +86,7 @@ def test_units():
     """
     just make sure there are no errors
     """
-    wm = environment.Wind(file=filepath)
+    wm = environment.Wind(filename=wind_file)
     new_units = "meter per second"
     assert wm.units != new_units
     wm.units = new_units
@@ -294,34 +294,37 @@ def test_constant_wind():
                        (10, 45))
 
 
-def test_new_from_dict():
+def test_new_from_dict_filename():
     """
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
-    wm = environment.Wind(file=filepath)
+    wm = environment.Wind(filename=wind_file)
     wm_state = wm.to_dict('create')
     print wm_state
     wm2 = environment.Wind.new_from_dict(wm_state)   # this does not catch two objects with same ID
     
     assert wm == wm2
-     
-    #===========================================================================
-    # for key in wm_state.keys():
-    #    if key != 'timeseries' and key != 'units':   # not settable properties
-    #        assert wm.__getattribute__(key) == wm2.__getattribute__(key)
-    #        
-    # assert np.all( wm.timeseries['time'] == wm2.timeseries['time'])
-    # assert np.allclose(wm.timeseries['value'], wm2.timeseries['value'], atol, rtol)
-    # assert wm.units == wm2.units
-    #===========================================================================
+    
+def test_new_from_dict_timeseries():
+    """
+    test to_dict function for Wind object
+    create a new wind object and make sure it has same properties
+    """
+    wm = environment.ConstantWind(10, 45, 'knots')
+    wm_state = wm.to_dict('create')
+    print wm_state
+    wm2 = environment.Wind.new_from_dict(wm_state)   # this does not catch two objects with same ID
+    
+    assert wm == wm2
+
     
 def test_from_dict():
     """
     test from_dict function for Wind object
     update existing wind object from_dict
     """
-    wm = environment.Wind(file=filepath)
+    wm = environment.Wind(filename=wind_file)
     wm_dict = wm.to_dict()
     
     # let's update timeseries 

@@ -451,12 +451,15 @@ class CatsMover(CyMover, serializable.Serializable):
     state = copy.deepcopy(CyMover.state)
     
     # follow the same convention as WindMover for now. Though this will likely change
-    _common = ['filename','scale','scale_refpoint','scale_value']
+    _read = ['filename']
+    _common = ['scale','scale_refpoint','scale_value']
+    
     _update = ['tide']
     _update.extend(_common)
-    _create = ['tide_id']
+    
+    _create = ['filename','tide_id']
     _create.extend(_common)
-    state.add(update=_update, create=_create)
+    state.add(update=_update, create=_create, read=_read)
     
     @classmethod
     def new_from_dict(cls, dict_):
