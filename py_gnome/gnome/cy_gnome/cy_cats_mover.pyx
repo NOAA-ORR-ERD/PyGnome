@@ -75,6 +75,8 @@ cdef class CyCatsMover(cy_mover.CyMover):
             accepts a list or a tuple
             will not work with a numpy array since indexing assumes a list or a tuple
             
+            takes only (long, lat, z), if length is bigger than 3, it uses the 1st 3 datapoints
+            
             todo: make sure this is consistent with the format of CyShioTime.ref_point 
             """
             ref_point = np.asarray(ref_point)   # make it a numpy array
