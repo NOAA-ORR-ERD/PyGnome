@@ -12,12 +12,27 @@ from itertools import chain
 import numpy as np
 from hazpy import unit_conversion
 
-from gnome import basic_types, GnomeObject
+from gnome import basic_types, GnomeId
 from gnome.utilities import transforms, time_utils, convert, serializable
 from gnome.cy_gnome import cy_ossm_time, cy_shio_time
 import gnome
 
-class Wind( GnomeObject, serializable.Serializable):
+class Environment(object):
+    """
+    A base class for all classes in environment module
+    
+    This is primarily to define a dtype such that the OrderedCollection defined in the Model
+    object requires it. 
+    
+    This base class just defines the id property 
+    """
+    def __init__(self, **kwargs):
+        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+        
+    id = property( lambda self: self._gnome_id.id)
+    
+
+class Wind( Environment, serializable.Serializable):
     """
     Defines the Wind conditions for a spill
     """
@@ -31,7 +46,7 @@ class Wind( GnomeObject, serializable.Serializable):
                 'updated_at',
                 'timeseries',
                 'units']    # default units for input/output data
-    _create = []
+    _create = ['filename']  # used to create new obj or as readonly parameter
     _create.extend(_update)
     
     state = copy.deepcopy(serializable.Serializable.state)
@@ -48,17 +63,21 @@ class Wind( GnomeObject, serializable.Serializable):
     def __init__(self, **kwargs):
         """
         Initializes a wind object. It only takes keyword arguments as input, these
-        are defined below. It requires one of the following to initialize:
+        are defined below. 
+        
+        Invokes super(Wind,self).__init__(**kwargs) for parent class initialization
+        
+        It requires one of the following to initialize:
               1. 'timeseries' along with 'units' or
-              2. a 'file' containing a header that defines units amongst other meta data
+              2. a 'filename' containing a header that defines units amongst other meta data
                
         All other keywords are optional.
         
         :param timeseries: (Required) numpy array containing time_value_pair
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         
-        :param file: path to a long wind file from which to read wind data
-        :param units: units associated with the timeseries data. If 'file' is given, then units are read in from the file. 
+        :param filename: path to a long wind file from which to read wind data
+        :param units: units associated with the timeseries data. If 'filename' is given, then units are read in from the file. 
                       get_timeseries() will use these as default units to output data, unless user specifies otherwise.
                       These units must be valid as defined in the hazpy unit_conversion module: 
                       unit_conversion.GetUnitNames('Velocity') 
@@ -74,14 +93,12 @@ class Wind( GnomeObject, serializable.Serializable):
                             
         :param latitude: (Optional) latitude of station or location where wind data is obtained from NWS
         :param longitude: (Optional) longitude of station or location where wind data is obtained from NWS
-        
-        :param filename: (Optional) timeseries could have come from a file and user may want to store that as meta data
         """
         
-        if 'timeseries' in kwargs and 'file' in kwargs:
+        if 'timeseries' in kwargs and 'filename' in kwargs:
             raise TypeError("Cannot instantiate Wind object with both timeseries and file as input")
         
-        if 'timeseries' not in kwargs and 'file' not in kwargs:
+        if 'timeseries' not in kwargs and 'filename' not in kwargs:
             raise TypeError("Either provide a timeseries or a wind file with a header, containing wind data")
         
         # default lat/long - can these be set from reading data in the file?
@@ -111,7 +128,7 @@ class Wind( GnomeObject, serializable.Serializable):
             
         else:
             ts_format = convert.tsformat(format)
-            self.ossm = cy_ossm_time.CyOSSMTime(file=kwargs.pop("file"),file_contains=ts_format)
+            self.ossm = cy_ossm_time.CyOSSMTime(file=kwargs.pop("filename"),file_contains=ts_format)
             self._user_units = self.ossm.user_units
             
             self.name = kwargs.pop('name',os.path.split(self.ossm.filename)[1])
@@ -126,6 +143,7 @@ class Wind( GnomeObject, serializable.Serializable):
         self.source_id = kwargs.pop('source_id','undefined')
         self.longitude = kwargs.pop('longitude',self.longitude)
         self.latitude = kwargs.pop('latitude',self.latitude)
+        super(Wind,self).__init__(**kwargs)
         
         
     def _convert_units(self, data, ts_format, from_unit, to_unit):
@@ -221,7 +239,7 @@ class Wind( GnomeObject, serializable.Serializable):
         self._check_units(value)
         self._user_units = value
     
-    filename = property( lambda self: self.ossm.filename)
+    filename = property( lambda self: (self.ossm.filename, None)[self.ossm.filename == ''])
     timeseries = property( lambda self: self.get_timeseries(),
                            lambda self, val: self.set_timeseries(val, units=self.units) )
     
@@ -279,6 +297,24 @@ class Wind( GnomeObject, serializable.Serializable):
         timeval = convert.to_time_value_pair(datetime_value_2d, format)
         self.ossm.timeseries = timeval
     
+    def to_dict(self, do='update'):
+        """
+        Call base class to_dict using super
+        
+        Then if to_dict is used to 'create' a dict for a save file and 'filename' is given,
+        then remove 'timeseries' from the dict. Only timeseries or filename need to be saved
+        to recreate the original object. If both are given, then 'filename' takes
+        precedence 
+        """
+        dict_ = super(Wind,self).to_dict(do)
+        
+        if do == 'create':
+            if self.filename is None:
+                dict_.pop('filename')
+            else:
+                dict_.pop('timeseries')
+        
+        return dict_
 
 def ConstantWind(speed, direction, units='m/s'):
     """
@@ -297,38 +333,49 @@ def ConstantWind(speed, direction, units='m/s'):
                 units=units)
 
         
-class Tides(GnomeObject):
+class Tide(Environment, serializable.Serializable):
     """
-    Define the tides for a spill
+    Define the tide for a spill
     
     Currently, this internally defines and uses the CyShioTime object, which is
     a cython wrapper around the C++ Shio object
     """
+    _read = ['filename']
+    _update = ['yeardata']    # default units for input/output data
+    _create = ['filename']
+    _create.extend(_update)
+    
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add(create=_create,
+              update=_update)   # no need to copy parent's state in tis case
+    
     def __init__(self,
-                 file=None,
+                 filename=None,
                  timeseries=None,
                  **kwargs):
         """
-        Tide information can be obtained from a file or set as a timeseries
-        Either a file or timeseries must be giving, both cannot be None.
+        Tide information can be obtained from a filename or set as a timeseries
+        Either a filename or timeseries must be giving, both cannot be None.
         
+	    Invokes super(Tides,self).__init__(**kwargs) for parent class initialization
+	    
         :param timeseries: numpy array containing datetime_value_2d, ts_format is always 'uv'
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
-        :param units: units associated with the timeseries data. If 'file' is given, then units are read in from the file. 
+        :param units: units associated with the timeseries data. If 'filename' is given, then units are read in from the filename. 
                       unit_conversion - NOT IMPLEMENTED YET
         :type units:  (Optional) string, for example: 'knot', 'meter per second', 'mile per hour' etc
                       Default is None for now
         
-        :param file: path to a long wind file from which to read wind data
+        :param filename: path to a long wind filename from which to read wind data
         
-        :param yeardata: (Optional) path to yeardata used for Shio data files. Default location
+        :param yeardata: (Optional) path to yeardata used for Shio data filenames. Default location
                          is gnome/data/yeardata/
         """
-        if( timeseries is None and file is None):
-            raise ValueError("Either provide timeseries or a valid file containing Tide data")
+        if( timeseries is None and filename is None):
+            raise ValueError("Either provide timeseries or a valid filename containing Tide data")
         
         # should probably put this at some central location
-        self.yeardata = kwargs.pop('yeardata',os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/'))
+        self.yeardata = os.path.abspath( kwargs.pop('yeardata',os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/')) )
         
         if not os.path.exists(self.yeardata):
             raise IOError("Path to yeardata files does not exist: {0}".format(self.yeardata))
@@ -344,14 +391,16 @@ class Tides(GnomeObject):
             self.cy_obj = cy_ossm_time.CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             self._user_units = kwargs.pop('units',None)    # not sure what these should be
         else:
-            self.cy_obj = self._obj_to_create(file)
+            self.filename = os.path.abspath( filename)
+            self.cy_obj = self._obj_to_create()
+
+        super(Tide,self).__init__(**kwargs)    
             
-            
-    def _obj_to_create(self, file_):
+    def _obj_to_create(self):
         """
         open file, read a few lines to determine if it is an ossm file or a shio file
         """
-        fh = open(file_, 'r')
+        fh = open(self.filename, 'r')
         lines = [fh.readline() for i in range(4)]   # depends on line endings - this does not work for '\r'
         
         if len(lines[1]) == 0:
@@ -365,10 +414,10 @@ class Tides(GnomeObject):
         shio_file = ['[StationInfo]', 'Type=', 'Name=', 'Latitude=']
         
         if all( [shio_file[i] == lines[i][:len(shio_file[i])] for i in range(4)]):
-            return cy_shio_time.CyShioTime(file_)
+            return cy_shio_time.CyShioTime(self.filename)
         
         elif len(string.split(lines[3],',')) == 7:
             #if float( string.split(lines[3],',')[-1]) != 0.0:    # maybe log / display a warning that v=0 for tide file and will be ignored
-            return cy_ossm_time.CyOSSMTime(file_, file_contains=convert.tsformat('uv'))
+            return cy_ossm_time.CyOSSMTime(self.filename, file_contains=convert.tsformat('uv'))
         else:
             raise ValueError("This does not appear to be a valid file format that can be read by OSSM or Shio to get tide information") 

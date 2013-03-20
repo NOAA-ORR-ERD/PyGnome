@@ -11,6 +11,7 @@ from colander import (
     OneOf,
     Float,
     Range,
+    drop
 )
 
 import gnome
@@ -64,7 +65,7 @@ class UpdateWind(MappingSchema):
     updated_at = SchemaNode(LocalDateTime(), default=None, missing=None, )
     units = SchemaNode(String() )
  
-    timeseries = WindTimeSeriesSchema()
+    timeseries = WindTimeSeriesSchema(missing=drop)
 
 class CreateWind( Id, UpdateWind):
     """
@@ -74,4 +75,12 @@ class CreateWind( Id, UpdateWind):
     
     This is a union of the properties in UpdateWind and Id
     """
+    filename = SchemaNode( String(), missing=drop)
+    pass
+
+class UpdateTide(MappingSchema):
+    filename = SchemaNode( String(), missing=None)
+    yeardata = SchemaNode( String() )
+    
+class CreateTide(Id, UpdateTide):
     pass
