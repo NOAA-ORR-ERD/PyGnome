@@ -468,11 +468,10 @@ class CatsMover(CyMover, serializable.Serializable):
         
         invokes: super(WindMover,cls).new_from_dict(dict_)
         """
-        tide_id = dict_.pop('tide_id')
-        if tide_id is not None:
-            if dict_.get('tide').id != tide_id:
+        if 'tide' in dict_ and 'tide' is not None:
+            if dict_.get('tide').id != dict_.pop('tide_id'):
                 raise ValueError("id of tide object does not match the tide_id parameter")
-        
+                
         return super(CatsMover,cls).new_from_dict(dict_)
     
     

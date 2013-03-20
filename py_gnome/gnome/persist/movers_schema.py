@@ -9,6 +9,7 @@ from colander import (
     Float,
     String,
     TupleSchema,
+    drop
     )
 
 import gnome
@@ -69,7 +70,7 @@ class UpdateCatsMover(Mover):
     scale = SchemaNode(Bool() )
     scale_refpoint = WorldPoint()
     scale_value = SchemaNode(Float() )
-    tide_id = SchemaNode(String(), missing=None)
+    tide_id = SchemaNode(String(), missing=drop)    # can have CatsMover without Tide object
     
 
 class CreateCatsMover(Id, UpdateCatsMover):

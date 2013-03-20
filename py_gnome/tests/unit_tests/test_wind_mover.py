@@ -297,12 +297,6 @@ def test_exception_new_from_dict():
     with pytest.raises(ValueError):
         movers.WindMover.new_from_dict(wm_state)
     
-
-def test_from_dict():
-    wm = movers.WindMover(environment.Wind(filename=file_)) # WindMover does not modify Wind object!
-    wm_dict = wm.to_dict()
-    
-    
 """
 Helper methods for this module
 """
