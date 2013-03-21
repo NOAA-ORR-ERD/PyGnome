@@ -6,6 +6,11 @@ html, body {
     margin-bottom: 0;
 }
 
+.navbar ul.dropdown-menu,
+.navbar li.dropdown-submenu {
+    z-index: 2000;
+}
+
 div.nav-collapse > div.btn-toolbar {
     margin: 0;
 }
@@ -190,3 +195,17 @@ select, input[type="file"] {
     transition: 0.1s linear all;
     overflow: visible;
 }
+
+
+/* Always show scrollbars in OS X Lion */
+
+/*::-webkit-scrollbar {*/
+    /*-webkit-appearance: none;*/
+    /*width: 5px;*/
+/*}*/
+
+/*::-webkit-scrollbar-thumb {*/
+    /*border-radius: 4px;*/
+    /*background-color: rgba(0, 0, 0, .5);*/
+    /*-webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);*/
+/*}*/

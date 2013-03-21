@@ -35,6 +35,15 @@ class WindValueSchemaTests(TestCase):
         self.assertRaises(colander.Invalid,
                           schema.TimeseriesValueSchema().deserialize, data)
 
+    def test_direction_must_be_valid_degrees_true(self):
+        data = [datetime.datetime.now(), 24, -1]
+        self.assertRaises(colander.Invalid,
+                          schema.TimeseriesValueSchema().deserialize, data)
+
+        data = [datetime.datetime.now(), 24, 361]
+        self.assertRaises(colander.Invalid,
+                          schema.TimeseriesValueSchema().deserialize, data)
+
 
 class WindSchemaTests(TestCase):
 

@@ -152,6 +152,15 @@ define([
 
             this.model = this.options.model;
 
+            // Allow the creator to override a prototype default.
+            if (this.options.validator) {
+                this.validator = this.options.validator;
+            }
+
+            if (this.validator) {
+                this.validator.bind('error', this.handleValidatorError);
+            }
+
             if (this.model) {
                 this.model.on('destroy', function() {
                     _this.model.clear();
@@ -169,6 +178,43 @@ define([
 
             this.setupDatePickers();
             $('.error').tooltip({selector: "a"});
+        },
+
+        /*
+         Validate the form's model without submitting -- only check that the
+         data conforms to a schema.
+
+         This is used when deferring a submit, when we want to verify that the
+         data on the form is correct without actually saving it.
+         */
+        validate: function() {
+            if (!this.validator || !this.model) {
+                return;
+            }
+
+            this.prepareSubmitData();
+            return this.validator.save(this.model.toJSON());
+        },
+
+        /*
+         When we validate a form separately from submitting the model, we
+         send the model's current attributes to a /validate web service that
+         only checks that they conform to a schema.
+
+         If the object has errors, we'll show them as if they were errors on
+         the model itself -- which they are.
+         */
+        handleValidatorError: function() {
+            // XXX: Why does this method get called multiple times on the
+            // WindMover form? And the second time, why is `this.model` null?
+            if (!this.model) {
+                console.log("Error: FormView's model is null. Cannot handle " +
+                            "validator errors.", this, this.validator.errors);
+                return;
+            }
+
+            this.model.errors = this.validator.errors;
+            this.handleServerError();
         },
 
         showErrorForField: function(field, error) {
@@ -284,8 +330,17 @@ define([
             throw new Error('You must override hide() in a subclass');
         },
 
+        prepareSubmitData: function() {
+            // Override in subclasses if you want to separate preparing the
+            // model for submission from submitting -- e.g. for extra steps
+            // needed before validation (see WindMoverFormView).
+            return;
+        },
+
         submit: function() {
             var _this = this;
+
+            this.prepareSubmitData();
 
             if (this.collection) {
                 this.collection.add(this.model);
@@ -524,7 +579,9 @@ define([
         show: function() {
             this.wasCancelled = false;
 
-            if (this.defaults && this.model) {
+            // Load defaults if the form is being used to show a new model.
+            // The lack of ID indicates that the model has not yet been saved.
+            if (this.defaults && !this.model.id) {
                 this.model.set(this.defaults);
             }
 
@@ -552,12 +609,14 @@ define([
         },
 
         addDeferredButton: function(button) {
+            var _this = this;
+
             deferreds.add(function() {
                 // The result of the function may be a jQuery
                 // Deferred object, e.g. a 'submit' function,
                 // so return the result (a Deferred or Promise).
-                var val = this[button.fnName]();
-                this.isDeferred = false;
+                var val = _this[button.fnName]();
+                _this.isDeferred = false;
                 return val;
             });
 
@@ -968,6 +1027,8 @@ define([
             return this.model;
         },
 
+        validator: new models.MapValidator(),
+
         // Never reset the model
         resetModel: function() {
             return;
@@ -994,6 +1055,8 @@ define([
                 change: this.updateSelection
             });
         },
+
+        validator: new models.CustomMapValidator(),
 
         updateSelection: function(rect) {
             var _this = this;
@@ -1064,6 +1127,8 @@ define([
             this.setupModelEvents();
         },
 
+        validator: new models.MapValidator(),
+
         // Always use the same model
         getModel: function(id) {
             return this.model;
@@ -1100,6 +1165,8 @@ define([
             // Extend prototype's events with ours.
             this.events = _.extend({}, FormView.prototype.events, this.events);
         },
+
+        validator: new models.WindMoverValidator(),
 
         events: {
             'click .add-time': 'addButtonClicked',
@@ -1328,22 +1395,38 @@ define([
             return this.$el.find('.time-list');
         },
 
-        getWindIdsWithErrors: function() {
-            var valuesWithErrors = [];
+        /*
+         Return an object of timeseries errors keyed to their index in the
+         Wind's timeseries array.
+
+         This method has a side effect -- it consumes timeseries-related errors
+         from `this.model.errors` and removes them from that array.
+
+         XXX: Is this method name clear? It refers to timeseries data not
+         Wind data, and those semantics may overlap here and elsewhere.
+         */
+        getTimeseriesErrors: function() {
+            var errors = {};
+            var newErrors = [];
 
             if (!this.model.errors) {
-               return valuesWithErrors;
+               return errors;
             }
 
             _.each(this.model.errors, function(error) {
                 var parts = error.name.split('.');
 
                 if (parts.length > 1 && parts[1] === 'timeseries') {
-                    valuesWithErrors.push(parts[2]);
+                    errors[parts[2]] = error;
+                    return;
                 }
+
+                newErrors.push(error);
             });
 
-            return valuesWithErrors;
+            this.model.errors = newErrors;
+
+            return errors;
         },
 
         renderTimeTable: function() {
@@ -1352,7 +1435,6 @@ define([
             var timeseries = wind.get('timeseries');
             var units = wind.get('units');
             var rows = [];
-            var IdsWithErrors = this.getWindIdsWithErrors();
 
             // Clear out any existing rows.
             this.getTimesTable().find('tr').not('.table-header').remove();
@@ -1383,8 +1465,9 @@ define([
 
                 row.attr('data-wind-id', index);
 
-                if (_.contains(IdsWithErrors, index)) {
+                if (wind.timeseriesErrors && wind.timeseriesErrors[index]) {
                     row.addClass('error');
+                    row.data('error', wind.timeseriesErrors[index]);
                 }
 
                 rows.push(row);
@@ -1409,7 +1492,7 @@ define([
             return [moment().format(), speed.val(), direction.val()];
         },
 
-        submit: function() {
+        prepareSubmitData: function() {
             // Clear the add time form in the variable wind div as those
             // values must be "saved" in order to mean anything.
             var variable = this.$el.find('.variable-wind');
@@ -1420,7 +1503,7 @@ define([
             var windUpdatedAt = this.getFormDate(
                 this.$el.find('.updated_at_container'));
 
-            if(windUpdatedAt) {
+            if (windUpdatedAt) {
                 wind.set('updated_at', windUpdatedAt);
             }
 
@@ -1433,7 +1516,7 @@ define([
                     'delete variable wind data. Go ahead?';
 
                 if (!window.confirm(message)) {
-                   return;
+                    return;
                 }
             }
 
@@ -1451,8 +1534,6 @@ define([
 
                 wind.set('timeseries', timeseries);
             }
-
-            return WindMoverFormView.__super__.submit.apply(this, arguments);
         },
 
         getMoverType: function() {
@@ -1724,33 +1805,29 @@ define([
             var _this = this;
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
+            var timeseriesErrors = this.getTimeseriesErrors();
+            var timeseriesIdsWithErrors = _.keys(timeseriesErrors).sort();
 
-            this.renderTimeTable();
-
-            var windIdsWithErrors = this.getWindIdsWithErrors();
-
-            if (windIdsWithErrors.length) {
-                window.alert('Your wind data has errors. The errors have been' +
-                    ' highlighted. Please resolve them and save again.');
-
-                this.$el.find('.wind-data-link').find('a').tab('show');
-
+            if (timeseriesIdsWithErrors.length) {
                 if (timeseries.length > 1) {
-                    this.showEditFormForWind(windIdsWithErrors[0]);
+                    window.alert('Your wind data has errors. The errors have been' +
+                        ' highlighted. Please resolve them and save again.');
+
+                    this.$el.find('.wind-data-link').find('a').tab('show');
+
+                    this.showEditFormForWind(timeseriesIdsWithErrors[0]);
+
+                    // XXX: Do we need to make the dialog larger anymore?
+                    // This was to accommodate the new space needed for error
+                    // messages.
+                    this.$el.dialog('option', 'height', 600);
                 }
 
-                // Always mark up the table because a user with a constant
-                // wind mover could switch to variable wind and edit the value.
-                _.each(windIdsWithErrors, function(id) {
-                    var row = _this.getRowForWindId(id);
-
-                    if (row.length) {
-                        row.addClass('error');
-                    }
-                });
+                // Save timeseries errors on the wind object.
+                wind.timeseriesErrors = timeseriesErrors;
             }
 
-            this.$el.dialog('option', 'height', 600);
+            this.renderTimeTable();
 
             // After this is called, model.errors will be null.
             WindMoverFormView.__super__.handleServerError.apply(this, arguments);
@@ -1778,6 +1855,8 @@ define([
          method is called, so we need to reapply them.
          */
         show: function() {
+            // XXX: Why is this wind object lingering in `this.defaults`?
+            this.defaults.wind = new models.Wind();
             this.model = new models.WindMover(this.defaults, {
                 gnomeModel: this.gnomeModel
             });
@@ -1804,6 +1883,8 @@ define([
             this.events = _.extend({}, FormView.prototype.events, this.events);
         },
 
+        validator: new models.SurfaceReleaseSpillValidator(),
+
         getDataBindings: function() {
             return {spill: this.model};
         },
@@ -1814,18 +1895,18 @@ define([
         },
 
         show: function(startCoords, endCoords) {
+            SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
+
             if (startCoords) {
                 this.model.set('start_position', [startCoords[0], startCoords[1], 0]);
             }
             if (endCoords) {
                 this.model.set('end_position', [endCoords[0], endCoords[1], 0]);
             }
-            SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
         },
 
-        submit: function() {
+        prepareSubmitData: function() {
             this.model.set('release_time', this.getFormDate(this.getForm()));
-            return SurfaceReleaseSpillFormView.__super__.submit.apply(this, arguments);
         },
 
         cancel: function() {
@@ -1905,6 +1986,8 @@ define([
             GnomeSettingsFormView.__super__.initialize.apply(this, [opts]);
         },
 
+        validator: new models.GnomeModelValidator(),
+
         // Always use the same model when reloading.
         reload: function() {
             GnomeSettingsFormView.__super__.reload.apply(this, [this.model.id]);
@@ -1920,9 +2003,8 @@ define([
             return;
         },
 
-        submit: function() {
+        prepareSubmitData: function() {
             this.model.set('start_time', this.getFormDate(this.getForm()));
-            return GnomeSettingsFormView.__super__.submit.apply(this, arguments);
         },
 
         show: function() {
@@ -1945,18 +2027,19 @@ define([
             RandomMoverFormView.__super__.initialize.apply(this, [opts]);
         },
 
+        validator: new models.RandomMoverValidator(),
+
         show: function() {
             RandomMoverFormView.__super__.show.apply(this, arguments);
             this.setDateFields('.active_start_container', this.model.get('active_start'));
             this.setDateFields('.active_stop_container', this.model.get('active_stop'));
         },
 
-        submit: function() {
-            this.model.set('active_start',  this.getFormDate(
+        prepareSubmitData: function() {
+            this.model.set('active_start', this.getFormDate(
                 this.$el.find('.active_start_container')));
-            this.model.set('active_stop',  this.getFormDate(
+            this.model.set('active_stop', this.getFormDate(
                 this.$el.find('.active_stop_container')));
-            return RandomMoverFormView.__super__.submit.apply(this, arguments);
         },
 
         getDataBindings: function() {
@@ -1984,11 +2067,6 @@ define([
             });
             this.setupModelEvents();
             AddRandomMoverFormView.__super__.show.apply(this, arguments);
-        },
-
-        submit: function() {
-            this.collection.add(this.model);
-            return AddRandomMoverFormView.__super__.submit.apply(this, arguments);
         }
     });
 

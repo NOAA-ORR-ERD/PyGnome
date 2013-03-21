@@ -88,7 +88,8 @@ class RandomMover(BaseResource):
         mover = WebRandomMover(**data)
         model.movers.add(mover)
 
-        return schema.RandomMoverSchema().bind().serialize(mover.to_dict())
+        return schema.RandomMoverSchema().bind().serialize(
+            mover.to_dict(do='create'))
 
     @view(validators=util.valid_model_id)
     def collection_get(self):

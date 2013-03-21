@@ -44,13 +44,17 @@ class NavigationTree(object):
                 item['object_id'] = node_id
 
             for name, value in node.items():
+                if value == 'id':
+                    continue
+
                 sub_item = {
                     'form_id': form_id,
                     'title': self._get_value_title(name, value)
                 }
 
                 if node_id:
-                    sub_item['object_id'] = node_id,
+                    sub_item['object_id'] = node_id
+
                 item['children'].append(sub_item)
 
             children.append(item)
@@ -91,8 +95,11 @@ class NavigationTree(object):
             'title': 'Map: %s' % (map_data['name'] if map_data else 'None')
         })
 
-        settings['children'].extend(self._render_children(
-            [dict(name=self._get_value_title(key, value), id=self.model.id)
-             for key, value in data.items()], form_id='model-settings'))
+        model_items = [
+            dict(name=self._get_value_title(key, value), id=self.model.id)
+            for key, value in data.items() if key != 'id']
+
+        settings['children'].extend(
+            self._render_children(model_items, form_id='model-settings'))
 
         return [settings, movers, spills]

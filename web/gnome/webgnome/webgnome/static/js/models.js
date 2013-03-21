@@ -369,6 +369,7 @@ define([
             if (opts && opts.gnomeModel) {
                 this.gnomeModel = opts.gnomeModel;
             }
+
             BaseModel.__super__.initialize.apply(this, arguments)
         },
 
@@ -798,6 +799,41 @@ define([
     });
 
 
+    var GnomeModelValidator = GnomeModel.extend({
+        url: '/validate/model'
+    });
+
+
+    var WindMoverValidator = WindMover.extend({
+        url: '/validate/mover/wind'
+    });
+
+
+    var RandomMoverValidator = RandomMover.extend({
+        url: '/validate/mover/random'
+    });
+
+
+    var SurfaceReleaseSpillValidator = SurfaceReleaseSpill.extend({
+        url: '/validate/spill/surface_release'
+    });
+
+
+    var MapValidator = Map.extend({
+        url: '/validate/map'
+    });
+
+
+    var CustomMapValidator = CustomMap.extend({
+        url: '/validate/custom_map'
+    });
+
+
+    var LocationFileValidator = LocationFile.extend({
+        url: '/validate/location_file'
+    });
+
+
     function nwsWindError(resp) {
         var error;
         var defaultError = 'Could not contact the National Weather Service.';
@@ -844,6 +880,13 @@ define([
         LocationFileMetaCollection: LocationFileMetaCollection,
         LocationFileWizard: LocationFileWizard,
         LocationFileWizardCollection: LocationFileWizardCollection,
+        GnomeModelValidator: GnomeModelValidator,
+        WindMoverValidator: WindMoverValidator,
+        RandomMoverValidator: RandomMoverValidator,
+        SurfaceReleaseSpillValidator: SurfaceReleaseSpillValidator,
+        MapValidator: MapValidator,
+        CustomMapValidator: CustomMapValidator,
+        LocationFileValidator: LocationFileValidator,
         getNwsWind: getNwsWind
     };
 

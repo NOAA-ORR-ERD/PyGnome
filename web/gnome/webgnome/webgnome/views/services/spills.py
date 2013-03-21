@@ -35,7 +35,7 @@ class SurfaceReleaseSpill(BaseResource):
         model.spills.add(spill)
 
         return schema.SurfaceReleaseSpillSchema().bind().serialize(
-            spill.to_dict())
+            spill.to_dict(do='create'))
 
     @view(validators=util.valid_spill_id)
     def get(self):
