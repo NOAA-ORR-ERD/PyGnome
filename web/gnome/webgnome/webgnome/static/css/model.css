@@ -53,7 +53,7 @@ ul.dynatree-container {
 }
 
 #tree {
-    overflow: scroll;
+    /*overflow: scroll;*/
     max-height: 100%;
 }
 

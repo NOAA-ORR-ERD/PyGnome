@@ -801,7 +801,7 @@ define([
                  deferreds.run().done(function() {
                      _this.model.save().done(function() {
                          // TODO: Trigger event, let AppView handle this.
-                         window.location = window.location.origin;
+                         util.refresh();
                      }).fail(function() {
                          alert('Saving the wizard model failed');
                      });

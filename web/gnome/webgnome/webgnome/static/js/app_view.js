@@ -199,7 +199,7 @@ define([
             })
 
             model.save().then(function() {
-                window.location = window.location.origin;
+                util.refresh();
             });
         },
 
@@ -473,7 +473,7 @@ define([
             this.gnomeModel.destroy({
                 success: function() {
                     util.Cookies.setItem('model_deleted', true);
-                    window.location = window.location.origin;
+                    util.refresh();
                 }
             });
         },
