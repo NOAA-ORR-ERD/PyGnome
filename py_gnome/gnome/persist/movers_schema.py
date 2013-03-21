@@ -51,7 +51,7 @@ class CatsMover( Id, Mover):
     """
     Contains properties required by UpdateWindMover and CreateWindMover
     """
-    filename = SchemaNode(String() )
+    filename = SchemaNode(String(), missing=drop)
     scale = SchemaNode(Bool() )
     scale_refpoint = WorldPoint()
     scale_value = SchemaNode(Float() )

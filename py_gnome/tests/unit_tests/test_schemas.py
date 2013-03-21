@@ -81,3 +81,17 @@ def test_windmover_update(wind_circ):
     dict_.update({'wind':wind})
     wm.from_dict(dict_)
     assert wm.wind.id == wind.id
+
+
+def test_catsmover_update():
+    curr_file= os.path.join( os.path.dirname(__file__), r"SampleData/long_island_sound/tidesWAC.CUR")
+    td_file  = os.path.join( os.path.dirname(__file__), r"SampleData/long_island_sound/CLISShio.txt")
+    c_mv = movers.CatsMover(curr_file, tide=environment.Tide(td_file) )
+    c_dict = movers_schema.CatsMover().serialize( c_mv.to_dict() )
+    dict_ = movers_schema.CatsMover().deserialize( c_dict)
+    
+    # now let's say we want to update the Tide object, which is not part of the serialization
+    tide = environment.Tide(td_file)
+    dict_.update({'tide':tide})
+    c_mv.from_dict(dict_)
+    assert c_mv.tide.id == tide.id

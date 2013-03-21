@@ -1,16 +1,18 @@
 '''
 Test all operations for cats mover work
 '''
-from gnome import environment, movers, basic_types
-from gnome.spill_container import TestSpillContainer
-from gnome.utilities import time_utils
 import datetime
+import os
 
 import numpy as np
 import pytest
 
-curr_file=r"SampleData/long_island_sound/tidesWAC.CUR"
-td = environment.Tide(filename=r"SampleData/long_island_sound/CLISShio.txt")
+from gnome import environment, movers, basic_types
+from gnome.spill_container import TestSpillContainer
+from gnome.utilities import time_utils
+
+curr_file= os.path.join( os.path.dirname(__file__), r"SampleData/long_island_sound/tidesWAC.CUR")
+td = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData/long_island_sound/CLISShio.txt"))
 
 def test_exceptions():
     """
