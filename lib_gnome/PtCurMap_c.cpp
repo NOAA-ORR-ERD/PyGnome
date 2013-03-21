@@ -853,11 +853,17 @@ WorldPoint3D PtCurMap_c::ReflectPoint(WorldPoint3D fromWPt,WorldPoint3D toWPt,Wo
 		//movedPoint.z = .1;
 		if (movedPoint.z > depthAtPt) 
 		{	// instead try movedPoint.z = depthAtPt - (movedPoint.z - depthAtPt);
-			if (depthAtPt > 1.)
-				movedPoint.z = GetRandomFloat(depthAtPt-1.,.9999999*depthAtPt);
+			double distanceBelowBottom = movedPoint.z - depthAtPt;
+			if (depthAtPt > distanceBelowBottom)
+			{
+				movedPoint.z = depthAtPt - distanceBelowBottom;
+			}
 			else
 				movedPoint.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
-			//movedPoint.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+			/*if (depthAtPt > 1.)
+				movedPoint.z = GetRandomFloat(depthAtPt-1.,.9999999*depthAtPt);
+			else
+				movedPoint.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);*/
 		}
 		//if (movedPoint.z > depthAtPt) movedPoint.z = GetRandomFloat(.7*depthAtPt,.99*depthAtPt);
 		//if (movedPoint.z <= 0) movedPoint.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
