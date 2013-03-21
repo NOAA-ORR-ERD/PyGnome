@@ -77,6 +77,16 @@ cdef class CyShioTime(object):
             return self.shio.fScaleFactor
         def __set__(self,value):
             self.shio.fScaleFactor = value
+            
+    property yeardata:
+        def __get__(self):
+            cdef bytes yd_path
+            yd_path = self.shio.fYearDataPath
+            return yd_path
+        
+        def __set__(self, value):
+            self.set_shio_yeardata_path(value)  # todo: figure out how to change fYearDataPath directly
+                
     
     def __repr__(self):
         """
