@@ -754,7 +754,7 @@ define([
     });
 
 
-    var LocationFile = BaseModel.extend({
+    var LocationFile = GnomeModel.extend({
         url: function() {
             return this.gnomeModel.url() + '/location_file/' + this.get('filename')
         }

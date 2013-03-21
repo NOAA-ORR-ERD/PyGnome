@@ -126,7 +126,7 @@ define([
                 }
 
                 formView.reload();
-                formView.show();
+                formView.show(true);
             }
         }
     });
@@ -788,6 +788,11 @@ define([
             return {wizard: this.model};
         },
 
+        resetModel: function() {
+            // Don't reset the model for this form
+            return;
+        },
+
         finish: function() {
             var _this = this;
 
@@ -871,7 +876,8 @@ define([
             var nextStep = this.getNextStep();
             var previousStep = this.getPreviousStep();
 
-            // Close over the `nextStep` and `previousStep` variables.
+            // Use closures to keep a reference to the actual next and previous
+            // steps for this form.
             function showNextStep() {
                 _this.showStep(nextStep)
             }
@@ -892,11 +898,11 @@ define([
                     gnomeModel: this.gnomeModel
                 });
 
-                locationFile.fetch({
-                    success: function() {
-                        trigger(locationFile.attributes);
-                    }
+                locationFile.once('sync', function(model) {
+                    trigger(model.attributes);
                 });
+
+                locationFile.fetch();
             } else {
                 trigger();
             }
@@ -1856,13 +1862,14 @@ define([
          */
         show: function() {
             // XXX: Why is this wind object lingering in `this.defaults`?
-            this.defaults.wind = new models.Wind();
+            this.defaults.wind = new models.Wind({units: 'knots'});
             this.model = new models.WindMover(this.defaults, {
                 gnomeModel: this.gnomeModel
             });
             this.setupModelEvents();
             this.model.on('sync', this.closeDialog);
             AddWindMoverFormView.__super__.show.apply(this);
+
         }
     });
 
@@ -2007,8 +2014,16 @@ define([
             this.model.set('start_time', this.getFormDate(this.getForm()));
         },
 
-        show: function() {
+        show: function(withDefaults) {
             GnomeSettingsFormView.__super__.show.apply(this, arguments);
+
+            // XXX: Do this here instead of in prototype because we always
+            // have an ID. Should come before we set the start_time_container
+            // because it will set the model's start_time.
+            if (withDefaults) {
+                this.model.set(this.defaults);
+            }
+
             this.setDateFields('.start_time_container', moment(this.model.get('start_time')));
         }
     });
