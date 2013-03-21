@@ -6,7 +6,9 @@ from colander import (
     String,
     deferred,
     SequenceSchema,
-    TupleSchema
+    TupleSchema,
+    Float,
+    drop
 )
 
 @deferred
@@ -21,7 +23,7 @@ class Id(MappingSchema):
     """
     any need to ensure it is valid UUID?
     """
-    id = SchemaNode(String() )
+    id = SchemaNode(String(), missing=drop)
 
 class OrderedCollectionIdListItem(TupleSchema):
     obj_type = SchemaNode(String() )  
@@ -34,3 +36,10 @@ class OrderedCollection(MappingSchema):
     dtype = SchemaNode( String() )
     id_list = OrderedCollectionIdList(missing=None)
     
+class WorldPoint(TupleSchema):
+    """
+    can be used to define reference points
+    """
+    long = SchemaNode( Float() )
+    lat = SchemaNode( Float() )
+    z = SchemaNode( Float(), default=0.0)

@@ -8,9 +8,8 @@ import numpy as np
 from gnome.utilities import time_utils, transforms, convert, serializable
 from gnome import basic_types, GnomeId
 from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNORE:E0611
-from gnome.cy_gnome.cy_ossm_time import CyOSSMTime       #@UnresolvedImport @UnusedImport IGNORE:W0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
-from gnome.cy_gnome import cy_cats_mover, cy_shio_time
+from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time
 from gnome.cy_gnome import cy_gridcurrent_mover
 from gnome.cy_gnome import cy_gridwind_mover
 from gnome import environment
@@ -227,14 +226,13 @@ class WindMover(CyMover, serializable.Serializable):
     _windage_is_set = False         # class scope, independent of instances of WindMover  
     _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
     
-    _common = ['uncertain_duration','uncertain_time_delay','uncertain_speed_scale','uncertain_angle_scale']
-    _update = ['wind']
-    _update.extend(_common)
+    _update = ['uncertain_duration','uncertain_time_delay','uncertain_speed_scale','uncertain_angle_scale']
     _create = ['wind_id']
-    _create.extend(_common)
+    _read = ['wind_id']
+    _create.extend(_update)
     
     state = copy.deepcopy(CyMover.state)
-    state.add(update=_update, create=_create)
+    state.add(read=_read, update=_update, create=_create)
     
     @classmethod
     def new_from_dict(cls, dict_):
@@ -256,6 +254,19 @@ class WindMover(CyMover, serializable.Serializable):
         """
         return self.wind.id
     
+    def from_dict(self, dict_):
+        """
+        For updating the object from dictionary
+        
+        'wind' object is not part of the state since it is not serialized/deserialized;
+        however, user can still update the wind attribute with a new Wind object. That must
+        be poped out of the dict here, then call super to process the standard dict_
+        """
+        if 'wind' in dict_ and dict_.get('wind') is not None:
+            self.wind = dict_.pop('wind')
+            
+        super(WindMover, self).from_dict(dict_)
+    
     def __init__(self, wind, **kwargs):
         """
         Uses super to call CyMover base class __init__
@@ -270,12 +281,12 @@ class WindMover(CyMover, serializable.Serializable):
         :param active_start: mover active after this time: defaults to datetime( *gmtime(0)[:6] ), 
         :param active_stop: mover inactive after this time: defaults to datetime(2038,1,18,0,0,0),
         """
-        self.wind = wind
         self.mover = CyWindMover(uncertain_duration=kwargs.pop('uncertain_duration',10800), 
                                  uncertain_time_delay=kwargs.pop('uncertain_time_delay',0), 
                                  uncertain_speed_scale=kwargs.pop('uncertain_speed_scale',2.),  
                                  uncertain_angle_scale=kwargs.pop('uncertain_angle_scale',0.4) )
-        self.mover.set_ossm(self.wind.ossm)
+        #self.mover.set_ossm(self.wind.ossm)
+        self.wind = wind    
         super(WindMover,self).__init__(**kwargs)
 
     def __repr__(self):
@@ -302,6 +313,19 @@ class WindMover(CyMover, serializable.Serializable):
         return info.format(self.mover, self)
 
     # Define properties using lambda functions: uses lambda function, which are accessible via fget/fset as follows:
+    
+    @property
+    def wind(self):
+        return self._wind
+    
+    @wind.setter
+    def wind(self, value):
+        if not isinstance(value, environment.Wind):
+            raise TypeError("wind must be of type environment.Wind")
+        else:
+            self._wind = value
+            self.mover.set_ossm(self.wind.ossm) # update reference to underlying cython object
+    
     uncertain_duration = property( lambda self: self.mover.uncertain_duration,
                                    lambda self, val: setattr(self.mover,'uncertain_duration', val))
 
@@ -488,7 +512,9 @@ class CatsMover(CyMover, serializable.Serializable):
         self.mover = cy_cats_mover.CyCatsMover()
         self.mover.read_topology(filename)
         
-        self.tide = kwargs.pop('tide',None)
+        self._tide = None   
+        if kwargs.get('tide') is not None:
+            self.tide = kwargs.pop('tide')
         
         self.scale = kwargs.pop('scale', self.mover.scale_type)
         self.scale_value = kwargs.get('scale_value', self.mover.scale_value)
@@ -517,6 +543,24 @@ class CatsMover(CyMover, serializable.Serializable):
             return None
         else:
             return self.tide.id    
+    
+    @property
+    def tide(self):
+        return self._tide
+    
+    @tide.setter
+    def tide(self, tide_obj):
+        if not isinstance(tide_obj, environment.Tide):
+            raise TypeError("tide must be of type environment.Tide")
+        
+        if isinstance(tide_obj.cy_obj, cy_shio_time.CyShioTime):
+            self.mover.set_shio(tide_obj.cy_obj)
+        elif isinstance(tide_obj.cy_obj, cy_ossm_time.CyOSSMTime):
+            self.mover.set_ossm(tide_obj.cy_obj)
+        else:
+            raise TypeError("Tide.cy_obj attribute must be either CyOSSMTime or CyShioTime type for CatsMover.")
+        
+        self._tide = tide_obj
         
 class WeatheringMover(Mover):
     """
