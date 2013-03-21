@@ -352,6 +352,7 @@ class Tide(Environment, serializable.Serializable):
     def __init__(self,
                  filename=None,
                  timeseries=None,
+                 yeardata=os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/'),
                  **kwargs):
         """
         Tide information can be obtained from a filename or set as a timeseries
@@ -371,15 +372,10 @@ class Tide(Environment, serializable.Serializable):
         :param yeardata: (Optional) path to yeardata used for Shio data filenames. Default location
                          is gnome/data/yeardata/
         """
+        self._yeardata = None # define locally so it is available even for OSSM files, though not used by OSSM files
         if( timeseries is None and filename is None):
             raise ValueError("Either provide timeseries or a valid filename containing Tide data")
-        
-        # should probably put this at some central location
-        self.yeardata = os.path.abspath( kwargs.pop('yeardata',os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/')) )
-        
-        if not os.path.exists(self.yeardata):
-            raise IOError("Path to yeardata files does not exist: {0}".format(self.yeardata))
-        
+                
         if( timeseries is not None):
             if units is None:
                 raise ValueError("Provide valid units as string or unicode for timeseries")
@@ -393,8 +389,22 @@ class Tide(Environment, serializable.Serializable):
         else:
             self.filename = os.path.abspath( filename)
             self.cy_obj = self._obj_to_create()
+            self.yeardata = os.path.abspath( yeardata ) # set yeardata
 
         super(Tide,self).__init__(**kwargs)    
+
+    @property
+    def yeardata(self):
+        return self._yeardata 
+    
+    @yeardata.setter
+    def yeardata(self, value):
+        """ only relevant if underlying cy_obj is CyShioTime"""
+        if not os.path.exists(value):
+            raise IOError("Path to yeardata files does not exist: {0}".format(value))
+        self._yeardata = value  # set private variable and also shio object's yeardata path
+        if isinstance( self.cy_obj, cy_shio_time.CyShioTime):
+            self.cy_obj.set_shio_yeardata_path(value)
             
     def _obj_to_create(self):
         """
@@ -414,7 +424,7 @@ class Tide(Environment, serializable.Serializable):
         shio_file = ['[StationInfo]', 'Type=', 'Name=', 'Latitude=']
         
         if all( [shio_file[i] == lines[i][:len(shio_file[i])] for i in range(4)]):
-            return cy_shio_time.CyShioTime(self.filename)
+            return cy_shio_time.CyShioTime(self.filename)   
         
         elif len(string.split(lines[3],',')) == 7:
             #if float( string.split(lines[3],',')[-1]) != 0.0:    # maybe log / display a warning that v=0 for tide file and will be ignored
