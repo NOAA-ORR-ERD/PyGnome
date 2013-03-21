@@ -27,22 +27,14 @@ def test_exceptions():
     with pytest.raises(IOError):
         environment.Tide(shio_file, yeardata=bad_yeardata_path)
 
-def test_shio_file():
+@pytest.mark.parametrize("filename", [shio_file, ossm_file])
+def test_file(filename):
     """
-    (WIP)
-    simply tests that the file loads correctly
+    (WIP) simply tests that the file loads correctly
     """
-    td = environment.Tide(shio_file)
-    assert True
-    
-def test_ossm_file():
-    """
-    (WIP)
-    simply tests that the file loads correctly
-    """
-    td = environment.Tide(ossm_file)
-    assert True
-    
+    td = environment.Tide(filename)
+    assert td.filename == filename
+        
 def test_new_from_dict():
     """
     test to_dict function for Wind object
