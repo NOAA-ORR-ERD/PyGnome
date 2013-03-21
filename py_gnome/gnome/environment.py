@@ -373,13 +373,7 @@ class Tide(Environment, serializable.Serializable):
         """
         if( timeseries is None and filename is None):
             raise ValueError("Either provide timeseries or a valid filename containing Tide data")
-        
-        # should probably put this at some central location
-        self.yeardata = os.path.abspath( kwargs.pop('yeardata',os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/')) )
-        
-        if not os.path.exists(self.yeardata):
-            raise IOError("Path to yeardata files does not exist: {0}".format(self.yeardata))
-        
+                
         if( timeseries is not None):
             if units is None:
                 raise ValueError("Provide valid units as string or unicode for timeseries")
@@ -392,9 +386,26 @@ class Tide(Environment, serializable.Serializable):
             self._user_units = kwargs.pop('units',None)    # not sure what these should be
         else:
             self.filename = os.path.abspath( filename)
-            self.cy_obj = self._obj_to_create()
+            self.cy_obj = self._obj_to_create(**kwargs)
+        
+        # only used by Shio
+        self._yeardata = None   # initialize vars, it is set in next line    
+        self.yeardata = os.path.abspath( kwargs.pop('yeardata',os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/')) )
 
         super(Tide,self).__init__(**kwargs)    
+
+    @property
+    def yeardata(self):
+        return self._yeardata
+    
+    @yeardata.setter
+    def yeardata(self, value):
+        """ only relevant if underlying cy_obj is CyShioTime"""
+        if not os.path.exists(value):
+            raise IOError("Path to yeardata files does not exist: {0}".format(value))
+        self._yeardata = value
+        if isinstance( self.cy_obj, cy_shio_time.CyShioTime):
+            self.cy_obj.set_shio_yeardata_path(value)
             
     def _obj_to_create(self):
         """
@@ -414,7 +425,7 @@ class Tide(Environment, serializable.Serializable):
         shio_file = ['[StationInfo]', 'Type=', 'Name=', 'Latitude=']
         
         if all( [shio_file[i] == lines[i][:len(shio_file[i])] for i in range(4)]):
-            return cy_shio_time.CyShioTime(self.filename)
+            return cy_shio_time.CyShioTime(self.filename)   # yeardata is set outside this function
         
         elif len(string.split(lines[3],',')) == 7:
             #if float( string.split(lines[3],',')[-1]) != 0.0:    # maybe log / display a warning that v=0 for tide file and will be ignored
