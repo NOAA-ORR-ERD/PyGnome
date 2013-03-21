@@ -793,22 +793,52 @@ define([
             return;
         },
 
+        /*
+         Finish the wizard. In order:
+
+            - Load the location file parameters into the user's current model
+            - Run 'deferred' functions -- model-related form submits
+            - Save the location-file-specific parameters the user selected
+            - Reload the page
+         */
         finish: function() {
             var _this = this;
 
-            // TODO: Handle server-side errors.
-            this.loadLocationFile().done(function() {
-                 deferreds.run().done(function() {
-                     _this.model.save().done(function() {
-                         // TODO: Trigger event, let AppView handle this.
-                         util.refresh();
-                     }).fail(function() {
-                         alert('Saving the wizard model failed');
-                     });
+//            this.loadLocationFile().done(function() {
+//                 deferreds.run().done(function() {
+//                     _this.model.save().done(function() {
+//                         // TODO: Trigger event, let AppView handle this.
+//                         util.refresh();
+//                     }).fail(function() {
+//                         console.log('Error submitting the location file wizard.');
+//                         alert('Error setting up your model. Please try again.');
+//                     });
+//                 }).fail(function() {
+//                     console.log('Error running deferred methods.');
+//                     alert('Error setting up your model. Please try again.');
+//                 });
+//            });
+
+
+            // XXX: Turns out we needed to get the LocationFile settings for the
+            // model settings form, so now does it really make sense to have a
+            // separate "model from location file" web service? We're already
+            // getting the model data, and below we post the entire thing back.
+            // If we do have a separate web service, then models.GnomeSettings
+            // should pop off spills and movers, or we'll get duplicates.
+             deferreds.run().done(function() {
+                 _this.model.save().done(function() {
+                     // TODO: Trigger event, let AppView handle this.
+                     util.refresh();
                  }).fail(function() {
-                     alert('Error saving deferred callback.');
+                     console.log('Error submitting the location file wizard.');
+                     alert('Error setting up your model. Please try again.');
                  });
-            });
+             }).fail(function() {
+                 console.log('Error running deferred methods.');
+                 alert('Error setting up your model. Please try again.');
+             });
+
         },
 
         loadLocationFile: function() {
