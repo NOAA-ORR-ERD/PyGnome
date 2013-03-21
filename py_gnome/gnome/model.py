@@ -4,15 +4,15 @@ from datetime import datetime, timedelta
 import copy
 
 import gnome
-from gnome.gnomeobject import GnomeObject
+from gnome import GnomeId
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.environment import Wind
+from gnome.environment import Environment, Wind
 from gnome.movers import Mover
 from gnome.spill_container import SpillContainerPair
 from gnome.utilities import serializable
 
-class Model(GnomeObject, serializable.Serializable):
+class Model(serializable.Serializable):
     """ 
     PyGNOME Model Class
     
@@ -23,6 +23,7 @@ class Model(GnomeObject, serializable.Serializable):
                'uncertain',
                'movers',
                'environment',
+               'spills'
                ]
     _create = []
     _create.extend(_update)
@@ -44,7 +45,7 @@ class Model(GnomeObject, serializable.Serializable):
         All this does is call reset() which initializes eveything to defaults
         """
         # making sure basic stuff is in place before properties are set
-        self.environment = OrderedCollection(dtype=Wind)  
+        self.environment = OrderedCollection(dtype=Environment)  
         self.movers = OrderedCollection(dtype=Mover)
         #self._spill_container = gnome.spill_container.SpillContainer()
         #self._uncertain_spill_container = None
@@ -57,6 +58,8 @@ class Model(GnomeObject, serializable.Serializable):
         #self._uncertain = uncertain # sets whether uncertainty is on or not.
 
         self.time_step = time_step # this calls rewind() !
+        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+        
 
     def reset(self, **kwargs):
         """
@@ -103,6 +106,10 @@ class Model(GnomeObject, serializable.Serializable):
         #    self.spills.uncertain = uncertain_value # update uncertainty
         #    self.rewind()           
         #=======================================================================
+    
+    @property
+    def id(self):
+        return self._gnome_id.id
 
     @property
     def start_time(self):
@@ -403,6 +410,8 @@ class Model(GnomeObject, serializable.Serializable):
         """
         return OrderedCollection.to_dict(self.environment)
 
+    def spills_to_dict(self):
+        return SpillContainerPair.to_dict(self.spills)
 
     def __eq__(self, other):
         """

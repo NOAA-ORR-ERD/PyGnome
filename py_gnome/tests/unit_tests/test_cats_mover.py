@@ -1,8 +1,7 @@
 '''
 Test all operations for cats mover work
 '''
-import gnome
-from gnome import movers, basic_types
+from gnome import environment, movers, basic_types
 from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils
 import datetime
@@ -14,18 +13,14 @@ def test_exceptions():
     """
     Test correct exceptions are raised
     """
-    curr_file=r"SampleData/long_island_sound/tidesWAC.CUR"
     bad_file=r"SampleData/long_island_sound/tidesWAC.CURX"
-    bad_shio_file = r"SampleData/long_island_sound/CLISShio.txtX"
-    shio_year_path = r"SampleData/Data/yeardata/"
     with pytest.raises(ValueError):
         movers.CatsMover(bad_file)
-        movers.CatsMover(curr_file, bad_shio_file, shio_year_path)
 
 
-shio_file = r"SampleData/long_island_sound/CLISShio.txt"
 curr_file=r"SampleData/long_island_sound/tidesWAC.CUR"
-shio_year_path=r"SampleData/Data/yeardata/"
+td = environment.Tide(filename=r"SampleData/long_island_sound/CLISShio.txt")
+
 num_le = 3
 start_pos = (-72.5, 41.17, 0)
 rel_time = datetime.datetime(2012, 8, 20, 13)
@@ -52,7 +47,7 @@ def test_loop():
     also checks the motion is same for all LEs
     """
     pSpill = TestSpillContainer(num_le, start_pos, rel_time)
-    cats   = movers.CatsMover(curr_file, shio_file, shio_year_path)
+    cats   = movers.CatsMover(curr_file, tide=td)
     delta  = _certain_loop(pSpill, cats)
     
     _assert_move(delta)
@@ -69,7 +64,7 @@ def test_uncertain_loop():
     checks there is non-zero motion.
     """
     pSpill = TestSpillContainer(num_le, start_pos, rel_time, uncertain=True) 
-    cats = movers.CatsMover(curr_file, shio_file, shio_year_path)
+    cats = movers.CatsMover(curr_file, tide=td)
     u_delta = _uncertain_loop(pSpill,cats)
     
     _assert_move(u_delta)
@@ -147,3 +142,36 @@ def _uncertain_loop(pSpill, cats):
     cats.model_step_is_done()
     
     return u_delta
+
+def test_exception_new_from_dict():
+    """
+    test exceptions raised for new_from_dict
+    """
+    c_cats = movers.CatsMover(curr_file)
+    dict_ = c_cats.to_dict('create')
+    dict_.update({'tide': td})
+    with pytest.raises(ValueError):
+        c2 = movers.CatsMover.new_from_dict(dict_)
+
+def test_new_from_dict_tide():
+    """
+    test to_dict function for Wind object
+    create a new wind object and make sure it has same properties
+    """
+    c_cats = movers.CatsMover(curr_file, tide=td)
+    dict_ = c_cats.to_dict('create')
+    dict_.update({'tide':td})
+    c2 = movers.CatsMover.new_from_dict(dict_)
+    assert c_cats == c2
+    
+def test_new_from_dict_curronly():
+    """
+    test to_dict function for Wind object
+    create a new wind object and make sure it has same properties
+    """
+    c_cats = movers.CatsMover(curr_file)
+    dict_ = c_cats.to_dict('create')
+    c2 = movers.CatsMover.new_from_dict(dict_)
+    assert c_cats == c2
+
+    

@@ -395,7 +395,11 @@ class SpillContainerPair(SpillContainerPairData):
             spills: dict containing the spills ordered collection converted to a dict
             data: ??
         """
-        return None
+        dict_ = {'certain_spills':OrderedCollection.to_dict(scp._spill_container.spills)}
+        if scp.uncertain:
+            dict_.update({'uncertain_spills':OrderedCollection.to_dict(scp._u_spill_container.spills)})
+            
+        return dict_
 
 class TestSpillContainer(SpillContainer):
     """

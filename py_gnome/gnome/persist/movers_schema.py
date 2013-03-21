@@ -9,6 +9,7 @@ from colander import (
     Float,
     String,
     TupleSchema,
+    drop
     )
 
 import gnome
@@ -54,4 +55,23 @@ class UpdateSimpleMover(Mover):
     velocity = SimpleMoverVelocity()
     
 class CreateSimpleMover(Id, UpdateSimpleMover):
+    pass
+
+class WorldPoint(TupleSchema):
+    long = SchemaNode( Float() )
+    lat = SchemaNode( Float() )
+    z = SchemaNode( Float(), default=0.0)
+    
+class UpdateCatsMover(Mover):
+    """
+    Contains properties required by UpdateWindMover and CreateWindMover
+    """
+    filename = SchemaNode(String() )
+    scale = SchemaNode(Bool() )
+    scale_refpoint = WorldPoint()
+    scale_value = SchemaNode(Float() )
+    tide_id = SchemaNode(String(), missing=drop)    # can have CatsMover without Tide object
+    
+
+class CreateCatsMover(Id, UpdateCatsMover):
     pass
