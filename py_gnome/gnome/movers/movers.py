@@ -561,6 +561,20 @@ class CatsMover(CyMover, serializable.Serializable):
             raise TypeError("Tide.cy_obj attribute must be either CyOSSMTime or CyShioTime type for CatsMover.")
         
         self._tide = tide_obj
+
+
+    def from_dict(self, dict_):
+        """
+        For updating the object from dictionary
+        
+        'tide' object is not part of the state since it is not serialized/deserialized;
+        however, user can still update the tide attribute with a new Tide object. That must
+        be poped out of the dict here, then call super to process the standard dict_
+        """
+        if 'tide' in dict_ and dict_.get('tide') is not None:
+            self.tide = dict_.pop('tide')
+            
+        super(CatsMover, self).from_dict(dict_)
         
 class WeatheringMover(Mover):
     """
