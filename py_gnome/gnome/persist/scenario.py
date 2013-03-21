@@ -25,7 +25,7 @@ def save(model, saveloc=None):
     
     # first save model info
     dict_ = model.to_dict('create')
-    model_to_json = gnome.persist.model_schema.CreateModel().serialize( dict_ )
+    model_to_json = gnome.persist.model_schema.Model().serialize( dict_ )
     _save_to_file(model_to_json,
                   os.path.join( saveloc, '{0}_{1}.txt'.format( model.__class__.__name__, model.id)))
     
@@ -55,7 +55,7 @@ def load(saveloc, filename=None):
             
     # first load model, then create other objects and add to model
     model_json = _load_from_file(model_file)
-    model_dict = gnome.persist.model_schema.CreateModel().deserialize( model_json )
+    model_dict = gnome.persist.model_schema.Model().deserialize( model_json )
     model = gnome.model.Model.new_from_dict(model_dict)
     print "created base model ..."
     
@@ -73,7 +73,7 @@ def load(saveloc, filename=None):
 def _save_collection(coll_,schema_module, saveloc):
     for obj in coll_:
         dict_ = obj.to_dict('create')
-        to_eval = '{0}.Create{1}().serialize(dict_)'.format( schema_module, obj.__class__.__name__ )
+        to_eval = '{0}.{1}().serialize(dict_)'.format( schema_module, obj.__class__.__name__ )
         to_json = eval(to_eval)
         
         # move file's over 
@@ -143,7 +143,7 @@ def _obj_from_json( type_, schema_module, obj_json):
 
 def _dict_from_json(type_, schema_module, obj_json):
     obj_name= string.rsplit( type_, '.', 1)[-1]
-    to_eval = '{0}.Create{1}().deserialize( obj_json )'.format( schema_module, obj_name)
+    to_eval = '{0}.{1}().deserialize( obj_json )'.format( schema_module, obj_name)
     obj_dict = eval( to_eval)
     return obj_dict
 

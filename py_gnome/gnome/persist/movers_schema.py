@@ -35,7 +35,7 @@ class WindMover(Id, Mover):
     uncertain_angle_scale = SchemaNode(Float() )
     wind_id = SchemaNode(String(), missing=drop)    # only used to create new WindMover
     
-class UpdateRandomMover(Id, Mover):
+class RandomMover(Id, Mover):
     diffusion_coef = SchemaNode( Float() )
         
 class SimpleMoverVelocity(TupleSchema):

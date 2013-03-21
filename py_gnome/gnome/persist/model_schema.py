@@ -51,7 +51,7 @@ class SpillContainerPair(MappingSchema):
     #    uncertain_spills = base_schema.OrderedCollection()
     
 
-class UpdateModel(MappingSchema):
+class Model(base_schema.Id, MappingSchema):
     time_step = SchemaNode( Float()) 
     start_time= SchemaNode(extend_colander.LocalDateTime(), validator=validators.convertable_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta() )   # put a constraint for max duration?
@@ -60,10 +60,3 @@ class UpdateModel(MappingSchema):
     uncertain = SchemaNode( Bool() )
     spills = SpillContainerPair(uncertain=False)
     
-class CreateModel(base_schema.Id, UpdateModel):
-    """
-    Likely to be used when validating the state of the object read in from a save file.
-    
-    This is a union of the properties in UpdateWind and Id
-    """
-    pass
