@@ -29,7 +29,7 @@ div.nav-collapse > div.btn-toolbar {
 }
 
 #sidebar-container {
-    padding-top: 20px;
+    padding-top: 15px;
 }
 
 .inner-wrapper {
@@ -37,7 +37,7 @@ div.nav-collapse > div.btn-toolbar {
 }
 
 #content {
-    padding-top: 10px;
+    padding-top: 15px;
 }
 
 .caption {
@@ -61,6 +61,8 @@ footer {
 @media (max-width: 767px) {
     #sidebar {
         height: auto;
+        max-height: 300px;
+        width: 100%;
     }
 
     .inner-wrapper {

@@ -44,9 +44,6 @@ define([
             this.sidebarEl = '#sidebar';
             $(this.sidebarEl).resizable({
                 handles: 'e, w',
-                resize: function (event, ui) {
-                    $(this).css("height", '100%');
-                }
             });
 
             this.treeView = new views.TreeView({

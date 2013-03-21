@@ -52,6 +52,11 @@ ul.dynatree-container {
     display: inline;
 }
 
+#tree {
+    overflow: scroll;
+    max-height: 100%;
+}
+
 #time {
     position: relative;
     top: -5px;
@@ -294,4 +299,25 @@ input.required {
 
 .placeholder {
     background-image: url('/static/img/placeholder.gif');
+}
+
+
+/* Responsive fixes */
+
+@media (max-width: 767px) {
+    #tree {
+        height: auto;
+        max-height: 250px;
+        width: 100%;
+        border-right: 0;
+    }
+
+    #main-content {
+        padding-top: 25px;
+    }
+
+}
+
+@media (max-width: 979px) {
+    /* Placeholder */
 }

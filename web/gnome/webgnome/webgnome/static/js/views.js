@@ -709,9 +709,15 @@ define([
          Adjust the sidebar height to stay at 100% of the page minus the navbar.
          */
         resize: function() {
-            var documentHeight = $(document).height();
+            var windowHeight = $(window).height();
             var navbarHeight = $('.navbar').height();
-            $('#sidebar').height(documentHeight - navbarHeight);
+            var tree = $('#tree');
+            var sidebar = $('#sidebar');
+            var treeHeight = tree.height();
+            var treeHeightDiff = sidebar.height() - treeHeight;
+            var newSidebarHeight = windowHeight - navbarHeight;
+            sidebar.height(newSidebarHeight);
+            tree.height(newSidebarHeight - treeHeightDiff);
         },
 
         setupDynatree: function() {
