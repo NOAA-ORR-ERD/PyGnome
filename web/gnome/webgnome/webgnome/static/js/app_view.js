@@ -43,7 +43,7 @@ define([
 
             this.sidebarEl = '#sidebar';
             $(this.sidebarEl).resizable({
-                handles: 'e, w',
+                handles: 'e, w'
             });
 
             this.treeView = new views.TreeView({

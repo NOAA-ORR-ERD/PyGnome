@@ -20,7 +20,7 @@ div.nav-collapse > div.btn-toolbar {
 }
 
 #sidebar {
-    min-width: 175px;
+    min-width: 250px;
     border-right: solid 1px #D4D4D4;
     width: 20%;
     float: left;

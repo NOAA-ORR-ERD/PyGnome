@@ -9,6 +9,7 @@ define([
     'map_generator',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree',
+    'lib/bootstrap-collapse',
     'lib/bootstrap-dropdown',
     'async!http://maps.googleapis.com/maps/api/js?key=AIzaSyATcDk4cEYobGp9mq75DeZKaEdeppPnSlk&sensor=false&libraries=drawing'
 ], function($, _, Backbone, models, util, forms) {
