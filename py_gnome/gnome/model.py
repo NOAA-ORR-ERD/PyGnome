@@ -23,7 +23,8 @@ class Model(serializable.Serializable):
                'uncertain',
                'movers',
                'environment',
-               'spills'
+               'spills',
+               'map'
                ]
     _create = []
     _create.extend(_update)

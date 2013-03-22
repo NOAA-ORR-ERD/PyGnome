@@ -33,13 +33,14 @@ class OrderedCollectionIdList(SequenceSchema):
     id_list = OrderedCollectionIdListItem() 
     
 class OrderedCollection(MappingSchema):
-    dtype = SchemaNode( String() )
-    id_list = OrderedCollectionIdList(missing=None)
+    dtype = SchemaNode( String(), missing=drop)
+    id_list = OrderedCollectionIdList(missing=drop)
     
-class WorldPoint(TupleSchema):
-    """
-    can be used to define reference points
-    """
+class LongLat(TupleSchema):
+    """only contains 2D (long, lat) positions"""
     long = SchemaNode( Float() )
     lat = SchemaNode( Float() )
-    z = SchemaNode( Float(), default=0.0)
+    
+class WorldPoint(LongLat):
+    """used to define reference points. 3D positions (long,lat,z)"""
+    z = SchemaNode( Float(), default=0.0)    
