@@ -483,7 +483,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
     """
     A raster land-water map, created from a BNA file
     """
-    _update = ['refloat_halflife','bna_filename']
+    _update = ['refloat_halflife','filename']
     _create = []
     _create.extend(_update)
     state = copy.deepcopy(RasterMap.state)
@@ -494,7 +494,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         
     
     def __init__(self,
-                 bna_filename,
+                 filename,
                  refloat_halflife, #seconds
                  raster_size = 1024*1024, # default to 1MB raster
                  **kwargs):
@@ -509,8 +509,8 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         
         todo: fix init so it handles kwargs cleanly
         """
-        self.bna_filename = os.path.abspath(bna_filename)
-        polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
+        self.filename = os.path.abspath(filename)
+        polygons = haz_files.ReadBNA(filename, "PolygonSet")
 
         # find the spillable area and map bounds:
         # and create a new polygonset without them
@@ -569,7 +569,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
 #        Basics pyGNOME color bitmap.
 #        (End-user visualization.)
 #    """     
-#    def __init__(self, image_size, bna_filename, color_mode='RGB'):
+#    def __init__(self, image_size, filename, color_mode='RGB'):
 #        """
 #            Initializes color map attributes. Calls on parent class initialization 
 #            method in order to handle projection scaling.
@@ -578,8 +578,8 @@ class MapFromBNA(RasterMap, serializable.Serializable):
 #                                      image_size,
 #                                      projection=map_canvas.FlatEarthProjection,
 #                                      mode=color_mode)
-#        self.polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
-#        self.filename = bna_filename        
+#        self.polygons = haz_files.ReadBNA(filename, "PolygonSet")
+#        self.filename = filename        
 #        self.draw_land(self.polygons)
 #
 #    def to_pixel(self, coord):
@@ -614,13 +614,13 @@ class MapFromBNA(RasterMap, serializable.Serializable):
 #    lake_color = 0
 #    land_color = 1
 #    
-#    def __init__(self, image_size, bna_filename, refloat_halflife, color_mode='1'):
+#    def __init__(self, image_size, filename, refloat_halflife, color_mode='1'):
 #        """
 #            Initializes land-water map attributes. Calls on parent class initialization 
 #            method in order to handle projection scaling. Caches its bounding_box so that
 #            it doesn't need to be computed repeatedly.
 #        """
-#        gnome_map.__init__(self, image_size, bna_filename, color_mode)
+#        gnome_map.__init__(self, image_size, filename, color_mode)
 #        self.bounding_box = self.polygons.bounding_box
 #        self.refloat_halflife = refloat_halflife
 #        self.spills = []

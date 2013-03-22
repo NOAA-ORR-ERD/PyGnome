@@ -63,7 +63,7 @@ def test_in_water_resolution():
     Test the limits of the precision, to within an order of magnitude, defining whether a point is in or out of water.
     '''
     
-    m = gnome.map.MapFromBNA(bna_filename = os.path.join(datadir, "Mapbounds_Island.bna"),
+    m = gnome.map.MapFromBNA(filename = os.path.join(datadir, "Mapbounds_Island.bna"),
                              refloat_halflife = (2.*60.*60.) ,
                              raster_size = 500*500 , # approx resolution
                              ) #Create an 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
