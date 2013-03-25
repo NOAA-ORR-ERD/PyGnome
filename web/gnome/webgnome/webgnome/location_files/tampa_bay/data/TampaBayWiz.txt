@@ -1,0 +1,52 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+10013
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Tampa Bay
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 1
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.05;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME Tampa Bay Map;PATH resnum 10003
+--
+MESSAGE createMover;TO Tampa Bay Map;TYPE Cats; NAME Clearwater.CUR;PATH resnum 10004
+MESSAGE setfield;TO Clearwater.CUR; scaleType constant;refP 82.823333 W 27.956667 N; scaleValue 1; timeFile resNum 10008; EddyDiffusion 10000;
+--
+MESSAGE createMover;TO Tampa Bay Map;TYPE Cats; NAME Boca Ciega Bay.CUR;PATH resnum 10005
+MESSAGE setfield;TO Boca Ciega Bay.CUR; scaleType constant;refP 82.761667 W 27.756667 N; scaleValue 1; timeFile resNum 10009; EddyDiffusion 10000;
+--
+MESSAGE createMover;TO Tampa Bay Map;TYPE Cats; NAME Tampa.CUR;PATH resnum 10006
+MESSAGE setfield;TO Tampa.CUR; scaleType constant;refP 82.760333 W 27.604333 N; scaleValue 1; timeFile resNum 10011; EddyDiffusion 10000;
+--
+MESSAGE createMover;TO Tampa Bay Map;TYPE Cats; NAME Sarasota.CUR;PATH resnum 10007
+MESSAGE setfield;TO Sarasota.CUR; scaleType constant;refP 82.690117 W 27.443588 N; scaleValue 1; timeFile resNum 10012; EddyDiffusion 10000;
+--
+MESSAGE createMover;TO Tampa Bay Map;TYPE Component; NAME Wind Driven Offshore Currents;
+MESSAGE createMover;TO Wind Driven Offshore Currents;TYPE Cats; PATTERN 1; NAME offshore.CUR;PATH resnum 10013;
+MESSAGE setfield;TO Wind Driven Offshore Currents; scaleType WINDMOVER;refP 83.0 W 27.667 N; 
+MESSAGE setfield;TO Wind Driven Offshore Currents; pat1Angle 180; pat1Speed 8.747; pat1SpeedUnits knots; pat1ScaleToValue 0.15;
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Tampa Bay;
+-------------------------------------------
+

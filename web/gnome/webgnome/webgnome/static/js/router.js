@@ -38,7 +38,11 @@ define([
         },
 
         splash: function() {
-            this.appView.showSection('splash-page')
+            if (!this.newModel) {
+                return this.navigate('model', true);
+            }
+
+            return this.appView.showSection('splash-page')
         }
     });
 

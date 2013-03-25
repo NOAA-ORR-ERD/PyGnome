@@ -154,6 +154,10 @@ define([
         }
     };
 
+    function refresh() {
+        window.location = window.location.protocol + "//" + window.location.host;
+    }
+
     return {
         log: log,
         handleAjaxError: handleAjaxError,
@@ -161,7 +165,8 @@ define([
         formatTimestamp: formatTimestamp,
         cardinalName: cardinalName,
         cardinalAngle: cardinalAngle,
-        Cookies: Cookies
+        Cookies: Cookies,
+        refresh: refresh
     };
 
 });

@@ -4,15 +4,12 @@ import os
 from cornice.resource import resource, view
 from pyramid.httpexceptions import HTTPNotFound
 
-from webgnome import util
+from webgnome import util, schema
 from webgnome.navigation_tree import NavigationTree
-from webgnome.schema import ModelSettingsSchema
 from webgnome.views.services.base import BaseResource
 
 
-
-@resource(collection_path='/model',
-          path='/model/{model_id}',
+@resource(collection_path='/model', path='/model/{model_id}',
           renderer='gnome_json',
           description='Create a new model or delete the current model.')
 class Model(BaseResource):
@@ -23,23 +20,21 @@ class Model(BaseResource):
         Return a JSON tree representation of the entire model, including movers
         and spills.
         """
-        include_movers = self.request.GET.get('include_movers', False)
-        include_spills = self.request.GET.get('include_spills', False)
-        model_settings = self.request.validated['model'].to_dict(
-            include_movers=include_movers, include_spills=include_spills)
+        model_data = self.request.validated['model'].to_dict()
 
-        return model_settings
-    
-    @view(schema=ModelSettingsSchema, validators=util.valid_model_id)
+        return schema.ModelSchema().bind().serialize(model_data)
+
+    @view(schema=schema.ModelSchema, validators=util.valid_model_id)
     def put(self):
         """
         Update settings for the current model.
         """
         model = self.request.validated['model']
+        self.request.validated.pop('map', None)
         model.from_dict(self.request.validated)
 
-        return model.to_dict()
-    
+        return schema.ModelSchema().bind().serialize(model.to_dict())
+
     @view(validators=util.valid_model_id)
     def delete(self):
         """
@@ -52,15 +47,10 @@ class Model(BaseResource):
         """
         Create a new model with default settings.
         """
-        model = self.settings.Model.create(
-            model_images_dir=self.settings['model_images_dir'])
-
+        model = self.settings.Model.create()
         self.request.session[self.settings['model_session_key']] = model.id
 
-        data = model.to_dict()
-        data['message'] = util.make_message('success', 'Created a new model.')
-
-        return data
+        return schema.ModelSchema().bind().serialize(model.to_dict())
 
 
 @resource(path='/model/{model_id}/tree', renderer='gnome_json',
@@ -70,12 +60,12 @@ class ModelTree(BaseResource):
     @view(validators=util.valid_model_id)
     def get(self):
         """
-        Return a JSON representation of the current state of the model, to be used
-        to create a tree view of the model in the JavaScript application.
+        Return a JSON representation of the current state of the model, to be
+        used to create a tree view of the model in the JavaScript application.
         """
         return NavigationTree(self.request.validated['model']).render()
-    
-    
+
+
 @resource(path='/model/{model_id}/runner', renderer='gnome_json',
           description='Run the current model.')
 class GnomeRunner(BaseResource):
@@ -179,3 +169,50 @@ class GnomeRunner(BaseResource):
         data['time_step'] = step
 
         return data
+
+
+@resource(path='/model/from_location_file/{location}', renderer='gnome_json',
+          description='Create a new model from a location file.')
+class ModelFromLocationFile(BaseResource):
+    """
+    Creates a new :class:`webgnome.model_manager.WebModel` from a location file
+    with the name given by the `location` parameter.
+
+    NOTE: This service is not used by the JavaScript application at this time.
+    """
+
+    def apply_location_file_to_model(self, model):
+        self.request.session[self.settings['model_session_key']] = model.id
+        model_schema = schema.ModelSchema().bind()
+
+        model_data = model_schema.deserialize(
+            self.request.validated['location_file_model_data'])
+        model.from_dict(model_data)
+        data = model.to_dict()
+
+        return model_schema.serialize(data)
+
+    @view(validators=util.valid_location_file)
+    def post(self):
+        """
+        Create a new model using settings from a location file.
+        """
+        model = self.settings.Model.create()
+        return self.apply_location_file_to_model(model)
+
+
+@resource(path='/model/{model_id}/from_location_file/{location}',
+          renderer='gnome_json',
+          description='Apply a location file to an existing model.')
+class ExistingModelFromLocationFile(ModelFromLocationFile):
+    """
+    Apply settings from a location file with the name given by the `location`
+    parameter to the user's current model.
+
+    NOTE: This service is not used by the JavaScript application at this time.
+    """
+
+    @view(validators=[util.valid_model_id, util.valid_location_file])
+    def post(self):
+        model = self.request.validated['model']
+        return self.apply_location_file_to_model(model)

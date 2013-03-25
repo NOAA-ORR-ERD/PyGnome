@@ -1,0 +1,98 @@
+{
+    "wind_movers": [
+        {
+            "on": true, 
+            "name": "Wind Mover", 
+            "uncertain_angle_scale": 0.4, 
+            "uncertain_duration": 10800.0, 
+            "active_start": "1970-01-01T00:00:00", 
+            "active_stop": "2038-01-18T00:00:00", 
+            "uncertain_time_delay": 0.0, 
+            "id": "c1fa916e-8cb4-11e2-95db-3c07541ca142", 
+            "wind": {
+                "description": "Wind Object", 
+                "updated_at": "2013-03-14T07:37:55.096135", 
+                "source_type": "undefined", 
+                "source_id": "undefined", 
+                "timeseries": [
+                    [
+                        "2013-03-12T10:00:00", 
+                        5.0, 
+                        180.0
+                    ], 
+                    [
+                        "2013-03-13T04:00:00", 
+                        5.0, 
+                        180.0
+                    ]
+                ], 
+                "units": "m/s"
+            }, 
+            "uncertain_speed_scale": 2.0
+        }
+    ], 
+    "map": {
+        "map_bounds": [
+            [
+                -71.099998, 
+                42.18507
+            ], 
+            [
+                -71.099998, 
+                42.633331
+            ], 
+            [
+                -70.588066, 
+                42.633331
+            ], 
+            [
+                -70.588066, 
+                42.18507
+            ]
+        ], 
+        "refloat_halflife": 3600.0, 
+        "name": "Map", 
+        "relative_path": "location_files/boston/data/MassBayMap.bna"
+    }, 
+    "uncertain": false, 
+    "start_time": "2013-03-12T10:00:00", 
+    "random_movers": [
+        {
+            "diffusion_coef": 100000.0, 
+            "name": "Random Mover", 
+            "on": true, 
+            "active_start": "1970-01-01T00:00:00", 
+            "active_stop": "2038-01-18T00:00:00", 
+            "id": "c1fa941e-8cb4-11e2-bad0-3c07541ca142"
+        }
+    ], 
+    "surface_release_spills": [
+        {
+            "num_elements": 1000, 
+            "windage_range": [
+                0.01, 
+                0.04
+            ], 
+            "name": "Surface Release Spill",
+            "is_active": true, 
+            "end_position": [
+                -70.911432, 
+                42.369142, 
+                0.0
+            ], 
+            "start_position": [
+                -70.911432, 
+                42.369142, 
+                0.0
+            ], 
+            "release_time": "2013-03-12T10:00:00", 
+            "windage_persist": 900.0, 
+            "end_release_time": "2013-03-12T10:00:00", 
+            "id": "c21c11a3-8cb4-11e2-b181-3c07541ca142"
+        }
+    ], 
+    "time_step": 0.25, 
+    "duration_hours": 0, 
+    "duration_days": 1, 
+    "id": "c1ccf4f3-8cb4-11e2-96dd-3c07541ca142"
+}

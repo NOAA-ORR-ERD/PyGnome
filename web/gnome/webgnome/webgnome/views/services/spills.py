@@ -2,7 +2,7 @@ from cornice.resource import resource, view
 
 from webgnome import util
 from webgnome.model_manager import WebSurfaceReleaseSpill
-from webgnome.schema import SurfaceReleaseSpillSchema
+from webgnome import schema
 from webgnome.views.services.base import BaseResource
 
 
@@ -20,9 +20,11 @@ class SurfaceReleaseSpill(BaseResource):
         model = data.pop('model')
         model_data = model.to_dict(include_spills=True)
 
-        return model_data['surface_release_spills']
+        return schema.SurfaceReleaseSpillsSchema(
+            model_data['surface_release_spills'])
 
-    @view(validators=util.valid_model_id, schema=SurfaceReleaseSpillSchema)
+    @view(validators=util.valid_model_id,
+          schema=schema.SurfaceReleaseSpillSchema)
     def collection_post(self):
         """
         Create a SurfaceReleaseSpill from a JSON representation.
@@ -32,7 +34,8 @@ class SurfaceReleaseSpill(BaseResource):
         spill = WebSurfaceReleaseSpill(**data)
         model.spills.add(spill)
 
-        return spill.to_dict()
+        return schema.SurfaceReleaseSpillSchema().bind().serialize(
+            spill.to_dict(do='create'))
 
     @view(validators=util.valid_spill_id)
     def get(self):
@@ -41,9 +44,12 @@ class SurfaceReleaseSpill(BaseResource):
         ``id`` matchdict value.
         """
         spill = self.request.validated['model'].spills[self.id]
-        return spill.to_dict()
 
-    @view(validators=util.valid_spill_id, schema=SurfaceReleaseSpillSchema)
+        return schema.SurfaceReleaseSpillSchema().bind().serialize(
+            spill.to_dict())
+
+    @view(validators=util.valid_spill_id,
+          schema=schema.SurfaceReleaseSpillSchema)
     def put(self):
         """
         Update an existing SurfaceReleaseSpill from a JSON representation.
@@ -54,7 +60,8 @@ class SurfaceReleaseSpill(BaseResource):
         spill.from_dict(data)
         model.rewind()
 
-        return spill.to_dict()
+        return schema.SurfaceReleaseSpillSchema().bind().serialize(
+            spill.to_dict())
 
     @view(validators=util.valid_spill_id)
     def delete(self):

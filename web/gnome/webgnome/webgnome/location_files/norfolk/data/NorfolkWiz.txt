@@ -1,0 +1,45 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+--10011
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Norfolk
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 1
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.10;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+minkilometersperinch 2.0;
+MESSAGE setfield;TO Diffusion; coefficient 10000; uncertaintyFactor 2;
+--
+MESSAGE createMap;TO model;TYPE vector; NAME Norfolk Map;PATH resnum 10003;
+--
+--
+--
+--Tides
+--
+MESSAGE createMover;TO Norfolk Map;TYPE Cats; NAME tide.cur;PATH resnum 10004;
+MESSAGE setfield;TO tide.cur; scaleType constant;refP 76.335833 W 36.890500 N; scaleValue 1; timeFile resNum 10005; EddyDiffusion 10000;
+--
+--
+-------------------------------------------
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Norfolk, VA;
+-------------------------------------------
+

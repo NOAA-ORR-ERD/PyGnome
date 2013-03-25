@@ -1,6 +1,7 @@
 """
 model_manager.py: Manage a pool of running models.
 """
+import copy
 import datetime
 import logging
 import os
@@ -34,13 +35,13 @@ from gnome.environment import Wind
 from gnome.map import MapFromBNA
 
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Serializable(object):
     serializable_fields = []
 
-    def to_dict(self):
+    def to_dict(self, *args, **kwargs):
         """
         Return a dictionary containing the serialized representation of this
         object, using `self.serializable_fields` to look up fields on the object
@@ -69,7 +70,7 @@ class Serializable(object):
             data[key] = value
         return data
 
-    def from_dict(self, data):
+    def from_dict(self, data, *args, **kwargs):
         """
         Set the state of this object using the dictionary ``data`` by looking up
         the value of each key in ``data`` that is also in
@@ -99,7 +100,12 @@ class Serializable(object):
             elif hasattr(field, 'from_dict'):
                 field.from_dict(value)
             else:
-                setattr(self, key, value)
+                try:
+                    setattr(self, key, value)
+                except ValueError:
+                    logger.exception(
+                        'Could not set %s with value %s on %s' % (
+                        key, value, self))
 
         return self
 
@@ -116,9 +122,10 @@ class BaseWebObject(Serializable):
         self._name = name
 
 
-class WebWind(Wind, BaseWebObject):
+class WebWind(Wind, Serializable):
     default_name = 'Wind'
     source_types = (
+        ('undefined', 'Undefined'),
         ('manual', 'Manual Data'),
         ('nws', 'NWS Wind Data'),
         ('buoy', 'Buoy Station ID'),
@@ -148,29 +155,12 @@ class WebWind(Wind, BaseWebObject):
         super(WebWind, self).__init__(*args, **kwargs)
 
     @property
-    def units(self):
-        return self._user_units
-
-    @units.setter
-    def units(self, value):
-        self._user_units = value
-
-    @property
     def timeseries(self):
-        return self.get_timeseries(units=self.user_units)
+        return self.get_timeseries(units=self.units)
 
     @timeseries.setter
     def timeseries(self, value):
-        self.set_timeseries(value, units=self.user_units)
-
-    def timeseries_to_dict(self):
-        series = []
-
-        for wind_value in self.timeseries:
-            dt = wind_value[0].astype(object)
-            series.append((dt, wind_value[1][0], wind_value[1][1]))
-
-        return series
+        self.set_timeseries(value, units=self.units)
 
 
 class WebWindMover(WindMover, BaseWebObject):
@@ -179,19 +169,9 @@ class WebWindMover(WindMover, BaseWebObject):
     webgnome-specific functionality.
     """
     default_name = 'Wind Mover'
-    serializable_fields = [
-        'id',
-        'wind',
-        'on',
-        'name',
-        'active_start',
-        'active_stop',
-        'uncertain_duration',
-        'uncertain_speed_scale',
-        'uncertain_angle_scale',
-        'uncertain_angle_scale_units',
-        'uncertain_time_delay'
-    ]
+    state = copy.deepcopy(WindMover.state)
+    state.add(create=['uncertain_angle_scale_units', 'name'],
+              update=['uncertain_angle_scale_units', 'name'])
 
     def __init__(self, *args, **kwargs):
         self.is_constant = kwargs.pop('is_constant', True)
@@ -211,14 +191,8 @@ class WebRandomMover(RandomMover, BaseWebObject):
     webgnome-specific functionality.
     """
     default_name = 'Random Mover'
-    serializable_fields = [
-        'id',
-        'on',
-        'name',
-        'active_start',
-        'active_stop',
-        'diffusion_coef'
-    ]
+    state = copy.deepcopy(RandomMover.state)
+    state.add(create=['name'], update=['name'])
 
     def __init__(self, *args, **kwargs):
         self.on = kwargs.pop('on', True)
@@ -283,8 +257,14 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
         'id',
         'name',
         'map_bounds',
-        'refloat_halflife'
+        'refloat_halflife',
+        'relative_path'
     ]
+
+    def __init__(self, *args, **kwargs):
+        self.name = kwargs.pop('name', 'Map')
+        self.relative_path = kwargs.pop('relative_path', None)
+        super(WebMapFromBNA, self).__init__(*args, **kwargs)
 
     def map_bounds_to_dict(self):
         """
@@ -296,10 +276,6 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
             return self.map_bounds.tolist()
         return self.map_bounds
 
-    def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', 'Map')
-        super(WebMapFromBNA, self).__init__(*args, **kwargs)
-
 
 class WebModel(Model, BaseWebObject):
     """
@@ -310,7 +286,8 @@ class WebModel(Model, BaseWebObject):
     """
     mover_keys = {
         WebWindMover: 'wind_movers',
-        WebRandomMover: 'random_movers'
+        WebRandomMover: 'random_movers',
+        # gnome.movers.CatsMover: 'cats_movers'
     }
 
     spill_keys = {
@@ -318,10 +295,16 @@ class WebModel(Model, BaseWebObject):
     }
 
     def __init__(self, *args, **kwargs):
+        data_dir = kwargs.pop('data_dir')
+
+        self.package_root = kwargs.pop('package_root')
+        self.base_dir = os.path.join(self.package_root, data_dir, str(self.id))
+        self.base_dir_relative = os.path.join(data_dir, str(self.id))
+        self.static_data_dir = os.path.join(self.base_dir, 'data')
+
         # Create the base directory for all of the model's data.
-        self.base_dir = os.path.join(kwargs.pop('model_images_dir'),
-                                     str(self.id))
         util.mkdir_p(self.base_dir)
+        util.mkdir_p(self.static_data_dir)
 
         super(WebModel, self).__init__()
 
@@ -355,20 +338,23 @@ class WebModel(Model, BaseWebObject):
 
     def add_bna_map(self, filename, map_data):
         """
-        Add a BNA map that exists at ``filename``, a path relative to the base
-        directory for the model.
+        Adds a BNA map that exists at ``filename``, a path relative to the
+        webgnome package directory.
+
+        This might be a map file in a location file or in a running model's
+        data directory.
 
         Creates the land-water map and the canvas, and saves the background
         image for the map.
         """
-        map_file = os.path.join(self.base_dir, filename)
+        map_file = os.path.join(self.package_root, filename)
 
         # Create the land-water map
-        self.map = WebMapFromBNA(map_file, **map_data)
+        self.map = WebMapFromBNA(map_file, relative_path=filename, **map_data)
 
         # TODO: Should size be user-configurable?
         canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
-        polygons = haz_files.ReadBNA(filename, "PolygonSet")
+        polygons = haz_files.ReadBNA(map_file, "PolygonSet")
         canvas.set_land(polygons)
         self.output_map = canvas
 
@@ -377,10 +363,10 @@ class WebModel(Model, BaseWebObject):
             try:
                 os.remove(self.background_image_path)
             except OSError as e:
-                log.error('Could not delete file: %s. Error was: %s' % (
+                logger.error('Could not delete file: %s. Error was: %s' % (
                     self.background_image, e))
 
-        # Save the backgrsinon-1.6.0ound image.
+        # Save the background image.
         self.background_image = 'background_image_%s.png' % util.get_runtime()
         self.output_map.draw_background()
         self.output_map.save_background(self.background_image_path)
@@ -413,7 +399,13 @@ class WebModel(Model, BaseWebObject):
             if key not in data:
                 data[key] = []
 
-            data[key].append(obj.to_dict())
+            obj_data = obj.to_dict(do='create')
+
+            # XXX: Temporary hack to fix new Serializable code
+            if hasattr(obj, 'wind'):
+                obj_data['wind'] = obj.wind.to_dict(do='create')
+
+            data[key].append(obj_data)
 
         return data
     
@@ -422,11 +414,6 @@ class WebModel(Model, BaseWebObject):
         Return a dictionary representation of this model. Includes subtrees
         (lists of dictionaries) for any movers and spills configured.
         """
-        if self.map and hasattr(self.map, 'to_dict'):
-            _map = self.map.to_dict()
-        else:
-            _map = None
-
         data = {
             'uncertain': self.uncertain,
             'time_step': (self.time_step / 60.0) / 60.0,
@@ -434,8 +421,10 @@ class WebModel(Model, BaseWebObject):
             'duration_days': 0,
             'duration_hours': 0,
             'id': self.id,
-            'map': _map
         }
+
+        if self.map and hasattr(self.map, 'to_dict'):
+            data['map'] = self.map.to_dict()
 
         if self.duration.days:
             data['duration_days'] = self.duration.days
@@ -467,8 +456,9 @@ class WebModel(Model, BaseWebObject):
         def add_spill(data, cls):
             _id = data.pop('id', None)
             spill = cls(**data)
-            if _id:
-                spill._id = uuid.UUID(_id)
+            # TODO: Why doesn't this work anymore?
+            # if _id:
+            #     spill._id = uuid.UUID(_id)
             self.spills.add(spill)
 
         self.uncertain = data['uncertain']
@@ -484,10 +474,11 @@ class WebModel(Model, BaseWebObject):
         surface_spills = data.get('surface_release_spills', None)
 
         if map_data:
-            filename = map_data.pop('filename')
-            # Ignore map bounds - will be set from the source file.
+            relative_path = map_data.pop('relative_path')
+            # Ignore map bounds and filename - will be set from the source file.
             map_data.pop('map_bounds', None)
-            self.add_bna_map(filename, map_data)
+            map_data.pop('filename', None)
+            self.add_bna_map(relative_path, map_data)
 
         if wind_movers:
             for mover_data in wind_movers:
@@ -513,7 +504,9 @@ class ModelManager(object):
     class DoesNotExist(Exception):
         pass
 
-    def __init__(self):
+    def __init__(self, data_dir, package_root):
+        self.data_dir = data_dir
+        self.package_root = package_root
         self.running_models = {}
 
     def create(self, **kwargs):
@@ -521,6 +514,11 @@ class ModelManager(object):
         Create a new :class:`WebModel`, adds it to the `running_models` dict
         and returns the new object.
         """
+        if 'package_root' not in kwargs:
+            kwargs['package_root'] = self.package_root
+        if 'data_dir' not in kwargs:
+            kwargs['data_dir'] = self.data_dir
+
         model = WebModel(**kwargs)
         self.running_models[str(model.id)] = model
         return model

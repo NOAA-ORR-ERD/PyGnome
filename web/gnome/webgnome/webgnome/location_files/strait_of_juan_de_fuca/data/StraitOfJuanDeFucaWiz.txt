@@ -1,0 +1,88 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+10011
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Strait of Juan de Fuca
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.25;
+-------------------------------------------
+
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME Juan de Fuca Map;PATH resnum 10003
+--
+------TIDES
+MESSAGE createMover;TO Juan de Fuca Map;TYPE Cats; NAME FGPWACwAmps.cur;PATH resnum 10004;
+MESSAGE setfield;TO FGPWACwAmps.CUR; scaleType constant;refP 123.166667 W 48.3 N; scaleValue 1; timeFile resNum 10005;
+--
+------PORT ANGELES EASTWARD CURRENT (residual tides)
+MESSAGE createMover;TO Juan de Fuca Map;TYPE Cats; NAME PtAngelesSAC.cur;PATH resnum 10006;
+MESSAGE setfield;TO PtAngelesSAC.cur; scaleType constant;refP 123.183333 W 48.166667 N; scaleValue 0.7; 
+--
+------STORM-INDUCED NEAR-ENTRANCE CURRENT REVERSALS
+MESSAGE createMover;TO Juan de Fuca Map;Type Cats; NAME WACReverse2.cur; PATH resnum 10007;
+MESSAGE setfield; TO WACReverse2.cur; scaleType constant; refP 124.583333 W 48.45 N; scaleValue 1.0;
+--
+------EASTERN STRAIT EDDIES 
+--
+--Eddy Slack after Flood Tide
+MESSAGE createMover;TO Juan de Fuca Map;TYPE Cats; NAME Eddy_FTS.cur;PATH resnum 10008;
+MESSAGE setfield;TO Eddy_FTS.cur; scaleType constant;refP 123.473576 W 48.362246 N; scaleValue 1; timeFile resNum 10009; speedUnits knots; 
+--
+--Eddy Slack after Ebb Tide
+MESSAGE createMover;TO Juan de Fuca Map;TYPE Cats; NAME Eddy_ETS.cur;PATH resnum 10010;
+MESSAGE setfield;TO Eddy_ETS.cur; scaleType constant;refP 123.307368 W 48.392572 N; scaleValue 1; timeFile resNum 10011; speedUnits knots; 
+--
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Strait of Juan de Fuca;
+-------------------------------------------
+
+
+[WMSG 10010]
+-------------------------------------------
+-----------Storm Induced Surface Current Reversals-------------------
+--$V9 is the user's choice for simulating a current reversal at the entrance to the Strait
+--
+-- user selected "normal" conditions
+set Strength_ReverseQ1 0 
+set User_ChoiceQ1 Normal conditions
+--
+-- mild current reversal --
+set Strength_ReverseQ2  0.1
+set User_ChoiceQ2 Mild current reversal
+--
+-- moderate current reversal --
+set Strength_ReverseQ3  0.35
+set User_ChoiceQ3 Moderate current reversal
+--
+-- strong current reversal --
+set Strength_ReverseQ4  0.5
+set User_ChoiceQ4 Strong current reversal
+--
+LHSTEXT {User_ChoiceQ{$V9}};
+
+MESSAGE setfield; TO WACReverse2.cur; scaleType constant; refP 124.583333 W 48.45 N; scaleValue {Strength_ReverseQ{$V9}};
+
+--DEBUGSTR Strength_Reverse = {Strength_Reverse}
+--

@@ -16,6 +16,51 @@ define([
     'lib/bootstrap.file-input'
 ], function($, _, Backbone, models, util, geo, rivets) {
 
+
+    var DeferredManager = function() {
+        this.deferreds = [];
+    };
+
+    DeferredManager.prototype = {
+        add: function(fn) {
+            this.deferreds.push(fn);
+        },
+
+        /*
+         Loop through the "deferred" function calls in `this.deferreds` and call
+         them. If they returned a result, assume it was a $.Deferred object
+         and add it to the local `deferreds` array.
+
+         Finally, attach `done` and `fail` handlers to the list of deferreds, so
+         that when all deferreds complete, we resolve the call to `run` via
+         a $.Deferred object `dfd`, or if any fail, we fail `dfd`.
+         */
+        run: function() {
+            var dfd = $.Deferred();
+            var deferreds = [];
+
+            _.each(this.deferreds, function(fn) {
+                var result = fn();
+
+                if (result && typeof result.done === 'function') {
+                    deferreds.push(result);
+                }
+            });
+
+            $.when.apply(null, deferreds).done(function() {
+                dfd.resolve();
+            }).fail(function() {
+                dfd.fail();
+            });
+
+            return dfd;
+        }
+    };
+
+
+    var deferreds = new DeferredManager();
+
+
     var FormViewContainer = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);
@@ -25,6 +70,7 @@ define([
         add: function(view) {
             var _this = this;
             this.formViews[view.id] = view;
+
             view.on(FormView.CANCELED, function(form) {
                 _this.trigger(FormView.CANCELED, form);
             });
@@ -34,6 +80,19 @@ define([
             view.on(FormView.MESSAGE_READY, function(message) {
                 _this.trigger(FormView.MESSAGE_READY, message);
             });
+
+            view.on(FormView.SHOW_FORM, this.show);
+
+            return view;
+        },
+
+        remove: function(id) {
+            if (_.has(id, 'id')) {
+                id = id.id;
+            }
+            var view = this.formViews[id];
+            delete this.formViews[id];
+            return view;
         },
 
         get: function(formId) {
@@ -44,6 +103,31 @@ define([
             _.each(this.formViews, function(formView, key) {
                 formView.hide();
             });
+        },
+
+        /*
+         Show the form with `formId`.
+         */
+        show: function(formId, success, cancel, customButtons, defaults) {
+            var formView = this.get(formId);
+
+            if (formView) {
+                if (success) {
+                    formView.once(FormView.SUBMITTED, success);
+                }
+                if (cancel) {
+                    formView.once(FormView.CANCELED, cancel);
+                }
+                if (customButtons && customButtons.length) {
+                    formView.setCustomButtons(customButtons);
+                }
+                if (defaults) {
+                    formView.defaults = defaults;
+                }
+
+                formView.reload();
+                formView.show(true);
+            }
         }
     });
 
@@ -68,6 +152,15 @@ define([
 
             this.model = this.options.model;
 
+            // Allow the creator to override a prototype default.
+            if (this.options.validator) {
+                this.validator = this.options.validator;
+            }
+
+            if (this.validator) {
+                this.validator.bind('error', this.handleValidatorError);
+            }
+
             if (this.model) {
                 this.model.on('destroy', function() {
                     _this.model.clear();
@@ -81,8 +174,47 @@ define([
             }
 
             this.defaults = this.options.defaults;
+            this.gnomeModel = this.options.gnomeModel;
+
             this.setupDatePickers();
             $('.error').tooltip({selector: "a"});
+        },
+
+        /*
+         Validate the form's model without submitting -- only check that the
+         data conforms to a schema.
+
+         This is used when deferring a submit, when we want to verify that the
+         data on the form is correct without actually saving it.
+         */
+        validate: function() {
+            if (!this.validator || !this.model) {
+                return;
+            }
+
+            this.prepareSubmitData();
+            return this.validator.save(this.model.toJSON());
+        },
+
+        /*
+         When we validate a form separately from submitting the model, we
+         send the model's current attributes to a /validate web service that
+         only checks that they conform to a schema.
+
+         If the object has errors, we'll show them as if they were errors on
+         the model itself -- which they are.
+         */
+        handleValidatorError: function() {
+            // XXX: Why does this method get called multiple times on the
+            // WindMover form? And the second time, why is `this.model` null?
+            if (!this.model) {
+                console.log("Error: FormView's model is null. Cannot handle " +
+                            "validator errors.", this, this.validator.errors);
+                return;
+            }
+
+            this.model.errors = this.validator.errors;
+            this.handleServerError();
         },
 
         showErrorForField: function(field, error) {
@@ -191,27 +323,40 @@ define([
         },
 
         show: function() {
-            this.prepareForm();
-            this.clearErrors();
-            this.bindData();
-            $('#main-content').addClass('hidden');
-            this.$el.removeClass('hidden');
+            throw new Error('You must override show() in a subclass');
         },
 
         hide: function() {
-            this.$el.addClass('hidden');
-            $('#main-content').removeClass('hidden');
+            throw new Error('You must override hide() in a subclass');
+        },
+
+        prepareSubmitData: function() {
+            // Override in subclasses if you want to separate preparing the
+            // model for submission from submitting -- e.g. for extra steps
+            // needed before validation (see WindMoverFormView).
+            return;
         },
 
         submit: function() {
+            var _this = this;
+
+            this.prepareSubmitData();
+
             if (this.collection) {
                 this.collection.add(this.model);
             }
-            this.model.save();
+
+            // Return a jQuery Promise object.
+            return this.model.save(null, {
+                success: function() {
+                    _this.trigger(FormView.SUBMITTED);
+                }
+            });
         },
 
         cancel: function() {
             this.resetModel();
+            this.trigger(FormView.CANCELED);
         },
 
         resetModel: function() {
@@ -345,9 +490,11 @@ define([
             this.setupModelEvents();
         }
     }, {
+        SUBMITTED: 'formView.submitted',
         CANCELED: 'formView:canceled',
         REFRESHED: 'formView:refreshed',
-        MESSAGE_READY: 'formView:messageReady'
+        MESSAGE_READY: 'formView:messageReady',
+        SHOW_FORM: 'formView:showForm'
     });
 
 
@@ -358,6 +505,8 @@ define([
         initialize: function(options) {
             JQueryUIModalFormView.__super__.initialize.apply(this, [options]);
             var _this = this;
+            var height = this.$el.attr('data-height');
+            var width = this.$el.attr('data-width');
 
             // The default set of UI Dialog widget options. A 'dialog' field
             // may be passed in with `options` containing additional options,
@@ -365,14 +514,16 @@ define([
             var opts = $.extend({
                 zIndex: 5000,
                 autoOpen: false,
+                height: height,
+                width: width,
                 buttons: {
+                    Save: function() {
+                        _this.submit();
+                    },
+
                     Cancel: function() {
                         _this.cancel();
                     },
-
-                    Save: function() {
-                        _this.submit();
-                    }
                 },
                 close: this.close,
                 beforeClose: this.beforeClose
@@ -387,7 +538,8 @@ define([
         },
 
         beforeClose: function() {
-            if (!this.wasCancelled && this.model && this.model.dirty) {
+            if (!this.wasCancelled && this.model && this.model.dirty
+                    && !this.isDeferred) {
                 if (!window.confirm('You have unsaved changes. Really close?')) {
                     return false;
                 }
@@ -408,7 +560,7 @@ define([
             if (!this.model) {
                 this.$el.dialog("close");
             }
-            JQueryUIModalFormView.__super__.submit.apply(this, arguments);
+            return JQueryUIModalFormView.__super__.submit.apply(this, arguments);
         },
 
         setupModelEvents: function() {
@@ -426,6 +578,13 @@ define([
          */
         show: function() {
             this.wasCancelled = false;
+
+            // Load defaults if the form is being used to show a new model.
+            // The lack of ID indicates that the model has not yet been saved.
+            if (this.defaults && !this.model.id) {
+                this.model.set(this.defaults);
+            }
+
             this.clearErrors();
             this.prepareForm();
             this.$el.dialog('open');
@@ -439,12 +598,324 @@ define([
 
         close: function() {
             this.closeDialog();
+            if (this.originalButtons) {
+                this.$el.dialog('option', 'buttons', this.originalButtons);
+            }
             this.resetModel();
         },
 
         closeDialog: function() {
             this.$el.dialog('close');
+        },
+
+        addDeferredButton: function(button) {
+            var _this = this;
+
+            deferreds.add(function() {
+                // The result of the function may be a jQuery
+                // Deferred object, e.g. a 'submit' function,
+                // so return the result (a Deferred or Promise).
+                var val = _this[button.fnName]();
+                _this.isDeferred = false;
+                return val;
+            });
+
+            this.close();
+
+            // XXX: Do we really want to trigger these events
+            // for deferred methods? Right now we have to because
+            // FormViewContainer is listening to them so we can
+            // continue in a Wizard-style form; however, is there
+            // a better way of handling that? And if we do want
+            // to trigger these events, should they really be
+            // hard-coded like this?
+            if (button.fnName === 'submit') {
+                this.trigger(FormView.SUBMITTED);
+            } else if (button.fnName === 'cancel') {
+                this.trigger(FormView.CANCELED);
+            }
+        },
+
+        setCustomButtons: function(buttonDefinitions) {
+            var buttons = [];
+            var _this = this;
+
+            if (!buttonDefinitions || !buttonDefinitions.length) {
+                return;
+            }
+
+            _.each(buttonDefinitions, function(button, index, list) {
+                buttons.push({
+                    text: button.text,
+                    click: function() {
+                        if (!button.deferred) {
+                            _this[button.fnName]();
+                            return;
+                        }
+
+                        _this.isDeferred = true;
+
+                        _this.validate().done(function() {
+                            _this.addDeferredButton(button);
+                        });
+                    }
+                });
+            });
+
+            this.originalButtons = this.$el.dialog('option', 'buttons');
+            this.$el.dialog('option', 'buttons', buttons);
         }
+    });
+
+
+    var MultiStepFormView = JQueryUIModalFormView.extend({
+        events: {
+            'click .ui-button.next': 'next',
+            'click .ui-button.back': 'back'
+        },
+
+        initialize: function(options) {
+            // Extend prototype's events with ours.
+            this.events = _.extend({}, FormView.prototype.events, this.events);
+
+            // Have to initialize super super before showing current step.
+            MultiStepFormView.__super__.initialize.apply(this, arguments);
+
+            this.annotateSteps();
+        },
+
+        /*
+         Annotate each step div with its step number. E.g., the first step will
+         have step number 0, second step number 1, etc.
+         */
+        annotateSteps: function() {
+            _.each(this.$el.find('.step'), function(step, idx) {
+                $(step).attr('data-step', idx);
+            });
+        },
+
+        getCurrentStep: function() {
+            return this.$el.find('.step').not('.hidden');
+        },
+
+        getCurrentStepNum: function() {
+            return this.getCurrentStep().data('step');
+        },
+
+        getStep: function(stepNum) {
+            return this.$el.find('.step[data-step="' + stepNum + '"]');
+        },
+
+        getNextStep: function() {
+            var currentStep = this.getCurrentStep();
+            var nextStepNum = currentStep.data('step') + 1;
+            return this.getStep(nextStepNum);
+        },
+
+        getPreviousStep: function() {
+            var currentStep = this.getCurrentStep();
+            var previousStepNum = currentStep.data('step') - 1;
+            // Minimum step number is 0.
+            previousStepNum = previousStepNum < 0 ? 0 : previousStepNum;
+            return this.getStep(previousStepNum);
+        },
+
+        show: function() {
+            this.showStep(this.getStep(0));
+            MultiStepFormView.__super__.show.apply(this, arguments);
+        },
+
+        showStep: function(step) {
+            if (step.length) {
+                this.$el.find('.step').not(step).addClass('hidden');
+                step.removeClass('hidden');
+            }
+        },
+
+        next: function() {
+            var nextStep = this.getNextStep();
+            this.showStep(nextStep);
+        },
+
+        back: function() {
+            var previousStep = this.getPreviousStep();
+            this.showStep(previousStep);
+        }
+    });
+
+
+    var LocationFileWizardFormView = MultiStepFormView.extend({
+        initialize: function(options) {
+            LocationFileWizardFormView.__super__.initialize.apply(this, arguments);
+
+            _.bindAll(this);
+
+            this.widget = this.$el.dialog('widget');
+            this.widget.on('click', '.ui-button.next', this.next);
+            this.widget.on('click', '.ui-button.back', this.back);
+            this.widget.on('click', '.ui-button.cancel', this.cancel);
+            this.widget.on('click', '.ui-button.finish', this.finish);
+            this.widget.on('click', '.ui-button.references', this.showReferences);
+
+            this.locationFileMeta = this.options.locationFileMeta;
+
+            this.references = this.$el.find('div.references').dialog({
+                autoOpen: false,
+                buttons: {
+                    Ok: function() {
+                        $(this).dialog("close");
+                    }
+                }
+            });
+
+            this.setButtons();
+        },
+
+        setStepSize: function() {
+            var step = this.getCurrentStep();
+            var height = step.data('height');
+            var width = step.data('width');
+
+            if (height) {
+                this.$el.dialog('option', 'height', parseInt(height));
+            }
+            if (width) {
+                this.$el.dialog('option', 'width', parseInt(width));
+            }
+        },
+
+        getDataBindings: function() {
+            return {wizard: this.model};
+        },
+
+        resetModel: function() {
+            // Don't reset the model for this form
+            return;
+        },
+
+        /*
+         Finish the wizard. In order:
+
+            - Load the location file parameters into the user's current model
+            - Run 'deferred' functions -- model-related form submits
+            - Save the location-file-specific parameters the user selected
+            - Reload the page
+         */
+        finish: function() {
+            var _this = this;
+             deferreds.run().done(function() {
+                 _this.model.save().done(function() {
+                     // TODO: Trigger event, let AppView handle this.
+                     util.refresh();
+                 }).fail(function() {
+                     console.log('Error submitting the location file wizard.');
+                     alert('Error setting up your model. Please try again.');
+                 });
+             }).fail(function() {
+                 console.log('Error running deferred methods.');
+                 alert('Error setting up your model. Please try again.');
+             });
+
+        },
+
+        loadLocationFile: function() {
+            var model = new models.GnomeModelFromLocationFile({
+                location_name: this.locationFileMeta.get('filename')
+            }, {
+                gnomeModel: this.gnomeModel
+            });
+
+            return model.save();
+        },
+
+        showReferences: function() {
+            this.references.dialog('open');
+        },
+
+        setButtons: function() {
+            var step = this.getCurrentStep();
+            var buttons = step.find('.custom-dialog-buttons');
+            if (buttons.length) {
+                var buttonPane = this.widget.find('.ui-dialog-buttonpane');
+                buttonPane.empty();
+                buttons.clone().appendTo(buttonPane).removeClass('hidden');
+            }
+        },
+
+        getCustomStepButtons: function(step) {
+            var buttons = [];
+            var customFormButtons = step.find('.custom-dialog-buttons').find(
+                '.ui-button');
+
+            if (customFormButtons.length) {
+                _.each(customFormButtons, function(el, index, list) {
+                    var fnName = $(el).data('function-name');
+                    if (!fnName) {
+                        return;
+                    }
+                    buttons.push({
+                        deferred: $(el).data('deferred'),
+                        text: $(el).text(),
+                        fnName: fnName
+                    });
+                })
+            }
+
+            return buttons;
+        },
+
+        showStep: function(step) {
+            LocationFileWizardFormView.__super__.showStep.apply(this, [step]);
+            this.setButtons();
+
+            var form = step.data('show-form');
+            if (form) {
+                this.widget.addClass('hidden');
+                this.showForm(form, this.getCustomStepButtons(step));
+            } else {
+                this.widget.removeClass('hidden');
+                this.setStepSize();
+            }
+        },
+
+        showForm: function(form, customButtons) {
+            var _this = this;
+            var nextStep = this.getNextStep();
+            var previousStep = this.getPreviousStep();
+
+            // Use closures to keep a reference to the actual next and previous
+            // steps for this form.
+            function showNextStep() {
+                _this.showStep(nextStep)
+            }
+
+            function showPreviousStep() {
+                _this.showStep(previousStep);
+            }
+
+            function trigger(defaults) {
+                _this.trigger(FormView.SHOW_FORM, form, showNextStep,
+                    showPreviousStep, customButtons, defaults);
+            }
+
+            if (form === 'model-settings') {
+                var locationFile = new models.LocationFile({
+                    filename: this.locationFileMeta.get('filename')
+                }, {
+                    gnomeModel: this.gnomeModel
+                });
+
+                locationFile.once('sync', function(model) {
+                    trigger(model.attributes);
+                });
+
+                locationFile.fetch();
+            } else {
+                trigger();
+            }
+        }
+    }, {
+        LOCATION_CHOSEN: 'locationFileWizardFormView:locationChosen'
     });
 
 
@@ -569,6 +1040,8 @@ define([
             return this.model;
         },
 
+        validator: new models.MapValidator(),
+
         // Never reset the model
         resetModel: function() {
             return;
@@ -595,6 +1068,8 @@ define([
                 change: this.updateSelection
             });
         },
+
+        validator: new models.CustomMapValidator(),
 
         updateSelection: function(rect) {
             var _this = this;
@@ -623,7 +1098,6 @@ define([
 
         show: function() {
             this.model.clear();
-            this.model.set(this.defaults);
             this.map.clearSelection();
             // Have to set these manually since reload() doesn't get called
             this.setupModelEvents();
@@ -666,6 +1140,8 @@ define([
             this.setupModelEvents();
         },
 
+        validator: new models.MapValidator(),
+
         // Always use the same model
         getModel: function(id) {
             return this.model;
@@ -675,7 +1151,6 @@ define([
             return {map: this.model};
         }
     });
-
 
 
     /*
@@ -704,6 +1179,8 @@ define([
             this.events = _.extend({}, FormView.prototype.events, this.events);
         },
 
+        validator: new models.WindMoverValidator(),
+
         events: {
             'click .add-time': 'addButtonClicked',
             'click .edit-time': 'editButtonClicked',
@@ -713,7 +1190,7 @@ define([
             'click .delete-time': 'trashButtonClicked',
             'click .query-source': 'querySource',
             'change .units': 'renderTimeTable',
-            'change .type': 'typeChanged',
+            'change .type': 'typeChanged'
         },
 
         getDataBindings: function() {
@@ -804,7 +1281,9 @@ define([
                 return;
             }
 
-            models.getNwsWind(coords, this.nwsWindsReceived);
+            models.getNwsWind(coords, {
+                success: this.nwsWindsReceived
+            });
         },
 
         setupWindMap: function() {
@@ -929,22 +1408,38 @@ define([
             return this.$el.find('.time-list');
         },
 
-        getWindIdsWithErrors: function() {
-            var valuesWithErrors = [];
+        /*
+         Return an object of timeseries errors keyed to their index in the
+         Wind's timeseries array.
+
+         This method has a side effect -- it consumes timeseries-related errors
+         from `this.model.errors` and removes them from that array.
+
+         XXX: Is this method name clear? It refers to timeseries data not
+         Wind data, and those semantics may overlap here and elsewhere.
+         */
+        getTimeseriesErrors: function() {
+            var errors = {};
+            var newErrors = [];
 
             if (!this.model.errors) {
-               return valuesWithErrors;
+               return errors;
             }
 
             _.each(this.model.errors, function(error) {
                 var parts = error.name.split('.');
 
                 if (parts.length > 1 && parts[1] === 'timeseries') {
-                    valuesWithErrors.push(parts[2]);
+                    errors[parts[2]] = error;
+                    return;
                 }
+
+                newErrors.push(error);
             });
 
-            return valuesWithErrors;
+            this.model.errors = newErrors;
+
+            return errors;
         },
 
         renderTimeTable: function() {
@@ -953,7 +1448,6 @@ define([
             var timeseries = wind.get('timeseries');
             var units = wind.get('units');
             var rows = [];
-            var IdsWithErrors = this.getWindIdsWithErrors();
 
             // Clear out any existing rows.
             this.getTimesTable().find('tr').not('.table-header').remove();
@@ -984,8 +1478,9 @@ define([
 
                 row.attr('data-wind-id', index);
 
-                if (_.contains(IdsWithErrors, index)) {
+                if (wind.timeseriesErrors && wind.timeseriesErrors[index]) {
                     row.addClass('error');
+                    row.data('error', wind.timeseriesErrors[index]);
                 }
 
                 rows.push(row);
@@ -1010,7 +1505,7 @@ define([
             return [moment().format(), speed.val(), direction.val()];
         },
 
-        submit: function() {
+        prepareSubmitData: function() {
             // Clear the add time form in the variable wind div as those
             // values must be "saved" in order to mean anything.
             var variable = this.$el.find('.variable-wind');
@@ -1021,7 +1516,7 @@ define([
             var windUpdatedAt = this.getFormDate(
                 this.$el.find('.updated_at_container'));
 
-            if(windUpdatedAt) {
+            if (windUpdatedAt) {
                 wind.set('updated_at', windUpdatedAt);
             }
 
@@ -1034,7 +1529,7 @@ define([
                     'delete variable wind data. Go ahead?';
 
                 if (!window.confirm(message)) {
-                   return;
+                    return;
                 }
             }
 
@@ -1052,8 +1547,6 @@ define([
 
                 wind.set('timeseries', timeseries);
             }
-
-            WindMoverFormView.__super__.submit.apply(this, arguments);
         },
 
         getMoverType: function() {
@@ -1325,33 +1818,29 @@ define([
             var _this = this;
             var wind = this.model.get('wind');
             var timeseries = wind.get('timeseries');
+            var timeseriesErrors = this.getTimeseriesErrors();
+            var timeseriesIdsWithErrors = _.keys(timeseriesErrors).sort();
 
-            this.renderTimeTable();
-
-            var windIdsWithErrors = this.getWindIdsWithErrors();
-
-            if (windIdsWithErrors.length) {
-                window.alert('Your wind data has errors. The errors have been' +
-                    ' highlighted. Please resolve them and save again.');
-
-                this.$el.find('.wind-data-link').find('a').tab('show');
-
+            if (timeseriesIdsWithErrors.length) {
                 if (timeseries.length > 1) {
-                    this.showEditFormForWind(windIdsWithErrors[0]);
+                    window.alert('Your wind data has errors. The errors have been' +
+                        ' highlighted. Please resolve them and save again.');
+
+                    this.$el.find('.wind-data-link').find('a').tab('show');
+
+                    this.showEditFormForWind(timeseriesIdsWithErrors[0]);
+
+                    // XXX: Do we need to make the dialog larger anymore?
+                    // This was to accommodate the new space needed for error
+                    // messages.
+                    this.$el.dialog('option', 'height', 600);
                 }
 
-                // Always mark up the table because a user with a constant
-                // wind mover could switch to variable wind and edit the value.
-                _.each(windIdsWithErrors, function(id) {
-                    var row = _this.getRowForWindId(id);
-
-                    if (row.length) {
-                        row.addClass('error');
-                    }
-                });
+                // Save timeseries errors on the wind object.
+                wind.timeseriesErrors = timeseriesErrors;
             }
 
-            this.$el.dialog('option', 'height', 600);
+            this.renderTimeTable();
 
             // After this is called, model.errors will be null.
             WindMoverFormView.__super__.handleServerError.apply(this, arguments);
@@ -1379,10 +1868,15 @@ define([
          method is called, so we need to reapply them.
          */
         show: function() {
-            this.model = new models.WindMover(this.defaults);
+            // XXX: Why is this wind object lingering in `this.defaults`?
+            this.defaults.wind = new models.Wind({units: 'knots'});
+            this.model = new models.WindMover(this.defaults, {
+                gnomeModel: this.gnomeModel
+            });
             this.setupModelEvents();
             this.model.on('sync', this.closeDialog);
             AddWindMoverFormView.__super__.show.apply(this);
+
         }
     });
 
@@ -1403,6 +1897,8 @@ define([
             this.events = _.extend({}, FormView.prototype.events, this.events);
         },
 
+        validator: new models.SurfaceReleaseSpillValidator(),
+
         getDataBindings: function() {
             return {spill: this.model};
         },
@@ -1413,18 +1909,18 @@ define([
         },
 
         show: function(startCoords, endCoords) {
+            SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
+
             if (startCoords) {
                 this.model.set('start_position', [startCoords[0], startCoords[1], 0]);
             }
             if (endCoords) {
                 this.model.set('end_position', [endCoords[0], endCoords[1], 0]);
             }
-            SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
         },
 
-        submit: function() {
+        prepareSubmitData: function() {
             this.model.set('release_time', this.getFormDate(this.getForm()));
-            SurfaceReleaseSpillFormView.__super__.submit.apply(this, arguments);
         },
 
         cancel: function() {
@@ -1483,7 +1979,9 @@ define([
         },
 
         show: function(coords) {
-            this.model = new models.SurfaceReleaseSpill(this.defaults);
+            this.model = new models.SurfaceReleaseSpill(this.defaults, {
+                gnomeModel: this.gnomeModel
+            });
             this.setupModelEvents();
             AddSurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
         }
@@ -1502,6 +2000,13 @@ define([
             GnomeSettingsFormView.__super__.initialize.apply(this, [opts]);
         },
 
+        validator: new models.GnomeModelValidator(),
+
+        // Always use the same model when reloading.
+        reload: function() {
+            GnomeSettingsFormView.__super__.reload.apply(this, [this.model.id]);
+        },
+
         // Always return the same model.
         getModel: function(id) {
             return this.model;
@@ -1512,13 +2017,20 @@ define([
             return;
         },
 
-        submit: function() {
+        prepareSubmitData: function() {
             this.model.set('start_time', this.getFormDate(this.getForm()));
-            GnomeSettingsFormView.__super__.submit.apply(this, arguments);
         },
 
-        show: function() {
+        show: function(withDefaults) {
             GnomeSettingsFormView.__super__.show.apply(this, arguments);
+
+            // XXX: Do this here instead of in prototype because we always
+            // have an ID. Should come before we set the start_time_container
+            // because it will set the model's start_time.
+            if (withDefaults) {
+                this.model.set(this.defaults);
+            }
+
             this.setDateFields('.start_time_container', moment(this.model.get('start_time')));
         }
     });
@@ -1537,16 +2049,19 @@ define([
             RandomMoverFormView.__super__.initialize.apply(this, [opts]);
         },
 
+        validator: new models.RandomMoverValidator(),
+
         show: function() {
             RandomMoverFormView.__super__.show.apply(this, arguments);
             this.setDateFields('.active_start_container', this.model.get('active_start'));
             this.setDateFields('.active_stop_container', this.model.get('active_stop'));
         },
 
-        submit: function() {
-            this.model.set('active_start',  this.getFormDate('.active_start_container'));
-            this.model.set('active_stop',  this.getFormDate('.active_stop_container'));
-            RandomMoverFormView.__super__.submit.apply(this, arguments);
+        prepareSubmitData: function() {
+            this.model.set('active_start', this.getFormDate(
+                this.$el.find('.active_start_container')));
+            this.model.set('active_stop', this.getFormDate(
+                this.$el.find('.active_stop_container')));
         },
 
         getDataBindings: function() {
@@ -1569,14 +2084,11 @@ define([
         },
 
         show: function() {
-            this.model = new models.RandomMover(this.defaults);
+            this.model = new models.RandomMover(this.defaults, {
+                gnomeModel: this.gnomeModel
+            });
             this.setupModelEvents();
             AddRandomMoverFormView.__super__.show.apply(this, arguments);
-        },
-
-        submit: function() {
-            this.collection.add(this.model);
-            AddRandomMoverFormView.__super__.submit.apply(this, arguments);
         }
     });
 
@@ -1597,7 +2109,10 @@ define([
         FormView: FormView,
         FormViewContainer: FormViewContainer,
         GnomeSettingsFormView: GnomeSettingsFormView,
-        ModelNotFoundException: ModelNotFoundException
+        MultiStepFormView: MultiStepFormView,
+        LocationFileWizardFormView: LocationFileWizardFormView,
+        ModelNotFoundException: ModelNotFoundException,
+        deferreds: deferreds
     };
 
 });

@@ -1,0 +1,237 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10003
+10010
+10011
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Galveston Bay
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.10;
+-------------------------------------------
+
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME Galveston Bay Map;PATH resnum 10003
+--
+--tides
+MESSAGE createMover;TO Galveston Bay Map;TYPE Cats; NAME Galveston Tides.CUR;PATH resnum 10004
+MESSAGE setfield;TO Galveston Tides.CUR; scaleType constant;refP 94.781333 W 29.343333 N; scaleValue 1; timeFile resNum 10005;
+--
+--river - Trinity
+MESSAGE createMover;TO Galveston Bay Map;TYPE Cats; NAME Trinity River.CUR;PATH resnum 10006
+--
+--river - Buffalo Bayou and San Jacinto combined
+MESSAGE createMover;TO Galveston Bay Map;TYPE Cats; NAME BuffBayouSanJacinto.CUR;PATH resnum 10007
+--
+--wind driven
+MESSAGE createMover;TO Galveston Bay Map;TYPE Component; NAME Wind Driven Currents; 
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 1; NAME Wind NWat20kt.cur;PATH resnum 10009;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 94.816333 W 29.451049 N; 
+MESSAGE setfield;TO Wind Driven Currents; pat1Angle 315; pat1Speed 20; pat1SpeedUnits knots; pat1ScaleToValue 0.1419;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 2; NAME Wind NEat20kt.cur;PATH resnum 10010;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 94.816333 W 29.451049 N ; 
+MESSAGE setfield;TO Wind Driven Currents; pat2Angle 45; pat2Speed 20; pat2SpeedUnits knots; pat2ScaleToValue 0.063554;
+MESSAGE setfield;TO Wind Driven Currents; ScaleBy windStress;
+--
+--PH Robinson Steam Plant
+MESSAGE createMover;TO Galveston Bay Map;Type Cats; NAME PHRobinson.cur; PATH resnum 10008
+MESSAGE setfield;TO PHRobinson.CUR;scaleValue 0.35; scaleType constant;refP 94.958593 W 29.506538 N;
+--
+--Offshore Currents
+MESSAGE createMover;TO Galveston Bay Map;Type Cats; NAME Offshore.cur; PATH resnum 10011
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Galveston Bay;
+-------------------------------------------
+
+
+[WMSG 10003]
+-------------------------------------------
+-----------TRINITY RIVER-------------------
+set cfs_to_m3PerSec  0.0283168
+if $V7 < 4
+	set TrinQ1  80000 
+	set TrinQ2  40000 
+	set TrinQ3  20000 
+	set T_transport TrinQ{$V7}
+	-- these are all in cfs
+	LHSTEXT Trinity River flow: {{T_transport} / 1000} kcfs;
+	set T_transport {{T_transport}*{cfs_to_m3PerSec}}
+else
+	-- user entered value for the Trinity River via  popup 9
+	-- $10 is TrinStage
+	Set TrinStage {$10}
+	-- If the Trinity River stage is below 15, we'll consider the flow 0, otherwise calculate.
+	if {TrinStage} < 15
+		set T_transport {0}
+	else	
+		set a9 {-0.0003237200497277822}*{pow {TrinStage} 9}
+		set a8 {0.05730374402263}*{pow {TrinStage} 8}
+		set a7 {-4.39356026997217}*{pow {TrinStage} 7}
+		set a6 {190.3947923307952}*{pow {TrinStage} 6}
+		set a5 {-5091.414135633288}*{pow {TrinStage} 5}
+		set a4 {85706.93130551324}*{pow {TrinStage} 4}
+		set a3 {-878585.6324310122}*{pow {TrinStage} 3}
+		set a2 {4860075.540379636}*{pow {TrinStage} 2}
+		set a1 {-9059453.584957751}*{pow {TrinStage} 1}
+		set a0 {-17464153.86161943}
+		set b1 {a9}+{a8}
+		set b2 {a7}+{a6}
+		set b3 {a5}+{a4}
+		set b4 {a3}+{a2}
+		set b5 {a1}+{a0}
+		set T_transport {{b1}+{b2}}+{{b3}+{b4}}
+		set T_transport {{T_transport}+{b5}}
+		-- this is in cfs
+	ENDIF
+	LHSTEXT CJ debug TrinStage {TrinStage};
+	LHSTEXT Trinity River flow: {ROUND {{T_transport} / {1000}}} kcfs;
+	set T_transport {{T_transport}*{cfs_to_m3PerSec}}
+ENDIF
+set UtoQratio  0.6698 / 15373
+--					[m/s] /  [m3/s] 
+--  ratio of orig velocity within scaling triangle to total transport for river boundary in orig pattern 
+set v_Trinity_Scaling  {UtoQratio} * {T_transport}
+--  multiply the original velocity to transport ratio by the user transport to get user scaling velocity 
+set v_T_scale  {v_Trinity_Scaling} 
+MESSAGE setfield;TO Trinity River.CUR;scaleValue {v_T_scale}; scaleType constant;refP 94.703728 W 29.74007 N;
+--DEBUGSTR v_T_scale = {v_T_scale}
+--DEBUGSTR T_transport = {T_transport}
+--
+-----------SAN JACINTO RIVER-------------------
+--
+if $V12 < 4
+	set SJ_Q1  250000 
+	set SJ_Q2  130000 
+	set SJ_Q3   40000 
+	set SJ_transport SJ_Q{$V12}
+	-- these are all in cfs
+	LHSTEXT San Jacinto River flow: {{SJ_transport}/{1000}} kcfs;
+	set SJ_transport {{SJ_transport}*{cfs_to_m3PerSec}}
+else
+	-- user entered value for the San Jacinto River via  popup 14
+	-- $15 is SJ_Stage
+	set SJ_Stage {$15}
+	set a7 {-0.0008962534216177780}*{pow {SJ_Stage} 7}
+	set a6 {0.08090710430776}*{pow {SJ_Stage} 6}
+	set a5 {-2.87704742826949}*{pow {SJ_Stage} 5}
+	set a4 {52.01494119132756}*{pow {SJ_Stage} 4}
+	set a3 {-497.7695044340068}*{pow {SJ_Stage} 3}
+	set a2 {2598.874761983057}*{pow {SJ_Stage} 2}
+	set a1 {-2873.610938411168}*{pow {SJ_Stage} 1}
+	set a0 {2078.345299841351}
+	set b2 {a7}+{a6}
+	set b3 {a5}+{a4}
+	set b4 {a3}+{a2}
+	set b5 {a1}+{a0}
+	set SJ_transport {{b3}+{b2}}+{{b5}+{b4}}
+		-- this is in cfs
+	LHSTEXT San Jacinto River flow: {ROUND {{SJ_transport}/1000}} kcfs;
+	set SJ_transport {{SJ_transport}*{cfs_to_m3PerSec}}
+ENDIF
+-- Continued after Buffalo Bayou
+--
+-----------BUFFALO BAYOU-------------------
+--
+if $V17 < 4
+	set BB_Q1  9000 
+	set BB_Q2  5000 
+	set BB_Q3  2000 
+	set BB_transport BB_Q{$V17}
+	-- these are all in cfs
+	LHSTEXT Buffalo Bayou flow: {{BB_transport}/{1000}} kcfs;
+	set BB_transport {{BB_transport}*{cfs_to_m3PerSec}}
+else
+	-- user entered value for the Buffalo Bayou via  popup 19
+	-- $20 is BB_Stage
+	Set BB_Stage {$20}
+	set orderMagnitude {pow 10 2}
+	set a7 {-0.00000000167309}*{pow {BB_Stage} 7}
+	set a6 {0.00000021083008}*{pow {BB_Stage} 6}
+	set a5 {-0.00001113042545}*{pow {BB_Stage} 5}
+	set a4 {0.00035192710537}*{pow {BB_Stage} 4}
+	set a3 {-0.00835199297309}*{pow {BB_Stage} 3}
+	set a2 {0.19852883938503}*{pow {BB_Stage} 2}
+	set a1 {0.59674875618414}*{pow {BB_Stage} 1}
+	set a0 {-2.70649020121096}
+	set b2 {a7}+{a6}
+	set b3 {a5}+{a4}
+	set b4 {a3}+{a2}
+	set b5 {a1}+{a0}
+	set BB_transport {{b3}+{b2}}+{{b5}+{b4}}
+	set BB_transport {{BB_transport}*{orderMagnitude}}
+		-- this is in cfs
+	LHSTEXT Buffalo Bayou flow: {ROUND {{BB_transport}/{1000}}} kcfs;
+	set BB_transport {{BB_transport}}
+ENDIF
+--
+-----------COMBINED BUFF BAYOU AND SAN JACINTO SCALING-----------------
+-- Though two different rivers, since enter bay domain in same place will combine transports
+-- so that only one current pattern is needed and location file will run faster.
+--
+set UtoQratio  0.7048 / {5.12238 * 1000}
+--					[m/s] /  [m3/s] 
+--  ratio of orig velocity within scaling triangle to total transport for river boundary in orig pattern
+--
+--  Now combine the transports of the two rivers 
+set BB_SJ_transport {{BB_transport} + {SJ_transport}}
+--
+set v_BB_SJ_Scaling  {UtoQratio} * {BB_SJ_transport}
+--  multiply the original velocity to transport ratio by the user transport to get user scaling velocity 
+set v_scale  {v_BB_SJ_Scaling} 
+MESSAGE setfield;TO BuffBayouSanJacinto.CUR;scaleValue {v_scale}; scaleType constant;refP 95.064864 W 29.756824 N;
+--DEBUGSTR v_scale = {v_scale}
+--DEBUGSTR BB_transport = {BB_transport}
+--DEBUGSTR SJ_transport = {SJ_transport}
+----------------------------------------------
+
+[WMSG 10010]
+--------------------------------------------------------------------------------------
+--
+set B_speed {$7}
+--LHSTEXT B_speed: {$7} m/s;
+set B_direction {$12}
+--LHSTEXT B_direction: {$12} degrees True;
+-- need to transform coordinate to match alongshore direction of 55 degrees True (theta)
+-- then can use trig funtion to find component in alongshore direction, u_alongshelf_B
+set theta_deg {{B_direction} - 55}
+--LHSTEXT theta_deg: {theta_deg};
+set pi 3.14159
+set theta_rad {{{theta_deg} * {pi}} / 180}
+--LHSTEXT theta_rad: {theta_rad};
+--LHSTEXT cos(theta_rad): {cos {theta_rad}};
+set u_alongshelf_B {{B_speed} * {cos {theta_rad}}}
+--LHSTEXT u_alongshelf_B: {u_alongshelf_B};
+-- since B is located outside domain, use ratio of ref point and B cats velocities to transform
+------method 1 : scale by the ratio of the currents at point B and reference point ---------
+--set cat_v_at_B 0.015001
+--set cat_V_at_ref 0.247137
+-- calcuate the alongshore velocity at the reference point (u_alongshelf_ref)
+--set u_alongshelf_ref  {{-1}*{u_alongshelf_B} * {{cat_v_at_ref} / {cat_V_at_B}}}
+------method 2 : scale new reference point by calculated alongshelf current
+set u_alongshelf_ref  {-1}*{u_alongshelf_B}
+-- NEGATIVE ONE COMES BECAUSE CURRENT PATTERN IS IN NEGATIVE DIRECTON. 
+------
+LHSTEXT Offshore flow speed: {u_alongshelf_B} m/s;
+MESSAGE setfield; TO Offshore.cur; scaleType constant; refP 94.7795 W 29.1485 N; scaleValue {u_alongshelf_ref};
+--------------------------------------------------------------------------------------
+
