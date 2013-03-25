@@ -387,9 +387,11 @@ class Tide(Environment, serializable.Serializable):
             self.cy_obj = cy_ossm_time.CyOSSMTime(timeseries=time_value_pair) # this has same scope as CyWindMover object
             self._user_units = kwargs.pop('units',None)    # not sure what these should be
         else:
-            self.filename = os.path.abspath( filename)
+            #self.filename = os.path.abspath( filename)
+            self.filename = filename
             self.cy_obj = self._obj_to_create()
-            self.yeardata = os.path.abspath( yeardata ) # set yeardata
+            #self.yeardata = os.path.abspath( yeardata ) # set yeardata
+            self.yeardata = yeardata # set yeardata
 
         super(Tide,self).__init__(**kwargs)    
 
