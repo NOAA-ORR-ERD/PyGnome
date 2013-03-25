@@ -1,13 +1,18 @@
 '''
 Test all operations for cats mover work
 '''
-from gnome import environment, movers, basic_types
-from gnome.spill_container import TestSpillContainer
-from gnome.utilities import time_utils
 import datetime
+import os
 
 import numpy as np
 import pytest
+
+from gnome import environment, movers, basic_types
+from gnome.spill_container import TestSpillContainer
+from gnome.utilities import time_utils
+
+curr_file= os.path.join( os.path.dirname(__file__), r"SampleData/long_island_sound/tidesWAC.CUR")
+td = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData/long_island_sound/CLISShio.txt"))
 
 def test_exceptions():
     """
@@ -16,10 +21,9 @@ def test_exceptions():
     bad_file=r"SampleData/long_island_sound/tidesWAC.CURX"
     with pytest.raises(ValueError):
         movers.CatsMover(bad_file)
-
-
-curr_file=r"SampleData/long_island_sound/tidesWAC.CUR"
-td = environment.Tide(filename=r"SampleData/long_island_sound/CLISShio.txt")
+        
+    with pytest.raises(TypeError):
+        movers.CatsMover(curr_file, tide=10)
 
 num_le = 3
 start_pos = (-72.5, 41.17, 0)
@@ -96,7 +100,6 @@ def test_scale():
     test setting / getting properties
     """
     c_cats.scale = True
-    print c_cats.scale
     assert c_cats.scale == True
 
 def test_scale_value():

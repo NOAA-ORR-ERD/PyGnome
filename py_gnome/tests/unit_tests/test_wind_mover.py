@@ -26,6 +26,9 @@ def test_exceptions():
         wind = environment.Wind(filename=file_)
         now = datetime.now()
         movers.WindMover(wind, active_start=now, active_stop=now)
+        
+    with pytest.raises(TypeError):
+        movers.WindMover(wind=10)
 
 # tolerance for np.allclose(..) function
 atol = 1e-14

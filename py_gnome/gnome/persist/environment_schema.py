@@ -49,8 +49,7 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
         validators.no_duplicate_datetime(node, cstruct)
         validators.ascending_datetime(node, cstruct)
 
-    
-class UpdateWind(MappingSchema):
+class Wind(Id, MappingSchema):
     """
     validate data after deserialize, before it is given back to pyGnome's 
     from_dict to set state of object
@@ -64,23 +63,10 @@ class UpdateWind(MappingSchema):
     
     updated_at = SchemaNode(LocalDateTime(), default=None, missing=None, )
     units = SchemaNode(String() )
- 
+    
     timeseries = WindTimeSeriesSchema(missing=drop)
-
-class CreateWind( Id, UpdateWind):
-    """
-    Likely to be used when validating the state of the object read in from a save file.
-    The resulting dict is used in new_from_dict(dict) method to construct a new object with same
-    state as originally saved object
-    
-    This is a union of the properties in UpdateWind and Id
-    """
     filename = SchemaNode( String(), missing=drop)
-    pass
 
-class UpdateTide(MappingSchema):
-    filename = SchemaNode( String(), missing=None)
+class Tide(Id, MappingSchema):
+    filename = SchemaNode( String(), missing=drop)
     yeardata = SchemaNode( String() )
-    
-class CreateTide(Id, UpdateTide):
-    pass

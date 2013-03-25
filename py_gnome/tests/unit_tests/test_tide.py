@@ -27,40 +27,33 @@ def test_exceptions():
     with pytest.raises(IOError):
         environment.Tide(shio_file, yeardata=bad_yeardata_path)
 
-def test_shio_file():
+@pytest.mark.parametrize("filename", [shio_file, ossm_file])
+def test_file(filename):
     """
-    (WIP)
-    simply tests that the file loads correctly
+    (WIP) simply tests that the file loads correctly
     """
-    td = environment.Tide(shio_file)
-    assert True
-    
-def test_ossm_file():
-    """
-    (WIP)
-    simply tests that the file loads correctly
-    """
-    td = environment.Tide(ossm_file)
-    assert True
-    
-def test_new_from_dict():
+    td = environment.Tide(filename)
+    assert td.filename == filename
+
+@pytest.mark.parametrize("filename", [shio_file, ossm_file])        
+def test_new_from_dict(filename):
     """
     test to_dict function for Wind object
     create a new wind object and make sure it has same properties
     """
-    td = environment.Tide(filename=shio_file)
+    td = environment.Tide(filename)
     td_state = td.to_dict('create')
     td2 = environment.Tide.new_from_dict(td_state)   # this does not catch two objects with same ID
     
     assert td == td2
 
-    
-def test_from_dict():
+@pytest.mark.parametrize("filename", [shio_file, ossm_file])    
+def test_from_dict(filename):
     """
     test from_dict function for Tide object
     no values are changed so it just tests that there are no failures
     """
-    wm = environment.Tide(filename=shio_file)
+    wm = environment.Tide(filename)
     wm_dict = wm.to_dict()
      
     wm.from_dict(wm_dict)

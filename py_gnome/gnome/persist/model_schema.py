@@ -13,22 +13,12 @@ from colander import (
     Int,
     String,
     SequenceSchema,
-    deferred
+    drop
     )
 
 import gnome
 from gnome.persist import validators, extend_colander, base_schema
 
-@deferred
-def model_uncertain(node, kw):
-    """
-    Used by TimeseriesValueSchema - assume it defers the calculation of datetime.datetime.now to when it is called in Schema
-    """
-    print node
-    print kw
-    uncertain_spills = None
-    #base_schema.OrderedCollection()
-    return uncertain_spills
 
 class ArrayTypeShape(TupleSchema):
      len_ = SchemaNode(Int())
@@ -45,25 +35,22 @@ class AllArrayTypes(SequenceSchema):
     
 class SpillContainerPair(MappingSchema):
     certain_spills = base_schema.OrderedCollection()
-    #uncertain_spills= SchemaNode( model_uncertain )
-    #print "model_uncertain: {0}".format(model_uncertain)
-    #if uncertain:
-    #    uncertain_spills = base_schema.OrderedCollection()
-    
+    uncertain_spills = base_schema.OrderedCollection(missing=drop)  # only present if uncertainty is on
 
-class UpdateModel(MappingSchema):
+class MapBounds(SequenceSchema):
+    map_bounds = base_schema.LongLat()
+
+class Map(base_schema.Id, MappingSchema):
+    map_bounds = MapBounds()
+    filename = SchemaNode(String(), missing=drop)
+    refloat_halflife = SchemaNode( Float(), missing=drop)
+
+class Model(base_schema.Id, MappingSchema):
     time_step = SchemaNode( Float()) 
     start_time= SchemaNode(extend_colander.LocalDateTime(), validator=validators.convertable_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta() )   # put a constraint for max duration?
     movers = base_schema.OrderedCollection()
     environment = base_schema.OrderedCollection()
     uncertain = SchemaNode( Bool() )
-    spills = SpillContainerPair(uncertain=False)
-    
-class CreateModel(base_schema.Id, UpdateModel):
-    """
-    Likely to be used when validating the state of the object read in from a save file.
-    
-    This is a union of the properties in UpdateWind and Id
-    """
-    pass
+    spills = SpillContainerPair()
+    map = Map()

@@ -48,10 +48,13 @@ cdef class CyShioTime(object):
     def set_shio_yeardata_path(self, yeardata_path):
         """
         .. function::set_shio_yeardata_path
-        
+        C++ expects a trailing slash at the end of yeardata_path, this is 
+        explicitly added here
         """
         cdef OSErr err
         if os.path.exists(yeardata_path):
+            if yeardata_path[-1] != os.sep:
+                yeardata_path = os.path.normpath(yeardata_path) + os.sep
             err = self.shio.SetYearDataPath(yeardata_path)
 #             if err != 0:
 #                 raise ValueError("Path could not be correctly be set by ShioTimeValue_c.SetYearDataPath(...)")
@@ -77,6 +80,16 @@ cdef class CyShioTime(object):
             return self.shio.fScaleFactor
         def __set__(self,value):
             self.shio.fScaleFactor = value
+            
+    property yeardata:
+        def __get__(self):
+            cdef bytes yd_path
+            yd_path = self.shio.fYearDataPath
+            return yd_path
+        
+        def __set__(self, value):
+            self.set_shio_yeardata_path(value)  # todo: figure out how to change fYearDataPath directly
+                
     
     def __repr__(self):
         """
