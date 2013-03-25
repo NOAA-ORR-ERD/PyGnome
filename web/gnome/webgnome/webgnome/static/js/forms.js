@@ -803,29 +803,6 @@ define([
          */
         finish: function() {
             var _this = this;
-
-//            this.loadLocationFile().done(function() {
-//                 deferreds.run().done(function() {
-//                     _this.model.save().done(function() {
-//                         // TODO: Trigger event, let AppView handle this.
-//                         util.refresh();
-//                     }).fail(function() {
-//                         console.log('Error submitting the location file wizard.');
-//                         alert('Error setting up your model. Please try again.');
-//                     });
-//                 }).fail(function() {
-//                     console.log('Error running deferred methods.');
-//                     alert('Error setting up your model. Please try again.');
-//                 });
-//            });
-
-
-            // XXX: Turns out we needed to get the LocationFile settings for the
-            // model settings form, so now does it really make sense to have a
-            // separate "model from location file" web service? We're already
-            // getting the model data, and below we post the entire thing back.
-            // If we do have a separate web service, then models.GnomeSettings
-            // should pop off spills and movers, or we'll get duplicates.
              deferreds.run().done(function() {
                  _this.model.save().done(function() {
                      // TODO: Trigger event, let AppView handle this.

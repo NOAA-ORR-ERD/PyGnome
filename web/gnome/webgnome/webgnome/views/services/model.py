@@ -174,6 +174,12 @@ class GnomeRunner(BaseResource):
 @resource(path='/model/from_location_file/{location}', renderer='gnome_json',
           description='Create a new model from a location file.')
 class ModelFromLocationFile(BaseResource):
+    """
+    Creates a new :class:`webgnome.model_manager.WebModel` from a location file
+    with the name given by the `location` parameter.
+
+    NOTE: This service is not used by the JavaScript application at this time.
+    """
 
     def apply_location_file_to_model(self, model):
         self.request.session[self.settings['model_session_key']] = model.id
@@ -199,6 +205,12 @@ class ModelFromLocationFile(BaseResource):
           renderer='gnome_json',
           description='Apply a location file to an existing model.')
 class ExistingModelFromLocationFile(ModelFromLocationFile):
+    """
+    Apply settings from a location file with the name given by the `location`
+    parameter to the user's current model.
+
+    NOTE: This service is not used by the JavaScript application at this time.
+    """
 
     @view(validators=[util.valid_model_id, util.valid_location_file])
     def post(self):
