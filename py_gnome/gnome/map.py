@@ -509,7 +509,8 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         
         todo: fix init so it handles kwargs cleanly
         """
-        self.filename = os.path.abspath(filename)
+        #self.filename = os.path.abspath(filename)
+        self.filename = filename
         polygons = haz_files.ReadBNA(filename, "PolygonSet")
 
         # find the spillable area and map bounds:
