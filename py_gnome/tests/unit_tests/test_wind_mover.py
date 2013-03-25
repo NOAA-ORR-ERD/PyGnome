@@ -290,7 +290,7 @@ def test_new_from_dict():
     wm2 = movers.WindMover.new_from_dict(wm_state)
     
     # check serializable state is correct
-    assert all([wm.__getattribute__(k) == wm2.__getattribute__(k) for k in movers.WindMover.state.create if k != 'wind_id'])
+    assert all([wm.__getattribute__(k) == wm2.__getattribute__(k) for k in movers.WindMover.state.create if k != 'wind_id' and k != 'obj_type'])
     assert wm.wind.id == wm2.wind.id 
     
 def test_exception_new_from_dict():
