@@ -63,7 +63,7 @@ def test_in_water_resolution():
     Test the limits of the precision, to within an order of magnitude, defining whether a point is in or out of water.
     '''
     
-    m = gnome.map.MapFromBNA(bna_filename = os.path.join(datadir, "Mapbounds_Island.bna"),
+    m = gnome.map.MapFromBNA(filename = os.path.join(datadir, "Mapbounds_Island.bna"),
                              refloat_halflife = (2.*60.*60.) ,
                              raster_size = 500*500 , # approx resolution
                              ) #Create an 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
@@ -132,6 +132,22 @@ class Test_GnomeMap:
         assert map.allowable_spill_position( (18.0, -87.0) )
 
         assert map.allowable_spill_position( (370.0, -87.0) ) is False
+    
+    def test_GnomeMap_new_from_dict(self):
+        """
+        test create new object from to_dict
+        """
+        map = gnome.map.GnomeMap()
+        map2 = map.new_from_dict(map.to_dict('create'))
+        
+        assert map == map2
+        
+    def test_GnomeMap_from_dict(self):
+        map = gnome.map.GnomeMap()
+        dict_ = map.to_dict()
+        dict_['map_bounds'] = ((-10, 10),(10,10),(10,-10),(-10,-10))
+        map.from_dict(dict_)
+        assert map.map_bounds == dict_['map_bounds']
     
 #####
 from gnome.map import RasterMap
@@ -346,6 +362,24 @@ class Test_MapfromBNA:
     def test_map_off_map(self):
         point = (-126.097336, 47.43962, 0.0)
         assert not self.bna_map.on_map( point )
+
+
+def test_MapfromBNA_new_from_dict():
+    """
+    test create new object from to_dict
+    """
+    map = gnome.map.MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6)
+    map2 = map.new_from_dict( map.to_dict('create'))
+    assert map == map2
+    
+def test_MapfromBNA_from_dict():
+    map = gnome.map.MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6)
+    dict_ = map.to_dict()
+    dict_['map_bounds'] = ((-10, 10),(10,10),(10,-10),(-10,-10))
+    dict_['refloat_halflife'] = 2
+    map.from_dict(dict_)
+    assert map.map_bounds == dict_['map_bounds']
+
 
 from gnome import basic_types        
 class Test_full_move:

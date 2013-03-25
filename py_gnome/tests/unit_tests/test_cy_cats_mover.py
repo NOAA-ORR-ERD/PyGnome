@@ -1,4 +1,8 @@
+import os
+
 import numpy as np
+
+import gnome
 from gnome import basic_types
 from gnome.cy_gnome import cy_cats_mover, cy_ossm_time, cy_shio_time
 import cy_fixtures
@@ -15,7 +19,7 @@ class CatsMove(cy_fixtures.CyTestMove):
         file_ = r"SampleData/long_island_sound/CLISShio.txt"
         self.shio = cy_shio_time.CyShioTime(file_)
         top_file=r"SampleData/long_island_sound/tidesWAC.CUR"
-        yeardata_path=r"SampleData/Data/yeardata/"
+        yeardata_path=os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/')
         self.cats = cy_cats_mover.CyCatsMover()
         self.cats.set_shio(self.shio)
         self.cats.read_topology(top_file)

@@ -164,6 +164,7 @@ public:
 	OSErr 				DisposeLastComputedTimeStuff (void);
 	OSErr 				TemporarilyShowFutureTime (Seconds futureTime);
 	OSErr 				SetModelToPastTime (Seconds pastTime);
+	double				GetRiseVelocity(LERec *theLE);
 	
 private:
 	long				GetLineIndex (long lineNum);

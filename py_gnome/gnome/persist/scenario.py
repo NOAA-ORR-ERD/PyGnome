@@ -7,6 +7,7 @@ import os
 import json
 import glob
 import string
+import shutil
 
 import gnome
 from gnome.persist import environment_schema, model_schema, movers_schema
@@ -23,7 +24,8 @@ def save(model, saveloc=None):
         raise ValueError("Invalid location for saving scenario. {0} does not exist".format(saveloc))
     
     # first save model info
-    model_to_json = gnome.persist.model_schema.CreateModel().serialize( model.to_dict('create') )
+    dict_ = model.to_dict('create')
+    model_to_json = gnome.persist.model_schema.Model().serialize( dict_ )
     _save_to_file(model_to_json,
                   os.path.join( saveloc, '{0}_{1}.txt'.format( model.__class__.__name__, model.id)))
     
@@ -53,7 +55,7 @@ def load(saveloc, filename=None):
             
     # first load model, then create other objects and add to model
     model_json = _load_from_file(model_file)
-    model_dict = gnome.persist.model_schema.CreateModel().deserialize( model_json )
+    model_dict = gnome.persist.model_schema.Model().deserialize( model_json )
     model = gnome.model.Model.new_from_dict(model_dict)
     print "created base model ..."
     
@@ -71,8 +73,14 @@ def load(saveloc, filename=None):
 def _save_collection(coll_,schema_module, saveloc):
     for obj in coll_:
         dict_ = obj.to_dict('create')
-        to_eval = '{0}.Create{1}().serialize(dict_)'.format( schema_module, obj.__class__.__name__ )
+        to_eval = '{0}.{1}().serialize(dict_)'.format( schema_module, obj.__class__.__name__ )
         to_json = eval(to_eval)
+        
+        # move file's over 
+        if 'filename' in to_json:
+            shutil.copy(to_json['filename'], saveloc)
+            to_json['filename'] = os.path.join( saveloc, os.path.split(to_json['filename'])[1] )
+        
         _save_to_file(to_json, os.path.join( saveloc, '{0}_{1}.txt'.format( obj.__class__.__name__, obj.id)) )
     
 def _save_to_file(data, fname):
@@ -92,16 +100,19 @@ def _add_movers(movers_dict, saveloc, model):
         obj_dict = _dict_from_json(type_, 'movers_schema', obj_json)
             
         if obj_name == 'WindMover':
-            try:
-                wind = model.environment[ obj_dict['wind_id'] ] # get object associated with this Id
-            except KeyError, e:
-                raise KeyError("Model.environment collection does not contain an object with id: {0}".format(e.message))
+            obj_dict.update({'wind': _get_obj(model.environment, obj_dict['wind_id']) })
             
-            obj_dict.update({'wind':wind})
-            
+        elif obj_name == 'CatsMover' and obj_dict.get('tide_id') is not None:
+            obj_dict.update({'tide': _get_obj(model.environment, obj_dict['tide_id']) })
             
         obj = _obj_from_dict( obj_dict, type_)
         model.movers += obj
+
+def _get_obj( coll_, id):
+    try:
+        return coll_[id] # get object associated with this Id
+    except KeyError, e:
+        raise KeyError("Collection does not contain an object with id: {0}".format(e.message))
 
 def _load_collection(coll_dict, schema_module, saveloc):
     """
@@ -132,7 +143,7 @@ def _obj_from_json( type_, schema_module, obj_json):
 
 def _dict_from_json(type_, schema_module, obj_json):
     obj_name= string.rsplit( type_, '.', 1)[-1]
-    to_eval = '{0}.Create{1}().deserialize( obj_json )'.format( schema_module, obj_name)
+    to_eval = '{0}.{1}().deserialize( obj_json )'.format( schema_module, obj_name)
     obj_dict = eval( to_eval)
     return obj_dict
 
