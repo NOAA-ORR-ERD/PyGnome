@@ -20,7 +20,7 @@ class State(object):
               deepcopy will create new State object and new lists for the attributes
         """
         self.update = []
-        self.create = ['id']
+        self.create = []
         self.read = []
         self._add_to_lists(**kwargs)
         
@@ -66,12 +66,15 @@ class Serializable(object):
     This class is intented as a mixin so to_dict and from_dict become part of the object
     and the object must define a state attribute of type State().
     
-    The default state=State() is a static variable for this class
+    The default state=State(create=['id']) is a static variable for this class
     It uses the same convention as State to obtain the lists, 'update' for updating 
     properties, 'read' for readonly properties and 'create' for a list of properties
     required to create new object.
+    
+    The default state contains 'id' in the create list. This is because all GnomeObject's
+    need 'id' to create a new one.
     """
-    state = State()
+    state = State(create=['id'])
     #===========================================================================
     # @classmethod
     # def add_state(cls, **kwargs):
@@ -116,11 +119,7 @@ class Serializable(object):
         
         This is base implementation and can be over-ridden by classes using mixin
         """
-        new_obj = cls(**dict_)
-        if dict_.get('id'):
-            new_obj.id = dict_.get('id')  # let's assign this as well?
-
-        return new_obj
+        return cls(**dict_)
     
     def to_dict(self,do='update'):
         """

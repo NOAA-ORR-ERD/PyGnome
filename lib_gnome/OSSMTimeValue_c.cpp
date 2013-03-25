@@ -364,6 +364,159 @@ OSErr OSSMTimeValue_c::InitTimeFunc ()
 	
 }
 
+OSErr OSSMTimeValue_c::ReadNCDCWind (char *path)
+{
+	char s[512], value1S[256], value2S[256], timeStr[256], stationStr[256], hdrStr[256];
+	long i,numValues,numLines,numScanned;
+	double value1, value2, magnitude, degrees;
+	CHARH f;
+	DateTimeRec time;
+	TimeValuePair pair;
+	OSErr scanErr;
+	double conversionFactor = MILESTOMETERSPERSEC;	// file speeds are in miles per hour
+	OSErr err = noErr;
+	//Boolean askForUnits = TRUE; 
+	//Boolean isLongWindFile = FALSE, isHydrologyFile = FALSE;
+	//short selectedUnits = unitsIfKnownInAdvance;
+	long numDataLines;
+	long numHeaderLines = 1;
+	short format = M19DEGREESMAGNITUDE;
+	
+	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f))
+	{ TechError("TOSSMTimeValue::ReadNCDCWind()", "ReadFileContents()", 0); goto done; }
+	
+	numLines = NumLinesInText(*f);
+	
+	numDataLines = numLines - numHeaderLines;
+	
+    this->SetUserUnits(kMilesPerHour);	//check this
+	
+	timeValues = (TimeValuePairH)_NewHandle(numDataLines * sizeof(TimeValuePair));
+	if (!timeValues)
+	{ err = -1; TechError("TOSSMTimeValue::ReadNCDCWind()", "_NewHandle()", 0); goto done; }
+	
+	time.second = 0;
+	//996410 99999 201201010000 130  36
+	numValues = 0;
+	for (i = 0 ; i < numLines ; i++) {
+		NthLineInTextOptimized(*f, i, s, 512); // day, month, year, hour, min, value1, value2
+		if(i < numHeaderLines)
+			continue; // skip any header lines
+		if(i%200 == 0) MySpinCursor(); 
+		RemoveLeadingAndTrailingWhiteSpace(s);
+		if(s[0] == 0) continue; // it's a blank line, allow this and skip the line
+		//StringSubstitute(s, ',', ' ');
+		
+		numScanned=sscanf(s, "%s %s %s %s %s",
+						  stationStr, hdrStr, timeStr,
+						  value1S, value2S) ;
+		if (numScanned<5)	
+			// scan will allow comment at end of line, for now just ignore 
+		{ err = -1; TechError("TOSSMTimeValue::ReadNDBCWind()", "sscanf() < 6", 0); goto done; }
+		// check if last line all zeros (an OSSM requirement) if so ignore the line
+		//if (i==numLines-1 && time.day==0 && time.month==0 && time.year==0 && time.hour==0 && time.minute==0)
+		//continue;
+		// check date is valid
+		// scan date
+		if (!strncmp (value1S,"***",strlen("***")) || !strncmp (value2S,"***",strlen("***")))
+			continue;
+
+		numScanned=sscanf(timeStr, "%4d %2d %2d %2d %2d",
+						  &time.year, &time.month, &time.day,
+						  &time.hour, &time.minute) ;
+		if (numScanned<5)	
+			// scan will allow comment at end of line, for now just ignore 
+		{ err = -1; TechError("TOSSMTimeValue::ReadNDBCWind()", "sscanf() < 6", 0); goto done; }
+		
+		
+		time.minute = time.second = 0;
+		if (time.day<1 || time.day>31 || time.month<1 || time.month>12)
+		{
+			err = -1;
+			printError("Invalid data in time file");
+			goto done;
+		}
+		else if (time.year < 1900)					// two digit date, so fix it
+		{
+			if (time.year >= 40 && time.year <= 99)	// JLM
+				time.year += 1900;
+			else
+				time.year += 2000;					// correct for year 2000 (00 to 40)
+		}
+		
+		switch (format) {
+			case M19REALREAL:
+				scanErr =  StringToDouble(value1S,&value1);
+				scanErr =  StringToDouble(value2S,&value2);
+				value1*= conversionFactor;//JLM
+				value2*= conversionFactor;//JLM
+				break;
+			case M19MAGNITUDEDEGREES:
+				scanErr =  StringToDouble(value1S,&magnitude);
+				scanErr =  StringToDouble(value2S,&degrees);
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, degrees, &value1, &value2);
+				break;
+			case M19DEGREESMAGNITUDE:
+				scanErr =  StringToDouble(value1S,&degrees);
+				scanErr =  StringToDouble(value2S,&magnitude);
+				if (magnitude == 99.0) continue;
+				if (degrees > 360) continue;
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, degrees, &value1, &value2);
+				break;
+			case M19MAGNITUDEDIRECTION:
+				scanErr =  StringToDouble(value1S,&magnitude);
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, ConvertToDegrees(value2S), &value1, &value2);
+				break;
+			case M19DIRECTIONMAGNITUDE:
+				scanErr =  StringToDouble(value2S,&magnitude);
+				magnitude*= conversionFactor;//JLM
+				ConvertToUV(magnitude, ConvertToDegrees(value1S), &value1, &value2);
+		}
+		
+		memset(&pair,0,sizeof(pair));
+		DateToSeconds (&time, &pair.time);
+		pair.value.u = value1;
+		pair.value.v = value2;
+		
+		if (numValues>0)
+		{
+			Seconds timeVal = INDEXH(timeValues, numValues-1).time;
+			if (pair.time < timeVal) 
+			{
+				err=-1;
+				printError("Time values are out of order");
+				goto done;
+			}
+		}
+		
+		INDEXH(timeValues, numValues++) = pair;
+	}
+	
+	if(numValues > 0)
+	{
+		// JS: 9/17/12 - Following does not work for cython.
+		// Leave it commented so we can repro and try to do debugging
+		//long actualSize = numValues*(long)sizeof(**timeValues);
+		long sz = (long)sizeof(**timeValues);
+		long actualSize = numValues*sz;
+		_SetHandleSize((Handle)timeValues,actualSize);
+		err = _MemError();
+	}
+	else {
+		printError("No lines were found");
+		err = true;
+	}
+done:
+	if(f) {DisposeHandle((Handle)f); f = 0;}
+	if(err &&timeValues)  {DisposeHandle((Handle)timeValues); timeValues = 0;}
+	
+	return err;
+	
+}
+
 OSErr OSSMTimeValue_c::ReadNDBCWind (char *path)
 {
 	char s[512], value1S[256], value2S[256];
@@ -373,7 +526,7 @@ OSErr OSSMTimeValue_c::ReadNDBCWind (char *path)
 	DateTimeRec time;
 	TimeValuePair pair;
 	OSErr scanErr;
-	double conversionFactor = 1.0;
+	double conversionFactor = 1.0;	// wind speeds are in mps
 	OSErr err = noErr;
 	//Boolean askForUnits = TRUE; 
 	//Boolean isLongWindFile = FALSE, isHydrologyFile = FALSE;
@@ -389,8 +542,7 @@ OSErr OSSMTimeValue_c::ReadNDBCWind (char *path)
 	
 	numDataLines = numLines - numHeaderLines;
 	
-    this->SetUserUnits(kKnots);	//check this
-	conversionFactor = KNOTSTOMETERSPERSEC;
+    this->SetUserUnits(kMetersPerSec);	//check this
 	
 	timeValues = (TimeValuePairH)_NewHandle(numDataLines * sizeof(TimeValuePair));
 	if (!timeValues)
@@ -538,13 +690,23 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	//////////////////////////////////////////
 	///**/ paramtext(fileName, "", "", ""); /**/
 	//////////////////////////////////////////
-
+	
 	if (IsNDBCWindFile(path)) 
 	{
 		err = ReadNDBCWind(path); 
 		return err;
 		// or
-		// selectedUnits = kKnots;
+		// selectedUnits = kMetersPerSec;
+		// isNDBC = true // scan is different
+		// numHeaderLines = 1;
+	}	// units/format always the same
+	
+	if (IsNCDCWindFile(path)) 
+	{
+		err = ReadNCDCWind(path); 
+		return err;
+		// or
+		// selectedUnits = kMetersPerSec;
 		// isNDBC = true // scan is different
 		// numHeaderLines = 1;
 	}	// units/format always the same

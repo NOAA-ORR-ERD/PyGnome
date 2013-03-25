@@ -2914,6 +2914,39 @@ OSErr TModel::SaveOutputSeriesFiles(Seconds oldTime,Boolean excludeRunBarFile)
 	return err;
 }
 
+double TModel::GetRiseVelocity(LERec *theLE)
+{
+	// now check ossm list
+	// if ossm list use rise velocity
+	// maybe should be mover or part of one
+	double dz = 0,z = (*theLE).z, riseVelocity = (*theLE).riseVelocity;
+	// if(spill->IAm(TYPE_OSSMLELIST)) {
+	//if((*(TOLEList*)spill).fSetSummary.riseVelocity != 0)
+	//if ((dynamic_cast<TOLEList *>(spill))->fSetSummary.riseVelocity != 0)
+	if (riseVelocity > 0)
+	 {
+		 //PtCurMap *map = GetPtCurMap();
+		 TMap *map = Get3DMap();
+		 WorldPoint refPoint = (*theLE).p;	
+		 //if (map && thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
+		 if ((*theLE).statusCode == OILSTAT_INWATER && z > 0) 
+		 {	// check this
+			 dz = -(riseVelocity/100.) * GetTimeStep();
+			/* float depthAtPoint = INFINITE_DEPTH;
+			 if (map) depthAtPoint = map->DepthAtPoint(refPoint);	
+			 z -= (riseVelocity/100.) * GetTimeStep();
+			 if (z < 0) 
+			 z = 0;
+			 if (z >= depthAtPoint) 
+				 z = z + (riseVelocity/100.) * GetTimeStep();
+			 if (z >= depthAtPoint) // shouldn't get here
+				 z = depthAtPoint - (abs(riseVelocity)/100.) * GetTimeStep();*/
+		 }
+	 }
+	//}
+	return dz;
+}
+
 OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmapping, vector< pair<bool, bool> > **dmapping, vector< pair<int, int> > **imapping) {
 	
 	int i, n, j, m, k, N, q, M, uncertaintyIndex = 0;
@@ -2932,6 +2965,7 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 	TOSSMTimeValue *time_val_ptr;
 	CMyList *time_val_list;
 	TMap *map;	// in theory should be moverMap, unless universal...
+	double z_move = 0;
 
 	
 	vector<LETYPE> *tmapping;
@@ -3123,6 +3157,16 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 			}
 		}
 	}
+	//for(j = 0, m = mapList->GetItemCount(); j < m; j++) {
+	for(k = 0, N = (*pmapping)[0].size(); k < N; k++) {	// are all LEs in all mappings?
+		//dp = mover->GetMove(this->GetStartTime(), this->GetEndTime(), this->GetModelTime(), fDialogVariables.computeTimeStep, (*imapping)[j][k].first, (*imapping)[j][k].second, (*pmapping)[j][k], tmapping[j][k]);
+		z_move = this->GetRiseVelocity((*pmapping)[0][k]);
+		//(*delta)[j][k].p.pLat += dp.p.pLat;
+		//(*delta)[j][k].p.pLong += dp.p.pLong;
+		(*delta)[0][k].z += z_move;
+	}
+	//}
+	
 	delete[] tmapping;
 	return noErr;
 	
@@ -3345,10 +3389,10 @@ OSErr TModel::check_spills(vector<WorldPoint3D> *delta, vector <LERec *> *pmappi
 				 // now check ossm list
 				 // if ossm list use rise velocity
 				 // maybe should be mover or part of one
-				
-				 if(spill->IAm(TYPE_OSSMLELIST)) {
+				// this should be with the move_spills code
+				/* if(spill->IAm(TYPE_OSSMLELIST)) {
 					if((*(TOLEList*)spill).fSetSummary.riseVelocity != 0)
-					{
+						{
 						//PtCurMap *map = GetPtCurMap();
 						TMap *map = Get3DMap();
 						WorldPoint refPoint = le_ptr->p;	
@@ -3366,7 +3410,7 @@ OSErr TModel::check_spills(vector<WorldPoint3D> *delta, vector <LERec *> *pmappi
 								le_ptr->z = depthAtPoint - (abs(le_ptr->riseVelocity)/100.) * GetTimeStep();
 						}
 					}
-				}
+				}*/
 			 } // end if(customData != -1)
 			 
 			 

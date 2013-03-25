@@ -23,9 +23,12 @@ def test_exceptions():
         movers.WindMover()
 
     with pytest.raises(ValueError):
-        wind = environment.Wind(file=file_)
+        wind = environment.Wind(filename=file_)
         now = datetime.now()
         movers.WindMover(wind, active_start=now, active_stop=now)
+        
+    with pytest.raises(TypeError):
+        movers.WindMover(wind=10)
 
 # tolerance for np.allclose(..) function
 atol = 1e-14
@@ -35,7 +38,7 @@ def test_read_file_init():
     """
     initialize from a long wind file
     """
-    wind = environment.Wind(file=file_)
+    wind = environment.Wind(filename=file_)
     wm = movers.WindMover(wind)
     wind_ts = wind.get_timeseries(format='uv', units='meter per second')
     _defaults(wm)   # check defaults set correctly
@@ -278,7 +281,7 @@ def test_new_from_dict():
     Currently only checks that new object can be created from dict
     It does not check equality of objects
     """
-    wind = environment.Wind(file=file_)
+    wind = environment.Wind(filename=file_)
     wm = movers.WindMover(wind) # WindMover does not modify Wind object!
     wm_state = wm.to_dict('create')
     # must create a Wind object and add this to wm_state dict
@@ -291,17 +294,11 @@ def test_new_from_dict():
     assert wm.wind.id == wm2.wind.id 
     
 def test_exception_new_from_dict():
-    wm = movers.WindMover(environment.Wind(file=file_)) # WindMover does not modify Wind object!
+    wm = movers.WindMover(environment.Wind(filename=file_)) # WindMover does not modify Wind object!
     wm_state = wm.to_dict('create')
-    wm_state.update({'wind':environment.Wind(file=file_)})
+    wm_state.update({'wind':environment.Wind(filename=file_)})
     with pytest.raises(ValueError):
         movers.WindMover.new_from_dict(wm_state)
-    
-
-def test_from_dict():
-    wm = movers.WindMover(environment.Wind(file=file_)) # WindMover does not modify Wind object!
-    wm_dict = wm.to_dict()
-    
     
 """
 Helper methods for this module
