@@ -44,7 +44,8 @@ class GnomeMap(serializable.Serializable):
     _update = ['map_bounds']
     _create = []
     _create.extend(_update)
-    state = serializable.State( create=_create, update=_update)
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add( create=_create, update=_update)
     
     refloat_halflife = None # note -- no land, so never used
 

@@ -24,6 +24,7 @@ class Id(MappingSchema):
     any need to ensure it is valid UUID?
     """
     id = SchemaNode(String(), missing=drop)
+    obj_type = SchemaNode(String(), missing=drop)
 
 class OrderedCollectionIdListItem(TupleSchema):
     obj_type = SchemaNode(String() )  

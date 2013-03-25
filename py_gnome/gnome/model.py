@@ -32,6 +32,17 @@ class Model(serializable.Serializable):
     state.add(create=_create,
               update=_update)   # no need to copy parent's state in tis case
     
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """create compound objects like map, output_map from dict, then pass it onto new_from_dict"""
+        if 'map' in dict_:
+            obj_ = dict_.pop('map')
+            to_eval = "{0}.new_from_dict( obj_)".format( obj_.pop('obj_type'))
+            map = eval(to_eval)
+            dict_['map'] = map  # update dict with object
+            
+        return super(Model, cls).new_from_dict( dict_)
+    
     def __init__(self,
                  time_step=900, # 15 minutes in seconds
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour

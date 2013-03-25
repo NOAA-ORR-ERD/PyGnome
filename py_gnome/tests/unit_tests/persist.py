@@ -67,13 +67,15 @@ c_mover.scale_value = 1.
 model.movers += c_mover
 model.environment += c_mover.tide
 
-print "adding a cats mover:"
-    
-c_mover = gnome.movers.CatsMover(os.path.join(datafiles,"MassBaySewage.CUR"))
-c_mover.scale = True    # but do need to scale (based on river stage)
-c_mover.scale_refpoint = (-70.78333,42.39333)
-c_mover.scale_value = .04    #the scale factor is 0 if user inputs no sewage outfall effects 
-model.movers += c_mover
+#===============================================================================
+# print "adding a cats mover:"
+#    
+# c_mover = gnome.movers.CatsMover(os.path.join(datafiles,"MassBaySewage.CUR"))
+# c_mover.scale = True    # but do need to scale (based on river stage)
+# c_mover.scale_refpoint = (-70.78333,42.39333)
+# c_mover.scale_value = .04    #the scale factor is 0 if user inputs no sewage outfall effects 
+# model.movers += c_mover
+#===============================================================================
 
 print "saving .."
 scenario.save(model,saveloc)

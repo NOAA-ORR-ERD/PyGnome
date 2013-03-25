@@ -75,15 +75,10 @@ def _save_collection(coll_,schema_module, saveloc):
         dict_ = obj.to_dict('create')
         to_eval = '{0}.{1}().serialize(dict_)'.format( schema_module, obj.__class__.__name__ )
         to_json = eval(to_eval)
-        
-        # move file's over 
-        if 'filename' in to_json:
-            shutil.copy(to_json['filename'], saveloc)
-            to_json['filename'] = os.path.join( saveloc, os.path.split(to_json['filename'])[1] )
-        
         _save_to_file(to_json, os.path.join( saveloc, '{0}_{1}.txt'.format( obj.__class__.__name__, obj.id)) )
     
 def _save_to_file(data, fname):
+    data = _move_data_file(data, os.path.dirname(fname) ) # if there is a
     with open(fname,'w') as outfile:
         json.dump(data, outfile, indent = True)
 
@@ -151,3 +146,11 @@ def _obj_from_dict(obj_dict, type_):
     to_eval = "{0}.new_from_dict(obj_dict)".format(type_)
     obj = eval( to_eval)
     return obj
+
+def _move_data_file(to_json, saveloc):
+    """if there is a 'filename' field, move the data file to saveloc, update 'filename' and return to_json"""
+    if 'filename' in to_json:
+        shutil.copy(to_json['filename'], saveloc)
+        to_json['filename'] = os.path.join( saveloc, os.path.split(to_json['filename'])[1] )
+    
+    return to_json
