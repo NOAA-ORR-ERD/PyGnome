@@ -25,7 +25,10 @@ def save(model, saveloc=None):
     
     # first save model info
     dict_ = model.to_dict('create')
+    
     model_to_json = gnome.persist.model_schema.Model().serialize( dict_ )
+    model_to_json['map'] = _move_data_file(model_to_json['map'], saveloc)
+    
     _save_to_file(model_to_json,
                   os.path.join( saveloc, '{0}_{1}.txt'.format( model.__class__.__name__, model.id)))
     

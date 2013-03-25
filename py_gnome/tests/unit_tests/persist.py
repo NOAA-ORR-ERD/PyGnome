@@ -16,11 +16,17 @@ Define a scenario and persist it to ./test_persist/
 saveloc  = './test_persist'
 datafiles= '/Users/jasmine.sandhu/Documents/projects/gnome/py_gnome/tests/scripts/script_boston'
 
+mapfile = os.path.join( datafiles, './MassBayMap.bna')
+gnome_map = gnome.map.MapFromBNA(mapfile,
+                                 refloat_halflife=1*3600, #seconds
+                                 )
+
 start_time = datetime(2013, 2, 13, 9, 0)
 model = gnome.model.Model(start_time = start_time,
                         duration = timedelta(days=2),
                         time_step = 30 * 60, # 1/2 hr in seconds
                         uncertain = False,
+                        map= gnome_map
                         )
 
 print "adding a spill"
