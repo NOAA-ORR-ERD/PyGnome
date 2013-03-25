@@ -1504,7 +1504,10 @@ OSErr TOLEList::Reset(Boolean newKeys)
 		/*if (fSetSummary.riseVelocity > 0)
 		{
 			//if (i < fSetSummary.numOfLEs
-			representativeLE.riseVelocity = (double) (i * riseStep);	// if set in order messes up time dependent release
+			if (!fSetSummary.bWantEndRelTime)	// will have to do something different here
+				representativeLE.riseVelocity = (double) (i * riseStep);	// if set in order messes up time dependent release
+			else
+				representativeLE.riseVelocity = GetRandomFloat(0,fSetSummary.riseVelocity);
 		}*/
 		//representativeLE.riseVelocity = INDEXH(LEHandle, i).riseVelocity;	// keep the rise velocity as set - may want to recalculate if rates can change
 		/////////////////////////////////////////////////

@@ -27,11 +27,33 @@ class State(object):
         
     def add(self,**kwargs):
         """
-        There is no check to make sure the lists of properties are disjoint.
+        Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list. 
+        
         Takes the same keyword, value pairs as __init__ method:
+        'update' is list of properties that can be updated, so read/write capable
+        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
+        'create' is list of properties that are required to create new object when JSON is read from save file
+                 The readonly properties are not saved in a file
         add(update=['prop_name'] to add prop_name to list containing properties that can be updated
         """
         self._add_to_lists(**kwargs)
+        
+    def remove(self,**kwargs):
+        """
+        Removes properties from the list. Provide a list containing the names of properties to be removed
+        
+        Takes the same keyword, value pairs as __init__ method:
+        'update' is list of properties that can be updated, so read/write capable
+        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
+        'create' is list of properties that are required to create new object when JSON is read from save file
+                 The readonly properties are not saved in a file
+        remove(update=['prop_name']) to remove prop_name from the list of properties that are updated ('update' list) 
+        """
+        read_, update_, create_ = self._get_lists(**kwargs)
+        [self.read.remove(item) for item in read_ if item in self.read]
+        [self.update.remove(item) for item in update_ if item in self.update]
+        [self.create.remove(item) for item in create_ if item in self.create]
+        
         
     def _add_to_lists(self, **kwargs):
         """
@@ -40,9 +62,7 @@ class State(object):
         if not all([isinstance(vals,list) for vals in kwargs.values()]):
             raise ValueError("inputs for State object must be a list of strings")
         
-        update_ = list( set( kwargs.pop('update',[])))
-        read_ = list( set( kwargs.pop('read',[])))
-        create_ = list( set(kwargs.pop('create',[])))
+        read_, update_, create_ = self._get_lists(**kwargs)
         
         if len( set(update_).intersection(set(read_)) ) > 0:
             raise ValueError('update (read/write properties) and read (readonly props) lists lists must be disjoint')
@@ -50,6 +70,16 @@ class State(object):
         self.update.extend( update_ )  # unique elements
         self.read.extend( read_)
         self.create.extend( create_)
+        
+    def _get_lists(self, **kwargs):
+        """
+        Internal method that just parses kwargs to get the update=[...], read=[...] and create=[...] lists
+        """
+        update_ = list( set( kwargs.pop('update',[])))
+        read_ = list( set( kwargs.pop('read',[])))
+        create_ = list( set(kwargs.pop('create',[])))
+        
+        return read_, update_, create_
         
         
     def get(self):

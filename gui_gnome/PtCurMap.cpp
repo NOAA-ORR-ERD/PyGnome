@@ -3207,7 +3207,40 @@ void PtCurMap::DrawContours(Rect r, WorldRect view)
 							case OILSTAT_INWATER:
 								if (LE.z > 0)
 								{
-									if (LE.z > 100)
+									//double maxDepth = GetMaxDepth2();	// allow user to set value?
+									//double maxDepth = 1500;	// allow user to set value? maybe use the second contour level
+									double maxDepth = fContourDepth2;	// check that fContourDepth2 > 0
+									long red=0,blue=0,green=0; // roughly 50 - 245 for light black to offwhite
+									//double range = 195 / maxDepth, LEcolor = 50 + range * LE.z; 
+									double range, LEcolor; 
+									//if (LEcolor >= 245) LEcolor = 245;
+									RGBColor underWaterColor = ((TOLEList*)thisLEList)->fColor;	// do we want to relate to surface color
+									if (fContourDepth2 <= 0) maxDepth = GetMaxDepth2();
+									if (maxDepth > 0) range = 195. / maxDepth;
+									if (LE.z > maxDepth)
+									{
+										LEcolor = 245;
+									}
+									else
+									{
+										LEcolor = 50. + range * LE.z;
+										if (LEcolor > 245) LEcolor = 245;
+									}
+									red = blue = green = (long) LEcolor;
+#ifdef IBM						
+									//underWaterColor = RGB(red,green,blue); // minus AH 07/09/2012
+									SetRGBColor(&underWaterColor,red,green,blue);
+#else						
+									RGBColor temp_color; 
+									temp_color.red = red*256;
+									temp_color.green = green*256;
+									temp_color.blue = blue*256;
+									underWaterColor = temp_color;		// AH 07/09/2012:
+#endif
+									//underWaterColor = RGB(red,green,blue);
+									inWaterColor = &underWaterColor;
+
+									/*if (LE.z > 100)
 									{
 										inWaterColor  = &colors[LIGHTGRAY];
 									}
@@ -3218,7 +3251,7 @@ void PtCurMap::DrawContours(Rect r, WorldRect view)
 									else
 									{
 										inWaterColor = &colors[DARKGRAY];
-									}
+									}*/
 								}
 								else
 								{
