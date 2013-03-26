@@ -32,7 +32,7 @@ from gnome.model import Model
 from gnome.movers import WindMover, RandomMover
 from gnome.spill import SurfaceReleaseSpill
 from gnome.environment import Wind
-from gnome.map import MapFromBNA
+from gnome.map import MapFromBNA, GnomeMap
 
 
 logger = logging.getLogger(__name__)
@@ -110,7 +110,16 @@ class Serializable(object):
         return self
 
 
-class BaseWebObject(Serializable):
+class BaseWebObject(object):
+    """
+    All WebGnome subclasses of Gnome objects have a name.
+    """
+    default_name = 'Item'
+
+    def __init__(self, *args, **kwargs):
+        self._name = kwargs.pop('name', self.default_name)
+        super(BaseWebObject, self).__init__(*args, **kwargs)
+
     @property
     def name(self):
         if self._name:
@@ -122,7 +131,7 @@ class BaseWebObject(Serializable):
         self._name = name
 
 
-class WebWind(Wind, Serializable):
+class WebWind(BaseWebObject, Wind):
     default_name = 'Wind'
     source_types = (
         ('undefined', 'Undefined'),
@@ -134,7 +143,6 @@ class WebWind(Wind, Serializable):
     state.add(create=['id'])
 
     def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', 'Wind')
         self.description = kwargs.pop('description', None)
         self.source_type = kwargs.pop('source_type', None)
         self.source_id = kwargs.pop('source_id', None)
@@ -153,7 +161,7 @@ class WebWind(Wind, Serializable):
         self.set_timeseries(value, units=self.units)
 
 
-class WebWindMover(WindMover, BaseWebObject):
+class WebWindMover(BaseWebObject, WindMover):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
     webgnome-specific functionality.
@@ -166,7 +174,6 @@ class WebWindMover(WindMover, BaseWebObject):
     def __init__(self, *args, **kwargs):
         self.is_constant = kwargs.pop('is_constant', True)
         self.on = kwargs.pop('on', True)
-        self.name = kwargs.pop('name', 'Wind Mover')
 
         # TODO: What to do with this value? Conversion?
         self.uncertain_angle_scale_units = kwargs.pop(
@@ -175,7 +182,7 @@ class WebWindMover(WindMover, BaseWebObject):
         super(WebWindMover, self).__init__(*args, **kwargs)
 
 
-class WebRandomMover(RandomMover, BaseWebObject):
+class WebRandomMover(BaseWebObject, RandomMover):
     """
     A subclass of :class:`gnome.movers.RandomMover` that provides
     webgnome-specific functionality.
@@ -186,17 +193,19 @@ class WebRandomMover(RandomMover, BaseWebObject):
 
     def __init__(self, *args, **kwargs):
         self.on = kwargs.pop('on', True)
-        self.name = kwargs.pop('name', 'Random Mover')
         super(WebRandomMover, self).__init__(*args, **kwargs)
 
 
-class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
+class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
     webgnome-specific functionality.
     """
+    default_name = 'Spill'
+    state = copy.deepcopy(SurfaceReleaseSpill.state)
+    state.add(create=['name'], update=['name'])
+
     def __init__(self, *args, **kwargs):
-        self._name = kwargs.pop('name', None)
         self.is_active = kwargs.pop('is_active', True)
         super(WebSurfaceReleaseSpill, self).__init__(*args, **kwargs)
 
@@ -217,7 +226,7 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
         return self.end_position.tolist()
 
 
-class WebMapFromBNA(MapFromBNA, BaseWebObject):
+class WebMapFromBNA(BaseWebObject, MapFromBNA):
     """
     A subclass of :class:`gnome.map.MapFromBNA` that provides
     webgnome-specific functionality.
@@ -232,7 +241,6 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
     state.create.remove('filename')
 
     def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', self.default_name)
         self.relative_path = kwargs.pop('relative_path', None)
         super(WebMapFromBNA, self).__init__(*args, **kwargs)
 
@@ -247,12 +255,16 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
         return self.map_bounds
 
 
-class WebModel(Model, BaseWebObject):
+class WebGnomeMap(BaseWebObject, GnomeMap):
+    default_name = 'Map'
+    state = copy.deepcopy(GnomeMap.state)
+    state.add(create=['name'], update=['name'])
+
+
+class WebModel(BaseWebObject, Model):
     """
     A subclass of :class:`gnome.model.Model` that provides webgnome-specific
     functionality.
-
-    TODO: Use Serializable mixin's to_dict and from_dict mechanism.
     """
     mover_keys = {
         WebWindMover: 'wind_movers',
@@ -266,10 +278,14 @@ class WebModel(Model, BaseWebObject):
 
     def __init__(self, *args, **kwargs):
         data_dir = kwargs.pop('data_dir')
+        _map = kwargs.pop('map', None)
         self.package_root = kwargs.pop('package_root')
 
         # Set the model's id
         super(WebModel, self).__init__()
+
+        if _map is None:
+            self.map = WebGnomeMap()
 
         self.base_dir = os.path.join(self.package_root, data_dir, str(self.id))
         self.base_dir_relative = os.path.join(data_dir, str(self.id))
@@ -395,7 +411,7 @@ class WebModel(Model, BaseWebObject):
         }
 
         if self.map and hasattr(self.map, 'to_dict'):
-            data['map'] = self.map.to_dict()
+            data['map'] = self.map.to_dict('create')
 
         if self.duration.days:
             data['duration_days'] = self.duration.days

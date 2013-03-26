@@ -582,3 +582,36 @@ class LocationFileWizardServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.get(self.base_url)
         model_data = resp.json_body
         self.assertEqual(model_data['duration_days'], 10)
+
+
+class NavigationTreeTests(FunctionalTestBase, ModelHelperMixin):
+    def setUp(self):
+        super(NavigationTreeTests, self).setUp()
+        self.create_model()
+        self.url = self.model_url('tree')
+
+    def test_empty_tree(self):
+        resp = self.testapp.get(self.url)
+        data = resp.json_body
+
+        model_settings = data[0]
+        self.assertEqual(model_settings['title'], 'Model Settings')
+        self.assertEqual(model_settings['form_id'], 'model-settings')
+
+        map_item = model_settings['children'][0]
+        self.assertEqual(map_item['form_id'], 'edit-map')
+        self.assertEqual(map_item['title'], 'Map: Map')
+
+        map_item = model_settings['children'][1]
+        self.assertEqual(map_item['form_id'], 'model-settings')
+        self.assertEqual(map_item['title'], 'Uncertain: False')
+
+        time_step_item = model_settings['children'][3]
+        self.assertEqual(time_step_item['form_id'], 'model-settings')
+        self.assertEqual(time_step_item['title'], 'Time Step: 0.25')
+
+        # Movers
+        self.assertEqual(len(data[1]['children']), 0)
+
+        # Spills
+        self.assertEqual(len(data[2]['children']), 0)
