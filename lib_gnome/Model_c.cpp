@@ -408,14 +408,13 @@ weatherLE:
 		
 		dropSizeHdl = map->GetDropletSizesH();
 		if (dropSizeHdl) numDropletSizes = _GetHandleSize((Handle)dropSizeHdl)/sizeof(**dropSizeHdl);
+		
 		for (i=0;i<numDropletSizes;i++)
-		{
-			if (rand2 < (*dropSizeHdl)[i].probability) theLE.dropletSize = (*dropSizeHdl)[i].dropletSize;
-			else
-			{
-				theLE.dropletSize = (*dropSizeHdl)[numDropletSizes-1].dropletSize;
-			}
+		{	
+			if (rand2 < (*dropSizeHdl)[i].probability) {theLE.dropletSize = (*dropSizeHdl)[i].dropletSize; break;}
 		}
+		if (rand2 == 1) theLE.dropletSize = (*dropSizeHdl)[numDropletSizes-1].dropletSize;
+		
 		if (theLE.dispersionStatus == DISPERSE_NAT)
 			theLE.dispersionStatus = HAVE_DISPERSED_NAT;
 		else

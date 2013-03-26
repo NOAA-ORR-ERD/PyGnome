@@ -223,6 +223,7 @@ WorldPoint3D Random3D_c::GetMove (const Seconds& model_time, Seconds timeStep,lo
 		//depthAtPoint = ((PtCurMap*)moverMap)->DepthAtPoint(refPoint);	// or check rand instead
 		if (depthAtPoint < mixedLayerDepth && depthAtPoint > 0) mixedLayerDepth = depthAtPoint;
 		// may want to put in an option to turn buoyancy on and off
+		// put this in a separate mover and use for all subsurface spills
 		if ((*theLE).dispersionStatus==HAVE_DISPERSED || (*theLE).dispersionStatus==HAVE_DISPERSED_NAT)	// no buoyancy for bottom releases of chemicals - what about oil?
 			// actually for bottom spill pollutant is not dispersed so there would be no assigned dropletSize unless LE gets redispersed
 			buoyancy = (2.*g/9.)*(1.-(*theLE).density/water_density)*((*theLE).dropletSize*1e-6/2.)*((*theLE).dropletSize*1e-6/2)/water_viscosity;

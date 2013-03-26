@@ -44,7 +44,8 @@ class GnomeMap(serializable.Serializable):
     _update = ['map_bounds']
     _create = []
     _create.extend(_update)
-    state = serializable.State( create=_create, update=_update)
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add( create=_create, update=_update)
     
     refloat_halflife = None # note -- no land, so never used
 
@@ -509,7 +510,8 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         
         todo: fix init so it handles kwargs cleanly
         """
-        self.filename = os.path.abspath(filename)
+        #self.filename = os.path.abspath(filename)
+        self.filename = filename
         polygons = haz_files.ReadBNA(filename, "PolygonSet")
 
         # find the spillable area and map bounds:

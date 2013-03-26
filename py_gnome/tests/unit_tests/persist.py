@@ -16,11 +16,17 @@ Define a scenario and persist it to ./test_persist/
 saveloc  = './test_persist'
 datafiles= '/Users/jasmine.sandhu/Documents/projects/gnome/py_gnome/tests/scripts/script_boston'
 
+mapfile = os.path.join( datafiles, './MassBayMap.bna')
+gnome_map = gnome.map.MapFromBNA(mapfile,
+                                 refloat_halflife=1*3600, #seconds
+                                 )
+
 start_time = datetime(2013, 2, 13, 9, 0)
 model = gnome.model.Model(start_time = start_time,
                         duration = timedelta(days=2),
                         time_step = 30 * 60, # 1/2 hr in seconds
                         uncertain = False,
+                        map= gnome_map
                         )
 
 print "adding a spill"
@@ -67,13 +73,15 @@ c_mover.scale_value = 1.
 model.movers += c_mover
 model.environment += c_mover.tide
 
-print "adding a cats mover:"
-    
-c_mover = gnome.movers.CatsMover(os.path.join(datafiles,"MassBaySewage.CUR"))
-c_mover.scale = True    # but do need to scale (based on river stage)
-c_mover.scale_refpoint = (-70.78333,42.39333)
-c_mover.scale_value = .04    #the scale factor is 0 if user inputs no sewage outfall effects 
-model.movers += c_mover
+#===============================================================================
+# print "adding a cats mover:"
+#    
+# c_mover = gnome.movers.CatsMover(os.path.join(datafiles,"MassBaySewage.CUR"))
+# c_mover.scale = True    # but do need to scale (based on river stage)
+# c_mover.scale_refpoint = (-70.78333,42.39333)
+# c_mover.scale_value = .04    #the scale factor is 0 if user inputs no sewage outfall effects 
+# model.movers += c_mover
+#===============================================================================
 
 print "saving .."
 scenario.save(model,saveloc)

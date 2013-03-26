@@ -27,11 +27,33 @@ class State(object):
         
     def add(self,**kwargs):
         """
-        There is no check to make sure the lists of properties are disjoint.
+        Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list. 
+        
         Takes the same keyword, value pairs as __init__ method:
+        'update' is list of properties that can be updated, so read/write capable
+        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
+        'create' is list of properties that are required to create new object when JSON is read from save file
+                 The readonly properties are not saved in a file
         add(update=['prop_name'] to add prop_name to list containing properties that can be updated
         """
         self._add_to_lists(**kwargs)
+        
+    def remove(self,**kwargs):
+        """
+        Removes properties from the list. Provide a list containing the names of properties to be removed
+        
+        Takes the same keyword, value pairs as __init__ method:
+        'update' is list of properties that can be updated, so read/write capable
+        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
+        'create' is list of properties that are required to create new object when JSON is read from save file
+                 The readonly properties are not saved in a file
+        remove(update=['prop_name']) to remove prop_name from the list of properties that are updated ('update' list) 
+        """
+        read_, update_, create_ = self._get_lists(**kwargs)
+        [self.read.remove(item) for item in read_ if item in self.read]
+        [self.update.remove(item) for item in update_ if item in self.update]
+        [self.create.remove(item) for item in create_ if item in self.create]
+        
         
     def _add_to_lists(self, **kwargs):
         """
@@ -40,9 +62,7 @@ class State(object):
         if not all([isinstance(vals,list) for vals in kwargs.values()]):
             raise ValueError("inputs for State object must be a list of strings")
         
-        update_ = list( set( kwargs.pop('update',[])))
-        read_ = list( set( kwargs.pop('read',[])))
-        create_ = list( set(kwargs.pop('create',[])))
+        read_, update_, create_ = self._get_lists(**kwargs)
         
         if len( set(update_).intersection(set(read_)) ) > 0:
             raise ValueError('update (read/write properties) and read (readonly props) lists lists must be disjoint')
@@ -50,6 +70,16 @@ class State(object):
         self.update.extend( update_ )  # unique elements
         self.read.extend( read_)
         self.create.extend( create_)
+        
+    def _get_lists(self, **kwargs):
+        """
+        Internal method that just parses kwargs to get the update=[...], read=[...] and create=[...] lists
+        """
+        update_ = list( set( kwargs.pop('update',[])))
+        read_ = list( set( kwargs.pop('read',[])))
+        create_ = list( set(kwargs.pop('create',[])))
+        
+        return read_, update_, create_
         
         
     def get(self):
@@ -63,7 +93,7 @@ class Serializable(object):
     """
     contains the to_dict and from_dict method to output properties of object in a list.
     
-    This class is intented as a mixin so to_dict and from_dict become part of the object
+    This class is intended as a mixin so to_dict and from_dict become part of the object
     and the object must define a state attribute of type State().
     
     The default state=State(create=['id']) is a static variable for this class
@@ -71,10 +101,14 @@ class Serializable(object):
     properties, 'read' for readonly properties and 'create' for a list of properties
     required to create new object.
     
-    The default state contains 'id' in the create list. This is because all GnomeObject's
-    need 'id' to create a new one.
+    The default state contains 'id' in the create list. This is because all objects
+    in a Model need 'id' to create a new one.
+    
+    Similary, 'obj_type' is required for all objects, this is so the scenario module
+    knows which object to create when loading from file. A default implementation of obj_type_to_dict
+    exists here.
     """
-    state = State(create=['id'])
+    state = State(create=['id','obj_type'])
     #===========================================================================
     # @classmethod
     # def add_state(cls, **kwargs):
@@ -128,34 +162,6 @@ class Serializable(object):
         however, do='create' or do='read' will return the dict with the corresponding
         list.
         
-        Under the hood, it calls _to_dict(self.state.update) if do='update'
-        """
-        if do == 'update':
-            return self._to_dict(self.state.update)
-        
-        elif do == 'create':
-            return self._to_dict(self.state.create)
-        
-        elif do == 'read':
-            return self._to_dict(self.state.read)
-        else:
-            raise ValueError("input not understood. String must be one of following: 'update', 'create' or 'readonly'.")
-        
-    def from_dict(self, data):
-        """
-        modifies state of the object using dictionary 'data'. 
-        Only the self.state.update list contains properties that can me modified for existing object
-        
-        Under the hood, it calls _from_dict(self.state.update, data)
-        """
-        return self._from_dict(self.state.update, data)
-        
-    def _to_dict(self, list_):
-        """
-        Return a dictionary containing the serialized representation of this
-        object, using provided input list to look up fields on the object
-        that the dictionary should contain.
-
         For every field, if there is a method defined on the object such that
         the method name is `{field_name}_to_dict`, use the return value of that
         method as the field value.
@@ -163,8 +169,19 @@ class Serializable(object):
         Note: any field in `list` that does not exist on the
         object and does not have a to_dict method will raise an AttributeError.
         """
+        if do == 'update':
+            #return self._to_dict(self.state.update)
+            list_ = self.state.update
+        elif do == 'create':
+            #return self._to_dict(self.state.create)
+            list_ = self.state.create
+        elif do == 'read':
+            #return self._to_dict(self.state.read)
+            list_ = self.state.read
+        else:
+            raise ValueError("input not understood. String must be one of following: 'update', 'create' or 'readonly'.")
+        
         data = {}
-
         for key in list_:
             to_dict_fn_name = '%s_to_dict' % key
 
@@ -174,13 +191,17 @@ class Serializable(object):
                 value = getattr(self, key)
 
             if hasattr(value, 'to_dict'):
-                value = value.to_dict()
+                value = value.to_dict(do)   # recursively call on contained objects
 
             data[key] = value
         return data
     
-    def _from_dict(self, list_, data):
+        
+    def from_dict(self, data):
         """
+        modifies state of the object using dictionary 'data'. 
+        Only the self.state.update list contains properties that can me modified for existing object
+        
         Set the state of this object using the dictionary ``data`` by looking up
         the value of each key in ``data`` that is also in  `list_`. Input list_ 
         contains the object's attributes (or fields) updated with data
@@ -196,6 +217,9 @@ class Serializable(object):
         If neither method exists, then set the field with the value from
         ``data`` directly on the object.
         """
+        #return self._from_dict(self.state.update, data)
+        list_ = self.state.update
+        
         for key in list_:
             if not key in data:
                 continue
@@ -218,8 +242,11 @@ class Serializable(object):
                 #    print "==========="
                 #    raise AttributeError("Failed to set {0}".format(key))
                 #===============================================================
-                    
         #return self    # not required
+    
+    def obj_type_to_dict(self):
+        """returns object type to save in dict. This is base implementation and can be over-ridden"""
+        return "{0.__module__}.{0.__class__.__name__}".format( self)
         
     def __eq__(self, other):
         """
