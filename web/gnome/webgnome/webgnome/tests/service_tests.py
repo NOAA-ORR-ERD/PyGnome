@@ -308,6 +308,7 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         data = self.make_wind_mover_data()
         resp = self.testapp.post_json(self.collection_url, data)
         mover_id = resp.json_body['id']
+        data = resp.json_body
 
         safe_now = self.get_safe_date(datetime.datetime.now())
         data['wind']['timeseries'][0][0] = safe_now
@@ -560,12 +561,12 @@ class LocationFileWizardServiceTests(FunctionalTestBase, ModelHelperMixin):
         wizard_url = self.model_url('/location_file/test/wizard')
         resp = self.testapp.get(wizard_url)
         data = resp.json_body
-        html = data['html'].replace('\n', '')
+        html = data['html'].replace('\n', '').replace('  ', ' ')
 
         self.assertIn("<form class='wizard form page hide' id=\"test_wizard\" "
                       "title=\"Test Location File\"", html)
-        self.assertIn('<div class="step hidden" '
-                      'data-reference-form=model-settings', html)
+        self.assertIn('<div class="step hidden"', html)
+        self.assertIn('data-show-form=model-settings', html)
         self.assertIn('<select class="type input-small" '
                       'data-value="wizard.custom_stuff" id="custom_stuff" '
                       'name="custom_stuff"', html)

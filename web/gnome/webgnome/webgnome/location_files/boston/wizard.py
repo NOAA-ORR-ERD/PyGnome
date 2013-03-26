@@ -8,4 +8,5 @@ def handle_input(model, data):
             return
 
         # Turn off this mover - any better way?
+        # outfall_mover.active = False
         outfall_mover.active_stop = outfall_mover.active_start

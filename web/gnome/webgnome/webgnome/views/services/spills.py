@@ -46,7 +46,7 @@ class SurfaceReleaseSpill(BaseResource):
         spill = self.request.validated['model'].spills[self.id]
 
         return schema.SurfaceReleaseSpillSchema().bind().serialize(
-            spill.to_dict())
+            spill.to_dict('create'))
 
     @view(validators=util.valid_spill_id,
           schema=schema.SurfaceReleaseSpillSchema)
@@ -61,7 +61,7 @@ class SurfaceReleaseSpill(BaseResource):
         model.rewind()
 
         return schema.SurfaceReleaseSpillSchema().bind().serialize(
-            spill.to_dict())
+            spill.to_dict('create'))
 
     @view(validators=util.valid_spill_id)
     def delete(self):

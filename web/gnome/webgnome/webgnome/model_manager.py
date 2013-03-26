@@ -130,18 +130,8 @@ class WebWind(Wind, Serializable):
         ('nws', 'NWS Wind Data'),
         ('buoy', 'Buoy Station ID'),
     )
-    serializable_fields = [
-        'id',
-        # set the units before timeseries, as timeseries relies on units
-        'units',
-        'timeseries',
-        'latitude',
-        'longitude',
-        'description',
-        'source_id',
-        'source_type',
-        'updated_at'
-    ]
+    state = copy.deepcopy(Wind.state)
+    state.add(create=['id'])
 
     def __init__(self, *args, **kwargs):
         self.name = kwargs.pop('name', 'Wind')
@@ -210,27 +200,6 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
         self.is_active = kwargs.pop('is_active', True)
         super(WebSurfaceReleaseSpill, self).__init__(*args, **kwargs)
 
-    serializable_fields = [
-        'id',
-        'release_time',
-        'end_release_time',
-        'start_position',
-        'end_position',
-        'windage_range',
-        'windage_persist',
-        'name',
-        'num_elements',
-        'is_active'
-    ]
-
-    @property
-    def hour(self):
-        return self.release_time.hour
-
-    @property
-    def minute(self):
-        return self.release_time.minute
-
     def _reshape(self, lst):
         return numpy.asarray(
             lst, dtype=basic_types.world_point_type).reshape((len(lst),))
@@ -253,16 +222,17 @@ class WebMapFromBNA(MapFromBNA, BaseWebObject):
     A subclass of :class:`gnome.map.MapFromBNA` that provides
     webgnome-specific functionality.
     """
-    serializable_fields = [
-        'id',
-        'name',
-        'map_bounds',
-        'refloat_halflife',
-        'relative_path'
-    ]
+    default_name = 'Map'
+    state = copy.deepcopy(MapFromBNA.state)
+    state.add(create=['name', 'relative_path'],
+              update=['name', 'relative_path'])
+
+    # TODO: Better way to remove from all lists?
+    state.update.remove('filename')
+    state.create.remove('filename')
 
     def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', 'Map')
+        self.name = kwargs.pop('name', self.default_name)
         self.relative_path = kwargs.pop('relative_path', None)
         super(WebMapFromBNA, self).__init__(*args, **kwargs)
 
@@ -296,8 +266,11 @@ class WebModel(Model, BaseWebObject):
 
     def __init__(self, *args, **kwargs):
         data_dir = kwargs.pop('data_dir')
-
         self.package_root = kwargs.pop('package_root')
+
+        # Set the model's id
+        super(WebModel, self).__init__()
+
         self.base_dir = os.path.join(self.package_root, data_dir, str(self.id))
         self.base_dir_relative = os.path.join(data_dir, str(self.id))
         self.static_data_dir = os.path.join(self.base_dir, 'data')
@@ -305,8 +278,6 @@ class WebModel(Model, BaseWebObject):
         # Create the base directory for all of the model's data.
         util.mkdir_p(self.base_dir)
         util.mkdir_p(self.static_data_dir)
-
-        super(WebModel, self).__init__()
 
         # Patch the object with an empty ``time_steps`` array for the time being.
         # TODO: Add output caching in the model?

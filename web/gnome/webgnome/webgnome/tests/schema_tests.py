@@ -21,7 +21,8 @@ class WindValueSchemaTests(TestCase):
         self.assertEqual(wind_value[2], data[2])
 
     def test_deserialize_strips_timezone(self):
-        dt = datetime.datetime.now(timezone('US/Pacific'))
+        dt = datetime.datetime(year=2013, month=2, day=5,
+                               tzinfo=timezone('US/Pacific'))
         dt_without_tz = dt.replace(tzinfo=None)
         data = [dt.isoformat(), '10.5', '180.5']
         wind_value = schema.TimeseriesValueSchema().deserialize(data)

@@ -21,10 +21,11 @@ class WindMover(BaseResource):
         model = data.pop('model')
         wind_data = data.pop('wind')
         data['wind'] = WebWind(**wind_data)
+        model.environment += data['wind']
         mover = WebWindMover(**data)
         model.movers.add(mover)
         mover_data = mover.to_dict(do='create')
-        mover_data['wind'] = wind_data
+        mover_data['wind'] = data['wind'].to_dict('create')
 
         return schema.WindMoverSchema().bind().serialize(mover_data)
 
@@ -48,8 +49,13 @@ class WindMover(BaseResource):
         """
         model = self.request.validated.pop('model')
         mover = model.movers.get(self.id)
+        mover_data = mover.to_dict()
 
-        return schema.WindMoverSchema().bind().serialize(mover.to_dict())
+        # XXX: Temporary workaround to new wind_id scheme.
+        if mover.wind:
+            mover_data['wind'] = mover.wind.to_dict('create')
+
+        return schema.WindMoverSchema().bind().serialize(mover_data)
 
     @view(validators=util.valid_mover_id, schema=schema.WindMoverSchema)
     def put(self):
@@ -59,6 +65,12 @@ class WindMover(BaseResource):
         data = self.request.validated
         model = data.pop('model')
         mover = model.movers.get(self.id)
+
+        if 'wind' in data:
+            wind = model.environment.get(data['wind']['id'])
+            wind.from_dict(data['wind'])
+            data['wind'] = wind
+
         mover.from_dict(data)
         mover_data = mover.to_dict(do='create')
 
