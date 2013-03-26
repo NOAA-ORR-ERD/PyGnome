@@ -44,7 +44,7 @@ class NavigationTree(object):
                 item['object_id'] = node_id
 
             for name, value in node.items():
-                if value == 'id':
+                if name == 'id' or name == 'obj_type':
                     continue
 
                 sub_item = {

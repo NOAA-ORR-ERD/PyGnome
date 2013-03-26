@@ -19,37 +19,62 @@ define([
 
     var DeferredManager = function() {
         this.deferreds = [];
+        this.namedDeferreds = {};
     };
 
     DeferredManager.prototype = {
+        /*
+         Add a deferred method call.
+
+         Calling this method multiple times with the same `fn` value will add
+         the method call multiple times.
+         */
         add: function(fn) {
             this.deferreds.push(fn);
         },
 
         /*
-         Loop through the "deferred" function calls in `this.deferreds` and call
-         them. If they returned a result, assume it was a $.Deferred object
-         and add it to the local `deferreds` array.
+         Add a deferred method call by name.
 
-         Finally, attach `done` and `fail` handlers to the list of deferreds, so
-         that when all deferreds complete, we resolve the call to `run` via
-         a $.Deferred object `dfd`, or if any fail, we fail `dfd`.
+         Multiple calls to this method using the same value for `name` will
+         overwrite the value, resulting in only one deferred method call for
+         each `name` value.
+         */
+        addNamed: function(name, fn) {
+            this.namedDeferreds[name] = fn;
+        },
+
+        /*
+         Loop through the closures saved in `this.deferreds` and
+         `this.namedDeferreds` and call them. Keep track of any result that is
+         a jQuery Deferred object in an `actualDeferreds` array.
+
+         Calling this method returns a jQuery Deferred object that is only
+         resolved when all Deferred objects returned by closures are resolved.
+
+         We attach `done` and `fail` handlers to any deferreds in `actualDeferreds`
+         so that when all of these Deferred objects are resolved, we resolve
+         the call to `run`. If *any* of Deferred objects fail, we fail the call
+         to `run`.
          */
         run: function() {
             var dfd = $.Deferred();
-            var deferreds = [];
+            var potentialDeferreds = this.deferreds.concat(
+                _.values(this.namedDeferreds));
+            var actualDeferreds = [];
 
-            _.each(this.deferreds, function(fn) {
+            _.each(potentialDeferreds, function(fn) {
                 var result = fn();
 
                 if (result && typeof result.done === 'function') {
-                    deferreds.push(result);
+                    actualDeferreds.push(result);
                 }
             });
 
-            $.when.apply(null, deferreds).done(function() {
+            $.when.apply(null, actualDeferreds).done(function() {
                 dfd.resolve();
             }).fail(function() {
+                // XXX: If any deferred method fails, the run operation fails.
                 dfd.fail();
             });
 
@@ -610,8 +635,9 @@ define([
 
         addDeferredButton: function(button) {
             var _this = this;
+            var name = this.$el.attr('id') + '-' + button.fnName;
 
-            deferreds.add(function() {
+            deferreds.addNamed(name, function() {
                 // The result of the function may be a jQuery
                 // Deferred object, e.g. a 'submit' function,
                 // so return the result (a Deferred or Promise).
