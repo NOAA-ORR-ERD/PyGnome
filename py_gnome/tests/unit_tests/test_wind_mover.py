@@ -244,7 +244,7 @@ def test_timespan():
     assert wm.active == False
     assert np.all(delta == 0)   # model_time + time_step = active_start
 
-    wm.active_start = model_time + timedelta(seconds=time_step/2)
+    wm.active_start = model_time - timedelta(seconds=time_step/2)
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
     wm.model_step_is_done()
@@ -252,6 +252,34 @@ def test_timespan():
     assert wm.active == True
     print "\n test_timespan: delta \n{0}".format(delta)
     assert np.all(delta[:,:2] != 0)   # model_time + time_step > active_start
+
+def test_active():
+    """ test that mover must be both active and on to get movement """
+    time_step = 15 * 60 # seconds
+
+    #todo: hack for now, but should try to use same spill for all tests
+    start_pos = (3., 6., 0.)
+    rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
+    #fixme: what to do about persistance?
+    spill = TestSpillContainer(5, start_pos, rel_time)
+    spill.release_elements(datetime.now(), time_step=100)
+
+    #model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
+    model_time = rel_time
+    spill.prepare_for_model_step(model_time, time_step)   # release particles
+
+    time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
+    time_val['time']  = np.datetime64( rel_time.isoformat() )
+    time_val['value'] = (2., 25.)
+
+    wm = movers.WindMover(environment.Wind(timeseries=time_val, units='meter per second'), on=False)
+    wm.prepare_for_model_run()
+    wm.prepare_for_model_step(spill, time_step, model_time)
+    delta = wm.get_move(spill, time_step, model_time)
+    wm.model_step_is_done()
+    assert wm.active == False
+    assert np.all(delta == 0)   # model_time + time_step = active_start
+    
 
 def test_constant_wind_mover():
     """
