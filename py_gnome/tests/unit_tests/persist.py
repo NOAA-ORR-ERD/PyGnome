@@ -25,7 +25,7 @@ start_time = datetime(2013, 2, 13, 9, 0)
 model = gnome.model.Model(start_time = start_time,
                         duration = timedelta(days=2),
                         time_step = 30 * 60, # 1/2 hr in seconds
-                        uncertain = False,
+                        uncertain = True,
                         map= gnome_map
                         )
 
