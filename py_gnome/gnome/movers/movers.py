@@ -66,17 +66,16 @@ class Mover(object):
 
     def prepare_for_model_step(self, sc, time_step, model_time_datetime):
         """
-        sets active flag based on time_span. If 
-            model_time + time_step > active_start and model_time + time_span < active_stop
-        then set flag to true.
+        sets active flag based on time_span and on flag. If 
+            model_time > active_start and model_time < active_stop then set flag to true.
         
         :param sc: an instance of the gnome.spill_container.SpillContainer class
         :param time_step: time step in seconds
         :param model_time_datetime: current time of the model as a date time object
         
         """
-        if (model_time_datetime + timedelta(seconds=time_step) > self.active_start) and \
-        (model_time_datetime + timedelta(seconds=time_step) <= self.active_stop):
+        if (model_time_datetime >= self.active_start) and \
+        (model_time_datetime < self.active_stop) and self.on:
             self._active = True
         else:
             self._active = False
@@ -167,7 +166,7 @@ class CyMover(Mover):
         self.prepare_data_for_get_move(sc, model_time_datetime)
         
         # only call get_move if mover is active, it is on and there are LEs that have been released
-        if self.active and self.on and len(self.positions) > 0:
+        if self.active and len(self.positions) > 0:
             self.mover.get_move(  self.model_time,
                                   time_step, 
                                   self.positions,
@@ -378,7 +377,7 @@ class WindMover(CyMover, serializable.Serializable):
         """
         self.prepare_data_for_get_move(sc, model_time_datetime)
         
-        if self.active and self.on and len(self.positions) > 0: 
+        if self.active and len(self.positions) > 0: 
             self.mover.get_move(  self.model_time,
                                   time_step, 
                                   self.positions,
@@ -647,7 +646,7 @@ class WeatheringMover(Mover):
         self.model_time = self.datetime_to_seconds(model_time_datetime)
         #self.prepare_data_for_get_move(sc, model_time_datetime)
 
-        if self.active and self.on and len(self.positions) > 0: 
+        if self.active and len(self.positions) > 0: 
             #self.mover.get_move(  self.model_time,
             #                      time_step,
             #                      self.positions,
@@ -831,7 +830,7 @@ class GridWindMover(CyMover):
         """
         self.prepare_data_for_get_move(sc, model_time_datetime)
         
-        if self.active and self.on and len(self.positions) > 0: 
+        if self.active and len(self.positions) > 0: 
             self.mover.get_move(  self.model_time,
                                   time_step, 
                                   self.positions,

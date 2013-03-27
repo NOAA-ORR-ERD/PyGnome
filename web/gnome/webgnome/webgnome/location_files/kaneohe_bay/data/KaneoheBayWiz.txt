@@ -1,0 +1,49 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Kaneohe Bay
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 1
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.25;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE createMap;TO model;TYPE vector; NAME Kaneohe Bay Map;PATH resnum 10003;
+--
+MESSAGE setfield;TO diffusion; coverage 20000;
+--
+MESSAGE createMover;TO Kaneohe Bay Map;TYPE Cats; NAME Flood Tide.cur;PATH resnum 10004;
+MESSAGE setfield;TO Flood Tide.cur; scaleType constant; refP 157.8195 W 21.50 N; scaleValue 1.0;timeFile resNum 10005; EddyDiffusion 100000; scaleFactor 0.184278;
+--
+MESSAGE createMover;TO Kaneohe Bay Map;TYPE Cats; NAME Outside SAC.cur;PATH resnum 10006;
+MESSAGE setfield;TO Outside SAC.cur; UpCurUncertainty 0.3; DownCurUncertainty 1.5;
+--
+MESSAGE createMover;TO Kaneohe Bay Map;TYPE Component; NAME Wind Driven Currents;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 1; NAME Outside DAC.cur;PATH resnum 10007;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER; refP 157.737667 W 21.534333 N ;
+MESSAGE setfield;TO Wind Driven Currents; pat1Angle 135; pat1Speed 20; pat1SpeedUnits knots; pat1ScaleToValue 0.17159;
+MESSAGE setfield;TO Wind Driven Currents;scaleBy WindStress;
+
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Kaneohe Bay;
+-------------------------------------------
+

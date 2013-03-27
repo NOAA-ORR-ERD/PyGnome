@@ -432,7 +432,7 @@ class Model(serializable.Serializable):
         In addition to checking properties, also check the equality of
         objects in each collection
         """
-        check = super(Wind,self).__eq__(other)
+        check = super(Model,self).__eq__(other)
         
         #=======================================================================
         # if check:

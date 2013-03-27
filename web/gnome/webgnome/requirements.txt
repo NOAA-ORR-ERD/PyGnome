@@ -1,6 +1,7 @@
 requests
 lxml
 pytz
+python-dateutil==2.1
 WebHelpers2
 python-cjson==1.0.5
 pyramid==1.4a1

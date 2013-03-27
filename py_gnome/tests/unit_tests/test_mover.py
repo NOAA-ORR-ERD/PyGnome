@@ -33,18 +33,25 @@ def test_active():
     time_step = 15 * 60 # seconds
     model_time = datetime(2012, 8, 20, 13)
     sc = TestSpillContainer(1, (0,0,0))   # no used for anything
+    
+    mv = movers.Mover(active_start=model_time )
+    mv.prepare_for_model_step( sc, time_step, model_time)
+    assert mv.active == True    # model_time = active_start
+    
     mv = movers.Mover(active_start=model_time+timedelta(seconds=time_step) )
     mv.prepare_for_model_step( sc, time_step, model_time)
     assert mv.active == False    # model_time + time_step = active_start
     
-    mv.active_start = model_time + timedelta(seconds=time_step/2)
+    mv.active_start = model_time - timedelta(seconds=time_step/2)
     mv.prepare_for_model_step( sc, time_step, model_time)
-    assert mv.active == True # model_time + time_step > active_start
+    assert mv.active == True    # model_time - time_step/2 = active_start
     
     # No need to test get_move again, above tests it is working per active flag
     # Next test just some more borderline cases that active is being set correctly
     mv.active_stop = model_time + timedelta(seconds=1.5*time_step)
     mv.prepare_for_model_step( sc, time_step, model_time)
     assert mv.active == True
-    mv.prepare_for_model_step( sc, time_step, model_time+timedelta(seconds=time_step))
-    assert mv.active == False    
+    
+    mv.active_stop = model_time + timedelta(seconds=2*time_step)
+    mv.prepare_for_model_step( sc, time_step, model_time+2*timedelta(seconds=time_step))
+    assert mv.active == False

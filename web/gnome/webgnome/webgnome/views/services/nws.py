@@ -7,7 +7,7 @@ from webgnome.views.services.base import BaseResource
 
 
 @resource(path='/nws/wind', renderer='gnome_json',
-          description='National Weather Service Wind Data.')
+          description='National Weather Service wind data.')
 class Wind(BaseResource):
     @view(validators=util.valid_coordinate_pair)
     def get(self):

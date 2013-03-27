@@ -15,7 +15,7 @@
                                         ('variable-wind', 'Variable')),
                                         class_='type input-small', data_value='mover:type'),
                                 label='Type', inline=True)}
-            ${defs.form_control(h.select('units', None, velocity_unit_options,
+            ${defs.form_control(h.select('units', 'knots', velocity_unit_options,
                                          class_='units input-small', data_value='wind.units'),
                                 label='Units', inline=True)}
             ${defs.form_control(h.checkbox('on', data_checked='mover.on'),

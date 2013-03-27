@@ -73,7 +73,7 @@ def convertable_to_seconds(node, value):
 
 
 def degrees_true(node, direction):
-    if 0 > direction > 360:
+    if 0 > direction or direction > 360:
         raise Invalid(
             node, 'Direction in degrees true must be between 0 and 360.')
 
@@ -165,8 +165,8 @@ class DatetimeValue2dArray(Sequence):
     array using :class:`gnome.basic_types.datetime_value_2d` as the data type.
     """
 
-    def deserialize(self, *args, **kwargs):
-        items = super(DatetimeValue2dArray, self).deserialize(*args, **kwargs)
+    def deserialize(self, node, cstruct, accept_scalar=None):
+        items = super(DatetimeValue2dArray, self).deserialize(node, cstruct)
         num_timeseries = len(items)
         timeseries = numpy.zeros((num_timeseries,),
                                  dtype=gnome.basic_types.datetime_value_2d)
@@ -176,6 +176,15 @@ class DatetimeValue2dArray(Sequence):
             timeseries['value'][idx] = (value[1], value[2])
 
         return timeseries
+
+    def serialize(self, node, appstruct, accept_scalar=None):
+        series = []
+
+        for wind_value in appstruct:
+            dt = wind_value[0].astype(object)
+            series.append((dt, wind_value[1][0], wind_value[1][1]))
+
+        return series
 
 
 class DatetimeValue2dArraySchema(SequenceSchema):
@@ -187,6 +196,7 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
 
 
 class WindSchema(MappingSchema):
+    id = SchemaNode(String(), missing=drop)
     source_id = SchemaNode(String(), default=None, missing=None)
     source_type = SchemaNode(String(), default='manual', missing='manual',
                              validator=OneOf([source[0] for source in
@@ -202,15 +212,20 @@ class WindSchema(MappingSchema):
 
 class BaseMoverSchema(MappingSchema):
     on = SchemaNode(Bool(), default=True, missing=True)
-    active_start = SchemaNode(LocalDateTime(), default=None, missing=None,
+    active_start = SchemaNode(LocalDateTime(),
+                              default=datetime.datetime(*time.gmtime(0)[:6]),
+                              missing=datetime.datetime(*time.gmtime(0)[:6]),
                               validator=convertable_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), default=None, missing=None,
+    active_stop = SchemaNode(LocalDateTime(),
+                             default=datetime.datetime(2038, 1, 18, 0, 0, 0),
+                             missing=datetime.datetime(2038, 1, 18, 0, 0, 0),
                              validator=convertable_to_seconds)
 
 
 class WindMoverSchema(BaseMoverSchema):
     default_name = 'Wind Mover'
     wind = WindSchema()
+    id = SchemaNode(String(), missing=drop)
     name = SchemaNode(String(), default=default_name, missing=default_name)
     uncertain_duration = SchemaNode(Float(), default=3, validator=Range(min=0))
     uncertain_time_delay = SchemaNode(Float(), default=0, validator=Range(min=0))
@@ -222,6 +237,7 @@ class WindMoverSchema(BaseMoverSchema):
 
 class RandomMoverSchema(BaseMoverSchema):
     default_name = 'Random Mover'
+    id = SchemaNode(String(), missing=drop)
     name = SchemaNode(String(), default=default_name, missing=default_name)
     diffusion_coef = SchemaNode(Float(), default=100000, missing=100000)
 
@@ -240,6 +256,7 @@ class WindageRangeSchema(TupleSchema):
 class SurfaceReleaseSpillSchema(MappingSchema):
     default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
+    id = SchemaNode(String(), missing=drop)
     num_elements = SchemaNode(Int(), default=0, validator=positive)
     release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
                               missing=now, validator=convertable_to_seconds)
@@ -281,8 +298,8 @@ class MapBoundsSchema(SequenceSchema):
 
 
 default_map_bounds = ((-360, 90),
-                      ( 360, 90),
-                      ( 360, -90),
+                      (360, 90),
+                      (360, -90),
                       (-360, -90))
 
 
@@ -292,15 +309,16 @@ class MapSchema(MappingSchema):
     refloat_halflife = SchemaNode(Float(), default=1)
     map_bounds = MapBoundsSchema(default=default_map_bounds,
                                  missing=default_map_bounds)
+    relative_path = SchemaNode(String(), default=None, missing=drop)
 
 
 # Input values GOODS expects for the `resolution` field on a custom map form.
 custom_map_resolutions = [
-    'c', # course
-    'l', # low
-    'i', # intermediate
-    'h', # high
-    'f'  # full
+    'c',  # course
+    'l',  # low
+    'i',  # intermediate
+    'h',  # high
+    'f'   # full
 ]
 
 
@@ -316,17 +334,24 @@ class CustomMapSchema(MappingSchema):
     refloat_halflife = SchemaNode(Float(), default=1)
 
 
-class ModelSettingsSchema(MappingSchema):
+class ModelSchema(MappingSchema):
+    id = SchemaNode(String(), missing=drop)
     start_time = SchemaNode(LocalDateTime(), default=now,
                             validator=convertable_to_seconds)
     duration_days = SchemaNode(Int(), default=1, validator=Range(min=0))
-    duration_hours = SchemaNode(Int(),default=0, validator=Range(min=0))
+    duration_hours = SchemaNode(Int(), default=0, validator=Range(min=0))
     uncertain = SchemaNode(Bool(), default=False)
     time_step = SchemaNode(Float(), default=0.1)
+    surface_release_spills = SurfaceReleaseSpillsSchema(
+        default=[], missing=drop)
+    wind_movers = WindMoversSchema(default=[], missing=drop)
+    random_movers = RandomMoversSchema(default=[], missing=drop)
+    map = MapSchema(missing=drop)
 
 
-class ModelSchema(ModelSettingsSchema):
-    surface_release_spills = SurfaceReleaseSpillsSchema(default=[])
-    wind_movers = WindMoversSchema(default=[])
-    random_movers = RandomMoversSchema(default=[])
-    map = MapSchema()
+class LocationFileSchema(MappingSchema):
+    name = SchemaNode(String())
+    latitude = SchemaNode(Float())
+    longitude = SchemaNode(Float())
+    model_data = ModelSchema()
+

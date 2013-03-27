@@ -1,0 +1,95 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+10011
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Boston and vicinity
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 1
+-- starting with zero makes it backwardly compatible
+EXPIRATIONDATE 2025
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.25;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+minkilometersperinch 2.7;
+--
+MESSAGE createMap;TO model;TYPE vector; NAME Massachusetts Bay Map;PATH resnum 10003;
+--
+--
+--Gulf of Maine arm entering Massachusetts Bay
+--
+MESSAGE createMover;TO Massachusetts Bay Map;TYPE Cats; NAME GulfMaine.cur;PATH resnum 10006;
+MESSAGE setfield;TO GulfMaine.cur; scaleType constant;refP 70.666667 W 42.55 N; scaleValue 0.04; DownCurUncertainty 0.8; CrossCurUncertainty 0.2;
+--
+--
+--Tides
+--
+MESSAGE createMover;TO Massachusetts Bay Map;TYPE Cats; NAME Ebb Tides.cur;PATH resnum 10004;
+MESSAGE setfield;TO Ebb Tides.cur; scaleType constant;refP 70.8875 W 42.321333 N; scaleValue -1; timeFile resNum 10005; EddyDiffusion 100000;
+--
+--
+--Merrimack River influenced coastal flow
+--
+MESSAGE createMover;TO Massachusetts Bay Map;TYPE Cats; NAME MerrimackMassCoast.cur;PATH resnum 10007;
+MESSAGE setfield;TO MerrimackMassCoast.cur; scaleType constant;refP 70.65 W 42.58333 N; scaleValue 1; timeFile resNum 10008; SpeedUnits meterspersecond; DownCurUncertainty 0.5; 
+--
+--
+-- Sewage Outfall (Default = 0)
+--
+MESSAGE createMover;TO Massachusetts Bay Map;TYPE Cats; NAME MassBaySewage.cur;PATH resnum 10009;
+--
+--
+--Wind component mover
+--
+MESSAGE createMover;TO Massachusetts Bay Map;TYPE Component; NAME Wind Driven Currents;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 1; NAME WAC10msNW.cur;PATH resnum 10012;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 70.855 W 42.275 N; 
+MESSAGE setfield;TO Wind Driven Currents; pat1Angle 315; pat1Speed 19.44; pat1SpeedUnits knots; pat1ScaleToValue 0.138855;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 2; NAME WAC10msSW.cur;PATH resnum 10013;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 70.855 W 42.275 N; 
+MESSAGE setfield;TO Wind Driven Currents; pat2Angle 225; pat2Speed 19.44; pat2SpeedUnits knots; pat2ScaleToValue 0.05121;
+MESSAGE setfield;TO Wind Driven Currents;scaleBy WindStress;
+
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Boston and vicinity;
+-------------------------------------------
+[WMSG 10010]
+-------------------------------------------
+[WMSG 10011]
+
+-----------Sewage Outfall Simulation Choice-------------------
+--$V4 is the user's choice for simulating surface effects from the MWRA Effluent Outfall 
+--Tunnel in Massachusetts Bay
+--
+-- user selected no sewage outfall effects
+set Sewage_EffectsQ1 0 
+set User_ChoiceQ1 No outfall effects
+--
+-- sewage outfall effects --
+set Sewage_EffectsQ2  0.04
+set User_ChoiceQ2 Sewage Outfall effects
+--
+LHSTEXT {User_ChoiceQ{$V4}};
+--
+MESSAGE setfield;TO MassBaySewage.cur; scaleType constant;refP 70.78333 W 42.39333 N; scaleValue {Sewage_EffectsQ{$V4}};  
+--
+--DEBUGSTR Sewage_Effects = {Sewage_Effects}
+--

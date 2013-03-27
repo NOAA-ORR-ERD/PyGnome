@@ -1,3 +1,5 @@
+from cornice import Service
+
 
 class BaseResource(object):
     optional_fields = []
@@ -27,3 +29,4 @@ class BaseResource(object):
                 del data[key]
 
         return data
+
