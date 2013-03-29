@@ -24,7 +24,7 @@ class Model(serializable.Serializable):
                'movers',
                'environment',
                'spills',
-               'map'
+               'maps'
                ]
     _create = []
     _create.extend(_update)
@@ -32,16 +32,18 @@ class Model(serializable.Serializable):
     state.add(create=_create,
               update=_update)   # no need to copy parent's state in tis case
     
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """create compound objects like map, output_map from dict, then pass it onto new_from_dict"""
-        if 'map' in dict_:
-            obj_ = dict_.pop('map')
-            to_eval = "{0}.new_from_dict( obj_)".format( obj_.pop('obj_type'))
-            map = eval(to_eval)
-            dict_['map'] = map  # update dict with object
-            
-        return super(Model, cls).new_from_dict( dict_)
+    #===========================================================================
+    # @classmethod
+    # def new_from_dict(cls, dict_):
+    #    """create compound objects like map, output_map from dict, then pass it onto new_from_dict"""
+    #    if 'map' in dict_:
+    #        obj_ = dict_.pop('map')
+    #        to_eval = "{0}.new_from_dict( obj_)".format( obj_.pop('obj_type'))
+    #        map = eval(to_eval)
+    #        dict_['map'] = map  # update dict with object
+    #        
+    #    return super(Model, cls).new_from_dict( dict_)
+    #===========================================================================
     
     def __init__(self,
                  time_step=900, # 15 minutes in seconds
@@ -321,7 +323,7 @@ class Model(serializable.Serializable):
         :param images_dir: directory to write the image to.
         """
         if self.output_map is None:
-            raise ValueError("You must have an ouput map to use the image output")
+            raise ValueError("You must have an output map to use the image output")
         if self.current_time_step == 0:
             self.output_map.draw_background()
             self.output_map.save_background(os.path.join(images_dir, "background_map.png"))
@@ -425,6 +427,18 @@ class Model(serializable.Serializable):
     def spills_to_dict(self):
         return SpillContainerPair.to_dict(self.spills)
 
+    def maps_to_dict(self):
+        """
+        create a dict_ that contains:
+        'map': (type, object.id)
+        'ouput_map': (type, object.id)
+        """
+        dict_ = {'map': ("{0}.{1}".format(self.map.__module__, self.map.__class__.__name__), self.map.id)}
+        #if output_map is not None:
+        #    dict_.update({'output_map': ("{0}.{1}".format(self.output_map.__module__, self.output_map.__class__.__name__), self.output_map.id)})
+            
+        return dict_
+    
     def __eq__(self, other):
         """
         override serializable.Serializable.__eq__() method

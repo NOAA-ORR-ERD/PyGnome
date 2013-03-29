@@ -10,7 +10,7 @@ import string
 import shutil
 
 import gnome
-from gnome.persist import environment_schema, model_schema, movers_schema, spills_schema
+from gnome.persist import environment_schema, model_schema, movers_schema, spills_schema, map_schema
 
 
 def save(model, saveloc=None):
@@ -27,7 +27,8 @@ def save(model, saveloc=None):
     dict_ = model.to_dict('create')
     
     model_to_json = gnome.persist.model_schema.Model().serialize( dict_ )
-    model_to_json['map'] = _move_data_file(model_to_json['map'], saveloc)
+    _save_collection( [model.map],'map_schema',saveloc)
+    #model_to_json['map'] = _move_data_file(model_to_json['map'], saveloc)
     
     _save_to_file(model_to_json,
                   os.path.join( saveloc, '{0}_{1}.txt'.format( model.__class__.__name__, model.id)))
@@ -60,6 +61,11 @@ def load(saveloc, filename=None):
     # first load model, then create other objects and add to model
     model_json = _load_from_file(model_file)
     model_dict = gnome.persist.model_schema.Model().deserialize( model_json )
+    
+    maps = _load_dict(model_dict['maps'], 'map_schema', saveloc)
+    for key in maps.keys():
+        model_dict.update({key:maps[key]})
+    
     model = gnome.model.Model.new_from_dict(model_dict)
     print "created base model ..."
     
@@ -83,7 +89,6 @@ def load(saveloc, filename=None):
 
     return model
     
-
 def _save_collection(coll_,schema_module, saveloc):
     for obj in coll_:
         dict_ = obj.to_dict('create')
@@ -133,6 +138,25 @@ def _load_collection(coll_dict, schema_module, saveloc):
         obj = _obj_from_json( type_, schema_module, obj_json)
         obj_list.append( obj) 
     return obj_list
+
+def _load_dict(dict_, schema_module, saveloc):
+    """ 
+    each keyword contains a tuple (type, id). For instance,
+    'map': ("gnome.map.MapFromBNA", id)
+    
+    Use this to re-create gnome.map.MapFromBNA object from file
+    Return a dict with same keywords but values now containing recreated objects
+    'map' : recreated MapFromBNA object 
+    """
+    obj_dict = {}
+    for key in dict_.keys():
+        type_ = dict_[key][0]
+        id_ = dict_[key][1]
+        obj_json = _find_and_load_json_file( type_, id_, saveloc)
+        obj = _obj_from_json( type_, schema_module, obj_json)
+        obj_dict.update({key:obj})
+
+    return obj_dict
 
 def _find_and_load_json_file( type_, id_, saveloc):
     obj_file = glob.glob( os.path.join(saveloc, '*_{0}.txt'.format(id_) ) )

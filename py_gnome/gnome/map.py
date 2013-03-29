@@ -41,7 +41,7 @@ class GnomeMap(serializable.Serializable):
     
     This also serves as a description of the interface
     """
-    _update = ['map_bounds']
+    _update = ['map_bounds','spillable_area']
     _create = []
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
@@ -49,16 +49,25 @@ class GnomeMap(serializable.Serializable):
     
     refloat_halflife = None # note -- no land, so never used
 
-    def __init__(self, map_bounds = None, **kwargs):
+    def __init__(self, **kwargs):
         """
         This __init__ will be different for other implementations
         
+        Optional parameters (kwargs)
         :param map_bounds: the bounds of the map:
             ( (x1,y1), (x2,y2),(x3,y3),..)
             An NX2 array of points that describe a polygon
             if no map bounds is provided -- the whole world is valid
-        
+            
+        Optional arguments (kwargs)
+        :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
+        :param spillable_area: The polygon bounding the spillable_area
+        :param id: unique ID of the object. Using UUID as a string. This is only used when loading object from save file.
+        :type id: string
         """
+        map_bounds = kwargs.pop('map_bounds',None)
+        spillable_area = kwargs.pop('spillable_area',None)
+        
         if map_bounds is not None:
             self.map_bounds = np.asarray(map_bounds, dtype=np.float64).reshape(-1, 2)
         else:
@@ -68,6 +77,12 @@ class GnomeMap(serializable.Serializable):
                                           ( 360, -90),
                                           (-360, -90),
                                           ), dtype=np.float64 )
+            
+        if spillable_area is None:
+            self.spillable_area = self.map_bounds
+        else:
+            self.spillable_area = np.asarray(spillable_area, dtype=np.float64).reshape(-1, 2)
+            
         self._gnome_id = GnomeId(id=kwargs.pop('id',None))
 
     id = property( lambda self: self._gnome_id.id)
@@ -118,7 +133,7 @@ class GnomeMap(serializable.Serializable):
          - True if the point is an allowable spill position
          - False if the point is not an allowable spill position
         """
-        return self.on_map(coord)
+        return point_in_poly(self.spillable_area, coord[:2])
 
     def beach_elements(self, spill):
         """
@@ -152,7 +167,7 @@ class RasterMap(GnomeMap):
     It requires a constant refloat half-life
     
     This will usually be initialized in a sub-class (from a BNA, etc)
-    NOTE: Not serializable since initialized from sub-class
+    NOTE: Nothing new added to state attribute for serialization
     """    
     ## NOTE: spillable area can be both larger and smaller than land raster:
     ##       map bounds can also be larger or smaller:
@@ -170,8 +185,6 @@ class RasterMap(GnomeMap):
                  refloat_halflife,    #seconds
                  bitmap_array,
                  projection,
-                 map_bounds = None,   # defaults to bounding box of raster
-                 spillable_area=None, # defaults to any water
                  **kwargs):
         """
         create a new RasterMap
@@ -183,24 +196,36 @@ class RasterMap(GnomeMap):
         
         :param projection: A gnome.map_canvas.Projection object -- used to convert from lat-long to pixels in the array
         
+        Optional arguments (kwargs)
         :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
+        :param spillable_area: The polygon bounding the spillable_area
+        :param id: unique ID of the object. Using UUID as a string. This is only used when loading object from save file.
+        :type id: string 
         """
         
         self.refloat_halflife = float(refloat_halflife)
         self.bitmap = bitmap_array
         self.projection = projection
-        if map_bounds is not None:
-            # make sure map bounds in a numpy array
-            self.map_bounds = np.asarray(map_bounds, dtype=np.float64).reshape(-1, 2)
-        else:
-            self.map_bounds = None
-        if spillable_area is not None:
-            # make sure spillable_area is a numpy array
-            self.spillable_area = np.asarray(spillable_area, dtype=np.float64).reshape(-1, 2)
-        else:
-            self.spillable_area = None
-            
-        self._gnome_id = GnomeId(id=kwargs.pop('id',None))  # TODO: not sure this is best way - maybe refactor
+        
+        GnomeMap.__init__(self, **kwargs)
+        
+        #TODO: should map_bounds and spillable_area be left as None or should it default
+        # as defined by GnomeMap -- see above __init__
+         
+        #=======================================================================
+        # if map_bounds is not None:
+        #    # make sure map bounds in a numpy array
+        #    self.map_bounds = np.asarray(map_bounds, dtype=np.float64).reshape(-1, 2)
+        # else:
+        #    self.map_bounds = None
+        # if spillable_area is not None:
+        #    # make sure spillable_area is a numpy array
+        #    self.spillable_area = np.asarray(spillable_area, dtype=np.float64).reshape(-1, 2)
+        # else:
+        #    self.spillable_area = None
+        #    
+        # self._gnome_id = GnomeId(id=kwargs.pop('id',None))  # TODO: not sure this is best way - maybe refactor
+        #=======================================================================
 
     def _on_land_pixel(self, coord):
         """
@@ -484,8 +509,8 @@ class MapFromBNA(RasterMap, serializable.Serializable):
     """
     A raster land-water map, created from a BNA file
     """
-    _update = ['refloat_halflife','filename']
-    _create = []
+    _update = ['refloat_halflife']
+    _create = ['filename']
     _create.extend(_update)
     state = copy.deepcopy(RasterMap.state)
     state.add( create=_create, update=_update)
@@ -508,19 +533,23 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         :param raster_size: the total number of pixels (bytes) to make the raster -- the actual size
         will match the aspect ratio of the bounding box of the land
         
-        todo: fix init so it handles kwargs cleanly
+        Optional arguments (kwargs)
+        :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
+        :param spillable_area: The polygon bounding the spillable_area
+        :param id: unique ID of the object. Using UUID as a string. This is only used when loading object from save file.
+        :type id: string 
         """
         #self.filename = os.path.abspath(filename)
         self.filename = filename
         polygons = haz_files.ReadBNA(filename, "PolygonSet")
-
+        map_bounds = None
+        spillable_area = None
         # find the spillable area and map bounds:
         # and create a new polygonset without them
         #  fixme -- adding a "pop" method to PolygonSet might be better
         #      or a gnome_map_data object...
         just_land = PolygonSet() # and lakes....
-        spillable_area = None
-        map_bounds = kwargs.pop('map_bounds',None)  # this isn't really used - just popped out so it isn't duplicated
+          
         for p in polygons:
             if p.metadata[1].lower() == "spillablearea":
                 spillable_area = p
@@ -536,7 +565,11 @@ class MapFromBNA(RasterMap, serializable.Serializable):
             map_bounds = BB.AsPoly()
         if spillable_area is None:
             spillable_area = map_bounds
-
+            
+        # user defined spillable_area, map_bounds overrides data obtained from polygons
+        spillable_area = kwargs.pop('spillable_area',spillable_area)
+        map_bounds = kwargs.pop('map_bounds',map_bounds)
+        
         # stretch the bounding box, to get approximate aspect ratio in projected coords.
         aspect_ratio = np.cos(BB.Center[1] * np.pi / 180 ) * BB.Width / BB.Height
         w = int(np.sqrt(raster_size*aspect_ratio))
@@ -555,8 +588,8 @@ class MapFromBNA(RasterMap, serializable.Serializable):
                            refloat_halflife, #hours
                            bitmap_array,
                            canvas.projection,
-                           map_bounds, 
-                           spillable_area, 
+                           map_bounds=map_bounds, 
+                           spillable_area=spillable_area, 
                            **kwargs)
         
         return None
