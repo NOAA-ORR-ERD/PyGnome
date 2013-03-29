@@ -1,111 +1,115 @@
 {
+    "winds": [
+        {
+            "id": "e8b7bbb5-989d-11e2-8dc9-3c07541ca142",
+            "description": "Wind Object",
+            "updated_at": "2013-03-13T12:23:41.444473",
+            "source_type": "undefined",
+            "source_id": "undefined",
+            "timeseries": [
+                [
+                    "2013-03-13T12:00:00",
+                    30.0,
+                    50.0
+                ],
+                [
+                    "2013-03-14T06:00:00",
+                    30.0,
+                    50.0
+                ],
+                [
+                    "2013-03-14T18:00:00",
+                    20.000000000000004,
+                    25.0
+                ],
+                [
+                    "2013-03-15T06:00:00",
+                    25.0,
+                    10.0
+                ],
+                [
+                    "2013-03-15T18:00:00",
+                    25.0,
+                    180.0
+                ]
+            ],
+            "units": "mps"
+        }
+    ],
     "wind_movers": [
         {
-            "on": true, 
-            "name": "Wind Mover", 
-            "uncertain_angle_scale": 0.4, 
-            "uncertain_duration": 10800.0, 
-            "active_start": "1970-01-01T00:00:00", 
-            "active_stop": "2038-01-18T00:00:00", 
-            "uncertain_time_delay": 0.0, 
-            "wind": {
-                "description": "Wind Object", 
-                "updated_at": "2013-03-13T12:23:41.444473", 
-                "source_type": "undefined", 
-                "source_id": "undefined", 
-                "timeseries": [
-                    [
-                        "2013-03-13T12:00:00", 
-                        30.0, 
-                        50.0
-                    ], 
-                    [
-                        "2013-03-14T06:00:00", 
-                        30.0, 
-                        50.0
-                    ], 
-                    [
-                        "2013-03-14T18:00:00", 
-                        20.000000000000004, 
-                        25.0
-                    ], 
-                    [
-                        "2013-03-15T06:00:00", 
-                        25.0, 
-                        10.0
-                    ], 
-                    [
-                        "2013-03-15T18:00:00", 
-                        25.0, 
-                        180.0
-                    ]
-                ], 
-                "units": "mps"
-            }, 
-            "uncertain_speed_scale": 2.0
+            "on": true,
+            "name": "Wind Mover",
+            "uncertain_angle_scale": 0.4,
+            "uncertain_duration": 10800.0,
+            "active_start": "1970-01-01T00:00:00",
+            "active_stop": "2038-01-18T00:00:00",
+            "uncertain_time_delay": 0.0,
+            "uncertain_speed_scale": 2.0,
+            "wind_id": "e8b7bbb5-989d-11e2-8dc9-3c07541ca142"
         }
-    ], 
+    ],
     "map": {
         "map_bounds": [
             [
-                -73.083328, 
+                -73.083328,
                 40.922832
-            ], 
+            ],
             [
-                -73.083328, 
+                -73.083328,
                 41.330833
-            ], 
+            ],
             [
-                -72.336334, 
+                -72.336334,
                 41.330833
-            ], 
+            ],
             [
-                -72.336334, 
+                -72.336334,
                 40.922832
             ]
-        ], 
-        "refloat_halflife": 21600.0, 
-        "name": "Long Island Sound", 
+        ],
+        "refloat_halflife": 21600.0,
+        "name": "Long Island Sound",
         "relative_path": "location_files/long_island/data/LongIslandSoundMap.BNA"
-    }, 
-    "uncertain": false, 
-    "start_time": "2013-03-13T12:00:00", 
+    },
+    "uncertain": false,
+    "start_time": "2013-03-13T12:00:00",
     "random_movers": [
         {
-            "diffusion_coef": 500000.0, 
-            "active_start": "1970-01-01T00:00:00", 
-            "name": "Random Mover", 
-            "active_stop": "2038-01-18T00:00:00", 
+            "diffusion_coef": 500000.0,
+            "active_start": "1970-01-01T00:00:00",
+            "name": "Random Mover",
+            "active_stop": "2038-01-18T00:00:00",
             "on": true
         }
-    ], 
+    ],
     "surface_release_spills": [
         {
-            "num_elements": 1000, 
+            "num_elements": 1000,
             "windage_range": [
-                0.01, 
+                0.01,
                 0.04
-            ], 
-            "name": "Long Island Spill", 
-            "is_active": true, 
+            ],
+            "name": "Long Island Spill",
+            "is_active": true,
             "end_position": [
-                -72.419992, 
-                41.20212, 
+                -72.419992,
+                41.20212,
                 0.0
-            ], 
+            ],
             "start_position": [
-                -72.419992, 
-                41.20212, 
+                -72.419992,
+                41.20212,
                 0.0
-            ], 
-            "release_time": "2013-03-13T12:00:00", 
-            "windage_persist": 900.0, 
-            "end_release_time": "2013-03-13T12:00:00", 
+            ],
+            "release_time": "2013-03-13T12:00:00",
+            "windage_persist": 900.0,
+            "end_release_time": "2013-03-13T12:00:00",
             "id": "8395c7ab-8c13-11e2-a2cc-3c07541ca142"
         }
-    ], 
-    "time_step": 0.25, 
-    "duration_hours": 0, 
+    ],
+    "time_step": 0.25,
+    "duration_hours": 0,
     "duration_days": 1, 
     "id": "8394d9e3-8c13-11e2-a64c-3c07541ca142"
 }

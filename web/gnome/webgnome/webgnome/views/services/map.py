@@ -56,8 +56,6 @@ class Map(MapResource):
         """
         data = self.request.validated
         model = data.pop('model')
-        # Ignore the map bounds on setting -- this is readonly.
-        data.pop('map_bounds')
         filename = data.pop('filename')
         relative_filename = os.path.join(model.base_dir_relative, filename)
         model.add_bna_map(relative_filename, data)
@@ -72,8 +70,7 @@ class Map(MapResource):
         model = data.pop('model')
 
         # Ignore readonly values.
-        data.pop('map_bounds')
-        data.pop('filename')
+        data.pop('filename', None)
 
         model.map.from_dict(data)
         return model.map.to_dict()

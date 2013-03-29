@@ -218,16 +218,7 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertIn('foreground_00001.png', resp.json_body['time_step']['url'])
 
 
-class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
-
-    def setUp(self):
-        super(WindMoverServiceTests, self).setUp()
-        self.create_model()
-        self.collection_url = self.model_url('/mover/wind')
-
-    def get_mover_url(self, mover_id):
-        return str('%s/%s' % (self.collection_url, mover_id))
-
+class WindHelperMixin(object):
     def get_safe_date(self, dt):
         """
         Return ``dt``, a :class:`datetime.datetime` value, stripped of micro-
@@ -240,7 +231,10 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         """
         return dt.replace(microsecond=0).isoformat()
 
-    def make_wind_mover_data(self, **kwargs):
+    def get_wind_url(self, mover_id):
+        return str('%s/%s' % (self.collection_url, mover_id))
+
+    def make_wind_data(self, **kwargs):
         now = datetime.datetime.now()
         one_day = datetime.timedelta(days=1)
         dates = [now + one_day, now + one_day * 2, now + one_day * 3]
@@ -252,10 +246,55 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         ]
 
         data = {
-            'wind': {
-                'timeseries': timeseries,
-                'units': 'mps'
-            },
+            'timeseries': [
+                [self.get_safe_date(val[0]), val[1], val[2]] for val in
+                timeseries],
+            'units': 'mps'
+        }
+
+        if kwargs:
+            data.update(**kwargs)
+
+        return data
+
+
+class WindServiceTests(FunctionalTestBase, ModelHelperMixin, WindHelperMixin):
+    def setUp(self):
+        super(WindServiceTests, self).setUp()
+        self.create_model()
+        self.collection_url = self.model_url('/environment/wind')
+
+    def test_wind_create(self):
+        data = self.make_wind_data()
+        resp = self.testapp.post_json(self.collection_url, data)
+        wind_id = resp.json_body['id']
+
+        self.assertTrue(wind_id)
+
+        resp = self.testapp.get(self.get_wind_url(wind_id))
+        self.assertEqual(resp.json['units'], 'mps')
+
+        timeseries = data['timeseries']
+        json_timeseries = resp.json['timeseries']
+
+        for i in range(3):
+            for x in range(3):
+                self.assertAlmostEqual(timeseries[i][x], json_timeseries[i][x])
+
+
+class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin,
+                            WindHelperMixin):
+    def setUp(self):
+        super(WindMoverServiceTests, self).setUp()
+        self.create_model()
+        self.collection_url = self.model_url('/mover/wind')
+        self.wind_collection_url = self.model_url('/environment/wind')
+
+    def get_mover_url(self, mover_id):
+        return str('%s/%s' % (self.collection_url, mover_id))
+
+    def make_wind_mover_data(self, **kwargs):
+        data = {
             'uncertain_duration': 4,
             'uncertain_time_delay': 2,
             'uncertain_speed_scale': 2,
@@ -266,31 +305,22 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         if kwargs:
             data.update(**kwargs)
 
-        data['wind']['timeseries'] = [
-            [self.get_safe_date(val[0]), val[1], val[2]]
-            for val in data['wind']['timeseries']]
-
         return data
 
     def test_wind_mover_create(self):
-        data = self.make_wind_mover_data()
+        wind_data = self.make_wind_data()
+        resp = self.testapp.post_json(self.wind_collection_url, wind_data)
+        wind_id = resp.json['id']
+
+        data = self.make_wind_mover_data(wind_id=wind_id)
         resp = self.testapp.post_json(self.collection_url, data)
-        mover_id = resp.json_body['id']
+        mover_id = resp.json['id']
 
         self.assertTrue(mover_id)
-
         resp = self.testapp.get(self.get_mover_url(mover_id))
 
+        self.assertEqual(wind_id, resp.json['wind_id'])
         self.assertEqual(resp.json['on'], True)
-        self.assertEqual(resp.json['wind']['units'], 'mps')
-
-        winds = data['wind']['timeseries']
-        json_winds = resp.json['wind']['timeseries']
-
-        for i in range(3):
-            for x in range(3):
-                self.assertAlmostEqual(winds[i][x], json_winds[i][x])
-
         self.assertEqual(resp.json['uncertain_duration'],
                          data['uncertain_duration'])
         self.assertEqual(resp.json['uncertain_time_delay'],
@@ -305,40 +335,50 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
                          datetime.datetime(2038, 1, 18, 0, 0, 0).isoformat())
 
     def test_wind_mover_update(self):
-        data = self.make_wind_mover_data()
+        wind_data = self.make_wind_data()
+        resp = self.testapp.post_json(self.wind_collection_url, wind_data)
+        wind_id = resp.json['id']
+
+        data = self.make_wind_mover_data(wind_id=wind_id)
         resp = self.testapp.post_json(self.collection_url, data)
         mover_id = resp.json_body['id']
         data = resp.json_body
 
-        safe_now = self.get_safe_date(datetime.datetime.now())
-        data['wind']['timeseries'][0][0] = safe_now
-        data['wind']['timeseries'][0][2] = 120
         data['uncertain_duration'] = 6
-
         resp = self.testapp.put_json(self.get_mover_url(mover_id), data)
+
         self.assertTrue(resp.json_body['id'])
+        self.assertTrue(resp.json['uncertain_duration'],
+                        data['uncertain_duration'])
 
         resp = self.testapp.get(self.get_mover_url(mover_id))
 
-        self.assertEqual(resp.json['wind']['timeseries'][0][2],
-                         data['wind']['timeseries'][0][2])
-        self.assertEqual(resp.json['wind']['timeseries'][0][0], safe_now)
-        self.assertEqual(resp.json['uncertain_duration'], 6.0)
+        self.assertTrue(resp.json['uncertain_duration'],
+                        data['uncertain_duration'])
 
     def test_wind_mover_update_is_active_fields(self):
+        wind_data = self.make_wind_data()
+        resp = self.testapp.post_json(self.wind_collection_url, wind_data)
+        wind_id = resp.json['id']
+
         active_start = datetime.datetime.now().isoformat()
         active_stop = datetime.datetime.now().isoformat()
 
         data = self.make_wind_mover_data()
         data['active_start'] = active_start
         data['active_stop'] = active_stop
+        data['wind_id'] = wind_id
         resp = self.testapp.post_json(self.collection_url, data)
 
         self.assertEqual(resp.json['active_start'], active_start)
         self.assertEqual(resp.json['active_stop'], active_stop)
 
     def test_wind_mover_delete(self):
-        data = self.make_wind_mover_data()
+        wind_data = self.make_wind_data()
+        resp = self.testapp.post_json(self.wind_collection_url, wind_data)
+        wind_id = resp.json['id']
+
+        data = self.make_wind_mover_data(wind_id=wind_id)
 
         # create a mover
         resp = self.testapp.post_json(self.collection_url, data)
@@ -610,8 +650,14 @@ class NavigationTreeTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(time_step_item['form_id'], 'model-settings')
         self.assertEqual(time_step_item['title'], 'Time Step: 0.25')
 
-        # Movers
+        # Environment
+        self.assertEqual(data[1]['title'], 'Environment')
         self.assertEqual(len(data[1]['children']), 0)
 
-        # Spills
+        # Movers
+        self.assertEqual(data[2]['title'], 'Movers')
         self.assertEqual(len(data[2]['children']), 0)
+
+        # Spills
+        self.assertEqual(data[3]['title'], 'Spills')
+        self.assertEqual(len(data[3]['children']), 0)

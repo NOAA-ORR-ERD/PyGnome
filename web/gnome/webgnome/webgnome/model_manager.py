@@ -27,7 +27,7 @@ except ImportError:
     sys.path.append('../../../py_gnome')
 
 import gnome.utilities.map_canvas
-from gnome import basic_types
+from gnome import basic_types, GnomeId
 from gnome.model import Model
 from gnome.movers import WindMover, RandomMover
 from gnome.spill import SurfaceReleaseSpill
@@ -70,16 +70,6 @@ class WebWind(BaseWebObject, Wind):
     state = copy.deepcopy(Wind.state)
     state.add(create=['id'])
 
-    def __init__(self, *args, **kwargs):
-        self.description = kwargs.pop('description', None)
-        self.source_type = kwargs.pop('source_type', None)
-        self.source_id = kwargs.pop('source_id', None)
-        self.longitude = kwargs.pop('longitude', None)
-        self.latitude = kwargs.pop('latitude', None)
-        self.updated_at = kwargs.pop('updated_at', None)
-
-        super(WebWind, self).__init__(*args, **kwargs)
-
     @property
     def timeseries(self):
         return self.get_timeseries(units=self.units)
@@ -100,9 +90,6 @@ class WebWindMover(BaseWebObject, WindMover):
               update=['uncertain_angle_scale_units', 'name'])
 
     def __init__(self, *args, **kwargs):
-        self.is_constant = kwargs.pop('is_constant', True)
-        self.on = kwargs.pop('on', True)
-
         # TODO: What to do with this value? Conversion?
         self.uncertain_angle_scale_units = kwargs.pop(
             'uncertain_angle_scale_units', None)
@@ -202,6 +189,10 @@ class WebModel(BaseWebObject, Model):
 
     spill_keys = {
         WebSurfaceReleaseSpill: 'surface_release_spills'
+    }
+
+    environment_keys = {
+        WebWind: 'winds'
     }
 
     def __init__(self, *args, **kwargs):
@@ -323,8 +314,9 @@ class WebModel(BaseWebObject, Model):
             data[key].append(obj_data)
 
         return data
-    
-    def to_dict(self, include_spills=True, include_movers=True):
+
+    def to_dict(self, include_spills=True, include_movers=True,
+                include_wind=True):
         """
         Return a dictionary representation of this model. Includes subtrees
         (lists of dictionaries) for any movers and spills configured.
@@ -347,6 +339,10 @@ class WebModel(BaseWebObject, Model):
         if self.duration_hours:
             data['duration_hours'] = self.duration_hours
 
+        if include_wind:
+            data = self.build_subtree(data, self.environment,
+                                      self.environment_keys)
+
         if include_movers:
             data = self.build_subtree(data, self.movers, self.mover_keys)
 
@@ -358,24 +354,7 @@ class WebModel(BaseWebObject, Model):
     def from_dict(self, data):
         """
         Set fields on this model from the dict ``data``.
-
-        Note: does not set movers or spills.
         """
-        def add_mover(data, cls):
-            _id = data.pop('id', None)
-            data = cls(**data)
-            if _id:
-                data._id = uuid.UUID(_id)
-            self.movers.add(data)
-
-        def add_spill(data, cls):
-            _id = data.pop('id', None)
-            spill = cls(**data)
-            # TODO: Why doesn't this work anymore?
-            # if _id:
-            #     spill._id = uuid.UUID(_id)
-            self.spills.add(spill)
-
         self.uncertain = data['uncertain']
         self.start_time = data['start_time']
         self.time_step = data['time_step'] * 60 * 60
@@ -384,6 +363,7 @@ class WebModel(BaseWebObject, Model):
             seconds=data['duration_hours'] * 60 * 60)
 
         map_data = data.get('map', None)
+        winds = data.get('winds', None)
         wind_movers = data.get('wind_movers', None)
         random_movers = data.get('random_movers', None)
         surface_spills = data.get('surface_release_spills', None)
@@ -395,18 +375,27 @@ class WebModel(BaseWebObject, Model):
             map_data.pop('filename', None)
             self.add_bna_map(relative_path, map_data)
 
+        def add_to_collection(collection, data, cls):
+            obj = cls(**data)
+            collection.add(obj)
+
+        if winds:
+            for wind in winds:
+                add_to_collection(self.environment, wind, WebWind)
+
         if wind_movers:
             for mover_data in wind_movers:
-                mover_data['wind'] = WebWind(**mover_data.pop('wind'))
-                add_mover(mover_data, WebWindMover)
+                mover_data['wind'] = self.environment.get(mover_data['wind_id'])
+                add_to_collection(self.movers, mover_data, WebWindMover)
 
         if random_movers:
             for mover_data in random_movers:
-                add_mover(mover_data, WebRandomMover)
+                add_to_collection(self.movers, mover_data, WebRandomMover)
 
         if surface_spills:
             for spill_data in surface_spills:
-                add_spill(spill_data, WebSurfaceReleaseSpill)
+                add_to_collection(self.spills, spill_data,
+                                  WebSurfaceReleaseSpill)
 
         return self
 

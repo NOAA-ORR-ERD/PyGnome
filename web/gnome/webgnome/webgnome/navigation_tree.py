@@ -69,9 +69,13 @@ class NavigationTree(object):
 
     def render(self):
         data = self.model.to_dict()
+        environment = self._render_root_node('Environment', 'add-environment')
         movers = self._render_root_node('Movers', 'add-mover')
         spills = self._render_root_node('Spills', 'add-spill')
         settings = self._render_root_node('Model Settings', 'model-settings')
+
+        environment['children'].extend(
+            self._render_children(data.pop('winds', []), form_id='edit-wind'))
 
         movers['children'].extend(
             self._render_children(data.pop('wind_movers', []),
@@ -102,4 +106,4 @@ class NavigationTree(object):
         settings['children'].extend(
             self._render_children(model_items, form_id='model-settings'))
 
-        return [settings, movers, spills]
+        return [settings, environment, movers, spills]

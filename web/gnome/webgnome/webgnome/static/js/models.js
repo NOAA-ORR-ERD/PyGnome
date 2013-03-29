@@ -724,20 +724,25 @@ define([
     });
     
     
-    var RandomMover = BaseMover.extend({});
-    
-    
-    var RandomMoverCollection = BaseCollection.extend({
-        model: RandomMover,
+var RandomMover = BaseMover.extend({});
 
-        url: function() {
-            return this.gnomeModel.url() + '/mover/random';
-        },
+var mover = new RandomMover({
+    id: 123,
+    diffusion_coefficient: 10000
+});
+    
 
-        comparator: function(mover) {
-            return this.get('active_start');
-        }
-    });
+var RandomMoverCollection = BaseCollection.extend({
+    model: RandomMover,
+
+    url: function() {
+        return this.gnomeModel.url() + '/mover/random';
+    },
+
+    comparator: function(mover) {
+        return this.get('active_start');
+    }
+});
 
 
     var Map = BaseModel.extend({
