@@ -10,7 +10,7 @@ import string
 import shutil
 
 import gnome
-from gnome.persist import environment_schema, model_schema, movers_schema
+from gnome.persist import environment_schema, model_schema, movers_schema, spills_schema
 
 
 def save(model, saveloc=None):
@@ -35,12 +35,13 @@ def save(model, saveloc=None):
     _save_collection(model.movers,'movers_schema',saveloc)
     _save_collection(model.environment, 'environment_schema', saveloc)
     
+    for sc in model.spills.items():
+        _save_collection( sc.spills,'spills_schema',saveloc)
+    
 
 def load(saveloc, filename=None):
     """
     look for model_*.txt for model to load
-    
-    (WIP) - currently not working
     """
     if not os.path.exists(saveloc):
         raise ValueError("Invalid location for saving scenario. {0} does not exist".format(saveloc))
@@ -61,6 +62,16 @@ def load(saveloc, filename=None):
     model_dict = gnome.persist.model_schema.Model().deserialize( model_json )
     model = gnome.model.Model.new_from_dict(model_dict)
     print "created base model ..."
+    
+    print "add spills .."
+    c_spills = _load_collection(model_dict['spills']['certain_spills'], 'spills_schema', saveloc)
+    if model.uncertain:
+        u_spills = _load_collection(model_dict['spills']['uncertain_spills'], 'spills_schema', saveloc)
+        obj_list = zip(c_spills, u_spills)
+    else:
+        obj_list = c_spills
+    
+    [model.spills.add(obj) for obj in obj_list]
     
     #first add environment collection - since movers depend on this
     print "add environment .."    
@@ -128,7 +139,7 @@ def _find_and_load_json_file( type_, id_, saveloc):
     if len(obj_file) == 0:
         raise IOError("No filename containing *_{0}.txt found in {1}".format(id_, saveloc))
     elif len(obj_file) > 1:
-        raise IOError("Cannot have two objects wtih same Id. Multiple filenames containing *_{0}.txt found in {1}".format(id_, saveloc))
+        raise IOError("Cannot have two objects with same Id. Multiple filenames containing *_{0}.txt found in {1}".format(id_, saveloc))
     
     obj_file = obj_file[0]
     obj_json = _load_from_file(os.path.abspath( obj_file) )

@@ -41,6 +41,7 @@
 #include <ddeml.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <io.h>
 //	#include <dos.h>			// changed for Codewarrior
 #include <math.h>
