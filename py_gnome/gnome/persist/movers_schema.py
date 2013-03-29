@@ -13,17 +13,17 @@ from colander import (
     )
 
 import gnome
-from gnome.persist.validators import convertable_to_seconds
+from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.base_schema import Id, WorldPoint
 from gnome.persist.extend_colander import LocalDateTime
 
 
 class Mover(MappingSchema):
     on = SchemaNode(Bool(), default=True, missing=True)
-    active_start = SchemaNode(LocalDateTime(), default=None, missing=None,
-                              validator=convertable_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), default=None, missing=None,
-                             validator=convertable_to_seconds)
+    active_start = SchemaNode(LocalDateTime(), default=None, missing=drop,
+                              validator=convertible_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), default=None, missing=drop,
+                             validator=convertible_to_seconds)
 
 class WindMover(Id, Mover):
     """

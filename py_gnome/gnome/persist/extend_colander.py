@@ -61,9 +61,6 @@ class DatetimeValue2dArray(Sequence):
     A subclass of :class:`colander.Sequence` that converts itself to a numpy
     array using :class:`gnome.basic_types.datetime_value_2d` as the data type.
     """
-    #def __init__(self, *args, **kwargs):
-    #    super(DatetimeValue2dArray, self).__init__(*args, **kwargs)
-    
     def serialize(self, node, appstruct):
         
         if appstruct is null:   # colander.null

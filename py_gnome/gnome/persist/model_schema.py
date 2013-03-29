@@ -41,13 +41,13 @@ class MapBounds(SequenceSchema):
     map_bounds = base_schema.LongLat()
 
 class Map(base_schema.Id, MappingSchema):
-    map_bounds = MapBounds()
+    map_bounds = MapBounds(missing=drop)
     filename = SchemaNode(String(), missing=drop)
     refloat_halflife = SchemaNode( Float(), missing=drop)
 
 class Model(base_schema.Id, MappingSchema):
     time_step = SchemaNode( Float()) 
-    start_time= SchemaNode(extend_colander.LocalDateTime(), validator=validators.convertable_to_seconds)
+    start_time= SchemaNode(extend_colander.LocalDateTime(), validator=validators.convertible_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta() )   # put a constraint for max duration?
     movers = base_schema.OrderedCollection()
     environment = base_schema.OrderedCollection()
