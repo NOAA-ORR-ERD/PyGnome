@@ -31,7 +31,7 @@ class MapItem(TupleSchema):
     
 class MapList(MappingSchema):
     map = MapItem()
-    #output_map = MapItem(missing=drop)    
+    output_map = MapItem(missing=drop)    
 
 class Model(base_schema.Id, MappingSchema):
     time_step = SchemaNode( Float()) 

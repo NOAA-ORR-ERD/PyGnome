@@ -434,8 +434,8 @@ class Model(serializable.Serializable):
         'ouput_map': (type, object.id)
         """
         dict_ = {'map': ("{0}.{1}".format(self.map.__module__, self.map.__class__.__name__), self.map.id)}
-        #if output_map is not None:
-        #    dict_.update({'output_map': ("{0}.{1}".format(self.output_map.__module__, self.output_map.__class__.__name__), self.output_map.id)})
+        if self.output_map is not None:
+            dict_.update({'output_map': ("{0}.{1}".format(self.output_map.__module__, self.output_map.__class__.__name__), self.output_map.id)})
             
         return dict_
     

@@ -21,12 +21,15 @@ gnome_map = gnome.map.MapFromBNA(mapfile,
                                  refloat_halflife=1*3600, #seconds
                                  )
 
+output_map = gnome.utilities.map_canvas.MapCanvasFromBNA((800,600),mapfile)
+
 start_time = datetime(2013, 2, 13, 9, 0)
 model = gnome.model.Model(start_time = start_time,
                         duration = timedelta(days=2),
                         time_step = 30 * 60, # 1/2 hr in seconds
                         uncertain = True,
-                        map= gnome_map
+                        map= gnome_map,
+                        output_map= output_map,
                         )
 
 print "adding a spill"
