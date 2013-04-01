@@ -114,26 +114,28 @@ class MapCanvas(object):
 
     id = property( lambda self: self._gnome_id.id)
 
-    @classmethod
-    def empty_map(cls, size, bounding_box):
-        """
-        Alternative constructor for a map_canvas with no land
-        
-        :param size: the size of the image: (width, height) in pixels 
-        
-        :param bounding_box: the bounding box you want the map to cover, in teh form:
-                             ( (min_lon, min_lat),
-                               (max_lon, max_lat) )
-        """
-        mc = cls.__new__(cls)
-        mc.image_size = size
-        mc.back_image = PIL.Image.new('P', size, color=cls.colors['background'])
-        mc.back_image.putpalette(mc.palette)
-        mc.projection = projections.FlatEarthProjection(bounding_box, size)
-        mc.map_BB = bounding_box 
-        mc.land_polygons=None 
-
-        return mc
+#===============================================================================
+#    @classmethod
+#    def empty_map(cls, image_size, bounding_box):
+#        """
+#        Alternative constructor for a map_canvas with no land
+#        
+#        :param image_size: the size of the image: (width, height) in pixels 
+#        
+#        :param bounding_box: the bounding box you want the map to cover, in teh form:
+#                             ( (min_lon, min_lat),
+#                               (max_lon, max_lat) )
+#        """
+#        mc = cls.__new__(cls)
+#        mc.image_size = image_size
+#        mc.back_image = PIL.Image.new('P', image_size, color=cls.colors['background'])
+#        mc.back_image.putpalette(mc.palette)
+#        mc.projection = projections.FlatEarthProjection(bounding_box, image_size)
+#        mc.map_BB = bounding_box 
+#        mc._land_polygons=None 
+# 
+#        return mc
+#===============================================================================
 
     @property
     def viewport(self):
