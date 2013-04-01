@@ -34,9 +34,8 @@ def make_map(bna_filename, png_filename, image_size = (500, 500)):
     #print "Reading input BNA"
     polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
 
-    canvas = MapCanvas(image_size)
+    canvas = MapCanvas(image_size, land_polygons=polygons)
     
-    canvas.set_land(polygons)
     canvas.draw_background()
     
     canvas.save_background(png_filename, "PNG")
@@ -61,33 +60,40 @@ class MapCanvas(object):
                   ('land',        (255, 204, 153) ),
                   ('LE',          (  0,   0,   0) ),
                   ('uncert_LE',   (255,   0,   0) ),
-                  ('map_BB',  (175, 175, 175) ),
+                  ('map_bounds',  (175, 175, 175) ),
                   ]
 
     colors  = dict( [(i[1][0], i[0]) for i in enumerate(colors_rgb)] )
     palette = np.array( [i[1] for i in colors_rgb], dtype=np.uint8 ).reshape((-1,))
 
-    def __init__(self, image_size, **kwargs):
+    def __init__(self, image_size, land_polygons=None, **kwargs):
         """
         create a new map image from scratch -- specifying the size:
+        Only the "Palette" image mode to used for drawing image. 
         
-        :param size: (width, height) tuple of the image size in pixels
-        :param projection_class: gnome.utilities.projections class to use.
-        :param mode='RGB': image mode to use -- format of image. Options are: 'RGB', 'palette', 'B&W'
+        :param image_size: (width, height) tuple of the image size in pixels
+        
+        Optional parameter:
+        :param land_polygons: a PolygonSet (gnome.utilities.geometry.polygons.PolygonSet) used to define the map. 
+                              If this is None, MapCanvas has no land. Set during object creation.
         
         Optional parameters (kwargs)
-        :param projection_class:
-        :param id:
-        :param viewport:
+        :param projection_class: gnome.utilities.projections class to use. Default is gnome.utilities.projections.FlatEarthProjection
+        :param map_BB:  map bounding box. Default is to use land_polygons.bounding_box. If land_polygons is None, then this is
+                        the whole world, defined by ((-180,-90),(180, 90))
+        :param viewport: viewport of map -- what gets drawn and on what scale. Default is to set viewport = map_BB
+        :param image_mode: Image mode ('P' for palette or 'L' for Black and White image)
+                           BW_MapCanvas inherits from MapCanvas and sets the mode to 'L'
+                           Default image_mode is 'P'.
+        :param id: unique identifier for a instance of this class (UUID given as a string). 
         """
         self.image_size = image_size
-        self.back_image = PIL.Image.new('P', self.image_size, color=self.colors['background'])
+        mode = kwargs.pop('image_mode', 'P')
+        self.back_image = PIL.Image.new(mode, self.image_size, color=self.colors['background'])
         self.back_image.putpalette(self.palette)
         
         # optional arguments (kwargs)
-        self.land_polygons = kwargs.pop('land_polygons', None)
-        
-        # should user be able to change map_BB and viewport?
+        self._land_polygons = land_polygons
         self.map_BB = kwargs.pop('map_BB', None)    
         
         if self.map_BB is None:
@@ -145,35 +151,10 @@ class MapCanvas(object):
         """
         self._viewport = viewport_BB
         self.projection.set_scale(viewport_BB, self.image_size)
-    
-    def set_land(self, polygons):
-        """ todo: need to fix this - viewport is coupled here! """
-        self.land_polygons = polygons
-        self.map_BB = polygons.bounding_box # not sure if we want to do this
-        #self.projection.set_scale(self.map_BB, self.image_size)
-        self.viewport = self.map_BB
-#===============================================================================
-#    def set_land(self, polygons, BB=None):
-#        """
-#        sets the land polygons and optionally reset projection to fit
-# 
-#        :param polygons:  a geometry.polygons object, holding the land polygons
-#        :param BB:  the bounding box (in lat, long) of the resulting image
-#                    if BB == 'keep' the current scaling, etc is used
-#                    if BB is None, the bounding box will be determined from
-#                       the input polygons
-#        """
-#        self.land_polygons = polygons
-#        
-#        if self.map_BB is None:
-#            """ set only if not previously set """
-#            self.map_BB = polygons.bounding_box
-#        if BB is None:
-#            # find the bounding box from the polygons
-#            self.projection.set_scale(self.map_BB, self.image_size)
-#        elif BB != 'keep': # if it's keep, don't change the scale
-#            self.projection.set_scale(self.land_BB, self.image_size)
-#===============================================================================
+
+    @property
+    def land_polygons(self):
+        return self._land_polygons
 
     def draw_background(self):
         """
@@ -201,7 +182,7 @@ class MapCanvas(object):
                 if p.metadata[1].strip().lower() == "map bounds":
                     #Draw the map bounds polygon
                     poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                    drawer.polygon(poly, outline=self.colors['map_BB'])
+                    drawer.polygon(poly, outline=self.colors['map_bounds'])
                 elif p.metadata[1].strip().lower() == "spillablearea":
                     # don't draw the spillable area polygon
                     continue
@@ -281,25 +262,29 @@ class BW_MapCanvas(MapCanvas):
                   ('land',        1 ),
                   ('LE',          255 ),
                   ('uncert_LE',   255 ),
-                  ('map_BB',  0 ),
+                  ('map_bounds',  0 ),
                   ]
 
     colors  = dict( colors_BW )
     
-    def __init__(self, size, projection_class=projections.FlatEarthProjection):
+    def __init__(self, image_size, land_polygons=None, projection_class=projections.FlatEarthProjection):
         """
         create a new B&W map image from scratch -- specifying the size:
         
-        :param size: (width, height) tuple of the image size
+        :param image_size: (width, height) tuple of the image size
         :param projection_class: gnome.utilities.projections class to use.
         
         """
-        self.image_size = size
-        ##note: type "L" because type "1" didn't seem to give the right numpy array
-        self.back_image = PIL.Image.new('L', self.image_size, color=self.colors['background'])
-        #self.back_image = PIL.Image.new('L', self.image_size, 1)
-        self.projection = projection_class(((-180,-85),(180, 85)), self.image_size) # BB will be re-set
-        self.map_BB = None
+        #=======================================================================
+        # self.image_size = image_size
+        # ##note: type "L" because type "1" didn't seem to give the right numpy array
+        # self.back_image = PIL.Image.new('L', self.image_size, color=self.colors['background'])
+        # #self.back_image = PIL.Image.new('L', self.image_size, 1)
+        # self.projection = projection_class(((-180,-85),(180, 85)), self.image_size) # BB will be re-set
+        # self.map_BB = None
+        #=======================================================================
+        MapCanvas.__init__(self, image_size, land_polygons=land_polygons, 
+                           projection_class=projections.FlatEarthProjection, image_mode='L')
 
     def as_array(self):
         """
@@ -328,7 +313,7 @@ class BW_MapCanvas(MapCanvas):
     
 class MapCanvasFromBNA(MapCanvas, serializable.Serializable):
     """ 
-    extends the MapCanvas class to initialize from BNA
+    extends the MapCanvas class to initialize from BNA -- land_polygons is set based on BNA map
     
     This class is serializable 
     """

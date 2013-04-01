@@ -31,8 +31,7 @@ def test_render_BW():
     note: it is rendered "almost black" on black...
     '''
     polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
-    m = map_canvas.BW_MapCanvas( (500,500) )
-    m.set_land(polygons)
+    m = map_canvas.BW_MapCanvas( (500,500), land_polygons=polygons)
     m.draw_background()
     #m.save_background('BW_LandMap.png') #Write the result to the present working directory as a PNG image file.
     
@@ -40,23 +39,21 @@ def test_render_BW():
 
 
 def test_basemap_square():
-    map = map_canvas.MapCanvas((300, 300))
     polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
     p1 = gnome.utilities.geometry.polygons.Polygon([[0,45],[1,45],[1,46],[0,46]], metadata=('name','land','1'))
     set = gnome.utilities.geometry.polygons.PolygonSet()
     set.append(p1)
-    map.set_land(set)
+    map = map_canvas.MapCanvas((300, 300), land_polygons=set)
     map.draw_background()
     map.save_background("background_square.png")
     assert True
 
 def test_basemap_square2():
-    map = map_canvas.MapCanvas((100, 300))
     polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
     p1 = gnome.utilities.geometry.polygons.Polygon([[0,45],[1,45],[1,46],[0,46]], metadata=('name','land','1'))
     set = gnome.utilities.geometry.polygons.PolygonSet()
     set.append(p1)
-    map.set_land(set)
+    map = map_canvas.MapCanvas((100, 300), set)
     map.draw_background()
     map.save_background("background_square2.png")
     assert True
@@ -67,33 +64,30 @@ def test_basemap_square3():
     p1 = gnome.utilities.geometry.polygons.Polygon([[0,45],[1,45],[1,46],[0,46]], metadata=('name','land','1'))
     set = gnome.utilities.geometry.polygons.PolygonSet()
     set.append(p1)
-    map.set_land(set)
+    map = map_canvas.MapCanvas((300, 100), land_polygons=set)
     map.draw_background()
     map.save_background("background_square3.png")
     assert True
 
 
 def test_basemap():
-    map = map_canvas.MapCanvas((400, 800))
     polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
-    map.set_land(polygons)
+    map = map_canvas.MapCanvas((400, 800), polygons)
     map.draw_background()
     map.save_background("background1.png")
     assert True
 
 def test_basemap_wide():
-    map = map_canvas.MapCanvas((800, 400))
     polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
-    map.set_land(polygons)
+    map = map_canvas.MapCanvas((800, 400), polygons)
     map.draw_background()
     map.save_background("background2.png")
     
     assert True
 
 def test_render_elements():
-    map = map_canvas.MapCanvas((800, 600))
     polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
-    map.set_land(polygons)
+    map = map_canvas.MapCanvas((800, 600), polygons)
     
     BB = map.map_BB
     min_lon, min_lat = BB[0] 

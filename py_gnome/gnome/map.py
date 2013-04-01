@@ -575,8 +575,7 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         w = int(np.sqrt(raster_size*aspect_ratio))
         h = int(raster_size / w)
 
-        canvas = map_canvas.BW_MapCanvas( (w, h))
-        canvas.set_land(just_land)
+        canvas = map_canvas.BW_MapCanvas( (w, h), land_polygons=just_land)
         canvas.draw_background()
         #canvas.save_background("raster_map_test.png")
 
