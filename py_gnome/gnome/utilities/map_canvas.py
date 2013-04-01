@@ -61,7 +61,7 @@ class MapCanvas(object):
                   ('land',        (255, 204, 153) ),
                   ('LE',          (  0,   0,   0) ),
                   ('uncert_LE',   (255,   0,   0) ),
-                  ('map_BB',  (175, 175, 175) ),
+                  ('map_bounds',  (175, 175, 175) ),
                   ]
 
     colors  = dict( [(i[1][0], i[0]) for i in enumerate(colors_rgb)] )
@@ -201,7 +201,7 @@ class MapCanvas(object):
                 if p.metadata[1].strip().lower() == "map bounds":
                     #Draw the map bounds polygon
                     poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                    drawer.polygon(poly, outline=self.colors['map_BB'])
+                    drawer.polygon(poly, outline=self.colors['map_bounds'])
                 elif p.metadata[1].strip().lower() == "spillablearea":
                     # don't draw the spillable area polygon
                     continue
@@ -281,7 +281,7 @@ class BW_MapCanvas(MapCanvas):
                   ('land',        1 ),
                   ('LE',          255 ),
                   ('uncert_LE',   255 ),
-                  ('map_BB',  0 ),
+                  ('map_bounds',  0 ),
                   ]
 
     colors  = dict( colors_BW )
