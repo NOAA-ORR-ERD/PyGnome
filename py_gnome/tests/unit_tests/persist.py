@@ -2,6 +2,7 @@ import json
 from datetime import datetime,timedelta
 import pprint
 import os
+import shutil
 
 import numpy as np
 import colander
@@ -16,6 +17,10 @@ Define a scenario and persist it to ./test_persist/
 saveloc  = './test_persist'
 datafiles= '/Users/jasmine.sandhu/Documents/projects/gnome/py_gnome/tests/scripts/script_boston'
 
+if os.path.exists(saveloc):
+    shutil.rmtree(saveloc)
+
+os.mkdir(saveloc)
 mapfile = os.path.join( datafiles, './MassBayMap.bna')
 gnome_map = gnome.map.MapFromBNA(mapfile,
                                  refloat_halflife=1*3600, #seconds
