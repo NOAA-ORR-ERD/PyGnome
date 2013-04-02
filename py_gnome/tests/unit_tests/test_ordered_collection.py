@@ -135,5 +135,17 @@ class TestOrderedCollection(object):
         assert mymovers[mover_4.id] == mover_4
 
 
-
-
+def test_to_dict():
+    """
+    added a to_dict() method - test this method
+    """
+    items = [movers.simple_mover.SimpleMover(velocity=(i*0.5, -1.0, 0.0)) for i in range(2)]
+    items.extend([movers.RandomMover() for i in range(2)])
+    mymovers = OrderedCollection(items, dtype=gnome.movers.Mover)
+    dict_ = mymovers.to_dict()
+    
+    assert dict_['dtype'] == mymovers.dtype
+    for id, mv in enumerate(items):
+        assert dict_['id_list'][id][0] == "{0}.{1}".format( mv.__module__, mv.__class__.__name__)
+        assert dict_['id_list'][id][1] == mv.id
+    

@@ -472,6 +472,25 @@ class TestAddSpillContainerPair:
             index = sp_ix[1]
             assert spill.id == u_spill[index].id 
 
+    def test_to_dict(self):
+        c_spill = [SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time) for i in range(2)]    
+        u_spill = [SurfaceReleaseSpill(self.num_elements,self.start_position2,self.start_time2) for i in range(2)]
+        scp = SpillContainerPair(True)
+        
+        for sp_tuple in zip(c_spill, u_spill): 
+            scp += sp_tuple
+            
+        dict_ = scp.to_dict()
+        
+        for key in dict_.keys():
+            if key == 'certain_spills':
+                enum_spill = c_spill
+            elif key == 'uncertain_spills':
+                enum_spill = u_spill
+                
+            for id, spill in enumerate(enum_spill):
+                assert dict_[key]['id_list'][id][0] == "{0}.{1}".format( spill.__module__, spill.__class__.__name__)
+                assert dict_[key]['id_list'][id][1] == spill.id 
 
 if __name__ == "__main__":
     test_rewind2()

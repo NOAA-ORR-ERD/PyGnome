@@ -414,18 +414,18 @@ class Model(serializable.Serializable):
 
     def movers_to_dict(self):
         """
-        call OrderedCollection.to_dict static method
+        call to_dict method of OrderedCollection object
         """
-        return OrderedCollection.to_dict(self.movers)
+        return self.movers.to_dict()
     
     def environment_to_dict(self):
         """
-        call OrderedCollection.to_dict static method
+        call to_dict method of OrderedCollection object
         """
-        return OrderedCollection.to_dict(self.environment)
+        return self.environment.to_dict()
 
     def spills_to_dict(self):
-        return SpillContainerPair.to_dict(self.spills)
+        return self.spills.to_dict()
 
     def maps_to_dict(self):
         """
