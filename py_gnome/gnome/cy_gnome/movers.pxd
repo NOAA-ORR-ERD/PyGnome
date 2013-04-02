@@ -19,8 +19,8 @@ cdef extern from "GridVel_c.h":
 
 cdef extern from "TimeGridVel_c.h":
     cdef cppclass TimeGridVel_c:
-        OSErr                TextRead(char *path,char *topFilePath)
-        OSErr                ReadTimeData(long index,VelocityFH *velocityH, char* errmsg)
+        OSErr                TextRead(char *path, char *topFilePath)
+        OSErr                ReadTimeData(long index, VelocityFH *velocityH, char* errmsg)
         void                 DisposeLoadedData(LoadedData * dataPtr)
         void                 ClearLoadedData(LoadedData * dataPtr)
         void                 DisposeAllLoadedData()
