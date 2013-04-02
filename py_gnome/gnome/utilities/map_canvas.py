@@ -86,6 +86,7 @@ class MapCanvas(object):
                            BW_MapCanvas inherits from MapCanvas and sets the mode to 'L'
                            Default image_mode is 'P'.
         :param id: unique identifier for a instance of this class (UUID given as a string). 
+                   This is used when loading an object from a persisted model
         """
         self.image_size = image_size
         mode = kwargs.pop('image_mode', 'P')
@@ -114,6 +115,7 @@ class MapCanvas(object):
 
     id = property( lambda self: self._gnome_id.id)
 
+# USE DEFAULT CONSTRUCTOR FOR CREATING EMPTY_MAP
 #===============================================================================
 #    @classmethod
 #    def empty_map(cls, image_size, bounding_box):
@@ -274,8 +276,12 @@ class BW_MapCanvas(MapCanvas):
         create a new B&W map image from scratch -- specifying the size:
         
         :param image_size: (width, height) tuple of the image size
+        :param land_polygons: a PolygonSet (gnome.utilities.geometry.polygons.PolygonSet) used to define the map. 
+                              If this is None, MapCanvas has no land. This can be read in from a BNA file.
         :param projection_class: gnome.utilities.projections class to use.
         
+        See MapCanvas documentation for remaining valid kwargs.
+        It sets the image_mode = 'L' when calling MapCanvas.__init__
         """
         #=======================================================================
         # self.image_size = image_size
@@ -334,6 +340,19 @@ class MapCanvasFromBNA(MapCanvas, serializable.Serializable):
         return cls(projection_class=proj, **dict_)
     
     def __init__(self, image_size, filename, **kwargs):
+        """
+        create a new B&W map image from scratch -- specifying the size:
+        
+        :param image_size: (width, height) tuple of the image size
+        :param filename: BNA filename. The land_polygons are defined by this BNA file. 
+                         land_polygons are passed into MapCanvas.__init__
+        
+        See MapCanvas documentation for remaining valid kwargs.
+        The land_polygons are set based on data read from BNA file: 'filename'.
+        
+        Remaining kwargs are passed onto baseclass's __init__ with a direct call: MapCanvas.__init__(..) 
+        See MapCanvas documentation for remaining valid kwargs.
+        """
         if not os.path.exists(filename):
             raise IOError("{0} does not exist. Enter a valid BNA file".format(filename))
         

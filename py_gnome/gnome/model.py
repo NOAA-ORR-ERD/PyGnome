@@ -57,6 +57,10 @@ class Model(serializable.Serializable):
         Initializes model. 
 
         All this does is call reset() which initializes eveything to defaults
+        
+        Optional keyword parameters (kwargs):
+        :param id: Unique Id identifying the newly created mover (a UUID as a string). 
+                   This is used when loading an object from a persisted model
         """
         # making sure basic stuff is in place before properties are set
         self.environment = OrderedCollection(dtype=Environment)  

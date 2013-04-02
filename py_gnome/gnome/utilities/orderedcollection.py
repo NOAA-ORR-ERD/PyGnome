@@ -129,11 +129,10 @@ class OrderedCollection(object):
     def __repr__(self):
         return self.__str__()
 
-    #@staticmethod
     def to_dict(self):
         """
-        static method takes an instance of ordered collection
-        and outputs a dict two fields:
+        method takes the instance of ordered collection and outputs a dict with 
+        two fields:
             dtype: associated dtype for each object in the order in which it is added
             id : contains list of IDs of each object in the order in which it is added
             
