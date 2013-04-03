@@ -94,4 +94,4 @@ model.environment += c_mover.tide
 print "saving .."
 scenario.save(model,saveloc)
 print "loading .."
-model2 = scenario.load(saveloc,'model_{0}.txt'.format(model.id))
+model2 = scenario.load(saveloc)
