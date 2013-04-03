@@ -25,7 +25,7 @@ import shutil
 import sys
 import subprocess
 
-from setuptools import setup # to support "develop" mode: 
+from setuptools import setup, find_packages # to support "develop" mode: 
 from distutils.extension import Extension
 from Cython.Distutils import build_ext 
 
@@ -259,8 +259,6 @@ setup(name='pyGnome',
       version='alpha', 
       requires=['numpy'],
       cmdclass={'build_ext': build_ext },
-      packages=['gnome',
-    #            'gnome.utilities',
-                ],
+      packages=find_packages(exclude=['gnome.deprecated']),
       ext_modules=extensions
      )
