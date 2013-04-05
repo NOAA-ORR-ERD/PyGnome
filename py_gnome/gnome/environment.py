@@ -363,7 +363,7 @@ class Tide(Environment, serializable.Serializable):
     def __init__(self,
                  filename=None,
                  timeseries=None,
-                 yeardata=os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/'),
+                 yeardata=os.path.join( os.path.dirname( gnome.__file__), 'data','yeardata'),
                  **kwargs):
         """
         Tide information can be obtained from a filename or set as a timeseries (timeseries is NOT TESTED YET)
@@ -394,8 +394,8 @@ class Tide(Environment, serializable.Serializable):
             raise ValueError("Either provide timeseries or a valid filename containing Tide data")
                 
         if( timeseries is not None):
-            if units is None:
-                raise ValueError("Provide valid units as string or unicode for timeseries")
+#            if units is None:
+#                raise ValueError("Provide valid units as string or unicode for timeseries")
             
             #self._check_timeseries(timeseries, units)    # will probably need to move this function out
             
