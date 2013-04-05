@@ -56,8 +56,8 @@ cdef class CyShioTime(object):
             if yeardata_path[-1] != os.sep:
                 yeardata_path = os.path.normpath(yeardata_path) + os.sep
             err = self.shio.SetYearDataPath(yeardata_path)
-#             if err != 0:
-#                 raise ValueError("Path could not be correctly be set by ShioTimeValue_c.SetYearDataPath(...)")
+            if err != 0:
+                raise ValueError("Path could not be correctly be set by ShioTimeValue_c.SetYearDataPath(...)")
         else:
             raise IOError("No such file: " + yeardata_path)
 
