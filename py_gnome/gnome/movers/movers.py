@@ -265,8 +265,7 @@ class WindMover(CyMover, serializable.Serializable):
         however, user can still update the wind attribute with a new Wind object. That must
         be poped out of the dict here, then call super to process the standard dict_
         """
-        if 'wind' in dict_ and dict_.get('wind') is not None:
-            self.wind = dict_.pop('wind')
+        self.wind = dict_.pop('wind',self.wind)
             
         super(WindMover, self).from_dict(dict_)
     

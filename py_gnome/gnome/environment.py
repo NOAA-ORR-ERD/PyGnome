@@ -346,6 +346,8 @@ def ConstantWind(speed, direction, units='m/s'):
         
 class Tide(Environment, serializable.Serializable):
     """
+    todo: baseclass called ScaleTimeseries (or something like that)
+    ScaleCurrent
     Define the tide for a spill
     
     Currently, this internally defines and uses the CyShioTime object, which is
