@@ -226,10 +226,9 @@ elif sys.platform == "win32":
     libdirs += ['gnome/cy_gnome']
     macros += [('CYTHON_CCOMPLEX', 0),]
     extension_names += ['cy_basic_types']
- # l_include_dirs += [r'..\third_party_lib\vs2008']
-    # These are for the new netCDF 4 libraries.
-    l_include_dirs += [r'..\third_party_lib\vs2010\include']
-   # l_include_dirs += [r'..\third_party_lib\vs2010\deps\shared\include'] 
+
+    # stdint.h is required for building cy_land_check.cpp
+    l_include_dirs += [r'..\third_party_lib\win32_headers'] 
 
 #
 ### the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
