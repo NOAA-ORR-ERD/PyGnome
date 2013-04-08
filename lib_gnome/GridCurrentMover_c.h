@@ -19,8 +19,8 @@
 #include "GridVel.h"
 #include "TimeGridVel.h"
 #else
-#include "GridVel_c.h"
-#define TGridVel GridVel_c
+//#include "GridVel_c.h"
+//#define TGridVel GridVel_c
 #include "TimeGridVel_c.h"
 #define TimeGridVel TimeGridVel_c
 #define TMap Map_c
