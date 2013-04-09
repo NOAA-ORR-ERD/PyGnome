@@ -29,10 +29,10 @@ class WindMover(Id, Mover):
     """
     Contains properties required by UpdateWindMover and CreateWindMover
     """
-    uncertain_duration = SchemaNode(Float() )
-    uncertain_time_delay = SchemaNode(Float() )
-    uncertain_speed_scale = SchemaNode(Float() )
-    uncertain_angle_scale = SchemaNode(Float() )
+    uncertain_duration = SchemaNode(Float(), default=3)
+    uncertain_time_delay = SchemaNode(Float(), default=0)
+    uncertain_speed_scale = SchemaNode(Float(), default=2)
+    uncertain_angle_scale = SchemaNode(Float(), default=0.4)
     wind_id = SchemaNode(String(), missing=drop)    # only used to create new WindMover
     
 class RandomMover(Id, Mover):

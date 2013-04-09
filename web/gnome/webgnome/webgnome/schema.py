@@ -29,9 +29,17 @@ def now(node, kw):
 
 
 class WindMoverSchema(movers_schema.WindMover):
+    default_name = 'Wind Mover'
+    name = SchemaNode(String(), default=default_name, missing=default_name)
     uncertain_angle_scale_units = SchemaNode(String(), default='rad',
                                              missing='rad',
                                              validator=OneOf(['rad', 'deg']))
+
+
+class RandomMoverSchema(movers_schema.RandomMover):
+    default_name = 'Random Mover'
+    name = SchemaNode(String(), default=default_name, missing=default_name)
+    diffusion_coef = SchemaNode(Float(), default=100000, missing=100000)
 
 
 class PositionSchema(TupleSchema):
@@ -72,7 +80,7 @@ class WindMoversSchema(SequenceSchema):
 
 
 class RandomMoversSchema(SequenceSchema):
-    mover = movers_schema.RandomMover()
+    mover = RandomMoverSchema()
 
 
 class MapSchema(model_schema.Map):
@@ -92,7 +100,8 @@ custom_map_resolutions = [
 
 
 class CustomMapSchema(MappingSchema):
-    name = SchemaNode(String(), default="Map")
+    default_name = 'Map'
+    name = SchemaNode(String(), default=default_name, missing=default_name)
     north_lat = SchemaNode(Float())
     west_lon = SchemaNode(Float())
     east_lon = SchemaNode(Float())
@@ -103,8 +112,13 @@ class CustomMapSchema(MappingSchema):
     refloat_halflife = SchemaNode(Float(), default=1)
 
 
+class WindSchema(environment_schema.Wind):
+    default_name = 'Wind'
+    name = SchemaNode(String(), default=default_name, missing=default_name)
+
+
 class WindsSchema(SequenceSchema):
-    wind = environment_schema.Wind()
+    wind = WindSchema()
 
 
 class ModelSchema(MappingSchema):

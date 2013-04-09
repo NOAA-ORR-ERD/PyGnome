@@ -158,7 +158,7 @@ class FileUpload(BaseResource):
 
         TODO: Chunked uploads.
         """
-        filename = self.reqeust.validated['filename']
+        filename = self.request.validated['filename']
         input_file = self.request.POST['filename'].file
 
         with open(filename) as f:

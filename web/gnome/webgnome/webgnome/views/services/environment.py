@@ -1,6 +1,4 @@
 from cornice.resource import resource, view
-from gnome.persist import environment_schema
-
 from webgnome import util
 from webgnome import schema
 from webgnome.model_manager import WebWind
@@ -12,7 +10,7 @@ from webgnome.views.services.base import BaseResource
           renderer='gnome_json', description='A wind mover.')
 class Wind(BaseResource):
 
-    @view(validators=util.valid_model_id, schema=environment_schema.Wind)
+    @view(validators=util.valid_model_id, schema=schema.WindSchema)
     def collection_post(self):
         """
         Create a :class:`model_manager.WebWind` from a JSON representation.
@@ -23,7 +21,7 @@ class Wind(BaseResource):
         model.environment.add(wind)
         wind_data = wind.to_dict(do='create')
 
-        return environment_schema.Wind().bind().serialize(wind_data)
+        return schema.WindSchema().bind().serialize(wind_data)
 
     @view(validators=util.valid_environment_id)
     def get(self):
@@ -35,10 +33,10 @@ class Wind(BaseResource):
         wind = model.environment.get(self.id)
         wind_data = wind.to_dict()
 
-        return environment_schema.Wind().bind().serialize(wind_data)
+        return schema.WindSchema().bind().serialize(wind_data)
 
     @view(validators=util.valid_environment_id,
-          schema=environment_schema.Wind)
+          schema=schema.WindSchema)
     def put(self):
         """
         Update an existing :class:`model_manager.WebWind` from a JSON
@@ -50,7 +48,7 @@ class Wind(BaseResource):
         wind.from_dict(data)
         wind_data = wind.to_dict(do='create')
 
-        return environment_schema.Wind().bind().serialize(wind_data)
+        return schema.WindSchema().bind().serialize(wind_data)
 
     @view(validators=util.valid_environment_id)
     def delete(self):

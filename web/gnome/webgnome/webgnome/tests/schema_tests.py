@@ -1,11 +1,12 @@
 import colander
 import datetime
+import numpy
 
 from dateutil import parser
 from gnome.persist import environment_schema
-import numpy
 from pytz import timezone
 from unittest import TestCase
+from webgnome.schema import WindSchema
 
 
 class WindValueSchemaTests(TestCase):
@@ -80,8 +81,8 @@ class WindSchemaTests(TestCase):
 
     def test_serialize(self):
         data = self.get_test_data()
-        data = environment_schema.Wind().deserialize(data)
-        serialized_wind = environment_schema.Wind().serialize(data)
+        data = WindSchema().deserialize(data)
+        serialized_wind = WindSchema().serialize(data)
 
         for idx, wind_value in enumerate(serialized_wind['timeseries']):
             test_val = data['timeseries'][idx]
@@ -104,7 +105,7 @@ class WindSchemaTests(TestCase):
             data['timeseries'][idx][1] = str(wind_value[1])
             data['timeseries'][idx][2] = str(wind_value[2])
 
-        wind = environment_schema.Wind().deserialize(data)
+        wind = WindSchema().deserialize(data)
 
         for idx, wind_value in enumerate(wind['timeseries']):
             test_values = data['timeseries'][idx]

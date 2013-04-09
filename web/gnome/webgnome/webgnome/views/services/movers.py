@@ -84,7 +84,7 @@ class WindMover(BaseResource):
 class RandomMover(BaseResource):
     optional_fields = ['active_start', 'active_stop']
 
-    @view(validators=util.valid_model_id, schema=movers_schema.RandomMover)
+    @view(validators=util.valid_model_id, schema=schema.RandomMoverSchema)
     def collection_post(self):
         """
         Create a :class:`model_manager.WebRandomMover` from a JSON
@@ -95,7 +95,7 @@ class RandomMover(BaseResource):
         mover = WebRandomMover(**data)
         model.movers.add(mover)
 
-        return movers_schema.RandomMover().bind().serialize(
+        return schema.RandomMoverSchema().bind().serialize(
             mover.to_dict(do='create'))
 
     @view(validators=util.valid_model_id)
@@ -107,7 +107,7 @@ class RandomMover(BaseResource):
         model = data.pop('model')
         model_data = model.to_dict(include_movers=True)
 
-        return movers_schema.RandomMover().bind().serialize(
+        return schema.RandomMoverSchema().bind().serialize(
             model_data['random_movers'])
 
     @view(validators=util.valid_mover_id)
@@ -119,7 +119,7 @@ class RandomMover(BaseResource):
         model = self.request.validated.pop('model')
         return model.movers.get(self.id).to_dict()
 
-    @view(validators=util.valid_mover_id, schema=movers_schema.RandomMover)
+    @view(validators=util.valid_mover_id, schema=schema.RandomMoverSchema)
     def put(self):
         """
         Update an existing :class:`model_manager.WebRandomMover` from a JSON

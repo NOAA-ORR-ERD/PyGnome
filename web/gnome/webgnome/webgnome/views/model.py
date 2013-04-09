@@ -46,15 +46,15 @@ def show_model(request):
         schema.SurfaceReleaseSpillSchema)
     wind_movers = _serialize_all(
         model_data.pop('wind_movers'), schema.WindMoverSchema)
+    winds = _serialize_all(model_data.pop('winds'), schema.WindSchema)
     random_movers = model_data.pop('random_movers')
     model_settings = util.SchemaForm(schema.ModelSchema, model_data)
     map_data = model_data.get('map', None)
 
     # JSON defaults for initializing JavaScript models
     default_wind_mover = _default_schema_json(schema.WindMoverSchema)
-    default_wind_timeseries_value = _default_schema_json(
-        environment_schema.WindTimeSeriesSchema)
-    default_random_mover = _default_schema_json(movers_schema.RandomMover)
+    default_wind = _default_schema_json(schema.WindSchema)
+    default_random_mover = _default_schema_json(schema.RandomMoverSchema)
     default_surface_release_spill = _default_schema_json(
         schema.SurfaceReleaseSpillSchema)
     default_map = _default_schema_json(schema.MapSchema)
@@ -75,7 +75,7 @@ def show_model(request):
         # Default values for forms that use them.
         'default_wind_mover': default_wind_mover,
         'default_surface_release_spill': default_surface_release_spill,
-        'default_wind_timeseries_value': default_wind_timeseries_value,
+        'default_wind': default_wind,
         'default_random_mover': default_random_mover,
         'default_map': default_map,
         'default_custom_map': default_custom_map,
@@ -85,6 +85,7 @@ def show_model(request):
         'surface_release_spills': util.to_json(surface_release_spills),
         'wind_movers': util.to_json(wind_movers),
         'random_movers': util.to_json(random_movers),
+        'winds': util.to_json(winds),
         'model_settings': util.to_json(model_data),
         'location_files': sorted(
             request.registry.settings.location_file_data.values(),

@@ -53,7 +53,8 @@ define([
                 map: this.map,
                 customMap: this.customMap,
                 collections: [
-                    this.windMovers, this.randomMovers, this.surfaceReleaseSpills
+                    this.windMovers, this.randomMovers, this.surfaceReleaseSpills,
+                    this.winds
                 ]
             });
 
@@ -134,7 +135,7 @@ define([
             this.addSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
             this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
 
-            this.formViews.on(forms.FormView.MESSAGE_READY, this.displayMessage);
+            this.formViews.on(forms.BaseView.MESSAGE_READY, this.displayMessage);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
@@ -272,6 +273,10 @@ define([
                 id: 'add-mover'
             });
 
+            this.addEnvironmentFormView = new forms.AddEnvironmentFormView({
+                id: 'add-environment'
+            });
+
             this.addSpillFormView = new forms.AddSpillFormView({
                 id: 'add-spill'
             });
@@ -303,22 +308,44 @@ define([
 
             this.gnomeSettingsFormView = new forms.GnomeSettingsFormView({
                 id: 'model-settings',
-                model: this.gnomeModel
+                model: this.gnomeModel,
+
+                // XXX: Wish we didn't have to reference this again?
+                gnomeModel: this.gnomeModel
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
                 id: 'add-wind-mover',
                 collection: this.windMovers,
+                router: this.router,
                 defaults: this.options.defaultWindMover,
-                defaultWindTimeseriesValue: this.options.defaultWindTimeseriesValue,
+                defaultWind: this.options.defaultWind,
+                winds: this.winds,
                 gnomeModel: this.gnomeModel
             });
 
             this.editWindMoverFormView = new forms.WindMoverFormView({
                 id: 'edit-wind-mover',
                 collection: this.windMovers,
+                router: this.router,
+                winds: this.winds,
                 defaults: this.options.defaultWindMover,
-                defaultWindTimeseriesValue: this.options.defaultWindTimeseriesValue
+                defaultWind: this.options.defaultWind,
+                gnomeModel: this.gnomeModel
+            });
+
+            this.addWindFormView = new forms.AddWindFormView({
+                id: 'add-wind',
+                collection: this.winds,
+                defaults: this.options.defaultWind,
+                gnomeModel: this.gnomeModel
+            });
+
+            this.editWindFormView = new forms.WindFormView({
+                id: 'edit-wind',
+                collection: this.winds,
+                defaults: this.options.defaultWind,
+                gnomeModel: this.gnomeModel
             });
 
             this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
@@ -332,6 +359,7 @@ define([
                 id: 'edit-random-mover',
                 collection: this.randomMovers,
                 defaults: this.options.defaultRandomMover,
+                gnomeModel: this.gnomeModel
             });
 
             this.addSurfaceReleaseSpillFormView = new forms.AddSurfaceReleaseSpillFormView({
@@ -344,12 +372,14 @@ define([
             this.editSurfaceReleaseSpillFormView = new forms.SurfaceReleaseSpillFormView({
                 id: 'edit-surface-release-spill',
                 collection: this.surfaceReleaseSpills,
-                defaults: this.options.defaultSurfaceReleaseSpill
+                defaults: this.options.defaultSurfaceReleaseSpill,
+                gnomeModel: this.gnomeModel
             });
 
-            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.showFormWithId);
+            this.addEnvironmentFormView.on(forms.AddEnvironmentFormView.ENVIRONMENT_CHOSEN, this.showFormWithId);
             this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
-            this.addMapFormView.on(forms.AddMapFormView.SOURCE_CHOSEN, this.mapSourceChosen);
+            this.addMapFormView.on(forms.AddMapFormView.SOURCE_CHOSEN, this.showFormWithId);
 
             // Create a LocationFileWizardFormView for each LocationFile that
             // has wizard HTML.
@@ -372,13 +402,16 @@ define([
 
             this.formViews.add(this.addMoverFormView);
             this.formViews.add(this.addSpillFormView);
+            this.formViews.add(this.addEnvironmentFormView);
             this.formViews.add(this.addMapFormView);
             this.formViews.add(this.addMapFromUploadFormView);
             this.formViews.add(this.addWindMoverFormView);
+            this.formViews.add(this.addWindFormView);
             this.formViews.add(this.addRandomMoverFormView);
             this.formViews.add(this.addSurfaceReleaseSpillFormView);
             this.formViews.add(this.gnomeSettingsFormView);
             this.formViews.add(this.editWindMoverFormView);
+            this.formViews.add(this.editWindFormView);
             this.formViews.add(this.editRandomMoverFormView);
             this.formViews.add(this.editSurfaceReleaseSpillFormView);
             this.formViews.add(this.editMapFormView);
@@ -410,6 +443,12 @@ define([
 
             this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
                 this.options.surfaceReleaseSpills, {
+                    gnomeModel: this.gnomeModel
+                }
+            );
+
+            this.winds = new models.WindCollection(
+                this.options.winds, {
                     gnomeModel: this.gnomeModel
                 }
             );
@@ -647,6 +686,7 @@ define([
                 return;
             }
 
+            formView.reload();
             formView.show();
         },
 
@@ -738,17 +778,6 @@ define([
             this.deleteObjectForNode(model, node);
         },
 
-        moverChosen: function(moverType) {
-            var formView = this.formViews.get(moverType);
-
-            if (formView === undefined) {
-                return;
-            }
-
-            formView.reload();
-            formView.show();
-        },
-
         spillChosen: function(spillType, startCoords, endCoords) {
             var formView = this.formViews.get(spillType);
 
@@ -758,16 +787,6 @@ define([
 
             formView.reload();
             formView.show(startCoords, endCoords);
-        },
-
-        mapSourceChosen: function(source) {
-            var formView = this.formViews.get(source);
-
-            if (formView === undefined) {
-                return;
-            }
-
-            formView.show();
         },
 
         showSection: function(section) {

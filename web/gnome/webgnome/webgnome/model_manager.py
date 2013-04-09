@@ -197,14 +197,14 @@ class WebModel(BaseWebObject, Model):
 
     def __init__(self, *args, **kwargs):
         data_dir = kwargs.pop('data_dir')
-        _map = kwargs.pop('map', None)
         self.package_root = kwargs.pop('package_root')
 
         # Set the model's id
         super(WebModel, self).__init__()
 
-        if _map is None:
-            self.map = WebGnomeMap()
+        # Remove the default map object.
+        if self.map:
+            self.remove_map()
 
         self.base_dir = os.path.join(self.package_root, data_dir, str(self.id))
         self.base_dir_relative = os.path.join(data_dir, str(self.id))

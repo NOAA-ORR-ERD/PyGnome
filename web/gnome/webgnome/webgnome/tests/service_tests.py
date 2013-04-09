@@ -370,8 +370,8 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin,
         data['wind_id'] = wind_id
         resp = self.testapp.post_json(self.collection_url, data)
 
-        self.assertEqual(resp.json['active_start'], active_start)
-        self.assertEqual(resp.json['active_stop'], active_stop)
+        self.assertAlmostEqual(resp.json['active_start'], active_start)
+        self.assertAlmostEqual(resp.json['active_stop'], active_stop)
 
     def test_wind_mover_delete(self):
         wind_data = self.make_wind_data()
@@ -639,8 +639,8 @@ class NavigationTreeTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(model_settings['form_id'], 'model-settings')
 
         map_item = model_settings['children'][0]
-        self.assertEqual(map_item['form_id'], 'edit-map')
-        self.assertEqual(map_item['title'], 'Map: Map')
+        self.assertEqual(map_item['form_id'], 'add-map')
+        self.assertEqual(map_item['title'], 'Map: None')
 
         map_item = model_settings['children'][1]
         self.assertEqual(map_item['form_id'], 'model-settings')

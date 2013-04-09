@@ -1,4 +1,26 @@
 {
+    "winds": [
+        {
+            "id": "121279fa-98ca-11e2-b5ad-3c07541ca142",
+            "description": "Wind Object",
+            "updated_at": "2013-03-14T07:37:55.096135",
+            "source_type": "undefined",
+            "source_id": "undefined",
+            "timeseries": [
+                [
+                    "2013-03-12T10:00:00",
+                    5.0,
+                    180.0
+                ],
+                [
+                    "2013-03-13T04:00:00",
+                    5.0,
+                    180.0
+                ]
+            ],
+            "units": "m/s"
+        }
+    ],
     "wind_movers": [
         {
             "on": true, 
@@ -9,25 +31,7 @@
             "active_stop": "2038-01-18T00:00:00", 
             "uncertain_time_delay": 0.0, 
             "id": "c1fa916e-8cb4-11e2-95db-3c07541ca142", 
-            "wind": {
-                "description": "Wind Object", 
-                "updated_at": "2013-03-14T07:37:55.096135", 
-                "source_type": "undefined", 
-                "source_id": "undefined", 
-                "timeseries": [
-                    [
-                        "2013-03-12T10:00:00", 
-                        5.0, 
-                        180.0
-                    ], 
-                    [
-                        "2013-03-13T04:00:00", 
-                        5.0, 
-                        180.0
-                    ]
-                ], 
-                "units": "m/s"
-            }, 
+            "wind_id": "121279fa-98ca-11e2-b5ad-3c07541ca142",
             "uncertain_speed_scale": 2.0
         }
     ], 

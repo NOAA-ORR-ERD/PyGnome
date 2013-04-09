@@ -257,8 +257,9 @@ def valid_wind_id(request):
     try:
         request.validated['wind'] = model.environment[wind_id]
     except KeyError:
-        request.errors.add('body', 'wind_mover', 'Mover not found.')
-        request.errors.status = 404
+        request.errors.add(
+            'body', 'wind_mover', 'The wind_id did not match an existing Wind.')
+        request.errors.status = 400
 
     return
 
@@ -349,7 +350,7 @@ def valid_new_location_file(request):
 def valid_filename(request):
     """
     A Cornice validator that verifies that a 'filename' in ``request``
-    be used safely to upload a file into the model's data directory.
+    can be used safely to upload a file into the model's data directory.
     """
     valid_model_id(request)
 
@@ -364,7 +365,7 @@ def valid_filename(request):
         request.errors.status = 400
         return
 
-    return safe_join(model.base_dir, filename)
+    request.validated['filename'] = safe_join(model.base_dir, filename)
 
 
 def valid_uploaded_file(request):
