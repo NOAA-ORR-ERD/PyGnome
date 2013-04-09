@@ -6,7 +6,7 @@ def main():
     env = bootstrap('../development.ini')
 
     util.CleanDirectoryCommand(
-        directory=env['registry'].settings.model_images_dir,
+        directory=env['registry'].settings.model_data_dir,
         description='Remove all model image files.')()
 
     env['closer']()

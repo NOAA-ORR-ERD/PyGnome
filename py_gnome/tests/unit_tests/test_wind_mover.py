@@ -13,6 +13,7 @@ from gnome.utilities import time_utils, transforms, convert
 from gnome.utilities import projections
 
 datadir = os.path.join(os.path.dirname(__file__), r'SampleData')
+file_ = os.path.join(datadir,r'WindDataFromGnome.WND')
 
 def test_exceptions():
     """
@@ -22,10 +23,12 @@ def test_exceptions():
         movers.WindMover()
 
     with pytest.raises(ValueError):
-        file_ = r"SampleData/WindDataFromGnome.WND"
-        wind = environment.Wind(file=file_)
+        wind = environment.Wind(filename=file_)
         now = datetime.now()
         movers.WindMover(wind, active_start=now, active_stop=now)
+        
+    with pytest.raises(TypeError):
+        movers.WindMover(wind=10)
 
 # tolerance for np.allclose(..) function
 atol = 1e-14
@@ -35,18 +38,17 @@ def test_read_file_init():
     """
     initialize from a long wind file
     """
-    file_ = r"SampleData/WindDataFromGnome.WND"
-    wind = environment.Wind(file=file_)
+    wind = environment.Wind(filename=file_)
     wm = movers.WindMover(wind)
     wind_ts = wind.get_timeseries(format='uv', units='meter per second')
     _defaults(wm)   # check defaults set correctly
     cpp_timeseries = _get_timeseries_from_cpp(wm)
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
 
-    # make sure default user_units is correct and correctly called
+    # make sure default units is correct and correctly called
     # NOTE: Following functionality is already tested in test_wind.py, but what the heck - do it here too.
     wind_ts = wind.get_timeseries(format=basic_types.ts_format.uv)
-    cpp_timeseries['value'] = unit_conversion.convert('Velocity','meter per second',wind.user_units,cpp_timeseries['value'])
+    cpp_timeseries['value'] = unit_conversion.convert('Velocity','meter per second',wind.units,cpp_timeseries['value'])
     _assert_timeseries_equivalence(cpp_timeseries, wind_ts)
    
 def test_timeseries_init(wind_circ):
@@ -88,14 +90,14 @@ def test_update_wind(wind_circ):
     t_dtv = np.zeros((3,), dtype=basic_types.datetime_value_2d).view(dtype=np.recarray)
     t_dtv.time = [datetime(2012,11,06,20,0+i,30) for i in range(3)]
     t_dtv.value= np.random.uniform(1,5, (3,2) )
-    o_wind.set_timeseries(t_dtv, units='meters per second', format='uv')
+    o_wind.set_timeseries(t_dtv, units='meter per second', format='uv')
     
     cpp_timeseries = _get_timeseries_from_cpp(wm)
     assert np.all(cpp_timeseries['time'] == t_dtv.time)
     assert np.allclose(cpp_timeseries['value'], t_dtv.value, atol, rtol)
     
     # set the wind timeseries back to test fixture values
-    o_wind.set_timeseries(wind_circ['rq'], units='meters per second')
+    o_wind.set_timeseries(wind_circ['rq'], units='meter per second')
     cpp_timeseries = _get_timeseries_from_cpp(wm)
     assert np.all(cpp_timeseries['time'] == wind_circ['uv']['time'])
     assert np.allclose(cpp_timeseries['value'], wind_circ['uv']['value'], atol, rtol)
@@ -110,7 +112,7 @@ class TestWindMover:
     model_time = rel_time
     
     time_val = np.array((rel_time, (2., 25.)), dtype=basic_types.datetime_value_2d).reshape(1,)
-    wind = environment.Wind(timeseries=time_val, units='meters per second')
+    wind = environment.Wind(timeseries=time_val, units='meter per second')
     wm = movers.WindMover(wind)
     wm.prepare_for_model_run()
     
@@ -159,7 +161,7 @@ class TestWindMover:
 
     def test_update_wind_vel(self):
         self.time_val['value'] = (1., 120.) # now given as (r, theta)
-        self.wind.set_timeseries( self.time_val, units='meters per second')
+        self.wind.set_timeseries( self.time_val, units='meter per second')
         self.test_get_move()
         self.test_get_move_exceptions()
    
@@ -233,7 +235,7 @@ def test_timespan():
     time_val['time']  = np.datetime64( rel_time.isoformat() )
     time_val['value'] = (2., 25.)
 
-    wm = movers.WindMover(environment.Wind(timeseries=time_val, units='meters per second'), 
+    wm = movers.WindMover(environment.Wind(timeseries=time_val, units='meter per second'), 
                           active_start=model_time+timedelta(seconds=time_step))
     wm.prepare_for_model_run()
     wm.prepare_for_model_step(spill, time_step, model_time)
@@ -242,7 +244,7 @@ def test_timespan():
     assert wm.active == False
     assert np.all(delta == 0)   # model_time + time_step = active_start
 
-    wm.active_start = model_time + timedelta(seconds=time_step/2)
+    wm.active_start = model_time - timedelta(seconds=time_step/2)
     wm.prepare_for_model_step(spill, time_step, model_time)
     delta = wm.get_move(spill, time_step, model_time)
     wm.model_step_is_done()
@@ -250,6 +252,34 @@ def test_timespan():
     assert wm.active == True
     print "\n test_timespan: delta \n{0}".format(delta)
     assert np.all(delta[:,:2] != 0)   # model_time + time_step > active_start
+
+def test_active():
+    """ test that mover must be both active and on to get movement """
+    time_step = 15 * 60 # seconds
+
+    #todo: hack for now, but should try to use same spill for all tests
+    start_pos = (3., 6., 0.)
+    rel_time = datetime(2012, 8, 20, 13)    # yyyy/month/day/hr/min/sec
+    #fixme: what to do about persistance?
+    spill = TestSpillContainer(5, start_pos, rel_time)
+    spill.release_elements(datetime.now(), time_step=100)
+
+    #model_time = time_utils.sec_to_date(time_utils.date_to_sec(rel_time) + 1)
+    model_time = rel_time
+    spill.prepare_for_model_step(model_time, time_step)   # release particles
+
+    time_val = np.zeros((1,), dtype=basic_types.datetime_value_2d)  # value is given as (r,theta)
+    time_val['time']  = np.datetime64( rel_time.isoformat() )
+    time_val['value'] = (2., 25.)
+
+    wm = movers.WindMover(environment.Wind(timeseries=time_val, units='meter per second'), on=False)
+    wm.prepare_for_model_run()
+    wm.prepare_for_model_step(spill, time_step, model_time)
+    delta = wm.get_move(spill, time_step, model_time)
+    wm.model_step_is_done()
+    assert wm.active == False
+    assert np.all(delta == 0)   # model_time + time_step = active_start
+    
 
 def test_constant_wind_mover():
     """
@@ -274,9 +304,33 @@ def test_constant_wind_mover():
     assert delta[0][0] == delta[0][1] # 45 degree wind at the equator -- u,v should be the same
 
 
-#
-#Helper methods for this module
-#
+def test_new_from_dict():
+    """
+    Currently only checks that new object can be created from dict
+    It does not check equality of objects
+    """
+    wind = environment.Wind(filename=file_)
+    wm = movers.WindMover(wind) # WindMover does not modify Wind object!
+    wm_state = wm.to_dict('create')
+    # must create a Wind object and add this to wm_state dict
+    wind2 = environment.Wind.new_from_dict(wind.to_dict('create'))
+    wm_state.update({'wind':wind2})
+    wm2 = movers.WindMover.new_from_dict(wm_state)
+    
+    # check serializable state is correct
+    assert all([wm.__getattribute__(k) == wm2.__getattribute__(k) for k in movers.WindMover.state.create if k != 'wind_id' and k != 'obj_type'])
+    assert wm.wind.id == wm2.wind.id 
+    
+def test_exception_new_from_dict():
+    wm = movers.WindMover(environment.Wind(filename=file_)) # WindMover does not modify Wind object!
+    wm_state = wm.to_dict('create')
+    wm_state.update({'wind':environment.Wind(filename=file_)})
+    with pytest.raises(ValueError):
+        movers.WindMover.new_from_dict(wm_state)
+    
+"""
+Helper methods for this module
+"""
 def _defaults(wm):
     """
     checks the default properties of the WindMover object as given in the input are as expected
@@ -292,7 +346,7 @@ def _get_timeseries_from_cpp(windmover):
     local method for tests - returns the timeseries used internally by the C++ WindMover_c object.
     This should be the same as the timeseries stored in the self.wind object
 
-    Data is returned as a datetime_value_2d array in units of meters per second in 
+    Data is returned as a datetime_value_2d array in units of meter per second in 
     format = uv
 
     This is simply used for testing.

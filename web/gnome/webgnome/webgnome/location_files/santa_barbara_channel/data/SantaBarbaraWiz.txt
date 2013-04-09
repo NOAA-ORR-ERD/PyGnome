@@ -1,0 +1,61 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+14000
+10010
+WIND
+10014
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Santa Barbara Channel
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 2
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.10;
+MESSAGE setfield;TO Variable Wind;windage  0.02 0.03;UncertaintySpeedScale 1.5;UncertaintyAngleScale .3;UncertaintyDuration 2;UncertaintyStartTime 1;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE setfield;TO Diffusion; coefficient 400000;uncertaintyFactor 2
+--
+MESSAGE createMap;TO model;TYPE vector; NAME Santa Barbara Map;PATH resnum 10003
+--
+MESSAGE createMover;TO Santa Barbara Map;TYPE Cats; NAME Upwelling.cur;PATH resnum 10004
+MESSAGE setfield;TO Upwelling.cur; scaleType constant;
+--
+MESSAGE createMover;TO Santa Barbara Map;TYPE Cats; NAME Convergent.cur;PATH resnum 10005
+MESSAGE setfield;TO Convergent.cur; scaleType constant;
+--
+MESSAGE createMover;TO Santa Barbara Map;TYPE Cats; NAME Relaxation.cur;PATH resnum 10006
+MESSAGE setfield;TO SBC Relaxation.cur; scaleType constant;
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Santa Barbara Channel;
+-------------------------------------------
+
+
+[WMSG 14000]
+-------------------------------------------
+MESSAGE setfield;TO Upwelling.cur;scaleType constant;refP 121 W 34.5 N;scaleValue  $A5;
+MESSAGE setfield;TO Convergent.cur;scaleType constant;refP 121 W 34.5 N;scaleValue  $B5;
+MESSAGE setfield;TO Relaxation.cur;scaleType constant;refP 121 W 34.5 N;scaleValue  $C5;
+
+set choiceName1  Upwelling
+set choiceName2  Convergent
+set choiceName3  Relaxation
+LHSTEXT Currents:{choiceName$V5};
+-------------------------------------------
+
+

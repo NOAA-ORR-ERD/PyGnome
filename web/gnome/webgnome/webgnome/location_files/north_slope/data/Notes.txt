@@ -1,0 +1,7 @@
+For component mover (pattern AlaskaNorthSlope.cur) 
+wind direction is from 90 deg
+for wind speed 10kts scale to .1 m/s
+unscaled value at ref pt (70.416666N, 148W) is .346827
+scaled by wind speed
+Uses Averaged winds option and extrapolates wind data
+Time to average over 6, scale factor .04, power factor 1

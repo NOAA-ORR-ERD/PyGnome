@@ -1,0 +1,76 @@
+[ORDER]
+-------------------------------------------
+10002
+MODEL
+10010
+WIND
+10011
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Port Everglades
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 1
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.05;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+minkilometersperinch 0.20
+MESSAGE setfield;TO Diffusion; coefficient 10000; uncertaintyFactor 2;
+--
+MESSAGE createMap;TO model;TYPE vector; NAME Port Everglades Map;PATH resnum 10003;
+--
+--
+--
+--
+--Tides
+--
+MESSAGE createMover;TO Port Everglades Map;TYPE Cats; NAME tide.cur;PATH resnum 10004;
+MESSAGE setfield;TO tide.cur; scaleType constant;refP 80.117500 W 26.095000 N; scaleValue 1; timeFile resNum 10005; EddyDiffusion 1000;
+--
+--
+--Outside coastal flow
+--
+MESSAGE createMover;TO Port Everglades Map;TYPE Cats; NAME outside.cur;PATH resnum 10007;
+MESSAGE setfield;TO  outside.cur; scaleType constant;refP 80.085 W 26.079833 N; scaleValue -0.125; 
+--
+--
+-- Canal.cur (Default = 0)
+--
+MESSAGE createMover;TO Port Everglades Map;TYPE Cats; NAME canal.cur;PATH resnum 10009;
+--
+--
+-------------------------------------------
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Port Everglades;
+-------------------------------------------
+[WMSG 10010]
+-------------------------------------------
+[WMSG 10011]
+
+-----------Power Plant Discharge Choice-------------------
+--$V4 is the user's choice for simulating surface effects from the Power Plant Discharge 
+--
+-- user selected no discharge effects
+set discharge1 0 
+set User_ChoiceQ1 No discharge effects
+--
+-- discharge effects --
+set discharge2  0.64
+set User_ChoiceQ2 Discharge effects
+--
+LHSTEXT {User_ChoiceQ{$V4}};
+--
+MESSAGE setfield;TO canal.cur; scaleType constant;refP 80.1235 W 26.082833 N; scaleValue {discharge{$V4}};  
+--
+--

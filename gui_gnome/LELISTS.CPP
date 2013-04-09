@@ -1419,7 +1419,7 @@ void TOLEList::Dispose ()
 OSErr TOLEList::Reset(Boolean newKeys)
 {
 	long i;
-	double timeStep = 0, latStep = 0, longStep = 0;
+	double timeStep = 0, latStep = 0, longStep = 0, riseStep = 0;
 //	LERec representativeLE = fSetSummary.representativeLE;
 	LERec representativeLE;
 	
@@ -1458,6 +1458,7 @@ OSErr TOLEList::Reset(Boolean newKeys)
 		longStep = (fSetSummary.endRelPos.pLong - fSetSummary.startRelPos.pLong) / (double) (fSetSummary.numOfLEs - 1);
 	}
 	
+	if (fSetSummary.riseVelocity > 0) riseStep = (fSetSummary.riseVelocity) / (double) (fSetSummary.numOfLEs - 1);	
 	
 	for (i = 0 ; i < fSetSummary.numOfLEs ; i++) {
 	
@@ -1499,6 +1500,16 @@ OSErr TOLEList::Reset(Boolean newKeys)
 				//representativeLE.dispersionStatus = 0;
 		}
 		
+		//representativeLE.riseVelocity = fSetSummary.riseVelocity;	// keep the rise velocity as set - may want to recalculate if rates can change
+		/*if (fSetSummary.riseVelocity > 0)
+		{
+			//if (i < fSetSummary.numOfLEs
+			if (!fSetSummary.bWantEndRelTime)	// will have to do something different here
+				representativeLE.riseVelocity = (double) (i * riseStep);	// if set in order messes up time dependent release
+			else
+				representativeLE.riseVelocity = GetRandomFloat(0,fSetSummary.riseVelocity);
+		}*/
+		//representativeLE.riseVelocity = INDEXH(LEHandle, i).riseVelocity;	// keep the rise velocity as set - may want to recalculate if rates can change
 		/////////////////////////////////////////////////
 		// JLM 10/22/99
 		// I think we should set the status for all LE's based on 
@@ -2495,7 +2506,8 @@ Boolean TOLEList::FunctionEnabled(ListItem item, short buttonID)
 				if (!model->LESetsList->IsItemInList((Ptr)&item.owner, &i)) return FALSE;
 				switch (buttonID) {
 					case UPBUTTON: return i > 0;
-					case DOWNBUTTON: return i < (model->LESetsList->GetItemCount()/2 - 1);
+					//case DOWNBUTTON: return i < (model->LESetsList->GetItemCount()/2 - 1);
+					case DOWNBUTTON: return i < (model->LESetsList->GetItemCount() - 3); // spills are 0,2,4,...
 			}
 		}
 	}

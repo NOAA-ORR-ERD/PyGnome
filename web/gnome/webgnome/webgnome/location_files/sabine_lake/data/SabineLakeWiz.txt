@@ -1,0 +1,103 @@
+ [ORDER]
+-------------------------------------------
+10002
+MODEL
+10011
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR Port Arthur
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.10;
+MESSAGE setfield;TO Variable Wind;windage  0.02 0.03;UncertaintySpeedScale 1.5;UncertaintyAngleScale .3;UncertaintyDuration 2;UncertaintyStartTime 1;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+MESSAGE setfield;TO Diffusion; coefficient 10000;uncertaintyFactor 2
+--
+MESSAGE createMap;TO model;TYPE vector; NAME Port Arthur Map;PATH resnum 10003
+MESSAGE setfield; TO Port Arthur Map;
+--
+--
+MESSAGE createMover;TO Port Arthur Map;TYPE Component; NAME Wind Driven Currents; 
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 1; NAME WAC_N10mps.cur;PATH resnum 10005;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 93.8945 W 29.767333 N; 
+MESSAGE setfield;TO Wind Driven Currents; pat1Angle 0; pat1Speed 10; pat1SpeedUnits meters; pat1ScaleToValue 0.272437;
+MESSAGE createMover;TO Wind Driven Currents;TYPE Cats; PATTERN 2; NAME WAC_E10mps.cur;PATH resnum 10006;
+MESSAGE setfield;TO Wind Driven Currents; scaleType WINDMOVER;refP 93.8945 W 29.767333 N ; 
+MESSAGE setfield;TO Wind Driven Currents; pat2Angle 90; pat2Speed 10; pat2SpeedUnits meters; pat2ScaleToValue 0.100943;
+MESSAGE setfield;TO Wind Driven Currents; ScaleBy windSpeed;
+--
+MESSAGE createMover;TO Port Arthur Map;TYPE Cats; NAME Sabine River.cur;PATH resnum 10007;
+--
+MESSAGE createMover;TO Port Arthur Map;TYPE Cats; NAME Neches River.cur;PATH resnum 10008;
+--
+--
+MESSAGE createMover;TO Port Arthur Map;TYPE Cats; NAME Tides.CUR;PATH resnum 10009
+MESSAGE setfield;TO Tides.CUR; scaleType constant;refP 93.864168 W 29.724 N; scaleValue 1; timeFile resNum 10010; EddyDiffusion 10000;
+-------------------------------------------
+
+
+[WMSG 10002]
+-------------------------------------------
+LHSTEXT Port Arthur and Sabine Lake;
+-------------------------------------------
+
+
+[WMSG 10011]
+-------------------------------------------
+--Sabine River Flow Rate
+-------------------------------------------
+if $V7 < 4
+-- flow is in cfs
+	set flow1  20000 
+	set flow2  10000 
+	set flow3  1000 
+	set transport flow{$V7}
+else
+	-- user entered values for Sabine River info UNIT popup 10
+	-- $10 user entered flow rate
+	-- transport in cfs
+	set transport $10
+endif
+LHSTEXT Sabine River flow: {ROUND {transport}} cfs;
+-- Unscaled transport is 75185 cfs
+--  so multiply unscaled value at ref pt (1.182 m/s) * (transport/75185) to get scale value
+set scale  1.182/95935
+set Sabine_scale  {scale} * {transport} 
+MESSAGE setfield;TO Sabine River.cur; scaleType constant;refP 93.719864 W 30.09734 N; scaleValue {Sabine_scale}; 
+--DEBUGSTR Sabine_scale = {Sabine_scale}
+-------------------------------------------
+--Neches River Flow Rate
+-------------------------------------------
+if $V16 < 4
+-- flow is in cfs
+	set flow1  3800 
+	set flow2  2250 
+	set flow3  700 
+	set transport flow{$V16}
+else
+	-- user entered values for Neches River info UNIT popup 15
+	-- $15 user entered flow rate
+	-- transport in cfs
+	set transport $15
+endif
+LHSTEXT Neches River flow: {ROUND {transport}} cfs;
+-- Unscaled transport is 198.53 m3/s
+--  so multiply unscaled value at ref pt (0.69 m/s) * (transport/198.53) to get scale value
+set scale  0.69/198.53
+set Neches_scale {scale} * {transport}
+MESSAGE setfield;TO Neches River.cur; scaleType constant;refP 94.089024 W 30.09734 N; scaleValue {Neches_scale}; 
+--DEBUGSTR Neches_scale = {Neches_scale}
+-------------------------------------------

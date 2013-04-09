@@ -11,10 +11,15 @@ from webgnome import util
 class ModelHelperMixin(object):
     def create_model(self):
         resp = self.testapp.post('/model')
-        self.base_url = str('/model/%s' % resp.json_body['id'])
+        self.model_id = resp.json_body['id']
+        self.base_url = str('/model/%s' % self.model_id)
         return resp
 
     def model_url(self, postfix):
+        """
+        Return a URL specific to the running model. The URL will include the
+        model's base URL (/model/{id}) followed by ``postfix``.
+        """
         postfix = '/%s' % postfix if postfix[0] not in ('/', '?') else postfix
         return str('%s%s' % (self.base_url, postfix))
 
@@ -33,9 +38,8 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(data['duration_days'], 1)
         self.assertEqual(data['duration_hours'], 0)
 
-        # We did not specify to include movers or spills.
-        self.assertNotIn('surface_release_spills', data)
-        self.assertNotIn('wind_movers', data)
+        self.assertEqual(data['surface_release_spills'], [])
+        self.assertEqual(data['wind_movers'], [])
 
     def test_get_model_includes_movers_if_requested(self):
         self.create_model()
@@ -58,10 +62,6 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
     def test_create_model_creates_a_model(self):
         resp = self.create_model()
         self.assertTrue(resp.json_body['id'])
-        self.assertEqual(resp.json_body['message'],  {
-            'type': 'success',
-            'text': 'Created a new model.'
-        })
 
     def test_delete_model_deletes_model(self):
         self.create_model()
@@ -95,14 +95,64 @@ class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(resp.json_body['duration_hours'], 1)
 
 
+class ModelFromLocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
+    def setUp(self):
+        super(ModelFromLocationFileServiceTests, self).setUp()
+        self.create_model()
+        self.maxDiff = 10000
+
+    def test_post_creates_model_from_location_file(self):
+        resp = self.testapp.get(self.model_url('/location_file/test'))
+        location_file_data = resp.json_body
+        resp = self.testapp.post('/model/from_location_file/test')
+        data = resp.json_body
+        util.delete_keys_from_dict(data, ['id'])
+
+        for key in ['map', 'uncertain', 'start_time', 'time_step',
+                    'duration_hours', 'duration_days']:
+            self.assertEqual(location_file_data[key], data[key])
+
+        self.assertEqual(len(location_file_data['wind_movers']),
+                         len(data['wind_movers']))
+        self.assertEqual(len(location_file_data['surface_release_spills']),
+                         len(data['surface_release_spills']))
+
+
+class ExistingModelFromLocationFileServiceTests(FunctionalTestBase,
+                                                ModelHelperMixin):
+    def setUp(self):
+        super(ExistingModelFromLocationFileServiceTests, self).setUp()
+        self.create_model()
+        self.maxDiff = 10000
+
+    def test_post_updates_existing_model_from_location_file(self):
+        resp = self.testapp.get(self.model_url('/location_file/test'))
+        location_file_data = resp.json_body
+        resp = self.testapp.post(self.model_url('from_location_file/test'))
+        data = resp.json_body
+
+        self.assertEqual(data['id'], self.model_id)
+        util.delete_keys_from_dict(data, ['id'])
+
+        for key in ['map', 'uncertain', 'start_time', 'time_step',
+                    'duration_hours', 'duration_days']:
+            self.assertEqual(location_file_data[key], data[key])
+
+        self.assertEqual(len(location_file_data['wind_movers']),
+                         len(data['wind_movers']))
+        self.assertEqual(len(location_file_data['surface_release_spills']),
+                         len(data['surface_release_spills']))
+
+
 class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_first_step(self):
         self.create_model()
-        url = self.model_url('/location_file/long_island')
 
         # Load the Long Island script parameters into the model.
-        self.testapp.post(url)
+        location_url = self.model_url('/location_file/long_island')
+        resp = self.testapp.get(location_url)
+        self.testapp.put_json(self.base_url, resp.json_body)
 
         # Post to runner URL to get the first step.
         resp = self.testapp.post_json(self.model_url('runner'))
@@ -112,36 +162,38 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_additional_steps(self):
         self.create_model()
-        url = self.model_url('/location_file/long_island')
 
         # Load the Long Island script parameters into the model.
-        self.testapp.post(url)
+        location_url = self.model_url('/location_file/long_island')
+        resp = self.testapp.get(location_url)
+        self.testapp.put_json(self.base_url, resp.json_body)
 
         # Post to runner URL to get the first step and expected # of time steps.
-        url = self.model_url('runner')
-        resp = self.testapp.post_json(url)
+        runner_url = self.model_url('runner')
+        resp = self.testapp.post_json(runner_url)
         num_steps = len(resp.json_body['expected_time_steps'])
 
         for step in range(num_steps):
             # Skip the first step because we received it in the POST.
             if step == 0:
                 continue
-            resp = self.testapp.get(url)
+            resp = self.testapp.get(runner_url)
             data = resp.json_body
             # TODO: Add more value tests here.
             self.assertEqual(data['time_step']['id'], step)
 
         # The model should now be exhausted and return a 404 if the user tries
         # to run it.
-        resp = self.testapp.get(url, status=404)
+        resp = self.testapp.get(runner_url, status=404)
         self.assertEqual(resp.status_code, 404)
 
     def test_restart_runner_after_finished(self):
         self.create_model()
-        url = self.model_url('/location_file/long_island')
 
         # Load the Long Island script parameters into the model.
-        self.testapp.post(url)
+        location_url = self.model_url('/location_file/long_island')
+        resp = self.testapp.get(location_url)
+        self.testapp.put_json(self.base_url, resp.json_body)
 
         # Post to runner URL to get the first step and expected # of time steps.
         url = self.model_url('runner')
@@ -220,7 +272,7 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
 
         return data
 
-    def jtest_wind_mover_create(self):
+    def test_wind_mover_create(self):
         data = self.make_wind_mover_data()
         resp = self.testapp.post_json(self.collection_url, data)
         mover_id = resp.json_body['id']
@@ -233,25 +285,30 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(resp.json['wind']['units'], 'mps')
 
         winds = data['wind']['timeseries']
-        self.assertEqual(resp.json['wind']['timeseries'], [
-            [winds[0]['datetime'], 10, 90],
-            [winds[1]['datetime'], 20, 180],
-            [winds[2]['datetime'], 30, 270]
-        ])
+        json_winds = resp.json['wind']['timeseries']
 
-        self.assertEqual(resp.json['uncertain_duration'], data['uncertain_duration'])
-        self.assertEqual(resp.json['uncertain_time_delay'], data['uncertain_time_delay'])
-        self.assertEqual(resp.json['uncertain_angle_scale'], data['uncertain_angle_scale'])
-        self.assertEqual(resp.json['uncertain_angle_scale_units'], 'deg')
+        for i in range(3):
+            for x in range(3):
+                self.assertAlmostEqual(winds[i][x], json_winds[i][x])
+
+        self.assertEqual(resp.json['uncertain_duration'],
+                         data['uncertain_duration'])
+        self.assertEqual(resp.json['uncertain_time_delay'],
+                         data['uncertain_time_delay'])
+        self.assertEqual(resp.json['uncertain_angle_scale'],
+                         data['uncertain_angle_scale'])
+        self.assertEqual(resp.json['uncertain_angle_scale_units'],
+                         data['uncertain_angle_scale_units'])
         self.assertEqual(resp.json['active_start'],
                          datetime.datetime(*gmtime(0)[:6]).isoformat())
         self.assertEqual(resp.json['active_stop'],
-                         datetime.datetime(2038,1,18,0,0,0).isoformat())
+                         datetime.datetime(2038, 1, 18, 0, 0, 0).isoformat())
 
     def test_wind_mover_update(self):
         data = self.make_wind_mover_data()
         resp = self.testapp.post_json(self.collection_url, data)
         mover_id = resp.json_body['id']
+        data = resp.json_body
 
         safe_now = self.get_safe_date(datetime.datetime.now())
         data['wind']['timeseries'][0][0] = safe_now
@@ -364,16 +421,21 @@ class MapServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.url = self.model_url('map')
 
     def copy_map(self, location_file, map_name, destination_name=None):
-        filename = '%s.bna' % map_name
-        destination_name = destination_name or filename
-        original_file = os.path.join(self.project_root, 'data',
-                                     'location_files', location_file, 'data',
-                                     map_name)
-        test_file = os.path.join(self.project_root, 'static', 'uploads',
-                                 destination_name)
-        shutil.copy(original_file, test_file)
+        """
+        Copy a map with the filename ``map_name`` from the location file
+        ``location_file`` to the current model's data directory.
 
-        return filename
+        If ``destination_name`` is None, use ``map_name`` as the new filename.
+        """
+        destination_name = destination_name or map_name
+        original_file = os.path.join(self.project_root, 'location_files',
+                                     location_file, 'data', map_name)
+        destination_file = os.path.join(self.project_root, 'static',
+                                        self.settings['model_data_dir'],
+                                        self.model_id, 'data', destination_name)
+        shutil.copy(original_file, destination_file)
+
+        return destination_name
 
     def test_create_map(self):
         filename = self.copy_map('long_island', 'LongIslandSoundMap.BNA')
@@ -481,68 +543,42 @@ class LocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.url = self.model_url('location_file')
         self.maxDiff = 5000
 
-    def test_add_long_island(self):
-        url = self.model_url('/location_file/long_island')
-        resp = self.testapp.post(url)
+    def test_post_to_test_location_file_updates_the_model_configuration(self):
+        url = self.model_url('/location_file/test')
+        resp = self.testapp.get(url)
+        resp = self.testapp.put_json(self.base_url, resp.json_body)
         body = resp.json_body
         util.delete_keys_from_dict(body, [u'id'])
+        self.assertEqual(body, body)
 
-        expected = {
-            u'wind_movers': [
-                {
-                    u'on': True, u'name': u'Wind Mover',
-                    u'uncertain_angle_scale': 0.4,
-                    u'uncertain_duration': 10800.0,
-                    u'active_start': u'1970-01-01T00:00:00',
-                    u'active_stop': u'2038-01-18T00:00:00',
-                    u'uncertain_angle_scale_units': u'rad',
-                    u'uncertain_time_delay': 0.0,
-                    u'wind': {
-                        u'units': u'mps', u'description': None,
-                        u'source_type': u'manual', u'updated_at': None,
-                        u'longitude': None, u'source_id': None,
-                        u'timeseries': [[u'2013-02-05T17:00:00', 30.0, 50.0],
-                                        [u'2013-02-06T11:00:00', 30.0, 50.0],
-                                        [u'2013-02-06T23:00:00',
-                                         20.000000000000004, 25.0],
-                                        [u'2013-02-07T11:00:00', 25.0, 10.0],
-                                        [u'2013-02-07T23:00:00', 25.0, 180.0]],
-                        u'latitude': None,
-                    },
-                    u'uncertain_speed_scale': 2.0
-                }
-            ],
-            u'map': {
-                u'map_bounds': [[-73.083328, 40.922832],
-                                [-73.083328, 41.330833],
-                                [-72.336334, 41.330833],
-                                [-72.336334, 40.922832]],
-                u'name': u'Long Island Sound', u'refloat_halflife': 21600.0
-            },
-            u'start_time': u'2013-02-05T17:00:00',
-            u'random_movers': [
-                {
-                    u'diffusion_coef': 500000.0,
-                    u'name': u'Random Mover',
-                    u'on': True,
-                    u'active_start': u'1970-01-01T00:00:00',
-                    u'active_stop': u'2038-01-18T00:00:00',
-                }
-            ],
-            u'uncertain': False,
-            u'surface_release_spills': [
-                {
-                    u'windage_range': [0.01, 0.04],
-                    u'num_elements': 1000,
-                    u'name': u'Long Island Spill',
-                    u'is_active': True,
-                    u'start_position': [-72.419992, 41.20212, 0.0],
-                    u'release_time': u'2013-02-05T17:00:00',
-                    u'windage_persist': 900.0,
-                }
-            ],
-            u'time_step': 0.25, u'duration_hours': 0,
-            u'duration_days': 1,
-        }
 
-        self.assertEqual(body, expected)
+class LocationFileWizardServiceTests(FunctionalTestBase, ModelHelperMixin):
+    def setUp(self):
+        super(LocationFileWizardServiceTests, self).setUp()
+        self.create_model()
+
+    def test_get_wizard_returns_html_fragment(self):
+        wizard_url = self.model_url('/location_file/test/wizard')
+        resp = self.testapp.get(wizard_url)
+        data = resp.json_body
+        html = data['html'].replace('\n', '').replace('  ', ' ')
+
+        self.assertIn("<form class='wizard form page hide' id=\"test_wizard\" "
+                      "title=\"Test Location File\"", html)
+        self.assertIn('<div class="step hidden"', html)
+        self.assertIn('data-show-form=model-settings', html)
+        self.assertIn('<select class="type input-small" '
+                      'data-value="wizard.custom_stuff" id="custom_stuff" '
+                      'name="custom_stuff"', html)
+
+    def test_post_to_test_wizard_changes_model(self):
+        resp = self.testapp.get(self.base_url)
+        model_data = resp.json_body
+        self.assertEqual(model_data['duration_days'], 1)
+
+        wizard_url = self.model_url('/location_file/test/wizard')
+        resp = self.testapp.put_json(wizard_url, {'use_custom_thing': 'yes'})
+
+        resp = self.testapp.get(self.base_url)
+        model_data = resp.json_body
+        self.assertEqual(model_data['duration_days'], 10)

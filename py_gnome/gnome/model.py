@@ -1,31 +1,59 @@
 #!/usr/bin/env python
 import os
 from datetime import datetime, timedelta
+import copy
 
 import gnome
 import gnome.utilities.cache
 
-from gnome.gnomeobject import GnomeObject
+from gnome import GnomeId
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.environment import Wind
+from gnome.environment import Environment, Wind
 from gnome.movers import Mover
 from gnome.spill_container import SpillContainerPair
+from gnome.utilities import serializable
 
-class Model(GnomeObject):
+class Model(serializable.Serializable):
     """ 
     PyGNOME Model Class
     
     """
+    _update = ['time_step',
+               'start_time',
+               'duration',
+               'uncertain',
+               'movers',
+               'environment',
+               'spills',
+               'map'
+               ]
+    _create = []
+    _create.extend(_update)
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add(create=_create,
+              update=_update)   # no need to copy parent's state in tis case
+    
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """create compound objects like map, output_map from dict, then pass it onto new_from_dict"""
+        if 'map' in dict_:
+            obj_ = dict_.pop('map')
+            to_eval = "{0}.new_from_dict( obj_)".format( obj_.pop('obj_type'))
+            map = eval(to_eval)
+            dict_['map'] = map  # update dict with object
+            
+        return super(Model, cls).new_from_dict( dict_)
+    
     def __init__(self,
                  time_step=timedelta(minutes=15), 
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
                  duration=timedelta(days=1),
                  map=gnome.map.GnomeMap(),
-                 output_map=None,
+                 renderer=None,
                  uncertain=False,
                  cache_enabled=False,
-                 ):
+                 **kwargs):
         """ 
         Initializes a model. 
 
@@ -39,19 +67,21 @@ class Model(GnomeObject):
 
         """
         # making sure basic stuff is in place before properties are set
-        self.winds = OrderedCollection(dtype=Wind)  
+        self.environment = OrderedCollection(dtype=Environment)  
         self.movers = OrderedCollection(dtype=Mover)
         self.spills = SpillContainerPair(uncertain)   # contains both certain/uncertain spills 
         self._cache = gnome.utilities.cache.ElementCache()
         self._cache.enabled = cache_enabled
-        self.outputters = [] # list of ouput objects
+        self.outputters = OrderedCollection(dtype=gnome.outputter.Outputter) # list of output objects
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
-        self.output_map = output_map
+        if renderer is not None:
+            self.outputters += renderer
         self.time_step = time_step # this calls rewind() !
-
+        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+        
 
     def reset(self, **kwargs):
         """
@@ -75,6 +105,11 @@ class Model(GnomeObject):
         self._cache.rewind()
         [outputter.rewind() for outputter in self.outputters]
 
+    def write_from_cache(self, filetype='netcdf', time_step='all'):
+        """
+        write the already-cached data to an output files.
+        """
+        pass
 
     ### Assorted properties
     @property
@@ -95,6 +130,10 @@ class Model(GnomeObject):
     @cache_enabled.setter
     def cache_enabled(self, enabled):
         self._cache.enabled = enabled
+    
+    @property
+    def id(self):
+        return self._gnome_id.id
 
     @property
     def start_time(self):
@@ -158,7 +197,7 @@ class Model(GnomeObject):
 
         """
         [mover.prepare_for_model_run() for mover in self.movers]
-        [outputter.prepare_for_model_run() for outputter in self.outputters]
+        [outputter.prepare_for_model_run(self._cache) for outputter in self.outputters]
         
         self.spills.rewind()
 
@@ -213,31 +252,24 @@ class Model(GnomeObject):
 
         for mover in self.movers:
             mover.model_step_is_done()
-        [outputter.model_step_is_done() for outputter in self.outputters]
+        for outputter in self.outputters:
+            outputter.model_step_is_done()
 
-    # def write_output(self):
+    # def write_image(self):
     #     """
-    #     write the output of the current time step to whatever output
-    #     methods have been selected
+    #     Render the map image, according to current parameters
+
+    #     :param images_dir: directory to write the image to.
     #     """
-    #     for output_method in self.output_types:
-    #         if output_method == "image":
-    #             self.write_image()
-    #         else:
-    #             raise ValueError("%s output type not supported"%output_method)
-    #     return (self.current_time_step, filename, self.model_time.isoformat())
+    #     if self.output_map is None:
+    #         raise ValueError("You must have an output map to use the image output")
+    #     filename = self.output_map.write_step(self.current_time_step)
 
-    def write_image(self):
-        """
-        Render the map image, according to current parameters
+    #     return filename
 
-        :param images_dir: directory to write the image to.
-        """
-        if self.output_map is None:
-            raise ValueError("You must have an output map to use the image output")
-        filename = self.output_map.write_step(self.current_time_step, self._cache)
-
-        return filename
+    def write_output(self):
+        for outputter in self.outputters:
+            outputter.write_output(self.current_time_step)
 
     def step(self):
         """
@@ -259,7 +291,7 @@ class Model(GnomeObject):
             sc.release_elements(self.model_time, self.time_step)
         # cache the results
         self._cache.save_timestep(self.current_time_step, self.spills)
-
+        self.write_output()
         return True
 
     def __iter__(self):
@@ -292,10 +324,16 @@ class Model(GnomeObject):
 
         :param images_dir: directory to write the image too.
         """
+        # is there a renderer in the outputters list?
+        for renderer in self.outputters:
+            if isinstance(renderer, gnome.renderer.Renderer):
+                break
+        else:
+            raise ValueError("There must be a renderer in the outputters list to call next_image")
         # run the next step:
         if not self.step():
             raise StopIteration
-        filename = self.write_image()
+        filename = renderer.last_filename
         return (self.current_time_step, filename, self.model_time.isoformat())
 
     def full_run_with_image_output(self, output_dir):
@@ -311,3 +349,42 @@ class Model(GnomeObject):
                 print "Done with the model run"
                 break
 
+    def movers_to_dict(self):
+        """
+        call OrderedCollection.to_dict static method
+        """
+        return OrderedCollection.to_dict(self.movers)
+    
+    def environment_to_dict(self):
+        """
+        call OrderedCollection.to_dict static method
+        """
+        return OrderedCollection.to_dict(self.environment)
+
+    def spills_to_dict(self):
+        return SpillContainerPair.to_dict(self.spills)
+
+    def __eq__(self, other):
+        """
+        override serializable.Serializable.__eq__() method
+        
+        In addition to checking properties, also check the equality of
+        objects in each collection
+        """
+        check = super(Model,self).__eq__(other)
+        
+        #=======================================================================
+        # if check:
+        #    """check ordered collections are equal. Currently not implemented"""
+        #    if not self.movers == other.movers:
+        #        return False
+        #    
+        #    if not self.environment == other.environment:
+        #        return False
+        #    
+        #    if not self.spills == other.spills:
+        #        return False
+        #=======================================================================
+        
+        return check
+        

@@ -147,19 +147,26 @@ def test_simple_run_with_image_output():
 
     start_time = datetime(2012, 9, 15, 12, 0)
     
-    model = gnome.model.Model()
-    model.duration = timedelta(hours=1)
 
+    # the image output map
     mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
 
     # the land-water map
-    model.map = gnome.map.MapFromBNA( mapfile,
+    map = gnome.map.MapFromBNA( mapfile,
                                       refloat_halflife=6*3600, #seconds
                                      )
-    # the image output map
-    model.output_map = gnome.outputters.ImageOutputter(mapfile,
-                                                       images_dir,
-                                                       size=(400, 300))
+    renderer = gnome.renderer.Renderer(mapfile,
+                                       images_dir,
+                                       size=(400, 300))
+    model = gnome.model.Model(time_step=timedelta(minutes=15), 
+                              start_time=start_time,
+                              duration=timedelta(hours=1),
+                              map=map,
+                              renderer=renderer,
+                              uncertain=False,
+                              cache_enabled=False,)
+
+
 
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
@@ -207,20 +214,24 @@ def test_simple_run_with_image_output_uncertainty():
 
     start_time = datetime(2012, 9, 15, 12, 0)
 
-    model = gnome.model.Model()
-    model.duration = timedelta(hours=1)
-
+       # the image output map
     mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
 
     # the land-water map
-    model.map = gnome.map.MapFromBNA( mapfile,
+    map = gnome.map.MapFromBNA( mapfile,
                                       refloat_halflife=6*3600, #seconds
                                      )
-    # the image output map
-    # the image output map
-    model.output_map = gnome.outputters.ImageOutputter(mapfile,
-                                                       images_dir,
-                                                       size=(400, 300))
+    renderer = gnome.renderer.Renderer(mapfile,
+                                       images_dir,
+                                       size=(400, 300))
+    model = gnome.model.Model(time_step=timedelta(minutes=15), 
+                              start_time=start_time,
+                              duration=timedelta(hours=1),
+                              map=map,
+                              renderer=renderer,
+                              uncertain=True,
+                              cache_enabled=False,)
+
 
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
@@ -525,7 +536,7 @@ def test_release_at_right_time():
 if __name__ == "__main__":
     #test_all_movers()
     #test_release_at_right_time()
-    test_simple_run_with_image_output()
-    
+    #test_simple_run_with_image_output()
+    test_simple_run_with_image_output_uncertainty()
 
     

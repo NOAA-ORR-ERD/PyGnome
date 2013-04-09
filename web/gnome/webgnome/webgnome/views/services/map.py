@@ -51,21 +51,16 @@ class Map(MapResource):
         """
         Add a map to the current model.
 
-        The 'filename' field must refer to a BNA file that already exists on
-        the server. The file will be *deleted* after it is used to construct
-        a map.
+        The 'filename' field must refer to a BNA file that exists in the data
+        directory for the user's model.
         """
         data = self.request.validated
         model = data.pop('model')
         # Ignore the map bounds on setting -- this is readonly.
         data.pop('map_bounds')
         filename = data.pop('filename')
-        model.add_bna_map(filename, data)
-        try:
-            os.remove(filename)
-        except OSError as e:
-            logger.error('Could not remove file: %s. Error was: %s' % (
-                filename, e))
+        relative_filename = os.path.join(model.base_dir_relative, filename)
+        model.add_bna_map(relative_filename, data)
         return self.get_map_data(model)
 
     @view(validators=util.valid_map, schema=MapSchema)
@@ -148,31 +143,35 @@ class CustomGoodsMap(BaseResource):
         f = NamedTemporaryFile(dir=model.base_dir, delete=False)
         f.write(resp.content)
         f.close()
-        model.add_bna_map(f.name, data)
+
+        relative_filename = os.path.join(model.base_dir_relative, f.name)
+        model.add_bna_map(relative_filename, data)
 
         return model.map.to_dict()
 
 
 @resource(path='/model/{model_id}/file_upload', renderer='gnome_json',
-          description='A file upload.')
+          description="Post to upload a file into the model's data directory.")
 class FileUpload(BaseResource):
 
-    @view(validators=util.valid_model_id)
+    @view(validators=[util.valid_model_id, util.valid_filename])
     def post(self):
         """
         Upload a file.
+
+        TODO: Chunked uploads.
         """
+        filename = self.reqeust.validated['filename']
         input_file = self.request.POST['filename'].file
-        temp_file = NamedTemporaryFile(dir=self.settings.upload_dir,
-                                       delete=False)
-        try:
-            temp_file.write(input_file.read())
-            temp_file.close()
-        except OSError as e:
-            logger.error('Could not write file: %s. Error was: %s' % (
-                temp_file.name, e))
-            raise HTTPServerError
-        else:
-            return {
-                'filename': temp_file.name.split(os.path.sep)[-1]
-            }
+
+        with open(filename) as f:
+            try:
+                f.write(input_file.read())
+            except OSError as e:
+                logger.error('Could not write file: %s. Error was: %s' % (
+                    f.name, e))
+                raise HTTPServerError
+
+        return {
+            'filename': filename.split(os.path.sep)[-1]
+        }

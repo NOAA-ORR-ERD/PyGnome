@@ -17,12 +17,14 @@ New features:
  - land raster is only as big as the land -- if the map bounds are bigger, extra space is not in the land map
     Question: what if map-bounds is smaller than land? wasted bitmap space? (though it should work)
 """
+import copy
+import os
  
 import numpy as np
 
 import gnome.cy_gnome.cy_land_check
-from gnome import GnomeObject
-from gnome.utilities import map_canvas
+from gnome import GnomeId
+from gnome.utilities import map_canvas, serializable
 from gnome.basic_types import world_point_type, oil_status
 
 from gnome.utilities.file_tools import haz_files
@@ -32,17 +34,22 @@ from gnome.utilities.geometry.PinP import CrossingsTest as point_in_poly
 from gnome.utilities.geometry.polygons import PolygonSet
 
             
-class GnomeMap(GnomeObject):
+class GnomeMap(serializable.Serializable):
     """
     The very simplest map for GNOME -- all water
     with only a bounding box for the map bounds.
     
     This also serves as a description of the interface
     """
+    _update = ['map_bounds']
+    _create = []
+    _create.extend(_update)
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add( create=_create, update=_update)
     
     refloat_halflife = None # note -- no land, so never used
 
-    def __init__(self, map_bounds = None):
+    def __init__(self, map_bounds = None, **kwargs):
         """
         This __init__ will be different for other implementations
         
@@ -61,6 +68,9 @@ class GnomeMap(GnomeObject):
                                           ( 360, -90),
                                           (-360, -90),
                                           ), dtype=np.float64 )
+        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+
+    id = property( lambda self: self._gnome_id.id)
 
     def on_map(self, coord):
         """
@@ -142,8 +152,8 @@ class RasterMap(GnomeMap):
     It requires a constant refloat half-life
     
     This will usually be initialized in a sub-class (from a BNA, etc)
-    """
-
+    NOTE: Not serializable since initialized from sub-class
+    """    
     ## NOTE: spillable area can be both larger and smaller than land raster:
     ##       map bounds can also be larger or smaller:
     ##            both are done with a point in polygon check
@@ -162,7 +172,7 @@ class RasterMap(GnomeMap):
                  projection,
                  map_bounds = None,   # defaults to bounding box of raster
                  spillable_area=None, # defaults to any water
-                 ):
+                 **kwargs):
         """
         create a new RasterMap
         
@@ -189,6 +199,8 @@ class RasterMap(GnomeMap):
             self.spillable_area = np.asarray(spillable_area, dtype=np.float64).reshape(-1, 2)
         else:
             self.spillable_area = None
+            
+        self._gnome_id = GnomeId(id=kwargs.pop('id',None))  # TODO: not sure this is best way - maybe refactor
 
     def _on_land_pixel(self, coord):
         """
@@ -468,15 +480,25 @@ class RasterMap(GnomeMap):
 #        
 
         
-class MapFromBNA(RasterMap):
+class MapFromBNA(RasterMap, serializable.Serializable):
     """
     A raster land-water map, created from a BNA file
     """
+    _update = ['refloat_halflife','filename']
+    _create = []
+    _create.extend(_update)
+    state = copy.deepcopy(RasterMap.state)
+    state.add( create=_create, update=_update)
+    
+    #@classmethod
+    #def new_from_dict(cls):
+        
+    
     def __init__(self,
-                 bna_filename,
+                 filename,
                  refloat_halflife, #seconds
                  raster_size = 1024*1024, # default to 1MB raster
-                 ):
+                 **kwargs):
         """
         Creates a GnomeMap (specifically a RasterMap) from a bna file.
         It is expected that you will get the spillable area and map bounds from the BNA -- if they exist
@@ -485,8 +507,12 @@ class MapFromBNA(RasterMap):
         :param refloat_halflife: the half-life (in seconds) for the re-floating.
         :param raster_size: the total number of pixels (bytes) to make the raster -- the actual size
         will match the aspect ratio of the bounding box of the land
+        
+        todo: fix init so it handles kwargs cleanly
         """
-        polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
+        #self.filename = os.path.abspath(filename)
+        self.filename = filename
+        polygons = haz_files.ReadBNA(filename, "PolygonSet")
 
         # find the spillable area and map bounds:
         # and create a new polygonset without them
@@ -494,7 +520,7 @@ class MapFromBNA(RasterMap):
         #      or a gnome_map_data object...
         just_land = PolygonSet() # and lakes....
         spillable_area = None
-        map_bounds = None
+        map_bounds = kwargs.pop('map_bounds',None)  # this isn't really used - just popped out so it isn't duplicated
         for p in polygons:
             if p.metadata[1].lower() == "spillablearea":
                 spillable_area = p
@@ -531,7 +557,7 @@ class MapFromBNA(RasterMap):
                            canvas.projection,
                            map_bounds, 
                            spillable_area, 
-                           )
+                           **kwargs)
         
         return None
 
@@ -545,7 +571,7 @@ class MapFromBNA(RasterMap):
 #        Basics pyGNOME color bitmap.
 #        (End-user visualization.)
 #    """     
-#    def __init__(self, image_size, bna_filename, color_mode='RGB'):
+#    def __init__(self, image_size, filename, color_mode='RGB'):
 #        """
 #            Initializes color map attributes. Calls on parent class initialization 
 #            method in order to handle projection scaling.
@@ -554,8 +580,8 @@ class MapFromBNA(RasterMap):
 #                                      image_size,
 #                                      projection=map_canvas.FlatEarthProjection,
 #                                      mode=color_mode)
-#        self.polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
-#        self.filename = bna_filename        
+#        self.polygons = haz_files.ReadBNA(filename, "PolygonSet")
+#        self.filename = filename        
 #        self.draw_land(self.polygons)
 #
 #    def to_pixel(self, coord):
@@ -590,13 +616,13 @@ class MapFromBNA(RasterMap):
 #    lake_color = 0
 #    land_color = 1
 #    
-#    def __init__(self, image_size, bna_filename, refloat_halflife, color_mode='1'):
+#    def __init__(self, image_size, filename, refloat_halflife, color_mode='1'):
 #        """
 #            Initializes land-water map attributes. Calls on parent class initialization 
 #            method in order to handle projection scaling. Caches its bounding_box so that
 #            it doesn't need to be computed repeatedly.
 #        """
-#        gnome_map.__init__(self, image_size, bna_filename, color_mode)
+#        gnome_map.__init__(self, image_size, filename, color_mode)
 #        self.bounding_box = self.polygons.bounding_box
 #        self.refloat_halflife = refloat_halflife
 #        self.spills = []

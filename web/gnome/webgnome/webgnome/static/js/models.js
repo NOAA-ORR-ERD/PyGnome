@@ -31,7 +31,8 @@ define([
         model: TimeStep,
 
         initialize: function(timeSteps, opts) {
-            _.bindAll(this);
+            _.bindAll(this, 'runSuccess', 'timeStepRequestFailure');
+
             this.url = opts.url + '/runner';
             this.currentTimeStep = opts.currentTimeStep || 0;
             this.nextTimeStep = this.currentTimeStep ? this.currentTimeStep + 1 : 0;
@@ -354,13 +355,21 @@ define([
 
 
     var BaseModel = Backbone.Model.extend({
-        // Add an array of field names here that should be converted to strings
-        // during `toJSON` calls and to `moment` objects during `get` calls.
+        /*
+         Add an array of field names here that should be converted to strings
+         during `toJSON` calls and to `moment` objects during `get` calls.
+         */
         dateFields: null,
 
-        initialize: function() {
+        initialize: function(attrs, opts) {
             this.dirty = false;
+            this.bind('change', this.change, this);
             this.bind('change:id', this.onIndexChange, this);
+
+            if (opts && opts.gnomeModel) {
+                this.gnomeModel = opts.gnomeModel;
+            }
+
             BaseModel.__super__.initialize.apply(this, arguments)
         },
 
@@ -407,17 +416,24 @@ define([
 
         change: function() {
             this.dirty = true;
-            BaseModel.__super__.change.apply(this, arguments)
         },
 
         save: function(attrs, options) {
             options = options || {};
+            var _this = this;
 
             if (!_.has(options, 'wait')) {
                 options.wait = true;
             }
 
-            if (!_.has(options, 'success')) {
+            if (_.has(options, 'success')) {
+                var success = options.success;
+
+                options.success = function(model, response, options) {
+                    _this.success(model, response, options);
+                    success(model, response, options);
+                }
+            } else {
                 options.success = this.success;
             }
 
@@ -425,7 +441,7 @@ define([
                 options.error = this.error;
             }
 
-            BaseModel.__super__.save.apply(this, [attrs, options]);
+            return BaseModel.__super__.save.apply(this, [attrs, options]);
         },
 
         success: function(model, response, options) {
@@ -491,8 +507,9 @@ define([
 
          // Return a `moment` object for any date field.
         get: function(attr) {
+            var val = BaseModel.__super__.get.apply(this, arguments);
+
             if(this.dateFields && _.contains(this.dateFields, attr)) {
-                var val = this.attributes[attr];
                 var date = moment(val);
                 if (date && date.isValid()) {
                     return date;
@@ -501,7 +518,7 @@ define([
                 }
             }
 
-            return BaseModel.__super__.get.apply(this, arguments);
+            return val;
         },
 
         // Call .format() on any date fields when preparing them for JSON
@@ -530,20 +547,19 @@ define([
     
     var BaseCollection = Backbone.Collection.extend({
         initialize: function (objs, opts) {
-            if (opts && opts.url) {
-                this.url = opts.url;
+            if (opts && opts.gnomeModel) {
+                this.gnomeModel = opts.gnomeModel;
             }
         }
     });
 
 
-    var Gnome = BaseModel.extend({
+    var GnomeModel = BaseModel.extend({
         dateFields: ['start_time'],
 
         url: function() {
             var id = this.id ? '/' + this.id : '';
-            return '/model' + id +
-                "?include_movers=false&include_spills=false";
+            return '/model' + id;
         }
     });
 
@@ -574,6 +590,10 @@ define([
 
         comparator: function(spill) {
             return moment(spill.get('release_time')).valueOf();
+        },
+
+        url: function() {
+            return this.gnomeModel.url() + '/spill/surface_release';
         }
     });
 
@@ -587,6 +607,8 @@ define([
             if (!attrs || !attrs.timeseries) {
                 this.set('timeseries', []);
             }
+
+            Wind.__super__.set.apply(this, arguments);
         },
 
         /*
@@ -694,6 +716,10 @@ define([
             if (timeseries.length) {
                 return moment(timeseries[0][0]).valueOf();
             }
+        },
+
+        url: function() {
+            return this.gnomeModel.url() + '/mover/wind';
         }
     });
     
@@ -704,6 +730,10 @@ define([
     var RandomMoverCollection = BaseCollection.extend({
         model: RandomMover,
 
+        url: function() {
+            return this.gnomeModel.url() + '/mover/random';
+        },
+
         comparator: function(mover) {
             return this.get('active_start');
         }
@@ -711,16 +741,96 @@ define([
 
 
     var Map = BaseModel.extend({
-        initialize: function(attrs, options) {
-            this.url = options.url;
+        url: function() {
+            return this.gnomeModel.url() + '/map';
         }
     });
 
 
     var CustomMap = BaseModel.extend({
-        initialize: function(attrs, options) {
-            this.url = options.url;
+        url: function() {
+            return this.gnomeModel.url() + '/custom_map';
         }
+    });
+
+
+    var LocationFile = GnomeModel.extend({
+        url: function() {
+            return this.gnomeModel.url() + '/location_file/' + this.get('filename')
+        }
+    });
+
+
+    var LocationFileMeta = BaseModel.extend({
+        idAttribute: 'filename'
+    });
+
+
+    var LocationFileMetaCollection = BaseCollection.extend({
+        model: LocationFileMeta,
+
+        url: function() {
+            return this.gnomeModel.url() + '/location_file_meta';
+        }
+    });
+
+
+    var LocationFileWizard = BaseModel.extend({
+        url: function() {
+            return this.collection.url() + '/' + this.id + '/wizard';
+        }
+    });
+
+
+    var LocationFileWizardCollection = BaseCollection.extend({
+        model: LocationFileWizard,
+
+        url: function() {
+            return this.gnomeModel.url() + '/location_file';
+        }
+
+    });
+
+
+    var GnomeModelFromLocationFile = BaseModel.extend({
+        url: function() {
+            return this.gnomeModel.url() + '/from_location_file/' + this.get('location_name')
+        }
+    });
+
+
+    var GnomeModelValidator = GnomeModel.extend({
+        url: '/validate/model'
+    });
+
+
+    var WindMoverValidator = WindMover.extend({
+        url: '/validate/mover/wind'
+    });
+
+
+    var RandomMoverValidator = RandomMover.extend({
+        url: '/validate/mover/random'
+    });
+
+
+    var SurfaceReleaseSpillValidator = SurfaceReleaseSpill.extend({
+        url: '/validate/spill/surface_release'
+    });
+
+
+    var MapValidator = Map.extend({
+        url: '/validate/map'
+    });
+
+
+    var CustomMapValidator = CustomMap.extend({
+        url: '/validate/custom_map'
+    });
+
+
+    var LocationFileValidator = LocationFile.extend({
+        url: '/validate/location_file'
     });
 
 
@@ -735,6 +845,7 @@ define([
         window.alert(error);
     }
 
+
     function getNwsWind(coords, opts) {
         var url = '/nws/wind?lat=' + coords.latitude + '&lon=' + coords.longitude;
         var error = opts.error | nwsWindError;
@@ -746,12 +857,13 @@ define([
             dataType: 'json'
         });
     }
-      
+
 
     return {
         TimeStep: TimeStep,
         GnomeRun: GnomeRun,
-        Gnome: Gnome,
+        GnomeModel: GnomeModel,
+        GnomeModelFromLocationFile: GnomeModelFromLocationFile,
         BaseModel: BaseModel,
         BaseCollection: BaseCollection,
         SurfaceReleaseSpill: SurfaceReleaseSpill,
@@ -763,6 +875,18 @@ define([
         RandomMoverCollection: RandomMoverCollection,
         Map: Map,
         CustomMap: CustomMap,
+        LocationFile: LocationFile,
+        LocationFileMeta: LocationFileMeta,
+        LocationFileMetaCollection: LocationFileMetaCollection,
+        LocationFileWizard: LocationFileWizard,
+        LocationFileWizardCollection: LocationFileWizardCollection,
+        GnomeModelValidator: GnomeModelValidator,
+        WindMoverValidator: WindMoverValidator,
+        RandomMoverValidator: RandomMoverValidator,
+        SurfaceReleaseSpillValidator: SurfaceReleaseSpillValidator,
+        MapValidator: MapValidator,
+        CustomMapValidator: CustomMapValidator,
+        LocationFileValidator: LocationFileValidator,
         getNwsWind: getNwsWind
     };
 

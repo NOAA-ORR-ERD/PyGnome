@@ -64,6 +64,7 @@ cdef extern from "ShioTimeValue_c.h":
         ShioTimeValue_c() except +
         string      fStationName    # make char array a string - easier to work with in Cython
         char        fStationType
+        string      fYearDataPath
         bool        daylight_savings_off    # is this required?
         EbbFloodDataH   fEbbFloodDataHdl    # values to show on list for tidal currents - not sure if these should be available
         HighLowDataH    fHighLowDataHdl
