@@ -152,7 +152,6 @@ class WebMapFromBNA(BaseWebObject, MapFromBNA):
               update=['name', 'relative_path'])
 
     # TODO: Better way to remove from all lists?
-    state.update.remove('filename')
     state.create.remove('filename')
 
     def __init__(self, *args, **kwargs):
