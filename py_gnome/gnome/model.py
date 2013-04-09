@@ -26,7 +26,7 @@ class Model(serializable.Serializable):
                'movers',
                'environment',
                'spills',
-               'map'
+               'maps'
                ]
     _create = []
     _create.extend(_update)
@@ -34,16 +34,18 @@ class Model(serializable.Serializable):
     state.add(create=_create,
               update=_update)   # no need to copy parent's state in tis case
     
-    @classmethod
-    def new_from_dict(cls, dict_):
-        """create compound objects like map, output_map from dict, then pass it onto new_from_dict"""
-        if 'map' in dict_:
-            obj_ = dict_.pop('map')
-            to_eval = "{0}.new_from_dict( obj_)".format( obj_.pop('obj_type'))
-            map = eval(to_eval)
-            dict_['map'] = map  # update dict with object
-            
-        return super(Model, cls).new_from_dict( dict_)
+    #===========================================================================
+    # @classmethod
+    # def new_from_dict(cls, dict_):
+    #    """create compound objects like map, output_map from dict, then pass it onto new_from_dict"""
+    #    if 'map' in dict_:
+    #        obj_ = dict_.pop('map')
+    #        to_eval = "{0}.new_from_dict( obj_)".format( obj_.pop('obj_type'))
+    #        map = eval(to_eval)
+    #        dict_['map'] = map  # update dict with object
+    #        
+    #    return super(Model, cls).new_from_dict( dict_)
+    #===========================================================================
     
     def __init__(self,
                  time_step=timedelta(minutes=15), 
@@ -65,6 +67,11 @@ class Model(serializable.Serializable):
         :param uncertain=False: flag for setting uncertainty
         :param cache_enabled=False: flag for setting whether the mocel should cache results to disk.
 
+        All this does is call reset() which initializes eveything to defaults
+        
+        Optional keyword parameters (kwargs):
+        :param id: Unique Id identifying the newly created mover (a UUID as a string). 
+                   This is used when loading an object from a persisted model
         """
         # making sure basic stuff is in place before properties are set
         self.environment = OrderedCollection(dtype=Environment)  
@@ -255,18 +262,6 @@ class Model(serializable.Serializable):
         for outputter in self.outputters:
             outputter.model_step_is_done()
 
-    # def write_image(self):
-    #     """
-    #     Render the map image, according to current parameters
-
-    #     :param images_dir: directory to write the image to.
-    #     """
-    #     if self.output_map is None:
-    #         raise ValueError("You must have an output map to use the image output")
-    #     filename = self.output_map.write_step(self.current_time_step)
-
-    #     return filename
-
     def write_output(self):
         for outputter in self.outputters:
             outputter.write_output(self.current_time_step)
@@ -351,19 +346,31 @@ class Model(serializable.Serializable):
 
     def movers_to_dict(self):
         """
-        call OrderedCollection.to_dict static method
+        call to_dict method of OrderedCollection object
         """
-        return OrderedCollection.to_dict(self.movers)
+        return self.movers.to_dict()
     
     def environment_to_dict(self):
         """
-        call OrderedCollection.to_dict static method
+        call to_dict method of OrderedCollection object
         """
-        return OrderedCollection.to_dict(self.environment)
+        return self.environment.to_dict()
 
     def spills_to_dict(self):
-        return SpillContainerPair.to_dict(self.spills)
+        return self.spills.to_dict()
 
+    def maps_to_dict(self):
+        """
+        create a dict_ that contains:
+        'map': (type, object.id)
+        'ouput_map': (type, object.id)
+        """
+        dict_ = {'map': ("{0}.{1}".format(self.map.__module__, self.map.__class__.__name__), self.map.id)}
+        if self.output_map is not None:
+            dict_.update({'output_map': ("{0}.{1}".format(self.output_map.__module__, self.output_map.__class__.__name__), self.output_map.id)})
+            
+        return dict_
+    
     def __eq__(self, other):
         """
         override serializable.Serializable.__eq__() method

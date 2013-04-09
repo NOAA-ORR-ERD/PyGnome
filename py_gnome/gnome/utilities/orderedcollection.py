@@ -129,19 +129,18 @@ class OrderedCollection(object):
     def __repr__(self):
         return self.__str__()
 
-    @staticmethod
-    def to_dict(oc):
+    def to_dict(self):
         """
-        static method takes an instance of ordered collection
-        and outputs a dict two fields:
+        method takes the instance of ordered collection and outputs a dict with 
+        two fields:
             dtype: associated dtype for each object in the order in which it is added
             id : contains list of IDs of each object in the order in which it is added
             
         This method assumes object has an ID
         """
-        dict_ = {'dtype':oc.dtype,'id_list':[]}
+        dict_ = {'dtype':self.dtype,'id_list':[]}
         
-        for obj in oc:
+        for obj in self:
             obj_type = "{0.__module__}.{0.__class__.__name__}".format( obj)
             dict_['id_list'].append(( obj_type, obj.id))
         

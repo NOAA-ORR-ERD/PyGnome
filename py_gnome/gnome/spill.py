@@ -77,6 +77,16 @@ class Spill(object):
         return self._gnome_id.id
     
     def __init__(self, num_elements=0, **kwargs):
+        """
+        Base spill class. Spill used by a gnome model derive from this base class
+        
+        :param num_elements: number of LEs - default is 0.
+        
+        Optional parameters (kwargs):
+        :param on: Toggles the spill on/off (bool). Default is 'on'.
+        :param id: Unique Id identifying the newly created mover (a UUID as a string). 
+                   This is used when loading an object from a persisted model
+        """
         self.num_elements = num_elements
         self.on = True       # sets whether the spill is active or not
         self._gnome_id = GnomeId(id=kwargs.pop('id',None))
@@ -173,7 +183,21 @@ class FloatingSpill(Spill):
     def __init__(self,
                  windage_range=(0.01, 0.04),
                  windage_persist=900, **kwargs):
-
+        """
+        Optional arguments:
+        :param windage_range: A tuple defining the min/max % of wind acting on each LE. 
+                              The windage is computed by randomly sampling between this range and 
+                              normalizing it by windage_persist so windage is independent of model time_step. 
+                              Default (0.01, 0.04)
+        :type windage_range: a tuple of size 2 (min, max)
+        
+        :param windage_persist: Duration over which windage persists - this is given in seconds. Default is 900s.
+                                The -1 means the persistence is infinite so it is only set at the beginning of the run.
+        :type windage_persist: integer
+        
+        Remaining kwargs are passed onto Spill's __init__ using super. 
+        See base class documentation for remaining valid kwargs.
+        """
         super(FloatingSpill, self).__init__(**kwargs)
         self.windage_range = windage_range
         self.windage_persist = windage_persist
@@ -221,9 +245,12 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
         :param release_time: time the LEs are released (datetime object)
         :param end_position=None: optional -- for a moving source, the end position
         :param end_release_time=None: optional -- for a release over time, the end release time
-        :param windage: the windage range of the LEs (min, max). Default is (0.01, 0.04) from 1% to 4%.
-        :param persist: Default is 900s, so windage is updated every 900 sec.
-                        The -1 means the persistence is infinite so it is only set at the beginning of the run.
+        :param windage_range: the windage range of the LEs (min, max). Default is (0.01, 0.04) from 1% to 4%.
+        :param windage_persist: Default is 900s, so windage is updated every 900 sec.
+                                The -1 means the persistence is infinite so it is only set at the beginning of the run.
+                                
+        Remaining kwargs are passed onto base class __init__ using super. 
+        See base class documentation for remaining valid kwargs.
         """
         super(SurfaceReleaseSpill, self).__init__(windage_range, windage_persist, **kwargs)
         
@@ -250,8 +277,8 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
         self.end_position = np.asarray(end_position, dtype=basic_types.world_point_type).reshape((3,))
         #self.positions.initial_value = self.start_position
 
-        self.windage_range    = windage_range[0:2]
-        self.windage_persist  = windage_persist
+        #self.windage_range    = windage_range[0:2]
+        #self.windage_persist  = windage_persist
 
         self.num_released = 0
         self.not_called_yet = True

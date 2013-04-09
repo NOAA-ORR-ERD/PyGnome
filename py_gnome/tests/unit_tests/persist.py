@@ -2,6 +2,7 @@ import json
 from datetime import datetime,timedelta
 import pprint
 import os
+import shutil
 
 import numpy as np
 import colander
@@ -16,17 +17,24 @@ Define a scenario and persist it to ./test_persist/
 saveloc  = './test_persist'
 datafiles= '/Users/jasmine.sandhu/Documents/projects/gnome/py_gnome/tests/scripts/script_boston'
 
+if os.path.exists(saveloc):
+    shutil.rmtree(saveloc)
+
+os.mkdir(saveloc)
 mapfile = os.path.join( datafiles, './MassBayMap.bna')
 gnome_map = gnome.map.MapFromBNA(mapfile,
                                  refloat_halflife=1*3600, #seconds
                                  )
 
+output_map = gnome.utilities.map_canvas.MapCanvasFromBNA((800,600),mapfile)
+
 start_time = datetime(2013, 2, 13, 9, 0)
 model = gnome.model.Model(start_time = start_time,
                         duration = timedelta(days=2),
                         time_step = 30 * 60, # 1/2 hr in seconds
-                        uncertain = False,
-                        map= gnome_map
+                        uncertain = True,
+                        map= gnome_map,
+                        output_map= output_map,
                         )
 
 print "adding a spill"
@@ -86,4 +94,4 @@ model.environment += c_mover.tide
 print "saving .."
 scenario.save(model,saveloc)
 print "loading .."
-model2 = scenario.load(saveloc,'model_{0}.txt'.format(model.id))
+model2 = scenario.load(saveloc)

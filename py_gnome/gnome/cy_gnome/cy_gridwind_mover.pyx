@@ -1,4 +1,4 @@
-cimport numpy as np
+cimport numpy as cnp
 import numpy as np
 
 from type_defs cimport *
@@ -22,18 +22,6 @@ cdef class CyGridWindMover(cy_mover.CyMover):
     def __dealloc__(self):
         del self.mover
         self.grid = NULL
-    
-#     def set_time_grid(self, time_grid_file, topology_file):
-#         self.grid.fIsOptimizedForStep = 0
-#         #cdef TimeGridVel_c *time_grid
-#         cdef TimeGridVelCurv_c *time_grid
-#         time_grid = new TimeGridVelCurv_c()
-#         #time_grid = new TimeGridVel_c()
-#         if (time_grid.TextRead(time_grid_file, topology_file) == -1):
-#             return False
-#         self.grid.SetTimeGrid(time_grid)
-#         return True
-            
 
     def text_read(self, time_grid_file, topology_file):
         """
@@ -54,10 +42,10 @@ cdef class CyGridWindMover(cy_mover.CyMover):
     def get_move(self, 
                  model_time, 
                  step_len, 
-                 np.ndarray[WorldPoint3D, ndim=1] ref_points, 
-                 np.ndarray[WorldPoint3D, ndim=1] delta, 
-                 np.ndarray[np.npy_double] windages,
-                 np.ndarray[np.npy_int16] LE_status, 
+                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points, 
+                 cnp.ndarray[WorldPoint3D, ndim=1] delta, 
+                 cnp.ndarray[cnp.npy_double] windages,
+                 cnp.ndarray[cnp.npy_int16] LE_status, 
                  LEType spill_type, 
                  long spill_ID):
         """

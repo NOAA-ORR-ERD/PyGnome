@@ -24,14 +24,19 @@ class Renderer(Outputter, MapCanvas):
         writes the frames for the LE "movies", etc.
 
     """
-    def __init__(self, mapfile, images_dir, size = (800,600), projection_class=projections.FlatEarthProjection):
+    def __init__(self, mapfile,
+                 images_dir,
+                 size = (800,600),
+                 projection_class=projections.FlatEarthProjection):
         """
         Init the image renderer.
         """
-        MapCanvas.__init__(self, size, projection_class)
         #set up the canvas
         polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
-        self.set_land(polygons)
+        MapCanvas.__init__(self,
+                           size,
+                           land_polygons=polygons,
+                           projection_class=projection_class)
 
         self.images_dir = images_dir
     

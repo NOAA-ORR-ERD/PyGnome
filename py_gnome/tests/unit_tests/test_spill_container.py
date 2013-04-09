@@ -415,8 +415,82 @@ def test_init_SpillContainerPair():
 
     assert True
 
+class TestAddSpillContainerPair:
+    start_time = datetime(2012, 1, 1, 12)
+    start_time2 = datetime(2012, 1, 2, 12)
 
+    start_position =  (23.0, -78.5, 0.0)
+    start_position2 = (45.0,  75.0, 0.0)
 
+    num_elements =  100
+
+    def test_exception_tuple(self):
+        """
+        tests that spills can be added to SpillContainerPair object
+        """
+        spill = SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time)    
+        sp2 = SurfaceReleaseSpill(self.num_elements,self.start_position2,self.start_time2)
+        scp = SpillContainerPair(True)
+        
+        with pytest.raises(ValueError):
+            scp += (spill, sp2, spill)
+
+    def test_exception_uncertainty(self):
+        spill = SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time)    
+        sp2 = SurfaceReleaseSpill(self.num_elements,self.start_position2,self.start_time2)
+        scp = SpillContainerPair(False)
+        
+        with pytest.raises(ValueError):
+            scp += (spill, sp2)
+            
+    def test_add_spill(self):
+        spill = [SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time) for i in range(2)]
+        scp = SpillContainerPair(False)
+        scp += (spill[0],)
+        scp += spill[1]
+        for sp_ix in zip( scp._spill_container.spills, range(len(spill)) ):
+            spill_ = sp_ix[0]
+            index = sp_ix[1]
+            assert spill_.id == spill[index].id
+        
+            
+    def test_add_spillpair(self):
+        c_spill = [SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time) for i in range(2)]    
+        u_spill = [SurfaceReleaseSpill(self.num_elements,self.start_position2,self.start_time2) for i in range(2)]
+        scp = SpillContainerPair(True)
+        
+        for sp_tuple in zip(c_spill, u_spill): 
+            scp += sp_tuple
+        
+        for sp_ix in zip( scp._spill_container.spills, range(len(c_spill)) ):
+            spill = sp_ix[0]
+            index = sp_ix[1]
+            assert spill.id == c_spill[index].id
+            
+        for sp_ix in zip( scp._u_spill_container.spills, range(len(c_spill)) ):
+            spill = sp_ix[0]
+            index = sp_ix[1]
+            assert spill.id == u_spill[index].id 
+
+    def test_to_dict(self):
+        c_spill = [SurfaceReleaseSpill(self.num_elements, self.start_position, self.start_time) for i in range(2)]    
+        u_spill = [SurfaceReleaseSpill(self.num_elements,self.start_position2,self.start_time2) for i in range(2)]
+        scp = SpillContainerPair(True)
+        
+        for sp_tuple in zip(c_spill, u_spill): 
+            scp += sp_tuple
+            
+        dict_ = scp.to_dict()
+        
+        for key in dict_.keys():
+            if key == 'certain_spills':
+                enum_spill = c_spill
+            elif key == 'uncertain_spills':
+                enum_spill = u_spill
+                
+            for id, spill in enumerate(enum_spill):
+                assert dict_[key]['id_list'][id][0] == "{0}.{1}".format( spill.__module__, spill.__class__.__name__)
+                assert dict_[key]['id_list'][id][1] == spill.id 
 
 if __name__ == "__main__":
     test_rewind2()

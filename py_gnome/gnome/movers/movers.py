@@ -19,9 +19,6 @@ class Mover(object):
     """
     Base class from which all Python movers can inherit
     
-    :param on: boolean as to whether the object is on or not
-    :param active_start: datetime when the mover should be active
-    :param active_stop: datetime after which the mover should be inactive
     It defines the interface for a Python mover. The model expects the methods defined here. 
     The get_move(...) method needs to be implemented by the derived class.  
     """
@@ -32,7 +29,14 @@ class Mover(object):
     
     def __init__(self, **kwargs):   # default min + max values for timespan
         """
-        During init, it defaults active = True
+        Initialize default Mover parameters
+        
+        All parameters are optional (kwargs)
+        :param on: boolean as to whether the object is on or not. Default is on
+        :param active_start: datetime when the mover should be active
+        :param active_stop: datetime after which the mover should be inactive
+        :param id: Unique Id identifying the newly created mover (a UUID as a string). 
+                   This is used when loading an object from a persisted model
         """
         self._active = True  # initialize to True, though this is set in prepare_for_model_step for each step
         self.on = kwargs.pop('on',True)  # turn the mover on / off for the run
@@ -261,8 +265,7 @@ class WindMover(CyMover, serializable.Serializable):
         however, user can still update the wind attribute with a new Wind object. That must
         be poped out of the dict here, then call super to process the standard dict_
         """
-        if 'wind' in dict_ and dict_.get('wind') is not None:
-            self.wind = dict_.pop('wind')
+        self.wind = dict_.pop('wind',self.wind)
             
         super(WindMover, self).from_dict(dict_)
     
@@ -271,14 +274,15 @@ class WindMover(CyMover, serializable.Serializable):
         Uses super to call CyMover base class __init__
         
         :param wind: wind object  -- provides the wind time series for the mover
-        :param active_start: datetime object for when the mover starts being active.
-        :param active_start: datetime object for when the mover stops being active.
+        
+        Optional parameters (kwargs):
         :param uncertain_duration:  (seconds) how often does a given uncertian windage get re-set
         :param uncertain_time_delay:   when does the uncertainly kick in.
         :param uncertain_speed_scale:  Scale for how uncertain the wind speed is
         :param uncertain_angle_scale:  Scale for how uncertain the wind direction is
-        :param active_start: mover active after this time: defaults to datetime( *gmtime(0)[:6] ), 
-        :param active_stop: mover inactive after this time: defaults to datetime(2038,1,18,0,0,0),
+        
+        Remaining kwargs are passed onto Mover's __init__ using super. 
+        See Mover documentation for remaining valid kwargs.
         """
         self.mover = CyWindMover(uncertain_duration=kwargs.pop('uncertain_duration',10800), 
                                  uncertain_time_delay=kwargs.pop('uncertain_time_delay',0), 
@@ -449,7 +453,13 @@ class RandomMover(CyMover, serializable.Serializable):
     
     def __init__(self, **kwargs):
         """
-        Uses super to invoke base class __init__ method
+        Uses super to invoke base class __init__ method. 
+        
+        Optional parameters (kwargs)
+        :param diffusion_coef: Diffusion coefficient for random diffusion. Default is 100,000 (units?)
+        
+        Remaining kwargs are passed onto Mover's __init__ using super. 
+        See Mover documentation for remaining valid kwargs.
         """
         self.mover = CyRandomMover(diffusion_coef=kwargs.pop('diffusion_coef',100000))
         super(RandomMover,self).__init__(**kwargs)
@@ -509,7 +519,19 @@ class CatsMover(CyMover, serializable.Serializable):
                  filename, 
                  **kwargs):
         """
-        Uses super to invoke base class __init__ method
+        Uses super to invoke base class __init__ method. 
+        
+        :param filename: file containing currents patterns for Cats 
+        
+        Optional parameters (kwargs)
+        :param tide: a gnome.environment.Tide object to be attached to CatsMover
+        :param scale: a boolean to indicate whether to scale value at reference point or not
+        :param scale_value: value used for scaling at reference point
+        :param scale_refpoint: reference location (long, lat, z). The scaling applied to all data is determined by scaling the 
+                               raw value at this location.
+        
+        Remaining kwargs are passed onto Mover's __init__ using super. 
+        See Mover documentation for remaining valid kwargs.
         """
         if not os.path.exists(filename):
             raise ValueError("Path for Cats filename does not exist: {0}".format(filename))
