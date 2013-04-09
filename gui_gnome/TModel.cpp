@@ -5,6 +5,7 @@
 #include "MakeMovie.h"
 #include "TShioTimeValue.h"
 #include "TideCurCycleMover.h"
+//#include "shapefil.h"
 
 #include <vector>
 
@@ -1805,6 +1806,163 @@ done:
 	
 }
 
+/*OSErr TModel::SaveShapeLEFile (Seconds fileTime, short fileNumber)
+{	// Trying this out - would need to put call in Output, comment out include shapefil.h, and add function to header file
+	OSErr err = 0;
+	long n, i, j, mapNum, count, createdDirID;
+	Seconds seconds;
+	TLEList *list;
+	TMap *bestMap;
+	LEHeaderRec header;
+	LEPropRec theLEPropRec;
+	LERec theLE;
+	char *p, path[256], fileName[256], fieldStr[32] ;
+	long fileItemNum,fileItemNum_forecast=0,fileItemNum_uncertain=0;
+	char out[512],forecastLEFName[256],uncertainLEFName[256];
+	char trajectoryTime[64], trajectoryDate[64], preparedTime[32], preparedDate[32];
+	Boolean bWriteUncertaintyLEs = this->IsUncertain();
+	SHPHandle hSHP;
+	int nShapeType=SHPT_POINT, nVertices, nVMax;
+	double *padfX, *padfY, *padfZ = NULL;
+	SHPObject *psObject;
+    DBFHandle	hDBF;
+	
+	
+	strcpy(fieldStr,"LEType");
+	/////////////////////////////////////////////////
+	err = GetOutputFileName (fileNumber, FORECAST_LE,    forecastLEFName);
+	if(err) return err; // JLM 8/2/99
+	err = GetOutputFileName (fileNumber, UNCERTAINTY_LE, uncertainLEFName);
+	if(err) return err; // JLM 8/2/99}
+	/////////////////////
+	
+	hSHP = SHPCreate(forecastLEFName,SHPT_POINT);
+    if( hSHP == NULL )
+    {
+		printf( "SHPCreate(%s) failed.\n", forecastLEFName );
+		err = -1; goto done;
+    }
+	hdelete(0, 0, forecastLEFName);
+    hDBF = DBFCreate( forecastLEFName );
+    if( hDBF == NULL )
+    {
+		printf( "DBFCreate(%s) failed.\n", forecastLEFName );
+		err = -1; goto done;
+    }
+	if( DBFAddField( hDBF, fieldStr, FTString, 32, 0 ) == -1 )
+	{
+		printf( "DBFAddField(%s,FTString,%d,0) failed.\n",
+			   fieldStr, 6 );
+		err = -1; goto done;
+	}
+	/////////////////////////////////////////////////
+	//if (IsUncertain ())  // open uncertainty LE file only if model is in uncertain mode
+	//{
+	 //}
+	/////////////////////////////////////////////////
+	
+	//if(fileNumber >= 0)	// may want to do something with time
+	 //{	// the trajectoryTime is different for each file , so we must set it automatically
+	 //GetDateTimeStrings(trajectoryTime, trajectoryDate, preparedTime, preparedDate);
+	// }
+	// else
+	 //{ // the user saw the trajectoryTime, so use what they set it to be
+	// strcpy(trajectoryTime,sharedTTime);
+	// strcpy(trajectoryDate,sharedTDate);
+	 //}
+	
+	
+	/////////////////////////////////////////////////
+	/////////////////////////////////////////////////
+	/////////////////////////////////////////////////
+	
+	/////////////////////////////////////////////////
+	// add up all the LEs from all spills
+	for (i = 0, n = LESetsList->GetItemCount() ; i < n ; i++) 
+	{
+		Boolean isUncertainLE;
+		LESetsList->GetListItem((Ptr)&list, i);
+		if (!list->bActive) continue;
+		
+		isUncertainLE = (list -> GetLEType () == UNCERTAINTY_LE);
+		if(isUncertainLE && !bWriteUncertaintyLEs) continue; //don't write out uncertainty LEs unless uncertainty is on
+		
+		//nVMax = list->numOfLEs;	// for one spill only
+		nVMax = 1;	// for one spill only
+		padfX = (double *) malloc(sizeof(double)*nVMax);
+		padfY = (double *) malloc(sizeof(double)*nVMax);
+		nVertices = nVMax;
+		for (j = 0 ; j < list->numOfLEs ; j++) 
+		{
+			list -> GetLE (j, &theLE);
+			//padfX[j] = theLE.p.pLong;
+			//padfY[j] = theLE.p.pLat;
+			padfX[0] = theLE.p.pLong / 1000000.;
+			padfY[0] = theLE.p.pLat / 1000000.;
+			// JLM, 3/1/99 it was decided to skip EVAPORATED and NOTRELEASED LE's
+			switch (theLE.statusCode) {
+				case OILSTAT_INWATER: 
+				case OILSTAT_OFFMAPS: 
+				case OILSTAT_ONLAND: 
+					break; // these are the only types written out
+					
+				default: continue; // skip these LE's	
+			}
+			////////////////////////////////////////////////
+			
+			psObject = SHPCreateSimpleObject(nShapeType, nVertices, padfX, padfY, padfZ);
+			SHPWriteObject(hSHP, -1, psObject);
+			SHPDestroyObject(psObject);
+			DBFWriteStringAttribute(hDBF, j, 0, "forecastLE" );
+		}
+		//psObject = SHPCreateObject(nShapeType, -1, nParts, panParts, NULL, nVertices, padfX, padfY, padfZ, padfM);
+		//psObject = SHPCreateSimpleObject(nShapeType, nVertices, padfX, padfY, padfZ);
+		//SHPWriteObject(hSHP, -1, psObject);
+		//SHPDestroyObject(psObject);
+		SHPClose(hSHP);
+		DBFClose(hDBF);
+		free(padfX);
+		free(padfY);
+		free(padfZ);
+	}
+	hSHP = SHPOpen(forecastLEFName,"rb");
+	hDBF = DBFOpen(forecastLEFName,"rb");
+	if (hSHP==NULL || hDBF == NULL)
+	{
+		goto done;
+	}
+	else 
+	{
+		int numEntries, numFields, numRecords;
+		const char *attStr;
+		SHPGetInfo(hSHP,&numEntries,&nShapeType,NULL,NULL); 
+		numFields = DBFGetFieldCount(hDBF);
+		numRecords = DBFGetRecordCount(hDBF);
+		//padfX = (double *) malloc(sizeof(double)*numEntries);
+		//padfY = (double *) malloc(sizeof(double)*numEntries);
+		//padfZ = NULL;
+		//nVertices = numEntries;
+		//psObject = SHPCreateSimpleObject(nShapeType, nVertices, padfX, padfY, padfZ);
+		for (j=0;j<numEntries;j++)
+		{
+			psObject = SHPReadObject(hSHP, j);
+			attStr = DBFReadStringAttribute(hDBF, j, 0);
+		}
+		//psObject = SHPReadObject(hSHP, numEntries-1);
+		SHPDestroyObject(psObject);
+		//free(padfX);
+		//free(padfY);
+	}
+	SHPClose(hSHP);
+	
+	goto done;
+	
+	
+done:	
+	
+	return err;	
+	
+}*/
 
 OSErr TModel::SaveSimpleAsciiLEFile (Seconds fileTime, short fileNumber)
 {
