@@ -155,7 +155,6 @@ def test_simple_run_with_image_output():
     map = gnome.map.MapFromBNA( mapfile,
                                       refloat_halflife=6*3600, #seconds
                                      )
-<<<<<<< HEAD
     renderer = gnome.renderer.Renderer(mapfile,
                                        images_dir,
                                        size=(400, 300))
@@ -167,15 +166,6 @@ def test_simple_run_with_image_output():
                               uncertain=False,
                               cache_enabled=False,)
 
-
-
-=======
-    # the image output map
-    polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
-    map = gnome.utilities.map_canvas.MapCanvas((400, 300), land_polygons=polygons)
-    model.output_map = map
-    
->>>>>>> 5bfd83356dcdf75ca9092ce3604e5ccd0780d1a8
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
     assert len(model.movers) == 1
@@ -229,10 +219,10 @@ def test_simple_run_with_image_output_uncertainty():
     map = gnome.map.MapFromBNA( mapfile,
                                       refloat_halflife=6*3600, #seconds
                                      )
-<<<<<<< HEAD
     renderer = gnome.renderer.Renderer(mapfile,
                                        images_dir,
                                        size=(400, 300))
+
     model = gnome.model.Model(time_step=timedelta(minutes=15), 
                               start_time=start_time,
                               duration=timedelta(hours=1),
@@ -241,12 +231,6 @@ def test_simple_run_with_image_output_uncertainty():
                               uncertain=True,
                               cache_enabled=False,)
 
-=======
-    # the image output map
-    polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
-    l__map = gnome.utilities.map_canvas.MapCanvas((400, 300), land_polygons=polygons)
-    model.output_map = l__map
->>>>>>> 5bfd83356dcdf75ca9092ce3604e5ccd0780d1a8
 
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
