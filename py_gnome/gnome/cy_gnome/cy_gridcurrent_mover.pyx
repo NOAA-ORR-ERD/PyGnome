@@ -2,7 +2,7 @@ cimport numpy as cnp
 import numpy as np
 
 from type_defs cimport *
-from movers cimport Mover_c,GridCurrentMover_c,TimeGridVel_c,TimeGridVelRect_c,TimeGridVelCurv_c
+from movers cimport Mover_c,GridCurrentMover_c,TimeGridVel_c
 cimport cy_mover
 
 cdef extern from *:
