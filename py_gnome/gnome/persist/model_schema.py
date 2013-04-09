@@ -13,7 +13,8 @@ from colander import (
     Int,
     String,
     SequenceSchema,
-    drop
+    drop,
+    deferred
     )
 
 import gnome
@@ -24,21 +25,25 @@ class SpillContainerPair(MappingSchema):
     certain_spills = base_schema.OrderedCollection()
     uncertain_spills = base_schema.OrderedCollection(missing=drop)  # only present if uncertainty is on
 
-class MapBounds(SequenceSchema):
-    map_bounds = base_schema.LongLat()
+class MapItem(TupleSchema):
+    type = SchemaNode( String() )
+    id   = SchemaNode( String() )
+    
+class MapList(MappingSchema):
+    map = MapItem()
+    output_map = MapItem(missing=drop)    
 
 class Map(base_schema.Id, MappingSchema):
-    map_bounds = MapBounds(missing=drop)
+    map_bounds = MapBounds()
     filename = SchemaNode(String(), missing=drop)
     refloat_halflife = SchemaNode( Float(), missing=drop)
 
 class Model(base_schema.Id, MappingSchema):
     time_step = SchemaNode( Float()) 
-    start_time= SchemaNode(extend_colander.LocalDateTime(), validator=validators.convertible_to_seconds)
+    start_time= SchemaNode(extend_colander.LocalDateTime(), validator=validators.convertable_to_seconds)
     duration = SchemaNode(extend_colander.TimeDelta() )   # put a constraint for max duration?
     movers = base_schema.OrderedCollection()
     environment = base_schema.OrderedCollection()
     uncertain = SchemaNode( Bool() )
     spills = SpillContainerPair()
-    map = Map()
-    test = SchemaNode( Int(), missing=drop)
+    maps = MapList()

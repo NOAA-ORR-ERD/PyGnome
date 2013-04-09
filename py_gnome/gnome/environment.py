@@ -27,6 +27,14 @@ class Environment(object):
     This base class just defines the id property 
     """
     def __init__(self, **kwargs):
+        """
+        Base class - serves two purposes:
+        1) Defines the dtype for all objects that can be added to the Model's environment OrderedCollection (Model.environment)
+        2) Defines the 'id' property used to uniquely identify an object 
+        
+        :param id: Unique Id identifying the newly created mover (a UUID as a string). 
+                   This is used when loading an object from a persisted model 
+        """
         self._gnome_id = GnomeId(id=kwargs.pop('id',None))
         
     id = property( lambda self: self._gnome_id.id)
@@ -72,7 +80,7 @@ class Wind( Environment, serializable.Serializable):
               2. a 'filename' containing a header that defines units amongst other meta data
                
         All other keywords are optional.
-        
+        Optional parameters (kwargs):
         :param timeseries: (Required) numpy array containing time_value_pair
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         
@@ -93,6 +101,9 @@ class Wind( Environment, serializable.Serializable):
                             
         :param latitude: (Optional) latitude of station or location where wind data is obtained from NWS
         :param longitude: (Optional) longitude of station or location where wind data is obtained from NWS
+        
+        Remaining kwargs ('id' if present) are passed onto Environment's __init__ using super. 
+        See base class documentation for remaining valid kwargs.
         """
         
         if 'timeseries' in kwargs and 'filename' in kwargs:
@@ -335,6 +346,8 @@ def ConstantWind(speed, direction, units='m/s'):
         
 class Tide(Environment, serializable.Serializable):
     """
+    todo: baseclass called ScaleTimeseries (or something like that)
+    ScaleCurrent
     Define the tide for a spill
     
     Currently, this internally defines and uses the CyShioTime object, which is
@@ -352,13 +365,16 @@ class Tide(Environment, serializable.Serializable):
     def __init__(self,
                  filename=None,
                  timeseries=None,
-                 yeardata=os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/'),
+                 yeardata=os.path.join( os.path.dirname( gnome.__file__), 'data','yeardata'),
                  **kwargs):
         """
-        Tide information can be obtained from a filename or set as a timeseries
-        Either a filename or timeseries must be giving, both cannot be None.
+        Tide information can be obtained from a filename or set as a timeseries (timeseries is NOT TESTED YET)
         
 	    Invokes super(Tides,self).__init__(**kwargs) for parent class initialization
+	    
+	    It requires one of the following to initialize:
+              1. 'timeseries' assumed to be in 'uv' format (NOT TESTED OR USED YET)
+              2. a 'filename' containing a header that defines units amongst other meta data
 	    
         :param timeseries: numpy array containing datetime_value_2d, ts_format is always 'uv'
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
@@ -371,14 +387,17 @@ class Tide(Environment, serializable.Serializable):
         
         :param yeardata: (Optional) path to yeardata used for Shio data filenames. Default location
                          is gnome/data/yeardata/
+                         
+        Remaining kwargs ('id' if present) are passed onto Environment's __init__ using super. 
+        See base class documentation for remaining valid kwargs.
         """
         self._yeardata = None # define locally so it is available even for OSSM files, though not used by OSSM files
         if( timeseries is None and filename is None):
             raise ValueError("Either provide timeseries or a valid filename containing Tide data")
                 
         if( timeseries is not None):
-            if units is None:
-                raise ValueError("Provide valid units as string or unicode for timeseries")
+#            if units is None:
+#                raise ValueError("Provide valid units as string or unicode for timeseries")
             
             #self._check_timeseries(timeseries, units)    # will probably need to move this function out
             

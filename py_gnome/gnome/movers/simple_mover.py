@@ -33,20 +33,23 @@ class SimpleMover(Mover, serializable.Serializable):
     state.add(update=['uncertainty_scale','velocity'], 
               create=['uncertainty_scale','velocity'])
     
-    def __init__(self, velocity, uncertainty_scale=0.5, *args, **kwargs):
+    def __init__(self, velocity, uncertainty_scale=0.5, **kwargs):
         """
         simple_mover (velocity)
 
         create a simple_mover instance
 
         :param velocity: a (u, v, w) triple -- in meters per second
-
+        
+        Remaining kwargs are passed onto Mover's __init__ using super. 
+        See Mover documentation for remaining valid kwargs.
         """
         self.velocity = np.asarray( velocity,
                                     dtype = basic_types.mover_type, # use this, to be compatible with whatever we are using for location
                                     ).reshape((3,))
         self.uncertainty_scale = uncertainty_scale
-        super(SimpleMover,self).__init__( *args, **kwargs)
+        super(SimpleMover,self).__init__( **kwargs)
+        
     def __repr__(self):
         return 'SimpleMover(<%s>)' % (self.id)
 

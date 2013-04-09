@@ -406,17 +406,17 @@ class SpillContainerPair(SpillContainerPairData):
         return ident in self._spill_container.spills
 
 
-    @staticmethod
-    def to_dict(scp):
+    def to_dict(self):
         """
-        static method takes an instance of SpillContainerPair class
-        and outputs a dict with:
-            spills: dict containing the spills ordered collection converted to a dict
-            data: ??
+        takes the instance of SpillContainerPair class and outputs a dict with:
+            'certain_spills': call to_dict() on spills ordered collection stored in certain spill container
+            
+        if uncertain, then also return:
+            'uncertain_spills': call to_dict() on spills ordered collection stored in uncertain spill container
         """
-        dict_ = {'certain_spills':OrderedCollection.to_dict(scp._spill_container.spills)}
-        if scp.uncertain:
-            dict_.update({'uncertain_spills':OrderedCollection.to_dict(scp._u_spill_container.spills)})
+        dict_ = {'certain_spills':self._spill_container.spills.to_dict()}
+        if self.uncertain:
+            dict_.update({'uncertain_spills':self._u_spill_container.spills.to_dict()})
             
         return dict_
 

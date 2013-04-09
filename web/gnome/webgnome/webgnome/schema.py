@@ -3,6 +3,7 @@ import datetime
 from gnome.persist import (
     environment_schema,
     movers_schema,
+    map_schema,
     model_schema,
     validators,
 )
@@ -83,7 +84,7 @@ class RandomMoversSchema(SequenceSchema):
     mover = RandomMoverSchema()
 
 
-class MapSchema(model_schema.Map):
+class MapSchema(map_schema.GnomeMap):
     default_name = 'Map'
     name = SchemaNode(String(), default=default_name, missing=default_name)
     relative_path = SchemaNode(String(), default=None, missing=drop)

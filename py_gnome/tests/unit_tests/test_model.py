@@ -157,9 +157,8 @@ def test_simple_run_with_image_output():
                                       refloat_halflife=6*3600, #seconds
                                      )
     # the image output map
-    map = gnome.utilities.map_canvas.MapCanvas((400, 300))
     polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
-    map.set_land(polygons)
+    map = gnome.utilities.map_canvas.MapCanvas((400, 300), land_polygons=polygons)
     model.output_map = map
     
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
@@ -218,9 +217,8 @@ def test_simple_run_with_image_output_uncertainty():
                                       refloat_halflife=6*3600, #seconds
                                      )
     # the image output map
-    l__map = gnome.utilities.map_canvas.MapCanvas((400, 300))
     polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
-    l__map.set_land(polygons)
+    l__map = gnome.utilities.map_canvas.MapCanvas((400, 300), land_polygons=polygons)
     model.output_map = l__map
 
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))

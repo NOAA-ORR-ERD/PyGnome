@@ -7,16 +7,17 @@ The drawing code for the interactive core mapping window -- at least for
 the web version
 
 """
+import copy
+import os
 
 import numpy as np
-
 import PIL.Image
 import PIL.ImageDraw
 
 from gnome.utilities.file_tools import haz_files
-from gnome.utilities import projections
-from gnome import basic_types
-
+from gnome.utilities import projections, serializable
+from gnome import basic_types, GnomeId
+import gnome
 
 def make_map(bna_filename, png_filename, image_size = (500, 500)):
     """
@@ -33,9 +34,8 @@ def make_map(bna_filename, png_filename, image_size = (500, 500)):
     #print "Reading input BNA"
     polygons = haz_files.ReadBNA(bna_filename, "PolygonSet")
 
-    canvas = MapCanvas(image_size)
+    canvas = MapCanvas(image_size, land_polygons=polygons)
     
-    canvas.set_land(polygons)
     canvas.draw_background()
     
     canvas.save_background(png_filename, "PNG")
@@ -50,6 +50,8 @@ class MapCanvas(object):
     This version uses PIL for the rendering, but it could be adapted to use other rendering tools
         
     This version uses a paletted image
+    
+    Note: For now - this is not serializable. Change if required in the future
     """
     # a bunch of constants -- maybe they should be settable, but...
     colors_rgb = [('transparent', (122, 122, 122) ),
@@ -64,45 +66,86 @@ class MapCanvas(object):
     colors  = dict( [(i[1][0], i[0]) for i in enumerate(colors_rgb)] )
     palette = np.array( [i[1] for i in colors_rgb], dtype=np.uint8 ).reshape((-1,))
 
-    def __init__(self, size, projection_class=projections.FlatEarthProjection):
+    def __init__(self, image_size, land_polygons=None, **kwargs):
         """
         create a new map image from scratch -- specifying the size:
+        Only the "Palette" image mode to used for drawing image. 
         
-        :param size: (width, height) tuple of the image size in pixels
-        :param projection_class: gnome.utilities.projections class to use.
-        :param mode='RGB': image mode to use -- format of image. Options are: 'RGB', 'palette', 'B&W'
+        :param image_size: (width, height) tuple of the image size in pixels
         
+        Optional parameter:
+        :param land_polygons: a PolygonSet (gnome.utilities.geometry.polygons.PolygonSet) used to define the map. 
+                              If this is None, MapCanvas has no land. Set during object creation.
+        
+        Optional parameters (kwargs)
+        :param projection_class: gnome.utilities.projections class to use. Default is gnome.utilities.projections.FlatEarthProjection
+        :param map_BB:  map bounding box. Default is to use land_polygons.bounding_box. If land_polygons is None, then this is
+                        the whole world, defined by ((-180,-90),(180, 90))
+        :param viewport: viewport of map -- what gets drawn and on what scale. Default is to set viewport = map_BB
+        :param image_mode: Image mode ('P' for palette or 'L' for Black and White image)
+                           BW_MapCanvas inherits from MapCanvas and sets the mode to 'L'
+                           Default image_mode is 'P'.
+        :param id: unique identifier for a instance of this class (UUID given as a string). 
+                   This is used when loading an object from a persisted model
         """
-        self.image_size = size
-        self.back_image = PIL.Image.new('P', self.image_size, color=self.colors['background'])
+        self.image_size = image_size
+        mode = kwargs.pop('image_mode', 'P')
+        self.back_image = PIL.Image.new(mode, self.image_size, color=self.colors['background'])
         self.back_image.putpalette(self.palette)
-        self.projection = projection_class(((-180,-85),(180, 85)), self.image_size) # BB will be re-set
-        self.map_BB = None
-        self.land_polygons = None
-
-    @classmethod
-    def empty_map(cls, size, bounding_box):
-        """
-        Alternative constructor for a map_canvas with no land
         
-        :param size: the size of the image: (width, height) in pixels 
+        # optional arguments (kwargs)
+        self._land_polygons = land_polygons
+        self.map_BB = kwargs.pop('map_BB', None)    
         
-        :param bounding_box: the bounding box you want the map to cover, in teh form:
-                             ( (min_lon, min_lat),
-                               (max_lon, max_lat) )
-        """
-        mc = cls.__new__(cls)
-        mc.image_size = size
-        mc.back_image = PIL.Image.new('P', size, color=cls.colors['background'])
-        mc.back_image.putpalette(mc.palette)
-        mc.projection = projections.FlatEarthProjection(bounding_box, size)
-        mc.map_BB = bounding_box 
-        mc.land_polygons=None 
+        if self.map_BB is None:
+            if self.land_polygons is None:
+                self.map_BB = ((-180,-90),(180, 90))
+            else:
+                self.map_BB = self.land_polygons.bounding_box
+        
+        projection_class= kwargs.pop('projection_class', projections.FlatEarthProjection)
+        self.projection = projection_class(self.map_BB, self.image_size) # BB will be re-set
+        
+        self._viewport = kwargs.pop('viewport',None)
+        
+        if self._viewport is None:
+            self.viewport = self.map_BB
+        
+        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
 
-        return mc
+    id = property( lambda self: self._gnome_id.id)
 
+# USE DEFAULT CONSTRUCTOR FOR CREATING EMPTY_MAP
+#===============================================================================
+#    @classmethod
+#    def empty_map(cls, image_size, bounding_box):
+#        """
+#        Alternative constructor for a map_canvas with no land
+#        
+#        :param image_size: the size of the image: (width, height) in pixels 
+#        
+#        :param bounding_box: the bounding box you want the map to cover, in teh form:
+#                             ( (min_lon, min_lat),
+#                               (max_lon, max_lat) )
+#        """
+#        mc = cls.__new__(cls)
+#        mc.image_size = image_size
+#        mc.back_image = PIL.Image.new('P', image_size, color=cls.colors['background'])
+#        mc.back_image.putpalette(mc.palette)
+#        mc.projection = projections.FlatEarthProjection(bounding_box, image_size)
+#        mc.map_BB = bounding_box 
+#        mc._land_polygons=None 
+# 
+#        return mc
+#===============================================================================
 
-    def set_viewport(self, viewport_BB):
+    @property
+    def viewport(self):
+        """ returns the current value of viewport of map: what gets drawn and on what scale """
+        return self._viewport
+    
+    @viewport.setter
+    def viewport(self, viewport_BB):
         """
         Sets the viewport of the map: what gets drawn at what scale
 
@@ -110,25 +153,12 @@ class MapCanvas(object):
                             ( (min_long, min_lat),
                               (max_long, max_lat) )
         """
-        self.projection.set_scale(viewport_BB)
+        self._viewport = viewport_BB
+        self.projection.set_scale(viewport_BB, self.image_size)
 
-    def set_land(self, polygons, BB=None):
-        """
-        sets the land polygons and optionally reset projection to fit
-
-        :param polygons:  a geometry.polygons object, holding the land polygons
-        :param BB:  the bounding box (in lat, long) of the resulting image
-                    if BB == 'keep' the current scaling, etc is used
-                    if BB is None, the bounding box will be determined from
-                       the input polygons
-        """
-        self.land_polygons = polygons
-        self.map_BB = polygons.bounding_box
-        if BB is None:
-            # find the bounding box from the polygons
-            self.projection.set_scale(self.map_BB, self.image_size)
-        elif BB != 'keep': # if it's keep, don't change the scale
-            self.projection.set_scale(self.land_BB, self.image_size)
+    @property
+    def land_polygons(self):
+        return self._land_polygons
 
     def draw_background(self):
         """
@@ -210,6 +240,15 @@ class MapCanvas(object):
     def save_foreground(self, filename, type_in="PNG"):
         self.fore_image.save(filename, transparency=self.colors['transparent'])
     
+    # Not sure this is required yet
+#    def projection_pickle_to_dict(self):
+#        """ returns a pickled projection object """
+#        return pickle.dumps(self.projection)
+#    
+#    def land_polygons_to_dict(self):
+#        """ returns a pickled land_polygons object """
+#        return pickle.dumps(self.land_polygons)
+    
 class BW_MapCanvas(MapCanvas):
     """
     a version of the map canvas that draws Black and White images
@@ -232,20 +271,28 @@ class BW_MapCanvas(MapCanvas):
 
     colors  = dict( colors_BW )
     
-    def __init__(self, size, projection_class=projections.FlatEarthProjection):
+    def __init__(self, image_size, land_polygons=None, projection_class=projections.FlatEarthProjection):
         """
         create a new B&W map image from scratch -- specifying the size:
         
-        :param size: (width, height) tuple of the image size
+        :param image_size: (width, height) tuple of the image size
+        :param land_polygons: a PolygonSet (gnome.utilities.geometry.polygons.PolygonSet) used to define the map. 
+                              If this is None, MapCanvas has no land. This can be read in from a BNA file.
         :param projection_class: gnome.utilities.projections class to use.
         
+        See MapCanvas documentation for remaining valid kwargs.
+        It sets the image_mode = 'L' when calling MapCanvas.__init__
         """
-        self.image_size = size
-        ##note: type "L" because type "1" didn't seem to give the right numpy array
-        self.back_image = PIL.Image.new('L', self.image_size, color=self.colors['background'])
-        #self.back_image = PIL.Image.new('L', self.image_size, 1)
-        self.projection = projection_class(((-180,-85),(180, 85)), self.image_size) # BB will be re-set
-        self.map_BB = None
+        #=======================================================================
+        # self.image_size = image_size
+        # ##note: type "L" because type "1" didn't seem to give the right numpy array
+        # self.back_image = PIL.Image.new('L', self.image_size, color=self.colors['background'])
+        # #self.back_image = PIL.Image.new('L', self.image_size, 1)
+        # self.projection = projection_class(((-180,-85),(180, 85)), self.image_size) # BB will be re-set
+        # self.map_BB = None
+        #=======================================================================
+        MapCanvas.__init__(self, image_size, land_polygons=land_polygons, 
+                           projection_class=projections.FlatEarthProjection, image_mode='L')
 
     def as_array(self):
         """
@@ -272,3 +319,49 @@ class BW_MapCanvas(MapCanvas):
 #    png_filename = bna_filename.rsplit(".")[0] + ".png"
 #    bna = make_map(bna_filename, png_filename)
     
+class MapCanvasFromBNA(MapCanvas, serializable.Serializable):
+    """ 
+    extends the MapCanvas class to initialize from BNA -- land_polygons is set based on BNA map
+    
+    This class is serializable 
+    """
+    _update = ['viewport','map_BB']
+    _create = ['image_size','filename','projection_type']   # not sure image_size should be updated
+    _create.extend(_update)
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add( create=_create, update=_update)
+    
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """
+        change projection_type from string to correct type 
+        """
+        proj = eval(dict_.pop('projection_type'))
+        return cls(projection_class=proj, **dict_)
+    
+    def __init__(self, image_size, filename, **kwargs):
+        """
+        create a new B&W map image from scratch -- specifying the size:
+        
+        :param image_size: (width, height) tuple of the image size
+        :param filename: BNA filename. The land_polygons are defined by this BNA file. 
+                         land_polygons are passed into MapCanvas.__init__
+        
+        See MapCanvas documentation for remaining valid kwargs.
+        The land_polygons are set based on data read from BNA file: 'filename'.
+        
+        Remaining kwargs are passed onto baseclass's __init__ with a direct call: MapCanvas.__init__(..) 
+        See MapCanvas documentation for remaining valid kwargs.
+        """
+        if not os.path.exists(filename):
+            raise IOError("{0} does not exist. Enter a valid BNA file".format(filename))
+        
+        self.filename = filename
+        polygons = haz_files.ReadBNA(filename, "PolygonSet")
+        
+        MapCanvas.__init__(self, image_size, land_polygons=polygons, **kwargs)
+
+    def projection_type_to_dict(self):
+        """ store projection class as a string for now since that is all that is required for persisting """
+        return "{0}.{1}".format(self.projection.__module__, self.projection.__class__.__name__)
+        

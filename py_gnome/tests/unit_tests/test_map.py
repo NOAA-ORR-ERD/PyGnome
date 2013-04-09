@@ -376,9 +376,12 @@ def test_MapfromBNA_from_dict():
     map = gnome.map.MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6)
     dict_ = map.to_dict()
     dict_['map_bounds'] = ((-10, 10),(10,10),(10,-10),(-10,-10))
+    dict_['spillable_area'] = ((-5, 5),(5,5),(5,-5),(-5,-5))
     dict_['refloat_halflife'] = 2
     map.from_dict(dict_)
     assert map.map_bounds == dict_['map_bounds']
+    assert map.spillable_area == dict_['spillable_area']
+    assert map.refloat_halflife == dict_['refloat_halflife']
 
 
 from gnome import basic_types        
