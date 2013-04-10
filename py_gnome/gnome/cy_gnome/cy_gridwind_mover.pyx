@@ -2,7 +2,7 @@ cimport numpy as cnp
 import numpy as np
 
 from type_defs cimport *
-from movers cimport Mover_c,GridWindMover_c,TimeGridVel_c,TimeGridVelRect_c,TimeGridVelCurv_c,TimeGridWindRect_c,TimeGridWindCurv_c
+from movers cimport Mover_c,GridWindMover_c,TimeGridVel_c
 cimport cy_mover
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
