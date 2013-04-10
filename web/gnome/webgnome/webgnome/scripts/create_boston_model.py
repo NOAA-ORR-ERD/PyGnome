@@ -8,7 +8,7 @@ import sys
 
 from pyramid.paster import bootstrap
 from webgnome import WebSurfaceReleaseSpill, WebWindMover, util
-from webgnome.model_manager import WebRandomMover, WebWind
+from webgnome.model_manager import WebRandomMover, WebWind, WebCatsMover
 from webgnome.schema import ModelSchema
 
 
@@ -67,7 +67,7 @@ def main():
 
     curr_file = os.path.join(boston_data, "EbbTides.CUR")
     shio_file = os.path.join(boston_data, "EbbTidesShio.txt")
-    c_mover = gnome.movers.CatsMover(curr_file, tide=Tide(shio_file))
+    c_mover = WebCatsMover(curr_file, tide=Tide(shio_file))
     c_mover.scale_refpoint = (
         -70.8875, 42.321333)  # this is the value in the file (default)
     c_mover.scale = True  # default value
@@ -80,7 +80,7 @@ def main():
 
     ossm_file = os.path.join(boston_data, 'MerrimackMassCoastOSSM.txt')
     curr_file = os.path.join(boston_data, 'MerrimackMassCoast.CUR')
-    c_mover = gnome.movers.CatsMover(curr_file, tide=Tide(ossm_file))
+    c_mover = WebCatsMover(curr_file, tide=Tide(ossm_file))
     # but do need to scale (based on river stage)
     c_mover.scale = True
     c_mover.scale_refpoint = (-70.65, 42.58333)
@@ -91,7 +91,7 @@ def main():
     # adding a cats mover
 
     curr_file = os.path.join(boston_data, 'MassBaySewage.CUR')
-    c_mover = gnome.movers.CatsMover(curr_file)
+    c_mover = WebCatsMover(curr_file)
     # but do need to scale (based on river stage)
     c_mover.scale = True
     c_mover.scale_refpoint = (-70.78333, 42.39333)

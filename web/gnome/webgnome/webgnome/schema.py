@@ -23,6 +23,7 @@ from colander import (
     drop,
 )
 from gnome.persist.map_schema import LongLatBounds
+from gnome.persist.movers_schema import CatsMover
 
 
 @deferred
@@ -89,7 +90,7 @@ class MapSchema(map_schema.MapFromBNA):
     default_name = 'Map'
     name = SchemaNode(String(), default=default_name, missing=default_name)
     filename = SchemaNode(String(), default=None, missing=drop)
-    map_bounds = LongLatBounds(missing=drop)
+    map_bounds = LongLatBounds(default=[], missing=drop)
 
 
 # Input values GOODS expects for the `resolution` field on a custom map form.
@@ -125,6 +126,15 @@ class WindsSchema(SequenceSchema):
     wind = WindSchema()
 
 
+class WebCatsMover(CatsMover):
+    default_name = 'Cats Mover'
+    name = SchemaNode(String(), default=default_name, missing=default_name)
+
+
+class CatsMoversSchema(SequenceSchema):
+    mover = WebCatsMover()
+
+
 class ModelSchema(MappingSchema):
     id = SchemaNode(String(), missing=drop)
     start_time = SchemaNode(LocalDateTime(), default=now,
@@ -137,6 +147,7 @@ class ModelSchema(MappingSchema):
         default=[], missing=drop)
     wind_movers = WindMoversSchema(default=[], missing=drop)
     random_movers = RandomMoversSchema(default=[], missing=drop)
+    cats_movers = CatsMoversSchema(default=[], missing=drop)
     winds = WindsSchema(default=[], missing=drop)
     map = MapSchema(missing=drop)
 

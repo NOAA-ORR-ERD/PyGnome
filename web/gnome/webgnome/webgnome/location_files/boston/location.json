@@ -7,10 +7,10 @@
             "uncertain_angle_scale": 0.4, 
             "uncertain_duration": 10800.0, 
             "active_start": "1970-01-01T00:00:00", 
-            "wind_id": "a0fcbb1c-a231-11e2-8306-3c07541ca142", 
+            "wind_id": "61e01f57-a23a-11e2-ac29-3c07541ca142", 
             "active_stop": "2038-01-18T00:00:00", 
             "uncertain_time_delay": 0.0, 
-            "id": "a0fcbed1-a231-11e2-adc5-3c07541ca142", 
+            "id": "61e022d9-a23a-11e2-bfdf-3c07541ca142", 
             "uncertain_speed_scale": 2.0
         }
     ], 
@@ -490,9 +490,61 @@
                 42.62
             ]
         ], 
-        "id": "a0e8f7c7-a231-11e2-bc2d-3c07541ca142", 
+        "id": "61cb0d0a-a23a-11e2-acc5-3c07541ca142", 
         "refloat_halflife": 3600.0
     }, 
+    "cats_movers": [
+        {
+            "on": true, 
+            "obj_type": "webgnome.model_manager.WebCatsMover", 
+            "scale": true, 
+            "scale_refpoint": [
+                -70.8875, 
+                42.321333, 
+                0.0
+            ], 
+            "name": "Cats Mover", 
+            "active_start": "1970-01-01T00:00:00", 
+            "filename": "/Users/andrew.brookins/src/GNOME/web/gnome/webgnome/webgnome/location_files/boston/data/EbbTides.CUR", 
+            "tide_id": "61e03bcf-a23a-11e2-96eb-3c07541ca142", 
+            "active_stop": "2038-01-18T00:00:00", 
+            "id": "61ec0b54-a23a-11e2-81d9-3c07541ca142", 
+            "scale_value": -1.0
+        }, 
+        {
+            "on": true, 
+            "obj_type": "webgnome.model_manager.WebCatsMover", 
+            "scale": true, 
+            "scale_refpoint": [
+                -70.65, 
+                42.58333, 
+                0.0
+            ], 
+            "name": "Cats Mover", 
+            "active_start": "1970-01-01T00:00:00", 
+            "filename": "/Users/andrew.brookins/src/GNOME/web/gnome/webgnome/webgnome/location_files/boston/data/MerrimackMassCoast.CUR", 
+            "tide_id": "61ec3105-a23a-11e2-80c1-3c07541ca142", 
+            "active_stop": "2038-01-18T00:00:00", 
+            "id": "61f81df3-a23a-11e2-b3ba-3c07541ca142", 
+            "scale_value": 1.0
+        }, 
+        {
+            "on": true, 
+            "obj_type": "webgnome.model_manager.WebCatsMover", 
+            "scale": true, 
+            "scale_refpoint": [
+                -70.78333, 
+                42.39333, 
+                0.0
+            ], 
+            "name": "Cats Mover", 
+            "active_start": "1970-01-01T00:00:00", 
+            "filename": "/Users/andrew.brookins/src/GNOME/web/gnome/webgnome/webgnome/location_files/boston/data/MassBaySewage.CUR", 
+            "active_stop": "2038-01-18T00:00:00", 
+            "id": "62042387-a23a-11e2-b6dd-3c07541ca142", 
+            "scale_value": 0.04
+        }
+    ], 
     "uncertain": false, 
     "start_time": "2013-03-12T10:00:00", 
     "random_movers": [
@@ -503,7 +555,7 @@
             "diffusion_coef": 100000.0, 
             "active_start": "1970-01-01T00:00:00", 
             "active_stop": "2038-01-18T00:00:00", 
-            "id": "a0fcc133-a231-11e2-8bf4-3c07541ca142"
+            "id": "61e02582-a23a-11e2-acd8-3c07541ca142"
         }
     ], 
     "surface_release_spills": [
@@ -528,14 +580,14 @@
             "release_time": "2013-03-12T10:00:00", 
             "windage_persist": 900.0, 
             "end_release_time": "2013-03-12T10:00:00", 
-            "id": "a12191d9-a231-11e2-b181-3c07541ca142"
+            "id": "62042838-a23a-11e2-9b24-3c07541ca142"
         }
     ], 
     "winds": [
         {
             "obj_type": "webgnome.model_manager.WebWind", 
             "name": "Wind Object", 
-            "updated_at": "2013-04-10T15:54:41.255078", 
+            "updated_at": "2013-04-10T16:57:20.841696", 
             "source_type": "undefined", 
             "source_id": "undefined", 
             "timeseries": [
@@ -551,12 +603,12 @@
                 ]
             ], 
             "units": "m/s", 
-            "id": "a0fcbb1c-a231-11e2-8306-3c07541ca142", 
+            "id": "61e01f57-a23a-11e2-ac29-3c07541ca142", 
             "description": "Wind Object"
         }
     ], 
     "time_step": 0.25, 
     "duration_hours": 0, 
     "duration_days": 1, 
-    "id": "a0d268a6-a231-11e2-a078-3c07541ca142"
+    "id": "61b3afca-a23a-11e2-b249-3c07541ca142"
 }

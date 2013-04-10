@@ -30,7 +30,7 @@ except ImportError:
 import gnome.utilities.map_canvas
 from gnome import basic_types, GnomeId
 from gnome.model import Model
-from gnome.movers import WindMover, RandomMover
+from gnome.movers import WindMover, RandomMover, CatsMover
 from gnome.spill import SurfaceReleaseSpill
 from gnome.environment import Wind
 from gnome.map import MapFromBNA, GnomeMap
@@ -110,6 +110,16 @@ class WebRandomMover(BaseWebObject, RandomMover):
     def __init__(self, *args, **kwargs):
         self.on = kwargs.pop('on', True)
         super(WebRandomMover, self).__init__(*args, **kwargs)
+
+
+class WebCatsMover(BaseWebObject, CatsMover):
+    """
+    A subclass of :class:`gnome.movers.CatsMover` that provides
+    webgnome-specific functionality.
+    """
+    default_name = 'Cats Mover'
+    state = copy.deepcopy(CatsMover.state)
+    state.add(create=['name'], update=['name'])
 
 
 class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
@@ -193,7 +203,7 @@ class WebModel(BaseWebObject, Model):
     mover_keys = {
         WebWindMover: 'wind_movers',
         WebRandomMover: 'random_movers',
-        gnome.movers.CatsMover: 'cats_movers'
+        WebCatsMover: 'cats_movers'
     }
 
     spill_keys = {
@@ -314,10 +324,6 @@ class WebModel(BaseWebObject, Model):
 
             obj_data = obj.to_dict(do='create')
 
-            # XXX: Temporary hack to fix new Serializable code
-            if hasattr(obj, 'wind'):
-                obj_data['wind'] = obj.wind.to_dict(do='create')
-
             data[key].append(obj_data)
 
         return data
@@ -342,7 +348,7 @@ class WebModel(BaseWebObject, Model):
 
         if self.duration.days:
             data['duration_days'] = self.duration.days
-    
+
         if self.duration_hours:
             data['duration_hours'] = self.duration_hours
 
@@ -372,6 +378,7 @@ class WebModel(BaseWebObject, Model):
         map_data = data.get('map', None)
         winds = data.get('winds', None)
         wind_movers = data.get('wind_movers', None)
+        cats_movers = data.get('cats_movers', None)
         random_movers = data.get('random_movers', None)
         surface_spills = data.get('surface_release_spills', None)
 
@@ -394,6 +401,10 @@ class WebModel(BaseWebObject, Model):
             for mover_data in wind_movers:
                 mover_data['wind'] = self.environment.get(mover_data['wind_id'])
                 add_to_collection(self.movers, mover_data, WebWindMover)
+
+        if cats_movers:
+            for mover_data in cats_movers:
+                add_to_collection(self.movers, mover_data, WebCatsMover)
 
         if random_movers:
             for mover_data in random_movers:
