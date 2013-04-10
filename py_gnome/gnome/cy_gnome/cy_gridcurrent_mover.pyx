@@ -5,6 +5,8 @@ from type_defs cimport *
 from movers cimport Mover_c,GridCurrentMover_c,TimeGridVel_c
 cimport cy_mover
 
+from gnome.utilities.convert import to_bytes
+
 cdef extern from *:
     GridCurrentMover_c* dynamic_cast_ptr "dynamic_cast<GridCurrentMover_c *>" (Mover_c *) except NULL
     
@@ -30,15 +32,21 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
 #             return False
 #         self.grid.SetTimeGrid(time_grid)
 #         return True
-            
-
+    
+    
     def text_read(self, time_grid_file, topology_file=None):
         """
         .. function::text_read
         
         """
         cdef OSErr err
-        err = self.grid.TextRead(time_grid_file, topology_file)
+        
+        if topology_file is None:
+            err = self.grid.TextRead( <bytes>to_bytes(time_grid_file), None)
+        else:
+            #err = self.grid.TextRead( <bytes>to_bytes(time_grid_file), <bytes> to_bytes(topology_file))
+            err = self.grid.TextRead( time_grid_file, topology_file)
+        
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
