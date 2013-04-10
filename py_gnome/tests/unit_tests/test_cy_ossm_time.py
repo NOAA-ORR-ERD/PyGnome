@@ -76,7 +76,7 @@ class TestGetTimeValues():
     #ossmT = cy_ossm_time.CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
     #                                file_contains=basic_types.ts_format.magnitude_direction)
     
-    ossmT = cy_ossm_time.CyOSSMTime(filename=os.path.join(datadir, u'WindDataFromGnome_\xe1ccent.WND'),
+    ossmT = cy_ossm_time.CyOSSMTime(filename=os.path.join(datadir, u'WindDataFromGnome_a\u0301ccent.WND'),
                                     file_contains=basic_types.ts_format.magnitude_direction)
     #ossmT = cy_ossm_time.CyOSSMTime(filename=os.path.join(datadir, u'Win_WindDataFromGnome_\xe1ccent.WND'),
     #                                file_contains=basic_types.ts_format.magnitude_direction)
