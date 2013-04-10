@@ -7,10 +7,10 @@
             "uncertain_angle_scale": 0.4, 
             "uncertain_duration": 10800.0, 
             "active_start": "1970-01-01T00:00:00", 
-            "wind_id": "154d4897-a1ff-11e2-b088-3c07541ca142", 
+            "wind_id": "a0fcbb1c-a231-11e2-8306-3c07541ca142", 
             "active_stop": "2038-01-18T00:00:00", 
             "uncertain_time_delay": 0.0, 
-            "id": "154d4b99-a1ff-11e2-979d-3c07541ca142", 
+            "id": "a0fcbed1-a231-11e2-adc5-3c07541ca142", 
             "uncertain_speed_scale": 2.0
         }
     ], 
@@ -35,7 +35,7 @@
                 42.18507
             ]
         ], 
-        "filename": "/Users/andrew.brookins/src/GNOME/web/gnome/webgnome/webgnome/location_files/boston/data/MassBayMap.bna", 
+        "filename": "location_files/boston/data/MassBayMap.bna", 
         "spillable_area": [
             [
                 -70.54, 
@@ -490,7 +490,7 @@
                 42.62
             ]
         ], 
-        "id": "1538d9a6-a1ff-11e2-b8a5-3c07541ca142", 
+        "id": "a0e8f7c7-a231-11e2-bc2d-3c07541ca142", 
         "refloat_halflife": 3600.0
     }, 
     "uncertain": false, 
@@ -503,7 +503,7 @@
             "diffusion_coef": 100000.0, 
             "active_start": "1970-01-01T00:00:00", 
             "active_stop": "2038-01-18T00:00:00", 
-            "id": "154d4e42-a1ff-11e2-a5ac-3c07541ca142"
+            "id": "a0fcc133-a231-11e2-8bf4-3c07541ca142"
         }
     ], 
     "surface_release_spills": [
@@ -528,12 +528,35 @@
             "release_time": "2013-03-12T10:00:00", 
             "windage_persist": 900.0, 
             "end_release_time": "2013-03-12T10:00:00", 
-            "id": "158ba975-a1ff-11e2-93e8-3c07541ca142"
+            "id": "a12191d9-a231-11e2-b181-3c07541ca142"
         }
     ], 
-    "winds": [], 
+    "winds": [
+        {
+            "obj_type": "webgnome.model_manager.WebWind", 
+            "name": "Wind Object", 
+            "updated_at": "2013-04-10T15:54:41.255078", 
+            "source_type": "undefined", 
+            "source_id": "undefined", 
+            "timeseries": [
+                [
+                    "2013-03-12T10:00:00", 
+                    5.0, 
+                    180.0
+                ], 
+                [
+                    "2013-03-13T04:00:00", 
+                    5.0, 
+                    180.0
+                ]
+            ], 
+            "units": "m/s", 
+            "id": "a0fcbb1c-a231-11e2-8306-3c07541ca142", 
+            "description": "Wind Object"
+        }
+    ], 
     "time_step": 0.25, 
     "duration_hours": 0, 
     "duration_days": 1, 
-    "id": "152221e1-a1ff-11e2-a970-3c07541ca142"
+    "id": "a0d268a6-a231-11e2-a078-3c07541ca142"
 }

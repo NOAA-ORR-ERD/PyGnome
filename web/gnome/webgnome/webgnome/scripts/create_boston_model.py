@@ -55,6 +55,7 @@ def main():
     series[1] = (start_time + datetime.timedelta(hours=18), (5, 180))
 
     wind = WebWind(timeseries=series, units='m/s')
+    model.environment += wind
     w_mover = WebWindMover(wind)
     model.movers += w_mover
 
