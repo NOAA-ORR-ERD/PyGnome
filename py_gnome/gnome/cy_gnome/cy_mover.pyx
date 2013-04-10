@@ -51,7 +51,7 @@ cdef class CyMover(object):
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
             """
-            raise OSError("PrepareForModelStep returned an error.")
+            raise OSError("PrepareForModelStep returned an error: {0}".format(err))
         
     def model_step_is_done(self):
         """

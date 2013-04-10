@@ -74,6 +74,7 @@ class TestGridCurrentMover():
         assert np.all(self.cm.delta['lat'] != 0)
         assert np.all(self.cm.delta['long'] != 0)
         
+    #@pytest.mark.parametrize(("filename"), [u'SampleData/currents/test.cdf',u'SampleData/currents/an_\xe1ccent.cdf'])
     def test_move_reg(self):
         """
         test move for a regular grid (first time in file)
@@ -81,6 +82,14 @@ class TestGridCurrentMover():
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
         time_grid_file = os.path.join(here, r'SampleData/currents/test.cdf')
+        
+        
+        #f_name = u'SampleData/currents/an_\xe1ccent.cdf'    # but this is
+        #f_name = u'SampleData/currents/an_‡ccent.cdf'
+        #print "file: ", filename
+        #time_grid_file = os.path.join(here, filename)
+        
+        
         #topology_file = r"SampleData/currents/NYTopology.dat"	# will want a null default
         topology_file = r""	# will want a null default
         self.gcm.text_read(time_grid_file,topology_file)

@@ -2,6 +2,7 @@
 Helper classes to do common tasks in pyGnome like;
 - convert_formats to convert datetime_value to time_value_pair 
 """
+import sys
 
 from gnome.utilities import time_utils, transforms
 from gnome import basic_types
@@ -89,3 +90,25 @@ def tsformat(format):
         return basic_types.ts_format.uv
     else:
         raise ValueError("timeseries format can only be 'r-theta' or 'uv', the format entered is not recognized as valid format")
+    
+            
+def to_bytes(ucode):
+    """
+    Encode a string to its unicode type to default file system encoding for the OS
+    Returns a string encoded as per sys.getfilesystemencoding()
+    """    
+    if not isinstance(ucode, basestring):
+        raise TypeError("{0} must either be a string or unicode type".format(ucode) )
+    
+    #===========================================================================
+    # if sys.platform == "darwin":
+    #    return string_.encode('utf-8')
+    # 
+    # elif sys.platform == "win32":
+    #    return string_.encode('utf-16')
+    # 
+    # else:
+    #    raise NotImplementedError("to_bytes is currently only implemented for darwin, win32 systems")    
+    #===========================================================================
+    
+    return ucode.encode( sys.getfilesystemencoding() )
