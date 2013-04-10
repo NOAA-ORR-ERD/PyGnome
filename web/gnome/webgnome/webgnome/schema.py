@@ -22,6 +22,7 @@ from colander import (
     deferred,
     drop,
 )
+from gnome.persist.map_schema import LongLatBounds
 
 
 @deferred
@@ -84,10 +85,11 @@ class RandomMoversSchema(SequenceSchema):
     mover = RandomMoverSchema()
 
 
-class MapSchema(map_schema.GnomeMap):
+class MapSchema(map_schema.MapFromBNA):
     default_name = 'Map'
     name = SchemaNode(String(), default=default_name, missing=default_name)
-    relative_path = SchemaNode(String(), default=None, missing=drop)
+    filename = SchemaNode(String(), default=None, missing=drop)
+    map_bounds = LongLatBounds(missing=drop)
 
 
 # Input values GOODS expects for the `resolution` field on a custom map form.
@@ -103,6 +105,7 @@ custom_map_resolutions = [
 class CustomMapSchema(MappingSchema):
     default_name = 'Map'
     name = SchemaNode(String(), default=default_name, missing=default_name)
+    map_bounds = LongLatBounds(missing=drop)
     north_lat = SchemaNode(Float())
     west_lon = SchemaNode(Float())
     east_lon = SchemaNode(Float())

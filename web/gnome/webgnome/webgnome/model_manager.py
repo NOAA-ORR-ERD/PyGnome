@@ -6,6 +6,7 @@ import datetime
 import logging
 import os
 import uuid
+from gnome.utilities import map_canvas
 import numpy
 
 from hazpy.file_tools import haz_files
@@ -148,14 +149,10 @@ class WebMapFromBNA(BaseWebObject, MapFromBNA):
     """
     default_name = 'Map'
     state = copy.deepcopy(MapFromBNA.state)
-    state.add(create=['name', 'relative_path'],
-              update=['name', 'relative_path'])
+    state.add(create=['name'], update=['name'])
 
-    # TODO: Better way to remove from all lists?
-    state.create.remove('filename')
-
-    def __init__(self, *args, **kwargs):
-        self.relative_path = kwargs.pop('relative_path', None)
+    def __init__(self, base_dir, *args, **kwargs):
+        self.base_dir = base_dir
         super(WebMapFromBNA, self).__init__(*args, **kwargs)
 
     def map_bounds_to_dict(self):
@@ -163,10 +160,23 @@ class WebMapFromBNA(BaseWebObject, MapFromBNA):
         Map bounds may be a tuple, if it's the default value provided by
         :class:`webgnome.schema.MapSchema`, or it may be a NumPy list,
         in which case we should call the tolist() method to get a list.
+
+        TODO: Should the Schema object handle this? Does it already?
         """
         if self.map_bounds is not None and hasattr(self.map_bounds, 'tolist'):
             return self.map_bounds.tolist()
         return self.map_bounds
+
+    def filename_to_dict(self):
+        """
+        Create a relative path to the filename by removing its base directory.
+        """
+        to_remove = len(self.base_dir)
+
+        if not self.base_dir.endswith(os.path.sep):
+            to_remove += 1
+
+        return self.filename[to_remove:]
 
 
 class WebGnomeMap(BaseWebObject, GnomeMap):
@@ -183,7 +193,7 @@ class WebModel(BaseWebObject, Model):
     mover_keys = {
         WebWindMover: 'wind_movers',
         WebRandomMover: 'random_movers',
-        # gnome.movers.CatsMover: 'cats_movers'
+        gnome.movers.CatsMover: 'cats_movers'
     }
 
     spill_keys = {
@@ -255,12 +265,10 @@ class WebModel(BaseWebObject, Model):
         map_file = os.path.join(self.package_root, filename)
 
         # Create the land-water map
-        self.map = WebMapFromBNA(map_file, relative_path=filename, **map_data)
+        self.map = WebMapFromBNA(self.package_root, map_file, **map_data)
 
-        # TODO: Should size be user-configurable?
-        canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
-        polygons = haz_files.ReadBNA(map_file, "PolygonSet")
-        canvas.set_land(polygons)
+        # TODO: Should canvas size be configurable?
+        canvas = map_canvas.MapCanvasFromBNA((800, 600), map_file)
         self.output_map = canvas
 
         # Delete an existing background image file.
@@ -368,11 +376,11 @@ class WebModel(BaseWebObject, Model):
         surface_spills = data.get('surface_release_spills', None)
 
         if map_data:
-            relative_path = map_data.pop('relative_path')
-            # Ignore map bounds and filename - will be set from the source file.
+            # Ignore map bounds - will be set from the source file.
             map_data.pop('map_bounds', None)
-            map_data.pop('filename', None)
-            self.add_bna_map(relative_path, map_data)
+            # Make the filename, which is stored as a relative path, absolute
+            filename = os.path.join(self.package_root, map_data.pop('filename'))
+            self.add_bna_map(filename, map_data)
 
         def add_to_collection(collection, data, cls):
             obj = cls(**data)
