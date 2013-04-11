@@ -2249,6 +2249,10 @@ define([
         show: function(startCoords, endCoords) {
             SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
 
+            if (this.gnomeModel) {
+                this.model.set('release_time', this.gnomeModel.get('start_time'));
+            }
+
             if (startCoords) {
                 this.model.set('start_position', [startCoords[0], startCoords[1], 0]);
             }
