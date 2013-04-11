@@ -31,6 +31,15 @@ def now(node, kw):
     return datetime.datetime.now()
 
 
+class LongLat(MappingSchema):
+    """
+    A :class:`colander.MappingSchema`-based LongLat schema, as opposed to the
+    TupleSchema-based class:`gnome.persist.base_schema.LongLat` version.
+    """
+    long = SchemaNode(Float())
+    lat = SchemaNode(Float())
+
+
 class WindMoverSchema(movers_schema.WindMover):
     default_name = 'Wind Mover'
     name = SchemaNode(String(), default=default_name, missing=default_name)
@@ -91,6 +100,7 @@ class MapSchema(map_schema.MapFromBNA):
     name = SchemaNode(String(), default=default_name, missing=default_name)
     filename = SchemaNode(String(), default=None, missing=drop)
     map_bounds = LongLatBounds(default=[], missing=drop)
+    background_image_url = SchemaNode(String(), default=None, missing=drop)
 
 
 # Input values GOODS expects for the `resolution` field on a custom map form.
