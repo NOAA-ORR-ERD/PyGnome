@@ -100,15 +100,18 @@ def to_bytes(ucode):
     if not isinstance(ucode, basestring):
         raise TypeError("{0} must either be a string or unicode type".format(ucode) )
     
-    #===========================================================================
-    # if sys.platform == "darwin":
-    #    return string_.encode('utf-8')
-    # 
-    # elif sys.platform == "win32":
-    #    return string_.encode('utf-16')
-    # 
-    # else:
-    #    raise NotImplementedError("to_bytes is currently only implemented for darwin, win32 systems")    
-    #===========================================================================
+    if not isinstance(ucode, unicode):
+        ucode = unicode(ucode)
+        
+    if sys.platform == "darwin":
+        return ucode.encode('utf-8')
+    elif sys.platform == "win32":
+        try:
+            return ucode.encode('ascii')
+        except UnicodeEncodeError as err:
+            print "\nSpecial characters not currently supported on windows - only ascii characters\n"
+            raise err
+    else:
+        raise NotImplementedError("to_bytes is currently only implemented for darwin, win32 systems")    
     
     return ucode.encode( sys.getfilesystemencoding() )
