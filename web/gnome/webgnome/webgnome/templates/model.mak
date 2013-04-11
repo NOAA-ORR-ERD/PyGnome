@@ -233,6 +233,10 @@
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                 currentTimeStep: ${current_time_step},
+                surfaceReleaseSpills: ${surface_release_spills | n},
+                windMovers: ${wind_movers | n},
+                winds: ${winds | n},
+                randomMovers: ${random_movers | n},
                 mapIsLoaded: ${"true" if map_is_loaded else "false"},
                 locationFilesMeta: ${location_file_json | n},
                 animationThreshold: 30, // Milliseconds
