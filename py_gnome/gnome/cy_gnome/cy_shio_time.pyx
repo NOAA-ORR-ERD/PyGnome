@@ -9,6 +9,8 @@ from gnome import basic_types
 from type_defs cimport * 
 from utils cimport ShioTimeValue_c, EbbFloodData, EbbFloodDataH, HighLowData, HighLowDataH, _NewHandle, _GetHandleSize
 
+from gnome.utilities.convert import to_bytes
+
 cdef class CyShioTime(object):
     """
     Cython wrapper around instantiating and using ShioTimeValue_c object
@@ -33,7 +35,7 @@ cdef class CyShioTime(object):
         
         if os.path.exists(path):
             #self._read_time_values(path) # user_units should be read from the file
-            err = self.shio.ReadTimeValues(path)
+            err = self.shio.ReadTimeValues(<bytes> to_bytes(path))
             if err != 0:
                 raise ValueError("File could not be correctly read by ShioTimeValue_c.ReadTimeValues(...)")
             

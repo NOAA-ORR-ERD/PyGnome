@@ -74,7 +74,6 @@ class TestGridCurrentMover():
         assert np.all(self.cm.delta['lat'] != 0)
         assert np.all(self.cm.delta['long'] != 0)
         
-    #@pytest.mark.parametrize(("filename"), [u'SampleData/currents/test.cdf',u'SampleData/currents/an_\xe1ccent.cdf'])
     def test_move_reg(self):
         """
         test move for a regular grid (first time in file)
