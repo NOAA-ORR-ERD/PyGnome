@@ -194,13 +194,15 @@ define([
 
         loadLocationFile: function(locationName) {
             var model = new models.GnomeModelFromLocationFile({
-                location_name: locationName
+                location_name: locationName.get('filename')
             }, {
                 gnomeModel: this.gnomeModel
             })
 
             model.save().then(function() {
                 util.refresh();
+            }).fail(function() {
+                alert('That location file is not available yet.');
             });
         },
 
