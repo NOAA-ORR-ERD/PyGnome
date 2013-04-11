@@ -568,8 +568,9 @@ OSErr TShioTimeValue::CheckAndPassOnMessage(TModelMessage *message)
 		case M_UPDATEVALUES:
 			VelocityRec dummyValue;
 			// new data, make sure we are displaying data for the current model range
-			 this->GetTimeValue(model->GetStartTime(),&dummyValue);											// minus AH 07/10/2012
-			 this->GetTimeValue(model->GetEndTime(),&dummyValue);	// in case model duration was increased		// minus AH 07/10/2012
+			this->GetTimeValue(model->GetModelTime(),&dummyValue);	// changed shio to compute only a few days, this caused a flash once run got past 3 days
+			//this->GetTimeValue(model->GetStartTime(),&dummyValue);											// minus AH 07/10/2012
+			//this->GetTimeValue(model->GetEndTime(),&dummyValue);	// in case model duration was increased		// minus AH 07/10/2012
 			break;
 	}
 	
