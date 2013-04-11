@@ -678,4 +678,4 @@ class NwsTests(FunctionalTestBase):
     def test_nws_success(self):
         resp = self.testapp.get('/nws/wind?lat=45.645&lon=-123.794')
         self.assertEqual(resp.json['description'], '4 Miles SSW Foss OR')
-        self.assertEqual(len(resp.json['results']), 168)
+        self.assertEqual(len(resp.json['timeseries']), 168)

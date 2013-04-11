@@ -1424,31 +1424,12 @@ define([
         },
 
         nwsWindsReceived: function(data) {
-            var desc = this.getElementByName('description');
-
-            desc.val(data.description);
-            desc.change();
-
+            this.model.set(data);
             this.setDateFields('.updated_at_container', moment());
-
-            var wind = this.model;
-            var timeseries = [];
-
-            _.each(data.results, function(windData) {
-                timeseries.push([windData[0], windData[1], windData[2]]);
-            });
-
-            wind.set('timeseries', timeseries);
-
-            // NWS data is in knots, so the entire wind mover data set will have
-            // to use knots, since we don't have a way of setting it per value.
-            wind.set('units', 'knots');
-
             this.sendMessage({
                 type: 'success',
                 text: 'Wind data refreshed from current NWS forecasts.'
             });
-
             this.trigger('dataReceived');
         },
 
