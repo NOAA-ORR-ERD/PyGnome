@@ -73,20 +73,8 @@ class TestGetTimeValues():
     Test get_time_value method for CyOSSMTime
     """
     # sample data generated and stored via Gnome GUI
-    #ossmT = cy_ossm_time.CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
-    #                                file_contains=basic_types.ts_format.magnitude_direction)
-    
-    
-    # on the Mac
-    file_ = os.path.join(datadir, u'WindDataFromGnome_a\u0301.WND')
-    try:
-        print "\nfilename: ", file_
-    except:
-        print "\ncould not print file_ .. moving on"
-    
-    ossmT = cy_ossm_time.CyOSSMTime(filename=file_,file_contains=basic_types.ts_format.magnitude_direction)
-    
-    
+    ossmT = cy_ossm_time.CyOSSMTime(filename=os.path.join(datadir, 'WindDataFromGnome.WND'),
+                                    file_contains=basic_types.ts_format.magnitude_direction)
     
     def test_get_time_value(self):
         """Test get_time_values method. It gets the time value pairs for the model times
@@ -171,6 +159,7 @@ class TestReadFileWithConstantWind():
                                       "get_time_value is not within a tolerance of "+str(tol), 0)
             np.testing.assert_allclose(vel['v'], actual['v'], tol, tol, 
                                       "get_time_value is not within a tolerance of "+str(tol), 0)
+
 
 if __name__ == "__main__":
     tt = TestTimeSeriesInit()
