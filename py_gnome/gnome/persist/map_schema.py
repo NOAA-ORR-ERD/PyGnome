@@ -28,7 +28,7 @@ class LongLatBounds(SequenceSchema):
 
 class GnomeMap(base_schema.Id, MappingSchema):
     map_bounds = LongLatBounds()
-    spillable_area = LongLatBounds()
+    spillable_area = LongLatBounds(missing=drop)
     
 class MapFromBNA(GnomeMap):    
     filename = SchemaNode(String() )

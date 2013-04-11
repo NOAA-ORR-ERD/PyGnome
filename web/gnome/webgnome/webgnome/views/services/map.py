@@ -7,7 +7,7 @@ from cornice.resource import resource, view
 from pyramid.httpexceptions import HTTPServerError
 from tempfile import NamedTemporaryFile
 
-from webgnome import util
+from webgnome import util, schema
 from webgnome.schema import MapSchema, CustomMapSchema
 from webgnome.views.services.base import BaseResource
 
@@ -44,24 +44,24 @@ class Map(MapResource):
         Return a JSON representation of the current map.
         """
         model = self.request.validated.pop('model')
-        return self.get_map_data(model)
+        map_data = self.get_map_data(model)
+        return schema.MapSchema().bind().serialize(map_data)
 
     @view(validators=util.valid_uploaded_file, schema=MapSchema)
     def post(self):
         """
         Add a map to the current model.
 
-        The 'filename' field must refer to a BNA file that exists in the data
-        directory for the user's model.
+        The 'filename' field on incoming JSON data must refer to a BNA file
+        that exists in the data directory for the user's model.
         """
         data = self.request.validated
         model = data.pop('model')
-        # Ignore the map bounds on setting -- this is readonly.
-        data.pop('map_bounds')
         filename = data.pop('filename')
         relative_filename = os.path.join(model.base_dir_relative, filename)
         model.add_bna_map(relative_filename, data)
-        return self.get_map_data(model)
+        map_data = self.get_map_data(model)
+        return schema.MapSchema().bind().serialize(map_data)
 
     @view(validators=util.valid_map, schema=MapSchema)
     def put(self):
@@ -72,11 +72,12 @@ class Map(MapResource):
         model = data.pop('model')
 
         # Ignore readonly values.
-        data.pop('map_bounds')
-        data.pop('filename')
+        data.pop('filename', None)
 
         model.map.from_dict(data)
-        return model.map.to_dict()
+        map_data = model.map.to_dict()
+
+        return schema.MapSchema().bind().serialize(map_data)
 
     @view(validators=util.valid_model_id)
     def delete(self):
@@ -147,7 +148,7 @@ class CustomGoodsMap(BaseResource):
         relative_filename = os.path.join(model.base_dir_relative, f.name)
         model.add_bna_map(relative_filename, data)
 
-        return model.map.to_dict()
+        return schema.CustomMapSchema().bind().serialize(model.map.to_dict())
 
 
 @resource(path='/model/{model_id}/file_upload', renderer='gnome_json',

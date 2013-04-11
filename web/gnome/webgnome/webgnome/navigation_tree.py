@@ -44,7 +44,7 @@ class NavigationTree(object):
                 item['object_id'] = node_id
 
             for name, value in node.items():
-                if value == 'id':
+                if name == 'id' or name == 'obj_type':
                     continue
 
                 sub_item = {
@@ -69,9 +69,13 @@ class NavigationTree(object):
 
     def render(self):
         data = self.model.to_dict()
+        environment = self._render_root_node('Environment', 'add-environment')
         movers = self._render_root_node('Movers', 'add-mover')
         spills = self._render_root_node('Spills', 'add-spill')
         settings = self._render_root_node('Model Settings', 'model-settings')
+
+        environment['children'].extend(
+            self._render_children(data.pop('winds', []), form_id='edit-wind'))
 
         movers['children'].extend(
             self._render_children(data.pop('wind_movers', []),
@@ -80,6 +84,10 @@ class NavigationTree(object):
         movers['children'].extend(
             self._render_children(data.pop('random_movers', []),
                                   form_id='edit-random-mover'))
+
+        movers['children'].extend(
+            self._render_children(data.pop('cats_movers', []),
+                                  form_id='edit-cats-mover'))
 
         spills['children'].extend(
             self._render_children(data.pop('surface_release_spills', []),
@@ -102,4 +110,4 @@ class NavigationTree(object):
         settings['children'].extend(
             self._render_children(model_items, form_id='model-settings'))
 
-        return [settings, movers, spills]
+        return [settings, environment, movers, spills]

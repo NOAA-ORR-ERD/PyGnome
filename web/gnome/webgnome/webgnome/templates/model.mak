@@ -154,6 +154,7 @@
 
     <div id="modal-container">
         <%include file="forms/add_mover.mak"/>
+        <%include file="forms/add_environment.mak"/>
         <%include file="forms/add_spill.mak"/>
         <%include file="forms/add_map.mak"/>
         <%include file="forms/model_settings.mak"/>
@@ -165,6 +166,8 @@
         ## Mover forms
         <%include file="forms/wind_mover.mak" args="form_id='add-wind-mover'"/>
         <%include file="forms/wind_mover.mak" args="form_id='edit-wind-mover'"/>
+        <%include file="forms/wind.mak" args="form_id='add-wind'"/>
+        <%include file="forms/wind.mak" args="form_id='edit-wind'"/>
         <%include file="forms/random_mover.mak" args="form_id='add-random-mover'"/>
         <%include file="forms/random_mover.mak" args="form_id='edit-random-mover'"/>
 
@@ -225,23 +228,24 @@
             var appOptions = {
                 el: $('#app'),
                 modelId: "${model_id}",
+                map: ${map_data | n},
+                gnomeSettings: ${model_settings | n},
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                 currentTimeStep: ${current_time_step},
                 surfaceReleaseSpills: ${surface_release_spills | n},
-                defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
                 windMovers: ${wind_movers | n},
-                defaultWindMover: ${default_wind_mover | n},
-                defaultWindTimeseriesValue: ${default_wind_timeseries_value | n},
+                winds: ${winds | n},
                 randomMovers: ${random_movers | n},
-                defaultRandomMover: ${default_random_mover | n},
-                gnomeSettings: ${model_settings | n},
-                map: ${map_data | n},
-                defaultMap: ${default_map | n},
-                defaultCustomMap: ${default_custom_map | n},
                 mapIsLoaded: ${"true" if map_is_loaded else "false"},
                 locationFilesMeta: ${location_file_json | n},
-                animationThreshold: 30 // Milliseconds
+                animationThreshold: 30, // Milliseconds
+                defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
+                defaultWindMover: ${default_wind_mover | n},
+                defaultWind: ${default_wind | n},
+                defaultRandomMover: ${default_random_mover | n},
+                defaultMap: ${default_map | n},
+                defaultCustomMap: ${default_custom_map | n},
             };
 
             $('#map').imagesLoaded(function() {

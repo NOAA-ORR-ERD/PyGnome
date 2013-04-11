@@ -1,5 +1,6 @@
 import json
 
+from gnome.persist import environment_schema, movers_schema
 from pyramid.view import view_config
 from webgnome import schema
 from webgnome import util
@@ -13,7 +14,11 @@ def _default_schema_json(schema_cls):
                       default=util.json_encoder)
 
 
-def _serialize(objs, schema):
+def _serialize_all(objs, schema):
+    """
+    Serialize all ``objs`` using ``schema`` and return a list of the serialized
+    representations.
+    """
     return [schema().bind().serialize(obj) for obj in objs]
 
 
@@ -36,19 +41,19 @@ def show_model(request):
     model_id = request.session.get(settings.model_session_key, None)
     model, created = settings.Model.get_or_create(model_id)
     model_data = model.to_dict()
-    surface_release_spills = _serialize(
+    surface_release_spills = _serialize_all(
         model_data.pop('surface_release_spills'),
         schema.SurfaceReleaseSpillSchema)
-    wind_movers = _serialize(
+    wind_movers = _serialize_all(
         model_data.pop('wind_movers'), schema.WindMoverSchema)
+    winds = _serialize_all(model_data.pop('winds'), schema.WindSchema)
     random_movers = model_data.pop('random_movers')
     model_settings = util.SchemaForm(schema.ModelSchema, model_data)
     map_data = model_data.get('map', None)
 
     # JSON defaults for initializing JavaScript models
     default_wind_mover = _default_schema_json(schema.WindMoverSchema)
-    default_wind_timeseries_value = _default_schema_json(
-        schema.TimeseriesValueSchema)
+    default_wind = _default_schema_json(schema.WindSchema)
     default_random_mover = _default_schema_json(schema.RandomMoverSchema)
     default_surface_release_spill = _default_schema_json(
         schema.SurfaceReleaseSpillSchema)
@@ -70,7 +75,7 @@ def show_model(request):
         # Default values for forms that use them.
         'default_wind_mover': default_wind_mover,
         'default_surface_release_spill': default_surface_release_spill,
-        'default_wind_timeseries_value': default_wind_timeseries_value,
+        'default_wind': default_wind,
         'default_random_mover': default_random_mover,
         'default_map': default_map,
         'default_custom_map': default_custom_map,
@@ -80,6 +85,7 @@ def show_model(request):
         'surface_release_spills': util.to_json(surface_release_spills),
         'wind_movers': util.to_json(wind_movers),
         'random_movers': util.to_json(random_movers),
+        'winds': util.to_json(winds),
         'model_settings': util.to_json(model_data),
         'location_files': sorted(
             request.registry.settings.location_file_data.values(),

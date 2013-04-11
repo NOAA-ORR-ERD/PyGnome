@@ -203,6 +203,14 @@ legend {
     max-height: 280px;
 }
 
+.wind-mover .wind-values {
+    margin-top: 15px;
+}
+
+.wind-mover .wind-header {
+    padding-left: 20px;
+}
+
 .wind form {
     margin-bottom: 0;
 }
@@ -245,6 +253,10 @@ legend {
 .wind-mover-header {
     margin-top: 10px;
     margin-bottom: 15px;
+}
+
+.wind-mover .nav-tabs {
+    margin-bottom: 10px;
 }
 
 .icon-warning-sign.error {
@@ -321,3 +333,4 @@ input.required {
 @media (max-width: 979px) {
     /* Placeholder */
 }
+
