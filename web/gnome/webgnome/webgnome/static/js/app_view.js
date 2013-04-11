@@ -422,6 +422,11 @@ define([
 
         setupModels: function() {
             var _this = this;
+            var gnomeSettings = this.options.gnomeSettings;
+
+            var windMovers = gnomeSettings.wind_movers;
+            delete gnomeSettings['wind_movers'];
+
 
             this.gnomeModel = new models.GnomeModel(this.options.gnomeSettings);
 

@@ -11,6 +11,7 @@
         data_class_required='wind:sourceIdRequired < wind.source_type',
         data_value='wind.source_id'), label='Source ID')}
 
+## Coming soon ...
 ##     <div data-show='wind:isBuoy < wind.source_type'>
 ##     ${defs.form_control(h.select('station_id', '',
 ##        (('', 'None'),),  class_='input-medium',
@@ -33,7 +34,7 @@
     </div>
 </div>
 
-<div class="span4">
+<div class="span3">
     <div class="nws-map-container" data-show='wind:isNws < wind.source_type'>
         <div class="nws-map-canvas"></div>
     </div>

@@ -14,14 +14,6 @@ def _default_schema_json(schema_cls):
                       default=util.json_encoder)
 
 
-def _serialize_all(objs, schema):
-    """
-    Serialize all ``objs`` using ``schema`` and return a list of the serialized
-    representations.
-    """
-    return [schema().bind().serialize(obj) for obj in objs]
-
-
 @view_config(route_name='show_model', renderer='model.mak')
 def show_model(request):
     """
@@ -36,22 +28,23 @@ def show_model(request):
     Render all forms, JSON and HTML needed to load the JavaScript app on the
     model page.
     """
+    # A flag that when true means the user just deleted their prior model.
     deleted = request.cookies.get('model_deleted', False)
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
     model, created = settings.Model.get_or_create(model_id)
-    model_data = model.to_dict()
-    surface_release_spills = _serialize_all(
-        model_data.pop('surface_release_spills'),
-        schema.SurfaceReleaseSpillSchema)
-    wind_movers = _serialize_all(
-        model_data.pop('wind_movers'), schema.WindMoverSchema)
-    winds = _serialize_all(model_data.pop('winds'), schema.WindSchema)
+    model_data = schema.ModelSchema().bind().serialize(model.to_dict())
+    surface_release_spills = model_data.pop('surface_release_spills')
+    wind_movers = model_data.pop('wind_movers')
+    winds = model_data.pop('winds')
     random_movers = model_data.pop('random_movers')
-    model_settings = util.SchemaForm(schema.ModelSchema, model_data)
     map_data = model_data.get('map', None)
 
-    # JSON defaults for initializing JavaScript models
+    if map_data and model.background_image:
+        map_data['background_image_url'] = util.get_model_image_url(
+            request, model, model.background_image)
+
+    # JavaScript model default values, used in "Add [object]" types of forms.
     default_wind_mover = _default_schema_json(schema.WindMoverSchema)
     default_wind = _default_schema_json(schema.WindSchema)
     default_random_mover = _default_schema_json(schema.RandomMoverSchema)
@@ -60,16 +53,11 @@ def show_model(request):
     default_map = _default_schema_json(schema.MapSchema)
     default_custom_map = _default_schema_json(schema.CustomMapSchema)
 
-    if map_data and model.background_image:
-        map_data['background_image_url'] = util.get_model_image_url(
-            request, model, model.background_image)
-
     data = {
-        'model': model_settings,
         'model_id': model.id,
         'created': created,
         'map_bounds': [],
-        'map_is_loaded': False,
+        'map_is_loaded': True if model.map else False,
         'current_time_step': model.current_time_step,
 
         # Default values for forms that use them.
@@ -100,12 +88,6 @@ def show_model(request):
         if model_id and not deleted:
             data['warning'] = 'The model you were working on is no longer ' \
                               'available. We created a new one for you.'
-
-    if model.map:
-        data['map_is_loaded'] = True
-
-        if model.map.map_bounds.any():
-            data['map_bounds'] = model.map.map_bounds.tolist()
 
     if model.time_steps:
         data['generated_time_steps_json'] = util.to_json(model.time_steps)
