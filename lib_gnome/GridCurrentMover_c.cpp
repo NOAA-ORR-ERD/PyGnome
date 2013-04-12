@@ -159,6 +159,7 @@ OSErr GridCurrentMover_c::PrepareForModelRun()
 
 OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
+	std::cout << "In PrepareForModelStep";
 	OSErr err=0;
 	char errmsg[256];
 	
@@ -170,7 +171,7 @@ OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const S
 	if (!bActive) return noErr;
 	
 	if (!timeGrid) return -1;
-	
+
 	err = timeGrid -> SetInterval(errmsg, model_time); 
 	if (err) goto done;
 	
