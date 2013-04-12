@@ -493,7 +493,7 @@ void CompErrors(short errorNum,char *errStr)
 			strcpy(errStr,"Insufficient data to compute heights. The low tide time offset data is unavailable.");
 			break;
 		case 24:
-			strcpy(errStr,"Unable to compute heights. Time offset data unuseable for selected time span.");
+			strcpy(errStr,"Unable to compute heights. Time offset data unusable for selected time span.");
 			break;
 		case 25:
 			strcpy(errStr,"Programmer error. Handle to offset data nil");

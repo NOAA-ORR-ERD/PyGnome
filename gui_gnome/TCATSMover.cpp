@@ -433,7 +433,8 @@ OSErr TCATSMover::CheckAndPassOnMessage(TModelMessage *message)
 			VelocityRec dummyValue;
 			// new data, make sure it is ok
 			if (timeDep) 
-			 	err = timeDep->GetTimeValue(model->GetStartTime(),&dummyValue);	// minus AH 07/10/2012
+			 	//err = timeDep->GetTimeValue(model->GetStartTime(),&dummyValue);	// minus AH 07/10/2012
+				err = timeDep->GetTimeValue(model->GetModelTime(),&dummyValue);	// changed shio to compute only a few days, this caused a flash once run got past 3 days
 			if (err) dynamic_cast<TCATSMover *>(this)->DeleteTimeDep();
 			break;
 	}

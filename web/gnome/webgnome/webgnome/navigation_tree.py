@@ -85,6 +85,10 @@ class NavigationTree(object):
             self._render_children(data.pop('random_movers', []),
                                   form_id='edit-random-mover'))
 
+        movers['children'].extend(
+            self._render_children(data.pop('cats_movers', []),
+                                  form_id='edit-cats-mover'))
+
         spills['children'].extend(
             self._render_children(data.pop('surface_release_spills', []),
                                   form_id='edit-surface-release-spill'))

@@ -107,6 +107,7 @@ class ModelFromLocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.post('/model/from_location_file/test')
         data = resp.json_body
         util.delete_keys_from_dict(data, ['id'])
+        util.delete_keys_from_dict(location_file_data, ['id'])
 
         for key in ['map', 'uncertain', 'start_time', 'time_step',
                     'duration_hours', 'duration_days']:
@@ -133,6 +134,7 @@ class ExistingModelFromLocationFileServiceTests(FunctionalTestBase,
 
         self.assertEqual(data['id'], self.model_id)
         util.delete_keys_from_dict(data, ['id'])
+        util.delete_keys_from_dict(location_file_data, ['id'])
 
         for key in ['map', 'uncertain', 'start_time', 'time_step',
                     'duration_hours', 'duration_days']:
@@ -642,9 +644,9 @@ class NavigationTreeTests(FunctionalTestBase, ModelHelperMixin):
         self.assertEqual(map_item['form_id'], 'add-map')
         self.assertEqual(map_item['title'], 'Map: None')
 
-        map_item = model_settings['children'][1]
-        self.assertEqual(map_item['form_id'], 'model-settings')
-        self.assertEqual(map_item['title'], 'Uncertain: False')
+        settings_item = model_settings['children'][1]
+        self.assertEqual(settings_item['form_id'], 'model-settings')
+        self.assertEqual(settings_item['title'], 'Uncertain: False')
 
         time_step_item = model_settings['children'][3]
         self.assertEqual(time_step_item['form_id'], 'model-settings')
@@ -661,3 +663,19 @@ class NavigationTreeTests(FunctionalTestBase, ModelHelperMixin):
         # Spills
         self.assertEqual(data[3]['title'], 'Spills')
         self.assertEqual(len(data[3]['children']), 0)
+
+
+class NwsTests(FunctionalTestBase):
+    def test_nws_handles_not_found_error(self):
+        self.testapp.get('/nws/wind?lat=-1&lon=-1', status=500)
+
+    def test_nws_handles_missing_lat(self):
+        self.testapp.get('/nws/wind?lon=-1', status=400)
+
+    def test_nws_handles_missing_lon(self):
+        self.testapp.get('/nws/wind?lat=1', status=400)
+
+    def test_nws_success(self):
+        resp = self.testapp.get('/nws/wind?lat=45.645&lon=-123.794')
+        self.assertEqual(resp.json['description'], '4 Miles SSW Foss OR')
+        self.assertEqual(len(resp.json['timeseries']), 168)

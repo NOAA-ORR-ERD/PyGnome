@@ -22,11 +22,22 @@ from colander import (
     deferred,
     drop,
 )
+from gnome.persist.map_schema import LongLatBounds
+from gnome.persist.movers_schema import CatsMover
 
 
 @deferred
 def now(node, kw):
     return datetime.datetime.now()
+
+
+class LongLat(MappingSchema):
+    """
+    A :class:`colander.MappingSchema`-based LongLat schema, as opposed to the
+    TupleSchema-based class:`gnome.persist.base_schema.LongLat` version.
+    """
+    long = SchemaNode(Float())
+    lat = SchemaNode(Float())
 
 
 class WindMoverSchema(movers_schema.WindMover):
@@ -84,10 +95,12 @@ class RandomMoversSchema(SequenceSchema):
     mover = RandomMoverSchema()
 
 
-class MapSchema(map_schema.GnomeMap):
+class MapSchema(map_schema.MapFromBNA):
     default_name = 'Map'
     name = SchemaNode(String(), default=default_name, missing=default_name)
-    relative_path = SchemaNode(String(), default=None, missing=drop)
+    filename = SchemaNode(String(), default=None, missing=drop)
+    map_bounds = LongLatBounds(default=[], missing=drop)
+    background_image_url = SchemaNode(String(), default=None, missing=drop)
 
 
 # Input values GOODS expects for the `resolution` field on a custom map form.
@@ -103,6 +116,7 @@ custom_map_resolutions = [
 class CustomMapSchema(MappingSchema):
     default_name = 'Map'
     name = SchemaNode(String(), default=default_name, missing=default_name)
+    map_bounds = LongLatBounds(missing=drop)
     north_lat = SchemaNode(Float())
     west_lon = SchemaNode(Float())
     east_lon = SchemaNode(Float())
@@ -122,6 +136,15 @@ class WindsSchema(SequenceSchema):
     wind = WindSchema()
 
 
+class WebCatsMover(CatsMover):
+    default_name = 'Cats Mover'
+    name = SchemaNode(String(), default=default_name, missing=default_name)
+
+
+class CatsMoversSchema(SequenceSchema):
+    mover = WebCatsMover()
+
+
 class ModelSchema(MappingSchema):
     id = SchemaNode(String(), missing=drop)
     start_time = SchemaNode(LocalDateTime(), default=now,
@@ -134,6 +157,7 @@ class ModelSchema(MappingSchema):
         default=[], missing=drop)
     wind_movers = WindMoversSchema(default=[], missing=drop)
     random_movers = RandomMoversSchema(default=[], missing=drop)
+    cats_movers = CatsMoversSchema(default=[], missing=drop)
     winds = WindsSchema(default=[], missing=drop)
     map = MapSchema(missing=drop)
 

@@ -2,12 +2,13 @@ import json
 import os
 import datetime
 import gnome.basic_types
+from gnome.environment import Tide
 import numpy
 import sys
 
 from pyramid.paster import bootstrap
 from webgnome import WebSurfaceReleaseSpill, WebWindMover, util
-from webgnome.model_manager import WebRandomMover, WebWind
+from webgnome.model_manager import WebRandomMover, WebWind, WebCatsMover
 from webgnome.schema import ModelSchema
 
 
@@ -23,8 +24,12 @@ def main():
     location_file = os.path.join(boston_dir, 'location.json')
 
     if os.path.exists(location_file):
-        print >> sys.stderr, 'File already exists: %s' % location_file
-        exit(1)
+        message = 'File already exists:\n %s\nRemove? (y/n) ' % location_file
+        if raw_input(message).lower() == 'y':
+            os.unlink(location_file)
+        else:
+            print 'Cancelled.'
+            return
 
     model = settings.Model.create()
 
@@ -50,6 +55,7 @@ def main():
     series[1] = (start_time + datetime.timedelta(hours=18), (5, 180))
 
     wind = WebWind(timeseries=series, units='m/s')
+    model.environment += wind
     w_mover = WebWindMover(wind)
     model.movers += w_mover
 
@@ -59,45 +65,39 @@ def main():
 
     # adding a cats shio mover:
 
-    shio_file = os.path.join(boston_data, "EbbTidesShio.txt")
     curr_file = os.path.join(boston_data, "EbbTides.CUR")
-    shio_year_path = os.path.join(settings.data_dir, 'yeardata')
-    c_mover = gnome.movers.CatsMover(curr_file, shio_file, shio_year_path)
+    shio_file = os.path.join(boston_data, "EbbTidesShio.txt")
+    c_mover = WebCatsMover(curr_file, tide=Tide(shio_file))
     c_mover.scale_refpoint = (
         -70.8875, 42.321333)  # this is the value in the file (default)
     c_mover.scale = True  # default value
     c_mover.scale_value = -1
     model.movers += c_mover
+    # todo: cannot add this till environment base class is created
+    model.environment += c_mover.tide
 
     # adding a cats ossm mover
 
     ossm_file = os.path.join(boston_data, 'MerrimackMassCoastOSSM.txt')
     curr_file = os.path.join(boston_data, 'MerrimackMassCoast.CUR')
-    c_mover = gnome.movers.CatsMover(curr_file, ossm_file=ossm_file)
+    c_mover = WebCatsMover(curr_file, tide=Tide(ossm_file))
     # but do need to scale (based on river stage)
     c_mover.scale = True
     c_mover.scale_refpoint = (-70.65, 42.58333)
     c_mover.scale_value = 1.
     model.movers += c_mover
+    model.environment += c_mover.tide
 
     # adding a cats mover
 
-    class NamedCatsMover(gnome.movers.CatsMover):
-        def __create_id(self):
-            self._id = 'sewage_outfall'
-
     curr_file = os.path.join(boston_data, 'MassBaySewage.CUR')
-    c_mover = NamedCatsMover(curr_file)
+    c_mover = WebCatsMover(curr_file)
     # but do need to scale (based on river stage)
     c_mover.scale = True
     c_mover.scale_refpoint = (-70.78333, 42.39333)
     # the scale factor is 0 if user inputs no sewage outfall effects
     c_mover.scale_value = .04
     model.movers += c_mover
-
-    # adding a component mover
-    # component_file1 =  r"./WAC10msNW.cur"
-    # component_file2 =  r"./WAC10msSW.cur"
 
     # adding a spill
 

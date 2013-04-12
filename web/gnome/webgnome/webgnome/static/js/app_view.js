@@ -194,13 +194,15 @@ define([
 
         loadLocationFile: function(locationName) {
             var model = new models.GnomeModelFromLocationFile({
-                location_name: locationName
+                location_name: locationName.get('filename')
             }, {
                 gnomeModel: this.gnomeModel
             })
 
             model.save().then(function() {
                 util.refresh();
+            }).fail(function() {
+                alert('That location file is not available yet.');
             });
         },
 
@@ -420,6 +422,11 @@ define([
 
         setupModels: function() {
             var _this = this;
+            var gnomeSettings = this.options.gnomeSettings;
+
+            var windMovers = gnomeSettings.wind_movers;
+            delete gnomeSettings['wind_movers'];
+
 
             this.gnomeModel = new models.GnomeModel(this.options.gnomeSettings);
 
