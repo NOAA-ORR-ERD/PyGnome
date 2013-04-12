@@ -83,12 +83,6 @@ class TestGridCurrentMover():
         time_grid_file = os.path.join(here, r'SampleData/currents/test.cdf')
         
         
-        #f_name = u'SampleData/currents/an_\xe1ccent.cdf'    # but this is
-        #f_name = u'SampleData/currents/an_‡ccent.cdf'
-        #print "file: ", filename
-        #time_grid_file = os.path.join(here, filename)
-        
-        
         #topology_file = r"SampleData/currents/NYTopology.dat"	# will want a null default
         topology_file = r""	# will want a null default
         self.gcm.text_read(time_grid_file,topology_file)
@@ -251,5 +245,5 @@ if __name__ == "__main__":
     through Visual Studio
     """
     tgc = TestGridCurrentMover()
-    tgc.test_move_reg()
+    #tgc.test_move_reg()
     tgc.test_move_curv()
