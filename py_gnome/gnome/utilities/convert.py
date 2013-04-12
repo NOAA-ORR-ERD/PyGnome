@@ -95,7 +95,10 @@ def tsformat(format):
 def to_bytes(ucode):
     """
     Encode a string to its unicode type to default file system encoding for the OS
-    Returns a string encoded as per sys.getfilesystemencoding()
+    For the mac it encodes it as utf-8
+    
+    For windows it does an ascii encoding for now because unicode filenames are not read by currenl lib_gnome
+    code in windows at present.
     """    
     if not isinstance(ucode, basestring):
         raise TypeError("{0} must either be a string or unicode type".format(ucode) )
