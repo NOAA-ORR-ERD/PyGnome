@@ -32,6 +32,16 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         
         """
         cdef OSErr err
+        cdef bytes time_grid, topology
+        
+        time_grid = <bytes> to_bytes(time_grid_file)
+        
+        if topology_file is None:
+            err = self.grid.TextRead( time_grid, '')
+        else:
+            topology  = <bytes> to_bytes(topology_file)
+            err = self.grid.TextRead( time_grid , topology )
+         
         err = self.grid.TextRead( <bytes> to_bytes(time_grid_file), <bytes> to_bytes(topology_file))
         if err != 0:
             """

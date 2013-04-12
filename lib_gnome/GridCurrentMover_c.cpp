@@ -159,7 +159,6 @@ OSErr GridCurrentMover_c::PrepareForModelRun()
 
 OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
-	std::cout << "In PrepareForModelStep";
 	OSErr err=0;
 	char errmsg[256];
 	

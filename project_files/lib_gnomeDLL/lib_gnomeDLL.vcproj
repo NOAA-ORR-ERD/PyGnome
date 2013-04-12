@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\lib_gnome;..\..\third_party_lib\vs2010\include"
+				AdditionalIncludeDirectories="..\..\lib_gnome;..\..\third_party_lib\netcdf-4.3"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LIB_GNOMEDLL_EXPORTS;pyGNOME;ibmpyGNOME"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -64,7 +64,7 @@
 				AdditionalDependencies="netcdf.lib"
 				OutputFile="..\..\py_gnome\gnome\cy_gnome\$(ProjectName).dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\third_party_lib\vs2010\lib"
+				AdditionalLibraryDirectories="..\..\third_party_lib\netcdf-4.3\win32\i386\"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"

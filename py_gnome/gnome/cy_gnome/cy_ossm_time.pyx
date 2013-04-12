@@ -163,7 +163,9 @@ cdef class CyOSSMTime(object):
                 
             Make this private since the constructor will likely call this when object is instantiated
         """        
-        err = self.time_dep.ReadTimeValues( <bytes> to_bytes(filename), file_contains, user_units)
+        cdef bytes file_
+        file_= <bytes> to_bytes(filename)
+        err = self.time_dep.ReadTimeValues( file_, file_contains, user_units)
         if err == 1:
             # TODO: need to define error codes in C++ and raise other exceptions
             raise ValueError("Valid user units not found in file")
