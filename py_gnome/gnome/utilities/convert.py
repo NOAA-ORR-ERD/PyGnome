@@ -91,30 +91,4 @@ def tsformat(format):
     else:
         raise ValueError("timeseries format can only be 'r-theta' or 'uv', the format entered is not recognized as valid format")
     
-            
-def to_bytes(ucode):
-    """
-    Encode a string to its unicode type to default file system encoding for the OS
-    For the mac it encodes it as utf-8
-    
-    For windows it does an ascii encoding for now because unicode filenames are not read by currenl lib_gnome
-    code in windows at present.
-    """    
-    if not isinstance(ucode, basestring):
-        raise TypeError("{0} must either be a string or unicode type".format(ucode) )
-    
-    if not isinstance(ucode, unicode):
-        ucode = unicode(ucode)
-        
-    if sys.platform == "darwin":
-        # can use this - sys.getfilesystemencoding()
-        return ucode.encode('utf-8')
-    elif sys.platform == "win32":
-        try:
-            return ucode.encode('ascii')
-        except UnicodeEncodeError as err:
-            print "\nSpecial characters not currently supported on windows - only ascii characters\n"
-            raise err
-    else:
-        raise NotImplementedError("to_bytes is currently only implemented for darwin, win32 systems")    
     

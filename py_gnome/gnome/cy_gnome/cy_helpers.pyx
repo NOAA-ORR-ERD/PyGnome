@@ -52,10 +52,13 @@ def rand():
 cdef bytes to_bytes(unicode ucode):
     """
     Encode a string to its unicode type to default file system encoding for the OS
-    For the mac it encodes it as utf-8
-    
-    For windows it does an ascii encoding for now because unicode filenames are not read by currenl lib_gnome
-    code in windows at present.
+    It uses locale.getpreferredencoding() to get the filesystem encoding
+        For the mac it encodes it as utf-8.
+        For windows this appears to be cp1252.
+        
+    The C++ expects char * so  either of these encodings appear to work. If the 
+    getpreferredencoding returns a type of encoding that is incompatible with a char *
+    C++ input, then things will fail.
     """
     cdef bytes byte_string
     
@@ -65,23 +68,3 @@ cdef bytes to_bytes(unicode ucode):
         raise err
     
     return byte_string
-    
-#===============================================================================
-# cdef bytes to_bytes2(unicode ucode):
-#    """
-#    Encode a string to its unicode type to default file system encoding for the OS
-#    For the mac it encodes it as utf-8
-#    
-#    For windows it does an ascii encoding for now because unicode filenames are not read by currenl lib_gnome
-#    code in windows at present.
-#    """
-#    cdef bytes byte_string
-#    
-#    try:
-#        byte_string = ucode.encode(locale.getpreferredencoding())
-#    except Exception as err:
-#        raise err
-#    
-#    return byte_string
-#===============================================================================
-    
