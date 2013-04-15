@@ -9,7 +9,7 @@ from gnome import basic_types
 from type_defs cimport * 
 from utils cimport ShioTimeValue_c, EbbFloodData, EbbFloodDataH, HighLowData, HighLowDataH, _NewHandle, _GetHandleSize
 
-from gnome.utilities.convert import to_bytes
+from cy_helpers cimport to_bytes
 
 cdef class CyShioTime(object):
     """
@@ -31,12 +31,12 @@ cdef class CyShioTime(object):
         """
         Init CyShioTime with defaults
         """
-        cdef bytes file_
+        cdef char * file_
         self.shio.daylight_savings_off=daylight_savings_off 
         
         if os.path.exists(path):
             #self._read_time_values(path) # user_units should be read from the file
-            file_ = <bytes> to_bytes(path)
+            file_ = to_bytes(unicode(path))
             err = self.shio.ReadTimeValues(file_)
             if err != 0:
                 raise ValueError("File could not be correctly read by ShioTimeValue_c.ReadTimeValues(...)")
@@ -58,12 +58,12 @@ cdef class CyShioTime(object):
         cdef OSErr err
         cdef bytes yeardata_path
         
-        yeardata_path = <bytes> to_bytes(yeardata_path_)
+        yeardata_path = to_bytes( unicode(yeardata_path_))
         
         if os.path.exists(yeardata_path):
             if yeardata_path[-1] != os.sep:
                 yeardata_path = os.path.normpath(yeardata_path) + os.sep
-            err = self.shio.SetYearDataPath(yeardata_path)
+            err = self.shio.SetYearDataPath(yeardata_path)  # implicit conversion from bytes to char *
             if err != 0:
                 raise ValueError("Path could not be correctly be set by ShioTimeValue_c.SetYearDataPath(...)")
         else:

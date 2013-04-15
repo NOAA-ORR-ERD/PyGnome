@@ -9,8 +9,7 @@ from gnome import basic_types
 from type_defs cimport * 
 from utils cimport _NewHandle, _GetHandleSize
 from utils cimport OSSMTimeValue_c
-
-from gnome.utilities.convert import to_bytes
+from cy_helpers cimport to_bytes
 
 cdef class CyOSSMTime(object):
 
@@ -163,9 +162,8 @@ cdef class CyOSSMTime(object):
                 
             Make this private since the constructor will likely call this when object is instantiated
         """        
-        cdef bytes file_
-        file_= <bytes> to_bytes(filename)
-        err = self.time_dep.ReadTimeValues( file_, file_contains, user_units)
+        cdef char * file_
+        err = self.time_dep.ReadTimeValues( to_bytes(unicode(filename)), file_contains, user_units)
         if err == 1:
             # TODO: need to define error codes in C++ and raise other exceptions
             raise ValueError("Valid user units not found in file")

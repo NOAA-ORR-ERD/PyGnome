@@ -9,7 +9,7 @@ from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
 from gnome.cy_gnome cimport cy_mover
-from gnome.utilities import convert
+from gnome.cy_gnome.cy_helpers cimport to_bytes
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
@@ -104,9 +104,9 @@ cdef class CyCatsMover(cy_mover.CyMover):
             
     def read_topology(self, fname):
         cdef OSErr err
-        cdef bytes path_
+        cdef char * path_
         
-        path_ = <bytes> convert.to_bytes(fname)
+        path_ = to_bytes( unicode(fname))
         
         if os.path.exists(path_):
             err = self.cats.ReadTopology(path_)

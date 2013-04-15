@@ -247,5 +247,5 @@ if __name__ == "__main__":
     """
     tgc = TestGridCurrentMover()
     #tgc.test_move_reg()
-    #tgc.test_move_curv()
-    tgc.test_move_tri()
+    tgc.test_move_curv()
+    #tgc.test_move_tri()

@@ -107,6 +107,7 @@ def to_bytes(ucode):
         ucode = unicode(ucode)
         
     if sys.platform == "darwin":
+        # can use this - sys.getfilesystemencoding()
         return ucode.encode('utf-8')
     elif sys.platform == "win32":
         try:
@@ -117,4 +118,3 @@ def to_bytes(ucode):
     else:
         raise NotImplementedError("to_bytes is currently only implemented for darwin, win32 systems")    
     
-    return ucode.encode( sys.getfilesystemencoding() )

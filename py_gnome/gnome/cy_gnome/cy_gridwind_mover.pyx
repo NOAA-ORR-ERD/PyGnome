@@ -5,7 +5,7 @@ from type_defs cimport *
 from movers cimport Mover_c,GridWindMover_c,TimeGridVel_c
 cimport cy_mover
 
-from gnome.utilities.convert import to_bytes
+from gnome.cy_gnome.cy_helpers cimport to_bytes
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
@@ -32,17 +32,16 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         
         """
         cdef OSErr err
-        cdef bytes time_grid, topology
+        cdef char *time_grid, *topology
         
-        time_grid = <bytes> to_bytes(time_grid_file)
+        time_grid = to_bytes( unicode(time_grid_file))
         
         if topology_file is None:
             err = self.grid.TextRead( time_grid, '')
         else:
-            topology  = <bytes> to_bytes(topology_file)
-            err = self.grid.TextRead( time_grid , topology )
+            topology  = to_bytes( unicode(topology_file))
+            err = self.grid.TextRead( time_grid, topology )
          
-        err = self.grid.TextRead( <bytes> to_bytes(time_grid_file), <bytes> to_bytes(topology_file))
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
