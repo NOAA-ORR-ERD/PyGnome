@@ -291,8 +291,6 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 	TimeGridVel *newTimeGrid = nil;
 	
 	strcpy(filePath,path);	// this gets altered in IsNetCDFPathsFile, eventually change that function
-	std::cout << path << "\n\n";
-	std::cout << topFilePath << "\n\n";
 
 	if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{
