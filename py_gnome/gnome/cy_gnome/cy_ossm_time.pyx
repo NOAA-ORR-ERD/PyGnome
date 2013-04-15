@@ -11,6 +11,7 @@ from utils cimport _NewHandle, _GetHandleSize
 from utils cimport OSSMTimeValue_c
 from cy_helpers cimport to_bytes
 
+
 cdef class CyOSSMTime(object):
 
     # underlying C++ object that is instantiated
