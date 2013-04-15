@@ -49,25 +49,7 @@ def rand():
     return stdlib.rand()
 
 
-cdef char * to_bytes(unicode ucode):
-    """
-    Encode a string to its unicode type to default file system encoding for the OS
-    For the mac it encodes it as utf-8
-    
-    For windows it does an ascii encoding for now because unicode filenames are not read by currenl lib_gnome
-    code in windows at present.
-    """
-    cdef bytes byte_string
-    
-    try:
-        byte_string = ucode.encode(locale.getpreferredencoding())
-    except Exception as err:
-        raise err
-    
-    return <char *>byte_string
-    #return byte_string
-    
-cdef bytes to_bytes2(unicode ucode):
+cdef bytes to_bytes(unicode ucode):
     """
     Encode a string to its unicode type to default file system encoding for the OS
     For the mac it encodes it as utf-8
@@ -83,4 +65,23 @@ cdef bytes to_bytes2(unicode ucode):
         raise err
     
     return byte_string
+    
+#===============================================================================
+# cdef bytes to_bytes2(unicode ucode):
+#    """
+#    Encode a string to its unicode type to default file system encoding for the OS
+#    For the mac it encodes it as utf-8
+#    
+#    For windows it does an ascii encoding for now because unicode filenames are not read by currenl lib_gnome
+#    code in windows at present.
+#    """
+#    cdef bytes byte_string
+#    
+#    try:
+#        byte_string = ucode.encode(locale.getpreferredencoding())
+#    except Exception as err:
+#        raise err
+#    
+#    return byte_string
+#===============================================================================
     

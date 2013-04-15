@@ -31,11 +31,10 @@ cdef class CyShioTime(object):
         """
         Init CyShioTime with defaults
         """
-        cdef char * file_
+        cdef bytes file_
         self.shio.daylight_savings_off=daylight_savings_off 
         
         if os.path.exists(path):
-            #self._read_time_values(path) # user_units should be read from the file
             file_ = to_bytes(unicode(path))
             err = self.shio.ReadTimeValues(file_)
             if err != 0:

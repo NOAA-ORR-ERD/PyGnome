@@ -32,7 +32,7 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         
         """
         cdef OSErr err
-        cdef char *time_grid, *topology
+        cdef bytes time_grid, topology
         
         time_grid = to_bytes( unicode(time_grid_file))
         

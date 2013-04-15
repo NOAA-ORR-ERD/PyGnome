@@ -104,7 +104,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
             
     def read_topology(self, fname):
         cdef OSErr err
-        cdef char * path_
+        cdef bytes path_
         
         path_ = to_bytes( unicode(fname))
         
