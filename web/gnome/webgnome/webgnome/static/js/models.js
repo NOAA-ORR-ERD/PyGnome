@@ -184,7 +184,7 @@ define([
 
             this.runUntilTimeStep = options.runUntilTimeStep || null;
 
-            if (this.dirty || this.runUntilTimeStep) {
+            if (this.dirty) {
                 this.doRun(options);
                 return;
             }
