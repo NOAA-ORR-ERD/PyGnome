@@ -747,7 +747,37 @@ define([
 
 
     var Map = BaseModel.extend({
-        url: '/map'
+        url: '/map',
+
+        // Bounds are stored as Long, Lat. Return then as Lat, Long.
+        getLatLongBounds: function() {
+            var bounds = this.get('map_bounds');
+
+            if (!bounds) {
+                return;
+            }
+
+            return {
+                nw: [bounds[1][1], bounds[1][0]],
+                ne: [bounds[2][1], bounds[2][0]],
+                se: [bounds[3][1], bounds[3][0]],
+                sw: [bounds[0][1], bounds[0][0]]
+            }
+        },
+
+        getLatLongCenter: function() {
+            var bounds = this.getLatLongBounds();
+
+            if (!bounds) {
+                return;
+            }
+
+            var latLngBounds = new google.maps.LatLngBounds(
+                new google.maps.LatLng(bounds.sw[0], bounds.sw[1]),
+                new google.maps.LatLng(bounds.ne[0], bounds.sw[1])
+            );
+            return latLngBounds.getCenter();
+        },
     });
 
 

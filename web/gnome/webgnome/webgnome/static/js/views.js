@@ -662,7 +662,7 @@ define([
             return {lat: lat, long: lng};
         }
     }, {
-        // Statuse constants
+        // Status constants
         PAUSED: 1,
         STOPPED: 2,
         PLAYING: 3,

@@ -340,14 +340,16 @@ define([
                 id: 'add-wind',
                 collection: this.winds,
                 defaults: this.options.defaultWind,
-                gnomeModel: this.gnomeModel
+                gnomeModel: this.gnomeModel,
+                map: this.map
             });
 
             this.editWindFormView = new forms.WindFormView({
                 id: 'edit-wind',
                 collection: this.winds,
                 defaults: this.options.defaultWind,
-                gnomeModel: this.gnomeModel
+                gnomeModel: this.gnomeModel,
+                map: this.map
             });
 
             this.addRandomMoverFormView = new forms.AddRandomMoverFormView({

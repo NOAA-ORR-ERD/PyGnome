@@ -1397,6 +1397,8 @@ define([
         initialize: function() {
             _.bindAll(this);
 
+            this.map = this.options.map;
+
             // Setup this.$el, which we need for `setupWindMap`.
             ExternalWindDataView.__super__.initialize.apply(this, arguments);
             this.events = _.extend({}, Backbone.View.prototype.events, this.events);
@@ -1408,9 +1410,36 @@ define([
             'click .query-source': 'querySource',
         },
 
-        resizeWindMap: function() {
+        resizeNwsMap: function() {
             google.maps.event.trigger(this.windMap, 'resize');
-            this.windMap.setCenter(this.windMapCenter.getCenter());
+        },
+
+        zoomNwsMap: function(zoomLevel) {
+            this.windMap.setZoom(zoomLevel);
+        },
+
+        /*
+         Center the NWS winds map on the center of the user's chosen map, if a
+         map has been added to the model and has a bounding box.
+         */
+        centerNwsMap: function() {
+            if (!this.map) {
+                return;
+            }
+
+            var center = this.map.getLatLongCenter();
+
+            if (!center) {
+                return;
+            }
+
+            this.windMap.setCenter(center);
+            this.zoomNwsMap(6);
+        },
+
+        prepareNwsMap: function() {
+            this.resizeNwsMap();
+            this.centerNwsMap();
         },
 
         setModel: function(model) {
@@ -1545,7 +1574,7 @@ define([
             var _this = this;
             if (this.model.isNws()) {
                 this.$el.find('.nws-map-container').imagesLoaded(function() {
-                    _this.resizeWindMap();
+                    _this.prepareNwsMap();
                 });
             }
         }
@@ -1949,7 +1978,8 @@ define([
             this.events = _.extend({}, FormView.prototype.events, this.events);
 
             this.externalDataView = new ExternalWindDataView({
-                id: this.id + '_data_source'
+                id: this.id + '_data_source',
+                map: this.options.map
             });
 
             this.externalDataView.on('dataReceived', this.externalDataReceived);
@@ -2250,7 +2280,7 @@ define([
             SurfaceReleaseSpillFormView.__super__.show.apply(this, arguments);
 
             if (this.gnomeModel) {
-                this.model.set('release_time', this.gnomeModel.get('start_time'));
+                this.setDateFields('.release_time_container', this.gnomeModel.get('start_time'));
             }
 
             if (startCoords) {
