@@ -355,7 +355,7 @@ def test_all_movers(start_time, release_delay, duration):
     assert len(model.movers) == 3
     
     # add CATS mover
-    model.movers += movers.CatsMover(r"SampleData/long_island_sound/tidesWAC.CUR")
+    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"))
     assert len(model.movers) == 4
     
     # run the model all the way...

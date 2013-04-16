@@ -7,6 +7,7 @@ from gnome import basic_types
 from gnome.cy_gnome import cy_cats_mover, cy_ossm_time, cy_shio_time
 import cy_fixtures
 
+datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
 
 class CatsMove(cy_fixtures.CyTestMove):
     """
@@ -16,9 +17,9 @@ class CatsMove(cy_fixtures.CyTestMove):
     Primarily just checks that CyCatsMover can be initialized correctly and all methods are invoked
     """
     def __init__(self):
-        file_ = r"SampleData/long_island_sound/CLISShio.txt"
+        file_ = os.path.join( datadir, r"long_island_sound/CLISShio.txt")
         self.shio = cy_shio_time.CyShioTime(file_)
-        top_file=r"SampleData/long_island_sound/tidesWAC.CUR"
+        top_file= os.path.join( datadir, r"long_island_sound/tidesWAC.CUR")
         yeardata_path=os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/')
         self.cats = cy_cats_mover.CyCatsMover()
         self.cats.set_shio(self.shio)
