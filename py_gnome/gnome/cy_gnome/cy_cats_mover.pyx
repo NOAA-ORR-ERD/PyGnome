@@ -1,13 +1,15 @@
+import os
+
 cimport numpy as cnp
 import numpy as np
-import os
 
 from type_defs cimport *
 from movers cimport CATSMover_c,Mover_c
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
-cimport cy_mover,cy_ossm_time
+from gnome.cy_gnome cimport cy_mover
+from gnome.cy_gnome.cy_helpers cimport to_bytes
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
@@ -100,14 +102,18 @@ cdef class CyCatsMover(cy_mover.CyMover):
         self.cats.bTimeFileActive = True   # What is this?
         return True
             
-    def read_topology(self, path):
+    def read_topology(self, fname):
         cdef OSErr err
-        if os.path.exists(path):
-            err = self.cats.ReadTopology(path)
+        cdef bytes path_
+        
+        path_ = to_bytes( unicode(fname))
+        
+        if os.path.exists(path_):
+            err = self.cats.ReadTopology(path_)
             if err != False:
                 raise ValueError("CATSMover.ReadTopology(..) returned an error. OSErr: {0}".format(err))
         else:
-            raise IOError("No such file: " + path)
+            raise IOError("No such file: " + path_)
         
         return True
     

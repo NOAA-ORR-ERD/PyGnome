@@ -81,6 +81,8 @@ class TestGridCurrentMover():
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
         time_grid_file = os.path.join(here, r'SampleData/currents/test.cdf')
+        
+        
         #topology_file = r"SampleData/currents/NYTopology.dat"	# will want a null default
         topology_file = r""	# will want a null default
         self.gcm.text_read(time_grid_file,topology_file)
@@ -153,6 +155,7 @@ class TestGridCurrentMover():
         self.cm.model_time = time_utils.date_to_sec(time)
         time_grid_file = os.path.join(here, r'SampleData/currents/ChesBay.nc')
         topology_file = os.path.join(here, r'SampleData/currents/ChesBay.dat')
+        
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-76.149368) #for ChesBay
         self.cm.ref[:]['lat'] = (37.74496)
@@ -243,5 +246,6 @@ if __name__ == "__main__":
     through Visual Studio
     """
     tgc = TestGridCurrentMover()
-    tgc.test_move_reg()
+    #tgc.test_move_reg()
     tgc.test_move_curv()
+    #tgc.test_move_tri()
