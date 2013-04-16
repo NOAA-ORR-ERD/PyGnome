@@ -53,9 +53,11 @@ def test_end_time():
     """
     
 
-def test_simple_run():
+def test_simple_run_rewind():
     """
     pretty much all this tests is that the model will run
+    and the seed is set during first run, then set correctly 
+    after it is rewound and run again
     """
     
     start_time = datetime(2012, 9, 15, 12, 0)
@@ -83,6 +85,8 @@ def test_simple_run():
     for step in model:
         print "just ran time step: %s"%model.current_time_step
 
+    pos = np.copy( model.spills.LE('positions'))
+    
     # rewind and run again:
     print "rewinding"
     model.rewind()
@@ -90,7 +94,7 @@ def test_simple_run():
     for step in model:
         print "just ran time step: %s"%model.current_time_step
         
-    assert True
+    assert np.all( model.spills.LE('positions') == pos)
     
 def test_simple_run_with_map():
     """
