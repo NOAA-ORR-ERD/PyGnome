@@ -258,6 +258,26 @@ define([
                     visibleSaveButton.click();
                 }
             });
+
+            Mousetrap.bind('left', function() {
+                var newStep = _this.gnomeRun.currentTimeStep - 1;
+
+                if (newStep < 0) {
+                    return;
+                }
+
+                _this.mapControlView.setValue(newStep);
+            });
+
+            Mousetrap.bind('right', function() {
+                var newStep = _this.gnomeRun.currentTimeStep + 1;
+
+                if (newStep > _this.gnomeRun.length) {
+                    return;
+                }
+
+                _this.mapControlView.setValue(newStep);
+            });
         },
 
         spillDrawn: function(startCoords, endCoords) {
@@ -611,8 +631,12 @@ define([
             this.mapControlView.enableControls();
         },
 
+        /*
+         Called while the user is dragging the slider.
+         We show the image for the target time step if it's loaded in cache.
+         */
+
         sliderMoved: function(newStepNum) {
-            // No need to do anything if the slider is on the current time step.
             if (newStepNum === this.gnomeRun.currentTimeStep) {
                 return;
             }
@@ -624,8 +648,14 @@ define([
             }
         },
 
+        /*
+         Called when the user finishes dragging the slider.
+
+         The image will be loaded if it was available in cache. If it wasn't,
+         then we're going to play until `newStepNum`, triggering download of
+         the intervening images.
+         */
         sliderChanged: function(newStepNum) {
-            // No need to do anything if the slider is on the current time step.
             if (newStepNum === this.gnomeRun.currentTimeStep) {
                 return;
             }

@@ -662,7 +662,7 @@ define([
             return {lat: lat, long: lng};
         }
     }, {
-        // Status constants
+        // Statuse constants
         PAUSED: 1,
         STOPPED: 2,
         PLAYING: 3,
@@ -967,6 +967,16 @@ define([
         updateCachedPercentage: function() {
             this.setCachedPercentage(
                 100*(this.gnomeRun.length / this.gnomeRun.expectedTimeSteps.length))
+        },
+
+        /*
+         Set the slider to `value`.
+
+         This triggers the "change" event on the widget.
+         */
+        setValue: function(value) {
+            this.sliderMoved(null, {value: value});
+            $(this.sliderEl).slider('value', value);
         },
 
         runBegan: function() {

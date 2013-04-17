@@ -222,14 +222,14 @@ define([
             this.currentTimeStep = stepNum;
             this.nextTimeStep = stepNum + 1;
 
+            this.trigger(GnomeRun.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
+
             if (this.currentTimeStep === this.runUntilTimeStep ||
                     this.currentTimeStep === _.last(this.expectedTimeSteps)) {
                 this.trigger(GnomeRun.RUN_FINISHED);
                 this.runUntilTimeStep = null;
                 return;
              }
-
-             this.trigger(GnomeRun.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
         },
 
         isOnLastTimeStep: function() {
