@@ -90,6 +90,25 @@ cdef class CyCatsMover(cy_mover.CyMover):
             else:
                 self.cats.SetRefPosition(p, ref_point[2])
          
+    def __repr__(self):
+        """
+        Return an unambiguous representation of this object so it can be recreated
+        
+        Probably want to return filename as well  
+        """
+        repr_ = '{0}(scale_type={1.scale_type}, scale_value={1.scale_value}, diffusion_coefficient={1.eddy_diffusion})'.format(self.__class__.__name__, self)
+        return repr_
+      
+    def __str__(self):
+        """Return string representation of this object"""
+        
+        info  = "{0} object - see attributes for more info\n".format(self.__class__.__name__)
+        info += "  scale type = {0.scale_type}\n".format(self)
+        info += "  scale value = {0.scale_value}\n".format(self)
+        info += "  eddy diffusion coef = {0.eddy_diffusion}\n".format(self)
+        
+        return info
+         
     def set_shio(self, CyShioTime cy_shio):
         self.cats.SetTimeDep(cy_shio.shio)
         self.cats.SetRefPosition(cy_shio.shio.GetStationLocation(), 0)
