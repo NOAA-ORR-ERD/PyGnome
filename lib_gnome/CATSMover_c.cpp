@@ -534,6 +534,8 @@ OSErr CATSMover_c::ReadTopology(char* path/*, TMap **newMap*/)
 		for(++i; i < x-j+1 && _ifstream->get(c); i++)
 			DEREFH(f)[i] = c;
 
+		delete _ifstream;
+
 	} catch(...) {
 	    cout << "Unable to read from the topology file. Exiting.\n";
 		err = true;
