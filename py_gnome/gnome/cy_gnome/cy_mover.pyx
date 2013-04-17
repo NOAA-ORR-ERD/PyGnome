@@ -39,7 +39,7 @@ cdef class CyMover(object):
                 'StationName': sName, 'StationType': sType,
                 'DaylightSavingsOff': self.shio.daylight_savings_off}"""
         
-        info  = "{0} object - see attributes for more info".format(self..__class__.__name__)
+        info  = "{0} object - see attributes for more info".format(self.__class__.__name__)
         
         return info
     
