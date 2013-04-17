@@ -2,6 +2,7 @@
 Helper classes to do common tasks in pyGnome like;
 - convert_formats to convert datetime_value to time_value_pair 
 """
+import sys
 
 from gnome.utilities import time_utils, transforms
 from gnome import basic_types
@@ -89,3 +90,5 @@ def tsformat(format):
         return basic_types.ts_format.uv
     else:
         raise ValueError("timeseries format can only be 'r-theta' or 'uv', the format entered is not recognized as valid format")
+    
+    

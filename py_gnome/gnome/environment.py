@@ -139,7 +139,7 @@ class Wind( Environment, serializable.Serializable):
             
         else:
             ts_format = convert.tsformat(format)
-            self.ossm = cy_ossm_time.CyOSSMTime(file=kwargs.pop("filename"),file_contains=ts_format)
+            self.ossm = cy_ossm_time.CyOSSMTime(filename=kwargs.pop("filename"),file_contains=ts_format)
             self._user_units = self.ossm.user_units
             
             self.name = kwargs.pop('name',os.path.split(self.ossm.filename)[1])
