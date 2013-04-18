@@ -3,6 +3,8 @@ import os
 from datetime import datetime, timedelta
 import copy
 
+import numpy as np
+
 import gnome
 import gnome.utilities.cache
 
@@ -52,7 +54,7 @@ class Model(serializable.Serializable):
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
                  duration=timedelta(days=1),
                  map=gnome.map.GnomeMap(),
-                 renderer=None,
+                 outputters=[],
                  uncertain=False,
                  cache_enabled=False,
                  **kwargs):
@@ -79,13 +81,13 @@ class Model(serializable.Serializable):
         self.spills = SpillContainerPair(uncertain)   # contains both certain/uncertain spills 
         self._cache = gnome.utilities.cache.ElementCache()
         self._cache.enabled = cache_enabled
-        self.outputters = OrderedCollection(dtype=gnome.outputter.Outputter) # list of output objects
+        self.outputters = OrderedCollection(outputters, dtype=gnome.outputter.Outputter) # list of output objects
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
-        if renderer is not None:
-            self.outputters += renderer
+        #if renderer is not None:
+        #    self.outputters += renderer
         self.time_step = time_step # this calls rewind() !
         self._gnome_id = GnomeId(id=kwargs.pop('id',None))
         
@@ -164,7 +166,7 @@ class Model(serializable.Serializable):
             self._time_step = time_step.total_seconds()
         except AttributeError: # not a timedelta object -- assume it's in seconds.
             self._time_step = int(time_step)
-        self._num_time_steps = self._duration.total_seconds() // self._time_step
+        self._num_time_steps = int( self._duration.total_seconds() // self._time_step )
         self.rewind()
 
     @property
@@ -184,7 +186,7 @@ class Model(serializable.Serializable):
             ## fixme: actually, only need to rewide is current model time is byond new time...
             self.rewind()
         self._duration = duration
-        self._num_time_steps = self._duration.total_seconds() // self.time_step
+        self._num_time_steps = int( self._duration.total_seconds() // self.time_step )
 
     @property
     def map(self):
@@ -263,15 +265,18 @@ class Model(serializable.Serializable):
             outputter.model_step_is_done()
 
     def write_output(self):
+        output_info = {'step_num':self.current_time_step}
         for outputter in self.outputters:
-            outputter.write_output(self.current_time_step)
+            output_info.update( outputter.write_output(self.current_time_step) )
+        return output_info
 
     def step(self):
         """
         Steps the model forward (or backward) in time. Needs testing for hindcasting.
         """
         if self.current_time_step >= self._num_time_steps:
-            return False
+            raise StopIteration
+
 
         if self.current_time_step == -1:
             self.setup_model_run() # that's all we need to do for the zeroth time step
@@ -285,9 +290,12 @@ class Model(serializable.Serializable):
         for sc in self.spills.items():
             sc.release_elements(self.model_time, self.time_step)
         # cache the results
+        # add the timestamp first:
+        for sc in self.spills.items():
+            sc['current_time_stamp'] = np.array(self.model_time) # needs to be a numpy array -- this will be an array scalar wiht a datetime object in it.
         self._cache.save_timestep(self.current_time_step, self.spills)
-        self.write_output()
-        return True
+        output_info = self.write_output()
+        return output_info
 
     def __iter__(self):
         """
@@ -302,14 +310,11 @@ class Model(serializable.Serializable):
         """
         (This method here to satisfy Python's iterator and generator protocols)
 
-        Compute the next model step
+        Simply calls model.step()
 
-        Return the step number
+        :return: the step number
         """
-
-        if not self.step():
-            raise StopIteration
-        return self.current_time_step
+        return self.step()
 
 
     def next_image(self):
@@ -326,16 +331,14 @@ class Model(serializable.Serializable):
         else:
             raise ValueError("There must be a renderer in the outputters list to call next_image")
         # run the next step:
-        if not self.step():
-            raise StopIteration
+        time_step = self.step()
         filename = renderer.last_filename
-        return (self.current_time_step, filename, self.model_time.isoformat())
+        return (time_step, filename, self.model_time.isoformat())
 
     def full_run_with_image_output(self, output_dir):
         """
         Do a full run of the model, outputting an image per time step.
         """
-
         # run the model
         while True:
             try:

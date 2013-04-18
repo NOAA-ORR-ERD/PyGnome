@@ -11,6 +11,8 @@ import tempfile
 import shutil
 import copy
 
+import datetime
+
 import numpy as np
 
 from gnome.spill_container import SpillContainerData, SpillContainerPairData
@@ -111,16 +113,21 @@ class ElementCache(object):
         """
         for sc in spill_container_pair.items():
             data = copy.deepcopy(sc.data_arrays_dict)
-            # save a copy of the most recent in memory:
-            #   this could be made smarter, to hold more later
-            ## note: this assume that the certain SC will be first!
+            # odd -- deepcopy seems to convert array scalar to item.
+            # kludge to get around that
+            try:
+                data['current_time_stamp'] = np.array(data['current_time_stamp'])
+            except KeyError:
+                pass # not there
+
+            ## note: this assumes that the certain SC will be first!
             if sc.uncertain:
                 self.recent[step_num][1] = data
             else:
                 #this creates a new dict, so only one step is saved
                 self.recent = { step_num: [data, None] }
             # write the data if enabled
-            # could be threaded -- data is a copy, so doesn't need ot be re-used by anything
+            # could be threaded -- data is a copy, so doesn't need to be re-used by anything
             if self.enabled:
                 if sc.uncertain:
                     np.savez(self._make_filename(step_num, True), **data)
@@ -149,7 +156,6 @@ class ElementCache(object):
             except IOError:
                 u_data_arrays_dict = None
 
-        #Build a SpillContainerPair:
         sc = SpillContainerData(data_arrays_dict)
         if u_data_arrays_dict is None:
             u_sc = None
