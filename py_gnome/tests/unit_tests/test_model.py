@@ -541,8 +541,6 @@ def test_callback_add_mover():
     model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
     model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"))
     
-    assert len(model.movers) == 4
-    
     for mover in model.movers:
         assert mover.active_start == model.start_time
         assert mover.active_stop == model.start_time + model.duration
@@ -554,6 +552,13 @@ def test_callback_add_mover():
             if mover.tide is not None:
                 assert mover.tide.id in model.environment
         
+    
+    # say wind object was added to environment collection, it should not be added again
+    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData","tides","CLISShio.txt"))
+    model.environment += tide_
+    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
+    
+    assert model.environment[tide_.id] == tide_
     
     # Add a mover with user defined active_start / active_stop values - these should not be updated
     active_on = model.start_time+timedelta(hours=1)
