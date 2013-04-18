@@ -21,9 +21,12 @@ from gnome.persist.extend_colander import LocalDateTime
 class Mover(MappingSchema):
     on = SchemaNode(Bool(), default=True, missing=True)
     active_start = SchemaNode(LocalDateTime(), default=None, missing=drop,
-                              validator=convertible_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), default=None, missing=drop,
                              validator=convertible_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), default=None, missing=drop,
+                            validator=convertible_to_seconds)
+    #active_start = SchemaNode(String(), default=None, missing=drop)
+    #active_stop = SchemaNode(String(), default=None, missing=drop)
+
 
 class WindMover(Id, Mover):
     """
