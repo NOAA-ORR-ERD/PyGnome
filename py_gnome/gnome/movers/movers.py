@@ -542,7 +542,7 @@ class CatsMover(CyMover, serializable.Serializable):
         
         self.filename = filename  # check if this is stored with cy_cats_mover?
         self.mover = cy_cats_mover.CyCatsMover()
-        self.mover.read_topology(filename)
+        self.mover.text_read(filename)
         
         self._tide = None   
         if kwargs.get('tide') is not None:

@@ -8,7 +8,6 @@ pytest>=2.3.4
 sphinx
 -e svn+https://svn.orr.noaa.gov/svn/Hazpy/trunk/Hazpy#egg=Hazpy
 -e git+https://github.com/Pylons/colander.git#egg=colander  # need newer version than what is in PyPy
-iso8601 
 
 # Oil Library database
 pyramid

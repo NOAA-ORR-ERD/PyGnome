@@ -121,14 +121,14 @@ cdef class CyCatsMover(cy_mover.CyMover):
         self.cats.bTimeFileActive = True   # What is this?
         return True
             
-    def read_topology(self, fname):
+    def text_read(self, fname):
         cdef OSErr err
         cdef bytes path_
         
         path_ = to_bytes( unicode(fname))
         
         if os.path.exists(path_):
-            err = self.cats.ReadTopology(path_)
+            err = self.cats.TextRead(path_)
             if err != False:
                 raise ValueError("CATSMover.ReadTopology(..) returned an error. OSErr: {0}".format(err))
         else:

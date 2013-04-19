@@ -101,7 +101,7 @@ cdef extern from "CATSMover_c.h":
         #=======================================================================
         #TCM_OPTIMZE     fOptimize
        
-        int   ReadTopology(char* path)
+        int   TextRead(char* path)
         void  SetRefPosition (WorldPoint p, long z)    # Could we use WorldPoint3D for this?
         #OSErr ComputeVelocityScale(Seconds&)    # seems to require TMap, TCATSMover
        

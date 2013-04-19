@@ -23,7 +23,7 @@ class CatsMove(cy_fixtures.CyTestMove):
         yeardata_path=os.path.join( os.path.dirname( gnome.__file__), 'data/yeardata/')
         self.cats = cy_cats_mover.CyCatsMover()
         self.cats.set_shio(self.shio)
-        self.cats.read_topology(top_file)
+        self.cats.text_read(top_file)
         self.shio.set_shio_yeardata_path(yeardata_path)
         
         super(CatsMove,self).__init__()
