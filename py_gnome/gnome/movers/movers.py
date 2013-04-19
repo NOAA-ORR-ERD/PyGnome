@@ -39,8 +39,6 @@ class Mover(object):
         """
         self._active = True  # initialize to True, though this is set in prepare_for_model_step for each step
         self.on = kwargs.pop('on',True)  # turn the mover on / off for the run
-        #active_start = kwargs.pop('active_start', constants.min_time)
-        #active_stop  = kwargs.pop('active_stop', constants.max_time)
         active_start = kwargs.pop('active_start', inf_datetime.InfDateTime('-inf'))
         active_stop  = kwargs.pop('active_stop', inf_datetime.InfDateTime('inf'))
         
@@ -80,8 +78,12 @@ class Mover(object):
         :param model_time_datetime: current time of the model as a date time object
         
         """
-        if (model_time_datetime >= self.active_start) and \
-        (model_time_datetime < self.active_stop) and self.on:
+        #=======================================================================
+        # if (model_time_datetime >= self.active_start) and \
+        # (model_time_datetime < self.active_stop) and self.on:
+        #=======================================================================
+        if (self.active_start <= model_time_datetime ) and \
+        (self.active_stop > model_time_datetime) and self.on:
             self._active = True
         else:
             self._active = False
