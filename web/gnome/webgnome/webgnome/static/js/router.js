@@ -10,7 +10,8 @@ define([
             '': 'index',
             'model': 'model',
             'splash': 'splash',
-            'location_map': 'locationMap'
+            'location_map': 'locationMap',
+            'wind/:id': 'wind'
         },
 
         initialize: function(options) {
@@ -38,7 +39,29 @@ define([
         },
 
         splash: function() {
-            this.appView.showSection('splash-page')
+            if (!this.newModel) {
+                return this.navigate('model', true);
+            }
+
+            return this.appView.showSection('splash-page')
+        },
+
+        wind: function(id) {
+            var formId;
+
+            if (id === 'new') {
+                id = null;
+                formId = 'add-wind';
+            } else {
+                formId = 'edit-wind';
+            }
+
+            this.appView.disableFullscreen();
+            this.appView.showSection('model');
+            this.appView.formViews.hideAll();
+            var formView = this.appView.formViews.get(formId);
+            formView.reload(id);
+            formView.show();
         }
     });
 

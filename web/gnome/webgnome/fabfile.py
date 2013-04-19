@@ -23,3 +23,4 @@ def docs():
     for filename in files_to_include:
         file_path = os.path.join(js_dir, filename)
         api.local('%s %s -o %s' % (docco_path, file_path, js_docs_dir))
+

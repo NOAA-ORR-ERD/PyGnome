@@ -1,0 +1,140 @@
+[ORDER]
+-------------------------------------------
+10002
+10004
+MODEL
+10011
+10012
+10013
+10010
+WIND
+ALMOSTDONE
+-------------------------------------------
+
+[VERSION]
+-------------------------------------------
+LOCATIONFILEIDSTR North Slope
+LOCATIONFILEFORMAT 0
+LOCATIONFILEVERSION 0
+-- starting with zero makes it backwardly compatible
+-------------------------------------------
+
+[BEFORE]
+-------------------------------------------
+MESSAGE setfield;TO model;timeStep  0.1;
+--MESSAGE setfield;TO Variable Wind;UncertaintySpeedScale 1.5;UncertaintyAngleScale .3;UncertaintyDuration 2;UncertaintyStartTime 1;
+-------------------------------------------
+
+[AFTER]
+-------------------------------------------
+--minkilometersperinch  5;
+--
+MESSAGE open; TO model; PATH resnum 10004;
+MESSAGE setfield;TO Diffusion; coefficient 25000;uncertaintyFactor 2
+--
+MESSAGE setfield; TO Component; scaleType WINDMOVER; refP 148 W 70.416666 N;
+--	NOTE : The component mover has 1 pattern (AlaskaNorthSlope.cur)	  check dialog for parameters (uses HAB option)
+-------------------------------------------
+
+
+--[WMSG 10002]
+-------------------------------------------
+LHSTEXT North Slope;
+-------------------------------------------
+
+[WMSG 10011]
+-------------------------------------------
+--Sag and other River Flow Rates
+-------------------------------------------
+--SAG RIVER
+	set Sag_spd {{$8}}
+LHSTEXT Sag River speed: {Sag_spd} m/s;
+MESSAGE setfield;TO SagRiver.cur; scaleValue {Sag_spd}; scaleType constant;refP 148.135440 W 70.345424 N;  
+--
+--SHARIOVIK RIVER
+	set Shar_spd {$15}
+LHSTEXT Shaviovik River speed: {Shar_spd} m/s;
+MESSAGE setfield;TO ShaviovikRiver.cur; scaleValue {Shar_spd}; scaleType constant;refP 147.334048 W 70.195494 N;  
+--
+-- CANNING RIVER WEST
+	set Can_west {$17}
+LHSTEXT Canning R. West speed: {Can_west} m/s;
+MESSAGE setfield;TO CanningWestRiver.cur; scaleValue {Can_west}; scaleType constant;refP 145.914784 W 70.142008 N;  
+--
+-- CANNING R. EAST AND TAMA RIVER: {Sag_spd} m/s;
+	set Can_east {$19}
+LHSTEXT Canning R. East / Tamayariak R. speed: {Can_east} m/s;
+MESSAGE setfield;TO CanningEastTamaRiver.cur; scaleValue {Can_east}; scaleType constant;refP 145.511376 W 70.073264 N;  
+-------------------------------------------
+[WMSG 10012]
+-------------------------------------------
+--Colville River Flow Rate
+-------------------------------------------
+if $V13 < 4
+-- flow is in cfs
+	set flow1  20000 
+	set flow2  10000 
+	set flow3  3000 
+	set transport flow{$V13}
+endif
+LHSTEXT Colville River flow: {ROUND {transport}} cfs;
+-- Unscaled transport is 1500 cfs
+--  so multiply unscaled value at ref pt (0.183 m/s) * (transport/1500 cfs) to get scale value
+set scale  0.183/1500
+set v_scale  {scale} * {transport} 
+--DEBUGSTR v_scale = {v_scale}
+MESSAGE setfield;TO ColvilleRiver.cur; scaleValue {v_scale}; scaleType constant;refP 150.425816 W 70.480224 N;  
+-------------------------------------------
+--Kuparuk River Flow Rate
+-------------------------------------------
+if $V7 < 4
+-- flow is in cfs
+	set flow1  3800 
+	set flow2  2250 
+	set flow3  700 
+	set transport flow{$V7}
+else
+	-- user entered values for Kuparuk River info UNIT popup 10
+	-- $10 user entered flow rate
+	-- transport in cfs
+	set transport $10
+endif
+LHSTEXT Kuparuk River flow: {ROUND {transport}} cfs;
+-- Unscaled transport is 967 cfs
+--  so multiply unscaled value at ref pt (0.1814 m/s) * (transport/957) to get scale value
+set scale  0.1814/957
+set v_scale  {scale} * {transport} 
+--DEBUGSTR v_scale = {v_scale}
+MESSAGE setfield;TO KuparukRiver.cur; scaleValue {v_scale}; scaleType constant;refP 148.807186 W 70.399552 N;  
+
+-------------------------------------------
+[WMSG 10013]
+-------------------------------------------
+--Mackenzie River Flow Rate
+-------------------------------------------
+-------------------------------------------
+if $V7 < 4
+-- flow is in cfs
+	set flow1  30000 
+	set flow2  20000 
+	set flow3  10000 
+	set transport flow{$V7}
+else
+	-- user entered values for Mackenzie River info UNIT popup 10
+	-- $10 user entered flow rate
+	-- transport in cms
+	set transport $10
+endif
+LHSTEXT Mackenzie River flow: {ROUND {transport}} (m^3)/s;
+-- Unscaled transport is 967 cfs
+--  so multiply unscaled value at ref pt (0.1814 m/s) * (transport/957) to get scale value
+set scale  0.266/108500
+set v_scale  {scale} * {transport} 
+--DEBUGSTR v_scale = {v_scale}
+MESSAGE setfield;TO MackenzieRiver_EastChannel.cur; scaleValue {v_scale}; scaleType constant;refP 133.526938 W 69.435932 N;  
+set scale  0.371/376250
+set v_scale  {scale} * {transport} 
+MESSAGE setfield;TO MackenzieRiver_MiddleChannel.cur; scaleValue {v_scale}; scaleType constant;refP 135.670945 W 69.373084 N;  
+set scale  0.363/408750
+set v_scale  {scale} * {transport} 
+MESSAGE setfield;TO MackenzieRiver_NapoiakChannel.cur; scaleValue {v_scale}; scaleType constant;refP 136.242371 W 68.898544 N;  

@@ -282,37 +282,55 @@ define([
         ok(model.toJSON()['date'] === date.format());
     });
 
+    test('url is prepended with GnomeModel URL if gnomeModel is passed into constructor', function() {
+        var gnome = new models.GnomeModel({
+            id: 'abc'
+        });
+
+        var TestModel = models.BaseModel.extend({
+            url: '/test_model'
+        });
+
+        var model = new TestModel({}, {
+            gnomeModel: gnome
+        });
+
+        ok(model.url() === '/model/abc/test_model');
+    });
+
 
     module('BaseCollection');
 
-    test('initialize sets url to the one passed to it', function() {
-        var url = 'test.com';
-        var collection = new models.BaseCollection({
-            url: url
+    test('url is prepended with GnomeModel URL if gnomeModel is passed into constructor', function() {
+        var gnome = new models.GnomeModel({
+            id: 'abc'
         });
 
-        ok(collection.url = url);
-    });
+        var TestModel = models.BaseModel.extend({});
 
-    test('initialize only sets the url if one was passed to it', function() {
-        var url = 'test';
-        var Collection = models.BaseCollection.extend({
-            url: url
+        var TestCollection = models.BaseCollection.extend({
+            model: TestModel,
+            url: '/test_model'
         });
 
-        var collection2 = new Collection();
+        var collection = new TestCollection([{id: 123}], {
+            gnomeModel: gnome
+        });
 
-        ok(collection2.url === url);
+        var model = collection.at(0);
+
+        ok(model.url() === '/model/abc/test_model/123');
     });
 
 
     module('Gnome');
 
-    test('url returns get params with the model ID', function() {
-        var gnome = new models.Gnome({
-            id: '123'
-        });
-        ok(gnome.url() === '/model/123?include_movers=false&include_spills=false');
+    test('url includes ID if present', function() {
+        var gnome = new models.GnomeModel();
+        ok(gnome.url() == '/model');
+
+        gnome.id = 123;
+        ok(gnome.url() === '/model/123');
     });
 
 
@@ -338,10 +356,17 @@ define([
 
     module('Wind');
 
-    test('initialize sets timeseries to empty array if not provided', function() {
+    test('initialize sets timeseries if not provided', function() {
         var wind = new models.Wind();
         var timeseries = wind.get('timeseries');
-        ok(timeseries && timeseries.length === 0);
+        var default_timeseries = timeseries[0];
+        var now = moment();
+        ok(default_timeseries[0].days() === now.days());
+        ok(default_timeseries[0].years() === now.years());
+        ok(default_timeseries[0].hour() === now.hour());
+        ok(default_timeseries[0].minute() === now.minute());
+        ok(default_timeseries[1] === 0);
+        ok(default_timeseries[2] === 0);
     });
 
     test('set sorts a timeseries array by datetime (index position 0)', function() {
@@ -381,82 +406,28 @@ define([
         ok(wind.isBuoy());
     });
 
-
-    module('WindMover');
-
-    test('set creates an empty Wind object if "wind" property is undefined', function() {
-        var mover = new models.WindMover();
-        ok(JSON.stringify(mover.get('wind')) == JSON.stringify(new models.Wind()));
-    });
-
-    test('set accepts a Wind object as a value in the attrs object', function() {
-        var wind = new models.Wind({thing: 1});
-        var mover = new models.WindMover({wind: wind});
-        ok(JSON.stringify(mover.get('wind')) == JSON.stringify(wind));
-    });
-
-    test('set accepts a Wind object as a value for the "wind" key', function() {
-        var wind = new models.Wind({thing: 1});
-        var mover = new models.WindMover();
-        mover.set('wind', wind);
-        ok(JSON.stringify(mover.get('wind')) == JSON.stringify(wind));
-    });
-
-    test('getTimeseries returns the timeseries of the wind object', function() {
-        var wind = new models.Wind({timeseries: [1, 2, 3]});
-        var mover = new models.WindMover({wind: wind});
-        ok(mover.getTimeseries() == wind.get('timeseries'));
-    });
-
     test('type reports "constant-wind" if wind has one timeseries value', function() {
         var wind = new models.Wind({timeseries: [1]});
-        var mover = new models.WindMover({wind: wind});
-        ok(mover.type() === 'constant-wind');
+        ok(wind.type() === 'constant-wind');
     });
 
     test('type reports "variable-wind" if wind has multiple timeseries values', function() {
         var wind = new models.Wind({timeseries: [1, 2]});
-        var mover = new models.WindMover({wind: wind});
-        ok(mover.type() === 'variable-wind');
+        ok(wind.type() === 'variable-wind');
     });
 
     test('constantSpeed reports the speed of the first wind timeseries', function() {
         var wind = new models.Wind({timeseries: [
             [1, 2, 3]
         ]});
-        var mover = new models.WindMover({wind: wind});
-        ok(mover.constantSpeed() === wind.get('timeseries')[0][1]);
+        ok(wind.constantSpeed() === wind.get('timeseries')[0][1]);
     });
 
     test('constantDirection reports the speed of the first wind timeseries', function() {
         var wind = new models.Wind({timeseries: [
             [1, 2, 3]
         ]});
-        var mover = new models.WindMover({wind: wind});
-        ok(mover.constantDirection() === wind.get('timeseries')[0][2]);
-    });
-
-
-    module('WindMoverCollection');
-
-    test('WindMoverCollection is sortable by the first wind timeseries date', function() {
-        var winds = [
-            new models.Wind({timeseries: [ [moment('1/1/2013'), 1, 1] ]}),
-            new models.Wind({timeseries: [ [moment('1/2/2013'), 2, 2] ]}),
-            new models.Wind({timeseries: [ [moment('1/3/2013'), 3, 3] ]})
-        ];
-
-        var movers = new models.WindMoverCollection([
-            {wind: winds[2]},
-            {wind: winds[0]},
-            {wind: winds[1]}
-        ]);
-
-        movers.sort();
-
-        ok(movers.at(0).get('wind').cid  === winds[0].cid);
-        ok(movers.at(1).get('wind').cid  === winds[1].cid);
-        ok(movers.at(2).get('wind').cid  === winds[2].cid);
+        ok(wind.constantDirection() === wind.get('timeseries')[0][2]);
     });
 
 
@@ -478,17 +449,27 @@ define([
 
     module('Map');
 
-    test('init accepts a url', function() {
-        var map = new models.Map({}, {url: '/test'});
-        ok(map.url === '/test');
+    test('url includes the gnomeModel URL', function() {
+        var gnome = new models.GnomeModel({
+            id: 123
+        });
+        var map = new models.Map({}, {
+            gnomeModel: gnome
+        });
+        ok(map.url() === '/model/123/map');
     });
 
 
     module('CustomMap');
 
-    test('init accepts a url', function() {
-        var map = new models.CustomMap({}, {url: '/test'});
-        ok(map.url === '/test');
+    test('url includes the gnomeModel URL', function() {
+        var gnome = new models.GnomeModel({
+            id: 123
+        });
+        var map = new models.CustomMap({}, {
+            gnomeModel: gnome
+        });
+        ok(map.url() === '/model/123/custom_map');
     });
 
 

@@ -332,12 +332,31 @@ class SpillContainerPair(SpillContainerPairData):
     def add(self, spill):
         """
         add spill to spill_container and make copy in u_spill_container if uncertainty is on
+        
+        Overload add method so it can take a tuple (spill, uncertain_spill)
+        If a tuple is given, the uncertain_spill must have the same spill number  
         """
-        self._spill_container.spills += spill
-        spill.spill_num.initial_value = self._spill_container.spills.index(spill.id, renumber=False)
-        if self.uncertain:
-            # todo: make sure spill_num for copied spill are the same as original
-            self._u_spill_container.spills += spill.uncertain_copy()
+        if isinstance(spill, tuple):
+            if self.uncertain:
+                if len(spill) != 2:
+                    raise ValueError("You can only add a tuple containing a certain/uncertain spill pair (spill, uncertain_spill)")
+                self._u_spill_container.spills += spill[1]
+            else:
+                if len(spill) != 1:
+                    raise ValueError("Uncertainty is off. Tuple must only contain (certain_spill,)")
+            
+            # TODO: currently, currently all spills have the same initial_value for spill_num since it is class variable 
+            # make sure spills.spill_num.initial_value is the same for both
+            #if spill[0].spill_num.initial_value != spill[1].spill_num.initial_value:
+            #    raise ValueError("The initial_value for spill_num should be the same for both spills.")
+            self._spill_container.spills += spill[0]
+                
+        else:
+            self._spill_container.spills += spill
+            spill.spill_num.initial_value = self._spill_container.spills.index(spill.id, renumber=False)
+            if self.uncertain:
+                # todo: make sure spill_num for copied spill are the same as original
+                self._u_spill_container.spills += spill.uncertain_copy()
 
     def remove(self, ident):
         """
@@ -386,6 +405,20 @@ class SpillContainerPair(SpillContainerPairData):
         """
         return ident in self._spill_container.spills
 
+
+    def to_dict(self):
+        """
+        takes the instance of SpillContainerPair class and outputs a dict with:
+            'certain_spills': call to_dict() on spills ordered collection stored in certain spill container
+            
+        if uncertain, then also return:
+            'uncertain_spills': call to_dict() on spills ordered collection stored in uncertain spill container
+        """
+        dict_ = {'certain_spills':self._spill_container.spills.to_dict()}
+        if self.uncertain:
+            dict_.update({'uncertain_spills':self._u_spill_container.spills.to_dict()})
+            
+        return dict_
 
 class TestSpillContainer(SpillContainer):
     """

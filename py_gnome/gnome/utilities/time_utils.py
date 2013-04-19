@@ -68,7 +68,11 @@ def sec_to_timestruct(seconds):
     lt = list(time.localtime(seconds))
     if lt[-1] != 0:
         lt[-1] = 0
-        lt[3] -= 1
+        if lt[3] == 0:  # roll clock back by an hour for daylight savings correction 
+            lt[2] -= 1
+            lt[3] = 23
+        else:
+            lt[3] -= 1
     
     return time.struct_time(lt)
 

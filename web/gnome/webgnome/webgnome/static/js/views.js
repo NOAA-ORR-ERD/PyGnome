@@ -5,12 +5,14 @@ define([
     'lib/backbone',
     'models',
     'util',
+    'forms',
     'map_generator',
     'lib/jquery.imagesloaded.min',
     'lib/jquery.dynatree',
+    'lib/bootstrap-collapse',
     'lib/bootstrap-dropdown',
     'async!http://maps.googleapis.com/maps/api/js?key=AIzaSyATcDk4cEYobGp9mq75DeZKaEdeppPnSlk&sensor=false&libraries=drawing'
-], function($, _, Backbone, models, util) {
+], function($, _, Backbone, models, util, forms) {
      /*
      `MessageView` is responsible for displaying messages sent back from the server
      during AJAX form submissions. These are non-form error conditions, usually,
@@ -22,8 +24,8 @@ define([
 
             this.options.gnomeRun.on(
                 models.GnomeRun.MESSAGE_RECEIVED, this.displayMessage);
-            this.options.gnomeSettings.on(
-                models.Gnome.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.gnomeModel.on(
+                models.GnomeModel.MESSAGE_RECEIVED, this.displayMessage);
             this.options.surfaceReleaseSpills.on(
                 models.SurfaceReleaseSpill.MESSAGE_RECEIVED, this.displayMessage);
             this.options.windMovers.on(
@@ -79,7 +81,7 @@ define([
             this.placeholderClass = this.options.placeholderClass;
             this.latLongBounds = this.options.latLongBounds;
             this.animationThreshold = this.options.animationThreshold;
-            this.locationFiles = this.options.locationFiles;
+            this.locationFilesMeta = this.options.locationFilesMeta;
             this.canDrawSpill = false;
 
             this.makeImagesClickable();
@@ -208,22 +210,28 @@ define([
             - `MapView.FRAME_CHANGED` after the image has loaded.
          */
         showImageForTimeStep: function(stepNum) {
+            var mapImages = this.map.find('img');
+
             // Show the map div if this is the first image of the run.
-            if (this.map.find('img').length === 1) {
+            if (mapImages.length === 1) {
                 this.map.show();
             }
 
             var stepImage = this.getImageForTimeStep(stepNum);
-            var otherImages = this.map.find('img').not(stepImage).not('.background');
-
-            // Hide all other images in the map div.
-            otherImages.addClass('hidden');
-            otherImages.removeClass(this.activeFrameClass);
 
             // The image isn't loaded.
             if (stepImage.length === 0) {
-                alert("An animation error occurred. Please refresh.");
+                alert("An animation error occurred.");
+                console.log('Could not load image for timestep: ' + stepNum);
+                return;
             }
+
+            var imagesToHide = mapImages.not(stepImage).not('.background');
+
+            // Hide all images in the map div other than the background and the
+            // image for the current step.
+            imagesToHide.addClass('hidden');
+            imagesToHide.removeClass(this.activeFrameClass);
 
             stepImage.addClass(this.activeFrameClass);
             stepImage.removeClass('hidden');
@@ -680,7 +688,8 @@ define([
             var _this = this;
             _.bindAll(this);
             this.treeEl = this.options.treeEl;
-            this.url = this.options.apiRoot + "/tree";
+            this.gnomeModel = this.options.gnomeModel;
+            this.url = this.gnomeModel.url() + "/tree";
 
             // Turn off node icons. A [+] icon will still appear for nodes
             // that have children.
@@ -693,16 +702,14 @@ define([
                 collection.on('destroy', _this.reload);
             });
 
-            this.gnomeSettings = this.options.gnomeSettings;
-            this.gnomeSettings.on('sync', this.reload);
-
+            this.gnomeModel.on('sync', this.reload);
             this.options.map.on('sync', this.reload);
 
             $(window).bind('resize', function() {
                 _this.resize();
             });
 
-            this.resize();
+            _this.resize();
         },
 
         /*
@@ -711,7 +718,13 @@ define([
         resize: function() {
             var windowHeight = $(window).height();
             var navbarHeight = $('.navbar').height();
-            $('#sidebar').height(windowHeight - navbarHeight);
+            var tree = $('#tree');
+            var sidebar = $('#sidebar');
+            var treeHeight = tree.height();
+            var treeHeightDiff = sidebar.height() - treeHeight;
+            var newSidebarHeight = windowHeight - navbarHeight;
+            sidebar.height(newSidebarHeight);
+            tree.height(newSidebarHeight - treeHeightDiff);
         },
 
         setupDynatree: function() {
@@ -747,14 +760,19 @@ define([
         },
 
         reload: function() {
-            if (this.gnomeSettings && this.gnomeSettings.wasDeleted) {
+            var _this = this;
+            if (this.gnomeModel && this.gnomeModel.wasDeleted) {
                 return;
             }
-            this.tree.dynatree('getTree').reload();
+            this.tree.dynatree('getTree').reload(function () {
+                _this.trigger(TreeView.RELOADED);
+                _this.resize();
+            });
         }
     }, {
-        ITEM_ACTIVATED: 'gnome:treeItemActivated',
-        ITEM_DOUBLE_CLICKED: 'gnome:treeItemDoubleClicked'
+        ITEM_ACTIVATED: 'treeView:treeItemActivated',
+        ITEM_DOUBLE_CLICKED: 'treeView:treeItemDoubleClicked',
+        RELOADED: 'treeView:reloaded'
     });
 
 
@@ -1264,9 +1282,8 @@ define([
 
         initialize: function() {
             _.bindAll(this);
-            this.apiRoot = this.options.apiRoot;
             this.mapCanvas = $(this.options.mapCanvas);
-            this.locationFiles = this.options.locationFiles;
+            this.locationFilesMeta = this.options.locationFilesMeta;
 
             this.setupLocationFileMap();
         },
@@ -1275,14 +1292,15 @@ define([
             event.preventDefault();
             var location = $(event.target).data('location');
             if (location) {
-                this.loadLocationFile(location);
+                this.trigger(LocationFileMapView.LOCATION_CHOSEN, location);
             }
+            this.infoWindow.close();
         },
 
         setupLocationFileMap: function() {
             var _this = this;
             this.center = new google.maps.LatLng(-34.397, 150.644);
-            var infoWindow = new google.maps.InfoWindow();
+            this.infoWindow = new google.maps.InfoWindow();
             var gmapOptions = {
                 center: this.center,
                 backgroundColor: '#212E68',
@@ -1295,9 +1313,9 @@ define([
             this.locationFileMap = new google.maps.Map(
                 this.mapCanvas[0], gmapOptions);
 
-            _.each(this.locationFiles, function(location) {
+            this.locationFilesMeta.each(function(location) {
                 var latLng = new google.maps.LatLng(
-                    location.latitude, location.longitude);
+                    location.get('latitude'), location.get('longitude'));
 
                 var marker = new google.maps.Marker({
                     position: latLng,
@@ -1307,8 +1325,8 @@ define([
                 google.maps.event.addListener(marker, 'click', function() {
                     var template = _.template(
                         $('#location-file-template').text());
-                    infoWindow.setContent(template(location));
-                    infoWindow.open(_this.locationFileMap, marker);
+                    _this.infoWindow.setContent(template(location.toJSON()));
+                    _this.infoWindow.open(_this.locationFileMap, marker);
                 });
             });
         },
@@ -1317,19 +1335,6 @@ define([
             google.maps.event.trigger(this.locationFileMap, 'resize');
             this.locationFileMap.setCenter(this.center);
         },
-
-        loadLocationFile: function(location) {
-             $.ajax({
-                 type: 'POST',
-                 url: this.apiRoot + '/location_file/' + location,
-                 success: function() {
-                     window.location = window.location.origin;
-                 },
-                 error: function() {
-                     alert('That location file does not exist yet.');
-                 }
-             });
-         },
 
         show: function() {
             this.$el.imagesLoaded(this.centerMap);

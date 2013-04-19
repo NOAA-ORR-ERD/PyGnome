@@ -27,7 +27,7 @@ public:
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
 	virtual OSErr 		Write (BFPB *bfpb); // write to  current position
 	
-	virtual OSErr		TextRead(char *path,TMap **newMap);
+	virtual OSErr		TextRead(char *path,TMap **newMap,char *topFilePath);
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg); 
 	
 	virtual OSErr 	 	ReadTopology(char* path, TMap **newMap);

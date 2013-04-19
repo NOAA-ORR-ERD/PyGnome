@@ -10,6 +10,7 @@ class OrderedCollection(object):
     - Objects are accessed by id, as if in a dictionary.
     - Objects can be replaced in order.  The objects will be referenced 
       by a new id, and still be in the correct order.
+      
     '''
     def __init__(self, elems=None, dtype=None):
         if elems and not isinstance(elems, list):
@@ -31,6 +32,7 @@ class OrderedCollection(object):
         # NOTE: we stringify the e.id value since it could be of a type that is hard to reference as a key
         self._index = dict([(str(e.id) if hasattr(e, 'id') else id(e), idx) for idx, e in enumerate(elems)])
         self._elems = elems[:]
+        self.callbacks = {}
 
     def get(self, ident):
         return self._elems[self._index[ident]]
@@ -47,14 +49,19 @@ class OrderedCollection(object):
             if l__id not in self._index.keys():
                 self._index[l__id] = len(self._elems)
                 self._elems.append(elem)
+            self.fire_event('add', elem)  # fire add event
+            
         elif isinstance(elem, list) and all([isinstance(e, self.dtype) for e in elem]):
             for e in elem:
                 self.add(e)
+                self.fire_event('add', e)  # fire add event
+                
         else:
             raise TypeError('%s: expected %s, got %s' % (self.__class__.__name__, self.dtype, type(elem)))
 
     def remove(self, ident):
         ''' Remove an object from the collection '''
+        self.fire_event('remove',self[ident])  # fire remove event before removing from collection
         if ident in self._index:
             self._elems[self._index[ident]] = None
             del self._index[ident]
@@ -84,6 +91,8 @@ class OrderedCollection(object):
         else:
             self._index[id(new_elem)] = idx
         self._elems[idx] = new_elem
+        
+        self.fire_event('replace',new_elem)  # returns the newly added object
 
     def index(self, ident, renumber=True):
         idx = self._index[ident]
@@ -129,3 +138,34 @@ class OrderedCollection(object):
     def __repr__(self):
         return self.__str__()
 
+    def to_dict(self):
+        """
+        method takes the instance of ordered collection and outputs a dict with 
+        two fields:
+            dtype: associated dtype for each object in the order in which it is added
+            id : contains list of IDs of each object in the order in which it is added
+            
+        This method assumes object has an ID
+        """
+        dict_ = {'dtype':self.dtype,'id_list':[]}
+        
+        for obj in self:
+            obj_type = "{0.__module__}.{0.__class__.__name__}".format( obj)
+            dict_['id_list'].append(( obj_type, obj.id))
+        
+        return dict_
+    
+    def register_callback(self, callback, events=('add','remove','replace')):
+        if not isinstance(events, (list,tuple)):
+            events = (events,)
+        
+        for event in events:
+            if event not in ('add','remove','replace'):
+                raise ValueError("Events must be either ('add','remove','replace'). {0} is not supported".format(event))
+            
+        self.callbacks[callback] = events
+        
+    def fire_event(self,event,obj_):
+        for callback, reg_event in self.callbacks.items():
+            if event in reg_event:
+                callback(obj_)  # this should be all that is required

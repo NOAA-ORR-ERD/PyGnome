@@ -31,7 +31,8 @@ define([
         model: TimeStep,
 
         initialize: function(timeSteps, opts) {
-            _.bindAll(this);
+            _.bindAll(this, 'runSuccess', 'timeStepRequestFailure');
+
             this.url = opts.url + '/runner';
             this.currentTimeStep = opts.currentTimeStep || 0;
             this.nextTimeStep = this.currentTimeStep ? this.currentTimeStep + 1 : 0;
@@ -353,19 +354,56 @@ define([
     });
 
 
+    function prependWithGnomeUrl() {
+        // A base URL is required
+        if (this.url === undefined) {
+            return;
+        }
+
+        if (this.url === Backbone.Model.prototype.url || Backbone.Collection.prototype.url) {
+            return;
+        }
+
+        var url = this.url;
+
+        if (this.url instanceof Function) {
+            url = this.url();
+        }
+
+        // URL is already prefixed, probably through a BaseCollection
+        if (url.search(this.gnomeModel.url()) === 0) {
+            return;
+        }
+
+        this.url = function() {
+            // Model URLs should begin with a forward-slash
+            return this.gnomeModel.url() + url;
+        }
+    }
+
+
     var BaseModel = Backbone.Model.extend({
-        // Add an array of field names here that should be converted to strings
-        // during `toJSON` calls and to `moment` objects during `get` calls.
+        /*
+         Add an array of field names here that should be converted to strings
+         during `toJSON` calls and to `moment` objects during `get` calls.
+         */
         dateFields: null,
 
-        initialize: function() {
+        initialize: function(attrs, opts) {
             this.dirty = false;
+            this.bind('change', this.change, this);
             this.bind('change:id', this.onIndexChange, this);
+
             BaseModel.__super__.initialize.apply(this, arguments)
+
+            if (opts && opts.gnomeModel) {
+                this.gnomeModel = opts.gnomeModel;
+                prependWithGnomeUrl.call(this);
+            }
         },
 
         onIndexChange: function() {
-            if (this.collection) {
+            if (this.collection && this.collection.comparator) {
                 this.collection.sort({silent: true});
             }
         },
@@ -407,17 +445,24 @@ define([
 
         change: function() {
             this.dirty = true;
-            BaseModel.__super__.change.apply(this, arguments)
         },
 
         save: function(attrs, options) {
             options = options || {};
+            var _this = this;
 
             if (!_.has(options, 'wait')) {
                 options.wait = true;
             }
 
-            if (!_.has(options, 'success')) {
+            if (_.has(options, 'success')) {
+                var success = options.success;
+
+                options.success = function(model, response, options) {
+                    _this.success(model, response, options);
+                    success(model, response, options);
+                }
+            } else {
                 options.success = this.success;
             }
 
@@ -425,7 +470,7 @@ define([
                 options.error = this.error;
             }
 
-            BaseModel.__super__.save.apply(this, [attrs, options]);
+            return BaseModel.__super__.save.apply(this, [attrs, options]);
         },
 
         success: function(model, response, options) {
@@ -491,8 +536,9 @@ define([
 
          // Return a `moment` object for any date field.
         get: function(attr) {
-            if(this.dateFields && _.contains(this.dateFields, attr)) {
-                var val = this.attributes[attr];
+            var val = BaseModel.__super__.get.apply(this, arguments);
+
+            if(val && this.dateFields && _.contains(this.dateFields, attr)) {
                 var date = moment(val);
                 if (date && date.isValid()) {
                     return date;
@@ -501,7 +547,7 @@ define([
                 }
             }
 
-            return BaseModel.__super__.get.apply(this, arguments);
+            return val;
         },
 
         // Call .format() on any date fields when preparing them for JSON
@@ -526,24 +572,26 @@ define([
     }, {
         MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
     });
-    
-    
+
+
     var BaseCollection = Backbone.Collection.extend({
         initialize: function (objs, opts) {
-            if (opts && opts.url) {
-                this.url = opts.url;
+            BaseCollection.__super__.initialize.apply(this, arguments);
+
+            if (opts && opts.gnomeModel) {
+                this.gnomeModel = opts.gnomeModel;
+                prependWithGnomeUrl.call(this);
             }
         }
     });
 
 
-    var Gnome = BaseModel.extend({
+    var GnomeModel = BaseModel.extend({
         dateFields: ['start_time'],
 
         url: function() {
             var id = this.id ? '/' + this.id : '';
-            return '/model' + id +
-                "?include_movers=false&include_spills=false";
+            return '/model' + id;
         }
     });
 
@@ -571,10 +619,12 @@ define([
 
     var SurfaceReleaseSpillCollection = BaseCollection.extend({
         model: SurfaceReleaseSpill,
+        url: '/spill/surface_release',
 
         comparator: function(spill) {
             return moment(spill.get('release_time')).valueOf();
-        }
+        },
+
     });
 
 
@@ -585,8 +635,11 @@ define([
 
         initialize: function(attrs, options) {
             if (!attrs || !attrs.timeseries) {
-                this.set('timeseries', []);
+                // Set a default timeseries value.
+                this.set('timeseries', [[moment(), 0, 0]]);
             }
+
+            Wind.__super__.set.apply(this, arguments);
         },
 
         /*
@@ -606,54 +659,30 @@ define([
             return Wind.__super__.set.apply(this, [key, val, options]);
         },
 
-        isManual: function() {
-            return this.get('source_type') === 'manual';
-        },
-
         isNws: function() {
             return this.get('source_type') === 'nws';
         },
 
         isBuoy: function() {
             return this.get('source_type') === 'buoy';
-        }
-    });
-
-
-    var BaseMover = BaseModel.extend({
-        dateFields: ['active_start', 'active_stop']
-    });
-
-
-    var WindMover = BaseMover.extend({
-
-        /*
-         Make sure the 'wind' field is a `Wind` object.
-
-         Assume an object with a `get` method is a Wind object; otherwise
-         assume it is an object of attrs that we can use to create a new Wind.
-         */
-        set: function(key, val, options) {
-            if (key && key.wind) {
-                if (key.wind.get === undefined) {
-                    key.wind = new Wind(key.wind);
-                }
-            } else if (key === 'wind' && val && val.get === undefined) {
-                key.wind = new Wind(val);
-            } else if (this.get('wind') === undefined) {
-                key.wind = new Wind();
-            }
-
-            WindMover.__super__.set.apply(this, [key, val, options]);
-            return this;
         },
 
-        getTimeseries: function() {
-            return this.get('wind').get('timeseries');
+        sourceIdRequired: function() {
+            return this.isBuoy() && !(this.get('longitude'));
+        },
+
+        longitudeRequired: function() {
+            return (this.isNws() || this.isBuoy())
+                && !(this.get('longitude'));
+        },
+
+        latitudeRequired: function() {
+            return (this.isNws() || this.isBuoy())
+                && !(this.get('latitude'));
         },
 
         type: function() {
-            var timeseries = this.getTimeseries();
+            var timeseries = this.get('timeseries');
 
             if (timeseries && timeseries.length > 1) {
                 return 'variable-wind';
@@ -663,7 +692,7 @@ define([
         },
 
         constantSpeed: function() {
-            var timeseries = this.getTimeseries();
+            var timeseries = this.get('timeseries');
 
             if (timeseries && timeseries.length) {
                 return timeseries[0][1];
@@ -673,7 +702,7 @@ define([
         },
 
         constantDirection: function() {
-            var timeseries = this.getTimeseries();
+            var timeseries = this.get('timeseries');
 
             if (timeseries && timeseries.length) {
                 return timeseries[0][2];
@@ -684,25 +713,32 @@ define([
     });
 
 
+    var WindCollection = BaseCollection.extend({
+        model: Wind,
+        url: '/environment/wind'
+    });
+
+
+    var BaseMover = BaseModel.extend({
+        dateFields: ['active_start', 'active_stop']
+    });
+
+
+    var WindMover = BaseMover.extend({});
+
+
     var WindMoverCollection = BaseCollection.extend({
         model: WindMover,
-
-        comparator: function(mover) {
-            var wind = mover.get('wind');
-            var timeseries = wind.get('timeseries');
-
-            if (timeseries.length) {
-                return moment(timeseries[0][0]).valueOf();
-            }
-        }
+        url: '/mover/wind'
     });
     
     
     var RandomMover = BaseMover.extend({});
-    
-    
+
+
     var RandomMoverCollection = BaseCollection.extend({
         model: RandomMover,
+        url: '/mover/random',
 
         comparator: function(mover) {
             return this.get('active_start');
@@ -711,16 +747,91 @@ define([
 
 
     var Map = BaseModel.extend({
-        initialize: function(attrs, options) {
-            this.url = options.url;
-        }
+        url: '/map'
     });
 
 
     var CustomMap = BaseModel.extend({
-        initialize: function(attrs, options) {
-            this.url = options.url;
+        url: '/custom_map'
+    });
+
+
+    var LocationFile = GnomeModel.extend({
+        url: function() {
+            return '/location_file/' + this.get('filename')
         }
+    });
+
+
+    var LocationFileMeta = BaseModel.extend({
+        idAttribute: 'filename'
+    });
+
+
+    var LocationFileMetaCollection = BaseCollection.extend({
+        model: LocationFileMeta,
+        url: '/location_file_meta'
+    });
+
+
+    var LocationFileWizard = BaseModel.extend({
+        // XXX: What to do here?
+        url: function() {
+            return this.collection.url() + '/' + this.id + '/wizard';
+        }
+    });
+
+
+    var LocationFileWizardCollection = BaseCollection.extend({
+        model: LocationFileWizard,
+        url: '/location_file'
+    });
+
+
+    var GnomeModelFromLocationFile = BaseModel.extend({
+        url: function() {
+            return '/from_location_file/' + this.get('location_name')
+        }
+    });
+
+
+    var GnomeModelValidator = GnomeModel.extend({
+        url: '/validate/model'
+    });
+
+
+    var WindMoverValidator = WindMover.extend({
+        url: '/validate/mover/wind'
+    });
+
+
+    var WindValidator = Wind.extend({
+        url: '/validate/environment/wind'
+    });
+
+
+    var RandomMoverValidator = RandomMover.extend({
+        url: '/validate/mover/random'
+    });
+
+
+    var SurfaceReleaseSpillValidator = SurfaceReleaseSpill.extend({
+        url: '/validate/spill/surface_release'
+    });
+
+
+    var MapValidator = Map.extend({
+        url: '/validate/map'
+    });
+
+
+    var CustomMapValidator = CustomMap.extend({
+        url: '/validate/custom_map'
+    });
+
+
+    var LocationFileValidator = LocationFile.extend({
+        url: '/validate/location_file'
     });
 
 
@@ -735,9 +846,10 @@ define([
         window.alert(error);
     }
 
+
     function getNwsWind(coords, opts) {
         var url = '/nws/wind?lat=' + coords.latitude + '&lon=' + coords.longitude;
-        var error = opts.error | nwsWindError;
+        var error = opts.error || nwsWindError;
         var success = opts.success;
         $.ajax({
             url: url,
@@ -746,23 +858,38 @@ define([
             dataType: 'json'
         });
     }
-      
+
 
     return {
         TimeStep: TimeStep,
         GnomeRun: GnomeRun,
-        Gnome: Gnome,
+        GnomeModel: GnomeModel,
+        GnomeModelFromLocationFile: GnomeModelFromLocationFile,
         BaseModel: BaseModel,
         BaseCollection: BaseCollection,
         SurfaceReleaseSpill: SurfaceReleaseSpill,
         SurfaceReleaseSpillCollection: SurfaceReleaseSpillCollection,
         Wind: Wind,
+        WindCollection: WindCollection,
         WindMover: WindMover,
         WindMoverCollection: WindMoverCollection,
         RandomMover: RandomMover,
         RandomMoverCollection: RandomMoverCollection,
         Map: Map,
         CustomMap: CustomMap,
+        LocationFile: LocationFile,
+        LocationFileMeta: LocationFileMeta,
+        LocationFileMetaCollection: LocationFileMetaCollection,
+        LocationFileWizard: LocationFileWizard,
+        LocationFileWizardCollection: LocationFileWizardCollection,
+        GnomeModelValidator: GnomeModelValidator,
+        WindValidator: WindValidator,
+        WindMoverValidator: WindMoverValidator,
+        RandomMoverValidator: RandomMoverValidator,
+        SurfaceReleaseSpillValidator: SurfaceReleaseSpillValidator,
+        MapValidator: MapValidator,
+        CustomMapValidator: CustomMapValidator,
+        LocationFileValidator: LocationFileValidator,
         getNwsWind: getNwsWind
     };
 

@@ -1,5 +1,6 @@
 <%inherit file="base.mak"/>
 
+
 <%block name="extra_head">
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
@@ -17,7 +18,12 @@
                 <li><a tabindex="-1" href="javascript:">Load from file</a></li>
                 <li class="dropdown-submenu"><a tabindex="-1" href="javascript:">Load example...</a>
                     <ul class="dropdown-menu">
-                        <li><a tabindex="-1" class='location-file-item' data-location='long_island' href="javascript:">Long Island Sound</a></li>
+                        % for location_file in location_files:
+                            <li><a tabindex="-1" class='location-file-item'
+                                   data-location='${location_file['filename']}'
+                                   href="javascript:">${location_file['name']}</a>
+                            </li>
+                        % endfor
                     </ul>
                 </li>
                 <li><a tabindex="-1" href="javascript:">Save</a></li>
@@ -148,6 +154,7 @@
 
     <div id="modal-container">
         <%include file="forms/add_mover.mak"/>
+        <%include file="forms/add_environment.mak"/>
         <%include file="forms/add_spill.mak"/>
         <%include file="forms/add_map.mak"/>
         <%include file="forms/model_settings.mak"/>
@@ -159,12 +166,20 @@
         ## Mover forms
         <%include file="forms/wind_mover.mak" args="form_id='add-wind-mover'"/>
         <%include file="forms/wind_mover.mak" args="form_id='edit-wind-mover'"/>
+        <%include file="forms/wind.mak" args="form_id='add-wind'"/>
+        <%include file="forms/wind.mak" args="form_id='edit-wind'"/>
         <%include file="forms/random_mover.mak" args="form_id='add-random-mover'"/>
         <%include file="forms/random_mover.mak" args="form_id='edit-random-mover'"/>
 
         ## Spill forms
         <%include file="forms/surface_release_spill.mak" args="form_id='add-surface-release-spill'"/>
         <%include file="forms/surface_release_spill.mak", args="form_id='edit-surface-release-spill'"/>
+
+        % for location_file in location_files:
+            % if 'wizard_html' in location_file:
+                ${location_file['wizard_html'] | n}
+            % endif
+        % endfor
     </div>
 </%block>
 
@@ -213,23 +228,24 @@
             var appOptions = {
                 el: $('#app'),
                 modelId: "${model_id}",
+                map: ${map_data | n},
+                gnomeSettings: ${model_settings | n},
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
                 currentTimeStep: ${current_time_step},
                 surfaceReleaseSpills: ${surface_release_spills | n},
-                defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
                 windMovers: ${wind_movers | n},
-                defaultWindMover: ${default_wind_mover | n},
-                defaultWindTimeseriesValue: ${default_wind_timeseries_value | n},
+                winds: ${winds | n},
                 randomMovers: ${random_movers | n},
+                mapIsLoaded: ${"true" if map_is_loaded else "false"},
+                locationFilesMeta: ${location_file_json | n},
+                animationThreshold: 30, // Milliseconds
+                defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
+                defaultWindMover: ${default_wind_mover | n},
+                defaultWind: ${default_wind | n},
                 defaultRandomMover: ${default_random_mover | n},
-                gnomeSettings: ${model_settings | n},
-                map: ${map_data | n},
                 defaultMap: ${default_map | n},
                 defaultCustomMap: ${default_custom_map | n},
-                mapIsLoaded: ${"true" if map_is_loaded else "false"},
-                locationFiles: ${location_files | n},
-                animationThreshold: 10 // Milliseconds
             };
 
             $('#map').imagesLoaded(function() {

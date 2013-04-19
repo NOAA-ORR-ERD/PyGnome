@@ -5,6 +5,7 @@
 #include "MakeMovie.h"
 #include "TShioTimeValue.h"
 #include "TideCurCycleMover.h"
+//#include "shapefil.h"
 
 #include <vector>
 
@@ -1805,6 +1806,163 @@ done:
 	
 }
 
+/*OSErr TModel::SaveShapeLEFile (Seconds fileTime, short fileNumber)
+{	// Trying this out - would need to put call in Output, comment out include shapefil.h, and add function to header file
+	OSErr err = 0;
+	long n, i, j, mapNum, count, createdDirID;
+	Seconds seconds;
+	TLEList *list;
+	TMap *bestMap;
+	LEHeaderRec header;
+	LEPropRec theLEPropRec;
+	LERec theLE;
+	char *p, path[256], fileName[256], fieldStr[32] ;
+	long fileItemNum,fileItemNum_forecast=0,fileItemNum_uncertain=0;
+	char out[512],forecastLEFName[256],uncertainLEFName[256];
+	char trajectoryTime[64], trajectoryDate[64], preparedTime[32], preparedDate[32];
+	Boolean bWriteUncertaintyLEs = this->IsUncertain();
+	SHPHandle hSHP;
+	int nShapeType=SHPT_POINT, nVertices, nVMax;
+	double *padfX, *padfY, *padfZ = NULL;
+	SHPObject *psObject;
+    DBFHandle	hDBF;
+	
+	
+	strcpy(fieldStr,"LEType");
+	/////////////////////////////////////////////////
+	err = GetOutputFileName (fileNumber, FORECAST_LE,    forecastLEFName);
+	if(err) return err; // JLM 8/2/99
+	err = GetOutputFileName (fileNumber, UNCERTAINTY_LE, uncertainLEFName);
+	if(err) return err; // JLM 8/2/99}
+	/////////////////////
+	
+	hSHP = SHPCreate(forecastLEFName,SHPT_POINT);
+    if( hSHP == NULL )
+    {
+		printf( "SHPCreate(%s) failed.\n", forecastLEFName );
+		err = -1; goto done;
+    }
+	hdelete(0, 0, forecastLEFName);
+    hDBF = DBFCreate( forecastLEFName );
+    if( hDBF == NULL )
+    {
+		printf( "DBFCreate(%s) failed.\n", forecastLEFName );
+		err = -1; goto done;
+    }
+	if( DBFAddField( hDBF, fieldStr, FTString, 32, 0 ) == -1 )
+	{
+		printf( "DBFAddField(%s,FTString,%d,0) failed.\n",
+			   fieldStr, 6 );
+		err = -1; goto done;
+	}
+	/////////////////////////////////////////////////
+	//if (IsUncertain ())  // open uncertainty LE file only if model is in uncertain mode
+	//{
+	 //}
+	/////////////////////////////////////////////////
+	
+	//if(fileNumber >= 0)	// may want to do something with time
+	 //{	// the trajectoryTime is different for each file , so we must set it automatically
+	 //GetDateTimeStrings(trajectoryTime, trajectoryDate, preparedTime, preparedDate);
+	// }
+	// else
+	 //{ // the user saw the trajectoryTime, so use what they set it to be
+	// strcpy(trajectoryTime,sharedTTime);
+	// strcpy(trajectoryDate,sharedTDate);
+	 //}
+	
+	
+	/////////////////////////////////////////////////
+	/////////////////////////////////////////////////
+	/////////////////////////////////////////////////
+	
+	/////////////////////////////////////////////////
+	// add up all the LEs from all spills
+	for (i = 0, n = LESetsList->GetItemCount() ; i < n ; i++) 
+	{
+		Boolean isUncertainLE;
+		LESetsList->GetListItem((Ptr)&list, i);
+		if (!list->bActive) continue;
+		
+		isUncertainLE = (list -> GetLEType () == UNCERTAINTY_LE);
+		if(isUncertainLE && !bWriteUncertaintyLEs) continue; //don't write out uncertainty LEs unless uncertainty is on
+		
+		//nVMax = list->numOfLEs;	// for one spill only
+		nVMax = 1;	// for one spill only
+		padfX = (double *) malloc(sizeof(double)*nVMax);
+		padfY = (double *) malloc(sizeof(double)*nVMax);
+		nVertices = nVMax;
+		for (j = 0 ; j < list->numOfLEs ; j++) 
+		{
+			list -> GetLE (j, &theLE);
+			//padfX[j] = theLE.p.pLong;
+			//padfY[j] = theLE.p.pLat;
+			padfX[0] = theLE.p.pLong / 1000000.;
+			padfY[0] = theLE.p.pLat / 1000000.;
+			// JLM, 3/1/99 it was decided to skip EVAPORATED and NOTRELEASED LE's
+			switch (theLE.statusCode) {
+				case OILSTAT_INWATER: 
+				case OILSTAT_OFFMAPS: 
+				case OILSTAT_ONLAND: 
+					break; // these are the only types written out
+					
+				default: continue; // skip these LE's	
+			}
+			////////////////////////////////////////////////
+			
+			psObject = SHPCreateSimpleObject(nShapeType, nVertices, padfX, padfY, padfZ);
+			SHPWriteObject(hSHP, -1, psObject);
+			SHPDestroyObject(psObject);
+			DBFWriteStringAttribute(hDBF, j, 0, "forecastLE" );
+		}
+		//psObject = SHPCreateObject(nShapeType, -1, nParts, panParts, NULL, nVertices, padfX, padfY, padfZ, padfM);
+		//psObject = SHPCreateSimpleObject(nShapeType, nVertices, padfX, padfY, padfZ);
+		//SHPWriteObject(hSHP, -1, psObject);
+		//SHPDestroyObject(psObject);
+		SHPClose(hSHP);
+		DBFClose(hDBF);
+		free(padfX);
+		free(padfY);
+		free(padfZ);
+	}
+	hSHP = SHPOpen(forecastLEFName,"rb");
+	hDBF = DBFOpen(forecastLEFName,"rb");
+	if (hSHP==NULL || hDBF == NULL)
+	{
+		goto done;
+	}
+	else 
+	{
+		int numEntries, numFields, numRecords;
+		const char *attStr;
+		SHPGetInfo(hSHP,&numEntries,&nShapeType,NULL,NULL); 
+		numFields = DBFGetFieldCount(hDBF);
+		numRecords = DBFGetRecordCount(hDBF);
+		//padfX = (double *) malloc(sizeof(double)*numEntries);
+		//padfY = (double *) malloc(sizeof(double)*numEntries);
+		//padfZ = NULL;
+		//nVertices = numEntries;
+		//psObject = SHPCreateSimpleObject(nShapeType, nVertices, padfX, padfY, padfZ);
+		for (j=0;j<numEntries;j++)
+		{
+			psObject = SHPReadObject(hSHP, j);
+			attStr = DBFReadStringAttribute(hDBF, j, 0);
+		}
+		//psObject = SHPReadObject(hSHP, numEntries-1);
+		SHPDestroyObject(psObject);
+		//free(padfX);
+		//free(padfY);
+	}
+	SHPClose(hSHP);
+	
+	goto done;
+	
+	
+done:	
+	
+	return err;	
+	
+}*/
 
 OSErr TModel::SaveSimpleAsciiLEFile (Seconds fileTime, short fileNumber)
 {
@@ -2914,6 +3072,39 @@ OSErr TModel::SaveOutputSeriesFiles(Seconds oldTime,Boolean excludeRunBarFile)
 	return err;
 }
 
+double TModel::GetVerticalMove(LERec *theLE)
+{
+	// now check ossm list
+	// if ossm list use rise velocity
+	// maybe should be mover or part of one
+	double dz = 0,z = (*theLE).z, riseVelocity = (*theLE).riseVelocity;
+	// if(spill->IAm(TYPE_OSSMLELIST)) {
+	//if((*(TOLEList*)spill).fSetSummary.riseVelocity != 0)
+	//if ((dynamic_cast<TOLEList *>(spill))->fSetSummary.riseVelocity != 0)
+	if (riseVelocity > 0)
+	 {
+		 //PtCurMap *map = GetPtCurMap();
+		 //TMap *map = Get3DMap();
+		 //WorldPoint refPoint = (*theLE).p;	
+		 //if (map && thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
+		 if ((*theLE).statusCode == OILSTAT_INWATER && z > 0) 
+		 {	// check this
+			 dz = -(riseVelocity/100.) * GetTimeStep();
+			/* float depthAtPoint = INFINITE_DEPTH;
+			 if (map) depthAtPoint = map->DepthAtPoint(refPoint);	
+			 z -= (riseVelocity/100.) * GetTimeStep();
+			 if (z < 0) 
+			 z = 0;
+			 if (z >= depthAtPoint) 
+				 z = z + (riseVelocity/100.) * GetTimeStep();
+			 if (z >= depthAtPoint) // shouldn't get here
+				 z = depthAtPoint - (abs(riseVelocity)/100.) * GetTimeStep();*/
+		 }
+	 }
+	//}
+	return dz;
+}
+
 OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmapping, vector< pair<bool, bool> > **dmapping, vector< pair<int, int> > **imapping) {
 	
 	int i, n, j, m, k, N, q, M, uncertaintyIndex = 0;
@@ -2932,6 +3123,7 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 	TOSSMTimeValue *time_val_ptr;
 	CMyList *time_val_list;
 	TMap *map;	// in theory should be moverMap, unless universal...
+	double z_move = 0;
 
 	
 	vector<LETYPE> *tmapping;
@@ -3123,6 +3315,16 @@ OSErr TModel::move_spills(vector<WorldPoint3D> **delta, vector<LERec *> **pmappi
 			}
 		}
 	}
+	//for(j = 0, m = mapList->GetItemCount(); j < m; j++) {
+	for(k = 0, N = (*pmapping)[0].size(); k < N; k++) {	// are all LEs in all mappings?
+		//dp = mover->GetMove(this->GetStartTime(), this->GetEndTime(), this->GetModelTime(), fDialogVariables.computeTimeStep, (*imapping)[j][k].first, (*imapping)[j][k].second, (*pmapping)[j][k], tmapping[j][k]);
+		z_move = this->GetVerticalMove((*pmapping)[0][k]);
+		//(*delta)[j][k].p.pLat += dp.p.pLat;
+		//(*delta)[j][k].p.pLong += dp.p.pLong;
+		(*delta)[0][k].z += z_move;
+	}
+	//}
+	
 	delete[] tmapping;
 	return noErr;
 	
@@ -3345,10 +3547,10 @@ OSErr TModel::check_spills(vector<WorldPoint3D> *delta, vector <LERec *> *pmappi
 				 // now check ossm list
 				 // if ossm list use rise velocity
 				 // maybe should be mover or part of one
-				
-				 if(spill->IAm(TYPE_OSSMLELIST)) {
+				// this should be with the move_spills code
+				/* if(spill->IAm(TYPE_OSSMLELIST)) {
 					if((*(TOLEList*)spill).fSetSummary.riseVelocity != 0)
-					{
+						{
 						//PtCurMap *map = GetPtCurMap();
 						TMap *map = Get3DMap();
 						WorldPoint refPoint = le_ptr->p;	
@@ -3366,7 +3568,7 @@ OSErr TModel::check_spills(vector<WorldPoint3D> *delta, vector <LERec *> *pmappi
 								le_ptr->z = depthAtPoint - (abs(le_ptr->riseVelocity)/100.) * GetTimeStep();
 						}
 					}
-				}
+				}*/
 			 } // end if(customData != -1)
 			 
 			 
@@ -3414,13 +3616,14 @@ OSErr TModel::Step ()
 	WorldPoint3D  midPt;
 	TMap *midPtBestMap = 0;
 	double distanceInKm;	
+	short uncertaintyListIndex=0,listIndex=0;
 
 	
-	vector<WorldPoint3D> *delta;			// for storing moved points
+	/*vector<WorldPoint3D> *delta;			// for storing moved points
 	vector <LERec *> *pmapping;				// for associating les with maps (since the movers are)
 	vector<pair<bool, bool> > *dmapping;	// for determining whether to disperse an individual le
 	vector<pair<int, int> > *imapping;		// for keeping track of indices
-	
+	*/
 #ifndef NO_GUI
 	GetPortGrafPtr(&savePort);
 	SetPortWindowPort(mapWindow);
@@ -3551,14 +3754,20 @@ OSErr TModel::Step ()
 	/// now step the LE's 
 	/////////////////////////////////////////////////
 
-	/*	minus AH 06/19/2012:
+	//	minus AH 06/19/2012:
 
 	for (i = 0, n = LESetsList -> GetItemCount (); i < n; i++)
 	{
 		LESetsList -> GetListItem ((Ptr) &thisLEList, i);
 		leType = thisLEList -> GetLEType();
 		if(leType == UNCERTAINTY_LE && !this->IsUncertain()) continue; //JLM 9/10/98
-		if(!thisLEList->IsActive()) continue;
+		if(leType == UNCERTAINTY_LE)	// probably won't use uncertainty here anyway...
+		{
+			//listIndex = uncertaintyListIndex++;
+			listIndex = uncertaintyListIndex;
+			uncertaintyListIndex++;
+		}
+		else listIndex = 0;	// note this is not used for forecast LEs - maybe put in a flag to identify that
 
 		UpdateWindage(thisLEList);
 		DispersionRec dispInfo = ((TOLEList *)thisLEList) -> GetDispersionInfo();
@@ -3601,13 +3810,14 @@ OSErr TModel::Step ()
 			// move only the floating LEs
 			if (thisLE.statusCode == OILSTAT_INWATER)
 			{	// moved to the end of the step
+				TOSSMTimeValue *time_val_ptr=0;
 				//if (dispInfo.lassoSelectedLEsToDisperse && thisLE.beachTime >= GetModelTime() && thisLE.beachTime < GetModelTime() + GetTimeStep()) timeToDisperse = true;
 				/*if (timeToDisperse)
 				{
 					DisperseOil (thisLEList, j);
 					thisLEList -> GetLE (j, &thisLE); // JLM 9/16/98 , we have to refresh the local variable thisLE
 					//thisLE.leCustomData = 1;	// for now use this so TRandom3D knows when to add z component
-				}
+				}*/
 	
 				movedPoint.p = thisLE.p; //JLM 10/8/98, moved line here because we need to do this assignment after we re-float it
 				movedPoint.z = thisLE.z; 
@@ -3624,7 +3834,27 @@ OSErr TModel::Step ()
 					uMap -> moverList -> GetListItem ((Ptr) &thisMover, k);
 					if (!thisMover -> IsActive ()) continue; // to next mover
 				
-					thisMove = thisMover -> GetMove (fDialogVariables.computeTimeStep,i,j,&thisLE,leType);
+					switch(thisMover->GetClassID()) {			
+						case TYPE_CATSMOVER:
+							time_val_ptr = ((TCATSMover*)thisMover)->timeDep;
+							if(time_val_ptr) {
+								if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+									dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
+							}
+							break;
+						case TYPE_TIDECURCYCLEMOVER:
+							time_val_ptr = ((TideCurCycleMover*)thisMover)->timeDep;
+							if(time_val_ptr) {
+								if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+									dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
+							}
+							// ..
+							break;
+						default:
+							break;
+					}
+					//thisMove = thisMover -> GetMove (model->GetStartTime(),fDialogVariables.computeTimeStep,i,j,&thisLE,leType);
+					thisMove = thisMover -> GetMove (model->GetStartTime(),fDialogVariables.computeTimeStep,listIndex,j,&thisLE,leType);
 					/*if(thisMover -> IAm(TYPE_CURRENTMOVER)) // maybe also for larvae (special LE type?)
 					{	// check if current beaches LE, and if so don't add into overall move
 						testPoint.p.pLat = currentMovedPoint.p.pLat + thisMove.p.pLat;
@@ -3644,7 +3874,7 @@ OSErr TModel::Step ()
 						}
 					}
 					else
-					{	// non-current movers, add contribution to movedPoint
+					{*/	// non-current movers, add contribution to movedPoint
 						//movedPoint.pLat  += thisMove.pLat;
 						//movedPoint.pLong += thisMove.pLong;
 						if (thisLE.leCustomData==-1)
@@ -3666,7 +3896,27 @@ OSErr TModel::Step ()
 					bestMap -> moverList -> GetListItem ((Ptr) &thisMover, k);
 					if (!thisMover -> IsActive ()) continue; // to next mover
 				
-					thisMove = thisMover -> GetMove (fDialogVariables.computeTimeStep,i,j,&thisLE,leType);
+					switch(thisMover->GetClassID()) {			
+						case TYPE_CATSMOVER:
+							time_val_ptr = ((TCATSMover*)thisMover)->timeDep;
+							if(time_val_ptr) {
+								if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+									dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
+							}
+							break;
+						case TYPE_TIDECURCYCLEMOVER:
+							time_val_ptr = ((TideCurCycleMover*)thisMover)->timeDep;
+							if(time_val_ptr) {
+								if(time_val_ptr->GetClassID() == TYPE_SHIOTIMEVALUES)
+									dynamic_cast<TShioTimeValue*>(time_val_ptr)->daylight_savings_off = settings.daylightSavingsTimeFlag;
+							}
+							// ..
+							break;
+						default:
+							break;
+					}
+					//thisMove = thisMover -> GetMove (fDialogVariables.computeTimeStep,i,j,&thisLE,leType);
+					thisMove = thisMover -> GetMove (GetModelTime(),fDialogVariables.computeTimeStep,listIndex,j,&thisLE,leType);
 					/*if(thisMover -> IAm(TYPE_CURRENTMOVER)) 
 					{	// check if current beaches LE, and if so don't add into overall move
 						testPoint.p.pLat  = currentMovedPoint.p.pLat + thisMove.p.pLat;
@@ -3685,7 +3935,7 @@ OSErr TModel::Step ()
 						}
 					}
 					else
-					{	// non-current movers, add contribution to movedPoint
+					{*/	// non-current movers, add contribution to movedPoint
 						//movedPoint.pLat  += thisMove.pLat;
 						//movedPoint.pLong += thisMove.pLong;
 						if (thisLE.leCustomData==-1)
@@ -3705,6 +3955,15 @@ OSErr TModel::Step ()
 				//movedPoint.p.pLong += currentMovedPoint.p.pLong - thisLE.p.pLong; // original point counted twice
 				//movedPoint.z += currentMovedPoint.z - thisLE.z; // original point counted twice
 				//bestMap = GetBestMap (thisLE.p); // bestMap may have been changed
+				if (thisLEList->IAm(TYPE_OSSMLELIST))
+				{	// move this up before the map check
+					if((*(TOLEList*)thisLEList).fSetSummary.riseVelocity != 0)
+					{	// turn this into a mover
+						double dz = GetVerticalMove(&thisLE);
+						movedPoint.z += dz;
+						//thisLE.z += dz;
+					}
+				}
 				//////////////////
 				// check for transition off maps, beaching, etc
 				//////////////////
@@ -3881,11 +4140,13 @@ OSErr TModel::Step ()
 			/////////////////////////////////////////////////
 			/////////////////////////////////////////////////
 
-			if (thisLEList->IAm(TYPE_OSSMLELIST))
-			{
+			/*if (thisLEList->IAm(TYPE_OSSMLELIST))
+			{	// move this up before the map check
 				if((*(TOLEList*)thisLEList).fSetSummary.riseVelocity != 0)
-				{
-					PtCurMap *map = GetPtCurMap();
+				{	// turn this into a mover
+					double dz = GetVerticalMove(&thisLE);
+					thisLE.z += dz;*/
+					/*PtCurMap *map = GetPtCurMap();
 					WorldPoint refPoint = (thisLE).p;	
 					//if (map && thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
 					if (thisLE.statusCode == OILSTAT_INWATER && thisLE.z > 0) 
@@ -3899,9 +4160,9 @@ OSErr TModel::Step ()
 							thisLE.z = thisLE.z + (thisLE.riseVelocity/100.) * GetTimeStep();
 						if (thisLE.z >= depthAtPoint) // shouldn't get here
 							thisLE.z = depthAtPoint - (abs(thisLE.riseVelocity)/100.) * GetTimeStep();
-					}
-				}
-			}
+					}*/
+				//}
+			//}
 		WeatherLE: //////////////////
 			// now perform weathering for this LE
 			// do not weather if using Adios Budget Table
@@ -3927,17 +4188,17 @@ OSErr TModel::Step ()
 		}
 	}
 	
-	*/ // end minus AH 06/19/2012.
+	 // end minus AH 06/19/2012.
 	   // beware: I had to remove some comment delimiters in order to comment this last block.
 	   // it's not a good idea to try to uncomment the block and use it as before, without double-checking
 	   // that the comment sub blocks have been terminated properly.
 
-	if(move_spills(&delta, &pmapping, &dmapping, &imapping));	// handle error?
+	/*if(move_spills(&delta, &pmapping, &dmapping, &imapping));	// handle error?
 	if(check_spills(delta, pmapping, dmapping, imapping));		// handle error?
 	delete[] delta;
 	delete[] pmapping;
 	delete[] dmapping;
-	delete[] imapping;
+	delete[] imapping;*/
 	
 	{	// totals LEs from all spills
 		PtCurMap *map = GetPtCurMap();
@@ -4142,7 +4403,8 @@ OSErr TModel::StepBackwards ()
 		if(leType == UNCERTAINTY_LE && !this->IsUncertain()) continue; //JLM 9/10/98
 		if(leType == UNCERTAINTY_LE)	// probably won't use uncertainty here anyway...
 		{
-			listIndex = uncertaintyListIndex++;
+			//listIndex = uncertaintyListIndex++;
+			listIndex = uncertaintyListIndex;
 			uncertaintyListIndex++;
 		}
 		else listIndex = 0;	// note this is not used for forecast LEs - maybe put in a flag to identify that

@@ -36,7 +36,7 @@ class FunctionalTestBase(GnomeTestCase):
         """
         test_images_dir = os.path.join(
             self.project_root, 'static', 'img',
-            self.settings['model_images_dir'])
+            self.settings['model_data_dir'])
         shutil.rmtree(test_images_dir, ignore_errors=True)
 
 

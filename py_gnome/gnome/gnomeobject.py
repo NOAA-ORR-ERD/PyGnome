@@ -1,25 +1,42 @@
 #!/usr/bin/env python
-
-from uuid import uuid1
+from datetime import datetime
+from time import gmtime
+from uuid import uuid1,UUID
 import copy
 
-class GnomeObject(object):
-    """
-    The top-level base class in which all Gnome Objects are derived.
+from gnome.basic_types import enum
 
-    Any global members or functionality will go in this class.
+class GnomeId(object):
+    """
+    A class for assigning a unique ID for an object
     """
     _id = None
+
+    def __init__(self, id=None):
+        """
+        Sets the ID of the object. 
+        :param id: (optional) input valid UUID to set
+        """
+        
+        if id is not None:
+            if isinstance(id, basestring):
+                UUID(id) # throws an error if not a valid UUID
+            elif isinstance(id, UUID):
+                id = str(id)
+            else:
+                raise ValueError('id cannot be set. It is not a UUID object, nor a valid UUID in string format')
+            
+            self._id = id
+        else:
+            self.__create_new_id()
 
     @property
     def id(self):
         """
         Override this method for more exotic forms of identification.
 
-        :return: a unique ID returned by uuid.uuid1()
+        :return: a unique ID assigned during construction
         """
-        if not self._id:
-            self.__create_new_id()
         return self._id
 
     def __create_new_id(self):
@@ -34,13 +51,13 @@ class GnomeObject(object):
     def __deepcopy__(self, memo=None):
         """
         the deepcopy implementation
-
+ 
         we need this, as we don't want the spill_nums copied, but do want everything else.
-
+ 
         got the method from:
-
+ 
         http://stackoverflow.com/questions/3253439/python-copy-how-to-inherit-the-default-copying-behaviour
-
+ 
         Despite what that thread says for __copy__, the built-in deepcopy() ends up using recursion
         """
         obj_copy = object.__new__(type(self))
@@ -53,6 +70,14 @@ class GnomeObject(object):
         might as well have copy, too.
         """
         obj_copy = object.__new__(type(self))
-        obj_copy.__dict__ = self.__dict__.copy()
+        obj_copy.__dict__ = copy.copy(self.__dict__)
         obj_copy.__create_new_id()
         return obj_copy
+
+""" 
+    Defines constants used in gnome:
+    min_time, max_time: Min/Max datetimes that can currently be handled by PyGnome.
+                        The time_utils converts these to seconds since epoch. Epoch begins
+"""
+constants = enum(min_time=datetime( *gmtime(0)[:6]), 
+                 max_time=datetime(2038,1,18,0,0,0))

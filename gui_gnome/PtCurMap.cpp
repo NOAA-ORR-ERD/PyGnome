@@ -1314,15 +1314,42 @@ done:
 					
 					if (!InVerticalMap(toWPt))	// check z is ok, else use original z, or entire fromWPt
 					{
-						toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+						double distanceBelowBottom = toWPt.z - depthAtPt;
+						if (depthAtPt > distanceBelowBottom)
+						{
+							toWPt.z = depthAtPt - distanceBelowBottom;
+						}
+						else
+							toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+						/*if (depthAtPt > 1.)
+							toWPt.z = GetRandomFloat(depthAtPt-1.,.9999999*depthAtPt);
+						else
+							toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);*/
+						//toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
 					}	
 				}
 				else
-					toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+				{	// instead try toWPt.z = depthAtPt - (toWPt.z - depthAtPt);
+					double distanceBelowBottom = toWPt.z - depthAtPt;
+					if (depthAtPt > distanceBelowBottom)
+					{
+						toWPt.z = depthAtPt - distanceBelowBottom;
+					}
+					else
+						toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+					/*if (depthAtPt > 1.)
+						toWPt.z = GetRandomFloat(depthAtPt-1.,.9999999*depthAtPt);
+					else
+						toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);*/
+					//toWPt.z = GetRandomFloat(.9*depthAtPt,.99*depthAtPt);
+				}
 			}
 			if (toWPt.z <= 0) 
 			{
-				toWPt.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
+				if (isDispersed)
+					toWPt.z = GetRandomFloat(.01*depthAtPt,.1*depthAtPt);
+				else
+					toWPt.z = 0;	// let LEs refloat - except for dispersed oil...
 			}
 			//toWPt.z = fromWPt.z;
 			//if (!InVerticalMap(toWPt))	
@@ -3180,7 +3207,40 @@ void PtCurMap::DrawContours(Rect r, WorldRect view)
 							case OILSTAT_INWATER:
 								if (LE.z > 0)
 								{
-									if (LE.z > 100)
+									//double maxDepth = GetMaxDepth2();	// allow user to set value?
+									//double maxDepth = 1500;	// allow user to set value? maybe use the second contour level
+									double maxDepth = fContourDepth2;	// check that fContourDepth2 > 0
+									long red=0,blue=0,green=0; // roughly 50 - 245 for light black to offwhite
+									//double range = 195 / maxDepth, LEcolor = 50 + range * LE.z; 
+									double range, LEcolor; 
+									//if (LEcolor >= 245) LEcolor = 245;
+									RGBColor underWaterColor = ((TOLEList*)thisLEList)->fColor;	// do we want to relate to surface color
+									if (fContourDepth2 <= 0) maxDepth = GetMaxDepth2();
+									if (maxDepth > 0) range = 195. / maxDepth;
+									if (LE.z > maxDepth)
+									{
+										LEcolor = 245;
+									}
+									else
+									{
+										LEcolor = 50. + range * LE.z;
+										if (LEcolor > 245) LEcolor = 245;
+									}
+									red = blue = green = (long) LEcolor;
+#ifdef IBM						
+									//underWaterColor = RGB(red,green,blue); // minus AH 07/09/2012
+									SetRGBColor(&underWaterColor,red,green,blue);
+#else						
+									RGBColor temp_color; 
+									temp_color.red = red*256;
+									temp_color.green = green*256;
+									temp_color.blue = blue*256;
+									underWaterColor = temp_color;		// AH 07/09/2012:
+#endif
+									//underWaterColor = RGB(red,green,blue);
+									inWaterColor = &underWaterColor;
+
+									/*if (LE.z > 100)
 									{
 										inWaterColor  = &colors[LIGHTGRAY];
 									}
@@ -3191,7 +3251,7 @@ void PtCurMap::DrawContours(Rect r, WorldRect view)
 									else
 									{
 										inWaterColor = &colors[DARKGRAY];
-									}
+									}*/
 								}
 								else
 								{

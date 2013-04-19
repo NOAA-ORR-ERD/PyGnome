@@ -1,10 +1,12 @@
 """
 model_manager.py: Manage a pool of running models.
 """
+import copy
 import datetime
 import logging
 import os
 import uuid
+from gnome.utilities import map_canvas
 import numpy
 
 from hazpy.file_tools import haz_files
@@ -26,85 +28,27 @@ except ImportError:
     sys.path.append('../../../py_gnome')
 
 import gnome.utilities.map_canvas
-from gnome import basic_types
+from gnome import basic_types, GnomeId
 from gnome.model import Model
-from gnome.movers import WindMover, RandomMover
+from gnome.movers import WindMover, RandomMover, CatsMover
 from gnome.spill import SurfaceReleaseSpill
 from gnome.environment import Wind
-from gnome.map import MapFromBNA
+from gnome.map import MapFromBNA, GnomeMap
 
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
-class Serializable(object):
-    serializable_fields = []
+class BaseWebObject(object):
+    """
+    All WebGnome subclasses of Gnome objects have a name.
+    """
+    default_name = 'Item'
 
-    def to_dict(self):
-        """
-        Return a dictionary containing the serialized representation of this
-        object, using `self.serializable_fields` to look up fields on the object
-        that the dictionary should contain.
+    def __init__(self, *args, **kwargs):
+        self._name = kwargs.pop('name', self.default_name)
+        super(BaseWebObject, self).__init__(*args, **kwargs)
 
-        For every field, if there is a method defined on the object such that
-        the method name is `{field_name}_to_dict`, use the return value of that
-        method as the field value.
-
-        Note: any field in `self.serializable_fields` that does not exist on the
-        object and does not have a to_dict method will raise an AttributeError.
-        """
-        data = {}
-
-        for key in self.serializable_fields:
-            to_dict_fn_name = '%s_to_dict' % key
-
-            if hasattr(self, to_dict_fn_name):
-                value = getattr(self, to_dict_fn_name)()
-            else:
-                value = getattr(self, key)
-
-            if hasattr(value, 'to_dict'):
-                value = value.to_dict()
-
-            data[key] = value
-        return data
-
-    def from_dict(self, data):
-        """
-        Set the state of this object using the dictionary ``data`` by looking up
-        the value of each key in ``data`` that is also in
-        `self.serializable_fields`.
-
-        For every field, the choice of how to set the field is as follows:
-
-        If there is a method defined on the object such that the method name is
-        `{field_name}_from_dict`, call that method with the field's data.
-
-        If the field on the object has a ``from_dict`` method, then use that
-        method instead.
-
-        If neither method exists, then set the field with the value from
-        ``data`` directly on the object.
-        """
-        for key in self.serializable_fields:
-            if not key in data:
-                continue
-
-            from_dict_fn_name = '%s_from_dict' % key
-            field = getattr(self, key)
-            value = data[key]
-
-            if hasattr(self, from_dict_fn_name):
-                getattr(self, from_dict_fn_name)(value)
-            elif hasattr(field, 'from_dict'):
-                field.from_dict(value)
-            else:
-                setattr(self, key, value)
-
-        return self
-
-
-class BaseWebObject(Serializable):
     @property
     def name(self):
         if self._name:
@@ -116,88 +60,37 @@ class BaseWebObject(Serializable):
         self._name = name
 
 
-class WebWind(Wind, BaseWebObject):
+class WebWind(BaseWebObject, Wind):
     default_name = 'Wind'
     source_types = (
+        ('undefined', 'Undefined'),
         ('manual', 'Manual Data'),
         ('nws', 'NWS Wind Data'),
         ('buoy', 'Buoy Station ID'),
     )
-    serializable_fields = [
-        'id',
-        # set the units before timeseries, as timeseries relies on units
-        'units',
-        'timeseries',
-        'latitude',
-        'longitude',
-        'description',
-        'source_id',
-        'source_type',
-        'updated_at'
-    ]
-
-    def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', 'Wind')
-        self.description = kwargs.pop('description', None)
-        self.source_type = kwargs.pop('source_type', None)
-        self.source_id = kwargs.pop('source_id', None)
-        self.longitude = kwargs.pop('longitude', None)
-        self.latitude = kwargs.pop('latitude', None)
-        self.updated_at = kwargs.pop('updated_at', None)
-
-        super(WebWind, self).__init__(*args, **kwargs)
-
-    @property
-    def units(self):
-        return self._user_units
-
-    @units.setter
-    def units(self, value):
-        self._user_units = value
+    state = copy.deepcopy(Wind.state)
+    state.add(create=['id'])
 
     @property
     def timeseries(self):
-        return self.get_timeseries(units=self.user_units)
+        return self.get_timeseries(units=self.units)
 
     @timeseries.setter
     def timeseries(self, value):
-        self.set_timeseries(value, units=self.user_units)
-
-    def timeseries_to_dict(self):
-        series = []
-
-        for wind_value in self.timeseries:
-            dt = wind_value[0].astype(object)
-            series.append((dt, wind_value[1][0], wind_value[1][1]))
-
-        return series
+        self.set_timeseries(value, units=self.units)
 
 
-class WebWindMover(WindMover, BaseWebObject):
+class WebWindMover(BaseWebObject, WindMover):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
     webgnome-specific functionality.
     """
     default_name = 'Wind Mover'
-    serializable_fields = [
-        'id',
-        'wind',
-        'on',
-        'name',
-        'active_start',
-        'active_stop',
-        'uncertain_duration',
-        'uncertain_speed_scale',
-        'uncertain_angle_scale',
-        'uncertain_angle_scale_units',
-        'uncertain_time_delay'
-    ]
+    state = copy.deepcopy(WindMover.state)
+    state.add(create=['uncertain_angle_scale_units', 'name'],
+              update=['uncertain_angle_scale_units', 'name'])
 
     def __init__(self, *args, **kwargs):
-        self.is_constant = kwargs.pop('is_constant', True)
-        self.on = kwargs.pop('on', True)
-        self.name = kwargs.pop('name', 'Wind Mover')
-
         # TODO: What to do with this value? Conversion?
         self.uncertain_angle_scale_units = kwargs.pop(
             'uncertain_angle_scale_units', None)
@@ -205,57 +98,42 @@ class WebWindMover(WindMover, BaseWebObject):
         super(WebWindMover, self).__init__(*args, **kwargs)
 
 
-class WebRandomMover(RandomMover, BaseWebObject):
+class WebRandomMover(BaseWebObject, RandomMover):
     """
     A subclass of :class:`gnome.movers.RandomMover` that provides
     webgnome-specific functionality.
     """
     default_name = 'Random Mover'
-    serializable_fields = [
-        'id',
-        'on',
-        'name',
-        'active_start',
-        'active_stop',
-        'diffusion_coef'
-    ]
+    state = copy.deepcopy(RandomMover.state)
+    state.add(create=['name'], update=['name'])
 
     def __init__(self, *args, **kwargs):
         self.on = kwargs.pop('on', True)
-        self.name = kwargs.pop('name', 'Random Mover')
         super(WebRandomMover, self).__init__(*args, **kwargs)
 
 
-class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
+class WebCatsMover(BaseWebObject, CatsMover):
+    """
+    A subclass of :class:`gnome.movers.CatsMover` that provides
+    webgnome-specific functionality.
+    """
+    default_name = 'Cats Mover'
+    state = copy.deepcopy(CatsMover.state)
+    state.add(create=['name'], update=['name'])
+
+
+class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
     """
     A subclass of :class:`gnome.movers.WindMover` that provides
     webgnome-specific functionality.
     """
+    default_name = 'Spill'
+    state = copy.deepcopy(SurfaceReleaseSpill.state)
+    state.add(create=['name'], update=['name'])
+
     def __init__(self, *args, **kwargs):
-        self._name = kwargs.pop('name', None)
         self.is_active = kwargs.pop('is_active', True)
         super(WebSurfaceReleaseSpill, self).__init__(*args, **kwargs)
-
-    serializable_fields = [
-        'id',
-        'release_time',
-        'end_release_time',
-        'start_position',
-        'end_position',
-        'windage_range',
-        'windage_persist',
-        'name',
-        'num_elements',
-        'is_active'
-    ]
-
-    @property
-    def hour(self):
-        return self.release_time.hour
-
-    @property
-    def minute(self):
-        return self.release_time.minute
 
     def _reshape(self, lst):
         return numpy.asarray(
@@ -274,56 +152,86 @@ class WebSurfaceReleaseSpill(SurfaceReleaseSpill, BaseWebObject):
         return self.end_position.tolist()
 
 
-class WebMapFromBNA(MapFromBNA, BaseWebObject):
+class WebMapFromBNA(BaseWebObject, MapFromBNA):
     """
     A subclass of :class:`gnome.map.MapFromBNA` that provides
     webgnome-specific functionality.
     """
-    serializable_fields = [
-        'id',
-        'name',
-        'map_bounds',
-        'refloat_halflife'
-    ]
+    default_name = 'Map'
+    state = copy.deepcopy(MapFromBNA.state)
+    state.add(create=['name'], update=['name'])
+
+    def __init__(self, base_dir, *args, **kwargs):
+        self.base_dir = base_dir
+        super(WebMapFromBNA, self).__init__(*args, **kwargs)
 
     def map_bounds_to_dict(self):
         """
         Map bounds may be a tuple, if it's the default value provided by
         :class:`webgnome.schema.MapSchema`, or it may be a NumPy list,
         in which case we should call the tolist() method to get a list.
+
+        TODO: Should the Schema object handle this? Does it already?
         """
         if self.map_bounds is not None and hasattr(self.map_bounds, 'tolist'):
             return self.map_bounds.tolist()
         return self.map_bounds
 
-    def __init__(self, *args, **kwargs):
-        self.name = kwargs.pop('name', 'Map')
-        super(WebMapFromBNA, self).__init__(*args, **kwargs)
+    def filename_to_dict(self):
+        """
+        Create a relative path to the filename by removing its base directory.
+        """
+        to_remove = len(self.base_dir)
+
+        if not self.base_dir.endswith(os.path.sep):
+            to_remove += 1
+
+        return self.filename[to_remove:]
 
 
-class WebModel(Model, BaseWebObject):
+class WebGnomeMap(BaseWebObject, GnomeMap):
+    default_name = 'Map'
+    state = copy.deepcopy(GnomeMap.state)
+    state.add(create=['name'], update=['name'])
+
+
+class WebModel(BaseWebObject, Model):
     """
     A subclass of :class:`gnome.model.Model` that provides webgnome-specific
     functionality.
-
-    TODO: Use Serializable mixin's to_dict and from_dict mechanism.
     """
     mover_keys = {
         WebWindMover: 'wind_movers',
-        WebRandomMover: 'random_movers'
+        WebRandomMover: 'random_movers',
+        WebCatsMover: 'cats_movers'
     }
 
     spill_keys = {
         WebSurfaceReleaseSpill: 'surface_release_spills'
     }
 
-    def __init__(self, *args, **kwargs):
-        # Create the base directory for all of the model's data.
-        self.base_dir = os.path.join(kwargs.pop('model_images_dir'),
-                                     str(self.id))
-        util.mkdir_p(self.base_dir)
+    environment_keys = {
+        WebWind: 'winds'
+    }
 
+    def __init__(self, *args, **kwargs):
+        data_dir = kwargs.pop('data_dir')
+        self.package_root = kwargs.pop('package_root')
+
+        # Set the model's id
         super(WebModel, self).__init__()
+
+        # Remove the default map object.
+        if self.map:
+            self.remove_map()
+
+        self.base_dir = os.path.join(self.package_root, data_dir, str(self.id))
+        self.base_dir_relative = os.path.join(data_dir, str(self.id))
+        self.static_data_dir = os.path.join(self.base_dir, 'data')
+
+        # Create the base directory for all of the model's data.
+        util.mkdir_p(self.base_dir)
+        util.mkdir_p(self.static_data_dir)
 
         # Patch the object with an empty ``time_steps`` array for the time being.
         # TODO: Add output caching in the model?
@@ -355,21 +263,22 @@ class WebModel(Model, BaseWebObject):
 
     def add_bna_map(self, filename, map_data):
         """
-        Add a BNA map that exists at ``filename``, a path relative to the base
-        directory for the model.
+        Adds a BNA map that exists at ``filename``, a path relative to the
+        webgnome package directory.
+
+        This might be a map file in a location file or in a running model's
+        data directory.
 
         Creates the land-water map and the canvas, and saves the background
         image for the map.
         """
-        map_file = os.path.join(self.base_dir, filename)
+        map_file = os.path.join(self.package_root, filename)
 
         # Create the land-water map
-        self.map = WebMapFromBNA(map_file, **map_data)
+        self.map = WebMapFromBNA(self.package_root, map_file, **map_data)
 
-        # TODO: Should size be user-configurable?
-        canvas = gnome.utilities.map_canvas.MapCanvas((800, 600))
-        polygons = haz_files.ReadBNA(filename, "PolygonSet")
-        canvas.set_land(polygons)
+        # TODO: Should canvas size be configurable?
+        canvas = map_canvas.MapCanvasFromBNA((800, 600), map_file)
         self.output_map = canvas
 
         # Delete an existing background image file.
@@ -377,10 +286,10 @@ class WebModel(Model, BaseWebObject):
             try:
                 os.remove(self.background_image_path)
             except OSError as e:
-                log.error('Could not delete file: %s. Error was: %s' % (
+                logger.error('Could not delete file: %s. Error was: %s' % (
                     self.background_image, e))
 
-        # Save the backgrsinon-1.6.0ound image.
+        # Save the background image.
         self.background_image = 'background_image_%s.png' % util.get_runtime()
         self.output_map.draw_background()
         self.output_map.save_background(self.background_image_path)
@@ -413,20 +322,18 @@ class WebModel(Model, BaseWebObject):
             if key not in data:
                 data[key] = []
 
-            data[key].append(obj.to_dict())
+            obj_data = obj.to_dict(do='create')
+
+            data[key].append(obj_data)
 
         return data
-    
-    def to_dict(self, include_spills=True, include_movers=True):
+
+    def to_dict(self, include_spills=True, include_movers=True,
+                include_wind=True):
         """
         Return a dictionary representation of this model. Includes subtrees
         (lists of dictionaries) for any movers and spills configured.
         """
-        if self.map and hasattr(self.map, 'to_dict'):
-            _map = self.map.to_dict()
-        else:
-            _map = None
-
         data = {
             'uncertain': self.uncertain,
             'time_step': (self.time_step / 60.0) / 60.0,
@@ -434,14 +341,20 @@ class WebModel(Model, BaseWebObject):
             'duration_days': 0,
             'duration_hours': 0,
             'id': self.id,
-            'map': _map
         }
+
+        if self.map and hasattr(self.map, 'to_dict'):
+            data['map'] = self.map.to_dict('create')
 
         if self.duration.days:
             data['duration_days'] = self.duration.days
-    
+
         if self.duration_hours:
             data['duration_hours'] = self.duration_hours
+
+        if include_wind:
+            data = self.build_subtree(data, self.environment,
+                                      self.environment_keys)
 
         if include_movers:
             data = self.build_subtree(data, self.movers, self.mover_keys)
@@ -454,23 +367,7 @@ class WebModel(Model, BaseWebObject):
     def from_dict(self, data):
         """
         Set fields on this model from the dict ``data``.
-
-        Note: does not set movers or spills.
         """
-        def add_mover(data, cls):
-            _id = data.pop('id', None)
-            data = cls(**data)
-            if _id:
-                data._id = uuid.UUID(_id)
-            self.movers.add(data)
-
-        def add_spill(data, cls):
-            _id = data.pop('id', None)
-            spill = cls(**data)
-            if _id:
-                spill._id = uuid.UUID(_id)
-            self.spills.add(spill)
-
         self.uncertain = data['uncertain']
         self.start_time = data['start_time']
         self.time_step = data['time_step'] * 60 * 60
@@ -479,28 +376,44 @@ class WebModel(Model, BaseWebObject):
             seconds=data['duration_hours'] * 60 * 60)
 
         map_data = data.get('map', None)
+        winds = data.get('winds', None)
         wind_movers = data.get('wind_movers', None)
+        cats_movers = data.get('cats_movers', None)
         random_movers = data.get('random_movers', None)
         surface_spills = data.get('surface_release_spills', None)
 
         if map_data:
-            filename = map_data.pop('filename')
             # Ignore map bounds - will be set from the source file.
             map_data.pop('map_bounds', None)
+            # Make the filename, which is stored as a relative path, absolute
+            filename = os.path.join(self.package_root, map_data.pop('filename'))
             self.add_bna_map(filename, map_data)
+
+        def add_to_collection(collection, data, cls):
+            obj = cls(**data)
+            collection.add(obj)
+
+        if winds:
+            for wind in winds:
+                add_to_collection(self.environment, wind, WebWind)
 
         if wind_movers:
             for mover_data in wind_movers:
-                mover_data['wind'] = WebWind(**mover_data.pop('wind'))
-                add_mover(mover_data, WebWindMover)
+                mover_data['wind'] = self.environment.get(mover_data['wind_id'])
+                add_to_collection(self.movers, mover_data, WebWindMover)
+
+        if cats_movers:
+            for mover_data in cats_movers:
+                add_to_collection(self.movers, mover_data, WebCatsMover)
 
         if random_movers:
             for mover_data in random_movers:
-                add_mover(mover_data, WebRandomMover)
+                add_to_collection(self.movers, mover_data, WebRandomMover)
 
         if surface_spills:
             for spill_data in surface_spills:
-                add_spill(spill_data, WebSurfaceReleaseSpill)
+                add_to_collection(self.spills, spill_data,
+                                  WebSurfaceReleaseSpill)
 
         return self
 
@@ -513,7 +426,9 @@ class ModelManager(object):
     class DoesNotExist(Exception):
         pass
 
-    def __init__(self):
+    def __init__(self, data_dir, package_root):
+        self.data_dir = data_dir
+        self.package_root = package_root
         self.running_models = {}
 
     def create(self, **kwargs):
@@ -521,6 +436,11 @@ class ModelManager(object):
         Create a new :class:`WebModel`, adds it to the `running_models` dict
         and returns the new object.
         """
+        if 'package_root' not in kwargs:
+            kwargs['package_root'] = self.package_root
+        if 'data_dir' not in kwargs:
+            kwargs['data_dir'] = self.data_dir
+
         model = WebModel(**kwargs)
         self.running_models[str(model.id)] = model
         return model

@@ -1,21 +1,37 @@
 #!/usr/bin/env python
 import os
 from datetime import datetime, timedelta
+import copy
 
 import gnome
-
-from gnome.gnomeobject import GnomeObject
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
-from gnome.environment import Wind
-from gnome.movers import Mover
+from gnome.environment import Environment, Wind
+from gnome.movers import Mover, WindMover, CatsMover
 from gnome.spill_container import SpillContainerPair
+from gnome.utilities import serializable
 
-class Model(GnomeObject):
+class Model(serializable.Serializable):
     """ 
     PyGNOME Model Class
     
     """
+    _update = ['time_step',
+               'start_time',
+               'duration',
+               'uncertain',
+               'movers',
+               'environment',
+               'spills',
+               'maps'
+               ]
+    _create = []
+    _create.extend(_update)
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add(create=_create,
+              update=_update)   # no need to copy parent's state in tis case
+
+    
     def __init__(self,
                  time_step=900, # 15 minutes in seconds
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
@@ -23,26 +39,32 @@ class Model(GnomeObject):
                  map=gnome.map.GnomeMap(),
                  output_map=None,
                  uncertain=False,
-                 ):
+                 **kwargs):
         """ 
         Initializes model. 
 
         All this does is call reset() which initializes eveything to defaults
+        
+        Optional keyword parameters (kwargs):
+        :param id: Unique Id identifying the newly created mover (a UUID as a string). 
+                   This is used when loading an object from a persisted model
         """
         # making sure basic stuff is in place before properties are set
-        self.winds = OrderedCollection(dtype=Wind)  
+        self.environment = OrderedCollection(dtype=Environment)  
         self.movers = OrderedCollection(dtype=Mover)
-        #self._spill_container = gnome.spill_container.SpillContainer()
-        #self._uncertain_spill_container = None
         self.spills = SpillContainerPair(uncertain)   # contains both certain/uncertain spills 
 
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
         self.output_map = output_map
-        #self._uncertain = uncertain # sets whether uncertainty is on or not.
 
         self.time_step = time_step # this calls rewind() !
+        self._gnome_id = gnome.GnomeId(id=kwargs.pop('id',None))
+        
+        # register callback with OrderedCollection
+        self.movers.register_callback(self._callback_add_mover, ('add','replace'))
+
 
     def reset(self, **kwargs):
         """
@@ -60,16 +82,8 @@ class Model(GnomeObject):
 
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
-        ## note: this may be redundant -- they will get reset in setup_model_run() anyway..
-        #self._spill_container.reset()
         self.spills.rewind()
-        #=======================================================================
-        # try:
-        #    self._uncertain_spill_container.reset()
-        # except AttributeError:
-        #    pass # there must not be one...
-        #=======================================================================
-
+        gnome.utilities.rand.seed(1) # set rand before each call so windages are set correctly
 
     ### Assorted properties
     @property
@@ -83,12 +97,10 @@ class Model(GnomeObject):
         if self.spills.uncertain != uncertain_value:
             self.spills.uncertain = uncertain_value # update uncertainty
             self.rewind()
-        #=======================================================================
-        # if self._uncertain != uncertain_value:
-        #    self._uncertain = uncertain_value
-        #    self.spills.uncertain = uncertain_value # update uncertainty
-        #    self.rewind()           
-        #=======================================================================
+    
+    @property
+    def id(self):
+        return self._gnome_id.id
 
     @property
     def start_time(self):
@@ -146,34 +158,6 @@ class Model(GnomeObject):
     def num_time_steps(self):
         return self._num_time_steps
 
-#===============================================================================
-#    def get_spill(self, spill_id):
-#        """
-#        Return a :class:`gnome.spill.Spill` in the ``self._spills`` dict with
-#        the key ``spill_id`` if one exists.
-#        """
-#        return self._spill_container.spills[spill_id]
-# 
-#    def add_spill(self, spill):
-#        """
-#        add a spill to the model
-# 
-#        :param spill: an instance of one of the gnome.spill classes
-# 
-#        """
-#        #fixme: where should we check if a spill is in a valid location on the map?
-#        self._spill_container.spills += spill
-#        ## fixme -- this may not be strictly required, but it's safer.
-#        self.rewind() 
-# 
-#    def remove_spill(self, spill_id):
-#        """
-#        remove the passed-in spill from the spill list
-#        """
-#        ##fixme: what if we want to remove by reference, rather than id?
-#        del self._spill_container.spills[spill_id]
-#===============================================================================
-
     def setup_model_run(self):
         """
         Sets up each mover for the model run
@@ -183,15 +167,7 @@ class Model(GnomeObject):
         for mover in self.movers:
             mover.prepare_for_model_run()
         
-        #self.spills.uncertain = self._uncertain
         self.spills.rewind()
-        #=======================================================================
-        # self._spill_container.reset()
-        # if self._uncertain:
-        #    self._uncertain_spill_container = self._spill_container.uncertain_copy()
-        # else:
-        #    self._uncertain_spill_container = None
-        #=======================================================================
 
     def setup_time_step(self):
         """
@@ -199,17 +175,11 @@ class Model(GnomeObject):
         
         right now only prepares the movers -- maybe more later?.
         """
-        
         # initialize movers differently if model uncertainty is on
         for mover in self.movers:
             for sc in self.spills.items():
                 mover.prepare_for_model_step(sc, self.time_step, self.model_time)
-            #===================================================================
-            # mover.prepare_for_model_step(self._spill_container, self.time_step, self.model_time)
-            # if self.is_uncertain:
-            #    mover.prepare_for_model_step(self._uncertain_spill_container, self.time_step, self.model_time)
-            #===================================================================
-                                
+            
     def move_elements(self):
         """
 
@@ -238,27 +208,6 @@ class Model(GnomeObject):
 
                     # the final move to the new positions
                     sc['positions'][:] = sc['next_positions']
-            
-#===============================================================================
-#        if self._spill_container.spills:
-#            containers = [ self._spill_container ]
-#            if self.is_uncertain:
-#                containers.append( self._uncertain_spill_container )
-#            for sc in containers: # either one or two, depending on uncertaintly or not
-#                if sc.num_elements > 0: # no reason to do any of this if there are no elements
-#                    # reset next_positions
-#                    sc['next_positions'][:] = sc['positions']
-# 
-#                    # loop through the movers
-#                    for mover in self.movers:
-#                        delta = mover.get_move(sc, self.time_step, self.model_time)
-#                        sc['next_positions'] += delta
-#                
-#                    self.map.beach_elements(sc)
-# 
-#                    # the final move to the new positions
-#                    sc['positions'][:] = sc['next_positions']
-#===============================================================================
 
     def step_is_done(self):
         """
@@ -288,7 +237,7 @@ class Model(GnomeObject):
         :param images_dir: directory to write the image to.
         """
         if self.output_map is None:
-            raise ValueError("You must have an ouput map to use the image output")
+            raise ValueError("You must have an output map to use the image output")
         if self.current_time_step == 0:
             self.output_map.draw_background()
             self.output_map.save_background(os.path.join(images_dir, "background_map.png"))
@@ -299,11 +248,7 @@ class Model(GnomeObject):
 
         for sc in self.spills.items():
             self.output_map.draw_elements(sc)
-        #=======================================================================
-        # if self.is_uncertain:
-        #    self.output_map.draw_elements(self._uncertain_spill_container)
-        # self.output_map.draw_elements(self._spill_container)
-        #=======================================================================
+
         self.output_map.save_foreground(filename)
 
         return filename
@@ -377,3 +322,47 @@ class Model(GnomeObject):
                 print "Done with the model run"
                 break
 
+    def movers_to_dict(self):
+        """
+        call to_dict method of OrderedCollection object
+        """
+        return self.movers.to_dict()
+    
+    def environment_to_dict(self):
+        """
+        call to_dict method of OrderedCollection object
+        """
+        return self.environment.to_dict()
+
+    def spills_to_dict(self):
+        return self.spills.to_dict()
+
+    def maps_to_dict(self):
+        """
+        create a dict_ that contains:
+        'map': (type, object.id)
+        'ouput_map': (type, object.id)
+        """
+        dict_ = {'map': ("{0}.{1}".format(self.map.__module__, self.map.__class__.__name__), self.map.id)}
+        if self.output_map is not None:
+            dict_.update({'output_map': ("{0}.{1}".format(self.output_map.__module__, self.output_map.__class__.__name__), self.output_map.id)})
+            
+        return dict_
+    
+    def _callback_add_mover(self, obj_added):
+        """ callback after mover has been added """
+        if isinstance(obj_added, WindMover):
+            if obj_added.wind.id not in self.environment:
+                self.environment += obj_added.wind
+                
+        if isinstance(obj_added, CatsMover):
+            if obj_added.tide is not None and obj_added.tide.id not in self.environment:
+                    self.environment += obj_added.tide
+        
+        # let's also set active_start, active_stop times to model times if they are set for all time
+        if obj_added.active_start == gnome.constants.min_time:
+            obj_added.active_start = self.start_time
+            
+        if obj_added.active_stop == gnome.constants.max_time:
+            obj_added.active_stop = self.start_time + self.duration
+        

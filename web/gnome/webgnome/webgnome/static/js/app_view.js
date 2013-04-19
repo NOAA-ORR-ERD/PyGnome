@@ -37,26 +37,24 @@ define([
                 newItemEl: "#menu-new",
                 runItemEl: "#menu-run",
                 stepItemEl: "#menu-step",
-                runUntilItemEl: "#menu-run-until"
+                runUntilItemEl: "#menu-run-until",
+                locationFilesMeta: this.locationFilesMeta
             });
 
             this.sidebarEl = '#sidebar';
             $(this.sidebarEl).resizable({
-                handles: 'e, w',
-                resize: function (event, ui) {
-                    $(this).css("height", '100%');
-                }
+                handles: 'e, w'
             });
 
             this.treeView = new views.TreeView({
                 treeEl: "#tree",
-                apiRoot: this.apiRoot,
                 gnomeRun: this.gnomeRun,
-                gnomeSettings: this.gnomeSettings,
+                gnomeModel: this.gnomeModel,
                 map: this.map,
                 customMap: this.customMap,
                 collections: [
-                    this.windMovers, this.randomMovers, this.surfaceReleaseSpills
+                    this.windMovers, this.randomMovers, this.surfaceReleaseSpills,
+                    this.winds
                 ]
             });
 
@@ -99,7 +97,7 @@ define([
 
             this.messageView = new views.MessageView({
                 gnomeRun: this.gnomeRun,
-                gnomeSettings: this.gnomeSettings,
+                gnomeModel: this.gnomeModel,
                 surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers
             });
@@ -111,9 +109,8 @@ define([
 
             this.locationFileMapView = new views.LocationFileMapView({
                 el: $('#location-file-map'),
-                apiRoot: this.apiRoot,
                 mapCanvas: '#map_canvas',
-                locationFiles: this.options.locationFiles
+                locationFilesMeta: this.locationFilesMeta
             });
 
             this.setupEventHandlers();
@@ -138,7 +135,7 @@ define([
             this.addSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
             this.editSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
 
-            this.formViews.on(forms.FormView.MESSAGE_READY, this.displayMessage);
+            this.formViews.on(forms.BaseView.MESSAGE_READY, this.displayMessage);
 
             this.treeView.on(views.TreeView.ITEM_DOUBLE_CLICKED, this.treeItemDoubleClicked);
 
@@ -165,14 +162,48 @@ define([
             this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
             this.mapView.on(views.MapView.READY, this.drawSpills);
 
+            this.locationFileMapView.on(views.LocationFileMapView.LOCATION_CHOSEN, this.loadLocationFileWizard);
+
             this.menuView.on(views.MenuView.NEW_ITEM_CLICKED, this.newMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_ITEM_CLICKED, this.runMenuItemClicked);
             this.menuView.on(views.MenuView.RUN_UNTIL_ITEM_CLICKED, this.runUntilMenuItemClicked);
-            this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.setLocation);
+            this.menuView.on(views.MenuView.LOCATION_FILE_ITEM_CLICKED, this.loadLocationFileWizard);
         },
 
-        setLocation: function(location) {
-            this.locationFileMapView.loadLocationFile(location);
+        showLocationFileWizard: function(locationFileMeta) {
+            var html = $(locationFileMeta.get('wizard_html'));
+            var id = html.attr('id');
+            var formView = this.formViews.get(id);
+
+            if (formView) {
+                formView.show();
+            } else {
+                this.loadLocationFile(locationFileMeta);
+            }
+        },
+
+        loadLocationFileWizard: function(location) {
+            var locationFileMeta = this.locationFilesMeta.get(location);
+
+            if (locationFileMeta) {
+                this.showLocationFileWizard(locationFileMeta);
+            } else {
+                alert('That location file is not available yet.');
+            }
+        },
+
+        loadLocationFile: function(locationName) {
+            var model = new models.GnomeModelFromLocationFile({
+                location_name: locationName.get('filename')
+            }, {
+                gnomeModel: this.gnomeModel
+            })
+
+            model.save().then(function() {
+                util.refresh();
+            }).fail(function() {
+                alert('That location file is not available yet.');
+            });
         },
 
         /*
@@ -234,12 +265,18 @@ define([
         },
 
         setupForms: function() {
+            var _this = this;
+
             this.formViews = new forms.FormViewContainer({
                 id: 'modal-container'
             });
 
             this.addMoverFormView = new forms.AddMoverFormView({
                 id: 'add-mover'
+            });
+
+            this.addEnvironmentFormView = new forms.AddEnvironmentFormView({
+                id: 'add-environment'
             });
 
             this.addSpillFormView = new forms.AddSpillFormView({
@@ -253,77 +290,130 @@ define([
             this.editMapFormView = new forms.MapFormView({
                 id: 'edit-map',
                 model: this.map,
-                defaults: this.options.defaultMap
+                defaults: this.options.defaultMap,
+                gnomeModel: this.gnomeModel
             });
 
             this.addCustomMapFormView = new forms.AddCustomMapFormView({
                 id: 'add-custom-map',
                 model: this.customMap,
-                defaults: this.options.defaultCustomMap
+                defaults: this.options.defaultCustomMap,
+                gnomeModel: this.gnomeModel
             });
 
             this.addMapFromUploadFormView = new forms.AddMapFromUploadFormView({
                 id: 'add-map-from-upload',
                 model: this.map,
-                uploadUrl: this.apiRoot + '/file_upload'
+                uploadUrl: this.apiRoot + '/file_upload',
+                gnomeModel: this.gnomeModel
             });
 
             this.gnomeSettingsFormView = new forms.GnomeSettingsFormView({
                 id: 'model-settings',
-                model: this.gnomeSettings
+                model: this.gnomeModel,
+
+                // XXX: Wish we didn't have to reference this again?
+                gnomeModel: this.gnomeModel
             });
 
             this.addWindMoverFormView = new forms.AddWindMoverFormView({
                 id: 'add-wind-mover',
                 collection: this.windMovers,
+                router: this.router,
                 defaults: this.options.defaultWindMover,
-                defaultWindTimeseriesValue: this.options.defaultWindTimeseriesValue
+                defaultWind: this.options.defaultWind,
+                winds: this.winds,
+                gnomeModel: this.gnomeModel
             });
 
             this.editWindMoverFormView = new forms.WindMoverFormView({
                 id: 'edit-wind-mover',
                 collection: this.windMovers,
+                router: this.router,
+                winds: this.winds,
                 defaults: this.options.defaultWindMover,
-                defaultWindTimeseriesValue: this.options.defaultWindTimeseriesValue
+                defaultWind: this.options.defaultWind,
+                gnomeModel: this.gnomeModel
+            });
+
+            this.addWindFormView = new forms.AddWindFormView({
+                id: 'add-wind',
+                collection: this.winds,
+                defaults: this.options.defaultWind,
+                gnomeModel: this.gnomeModel
+            });
+
+            this.editWindFormView = new forms.WindFormView({
+                id: 'edit-wind',
+                collection: this.winds,
+                defaults: this.options.defaultWind,
+                gnomeModel: this.gnomeModel
             });
 
             this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
                 id: 'add-random-mover',
                 collection: this.randomMovers,
                 defaults: this.options.defaultRandomMover,
+                gnomeModel: this.gnomeModel
             });
 
             this.editRandomMoverFormView = new forms.RandomMoverFormView({
                 id: 'edit-random-mover',
                 collection: this.randomMovers,
                 defaults: this.options.defaultRandomMover,
+                gnomeModel: this.gnomeModel
             });
 
             this.addSurfaceReleaseSpillFormView = new forms.AddSurfaceReleaseSpillFormView({
                 id: 'add-surface-release-spill',
                 collection: this.surfaceReleaseSpills,
                 defaults: this.options.defaultSurfaceReleaseSpill,
+                gnomeModel: this.gnomeModel
             });
 
             this.editSurfaceReleaseSpillFormView = new forms.SurfaceReleaseSpillFormView({
                 id: 'edit-surface-release-spill',
                 collection: this.surfaceReleaseSpills,
-                defaults: this.options.defaultSurfaceReleaseSpill
+                defaults: this.options.defaultSurfaceReleaseSpill,
+                gnomeModel: this.gnomeModel
             });
 
-            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.moverChosen);
+            this.addMoverFormView.on(forms.AddMoverFormView.MOVER_CHOSEN, this.showFormWithId);
+            this.addEnvironmentFormView.on(forms.AddEnvironmentFormView.ENVIRONMENT_CHOSEN, this.showFormWithId);
             this.addSpillFormView.on(forms.AddSpillFormView.SPILL_CHOSEN, this.spillChosen);
-            this.addMapFormView.on(forms.AddMapFormView.SOURCE_CHOSEN, this.mapSourceChosen);
+            this.addMapFormView.on(forms.AddMapFormView.SOURCE_CHOSEN, this.showFormWithId);
+
+            // Create a LocationFileWizardFormView for each LocationFile that
+            // has wizard HTML.
+            this.locationFilesMeta.each(function(locationFileMeta) {
+                var html = $(locationFileMeta.get('wizard_html'));
+                var id = html.attr('id');
+                var wizard = _this.locationFileWizards.get(locationFileMeta.id);
+
+                if (html.length && id) {
+                    var formView = new forms.LocationFileWizardFormView({
+                        id: id,
+                        model: wizard,
+                        gnomeModel: _this.gnomeModel,
+                        locationFileMeta: locationFileMeta
+                    });
+
+                    _this.formViews.add(formView);
+                }
+            });
 
             this.formViews.add(this.addMoverFormView);
             this.formViews.add(this.addSpillFormView);
+            this.formViews.add(this.addEnvironmentFormView);
             this.formViews.add(this.addMapFormView);
             this.formViews.add(this.addMapFromUploadFormView);
             this.formViews.add(this.addWindMoverFormView);
+            this.formViews.add(this.addWindFormView);
             this.formViews.add(this.addRandomMoverFormView);
             this.formViews.add(this.addSurfaceReleaseSpillFormView);
             this.formViews.add(this.gnomeSettingsFormView);
             this.formViews.add(this.editWindMoverFormView);
+            this.formViews.add(this.editWindFormView);
             this.formViews.add(this.editRandomMoverFormView);
             this.formViews.add(this.editSurfaceReleaseSpillFormView);
             this.formViews.add(this.editMapFormView);
@@ -331,33 +421,14 @@ define([
         },
 
         setupModels: function() {
-            this.map = new models.Map(this.options.map, {
-                url: this.apiRoot + '/map'
-            });
+            var _this = this;
+            var gnomeSettings = this.options.gnomeSettings;
 
-            this.customMap = new models.CustomMap({}, {
-                url: this.apiRoot + '/custom_map'
-            });
+            var windMovers = gnomeSettings.wind_movers;
+            delete gnomeSettings['wind_movers'];
 
-            this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
-                this.options.surfaceReleaseSpills, {
-                    url: this.apiRoot + "/spill/surface_release"
-                }
-            );
 
-            this.windMovers = new models.WindMoverCollection(
-                this.options.windMovers, {
-                    url: this.apiRoot + "/mover/wind"
-                }
-            );
-
-            this.randomMovers = new models.RandomMoverCollection(
-                this.options.randomMovers, {
-                    url: this.apiRoot + "/mover/random"
-                }
-            );
-
-            this.gnomeSettings = new models.Gnome(this.options.gnomeSettings);
+            this.gnomeModel = new models.GnomeModel(this.options.gnomeSettings);
 
             // Initialize the model with any previously-generated time step data the
             // server had available.
@@ -366,7 +437,56 @@ define([
                 expectedTimeSteps: this.options.expectedTimeSteps,
                 currentTimeStep: this.options.currentTimeStep,
                 bounds: this.options.mapBounds || [],
-                gnomeSettings: this.gnomeSettings
+                gnomeModel: this.gnomeModel
+            });
+
+            this.map = new models.Map(this.options.map, {
+                gnomeModel: this.gnomeModel
+            });
+
+            this.customMap = new models.CustomMap({}, {
+                gnomeModel: this.gnomeModel
+            });
+
+            this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
+                this.options.surfaceReleaseSpills, {
+                    gnomeModel: this.gnomeModel
+                }
+            );
+
+            this.winds = new models.WindCollection(
+                this.options.winds, {
+                    gnomeModel: this.gnomeModel
+                }
+            );
+
+            this.windMovers = new models.WindMoverCollection(
+                this.options.windMovers, {
+                    gnomeModel: this.gnomeModel
+                }
+            );
+
+            this.randomMovers = new models.RandomMoverCollection(
+                this.options.randomMovers, {
+                    gnomeModel: this.gnomeModel
+                }
+            );
+
+            this.locationFilesMeta = new models.LocationFileMetaCollection(
+                this.options.locationFilesMeta, {
+                    gnomeModel: this.gnomeModel
+                }
+            );
+
+            this.locationFileWizards = new models.LocationFileWizardCollection([], {
+                gnomeModel: this.gnomeModel
+            });
+
+            // Create a LocationFileWizard for every LocationFile
+            this.locationFilesMeta.each(function(location) {
+                var wizard_json = location.get('wizard_json') || {};
+                wizard_json.id = location.id;
+                _this.locationFileWizards.add(wizard_json);
             });
         },
 
@@ -395,11 +515,11 @@ define([
                 return;
             }
 
-            this.gnomeSettings.wasDeleted = true;
-            this.gnomeSettings.destroy({
+            this.gnomeModel.wasDeleted = true;
+            this.gnomeModel.destroy({
                 success: function() {
                     util.Cookies.setItem('model_deleted', true);
-                    window.location = window.location.origin;
+                    util.refresh();
                 }
             });
         },
@@ -573,6 +693,7 @@ define([
                 return;
             }
 
+            formView.reload();
             formView.show();
         },
 
@@ -664,17 +785,6 @@ define([
             this.deleteObjectForNode(model, node);
         },
 
-        moverChosen: function(moverType) {
-            var formView = this.formViews.get(moverType);
-
-            if (formView === undefined) {
-                return;
-            }
-
-            formView.reload();
-            formView.show();
-        },
-
         spillChosen: function(spillType, startCoords, endCoords) {
             var formView = this.formViews.get(spillType);
 
@@ -684,16 +794,6 @@ define([
 
             formView.reload();
             formView.show(startCoords, endCoords);
-        },
-
-        mapSourceChosen: function(source) {
-            var formView = this.formViews.get(source);
-
-            if (formView === undefined) {
-                return;
-            }
-
-            formView.show();
         },
 
         showSection: function(section) {

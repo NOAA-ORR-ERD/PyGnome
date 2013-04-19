@@ -135,5 +135,127 @@ class TestOrderedCollection(object):
         assert mymovers[mover_4.id] == mover_4
 
 
+def test_to_dict():
+    """
+    added a to_dict() method - test this method
+    """
+    items = [movers.simple_mover.SimpleMover(velocity=(i*0.5, -1.0, 0.0)) for i in range(2)]
+    items.extend([movers.RandomMover() for i in range(2)])
+    mymovers = OrderedCollection(items, dtype=gnome.movers.Mover)
+    dict_ = mymovers.to_dict()
+    
+    assert dict_['dtype'] == mymovers.dtype
+    for id, mv in enumerate(items):
+        assert dict_['id_list'][id][0] == "{0}.{1}".format( mv.__module__, mv.__class__.__name__)
+        assert dict_['id_list'][id][1] == mv.id
+     
+""" Define a helper class (mutable object) for use in TestCallbacks """
+class ObjToAdd():
+    def __init__(self):
+        self.reset()
+        
+    def reset(self):
+        self.add_callback = False
+        self.rm_callback = False
+        self.replace_callback = False
 
-
+class TestCallbacks():
+    to_add = [ObjToAdd(), ObjToAdd(), ObjToAdd()]
+    
+    def test_add_callback(self):
+        """ test add callback is invoked after adding an object or list of objects """
+        oc = OrderedCollection(dtype=ObjToAdd) # lets work with a mutable type
+        oc.register_callback(self._add_callback, events=('add'))
+        
+        self._reset_ObjToAdd_init_state()    # check everything if False initially
+        
+        oc += self.to_add
+        oc += ObjToAdd()
+        
+        for obj in oc:
+            assert obj.add_callback
+            assert not obj.rm_callback
+            assert not obj.replace_callback 
+         
+        
+    def test_remove_callback(self):
+        """ test remove callback is invoked after removing an object """
+        oc = OrderedCollection(dtype=ObjToAdd) # lets work with a mutable type
+        oc.register_callback(self._rm_callback, events='remove')
+        oc.register_callback(self._add_callback, events=('add'))
+        
+        self._reset_ObjToAdd_init_state()    # check everything if False initially
+        
+        oc += self.to_add
+            
+        del oc[id(self.to_add[0])]
+        
+        assert self.to_add[0].rm_callback 
+        assert self.to_add[0].add_callback
+        assert not self.to_add[0].replace_callback
+        
+        self.to_add[0].reset()  # reset all to false
+        oc += self.to_add[0]    # let's add this back in
+        
+        for obj in oc:
+            assert obj.add_callback
+            assert not obj.rm_callback
+            assert not obj.replace_callback
+            
+    def test_replace_callback(self):
+        """ test replace callback is invoked after replacing an object """
+        oc = OrderedCollection(dtype=ObjToAdd) # lets work with a mutable type
+        oc.register_callback(self._replace_callback, events=('replace'))
+        
+        self._reset_ObjToAdd_init_state()    # check everything if False initially
+        
+        oc += self.to_add
+        rep = ObjToAdd()
+        oc[id(self.to_add[0])] = rep
+        
+        for obj in oc:
+            assert not obj.add_callback
+            assert not obj.rm_callback
+            if id(obj) == id(rep):
+                assert obj.replace_callback
+            else:
+                assert not obj.replace_callback
+                
+    def test_add_replace_callback(self):
+        """ register one callback with multiple events (add, replace) """
+        oc = OrderedCollection(dtype=ObjToAdd) # lets work with a mutable type
+        oc.register_callback(self._add_callback, events=('add','replace'))
+        
+        self._reset_ObjToAdd_init_state()    # check everything if False initially
+        
+        oc += self.to_add
+        
+        for obj in oc:
+            assert obj.add_callback
+            assert not obj.rm_callback
+            assert not obj.replace_callback
+        
+        rep = ObjToAdd()
+        oc[id(self.to_add[0])] = rep
+        
+        for obj in oc:
+            assert obj.add_callback
+            assert not obj.rm_callback
+            assert not obj.replace_callback
+        
+        
+    """ Helper Functions """    
+    def _add_callback(self, obj_):
+        obj_.add_callback = True
+        
+    def _rm_callback(self, obj_):
+        obj_.rm_callback = True
+        
+    def _replace_callback(self, obj_):
+        obj_.replace_callback = True
+    
+    def _reset_ObjToAdd_init_state(self):
+        for obj in self.to_add:
+            obj.reset()
+    """ End helper objects/functions """
+    

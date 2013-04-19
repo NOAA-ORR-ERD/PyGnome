@@ -140,7 +140,7 @@ WorldPoint3D GridWindMover_c::GetMove(const Seconds& model_time, Seconds timeSte
 	OSErr err = noErr;
 	char errmsg[256];
 	
-	// if ((*theLE).z > 0) return deltaPoint; // wind doesn't act below surface
+	if ((*theLE).z > 0) return deltaPoint; // wind doesn't act below surface
 	// or use some sort of exponential decay below the surface...
 	
 	if(!fIsOptimizedForStep) 

@@ -1,9 +1,12 @@
-cimport numpy as np
+cimport numpy as cnp
 import numpy as np
 
 from type_defs cimport *
-from movers cimport Mover_c,GridWindMover_c,TimeGridVel_c,TimeGridVelRect_c,TimeGridVelCurv_c,TimeGridWindRect_c,TimeGridWindCurv_c
+from movers cimport Mover_c,GridWindMover_c,TimeGridVel_c
 cimport cy_mover
+
+from gnome.cy_gnome.cy_helpers cimport to_bytes
+
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
 Since this function is custom for each mover, just keep it with the definition for each mover
@@ -22,18 +25,6 @@ cdef class CyGridWindMover(cy_mover.CyMover):
     def __dealloc__(self):
         del self.mover
         self.grid = NULL
-    
-#     def set_time_grid(self, time_grid_file, topology_file):
-#         self.grid.fIsOptimizedForStep = 0
-#         #cdef TimeGridVel_c *time_grid
-#         cdef TimeGridVelCurv_c *time_grid
-#         time_grid = new TimeGridVelCurv_c()
-#         #time_grid = new TimeGridVel_c()
-#         if (time_grid.TextRead(time_grid_file, topology_file) == -1):
-#             return False
-#         self.grid.SetTimeGrid(time_grid)
-#         return True
-            
 
     def text_read(self, time_grid_file, topology_file):
         """
@@ -41,7 +32,16 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         
         """
         cdef OSErr err
-        err = self.grid.TextRead(time_grid_file, topology_file)
+        cdef bytes time_grid, topology
+        
+        time_grid = to_bytes( unicode(time_grid_file))
+        
+        if topology_file is None:
+            err = self.grid.TextRead( time_grid, '')
+        else:
+            topology  = to_bytes( unicode(topology_file))
+            err = self.grid.TextRead( time_grid, topology )
+         
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
@@ -54,10 +54,10 @@ cdef class CyGridWindMover(cy_mover.CyMover):
     def get_move(self, 
                  model_time, 
                  step_len, 
-                 np.ndarray[WorldPoint3D, ndim=1] ref_points, 
-                 np.ndarray[WorldPoint3D, ndim=1] delta, 
-                 np.ndarray[np.npy_double] windages,
-                 np.ndarray[np.npy_int16] LE_status, 
+                 cnp.ndarray[WorldPoint3D, ndim=1] ref_points, 
+                 cnp.ndarray[WorldPoint3D, ndim=1] delta, 
+                 cnp.ndarray[cnp.npy_double] windages,
+                 cnp.ndarray[cnp.npy_int16] LE_status, 
                  LEType spill_type, 
                  long spill_ID):
         """

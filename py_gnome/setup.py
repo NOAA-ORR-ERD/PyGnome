@@ -19,14 +19,17 @@ It needs to be imported before any other extensions (which happens in the gnome.
 """
 
 ## NOTE: this works with "distribute" package, but not with setuptools.
-from setuptools import setup # to support "develop" mode: 
+import os
+import glob
+import shutil
+import sys
+import subprocess
+
+from setuptools import setup, find_packages # to support "develop" mode: 
 from distutils.extension import Extension
-from Cython.Distutils import build_ext
-import subprocess 
+from Cython.Distutils import build_ext 
 
 import numpy as np
-import os
-import sys
 
 if "clean" in "".join(sys.argv[1:]):
     target = 'clean'
@@ -35,12 +38,21 @@ else:
 
 if "cleanall" in "".join(sys.argv[1:]):
     target = 'clean'
-    print "Deleting cython files .."
-    os.system('rm -v gnome/cy_gnome/cy_*.so')
-    os.system('rm -v gnome/cy_gnome/cy_*.pyd')
-    os.system('rm -v gnome/cy_gnome/cy_*.cpp')
-    os.system('rm -rv build')
-    os.system('rm -rv pyGnome.egg-info')
+    rm_files = ['gnome/cy_gnome/cy_*.so','gnome/cy_gnome/cy_*.pyd','gnome/cy_gnome/cy_*.cpp']
+
+    for files_ in rm_files:
+        for file_ in glob.glob(files_):
+            print "Deleting auto-generated files: {0}".format(file_)
+            os.remove(file_)
+
+    rm_dir = ['pyGnome.egg-info','build']
+    for dir_ in rm_dir:
+        print "Deleting auto-generated directory: {0}".format(dir_)
+        try:
+            shutil.rmtree(dir_)
+        except OSError as e:
+            print e
+
     sys.argv[1] = 'clean'   # this is what distutils understands
 
 # only for windows
@@ -123,29 +135,44 @@ compile_args = []
 link_args = []
 
 # List of include directories for cython code - append to this list as needed for each platform
-l_include_dirs = [CPP_CODE_DIR,
-                    np.get_include(),
-                    '.']
+l_include_dirs = [ CPP_CODE_DIR, np.get_include(), '.']
 
 
+# build cy_basic_types along with lib_gnome so we can use distutils for building everything
+# and putting it in the correct place for linking.
+# cy_basic_types needs to be imported before any other extensions - this is being done
+# in the gnome/cy_gnome/__init__.py
 if sys.platform == "darwin":
-    # build cy_basic_types along with lib_gnome so we can use distutils for building everything
-    # and putting it in the correct place for linking.
-    # cy_basic_types needs to be imported before any other extensions - this is being done
-    # in the gnome/cy_gnome/__init__.py
-    basic_types_ext = Extension('gnome.cy_gnome.cy_basic_types',
-                                ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files, 
-                                language="c++",
-                                define_macros = macros,
-                                extra_compile_args=compile_args,
-   	                            extra_link_args= ['-Wl,../third_party_lib/libnetcdf.a'],
-                                include_dirs=l_include_dirs,
-                                )
-    
+    architecture = os.environ['ARCHFLAGS'].split()[1]
+    l_include_dirs.append('../third_party/%s/include' % architecture)
+    third_party_lib_dir = '../third_party/%s/lib' % architecture
+
+    # These are the new netCDF 4 libraries.
+    # TODO: They seem to be working with most all the unit tests with
+    # the following exceptions:
+    #     - test_cy_gridcurrent_mover.py passes all tests, but when
+    #       run my itself, spuriously generates bus errors and segmentation
+    #       faults at the completion of the tests.
+    #     - test_cy_gridwind_mover.py passes all tests, but when
+    #       run my itself, spuriously generates bus errors and segmentation
+    #       faults at the completion of the tests.
+    static_lib_names = ('hdf5', 'hdf5_hl', 'netcdf', 'netcdf_c++4')
+    static_lib_files = [os.path.join(third_party_lib_dir, 'lib%s.a' % l) for l in static_lib_names]
+
+    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
+            ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
+            language = 'c++',
+            define_macros = macros,
+            extra_compile_args = compile_args,
+            extra_link_args = ['-lz', '-lcurl'],
+            extra_objects=static_lib_files,
+            include_dirs = l_include_dirs,
+            )
+
     extensions.append(basic_types_ext)
 
 elif sys.platform == "win32":
-   
+
     # see if msbuild exists
     # using subprocess.PIPE to supress output - not quite sure how/why it works?
     found_msbuild = subprocess.call("where msbuild",
@@ -163,7 +190,7 @@ elif sys.platform == "win32":
             sys.exit(0)
 
     compile_args = ['/W0','/MD']
-   
+
     # NOTE: This used to work with the runtime libraries
     #       that were part of lib_gnomeDLL, however, that is currently broken.
     #       The updates below was a try at forcing the same libs as the working version
@@ -199,7 +226,9 @@ elif sys.platform == "win32":
     libdirs += ['gnome/cy_gnome']
     macros += [('CYTHON_CCOMPLEX', 0),]
     extension_names += ['cy_basic_types']
-    l_include_dirs += [r'..\third_party_lib\vs2008']
+
+    # stdint.h is required for building cy_land_check.cpp
+    l_include_dirs += [r'..\third_party_lib\win32_headers'] 
 
 #
 ### the "master" extension -- of the extra stuff, so the whole C++ lib will be there for the others
@@ -229,8 +258,6 @@ setup(name='pyGnome',
       version='alpha', 
       requires=['numpy'],
       cmdclass={'build_ext': build_ext },
-      packages=['gnome',
-    #            'gnome.utilities',
-                ],
+      packages=find_packages(exclude=['gnome.deprecated']),
       ext_modules=extensions
      )

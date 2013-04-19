@@ -36,6 +36,7 @@
 //#include <strings.h> 
 #include <stdio.h> 
 #include <stdlib.h> 
+#include <stdint.h> 
 #include <TextEdit.h>
 #include <ToolUtils.h> 
 //#include <Traps.h>

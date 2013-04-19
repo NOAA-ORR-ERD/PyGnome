@@ -170,7 +170,7 @@ OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const S
 	if (!bActive) return noErr;
 	
 	if (!timeGrid) return -1;
-	
+
 	err = timeGrid -> SetInterval(errmsg, model_time); 
 	if (err) goto done;
 	
@@ -286,12 +286,13 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 	// this code is for curvilinear grids
 	OSErr err = 0;
 	short gridType, selectedUnits;
-	char fileNamesPath[256];
+	char fileNamesPath[256], filePath[256];
 	Boolean isNetCDFPathsFile = false;
 	TimeGridVel *newTimeGrid = nil;
 	
-	
-	if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(path, &isNetCDFPathsFile, fileNamesPath, &gridType))
+	strcpy(filePath,path);	// this gets altered in IsNetCDFPathsFile, eventually change that function
+
+	if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{
 		if (gridType == CURVILINEAR)
 		{
@@ -310,7 +311,7 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 		{
 			//err = this->InitMover(timeGrid);
 			//if(err) return err;
-			err = newTimeGrid->TextRead(path,topFilePath);
+			err = newTimeGrid->TextRead(filePath,topFilePath);
 			if(err) return err;
 			this->SetTimeGrid(newTimeGrid);
 		}
