@@ -76,6 +76,8 @@ cdef extern from "TypeDefs.h":
         
     ctypedef VelocityFRec **VelocityFH
     
+    ctypedef long **LONGH
+    
     ctypedef struct LoadedData:
         long timeIndex
         VelocityFH dataHdl

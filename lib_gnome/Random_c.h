@@ -15,14 +15,7 @@
 #include "Mover_c.h"
 #include "ExportSymbols.h"
 
-#ifdef pyGNOME
-#define TMap Map_c
-#endif
-
-class TMap;
-
 class GNOMEDLL_API Random_c : virtual public Mover_c {
-//class Random_c : virtual public Mover_c {
 	
 public:
 	double fDiffusionCoefficient; //cm**2/s
@@ -30,7 +23,9 @@ public:
 	double fUncertaintyFactor;		// multiplicative factor applied when uncertainty is on
 	Boolean bUseDepthDependent;
 	
+#ifndef pyGNOME
 	Random_c (TMap *owner, char *name);
+#endif
 	Random_c();
 	virtual OSErr 		PrepareForModelRun(); 
 	virtual OSErr 		PrepareForModelStep(const Seconds&, const Seconds&, bool, int numLESets, int* LESetsSizesList); // AH 07/10/2012
@@ -44,5 +39,4 @@ protected:
 	void				Init();
 };
 
-#undef TMap
 #endif

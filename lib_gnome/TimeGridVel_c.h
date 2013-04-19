@@ -40,6 +40,8 @@ Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNam
 Boolean IsPtCurFile (char *path);
 Boolean IsGridCurTimeFile (char *path, short *selectedUnits);
 Boolean IsGridWindFile(char *path,short *selectedUnits);
+Boolean IsCATS3DFile (char *path);
+
 class TimeGridVel_c
 {
 public:

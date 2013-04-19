@@ -1,6 +1,7 @@
 
 #include "Cross.h"
 #include "MapUtils.h"
+#include "GridMapUtils.h"
 #include "GenDefs.h"
 #include "GridVel.h"
 #include "NetCDFMover.h"

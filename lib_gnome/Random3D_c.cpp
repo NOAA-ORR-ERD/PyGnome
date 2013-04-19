@@ -18,7 +18,6 @@
 #include "Replacements.h"
 #endif
 
-TRandom3D *sharedRMover3D;
 
 Random3D_c::Random3D_c (TMap *owner, char *name) : Mover_c(owner, name), Random_c (owner, name)
 {

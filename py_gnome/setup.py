@@ -82,6 +82,7 @@ extension_names = ['cy_mover',
                    'cy_ossm_time',
                    'cy_random_mover',
                    'cy_land_check',
+                   'cy_grid_map',
                    'cy_shio_time',
                    ]
 
@@ -118,6 +119,8 @@ cpp_files = [
               'TimeGridWind_c.cpp',
               'MakeTriangles.cpp',
               'MakeDagTree.cpp',
+              'GridMap_c.cpp',
+              'GridMapUtils.cpp',
               ]
 
 

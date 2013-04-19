@@ -95,6 +95,34 @@ Boolean IsPtCurFile (char *path)
 }
 
 /////////////////////////////////////////////////
+Boolean IsCATS3DFile (char *path)
+{
+	Boolean	bIsValid = false;
+	OSErr	err = noErr;
+	long line;
+	char	strLine [256];
+	char	firstPartOfFile [256];
+	long lenToRead,fileLength;
+	
+	err = MyGetFileSize(0,0,path,&fileLength);
+	if(err) return false;
+	
+	lenToRead = _min(256,fileLength);
+	
+	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
+	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
+	if (!err)
+	{	// must start with CATS3D
+		char * strToMatch = "CATS3D";
+		NthLineInTextNonOptimized (firstPartOfFile, line = 0, strLine, 256);
+		if (!strncmp (strLine,strToMatch,strlen(strToMatch)))
+			bIsValid = true;
+	}
+	
+	return bIsValid;
+}
+
+/////////////////////////////////////////////////
 Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType)
 {
 	// NOTE!! if the input variable path does point to a NetCDFPaths file, 

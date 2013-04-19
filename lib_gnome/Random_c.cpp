@@ -12,22 +12,8 @@
 #include "GEOMETRY.H"
 #include "Units.h"
 
-#ifdef MAC
-#ifdef MPW
-#pragma SEGMENT RANDOM_C
-#endif
-#endif
-
 #ifndef pyGNOME
-#include "TModel.h"
 #include "TVectMap.h"
-extern TModel *model;
-#else
-#include "Map_c.h"
-#include "Model_c.h"
-#include "VectMap_c.h"
-#define TMap Map_c
-extern Model_c *model;
 #endif
 
 using std::cout;
@@ -36,13 +22,13 @@ Random_c::Random_c () : Mover_c()
 {
 	Init();
 }
-
+#ifndef pyGNOME
 Random_c::Random_c (TMap *owner, char *name) : Mover_c (owner, name)
 {
 	Init();
 	SetClassName (name);
 }
-
+#endif
 // Initialize local variables the same way for all constructors
 void Random_c::Init()
 {
@@ -196,4 +182,3 @@ WorldPoint3D Random_c::GetMove (const Seconds& model_time, Seconds timeStep,long
 	return deltaPoint;
 }
 
-#undef TMap

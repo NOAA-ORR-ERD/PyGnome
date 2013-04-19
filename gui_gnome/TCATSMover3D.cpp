@@ -50,7 +50,7 @@ void TCATSMover3D::Dispose ()
 	TCATSMover::Dispose ();
 }
 
-Boolean IsCATS3DFile (char *path)
+/*Boolean IsCATS3DFile (char *path)
 {
 	Boolean	bIsValid = false;
 	OSErr	err = noErr;
@@ -75,7 +75,7 @@ Boolean IsCATS3DFile (char *path)
 	}
 	
 	return bIsValid;
-}
+}*/
 
 
 
