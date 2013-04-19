@@ -35,20 +35,7 @@ class Model(serializable.Serializable):
     state = copy.deepcopy(serializable.Serializable.state)
     state.add(create=_create,
               update=_update)   # no need to copy parent's state in tis case
-    
-    #===========================================================================
-    # @classmethod
-    # def new_from_dict(cls, dict_):
-    #    """create compound objects like map, output_map from dict, then pass it onto new_from_dict"""
-    #    if 'map' in dict_:
-    #        obj_ = dict_.pop('map')
-    #        to_eval = "{0}.new_from_dict( obj_)".format( obj_.pop('obj_type'))
-    #        map = eval(to_eval)
-    #        dict_['map'] = map  # update dict with object
-    #        
-    #    return super(Model, cls).new_from_dict( dict_)
-    #===========================================================================
-    
+        
     def __init__(self,
                  time_step=timedelta(minutes=15), 
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
@@ -166,7 +153,7 @@ class Model(serializable.Serializable):
             self._time_step = time_step.total_seconds()
         except AttributeError: # not a timedelta object -- assume it's in seconds.
             self._time_step = int(time_step)
-        self._num_time_steps = int( self._duration.total_seconds() // self._time_step )
+        self._num_time_steps = int( self._duration.total_seconds() // self._time_step ) + 1 # there is a zeroth time step
         self.rewind()
 
     @property
@@ -186,7 +173,7 @@ class Model(serializable.Serializable):
             ## fixme: actually, only need to rewide is current model time is byond new time...
             self.rewind()
         self._duration = duration
-        self._num_time_steps = int( self._duration.total_seconds() // self.time_step )
+        self._num_time_steps = int( self._duration.total_seconds() // self.time_step ) + 1 # there is a zeroth time step
 
     @property
     def map(self):
@@ -274,7 +261,7 @@ class Model(serializable.Serializable):
         """
         Steps the model forward (or backward) in time. Needs testing for hindcasting.
         """
-        if self.current_time_step >= self._num_time_steps:
+        if self.current_time_step >= self._num_time_steps - 1: # it gets incremented after this check
             raise StopIteration
 
 
@@ -317,35 +304,27 @@ class Model(serializable.Serializable):
         return self.step()
 
 
-    def next_image(self):
+    def full_run(self, rewind=True):
         """
-        Compute the next model step, render an image, and return info about the
-        step rendered
+        Do a full run of the model.
 
-        :param images_dir: directory to write the image too.
-        """
-        # is there a renderer in the outputters list?
-        for renderer in self.outputters:
-            if isinstance(renderer, gnome.renderer.Renderer):
-                break
-        else:
-            raise ValueError("There must be a renderer in the outputters list to call next_image")
-        # run the next step:
-        time_step = self.step()
-        filename = renderer.last_filename
-        return (time_step, filename, self.model_time.isoformat())
+        :param rewind=True: whether to rewind teh model first -- defaults to True
+                            if set to false, model will be run from the current
+                            step to the end
+        :returns: list of outputter info dicts
 
-    def full_run_with_image_output(self, output_dir):
         """
-        Do a full run of the model, outputting an image per time step.
-        """
+        if rewind:
+            self.rewind()
         # run the model
+        output_data = []
         while True:
             try:
-                self.next_image(output_dir)
+                output_data.append( self.step() )
             except StopIteration:
                 print "Done with the model run"
                 break
+        return output_data
 
     def movers_to_dict(self):
         """

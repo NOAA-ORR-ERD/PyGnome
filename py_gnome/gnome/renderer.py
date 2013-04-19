@@ -67,9 +67,11 @@ class Renderer(Outputter, MapCanvas):
         if cache is not None:
             self.cache = cache
 
+        self.clear_output_dir()
 
         self.draw_background()
         self.save_background(os.path.join(self.images_dir, self.background_map_name))
+
     def clear_output_dir(self):
         # clear out output dir:
         # don't need to do this -- it will get written over.

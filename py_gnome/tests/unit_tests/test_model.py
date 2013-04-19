@@ -18,6 +18,53 @@ from gnome.spill import SpatialReleaseSpill
 
 datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
 
+def setup_simple_model():
+    """
+    utility to setup up a simple, but complete model for tests
+    """
+    # create a place for test images (cleaning out any old ones)
+    images_dir = "Test_images"
+    if os.path.isdir(images_dir):
+        shutil.rmtree(images_dir)
+    os.mkdir(images_dir)
+
+    start_time = datetime(2012, 9, 15, 12, 0)
+
+    # the image output map
+    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
+
+    # the land-water map
+    gnome_map = gnome.map.MapFromBNA( mapfile,
+                                      refloat_halflife=6*3600, #seconds
+                                     )
+
+    renderer = gnome.renderer.Renderer(mapfile,
+                                       images_dir,
+                                       size=(400, 300))
+
+    model = gnome.model.Model(time_step=timedelta(minutes=15), 
+                              start_time=start_time,
+                              duration=timedelta(hours=1),
+                              map=gnome_map,
+                              outputters=[renderer,],
+                              uncertain=False,
+                              cache_enabled=False,)
+
+    model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+
+    N = 10 # a line of ten points
+    start_points = np.zeros((N, 3) , dtype=np.float64)
+    start_points[:,0] = np.linspace(-127.1, -126.5, N)
+    start_points[:,1] = np.linspace( 47.93, 48.1, N)
+    #print start_points
+    spill = gnome.spill.SpatialReleaseSpill(start_positions = start_points,
+                                            release_time = start_time,
+                                            )
+    
+    model.spills += spill
+
+    return model
+
 def test_init():
     model = gnome.model.Model()
     
@@ -152,7 +199,7 @@ def test_simple_run_with_image_output():
     mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
 
     # the land-water map
-    map = gnome.map.MapFromBNA( mapfile,
+    gnome_map = gnome.map.MapFromBNA( mapfile,
                                       refloat_halflife=6*3600, #seconds
                                      )
     renderer = gnome.renderer.Renderer(mapfile,
@@ -161,7 +208,7 @@ def test_simple_run_with_image_output():
     model = gnome.model.Model(time_step=timedelta(minutes=15), 
                               start_time=start_time,
                               duration=timedelta(hours=1),
-                              map=map,
+                              map=gnome_map,
                               renderer=renderer,
                               uncertain=False,
                               cache_enabled=False,)
@@ -188,9 +235,9 @@ def test_simple_run_with_image_output():
 
     num_steps_output = 0
     while True:
-        print "calling next_image"
+        print "calling step"
         try:
-            image_info = model.next_image()
+            image_info = model.step()
             num_steps_output += 1
             print image_info
         except StopIteration:
@@ -198,6 +245,8 @@ def test_simple_run_with_image_output():
             break
 
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+
+
 
 def test_simple_run_with_image_output_uncertainty():
     """
@@ -254,7 +303,7 @@ def test_simple_run_with_image_output_uncertainty():
     num_steps_output = 0
     while True:
         try:
-            image_info = model.next_image()
+            image_info = model.step()
             num_steps_output += 1
             print image_info
         except StopIteration:
@@ -437,7 +486,7 @@ def test_linearity_of_wind_movers():
     atol = 1e-14
     rtol = 0
     
-    for i in range(int(model1.num_time_steps)+1):
+    for i in range( model1.num_time_steps ):
         gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
         model1.step()
         gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
@@ -531,6 +580,20 @@ def test_release_at_right_time():
     model.step()
     assert model.spills.items()[0].num_elements == 12
 
+
+def test_full_run():
+    """
+    test doing a full run
+    """
+    model = setup_simple_model()
+    results = model.full_run()
+    print results
+
+    # check the number of time steps output is right
+    assert len(results) == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+
+    # check if the images are there:
+    assert len( os.listdir("Test_images") ) == model.num_time_steps + 1 #(1 extra for background image)
 
 if __name__ == "__main__":
     #test_all_movers()
