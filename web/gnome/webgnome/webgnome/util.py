@@ -18,6 +18,7 @@ import uuid
 
 from functools import wraps
 from itertools import chain
+from webgnome.schema import LongLat
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
@@ -455,20 +456,13 @@ def valid_coordinate_pair(request):
     lat = request.GET.get('lat', None)
     lon = request.GET.get('lon', None)
 
-    if lat is None:
-        request.errors.add('body', 'coordinates', 'Latitude is required as '
-                                                  '"lat" GET parameter.')
-        request.errors.status = 400
+    try:
+        valid_coordinates = LongLat().deserialize({'long': lon, 'lat': lat})
+    except colander.Invalid as e:
+        request.errors.add('nws', 'coordinates', e.asdict())
+        return
 
-    if lon is None:
-        request.errors.add('body', 'coordinates', 'Longitude is required as '
-                                                  '"lon" GET parameter.')
-        request.errors.status = 400
-
-    request.validated['coordinates'] = {
-        'lat': lat,
-        'lon': lon
-    }
+    request.validated['coordinates'] = valid_coordinates
 
 
 def require_model(f):

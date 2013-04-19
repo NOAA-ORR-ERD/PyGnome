@@ -1,12 +1,11 @@
 import os
 import copy
-from datetime import datetime, timedelta
-from time import gmtime
+from datetime import datetime
 
 import numpy as np
 
 from gnome.utilities import time_utils, transforms, convert, serializable
-from gnome import basic_types, GnomeId
+from gnome import basic_types, GnomeId, constants
 from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time
@@ -40,15 +39,16 @@ class Mover(object):
         """
         self._active = True  # initialize to True, though this is set in prepare_for_model_step for each step
         self.on = kwargs.pop('on',True)  # turn the mover on / off for the run
-        active_start = kwargs.pop('active_start',datetime( *gmtime(0)[:6] ))
-        active_stop  = kwargs.pop('active_stop', datetime(2038,1,18,0,0,0))
+        active_start = kwargs.pop('active_start', constants.min_time)
+        active_stop  = kwargs.pop('active_stop', constants.max_time)
+        
         if active_stop <= active_start:
             raise ValueError("active_start should be a python datetime object strictly smaller than active_stop")
         
         self.active_start = active_start
         self.active_stop = active_stop
         self._gnome_id = GnomeId(id=kwargs.pop('id',None))
-        
+
     # Methods for active property definition
     @property
     def active(self):
@@ -226,8 +226,8 @@ class WindMover(CyMover, serializable.Serializable):
     # with a 10know wind each. 
     # This requires the windage is only set once for each timestep irrespective of how many wind movers are active during that time
     # Another way to state this, is the get_move operation is linear. This is why the following class level attributes are defined.
-    _windage_is_set = False         # class scope, independent of instances of WindMover  
-    _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
+    #_windage_is_set = False         # class scope, independent of instances of WindMover  
+    #_uspill_windage_is_set = False  # need to set uncertainty spill windage as well
     
     _update = ['uncertain_duration','uncertain_time_delay','uncertain_speed_scale','uncertain_angle_scale']
     _create = ['wind_id']
@@ -356,19 +356,21 @@ class WindMover(CyMover, serializable.Serializable):
         if len(sc['positions']) == 0:
             return
         
-        if (not WindMover._windage_is_set and not sc.uncertain) or (not WindMover._uspill_windage_is_set and sc.uncertain):
-            for spill in sc.spills:
-                spill_mask = sc.get_spill_mask(spill)
-                if np.any(spill_mask):
-                    sc['windages'][spill_mask] = rand.random_with_persistance(spill.windage_range[0],
-                                                                      spill.windage_range[1],
-                                                                      spill.windage_persist,
-                                                                      time_step,
-                                                                      array_len=np.count_nonzero(spill_mask))
-            if sc.uncertain:
-                WindMover._uspill_windage_is_set = True
-            else:
-                WindMover._windage_is_set = True
+        #if (not WindMover._windage_is_set and not sc.uncertain) or (not WindMover._uspill_windage_is_set and sc.uncertain):
+        for spill in sc.spills:
+            spill_mask = sc.get_spill_mask(spill)
+            if np.any(spill_mask):
+                sc['windages'][spill_mask] = rand.random_with_persistance(spill.windage_range[0],
+                                                                  spill.windage_range[1],
+                                                                  spill.windage_persist,
+                                                                  time_step,
+                                                                  array_len=np.count_nonzero(spill_mask))
+            #===================================================================
+            # if sc.uncertain:
+            #    WindMover._uspill_windage_is_set = True
+            # else:
+            #    WindMover._windage_is_set = True
+            #===================================================================
         
     
     def get_move(self, sc, time_step, model_time_datetime):
@@ -393,16 +395,18 @@ class WindMover(CyMover, serializable.Serializable):
             
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
-    def model_step_is_done(self):
-        """
-        Set _windage_is_set flag back to False
-        use super to invoke base class model_step_is_done
-        """
-        if WindMover._windage_is_set:
-            WindMover._windage_is_set = False
-        if WindMover._uspill_windage_is_set:
-            WindMover._uspill_windage_is_set = False
-        super(WindMover,self).model_step_is_done() 
+    #===========================================================================
+    # def model_step_is_done(self):
+    #    """
+    #    Set _windage_is_set flag back to False
+    #    use super to invoke base class model_step_is_done
+    #    """
+    #    if WindMover._windage_is_set:
+    #        WindMover._windage_is_set = False
+    #    if WindMover._uspill_windage_is_set:
+    #        WindMover._uspill_windage_is_set = False
+    #    super(WindMover,self).model_step_is_done() 
+    #===========================================================================
 
 def wind_mover_from_file(filename, **kwargs):
     """
@@ -538,7 +542,7 @@ class CatsMover(CyMover, serializable.Serializable):
         
         self.filename = filename  # check if this is stored with cy_cats_mover?
         self.mover = cy_cats_mover.CyCatsMover()
-        self.mover.read_topology(filename)
+        self.mover.text_read(filename)
         
         self._tide = None   
         if kwargs.get('tide') is not None:
@@ -554,7 +558,7 @@ class CatsMover(CyMover, serializable.Serializable):
         """
         unambiguous representation of object
         """
-        info = "CatsMover(filename={0},tide_id={1})".format(self.filename, self.tide.id)
+        info = "CatsMover(filename={0})".format(self.filename)
         return info
      
     # Properties
@@ -737,8 +741,6 @@ class GridWindMover(CyMover):
 #         
 #         super(GridWindMover,self).__init__(active_start, active_stop)
         
-    _windage_is_set = False         # class scope, independent of instances of GridWindMover  
-    _uspill_windage_is_set = False  # need to set uncertainty spill windage as well
     def __init__(self, wind_file, topology_file=None, 
                  uncertain_duration=10800,
                  uncertain_time_delay=0, 
@@ -827,20 +829,15 @@ class GridWindMover(CyMover):
         if len(sc['positions']) == 0:
             return
         
-        if (not GridWindMover._windage_is_set and not sc.uncertain) or (not GridWindMover._uspill_windage_is_set and sc.uncertain):
-            for spill in sc.spills:
-                spill_mask = sc.get_spill_mask(spill)
-                if np.any(spill_mask):
-                    sc['windages'][spill_mask] = rand.random_with_persistance(spill.windage_range[0],
-                                                                      spill.windage_range[1],
-                                                                      spill.windage_persist,
-                                                                      time_step,
-                                                                      array_len=np.count_nonzero(spill_mask))
-            if sc.uncertain:
-                GridWindMover._uspill_windage_is_set = True
-            else:
-                GridWindMover._windage_is_set = True
-        
+        for spill in sc.spills:
+            spill_mask = sc.get_spill_mask(spill)
+            if np.any(spill_mask):
+                sc['windages'][spill_mask] = rand.random_with_persistance(spill.windage_range[0],
+                                                                  spill.windage_range[1],
+                                                                  spill.windage_persist,
+                                                                  time_step,
+                                                                  array_len=np.count_nonzero(spill_mask))
+    
     
     def get_move(self, sc, time_step, model_time_datetime):
         """
@@ -863,16 +860,3 @@ class GridWindMover(CyMover):
                                   0)    # only ever 1 spill_container so this is always 0!
             
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
-
-    def model_step_is_done(self):
-        """
-        Set _windage_is_set flag back to False
-        
-        uses super to invoke base class method
-        """
-        if GridWindMover._windage_is_set:
-            GridWindMover._windage_is_set = False
-        if GridWindMover._uspill_windage_is_set:
-            GridWindMover._uspill_windage_is_set = False
-        super(GridWindMover,self).model_step_is_done() 
-

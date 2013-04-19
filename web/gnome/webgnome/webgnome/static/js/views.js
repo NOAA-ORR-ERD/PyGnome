@@ -210,22 +210,28 @@ define([
             - `MapView.FRAME_CHANGED` after the image has loaded.
          */
         showImageForTimeStep: function(stepNum) {
+            var mapImages = this.map.find('img');
+
             // Show the map div if this is the first image of the run.
-            if (this.map.find('img').length === 1) {
+            if (mapImages.length === 1) {
                 this.map.show();
             }
 
             var stepImage = this.getImageForTimeStep(stepNum);
-            var otherImages = this.map.find('img').not(stepImage).not('.background');
-
-            // Hide all other images in the map div.
-            otherImages.addClass('hidden');
-            otherImages.removeClass(this.activeFrameClass);
 
             // The image isn't loaded.
             if (stepImage.length === 0) {
-                alert("An animation error occurred. Please refresh.");
+                alert("An animation error occurred.");
+                console.log('Could not load image for timestep: ' + stepNum);
+                return;
             }
+
+            var imagesToHide = mapImages.not(stepImage).not('.background');
+
+            // Hide all images in the map div other than the background and the
+            // image for the current step.
+            imagesToHide.addClass('hidden');
+            imagesToHide.removeClass(this.activeFrameClass);
 
             stepImage.addClass(this.activeFrameClass);
             stepImage.removeClass('hidden');

@@ -663,3 +663,19 @@ class NavigationTreeTests(FunctionalTestBase, ModelHelperMixin):
         # Spills
         self.assertEqual(data[3]['title'], 'Spills')
         self.assertEqual(len(data[3]['children']), 0)
+
+
+class NwsTests(FunctionalTestBase):
+    def test_nws_handles_not_found_error(self):
+        self.testapp.get('/nws/wind?lat=-1&lon=-1', status=500)
+
+    def test_nws_handles_missing_lat(self):
+        self.testapp.get('/nws/wind?lon=-1', status=400)
+
+    def test_nws_handles_missing_lon(self):
+        self.testapp.get('/nws/wind?lat=1', status=400)
+
+    def test_nws_success(self):
+        resp = self.testapp.get('/nws/wind?lat=45.645&lon=-123.794')
+        self.assertEqual(resp.json['description'], '4 Miles SSW Foss OR')
+        self.assertEqual(len(resp.json['timeseries']), 168)

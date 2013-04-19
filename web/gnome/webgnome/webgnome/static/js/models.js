@@ -849,7 +849,7 @@ define([
 
     function getNwsWind(coords, opts) {
         var url = '/nws/wind?lat=' + coords.latitude + '&lon=' + coords.longitude;
-        var error = opts.error | nwsWindError;
+        var error = opts.error || nwsWindError;
         var success = opts.success;
         $.ajax({
             url: url,

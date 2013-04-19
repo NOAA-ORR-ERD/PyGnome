@@ -9,6 +9,8 @@ from gnome import basic_types
 from type_defs cimport * 
 from utils cimport _NewHandle, _GetHandleSize
 from utils cimport OSSMTimeValue_c
+from cy_helpers cimport to_bytes
+
 
 cdef class CyOSSMTime(object):
 
@@ -23,7 +25,7 @@ cdef class CyOSSMTime(object):
     def __dealloc__(self):
         del self.time_dep
     
-    def __init__(self, file=None, file_contains=None, cnp.ndarray[TimeValuePair, ndim=1] timeseries=None, scale_factor=1):
+    def __init__(self, filename=None, file_contains=None, cnp.ndarray[TimeValuePair, ndim=1] timeseries=None, scale_factor=1):
         """
         Initialize object - takes either file or time value pair to initialize
         :param file: path to file containing time series data. It valid user_units are defined in the file, it uses them; otherwise,
@@ -34,10 +36,10 @@ cdef class CyOSSMTime(object):
         
         NOTE: If timeseries are given, and data is velocity, it is always assumed to be in meters_per_sec
         """
-        if file is None and timeseries is None:
+        if filename is None and timeseries is None:
             raise ValueError("Object needs either a file to the time series file or timeseries")   # TODO: check error
         
-        if file is not None:
+        if filename is not None:
             if file_contains is None:
                 raise ValueError('Unknown file contents - need a valid basic_types.ts_format.* value')
             
@@ -45,10 +47,10 @@ cdef class CyOSSMTime(object):
             if file_contains not in basic_types.ts_format._int:
                 raise ValueError("file_contains can only contain integers 5, or 1; also defined by basic_types.ts_format.<magnitude_direction or uv>")
             
-            if os.path.exists(file):
-                self._read_time_values(file, file_contains, -1) # user_units should be read from the file
+            if os.path.exists(filename):
+                self._read_time_values(filename, file_contains, -1) # user_units should be read from the file
             else:
-                raise IOError("No such file: " + file)
+                raise IOError("No such file: " + filename)
         
         elif timeseries is not None:
             self._set_time_value_handle(timeseries)
@@ -142,7 +144,7 @@ cdef class CyOSSMTime(object):
         return vel_rec
     
        
-    def _read_time_values(self, path, file_contains, user_units=-1):
+    def _read_time_values(self, filename, file_contains, user_units=-1):
         """
             Format for the data file. This is an enum type in C++
             defined below. These are defined in cy_basic_types such that python can see them
@@ -161,7 +163,10 @@ cdef class CyOSSMTime(object):
                 
             Make this private since the constructor will likely call this when object is instantiated
         """        
-        err = self.time_dep.ReadTimeValues(path, file_contains, user_units)
+        cdef bytes file_
+        file_ = to_bytes(unicode(filename))
+        err = self.time_dep.ReadTimeValues( file_, file_contains, user_units)
+        
         if err == 1:
             # TODO: need to define error codes in C++ and raise other exceptions
             raise ValueError("Valid user units not found in file")

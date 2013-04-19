@@ -26,6 +26,20 @@ cdef class CyMover(object):
         """
         self.mover = new Mover_c()
     
+    def __repr__(self):
+        """
+        Return an unambiguous representation of this object so it can be recreated 
+        """
+        repr_ = '{0}()'.format(self.__class__.__name__)
+        return repr_
+      
+    def __str__(self):
+        """Return string representation of this object"""
+        
+        info  = "{0} object - see attributes for more info".format(self.__class__.__name__)
+        
+        return info
+    
     def prepare_for_model_run(self):
         """
         default implementation. It calls the C++ objects's PrepareForModelRun() method
@@ -51,7 +65,7 @@ cdef class CyMover(object):
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
             """
-            raise OSError("PrepareForModelStep returned an error.")
+            raise OSError("PrepareForModelStep returned an error: {0}".format(err))
         
     def model_step_is_done(self):
         """

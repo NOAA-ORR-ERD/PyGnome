@@ -483,7 +483,7 @@ void CATSMover_c::DeleteTimeDep ()
 	return;
 }
 
-OSErr CATSMover_c::ReadTopology(char* path/*, TMap **newMap*/)
+OSErr CATSMover_c::TextRead(char* path/*, TMap **newMap*/)
 {
 	// import PtCur triangle info so don't have to regenerate
 	char s[1024], errmsg[256];
@@ -533,6 +533,8 @@ OSErr CATSMover_c::ReadTopology(char* path/*, TMap **newMap*/)
 		DEREFH(f)[i] = c;
 		for(++i; i < x-j+1 && _ifstream->get(c); i++)
 			DEREFH(f)[i] = c;
+
+		delete _ifstream;
 
 	} catch(...) {
 	    cout << "Unable to read from the topology file. Exiting.\n";
