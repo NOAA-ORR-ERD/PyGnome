@@ -381,7 +381,8 @@ def test_all_movers(start_time, release_delay, duration):
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
 
 
-def test_linearity_of_wind_movers():
+@pytest.mark.parametrize("wind_persist", [0, 900, 5])   # 0 is infinite persistence
+def test_linearity_of_wind_movers(wind_persist):
     """
     WindMover is defined as a linear operation - defining a model
     with a single WindMover with 15 knot wind is equivalent to defining
@@ -389,67 +390,71 @@ def test_linearity_of_wind_movers():
     WindMover's such that the sum of their magnitude is 15knots and the
     direction of wind is the same for both cases.
     
-    Current implementation defines a class variable (WindMover._windage_is_set)
-    that is set during prepare_for_model_step and reset during model_step_is_done
+    Below is an example which defines two models and runs them. In model2, there
+    are multiple winds defined so the windage parameter is reset 3 times for one timestep.
+    Since windage range and persistance do not change, this only has the effect of doing the
+    same computation 3 times. However, the results are the same.
     
-    Below is an example which defines two models and runs them in one thread so the 
-    model loop defined by model.step() runs for each model without coupling from 
-    the second model. So, although this works and shows linearity of the WindMover as
-    it is currently implemented, it is not thread safe - see comments towards bottom of this example.
-    
-    To make it thread safe, the model loop (model.step()) must be made thread safe. 
+    The mean and variance of the positions for both models are close. As windage_persist is decreased,
+    the values become closer. Setting windage_persist=0 gives the larged difference between them.
     """
     start_time = datetime(2012, 1, 1, 0, 0)
     series1= np.array( (start_time, ( 15,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     series2= np.array( (start_time, (  6,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     series3= np.array( (start_time, (  3,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     
+    num_LEs=1000
     model1= gnome.model.Model()
-    model1.duration = timedelta(hours=3)
+    model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours = 1)
     model1.start_time = start_time
-    model1.spills += gnome.spill.SurfaceReleaseSpill(num_elements=5,
+    model1.spills += gnome.spill.SurfaceReleaseSpill(num_elements=num_LEs,
                                                      start_position=(1.,2.,0.),
                                                      release_time  = start_time,
+                                                     windage_persist=wind_persist
                                                      )
     model1.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series1, units='meter per second'))
     
     model2= gnome.model.Model()
-    model2.duration = timedelta(hours=3)
+    model2.duration = timedelta(hours=10)
     model2.time_step = timedelta(hours = 1)
     model2.start_time = start_time
-    model2.spills += gnome.spill.SurfaceReleaseSpill(num_elements=5,
+    model2.spills += gnome.spill.SurfaceReleaseSpill(num_elements=num_LEs,
                                                      start_position=(1.,2.,0.),
                                                      release_time  = start_time,
+                                                     windage_persist=wind_persist
                                                      )
+    
+    # todo: CHECK RANDOM SEED
+    #model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series1, units='meter per second'))
+    
     model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series2, units='meter per second'))
     model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series2, units='meter per second'))
     model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series3, units='meter per second'))
     
-    # tolerance for np.allclose(..) function
-    atol = 1e-14
-    rtol = 0
+    while True:
+        try: 
+            model1.next()
+        except StopIteration:
+            print "Done model1 .."
+            break
+            
+    while True:
+        try: 
+            model2.next()
+        except StopIteration:
+            print "Done model2 .."
+            break
     
-    for i in range(int(model1.num_time_steps)+1):
-        gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
-        model1.step()
-        gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
-        model2.step()
-        assert np.allclose(model1.spills.LE('positions'), model2.spills.LE('positions'), atol, rtol)
+    # mean and variance at the end should be fairly close
+    # look at the mean of the position vector. Assume m1 is truth and m2 is approximation - look at the
+    # absolute error between mean position of m2 in the 2 norm.
+    #rel_mean_error=np.linalg.norm( np.mean( model2.spills.LE('positions'), 0)-np.mean( model1.spills.LE('positions'), 0) )
+    #assert rel_mean_error <= 0.5
+    # Similary look at absolute error in variance of position of m2 in the 2 norm.  
+    rel_var_error=np.linalg.norm( np.var( model2.spills.LE('positions'), 0)-np.var( model1.spills.LE('positions'), 0) )
+    assert rel_var_error <= 0.001
     
-    
-    """
-    NOTE:
-    The above works because both models are running in a single thread. If both models were running
-    on separate threads and the model.step() is not thread safe, this will not work correctly. 
-    As an example, note that setting the _windage_is_set flag effects the class attribute
-    WindMover objects in both models as one would expect.
-    """
-    lmv = [model1.movers[m.id] for m in model1.movers]
-    lmv2= [model2.movers[m.id] for m in model2.movers]
-    
-    lmv[0].__class__._windage_is_set = True
-    assert lmv2[0].__class__._windage_is_set == True    # PROBLEM!
 
 def test_model_release_after_start():
     """
