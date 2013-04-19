@@ -65,6 +65,14 @@ cdef class CyWindMover(cy_mover.CyMover):
         info = "CyWindMover(uncertain_duration=%s,uncertain_time_delay=%s,uncertain_speed_scale=%s,uncertain_angle_scale=%s)" \
         % (self.wind.fDuration, self.wind.fUncertainStartTime, self.wind.fSpeedScale, self.wind.fAngleScale)
         return info
+      
+    def __str__(self):
+        """Return string representation of this object"""
+        
+        info  = "CyWindMover object - \n  uncertain_duration: %s \n  uncertain_time_delay: %s \n  uncertain_speed_scale: %s\n  uncertain_angle_scale: %s" \
+        % (self.wind.fDuration, self.wind.fUncertainStartTime, self.wind.fSpeedScale, self.wind.fAngleScale)
+        
+        return info
         
     property uncertain_duration:
         def __get__(self):

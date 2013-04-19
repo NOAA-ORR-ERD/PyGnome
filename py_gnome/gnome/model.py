@@ -4,11 +4,10 @@ from datetime import datetime, timedelta
 import copy
 
 import gnome
-from gnome import GnomeId
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.environment import Environment, Wind
-from gnome.movers import Mover
+from gnome.movers import Mover, WindMover, CatsMover
 from gnome.spill_container import SpillContainerPair
 from gnome.utilities import serializable
 
@@ -61,8 +60,11 @@ class Model(serializable.Serializable):
         self.output_map = output_map
 
         self.time_step = time_step # this calls rewind() !
-        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+        self._gnome_id = gnome.GnomeId(id=kwargs.pop('id',None))
         
+        # register callback with OrderedCollection
+        self.movers.register_callback(self._callback_add_mover, ('add','replace'))
+
 
     def reset(self, **kwargs):
         """
@@ -347,4 +349,20 @@ class Model(serializable.Serializable):
             
         return dict_
     
+    def _callback_add_mover(self, obj_added):
+        """ callback after mover has been added """
+        if isinstance(obj_added, WindMover):
+            if obj_added.wind.id not in self.environment:
+                self.environment += obj_added.wind
+                
+        if isinstance(obj_added, CatsMover):
+            if obj_added.tide is not None and obj_added.tide.id not in self.environment:
+                    self.environment += obj_added.tide
+        
+        # let's also set active_start, active_stop times to model times if they are set for all time
+        if obj_added.active_start == gnome.constants.min_time:
+            obj_added.active_start = self.start_time
+            
+        if obj_added.active_stop == gnome.constants.max_time:
+            obj_added.active_stop = self.start_time + self.duration
         

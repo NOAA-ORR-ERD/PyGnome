@@ -366,7 +366,7 @@ def test_all_movers(start_time, release_delay, duration):
     num_steps_output = 0
     for step in model:
         num_steps_output += 1
-        print "running step:", step
+        #print "running step:", step
         
     # test release happens correctly for all cases
     if release_delay < duration:    # at least one get_move has been called after release
@@ -524,6 +524,53 @@ def test_release_at_right_time():
     model.step()
     assert model.spills.items()[0].num_elements == 12
 
+
+def test_callback_add_mover():
+    """ Test callback after add mover """
+    model = gnome.model.Model()
+    model.time_step = timedelta(hours=1)
+    model.duration = timedelta(hours=10)
+    model.start_time = datetime(2012, 1, 1, 0, 0)
+    start_loc = (1.0, 2.0, 0.0) # random non-zero starting points
+    
+    # add Movers
+    model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    series = np.array( (model.start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
+    model.movers += movers.WindMover(environment.Wind(timeseries=series, units='meter per second'))
+    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData","tides","CLISShio.txt"))
+    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
+    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"))
+    
+    for mover in model.movers:
+        assert mover.active_start == model.start_time
+        assert mover.active_stop == model.start_time + model.duration
+        
+        if isinstance( mover, movers.WindMover):
+            assert  mover.wind.id in model.environment
+            
+        if isinstance( mover, movers.CatsMover):
+            if mover.tide is not None:
+                assert mover.tide.id in model.environment
+        
+    
+    # say wind object was added to environment collection, it should not be added again
+    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData","tides","CLISShio.txt"))
+    model.environment += tide_
+    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
+    
+    assert model.environment[tide_.id] == tide_
+    
+    # Add a mover with user defined active_start / active_stop values - these should not be updated
+    active_on = model.start_time+timedelta(hours=1)
+    active_off = model.start_time+timedelta(hours=4)
+    custom_mover =  movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0), 
+                                                    active_start=active_on,
+                                                    active_stop=active_off)
+    model.movers += custom_mover
+    
+    assert model.movers[custom_mover.id].active_start == active_on
+    assert model.movers[custom_mover.id].active_stop == active_off
+    
 
 if __name__ == "__main__":
     #test_all_movers()

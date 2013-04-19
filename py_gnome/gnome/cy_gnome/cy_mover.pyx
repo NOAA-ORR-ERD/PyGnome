@@ -30,14 +30,11 @@ cdef class CyMover(object):
         """
         Return an unambiguous representation of this object so it can be recreated 
         """
-        repr_ = '{0}(..)'.format(self.__class__.__name__)
+        repr_ = '{0}()'.format(self.__class__.__name__)
         return repr_
       
     def __str__(self):
         """Return string representation of this object"""
-        """info = {'Long': round(g_wp[0]['long'], 2),'Lat': round( g_wp[0]['lat'], 2),
-                'StationName': sName, 'StationType': sType,
-                'DaylightSavingsOff': self.shio.daylight_savings_off}"""
         
         info  = "{0} object - see attributes for more info".format(self.__class__.__name__)
         

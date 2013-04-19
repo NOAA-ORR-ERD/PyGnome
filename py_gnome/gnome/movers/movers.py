@@ -1,12 +1,11 @@
 import os
 import copy
-from datetime import datetime, timedelta
-from time import gmtime
+from datetime import datetime
 
 import numpy as np
 
 from gnome.utilities import time_utils, transforms, convert, serializable
-from gnome import basic_types, GnomeId
+from gnome import basic_types, GnomeId, constants
 from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time
@@ -40,15 +39,16 @@ class Mover(object):
         """
         self._active = True  # initialize to True, though this is set in prepare_for_model_step for each step
         self.on = kwargs.pop('on',True)  # turn the mover on / off for the run
-        active_start = kwargs.pop('active_start',datetime( *gmtime(0)[:6] ))
-        active_stop  = kwargs.pop('active_stop', datetime(2038,1,18,0,0,0))
+        active_start = kwargs.pop('active_start', constants.min_time)
+        active_stop  = kwargs.pop('active_stop', constants.max_time)
+        
         if active_stop <= active_start:
             raise ValueError("active_start should be a python datetime object strictly smaller than active_stop")
         
         self.active_start = active_start
         self.active_stop = active_stop
         self._gnome_id = GnomeId(id=kwargs.pop('id',None))
-        
+
     # Methods for active property definition
     @property
     def active(self):
@@ -558,7 +558,7 @@ class CatsMover(CyMover, serializable.Serializable):
         """
         unambiguous representation of object
         """
-        info = "CatsMover(filename={0},tide_id={1})".format(self.filename, self.tide.id)
+        info = "CatsMover(filename={0})".format(self.filename)
         return info
      
     # Properties
