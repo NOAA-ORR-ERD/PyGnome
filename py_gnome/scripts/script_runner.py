@@ -21,18 +21,14 @@ from gnome.utilities.file_tools import haz_files
 from gnome.persist import scenario
 
 
-def make_model():
-    
-    return model
-
-def run(model, images_dir):
+def run(model):
     
     # create a place for test images (cleaning out any old ones)
     #images_dir = os.path.join( base_dir, "images")
-    if os.path.isdir(images_dir):
-        shutil.rmtree(images_dir)
-    os.mkdir(images_dir)
-    
+    #if os.path.isdir(images_dir):
+    #    shutil.rmtree(images_dir)
+    #os.mkdir(images_dir)
+    #
     print "running:"
     
     # run the model
@@ -91,6 +87,25 @@ def parse_args(argv):
     
     return args
 
+def make_model(location,images_dir):
+    #import ipdb; ipdb.set_trace()
+    dir_name, filename = os.path.split(location)
+    
+    if os.path.isdir(images_dir):
+        shutil.rmtree(images_dir)
+    os.mkdir(images_dir)
+    
+    imp_script = imp.load_source(filename.rstrip('.py'),location) 
+    model = imp_script.make_model(images_dir)
+    return (model,imp_script)
+
+def post_run(model,imp_script):
+    try:
+        imp_script.post_run(model)
+    except AttributeError: # must not have a post_run function
+        pass
+
+
 if __name__=="__main__":
     """when script is run from command like, then call run()"""
     args = parse_args(sys.argv[1:])
@@ -99,24 +114,15 @@ if __name__=="__main__":
         if not os.path.isfile(args.location):
             raise ValueError("{0} is not a file - provide a python script if action is to 'run' or 'save' model".format(args.location))
         
-        #import ipdb; ipdb.set_trace()
-        dir_name, filename = os.path.split(args.location)
-        myscript = imp.load_source(filename.rstrip('.py'),args.location) 
-        model = myscript.make_model()
-        
+        model, imp_script = make_model(args.location, args.images)
+                
         if args.do == 'run':
-            run(model, args.images)
-            try:
-                myscript.post_run(model)
-            except AttributeError: # must not have a post_run function
-                pass
-    
+            run(model)
+            post_run(model, imp_script)
+        else:
+            save(model, args.saveloc)
+                
     elif args.do == 'run_from_save':
-        run_from_save(args.saveloc, args.images)
-        try:
-            myscript.post_run(model)
-        except AttributeError: # must not have a post_run function
-            pass
-
-
+        run_from_save(args.saveloc)
+        post_run(model, imp_script)
 
