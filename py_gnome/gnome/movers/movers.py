@@ -5,14 +5,14 @@ from datetime import datetime
 import numpy as np
 
 from gnome.utilities import time_utils, transforms, convert, serializable
-from gnome import basic_types, GnomeId, constants
+from gnome import basic_types, GnomeId
 from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time
 from gnome.cy_gnome import cy_gridcurrent_mover
 from gnome.cy_gnome import cy_gridwind_mover
 from gnome import environment
-from gnome.utilities import rand    # not to confuse with python random module
+from gnome.utilities import rand, inf_datetime    # not to confuse with python random module
 
 class Mover(object):
     """
@@ -39,8 +39,10 @@ class Mover(object):
         """
         self._active = True  # initialize to True, though this is set in prepare_for_model_step for each step
         self.on = kwargs.pop('on',True)  # turn the mover on / off for the run
-        active_start = kwargs.pop('active_start', constants.min_time)
-        active_stop  = kwargs.pop('active_stop', constants.max_time)
+        #active_start = kwargs.pop('active_start', constants.min_time)
+        #active_stop  = kwargs.pop('active_stop', constants.max_time)
+        active_start = kwargs.pop('active_start', inf_datetime.InfDateTime('-inf'))
+        active_stop  = kwargs.pop('active_stop', inf_datetime.InfDateTime('inf'))
         
         if active_stop <= active_start:
             raise ValueError("active_start should be a python datetime object strictly smaller than active_stop")
