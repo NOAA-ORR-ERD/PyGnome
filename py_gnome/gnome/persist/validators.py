@@ -18,7 +18,7 @@ def positive(node, value):
         raise Invalid(node, 'Value must be greater than zero.')
 
 
-def convertable_to_seconds(node, value):
+def convertible_to_seconds(node, value):
     try:
         time.mktime(list(value.timetuple()))
     except (OverflowError, ValueError) as e:

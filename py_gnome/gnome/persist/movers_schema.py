@@ -13,26 +13,29 @@ from colander import (
     )
 
 import gnome
-from gnome.persist.validators import convertable_to_seconds
+from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.base_schema import Id, WorldPoint
 from gnome.persist.extend_colander import LocalDateTime
 
 
 class Mover(MappingSchema):
     on = SchemaNode(Bool(), default=True, missing=True)
-    active_start = SchemaNode(LocalDateTime(), default=None, missing=None,
-                              validator=convertable_to_seconds)
-    active_stop = SchemaNode(LocalDateTime(), default=None, missing=None,
-                             validator=convertable_to_seconds)
+    active_start = SchemaNode(LocalDateTime(), default=None, missing=drop,
+                             validator=convertible_to_seconds)
+    active_stop = SchemaNode(LocalDateTime(), default=None, missing=drop,
+                            validator=convertible_to_seconds)
+    #active_start = SchemaNode(String(), default=None, missing=drop)
+    #active_stop = SchemaNode(String(), default=None, missing=drop)
+
 
 class WindMover(Id, Mover):
     """
     Contains properties required by UpdateWindMover and CreateWindMover
     """
-    uncertain_duration = SchemaNode(Float() )
-    uncertain_time_delay = SchemaNode(Float() )
-    uncertain_speed_scale = SchemaNode(Float() )
-    uncertain_angle_scale = SchemaNode(Float() )
+    uncertain_duration = SchemaNode(Float(), default=3)
+    uncertain_time_delay = SchemaNode(Float(), default=0)
+    uncertain_speed_scale = SchemaNode(Float(), default=2)
+    uncertain_angle_scale = SchemaNode(Float(), default=0.4)
     wind_id = SchemaNode(String(), missing=drop)    # only used to create new WindMover
     
 class RandomMover(Id, Mover):

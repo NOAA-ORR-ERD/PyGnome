@@ -492,6 +492,42 @@ class TestAddSpillContainerPair:
                 assert dict_[key]['id_list'][id][0] == "{0}.{1}".format( spill.__module__, spill.__class__.__name__)
                 assert dict_[key]['id_list'][id][1] == spill.id 
 
+def test_get_spill_mask():
+    """
+    Simple tests for get_spill_mask
+    """
+    start_time0 = datetime(2012, 1, 1, 12)
+    start_time1 = datetime(2012, 1, 2, 12)
+    start_time2 = start_time1 + timedelta(hours=1)
+    start_position = (23.0, -78.5, 0.0)
+    num_elements =  5
+    sc = SpillContainer()
+    sp0 = SurfaceReleaseSpill(num_elements,
+                              start_position,
+                              start_time0)
+
+    sp1 = SurfaceReleaseSpill(num_elements,
+                              start_position,
+                              start_time1,
+                              end_position=(start_position[0]+0.2, start_position[1]+0.2, 0.0),
+                              end_release_time=start_time1 + timedelta(hours=3))
+
+    sp2 = SurfaceReleaseSpill(num_elements,
+                              start_position,
+                              start_time2)
+
+    sc.spills += [sp0, sp1, sp2]
+
+    # as we move forward in time, the spills will release LEs in an expected way
+    sc.release_elements(start_time0, time_step=100)
+    sc.release_elements(start_time0 + timedelta(hours=24), time_step=100)
+    sc.release_elements(start_time1 + timedelta(hours=1), time_step=100)
+    sc.release_elements(start_time1 + timedelta(hours=3), time_step=100)
+
+    assert all(sc['spill_num'][sc.get_spill_mask(sp2)] == 2)
+    assert all(sc['spill_num'][sc.get_spill_mask(sp0)] == 0)
+    assert all(sc['spill_num'][sc.get_spill_mask(sp1)] == 1)
+    
 if __name__ == "__main__":
     test_rewind2()
 

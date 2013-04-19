@@ -170,7 +170,7 @@ OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds& model_time, const S
 	if (!bActive) return noErr;
 	
 	if (!timeGrid) return -1;
-	
+
 	err = timeGrid -> SetInterval(errmsg, model_time); 
 	if (err) goto done;
 	
@@ -291,6 +291,7 @@ OSErr GridCurrentMover_c::TextRead(char *path, char *topFilePath)
 	TimeGridVel *newTimeGrid = nil;
 	
 	strcpy(filePath,path);	// this gets altered in IsNetCDFPathsFile, eventually change that function
+
 	if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{
 		if (gridType == CURVILINEAR)

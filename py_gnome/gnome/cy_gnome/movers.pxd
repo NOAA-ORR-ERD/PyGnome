@@ -1,11 +1,10 @@
 """
 Declare the C++ mover classes from lib_gnome
 """
+from libcpp cimport bool
 
 from type_defs cimport *
-from utils cimport OSSMTimeValue_c
-
-from libcpp cimport bool
+from utils cimport OSSMTimeValue_c  
 
 """
 Following are used by some of the methods of the movers
@@ -20,19 +19,12 @@ cdef extern from "GridVel_c.h":
 cdef extern from "TimeGridVel_c.h":
     cdef cppclass TimeGridVel_c:
         OSErr                TextRead(char *path, char *topFilePath)
+        OSErr                ReadInputFileNames(char *fileNamesPath)    # not used by pyx -- just used for some testing right now
         OSErr                ReadTimeData(long index, VelocityFH *velocityH, char* errmsg)
         void                 DisposeLoadedData(LoadedData * dataPtr)
         void                 ClearLoadedData(LoadedData * dataPtr)
         void                 DisposeAllLoadedData()
-    cdef cppclass TimeGridVelRect_c:
-        OSErr                TextRead(char *path,char *topFilePath)
-    cdef cppclass TimeGridVelCurv_c:
-        OSErr                TextRead(char *path,char *topFilePath)
-    cdef cppclass TimeGridWindRect_c:
-        OSErr                TextRead(char *path,char *topFilePath)
-    cdef cppclass TimeGridWindCurv_c:
-        OSErr                TextRead(char *path,char *topFilePath)
-
+    
 # TODO: pre-processor directive for cython, but what is its purpose?
 # comment for now so it doesn't give compile time errors - not sure LELIST_c is used anywhere either
 #IF not HEADERS.count("_LIST_"):
@@ -109,7 +101,7 @@ cdef extern from "CATSMover_c.h":
         #=======================================================================
         #TCM_OPTIMZE     fOptimize
        
-        int   ReadTopology(char* path)
+        int   TextRead(char* path)
         void  SetRefPosition (WorldPoint p, long z)    # Could we use WorldPoint3D for this?
         #OSErr ComputeVelocityScale(Seconds&)    # seems to require TMap, TCATSMover
        

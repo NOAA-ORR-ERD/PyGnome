@@ -18,6 +18,7 @@ import uuid
 
 from functools import wraps
 from itertools import chain
+from webgnome.schema import LongLat
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
 from hazpy.unit_conversion.unit_data import ConvertDataUnits
@@ -234,6 +235,36 @@ def valid_model_id(request):
     request.validated['model'] = model
 
 
+def valid_wind_id(request):
+    """
+    A Cornice validator that tests if a JSON representation of a
+    :class:`model_manager.WebWindMover` includes a `wind_id` value that refers
+    to a :class`model_manager.WebWind` value that exists on the current model.
+    """
+    valid_model_id(request)
+
+    if request.errors:
+        return
+
+    model = request.validated['model']
+
+    try:
+        wind_id = request.validated['wind_id']
+    except KeyError:
+        request.errors.add('body', 'wind_mover', 'Missing "wind_id" value.')
+        request.errors.status = 400
+        return
+
+    try:
+        request.validated['wind'] = model.environment[wind_id]
+    except KeyError:
+        request.errors.add(
+            'body', 'wind_mover', 'The wind_id did not match an existing Wind.')
+        request.errors.status = 400
+
+    return
+
+
 def valid_map(request):
     """
     A Cornice validator that returns a 404 if a map was not found for the user's
@@ -320,7 +351,7 @@ def valid_new_location_file(request):
 def valid_filename(request):
     """
     A Cornice validator that verifies that a 'filename' in ``request``
-    be used safely to upload a file into the model's data directory.
+    can be used safely to upload a file into the model's data directory.
     """
     valid_model_id(request)
 
@@ -335,7 +366,7 @@ def valid_filename(request):
         request.errors.status = 400
         return
 
-    return safe_join(model.base_dir, filename)
+    request.validated['filename'] = safe_join(model.base_dir, filename)
 
 
 def valid_uploaded_file(request):
@@ -362,6 +393,24 @@ def valid_uploaded_file(request):
         return
 
     request.validated['filename'] = relative_filename
+
+
+def valid_environment_id(request):
+    """
+    A Cornice validator that returns a 404 if a valid environment object was
+    not found using an ``id`` matchdict value.
+    """
+    valid_model_id(request)
+
+    if request.errors:
+        return
+
+    model = request.validated['model']
+
+    if not request.matchdict['id'] in model.environment:
+        request.errors.add('body', 'environment',
+                           'Environment object not found.')
+        request.errors.status = 404
 
 
 def valid_mover_id(request):
@@ -407,20 +456,13 @@ def valid_coordinate_pair(request):
     lat = request.GET.get('lat', None)
     lon = request.GET.get('lon', None)
 
-    if lat is None:
-        request.errors.add('body', 'coordinates', 'Latitude is required as '
-                                                  '"lat" GET parameter.')
-        request.errors.status = 400
+    try:
+        valid_coordinates = LongLat().deserialize({'long': lon, 'lat': lat})
+    except colander.Invalid as e:
+        request.errors.add('nws', 'coordinates', e.asdict())
+        return
 
-    if lon is None:
-        request.errors.add('body', 'coordinates', 'Longitude is required as '
-                                                  '"lon" GET parameter.')
-        request.errors.status = 400
-
-    request.validated['coordinates'] = {
-        'lat': lat,
-        'lon': lon
-    }
+    request.validated['coordinates'] = valid_coordinates
 
 
 def require_model(f):

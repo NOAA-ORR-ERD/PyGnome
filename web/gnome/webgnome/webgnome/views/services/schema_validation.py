@@ -5,79 +5,110 @@ The purpose of these services is to allow the client to validate data without
 attempting to save it.
 """
 from cornice.resource import resource, view
+from gnome.persist import movers_schema
+from webgnome import util
+from webgnome.schema import (
+    ModelSchema,
+    WindMoverSchema,
+    SurfaceReleaseSpillSchema,
+    MapSchema,
+    CustomMapSchema,
+    LocationFileSchema
+)
 from webgnome.views.services.base import BaseResource
-from webgnome import schema
 
 
 class ResourceValidatorMetaclass(type):
     """
     Create `post` and `put` methods on this class, each of which are marked as
-    Cornice views that validate against the class's `_schema` class, a Colander
-    schema.
+    Cornice views that validate against the class's `schema`.
 
-    Classes that use this metaclass must define a class-level `_schema` value.
+    Classes that use this metaclass must define a class-level `schema` value
+    that is a Colander schema
+
+    Classes may optionally define a class-level `validators` field.
+
+    If `validators` is a dict, an item using the 'put' or 'post' key will be
+    passed into :func:`cornice.resource.view` as the ``validators`` argument
+    for that view.
+
+    If `validators` is not a dict, it will be passed to
+    :func:`cornice.resource.view` as the ``validators`` keyword argument for
+    both the 'put' and 'post' views that the metaclass creates.
     """
+
     def __new__(mcs, name, bases, dct):
-        schema = dct.get('_schema')
+        schema = dct.get('schema')
+        validators = dct.get('validators', {})
 
-        @view(schema=schema)
-        def validator(self):
-            return {
-                'valid': True
-            }
+        for method in ('post', 'put'):
+            if method in dct:
+                continue
+            try:
+                _validators = validators.get(method, None)
+            except AttributeError:
+                _validators = validators
 
-        if 'post' not in dct:
-            dct['post'] = validator
+            view_fn = lambda request: {'valid': True}
 
-        if 'put' not in dct:
-            dct['put'] = validator
+            if _validators:
+                _view = view(schema=schema, validators=_validators)(view_fn)
+            else:
+                _view = view(schema=schema)(view_fn)
 
-        return super(ResourceValidatorMetaclass, mcs).__new__(mcs, name, bases,
-                                                              dct)
+            dct[method] = _view
+
+        return super(ResourceValidatorMetaclass, mcs).__new__(
+            mcs, name, bases, dct)
 
 
 class BaseResourceValidator(BaseResource):
-    _schema = None
+    schema = None
     __metaclass__ = ResourceValidatorMetaclass
 
 
-@resource(path='validate/model', renderer='gnome_json',
+@resource(path='/model/{model_id}/validate/model', renderer='gnome_json',
           description='Validate Model JSON.')
 class ModelValidator(BaseResourceValidator):
-    _schema = schema.ModelSchema
+    schema = ModelSchema
 
 
-@resource(path='/validate/mover/wind', renderer='gnome_json',
+@resource(path='/model/{model_id}/validate/mover/wind', renderer='gnome_json',
           description='Validate WindMover JSON.')
 class WindMoverValidator(BaseResourceValidator):
-    _schema = schema.WindMoverSchema
+    schema = WindMoverSchema
+    validators = {
+        'put': util.valid_wind_id
+    }
 
 
-@resource(path='/validate/mover/random', renderer='gnome_json',
+@resource(path='/model/{model_id}/validate/mover/random', renderer='gnome_json',
           description='Validate RandomMover JSON.')
 class RandomMoverValidator(BaseResourceValidator):
-    _schema = schema.RandomMoverSchema
+    schema = movers_schema.RandomMover
 
 
-@resource(path='/validate/spill/surface_release', renderer='gnome_json',
+@resource(path='/model/{model_id}/validate/spill/surface_release',
+          renderer='gnome_json',
           description='Validate SurfaceReleaseSpill JSON.')
 class SurfaceReleaseSpillValidator(BaseResourceValidator):
-    _schema = schema.SurfaceReleaseSpillSchema
+    schema = SurfaceReleaseSpillSchema
 
 
-@resource(path='/validate/map', renderer='gnome_json',
+@resource(path='/model/{model_id}/validate/map', renderer='gnome_json',
           description='Validate Map JSON.')
 class MapValidator(BaseResourceValidator):
-    _schema = schema.MapSchema
+    schema = MapSchema
 
 
-@resource(path='/validate/custom_map', renderer='gnome_json',
+@resource(path='/model/{model_id}/validate/custom_map', renderer='gnome_json',
           description='Validate CustomMap JSON.')
 class CustomMapValidator(BaseResourceValidator):
-    _schema = schema.CustomMapSchema
+    schema = CustomMapSchema
 
 
-@resource(path='/validate/location_file', renderer='gnome_json',
+@resource(path='/model/{model_id}/validate/location_file',
+          renderer='gnome_json',
           description='Validate LocationFile JSON.')
 class LocationFileValidator(BaseResourceValidator):
-    _schema = schema.LocationFileSchema
+    schema = LocationFileSchema

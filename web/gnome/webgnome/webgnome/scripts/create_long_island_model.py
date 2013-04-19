@@ -22,8 +22,12 @@ def main():
                                  'location.json')
 
     if os.path.exists(location_file):
-        print >> sys.stderr, 'File already exists: %s' % location_file
-        exit(1)
+        message = 'File already exists:\n %s\nRemove? (y/n) ' % location_file
+        if raw_input(message).lower() == 'y':
+            os.unlink(location_file)
+        else:
+            print 'Cancelled.'
+            return
 
     model = settings.Model.create()
 
@@ -48,6 +52,7 @@ def main():
     series[4] = (start_time + datetime.timedelta(hours=54), (25, 180))
 
     wind = WebWind(units='mps', timeseries=series)
+    model.environment.add(wind)
     w_mover = WebWindMover(wind=wind, is_constant=False)
     model.movers.add(w_mover)
 

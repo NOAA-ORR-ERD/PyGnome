@@ -208,7 +208,7 @@ short GetTideCurrent(DateTimeRec *BeginDate,DateTimeRec *EndDate,
 		//	}
 
 		// Check to see if rotary smoothing is called for
-		/*if( answers->speedKey != 0 )*/{ FixCurve(answers); }	// GK suggested commenting out to fix Norfolk problem w unuseable tide data, so far it hasn't helped 6.22.06
+		/*if( answers->speedKey != 0 )*/{ FixCurve(answers); }	// GK suggested commenting out to fix Norfolk problem w unusable tide data, so far it hasn't helped 6.22.06
 		
 		// Now fill in array for major-minor axis
 		errorFlag = RotToMajorMinor(constituent,offset,answers);
@@ -526,10 +526,10 @@ void CompCErrors(short errorNum,char *errStr)
 			strcpy(errStr,"ebb offset data unavailable");
 			break;
 		case 28:
-			strcpy(errStr,"Offsets for currents unuseable for selected time span.");
+			strcpy(errStr,"Offsets for currents unusable for selected time span.");
 			break;
 		case 29:
-			strcpy(errStr,"Time offsets unuseable for selected time period.");
+			strcpy(errStr,"Time offsets unusable for selected time period.");
 			break;
 		case 30:
 			strcpy(errStr,"control parameters bad");

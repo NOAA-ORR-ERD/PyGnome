@@ -26,11 +26,11 @@ class WindTupleSchema(DefaultTupleSchema):
     Schema for each tuple in WindTimeSeries list
     """
     datetime = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
-                          validator=validators.convertable_to_seconds)
+                          validator=validators.convertible_to_seconds)
     speed = SchemaNode(Float(), 
-                       default=0, 
+                       default=0,
                        validator=Range(min=0,min_err="wind speed must be greater than or equal to 0"))
-    direction = SchemaNode(Float(), default=0, 
+    direction = SchemaNode(Float(), default=0,
                            validator=Range(0,360,
                                            min_err="wind direction must be greater than or equal to 0",
                                            max_err="wind direction must be less than or equal to 360deg"))
@@ -49,23 +49,26 @@ class WindTimeSeriesSchema(DatetimeValue2dArraySchema):
         validators.no_duplicate_datetime(node, cstruct)
         validators.ascending_datetime(node, cstruct)
 
+
 class Wind(Id, MappingSchema):
     """
     validate data after deserialize, before it is given back to pyGnome's 
     from_dict to set state of object
     """
-    description = SchemaNode(String() )
-    latitude = SchemaNode(Float(), default=None, missing=None)
-    longitude = SchemaNode(Float(), default=None, missing=None)
-    name = SchemaNode(String() )
-    source_id = SchemaNode(String() )
-    source_type = SchemaNode(String(), validator=OneOf(gnome.basic_types.wind_datasource._attr))
-    
-    updated_at = SchemaNode(LocalDateTime(), default=None, missing=None, )
-    units = SchemaNode(String() )
+    description = SchemaNode(String(), default=None, missing=drop)
+    latitude = SchemaNode(Float(), default=None, missing=drop)
+    longitude = SchemaNode(Float(), default=None, missing=drop)
+    name = SchemaNode(String(), default=None, missing=drop)
+    source_id = SchemaNode(String(), default=None, missing=drop)
+    source_type = SchemaNode(
+        String(), validator=OneOf(gnome.basic_types.wind_datasource._attr),
+        default='undefined', missing='undefined')
+    updated_at = SchemaNode(LocalDateTime(), default=None, missing=drop)
+    units = SchemaNode(String(), default='m/s')
     
     timeseries = WindTimeSeriesSchema(missing=drop)
-    filename = SchemaNode( String(), missing=drop)
+    filename = SchemaNode(String(), missing=drop)
+
 
 class Tide(Id, MappingSchema):
     filename = SchemaNode( String(), missing=drop)

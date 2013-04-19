@@ -8,11 +8,11 @@ import numpy as np
 import gnome
 import gnome.utilities.cache
 
-from gnome import GnomeId
+#from gnome import GnomeId
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.environment import Environment, Wind
-from gnome.movers import Mover
+from gnome.movers import Mover, WindMover, CatsMover
 from gnome.spill_container import SpillContainerPair
 from gnome.utilities import serializable
 
@@ -35,7 +35,7 @@ class Model(serializable.Serializable):
     state = copy.deepcopy(serializable.Serializable.state)
     state.add(create=_create,
               update=_update)   # no need to copy parent's state in tis case
-        
+
     def __init__(self,
                  time_step=timedelta(minutes=15), 
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
@@ -52,11 +52,9 @@ class Model(serializable.Serializable):
         :param start_time=datetime.now(): start time of model, datetime object
         :param duration=timedelta(days=1): how long to run the model, a timedelta object
         :param map=gnome.map.GnomeMap(): the land-water map, default is a map with no land-water
-        :param output_map=None: map for drawing output
+        :param outputters=[]: Sequence of ouputter objects: renderer, netcdf_writer, etc.
         :param uncertain=False: flag for setting uncertainty
         :param cache_enabled=False: flag for setting whether the mocel should cache results to disk.
-
-        All this does is call reset() which initializes eveything to defaults
         
         Optional keyword parameters (kwargs):
         :param id: Unique Id identifying the newly created mover (a UUID as a string). 
@@ -73,11 +71,13 @@ class Model(serializable.Serializable):
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
-        #if renderer is not None:
-        #    self.outputters += renderer
         self.time_step = time_step # this calls rewind() !
-        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+
+        self._gnome_id = gnome.GnomeId(id=kwargs.pop('id',None))
         
+        # register callback with OrderedCollection
+        self.movers.register_callback(self._callback_add_mover, ('add','replace'))
+
 
     def reset(self, **kwargs):
         """
@@ -95,17 +95,20 @@ class Model(serializable.Serializable):
 
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
+
         ## note: this may be redundant -- they will get reset in setup_model_run() anyway..
         self.spills.rewind()
+        gnome.utilities.rand.seed(1) # set rand before each call so windages are set correctly
+
         #clear the cache:
         self._cache.rewind()
+
         [outputter.rewind() for outputter in self.outputters]
 
-    def write_from_cache(self, filetype='netcdf', time_step='all'):
-        """
-        write the already-cached data to an output files.
-        """
-        pass
+#    def write_from_cache(self, filetype='netcdf', time_step='all'):
+#        """
+#        write the already-cached data to an output files.
+#        """
 
     ### Assorted properties
     @property
@@ -203,14 +206,13 @@ class Model(serializable.Serializable):
         
         right now only prepares the movers -- maybe more later?.
         """
-        
         # initialize movers differently if model uncertainty is on
         for mover in self.movers:
             for sc in self.spills.items():
                 mover.prepare_for_model_step(sc, self.time_step, self.model_time)
-        [outputter.prepare_for_model_step() for outputter in self.outputters]
+        for outputter in self.outputters:        
+            outputter.prepare_for_model_step()
 
-                                
     def move_elements(self):
         """
 
@@ -239,7 +241,6 @@ class Model(serializable.Serializable):
 
                     # the final move to the new positions
                     sc['positions'][:] = sc['next_positions']
-
 
     def step_is_done(self):
         """
@@ -279,7 +280,8 @@ class Model(serializable.Serializable):
         # cache the results
         # add the timestamp first:
         for sc in self.spills.items():
-            sc['current_time_stamp'] = np.array(self.model_time) # needs to be a numpy array -- this will be an array scalar wiht a datetime object in it.
+            # needs to be a numpy array -- this will be a rank-zero array scalar with a datetime object in it.
+            sc['current_time_stamp'] = np.array(self.model_time) 
         self._cache.save_timestep(self.current_time_step, self.spills)
         output_info = self.write_output()
         return output_info
@@ -353,27 +355,19 @@ class Model(serializable.Serializable):
             
         return dict_
     
-    def __eq__(self, other):
-        """
-        override serializable.Serializable.__eq__() method
+    def _callback_add_mover(self, obj_added):
+        """ callback after mover has been added """
+        if isinstance(obj_added, WindMover):
+            if obj_added.wind.id not in self.environment:
+                self.environment += obj_added.wind
+                
+        if isinstance(obj_added, CatsMover):
+            if obj_added.tide is not None and obj_added.tide.id not in self.environment:
+                    self.environment += obj_added.tide
         
-        In addition to checking properties, also check the equality of
-        objects in each collection
-        """
-        check = super(Model,self).__eq__(other)
-        
-        #=======================================================================
-        # if check:
-        #    """check ordered collections are equal. Currently not implemented"""
-        #    if not self.movers == other.movers:
-        #        return False
-        #    
-        #    if not self.environment == other.environment:
-        #        return False
-        #    
-        #    if not self.spills == other.spills:
-        #        return False
-        #=======================================================================
-        
-        return check
-        
+        # let's also set active_start, active_stop times to model times if they are set for all time
+        if obj_added.active_start == gnome.constants.min_time:
+            obj_added.active_start = self.start_time
+            
+        if obj_added.active_stop == gnome.constants.max_time:
+            obj_added.active_stop = self.start_time + self.duration

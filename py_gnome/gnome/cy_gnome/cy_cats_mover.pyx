@@ -1,13 +1,15 @@
+import os
+
 cimport numpy as cnp
 import numpy as np
-import os
 
 from type_defs cimport *
 from movers cimport CATSMover_c,Mover_c
 from gnome import basic_types
 from gnome.cy_gnome.cy_ossm_time cimport CyOSSMTime
 from gnome.cy_gnome.cy_shio_time cimport CyShioTime
-cimport cy_mover,cy_ossm_time
+from gnome.cy_gnome cimport cy_mover
+from gnome.cy_gnome.cy_helpers cimport to_bytes
 
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
@@ -88,6 +90,25 @@ cdef class CyCatsMover(cy_mover.CyMover):
             else:
                 self.cats.SetRefPosition(p, ref_point[2])
          
+    def __repr__(self):
+        """
+        Return an unambiguous representation of this object so it can be recreated
+        
+        Probably want to return filename as well  
+        """
+        repr_ = '{0}(scale_type={1.scale_type}, scale_value={1.scale_value}, diffusion_coefficient={1.eddy_diffusion})'.format(self.__class__.__name__, self)
+        return repr_
+      
+    def __str__(self):
+        """Return string representation of this object"""
+        
+        info  = "{0} object - see attributes for more info\n".format(self.__class__.__name__)
+        info += "  scale type = {0.scale_type}\n".format(self)
+        info += "  scale value = {0.scale_value}\n".format(self)
+        info += "  eddy diffusion coef = {0.eddy_diffusion}\n".format(self)
+        
+        return info
+         
     def set_shio(self, CyShioTime cy_shio):
         self.cats.SetTimeDep(cy_shio.shio)
         self.cats.SetRefPosition(cy_shio.shio.GetStationLocation(), 0)
@@ -100,14 +121,18 @@ cdef class CyCatsMover(cy_mover.CyMover):
         self.cats.bTimeFileActive = True   # What is this?
         return True
             
-    def read_topology(self, path):
+    def text_read(self, fname):
         cdef OSErr err
-        if os.path.exists(path):
-            err = self.cats.ReadTopology(path)
+        cdef bytes path_
+        
+        path_ = to_bytes( unicode(fname))
+        
+        if os.path.exists(path_):
+            err = self.cats.TextRead(path_)
             if err != False:
                 raise ValueError("CATSMover.ReadTopology(..) returned an error. OSErr: {0}".format(err))
         else:
-            raise IOError("No such file: " + path)
+            raise IOError("No such file: " + path_)
         
         return True
     

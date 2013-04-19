@@ -2,8 +2,11 @@ cimport numpy as cnp
 import numpy as np
 
 from type_defs cimport *
-from movers cimport Mover_c,GridWindMover_c,TimeGridVel_c,TimeGridVelRect_c,TimeGridVelCurv_c,TimeGridWindRect_c,TimeGridWindCurv_c
+from movers cimport Mover_c,GridWindMover_c,TimeGridVel_c
 cimport cy_mover
+
+from gnome.cy_gnome.cy_helpers cimport to_bytes
+
 """
 Dynamic casts are not currently supported in Cython - define it here instead.
 Since this function is custom for each mover, just keep it with the definition for each mover
@@ -29,7 +32,16 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         
         """
         cdef OSErr err
-        err = self.grid.TextRead(time_grid_file, topology_file)
+        cdef bytes time_grid, topology
+        
+        time_grid = to_bytes( unicode(time_grid_file))
+        
+        if topology_file is None:
+            err = self.grid.TextRead( time_grid, '')
+        else:
+            topology  = to_bytes( unicode(topology_file))
+            err = self.grid.TextRead( time_grid, topology )
+         
         if err != 0:
             """
             For now just raise an OSError - until the types of possible errors are defined and enumerated
