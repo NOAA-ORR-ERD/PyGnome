@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 '''
 Created on Apr 4, 2013
 
@@ -15,17 +16,17 @@ scripts = ['script_boston/script_boston.py',
            ]
 
 for script in scripts:
-    torun = "script_runner.py "+script 
+    torun = "./script_runner.py "+script 
     os.system(torun)
     
     print "\n completed : {0}\n".format(torun)
     
-    tosave = "script_runner.py --do=save "+script
+    tosave = "./script_runner.py --do=save "+script
     os.system(tosave)
     
     print "\n completed : {0}\n".format(tosave)
     
-    run_from_save= "script_runner.py     --do=run_from_save "+os.path.join(os.path.dirname(script),'save_model')
+    run_from_save= "./script_runner.py     --do=run_from_save "+os.path.join(os.path.dirname(script),'save_model')
     os.system(run_from_save)
     
     print "\n completed : {0}\n".format(run_from_save)

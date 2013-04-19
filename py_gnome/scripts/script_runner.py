@@ -37,13 +37,14 @@ def run(model, images_dir):
     
     # run the model
     while True:
-        print "calling next_image"
+        print "calling step"
         try:
-            image_info = model.next_image(images_dir)
+            image_info = model.step()
             print image_info
         except StopIteration:
             print "Done with the model run"
             break
+
 
 def save(model, saveloc):
     # save directory
@@ -105,8 +106,17 @@ if __name__=="__main__":
         
         if args.do == 'run':
             run(model, args.images)
-        else:
-            save(model, args.saveloc)
+            try:
+                myscript.post_run(model)
+            except AttributeError: # must not have a post_run function
+                pass
     
     elif args.do == 'run_from_save':
         run_from_save(args.saveloc, args.images)
+        try:
+            myscript.post_run(model)
+        except AttributeError: # must not have a post_run function
+            pass
+
+
+

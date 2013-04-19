@@ -3,9 +3,6 @@
 """
 Script to test GNOME with long island sound data
 
-Updated to use new version of code:
-11/5/2012
-
 """
 
 import os
@@ -23,52 +20,47 @@ from gnome.utilities.file_tools import haz_files
 # define base directory
 base_dir = os.path.dirname(__file__)
 
-def make_model():
+global renderer
+
+def make_model(images_dir=os.path.join(base_dir,"images") ):
     print "initializing the model"
     
     start_time = datetime(2012, 9, 15, 12, 0)
-    model = gnome.model.Model(start_time = start_time,
-                              duration = timedelta(days=2),
-                              time_step = 3600, # one hour in seconds
-                              uncertain = True
-                              )
-    
-    print "adding the map"
-    
+
     mapfile = os.path.join( base_dir, './LongIslandSoundMap.BNA')
-    model.map = gnome.map.MapFromBNA(mapfile,
-                                     refloat_halflife=6*3600, #seconds
-                                     )
-    
-    ## the image output map
-    map_ = map_canvas.MapCanvasFromBNA((800, 600), mapfile)
-    model.output_map = map_
-    
-    
-    print "adding a spill"
-    
+
+    gnome_map = gnome.map.MapFromBNA(mapfile,
+                           refloat_halflife=6*3600, #seconds
+                           )
+
+    ## the image output renderer
+    global renderer
+    renderer = gnome.renderer.Renderer(mapfile,
+                                       images_dir,
+                                       size=(800, 600))
+
+    model = gnome.model.Model(start_time = start_time,
+                          duration = timedelta(hours=48),
+                          time_step = 3600, # one hour in seconds
+                          map = gnome_map,
+                          uncertain = True,
+                          outputters = [renderer],
+                          cache_enabled = True,
+                          )
+
+    print "adding a spill"    
     spill = gnome.spill.SurfaceReleaseSpill(num_elements=1000,
                                             start_position = (-72.419992, 41.202120, 0.0),
                                             release_time = start_time,
                                             )
         
     model.spills += spill
-    
-    # second spill
-    # spill = gnome.spill.PointReleaseSpill(num_LEs=10,
-    #                                       start_position = (-72.419992,41.202120),
-    #                                       release_time = start_time,
-    #                                       )
         
-    # model.add_spill(spill)
-    
     print  "adding a RandomMover:"
     r_mover = gnome.movers.RandomMover(diffusion_coef=500000)
     model.movers += r_mover
     
-    
     print "adding a wind mover:"
-    
     series = np.zeros((5,), dtype=gnome.basic_types.datetime_value_2d)
     series[0] = (start_time,                      ( 10,   45) )
     series[1] = (start_time+timedelta(hours=18),  ( 10,   90) )
@@ -82,11 +74,32 @@ def make_model():
     model.movers += w_mover
     
     print "adding a cats mover:"
-    
     curr_file=os.path.join( base_dir, r"./LI_tidesWAC.CUR")
     c_mover = gnome.movers.CatsMover(curr_file, tide=Tide(os.path.join( base_dir, r"./CLISShio.txt")))
     model.movers += c_mover
     model.environment += c_mover.tide 
     
     return model
+
+def post_run(model):
+    # create a place for test images (cleaning out any old ones)
+    images_dir = os.path.join( base_dir, "images_2")
+    if os.path.isdir(images_dir):
+        shutil.rmtree(images_dir)
+    os.mkdir(images_dir)
+    renderer.images_dir = images_dir
+
+    print "re-rendering images"
+    # re-render images:
+    renderer.viewport = ((-72.75, 41.1),(-72.34, 41.3))
+
+    renderer.prepare_for_model_run()
+
+    for step_num in range(model.num_time_steps):
+        print "writing image:"
+        image_info = renderer.write_output(step_num)
+        print "image written:", image_info
+
+
+
 
