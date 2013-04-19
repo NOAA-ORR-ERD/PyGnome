@@ -6,15 +6,19 @@ test code for the model class
 not a lot to test by itself, but a start
 
 """
-import pytest
 import os, shutil
 from datetime import datetime, timedelta
+
 import numpy as np
+import pytest
+
 import gnome.model
 import gnome.map
 from gnome import movers, environment
 import gnome.spill
 from gnome.spill import SpatialReleaseSpill
+import gnome.utilities.map_canvas
+from gnome.utilities.file_tools import haz_files
 
 datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
 
@@ -134,9 +138,6 @@ def test_simple_run_with_map():
         print "just ran time step: %s"%step
         
     assert True
-
-import gnome.utilities.map_canvas
-from gnome.utilities.file_tools import haz_files
 
 def test_simple_run_with_image_output():
     """
