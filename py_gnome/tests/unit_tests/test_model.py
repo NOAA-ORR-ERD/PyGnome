@@ -50,10 +50,10 @@ def setup_simple_model():
                               start_time=start_time,
                               duration=timedelta(hours=1),
                               map=gnome_map,
-                              outputters=[renderer,],
                               uncertain=False,
                               cache_enabled=False,)
 
+    model.outputters += renderer
     model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
 
     N = 10 # a line of ten points

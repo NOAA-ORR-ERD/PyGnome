@@ -68,7 +68,6 @@ class Model(serializable.Serializable):
         self._cache.enabled = cache_enabled
         
         self.outputters = OrderedCollection(dtype=gnome.outputter.Outputter) # list of output objects
-        #import ipdb; ipdb.set_trace()
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
@@ -103,7 +102,6 @@ class Model(serializable.Serializable):
 
         #clear the cache:
         self._cache.rewind()
-        #import ipdb; ipdb.set_trace()
         [outputter.rewind() for outputter in self.outputters]
 
 #    def write_from_cache(self, filetype='netcdf', time_step='all'):
