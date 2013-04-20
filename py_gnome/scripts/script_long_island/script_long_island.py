@@ -44,9 +44,12 @@ def make_model(images_dir=os.path.join(base_dir,"images") ):
                           time_step = 3600, # one hour in seconds
                           map = gnome_map,
                           uncertain = True,
-                          outputters = [renderer],
                           cache_enabled = True,
                           )
+    
+    print "adding outputters"
+    model.outputters += renderer
+    
 
     print "adding a spill"    
     spill = gnome.spill.SurfaceReleaseSpill(num_elements=1000,

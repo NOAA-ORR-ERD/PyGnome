@@ -51,11 +51,11 @@ def save(model, saveloc):
     print "saving .."
     scenario.save(model,saveloc)
 
-def run_from_save(saveloc, images_dir):
+def run_from_save(saveloc):
     if not os.path.isdir(saveloc):
         raise ValueError("{0} does not appear to be a valid directory".format(saveloc))
     model = scenario.load(saveloc)
-    run( model, images_dir)
+    run( model)
     
 
 def parse_args(argv):
@@ -87,7 +87,7 @@ def parse_args(argv):
     
     return args
 
-def make_model(location,images_dir):
+def load_model(location,images_dir):
     #import ipdb; ipdb.set_trace()
     dir_name, filename = os.path.split(location)
     
@@ -99,12 +99,6 @@ def make_model(location,images_dir):
     model = imp_script.make_model(images_dir)
     return (model,imp_script)
 
-def post_run(model,imp_script):
-    try:
-        imp_script.post_run(model)
-    except AttributeError: # must not have a post_run function
-        pass
-
 
 if __name__=="__main__":
     """when script is run from command like, then call run()"""
@@ -114,15 +108,18 @@ if __name__=="__main__":
         if not os.path.isfile(args.location):
             raise ValueError("{0} is not a file - provide a python script if action is to 'run' or 'save' model".format(args.location))
         
-        model, imp_script = make_model(args.location, args.images)
+        model, imp_script = load_model(args.location, args.images)
                 
-        if args.do == 'run':
-            run(model)
-            post_run(model, imp_script)
-        else:
-            save(model, args.saveloc)
-                
-    elif args.do == 'run_from_save':
+    if args.do == 'run':
+        run(model)
+        try:
+            imp_script.post_run(model)
+        except AttributeError: # must not have a post_run function
+            pass
+    elif args.do == 'save':
+        save(model, args.saveloc)
+    else:   #if args.do == 'run_from_save':
         run_from_save(args.saveloc)
-        post_run(model, imp_script)
-
+        
+    #if args.do in ('run','run_from_save'):
+    #    post_run(model, imp_script)    # cannot do post run because it needs module name to call post_run

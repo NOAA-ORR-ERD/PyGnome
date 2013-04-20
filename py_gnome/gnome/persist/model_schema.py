@@ -25,13 +25,13 @@ class SpillContainerPair(MappingSchema):
     certain_spills = base_schema.OrderedCollection()
     uncertain_spills = base_schema.OrderedCollection(missing=drop)  # only present if uncertainty is on
 
-class MapItem(TupleSchema):
+class ObjectInModel(TupleSchema):
     type = SchemaNode( String() )
     id   = SchemaNode( String() )
     
-class MapList(MappingSchema):
-    map = MapItem()
-    output_map = MapItem(missing=drop)    
+#class MapList(MappingSchema):
+#    map = MapItem()
+    #output_map = MapItem(missing=drop)    
 
 class Model(base_schema.Id, MappingSchema):
     time_step = SchemaNode( Float()) 
@@ -41,4 +41,6 @@ class Model(base_schema.Id, MappingSchema):
     environment = base_schema.OrderedCollection()
     uncertain = SchemaNode( Bool() )
     spills = SpillContainerPair()
-    maps = MapList()
+    #map = MapList()
+    map = ObjectInModel()
+    outputters = base_schema.OrderedCollection()

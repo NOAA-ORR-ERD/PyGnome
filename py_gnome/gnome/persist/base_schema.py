@@ -8,7 +8,8 @@ from colander import (
     SequenceSchema,
     TupleSchema,
     Float,
-    drop
+    drop,
+    Int
 )
 
 @deferred
@@ -42,6 +43,15 @@ class LongLat(TupleSchema):
     long = SchemaNode( Float() )
     lat = SchemaNode( Float() )
     
+class LongLatBounds(SequenceSchema):
+    """ used to define bounds on a map """
+    bounds = LongLat()
+    
 class WorldPoint(LongLat):
     """used to define reference points. 3D positions (long,lat,z)"""
     z = SchemaNode( Float(), default=0.0)    
+
+class ImageSize(TupleSchema):
+    """only contains 2D (long, lat) positions"""
+    width = SchemaNode( Int() )
+    height = SchemaNode( Int() )

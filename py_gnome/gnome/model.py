@@ -28,7 +28,8 @@ class Model(serializable.Serializable):
                'movers',
                'environment',
                'spills',
-               'maps'
+               'map',
+               'outputters'
                ]
     _create = []
     _create.extend(_update)
@@ -41,7 +42,6 @@ class Model(serializable.Serializable):
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
                  duration=timedelta(days=1),
                  map=gnome.map.GnomeMap(),
-                 outputters=[],
                  uncertain=False,
                  cache_enabled=False,
                  **kwargs):
@@ -52,13 +52,13 @@ class Model(serializable.Serializable):
         :param start_time=datetime.now(): start time of model, datetime object
         :param duration=timedelta(days=1): how long to run the model, a timedelta object
         :param map=gnome.map.GnomeMap(): the land-water map, default is a map with no land-water
-        :param outputters=[]: Sequence of ouputter objects: renderer, netcdf_writer, etc.
         :param uncertain=False: flag for setting uncertainty
         :param cache_enabled=False: flag for setting whether the mocel should cache results to disk.
         
         Optional keyword parameters (kwargs):
         :param id: Unique Id identifying the newly created mover (a UUID as a string). 
                    This is used when loading an object from a persisted model
+        :param outputters: Sequence of ouputter objects: renderer, netcdf_writer, etc. Default is None
         """
         # making sure basic stuff is in place before properties are set
         self.environment = OrderedCollection(dtype=Environment)  
@@ -66,8 +66,9 @@ class Model(serializable.Serializable):
         self.spills = SpillContainerPair(uncertain)   # contains both certain/uncertain spills 
         self._cache = gnome.utilities.cache.ElementCache()
         self._cache.enabled = cache_enabled
-        self.outputters = OrderedCollection(outputters, dtype=gnome.outputter.Outputter) # list of output objects
-
+        
+        self.outputters = OrderedCollection(dtype=gnome.outputter.Outputter) # list of output objects
+        #import ipdb; ipdb.set_trace()
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
@@ -102,7 +103,7 @@ class Model(serializable.Serializable):
 
         #clear the cache:
         self._cache.rewind()
-
+        #import ipdb; ipdb.set_trace()
         [outputter.rewind() for outputter in self.outputters]
 
 #    def write_from_cache(self, filetype='netcdf', time_step='all'):
@@ -328,6 +329,7 @@ class Model(serializable.Serializable):
                 break
         return output_data
 
+
     def movers_to_dict(self):
         """
         call to_dict method of OrderedCollection object
@@ -343,17 +345,20 @@ class Model(serializable.Serializable):
     def spills_to_dict(self):
         return self.spills.to_dict()
 
-    def maps_to_dict(self):
+    def outputters_to_dict(self):
         """
-        create a dict_ that contains:
-        'map': (type, object.id)
-        'ouput_map': (type, object.id)
+        call to_dict method of OrderedCollection object
         """
-        dict_ = {'map': ("{0}.{1}".format(self.map.__module__, self.map.__class__.__name__), self.map.id)}
-        if self.output_map is not None:
-            dict_.update({'output_map': ("{0}.{1}".format(self.output_map.__module__, self.output_map.__class__.__name__), self.output_map.id)})
-            
-        return dict_
+        return self.outputters.to_dict()
+    
+    def map_to_dict(self):
+        """
+        create a tuple that contains: (type, object.id)
+        """
+        #dict_ = {'map': ("{0}.{1}".format(self.map.__module__, self.map.__class__.__name__), self.map.id)}
+        return ("{0}.{1}".format(self.map.__module__, self.map.__class__.__name__), self.map.id)
+        #if self.output_map is not None:
+        #    dict_.update({'output_map': ("{0}.{1}".format(self.output_map.__module__, self.output_map.__class__.__name__), self.output_map.id)})
     
     def _callback_add_mover(self, obj_added):
         """ callback after mover has been added """

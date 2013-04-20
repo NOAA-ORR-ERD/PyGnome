@@ -333,7 +333,7 @@ class MapCanvasFromBNA(MapCanvas, serializable.Serializable):
     This class is serializable 
     """
     _update = ['viewport','map_BB']
-    _create = ['image_size','filename','projection_type']   # not sure image_size should be updated
+    _create = ['image_size','filename','projection_class']   # not sure image_size should be updated
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
     state.add( create=_create, update=_update)
@@ -343,7 +343,7 @@ class MapCanvasFromBNA(MapCanvas, serializable.Serializable):
         """
         change projection_type from string to correct type 
         """
-        proj = eval(dict_.pop('projection_type'))
+        proj = eval(dict_.pop('projection_class'))
         return cls(projection_class=proj, **dict_)
     
     def __init__(self, image_size, filename, **kwargs):
@@ -368,7 +368,7 @@ class MapCanvasFromBNA(MapCanvas, serializable.Serializable):
         
         MapCanvas.__init__(self, image_size, land_polygons=polygons, **kwargs)
 
-    def projection_type_to_dict(self):
+    def projection_class_to_dict(self):
         """ store projection class as a string for now since that is all that is required for persisting """
         return "{0}.{1}".format(self.projection.__module__, self.projection.__class__.__name__)
         
