@@ -21,7 +21,7 @@ from gnome.utilities.file_tools import haz_files
 # define base directory
 base_dir = os.path.dirname(__file__)
 
-def make_model():
+def make_model(images_dir=os.path.join(base_dir,"images")):
     print "initializing the model"
     
     start_time = datetime(2004, 12, 31, 13, 0)
