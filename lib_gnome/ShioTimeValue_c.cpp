@@ -845,7 +845,7 @@ OSErr ShioTimeValue_c::GetTimeValue(const Seconds& current_time, VelocityRec *va
 			Seconds midTime;
 			double forHeight, maxMinDeriv, largestDeriv = 0.;
 			HighLowData startHighLowData,endHighLowData;
-			double scaleFactor;
+			double scaleFactor = 1.;
 			char msg[256];
 			for( i=0 ; i<this->GetNumHighLowValues()-1; i++) 
 			{
