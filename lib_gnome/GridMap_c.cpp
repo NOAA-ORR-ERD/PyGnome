@@ -3464,7 +3464,7 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 		dag_vals[i*3+1] = (*treeH)[i].branchLeft;
 		dag_vals[i*3+2] = (*treeH)[i].branchRight;
 	}
-	for(i=0;j<numTriangles;i++)
+	for(i=0;i<numTriangles;i++)
 	{
 		top_vals[i*3] = (*topH)[i].vertex1;
 		top_vals[i*3+1] = (*topH)[i].vertex2;

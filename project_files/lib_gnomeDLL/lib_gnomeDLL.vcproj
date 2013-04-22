@@ -213,6 +213,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\lib_gnome\GridMap_c.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\lib_gnome\GridMapUtils.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\lib_gnome\GridWindMover_c.cpp"
 				>
 			</File>
