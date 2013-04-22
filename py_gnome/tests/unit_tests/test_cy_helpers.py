@@ -65,7 +65,6 @@ class TestCyDateTime():
         sec = self.target.DateToSeconds(self.daterec)
         assert self.pySec == sec
 
-    @pytest.mark.xfail  # need to look into why this is failing
     def test_sec_to_timestruct(self):
         '''
         Test Gnome's reverse conversion back to Date
