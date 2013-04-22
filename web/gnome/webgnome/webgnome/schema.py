@@ -1,13 +1,6 @@
 import datetime
+import hammer
 
-from gnome.persist import (
-    environment_schema,
-    movers_schema,
-    map_schema,
-    model_schema,
-    validators,
-)
-from gnome.persist.extend_colander import LocalDateTime
 from colander import (
     MappingSchema,
     SchemaNode,
@@ -22,6 +15,13 @@ from colander import (
     deferred,
     drop,
 )
+from gnome.persist import (
+    environment_schema,
+    movers_schema,
+    map_schema,
+    validators,
+    extend_colander)
+from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.map_schema import LongLatBounds
 from gnome.persist.movers_schema import CatsMover
 
@@ -168,3 +168,17 @@ class LocationFileSchema(MappingSchema):
     longitude = SchemaNode(Float())
     model_data = ModelSchema()
 
+
+@hammer.adapts(validators.positive)
+def adapt_positive(schema, **kwargs):
+    return {
+        'minimum': 0
+    }
+
+
+hammer.register_adapter(extend_colander.LocalDateTime, hammer.adapt_datetime)
+hammer.register_adapter([extend_colander.DatetimeValue2dArray,
+                         extend_colander.DatetimeValue2dArraySchema],
+                        hammer.adapt_sequence)
+hammer.register_adapter([extend_colander.DefaultTupleSchema,
+                         extend_colander.DefaultTuple], hammer.adapt_tuple)

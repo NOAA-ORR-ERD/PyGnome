@@ -3,7 +3,9 @@ define([
     'jquery',
     'lib/underscore',
     'lib/backbone',
-    'util'
+    'util',
+    'lib/jsv/environments',
+    'lib/jsv/jsv'
 ], function($, _, Backbone, util) {
 
      /*
@@ -389,6 +391,8 @@ define([
          */
         dateFields: null,
 
+        schema: null,
+
         initialize: function(attrs, opts) {
             this.dirty = false;
             this.bind('change', this.change, this);
@@ -400,6 +404,42 @@ define([
                 this.gnomeModel = opts.gnomeModel;
                 prependWithGnomeUrl.call(this);
             }
+        },
+
+        // Allow only empty or schema-compliant attributes
+        validate: function() {
+            var errors = [];
+
+            if (!this.schema) {
+                return errors;
+            }
+
+            // JSV defaults to JSON Schema draft 3 by default.
+            var env = JSV.createEnvironment();
+            var obj = this.toJSON();
+
+            if (_.isEmpty(obj)) {
+                return errors;
+            }
+
+            var r = env.validate(obj, this.schema);
+
+            if (!r.errors.length) {
+                return errors;
+            }
+
+            for (var i = 0; i < r.errors.length; i++) {
+                var error = r.errors[i];
+                var uriParts = error.uri.split('/');
+
+                errors.push({
+                    description: error.message,
+                    // Field name is the last part of the URI
+                    name: uriParts[uriParts.length - 1]
+                });
+            }
+
+            return errors;
         },
 
         onIndexChange: function() {
@@ -612,7 +652,7 @@ define([
             this.syncArrayField('windage_range', 'windage_range_min', 0);
             this.syncArrayField('windage_range', 'windage_range_max', 1);
 
-            SurfaceReleaseSpill.__super__.initialize.apply(this, arguments);
+            return SurfaceReleaseSpill.__super__.initialize.apply(this, arguments);
         }
     });
 
@@ -639,7 +679,7 @@ define([
                 this.set('timeseries', [[moment(), 0, 0]]);
             }
 
-            Wind.__super__.set.apply(this, arguments);
+            return Wind.__super__.set.apply(this, arguments);
         },
 
         /*
@@ -890,7 +930,15 @@ define([
     }
 
 
+    function init(opts) {
+        var schema = opts.jsonSchema;
+        SurfaceReleaseSpill.prototype.defaults = opts.defaultSurfaceReleaseSpill;
+        SurfaceReleaseSpill.prototype.schema =  schema.properties.surface_release_spills.items;
+    }
+
+
     return {
+        init: init,
         TimeStep: TimeStep,
         GnomeRun: GnomeRun,
         GnomeModel: GnomeModel,

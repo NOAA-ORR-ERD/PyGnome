@@ -215,6 +215,15 @@
                         return obj.get(keypath);
                     },
                     publish: function(obj, keypath, value) {
+                        // Convert numeric strings to floats if they are valid
+                        // numbers, to help with client-side JSON Schema
+                        // validation.
+                        var numValue = parseFloat(value);
+
+                        if (!isNaN(numValue)) {
+                            value = numValue;
+                        }
+
                         obj.set(keypath, value);
                     }
                 }
@@ -246,6 +255,7 @@
                 defaultRandomMover: ${default_random_mover | n},
                 defaultMap: ${default_map | n},
                 defaultCustomMap: ${default_custom_map | n},
+                jsonSchema: ${json_schema | n}
             };
 
             $('#map').imagesLoaded(function() {

@@ -464,6 +464,16 @@ define([
 
             this.prepareSubmitData();
 
+            var errors = this.model.validate();
+
+            if (errors.length) {
+                for (var i = 0; i < errors.length; i++) {
+                    var obj = errors[i];
+                    this.handleFieldError(obj);
+                }
+                return;
+            }
+
             if (this.collection) {
                 this.collection.add(this.model);
             }

@@ -7,7 +7,7 @@ define([
     'models',
     'forms',
     'views',
-    'util'
+    'util',
 ], function($, _, Backbone, Mousetrap, models, forms, views, util) {
 
      /*
@@ -444,11 +444,9 @@ define([
 
         setupModels: function() {
             var _this = this;
-            var gnomeSettings = this.options.gnomeSettings;
 
-            var windMovers = gnomeSettings.wind_movers;
-            delete gnomeSettings['wind_movers'];
-
+            // Setup model defaults and schema validators.
+            models.init(this.options);
 
             this.gnomeModel = new models.GnomeModel(this.options.gnomeSettings);
 
