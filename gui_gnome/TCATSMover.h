@@ -15,6 +15,7 @@
 #include "CATSMover_c.h"
 #include "TCurrentMover.h"
 #include "Uncertainty.h"
+#include "TimeGridVel_c.h"
 
 class TCATSMover : virtual public CATSMover_c,  public TCurrentMover
 {

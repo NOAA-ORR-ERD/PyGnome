@@ -587,7 +587,7 @@ class TGridVel;
 
 //--
 
-Boolean IsCATS3DFile (char *path);
+//Boolean IsCATS3DFile (char *path);
 void SetShowGrid(Boolean set);
 void SetShowSelectedTriangles(Boolean set);
 void SetDosageCheckMarks(Boolean set);

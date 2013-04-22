@@ -4,6 +4,7 @@
 #include "GridVel.h"
 #include "NetCDFMover.h"
 #include "Map3D.h"
+#include "GridMap_c.h"
 
 void	GetOWeatherValues (DialogPtr dialog, long item);
 void 	SetOWeatherValues (DialogPtr dialog, long item);
@@ -889,6 +890,7 @@ OSErr AddMapsDialog2()
 	TVectorMap	*vMap;
 	TOSSMMap 	*oMap;
 	Map3D 		*gMap;
+	GridMap_c *gridMap = 0;
 	OSType 	typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };
 	MySFReply 	reply;
 	WorldRect	theRect = emptyWorldRect;
@@ -1001,7 +1003,6 @@ OSErr AddMapsDialog2()
 	else if (IsNetCDFFile (path, &gridType))
 	{
 		TMap *newMap = 0;
-		//TCurrentMover *newMover = CreateAndInitCurrentsMover (model->uMap,false,path,"NetCDFfile",&newMap);	// already have path
 		
 		char s[256],fileName[256];
 		WorldRect bounds = theWorld;
@@ -1017,23 +1018,29 @@ OSErr AddMapsDialog2()
 			WORLDPOINTFH vertexPtsH=0;
 			long numRows=0, numCols=0, numNodes=0, numTri=0, numBoundaryPts=0;
 			char errmsg[256];
+			gridMap = new GridMap_c();
 			if (gridType == CURVILINEAR)
 			{
 				DOUBLEH maskH = 0;
-				err = gMap->GetPointsAndMask(path,&maskH,&vertexPtsH,&depthPtsH,&numRows, &numCols);	//Text read	
-				if (!err) err = gMap->SetUpCurvilinearGrid(maskH,numRows,numCols,vertexPtsH,depthPtsH,errmsg);	//Reorder points
+				//err = gMap->GetPointsAndMask(path,&maskH,&vertexPtsH,&depthPtsH,&numRows, &numCols);	//Text read	
+				//if (!err) err = gMap->SetUpCurvilinearGrid(maskH,numRows,numCols,vertexPtsH,depthPtsH,errmsg);	//Reorder points
+				err = gridMap->GetPointsAndMask(path,&maskH,&vertexPtsH,&depthPtsH,&numRows, &numCols);	//Text read	
+				if (!err) err = gridMap->SetUpCurvilinearGrid(maskH,numRows,numCols,vertexPtsH,depthPtsH,errmsg);	//Reorder points
 				if(maskH) {DisposeHandle((Handle)maskH); maskH = 0;}
 			}
 			else if (gridType == TRIANGULAR)
 			{	// check if topology is included
 				LONGPTR bndry_indices=0, bndry_nums=0, bndry_type=0, tri_verts=0, tri_neighbors=0;
-				err = gMap->GetPointsAndBoundary(path,&vertexPtsH,&depthPtsH, &numNodes, &bndry_indices, &bndry_nums, &bndry_type, &numBoundaryPts, &tri_verts, &tri_neighbors, &numTri);	//Text read	
+				//err = gMap->GetPointsAndBoundary(path,&vertexPtsH,&depthPtsH, &numNodes, &bndry_indices, &bndry_nums, &bndry_type, &numBoundaryPts, &tri_verts, &tri_neighbors, &numTri);	//Text read	
+				err = gridMap->GetPointsAndBoundary(path,&vertexPtsH,&depthPtsH, &numNodes, &bndry_indices, &bndry_nums, &bndry_type, &numBoundaryPts, &tri_verts, &tri_neighbors, &numTri);	//Text read	
 				if (!err) 
 				{	// separate points and boundary
 					if (numTri == 0)
-						err = gMap->SetUpTriangleGrid(numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts);	//Reorder points
+						//err = gMap->SetUpTriangleGrid(numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts);	//Reorder points
+						err = gridMap->SetUpTriangleGrid(numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts);	//Reorder points
 					else
-						err = gMap->SetUpTriangleGrid2(numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts,tri_verts, tri_neighbors);	//Reorder points
+						//err = gMap->SetUpTriangleGrid2(numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts,tri_verts, tri_neighbors);	//Reorder points
+						err = gridMap->SetUpTriangleGrid2(numNodes,numTri,vertexPtsH,depthPtsH, bndry_indices, bndry_nums, bndry_type, numBoundaryPts,tri_verts, tri_neighbors);	//Reorder points
 				
 				}
 				if (bndry_indices) delete [] bndry_indices;
@@ -1044,7 +1051,15 @@ OSErr AddMapsDialog2()
 			}
 			if(vertexPtsH) {DisposeHandle((Handle)vertexPtsH); vertexPtsH = 0;}
 			if(depthPtsH) {DisposeHandle((Handle)depthPtsH); depthPtsH = 0;}
-			if( !err) err = gMap->MakeBitmaps();
+			if( !err) 
+			{
+				gMap->SetBoundarySegs(gridMap->GetBoundarySegs());
+				gMap->SetWaterBoundaries(gridMap->GetWaterBoundaries());
+				gMap->SetBoundaryPoints(gridMap->GetBoundaryPoints());
+				gMap->SetGrid(gridMap->GetGrid());
+				gMap->SetMapBounds(gridMap->GetMapBounds());
+				err = gMap->MakeBitmaps();
+			}
 			if (!err) err = model->AddMap(gMap, 0);
 			if (err)
 			{
@@ -1117,7 +1132,7 @@ OSErr AddMapsDialog2()
 			printNote(tempStr);
 		}
 	}
-	else if (IsCATS3DFile (path))
+	else if (IsCATS3DFile (path))	// for any CATS?
 	{
 		char s[256],fileName[256];
 		WorldRect bounds = theWorld;
@@ -1129,8 +1144,23 @@ OSErr AddMapsDialog2()
 		
 		if (gMap)
 		{
-			err = gMap->ReadCATSMap(path);	
-			if(!err) err = gMap->MakeBitmaps();
+			gridMap = new GridMap_c();
+			if (!gridMap) {err = gMap->ReadCATSMap(path);/*err = -1;*/}
+			else
+				//err = gMap->ReadCATSMap(path);
+				err = gridMap->ReadCATSMap(path);	
+			if(!err) 
+			{	
+				if (gridMap)
+				{
+					gMap->SetBoundarySegs(gridMap->GetBoundarySegs());
+					gMap->SetWaterBoundaries(gridMap->GetWaterBoundaries());
+					gMap->SetBoundaryPoints(gridMap->GetBoundaryPoints());
+					gMap->SetGrid(gridMap->GetGrid());
+					gMap->SetMapBounds(gridMap->GetMapBounds());
+				}
+				err = gMap->MakeBitmaps();
+			}
 
 			if (err = model->AddMap(gMap, 0))
 			{
@@ -1144,14 +1174,32 @@ OSErr AddMapsDialog2()
 	{
 		WorldRect bounds = theWorld;
 		gMap = CreateAndInitMap3D (path,bounds);	// need to fix bounds afterwards
-		err = gMap -> ReadTopology(path);
-			if(!err) err = gMap->MakeBitmaps();
+		if (gMap)
+		{
+			gridMap = new GridMap_c();
+			if (!gridMap) {err = gMap -> ReadTopology(path);/*err = -1;*/}
+			else 
+				//err = gMap -> ReadTopology(path);
+				err = gridMap -> ReadTopology(path);
+			if(!err) 
+			{
+				if (gridMap)
+				{
+					gMap->SetBoundarySegs(gridMap->GetBoundarySegs());
+					gMap->SetWaterBoundaries(gridMap->GetWaterBoundaries());
+					gMap->SetBoundaryPoints(gridMap->GetBoundaryPoints());
+					gMap->SetGrid(gridMap->GetGrid());
+					gMap->SetMapBounds(gridMap->GetMapBounds());
+				}
+				err = gMap->MakeBitmaps();
+			}
 			if (err = model->AddMap(gMap, 0))
 			{
 				gMap -> Dispose ();
 				delete gMap;
 				err = -1;
 			}
+		}
 		//err = true;
 		if (err)
 		{sprintf(tempStr,"File %s is not a recognizable map file.",shortFileName);

@@ -3,12 +3,16 @@ import os
 from datetime import datetime, timedelta
 import copy
 
+import numpy as np
+
 import gnome
-from gnome import GnomeId
+import gnome.utilities.cache
+
+#from gnome import GnomeId
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.environment import Environment, Wind
-from gnome.movers import Mover
+from gnome.movers import Mover, WindMover, CatsMover
 from gnome.spill_container import SpillContainerPair
 from gnome.utilities import serializable
 
@@ -24,7 +28,8 @@ class Model(serializable.Serializable):
                'movers',
                'environment',
                'spills',
-               'maps'
+               'map',
+               'outputters'
                ]
     _create = []
     _create.extend(_update)
@@ -32,37 +37,47 @@ class Model(serializable.Serializable):
     state.add(create=_create,
               update=_update)   # no need to copy parent's state in tis case
 
-    
     def __init__(self,
-                 time_step=900, # 15 minutes in seconds
+                 time_step=timedelta(minutes=15), 
                  start_time=round_time(datetime.now(), 3600), # default to now, rounded to the nearest hour
                  duration=timedelta(days=1),
                  map=gnome.map.GnomeMap(),
-                 output_map=None,
                  uncertain=False,
+                 cache_enabled=False,
                  **kwargs):
         """ 
-        Initializes model. 
+        Initializes a model. 
 
-        All this does is call reset() which initializes eveything to defaults
+        :param time_step=timedelta(minutes=15): model time step in seconds or as a timedelta object
+        :param start_time=datetime.now(): start time of model, datetime object
+        :param duration=timedelta(days=1): how long to run the model, a timedelta object
+        :param map=gnome.map.GnomeMap(): the land-water map, default is a map with no land-water
+        :param uncertain=False: flag for setting uncertainty
+        :param cache_enabled=False: flag for setting whether the mocel should cache results to disk.
         
         Optional keyword parameters (kwargs):
         :param id: Unique Id identifying the newly created mover (a UUID as a string). 
                    This is used when loading an object from a persisted model
+        :param outputters: Sequence of ouputter objects: renderer, netcdf_writer, etc. Default is None
         """
         # making sure basic stuff is in place before properties are set
         self.environment = OrderedCollection(dtype=Environment)  
         self.movers = OrderedCollection(dtype=Mover)
         self.spills = SpillContainerPair(uncertain)   # contains both certain/uncertain spills 
-
+        self._cache = gnome.utilities.cache.ElementCache()
+        self._cache.enabled = cache_enabled
+        
+        self.outputters = OrderedCollection(dtype=gnome.outputter.Outputter) # list of output objects
         self._start_time = start_time # default to now, rounded to the nearest hour
         self._duration = duration
         self._map = map
-        self.output_map = output_map
-
         self.time_step = time_step # this calls rewind() !
-        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+
+        self._gnome_id = gnome.GnomeId(id=kwargs.pop('id',None))
         
+        # register callback with OrderedCollection
+        self.movers.register_callback(self._callback_add_mover, ('add','replace'))
+
 
     def reset(self, **kwargs):
         """
@@ -80,8 +95,19 @@ class Model(serializable.Serializable):
 
         self.current_time_step = -1 # start at -1
         self.model_time = self._start_time
+
+        ## note: this may be redundant -- they will get reset in setup_model_run() anyway..
         self.spills.rewind()
         gnome.utilities.rand.seed(1) # set rand before each call so windages are set correctly
+
+        #clear the cache:
+        self._cache.rewind()
+        [outputter.rewind() for outputter in self.outputters]
+
+#    def write_from_cache(self, filetype='netcdf', time_step='all'):
+#        """
+#        write the already-cached data to an output files.
+#        """
 
     ### Assorted properties
     @property
@@ -95,6 +121,13 @@ class Model(serializable.Serializable):
         if self.spills.uncertain != uncertain_value:
             self.spills.uncertain = uncertain_value # update uncertainty
             self.rewind()
+
+    @property
+    def cache_enabled(self):
+        return self._cache.enabled
+    @cache_enabled.setter
+    def cache_enabled(self, enabled):
+        self._cache.enabled = enabled
     
     @property
     def id(self):
@@ -122,7 +155,7 @@ class Model(serializable.Serializable):
             self._time_step = time_step.total_seconds()
         except AttributeError: # not a timedelta object -- assume it's in seconds.
             self._time_step = int(time_step)
-        self._num_time_steps = self._duration.total_seconds() // self._time_step
+        self._num_time_steps = int( self._duration.total_seconds() // self._time_step ) + 1 # there is a zeroth time step
         self.rewind()
 
     @property
@@ -142,7 +175,7 @@ class Model(serializable.Serializable):
             ## fixme: actually, only need to rewide is current model time is byond new time...
             self.rewind()
         self._duration = duration
-        self._num_time_steps = self._duration.total_seconds() // self.time_step
+        self._num_time_steps = int( self._duration.total_seconds() // self.time_step ) + 1 # there is a zeroth time step
 
     @property
     def map(self):
@@ -160,10 +193,9 @@ class Model(serializable.Serializable):
         """
         Sets up each mover for the model run
 
-        Currently, only movers need to initialize at the beginning of the run
         """
-        for mover in self.movers:
-            mover.prepare_for_model_run()
+        [mover.prepare_for_model_run() for mover in self.movers]
+        [outputter.prepare_for_model_run(self._cache) for outputter in self.outputters]
         
         self.spills.rewind()
 
@@ -177,7 +209,9 @@ class Model(serializable.Serializable):
         for mover in self.movers:
             for sc in self.spills.items():
                 mover.prepare_for_model_step(sc, self.time_step, self.model_time)
-            
+        for outputter in self.outputters:        
+            outputter.prepare_for_model_step()
+
     def move_elements(self):
         """
 
@@ -214,49 +248,22 @@ class Model(serializable.Serializable):
 
         for mover in self.movers:
             mover.model_step_is_done()
+        for outputter in self.outputters:
+            outputter.model_step_is_done()
 
-    # def write_output(self):
-    #     """
-    #     write the output of the current time step to whatever output
-    #     methods have been selected
-    #     """
-    #     for output_method in self.output_types:
-    #         if output_method == "image":
-    #             self.write_image()
-    #         else:
-    #             raise ValueError("%s output type not supported"%output_method)
-    #     return (self.current_time_step, filename, self.model_time.isoformat())
-
-    def write_image(self, images_dir):
-        ##fixme: put this in an "Output" class?
-        """
-        Render the map image, according to current parameters
-
-        :param images_dir: directory to write the image to.
-        """
-        if self.output_map is None:
-            raise ValueError("You must have an output map to use the image output")
-        if self.current_time_step == 0:
-            self.output_map.draw_background()
-            self.output_map.save_background(os.path.join(images_dir, "background_map.png"))
-
-        filename = os.path.join(images_dir, 'foreground_%05i.png'%self.current_time_step)
-
-        self.output_map.create_foreground_image()
-
-        for sc in self.spills.items():
-            self.output_map.draw_elements(sc)
-
-        self.output_map.save_foreground(filename)
-
-        return filename
+    def write_output(self):
+        output_info = {'step_num':self.current_time_step}
+        for outputter in self.outputters:
+            output_info.update( outputter.write_output(self.current_time_step) )
+        return output_info
 
     def step(self):
         """
         Steps the model forward (or backward) in time. Needs testing for hindcasting.
         """
-        if self.current_time_step >= self._num_time_steps:
-            return False
+        if self.current_time_step >= self._num_time_steps - 1: # it gets incremented after this check
+            raise StopIteration
+
 
         if self.current_time_step == -1:
             self.setup_model_run() # that's all we need to do for the zeroth time step
@@ -269,7 +276,14 @@ class Model(serializable.Serializable):
         ## but not yet moved, at the beginning of the release time.
         for sc in self.spills.items():
             sc.release_elements(self.model_time, self.time_step)
-        return True
+        # cache the results
+        # add the timestamp first:
+        for sc in self.spills.items():
+            # needs to be a numpy array -- this will be a rank-zero array scalar with a datetime object in it.
+            sc['current_time_stamp'] = np.array(self.model_time) 
+        self._cache.save_timestep(self.current_time_step, self.spills)
+        output_info = self.write_output()
+        return output_info
 
     def __iter__(self):
         """
@@ -284,41 +298,35 @@ class Model(serializable.Serializable):
         """
         (This method here to satisfy Python's iterator and generator protocols)
 
-        Compute the next model step
+        Simply calls model.step()
 
-        Return the step number
+        :return: the step number
         """
-
-        if not self.step():
-            raise StopIteration
-        return self.current_time_step
+        return self.step()
 
 
-    def next_image(self, images_dir):
+    def full_run(self, rewind=True):
         """
-        Compute the next model step, render an image, and return info about the
-        step rendered
+        Do a full run of the model.
 
-        :param images_dir: directory to write the image too.
-        """
-        # run the next step:
-        if not self.step():
-            raise StopIteration
-        filename = self.write_image(images_dir)
-        return (self.current_time_step, filename, self.model_time.isoformat())
+        :param rewind=True: whether to rewind teh model first -- defaults to True
+                            if set to false, model will be run from the current
+                            step to the end
+        :returns: list of outputter info dicts
 
-    def full_run_with_image_output(self, output_dir):
         """
-        Do a full run of the model, outputting an image per time step.
-        """
-
+        if rewind:
+            self.rewind()
         # run the model
+        output_data = []
         while True:
             try:
-                self.next_image(output_dir)
+                output_data.append( self.step() )
             except StopIteration:
                 print "Done with the model run"
                 break
+        return output_data
+
 
     def movers_to_dict(self):
         """
@@ -335,16 +343,34 @@ class Model(serializable.Serializable):
     def spills_to_dict(self):
         return self.spills.to_dict()
 
-    def maps_to_dict(self):
+    def outputters_to_dict(self):
         """
-        create a dict_ that contains:
-        'map': (type, object.id)
-        'ouput_map': (type, object.id)
+        call to_dict method of OrderedCollection object
         """
-        dict_ = {'map': ("{0}.{1}".format(self.map.__module__, self.map.__class__.__name__), self.map.id)}
-        if self.output_map is not None:
-            dict_.update({'output_map': ("{0}.{1}".format(self.output_map.__module__, self.output_map.__class__.__name__), self.output_map.id)})
-            
-        return dict_
+        return self.outputters.to_dict()
     
+    def map_to_dict(self):
+        """
+        create a tuple that contains: (type, object.id)
+        """
+        #dict_ = {'map': ("{0}.{1}".format(self.map.__module__, self.map.__class__.__name__), self.map.id)}
+        return ("{0}.{1}".format(self.map.__module__, self.map.__class__.__name__), self.map.id)
+        #if self.output_map is not None:
+        #    dict_.update({'output_map': ("{0}.{1}".format(self.output_map.__module__, self.output_map.__class__.__name__), self.output_map.id)})
+    
+    def _callback_add_mover(self, obj_added):
+        """ callback after mover has been added """
+        if isinstance(obj_added, WindMover):
+            if obj_added.wind.id not in self.environment:
+                self.environment += obj_added.wind
+                
+        if isinstance(obj_added, CatsMover):
+            if obj_added.tide is not None and obj_added.tide.id not in self.environment:
+                    self.environment += obj_added.tide
         
+        # let's also set active_start, active_stop times to model times if they are set for all time
+        if obj_added.active_start == gnome.constants.min_time:
+            obj_added.active_start = self.start_time
+            
+        if obj_added.active_stop == gnome.constants.max_time:
+            obj_added.active_stop = self.start_time + self.duration

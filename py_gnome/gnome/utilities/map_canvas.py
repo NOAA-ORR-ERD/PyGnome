@@ -89,9 +89,9 @@ class MapCanvas(object):
                    This is used when loading an object from a persisted model
         """
         self.image_size = image_size
-        mode = kwargs.pop('image_mode', 'P')
-        self.back_image = PIL.Image.new(mode, self.image_size, color=self.colors['background'])
-        self.back_image.putpalette(self.palette)
+        self.image_mode = kwargs.pop('image_mode', 'P')
+        
+        self.back_image = None
         
         # optional arguments (kwargs)
         self._land_polygons = land_polygons
@@ -173,13 +173,20 @@ class MapCanvas(object):
         Draws the land map to the internal background image.
         
         """
-        #self.back_image.save("empty_BW_image.png")
+        back_image = PIL.Image.new(self.image_mode,
+                                        self.image_size,
+                                        color=self.colors['background'])
+        back_image.putpalette(self.palette)
+        
+        ##fixme: do we need to keep this around?
+        self.back_image = back_image
+
         if self.land_polygons: # is there any land to draw?
             # project the data:
             polygons = self.land_polygons.Copy()
             polygons.TransformData(self.projection.to_pixel_2D)
         
-            drawer = PIL.ImageDraw.Draw(self.back_image)
+            drawer = PIL.ImageDraw.Draw(back_image)
 
             #fixme: should we make sure to draw the lakes after the land???
             for p in polygons:
@@ -296,7 +303,7 @@ class BW_MapCanvas(MapCanvas):
 
     def as_array(self):
         """
-        returns a numpy array of the data in the image
+        returns a numpy array of the data in the background image
         
         this version returns dtype: np.uint8
 
@@ -326,7 +333,7 @@ class MapCanvasFromBNA(MapCanvas, serializable.Serializable):
     This class is serializable 
     """
     _update = ['viewport','map_BB']
-    _create = ['image_size','filename','projection_type']   # not sure image_size should be updated
+    _create = ['image_size','filename','projection_class']   # not sure image_size should be updated
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
     state.add( create=_create, update=_update)
@@ -336,7 +343,7 @@ class MapCanvasFromBNA(MapCanvas, serializable.Serializable):
         """
         change projection_type from string to correct type 
         """
-        proj = eval(dict_.pop('projection_type'))
+        proj = eval(dict_.pop('projection_class'))
         return cls(projection_class=proj, **dict_)
     
     def __init__(self, image_size, filename, **kwargs):
@@ -361,7 +368,7 @@ class MapCanvasFromBNA(MapCanvas, serializable.Serializable):
         
         MapCanvas.__init__(self, image_size, land_polygons=polygons, **kwargs)
 
-    def projection_type_to_dict(self):
+    def projection_class_to_dict(self):
         """ store projection class as a string for now since that is all that is required for persisting """
         return "{0}.{1}".format(self.projection.__module__, self.projection.__class__.__name__)
         

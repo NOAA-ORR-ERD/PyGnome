@@ -149,7 +149,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\gui_gnome;..\lib_gnome;WinResources;&quot;..\third_party_lib\qt libraries\CIncludes&quot;;..\third_party_lib\;&quot;..\third_party_lib\qt libraries\Libraries&quot;;..\project_files\WinResources"
+				AdditionalIncludeDirectories="..\gui_gnome;..\lib_gnome;WinResources;&quot;..\third_party_lib\qt libraries\CIncludes&quot;;&quot;..\third_party_lib\\netcdf-3&quot;;&quot;..\third_party_lib\qt libraries\Libraries&quot;;..\project_files\WinResources"
 				PreprocessorDefinitions="_DEBUG;OSSM;WIN32;_WINDOWS;IBM;_CRT_SECURE_NO_DEPRECATE;_USE_32BIT_TIME_T"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
@@ -177,7 +177,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="odbc32.lib odbccp32.lib ..\third_party_lib\netcdfs.lib  &quot;..\third_party_lib\qt libraries\libraries\qtmlclient.lib&quot;"
+				AdditionalDependencies="odbc32.lib odbccp32.lib ..\third_party_lib\netcdf-3\win32\i386\netcdfs.lib &quot;..\third_party_lib\qt libraries\libraries\qtmlclient.lib&quot;"
 				OutputFile=".\Debug\Gnome.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -416,6 +416,22 @@
 				</File>
 				<File
 					RelativePath="..\lib_gnome\GridCurrentMover_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GridMap_c.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GridMap_c.h"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GridMapUtils.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\lib_gnome\GridMapUtils.h"
 					>
 				</File>
 				<File

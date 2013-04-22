@@ -6,17 +6,68 @@ test code for the model class
 not a lot to test by itself, but a start
 
 """
-import pytest
 import os, shutil
 from datetime import datetime, timedelta
+
 import numpy as np
+import pytest
+
 import gnome.model
 import gnome.map
 from gnome import movers, environment
 import gnome.spill
 from gnome.spill import SpatialReleaseSpill
+import gnome.utilities.map_canvas
+from gnome.utilities.file_tools import haz_files
 
 datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
+
+def setup_simple_model():
+    """
+    utility to setup up a simple, but complete model for tests
+    """
+    # create a place for test images (cleaning out any old ones)
+    images_dir = "Test_images"
+    if os.path.isdir(images_dir):
+        shutil.rmtree(images_dir)
+    os.mkdir(images_dir)
+
+    start_time = datetime(2012, 9, 15, 12, 0)
+
+    # the image output map
+    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
+
+    # the land-water map
+    gnome_map = gnome.map.MapFromBNA( mapfile,
+                                      refloat_halflife=6*3600, #seconds
+                                     )
+
+    renderer = gnome.renderer.Renderer(mapfile,
+                                       images_dir,
+                                       size=(400, 300))
+
+    model = gnome.model.Model(time_step=timedelta(minutes=15), 
+                              start_time=start_time,
+                              duration=timedelta(hours=1),
+                              map=gnome_map,
+                              uncertain=False,
+                              cache_enabled=False,)
+
+    model.outputters += renderer
+    model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+
+    N = 10 # a line of ten points
+    start_points = np.zeros((N, 3) , dtype=np.float64)
+    start_points[:,0] = np.linspace(-127.1, -126.5, N)
+    start_points[:,1] = np.linspace( 47.93, 48.1, N)
+    #print start_points
+    spill = gnome.spill.SpatialReleaseSpill(start_positions = start_points,
+                                            release_time = start_time,
+                                            )
+    
+    model.spills += spill
+
+    return model
 
 def test_init():
     model = gnome.model.Model()
@@ -46,11 +97,6 @@ def test_timestep():
     dur = timedelta(days=3)
     model.duration = dur
     assert model._duration == dur
-
-def test_end_time():
-    """
-    test if the duration is properly computed when the end_time property is set.
-    """
     
 
 def test_simple_run_rewind():
@@ -135,9 +181,6 @@ def test_simple_run_with_map():
         
     assert True
 
-import gnome.utilities.map_canvas
-from gnome.utilities.file_tools import haz_files
-
 def test_simple_run_with_image_output():
     """
     pretty much all this tests is that the model will run and output images
@@ -151,20 +194,25 @@ def test_simple_run_with_image_output():
 
     start_time = datetime(2012, 9, 15, 12, 0)
     
-    model = gnome.model.Model()
-    model.duration = timedelta(hours=1)
 
+    # the image output map
     mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
 
     # the land-water map
-    model.map = gnome.map.MapFromBNA( mapfile,
+    gnome_map = gnome.map.MapFromBNA( mapfile,
                                       refloat_halflife=6*3600, #seconds
                                      )
-    # the image output map
-    polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
-    map = gnome.utilities.map_canvas.MapCanvas((400, 300), land_polygons=polygons)
-    model.output_map = map
-    
+    renderer = gnome.renderer.Renderer(mapfile,
+                                       images_dir,
+                                       size=(400, 300))
+    model = gnome.model.Model(time_step=timedelta(minutes=15), 
+                              start_time=start_time,
+                              duration=timedelta(hours=1),
+                              map=gnome_map,
+                              renderer=renderer,
+                              uncertain=False,
+                              cache_enabled=False,)
+
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
     assert len(model.movers) == 1
@@ -187,9 +235,9 @@ def test_simple_run_with_image_output():
 
     num_steps_output = 0
     while True:
-        print "calling next_image"
+        print "calling step"
         try:
-            image_info = model.next_image(images_dir)
+            image_info = model.step()
             num_steps_output += 1
             print image_info
         except StopIteration:
@@ -197,6 +245,8 @@ def test_simple_run_with_image_output():
             break
 
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+
+
 
 def test_simple_run_with_image_output_uncertainty():
     """
@@ -211,19 +261,25 @@ def test_simple_run_with_image_output_uncertainty():
 
     start_time = datetime(2012, 9, 15, 12, 0)
 
-    model = gnome.model.Model()
-    model.duration = timedelta(hours=1)
-
+       # the image output map
     mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
 
     # the land-water map
-    model.map = gnome.map.MapFromBNA( mapfile,
+    map = gnome.map.MapFromBNA( mapfile,
                                       refloat_halflife=6*3600, #seconds
                                      )
-    # the image output map
-    polygons = haz_files.ReadBNA(mapfile, "PolygonSet")
-    l__map = gnome.utilities.map_canvas.MapCanvas((400, 300), land_polygons=polygons)
-    model.output_map = l__map
+    renderer = gnome.renderer.Renderer(mapfile,
+                                       images_dir,
+                                       size=(400, 300))
+
+    model = gnome.model.Model(time_step=timedelta(minutes=15), 
+                              start_time=start_time,
+                              duration=timedelta(hours=1),
+                              map=map,
+                              renderer=renderer,
+                              uncertain=True,
+                              cache_enabled=False,)
+
 
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
@@ -247,7 +303,7 @@ def test_simple_run_with_image_output_uncertainty():
     num_steps_output = 0
     while True:
         try:
-            image_info = model.next_image(images_dir)
+            image_info = model.step()
             num_steps_output += 1
             print image_info
         except StopIteration:
@@ -256,6 +312,7 @@ def test_simple_run_with_image_output_uncertainty():
 
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
     ## fixme -- do an assertionlooking for red in images?
+    ##  ot at least make sure they are created?
 
 def test_mover_api():
     """
@@ -313,7 +370,6 @@ test_cases = [(datetime(2012, 1, 1, 0, 0), 0, 12 ), # model start_time, No. of t
               (datetime(2012, 1, 1, 0, 0), 12, 12),
               (datetime(2012, 1, 1, 0, 0), 13, 12)]
 
-#test_cases = [(datetime(2012, 1, 1, 0, 0), 13, 12)]
 
 @pytest.mark.parametrize(("start_time", "release_delay", "duration"), test_cases)
 def test_all_movers(start_time, release_delay, duration):
@@ -366,7 +422,7 @@ def test_all_movers(start_time, release_delay, duration):
     num_steps_output = 0
     for step in model:
         num_steps_output += 1
-        print "running step:", step
+        #print "running step:", step
         
     # test release happens correctly for all cases
     if release_delay < duration:    # at least one get_move has been called after release
@@ -381,7 +437,8 @@ def test_all_movers(start_time, release_delay, duration):
     assert num_steps_output == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
 
 
-def test_linearity_of_wind_movers():
+@pytest.mark.parametrize("wind_persist", [0, 900, 5])   # 0 is infinite persistence
+def test_linearity_of_wind_movers(wind_persist):
     """
     WindMover is defined as a linear operation - defining a model
     with a single WindMover with 15 knot wind is equivalent to defining
@@ -389,67 +446,84 @@ def test_linearity_of_wind_movers():
     WindMover's such that the sum of their magnitude is 15knots and the
     direction of wind is the same for both cases.
     
-    Current implementation defines a class variable (WindMover._windage_is_set)
-    that is set during prepare_for_model_step and reset during model_step_is_done
+    Below is an example which defines two models and runs them. In model2, there
+    are multiple winds defined so the windage parameter is reset 3 times for one timestep.
+    Since windage range and persistance do not change, this only has the effect of doing the
+    same computation 3 times. However, the results are the same.
     
-    Below is an example which defines two models and runs them in one thread so the 
-    model loop defined by model.step() runs for each model without coupling from 
-    the second model. So, although this works and shows linearity of the WindMover as
-    it is currently implemented, it is not thread safe - see comments towards bottom of this example.
-    
-    To make it thread safe, the model loop (model.step()) must be made thread safe. 
+    The mean and variance of the positions for both models are close. As windage_persist is decreased,
+    the values become closer. Setting windage_persist=0 gives the larged difference between them.
     """
     start_time = datetime(2012, 1, 1, 0, 0)
     series1= np.array( (start_time, ( 15,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     series2= np.array( (start_time, (  6,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     series3= np.array( (start_time, (  3,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     
+    num_LEs=1000
     model1= gnome.model.Model()
-    model1.duration = timedelta(hours=3)
+    model1.duration = timedelta(hours=1)
     model1.time_step = timedelta(hours = 1)
     model1.start_time = start_time
-    model1.spills += gnome.spill.SurfaceReleaseSpill(num_elements=5,
+    model1.spills += gnome.spill.SurfaceReleaseSpill(num_elements=num_LEs,
                                                      start_position=(1.,2.,0.),
                                                      release_time  = start_time,
+                                                     windage_persist=wind_persist
                                                      )
     model1.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series1, units='meter per second'))
     
     model2= gnome.model.Model()
-    model2.duration = timedelta(hours=3)
+    model2.duration = timedelta(hours=10)
     model2.time_step = timedelta(hours = 1)
     model2.start_time = start_time
-    model2.spills += gnome.spill.SurfaceReleaseSpill(num_elements=5,
+    model2.spills += gnome.spill.SurfaceReleaseSpill(num_elements=num_LEs,
                                                      start_position=(1.,2.,0.),
                                                      release_time  = start_time,
+                                                     windage_persist=wind_persist
                                                      )
+    
+    # todo: CHECK RANDOM SEED
+    #model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series1, units='meter per second'))
+    
     model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series2, units='meter per second'))
     model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series2, units='meter per second'))
     model2.movers += gnome.movers.WindMover(gnome.environment.Wind(timeseries=series3, units='meter per second'))
     
-    # tolerance for np.allclose(..) function
-    atol = 1e-14
-    rtol = 0
+# <<<<<<< HEAD
+#     # tolerance for np.allclose(..) function
+#     atol = 1e-14
+#     rtol = 0
     
-    for i in range(int(model1.num_time_steps)+1):
-        gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
-        model1.step()
-        gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
-        model2.step()
-        assert np.allclose(model1.spills.LE('positions'), model2.spills.LE('positions'), atol, rtol)
+#     for i in range( model1.num_time_steps ):
+#         gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
+#         model1.step()
+#         gnome.utilities.rand.seed() # set rand before each call so windages are set correctly
+#         model2.step()
+#         assert np.allclose(model1.spills.LE('positions'), model2.spills.LE('positions'), atol, rtol)
     
+# =======
+    while True:
+        try: 
+            model1.next()
+        except StopIteration:
+            print "Done model1 .."
+            break
+            
+    while True:
+        try: 
+            model2.next()
+        except StopIteration:
+            print "Done model2 .."
+            break
     
-    """
-    NOTE:
-    The above works because both models are running in a single thread. If both models were running
-    on separate threads and the model.step() is not thread safe, this will not work correctly. 
-    As an example, note that setting the _windage_is_set flag effects the class attribute
-    WindMover objects in both models as one would expect.
-    """
-    lmv = [model1.movers[m.id] for m in model1.movers]
-    lmv2= [model2.movers[m.id] for m in model2.movers]
+    # mean and variance at the end should be fairly close
+    # look at the mean of the position vector. Assume m1 is truth and m2 is approximation - look at the
+    # absolute error between mean position of m2 in the 2 norm.
+    #rel_mean_error=np.linalg.norm( np.mean( model2.spills.LE('positions'), 0)-np.mean( model1.spills.LE('positions'), 0) )
+    #assert rel_mean_error <= 0.5
+    # Similary look at absolute error in variance of position of m2 in the 2 norm.  
+    rel_var_error=np.linalg.norm( np.var( model2.spills.LE('positions'), 0)-np.var( model1.spills.LE('positions'), 0) )
+    assert rel_var_error <= 0.001
     
-    lmv[0].__class__._windage_is_set = True
-    assert lmv2[0].__class__._windage_is_set == True    # PROBLEM!
 
 def test_model_release_after_start():
     """
@@ -525,10 +599,70 @@ def test_release_at_right_time():
     assert model.spills.items()[0].num_elements == 12
 
 
+def test_full_run():
+    """
+    test doing a full run
+    """
+    model = setup_simple_model()
+    results = model.full_run()
+    print results
+
+    # check the number of time steps output is right
+    assert len(results) == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
+
+    # check if the images are there:
+    assert len( os.listdir("Test_images") ) == model.num_time_steps + 1 #(1 extra for background image)
+
+def test_callback_add_mover():
+    """ Test callback after add mover """
+    model = gnome.model.Model()
+    model.time_step = timedelta(hours=1)
+    model.duration = timedelta(hours=10)
+    model.start_time = datetime(2012, 1, 1, 0, 0)
+    start_loc = (1.0, 2.0, 0.0) # random non-zero starting points
+    
+    # add Movers
+    model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
+    series = np.array( (model.start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
+    model.movers += movers.WindMover(environment.Wind(timeseries=series, units='meter per second'))
+    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData","tides","CLISShio.txt"))
+    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
+    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"))
+    
+    for mover in model.movers:
+        assert mover.active_start == model.start_time
+        assert mover.active_stop == model.start_time + model.duration
+        
+        if isinstance( mover, movers.WindMover):
+            assert  mover.wind.id in model.environment
+            
+        if isinstance( mover, movers.CatsMover):
+            if mover.tide is not None:
+                assert mover.tide.id in model.environment
+        
+    
+    # say wind object was added to environment collection, it should not be added again
+    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData","tides","CLISShio.txt"))
+    model.environment += tide_
+    model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
+    
+    assert model.environment[tide_.id] == tide_
+    
+    # Add a mover with user defined active_start / active_stop values - these should not be updated
+    active_on = model.start_time+timedelta(hours=1)
+    active_off = model.start_time+timedelta(hours=4)
+    custom_mover =  movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0), 
+                                                    active_start=active_on,
+                                                    active_stop=active_off)
+    model.movers += custom_mover
+    
+    assert model.movers[custom_mover.id].active_start == active_on
+    assert model.movers[custom_mover.id].active_stop == active_off
+    
 if __name__ == "__main__":
     #test_all_movers()
-    test_release_at_right_time()
-    
-    
+    #test_release_at_right_time()
+    #test_simple_run_with_image_output()
+    test_simple_run_with_image_output_uncertainty()
 
     

@@ -483,7 +483,7 @@ void CATSMover_c::DeleteTimeDep ()
 	return;
 }
 
-OSErr CATSMover_c::ReadTopology(char* path/*, TMap **newMap*/)
+OSErr CATSMover_c::TextRead(char* path/*, TMap **newMap*/)
 {
 	// import PtCur triangle info so don't have to regenerate
 	char s[1024], errmsg[256];

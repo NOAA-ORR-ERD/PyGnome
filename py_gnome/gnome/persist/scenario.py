@@ -10,7 +10,13 @@ import string
 import shutil
 
 import gnome
-from gnome.persist import environment_schema, model_schema, movers_schema, spills_schema, map_schema
+from gnome.persist import (
+    environment_schema, 
+    model_schema, 
+    movers_schema, 
+    spills_schema, 
+    map_schema, 
+    outputters_schema)
 
 
 def save(model, saveloc=None):
@@ -31,9 +37,11 @@ def save(model, saveloc=None):
     _save_to_file(model_to_json,
                   os.path.join( saveloc, '{0}_{1}.txt'.format( model.__class__.__name__, model.id)))
     
-    _save_collection( [model.map, model.output_map],'map_schema',saveloc)
+    #_save_collection( [model.map, model.output_map],'map_schema',saveloc)
+    _save_collection([model.map],'map_schema',saveloc)
     _save_collection(model.movers,'movers_schema',saveloc)
     _save_collection(model.environment, 'environment_schema', saveloc)
+    _save_collection(model.outputters,'outputters_schema',saveloc)
     
     for sc in model.spills.items():
         _save_collection( sc.spills,'spills_schema',saveloc)
@@ -64,9 +72,13 @@ def load(saveloc):
         cur_dir = os.getcwd()
         os.chdir(saveloc)
         
-        maps = _load_dict(model_dict['maps'], 'map_schema')
-        for key in maps.keys():
-            model_dict.update({key:maps[key]})
+        #maps = _load_model_object(model_dict['map'], 'map_schema')
+        type_ = model_dict['map'][0]
+        id_ = model_dict['map'][1] 
+        obj_json = _find_and_load_json_file( type_, id_)
+        map = _obj_from_json( type_, 'map_schema', obj_json)
+        
+        model_dict.update({'map':map})
         
         model = gnome.model.Model.new_from_dict(model_dict)
         print "created base model ..."
@@ -85,6 +97,10 @@ def load(saveloc):
         print "add environment .."    
         obj_list = _load_collection(model_dict['environment'], 'environment_schema')
         [model.environment.add(obj) for obj in obj_list]
+        
+        print "add outputters .."
+        obj_list = _load_collection(model_dict['outputters'], 'outputters_schema')
+        [model.outputters.add(obj) for obj in obj_list]
         
         print "add movers .."    
         _add_movers(model_dict['movers'], model)
@@ -158,24 +174,24 @@ def _load_collection(coll_dict, schema_module):
         obj_list.append( obj) 
     return obj_list
 
-def _load_dict(dict_, schema_module):
-    """ 
-    each keyword contains a tuple (type, id). For instance,
-    'map': ("gnome.map.MapFromBNA", id)
-    
-    Use this to re-create gnome.map.MapFromBNA object from file
-    Return a dict with same keywords but values now containing recreated objects
-    'map' : recreated MapFromBNA object 
-    """
-    obj_dict = {}
-    for key in dict_.keys():
-        type_ = dict_[key][0]
-        id_ = dict_[key][1]
-        obj_json = _find_and_load_json_file( type_, id_)
-        obj = _obj_from_json( type_, schema_module, obj_json)
-        obj_dict.update({key:obj})
-
-    return obj_dict
+#def _load_dict(dict_, schema_module):
+#    """ 
+#    each keyword contains a tuple (type, id). For instance,
+#    'map': ("gnome.map.MapFromBNA", id)
+#    
+#    Use this to re-create gnome.map.MapFromBNA object from file
+#    Return a dict with same keywords but values now containing recreated objects
+#    'map' : recreated MapFromBNA object 
+#    """
+#    obj_dict = {}
+#    for key in dict_.keys():
+#        type_ = dict_[key][0]
+#        id_ = dict_[key][1]
+#        obj_json = _find_and_load_json_file( type_, id_)
+#        obj = _obj_from_json( type_, schema_module, obj_json)
+#        obj_dict.update({key:obj})
+#
+#    return obj_dict
 
 def _find_and_load_json_file( type_, id_):
     obj_file = glob.glob( '*_{0}.txt'.format(id_) )

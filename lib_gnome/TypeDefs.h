@@ -79,6 +79,7 @@ const ClassID TYPE_VECTORMAP		= 402;
 const ClassID TYPE_PTCURMAP			= 403;
 const ClassID TYPE_COMPOUNDMAP		= 404;
 const ClassID TYPE_MAP3D			= 405;
+const ClassID TYPE_GRIDMAP			= 406;
 
 const ClassID TYPE_MOVER 			= 500;
 const ClassID TYPE_RANDOMMOVER		= 501;
