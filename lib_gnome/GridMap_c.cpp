@@ -3141,8 +3141,8 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 	}
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
 	numTriangles = _GetHandleSize((Handle)topH)/sizeof(**topH);
-	numBranches = _GetHandleSize((Handle)treeH)/sizeof(**treeH);
-	//dagTree->fNumBranches = dagTree->fNumBranches;
+	//numBranches = _GetHandleSize((Handle)treeH)/sizeof(**treeH);
+	numBranches = dagTree->fNumBranches;
 	nBoundarySegs = _GetHandleSize((Handle)boundarySegmentsH)/sizeof(long);
 	if (boundaryPointsH) nBoundaryPts = _GetHandleSize((Handle)boundaryPointsH)/sizeof(long);	// all the boundary points
 	else nBoundaryPts = INDEXH(boundarySegmentsH,nBoundarySegs-1);
