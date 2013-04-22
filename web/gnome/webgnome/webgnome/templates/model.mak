@@ -216,8 +216,7 @@
                     },
                     publish: function(obj, keypath, value) {
                         // Convert numeric strings to floats if they are valid
-                        // numbers, to help with client-side JSON Schema
-                        // validation.
+                        // numbers, to help with client-side JSON Schema validation.
                         var numValue = parseFloat(value);
 
                         if (!isNaN(numValue)) {

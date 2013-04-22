@@ -407,26 +407,44 @@ define([
         },
 
         // Allow only empty or schema-compliant attributes
-        validate: function() {
-            var errors = [];
-
+        validate: function(attrs) {
             if (!this.schema) {
-                return errors;
+                return null;
             }
 
             // JSV defaults to JSON Schema draft 3 by default.
             var env = JSV.createEnvironment();
-            var obj = this.toJSON();
+
+            // Resulting model consists of attributes we already have set and
+            // the attributes provided as argument to this function (merged).
+            // When an attribute is `unset`, it is passed in `attrs` object,
+            // the attribute has special value of `undefined`. To learn how the
+            // resulting object will look like, we need to:
+            // + merge the already-set attributes with the new ones, and
+            // + remove the attributes that are to be unset.
+            var obj = _.extend({}, this.attributes, attrs);
+
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    if ('undefined' === typeof obj[key]) {
+                        delete obj[key];
+                    }
+                }
+            }
 
             if (_.isEmpty(obj)) {
-                return errors;
+                return;
             }
+
+            obj = this.jsonify(obj);
 
             var r = env.validate(obj, this.schema);
 
             if (!r.errors.length) {
-                return errors;
+                return null;
             }
+
+            var errors = [];
 
             for (var i = 0; i < r.errors.length; i++) {
                 var error = r.errors[i];
@@ -590,11 +608,13 @@ define([
             return val;
         },
 
-        // Call .format() on any date fields when preparing them for JSON
-        // serialization.
-        toJSON: function() {
-            var data = BaseModel.__super__.toJSON.apply(this, arguments);
+        /*
+         Call .format() on any date fields when preparing them for JSON
+         serialization.
 
+         Included in a separate method so it can be called during validation.
+         */
+        jsonify: function(data) {
             if (this.dateFields) {
                 _.each(this.dateFields, function(field) {
                     if (typeof(data[field]) === "string") {
@@ -608,6 +628,11 @@ define([
             }
 
             return data;
+        },
+
+        toJSON: function() {
+            var data = BaseModel.__super__.toJSON.apply(this, arguments);
+            return this.jsonify(data);
         }
     }, {
         MESSAGE_RECEIVED: 'ajaxForm:messageReceived'

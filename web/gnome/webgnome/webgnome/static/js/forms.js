@@ -466,7 +466,7 @@ define([
 
             var errors = this.model.validate();
 
-            if (errors.length) {
+            if (errors && errors.length) {
                 for (var i = 0; i < errors.length; i++) {
                     var obj = errors[i];
                     this.handleFieldError(obj);
@@ -745,12 +745,16 @@ define([
                         }
 
                         _this.isDeferred = true;
+                        var promise = _this.validate();
 
-                        _this.validate()
-                            .done(function() {
-                                _this.addDeferredButton(button);
-                            })
-                            .fail(_this.handleValidatorError);
+                        if (!promise) {
+                            return;
+                        }
+
+                        promise.done(function() {
+                            _this.addDeferredButton(button);
+                        });
+                        promise.fail(_this.handleValidatorError);
                     }
                 });
             });

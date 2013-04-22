@@ -22,7 +22,7 @@ from gnome.persist import (
     validators,
     extend_colander)
 from gnome.persist.extend_colander import LocalDateTime
-from gnome.persist.map_schema import LongLatBounds
+from gnome.persist.base_schema import LongLatBounds
 from gnome.persist.movers_schema import CatsMover
 
 
