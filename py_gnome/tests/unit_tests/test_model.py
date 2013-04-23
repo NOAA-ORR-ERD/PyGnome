@@ -209,10 +209,10 @@ def test_simple_run_with_image_output():
                               start_time=start_time,
                               duration=timedelta(hours=1),
                               map=gnome_map,
-                              renderer=renderer,
                               uncertain=False,
                               cache_enabled=False,)
 
+    model.outputters += renderer
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
     assert len(model.movers) == 1
@@ -276,11 +276,10 @@ def test_simple_run_with_image_output_uncertainty():
                               start_time=start_time,
                               duration=timedelta(hours=1),
                               map=map,
-                              renderer=renderer,
                               uncertain=True,
                               cache_enabled=False,)
 
-
+    model.outputters += renderer
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
 

@@ -487,17 +487,6 @@ class CatsMover(CyMover, serializable.Serializable):
     
     state = copy.deepcopy(CyMover.state)
     
-    # follow the same convention as WindMover for now. Though this will likely change
-    #===========================================================================
-    # _read = ['filename']
-    # _common = ['scale','scale_refpoint','scale_value']
-    # 
-    # _update = ['tide']
-    # _update.extend(_common)
-    # 
-    # _create = ['filename','tide_id']
-    # _create.extend(_common)
-    #===========================================================================
     _read = ['filename','tide_id']
     _update = ['scale','scale_refpoint','scale_value']
     

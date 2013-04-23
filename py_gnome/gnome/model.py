@@ -29,7 +29,8 @@ class Model(serializable.Serializable):
                'environment',
                'spills',
                'map',
-               'outputters'
+               'outputters',
+               'cache_enabled'
                ]
     _create = []
     _create.extend(_update)
@@ -44,9 +45,9 @@ class Model(serializable.Serializable):
                  map=gnome.map.GnomeMap(),
                  uncertain=False,
                  cache_enabled=False,
-                 **kwargs):
+                 id=None):
         """ 
-        Initializes a model. 
+        Initializes a model. All arguments have a default.
 
         :param time_step=timedelta(minutes=15): model time step in seconds or as a timedelta object
         :param start_time=datetime.now(): start time of model, datetime object
@@ -54,11 +55,8 @@ class Model(serializable.Serializable):
         :param map=gnome.map.GnomeMap(): the land-water map, default is a map with no land-water
         :param uncertain=False: flag for setting uncertainty
         :param cache_enabled=False: flag for setting whether the mocel should cache results to disk.
-        
-        Optional keyword parameters (kwargs):
         :param id: Unique Id identifying the newly created mover (a UUID as a string). 
                    This is used when loading an object from a persisted model
-        :param outputters: Sequence of ouputter objects: renderer, netcdf_writer, etc. Default is None
         """
         # making sure basic stuff is in place before properties are set
         self.environment = OrderedCollection(dtype=Environment)  
@@ -73,7 +71,7 @@ class Model(serializable.Serializable):
         self._map = map
         self.time_step = time_step # this calls rewind() !
 
-        self._gnome_id = gnome.GnomeId(id=kwargs.pop('id',None))
+        self._gnome_id = gnome.GnomeId(id)
         
         # register callback with OrderedCollection
         self.movers.register_callback(self._callback_add_mover, ('add','replace'))
