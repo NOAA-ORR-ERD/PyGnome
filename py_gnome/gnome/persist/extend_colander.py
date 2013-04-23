@@ -17,6 +17,7 @@ from colander import (
 )
 
 import gnome.basic_types
+from gnome.utilities import inf_datetime
 """
 Following extend colander's basic types for serialization/deserialization
 """
@@ -32,12 +33,19 @@ class LocalDateTime(DateTime):
         return _datetime
 
     def serialize(self, node, appstruct):
-        appstruct = self.strip_timezone(appstruct)
-        return super(LocalDateTime, self).serialize(node, appstruct)
+        if isinstance(appstruct, datetime.datetime):
+            appstruct = self.strip_timezone(appstruct)
+            return super(LocalDateTime, self).serialize(node, appstruct)
+        
+        elif isinstance(appstruct, inf_datetime.MinusInfTime) or isinstance(appstruct, inf_datetime.InfTime):
+            return appstruct.isoformat()
 
     def deserialize(self, node, cstruct):
-        dt = super(LocalDateTime, self).deserialize(node, cstruct)
-        return self.strip_timezone(dt)
+        if cstruct == '-inf' or cstruct == 'inf':
+            return inf_datetime.InfDateTime(cstruct)
+        else:
+            dt = super(LocalDateTime, self).deserialize(node, cstruct)
+            return self.strip_timezone(dt)
 
 
 class DefaultTuple(Tuple):
