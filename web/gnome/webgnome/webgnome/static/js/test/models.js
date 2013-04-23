@@ -19,6 +19,7 @@ define([
         var model = new models.BaseModel({id: 1});
         model.collection = {};
         model.collection.sort = sinon.spy();
+        model.collection.comparator = function() { return 1; };
         model.set('id', 2);
         ok(model.collection.sort.called);
     });
@@ -389,11 +390,6 @@ define([
         ok(timeseries[0] === first);
         ok(timeseries[1] === second);
         ok(timeseries[2] === third);
-    });
-
-    test('isManual works', function() {
-        var wind = new models.Wind({source_type: 'manual'});
-        ok(wind.isManual());
     });
 
     test('isNws works', function() {
