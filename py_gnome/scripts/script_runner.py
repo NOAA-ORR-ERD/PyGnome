@@ -49,13 +49,15 @@ def save(model, saveloc):
         shutil.rmtree(saveloc)
     os.mkdir(saveloc)
     print "saving .."
-    scenario.save(model,saveloc)
+    sc = scenario.Scenario(saveloc, model)
+    sc.save()
 
 def run_from_save(saveloc):
     if not os.path.isdir(saveloc):
         raise ValueError("{0} does not appear to be a valid directory".format(saveloc))
-    model = scenario.load(saveloc)
-    run( model)
+    sc = scenario.Scenario(saveloc)
+    sc.load()
+    run( sc.model)
     
 
 def parse_args(argv):

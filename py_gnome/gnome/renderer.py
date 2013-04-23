@@ -86,6 +86,9 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     
     filename = property(lambda self: self._filename)
     
+    def images_dir_to_dict(self):
+        return os.path.abspath(self.images_dir)
+    
     def prepare_for_model_run(self, cache=None):
         """
         prepares the renderer for a model run.

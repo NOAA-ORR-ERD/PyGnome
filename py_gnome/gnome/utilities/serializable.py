@@ -107,6 +107,9 @@ class Serializable(object):
     Similary, 'obj_type' is required for all objects, this is so the scenario module
     knows which object to create when loading from file. A default implementation of obj_type_to_dict
     exists here.
+    
+    Used obj_type instead of type because type is a builtin in python and 
+    didn't want to use the same name. The obj_type contains the type of the object as a string.
     """
     state = State(create=['id','obj_type'])
     #===========================================================================

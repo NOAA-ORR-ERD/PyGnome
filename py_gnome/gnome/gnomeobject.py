@@ -73,11 +73,4 @@ class GnomeId(object):
         obj_copy.__dict__ = copy.copy(self.__dict__)
         obj_copy.__create_new_id()
         return obj_copy
-
-""" 
-    Defines constants used in gnome:
-    min_time, max_time: Min/Max datetimes that can currently be handled by PyGnome.
-                        The time_utils converts these to seconds since epoch. Epoch begins
-"""
-constants = enum(min_time=datetime( *gmtime(0)[:6]), 
-                 max_time=datetime(2038,1,18,0,0,0))
+    
