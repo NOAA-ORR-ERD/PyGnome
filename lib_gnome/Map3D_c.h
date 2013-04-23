@@ -94,6 +94,7 @@ public:
 	//double			GetSpillStartDepth();
 	Boolean			ThereIsADispersedSpill();
 	TTriGridVel* 	GetGrid();
+	void			SetGrid(TGridVel *grid) {fGrid = grid;}
 	LongPointHdl 	GetPointsHdl();	
 	virtual Boolean		CanReFloat (Seconds time, LERec *theLE);
 

@@ -22,13 +22,9 @@ from gnome.persist import base_schema
 """
 Schemas for gnome map classes (map.py module) used for computation
 """
-class LongLatBounds(SequenceSchema):
-    """ used to define bounds on a map """
-    bounds = base_schema.LongLat()
-
 class GnomeMap(base_schema.Id, MappingSchema):
-    map_bounds = LongLatBounds()
-    spillable_area = LongLatBounds(missing=drop)
+    map_bounds = base_schema.LongLatBounds()
+    spillable_area = base_schema.LongLatBounds(missing=drop)
     
 class MapFromBNA(GnomeMap):    
     filename = SchemaNode(String() )
@@ -36,17 +32,15 @@ class MapFromBNA(GnomeMap):
 
 """
 Schemas for gnome output_map classes (map_canvas.py module) used for display
-"""
-class ImageSize(TupleSchema):
-    """only contains 2D (long, lat) positions"""
-    width = SchemaNode( Int() )
-    height = SchemaNode( Int() )
-    
+
+Now deprecated. Added the notion of outputters to the model. The Renderer object
+is used instead of MapCanvasFromBNA for making images. It has has more methods.
+"""   
 class MapCanvasFromBNA(base_schema.Id, MappingSchema):
-    viewport = LongLatBounds()  # not sure if bounding box needs defintion separate from LongLatBounds
+    viewport = base_schema.LongLatBounds()  # not sure if bounding box needs defintion separate from LongLatBounds
     
     # following are only used when creating objects, not updating - so missing=drop
     filename = SchemaNode(String(), missing=drop)
-    projection_type = SchemaNode(String(), missing=drop) 
-    image_size= ImageSize(missing=drop)
+    projection_class = SchemaNode(String(), missing=drop) 
+    image_size= base_schema.ImageSize(missing=drop)
     

@@ -18,7 +18,7 @@ from colander import (
     )
 
 import gnome
-from gnome.persist.validators import convertable_to_seconds
+from gnome.persist.validators import convertible_to_seconds
 from gnome.persist.base_schema import Id, WorldPoint
 from gnome.persist.extend_colander import LocalDateTime
 
@@ -52,9 +52,9 @@ class SurfaceReleaseSpill(Id, Spill):
     """
     _create= ['', '', '','']
     start_position = WorldPoint()
-    release_time = SchemaNode(LocalDateTime(), validator=convertable_to_seconds)
+    release_time = SchemaNode(LocalDateTime(), validator=convertible_to_seconds)
     end_position = WorldPoint(missing=None)
-    end_release_time = SchemaNode(LocalDateTime(), missing=None, validator=convertable_to_seconds)
+    end_release_time = SchemaNode(LocalDateTime(), missing=None, validator=convertible_to_seconds)
     windage_range = Windage()
     windage_persist = SchemaNode( Float() )
     

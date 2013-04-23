@@ -24,9 +24,6 @@ requirejs.config({
             deps: ["lib/underscore", "jquery"],
             exports: "Backbone"
         },
-        'lib/backbone-nested': {
-            deps: ['lib/backbone']
-        },
         'lib/mousetrap': {
             exports: "Mousetrap"
         },

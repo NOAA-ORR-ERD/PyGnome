@@ -154,3 +154,20 @@ cdef extern from "GridWindMover_c.h":
         void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
         
+cdef extern from "GridMap_c.h":
+    
+    cdef cppclass GridMap_c:
+        GridVel_c    *fGrid
+        WorldRect fMapBounds
+        LONGH    fBoundarySegmentsH
+        LONGH    fBoundaryTypeH
+        LONGH    fBoundaryPointsH
+        
+        GridMap_c ()
+        LONGH    GetBoundarySegs()
+        LONGH    GetWaterBoundaries()
+        LONGH    GetBoundaryPoints()
+        OSErr 		    ExportTopology(char *path)
+        OSErr 		    SaveAsNetCDF(char *path)
+        OSErr           TextRead(char *path)
+        

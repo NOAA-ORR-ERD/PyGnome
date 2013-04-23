@@ -8,7 +8,8 @@
 #endif
 #endif
 
-extern TRandom3D *sharedRMover3D;
+//extern TRandom3D *sharedRMover3D;
+TRandom3D *sharedRMover3D;
 
 TRandom3D::TRandom3D (TMap *owner, char *name) : TRandom (owner, name)
 {

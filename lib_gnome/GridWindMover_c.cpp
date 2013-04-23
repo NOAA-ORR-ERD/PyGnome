@@ -180,12 +180,13 @@ OSErr GridWindMover_c::TextRead(char *path, char *topFilePath)
 	// this code is for curvilinear grids
 	OSErr err = 0;
 	short gridType, selectedUnits;
-	char fileNamesPath[256];
+	char fileNamesPath[256], filePath[256];
 	Boolean isNetCDFPathsFile = false;
 	TimeGridVel *newTimeGrid = nil;
 	
 	
-	if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(path, &isNetCDFPathsFile, fileNamesPath, &gridType))
+	strcpy(filePath,path);	// this gets altered in IsNetCDFPathsFile, eventually change that function
+	if (IsNetCDFFile(path, &gridType) || IsNetCDFPathsFile(filePath, &isNetCDFPathsFile, fileNamesPath, &gridType))
 	{
 		if (gridType == CURVILINEAR)
 		{
@@ -200,7 +201,7 @@ OSErr GridWindMover_c::TextRead(char *path, char *topFilePath)
 	 
 			 //err = newGridWindMover->InitMover(timeGrid);
 			 //if(err) goto Error;
-			 if (!err) err = newTimeGrid->TextRead(path,topFilePath);
+			 if (!err) err = newTimeGrid->TextRead(filePath,topFilePath);
 			 if(err) goto Error;
 			 this->SetTimeGrid(newTimeGrid);
 		}
