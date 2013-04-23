@@ -151,7 +151,7 @@ Boolean IsLongWindFile(char* path,short *selectedUnitsP,Boolean *dataInGMTP)
 	return bIsValid;
 }
 
-Boolean IsNDBCWindFile(char* path)
+Boolean IsNDBCWindFile(char* path, long *numHeaderLines)
 {
 	Boolean	bIsValid = false;
 	OSErr	err = noErr;
@@ -164,6 +164,7 @@ Boolean IsNDBCWindFile(char* path)
 	if(err) return false;
 	
 	lenToRead = _min(512,fileLength);
+	*numHeaderLines = 1;
 	
 	err = ReadSectionOfFile(0,0,path,0,lenToRead,firstPartOfFile,0);
 	firstPartOfFile[lenToRead-1] = 0; // make sure it is a cString
@@ -173,6 +174,7 @@ Boolean IsNDBCWindFile(char* path)
 		char value1S[256], value2S[256];
 		char * strToMatch = "YYYY";
 		char * str2ToMatch = "YY";
+		char * str3ToMatch = "#YY";
 		long numScanned;
 		// we check 
 		// the header line 
@@ -183,7 +185,13 @@ Boolean IsNDBCWindFile(char* path)
 		// first line , header - YYYY MM DD hh WD   WSPD GST  WVHT  DPD   APD  MWD  BAR    ATMP  WTMP  DEWP  VIS
 		NthLineInTextOptimized(firstPartOfFile, line++, strLine, 512); 
 		RemoveLeadingAndTrailingWhiteSpace(strLine);
-		if (!strncmp (strLine,strToMatch,strlen(strToMatch)) || !strncmp (strLine,str2ToMatch,strlen(str2ToMatch)))
+		if (!strncmp (strLine,str3ToMatch,strlen(str3ToMatch)))
+		{
+			bIsValid = true;
+			*numHeaderLines = 2;
+			return bIsValid;
+		}
+		if (!strncmp (strLine,strToMatch,strlen(strToMatch)) || !strncmp (strLine,str2ToMatch,strlen(str2ToMatch)) || !strncmp (strLine,str3ToMatch,strlen(str3ToMatch)))
 			bIsValid = true;
 		else {bIsValid = false; return bIsValid;}
 		/////////////////////////////////////////////////
