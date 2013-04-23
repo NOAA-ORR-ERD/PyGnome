@@ -4,6 +4,16 @@ Created on Feb 15, 2013
 
 import numpy
 
+class Field(object):#,serializable.Serializable):
+    """
+    Class containing information about the property to be serialized
+    """
+    def __init__(self, name, isdatafile=False, access='update'):
+        self.name = name
+        self.isdatafile = isdatafile
+        self.access = access
+
+
 class State(object):
     def __init__(self, **kwargs):
         """
