@@ -407,6 +407,9 @@ define([
         },
 
         // Allow only empty or schema-compliant attributes
+        //
+        // Inspired by:
+        //      https://github.com/salsita/backbone-schema/blob/master/lib/backbone-schema.js#L41
         validate: function(attrs) {
             if (!this.schema) {
                 return null;
@@ -437,7 +440,6 @@ define([
             }
 
             obj = this.jsonify(obj);
-
             var r = env.validate(obj, this.schema);
 
             if (!r.errors.length) {
@@ -448,16 +450,40 @@ define([
 
             for (var i = 0; i < r.errors.length; i++) {
                 var error = r.errors[i];
-                var uriParts = error.uri.split('/');
-
-                errors.push({
-                    description: error.message,
-                    // Field name is the last part of the URI
-                    name: uriParts[uriParts.length - 1]
-                });
+                errors.push(this.formatSchemaError(error));
             }
 
             return errors;
+        },
+
+        schemaErrorDescriptionTemplates: {
+            'type': 'Value should be a {{error.details}}',
+            'type_many': 'Value should be one of these types: {{error.details}}',
+            'minimum': 'Value should be at least: {{error.details}}',
+            'maximum': 'Value should be at most: {{error.details}}'
+        },
+
+        formatSchemaError: function(error) {
+            var uriParts = error.uri.split('/');
+            var description = error.message;
+            var attribute = error.attribute;
+
+            if (attribute == 'type' && error.details.length > 1) {
+                attribute = 'type_many';
+            }
+
+            var template = this.schemaErrorDescriptionTemplates[attribute];
+
+            if (template) {
+                template = _.template(template);
+                description = template({error: error});
+            }
+
+            return {
+                description: description,
+                // Field name is the last part of the URI
+                name: uriParts[uriParts.length - 1]
+            }
         },
 
         onIndexChange: function() {

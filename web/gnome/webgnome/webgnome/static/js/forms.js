@@ -463,6 +463,7 @@ define([
             var _this = this;
 
             this.prepareSubmitData();
+            this.clearErrors();
 
             var errors = this.model.validate();
 
