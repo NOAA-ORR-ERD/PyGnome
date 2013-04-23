@@ -1,6 +1,6 @@
+import hammer
 import json
 
-from gnome.persist import environment_schema, movers_schema
 from pyramid.view import view_config
 from webgnome import schema
 from webgnome import util
@@ -33,7 +33,10 @@ def show_model(request):
     settings = request.registry.settings
     model_id = request.session.get(settings.model_session_key, None)
     model, created = settings.Model.get_or_create(model_id)
-    model_data = schema.ModelSchema().bind().serialize(model.to_dict())
+    model_schema = schema.ModelSchema().bind()
+    model_data = model_schema.serialize(model.to_dict())
+    model_json_schema = json.dumps(
+        hammer.to_json_schema(model_schema, draft_version=3))
     surface_release_spills = model_data.pop('surface_release_spills')
     wind_movers = model_data.pop('wind_movers')
     winds = model_data.pop('winds')
@@ -59,6 +62,7 @@ def show_model(request):
         'map_bounds': [],
         'map_is_loaded': True if model.map else False,
         'current_time_step': model.current_time_step,
+        'json_schema': model_json_schema,
 
         # Default values for forms that use them.
         'default_wind_mover': default_wind_mover,

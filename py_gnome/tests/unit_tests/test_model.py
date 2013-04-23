@@ -19,6 +19,7 @@ import gnome.spill
 from gnome.spill import SpatialReleaseSpill
 import gnome.utilities.map_canvas
 from gnome.utilities.file_tools import haz_files
+from gnome.utilities import inf_datetime
 
 datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
 
@@ -209,10 +210,10 @@ def test_simple_run_with_image_output():
                               start_time=start_time,
                               duration=timedelta(hours=1),
                               map=gnome_map,
-                              renderer=renderer,
                               uncertain=False,
                               cache_enabled=False,)
 
+    model.outputters += renderer
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
     assert len(model.movers) == 1
@@ -276,11 +277,10 @@ def test_simple_run_with_image_output_uncertainty():
                               start_time=start_time,
                               duration=timedelta(hours=1),
                               map=map,
-                              renderer=renderer,
                               uncertain=True,
                               cache_enabled=False,)
 
-
+    model.outputters += renderer
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     model.movers += a_mover
 
@@ -630,8 +630,8 @@ def test_callback_add_mover():
     model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"))
     
     for mover in model.movers:
-        assert mover.active_start == model.start_time
-        assert mover.active_stop == model.start_time + model.duration
+        assert mover.active_start == inf_datetime.InfDateTime('-inf')
+        assert mover.active_stop == inf_datetime.InfDateTime('inf')
         
         if isinstance( mover, movers.WindMover):
             assert  mover.wind.id in model.environment

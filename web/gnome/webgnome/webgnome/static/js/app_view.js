@@ -7,7 +7,7 @@ define([
     'models',
     'forms',
     'views',
-    'util'
+    'util',
 ], function($, _, Backbone, Mousetrap, models, forms, views, util) {
 
      /*
@@ -258,6 +258,26 @@ define([
                     visibleSaveButton.click();
                 }
             });
+
+            Mousetrap.bind('left', function() {
+                var newStep = _this.gnomeRun.currentTimeStep - 1;
+
+                if (newStep < 0) {
+                    return;
+                }
+
+                _this.mapControlView.setValue(newStep);
+            });
+
+            Mousetrap.bind('right', function() {
+                var newStep = _this.gnomeRun.currentTimeStep + 1;
+
+                if (newStep > _this.gnomeRun.length) {
+                    return;
+                }
+
+                _this.mapControlView.setValue(newStep);
+            });
         },
 
         spillDrawn: function(startCoords, endCoords) {
@@ -340,14 +360,16 @@ define([
                 id: 'add-wind',
                 collection: this.winds,
                 defaults: this.options.defaultWind,
-                gnomeModel: this.gnomeModel
+                gnomeModel: this.gnomeModel,
+                map: this.map
             });
 
             this.editWindFormView = new forms.WindFormView({
                 id: 'edit-wind',
                 collection: this.winds,
                 defaults: this.options.defaultWind,
-                gnomeModel: this.gnomeModel
+                gnomeModel: this.gnomeModel,
+                map: this.map
             });
 
             this.addRandomMoverFormView = new forms.AddRandomMoverFormView({
@@ -422,11 +444,9 @@ define([
 
         setupModels: function() {
             var _this = this;
-            var gnomeSettings = this.options.gnomeSettings;
 
-            var windMovers = gnomeSettings.wind_movers;
-            delete gnomeSettings['wind_movers'];
-
+            // Setup model defaults and schema validators.
+            models.init(this.options);
 
             this.gnomeModel = new models.GnomeModel(this.options.gnomeSettings);
 
@@ -609,8 +629,12 @@ define([
             this.mapControlView.enableControls();
         },
 
+        /*
+         Called while the user is dragging the slider.
+         We show the image for the target time step if it's loaded in cache.
+         */
+
         sliderMoved: function(newStepNum) {
-            // No need to do anything if the slider is on the current time step.
             if (newStepNum === this.gnomeRun.currentTimeStep) {
                 return;
             }
@@ -622,8 +646,14 @@ define([
             }
         },
 
+        /*
+         Called when the user finishes dragging the slider.
+
+         The image will be loaded if it was available in cache. If it wasn't,
+         then we're going to play until `newStepNum`, triggering download of
+         the intervening images.
+         */
         sliderChanged: function(newStepNum) {
-            // No need to do anything if the slider is on the current time step.
             if (newStepNum === this.gnomeRun.currentTimeStep) {
                 return;
             }

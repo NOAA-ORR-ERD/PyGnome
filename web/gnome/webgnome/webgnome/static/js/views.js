@@ -969,6 +969,16 @@ define([
                 100*(this.gnomeRun.length / this.gnomeRun.expectedTimeSteps.length))
         },
 
+        /*
+         Set the slider to `value`.
+
+         This triggers the "change" event on the widget.
+         */
+        setValue: function(value) {
+            this.sliderMoved(null, {value: value});
+            $(this.sliderEl).slider('value', value);
+        },
+
         runBegan: function() {
             if (this.gnomeRun.dirty) {
                 // TODO: Is this really what we want to do here?
