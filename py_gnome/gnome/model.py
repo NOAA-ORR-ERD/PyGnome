@@ -366,9 +366,3 @@ class Model(serializable.Serializable):
             if obj_added.tide is not None and obj_added.tide.id not in self.environment:
                     self.environment += obj_added.tide
         
-        # let's also set active_start, active_stop times to model times if they are set for all time
-        if obj_added.active_start == gnome.constants.min_time:
-            obj_added.active_start = self.start_time
-            
-        if obj_added.active_stop == gnome.constants.max_time:
-            obj_added.active_stop = self.start_time + self.duration

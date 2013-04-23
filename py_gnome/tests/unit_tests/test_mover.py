@@ -34,6 +34,10 @@ def test_active():
     model_time = datetime(2012, 8, 20, 13)
     sc = TestSpillContainer(1, (0,0,0))   # no used for anything
     
+    mv = movers.Mover()
+    mv.prepare_for_model_step( sc, time_step, model_time)
+    assert mv.active == True    # model_time = active_start
+    
     mv = movers.Mover(active_start=model_time )
     mv.prepare_for_model_step( sc, time_step, model_time)
     assert mv.active == True    # model_time = active_start

@@ -6,12 +6,13 @@ Define general purpose functions that can used as validators
 import datetime,time
 
 import numpy 
-
-import gnome.basic_types
 from colander import (
                       Invalid,
                       OneOf,
                       )
+
+import gnome.basic_types
+from gnome.utilities import inf_datetime
 
 def positive(node, value):
     if value <= 0:
@@ -19,6 +20,10 @@ def positive(node, value):
 
 
 def convertible_to_seconds(node, value):
+    """ validate only datetime objects """
+    if isinstance(value, inf_datetime.MinusInfTime) or isinstance(value, inf_datetime.InfTime):
+        return
+    
     try:
         time.mktime(list(value.timetuple()))
     except (OverflowError, ValueError) as e:
