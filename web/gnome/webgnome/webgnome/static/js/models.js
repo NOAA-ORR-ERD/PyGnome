@@ -3,7 +3,9 @@ define([
     'jquery',
     'lib/underscore',
     'lib/backbone',
-    'util'
+    'util',
+    'lib/jsv/environments',
+    'lib/jsv/jsv'
 ], function($, _, Backbone, util) {
 
      /*
@@ -184,7 +186,7 @@ define([
 
             this.runUntilTimeStep = options.runUntilTimeStep || null;
 
-            if (this.dirty || this.runUntilTimeStep) {
+            if (this.dirty) {
                 this.doRun(options);
                 return;
             }
@@ -222,14 +224,14 @@ define([
             this.currentTimeStep = stepNum;
             this.nextTimeStep = stepNum + 1;
 
+            this.trigger(GnomeRun.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
+
             if (this.currentTimeStep === this.runUntilTimeStep ||
                     this.currentTimeStep === _.last(this.expectedTimeSteps)) {
                 this.trigger(GnomeRun.RUN_FINISHED);
                 this.runUntilTimeStep = null;
                 return;
              }
-
-             this.trigger(GnomeRun.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
         },
 
         isOnLastTimeStep: function() {
@@ -389,6 +391,8 @@ define([
          */
         dateFields: null,
 
+        schema: null,
+
         initialize: function(attrs, opts) {
             this.dirty = false;
             this.bind('change', this.change, this);
@@ -400,6 +404,60 @@ define([
                 this.gnomeModel = opts.gnomeModel;
                 prependWithGnomeUrl.call(this);
             }
+        },
+
+        // Allow only empty or schema-compliant attributes
+        validate: function(attrs) {
+            if (!this.schema) {
+                return null;
+            }
+
+            // JSV defaults to JSON Schema draft 3 by default.
+            var env = JSV.createEnvironment();
+
+            // Resulting model consists of attributes we already have set and
+            // the attributes provided as argument to this function (merged).
+            // When an attribute is `unset`, it is passed in `attrs` object,
+            // the attribute has special value of `undefined`. To learn how the
+            // resulting object will look like, we need to:
+            // + merge the already-set attributes with the new ones, and
+            // + remove the attributes that are to be unset.
+            var obj = _.extend({}, this.attributes, attrs);
+
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    if ('undefined' === typeof obj[key]) {
+                        delete obj[key];
+                    }
+                }
+            }
+
+            if (_.isEmpty(obj)) {
+                return;
+            }
+
+            obj = this.jsonify(obj);
+
+            var r = env.validate(obj, this.schema);
+
+            if (!r.errors.length) {
+                return null;
+            }
+
+            var errors = [];
+
+            for (var i = 0; i < r.errors.length; i++) {
+                var error = r.errors[i];
+                var uriParts = error.uri.split('/');
+
+                errors.push({
+                    description: error.message,
+                    // Field name is the last part of the URI
+                    name: uriParts[uriParts.length - 1]
+                });
+            }
+
+            return errors;
         },
 
         onIndexChange: function() {
@@ -550,11 +608,13 @@ define([
             return val;
         },
 
-        // Call .format() on any date fields when preparing them for JSON
-        // serialization.
-        toJSON: function() {
-            var data = BaseModel.__super__.toJSON.apply(this, arguments);
+        /*
+         Call .format() on any date fields when preparing them for JSON
+         serialization.
 
+         Included in a separate method so it can be called during validation.
+         */
+        jsonify: function(data) {
             if (this.dateFields) {
                 _.each(this.dateFields, function(field) {
                     if (typeof(data[field]) === "string") {
@@ -568,6 +628,11 @@ define([
             }
 
             return data;
+        },
+
+        toJSON: function() {
+            var data = BaseModel.__super__.toJSON.apply(this, arguments);
+            return this.jsonify(data);
         }
     }, {
         MESSAGE_RECEIVED: 'ajaxForm:messageReceived'
@@ -612,7 +677,7 @@ define([
             this.syncArrayField('windage_range', 'windage_range_min', 0);
             this.syncArrayField('windage_range', 'windage_range_max', 1);
 
-            SurfaceReleaseSpill.__super__.initialize.apply(this, arguments);
+            return SurfaceReleaseSpill.__super__.initialize.apply(this, arguments);
         }
     });
 
@@ -639,7 +704,7 @@ define([
                 this.set('timeseries', [[moment(), 0, 0]]);
             }
 
-            Wind.__super__.set.apply(this, arguments);
+            return Wind.__super__.set.apply(this, arguments);
         },
 
         /*
@@ -747,7 +812,37 @@ define([
 
 
     var Map = BaseModel.extend({
-        url: '/map'
+        url: '/map',
+
+        // Bounds are stored as Long, Lat. Return then as Lat, Long.
+        getLatLongBounds: function() {
+            var bounds = this.get('map_bounds');
+
+            if (!bounds) {
+                return;
+            }
+
+            return {
+                nw: [bounds[1][1], bounds[1][0]],
+                ne: [bounds[2][1], bounds[2][0]],
+                se: [bounds[3][1], bounds[3][0]],
+                sw: [bounds[0][1], bounds[0][0]]
+            }
+        },
+
+        getLatLongCenter: function() {
+            var bounds = this.getLatLongBounds();
+
+            if (!bounds) {
+                return;
+            }
+
+            var latLngBounds = new google.maps.LatLngBounds(
+                new google.maps.LatLng(bounds.sw[0], bounds.sw[1]),
+                new google.maps.LatLng(bounds.ne[0], bounds.sw[1])
+            );
+            return latLngBounds.getCenter();
+        },
     });
 
 
@@ -860,7 +955,15 @@ define([
     }
 
 
+    function init(opts) {
+        var schema = opts.jsonSchema;
+        SurfaceReleaseSpill.prototype.defaults = opts.defaultSurfaceReleaseSpill;
+        SurfaceReleaseSpill.prototype.schema =  schema.properties.surface_release_spills.items;
+    }
+
+
     return {
+        init: init,
         TimeStep: TimeStep,
         GnomeRun: GnomeRun,
         GnomeModel: GnomeModel,

@@ -158,6 +158,13 @@ define([
         window.location = window.location.protocol + "//" + window.location.host;
     }
 
+    // https://github.com/redpie/backbone-schema/pull/3
+    function formatError(str, values) {
+        return str.replace(/%((\w+))/g, function(match, name) {
+            return values[name] || match;
+        });
+    }
+
     return {
         log: log,
         handleAjaxError: handleAjaxError,
@@ -166,7 +173,8 @@ define([
         cardinalName: cardinalName,
         cardinalAngle: cardinalAngle,
         Cookies: Cookies,
-        refresh: refresh
+        refresh: refresh,
+        parseError: formatError
     };
 
 });

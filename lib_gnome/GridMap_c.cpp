@@ -3098,7 +3098,7 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 	long nSegs = GetNumBoundarySegs();	
 	long theSeg,startver,endver,index,index1,index2,boundaryIndex=0;
 	
-	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts;
+	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts=0;
 	long boundaryFlagRange[] = {1, 2}, boundaryFlagValues[] = {1,2};
 	
 	TopologyHdl topH=0;
@@ -3145,7 +3145,7 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 	numBranches = dagTree->fNumBranches;
 	nBoundarySegs = _GetHandleSize((Handle)boundarySegmentsH)/sizeof(long);
 	if (boundaryPointsH) nBoundaryPts = _GetHandleSize((Handle)boundaryPointsH)/sizeof(long);	// all the boundary points
-	else nBoundaryPts = INDEXH(boundarySegmentsH,nBoundarySegs-1);
+	else nBoundaryPts = INDEXH(boundarySegmentsH,nBoundarySegs-1)+1;
 	
 	status = nc_create(path, NC_CLOBBER, &ncid);
 	//sprintf(errmsg,"the path is %s\n",path);
@@ -3454,8 +3454,8 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 
 	for (i=0;i<nver;i++)
 	{
-		lat_vals[i] = INDEXH(ptsH,i).v;
-		lon_vals[i] = INDEXH(ptsH,i).h;
+		lat_vals[i] = INDEXH(ptsH,i).v / 1000000.;
+		lon_vals[i] = INDEXH(ptsH,i).h / 1000000.;
 		depth_vals[i] = INDEXH(depthsH,i);
 	}
 	for (i=0;i<numBranches;i++)
@@ -3464,7 +3464,7 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 		dag_vals[i*3+1] = (*treeH)[i].branchLeft;
 		dag_vals[i*3+2] = (*treeH)[i].branchRight;
 	}
-	for(i=0;j<numTriangles;i++)
+	for(i=0;i<numTriangles;i++)
 	{
 		top_vals[i*3] = (*topH)[i].vertex1;
 		top_vals[i*3+1] = (*topH)[i].vertex2;
@@ -3612,6 +3612,10 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 	
 	// store edges 
 	status = nc_put_var_long(ncid, mesh2_edge_id, edge_vals);
+	if (status != NC_NOERR) {err = -1; goto done;}
+	
+	// store boundaries 
+	status = nc_put_var_long(ncid, mesh2_boundary_count_id, boundary_count_vals);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
 	status = nc_close(ncid);
