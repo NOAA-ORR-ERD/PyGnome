@@ -54,13 +54,14 @@ class Wind( Environment, serializable.Serializable):
                 'updated_at',
                 'timeseries',
                 'units']    # default units for input/output data
-    _create = ['filename']  # used to create new obj or as readonly parameter
+    _create = []  # used to create new obj or as readonly parameter
     _create.extend(_update)
     
     state = copy.deepcopy(serializable.Serializable.state)
-    state.add(read  =['filename'],
-              create=_create,
-              update=_update)   # no need to copy parent's state in tis case
+    state.add(create=_create,
+              update=_update)   
+    
+    state.add_field(serializable.Field('filename',isdatafile=True,create=True,read=True))   # add 'filename' as a Field object
 
     # list of valid velocity units for timeseries
     #valid_vel_units = unit_conversion.GetUnitNames('Velocity')
@@ -353,14 +354,10 @@ class Tide(Environment, serializable.Serializable):
     Currently, this internally defines and uses the CyShioTime object, which is
     a cython wrapper around the C++ Shio object
     """
-    _read = ['filename']
-    _update = ['yeardata']    # default units for input/output data
-    _create = ['filename']
-    _create.extend(_update)
-    
     state = copy.deepcopy(serializable.Serializable.state)
-    state.add(create=_create,
-              update=_update)   # no need to copy parent's state in tis case
+    state.add(create=['yeardata'],
+              update=['yeardata'])   # no need to copy parent's state in tis case
+    state.add_field(serializable.Field('filename',isdatafile=True,create=True,read=True))   # add 'filename' as a Field object
     
     def __init__(self,
                  filename=None,
@@ -373,7 +370,7 @@ class Tide(Environment, serializable.Serializable):
 	    Invokes super(Tides,self).__init__(**kwargs) for parent class initialization
 	    
 	    It requires one of the following to initialize:
-              1. 'timeseries' assumed to be in 'uv' format (NOT TESTED OR USED YET)
+              1. 'timeseries' assumed to be in 'uv' format (NOT TESTED/IMPLEMENTED OR USED YET)
               2. a 'filename' containing a header that defines units amongst other meta data
 	    
         :param timeseries: numpy array containing datetime_value_2d, ts_format is always 'uv'

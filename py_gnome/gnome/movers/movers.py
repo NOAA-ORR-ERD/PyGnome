@@ -421,9 +421,9 @@ def wind_mover_from_file(filename, **kwargs):
 
     :returns mover: returns a wind mover, built from the file
     """
-    w = environment.Wind(file=filename,
+    w = environment.Wind(filename=filename,
                      ts_format=basic_types.ts_format.magnitude_direction)
-    ts = w.get_timeseries(ts_format=basic_types.ts_format.magnitude_direction)
+    ts = w.get_timeseries(format=basic_types.ts_format.magnitude_direction)
     wm = WindMover(w, **kwargs)
 
     return wm
@@ -491,12 +491,11 @@ class CatsMover(CyMover, serializable.Serializable):
     
     state = copy.deepcopy(CyMover.state)
     
-    _read = ['filename','tide_id']
     _update = ['scale','scale_refpoint','scale_value']
-    
-    _create = ['filename','tide_id']
+    _create = ['tide_id']
     _create.extend(_update)
-    state.add(update=_update, create=_create, read=_read)
+    state.add(update=_update, create=_create, read=['tide_id'])
+    state.add_field(serializable.Field('filename',create=True,read=True,isdatafile=True))
     
     @classmethod
     def new_from_dict(cls, dict_):

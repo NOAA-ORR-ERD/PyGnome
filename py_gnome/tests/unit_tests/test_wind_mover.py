@@ -303,6 +303,9 @@ def test_constant_wind_mover():
     print "delta:", delta
     assert delta[0][0] == delta[0][1] # 45 degree wind at the equator -- u,v should be the same
 
+def test_wind_mover_from_file():
+    wm = movers.wind_mover_from_file(file_)
+    assert wm.wind.filename == file_
 
 def test_new_from_dict():
     """
@@ -318,7 +321,7 @@ def test_new_from_dict():
     wm2 = movers.WindMover.new_from_dict(wm_state)
     
     # check serializable state is correct
-    assert all([wm.__getattribute__(k) == wm2.__getattribute__(k) for k in movers.WindMover.state.create if k != 'wind_id' and k != 'obj_type'])
+    assert all([wm.__getattribute__(k) == wm2.__getattribute__(k) for k in movers.WindMover.state.get_names('create') if k != 'wind_id' and k != 'obj_type'])
     assert wm.wind.id == wm2.wind.id 
     
 def test_exception_new_from_dict():

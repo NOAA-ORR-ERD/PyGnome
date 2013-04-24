@@ -509,11 +509,9 @@ class MapFromBNA(RasterMap, serializable.Serializable):
     """
     A raster land-water map, created from a BNA file
     """
-    _update = ['refloat_halflife']
-    _create = ['filename']
-    _create.extend(_update)
     state = copy.deepcopy(RasterMap.state)
-    state.add( create=_create, update=_update)
+    state.add( create=['refloat_halflife'], update=['refloat_halflife'])
+    state.add_field(serializable.Field('filename',isdatafile=True,create=True,read=True))   # add 'filename' as a Field object
     
     #@classmethod
     #def new_from_dict(cls):

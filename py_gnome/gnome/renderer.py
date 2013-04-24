@@ -33,10 +33,11 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     foreground_filename_glob =   'foreground_?????.png'
 
     _update = ['viewport','map_BB','images_dir']    # todo: how should images_dir be saved? Absolute? Currently, it is relative
-    _create = ['image_size','filename','projection_class']   # not sure image_size should be updated
+    _create = ['image_size','projection_class']   # not sure image_size should be updated
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
     state.add( create=_create, update=_update)
+    state.add_field(serializable.Field('filename',isdatafile=True,create=True,read=True))   
 
     @classmethod
     def new_from_dict(cls, dict_):

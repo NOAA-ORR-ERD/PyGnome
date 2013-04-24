@@ -112,12 +112,27 @@ class Scenario(object):
             json.dump(data, outfile, indent = True)
     
     def _move_data_file(self,to_json):
-        """if there is a 'filename' field, move the data file to saveloc, update 'filename' and return to_json"""
-        for key, value in to_json.items():
-            if isinstance(value, basestring):
-                if os.path.exists(value) and os.path.isfile(value):
-                    shutil.copy(value, self.saveloc)
-                    to_json[key] = os.path.split(to_json['filename'])[1]
+        """Look at state attribute of object. Find all fields with 'isdatafile' attribute as True.
+           If there is a key in to_json corresponding with 'name' of the fields with True 'isdatafile' attribute
+           then move that datafile and update the key in the to_json to point to new location"""
+        state = eval( '{0}.state'.format(to_json['obj_type']) )
+        fields = state.get_field_by_attribute('isdatafile')
+        
+        for field in fields:
+            if field.name not in to_json:
+                continue
+            value = to_json[field.name]
+            if os.path.exists(value) and os.path.isfile(value):
+                shutil.copy(value, self.saveloc)
+                to_json[field.name] = os.path.split(to_json[field.name])[1] 
+        
+        #=======================================================================
+        # for key, value in to_json.items():
+        #    if isinstance(value, basestring):
+        #        if os.path.exists(value) and os.path.isfile(value):
+        #            shutil.copy(value, self.saveloc)
+        #            to_json[key] = os.path.split(to_json['filename'])[1]
+        #=======================================================================
                      
         #=======================================================================
         # if 'filename' in to_json:
