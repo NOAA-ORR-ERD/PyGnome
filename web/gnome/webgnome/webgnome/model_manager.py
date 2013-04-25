@@ -230,7 +230,7 @@ class WebModel(BaseWebObject, Model):
         # during superclass initialization.
         self.base_dir = None
 
-        # Set the model's id
+        # Set the model's ID, which we need to set the base_dir.
         super(WebModel, self).__init__()
 
         # Remove the default map object.
@@ -276,21 +276,24 @@ class WebModel(BaseWebObject, Model):
     @changed_at.setter
     def changed_at(self, change_time):
         """
-        Set the datetime the model was last changed. This will change the
-        data directory for images created for the model, effectively busting
-        any cached versions of those images.
-        """
-        if self.data_dir and os.path.exists(self.data_dir):
-            shutil.rmtree(self.data_dir)
+        Set the datetime the model was last changed.
 
+        This will change the data directory for images created for the model,
+        effectively busting any cached versions of those images.
+
+        This method is called, among other places, in __init__, before the model
+        has a base_dir or an ID, so we defend against that possibility.
+
+        Note that previous data directories are kept around.
+        """
         self._changed_at = change_time
-        self.update_renderer()
 
         if self.data_dir and not os.path.exists(self.data_dir):
             util.mkdir_p(self.data_dir)
 
-        # Save the background image.
+        # Update renderer's `images_dir` and save a new background image.
         if self.renderer:
+            self.renderer.images_dir = self.data_dir
             self.renderer.prepare_for_model_run()
 
     def mark_changed(self):
@@ -298,33 +301,6 @@ class WebModel(BaseWebObject, Model):
         Update the `self.changed_at` field to the current time.
         """
         self.changed_at = datetime.datetime.now()
-
-    def update_renderer(self):
-        """
-        Update the current renderer's background image name to use the latest
-        model changed_at time and its images_dir to use the latest model
-        data_dir.
-
-        Remove the background image for the previous model runtime if one exists.
-        """
-        if not self.renderer:
-            return
-
-        # Delete an existing background image file.
-        if os.path.exists(self.renderer.background_image_path):
-            try:
-                os.remove(self.renderer.background_image_path)
-            except OSError as e:
-                logger.error('Could not delete file: %s. Error was: %s' % (
-                    self.renderer.background_image_path, e))
-
-        if self.data_dir:
-            self.renderer.images_dir = self.data_dir
-
-        # Set the new background image path.
-        self.renderer.background_map_name = \
-            'background_image_%s.png' % util.get_filename_safe_time(
-                self.changed_at)
 
     def add_bna_map(self, filename, map_data):
         """
@@ -363,8 +339,6 @@ class WebModel(BaseWebObject, Model):
 
         self.outputters += self.renderer
 
-        # This will set a new background_map_name for the renderer using the
-        # model's current `changed_at` value for an image URL cache-buster.
         self.mark_changed()
 
     def remove_map(self):
