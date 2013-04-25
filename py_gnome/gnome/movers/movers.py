@@ -421,9 +421,9 @@ def wind_mover_from_file(filename, **kwargs):
 
     :returns mover: returns a wind mover, built from the file
     """
-    w = environment.Wind(file=filename,
+    w = environment.Wind(filename=filename,
                      ts_format=basic_types.ts_format.magnitude_direction)
-    ts = w.get_timeseries(ts_format=basic_types.ts_format.magnitude_direction)
+    ts = w.get_timeseries(format=basic_types.ts_format.magnitude_direction)
     wm = WindMover(w, **kwargs)
 
     return wm
@@ -491,12 +491,11 @@ class CatsMover(CyMover, serializable.Serializable):
     
     state = copy.deepcopy(CyMover.state)
     
-    _read = ['filename','tide_id']
     _update = ['scale','scale_refpoint','scale_value']
-    
-    _create = ['filename','tide_id']
+    _create = ['tide_id']
     _create.extend(_update)
-    state.add(update=_update, create=_create, read=_read)
+    state.add(update=_update, create=_create, read=['tide_id'])
+    state.add_field(serializable.Field('filename',create=True,read=True,isdatafile=True))
     
     @classmethod
     def new_from_dict(cls, dict_):
@@ -678,7 +677,12 @@ class WeatheringMover(Mover):
         #return self.delta
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
 
-class GridCurrentMover(CyMover):
+class GridCurrentMover(CyMover, serializable.Serializable):
+    
+    state = copy.deepcopy(CyMover.state)
+    
+    state.add_field( [serializable.Field('filename',create=True,read=True,isdatafile=True),
+                      serializable.Field('topology_file',create=True,read=True,isdatafile=True)])
     
     def __init__(self, filename, topology_file=None, **kwargs):
         """
@@ -693,6 +697,7 @@ class GridCurrentMover(CyMover):
                 raise ValueError("Path for Topology file does not exist: {0}".format(topology_file))
 
         self.filename = filename  # check if this is stored with cy_gridcurrent_mover?
+        self.topology_file = topology_file  # check if this is stored with cy_gridcurrent_mover?
         self.mover = cy_gridcurrent_mover.CyGridCurrentMover()
         self.mover.text_read(filename,topology_file)
         
@@ -713,26 +718,17 @@ class GridCurrentMover(CyMover):
 #         
         
 
-class GridWindMover(CyMover):
+class GridWindMover(CyMover, serializable.Serializable):
     
-#     def __init__(self, wind_file, topology_file=None,
-#                  active_start= datetime( *gmtime(0)[:6] ), 
-#                  active_stop = datetime(2038,1,18,0,0,0)):
-#         """
-#         
-#         """
-#         if not os.path.exists(wind_file):
-#             raise ValueError("Path for wind file does not exist: {0}".format(wind_file))
-#         
-#         if topology_file is not None:
-#             if not os.path.exists(topology_file):
-#                 raise ValueError("Path for Topology file does not exist: {0}".format(topology_file))
-# 
-#         self.wind_file = wind_file  # check if this is stored with cy_gridwind_mover?
-#         self.mover = cy_gridwind_mover.CyGridWindMover()
-#         self.mover.text_read(wind_file,topology_file)
-#         
-#         super(GridWindMover,self).__init__(active_start, active_stop)
+    _update = ['uncertain_duration','uncertain_time_delay','uncertain_speed_scale','uncertain_angle_scale']
+    #_create = ['wind_file', 'topology_file']
+    #_read = ['wind_file', 'topology_file']
+    #_create.extend(_update)
+    
+    state = copy.deepcopy(CyMover.state)
+    state.add(update=_update, create=_update)
+    state.add_field( [serializable.Field('wind_file',create=True,read=True,isdatafile=True),
+                      serializable.Field('topology_file',create=True,read=True,isdatafile=True)])
         
     def __init__(self, wind_file, topology_file=None, 
                  uncertain_duration=10800,
@@ -763,6 +759,7 @@ class GridWindMover(CyMover):
                 raise ValueError("Path for Topology file does not exist: {0}".format(topology_file))
 
         self.wind_file = wind_file  # check if this is stored with cy_gridwind_mover?
+        self.topology_file = topology_file  # check if this is stored with cy_gridwind_mover?
         self.mover = cy_gridwind_mover.CyGridWindMover()
         self.mover.text_read(wind_file,topology_file)
         

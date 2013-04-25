@@ -59,3 +59,12 @@ class CatsMover( Id, Mover):
     scale_refpoint = WorldPoint()
     scale_value = SchemaNode(Float() )
     tide_id = SchemaNode(String(), missing=drop)    # can have CatsMover without Tide object
+    
+class GridCurrentMover( Id, Mover):
+    filename = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
+    
+class GridWindMover(WindMover):
+    """ Similar to WindMover except it doesn't have wind_id"""
+    wind_file = SchemaNode(String(), missing=drop)
+    topology_file = SchemaNode(String(), missing=drop)
