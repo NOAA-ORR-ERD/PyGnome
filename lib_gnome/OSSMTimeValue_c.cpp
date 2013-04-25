@@ -517,7 +517,7 @@ done:
 	
 }
 
-OSErr OSSMTimeValue_c::ReadNDBCWind (char *path)
+OSErr OSSMTimeValue_c::ReadNDBCWind (char *path, long numHeaderLines)
 {
 	char s[512], value1S[256], value2S[256];
 	long i,numValues,numLines,numScanned;
@@ -532,7 +532,7 @@ OSErr OSSMTimeValue_c::ReadNDBCWind (char *path)
 	//Boolean isLongWindFile = FALSE, isHydrologyFile = FALSE;
 	//short selectedUnits = unitsIfKnownInAdvance;
 	long numDataLines;
-	long numHeaderLines = 1;
+	//long numHeaderLines = 1;
 	short format = M19DEGREESMAGNITUDE;
 
 	if (err = ReadFileContents(TERMINATED,0, 0, path, 0, 0, &f))
@@ -560,17 +560,28 @@ OSErr OSSMTimeValue_c::ReadNDBCWind (char *path)
 		if(s[0] == 0) continue; // it's a blank line, allow this and skip the line
 		//StringSubstitute(s, ',', ' ');
 		
-		numScanned=sscanf(s, "%hd %hd %hd %hd %s %s",
-						  &time.year, &time.month, &time.day,
-						  &time.hour, value1S, value2S) ;
-		if (numScanned<6)	
-			// scan will allow comment at end of line, for now just ignore 
-		{ err = -1; TechError("TOSSMTimeValue::ReadNDBCWind()", "sscanf() < 6", 0); goto done; }
-		// check if last line all zeros (an OSSM requirement) if so ignore the line
-		//if (i==numLines-1 && time.day==0 && time.month==0 && time.year==0 && time.hour==0 && time.minute==0)
-			//continue;
+		if (numHeaderLines==1)
+		{
+			numScanned=sscanf(s, "%hd %hd %hd %hd %s %s",
+							  &time.year, &time.month, &time.day,
+							  &time.hour, value1S, value2S) ;
+			if (numScanned<6)	
+				// scan will allow comment at end of line, for now just ignore 
+				{ err = -1; TechError("TOSSMTimeValue::ReadNDBCWind()", "sscanf() < 6", 0); goto done; }
+
+			time.minute = time.second = 0;
+		}
+		else 
+		{
+			numScanned=sscanf(s, "%hd %hd %hd %hd %hd %s %s",
+							  &time.year, &time.month, &time.day,
+							  &time.hour, &time.minute, value1S, value2S) ;
+			if (numScanned<7)	
+				// scan will allow comment at end of line, for now just ignore 
+			{ err = -1; TechError("TOSSMTimeValue::ReadNDBCWind()", "sscanf() < 7", 0); goto done; }
+		}
+
 		// check date is valid
-		time.minute = time.second = 0;
 		if (time.day<1 || time.day>31 || time.month<1 || time.month>12)
 		{
 			err = -1;
@@ -691,14 +702,15 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	///**/ paramtext(fileName, "", "", ""); /**/
 	//////////////////////////////////////////
 	
-	if (IsNDBCWindFile(path)) 
+	if (IsNDBCWindFile(path,&numHeaderLines)) 
 	{
-		err = ReadNDBCWind(path); 
+		err = ReadNDBCWind(path,numHeaderLines); //scan is different
 		return err;
 		// or
+		
 		// selectedUnits = kMetersPerSec;
 		// isNDBC = true // scan is different
-		// numHeaderLines = 1;
+		// numHeaderLines = 1; (or 2 - format includes minutes)
 	}	// units/format always the same
 	
 	if (IsNCDCWindFile(path)) 
