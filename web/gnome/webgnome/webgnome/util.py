@@ -265,21 +265,24 @@ def valid_wind_id(request):
     return
 
 
-def valid_map(request):
-    """
-    A Cornice validator that returns a 404 if a map was not found for the user's
-    current model.
-    """
-    valid_model_id(request)
+def make_map_validator(error_status_code):
+    def valid_map(request):
+        """
+        A Cornice validator that returns ``error_status_code`` if the target
+        model does not have an associated Map.
+        """
+        valid_model_id(request)
 
-    if request.errors:
-        return
+        if request.errors:
+            return
 
-    model = request.validated['model']
+        model = request.validated['model']
 
-    if not model.map:
-        request.errors.add('body', 'map', 'Map not found.')
-        request.errors.status = 404
+        if not model.map:
+            request.errors.add('body', 'map', 'Map not found.')
+            request.errors.status = error_status_code
+
+    return valid_map
 
 
 def valid_location_file(request):
@@ -552,18 +555,26 @@ def get_model_image_url(request, model, filename):
 
     These are files in the model's base directory.
     """
-    return request.static_url('webgnome:static/%s/%s/%s' % (
+    return request.static_url('webgnome:static/%s/%s/%s/%s' % (
         request.registry.settings['model_images_url_path'],
         model.id,
+        get_filename_safe_time(model.changed_at),
         filename))
 
 
-def get_runtime():
+def get_filename_safe_time(_datetime=None):
     """
     Return the current time as a string to be used as part of the file path
     for all images generated during a model run.
     """
-    return time.strftime("%Y-%m-%d-%H-%M-%S")
+    format_str = "%Y-%m-%d-%H-%M-%S"
+
+    if _datetime:
+        safe_time = time.strftime(format_str, _datetime.timetuple())
+    else:
+        safe_time = time.strftime(format_str)
+
+    return safe_time
 
 
 def delete_keys_from_dict(target_dict, keys):

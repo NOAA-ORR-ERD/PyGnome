@@ -43,9 +43,9 @@ def show_model(request):
     random_movers = model_data.pop('random_movers')
     map_data = model_data.get('map', None)
 
-    if map_data and model.background_image:
+    if map_data and model.renderer and model.renderer.background_map_name:
         map_data['background_image_url'] = util.get_model_image_url(
-            request, model, model.background_image)
+            request, model, model.renderer.background_map_name)
 
     # JavaScript model default values, used in "Add [object]" types of forms.
     default_wind_mover = _default_schema_json(schema.WindMoverSchema)

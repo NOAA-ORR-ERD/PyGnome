@@ -751,7 +751,7 @@ define([
                 initAjax: {
                     url: _this.url
                 },
-                windage_persist: true
+                persist: true
             });
         },
 
@@ -759,8 +759,11 @@ define([
             return this.tree.dynatree("getActiveNode");
         },
 
-        reload: function() {
+        reload: function(opts) {
             var _this = this;
+            if (!opts.reloadTree) {
+                return;
+            }
             if (this.gnomeModel && this.gnomeModel.wasDeleted) {
                 return;
             }

@@ -175,8 +175,8 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.post_json(runner_url)
         num_steps = len(resp.json_body['expected_time_steps'])
 
+        # Skip the first step because we received it in the POST.
         for step in range(num_steps):
-            # Skip the first step because we received it in the POST.
             if step == 0:
                 continue
             resp = self.testapp.get(runner_url)
@@ -331,10 +331,8 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin,
                          data['uncertain_angle_scale'])
         self.assertEqual(resp.json['uncertain_angle_scale_units'],
                          data['uncertain_angle_scale_units'])
-        self.assertEqual(resp.json['active_start'],
-                         datetime.datetime(*gmtime(0)[:6]).isoformat())
-        self.assertEqual(resp.json['active_stop'],
-                         datetime.datetime(2038, 1, 18, 0, 0, 0).isoformat())
+        self.assertEqual(resp.json['active_start'], '-inf')
+        self.assertEqual(resp.json['active_stop'], 'inf')
 
     def test_wind_mover_update(self):
         wind_data = self.make_wind_data()
@@ -490,7 +488,8 @@ class MapServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp_data = resp.json_body
 
         self.assertEqual(data['name'], resp_data['name'])
-        self.assertEqual(data['refloat_halflife'], resp_data['refloat_halflife'])
+        self.assertEqual(data['refloat_halflife'],
+                         resp_data['refloat_halflife'])
         self.assertEqual(resp_data['map_bounds'],
                          [[-73.083328, 40.922832], [-73.083328, 41.330833],
                           [-72.336334, 41.330833], [-72.336334, 40.922832]])

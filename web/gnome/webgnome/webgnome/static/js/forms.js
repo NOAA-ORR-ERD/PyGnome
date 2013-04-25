@@ -494,7 +494,7 @@ define([
 
         resetModel: function() {
             if (this.model && this.model.id) {
-                this.model.fetch();
+                this.model.fetch({reloadTree: false});
                 this.stopListening(this.model);
                 this.model = null;
             }
@@ -1342,8 +1342,17 @@ define([
             // correct option in the wind_id select.
             this.model.trigger('change:wind_id');
 
-            this.setDateFields('.active_start_container', this.model.get('active_start'));
-            this.setDateFields('.active_stop_container', this.model.get('active_stop'));
+            var activeStart = this.model.get('active_start');
+            var activeStop = this.model.get('active_stop');
+
+            // TODO: Is this really how we want to handle this, or should the
+            // model return a special datetime for -inf and inf?
+            if (activeStart != '-inf') {
+                this.setDateFields('.active_start_container', activeStart);
+            }
+            if (activeStop != 'inf') {
+                this.setDateFields('.active_stop_container', activeStop);
+            }
         },
 
         validator: models.WindMoverValidator,

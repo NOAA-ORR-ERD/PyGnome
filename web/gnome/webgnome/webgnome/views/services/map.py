@@ -14,6 +14,8 @@ from webgnome.views.services.base import BaseResource
 
 logger = logging.getLogger(__name__)
 
+valid_map = util.make_map_validator(404)
+
 
 class MapResource(BaseResource):
     """
@@ -27,9 +29,9 @@ class MapResource(BaseResource):
         """
         map_data = model.map.to_dict()
 
-        if model.background_image:
+        if model.renderer and model.renderer.background_map_name:
             map_data['background_image_url'] = util.get_model_image_url(
-                self.request, model, model.background_image)
+                self.request, model, model.renderer.background_map_name)
 
         return map_data
 
@@ -37,8 +39,7 @@ class MapResource(BaseResource):
 @resource(path='/model/{model_id}/map', renderer='gnome_json',
           description="The user's current map.")
 class Map(MapResource):
-
-    @view(validators=util.valid_map)
+    @view(validators=valid_map)
     def get(self):
         """
         Return a JSON representation of the current map.
@@ -63,7 +64,7 @@ class Map(MapResource):
         map_data = self.get_map_data(model)
         return schema.MapSchema().bind().serialize(map_data)
 
-    @view(validators=util.valid_map, schema=MapSchema)
+    @view(validators=valid_map, schema=MapSchema)
     def put(self):
         """
         Update an existing map.
@@ -87,7 +88,6 @@ class Map(MapResource):
 @resource(path='/model/{model_id}/custom_map', renderer='gnome_json',
           description='A custom map created from GOODS data.')
 class CustomGoodsMap(BaseResource):
-
     def get_form_errors(self, content):
         if content.find('<html>') == -1:
             return
@@ -102,7 +102,7 @@ class CustomGoodsMap(BaseResource):
 
         return errors
 
-    @view(validators=util.valid_map)
+    @view(validators=valid_map)
     def get(self):
         """
         Return a JSON representation of the current map.
@@ -154,7 +154,6 @@ class CustomGoodsMap(BaseResource):
 @resource(path='/model/{model_id}/file_upload', renderer='gnome_json',
           description="Post to upload a file into the model's data directory.")
 class FileUpload(BaseResource):
-
     @view(validators=[util.valid_model_id, util.valid_filename])
     def post(self):
         """

@@ -5,11 +5,10 @@ import copy
 import datetime
 import logging
 import os
-import uuid
-from gnome.utilities import map_canvas
+import shutil
+from gnome.renderer import Renderer
 import numpy
 
-from hazpy.file_tools import haz_files
 from webgnome import util
 
 # XXX: This except block should not be necessary.
@@ -27,8 +26,7 @@ except ImportError:
     import gnome
     sys.path.append('../../../py_gnome')
 
-import gnome.utilities.map_canvas
-from gnome import basic_types, GnomeId
+from gnome import basic_types
 from gnome.model import Model
 from gnome.movers import WindMover, RandomMover, CatsMover
 from gnome.spill import SurfaceReleaseSpill
@@ -161,9 +159,10 @@ class WebMapFromBNA(BaseWebObject, MapFromBNA):
     state = copy.deepcopy(MapFromBNA.state)
     state.add(create=['name'], update=['name'])
 
-    def __init__(self, base_dir, *args, **kwargs):
+    def __init__(self, base_dir, filename, *args, **kwargs):
         self.base_dir = base_dir
-        super(WebMapFromBNA, self).__init__(*args, **kwargs)
+        self.filename = filename
+        super(WebMapFromBNA, self).__init__(filename, *args, **kwargs)
 
     def map_bounds_to_dict(self):
         """
@@ -187,6 +186,15 @@ class WebMapFromBNA(BaseWebObject, MapFromBNA):
             to_remove += 1
 
         return self.filename[to_remove:]
+
+
+class WebRenderer(BaseWebObject, Renderer):
+    """
+    A :class:`gnome.renderer.Renderer` subclass with WebGnome-specific helpers.
+    """
+    @property
+    def background_image_path(self):
+        return os.path.join(self.images_dir, self.background_map_name)
 
 
 class WebGnomeMap(BaseWebObject, GnomeMap):
@@ -217,6 +225,12 @@ class WebModel(BaseWebObject, Model):
     def __init__(self, *args, **kwargs):
         data_dir = kwargs.pop('data_dir')
         self.package_root = kwargs.pop('package_root')
+        self.renderer = None
+
+        # Model.__init__ ends up calling rewind(), which looks for base_dir to
+        # set up the data directory. Set `base_dir` to None to skip those steps
+        # during superclass initialization.
+        self.base_dir = None
 
         # Set the model's id
         super(WebModel, self).__init__()
@@ -236,30 +250,83 @@ class WebModel(BaseWebObject, Model):
         # Patch the object with an empty ``time_steps`` array for the time being.
         # TODO: Add output caching in the model?
         self.time_steps = []
-        self.runtime = None
-        self.background_image = None
+        self.changed_at = datetime.datetime.now()
 
     @property
     def data_dir(self):
         """
         Return the expected path to the files for the current run of the model.
         """
-        if not self.runtime:
+        if not self.base_dir:
             return
 
-        return os.path.join(self.base_dir, self.runtime)
-
-    @property
-    def background_image_path(self):
-        if not self.background_image:
-            return
-
-        return os.path.join(self.base_dir, self.background_image)
+        return os.path.join(self.base_dir,
+                            util.get_filename_safe_time(self.changed_at))
 
     @property
     def duration_hours(self):
         if self.duration.seconds:
             return self.duration.seconds / 60 / 60
+
+    @property
+    def changed_at(self):
+        """
+        The datetime the model was last changed.
+        """
+        return self._changed_at
+
+    @changed_at.setter
+    def changed_at(self, change_time):
+        """
+        Set the datetime the model was last changed. This will change the
+        data directory for images created for the model, effectively busting
+        any cached versions of those images.
+        """
+        if self.data_dir and os.path.exists(self.data_dir):
+            shutil.rmtree(self.data_dir)
+
+        self._changed_at = change_time
+        self.update_renderer()
+
+        if self.data_dir and not os.path.exists(self.data_dir):
+            util.mkdir_p(self.data_dir)
+
+        # Save the background image.
+        if self.renderer:
+            self.renderer.prepare_for_model_run()
+
+    def mark_changed(self):
+        """
+        Update the `self.changed_at` field to the current time.
+        """
+        self.changed_at = datetime.datetime.now()
+
+    def update_renderer(self):
+        """
+        Update the current renderer's background image name to use the latest
+        model changed_at time and its images_dir to use the latest model
+        data_dir.
+
+        Remove the background image for the previous model runtime if one exists.
+        """
+        if not self.renderer:
+            return
+
+        # Delete an existing background image file.
+        if os.path.exists(self.renderer.background_image_path):
+            try:
+                os.remove(self.renderer.background_image_path)
+            except OSError as e:
+                logger.error('Could not delete file: %s. Error was: %s' % (
+                    self.renderer.background_image_path, e))
+
+        if self.data_dir:
+            self.renderer.images_dir = self.data_dir
+
+        # Set the new background image path.
+        self.renderer.background_map_name = \
+            'background_image_%s.png' % util.get_filename_safe_time(
+                self.changed_at)
 
     def add_bna_map(self, filename, map_data):
         """
@@ -269,36 +336,74 @@ class WebModel(BaseWebObject, Model):
         This might be a map file in a location file or in a running model's
         data directory.
 
-        Creates the land-water map and the canvas, and saves the background
-        image for the map.
+        Creates a renderer using the map file, with a reference stored as
+        `self.renderer`.
         """
         map_file = os.path.join(self.package_root, filename)
-
         # Create the land-water map
         self.map = WebMapFromBNA(self.package_root, map_file, **map_data)
+        self.setup_renderer()
 
-        # TODO: Should canvas size be configurable?
-        canvas = map_canvas.MapCanvasFromBNA((800, 600), map_file)
-        self.output_map = canvas
+    def setup_renderer(self):
+        """
+        Add a renderer for the model.
 
-        # Delete an existing background image file.
-        if self.background_image and os.path.exists(self.background_image_path):
-            try:
-                os.remove(self.background_image_path)
-            except OSError as e:
-                logger.error('Could not delete file: %s. Error was: %s' % (
-                    self.background_image, e))
+        If one already exists, it will be removed.
 
-        # Save the background image.
-        self.background_image = 'background_image_%s.png' % util.get_runtime()
-        self.output_map.draw_background()
-        self.output_map.save_background(self.background_image_path)
+        This method updates the model's `changed_at` value and writes the
+        background image for the current map.
+        """
+        if not self.map:
+            raise ValueError('Cannot setup a renderer if the model lacks a map')
+
+        if self.renderer:
+            self.outputters.remove(self.renderer.id)
+
+        # TODO: Should size be configurable?
+        self.renderer = WebRenderer(self.map.filename, self.data_dir,
+                                    size=(800, 600))
+
+        self.outputters += self.renderer
+
+        # This will set a new background_map_name for the renderer using the
+        # model's current `changed_at` value for an image URL cache-buster.
+        self.mark_changed()
 
     def remove_map(self):
         self.map = None
-        self.background_image = None
         self.output_map = None
         self.rewind()
+
+    def rewind(self):
+        """
+        Rewind the model.
+
+        Reset WebGnome-specific caches, set the background image name with a
+        cache-buster value and call Model.rewind().
+        """
+        self.mark_changed()
+        self.timestamps = self.get_timestamps()
+        self.time_steps = []
+
+        return super(WebModel, self).rewind()
+
+    def get_timestamps(self):
+        """
+        Get the expected timestamps for a model run.
+        """
+        timestamps = []
+
+        # XXX: Why is _num_time_steps a float? Is this ok?
+        for step_num in range(int(self._num_time_steps)):
+            if step_num == 0:
+                dt = self.start_time
+            else:
+                delta = datetime.timedelta(
+                    seconds=step_num * self.time_step)
+                dt = self.start_time + delta
+            timestamps.append(dt)
+
+        return timestamps
 
     def build_subtree(self, data, objs, keys):
         """
