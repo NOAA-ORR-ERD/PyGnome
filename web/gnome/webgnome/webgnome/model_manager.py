@@ -66,8 +66,6 @@ class WebWind(BaseWebObject, Wind):
         ('nws', 'NWS Wind Data'),
         ('buoy', 'Buoy Station ID'),
     )
-    state = copy.deepcopy(Wind.state)
-    state.add(create=['id'])
 
     @property
     def timeseries(self):
