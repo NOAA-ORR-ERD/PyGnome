@@ -9,7 +9,6 @@ class Field(object):#,serializable.Serializable):
     """
     Class containing information about the property to be serialized
     """
-    _attr = ['isdatafile','update','create','read']
     def __init__(self, name, isdatafile=False, update=False, create=False, read=False):
         self.name = name
         self.isdatafile = isdatafile
@@ -26,10 +25,7 @@ class Field(object):#,serializable.Serializable):
         self.update == other.update and self.read == other.read:
             return True
     
-    def __repr__(self):
-        """ unambiguous object representation """
-        return "Field(name={0.name},update={0.update},create={0.create},read={0.read},isdatafile={0.isdatafile})".format(self)
-    
+
     def __repr__(self):
         """ unambiguous object representation """
         return "Field(name={0.name},update={0.update},create={0.create},read={0.read},isdatafile={0.isdatafile})".format(self)

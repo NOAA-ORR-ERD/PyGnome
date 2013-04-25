@@ -8,6 +8,7 @@ import copy
 
 from gnome.utilities.serializable import State, Field
 
+""" State object tests """
 update = ['test0','test1', 'test2']
 read = ['read']
 create = ['create']
@@ -149,3 +150,15 @@ def test_state_get_names():
     assert state.get_names('read').sort() == read.sort()
     assert state.get_names('update').sort() == update.sort()
     assert state.get_names('create').sort() == create.sort()
+
+""" Field object tests """
+def test_field_eq():
+    assert Field('test') == Field('test')
+    assert Field('test') != Field('test',isdatafile=True)   # all fields must match for equality
+    
+def test_repr_str():
+    repr(Field('test'))
+    str(Field('test'))
+    assert True
+    
+    
