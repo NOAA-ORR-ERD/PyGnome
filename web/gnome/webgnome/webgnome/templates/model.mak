@@ -90,6 +90,7 @@
                     <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
                 </div>
                 <div class="btn-group">
+                    <a class="btn disabled" id="hand-button" href="javascript:"><i class="icon-hand-up"></i></a>
                     <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
                     <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
                     <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>

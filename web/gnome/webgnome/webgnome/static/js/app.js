@@ -1,4 +1,3 @@
-
 define([
     'jquery',
     'lib/underscore',
@@ -9,7 +8,6 @@ define([
     'views',
     'util',
 ], function($, _, Backbone, Mousetrap, models, forms, views, util) {
-
      /*
      `AppView` acts as a controller, listening to delegate views and models for
      events and coordinating state changes.
@@ -78,7 +76,8 @@ define([
 
             this.mapControlView = new views.MapControlView({
                 sliderEl: "#slider",
-                sliderShadedEl: '#slider-shaded',
+                sliderShadedEl: "#slider-shaded",
+                handButtonEl: "#hand-button",
                 playButtonEl: "#play-button",
                 pauseButtonEl: "#pause-button",
                 backButtonEl: "#back-button",

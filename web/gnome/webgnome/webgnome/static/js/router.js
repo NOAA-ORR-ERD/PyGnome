@@ -1,9 +1,8 @@
 define([
     'lib/underscore',
     'lib/backbone',
-    'views',
-    'app_view'
-], function(_, Backbone, views, app_view) {
+    'app',
+], function(_, Backbone, app) {
 
     var Router = Backbone.Router.extend({
         routes: {
@@ -17,7 +16,7 @@ define([
         initialize: function(options) {
             this.newModel = options.newModel;
             options.appOptions.router = this;
-            this.appView = new app_view.AppView(options.appOptions);
+            this.appView = new app.AppView(options.appOptions);
         },
 
         index: function() {
