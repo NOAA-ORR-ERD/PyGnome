@@ -4,10 +4,9 @@ define([
     'lib/backbone',
     'lib/mousetrap',
     'models',
-    'forms',
-    'views',
+    'views/all',
     'util',
-], function($, _, Backbone, Mousetrap, models, forms, views, util) {
+], function($, _, Backbone, Mousetrap, models, views, util) {
      /*
      `AppView` acts as a controller, listening to delegate views and models for
      events and coordinating state changes.
@@ -17,6 +16,8 @@ define([
      specific model (or another view) and handle updating themselves without
      assistance from `AppView`.
      */
+    var forms = views.forms;
+
     var AppView = Backbone.View.extend({
         initialize: function() {
             _.bindAll(this);

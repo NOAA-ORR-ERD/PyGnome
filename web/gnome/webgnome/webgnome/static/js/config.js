@@ -10,9 +10,6 @@ requirejs.config({
     },
     shim: {
         'map_generator': ['jquery'],
-        'lib/gmaps-amd': {
-            exports: "google"
-        },
         'lib/jquery.dynatree': ['lib/jquery.ui', 'lib/jquery.cookie'],
         'lib/underscore': {
             exports: "_"

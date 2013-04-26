@@ -3,7 +3,7 @@ define([
     'lib/underscore',
     'lib/backbone',
     'lib/jquery.imagesloaded.min',
-    'async!http://maps.googleapis.com/maps/api/js?key=AIzaSyATcDk4cEYobGp9mq75DeZKaEdeppPnSlk&sensor=false&libraries=drawing'
+    'lib/gmaps'
 ], function($, _, Backbone) {
     var LocationFileMapView = Backbone.View.extend({
         events: {
