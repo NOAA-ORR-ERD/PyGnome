@@ -54,10 +54,11 @@ define([
             });
 
             this.controls = this.animationControls.concat(this.mapControls);
-            this.status = MapControlView.STATUS_STOPPED;
 
-            $(this.pauseButtonEl).hide();
-            $(this.resizeButtonEl).hide();
+            this.state = this.options.state;
+            this.listenTo(this.state, 'change:animation', this.renderAnimationControls);
+            this.listenTo(this.state, 'change:cursor', this.renderCursorControls);
+            this.listenTo(this.state, 'change:fullscreen', this.renderFullscreenControls);
 
             $(this.sliderEl).slider({
                 start: this.sliderStarted,
@@ -71,6 +72,7 @@ define([
                 this.enableControls();
             }
 
+            this.setPaused();
             this.setupClickEvents();
             this.updateCachedPercentage();
 
@@ -81,6 +83,51 @@ define([
             this.gnomeRun.on(models.GnomeRun.CREATED, this.modelCreated);
 
             this.options.mapView.on(map.MapView.FRAME_CHANGED, this.mapViewFrameChanged);
+        },
+
+        renderAnimationControls: function(animationState) {
+            switch (animationState) {
+                case models.AnimationState.STOPPED:
+                    this.setStopped();
+                    break;
+                case models.AnimationState.PLAYING:
+                    this.setPlaying();
+                    break;
+                case models.AnimationState.PAUSED:
+                    this.setPaused();
+                    break;
+            }
+        },
+
+        renderCursorControls: function(cursorState) {
+            switch(cursorState) {
+                case models.CursorState.ZOOMING_IN:
+                    this.setZoomingIn();
+                    break;
+                case models.CursorState.ZOOMING_OUT:
+                    this.setZoomingOut();
+                    break;
+                case models.CursorState.RESTING:
+                    this.setResting();
+                    break;
+                case models.CursorState.MOVING:
+                    this.setMoving();
+                    break;
+                case models.CursorState.DRAWING_SPILL:
+                    this.setDrawingSpill();
+                    break;
+            }
+        },
+
+        renderFullscreenControls: function(fullscreenState) {
+            switch (fullscreenState) {
+                case models.FullscreenState.DISABLED:
+                    this.switchToNormalScreen();
+                    break;
+                case models.FullscreenState.ENABLED:
+                    this.switchToFullscreen();
+                    break;
+            }
         },
 
         setupClickEvents: function() {
@@ -163,18 +210,13 @@ define([
             this.setTime(timeStep.get('timestamp'));
         },
 
-        stop: function() {
-            this.setStopped();
-            this.enableControls();
-        },
-
         gnomeRunError: function() {
-            this.stop();
+            this.disableControls();
         },
 
         gnomeRunFinished: function() {
             this.disableControls();
-            this.stop();
+            this.enableControls(this.playButtonEl);
         },
 
         modelCreated: function() {
@@ -182,37 +224,43 @@ define([
         },
 
         setStopped: function() {
-            this.status = MapControlView.STATUS_STOPPED;
             $(this.pauseButtonEl).hide();
             $(this.playButtonEl).show();
+            this.enableControls();
         },
 
         setPlaying: function() {
-            this.status = MapControlView.STATUS_PLAYING;
-            $(this.pauseButtonEl).show();
             $(this.playButtonEl).hide();
+            $(this.pauseButtonEl).show();
+            this.disableControls();
+            this.enableControls(this.pauseButtonEl);
         },
 
         setPaused: function() {
-            this.status = MapControlView.STATUS_PAUSED;
             $(this.pauseButtonEl).hide();
             $(this.playButtonEl).show();
-        },
-
-        setForward: function() {
-            this.status = MapControlView.STATUS_FORWARD;
-        },
-
-        setBack: function() {
-            this.status = MapControlView.STATUS_BACK;
+            this.enableControls();
         },
 
         setZoomingIn: function() {
-            this.status = MapControlView.STATUS_ZOOMING_IN;
+
         },
 
         setZoomingOut: function() {
-            this.status = MapControlView.STATUS_ZOOMING_OUT;
+            this.deactivateControl();
+            this.activateControl(this.zoomInButtonEl);
+        },
+
+        setResting: function() {
+
+        },
+
+        setMoving: function() {
+
+        },
+
+        setDrawingSpill: function() {
+
         },
 
         setTimeStep: function(stepNum) {
@@ -235,34 +283,6 @@ define([
         switchToNormalScreen: function() {
             $(this.resizeButtonEl).hide();
             $(this.fullscreenButtonEl).show();
-        },
-
-        isPlaying: function() {
-            return this.status === MapControlView.STATUS_PLAYING;
-        },
-
-        isStopped: function() {
-            return this.status === MapControlView.STATUS_STOPPED;
-        },
-
-        isPaused: function() {
-            return this.status === MapControlView.STATUS_PAUSED;
-        },
-
-        isForward: function() {
-            return this.status === MapControlView.STATUS_PLAYING;
-        },
-
-        isBack: function() {
-            return this.status === MapControlView.STATUS_BACK;
-        },
-
-        isZoomingIn: function() {
-            return this.status === MapControlView.STATUS_ZOOMING_IN;
-        },
-
-        isZoomingOut: function() {
-            return this.status === MapControlView.STATUS_ZOOMING_OUT;
         },
 
         // Toggle the slider. `toggleOn` should be either `MapControlView.ON`
@@ -323,6 +343,38 @@ define([
             this.toggleControls(controls, MapControlView.OFF);
         },
 
+        toggleControlClass: function(controls, cls, toggle) {
+            if (controls === undefined) {
+                controls = this.mapControls;
+            }
+
+            function doToggle(control) {
+                control = $(control);
+                if (toggle === this.OFF) {
+                    control.removeClass(cls);
+                } else {
+                    control.addClass(cls);
+                }
+            }
+
+            if (controls && controls.length) {
+                for (var i = 0; i < controls.length; i++) {
+                    doToggle(controls[i])
+                }
+                return;
+            }
+
+            doToggle(controls);
+        },
+
+        activateControl: function(control) {
+            this.toggleControlClass(control, 'active', this.ON);
+        },
+
+        deactivateControl: function(control) {
+            this.toggleControlClass(control, 'active', this.OFF);
+        },
+
         getTimeStep: function() {
             $(this.sliderEl).slider('value');
         },
@@ -334,7 +386,6 @@ define([
         reset: function() {
             this.setTime('00:00');
             this.disableControls();
-            this.setStopped();
             this.setTimeStep(0);
             $(this.sliderEl).slider('values', null);
             this.enableControls([this.playButtonEl]);
@@ -357,16 +408,7 @@ define([
         RESIZE_BUTTON_CLICKED: "mapControlView:resizeButtonClicked",
         SPILL_BUTTON_CLICKED: "mapControllView:spillButtonClicked",
         SLIDER_CHANGED: "mapControlView:sliderChanged",
-        SLIDER_MOVED: "mapControlView:sliderMoved",
-
-        // Status constants
-        STATUS_STOPPED: 0,
-        STATUS_PLAYING: 1,
-        STATUS_PAUSED: 2,
-        STATUS_BACK: 3,
-        STATUS_FORWARD: 4,
-        STATUS_ZOOMING_IN: 5,
-        STATUS_ZOOMING_OUT: 6
+        SLIDER_MOVED: "mapControlView:sliderMoved"
     });
 
     return {

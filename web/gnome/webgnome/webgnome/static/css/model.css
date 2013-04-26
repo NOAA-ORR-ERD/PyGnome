@@ -74,8 +74,16 @@ ul.dynatree-container {
     cursor: url(/static/img/zoom_out.cur), auto;
 }
 
+.moving {
+    cursor: move;
+}
+
 .regular {
     cursor: default;
+}
+
+.spill {
+    cursor: crosshair;
 }
 
 legend {

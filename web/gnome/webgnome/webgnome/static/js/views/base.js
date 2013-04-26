@@ -10,6 +10,8 @@ define([
      Includes helper methods for getting elements within the view's `el`
      and constructing moment objects from dates spread across multiple form
      elements.
+
+     Right now this is mostly used only in views/forms prototypes.
      */
     var BaseView = Backbone.View.extend({
         initialize: function() {

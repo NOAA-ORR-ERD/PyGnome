@@ -29,7 +29,11 @@ define([
             this.canDrawSpill = false;
 
             this.makeImagesClickable();
-            this.status = MapView.STOPPED;
+
+            this.state = this.options.state;
+            this.listenTo(this.state, 'change:animation', this.animationStateChanged);
+            this.listenTo(this.state, 'change:cursor', this.cursorStateChanged);
+
             this.map = $(this.mapEl);
 
             this.gnomeRun = this.options.gnomeRun;
@@ -51,6 +55,45 @@ define([
             if (this.gnomeRun.hasCachedTimeStep(this.gnomeRun.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
             }
+
+            this.cursorClasses = ['zooming-in', 'zooming-out', 'moving', 'spill'];
+        },
+
+        animationStateChanged: function(animationState) {
+            switch (animationState) {
+                case this.state.animation.STOPPED:
+//                    this.setStopped();
+                    break;
+                case this.state.animation.PLAYING:
+//                    this.setPlaying();
+                    break;
+                case this.state.animation.PAUSED:
+//                    this.setPaused();
+                    break;
+            }
+        },
+
+        cursorStateChanged: function(cursorState) {
+            switch(cursorState) {
+                case models.CursorState.ZOOMING_IN:
+                    this.makeActiveImageClickable();
+                    this.makeActiveImageSelectable();
+                    this.setZoomingInCursor();
+                    break;
+                case models.CursorState.ZOOMING_OUT:
+                    this.makeActiveImageClickable();
+                    this.setZoomingOutCursor();
+                    break;
+                case models.CursorState.RESTING:
+                    this.setRegularCursor();
+                    break;
+                case models.CursorState.MOVING:
+                    this.setMovingCursor();
+                    break;
+                case models.CursorState.DRAWING_SPILL:
+                    this.setDrawingSpill();
+                    break;
+            }
         },
 
         show: function() {
@@ -65,30 +108,6 @@ define([
             } else {
                 this.showPlaceholder();
             }
-        },
-
-        isPaused: function() {
-            return this.status === MapView.PAUSED;
-        },
-
-        isStopped: function() {
-            return this.status === MapView.STOPPED;
-        },
-
-        isPlaying: function() {
-            return this.status === MapView.PLAYING;
-        },
-
-        setPaused: function() {
-            this.status = MapView.PAUSED;
-        },
-
-        setStopped: function() {
-            this.status = MapView.STOPPED;
-        },
-
-        setPlaying: function() {
-            this.status = MapView.PLAYING;
         },
 
         showPlaceholder: function() {
@@ -274,7 +293,15 @@ define([
             ];
         },
 
+        removeCursorClasses: function() {
+            for (var i = 0; i < this.cursorClasses.length; i++) {
+                var cls = this.cursorClasses[i];
+                $(this.mapEl).removeClass(cls);
+            }
+        },
+
         setZoomingInCursor: function() {
+            this.removeCursorClasses();
             $(this.mapEl).addClass('zooming-in');
         },
 
@@ -283,8 +310,18 @@ define([
         },
 
         setRegularCursor: function() {
-            $(this.mapEl).removeClass('zooming-out');
-            $(this.mapEl).removeClass('zooming-in');
+            this.removeCursorClasses();
+            $(this.mapEl).addClass('regular');
+        },
+
+        setMovingCursor: function() {
+            this.removeCursorClasses();
+            $(this.mapEl).addClass('moving');
+        },
+
+        setSpillCursor: function() {
+            this.removeCursorClasses();
+            $(this.mapEl).addClass('spill');
         },
 
         getRect: function(rect) {
@@ -545,17 +582,16 @@ define([
         },
 
         gnomeRunError: function() {
-            this.setStopped();
+            this.state.animation.setStopped();
         },
 
         gnomeRunFinished: function() {
-            this.setStopped();
+            this.state.animation.setStopped();
         },
 
         reset: function() {
             this.clear({clearBackground: true});
             this.setBackground();
-            this.setStopped();
         },
 
         pixelsFromCoordinates: function(point) {
@@ -606,11 +642,6 @@ define([
             return {lat: lat, long: lng};
         }
     }, {
-        // Statuse constants
-        PAUSED: 1,
-        STOPPED: 2,
-        PLAYING: 3,
-
         // Event constants
         DRAGGING_FINISHED: 'mapView:draggingFinished',
         REFRESH_FINISHED: 'mapView:refreshFinished',

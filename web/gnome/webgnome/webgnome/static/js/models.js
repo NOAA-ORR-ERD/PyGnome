@@ -586,7 +586,7 @@ define([
                 }];
             }
 
-            if (response.errors.length) {
+            if (response && response.errors.length) {
                 model.errors = response.errors;
                 model.set(model.previousAttributes());
             }
@@ -718,8 +718,7 @@ define([
 
         comparator: function(spill) {
             return moment(spill.get('release_time')).valueOf();
-        },
-
+        }
     });
 
 
@@ -872,7 +871,7 @@ define([
                 new google.maps.LatLng(bounds.ne[0], bounds.sw[1])
             );
             return latLngBounds.getCenter();
-        },
+        }
     });
 
 
@@ -958,6 +957,107 @@ define([
     var LocationFileValidator = LocationFile.extend({
         url: '/validate/location_file'
     });
+    
+    
+    function makeSetter(state) {
+        return function() {
+            this.set('state', state);
+        }
+    }
+    
+    function makeChecker(state) {
+        return function() {
+            return this.get('state') === state;
+        }
+    }
+
+
+    var StateMachine = Backbone.Model.extend({
+        initialize: function() {
+            this.set('state', this.defaultState);
+        }
+    });
+
+
+    var AnimationState = StateMachine.extend({}, {
+        STOPPED: 0,
+        PLAYING: 1,
+        PAUSED: 2
+    });
+    
+    AnimationState = AnimationState.extend({
+        defaultState: AnimationState.STOPPED,
+
+        setStopped: makeSetter(AnimationState.STOPPED),
+        setPlaying: makeSetter(AnimationState.PLAYING),
+        setPaused: makeSetter(AnimationState.PAUSED),
+
+        isStopped: makeChecker(AnimationState.STOPPED),
+        isPlaying: makeChecker(AnimationState.PLAYING),
+        isPaused: makeChecker(AnimationState.PAUSED)       
+    });
+
+
+    var CursorState = StateMachine.extend({}, {
+        RESTING: 0,
+        ZOOMING_IN: 1,
+        ZOOMING_OUT: 2,
+        MOVING: 3,
+        DRAWING_SPILL: 4
+    });
+    
+    CursorState = CursorState.extend({
+        defaultState: CursorState.RESTING,
+
+        setZoomingIn: makeSetter(CursorState.ZOOMING_IN),
+        setZoomingOut: makeSetter(CursorState.ZOOMING_OUT),
+        setResting: makeSetter(CursorState.RESTING),
+        setMoving: makeSetter(CursorState.MOVING),
+        setDrawingSpill: makeSetter(CursorState.DRAWING_SPILL),
+
+        isZoomingIn: makeChecker(CursorState.ZOOMING_IN),
+        isZoomingOut: makeChecker(CursorState.ZOOMING_OUT),
+        isResting: makeChecker(CursorState.RESTING),
+        isMoving: makeChecker(CursorState.MOVING),
+        isDrawingSpill: makeChecker(CursorState.DRAWING_SPILL)
+    });
+
+
+    var FullscreenState = StateMachine.extend({}, {
+        DISABLED: 0,
+        ENABLED: 1
+    });
+
+    FullscreenState = FullscreenState.extend({
+        defaultState: FullscreenState.DISABLED,
+
+        setEnabled: makeSetter(FullscreenState.ENABLED),
+        setDisabled: makeSetter(FullscreenState.DISABLED),
+
+        isEnabled: makeChecker(FullscreenState.ENABLED),
+        isDisabled: makeChecker(FullscreenState.DISABLED)
+    });
+
+
+    var AppState = Backbone.Model.extend({
+        initialize: function() {
+            this.animation = new AnimationState();
+            this.cursor = new CursorState();
+            this.fullscreen = new FullscreenState();
+
+            this.listenTo(this.animation, 'change', function(obj) {
+                this.trigger('change:animation', obj.get('state'));
+            });
+
+            this.listenTo(this.animation, 'change', function(obj) {
+                this.trigger('change:cursor', obj.get('state'));
+            });
+
+            this.listenTo(this.fullscreen, 'change', function(obj) {
+                this.trigger('change:fullscreen', obj.get('state'));
+            });
+        }
+    });
 
 
     function nwsWindError(resp) {
@@ -1023,7 +1123,11 @@ define([
         MapValidator: MapValidator,
         CustomMapValidator: CustomMapValidator,
         LocationFileValidator: LocationFileValidator,
-        getNwsWind: getNwsWind
+        getNwsWind: getNwsWind,
+        AppState: AppState,
+        AnimationState: AnimationState,
+        CursorState: CursorState,
+        FullscreenState: FullscreenState
     };
 
 });

@@ -72,7 +72,8 @@ define([
                 gnomeRun: this.gnomeRun,
                 model: this.map,
                 animationThreshold: this.options.animationThreshold,
-                newModel: this.options.newModel
+                newModel: this.options.newModel,
+                state: this.state
             });
 
             this.mapControlView = new views.MapControlView({
@@ -92,7 +93,8 @@ define([
                 timeEl: "#time",
                 gnomeRun: this.gnomeRun,
                 mapView: this.mapView,
-                model: this.map
+                model: this.map,
+                state: this.state
             });
 
             this.messageView = new views.MessageView({
@@ -197,7 +199,7 @@ define([
                 location_name: locationName.get('filename')
             }, {
                 gnomeModel: this.gnomeModel
-            })
+            });
 
             model.save().then(function() {
                 util.refresh();
@@ -222,7 +224,7 @@ define([
             var _this = this;
 
             Mousetrap.bind('space', function() {
-                if (_this.mapControlView.isPlaying()) {
+                if (_this.state.isPlaying()) {
                     _this.pause();
                 } else {
                     _this.play({});
@@ -448,6 +450,8 @@ define([
             // Setup model defaults and schema validators.
             models.init(this.options);
 
+            this.state = new models.AppState();
+
             this.gnomeModel = new models.GnomeModel(this.options.gnomeSettings);
 
             // Initialize the model with any previously-generated time step data the
@@ -515,6 +519,7 @@ define([
         },
 
         gnomeRunError: function() {
+            this.state.animation.setStopped();
             this.messageView.displayMessage({
                 type: 'error',
                 text: 'Model run failed.'
@@ -550,10 +555,7 @@ define([
                 return;
             }
 
-            this.mapControlView.disableControls();
-            this.mapControlView.enableControls([this.mapControlView.pauseButtonEl]);
-            this.mapControlView.setPlaying();
-            this.mapView.setPlaying();
+            this.state.animation.setPlaying();
 
             if (this.gnomeRun.isOnLastTimeStep()) {
                 this.gnomeRun.rewind();
@@ -571,10 +573,7 @@ define([
                 return;
             }
 
-            this.mapControlView.setZoomingIn();
-            this.mapView.makeActiveImageClickable();
-            this.mapView.makeActiveImageSelectable();
-            this.mapView.setZoomingInCursor();
+            this.state.setZoomingIn();
         },
 
         enableZoomOut: function() {
@@ -582,9 +581,7 @@ define([
                 return;
             }
 
-            this.mapControlView.setZoomingOut();
-            this.mapView.makeActiveImageClickable();
-            this.mapView.setZoomingOutCursor();
+            this.state.animation.setZoomingOut();
         },
 
         stopAnimation: function() {
@@ -592,8 +589,7 @@ define([
         },
 
         zoomIn: function(startPosition, endPosition) {
-            this.mapView.setPaused();
-            this.mapControlView.setPaused();
+            this.state.animation.setPaused();
             this.gnomeRun.rewind();
 
             if (endPosition) {
@@ -616,17 +612,14 @@ define([
         },
 
         zoomOut: function(point) {
+            this.state.animation.setPaused();
             this.gnomeRun.rewind();
-            this.mapView.setPaused();
-            this.mapControlView.setPaused();
             this.gnomeRun.zoomFromPoint(point, models.GnomeRun.ZOOM_OUT);
             this.mapView.setRegularCursor();
         },
 
         pause: function() {
-            this.mapView.setPaused();
-            this.mapControlView.setPaused();
-            this.mapControlView.enableControls();
+            this.state.animation.setPaused();
         },
 
         /*
@@ -669,13 +662,14 @@ define([
         },
 
         frameChanged: function() {
-            if (this.mapView.isPaused() || this.mapView.isStopped()) {
+            if (this.state.animation.isPaused() || this.state.animation.isStopped()) {
                 return;
             }
             this.gnomeRun.getNextTimeStep();
         },
 
         reset: function() {
+            this.state.animation.setStopped();
             this.mapView.reset();
             this.gnomeRun.clearData();
             this.mapControlView.reset();
@@ -699,6 +693,7 @@ define([
         jumpToLastFrame: function() {
             var lastFrame = this.gnomeRun.length - 1;
             this.gnomeRun.setCurrentTimeStep(lastFrame);
+            this.state.animation.setPaused();
         },
 
         useFullscreen: function() {
