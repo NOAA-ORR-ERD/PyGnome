@@ -74,6 +74,11 @@ define([
         },
 
         cursorStateChanged: function(cursorState) {
+            this.removeCursorClasses();
+
+            // Unset ability to draw a spill on the map.
+            this.unsetSpillCursor();
+
             switch(cursorState) {
                 case models.CursorState.ZOOMING_IN:
                     this.makeActiveImageClickable();
@@ -91,7 +96,7 @@ define([
                     this.setMovingCursor();
                     break;
                 case models.CursorState.DRAWING_SPILL:
-                    this.setDrawingSpill();
+                    this.setSpillCursor();
                     break;
             }
         },
@@ -301,7 +306,6 @@ define([
         },
 
         setZoomingInCursor: function() {
-            this.removeCursorClasses();
             $(this.mapEl).addClass('zooming-in');
         },
 
@@ -310,18 +314,21 @@ define([
         },
 
         setRegularCursor: function() {
-            this.removeCursorClasses();
             $(this.mapEl).addClass('regular');
         },
 
         setMovingCursor: function() {
-            this.removeCursorClasses();
             $(this.mapEl).addClass('moving');
         },
 
         setSpillCursor: function() {
-            this.removeCursorClasses();
             $(this.mapEl).addClass('spill');
+            this.canDrawSpill = true;
+        },
+
+        unsetSpillCursor: function() {
+            $(this.mapEl).removeClass('spill');
+            this.canDrawSpill = false;
         },
 
         getRect: function(rect) {
@@ -527,7 +534,7 @@ define([
 
             // Event handlers to draw new spills
             this.foregroundCanvas.mousemove(function(ev) {
-                if (!this.pressed) {
+                if (!this.pressed || !_this.canDrawSpill) {
                     return;
                 }
                 this.moved = true;
@@ -548,6 +555,9 @@ define([
             });
 
             $(this.foregroundCanvas).mouseup(function(ev) {
+                if (!this.pressed || !_this.canDrawSpill) {
+                    return;
+                }
                 var canvas = _this.backgroundCanvas[0];
                 var ctx = canvas.getContext('2d');
                 var offset = $(this).offset();
