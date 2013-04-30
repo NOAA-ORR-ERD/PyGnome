@@ -81,7 +81,7 @@ class MapCanvas(object):
         :param projection_class: gnome.utilities.projections class to use. Default is gnome.utilities.projections.FlatEarthProjection
         :param map_BB:  map bounding box. Default is to use land_polygons.bounding_box. If land_polygons is None, then this is
                         the whole world, defined by ((-180,-90),(180, 90))
-        :param viewport: viewport of map -- what gets drawn and on what scale. Default is to set viewport = map_BB
+        ## :param viewport: viewport of map -- what gets drawn and on what scale. Default is to set viewport = map_BB
         :param image_mode: Image mode ('P' for palette or 'L' for Black and White image)
                            BW_MapCanvas inherits from MapCanvas and sets the mode to 'L'
                            Default image_mode is 'P'.
@@ -106,10 +106,10 @@ class MapCanvas(object):
         projection_class= kwargs.pop('projection_class', projections.FlatEarthProjection)
         self.projection = projection_class(self.map_BB, self.image_size) # BB will be re-set
         
-        self._viewport = kwargs.pop('viewport',None)
+        # self._viewport = kwargs.pop('viewport',None)
         
-        if self._viewport is None:
-            self.viewport = self.map_BB
+        # if self._viewport is None:
+        #     self.viewport = self.map_BB
         
         self._gnome_id = GnomeId(id=kwargs.pop('id',None))
 
@@ -141,8 +141,12 @@ class MapCanvas(object):
 
     @property
     def viewport(self):
-        """ returns the current value of viewport of map: what gets drawn and on what scale """
-        return self._viewport
+        """
+        returns the current value of viewport of map:
+          the bounding box of the image
+        """
+        return self.projection.to_lonlat( ( (0, self.image_size[1]),
+                                                      (self.image_size[0], 0 ) ) )
     
     @viewport.setter
     def viewport(self, viewport_BB):
@@ -153,7 +157,6 @@ class MapCanvas(object):
                             ( (min_long, min_lat),
                               (max_long, max_lat) )
         """
-        self._viewport = viewport_BB
         self.projection.set_scale(viewport_BB, self.image_size)
 
     @property

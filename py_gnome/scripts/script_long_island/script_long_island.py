@@ -82,6 +82,8 @@ def make_model(images_dir=os.path.join(base_dir,"images") ):
     model.movers += c_mover
     model.environment += c_mover.tide 
     
+    print "viewport is:", renderer.viewport
+    
     return model
 
 def post_run(model):
@@ -103,6 +105,7 @@ def post_run(model):
         image_info = renderer.write_output(step_num)
         print "image written:", image_info
 
+    print "viewport is:", renderer.viewport
 
 
 
