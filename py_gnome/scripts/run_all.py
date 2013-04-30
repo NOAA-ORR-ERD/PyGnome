@@ -10,31 +10,33 @@ import os
 
 import script_runner
 
-scripts = [#'script_boston/script_boston.py',
-           #'script_guam/script_guam.py',
+scripts = ['script_boston/script_boston.py',
+           'script_guam/script_guam.py',
            #'script_chesapeake_bay/script_chesapeake_bay.py',
            'script_long_island/script_long_island.py',
-           #'script_mississippi_river/script_lower_mississippi.py'
+           'script_mississippi_river/script_lower_mississippi.py'
            ]
 
 for script in scripts:
-    # run script
+    # run script and do post_run if it exists
     image_dir = os.path.join( os.path.dirname(script),'images')
     print image_dir
-    model,imp_script = script_runner.make_model(script, image_dir)
+    model,imp_script = script_runner.load_model(script, image_dir)
     script_runner.run(model)
-    script_runner.post_run(model, imp_script)
-    #torun = "./script_runner.py "+script 
-    #os.system(torun)
-    #
-    #print "\n completed : {0}\n".format(torun)
-    #
-    #tosave = "./script_runner.py --do=save "+script
-    #os.system(tosave)
-    #
-    #print "\n completed : {0}\n".format(tosave)
-    #
-    #run_from_save= "./script_runner.py     --do=run_from_save "+os.path.join(os.path.dirname(script),'save_model')
-    #os.system(run_from_save)
-    #
-    #print "\n completed : {0}\n".format(run_from_save)
+
+    print "\n completed model run for: {0}\n".format(script)
+    
+    if hasattr(imp_script, 'post_run'):
+        imp_script.post_run(model)
+        print "\n completed post model run for: {0}\n".format(script)
+    
+    # save model state
+    saveloc = os.path.join( os.path.dirname(script),'save_model')
+    script_runner.save(model, saveloc)
+    print "\n completed saving model state for: {0}\n".format(script) 
+    
+    try:
+        script_runner.run_from_save(saveloc)
+        print "\n completed loading and running saved model state from: {0}\n".format(saveloc)
+    except Exception as ex:
+        print ex

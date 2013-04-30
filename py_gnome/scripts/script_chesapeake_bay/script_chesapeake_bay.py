@@ -31,24 +31,17 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
                               uncertain = False,
                               )
     
-    print "adding the map"
-    
     mapfile = os.path.join( base_dir, './ChesapeakeBay.bna')
+    print "adding the map"
     model.map = gnome.map.MapFromBNA(mapfile,
                                      refloat_halflife=1*3600, #seconds
                                      )
     
-    ## the image output map
-    ## fixme: need an easier way to do this!
-    output_map = map_canvas.MapCanvasFromBNA((600, 800), mapfile)
-    model.output_map = output_map
+    renderer = gnome.renderer.Renderer(mapfile, images_dir, size=(800, 600))
+    renderer.viewport = ((-76.5, 37.25),(-75.8, 37.75))
     
-    ## reset the viewport of the ouput map
-    ## a bit kludgy, should there be a model API to do this ?
-    
-    ## bounding  box of viewport
-    output_map.viewport = ((-76.5, 37.25),(-75.8, 37.75))
-    
+    print "adding outputters"
+    model.outputters += renderer
     
     print "adding a spill"
     
