@@ -20,7 +20,7 @@ from gnome.utilities.file_tools import haz_files
 # define base directory
 base_dir = os.path.dirname(__file__)
 
-global renderer
+#global renderer
 
 def make_model(images_dir=os.path.join(base_dir,"images") ):
     print "initializing the model"
@@ -34,7 +34,7 @@ def make_model(images_dir=os.path.join(base_dir,"images") ):
                            )
 
     ## the image output renderer
-    global renderer
+    #global renderer
     renderer = gnome.renderer.Renderer(mapfile,
                                        images_dir,
                                        size=(800, 600))
@@ -82,6 +82,8 @@ def make_model(images_dir=os.path.join(base_dir,"images") ):
     model.movers += c_mover
     model.environment += c_mover.tide 
     
+    print "viewport is:", renderer.viewport
+    
     return model
 
 def post_run(model):
@@ -90,6 +92,12 @@ def post_run(model):
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
+    
+    for outputter in model.outputters:
+        if isinstance(outputter, gnome.renderer.Renderer):
+            renderer = model.outputters[outputter.id]
+            break
+    
     renderer.images_dir = images_dir
 
     print "re-rendering images"
@@ -103,6 +111,7 @@ def post_run(model):
         image_info = renderer.write_output(step_num)
         print "image written:", image_info
 
+    print "viewport is:", renderer.viewport
 
 
 

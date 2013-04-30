@@ -222,7 +222,7 @@ class GeoProjection(object):
         returns:  the pixel coords as a similar Nx2 array of floating point x,y coordinates
         (using the y = 0 at the top, and y increasing down)
          """
-        
+        coords = np.asarray(coords)
         if np.issubdtype(coords.dtype, int):
             # convert to float64:
             coords = coords.astype(np.float64)

@@ -31,7 +31,9 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
                                      refloat_halflife=1*3600, #seconds
                                      )
     
-    output_map = gnome.utilities.map_canvas.MapCanvasFromBNA((800,600),mapfile)
+    renderer = gnome.renderer.Renderer(mapfile,
+                                       images_dir,
+                                       size=(800, 600))
     
     
     print "initializing the model"
@@ -41,8 +43,10 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
                               start_time=start_time, # default to now, rounded to the nearest hour
                               duration=timedelta(days=1),
                               map=gnome_map,
-                              output_map=output_map,
                               uncertain=False,)
+    
+    print "adding outputters"
+    model.outputters += renderer
     
     print  "adding a RandomMover:"
     model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
