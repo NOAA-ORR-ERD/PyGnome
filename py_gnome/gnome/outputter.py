@@ -21,7 +21,7 @@ class Outputter(object):
     base class for all outputters
     """
 
-    def write_step(self, step_num):
+    def write_output(self, step_num):
         """
         called by the model at the end of each time step
 
