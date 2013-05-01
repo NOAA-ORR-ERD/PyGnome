@@ -55,9 +55,9 @@ void GridMap_c::Dispose()
 	if (fGrid)
 	{
 		fGrid -> Dispose();
-#ifndef pyGNOME
+//#ifndef pyGNOME
 		delete fGrid;
-#endif	
+//#endif	
 		fGrid = nil;
 	}
 	
