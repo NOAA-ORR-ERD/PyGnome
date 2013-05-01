@@ -53,10 +53,10 @@ TCATSMover::TCATSMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 	SetClassName (name);
 }
 
-
+// moved to catsmover_c
 void TCATSMover::Dispose ()
 {
-	if (fGrid)
+	/*if (fGrid)
 	{
 		fGrid -> Dispose();
 		delete fGrid;
@@ -66,7 +66,7 @@ void TCATSMover::Dispose ()
 	DeleteTimeDep ();
 	
 		
-	TCurrentMover::Dispose ();
+	TCurrentMover::Dispose ();*/
 }
 
 

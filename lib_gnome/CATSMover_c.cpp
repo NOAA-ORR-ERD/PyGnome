@@ -67,6 +67,23 @@ CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 }
 #endif
 
+void CATSMover_c::Dispose ()
+{
+	if (fGrid)
+	{
+		fGrid -> Dispose();
+#ifndef pyGNOME
+		delete fGrid;
+#endif
+		fGrid = nil;
+	}
+	
+	DeleteTimeDep ();
+	
+	
+	CurrentMover_c::Dispose ();
+}
+
 #ifdef pyGNOME
 
 OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time) {	// AH 08/08/2012
@@ -476,7 +493,9 @@ void CATSMover_c::DeleteTimeDep ()
 	if (timeDep)
 	{
 		timeDep -> Dispose ();
+#ifndef pyGNOME
 		delete timeDep;
+#endif
 		timeDep = nil;
 	}
 	
