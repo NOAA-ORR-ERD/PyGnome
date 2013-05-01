@@ -7,15 +7,19 @@ runs all scripts in here
 '''
 
 import os
+import glob
 
 import script_runner
 
-scripts = ['script_boston/script_boston.py',
-           'script_guam/script_guam.py',
-           #'script_chesapeake_bay/script_chesapeake_bay.py',
-           'script_long_island/script_long_island.py',
-           'script_mississippi_river/script_lower_mississippi.py'
-           ]
+#===============================================================================
+# scripts = ['script_boston/script_boston.py',
+#           'script_guam/script_guam.py',
+#           'script_chesapeake_bay/script_chesapeake_bay.py',
+#           'script_long_island/script_long_island.py',
+#           'script_mississippi_river/script_lower_mississippi.py'
+#           ]
+#===============================================================================
+scripts = glob.glob('script_*/script_*.py')
 
 for script in scripts:
     # run script and do post_run if it exists
