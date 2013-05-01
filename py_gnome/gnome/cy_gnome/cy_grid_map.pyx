@@ -14,7 +14,7 @@ cdef class CyGridMap:
     
     def __dealloc__(self):
         del self.map
-        self.map = NULL
+        #self.map = NULL
     
 
     def text_read(self, grid_map_file):
