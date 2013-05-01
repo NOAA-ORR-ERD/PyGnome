@@ -2,9 +2,11 @@
 
 
 <%block name="extra_head">
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.css"/>
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
 
+    <script src="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.js"></script>
     <script src="/static/js/require-jquery.js"></script>
     <script src="/static/js/config.js"></script>
 </%block>
@@ -110,7 +112,8 @@
                 </div>
             </div>
 
-            <div id="map"> </div>
+            <div id="leaflet-map" style="width: 800px; height: 600px"> </div>
+            <div id="map"></div>
             <div class="placeholder"></div>
         </div>
 
@@ -230,6 +233,7 @@
                 el: $('#app'),
                 modelId: "${model_id}",
                 map: ${map_data | n},
+                renderer: ${renderer_data | n},
                 gnomeSettings: ${model_settings | n},
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},

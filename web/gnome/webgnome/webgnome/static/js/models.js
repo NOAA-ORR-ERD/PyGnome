@@ -847,7 +847,7 @@ define([
         getLatLongBounds: function() {
             var bounds = this.get('map_bounds');
 
-            if (!bounds) {
+            if (!bounds.length) {
                 return;
             }
 
@@ -872,6 +872,25 @@ define([
             );
             return latLngBounds.getCenter();
         }
+    });
+
+
+    var Renderer = BaseModel.extend({
+        url: '/renderer',
+
+        // Viewport is stored as Long, Lat. Return then as Lat, Long.
+        getLatLongViewport: function() {
+            var viewport = this.get('viewport');
+
+            if (!viewport || !viewport.length) {
+                return;
+            }
+
+            return {
+                sw: [viewport[0][1], viewport[0][0]],
+                ne: [viewport[1][1], viewport[1][0]]
+            }
+        },
     });
 
 
@@ -1111,6 +1130,7 @@ define([
         RandomMover: RandomMover,
         RandomMoverCollection: RandomMoverCollection,
         Map: Map,
+        Renderer: Renderer,
         CustomMap: CustomMap,
         LocationFile: LocationFile,
         LocationFileMeta: LocationFileMeta,

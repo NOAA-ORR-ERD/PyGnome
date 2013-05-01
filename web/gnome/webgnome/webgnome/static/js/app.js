@@ -70,6 +70,7 @@ define([
                 frameClass: 'frame',
                 activeFrameClass: 'active',
                 gnomeRun: this.gnomeRun,
+                renderer: this.renderer,
                 model: this.map,
                 animationThreshold: this.options.animationThreshold,
                 newModel: this.options.newModel,
@@ -445,6 +446,17 @@ define([
             this.formViews.add(this.addCustomMapFormView);
         },
 
+        /*
+         Make a model with a default option set that includes `this.gnomeModel`.
+         */
+        make: function(prototype, attrs, opts) {
+            opts = $.extend({
+                gnomeModel: this.gnomeModel
+            }, opts);
+
+            return new prototype(attrs, opts);
+        },
+
         setupModels: function() {
             var _this = this;
 
@@ -452,60 +464,26 @@ define([
             models.init(this.options);
 
             this.state = new models.AppState();
-
             this.gnomeModel = new models.GnomeModel(this.options.gnomeSettings);
 
-            // Initialize the model with any previously-generated time step data the
+            // Initialize a GnomeRun with any previously-generated time step data the
             // server had available.
-            this.gnomeRun = new models.GnomeRun(this.options.generatedTimeSteps, {
+            this.gnomeRun = this.make(models.GnomeRun, this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
                 currentTimeStep: this.options.currentTimeStep,
-                bounds: this.options.mapBounds || [],
-                gnomeModel: this.gnomeModel
+                bounds: this.options.mapBounds || []
             });
-
-            this.map = new models.Map(this.options.map, {
-                gnomeModel: this.gnomeModel
-            });
-
-            this.customMap = new models.CustomMap({}, {
-                gnomeModel: this.gnomeModel
-            });
-
-            this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
-                this.options.surfaceReleaseSpills, {
-                    gnomeModel: this.gnomeModel
-                }
-            );
-
-            this.winds = new models.WindCollection(
-                this.options.winds, {
-                    gnomeModel: this.gnomeModel
-                }
-            );
-
-            this.windMovers = new models.WindMoverCollection(
-                this.options.windMovers, {
-                    gnomeModel: this.gnomeModel
-                }
-            );
-
-            this.randomMovers = new models.RandomMoverCollection(
-                this.options.randomMovers, {
-                    gnomeModel: this.gnomeModel
-                }
-            );
-
-            this.locationFilesMeta = new models.LocationFileMetaCollection(
-                this.options.locationFilesMeta, {
-                    gnomeModel: this.gnomeModel
-                }
-            );
-
-            this.locationFileWizards = new models.LocationFileWizardCollection([], {
-                gnomeModel: this.gnomeModel
-            });
+            this.map = this.make(models.Map, this.options.map);
+            this.renderer = this.make(models.Renderer, this.options.renderer);
+            this.customMap = this.make(models.CustomMap, {});
+            this.surfaceReleaseSpills = this.make(
+                models.SurfaceReleaseSpillCollection, this.options.surfaceReleaseSpills);
+            this.winds = this.make(models.WindCollection, this.options.winds);
+            this.windMovers = this.make(models.WindMoverCollection, this.options.windMovers);
+            this.randomMovers = this.make(models.RandomMoverCollection, this.options.randomMovers);
+            this.locationFilesMeta = this.make(models.LocationFileMetaCollection, this.options.locationFilesMeta);
+            this.locationFileWizards = this.make(models.LocationFileWizardCollection, []);
 
             // Create a LocationFileWizard for every LocationFile
             this.locationFilesMeta.each(function(location) {

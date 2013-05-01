@@ -26,6 +26,7 @@ define([
             this.latLongBounds = this.options.latLongBounds;
             this.animationThreshold = this.options.animationThreshold;
             this.locationFilesMeta = this.options.locationFilesMeta;
+            this.renderer = this.options.renderer;
             this.canDrawSpill = false;
 
             this.makeImagesClickable();
@@ -57,6 +58,26 @@ define([
             }
 
             this.cursorClasses = ['zooming-in', 'zooming-out', 'moving', 'spill'];
+            var viewport = this.getViewport();
+
+            if (viewport) {
+                viewport = new L.LatLngBounds([viewport.sw, viewport.ne]);
+                var center = viewport.getCenter();
+                this.leafletMap = L.map('leaflet-map', {
+                    crs: L.CRS.Simple
+                }).setView(center, 11);
+            }
+        },
+
+        getViewport: function() {
+            var mapBounds = this.model.getLatLongBounds();
+            var viewport = this.renderer.getLatLongViewport();
+
+            if (viewport) {
+                return viewport;
+            } else {
+                return mapBounds;
+            }
         },
 
         animationStateChanged: function(animationState) {
@@ -73,21 +94,28 @@ define([
             }
         },
 
-        cursorStateChanged: function(cursorState) {
-            this.removeCursorClasses();
-
+        resetCursorState: function() {
             // Unset ability to draw a spill on the map.
             this.unsetSpillCursor();
+            this.allowZoomingOut = false;
+            this.allowZoomingIn = false;
+        },
+
+        cursorStateChanged: function(cursorState) {
+            this.removeCursorClasses();
+            this.resetCursorState();
 
             switch(cursorState) {
                 case models.CursorState.ZOOMING_IN:
                     this.makeActiveImageClickable();
                     this.makeActiveImageSelectable();
                     this.setZoomingInCursor();
+                    this.allowZoomingIn = true;
                     break;
                 case models.CursorState.ZOOMING_OUT:
                     this.makeActiveImageClickable();
                     this.setZoomingOutCursor();
+                    this.allowZoomingOut = true;
                     break;
                 case models.CursorState.RESTING:
                     this.setRegularCursor();
@@ -103,6 +131,16 @@ define([
 
         show: function() {
             this.setBackground();
+        },
+
+        zoom: function(evt) {
+            if (this.allowZoomingIn) {
+                evt.stopPropagation();
+                this.zoomIn(evt);
+            } else if (this.allowZoomingOut) {
+                evt.stopPropagation();
+                this.zoomOut(evt);
+            }
         },
 
         setBackground: function() {
@@ -405,6 +443,14 @@ define([
             });
 
             background.appendTo(map);
+
+            if (this.backgroundOverlay) {
+                this.leafletMap.removeLayer(this.backgroundOverlay);
+            }
+
+            var viewport = this.getViewport();
+            this.backgroundOverlay = L.imageOverlay(url, [viewport.sw, viewport.ne]);
+            this.backgroundOverlay.addTo(this.leafletMap);
         },
 
         drawLine: function(ctx, start_x, start_y, end_x, end_y) {
