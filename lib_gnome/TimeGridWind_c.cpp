@@ -63,6 +63,11 @@ TimeGridWindRect_c::TimeGridWindRect_c() : TimeGridVel_c()
 	
 }
 
+void TimeGridWindRect_c::Dispose()
+{
+	TimeGridVel_c::Dispose ();
+}
+
 
 VelocityRec TimeGridWindRect_c::GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint)
 {	// pull out the getpatval part
@@ -518,6 +523,14 @@ TimeGridWindCurv_c::TimeGridWindCurv_c () : TimeGridWindRect_c()
 {
 	fVerdatToNetCDFH = 0;	
 	fVertexPtsH = 0;
+}
+
+void TimeGridWindCurv_c::Dispose ()
+{
+	if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
+	if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
+	
+	TimeGridWindRect_c::Dispose ();
 }
 
 long TimeGridWindCurv_c::GetVelocityIndex(WorldPoint wp)

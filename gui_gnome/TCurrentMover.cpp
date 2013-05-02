@@ -35,13 +35,13 @@ TCurrentMover::TCurrentMover (TMap *owner, char *name) : TMover(owner, name)
 	bIAmA3DMover = false;
 }
 // moved to currentmover_c
-void TCurrentMover::Dispose ()
+/*void TCurrentMover::Dispose ()
 {
 	
 	//this->DisposeUncertainty();
 	
 	//TMover::Dispose ();
-}
+}*/
 
 
 

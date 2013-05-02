@@ -54,9 +54,9 @@ TCATSMover::TCATSMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 }
 
 // moved to catsmover_c
-void TCATSMover::Dispose ()
+/*void TCATSMover::Dispose ()
 {
-	/*if (fGrid)
+	if (fGrid)
 	{
 		fGrid -> Dispose();
 		delete fGrid;
@@ -66,8 +66,8 @@ void TCATSMover::Dispose ()
 	DeleteTimeDep ();
 	
 		
-	TCurrentMover::Dispose ();*/
-}
+	TCurrentMover::Dispose ();
+}*/
 
 
 CATSDialogNonPtrFields GetCATSDialogNonPtrFields(TCATSMover	* cm)

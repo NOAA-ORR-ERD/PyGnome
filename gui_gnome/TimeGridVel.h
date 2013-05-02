@@ -13,7 +13,7 @@ class TimeGridVel : virtual public TimeGridVel_c
 public:
 						TimeGridVel();
 						~TimeGridVel () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -33,7 +33,7 @@ public:
 
 	TimeGridVelRect();
 	~TimeGridVelRect () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -50,7 +50,7 @@ class TimeGridVelCurv : virtual public TimeGridVelCurv_c, public TimeGridVelRect
 public:
 						TimeGridVelCurv();
 						~TimeGridVelCurv () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -70,7 +70,7 @@ class TimeGridVelTri : virtual public TimeGridVelTri_c, public TimeGridVelCurv
 public:
 						TimeGridVelTri();
 						~TimeGridVelTri () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -92,7 +92,7 @@ public:
 	
 	TimeGridCurRect();
 	~TimeGridCurRect () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -111,7 +111,7 @@ public:
 	
 	TimeGridCurTri();
 	~TimeGridCurTri () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -129,7 +129,7 @@ public:
 
 	TimeGridWindRect();
 	~TimeGridWindRect () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -146,7 +146,7 @@ class TimeGridWindCurv : virtual public TimeGridWindCurv_c, public TimeGridWindR
 public:
 	TimeGridWindCurv();
 	~TimeGridWindCurv () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
