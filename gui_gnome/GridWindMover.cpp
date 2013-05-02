@@ -32,7 +32,7 @@ GridWindMover::GridWindMover(TMap *owner,char* name) : TWindMover(owner, name)
 }
 
 
-void GridWindMover::Dispose()
+/*void GridWindMover::Dispose()
 {
 	if (timeGrid)
 	{
@@ -42,7 +42,7 @@ void GridWindMover::Dispose()
 	}
 
 	TWindMover::Dispose ();
-}
+}*/
 	 	 
 long GridWindMover::GetListLength()
 {

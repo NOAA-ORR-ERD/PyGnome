@@ -14,17 +14,17 @@ cdef class CyMover(object):
     instantiates self.mover as a WindMover_c object. 
     
     It would be desirable to make it so the user cannot instantiate an object of type CyMover, so it only
-    serves as a base class; however, since I don't believe I can do that - CyMover.__init__() creates
-    a new Mover_c object. This is so the application doesn't crash if the user instantiates a CyMover object
-    in Python. Though this object doesn't do much and it does not have a get_move method, it doesn't crash either.
+    serves as a base class; however, since I don't believe I can do that - CyMover.__init__() sets self.mover = NULL 
+    This is so the application doesn't crash if the user instantiates a CyMover object
+    in Python. Though this object doesn't do anything and it does not have a get_move method.
     """
     def __init__(self):
         """
-        By default it instantiates Mover_c object. This is only so Python doesn't crash if user
+        By default it sets self.mover=NULL. This is only so Python doesn't crash if user
         instantiates a CyMover object in Python. Though the main purpose of this class is to serve
         as a base class to all the cython wrappers around the C++ movers.
         """
-        self.mover = new Mover_c()
+        self.mover = NULL
     
     def __repr__(self):
         """
@@ -44,7 +44,8 @@ cdef class CyMover(object):
         """
         default implementation. It calls the C++ objects's PrepareForModelRun() method
         """
-        self.mover.PrepareForModelRun()
+        if self.mover:
+            self.mover.PrepareForModelRun()
     
     def prepare_for_model_step(self, model_time, step_len, numSets=0, cnp.ndarray[cnp.npy_int] setSizes=None):
         """
@@ -56,16 +57,17 @@ cdef class CyMover(object):
         :param step_len: length of the time step over which the get move will be computed
         """
         cdef OSErr err
-        if numSets == 0:
-            err = self.mover.PrepareForModelStep(model_time, step_len, False, 0, NULL)
-        else:
-            err = self.mover.PrepareForModelStep(model_time, step_len, True, numSets, <int *>&setSizes[0])
-            
-        if err != 0:
-            """
-            For now just raise an OSError - until the types of possible errors are defined and enumerated
-            """
-            raise OSError("PrepareForModelStep returned an error: {0}".format(err))
+        if self.mover:
+            if numSets == 0:
+                err = self.mover.PrepareForModelStep(model_time, step_len, False, 0, NULL)
+            else:
+                err = self.mover.PrepareForModelStep(model_time, step_len, True, numSets, <int *>&setSizes[0])
+                
+            if err != 0:
+                """
+                For now just raise an OSError - until the types of possible errors are defined and enumerated
+                """
+                raise OSError("PrepareForModelStep returned an error: {0}".format(err))
         
     def model_step_is_done(self):
         """
@@ -73,4 +75,5 @@ cdef class CyMover(object):
         
         Default call to C++ ModelStepIsDone method
         """
-        self.mover.ModelStepIsDone()
+        if self.mover:
+            self.mover.ModelStepIsDone()

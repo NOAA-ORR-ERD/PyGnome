@@ -24,10 +24,10 @@ TimeGridWindRect::TimeGridWindRect() : TimeGridVel()
 
 }
 
-void TimeGridWindRect::Dispose()
+/*void TimeGridWindRect::Dispose()
 {
 	TimeGridVel::Dispose ();
-}
+}*/
 	 	 
 
 #define TimeGridWindRectREADWRITEVERSION 1 //JLM	5/3/10
@@ -273,13 +273,13 @@ TimeGridWindCurv::TimeGridWindCurv () : TimeGridWindRect()
 	fVertexPtsH = 0;
 }
 
-void TimeGridWindCurv::Dispose ()
+/*void TimeGridWindCurv::Dispose ()
 {
 	if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
 	if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
 	
 	TimeGridWindRect::Dispose ();
-}
+}*/
 
 
 #define TimeGridWindCurvREADWRITEVERSION 1 //JLM

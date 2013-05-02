@@ -153,7 +153,7 @@ class CyMover(Mover):
         Uses super to invoke Mover class prepare_for_model_step and does a couple more things specific to CyMover.
         """
         super(CyMover,self).prepare_for_model_step(sc, time_step, model_time_datetime)
-        if self.active and self.on:
+        if self.active:
             uncertain_spill_count = 0
             uncertain_spill_size = np.array( (0,) ) # only useful if spill.uncertain
             if sc.uncertain:
@@ -216,7 +216,7 @@ class CyMover(Mover):
         in a time step, and is intended to perform any necessary clean-up operations.
         Subclassed movers can override this method.
         """
-        if self.active and self.on:
+        if self.active:
             self.mover.model_step_is_done()
 
 class WindMover(CyMover, serializable.Serializable):

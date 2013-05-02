@@ -60,7 +60,7 @@ GridCurrentMover::GridCurrentMover (TMap *owner, char *name) : TCurrentMover(own
 	//memset(&fLegendRect,0,sizeof(fLegendRect)); 
 }
 
-void GridCurrentMover::Dispose ()
+/*void GridCurrentMover::Dispose ()
 {
 	if (timeGrid)
 	{
@@ -70,7 +70,7 @@ void GridCurrentMover::Dispose ()
 	}
 	
 	TCurrentMover::Dispose ();
-}
+}*/
 
 
 void ShowGridCurrentMoverDialogItems(DialogPtr dialog)

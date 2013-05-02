@@ -13,7 +13,7 @@ class TWindMover : virtual public WindMover_c,  public TMover
 public:
 	TWindMover (TMap *owner, char* name);
 	virtual			   ~TWindMover () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 
 	virtual OSErr		MakeClone(TWindMover **clonePtrPtr);
 	virtual OSErr		BecomeClone(TWindMover *clone);

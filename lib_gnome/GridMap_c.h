@@ -45,8 +45,8 @@ public:
 	
 public:
 	GridMap_c ();
-	virtual ~GridMap_c (){}
-	//virtual ~GridMap_c () {Dispose ();}
+	//virtual ~GridMap_c (){}
+	virtual ~GridMap_c () {Dispose ();}
 
 	virtual void	Dispose ();
 	virtual OSErr	InitMap();
