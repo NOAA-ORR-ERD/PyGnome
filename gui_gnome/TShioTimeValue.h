@@ -14,10 +14,10 @@ class TShioTimeValue : virtual public ShioTimeValue_c, public TOSSMTimeValue
 	public:
 								TShioTimeValue (TMover *theOwner);
 								TShioTimeValue (TMover *theOwner,TimeValuePairH tvals);
-							   ~TShioTimeValue () { this->Dispose (); }
+		virtual					   ~TShioTimeValue () { this->Dispose (); }
 		virtual OSErr 			MakeClone(TShioTimeValue **clonePtrPtr);
 		virtual OSErr 			BecomeClone(TShioTimeValue *clone);
-		virtual void			Dispose ();
+		//virtual void			Dispose ();
 
 
 		// I/O methods

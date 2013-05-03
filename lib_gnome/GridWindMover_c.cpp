@@ -46,7 +46,7 @@ void GridWindMover_c::Dispose()
 	if (timeGrid)
 	{
 		timeGrid -> Dispose();
-		//delete fGrid;
+		delete timeGrid; // this causes a crash...
 		timeGrid = nil;
 	}
 	

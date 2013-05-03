@@ -91,6 +91,8 @@ public:
 							ShioTimeValue_c ();
 							ShioTimeValue_c (TMover *theOwner);
 							ShioTimeValue_c (TMover *theOwner,TimeValuePairH tvals);
+	virtual					 ~ShioTimeValue_c () { this->Dispose (); }
+	virtual void			Dispose ();
 	virtual ClassID 		GetClassID () { return TYPE_SHIOTIMEVALUES; }
 	virtual Boolean			IAm(ClassID id) { if(id==TYPE_SHIOTIMEVALUES) return TRUE; return OSSMTimeValue_c::IAm(id); }
 	virtual OSErr			ReadTimeValues (char *path);
