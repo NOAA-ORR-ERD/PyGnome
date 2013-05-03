@@ -6,7 +6,9 @@
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
 
-    <script src="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.js"></script>
+    <script src="/static/js/lib/leaflet-src.js"></script>
+    <script src="/static/js/lib/proj4js-compressed.js"></script>
+    <script src="/static/js/lib/proj4leaflet.js"></script>
     <script src="/static/js/require-jquery.js"></script>
     <script src="/static/js/config.js"></script>
 </%block>
@@ -82,8 +84,8 @@
       </div>
     </div>
 
-    <div id="main-content" class="row">
-        <div id="model" class='section hidden'>
+    <div id="main-content" class="row expand">
+        <div id="model" class='section hidden expand'>
             <div class="btn-toolbar">
                 <div class="btn-group">
                     <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
@@ -112,8 +114,8 @@
                 </div>
             </div>
 
-            <div id="leaflet-map" style="width: 800px; height: 600px"> </div>
-            <div id="map"></div>
+            <div id="leaflet-map"> </div>
+            <div id="map" class="hidden"></div>
             <div class="placeholder"></div>
         </div>
 

@@ -104,6 +104,11 @@ legend {
     display: inline-block;
 }
 
+#leaflet-map {
+    height: 85%;
+    width: 100%;
+}
+
 .drawable-foreground {
     z-index: 1025;
     position: absolute;

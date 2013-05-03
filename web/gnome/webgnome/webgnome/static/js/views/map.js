@@ -58,15 +58,10 @@ define([
             }
 
             this.cursorClasses = ['zooming-in', 'zooming-out', 'moving', 'spill'];
-            var viewport = this.getViewport();
 
-            if (viewport) {
-                viewport = new L.LatLngBounds([viewport.sw, viewport.ne]);
-                var center = viewport.getCenter();
-                this.leafletMap = L.map('leaflet-map', {
-                    crs: L.CRS.Simple
-                }).setView(center, 11);
-            }
+            this.leafletMap = L.map('leaflet-map', {
+                crs: L.CRS.EPSG4326
+            });
         },
 
         getViewport: function() {
@@ -449,8 +444,14 @@ define([
             }
 
             var viewport = this.getViewport();
-            this.backgroundOverlay = L.imageOverlay(url, [viewport.sw, viewport.ne]);
-            this.backgroundOverlay.addTo(this.leafletMap);
+
+            if (viewport) {
+                viewport = new L.LatLngBounds(
+                    [viewport.sw, [viewport.ne[0], viewport.ne[1] -.2]]);
+                this.leafletMap.setView(viewport.getCenter(), 11);
+                this.backgroundOverlay = L.imageOverlay(url, viewport);
+                this.leafletMap.addLayer(this.backgroundOverlay);
+           }
         },
 
         drawLine: function(ctx, start_x, start_y, end_x, end_y) {
