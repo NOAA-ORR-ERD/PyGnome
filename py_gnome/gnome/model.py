@@ -193,7 +193,8 @@ class Model(serializable.Serializable):
 
         """
         [mover.prepare_for_model_run() for mover in self.movers]
-        [outputter.prepare_for_model_run(self._cache) for outputter in self.outputters]
+        [outputter.prepare_for_model_run(self._cache, model_start_time=self.start_time,num_time_steps=self.num_time_steps, uncertain=self.uncertain) 
+         for outputter in self.outputters]
         
         self.spills.rewind()
 

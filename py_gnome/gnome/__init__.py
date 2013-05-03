@@ -16,5 +16,5 @@ from . import environment
 from . import model
 from . import outputter
 from . import renderer
-
+from . import netcdf_outputter
 
