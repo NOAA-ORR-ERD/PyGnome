@@ -30,24 +30,30 @@ class TestGridMap():
         Test a grid map - read and write out
         """
 		#curvilinear grid
+        gcm1 = cy_grid_map.CyGridMap() 
         grid_map_file = os.path.join(here, r'SampleData/currents/ny_cg.nc')
         netcdf_file = os.path.join(here, r'SampleData/currents/ny_cg_top.nc')
-        #topology_file = os.path.join(here, r'SampleData/currents/ny_cg_top.dat')
-        self.gcm.text_read(grid_map_file)
+        topology_file = os.path.join(here, r'SampleData/currents/ny_cg_top.dat')
+        gcm1.text_read(grid_map_file)
+        #self.gcm.text_read(grid_map_file)
         #self.gcm.export_topology(topology_file)
-        self.gcm.save_netcdf(netcdf_file)
+        #self.gcm.save_netcdf(netcdf_file)
+        gcm1.save_netcdf(netcdf_file)
 
 #     def test_grid_map_tri(self):
 #         """
 #         Test a grid map - read and write out
 #         """
 #         #triangle grid
+#         gcm2 = cy_grid_map.CyGridMap()
 #         grid_map_file = os.path.join(here, r'SampleData/currents/ChesBay.nc')
 #         netcdf_file = os.path.join(here, r'SampleData/currents/ChesBayTop.nc')
-#         #topology_file = os.path.join(here, r'SampleData/currents/chesbay_top.dat')
-#         self.gcm.text_read(grid_map_file)
+#         topology_file = os.path.join(here, r'SampleData/currents/chesbay_top.dat')
+#         #self.gcm.text_read(grid_map_file)
+#         gcm2.text_read(grid_map_file)
 #         #self.gcm.export_topology(topology_file)
-#         self.gcm.save_netcdf(netcdf_file)
+#         gcm2.save_netcdf(netcdf_file)
+#         #self.gcm.save_netcdf(netcdf_file)
 #                
     
 if __name__ == "__main__":

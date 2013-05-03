@@ -55,7 +55,9 @@ void GridMap_c::Dispose()
 	if (fGrid)
 	{
 		fGrid -> Dispose();
+//#ifndef pyGNOME
 		delete fGrid;
+//#endif	
 		fGrid = nil;
 	}
 	
@@ -3334,6 +3336,7 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
     
 	
     /*Boundary segments (custom).*/
+	// change to boundary_nodes
     edge_dimid[0] = edge_dim;
     edge_dimid[1] = two_dim;
     startIndex = 1;
@@ -3406,6 +3409,7 @@ OSErr GridMap_c::SaveAsNetCDF(char *path)
 
 	/*Water boundaries (custom).*/
 	landwater_dimid[0] = edge_dim;
+	// change to boundary type - boundary_types, 0 closed, 1 open
  	status = nc_def_var(ncid, "Mesh2_edge_boundary_type_WaterORLand", NC_LONG, 1, landwater_dimid, &mesh2_landwater_id);
 	if (status != NC_NOERR) {err = -1; goto done;}
    	status = nc_put_att_text (ncid, mesh2_landwater_id, "long_name", strlen("Specifies whether the edge represents land or water."), "Specifies whether the edge represents land or water.");

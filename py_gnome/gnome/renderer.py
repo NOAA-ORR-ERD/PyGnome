@@ -45,9 +45,14 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         change projection_type from string to correct type 
         """
         proj = eval(dict_.pop('projection_class'))
-        filename = dict_.pop('filename')
-        images_dir = dict_.pop('images_dir')
-        return cls(filename, images_dir, projection_class=proj, **dict_)
+        viewport = dict_.pop('viewport')
+        #filename = dict_.pop('filename')
+        #images_dir = dict_.pop('images_dir')
+        #obj =  cls(filename, images_dir, projection_class=proj, **dict_)
+        obj =  cls(projection_class=proj, **dict_)
+        obj.viewport = viewport
+        return obj
+
 
     def __init__(self,
                  filename,

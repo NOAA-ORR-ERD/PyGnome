@@ -53,8 +53,8 @@ TCATSMover::TCATSMover (TMap *owner, char *name) : TCurrentMover(owner, name)
 	SetClassName (name);
 }
 
-
-void TCATSMover::Dispose ()
+// moved to catsmover_c
+/*void TCATSMover::Dispose ()
 {
 	if (fGrid)
 	{
@@ -67,7 +67,7 @@ void TCATSMover::Dispose ()
 	
 		
 	TCurrentMover::Dispose ();
-}
+}*/
 
 
 CATSDialogNonPtrFields GetCATSDialogNonPtrFields(TCATSMover	* cm)

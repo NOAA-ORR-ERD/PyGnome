@@ -27,6 +27,8 @@ class GridVel_c {
 protected:
 	WorldRect fGridBounds;	
 public:
+	GridVel_c();
+	virtual	~GridVel_c() { Dispose (); }
 	virtual ClassID 	GetClassID 	() { return TYPE_GRIDVEL; }
 	virtual  VelocityRec GetPatValue(WorldPoint p)=0;
 	virtual VelocityRec GetSmoothVelocity(WorldPoint p)=0;
@@ -34,7 +36,7 @@ public:
 	virtual WorldRect GetBounds(){return fGridBounds;}	
 	virtual InterpolationVal GetInterpolationValues(WorldPoint ref){InterpolationVal ival; memset(&ival,0,sizeof(ival)); return ival;}
 	virtual double GetDepthAtPoint(WorldPoint p){return 0;}
-	void	Dispose() { return; }
+	virtual void	Dispose() { return; }
 	
 };
 

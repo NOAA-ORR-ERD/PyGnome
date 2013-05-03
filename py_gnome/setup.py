@@ -127,7 +127,9 @@ cpp_files = [
 cpp_files = [os.path.join(CPP_CODE_DIR , f) for f in cpp_files]
 
 ## setting the "pyGNOME" define so that conditional compilation in the cpp files is done right.
-macros = [('pyGNOME', 1),]
+macros = [('pyGNOME', 1),
+          #('NPY_NO_DEPRECATED_API','NPY_1_7_API_VERSION')    # cannot currently use this since Cython's numpy.pxd uses deprecated numpy API
+          ]
 
 ## Build the extension objects
 extensions = []

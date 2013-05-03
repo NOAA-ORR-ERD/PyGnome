@@ -25,6 +25,8 @@ public:
 	Rect	fLegendRect;
 	
 public:
+	TriGridVel_c(){fDagTree = 0; fBathymetryH=0;	/*fDepthContoursH=0;	memset(&fLegendRect,0,sizeof(fLegendRect));*/}
+	virtual	~TriGridVel_c() { Dispose (); }
 	virtual ClassID 	GetClassID 	() { return TYPE_TRIGRIDVEL; }
 	void SetDagTree(TDagTree *dagTree){fDagTree=dagTree;}
 	TDagTree*  GetDagTree(){return fDagTree;}

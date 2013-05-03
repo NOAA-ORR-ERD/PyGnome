@@ -54,44 +54,35 @@ class Scenario(object):
     def load(self):
         """
         look for model_*.txt for model to load
-        """
-        # For all other objects, change directory to saveloc, load files, then change back to cur_dir
-        try:
-            cur_dir = os.getcwd()
-            os.chdir(self.saveloc)  # do this since datafiles are stored relative to saveloc
-            
-            model_dict = self.load_model_dict()
-            
-            # pop lists that are not used for model initialization
-            l_movers = model_dict.pop('movers')
-            l_environment = model_dict.pop('environment')
-            l_outputters = model_dict.pop('outputters')
-            l_spills = model_dict.pop('spills')
-                        
-            self.model = self.dict_to_obj(model_dict)
-            print "created base model ..."
-            
-            #first add environment collection - since l_movers depend on this
-            print "add environment .."    
-            obj_list = self._load_collection( l_environment)
-            [self.model.environment.add(obj) for obj in obj_list]
-            
-            print "add outputters .."
-            obj_list = self._load_collection( l_outputters)
-            [self.model.outputters.add(obj) for obj in obj_list]
-            
-            print "add spills .."
-            self._add_spills(l_spills)
-            
-            print "add movers .."    
-            self._add_movers(l_movers)
-            os.chdir(cur_dir)
-            
-        except (KeyError,IOError, ValueError) as err:
-            os.chdir(cur_dir)   # return to original location
-            print "\n\n!!! Following error occurred while loading model from {0}".format(self.saveloc)
-            raise err   
         
+        :returns : a model object re-created from the save files
+        """
+        model_dict = self.load_model_dict()
+        
+        # pop lists that are not used for model initialization
+        l_movers = model_dict.pop('movers')
+        l_environment = model_dict.pop('environment')
+        l_outputters = model_dict.pop('outputters')
+        l_spills = model_dict.pop('spills')
+                    
+        self.model = self.dict_to_obj(model_dict)
+        print "created base model ..."
+        
+        #first add environment collection - since l_movers depend on this
+        print "add environment .."    
+        obj_list = self._load_collection( l_environment)
+        [self.model.environment.add(obj) for obj in obj_list]
+        
+        print "add outputters .."
+        obj_list = self._load_collection( l_outputters)
+        [self.model.outputters.add(obj) for obj in obj_list]
+        
+        print "add spills .."
+        self._add_spills(l_spills)
+        
+        print "add movers .."    
+        self._add_movers(l_movers)
+        return self.model
     
     def dict_to_json(self,dict_):
         """ convert the dict returned by object's to_dict method to valid json format via colander schema """
@@ -126,20 +117,6 @@ class Scenario(object):
                 shutil.copy(value, self.saveloc)
                 to_json[field.name] = os.path.split(to_json[field.name])[1] 
         
-        #=======================================================================
-        # for key, value in to_json.items():
-        #    if isinstance(value, basestring):
-        #        if os.path.exists(value) and os.path.isfile(value):
-        #            shutil.copy(value, self.saveloc)
-        #            to_json[key] = os.path.split(to_json['filename'])[1]
-        #=======================================================================
-                     
-        #=======================================================================
-        # if 'filename' in to_json:
-        #    shutil.copy(to_json['filename'], self.saveloc)
-        #    to_json['filename'] = os.path.split(to_json['filename'])[1]
-        #=======================================================================
-        
         return to_json
     
     """ LOADING FUNCTIONS """
@@ -160,7 +137,7 @@ class Scenario(object):
     def load_model_dict(self):
         """ Load model dict from *.txt file. Pop 'map' key, create 'map' object and add to model dict 
             This dict is used in Model.new_from_dict(dict_) to create new Model """
-        model_file = glob.glob( 'Model_*.txt')
+        model_file = glob.glob( os.path.join(self.saveloc, 'Model_*.txt'))
         if model_file == []:
             raise ValueError("No Model_*.txt files find in {0}".format(self.saveloc))
         elif len(model_file) > 1:
@@ -184,11 +161,24 @@ class Scenario(object):
         
     
     def _load_json_from_file(self, fname):
+        """ Look at state attribute of object. Find all fields with 'isdatafiel' attribute as True.
+        If there is a key in json_data corresponding with 'name' of the fields with True 'isdatafile' attribute,
+        then append the saveloc path to the value """
         with open(fname,'r') as infile:
-            return json.load(infile)
+            json_data = json.load(infile)
+            
+        state = eval( '{0}.state'.format(json_data['obj_type']) )
+        fields = state.get_field_by_attribute('isdatafile')
+        for field in fields:
+            if field.name not in json_data:
+                continue
+            json_data[field.name] = os.path.join(self.saveloc, json_data[field.name])
+        
+        return json_data
+        
     
     def _find_and_load_json_file( self, id_):
-        obj_file = glob.glob( '*_{0}.txt'.format(id_) )
+        obj_file = glob.glob( os.path.join( self.saveloc, '*_{0}.txt'.format(id_) ))
         if len(obj_file) == 0:
             raise IOError("No filename containing *_{0}.txt found in {1}".format(id_, os.path.abspath('.')))
         elif len(obj_file) > 1:
@@ -208,7 +198,8 @@ class Scenario(object):
         returns a list of objects corresponding with the data in 'id_list'
         """
         obj_list = []
-        for type_, id_ in coll_dict['id_list']:
+        for info in coll_dict['id_list']:
+            id_ = info[1]
             obj_json = self._find_and_load_json_file( id_)
             dict_ = self.json_to_dict(obj_json)
             obj = self.dict_to_obj(dict_)
@@ -244,10 +235,10 @@ class Scenario(object):
             self.model.movers += obj
     
     def _get_obj( self, coll_, id):
-       try:
-           return coll_[id] # get object associated with this Id
-       except KeyError, e:
-           raise KeyError("Collection does not contain an object with id: {0}".format(e.message))
+        try:
+            return coll_[id] # get object associated with this Id
+        except KeyError, e:
+            raise KeyError("Collection does not contain an object with id: {0}".format(e.message))
     
     def _add_spills( self, l_spills):
         """ add spills from spills dict (uncertain and certain) to provided model """

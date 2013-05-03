@@ -61,6 +61,17 @@ ShioTimeValue_c::ShioTimeValue_c(TMover *theOwner) : OSSMTimeValue_c(theOwner)
 { 
 	this->InitInstanceVariables();
 }
+
+void ShioTimeValue_c::Dispose()
+{
+	if(fEbbFloodDataHdl)DisposeHandle((Handle)fEbbFloodDataHdl);
+	if(fHighLowDataHdl)DisposeHandle((Handle)fHighLowDataHdl);
+	if(fConstituent.H)DisposeHandle((Handle)fConstituent.H);
+	if(fConstituent.kPrime)DisposeHandle((Handle)fConstituent.kPrime);
+	OSSMTimeValue_c::Dispose();
+	this->InitInstanceVariables();
+}
+
 char* GetKeyedLine(CHARH f, char*key, long lineNum, char *strLine)
 {	// copies the next line into strLine
 	// and returns ptr to first char after the key
