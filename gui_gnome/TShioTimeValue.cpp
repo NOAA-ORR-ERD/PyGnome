@@ -221,7 +221,7 @@ done:
 	return err;
 }
 
-void TShioTimeValue::Dispose()
+/*void TShioTimeValue::Dispose()
 {
 	if(fEbbFloodDataHdl)DisposeHandle((Handle)fEbbFloodDataHdl);
 	if(fHighLowDataHdl)DisposeHandle((Handle)fHighLowDataHdl);
@@ -229,7 +229,7 @@ void TShioTimeValue::Dispose()
 	if(fConstituent.kPrime)DisposeHandle((Handle)fConstituent.kPrime);
 	TOSSMTimeValue::Dispose();
 	this->InitInstanceVariables();
-}
+}*/
 
 
 

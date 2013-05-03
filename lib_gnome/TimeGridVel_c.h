@@ -67,7 +67,7 @@ public:
 
 	TimeGridVel_c (/*TMover *owner, char *name*/);	// do we need an owner? or a name
 
-	~TimeGridVel_c () { Dispose (); }
+	virtual ~TimeGridVel_c () { Dispose (); }
 	virtual void		Dispose ();
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVEL; }
@@ -129,7 +129,7 @@ public:
 	
 	
 	TimeGridVelRect_c();
-	~TimeGridVelRect_c () { Dispose (); }
+	virtual ~TimeGridVelRect_c () { Dispose (); }
 	virtual void		Dispose ();
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELRECT; }
@@ -160,7 +160,7 @@ public:
 	Boolean bVelocitiesOnNodes;		// default is velocities on cells
 
 	TimeGridVelCurv_c ();
-	~TimeGridVelCurv_c () { Dispose (); }
+	virtual ~TimeGridVelCurv_c () { Dispose (); }
 	virtual void		Dispose ();
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELCURV; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELCURV) return TRUE; return TimeGridVelRect_c::IAm(id); }
@@ -198,7 +198,7 @@ public:
 	
 	
 	TimeGridVelTri_c ();
-	~TimeGridVelTri_c () { Dispose (); }
+	virtual ~TimeGridVelTri_c () { Dispose (); }
 	virtual void		Dispose ();
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELTRI; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELTRI) return TRUE; return TimeGridVelCurv_c::IAm(id); }

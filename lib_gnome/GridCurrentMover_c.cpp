@@ -114,7 +114,7 @@ void GridCurrentMover_c::Dispose ()
 	if (timeGrid)
 	{
 		timeGrid -> Dispose();
-		//delete timeGrid;	// this causes a crash...
+		delete timeGrid;	// this causes a crash...
 		timeGrid = nil;
 	}
 	

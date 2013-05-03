@@ -12,7 +12,7 @@ class TimeGridVel : virtual public TimeGridVel_c
 {
 public:
 						TimeGridVel();
-						~TimeGridVel () { Dispose (); }
+	virtual				~TimeGridVel () { Dispose (); }
 	//virtual void		Dispose ();
 
 	// I/O methods
@@ -32,7 +32,7 @@ class TimeGridVelRect : virtual public TimeGridVelRect_c, public TimeGridVel
 public:
 
 	TimeGridVelRect();
-	~TimeGridVelRect () { Dispose (); }
+	virtual ~TimeGridVelRect () { Dispose (); }
 	//virtual void		Dispose ();
 	
 	// I/O methods
@@ -49,7 +49,7 @@ class TimeGridVelCurv : virtual public TimeGridVelCurv_c, public TimeGridVelRect
 {
 public:
 						TimeGridVelCurv();
-						~TimeGridVelCurv () { Dispose (); }
+	virtual				~TimeGridVelCurv () { Dispose (); }
 	//virtual void		Dispose ();
 
 	// I/O methods
@@ -69,7 +69,7 @@ class TimeGridVelTri : virtual public TimeGridVelTri_c, public TimeGridVelCurv
 {
 public:
 						TimeGridVelTri();
-						~TimeGridVelTri () { Dispose (); }
+	virtual				~TimeGridVelTri () { Dispose (); }
 	//virtual void		Dispose ();
 
 	// I/O methods
@@ -91,7 +91,7 @@ class TimeGridCurRect : virtual public TimeGridCurRect_c, public TimeGridVel
 public:
 	
 	TimeGridCurRect();
-	~TimeGridCurRect () { Dispose (); }
+	virtual ~TimeGridCurRect () { Dispose (); }
 	//virtual void		Dispose ();
 	
 	// I/O methods
@@ -110,7 +110,7 @@ class TimeGridCurTri : virtual public TimeGridCurTri_c, public TimeGridCurRect
 public:
 	
 	TimeGridCurTri();
-	~TimeGridCurTri () { Dispose (); }
+	virtual ~TimeGridCurTri () { Dispose (); }
 	//virtual void		Dispose ();
 	
 	// I/O methods
@@ -128,7 +128,7 @@ class TimeGridWindRect : virtual public TimeGridWindRect_c, public TimeGridVel
 public:
 
 	TimeGridWindRect();
-	~TimeGridWindRect () { Dispose (); }
+	virtual ~TimeGridWindRect () { Dispose (); }
 	//virtual void		Dispose ();
 	
 	// I/O methods
@@ -145,7 +145,7 @@ class TimeGridWindCurv : virtual public TimeGridWindCurv_c, public TimeGridWindR
 {
 public:
 	TimeGridWindCurv();
-	~TimeGridWindCurv () { Dispose (); }
+	virtual ~TimeGridWindCurv () { Dispose (); }
 	//virtual void		Dispose ();
 	
 	// I/O methods
@@ -166,7 +166,7 @@ public:
 public:
 	
 	TimeGridWindRectASCII();
-	~TimeGridWindRectASCII () { Dispose (); }
+	virtual ~TimeGridWindRectASCII () { Dispose (); }
 	virtual void		Dispose ();
 	
 	// I/O methods

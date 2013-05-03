@@ -23,7 +23,7 @@ here = os.path.dirname(__file__)
 # 
 @pytest.mark.slow
 class TestGridMap():
-    gcm = cy_grid_map.CyGridMap()    
+    #gcm = cy_grid_map.CyGridMap()    
         
     def test_grid_map_curv(self):
         """
