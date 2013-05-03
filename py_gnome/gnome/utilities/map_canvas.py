@@ -4,7 +4,10 @@
 Module to hold classes and suporting code for the map canvas for GNOME:
 
 The drawing code for the interactive core mapping window -- at least for
-the web version
+the web version.
+
+This should have the basic drawing stuff. Specific rendering, like
+dealing with spill_containers, etc, should be in the rendere subclass.
 
 """
 import copy
@@ -232,16 +235,30 @@ class MapCanvas(object):
             arr = self.fore_image_array
 
             # remove points that are off the map
-            pixel_pos = pixel_pos[(pixel_pos[:,0] > 1) &
-                                  (pixel_pos[:,1] > 1) &
-                                  (pixel_pos[:,0] < (self.image_size[0]-2) ) &
-                                  (pixel_pos[:,1] < (self.image_size[1]-2) ) ]
-            # draw the four pixels for the LE
+            on_map = ( (pixel_pos[:,0] > 1) &
+                       (pixel_pos[:,1] > 1) &
+                       (pixel_pos[:,0] < (self.image_size[0]-2) ) &
+                       (pixel_pos[:,1] < (self.image_size[1]-2) ) )
+            pixel_pos = pixel_pos[on_map]
+
+            # which ones are on land?
+            on_land = spill['status_codes'][on_map] == basic_types.oil_status.on_land
+
+            # draw the five "X" pixels for the on_land elements
+            arr[(pixel_pos[on_land,1]).astype(np.int32), (pixel_pos[on_land,0]).astype(np.int32)] = color
+            arr[(pixel_pos[on_land,1]-1).astype(np.int32), (pixel_pos[on_land,0]-1).astype(np.int32)] = color
+            arr[(pixel_pos[on_land,1]-1).astype(np.int32), (pixel_pos[on_land,0]+1).astype(np.int32)] = color
+            arr[(pixel_pos[on_land,1]+1).astype(np.int32), (pixel_pos[on_land,0]-1).astype(np.int32)] = color
+            arr[(pixel_pos[on_land,1]+1).astype(np.int32), (pixel_pos[on_land,0]+1).astype(np.int32)] = color
+
+            # draw the four pixels for the elements not on land
+            not_on_land = ~on_land
+
             #note: long-lat backwards for array (vs image)
-            arr[(pixel_pos[:,1]-0.5).astype(np.int32), (pixel_pos[:,0]-0.5).astype(np.int32)] = color
-            arr[(pixel_pos[:,1]-0.5).astype(np.int32), (pixel_pos[:,0]+0.5).astype(np.int32)] = color
-            arr[(pixel_pos[:,1]+0.5).astype(np.int32), (pixel_pos[:,0]-0.5).astype(np.int32)] = color
-            arr[(pixel_pos[:,1]+0.5).astype(np.int32), (pixel_pos[:,0]+0.5).astype(np.int32)] = color
+            arr[(pixel_pos[not_on_land,1]-0.5).astype(np.int32), (pixel_pos[not_on_land,0]-0.5).astype(np.int32)] = color
+            arr[(pixel_pos[not_on_land,1]-0.5).astype(np.int32), (pixel_pos[not_on_land,0]+0.5).astype(np.int32)] = color
+            arr[(pixel_pos[not_on_land,1]+0.5).astype(np.int32), (pixel_pos[not_on_land,0]-0.5).astype(np.int32)] = color
+            arr[(pixel_pos[not_on_land,1]+0.5).astype(np.int32), (pixel_pos[not_on_land,0]+0.5).astype(np.int32)] = color
 
 
     def save_background(self, filename, type_in="PNG"):

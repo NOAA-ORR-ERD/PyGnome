@@ -12,6 +12,12 @@
 #include "MemUtils.h"
 using std::cout;
 
+GridVel_c::GridVel_c() 
+{
+	WorldRect emptyRect = { 0, 0, 0, 0 };
+	fGridBounds = emptyRect;
+}
+
 LongPointHdl TriGridVel_c::GetPointsHdl(void)
 {
 	if(!fDagTree) return nil;

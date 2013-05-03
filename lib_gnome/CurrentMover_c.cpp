@@ -70,6 +70,14 @@ CurrentMover_c::CurrentMover_c () : Mover_c()
 }
 
 
+void CurrentMover_c::Dispose ()
+{
+	
+	this->DisposeUncertainty();
+	
+	Mover_c::Dispose ();
+}
+
 void CurrentMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 {
 	long i,n;

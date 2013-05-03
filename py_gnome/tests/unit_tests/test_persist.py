@@ -99,7 +99,7 @@ def test_save_load_scenario():
     scene.save()
     scene.model = None   # make it none - load from persistence
     print "loading scenario .."
-    scene.load()
-    model2 = scene.model
+    model2 = scene.load()
+    #model2 = scene.model
     
     assert model == model2

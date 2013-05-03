@@ -41,6 +41,8 @@ public:
 	CurrentMover_c (TMap *owner, char *name);
 #endif
 	CurrentMover_c ();
+	virtual			   ~CurrentMover_c () { Dispose (); }
+	virtual void		Dispose ();
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
 	virtual OSErr		UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList);
 	virtual OSErr		AllocateUncertainty (int numLESets, int* LESetsSizesList);

@@ -54,6 +54,8 @@ class Scenario(object):
     def load(self):
         """
         look for model_*.txt for model to load
+        
+        :returns : a model object re-created from the save files
         """
         model_dict = self.load_model_dict()
         
@@ -80,7 +82,7 @@ class Scenario(object):
         
         print "add movers .."    
         self._add_movers(l_movers)
-        
+        return self.model
     
     def dict_to_json(self,dict_):
         """ convert the dict returned by object's to_dict method to valid json format via colander schema """
@@ -114,20 +116,6 @@ class Scenario(object):
             if os.path.exists(value) and os.path.isfile(value):
                 shutil.copy(value, self.saveloc)
                 to_json[field.name] = os.path.split(to_json[field.name])[1] 
-        
-        #=======================================================================
-        # for key, value in to_json.items():
-        #    if isinstance(value, basestring):
-        #        if os.path.exists(value) and os.path.isfile(value):
-        #            shutil.copy(value, self.saveloc)
-        #            to_json[key] = os.path.split(to_json['filename'])[1]
-        #=======================================================================
-                     
-        #=======================================================================
-        # if 'filename' in to_json:
-        #    shutil.copy(to_json['filename'], self.saveloc)
-        #    to_json['filename'] = os.path.split(to_json['filename'])[1]
-        #=======================================================================
         
         return to_json
     

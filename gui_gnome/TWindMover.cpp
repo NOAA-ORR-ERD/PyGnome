@@ -45,15 +45,15 @@ TWindMover::TWindMover(TMap *owner,char* name) : TMover(owner, name)
 
 
 //moved to windmover_c
-void TWindMover::Dispose()
+/*void TWindMover::Dispose()
 {
-	/*DeleteTimeDep ();
+	DeleteTimeDep ();
 	
 	this->DisposeUncertainty();
 	
-	TMover::Dispose ();*/
+	TMover::Dispose ();
 	
-}
+}*/
 
 
 long TWindMover::GetListLength()

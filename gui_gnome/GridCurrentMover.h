@@ -29,8 +29,8 @@ public:
 
 
 						GridCurrentMover (TMap *owner, char *name);
-						~GridCurrentMover () { Dispose (); }
-	virtual void		Dispose ();
+	virtual				~GridCurrentMover () { Dispose (); }
+	//virtual void		Dispose ();
 	virtual OSErr		InitMover (TimeGridVel *grid); 
 
 

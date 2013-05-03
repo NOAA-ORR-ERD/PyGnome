@@ -109,6 +109,18 @@ GridCurrentMover_c::GridCurrentMover_c () : CurrentMover_c()
 	
 }
 
+void GridCurrentMover_c::Dispose ()
+{
+	if (timeGrid)
+	{
+		timeGrid -> Dispose();
+		delete timeGrid;	// this causes a crash...
+		timeGrid = nil;
+	}
+	
+	CurrentMover_c::Dispose ();
+}
+
 OSErr GridCurrentMover_c::AddUncertainty(long setIndex, long leIndex,VelocityRec *velocity,double timeStep,Boolean useEddyUncertainty)
 {
 	LEUncertainRec unrec;

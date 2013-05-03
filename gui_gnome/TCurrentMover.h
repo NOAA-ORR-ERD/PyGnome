@@ -19,7 +19,7 @@ class TCurrentMover : virtual public CurrentMover_c,  public TMover
 public:
 	TCurrentMover (TMap *owner, char *name);
 	virtual			   ~TCurrentMover () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 	
 
 	

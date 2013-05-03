@@ -67,9 +67,8 @@ public:
 
 	TimeGridVel_c (/*TMover *owner, char *name*/);	// do we need an owner? or a name
 
-	//virtual	~TimeGridVel_c() { Dispose (); }
-	
-	//virtual void	Dispose() { return; }
+	virtual ~TimeGridVel_c () { Dispose (); }
+	virtual void		Dispose ();
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVEL; }
 	virtual Boolean	IAm(ClassID id) { return(id==TYPE_TIMEGRIDVEL);}
@@ -130,9 +129,8 @@ public:
 	
 	
 	TimeGridVelRect_c();
-	//virtual	~TimeGridVelRect_c() { Dispose (); }
-	
-	//virtual void	Dispose() { return; }
+	virtual ~TimeGridVelRect_c () { Dispose (); }
+	virtual void		Dispose ();
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELRECT; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELRECT) return TRUE; return TimeGridVel_c::IAm(id); }
@@ -161,11 +159,9 @@ public:
 	WORLDPOINTFH fVertexPtsH;		// for curvilinear, all vertex points from file
 	Boolean bVelocitiesOnNodes;		// default is velocities on cells
 
-	//virtual	~TimeGridVelCurv_c() { Dispose (); }
-	
-	//virtual void	Dispose() { return; }
-	
 	TimeGridVelCurv_c ();
+	virtual ~TimeGridVelCurv_c () { Dispose (); }
+	virtual void		Dispose ();
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELCURV; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELCURV) return TRUE; return TimeGridVelRect_c::IAm(id); }
 	
@@ -201,11 +197,9 @@ public:
 	Boolean bVelocitiesOnTriangles;
 	
 	
-	//virtual	~TimeGridVelTri_c() { Dispose (); }
-	
-	//virtual void	Dispose() { return; }
-	
 	TimeGridVelTri_c ();
+	virtual ~TimeGridVelTri_c () { Dispose (); }
+	virtual void		Dispose ();
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDVELTRI; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDVELTRI) return TRUE; return TimeGridVelCurv_c::IAm(id); }
 	LongPointHdl			GetPointsHdl();
@@ -234,9 +228,8 @@ public:
 	short fUserUnits;
 	
 	TimeGridCurRect_c();
-	//virtual	~TimeGridCurRect_c() { Dispose (); }
-	
-	//virtual void	Dispose() { return; }
+	virtual	~TimeGridCurRect_c() { Dispose (); }
+	virtual void	Dispose();
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURRECT; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURRECT) return TRUE; return TimeGridVel_c::IAm(id); }
@@ -264,9 +257,8 @@ public:
 	PTCurVariables fVar2;
 	
 	TimeGridCurTri_c();
-	//virtual	~TimeGridCurTri_c() { Dispose (); }
-	
-	//virtual void	Dispose() { return; }
+	virtual	~TimeGridCurTri_c() { Dispose (); }
+	virtual void	Dispose();
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDCURTRI; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDCURTRI) return TRUE; return TimeGridCurRect_c::IAm(id); }
@@ -288,9 +280,8 @@ class TimeGridWindRect_c : virtual public TimeGridVel_c
 public:
 	
 	TimeGridWindRect_c();
-	//virtual	~TimeGridWindRect_c() { Dispose (); }
-	
-	//virtual void	Dispose() { return; }
+	virtual	~TimeGridWindRect_c() { Dispose (); }
+	virtual void	Dispose();
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDRECT; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDRECT) return TRUE; return TimeGridVel_c::IAm(id); }
@@ -311,9 +302,8 @@ public:
 	
 	
 	TimeGridWindCurv_c();
-	//virtual	~TimeGridWindCurv_c() { Dispose (); }
-	
-	//virtual void	Dispose() { return; }
+	virtual	~TimeGridWindCurv_c() { Dispose (); }
+	virtual void	Dispose();
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDCURV; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDCURV) return TRUE;  return TimeGridWindRect_c::IAm(id); }
@@ -341,7 +331,7 @@ public:
 	TimeGridWindRectASCII_c();
 	//virtual	~TimeGridCurRect_c() { Dispose (); }
 	
-	//virtual void	Dispose() { return; }
+	//virtual void	Dispose();
 	
 	virtual ClassID 	GetClassID () { return TYPE_TIMEGRIDWINDRECTASCII; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_TIMEGRIDWINDRECTASCII) return TRUE; return TimeGridVel_c::IAm(id); }
