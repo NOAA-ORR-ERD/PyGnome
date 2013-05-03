@@ -161,10 +161,11 @@ class FileUpload(BaseResource):
 
         TODO: Chunked uploads.
         """
-        filename = self.reqeust.validated['filename']
+        filename = self.request.validated['filename']
         input_file = self.request.POST['filename'].file
+        print filename
 
-        with open(filename) as f:
+        with open(filename, 'wb') as f:
             try:
                 f.write(input_file.read())
             except OSError as e:

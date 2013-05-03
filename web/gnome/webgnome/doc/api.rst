@@ -22,6 +22,9 @@ API documentation for the Python/Pyramid portion of the application.
 JavaScript API
 ~~~~~~~~~~~~~~
 
-API documentation for the JavaScript portion of the application.
+API documentation for the JavaScript portion of the application, generated with
+Docco.
 
-- `Map.js documented with Docco <../../javascript/map.html>`_.
+- `App.js -- the application container <../../javascript/app.html>`_.
+- `Models.js -- models for all views  <../../javascript/models.html>`_.
+- `Util.js -- utility functionsk <../../javascript/util.html>`_.

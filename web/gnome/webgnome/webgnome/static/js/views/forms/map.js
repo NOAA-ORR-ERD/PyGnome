@@ -109,9 +109,13 @@ define([
             // chose has finished uploading.
             this.uploader = uploadInput.fileupload({
                 dataType: 'json',
+
+                // TODO: This should set a spinner.
                 submit: function(e, data) {
                     saveButton.button('disable');
                 },
+
+                // TODO: This should unset a spinner.
                 done: function(e, data) {
                     _this.model.set('filename', data.result.filename);
                     saveButton.button('enable');

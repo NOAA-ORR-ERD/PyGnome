@@ -66,23 +66,23 @@ ul.dynatree-container {
     font-size: 9px;
 }
 
-.zooming-in {
+.zooming-in-cursor {
     cursor: url(/static/img/zoom_in.cur), auto;
 }
 
-.zooming-out {
+.zooming-out-cursor {
     cursor: url(/static/img/zoom_out.cur), auto;
 }
 
-.moving {
+.moving-cursor {
     cursor: move;
 }
 
-.regular {
+.regular-cursor {
     cursor: default;
 }
 
-.spill {
+.spill-cursor {
     cursor: crosshair;
 }
 
@@ -90,6 +90,10 @@ legend {
     font-size: 18px;
     margin-bottom: 0;
     line-height: 20px;
+}
+
+#viewport {
+    overflow: hidden;
 }
 
 #map {

@@ -353,7 +353,7 @@ def valid_new_location_file(request):
 
 def valid_filename(request):
     """
-    A Cornice validator that verifies that a 'filename' in ``request``
+    A Cornice validator that verifies that a 'filename' value in ``request``
     can be used safely to upload a file into the model's data directory.
     """
     valid_model_id(request)
@@ -364,6 +364,7 @@ def valid_filename(request):
     model = request.validated['model']
     filename = request.POST['filename'].filename
 
+    # TODO: We should probably test more than just truthiness here, but what?
     if not filename:
         request.errors.add('body', 'filename', 'Illegal filename.')
         request.errors.status = 400

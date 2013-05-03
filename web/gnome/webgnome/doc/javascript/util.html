@@ -1,0 +1,175 @@
+<!DOCTYPE html>  <html> <head>   <title>util.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               util.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>util.js: Utility functions for the WebGNOME JavaScript application.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">define</span><span class="p">([</span>
+    <span class="s1">&#39;jquery&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lib/underscore&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lib/moment&#39;</span>
+<span class="p">],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="cm">/*</span>
+<span class="cm">     Safely wrap `window.console.log`. Sends all arguments to that function</span>
+<span class="cm">     if it exists.</span>
+<span class="cm">     */</span>
+    <span class="kd">function</span> <span class="nx">log</span><span class="p">(</span><span class="nx">var_args</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">args</span> <span class="o">=</span> <span class="nb">Array</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">slice</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="nx">arguments</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">console</span> <span class="o">&amp;&amp;</span> <span class="nb">window</span><span class="p">.</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nb">window</span><span class="p">.</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">console</span><span class="p">,</span> <span class="nx">args</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="cm">/*</span>
+<span class="cm">     Generic AJAX error handler.</span>
+<span class="cm">     Retry on error if the request specified tryCount.</span>
+<span class="cm">     */</span>
+    <span class="kd">function</span> <span class="nx">handleAjaxError</span><span class="p">(</span><span class="nx">xhr</span><span class="p">,</span> <span class="nx">textStatus</span><span class="p">,</span> <span class="nx">errorThrown</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">textStatus</span> <span class="o">===</span> <span class="s1">&#39;timeout&#39;</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">tryCount</span><span class="o">++</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">tryCount</span> <span class="o">&lt;=</span> <span class="k">this</span><span class="p">.</span><span class="nx">retryLimit</span><span class="p">)</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Retry count is below the limit, so try the request again.</p>             </td>             <td class="code">               <div class="highlight"><pre>                <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="nb">window</span><span class="p">.</span><span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;Could not connect to server.&#39;</span><span class="p">);</span>
+        <span class="nx">log</span><span class="p">(</span><span class="nx">xhr</span><span class="p">,</span> <span class="nx">textStatus</span><span class="p">,</span> <span class="nx">errorThrown</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="cm">/*</span>
+<span class="cm">      Retrieve a message object from the object `data` if the `message` key</span>
+<span class="cm">      exists, annotate the message object ith an `error` value set to true</span>
+<span class="cm">      if the message is an error type, and return the message object.</span>
+<span class="cm">     */</span>
+    <span class="kd">function</span> <span class="nx">parseMessage</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">message</span><span class="p">;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nx">data</span> <span class="o">===</span> <span class="kc">null</span> <span class="o">||</span> <span class="nx">data</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="s1">&#39;message&#39;</span><span class="p">))</span> <span class="p">{</span>
+            <span class="nx">message</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">message</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">message</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="s1">&#39;error&#39;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">message</span><span class="p">.</span><span class="nx">error</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="nx">message</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="cm">/*</span>
+<span class="cm">     Return a date string for `timestamp`.</span>
+
+<span class="cm">     `timestamp` which should be in a format acceptable to `Date.parse`.</span>
+<span class="cm">     */</span>
+    <span class="kd">function</span> <span class="nx">formatTimestamp</span><span class="p">(</span><span class="nx">timestamp</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">date</span> <span class="o">=</span> <span class="nx">moment</span><span class="p">(</span><span class="nx">timestamp</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">date</span><span class="p">.</span><span class="nx">isValid</span><span class="p">())</span> <span class="p">{</span>
+            <span class="nx">timestamp</span> <span class="o">=</span> <span class="nx">date</span><span class="p">.</span><span class="nx">format</span><span class="p">(</span><span class="s1">&#39;MM/DD/YYYY HH:mm&#39;</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nx">timestamp</span><span class="p">;</span>
+    <span class="p">}</span>
+
+
+    <span class="kd">var</span> <span class="nx">dirNames</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="s1">&#39;NNE&#39;</span><span class="p">,</span> <span class="s1">&#39;NE&#39;</span><span class="p">,</span> <span class="s1">&#39;ENE&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;ESE&#39;</span><span class="p">,</span> <span class="s1">&#39;SE&#39;</span><span class="p">,</span> <span class="s1">&#39;SSE&#39;</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;SSW&#39;</span><span class="p">,</span> <span class="s1">&#39;SW&#39;</span><span class="p">,</span> <span class="s1">&#39;WSW&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="s1">&#39;WNW&#39;</span><span class="p">,</span> <span class="s1">&#39;NW&#39;</span><span class="p">,</span> <span class="s1">&#39;NNW&#39;</span><span class="p">];</span>
+
+    <span class="kd">function</span> <span class="nx">cardinalName</span><span class="p">(</span><span class="nx">angle</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">dirNames</span><span class="p">[</span><span class="nb">Math</span><span class="p">.</span><span class="nx">floor</span><span class="p">((</span><span class="o">+</span><span class="p">(</span><span class="nx">angle</span><span class="p">)</span> <span class="o">+</span> <span class="mi">360</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">360</span> <span class="o">/</span> <span class="mf">16.0</span><span class="p">)</span> <span class="o">%</span> <span class="mi">16</span><span class="p">)];</span>
+    <span class="p">}</span>
+
+    <span class="kd">function</span> <span class="nx">cardinalAngle</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">idx</span> <span class="o">=</span> <span class="nx">dirNames</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">name</span><span class="p">.</span><span class="nx">toUpperCase</span><span class="p">());</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">idx</span> <span class="o">===</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">else</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="p">(</span><span class="mf">360.0</span> <span class="o">/</span> <span class="mi">16</span><span class="p">)</span> <span class="o">*</span> <span class="nx">idx</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+     <span class="cm">/*\</span>
+<span class="cm">     |*|</span>
+<span class="cm">     |*|  :: cookies.js ::</span>
+<span class="cm">     |*|</span>
+<span class="cm">     |*|  A complete cookies reader/writer framework with full unicode support.</span>
+<span class="cm">     |*|</span>
+<span class="cm">     |*|  https://developer.mozilla.org/en-US/docs/DOM/document.cookie</span>
+<span class="cm">     |*|</span>
+<span class="cm">     |*|  Syntaxes:</span>
+<span class="cm">     |*|</span>
+<span class="cm">     |*|  * docCookies.setItem(name, value[, end[, path[, domain[, secure]]]])</span>
+<span class="cm">     |*|  * docCookies.getItem(name)</span>
+<span class="cm">     |*|  * docCookies.removeItem(name[, path])</span>
+<span class="cm">     |*|  * docCookies.hasItem(name)</span>
+<span class="cm">     |*|  * docCookies.keys()</span>
+<span class="cm">     |*|</span>
+<span class="cm">     \*/</span>
+    <span class="kd">var</span> <span class="nx">Cookies</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="nx">getItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sKey</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">sKey</span> <span class="o">||</span> <span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">hasItem</span><span class="p">(</span><span class="nx">sKey</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="nx">unescape</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="k">new</span> <span class="nb">RegExp</span><span class="p">(</span><span class="s2">&quot;(?:^|.*;\\s*)&quot;</span> <span class="o">+</span> <span class="nx">escape</span><span class="p">(</span><span class="nx">sKey</span><span class="p">).</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/[\-\.\+\*]/g</span><span class="p">,</span> <span class="s2">&quot;\\$&amp;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;\\s*\\=\\s*((?:[^;](?!;))*[^;]?).*&quot;</span><span class="p">),</span> <span class="s2">&quot;$1&quot;</span><span class="p">));</span>
+        <span class="p">},</span>
+        <span class="nx">setItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sKey</span><span class="p">,</span> <span class="nx">sValue</span><span class="p">,</span> <span class="nx">vEnd</span><span class="p">,</span> <span class="nx">sPath</span><span class="p">,</span> <span class="nx">sDomain</span><span class="p">,</span> <span class="nx">bSecure</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">sKey</span> <span class="o">||</span> <span class="sr">/^(?:expires|max\-age|path|domain|secure)$/i</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span><span class="nx">sKey</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="kd">var</span> <span class="nx">sExpires</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">vEnd</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">switch</span> <span class="p">(</span><span class="nx">vEnd</span><span class="p">.</span><span class="nx">constructor</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">case</span> <span class="nb">Number</span><span class="o">:</span>
+                        <span class="nx">sExpires</span> <span class="o">=</span> <span class="nx">vEnd</span> <span class="o">===</span> <span class="kc">Infinity</span> <span class="o">?</span> <span class="s2">&quot;; expires=Tue, 19 Jan 2038 03:14:07 GMT&quot;</span> <span class="o">:</span> <span class="s2">&quot;; max-age=&quot;</span> <span class="o">+</span> <span class="nx">vEnd</span><span class="p">;</span>
+                        <span class="k">break</span><span class="p">;</span>
+                    <span class="k">case</span> <span class="nb">String</span><span class="o">:</span>
+                        <span class="nx">sExpires</span> <span class="o">=</span> <span class="s2">&quot;; expires=&quot;</span> <span class="o">+</span> <span class="nx">vEnd</span><span class="p">;</span>
+                        <span class="k">break</span><span class="p">;</span>
+                    <span class="k">case</span> <span class="nb">Date</span><span class="o">:</span>
+                        <span class="nx">sExpires</span> <span class="o">=</span> <span class="s2">&quot;; expires=&quot;</span> <span class="o">+</span> <span class="nx">vEnd</span><span class="p">.</span><span class="nx">toGMTString</span><span class="p">();</span>
+                        <span class="k">break</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span> <span class="o">=</span> <span class="nx">escape</span><span class="p">(</span><span class="nx">sKey</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span> <span class="o">+</span> <span class="nx">escape</span><span class="p">(</span><span class="nx">sValue</span><span class="p">)</span> <span class="o">+</span> <span class="nx">sExpires</span> <span class="o">+</span> <span class="p">(</span><span class="nx">sDomain</span> <span class="o">?</span> <span class="s2">&quot;; domain=&quot;</span> <span class="o">+</span> <span class="nx">sDomain</span> <span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="nx">sPath</span> <span class="o">?</span> <span class="s2">&quot;; path=&quot;</span> <span class="o">+</span> <span class="nx">sPath</span> <span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="nx">bSecure</span> <span class="o">?</span> <span class="s2">&quot;; secure&quot;</span> <span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">);</span>
+        <span class="p">},</span>
+        <span class="nx">removeItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sKey</span><span class="p">,</span> <span class="nx">sPath</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">sKey</span> <span class="o">||</span> <span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">hasItem</span><span class="p">(</span><span class="nx">sKey</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span> <span class="o">=</span> <span class="nx">escape</span><span class="p">(</span><span class="nx">sKey</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;=; expires=Thu, 01 Jan 1970 00:00:00 GMT&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="nx">sPath</span> <span class="o">?</span> <span class="s2">&quot;; path=&quot;</span> <span class="o">+</span> <span class="nx">sPath</span> <span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">);</span>
+        <span class="p">},</span>
+        <span class="nx">hasItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sKey</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="p">(</span><span class="k">new</span> <span class="nb">RegExp</span><span class="p">(</span><span class="s2">&quot;(?:^|;\\s*)&quot;</span> <span class="o">+</span> <span class="nx">escape</span><span class="p">(</span><span class="nx">sKey</span><span class="p">).</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/[\-\.\+\*]/g</span><span class="p">,</span> <span class="s2">&quot;\\$&amp;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;\\s*\\=&quot;</span><span class="p">)).</span><span class="nx">test</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span><span class="p">);</span>
+        <span class="p">},</span>
+        <span class="nx">keys</span><span class="o">:</span> <span class="cm">/* optional method: you can safely remove it! */</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">aKeys</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">).</span><span class="nx">split</span><span class="p">(</span><span class="sr">/\s*(?:\=[^;]*)?;\s*/</span><span class="p">);</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">nIdx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">nIdx</span> <span class="o">&lt;</span> <span class="nx">aKeys</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">nIdx</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">aKeys</span><span class="p">[</span><span class="nx">nIdx</span><span class="p">]</span> <span class="o">=</span> <span class="nx">unescape</span><span class="p">(</span><span class="nx">aKeys</span><span class="p">[</span><span class="nx">nIdx</span><span class="p">]);</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="nx">aKeys</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">};</span>
+
+    <span class="kd">function</span> <span class="nx">refresh</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nb">window</span><span class="p">.</span><span class="nx">location</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">protocol</span> <span class="o">+</span> <span class="s2">&quot;//&quot;</span> <span class="o">+</span> <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">host</span><span class="p">;</span>
+    <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>https://github.com/redpie/backbone-schema/pull/3</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="kd">function</span> <span class="nx">formatError</span><span class="p">(</span><span class="nx">str</span><span class="p">,</span> <span class="nx">values</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">str</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/%((\w+))/g</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">match</span><span class="p">,</span> <span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">values</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">||</span> <span class="nx">match</span><span class="p">;</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="o">:</span> <span class="nx">log</span><span class="p">,</span>
+        <span class="nx">handleAjaxError</span><span class="o">:</span> <span class="nx">handleAjaxError</span><span class="p">,</span>
+        <span class="nx">parseMessage</span><span class="o">:</span> <span class="nx">parseMessage</span><span class="p">,</span>
+        <span class="nx">formatTimestamp</span><span class="o">:</span> <span class="nx">formatTimestamp</span><span class="p">,</span>
+        <span class="nx">cardinalName</span><span class="o">:</span> <span class="nx">cardinalName</span><span class="p">,</span>
+        <span class="nx">cardinalAngle</span><span class="o">:</span> <span class="nx">cardinalAngle</span><span class="p">,</span>
+        <span class="nx">Cookies</span><span class="o">:</span> <span class="nx">Cookies</span><span class="p">,</span>
+        <span class="nx">refresh</span><span class="o">:</span> <span class="nx">refresh</span><span class="p">,</span>
+        <span class="nx">parseError</span><span class="o">:</span> <span class="nx">formatError</span>
+    <span class="p">};</span>
+
+<span class="p">});</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

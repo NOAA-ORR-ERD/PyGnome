@@ -9,11 +9,10 @@ views Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`movers` Module
---------------------
+Subpackages
+-----------
 
-.. automodule:: webgnome.views.movers
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. toctree::
+
+    webgnome.views.services
 

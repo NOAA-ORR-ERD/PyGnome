@@ -24,3 +24,5 @@ web/gnome/webgnome/doc/_build/*
 # ignore generated model data in WebGNOME
 web/gnome/webgnome/webgnome/static/models/*
 web/gnome/webgnome/webgnome/static/test_models/*
+.projectile
+.coverage
