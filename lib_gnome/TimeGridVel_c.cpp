@@ -349,6 +349,24 @@ TimeGridVel_c::TimeGridVel_c ()
 	
 }
 
+void TimeGridVel_c::Dispose ()
+{
+	if (fGrid)
+	{
+		fGrid -> Dispose();
+		delete fGrid;
+		fGrid = nil;
+	}
+	
+	if(fTimeHdl) {DisposeHandle((Handle)fTimeHdl); fTimeHdl=0;}
+	
+	if(fStartData.dataHdl)DisposeLoadedData(&fStartData); 
+	if(fEndData.dataHdl)DisposeLoadedData(&fEndData);
+	
+	if(fInputFilesHdl) {DisposeHandle((Handle)fInputFilesHdl); fInputFilesHdl=0;}
+	
+}
+
 
 long TimeGridVel_c::GetNumTimesInFile()
 {
@@ -1959,6 +1977,16 @@ TimeGridVelRect_c::TimeGridVelRect_c () : TimeGridVel_c()
 	
 }
 
+void TimeGridVelRect_c::Dispose ()
+{
+	if(fDepthLevelsHdl) {DisposeHandle((Handle)fDepthLevelsHdl); fDepthLevelsHdl=0;}
+	
+	if(fDepthsH) {DisposeHandle((Handle)fDepthsH); fDepthsH=0;}
+	if(fDepthDataInfo) {DisposeHandle((Handle)fDepthDataInfo); fDepthDataInfo=0;}
+	
+	TimeGridVel_c::Dispose ();
+}
+
 
 TimeGridVelCurv_c::TimeGridVelCurv_c () : TimeGridVelRect_c()
 {
@@ -1967,6 +1995,14 @@ TimeGridVelCurv_c::TimeGridVelCurv_c () : TimeGridVelRect_c()
 	//bIsCOOPSWaterMask = false;
 	bVelocitiesOnNodes = false;
 }	
+
+void TimeGridVelCurv_c::Dispose ()
+{
+	if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
+	if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
+	
+	TimeGridVelRect_c::Dispose ();
+}
 
 LongPointHdl TimeGridVelCurv_c::GetPointsHdl()
 {
@@ -5009,6 +5045,11 @@ LongPointHdl TimeGridVelTri_c::GetPointsHdl()
 	return (dynamic_cast<TTriGridVel*>(fGrid)) -> GetPointsHdl();
 }
 
+void TimeGridVelTri_c::Dispose ()
+{
+	TimeGridVelCurv_c::Dispose ();
+}
+
 float TimeGridVelTri_c::GetTotalDepth(WorldPoint refPoint, long triNum)
 {
 #pragma unused(refPoint)
@@ -6881,6 +6922,13 @@ TimeGridCurRect_c::TimeGridCurRect_c () : TimeGridVel_c()
 	fUserUnits = kUndefined;
 }
 
+void TimeGridCurRect_c::Dispose ()
+{
+	if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
+	
+	TimeGridVel_c::Dispose ();
+}
+
 VelocityRec TimeGridCurRect_c::GetScaledPatValue(const Seconds& model_time, WorldPoint3D refPoint)
 {
 	double timeAlpha;
@@ -7765,6 +7813,13 @@ long TimeGridCurTri_c::GetNumDepths(void)
 	if (fDepthsH) numDepths = _GetHandleSize((Handle)fDepthsH)/sizeof(**fDepthsH);
 	
 	return numDepths;
+}
+void TimeGridCurTri_c::Dispose ()
+{
+	if(fDepthsH) {DisposeHandle((Handle)fDepthsH); fDepthsH=0;}
+	if(fDepthDataInfo) {DisposeHandle((Handle)fDepthDataInfo); fDepthDataInfo=0;}
+	
+	TimeGridCurRect_c::Dispose ();
 }
 void TimeGridCurTri_c::GetDepthIndices(long ptIndex, float depthAtPoint, long *depthIndex1, long *depthIndex2)
 {

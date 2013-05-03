@@ -61,6 +61,8 @@ public:
 #endif
 	//GridCurrentMover_c () {timeGrid = 0; fLESetSizesH = 0; fUncertaintyListH = 0;} 
 	GridCurrentMover_c (); 
+	~GridCurrentMover_c () { Dispose (); }
+	virtual void		Dispose ();
 	
 	virtual ClassID 	GetClassID () { return TYPE_GRIDCURRENTMOVER; }
 	virtual Boolean	IAm(ClassID id) { if(id==TYPE_GRIDCURRENTMOVER) return TRUE; return CurrentMover_c::IAm(id); }

@@ -24,7 +24,7 @@ class TMover : virtual public Mover_c,  public TClassID
 public:
 	TMover (TMap *owner, char *name);
 	virtual			   ~TMover () { Dispose (); }
-	virtual void		Dispose () {}
+	//virtual void		Dispose () {}
 	
 	virtual OSErr 		MakeClone(TMover **clonePtrPtr);
 	virtual OSErr 		BecomeClone(TMover *clone);

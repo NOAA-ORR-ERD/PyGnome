@@ -41,6 +41,18 @@ OSErr GridWindMover_c::PrepareForModelRun()
 	return WindMover_c::PrepareForModelRun();
 }
 
+void GridWindMover_c::Dispose()
+{
+	if (timeGrid)
+	{
+		timeGrid -> Dispose();
+		//delete fGrid;
+		timeGrid = nil;
+	}
+	
+	WindMover_c::Dispose ();
+}
+
 OSErr GridWindMover_c::PrepareForModelStep(const Seconds& model_time, const Seconds& time_step, bool uncertain, int numLESets, int* LESetsSizesList)
 {
 	OSErr err = 0;

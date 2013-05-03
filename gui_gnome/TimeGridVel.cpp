@@ -45,7 +45,7 @@ TimeGridVel::TimeGridVel (/*TMap *owner, char *name*/)
 	
 }
 
-void TimeGridVel::Dispose ()
+/*void TimeGridVel::Dispose ()
 {
 	if (fGrid)
 	{
@@ -61,7 +61,7 @@ void TimeGridVel::Dispose ()
 
 	if(fInputFilesHdl) {DisposeHandle((Handle)fInputFilesHdl); fInputFilesHdl=0;}
 
-}
+}*/
 
 
 #define TimeGridVelREADWRITEVERSION 1 // don't bother with for now
@@ -775,7 +775,7 @@ TimeGridVelRect::TimeGridVelRect () : TimeGridVel()
 	
 }
 
-void TimeGridVelRect::Dispose ()
+/*void TimeGridVelRect::Dispose ()
 {
 	if(fDepthLevelsHdl) {DisposeHandle((Handle)fDepthLevelsHdl); fDepthLevelsHdl=0;}
 	
@@ -783,7 +783,7 @@ void TimeGridVelRect::Dispose ()
 	if(fDepthDataInfo) {DisposeHandle((Handle)fDepthDataInfo); fDepthDataInfo=0;}
 	
 	TimeGridVel::Dispose ();
-}
+}*/
 
 
 #define TimeGridVelRectREADWRITEVERSION 1 // don't bother with for now
@@ -951,13 +951,13 @@ done:
 	return err;
 }
 
-void TimeGridVelCurv::Dispose ()
+/*void TimeGridVelCurv::Dispose ()
 {
 	if(fVerdatToNetCDFH) {DisposeHandle((Handle)fVerdatToNetCDFH); fVerdatToNetCDFH=0;}
 	if(fVertexPtsH) {DisposeHandle((Handle)fVertexPtsH); fVertexPtsH=0;}
 	
 	TimeGridVelRect::Dispose ();
-}
+}*/
 
 
 
@@ -1638,10 +1638,10 @@ TimeGridVelTri::TimeGridVelTri () : TimeGridVelCurv()
 	bVelocitiesOnTriangles = false;
 }
 
-void TimeGridVelTri::Dispose ()
+/*void TimeGridVelTri::Dispose ()
 {
 	TimeGridVelCurv::Dispose ();
-}
+}*/
 
 #define TimeGridVelTriREADWRITEVERSION 1 //JLM
 
@@ -2484,12 +2484,12 @@ TimeGridCurRect::TimeGridCurRect () : TimeGridVel()
 	fUserUnits = kUndefined;
 }
 
-void TimeGridCurRect::Dispose ()
+/*void TimeGridCurRect::Dispose ()
 {
 	if(fTimeDataHdl) {DisposeHandle((Handle)fTimeDataHdl); fTimeDataHdl=0;}
 	
 	TimeGridVel::Dispose ();
-}
+}*/
 
 #define TimeGridCurRectREADWRITEVERSION 1 
 
@@ -2759,13 +2759,13 @@ TimeGridCurTri::TimeGridCurTri () : TimeGridCurRect()
 	
 	//SetClassName (name); // short file name
 }
-void TimeGridCurTri::Dispose ()
+/*void TimeGridCurTri::Dispose ()
 {
 	if(fDepthsH) {DisposeHandle((Handle)fDepthsH); fDepthsH=0;}
 	if(fDepthDataInfo) {DisposeHandle((Handle)fDepthDataInfo); fDepthDataInfo=0;}
 	
 	TimeGridCurRect::Dispose ();
-}
+}*/
 #define TimeGridCurTriREADWRITEVERSION 1 //JLM
 
 OSErr TimeGridCurTri::Write (BFPB *bfpb)

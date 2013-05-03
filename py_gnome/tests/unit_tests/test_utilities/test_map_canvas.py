@@ -14,7 +14,7 @@ from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
 import gnome.utilities.geometry.polygons
 
-datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
+datadir = os.path.join(os.path.dirname(__file__), r"../SampleData")
 
 def test_render():
     """
@@ -84,41 +84,6 @@ def test_basemap_wide():
     map.save_background("background2.png")
     
     assert True
-
-def test_render_elements():
-    polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
-    map = map_canvas.MapCanvas((800, 600), polygons)
-    
-    BB = map.map_BB
-    min_lon, min_lat = BB[0] 
-    max_lon, max_lat = BB[1] 
-    
-    N = 1000
-    #create some random particle positions:
-    lon = random.uniform(min_lon, max_lon, (N,))
-    lat = random.uniform(min_lat, max_lat, (N,))
-
-    #create a spill
-    spill = TestSpillContainer(num_elements=N)
-    spill['positions'][:,0] = lon
-    spill['positions'][:,1] = lat
-
-    map.create_foreground_image()
-    map.draw_elements(spill)
-
-    # create an uncertainty spill
-    lon = random.uniform(min_lon, max_lon, (N,))
-    lat = random.uniform(min_lat, max_lat, (N,))
-
-    spill = TestSpillContainer(num_elements=N, uncertain=True)
-    spill['positions'][:,0] = lon
-    spill['positions'][:,1] = lat
-
-    map.draw_elements(spill)
-
-    # save the image
-    map.save_foreground("foreground1.png")
-    assert True        
 
 def test_MapCanvasfromBNA_new_from_dict():
     """
