@@ -163,7 +163,6 @@ class FileUpload(BaseResource):
         """
         filename = self.request.validated['filename']
         input_file = self.request.POST['filename'].file
-        print filename
 
         with open(filename, 'wb') as f:
             try:

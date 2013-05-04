@@ -370,7 +370,7 @@ def valid_filename(request):
         request.errors.status = 400
         return
 
-    request.validated['filename'] = safe_join(model.base_dir, filename)
+    request.validated['filename'] = safe_join(model.static_data_dir, filename)
 
 
 def valid_uploaded_file(request):
@@ -381,20 +381,27 @@ def valid_uploaded_file(request):
     Once validated, the absolute path of the file will be added to the
     `request.validated` dictionary.
     """
+    def die(error):
+        request.errors.add('body', 'filename', error)
+        request.errors.status = 400
+
     valid_model_id(request)
 
     if request.errors:
         return
 
     model = request.validated['model']
-    filename = request.validated['filename']
+    filename = request.validated.get('filename', None)
+
+    if not filename:
+        return die('A file is required.')
+
     abs_filename = os.path.join(model.static_data_dir, filename)
     relative_filename = os.path.join('data', filename)
+    print abs_filename
 
     if not os.path.exists(abs_filename):
-        request.errors.add('body', 'filename', 'File does not exist.')
-        request.errors.status = 400
-        return
+        return die('File does not exist.')
 
     request.validated['filename'] = relative_filename
 

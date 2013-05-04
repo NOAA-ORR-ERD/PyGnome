@@ -72,14 +72,19 @@ Data users input may be validated one of three different ways -- all of which
 happen during form submission. The workflow for a form submission is as follows:
 
 - The user edits a form, updating the model as they do so
+
 - The user clicks a "Save" button
+
 - The View responsible for the form executes its ``submit`` event handler
+
 - If a JSON Schema is defined for the model, user input is checked agains the
   schema by the JSV JavaScript library. Any errors are displayed on the form
   and the submissions is canceled.
+
 - Data for the form is sent to the View's validation web service if one has
   been defined. Any errors returned by the validation service are displayed
   on the form for the user to correct.
+
 - If no validation service is defined, the model is saved to its usual web
   service API, e.g., `/model/<model_id>/movers/wind/<wind_id>`. Again, if any
   errors are returned, they are displayed on the form next to the appropriate
@@ -122,4 +127,5 @@ The Navigation Tree
 - The tree view listens for a successful submission event of any form, and if
   that happens, it makes an AJAX request for the new representation of the tree
   and redisplays itself.
+  ab@orr.2012!!k
 
