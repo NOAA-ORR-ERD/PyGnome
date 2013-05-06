@@ -31,7 +31,7 @@ using std::fstream;
 using std::ios;
 using std::cout;
 
-CATSMover_c::CATSMover_c () { 
+CATSMover_c::CATSMover_c () : CurrentMover_c() { 
 	
 	fDuration=48*3600; //48 hrs as seconds 
 	fTimeUncertaintyWasSet =0;
@@ -66,6 +66,25 @@ CATSMover_c::CATSMover_c (TMap *owner, char *name) : CurrentMover_c(owner, name)
 	SetClassName (name);
 }
 #endif
+
+void CATSMover_c::Dispose ()
+{
+	if (fGrid)
+	{
+		fGrid -> Dispose();
+//#ifndef pyGNOME
+		delete fGrid;
+//#endif
+		fGrid = nil;
+	}
+	//For pyGnome, let python/cython manage memory for this object.	
+#ifndef pyGNOME
+	DeleteTimeDep ();
+#endif
+	
+	
+	CurrentMover_c::Dispose ();
+}
 
 #ifdef pyGNOME
 
@@ -476,7 +495,9 @@ void CATSMover_c::DeleteTimeDep ()
 	if (timeDep)
 	{
 		timeDep -> Dispose ();
+//#ifndef pyGNOME
 		delete timeDep;
+//#endif
 		timeDep = nil;
 	}
 	

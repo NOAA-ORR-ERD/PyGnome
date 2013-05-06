@@ -239,6 +239,9 @@ class WebModel(BaseWebObject, Model):
 
         self.base_dir = os.path.join(self.package_root, data_dir, str(self.id))
         self.base_dir_relative = os.path.join(data_dir, str(self.id))
+
+        # The static data dir is for things like file uploads that are not bound
+        # to a datetime for caching purposes.
         self.static_data_dir = os.path.join(self.base_dir, 'data')
 
         # Create the base directory for all of the model's data.
@@ -254,6 +257,9 @@ class WebModel(BaseWebObject, Model):
     def data_dir(self):
         """
         Return the expected path to the files for the current run of the model.
+
+        This path is bound to the current value of ``self.changed_at`` so that
+        we can invalidate a browser-based image cache when a model changes.
         """
         if not self.base_dir:
             return

@@ -57,6 +57,8 @@ public:
 						CATSMover_c (TMap *owner, char *name);
 #endif
 						CATSMover_c ();
+	virtual			   ~CATSMover_c () { Dispose (); }
+	virtual void		Dispose ();
 	virtual OSErr		AddUncertainty(long setIndex, long leIndex,VelocityRec *patVelocity,double timeStep,Boolean useEddyUncertainty);
 	void				SetRefPosition (WorldPoint p, long z) { refP = p; refZ = z; }
 	void				GetRefPosition (WorldPoint *p, long *z) { (*p) = refP; (*z) = refZ; }

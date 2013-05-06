@@ -17,10 +17,18 @@ tests Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`object_form_tests` Module
--------------------------------
+:mod:`schema_tests` Module
+--------------------------
 
-.. automodule:: webgnome.tests.object_form_tests
+.. automodule:: webgnome.tests.schema_tests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`service_tests` Module
+---------------------------
+
+.. automodule:: webgnome.tests.service_tests
     :members:
     :undoc-members:
     :show-inheritance:

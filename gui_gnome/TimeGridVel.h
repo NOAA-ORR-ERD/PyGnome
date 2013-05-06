@@ -12,8 +12,8 @@ class TimeGridVel : virtual public TimeGridVel_c
 {
 public:
 						TimeGridVel();
-						~TimeGridVel () { Dispose (); }
-	virtual void		Dispose ();
+	virtual				~TimeGridVel () { Dispose (); }
+	//virtual void		Dispose ();
 
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -32,8 +32,8 @@ class TimeGridVelRect : virtual public TimeGridVelRect_c, public TimeGridVel
 public:
 
 	TimeGridVelRect();
-	~TimeGridVelRect () { Dispose (); }
-	virtual void		Dispose ();
+	virtual ~TimeGridVelRect () { Dispose (); }
+	//virtual void		Dispose ();
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -49,8 +49,8 @@ class TimeGridVelCurv : virtual public TimeGridVelCurv_c, public TimeGridVelRect
 {
 public:
 						TimeGridVelCurv();
-						~TimeGridVelCurv () { Dispose (); }
-	virtual void		Dispose ();
+	virtual				~TimeGridVelCurv () { Dispose (); }
+	//virtual void		Dispose ();
 
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -69,8 +69,8 @@ class TimeGridVelTri : virtual public TimeGridVelTri_c, public TimeGridVelCurv
 {
 public:
 						TimeGridVelTri();
-						~TimeGridVelTri () { Dispose (); }
-	virtual void		Dispose ();
+	virtual				~TimeGridVelTri () { Dispose (); }
+	//virtual void		Dispose ();
 
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -91,8 +91,8 @@ class TimeGridCurRect : virtual public TimeGridCurRect_c, public TimeGridVel
 public:
 	
 	TimeGridCurRect();
-	~TimeGridCurRect () { Dispose (); }
-	virtual void		Dispose ();
+	virtual ~TimeGridCurRect () { Dispose (); }
+	//virtual void		Dispose ();
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -110,8 +110,8 @@ class TimeGridCurTri : virtual public TimeGridCurTri_c, public TimeGridCurRect
 public:
 	
 	TimeGridCurTri();
-	~TimeGridCurTri () { Dispose (); }
-	virtual void		Dispose ();
+	virtual ~TimeGridCurTri () { Dispose (); }
+	//virtual void		Dispose ();
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -128,8 +128,8 @@ class TimeGridWindRect : virtual public TimeGridWindRect_c, public TimeGridVel
 public:
 
 	TimeGridWindRect();
-	~TimeGridWindRect () { Dispose (); }
-	virtual void		Dispose ();
+	virtual ~TimeGridWindRect () { Dispose (); }
+	//virtual void		Dispose ();
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -145,8 +145,8 @@ class TimeGridWindCurv : virtual public TimeGridWindCurv_c, public TimeGridWindR
 {
 public:
 	TimeGridWindCurv();
-	~TimeGridWindCurv () { Dispose (); }
-	virtual void		Dispose ();
+	virtual ~TimeGridWindCurv () { Dispose (); }
+	//virtual void		Dispose ();
 	
 	// I/O methods
 	virtual OSErr 		Read (BFPB *bfpb); 	// read from current position
@@ -166,7 +166,7 @@ public:
 public:
 	
 	TimeGridWindRectASCII();
-	~TimeGridWindRectASCII () { Dispose (); }
+	virtual ~TimeGridWindRectASCII () { Dispose (); }
 	virtual void		Dispose ();
 	
 	// I/O methods

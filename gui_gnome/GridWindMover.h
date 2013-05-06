@@ -23,7 +23,7 @@ class GridWindMover : virtual public GridWindMover_c,  public TWindMover
 public:
 	GridWindMover (TMap *owner, char* name);
 	~GridWindMover () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 
 	virtual OSErr		InitMover (TimeGridVel *grid); 
 

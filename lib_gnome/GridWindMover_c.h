@@ -50,6 +50,8 @@ public:
 	GridWindMover_c (TMap *owner, char* name);
 #endif
 	GridWindMover_c () {}
+	~GridWindMover_c () { Dispose (); }
+	virtual void		Dispose ();
 	
 	virtual ClassID 	GetClassID () { return TYPE_GRIDWINDMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_GRIDWINDMOVER) return TRUE; return WindMover_c::IAm(id); }

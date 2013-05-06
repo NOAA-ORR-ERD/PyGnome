@@ -11,55 +11,90 @@ WebGNOME.
 Summary
 -------
 
-The WebGNOME JavaScript application uses two approaches for managing UI
-elements. The first is AJAX requests for "view partials," which are server-side
-API endpoints (known as "views" in Pyramid) that render HTML that the JavaScript
-application then inserts into the DOM. The second is the Backbone.js pattern of
-client-side ``View`` objects that listen to client-side ``Model`` objects and
-refresh themselves when these models change.
+The WebGNOME JavaScript application is loosely structured based on the MVC
+pattern using Backbone.js. Functionality is spread between View and Model
+objects, with Views often receiving user input in a style more like a
+traditional Controller -- as is the fashion when using Backbone.
+
+Views listen to Models and refresh themselves when models change. A model may
+represent GUI state, such as the type of action the user is currently engaged
+in (playing an animation, drawing a spill onto the map) or they may exist
+as client-side representation of server-side objects, like Wind Movers,
+Surface Release Spills and the Gnome Model itselt -- or, at least, the settings
+values that it makes sense for a user to change from a web GUI.
 
 
 High-level Goals
 ----------------
 
-- Keep as little state about the model in the browser as possible.
-
-- Restrict the use of hard-coded API URLs in JavaScript. URLs should be passed
-  into the application from the server.
-
 - Always request model data from the server before displaying it. In-app changes
-  do not change an intermediary client-side model which then persists to the
-  server, as is usual in Backbone.js applications; they change the server-side
-  model directly via form submissions and displays refresh from AJAX calls to the
-  server.
+  change an intermdiary client-side model which is validated server-side and
+  only persisted if validation succeeds.
 
-- Render forms on the server ("view partials") and return via AJAX calls. Forms
-  are not rendered by client-side templates in the browser, though we may use
-  lightweight client-side validation in addition to server-side validation.
+- Keep browser memory use low for long-running sessions of the web application
+  by swapping out the data for form-related views from models when forms are
+  displayed, rather than creating multiple View objects, one for each model.
 
-- Backbone.js models and views are used to render read-only data.
+- Validate data in the client and on the server. See VALIDATION for more details.
 
 
-Server-side View Partials
--------------------------
+RequireJS Modules
+-----------------
 
-The JavaScript application uses view partials for all form-handling code. Forms
-are submitted via AJAX requests to the server, rendered in the server, and sent
-back to the JavaScript application if there are errors. A Backbone.js ``View``
-called the ``ModalFormView`` is responsible for displaying the form HTML
-returned by the server in a modal display. Form submissions immediately change
-the value of settings on the user's server-side :class:`gnome.model.Model`.
+Code for the JavaScript application is separated into modules using the
+RequireJS library. This means that each module declares its dependencies at
+the top of the file, and those JavaScript modules (or files, in the case of non-
+RequireJS-enabled code) will load before the code of the module is executed.
 
 
 Backbone.js Models and Views
 ----------------------------
 
-The application uses Backbone.js client-side models and views for animation
-controls. The convention used in the application is that only form submissions
-may change the underlying :class:`gnome.model.Model` object, so Backbone.js
-``Model`` objects are used in a read-only way: i.e., these "models" are not
-saved back to the server, but typically refresh when the
-:class:`gnome.model.Model` changes after a form submission.
+The application uses Backbone.js client-side Model and View objects for
+animation controls and to represent input forms.
+
+
+Two-Way Data Binding with Rivets.js
+-----------------------------------
+
+Form inputs are bound to a specific model through the Rivets.js library, in a
+manner similar to that found in Angular.js. This means that as users fill out a
+form, the underlying model the form uses is updated.
+
+If the user cancels a form without saving, the model is retrieved from the
+server and refreshed.
+
+
+Data Validation
+---------------
+
+Data users input may be validated one of three different ways -- all of which
+happen during form submission. The workflow for a form submission is as follows:
+
+- The user edits a form, updating the model as they do so
+
+- The user clicks a "Save" button
+
+- The View responsible for the form executes its ``submit`` event handler
+
+- If a JSON Schema is defined for the model, user input is checked agains the
+  schema by the JSV JavaScript library. Any errors are displayed on the form
+  and the submissions is canceled.
+
+- Data for the form is sent to the View's validation web service if one has
+  been defined. Any errors returned by the validation service are displayed
+  on the form for the user to correct.
+
+- If no validation service is defined, the model is saved to its usual web
+  service API, e.g., `/model/<model_id>/movers/wind/<wind_id>`. Again, if any
+  errors are returned, they are displayed on the form next to the appropriate
+  input fields.
+
+A validation web service is normally only used if the save operation the user is
+attempting to do will be deferred until a later time, as is the case when the
+user is filling out a multi-step form. We wait to send each "save" operation
+until the user finishes the multi-step form, to make it easier for us to back
+out of changes to multiple models during the course of the form.
 
 
 Running the Model
@@ -84,32 +119,13 @@ The Navigation Tree
   which are settings values, instantiated movers, etc., for the active model.
 
 - Each item in the tree is linked to a form by a string known as the ``form_id``
-  that is the HTML ID of the form. A form class is responsible for providing this
-  string both when a form is rendered and on demand via a class method, which is
-  used during the construction of the navigation tree.
-
-- Each item in the tree is given a ``delete_url`` that the client may use to
-  delete the resource the item refers to.
+  that is the HTML ID of the form that should open the item. A View with that ID
+  will open if the user double-clicks on the item, e.g. the Edit Wind Mover form.
+  Each item also has an ``object_id`` which refers to a Model that will then
+  be loaded as the dataset for the form.
 
 - The tree view listens for a successful submission event of any form, and if
   that happens, it makes an AJAX request for the new representation of the tree
   and redisplays itself.
+  ab@orr.2012!!k
 
-
-Forms
------
-
-- All forms are rendered as HTML and included in the page on the first load.
-
-- Invoking an "Add" event on a root item in the tree, such as "Movers" or "Spills"
-  displays the add form for that item.
-
-- Invoking an "Edit" event on an item displays the edit form for the item, which
-  exists on the page in a hidden div.
-
-- Submitting a form passes the serialized form values to a Pyramid view in an
-  AJAX call. If there were form errors, the rendered form is sent back from the
-  server in a JSON response and the client will display it again.
-
-- After every form submission, the hidden <div> of form HTML is refreshed from a
-  partial view, to make sure all forms reflect the current state of the model.

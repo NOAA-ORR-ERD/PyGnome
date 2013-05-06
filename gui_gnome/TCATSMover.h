@@ -23,7 +23,7 @@ class TCATSMover : virtual public CATSMover_c,  public TCurrentMover
 public:
 	TCATSMover (TMap *owner, char *name);
 	virtual			   ~TCATSMover () { Dispose (); }
-	virtual void		Dispose ();
+	//virtual void		Dispose ();
 	virtual OSErr		InitMover (TGridVel *grid, WorldPoint p);
 	virtual ClassID 	GetClassID () { return TYPE_CATSMOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_CATSMOVER) return TRUE; return TCurrentMover::IAm(id); }

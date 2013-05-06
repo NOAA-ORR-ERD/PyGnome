@@ -220,7 +220,16 @@
                     read: function(obj, keypath) {
                         return obj.get(keypath);
                     },
+                    /*
+                     When setting a value, if it's parsable as a float, use a
+                     float value instead. This is to support JSON Schema
+                     validation of float types.
+                     */
                     publish: function(obj, keypath, value) {
+                        var floatVal = parseFloat(value);
+                        if (!isNaN(floatVal)) {
+                            value = floatVal;
+                        }
                         obj.set(keypath, value);
                     }
                 }

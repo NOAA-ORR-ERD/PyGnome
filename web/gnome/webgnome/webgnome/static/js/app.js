@@ -328,6 +328,7 @@ define([
             this.addMapFromUploadFormView = new forms.AddMapFromUploadFormView({
                 id: 'add-map-from-upload',
                 model: this.map,
+                defaults: this.options.defaultMap,
                 uploadUrl: this.apiRoot + '/file_upload',
                 gnomeModel: this.gnomeModel
             });

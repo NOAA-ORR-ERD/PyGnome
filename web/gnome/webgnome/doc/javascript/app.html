@@ -1,0 +1,816 @@
+<!DOCTYPE html>  <html> <head>   <title>app.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               app.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="nx">define</span><span class="p">([</span>
+    <span class="s1">&#39;jquery&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lib/underscore&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lib/backbone&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lib/mousetrap&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;models&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;views/all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;util&#39;</span><span class="p">,</span>
+<span class="p">],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">Mousetrap</span><span class="p">,</span> <span class="nx">models</span><span class="p">,</span> <span class="nx">views</span><span class="p">,</span> <span class="nx">util</span><span class="p">)</span> <span class="p">{</span>
+     <span class="cm">/*</span>
+<span class="cm">     `AppView` acts as a controller, listening to delegate views and models for</span>
+<span class="cm">     events and coordinating state changes.</span>
+
+<span class="cm">     `AppView` should only handle events triggered by models and views that</span>
+<span class="cm">     *require* coordination. When possible, views should listen directly to a</span>
+<span class="cm">     specific model (or another view) and handle updating themselves without</span>
+<span class="cm">     assistance from `AppView`.</span>
+<span class="cm">     */</span>
+    <span class="kd">var</span> <span class="nx">forms</span> <span class="o">=</span> <span class="nx">views</span><span class="p">.</span><span class="nx">forms</span><span class="p">;</span>
+
+    <span class="kd">var</span> <span class="nx">AppView</span> <span class="o">=</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">View</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">initialize</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">_</span><span class="p">.</span><span class="nx">bindAll</span><span class="p">(</span><span class="k">this</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Used to construct model and other server-side URLs.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">this</span><span class="p">.</span><span class="nx">apiRoot</span> <span class="o">=</span> <span class="s2">&quot;/model/&quot;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">modelId</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">router</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">router</span><span class="p">;</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">setupModels</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">setupForms</span><span class="p">();</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">menuView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">views</span><span class="p">.</span><span class="nx">MenuView</span><span class="p">({</span>
+                <span class="nx">modelDropdownEl</span><span class="o">:</span> <span class="s2">&quot;#file-drop&quot;</span><span class="p">,</span>
+                <span class="nx">runDropdownEl</span><span class="o">:</span> <span class="s2">&quot;#run-drop&quot;</span><span class="p">,</span>
+                <span class="nx">helpDropdownEl</span><span class="o">:</span> <span class="s2">&quot;#help-drop&quot;</span><span class="p">,</span>
+                <span class="nx">newItemEl</span><span class="o">:</span> <span class="s2">&quot;#menu-new&quot;</span><span class="p">,</span>
+                <span class="nx">runItemEl</span><span class="o">:</span> <span class="s2">&quot;#menu-run&quot;</span><span class="p">,</span>
+                <span class="nx">stepItemEl</span><span class="o">:</span> <span class="s2">&quot;#menu-step&quot;</span><span class="p">,</span>
+                <span class="nx">runUntilItemEl</span><span class="o">:</span> <span class="s2">&quot;#menu-run-until&quot;</span><span class="p">,</span>
+                <span class="nx">locationFilesMeta</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">locationFilesMeta</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">sidebarEl</span> <span class="o">=</span> <span class="s1">&#39;#sidebar&#39;</span><span class="p">;</span>
+            <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">sidebarEl</span><span class="p">).</span><span class="nx">resizable</span><span class="p">({</span>
+                <span class="nx">handles</span><span class="o">:</span> <span class="s1">&#39;e, w&#39;</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">treeView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">views</span><span class="p">.</span><span class="nx">TreeView</span><span class="p">({</span>
+                <span class="nx">treeEl</span><span class="o">:</span> <span class="s2">&quot;#tree&quot;</span><span class="p">,</span>
+                <span class="nx">gnomeRun</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">,</span>
+                <span class="nx">map</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">map</span><span class="p">,</span>
+                <span class="nx">customMap</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">customMap</span><span class="p">,</span>
+                <span class="nx">collections</span><span class="o">:</span> <span class="p">[</span>
+                    <span class="k">this</span><span class="p">.</span><span class="nx">windMovers</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">randomMovers</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span><span class="p">,</span>
+                    <span class="k">this</span><span class="p">.</span><span class="nx">winds</span>
+                <span class="p">]</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">treeControlView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">views</span><span class="p">.</span><span class="nx">TreeControlView</span><span class="p">({</span>
+                <span class="nx">addButtonEl</span><span class="o">:</span> <span class="s2">&quot;#add-button&quot;</span><span class="p">,</span>
+                <span class="nx">removeButtonEl</span><span class="o">:</span> <span class="s2">&quot;#remove-button&quot;</span><span class="p">,</span>
+                <span class="nx">settingsButtonEl</span><span class="o">:</span> <span class="s2">&quot;#settings-button&quot;</span><span class="p">,</span>
+                <span class="nx">treeView</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">treeView</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">views</span><span class="p">.</span><span class="nx">MapView</span><span class="p">({</span>
+                <span class="nx">mapEl</span><span class="o">:</span> <span class="s1">&#39;#map&#39;</span><span class="p">,</span>
+                <span class="nx">placeholderClass</span><span class="o">:</span> <span class="s1">&#39;placeholder&#39;</span><span class="p">,</span>
+                <span class="nx">frameClass</span><span class="o">:</span> <span class="s1">&#39;frame&#39;</span><span class="p">,</span>
+                <span class="nx">activeFrameClass</span><span class="o">:</span> <span class="s1">&#39;active&#39;</span><span class="p">,</span>
+                <span class="nx">gnomeRun</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">,</span>
+                <span class="nx">model</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">map</span><span class="p">,</span>
+                <span class="nx">animationThreshold</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">animationThreshold</span><span class="p">,</span>
+                <span class="nx">newModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">newModel</span><span class="p">,</span>
+                <span class="nx">state</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">({</span>
+                <span class="nx">sliderEl</span><span class="o">:</span> <span class="s2">&quot;#slider&quot;</span><span class="p">,</span>
+                <span class="nx">sliderShadedEl</span><span class="o">:</span> <span class="s2">&quot;#slider-shaded&quot;</span><span class="p">,</span>
+                <span class="nx">restingButtonEl</span><span class="o">:</span> <span class="s2">&quot;#hand-button&quot;</span><span class="p">,</span>
+                <span class="nx">playButtonEl</span><span class="o">:</span> <span class="s2">&quot;#play-button&quot;</span><span class="p">,</span>
+                <span class="nx">pauseButtonEl</span><span class="o">:</span> <span class="s2">&quot;#pause-button&quot;</span><span class="p">,</span>
+                <span class="nx">backButtonEl</span><span class="o">:</span> <span class="s2">&quot;#back-button&quot;</span><span class="p">,</span>
+                <span class="nx">forwardButtonEl</span><span class="o">:</span> <span class="s2">&quot;#forward-button&quot;</span><span class="p">,</span>
+                <span class="nx">zoomInButtonEl</span><span class="o">:</span> <span class="s2">&quot;#zoom-in-button&quot;</span><span class="p">,</span>
+                <span class="nx">zoomOutButtonEl</span><span class="o">:</span> <span class="s2">&quot;#zoom-out-button&quot;</span><span class="p">,</span>
+                <span class="nx">moveButtonEl</span><span class="o">:</span> <span class="s2">&quot;#move-button&quot;</span><span class="p">,</span>
+                <span class="nx">fullscreenButtonEl</span><span class="o">:</span> <span class="s2">&quot;#fullscreen-button&quot;</span><span class="p">,</span>
+                <span class="nx">resizeButtonEl</span><span class="o">:</span> <span class="s2">&quot;#resize-button&quot;</span><span class="p">,</span>
+                <span class="nx">spillButtonEl</span><span class="o">:</span> <span class="s2">&quot;#spill-button&quot;</span><span class="p">,</span>
+                <span class="nx">timeEl</span><span class="o">:</span> <span class="s2">&quot;#time&quot;</span><span class="p">,</span>
+                <span class="nx">gnomeRun</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">,</span>
+                <span class="nx">mapView</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">,</span>
+                <span class="nx">model</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">map</span><span class="p">,</span>
+                <span class="nx">state</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">messageView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">views</span><span class="p">.</span><span class="nx">MessageView</span><span class="p">({</span>
+                <span class="nx">gnomeRun</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">,</span>
+                <span class="nx">surfaceReleaseSpills</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span><span class="p">,</span>
+                <span class="nx">windMovers</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">windMovers</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">splashView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">views</span><span class="p">.</span><span class="nx">SplashView</span><span class="p">({</span>
+                <span class="nx">el</span><span class="o">:</span> <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#splash-page&#39;</span><span class="p">),</span>
+                <span class="nx">router</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">router</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">locationFileMapView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">views</span><span class="p">.</span><span class="nx">LocationFileMapView</span><span class="p">({</span>
+                <span class="nx">el</span><span class="o">:</span> <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#location-file-map&#39;</span><span class="p">),</span>
+                <span class="nx">mapCanvas</span><span class="o">:</span> <span class="s1">&#39;#map_canvas&#39;</span><span class="p">,</span>
+                <span class="nx">locationFilesMeta</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">locationFilesMeta</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">setupEventHandlers</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">setupKeyboardHandlers</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">setupEventHandlers</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">_this</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">customMap</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;sync&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">map</span><span class="p">.</span><span class="nx">fetch</span><span class="p">();</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">models</span><span class="p">.</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">RUN_ERROR</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRunError</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">models</span><span class="p">.</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">SERVER_RESET</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">rewind</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&quot;sync&quot;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">spillUpdated</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;sync&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">drawSpills</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;add&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">drawSpills</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;remove&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">drawSpills</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addSpillFormView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">forms</span><span class="p">.</span><span class="nx">AddSpillFormView</span><span class="p">.</span><span class="nx">CANCELED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">drawSpills</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">addSurfaceReleaseSpillFormView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">forms</span><span class="p">.</span><span class="nx">SurfaceReleaseSpillFormView</span><span class="p">.</span><span class="nx">CANCELED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">drawSpills</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">editSurfaceReleaseSpillFormView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">forms</span><span class="p">.</span><span class="nx">SurfaceReleaseSpillFormView</span><span class="p">.</span><span class="nx">CANCELED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">drawSpills</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">forms</span><span class="p">.</span><span class="nx">BaseView</span><span class="p">.</span><span class="nx">MESSAGE_READY</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">displayMessage</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">treeView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">TreeView</span><span class="p">.</span><span class="nx">ITEM_DOUBLE_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">treeItemDoubleClicked</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">treeControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">TreeControlView</span><span class="p">.</span><span class="nx">ADD_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">addButtonClicked</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">treeControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">TreeControlView</span><span class="p">.</span><span class="nx">REMOVE_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">removeButtonClicked</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">treeControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">TreeControlView</span><span class="p">.</span><span class="nx">SETTINGS_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">settingsButtonClicked</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">HAND_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">handButtonClicked</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">PLAY_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">playButtonClicked</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">PAUSE_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">pause</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">ZOOM_IN_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">enableZoomIn</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">ZOOM_OUT_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">enableZoomOut</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">SLIDER_MOVED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">sliderMoved</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">SLIDER_CHANGED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">sliderChanged</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">BACK_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">rewind</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">FORWARD_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">jumpToLastFrame</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">FULLSCREEN_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">useFullscreen</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">RESIZE_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">disableFullscreen</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapControlView</span><span class="p">.</span><span class="nx">SPILL_BUTTON_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">enableSpillDrawing</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapView</span><span class="p">.</span><span class="nx">PLAYING_FINISHED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">stopAnimation</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapView</span><span class="p">.</span><span class="nx">DRAGGING_FINISHED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">zoomIn</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapView</span><span class="p">.</span><span class="nx">FRAME_CHANGED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">frameChanged</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapView</span><span class="p">.</span><span class="nx">MAP_WAS_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">zoomOut</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapView</span><span class="p">.</span><span class="nx">SPILL_DRAWN</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">spillDrawn</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MapView</span><span class="p">.</span><span class="nx">READY</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">drawSpills</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">locationFileMapView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">LocationFileMapView</span><span class="p">.</span><span class="nx">LOCATION_CHOSEN</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">loadLocationFileWizard</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">menuView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MenuView</span><span class="p">.</span><span class="nx">NEW_ITEM_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">newMenuItemClicked</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">menuView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MenuView</span><span class="p">.</span><span class="nx">RUN_ITEM_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">runMenuItemClicked</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">menuView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MenuView</span><span class="p">.</span><span class="nx">RUN_UNTIL_ITEM_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">runUntilMenuItemClicked</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">menuView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">views</span><span class="p">.</span><span class="nx">MenuView</span><span class="p">.</span><span class="nx">LOCATION_FILE_ITEM_CLICKED</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">loadLocationFileWizard</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">showLocationFileWizard</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">locationFileMeta</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">html</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="nx">locationFileMeta</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;wizard_html&#39;</span><span class="p">));</span>
+            <span class="kd">var</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">html</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">);</span>
+            <span class="kd">var</span> <span class="nx">formView</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">formView</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">formView</span><span class="p">.</span><span class="nx">show</span><span class="p">();</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">loadLocationFile</span><span class="p">(</span><span class="nx">locationFileMeta</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">loadLocationFileWizard</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">location</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">locationFileMeta</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">locationFilesMeta</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">location</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">locationFileMeta</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">showLocationFileWizard</span><span class="p">(</span><span class="nx">locationFileMeta</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;That location file is not available yet.&#39;</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">loadLocationFile</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">locationName</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">model</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">GnomeModelFromLocationFile</span><span class="p">({</span>
+                <span class="nx">location_name</span><span class="o">:</span> <span class="nx">locationName</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">)</span>
+            <span class="p">},</span> <span class="p">{</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="nx">model</span><span class="p">.</span><span class="nx">save</span><span class="p">().</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">util</span><span class="p">.</span><span class="nx">refresh</span><span class="p">();</span>
+            <span class="p">}).</span><span class="nx">fail</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;That location file is not available yet.&#39;</span><span class="p">);</span>
+            <span class="p">});</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Consider the model dirty if the user updates an existing spill, so</span>
+<span class="cm">         we don&#39;t get cached images back on the next model run.</span>
+<span class="cm">         */</span>
+        <span class="nx">spillUpdated</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">rewind</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">drawSpills</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">drawSpills</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">setupKeyboardHandlers</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">_this</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+
+            <span class="nx">Mousetrap</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;space&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">_this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">isPlaying</span><span class="p">())</span> <span class="p">{</span>
+                    <span class="nx">_this</span><span class="p">.</span><span class="nx">pause</span><span class="p">();</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="nx">_this</span><span class="p">.</span><span class="nx">play</span><span class="p">({});</span>
+                <span class="p">}</span>
+            <span class="p">});</span>
+
+            <span class="nx">Mousetrap</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">showFormForActiveTreeItem</span><span class="p">();</span>
+            <span class="p">});</span>
+
+            <span class="nx">Mousetrap</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;n o&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">newMenuItemClicked</span><span class="p">();</span>
+            <span class="p">});</span>
+
+            <span class="nx">Mousetrap</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;n m&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">hideAll</span><span class="p">();</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">showFormWithId</span><span class="p">(</span><span class="s1">&#39;add_mover&#39;</span><span class="p">);</span>
+            <span class="p">});</span>
+
+            <span class="nx">Mousetrap</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;n w&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">hideAll</span><span class="p">();</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">showFormWithId</span><span class="p">(</span><span class="s1">&#39;add-wind-mover&#39;</span><span class="p">);</span>
+            <span class="p">});</span>
+
+            <span class="nx">Mousetrap</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;n p&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">hideAll</span><span class="p">();</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">showFormWithId</span><span class="p">(</span><span class="s1">&#39;add-surface-release-spill&#39;</span><span class="p">);</span>
+            <span class="p">});</span>
+
+            <span class="nx">Mousetrap</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;s f&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">visibleSaveButton</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;div.form[hidden=false] .btn-primary&#39;</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">visibleSaveButton</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">visibleSaveButton</span><span class="p">.</span><span class="nx">click</span><span class="p">();</span>
+                <span class="p">}</span>
+            <span class="p">});</span>
+
+            <span class="nx">Mousetrap</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">newStep</span> <span class="o">=</span> <span class="nx">_this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="nx">newStep</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">return</span><span class="p">;</span>
+                <span class="p">}</span>
+
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">setValue</span><span class="p">(</span><span class="nx">newStep</span><span class="p">);</span>
+            <span class="p">});</span>
+
+            <span class="nx">Mousetrap</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">newStep</span> <span class="o">=</span> <span class="nx">_this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="nx">newStep</span> <span class="o">&gt;</span> <span class="nx">_this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">return</span><span class="p">;</span>
+                <span class="p">}</span>
+
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">setValue</span><span class="p">(</span><span class="nx">newStep</span><span class="p">);</span>
+            <span class="p">});</span>
+        <span class="p">},</span>
+
+        <span class="nx">spillDrawn</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">startCoords</span><span class="p">,</span> <span class="nx">endCoords</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">addSpillFormView</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">startCoords</span><span class="p">,</span> <span class="nx">endCoords</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">setupForms</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">_this</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">FormViewContainer</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;modal-container&#39;</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addMoverFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">AddMoverFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;add-mover&#39;</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addEnvironmentFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">AddEnvironmentFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;add-environment&#39;</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addSpillFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">AddSpillFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;add-spill&#39;</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addMapFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">AddMapFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;add-map&#39;</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">editMapFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">MapFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;edit-map&#39;</span><span class="p">,</span>
+                <span class="nx">model</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">map</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultMap</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addCustomMapFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">AddCustomMapFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;add-custom-map&#39;</span><span class="p">,</span>
+                <span class="nx">model</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">customMap</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultCustomMap</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addMapFromUploadFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">AddMapFromUploadFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;add-map-from-upload&#39;</span><span class="p">,</span>
+                <span class="nx">model</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">map</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultMap</span><span class="p">,</span>
+                <span class="nx">uploadUrl</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">apiRoot</span> <span class="o">+</span> <span class="s1">&#39;/file_upload&#39;</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeSettingsFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">GnomeSettingsFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;model-settings&#39;</span><span class="p">,</span>
+                <span class="nx">model</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">,</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>XXX: Wish we didn't have to reference this again?</p>             </td>             <td class="code">               <div class="highlight"><pre>                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addWindMoverFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">AddWindMoverFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;add-wind-mover&#39;</span><span class="p">,</span>
+                <span class="nx">collection</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">windMovers</span><span class="p">,</span>
+                <span class="nx">router</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">router</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultWindMover</span><span class="p">,</span>
+                <span class="nx">defaultWind</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultWind</span><span class="p">,</span>
+                <span class="nx">winds</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">winds</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">editWindMoverFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">WindMoverFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;edit-wind-mover&#39;</span><span class="p">,</span>
+                <span class="nx">collection</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">windMovers</span><span class="p">,</span>
+                <span class="nx">router</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">router</span><span class="p">,</span>
+                <span class="nx">winds</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">winds</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultWindMover</span><span class="p">,</span>
+                <span class="nx">defaultWind</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultWind</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addWindFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">AddWindFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;add-wind&#39;</span><span class="p">,</span>
+                <span class="nx">collection</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">winds</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultWind</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">,</span>
+                <span class="nx">map</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">map</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">editWindFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">WindFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;edit-wind&#39;</span><span class="p">,</span>
+                <span class="nx">collection</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">winds</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultWind</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">,</span>
+                <span class="nx">map</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">map</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addRandomMoverFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">AddRandomMoverFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;add-random-mover&#39;</span><span class="p">,</span>
+                <span class="nx">collection</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">randomMovers</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultRandomMover</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">editRandomMoverFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">RandomMoverFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;edit-random-mover&#39;</span><span class="p">,</span>
+                <span class="nx">collection</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">randomMovers</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultRandomMover</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addSurfaceReleaseSpillFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">AddSurfaceReleaseSpillFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;add-surface-release-spill&#39;</span><span class="p">,</span>
+                <span class="nx">collection</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultSurfaceReleaseSpill</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">editSurfaceReleaseSpillFormView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">SurfaceReleaseSpillFormView</span><span class="p">({</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="s1">&#39;edit-surface-release-spill&#39;</span><span class="p">,</span>
+                <span class="nx">collection</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span><span class="p">,</span>
+                <span class="nx">defaults</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">defaultSurfaceReleaseSpill</span><span class="p">,</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addMoverFormView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">forms</span><span class="p">.</span><span class="nx">AddMoverFormView</span><span class="p">.</span><span class="nx">MOVER_CHOSEN</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">showFormWithId</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">addEnvironmentFormView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">forms</span><span class="p">.</span><span class="nx">AddEnvironmentFormView</span><span class="p">.</span><span class="nx">ENVIRONMENT_CHOSEN</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">showFormWithId</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">addSpillFormView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">forms</span><span class="p">.</span><span class="nx">AddSpillFormView</span><span class="p">.</span><span class="nx">SPILL_CHOSEN</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">spillChosen</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">addMapFormView</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="nx">forms</span><span class="p">.</span><span class="nx">AddMapFormView</span><span class="p">.</span><span class="nx">SOURCE_CHOSEN</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">showFormWithId</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>Create a LocationFileWizardFormView for each LocationFile that
+has wizard HTML.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">this</span><span class="p">.</span><span class="nx">locationFilesMeta</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">locationFileMeta</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">html</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="nx">locationFileMeta</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;wizard_html&#39;</span><span class="p">));</span>
+                <span class="kd">var</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">html</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">);</span>
+                <span class="kd">var</span> <span class="nx">wizard</span> <span class="o">=</span> <span class="nx">_this</span><span class="p">.</span><span class="nx">locationFileWizards</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">locationFileMeta</span><span class="p">.</span><span class="nx">id</span><span class="p">);</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="nx">html</span><span class="p">.</span><span class="nx">length</span> <span class="o">&amp;&amp;</span> <span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="kd">var</span> <span class="nx">formView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">LocationFileWizardFormView</span><span class="p">({</span>
+                        <span class="nx">id</span><span class="o">:</span> <span class="nx">id</span><span class="p">,</span>
+                        <span class="nx">model</span><span class="o">:</span> <span class="nx">wizard</span><span class="p">,</span>
+                        <span class="nx">gnomeModel</span><span class="o">:</span> <span class="nx">_this</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">,</span>
+                        <span class="nx">locationFileMeta</span><span class="o">:</span> <span class="nx">locationFileMeta</span>
+                    <span class="p">});</span>
+
+                    <span class="nx">_this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="nx">formView</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">addMoverFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">addSpillFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">addEnvironmentFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">addMapFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">addMapFromUploadFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">addWindMoverFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">addWindFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">addRandomMoverFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">addSurfaceReleaseSpillFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">gnomeSettingsFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">editWindMoverFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">editWindFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">editRandomMoverFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">editSurfaceReleaseSpillFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">editMapFormView</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">addCustomMapFormView</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">setupModels</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">_this</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>Setup model defaults and schema validators.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="nx">models</span><span class="p">.</span><span class="nx">init</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">AppState</span><span class="p">();</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">GnomeModel</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">gnomeSettings</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>Initialize the model with any previously-generated time step data the
+server had available.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">GnomeRun</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">generatedTimeSteps</span><span class="p">,</span> <span class="p">{</span>
+                <span class="nx">url</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">apiRoot</span><span class="p">,</span>
+                <span class="nx">expectedTimeSteps</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">expectedTimeSteps</span><span class="p">,</span>
+                <span class="nx">currentTimeStep</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">currentTimeStep</span><span class="p">,</span>
+                <span class="nx">bounds</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">mapBounds</span> <span class="o">||</span> <span class="p">[],</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">Map</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">map</span><span class="p">,</span> <span class="p">{</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">customMap</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">CustomMap</span><span class="p">({},</span> <span class="p">{</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">SurfaceReleaseSpillCollection</span><span class="p">(</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">surfaceReleaseSpills</span><span class="p">,</span> <span class="p">{</span>
+                    <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+                <span class="p">}</span>
+            <span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">winds</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">WindCollection</span><span class="p">(</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">winds</span><span class="p">,</span> <span class="p">{</span>
+                    <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+                <span class="p">}</span>
+            <span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">windMovers</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">WindMoverCollection</span><span class="p">(</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">windMovers</span><span class="p">,</span> <span class="p">{</span>
+                    <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+                <span class="p">}</span>
+            <span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">randomMovers</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">RandomMoverCollection</span><span class="p">(</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">randomMovers</span><span class="p">,</span> <span class="p">{</span>
+                    <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+                <span class="p">}</span>
+            <span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">locationFilesMeta</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">LocationFileMetaCollection</span><span class="p">(</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">options</span><span class="p">.</span><span class="nx">locationFilesMeta</span><span class="p">,</span> <span class="p">{</span>
+                    <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+                <span class="p">}</span>
+            <span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">locationFileWizards</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">models</span><span class="p">.</span><span class="nx">LocationFileWizardCollection</span><span class="p">([],</span> <span class="p">{</span>
+                <span class="nx">gnomeModel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span>
+            <span class="p">});</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>Create a LocationFileWizard for every LocationFile</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">this</span><span class="p">.</span><span class="nx">locationFilesMeta</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">location</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">wizard_json</span> <span class="o">=</span> <span class="nx">location</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;wizard_json&#39;</span><span class="p">)</span> <span class="o">||</span> <span class="p">{};</span>
+                <span class="nx">wizard_json</span><span class="p">.</span><span class="nx">id</span> <span class="o">=</span> <span class="nx">location</span><span class="p">.</span><span class="nx">id</span><span class="p">;</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">locationFileWizards</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="nx">wizard_json</span><span class="p">);</span>
+            <span class="p">});</span>
+        <span class="p">},</span>
+
+        <span class="nx">displayMessage</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">messageView</span><span class="p">.</span><span class="nx">displayMessage</span><span class="p">(</span><span class="nx">message</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">gnomeRunError</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">animation</span><span class="p">.</span><span class="nx">setStopped</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">messageView</span><span class="p">.</span><span class="nx">displayMessage</span><span class="p">({</span>
+                <span class="nx">type</span><span class="o">:</span> <span class="s1">&#39;error&#39;</span><span class="p">,</span>
+                <span class="nx">text</span><span class="o">:</span> <span class="s1">&#39;Model run failed.&#39;</span>
+            <span class="p">});</span>
+        <span class="p">},</span>
+
+        <span class="nx">runMenuItemClicked</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">play</span><span class="p">({});</span>
+        <span class="p">},</span>
+
+        <span class="nx">runUntilMenuItemClicked</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <p>TODO: Implement.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;run until item clicked&#39;</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">newMenuItemClicked</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">confirm</span><span class="p">(</span><span class="s2">&quot;Reset model?&quot;</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">.</span><span class="nx">wasDeleted</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">.</span><span class="nx">destroy</span><span class="p">({</span>
+                <span class="nx">success</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                    <span class="nx">util</span><span class="p">.</span><span class="nx">Cookies</span><span class="p">.</span><span class="nx">setItem</span><span class="p">(</span><span class="s1">&#39;model_deleted&#39;</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
+                    <span class="nx">util</span><span class="p">.</span><span class="nx">refresh</span><span class="p">();</span>
+                <span class="p">}</span>
+            <span class="p">});</span>
+        <span class="p">},</span>
+
+        <span class="nx">handButtonClicked</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">cursor</span><span class="p">.</span><span class="nx">setResting</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">play</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">map</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nb">window</span><span class="p">.</span><span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;You must add a map before you can run the model.&#39;</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">animation</span><span class="p">.</span><span class="nx">setPlaying</span><span class="p">();</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">isOnLastTimeStep</span><span class="p">())</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">rewind</span><span class="p">();</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">run</span><span class="p">(</span><span class="nx">opts</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">playButtonClicked</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">play</span><span class="p">({});</span>
+        <span class="p">},</span>
+
+        <span class="nx">enableZoomIn</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">cursor</span><span class="p">.</span><span class="nx">setZoomingIn</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">enableZoomOut</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">cursor</span><span class="p">.</span><span class="nx">setZoomingOut</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">stopAnimation</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">animation</span><span class="p">.</span><span class="nx">setStopped</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">zoomIn</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">startPosition</span><span class="p">,</span> <span class="nx">endPosition</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">animation</span><span class="p">.</span><span class="nx">setPaused</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">rewind</span><span class="p">();</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">endPosition</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">rect</span> <span class="o">=</span> <span class="p">{</span><span class="nx">start</span><span class="o">:</span> <span class="nx">startPosition</span><span class="p">,</span> <span class="nx">end</span><span class="o">:</span> <span class="nx">endPosition</span><span class="p">};</span>
+                <span class="kd">var</span> <span class="nx">isInsideMap</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">isRectInsideMap</span><span class="p">(</span><span class="nx">rect</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>If we are at zoom level 0 and there is no map portion outside of
+the visible area, then adjust the coordinates of the selected
+rectangle to the on-screen pixel bounds.</p>             </td>             <td class="code">               <div class="highlight"><pre>                <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">isInsideMap</span> <span class="o">&amp;&amp;</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">zoomLevel</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">rect</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">getAdjustedRect</span><span class="p">(</span><span class="nx">rect</span><span class="p">);</span>
+                <span class="p">}</span>
+
+                <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">zoomFromRect</span><span class="p">(</span><span class="nx">rect</span><span class="p">,</span> <span class="nx">models</span><span class="p">.</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">ZOOM_IN</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">zoomFromPoint</span><span class="p">(</span><span class="nx">startPosition</span><span class="p">,</span> <span class="nx">models</span><span class="p">.</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">ZOOM_IN</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">cursor</span><span class="p">.</span><span class="nx">setResting</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">zoomOut</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">point</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">animation</span><span class="p">.</span><span class="nx">setPaused</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">rewind</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">zoomFromPoint</span><span class="p">(</span><span class="nx">point</span><span class="p">,</span> <span class="nx">models</span><span class="p">.</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">ZOOM_OUT</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">setRegularCursor</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">pause</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">animation</span><span class="p">.</span><span class="nx">setPaused</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Called while the user is dragging the slider.</span>
+<span class="cm">         We show the image for the target time step if it&#39;s loaded in cache.</span>
+<span class="cm">         */</span>
+
+        <span class="nx">sliderMoved</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">newStepNum</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">newStepNum</span> <span class="o">===</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">currentTimeStep</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <p>If the model and map view have the time step, display it.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">hasCachedTimeStep</span><span class="p">(</span><span class="nx">newStepNum</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+                    <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">timeStepIsLoaded</span><span class="p">(</span><span class="nx">newStepNum</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">setCurrentTimeStep</span><span class="p">(</span><span class="nx">newStepNum</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Called when the user finishes dragging the slider.</span>
+
+<span class="cm">         The image will be loaded if it was available in cache. If it wasn&#39;t,</span>
+<span class="cm">         then we&#39;re going to play until `newStepNum`, triggering download of</span>
+<span class="cm">         the intervening images.</span>
+<span class="cm">         */</span>
+        <span class="nx">sliderChanged</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">newStepNum</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">newStepNum</span> <span class="o">===</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">currentTimeStep</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <p>If the model and map view don't have the time step,
+we need to run until the new time step.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">hasCachedTimeStep</span><span class="p">(</span><span class="nx">newStepNum</span><span class="p">)</span>
+                    <span class="o">||</span> <span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">timeStepIsLoaded</span><span class="p">(</span><span class="nx">newStepNum</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">play</span><span class="p">({</span>
+                    <span class="nx">runUntilTimeStep</span><span class="o">:</span> <span class="nx">newStepNum</span>
+                <span class="p">});</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">frameChanged</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">animation</span><span class="p">.</span><span class="nx">isPaused</span><span class="p">()</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">animation</span><span class="p">.</span><span class="nx">isStopped</span><span class="p">())</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">getNextTimeStep</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">reset</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">animation</span><span class="p">.</span><span class="nx">setStopped</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">clearData</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">rewind</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">.</span><span class="nx">clear</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">clearData</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">map</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">enableControls</span><span class="p">(</span>
+                    <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">mapControls</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Jump to the last LOADED frame of the animation. This will stop at</span>
+<span class="cm">         whatever frame was the last received from the server.</span>
+<span class="cm">         */</span>
+        <span class="nx">jumpToLastFrame</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">lastFrame</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">gnomeRun</span><span class="p">.</span><span class="nx">setCurrentTimeStep</span><span class="p">(</span><span class="nx">lastFrame</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">animation</span><span class="p">.</span><span class="nx">setPaused</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">useFullscreen</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">switchToFullscreen</span><span class="p">();</span>
+            <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">sidebarEl</span><span class="p">).</span><span class="nx">hide</span><span class="p">(</span><span class="s1">&#39;slow&#39;</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">disableFullscreen</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">mapControlView</span><span class="p">.</span><span class="nx">switchToNormalScreen</span><span class="p">();</span>
+            <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">sidebarEl</span><span class="p">).</span><span class="nx">removeClass</span><span class="p">(</span><span class="s1">&#39;hidden&#39;</span><span class="p">);</span>
+            <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">sidebarEl</span><span class="p">).</span><span class="nx">show</span><span class="p">(</span><span class="s1">&#39;slow&#39;</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">enableSpillDrawing</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">cursor</span><span class="p">.</span><span class="nx">setDrawingSpill</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">showFormWithId</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">formId</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">formView</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">formId</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">formView</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="nx">formView</span><span class="p">.</span><span class="nx">reload</span><span class="p">();</span>
+            <span class="nx">formView</span><span class="p">.</span><span class="nx">show</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">showFormForNode</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">formView</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">form_id</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">formView</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">form_id</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">formView</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <p>This has to come before we show the form because form views
+may set their models to null when hiding.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">hideAll</span><span class="p">();</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">object_id</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="p">{</span>
+                    <span class="nx">formView</span><span class="p">.</span><span class="nx">reload</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">object_id</span><span class="p">);</span>
+                <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="nx">e</span> <span class="k">instanceof</span> <span class="nx">forms</span><span class="p">.</span><span class="nx">ModelNotFoundException</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nb">window</span><span class="p">.</span><span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;That item is unavailable right now. &#39;</span> <span class="o">+</span>
+                            <span class="s1">&#39;Please refresh the page and try again.&#39;</span><span class="p">);</span>
+
+                        <span class="k">return</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="nx">formView</span><span class="p">.</span><span class="nx">show</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Show the `AjaxFormView` for the active tree item.</span>
+
+<span class="cm">         If showing an add form, display the `AjaxFormView` for the active node.</span>
+
+<span class="cm">         If showing an edit form, perform a `fetch` using the `AjaxForm` for the</span>
+<span class="cm">         selected node first, which will trigger the bound `AjaxFormView` to display.</span>
+
+<span class="cm">         The distinction of &quot;add&quot; versus &quot;edit&quot; is made on whether or not the node</span>
+<span class="cm">         has an `id` property with a non-null value.</span>
+<span class="cm">         */</span>
+        <span class="nx">showFormForActiveTreeItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">treeView</span><span class="p">.</span><span class="nx">getActiveItem</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">showFormForNode</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">addButtonClicked</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">showFormForActiveTreeItem</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">treeItemDoubleClicked</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">showFormForNode</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">settingsButtonClicked</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">showFormForActiveTreeItem</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">deleteObjectForNode</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">object</span><span class="p">,</span> <span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">confirm</span><span class="p">(</span><span class="s1">&#39;Remove &#39;</span> <span class="o">+</span> <span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">title</span> <span class="o">+</span> <span class="s1">&#39;?&#39;</span><span class="p">)</span> <span class="o">===</span> <span class="kc">false</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="nx">object</span><span class="p">.</span><span class="nx">destroy</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="nx">removeButtonClicked</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">treeView</span><span class="p">.</span><span class="nx">getActiveItem</span><span class="p">();</span>
+
+            <span class="kd">function</span> <span class="nx">error</span><span class="p">()</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;That item cannot be removed.&#39;</span><span class="p">)</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">object_id</span> <span class="o">||</span> <span class="o">!</span><span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">form_id</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">error</span><span class="p">();</span>
+            <span class="p">}</span>
+
+            <span class="kd">var</span> <span class="nx">formView</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">form_id</span><span class="p">);</span>
+            <span class="kd">var</span> <span class="nx">model</span> <span class="o">=</span> <span class="nx">formView</span><span class="p">.</span><span class="nx">getModel</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">object_id</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">formView</span> <span class="o">||</span> <span class="o">!</span><span class="nx">model</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">error</span><span class="p">();</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">deleteObjectForNode</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">node</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">spillChosen</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">spillType</span><span class="p">,</span> <span class="nx">startCoords</span><span class="p">,</span> <span class="nx">endCoords</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">formView</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">formViews</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">spillType</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">formView</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="nx">formView</span><span class="p">.</span><span class="nx">reload</span><span class="p">();</span>
+            <span class="nx">formView</span><span class="p">.</span><span class="nx">show</span><span class="p">(</span><span class="nx">startCoords</span><span class="p">,</span> <span class="nx">endCoords</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="nx">showSection</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">section</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">sectionViews</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;splash-page&#39;</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">splashView</span><span class="p">,</span>
+                <span class="s1">&#39;model&#39;</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">mapView</span><span class="p">,</span>
+                <span class="s1">&#39;location-file-map&#39;</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">locationFileMapView</span>
+            <span class="p">};</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">section</span> <span class="k">in</span> <span class="nx">sectionViews</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">sectionSel</span> <span class="o">=</span> <span class="s1">&#39;#&#39;</span> <span class="o">+</span> <span class="nx">section</span><span class="p">;</span>
+                <span class="kd">var</span> <span class="nx">view</span> <span class="o">=</span> <span class="nx">sectionViews</span><span class="p">[</span><span class="nx">section</span><span class="p">];</span>
+
+                <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.section&#39;</span><span class="p">).</span><span class="nx">not</span><span class="p">(</span><span class="nx">sectionSel</span><span class="p">).</span><span class="nx">addClass</span><span class="p">(</span><span class="s1">&#39;hidden&#39;</span><span class="p">);</span>
+                <span class="nx">$</span><span class="p">(</span><span class="nx">sectionSel</span><span class="p">).</span><span class="nx">removeClass</span><span class="p">(</span><span class="s1">&#39;hidden&#39;</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">view</span><span class="p">.</span><span class="nx">show</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">view</span><span class="p">.</span><span class="nx">show</span><span class="p">();</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="nx">AppView</span><span class="o">:</span> <span class="nx">AppView</span>
+    <span class="p">};</span>
+
+<span class="p">});</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

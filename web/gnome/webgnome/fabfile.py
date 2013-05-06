@@ -18,7 +18,7 @@ def docs():
 
     # Auto-generate JavaScript API docs.
     docco_path = os.path.join(base_path, 'node_modules', 'docco', 'bin', 'docco')
-    files_to_include = ['gnome.js']
+    files_to_include = ['models.js', 'app.js', 'util.js']
 
     for filename in files_to_include:
         file_path = os.path.join(js_dir, filename)

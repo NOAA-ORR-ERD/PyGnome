@@ -339,28 +339,28 @@ define([
         },
 
         setZoomingInCursor: function() {
-            $(this.mapEl).addClass('zooming-in');
+            $(this.mapEl).addClass('zooming-in-cursor');
         },
 
         setZoomingOutCursor: function() {
-            $(this.mapEl).addClass('zooming-out');
+            $(this.mapEl).addClass('zooming-out-cursor');
         },
 
         setRegularCursor: function() {
-            $(this.mapEl).addClass('regular');
+            $(this.mapEl).addClass('regular-cursor');
         },
 
         setMovingCursor: function() {
-            $(this.mapEl).addClass('moving');
+            $(this.mapEl).addClass('moving-cursor');
         },
 
         setSpillCursor: function() {
-            $(this.mapEl).addClass('spill');
+            $(this.mapEl).addClass('spill-cursor');
             this.canDrawSpill = true;
         },
 
         unsetSpillCursor: function() {
-            $(this.mapEl).removeClass('spill');
+            $(this.mapEl).removeClass('spill-cursor');
             this.canDrawSpill = false;
         },
 
