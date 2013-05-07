@@ -22,5 +22,6 @@ modules_dict= {'gnome.environment':'gnome.persist.environment_schema',
                'gnome.model':'gnome.persist.model_schema',
                'gnome.movers.movers':'gnome.persist.movers_schema',
                'gnome.spill':'gnome.persist.spills_schema',
-               'gnome.renderer':'gnome.persist.outputters_schema'
+               'gnome.renderer':'gnome.persist.outputters_schema',
+               'gnome.netcdf_outputter':'gnome.persist.outputters_schema',
                }

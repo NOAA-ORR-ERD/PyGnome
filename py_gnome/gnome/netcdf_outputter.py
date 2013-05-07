@@ -14,7 +14,26 @@ from gnome.outputter import Outputter
 from gnome.utilities import serializable, time_utils
 
 class NetCDFOutput(Outputter, serializable.Serializable):
-
+    """
+    A NetCDFOutput object is used to write the model's data to a NetCDF file.
+    It inherits from Outputter class and implements the same interface.
+    
+    This class is meant to be used within the Model, to be added to list of outputters.
+    
+    >>> model = gnome.model.Model(...)
+    >>> model.outputters += gnome.netcdf_outputter.NetCDFOutput(os.path.join(base_dir,'sample_model.nc'), all_data=True)
+    
+    'all_data' flag is used to either output all the data arrays defined in model.spills or only the standard data.
+               
+               
+    .. note::
+       cf_attributes and data_vars are static members. cf_attributes is a dict that contains the global attributes per CF convention
+       data_vars is a dict used to define NetCDF variables. 
+       There is also a list called 'standard_data'. Since the names of the netcdf variables are different from the names in the 
+       SpillContainer data_arrays, this simply lists the names of data_arrays that are part of standard data. When writing 'all_data',
+       these data arrays are skipped.
+    
+    """
     cf_attributes={'comment' : 'Particle output from the NOAA PyGnome model',
                    'source' : "PyGnome version x.x.x",
                    'references' : 'TBD',
@@ -80,12 +99,31 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     var['units'] = '1'
     data_vars['id'] = copy.deepcopy(var)
 
+    del var   # only used during initialization - no need to keep around
+    
     # This is data that has already been written in standard format
     standard_data = ['positions','current_time_stamp','status_codes','spill_num','age','mass','flag']
     
+    # define state for serialization
+    state = copy.deepcopy(serializable.Serializable.state)
+    state.add(create=['all_data'],read=['all_data'])    # toggling this will require rewind and calling prepare_for_model_step
+    state.add_field(serializable.Field('netcdf_filename',isdatafile=True,create=True,read=True))
+    
     def __init__(self, netcdf_filename, cache=None, all_data=False, id=None):
         """
-        should netcdf_filename be overwritten of if it already exists?
+        .. function:: __init__(netcdf_filename, cache=None, all_data=False, id=None)
+        
+        Constructor for Net_CDFOutput object.
+        
+        :param netcdf_filename: Required parameter. The filename in which to store the NetCDF data. 
+        :type netcdf_filename: str. or unicode
+        :param cache: A cache object. Default is None, but this is required before calling write_output. 
+                      This will generally be set automatically by the model.
+        :type cache: As defined in cache module (gnome.utilities.cache). Currently only ElementCache is defined/used.
+        :param all_data: If true, write all data to NetCDF, otherwise write only standard data. Default is False.
+        :type all_data: bool
+        :param id: Unique Id identifying the newly created mover (a UUID as a string). 
+                   This is used when loading an object from a persisted state. User should never have to set this.
         """
         self.netcdf_filename = netcdf_filename
         self.cache = cache
@@ -93,7 +131,6 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self._u_netcdf_filename = None
         self.all_data = all_data
         self.arr_types = None   # this is only updated in prepare_for_model_run if all_data is True
-        #self.del_on_rewind = del_on_rewind
         
         if os.path.isdir(netcdf_filename):
             raise ValueError("netcdf_filename must be a file not a directory.")
@@ -108,28 +145,48 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     
     @property
     def id(self):
+        """
+        Function returns the unique id to identify the object,
+        """
         return self._gnome_id.id
     
     def prepare_for_model_run(self, cache=None, model_start_time=None, num_time_steps=None, uncertain=False, spills=None, **kwargs):
         """ 
-        Write global attributes
+        .. function:: prepare_for_model_run(cache=None, model_start_time=None, num_time_steps=None, uncertain=False, spills=None, **kwargs)
         
-        :param cache=None: Sets the cache object to be used for the data.
-                           If None, it will use the one already set up.
+        Write global attributes and define dimensions and variables for NetCDF file. This must be done in prepare_for_model_run
+        because if model state changes, it is rewound and re-run from the beginning.
         
-        This takes more than standard 'cache' argument. These are required arguments - they contain None for defaults
-        because XXX
-        :model_start_time: 
-        :num_time_steps:
+        This takes more than standard 'cache' argument. Some of these are required arguments - they contain 
+        None for defaults because non-default argument cannot follow default argument. Since cache is already 2nd positional argument
+        for Renderer object, the required non-default arguments must be defined following 'cache'.
         
+        :param cache=None: Sets the cache object to be used for the data. If None, it will use the one already set up. 
+        :type cache: As defined in cache module (gnome.utilities.cache). Currently only ElementCache is defined/used.
+        :param model_start_time: (Required) start time of the model run. NetCDF time units calculated with respect to this time.
+        :type model_start_time: datetime.datetime object
+        :param num_time_steps: (Required) total number of time steps for the run. Currently this is known and fixed.
+        :type num_time_steps: int
+        :param uncertain: Default is False. Model automatically sets this based on whether uncertainty is on or off. If this is
+                          True then a uncertain data is written to netcdf_filename + '_uncertain.nc'
+        :type uncertain: bool
+        :param spills: If 'all_data' flag is True, then model must provide the model.spills object so NetCDF variables can be
+                       defined for the remaining data arrays. If spills is None, but all_data flag is True, a ValueError will be raised.
+                       It does not make sense to write 'all_data' but not provide 'model.spills'. 
+        :type spills: gnome.spill_container.SpillContainerPair object. 
+        
+        .. note:: 
         Does not take any other input arguments; however, to keep the interface the same for all outputters,
-        define **kwargs for now.
+        define **kwargs incase future outputters require different arguments.
         """
         if cache is not None:
             self.cache = cache
         
         if model_start_time is None or num_time_steps is None:
             raise TypeError("model_start_time and num_time_steps cannot be NoneType")
+        
+        if self.all_data and spills is None:
+            raise ValueError("'all_data' flag is True, however spills is None. Please provide valid model.spills so we know which additional data to write.")
         
         self._uncertain = uncertain
         
@@ -192,7 +249,12 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                         
     
     def write_output(self, step_num):
-        """ write output at the end of the step"""
+        """ 
+        write NetCDF output at the end of the step
+        
+        :param step_num: The model's current timestep for which data is being written. model.current_time_step
+        :type step_num: int
+        """
         if self.cache is None:
             raise ValueError("cache object is not defined. It is required prior to calling write_output")
         
@@ -235,7 +297,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             
     
     def rewind(self):
-        """ if rewound, delete the file and start over? """
+        """ 
+        if rewound, delete both the files and expect prepare_for_model_run to be called since
+        rewind means start from beginning. 
+        """
         if os.path.exists(self.netcdf_filename):
             os.remove(self.netcdf_filename)
             

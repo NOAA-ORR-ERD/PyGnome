@@ -22,9 +22,12 @@ import script_runner
 scripts = glob.glob('script_*/script_*.py')
 
 for script in scripts:
+    # clean directories first
+    #script_runner.clean(os.path.dirname(script))
+    #print "\n cleaned script directory: {0}\n".format(os.path.dirname(script))    
     # run script and do post_run if it exists
     image_dir = os.path.join( os.path.dirname(script),'images')
-    print image_dir
+    
     model,imp_script = script_runner.load_model(script, image_dir)
     script_runner.run(model)
 

@@ -16,6 +16,7 @@ from gnome.environment import Wind, Tide
 
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
+import scripts
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -51,7 +52,10 @@ def make_model(images_dir=os.path.join(base_dir,"images") ):
     
     print "adding outputters"
     model.outputters += renderer
-    model.outputters += gnome.netcdf_outputter.NetCDFOutput(os.path.join(base_dir,'script_long_island.nc'), all_data=True)
+    
+    netcdf_file = os.path.join(base_dir,'script_long_island.nc')
+    scripts.remove_netcdf(netcdf_file)
+    model.outputters += gnome.netcdf_outputter.NetCDFOutput(netcdf_file, all_data=True)
     
 
     print "adding a spill"    

@@ -17,14 +17,15 @@ def model(sample_model_spatial_release_spill, request):
     """ 
     use fixture sample_model_spatial_release_spill and add a few things to it for the test
     
-    Fixtures adds another spill (SurfaceReleaseSpill) and a netcdf outputter
+    This fixtures adds another spill (SurfaceReleaseSpill) and a netcdf outputter
     to the model. 
+    It also adds a cleanup function that deletes the netcdf files after upon test completion.
     """
     model = sample_model_spatial_release_spill['model']
     
     model.cache_enabled = True  # let's enable cache
     
-    model.outputters += gnome.netcdf_outputter.NetCDFOutput(os.path.join(base_dir,'sample_model.nc'))
+    model.outputters += gnome.netcdf_outputter.NetCDFOutput(os.path.join(base_dir,u'sample_model.nc'))
     
     for sp in model.spills:
         st_pos = sp.start_positions[0,:]
@@ -52,7 +53,9 @@ def model(sample_model_spatial_release_spill, request):
 
 
 def test_exceptions():
-    """ test all exceptions are raised """
+    """ 
+    test all exceptions are raised 
+    """
     with pytest.raises(ValueError):
         gnome.netcdf_outputter.NetCDFOutput(os.path.join(base_dir,'SampleData','MapBounds_Island.bna')) # file exists
         
@@ -75,6 +78,10 @@ def test_exceptions():
     with pytest.raises(ValueError):
         netcdf.write_output(0)
         
+    with pytest.raises(ValueError):
+        netcdf.all_data = True
+        netcdf.prepare_for_model_run(model_start_time=datetime.now(), num_time_steps=4)
+        
     # clean up temporary file
     if os.path.exists(t_file):
         print ("remove temporary file {0}".format(t_file))
@@ -83,7 +90,10 @@ def test_exceptions():
         
 def test_prepare_for_model_run(model):
     """ 
-    use model fixture. Call prepare_for_model_run for netcdf_outputter 
+    use model fixture. 
+    Call prepare_for_model_run for netcdf_outputter
+    
+    Simply asserts the correct files are created and no errors are raised. 
     """
     for outputter in model.outputters:
         if isinstance(outputter,gnome.netcdf_outputter.NetCDFOutput):   # there should only be 1! 
@@ -109,7 +119,7 @@ def test_write_output_standard(model):
     Compare uncertain and uncertain data.
     
     Since 'latitude', 'longitude' and 'depth' are float 32 while the data in cache is float64, use np.allclose to
-    check it is within 1e-5 tolerance - till about 5 decimal places.
+    check it is within 1e-5 tolerance.
     """
     model.rewind()
     while True:
@@ -166,7 +176,7 @@ def test_write_output_all_data(model):
     rewind model defined by model fixture.
     invoke model.step() till model runs all 5 steps
     
-    For each step, compare the standard variables in the model.cache to the data read back in from netcdf files.
+    For each step, compare the non-standard variables in the model.cache to the data read back in from netcdf files.
     Compare uncertain and uncertain data.
     
     Only compare the remaining data not already checked in test_write_output_standard
