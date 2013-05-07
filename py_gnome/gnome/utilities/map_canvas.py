@@ -109,6 +109,8 @@ class MapCanvas(object):
         projection_class= kwargs.pop('projection_class', projections.FlatEarthProjection)
         self.projection = projection_class(self.map_BB, self.image_size) # BB will be re-set
         
+        # assorted status flags:
+        self.draw_map_bounds = True
         # self._viewport = kwargs.pop('viewport',None)
         
         # if self._viewport is None:
@@ -197,9 +199,10 @@ class MapCanvas(object):
             #fixme: should we make sure to draw the lakes after the land???
             for p in polygons:
                 if p.metadata[1].strip().lower() == "map bounds":
-                    #Draw the map bounds polygon
-                    poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
-                    drawer.polygon(poly, outline=self.colors['map_bounds'])
+                    if self.draw_map_bounds:
+                        #Draw the map bounds polygon
+                        poly = np.round(p).astype(np.int32).reshape((-1,)).tolist()
+                        drawer.polygon(poly, outline=self.colors['map_bounds'])
                 elif p.metadata[1].strip().lower() == "spillablearea":
                     # don't draw the spillable area polygon
                     continue
@@ -262,6 +265,7 @@ class MapCanvas(object):
 
 
     def save_background(self, filename, type_in="PNG"):
+        print "saving:", filename
         self.back_image.save(filename, type_in)
 
     def save_foreground(self, filename, type_in="PNG"):

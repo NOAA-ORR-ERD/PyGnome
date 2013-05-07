@@ -18,6 +18,7 @@ Contents:
    pyramid_architecture
    javascript_architecture
    api
+   services
 
 
 Indices and tables

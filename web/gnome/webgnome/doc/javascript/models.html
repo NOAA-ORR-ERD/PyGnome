@@ -1,0 +1,1066 @@
+<!DOCTYPE html>  <html> <head>   <title>models.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               models.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="nx">define</span><span class="p">([</span>
+    <span class="s1">&#39;jquery&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lib/underscore&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lib/backbone&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;util&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lib/jsv/environments&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lib/jsv/jsv&#39;</span>
+<span class="p">],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">Backbone</span><span class="p">,</span> <span class="nx">util</span><span class="p">)</span> <span class="p">{</span>
+
+     <span class="cm">/*</span>
+<span class="cm">     `TimeStep` represents a single time step of the user&#39;s actively-running</span>
+<span class="cm">     model on the server.</span>
+<span class="cm">     */</span>
+    <span class="kd">var</span> <span class="nx">TimeStep</span> <span class="o">=</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">get</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attr</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">value</span> <span class="o">=</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">get</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">attr</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">attr</span> <span class="o">===</span> <span class="s1">&#39;timestamp&#39;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">value</span> <span class="o">=</span> <span class="nx">util</span><span class="p">.</span><span class="nx">formatTimestamp</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="nx">value</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="cm">/*</span>
+<span class="cm">     `GnomeRun` is a collection of `TimeStep` objects representing a run of</span>
+<span class="cm">     the user&#39;s active Gnome model.</span>
+<span class="cm">     */</span>
+    <span class="kd">var</span> <span class="nx">GnomeRun</span> <span class="o">=</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">model</span><span class="o">:</span> <span class="nx">TimeStep</span><span class="p">,</span>
+
+        <span class="nx">initialize</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">timeSteps</span><span class="p">,</span> <span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">_</span><span class="p">.</span><span class="nx">bindAll</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;runSuccess&#39;</span><span class="p">,</span> <span class="s1">&#39;timeStepRequestFailure&#39;</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">url</span> <span class="o">=</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">url</span> <span class="o">+</span> <span class="s1">&#39;/runner&#39;</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">=</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">||</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">nextTimeStep</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">?</span> <span class="k">this</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">:</span> <span class="mi">0</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>An array of timestamps, one for each step we expect the server to
+make, passed back when we initiate a model run.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">this</span><span class="p">.</span><span class="nx">expectedTimeSteps</span> <span class="o">=</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">expectedTimeSteps</span> <span class="o">||</span> <span class="p">[];</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Optionally specify the zoom level.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">this</span><span class="p">.</span><span class="nx">zoomLevel</span> <span class="o">=</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">zoomLevel</span> <span class="o">===</span> <span class="kc">undefined</span> <span class="o">?</span> <span class="mi">4</span> <span class="o">:</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">zoomLevel</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>If true, <code>Model</code> will request a new set of time steps from the server
+on the next run. Assume we want to do this by default (i.e., at
+construction time) if there are no time steps.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">this</span><span class="p">.</span><span class="nx">dirty</span> <span class="o">=</span> <span class="nx">timeSteps</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>When initializing the model at the last time step of a generated
+series, rewind to the beginning so the user can play the series
+again.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">isOnLastTimeStep</span><span class="p">())</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">rewind</span><span class="p">();</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">hasData</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">expectedTimeSteps</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Return true if the model has time step data for the step numbered</span>
+<span class="cm">         `stepNum`.</span>
+<span class="cm">         */</span>
+        <span class="nx">hasCachedTimeStep</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">stepNum</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">stepNum</span><span class="p">)</span> <span class="o">!==</span> <span class="kc">undefined</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Return true if the server gave us a time step for step number `stepNum`.</span>
+<span class="cm">         */</span>
+        <span class="nx">serverHasTimeStep</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">stepNum</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">expectedTimeSteps</span><span class="p">[</span><span class="nx">stepNum</span><span class="p">]</span> <span class="o">!==</span> <span class="kc">undefined</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Return the timestamp the server returned for the expected step `stepNum`.</span>
+<span class="cm">         Unlike `this.getTimeStep()`, this function may be called for steps that</span>
+<span class="cm">         the model has not yet received from the server.</span>
+<span class="cm">         */</span>
+        <span class="nx">getTimestampForExpectedStep</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">stepNum</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">timestamp</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">serverHasTimeStep</span><span class="p">(</span><span class="nx">stepNum</span><span class="p">))</span> <span class="p">{</span>
+                <span class="nx">timestamp</span> <span class="o">=</span> <span class="nx">util</span><span class="p">.</span><span class="nx">formatTimestamp</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">expectedTimeSteps</span><span class="p">[</span><span class="nx">stepNum</span><span class="p">]);</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="nx">timestamp</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Handle a successful request to the server to start the model run.</span>
+<span class="cm">         Events:</span>
+
+<span class="cm">         - Triggers:</span>
+<span class="cm">            - `Model.MESSAGE_RECEIVED` if the server sent a message.</span>
+<span class="cm">            - `Model.RUN_BEGAN` unless we received an error message.</span>
+<span class="cm">         */</span>
+        <span class="nx">runSuccess</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">message</span> <span class="o">=</span> <span class="nx">util</span><span class="p">.</span><span class="nx">parseMessage</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">message</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">MESSAGE_RECEIVED</span><span class="p">,</span> <span class="nx">message</span><span class="p">);</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="nx">message</span><span class="p">.</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">RUN_ERROR</span><span class="p">);</span>
+                    <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">dirty</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+
+            <span class="kd">var</span> <span class="nx">isFirstStep</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">time_step</span><span class="p">.</span><span class="nx">id</span> <span class="o">===</span> <span class="mi">0</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>The Gnome model was reset on the server without our knowledge,
+so reset the client-side model to stay in sync.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">if</span> <span class="p">(</span><span class="nx">isFirstStep</span> <span class="o">&amp;&amp;</span> <span class="k">this</span><span class="p">.</span><span class="nx">currentTimeStep</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">rewind</span><span class="p">();</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">SERVER_RESET</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">addTimeStep</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">time_step</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">isFirstStep</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">expectedTimeSteps</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">expected_time_steps</span><span class="p">;</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">RUN_BEGAN</span><span class="p">,</span> <span class="nx">data</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Helper that performs an AJAX request to start (&quot;run&quot;) the model.</span>
+
+<span class="cm">         Receives an array of timestamps, one for each step the server expects</span>
+<span class="cm">         to generate on subsequent requests.</span>
+<span class="cm">         */</span>
+        <span class="nx">doRun</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">isInvalid</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">obj</span> <span class="o">===</span> <span class="kc">undefined</span> <span class="o">||</span> <span class="nx">obj</span> <span class="o">===</span> <span class="kc">null</span> <span class="o">||</span> <span class="k">typeof</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="o">!==</span> <span class="s2">&quot;object&quot;</span><span class="p">;</span>
+            <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>Abort if we were asked to zoom without a valid <code>opts.rect</code> or
+<code>opts.point</code>.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">if</span> <span class="p">(</span><span class="nx">opts</span><span class="p">.</span><span class="nx">zoomLevel</span> <span class="o">!==</span> <span class="k">this</span><span class="p">.</span><span class="nx">zoomLevel</span> <span class="o">&amp;&amp;</span>
+                <span class="nx">isInvalid</span><span class="p">(</span><span class="nx">opts</span><span class="p">.</span><span class="nx">rect</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nx">isInvalid</span><span class="p">(</span><span class="nx">opts</span><span class="p">.</span><span class="nx">point</span><span class="p">))</span> <span class="p">{</span>
+                <span class="nb">window</span><span class="p">.</span><span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;Invalid zoom level. Please try again.&quot;</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">expectedTimeSteps</span> <span class="o">=</span> <span class="p">[];</span>
+
+            <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+                <span class="nx">type</span><span class="o">:</span> <span class="s1">&#39;POST&#39;</span><span class="p">,</span>
+                <span class="nx">url</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">url</span><span class="p">,</span>
+                <span class="nx">data</span><span class="o">:</span> <span class="nx">opts</span><span class="p">,</span>
+                <span class="nx">tryCount</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="nx">retryLimit</span><span class="o">:</span> <span class="mi">3</span><span class="p">,</span>
+                <span class="nx">success</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">runSuccess</span><span class="p">,</span>
+                <span class="nx">error</span><span class="o">:</span> <span class="nx">util</span><span class="p">.</span><span class="nx">handleAjaxError</span>
+            <span class="p">});</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Run the model.</span>
+
+<span class="cm">         If the model is dirty, make an AJAX request to the server to initiate a</span>
+<span class="cm">         model run. Otherwise request the next time step.</span>
+
+<span class="cm">         Options:</span>
+<span class="cm">         - `zoomLevel`: the user&#39;s chosen zoom level</span>
+<span class="cm">         - `zoomDirection`: if the user is zooming, `Model.ZOOM_IN`,</span>
+<span class="cm">             `Model.ZOOM_OUT`, otherwise `Model.ZOOM_NONE` (the default)</span>
+<span class="cm">         - `runUntilTimeStep`: the time step to stop running. This value is</span>
+<span class="cm">             passed to the server-side model and running will stop after the</span>
+<span class="cm">             client requests the step with this number.</span>
+<span class="cm">         */</span>
+        <span class="nx">run</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">options</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">extend</span><span class="p">({},</span> <span class="p">{</span>
+                <span class="nx">zoomLevel</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">zoomLevel</span><span class="p">,</span>
+                <span class="nx">zoomDirection</span><span class="o">:</span> <span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">ZOOM_NONE</span><span class="p">,</span>
+                <span class="nx">runUntilTimeStep</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">runUntilTimeStep</span>
+            <span class="p">},</span> <span class="nx">opts</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">runUntilTimeStep</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">runUntilTimeStep</span> <span class="o">||</span> <span class="kc">null</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">dirty</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">doRun</span><span class="p">(</span><span class="nx">options</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">getNextTimeStep</span><span class="p">();</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Return the `TimeStep` object whose ID matches `self.currentTimeStep`.</span>
+<span class="cm">         */</span>
+        <span class="nx">getCurrentTimeStep</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">currentTimeStep</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Set the current time step to `newStepNum`.</span>
+<span class="cm">         */</span>
+        <span class="nx">addTimeStep</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">timeStepJson</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">timeStep</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">TimeStep</span><span class="p">(</span><span class="nx">timeStepJson</span><span class="p">);</span>
+            <span class="kd">var</span> <span class="nx">now</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">().</span><span class="nx">getTime</span><span class="p">();</span>
+            <span class="kd">var</span> <span class="nx">requestBegan</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">timeStepRequestBegin</span> <span class="o">||</span> <span class="nx">now</span><span class="p">;</span>
+            <span class="nx">timeStep</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">&#39;requestTime&#39;</span><span class="p">,</span> <span class="nx">now</span> <span class="o">-</span> <span class="nx">requestBegan</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="nx">timeStep</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">setCurrentTimeStep</span><span class="p">(</span><span class="nx">timeStep</span><span class="p">.</span><span class="nx">id</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Set the current time step to `stepNum`.</span>
+
+<span class="cm">         Triggers:</span>
+<span class="cm">         - `Model.NEXT_TIME_STEP_READY` with the time step object for the new step.</span>
+<span class="cm">         - `Model.RUN_FINISHED` if the model has run until `this.runUntilTimeStep`.</span>
+<span class="cm">         */</span>
+        <span class="nx">setCurrentTimeStep</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">stepNum</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">=</span> <span class="nx">stepNum</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">nextTimeStep</span> <span class="o">=</span> <span class="nx">stepNum</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">NEXT_TIME_STEP_READY</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">getCurrentTimeStep</span><span class="p">());</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">===</span> <span class="k">this</span><span class="p">.</span><span class="nx">runUntilTimeStep</span> <span class="o">||</span>
+                    <span class="k">this</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">===</span> <span class="nx">_</span><span class="p">.</span><span class="nx">last</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">expectedTimeSteps</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">RUN_FINISHED</span><span class="p">);</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">runUntilTimeStep</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+                <span class="k">return</span><span class="p">;</span>
+             <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">isOnLastTimeStep</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">===</span> <span class="k">this</span><span class="p">.</span><span class="nx">expectedTimeSteps</span><span class="p">.</span><span class="nx">length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="p">},</span>
+
+         <span class="cm">/*</span>
+<span class="cm">         Finish the current run.</span>
+
+<span class="cm">         Triggers:</span>
+<span class="cm">         - `Model.RUN_FINISHED`</span>
+<span class="cm">         */</span>
+        <span class="nx">finishRun</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">rewind</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">runUntilTimeStep</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="nx">GnomeRun</span><span class="p">.</span><span class="nx">RUN_FINISHED</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Makes a request to the server for the next time step.</span>
+
+<span class="cm">         Triggers:</span>
+<span class="cm">         - `Model.RUN_FINISHED` if the server has no more time steps to run.</span>
+<span class="cm">         */</span>
+        <span class="nx">getNextTimeStep</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">serverHasTimeStep</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">nextTimeStep</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">finishRun</span><span class="p">();</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <p>The time step has already been generated and we have it.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">hasCachedTimeStep</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">nextTimeStep</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">setCurrentTimeStep</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">nextTimeStep</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">timeStepRequestBegin</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">().</span><span class="nx">getTime</span><span class="p">();</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>Request the next step from the server.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+                <span class="nx">type</span><span class="o">:</span> <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
+                <span class="nx">url</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">url</span><span class="p">,</span>
+                <span class="nx">success</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">runSuccess</span><span class="p">,</span>
+                <span class="nx">error</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">timeStepRequestFailure</span>
+            <span class="p">});</span>
+        <span class="p">},</span>
+
+       <span class="nx">timeStepRequestFailure</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">xhr</span><span class="p">,</span> <span class="nx">textStatus</span><span class="p">,</span> <span class="nx">errorThrown</span><span class="p">)</span> <span class="p">{</span>
+           <span class="k">if</span> <span class="p">(</span><span class="nx">xhr</span><span class="p">.</span><span class="nx">status</span> <span class="o">===</span> <span class="mi">500</span><span class="p">)</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <p>TODO: Inform user of more information.</p>             </td>             <td class="code">               <div class="highlight"><pre>               <span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;The run failed due to a server-side error.&#39;</span><span class="p">);</span>
+           <span class="p">}</span> <span class="k">if</span> <span class="p">(</span><span class="nx">xhr</span><span class="p">.</span><span class="nx">status</span> <span class="o">===</span> <span class="mi">404</span><span class="p">)</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <p>The run finished. We already check if the server is expected
+to have a time step before th in a local cache of
+expected time steps for the run, so we should not reach
+this point in normal operation. That is, assuming the local
+cache of time steps matches the server's -- which it always
+should.</p>             </td>             <td class="code">               <div class="highlight"><pre>               <span class="k">this</span><span class="p">.</span><span class="nx">finishRun</span><span class="p">();</span>
+           <span class="p">}</span>
+           <span class="k">this</span><span class="p">.</span><span class="nx">finishRun</span><span class="p">();</span>
+           <span class="nx">util</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">xhr</span><span class="p">);</span>
+       <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Zoom the map from `point` in direction `direction`.</span>
+
+<span class="cm">         Options:</span>
+<span class="cm">         - `point`: an x, y coordinate, where the user clicked the map</span>
+<span class="cm">         - `direction`: either `Model.ZOOM_IN` or `Model.ZOOM_OUT`</span>
+<span class="cm">         */</span>
+        <span class="nx">zoomFromPoint</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">point</span><span class="p">,</span> <span class="nx">direction</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">dirty</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">run</span><span class="p">({</span><span class="nx">point</span><span class="o">:</span> <span class="nx">point</span><span class="p">,</span> <span class="nx">zoom</span><span class="o">:</span> <span class="nx">direction</span><span class="p">});</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Zoom the map from a rectangle `rect` in direction `direction`.</span>
+
+<span class="cm">         Options:</span>
+<span class="cm">         - `rect`: a rectangle consisting of two (x, y) coordinates that the</span>
+<span class="cm">         user selected for the zoom operation. TODO: This should be</span>
+<span class="cm">         constrained to the aspect ratio of the background image.</span>
+<span class="cm">         - `direction`: either `Model.ZOOM_IN` or `Model.ZOOM_OUT`</span>
+<span class="cm">         */</span>
+        <span class="nx">zoomFromRect</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">rect</span><span class="p">,</span> <span class="nx">direction</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">dirty</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">run</span><span class="p">({</span><span class="nx">rect</span><span class="o">:</span> <span class="nx">rect</span><span class="p">,</span> <span class="nx">zoom</span><span class="o">:</span> <span class="nx">direction</span><span class="p">});</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Set the current time step to 0.</span>
+<span class="cm">         */</span>
+        <span class="nx">rewind</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">currentTimeStep</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">nextTimeStep</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Clear all time step data. Used when creating a new server-side model.</span>
+<span class="cm">         */</span>
+        <span class="nx">clearData</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">dirty</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">rewind</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">expectedTimeSteps</span> <span class="o">=</span> <span class="p">[];</span>
+        <span class="p">}</span>
+    <span class="p">},</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <p>Class constants</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="nx">ZOOM_IN</span><span class="o">:</span> <span class="s1">&#39;zoom_in&#39;</span><span class="p">,</span>
+        <span class="nx">ZOOM_OUT</span><span class="o">:</span> <span class="s1">&#39;zoom_out&#39;</span><span class="p">,</span>
+        <span class="nx">ZOOM_NONE</span><span class="o">:</span> <span class="s1">&#39;zoom_none&#39;</span><span class="p">,</span></pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <p>Class events</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="nx">CREATED</span><span class="o">:</span> <span class="s1">&#39;model:Created&#39;</span><span class="p">,</span>
+        <span class="nx">RUN_BEGAN</span><span class="o">:</span> <span class="s1">&#39;model:gnomeRunBegan&#39;</span><span class="p">,</span>
+        <span class="nx">RUN_FINISHED</span><span class="o">:</span> <span class="s1">&#39;model:gnomeRunFinished&#39;</span><span class="p">,</span>
+        <span class="nx">RUN_ERROR</span><span class="o">:</span> <span class="s1">&#39;model:runError&#39;</span><span class="p">,</span>
+        <span class="nx">NEXT_TIME_STEP_READY</span><span class="o">:</span> <span class="s1">&#39;model:nextTimeStepReady&#39;</span><span class="p">,</span>
+        <span class="nx">MESSAGE_RECEIVED</span><span class="o">:</span> <span class="s1">&#39;model:messageReceived&#39;</span><span class="p">,</span>
+        <span class="nx">SERVER_RESET</span><span class="o">:</span> <span class="s1">&#39;model:serverReset&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">function</span> <span class="nx">prependWithGnomeUrl</span><span class="p">()</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <p>A base URL is required</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">url</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">url</span> <span class="o">===</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">url</span> <span class="o">||</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">url</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="kd">var</span> <span class="nx">url</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">url</span><span class="p">;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">url</span> <span class="k">instanceof</span> <span class="nb">Function</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">url</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">url</span><span class="p">();</span>
+        <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-15">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-15">&#182;</a>               </div>               <p>URL is already prefixed, probably through a BaseCollection</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="k">if</span> <span class="p">(</span><span class="nx">url</span><span class="p">.</span><span class="nx">search</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">.</span><span class="nx">url</span><span class="p">())</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">this</span><span class="p">.</span><span class="nx">url</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-16">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-16">&#182;</a>               </div>               <p>Model URLs should begin with a forward-slash</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">.</span><span class="nx">url</span><span class="p">()</span> <span class="o">+</span> <span class="nx">url</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+
+    <span class="kd">var</span> <span class="nx">BaseModel</span> <span class="o">=</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="cm">/*</span>
+<span class="cm">         Add an array of field names here that should be converted to strings</span>
+<span class="cm">         during `toJSON` calls and to `moment` objects during `get` calls.</span>
+<span class="cm">         */</span>
+        <span class="nx">dateFields</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span>
+
+        <span class="nx">schema</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span>
+
+        <span class="nx">initialize</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attrs</span><span class="p">,</span> <span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">dirty</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;change&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">change</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="s1">&#39;change:id&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">onIndexChange</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>
+
+            <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">initialize</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">arguments</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">opts</span> <span class="o">&amp;&amp;</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span> <span class="o">=</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">;</span>
+                <span class="nx">prependWithGnomeUrl</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">},</span></pre></div>             </td>           </tr>                               <tr id="section-17">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-17">&#182;</a>               </div>               <p>Allow only empty or schema-compliant attributes</p>
+
+<p>Inspired by:
+     https://github.com/salsita/backbone-schema/blob/master/lib/backbone-schema.js#L41</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="nx">validate</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attrs</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">schema</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+            <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-18">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-18">&#182;</a>               </div>               <p>JSV defaults to JSON Schema draft 3 by default.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="kd">var</span> <span class="nx">env</span> <span class="o">=</span> <span class="nx">JSV</span><span class="p">.</span><span class="nx">createEnvironment</span><span class="p">();</span></pre></div>             </td>           </tr>                               <tr id="section-19">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-19">&#182;</a>               </div>               <p>Resulting model consists of attributes we already have set and
+the attributes provided as argument to this function (merged).
+When an attribute is <code>unset</code>, it is passed in <code>attrs</code> object,
+the attribute has special value of <code>undefined</code>. To learn how the
+resulting object will look like, we need to:
++ merge the already-set attributes with the new ones, and
++ remove the attributes that are to be unset.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="kd">var</span> <span class="nx">obj</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">({},</span> <span class="k">this</span><span class="p">.</span><span class="nx">attributes</span><span class="p">,</span> <span class="nx">attrs</span><span class="p">);</span>
+
+            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">key</span> <span class="k">in</span> <span class="nx">obj</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">obj</span><span class="p">.</span><span class="nx">hasOwnProperty</span><span class="p">(</span><span class="nx">key</span><span class="p">))</span> <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;undefined&#39;</span> <span class="o">===</span> <span class="k">typeof</span> <span class="nx">obj</span><span class="p">[</span><span class="nx">key</span><span class="p">])</span> <span class="p">{</span>
+                        <span class="k">delete</span> <span class="nx">obj</span><span class="p">[</span><span class="nx">key</span><span class="p">];</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="nx">obj</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="nx">obj</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">jsonify</span><span class="p">(</span><span class="nx">obj</span><span class="p">);</span>
+            <span class="kd">var</span> <span class="nx">r</span> <span class="o">=</span> <span class="nx">env</span><span class="p">.</span><span class="nx">validate</span><span class="p">(</span><span class="nx">obj</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">schema</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">r</span><span class="p">.</span><span class="nx">errors</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="kd">var</span> <span class="nx">errors</span> <span class="o">=</span> <span class="p">[];</span>
+
+            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">errors</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">error</span> <span class="o">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">errors</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
+                <span class="nx">errors</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">formatSchemaError</span><span class="p">(</span><span class="nx">error</span><span class="p">));</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="nx">errors</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="nx">schemaErrorDescriptionTemplates</span><span class="o">:</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="o">:</span> <span class="s1">&#39;Value should be a {{error.details}}&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;type_many&#39;</span><span class="o">:</span> <span class="s1">&#39;Value should be one of these types: {{error.details}}&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;minimum&#39;</span><span class="o">:</span> <span class="s1">&#39;Value should be at least: {{error.details}}&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;maximum&#39;</span><span class="o">:</span> <span class="s1">&#39;Value should be at most: {{error.details}}&#39;</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Format a JSON Schema error generated by JSV `error` with a description</span>
+<span class="cm">         that we can show directly to a user.</span>
+<span class="cm">         */</span>
+        <span class="nx">formatSchemaError</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">uriParts</span> <span class="o">=</span> <span class="nx">error</span><span class="p">.</span><span class="nx">uri</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">);</span>
+            <span class="kd">var</span> <span class="nx">description</span> <span class="o">=</span> <span class="nx">error</span><span class="p">.</span><span class="nx">message</span><span class="p">;</span>
+            <span class="kd">var</span> <span class="nx">attribute</span> <span class="o">=</span> <span class="nx">error</span><span class="p">.</span><span class="nx">attribute</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">attribute</span> <span class="o">==</span> <span class="s1">&#39;type&#39;</span> <span class="o">&amp;&amp;</span> <span class="nx">error</span><span class="p">.</span><span class="nx">details</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">attribute</span> <span class="o">=</span> <span class="s1">&#39;type_many&#39;</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="kd">var</span> <span class="nx">template</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">schemaErrorDescriptionTemplates</span><span class="p">[</span><span class="nx">attribute</span><span class="p">];</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">template</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">template</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">template</span><span class="p">(</span><span class="nx">template</span><span class="p">);</span>
+                <span class="nx">description</span> <span class="o">=</span> <span class="nx">template</span><span class="p">({</span><span class="nx">error</span><span class="o">:</span> <span class="nx">error</span><span class="p">});</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="nx">description</span><span class="o">:</span> <span class="nx">description</span><span class="p">,</span></pre></div>             </td>           </tr>                               <tr id="section-20">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-20">&#182;</a>               </div>               <p>Field name is the last part of the URI</p>             </td>             <td class="code">               <div class="highlight"><pre>                <span class="nx">name</span><span class="o">:</span> <span class="nx">uriParts</span><span class="p">[</span><span class="nx">uriParts</span><span class="p">.</span><span class="nx">length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">onIndexChange</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">collection</span> <span class="o">&amp;&amp;</span> <span class="k">this</span><span class="p">.</span><span class="nx">collection</span><span class="p">.</span><span class="nx">comparator</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">collection</span><span class="p">.</span><span class="nx">sort</span><span class="p">({</span><span class="nx">silent</span><span class="o">:</span> <span class="kc">true</span><span class="p">});</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Keep an array field on the model in sync with a field that represents</span>
+<span class="cm">         one item in the array.</span>
+
+<span class="cm">         E.g. given a `start_position` field that is an array, the model might</span>
+<span class="cm">         have a `start_position_x` field that we use for easier data binding</span>
+<span class="cm">         in views. The following usage of `syncArrayField` will keep</span>
+<span class="cm">         `start_position` up to date with the latest value of `start_position_x`:</span>
+<span class="cm">         at index 0 and vice versa.</span>
+
+<span class="cm">                syncArrayField(&#39;start_position&#39;, &#39;start_position_x&#39;, 0);</span>
+<span class="cm">         */</span>
+        <span class="nx">syncArrayField</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">arrayFieldName</span><span class="p">,</span> <span class="nx">arrayItemFieldName</span><span class="p">,</span> <span class="nx">index</span><span class="p">)</span> <span class="p">{</span>
+
+            <span class="kd">function</span> <span class="nx">setArrayField</span><span class="p">(</span><span class="nx">model</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">arrayField</span> <span class="o">=</span> <span class="nx">model</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">arrayFieldName</span><span class="p">);</span>
+                <span class="nx">arrayField</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span> <span class="o">=</span> <span class="nx">model</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">arrayItemFieldName</span><span class="p">);</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="nx">arrayFieldName</span><span class="p">,</span> <span class="nx">arrayField</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="kd">function</span> <span class="nx">setArrayItemField</span><span class="p">(</span><span class="nx">model</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">arrayField</span> <span class="o">=</span> <span class="nx">model</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">arrayFieldName</span><span class="p">);</span>
+                <span class="nx">model</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="nx">arrayItemFieldName</span><span class="p">,</span> <span class="nx">arrayField</span><span class="p">[</span><span class="nx">index</span><span class="p">]);</span>
+            <span class="p">}</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;change:&#39;</span> <span class="o">+</span> <span class="nx">arrayItemFieldName</span><span class="p">,</span> <span class="nx">setArrayField</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;change:&#39;</span> <span class="o">+</span> <span class="nx">arrayFieldName</span><span class="p">,</span> <span class="nx">setArrayItemField</span><span class="p">);</span>
+
+            <span class="kd">var</span> <span class="nx">arrayField</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">arrayFieldName</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">arrayField</span> <span class="o">&amp;&amp;</span> <span class="nx">arrayField</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">setArrayItemField</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">change</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">dirty</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="nx">save</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attrs</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">options</span> <span class="o">=</span> <span class="nx">options</span> <span class="o">||</span> <span class="p">{};</span>
+            <span class="kd">var</span> <span class="nx">_this</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="s1">&#39;wait&#39;</span><span class="p">))</span> <span class="p">{</span>
+                <span class="nx">options</span><span class="p">.</span><span class="nx">wait</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="s1">&#39;success&#39;</span><span class="p">))</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">success</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">success</span><span class="p">;</span>
+
+                <span class="nx">options</span><span class="p">.</span><span class="nx">success</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">_this</span><span class="p">.</span><span class="nx">success</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+                    <span class="nx">success</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="nx">options</span><span class="p">.</span><span class="nx">success</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">success</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="s1">&#39;error&#39;</span><span class="p">))</span> <span class="p">{</span>
+                <span class="nx">options</span><span class="p">.</span><span class="nx">error</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">error</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">save</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="p">[</span><span class="nx">attrs</span><span class="p">,</span> <span class="nx">options</span><span class="p">]);</span>
+        <span class="p">},</span>
+
+        <span class="nx">success</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">model</span><span class="p">.</span><span class="nx">errors</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+            <span class="nx">model</span><span class="p">.</span><span class="nx">dirty</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="nx">destroy</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">options</span> <span class="o">=</span> <span class="nx">options</span> <span class="o">||</span> <span class="p">{};</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="s1">&#39;wait&#39;</span><span class="p">))</span> <span class="p">{</span>
+                <span class="nx">options</span><span class="p">.</span><span class="nx">wait</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">destroy</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="p">[</span><span class="nx">options</span><span class="p">]);</span>
+        <span class="p">},</span>
+
+        <span class="nx">error</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">try</span> <span class="p">{</span>
+                <span class="nx">response</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">parseJSON</span><span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">responseText</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">response</span><span class="p">.</span><span class="nx">errors</span> <span class="o">=</span> <span class="p">[{</span>
+                    <span class="nx">name</span><span class="o">:</span> <span class="s1">&#39;server&#39;</span><span class="p">,</span>
+                    <span class="nx">description</span><span class="o">:</span> <span class="s1">&#39;A server error prevented saving the model.&#39;</span>
+                <span class="p">}];</span>
+            <span class="p">}</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">response</span> <span class="o">&amp;&amp;</span> <span class="nx">response</span><span class="p">.</span><span class="nx">errors</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">model</span><span class="p">.</span><span class="nx">errors</span> <span class="o">=</span> <span class="nx">response</span><span class="p">.</span><span class="nx">errors</span><span class="p">;</span>
+                <span class="nx">model</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="nx">model</span><span class="p">.</span><span class="nx">previousAttributes</span><span class="p">());</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">fetch</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">options</span> <span class="o">=</span> <span class="nx">options</span> <span class="o">||</span> <span class="p">{};</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="s1">&#39;success&#39;</span><span class="p">))</span> <span class="p">{</span>
+                <span class="nx">options</span><span class="p">.</span><span class="nx">success</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">success</span>
+            <span class="p">}</span>
+
+            <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">fetch</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="p">[</span><span class="nx">options</span><span class="p">]);</span>
+        <span class="p">},</span>
+
+        <span class="nx">parse</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">message</span> <span class="o">=</span> <span class="nx">util</span><span class="p">.</span><span class="nx">parseMessage</span><span class="p">(</span><span class="nx">response</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">message</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="nx">BaseModel</span><span class="p">.</span><span class="nx">MESSAGE_RECEIVED</span><span class="p">,</span> <span class="nx">message</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">parse</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-21">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-21">&#182;</a>               </div>               <p>Convert date fields from strings into <code>moment</code> objects.</p>             </td>             <td class="code">               <div class="highlight"><pre>            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">dateFields</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">dateFields</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">field</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="nx">field</span><span class="p">]</span> <span class="o">===</span> <span class="s2">&quot;string&quot;</span><span class="p">))</span> <span class="p">{</span>
+                        <span class="nx">data</span><span class="p">[</span><span class="nx">field</span><span class="p">]</span> <span class="o">=</span> <span class="nx">moment</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="nx">field</span><span class="p">]);</span>
+                    <span class="p">}</span>
+                <span class="p">});</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="nx">data</span><span class="p">;</span>
+        <span class="p">},</span></pre></div>             </td>           </tr>                               <tr id="section-22">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-22">&#182;</a>               </div>               <p>Return a <code>moment</code> object for any date field.</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="nx">get</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attr</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">val</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">get</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span>
+
+            <span class="k">if</span><span class="p">(</span><span class="nx">val</span> <span class="o">&amp;&amp;</span> <span class="k">this</span><span class="p">.</span><span class="nx">dateFields</span> <span class="o">&amp;&amp;</span> <span class="nx">_</span><span class="p">.</span><span class="nx">contains</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">dateFields</span><span class="p">,</span> <span class="nx">attr</span><span class="p">))</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">date</span> <span class="o">=</span> <span class="nx">moment</span><span class="p">(</span><span class="nx">val</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">date</span> <span class="o">&amp;&amp;</span> <span class="nx">date</span><span class="p">.</span><span class="nx">isValid</span><span class="p">())</span> <span class="p">{</span>
+                    <span class="k">return</span> <span class="nx">date</span><span class="p">;</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="k">return</span> <span class="nx">val</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="nx">val</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Call .format() on any date fields when preparing them for JSON</span>
+<span class="cm">         serialization.</span>
+
+<span class="cm">         Included in a separate method so it can be called during validation.</span>
+<span class="cm">         */</span>
+        <span class="nx">jsonify</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">dateFields</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">dateFields</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">field</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="nx">field</span><span class="p">])</span> <span class="o">===</span> <span class="s2">&quot;string&quot;</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="k">return</span><span class="p">;</span>
+                    <span class="p">}</span>
+
+                    <span class="k">if</span> <span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="nx">field</span><span class="p">])</span> <span class="p">{</span>
+                        <span class="nx">data</span><span class="p">[</span><span class="nx">field</span><span class="p">]</span> <span class="o">=</span> <span class="nx">data</span><span class="p">[</span><span class="nx">field</span><span class="p">].</span><span class="nx">format</span><span class="p">();</span>
+                    <span class="p">}</span>
+                <span class="p">});</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="nx">data</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="nx">toJSON</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">toJSON</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">jsonify</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">},</span> <span class="p">{</span>
+        <span class="nx">MESSAGE_RECEIVED</span><span class="o">:</span> <span class="s1">&#39;ajaxForm:messageReceived&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">BaseCollection</span> <span class="o">=</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">initialize</span><span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">objs</span><span class="p">,</span> <span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">BaseCollection</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">initialize</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">opts</span> <span class="o">&amp;&amp;</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">gnomeModel</span> <span class="o">=</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">gnomeModel</span><span class="p">;</span>
+                <span class="nx">prependWithGnomeUrl</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">GnomeModel</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">dateFields</span><span class="o">:</span> <span class="p">[</span><span class="s1">&#39;start_time&#39;</span><span class="p">],</span>
+
+        <span class="nx">url</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">id</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">id</span> <span class="o">?</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">id</span> <span class="o">:</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
+            <span class="k">return</span> <span class="s1">&#39;/model&#39;</span> <span class="o">+</span> <span class="nx">id</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">});</span></pre></div>             </td>           </tr>                               <tr id="section-23">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-23">&#182;</a>               </div>               <p>Spills</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="kd">var</span> <span class="nx">SurfaceReleaseSpill</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">dateFields</span><span class="o">:</span> <span class="p">[</span><span class="s1">&#39;release_time&#39;</span><span class="p">],</span>
+
+        <span class="nx">initialize</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">syncArrayField</span><span class="p">(</span><span class="s1">&#39;start_position&#39;</span><span class="p">,</span> <span class="s1">&#39;start_position_x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">syncArrayField</span><span class="p">(</span><span class="s1">&#39;start_position&#39;</span><span class="p">,</span> <span class="s1">&#39;start_position_y&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">syncArrayField</span><span class="p">(</span><span class="s1">&#39;start_position&#39;</span><span class="p">,</span> <span class="s1">&#39;start_position_z&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">syncArrayField</span><span class="p">(</span><span class="s1">&#39;end_position&#39;</span><span class="p">,</span> <span class="s1">&#39;end_position_x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">syncArrayField</span><span class="p">(</span><span class="s1">&#39;end_position&#39;</span><span class="p">,</span> <span class="s1">&#39;end_position_y&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">syncArrayField</span><span class="p">(</span><span class="s1">&#39;end_position&#39;</span><span class="p">,</span> <span class="s1">&#39;end_position_z&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+            
+            <span class="k">this</span><span class="p">.</span><span class="nx">syncArrayField</span><span class="p">(</span><span class="s1">&#39;windage_range&#39;</span><span class="p">,</span> <span class="s1">&#39;windage_range_min&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">syncArrayField</span><span class="p">(</span><span class="s1">&#39;windage_range&#39;</span><span class="p">,</span> <span class="s1">&#39;windage_range_max&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+
+            <span class="k">return</span> <span class="nx">SurfaceReleaseSpill</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">initialize</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">SurfaceReleaseSpillCollection</span> <span class="o">=</span> <span class="nx">BaseCollection</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">model</span><span class="o">:</span> <span class="nx">SurfaceReleaseSpill</span><span class="p">,</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/spill/surface_release&#39;</span><span class="p">,</span>
+
+        <span class="nx">comparator</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">spill</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">moment</span><span class="p">(</span><span class="nx">spill</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;release_time&#39;</span><span class="p">)).</span><span class="nx">valueOf</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">});</span></pre></div>             </td>           </tr>                               <tr id="section-24">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-24">&#182;</a>               </div>               <p>Movers</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="kd">var</span> <span class="nx">Wind</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">dateFields</span><span class="o">:</span> <span class="p">[</span><span class="s1">&#39;updated_at&#39;</span><span class="p">],</span>
+
+        <span class="nx">initialize</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attrs</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">attrs</span> <span class="o">||</span> <span class="o">!</span><span class="nx">attrs</span><span class="p">.</span><span class="nx">timeseries</span><span class="p">)</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-25">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-25">&#182;</a>               </div>               <p>Set a default timeseries value.</p>             </td>             <td class="code">               <div class="highlight"><pre>                <span class="k">this</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">&#39;timeseries&#39;</span><span class="p">,</span> <span class="p">[[</span><span class="nx">moment</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]);</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="nx">Wind</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">set</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span>
+        <span class="p">},</span>
+
+        <span class="cm">/*</span>
+<span class="cm">         Whenever `timeseries` is set, sort it by datetime.</span>
+<span class="cm">         */</span>
+        <span class="nx">set</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">val</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">key</span><span class="p">.</span><span class="nx">timeseries</span> <span class="o">&amp;&amp;</span> <span class="nx">key</span><span class="p">.</span><span class="nx">timeseries</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">key</span><span class="p">.</span><span class="nx">timeseries</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">sortBy</span><span class="p">(</span><span class="nx">key</span><span class="p">.</span><span class="nx">timeseries</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">return</span> <span class="nx">item</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+                <span class="p">});</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">key</span> <span class="o">===</span> <span class="s1">&#39;timeseries&#39;</span> <span class="o">&amp;&amp;</span> <span class="nx">val</span> <span class="o">&amp;&amp;</span> <span class="nx">val</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">val</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">sortBy</span><span class="p">(</span><span class="nx">val</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">return</span> <span class="nx">item</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+                <span class="p">});</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="nx">Wind</span><span class="p">.</span><span class="nx">__super__</span><span class="p">.</span><span class="nx">set</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="p">[</span><span class="nx">key</span><span class="p">,</span> <span class="nx">val</span><span class="p">,</span> <span class="nx">options</span><span class="p">]);</span>
+        <span class="p">},</span>
+
+        <span class="nx">isNws</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;source_type&#39;</span><span class="p">)</span> <span class="o">===</span> <span class="s1">&#39;nws&#39;</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="nx">isBuoy</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;source_type&#39;</span><span class="p">)</span> <span class="o">===</span> <span class="s1">&#39;buoy&#39;</span><span class="p">;</span>
+        <span class="p">},</span>
+
+        <span class="nx">sourceIdRequired</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">isBuoy</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;longitude&#39;</span><span class="p">));</span>
+        <span class="p">},</span>
+
+        <span class="nx">longitudeRequired</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">isNws</span><span class="p">()</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">isBuoy</span><span class="p">())</span>
+                <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;longitude&#39;</span><span class="p">));</span>
+        <span class="p">},</span>
+
+        <span class="nx">latitudeRequired</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">isNws</span><span class="p">()</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">isBuoy</span><span class="p">())</span>
+                <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;latitude&#39;</span><span class="p">));</span>
+        <span class="p">},</span>
+
+        <span class="nx">type</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">timeseries</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;timeseries&#39;</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">timeseries</span> <span class="o">&amp;&amp;</span> <span class="nx">timeseries</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="s1">&#39;variable-wind&#39;</span><span class="p">;</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="s1">&#39;constant-wind&#39;</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">constantSpeed</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">timeseries</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;timeseries&#39;</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">timeseries</span> <span class="o">&amp;&amp;</span> <span class="nx">timeseries</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">timeseries</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">];</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">constantDirection</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">timeseries</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;timeseries&#39;</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nx">timeseries</span> <span class="o">&amp;&amp;</span> <span class="nx">timeseries</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">timeseries</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">];</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">WindCollection</span> <span class="o">=</span> <span class="nx">BaseCollection</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">model</span><span class="o">:</span> <span class="nx">Wind</span><span class="p">,</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/environment/wind&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">BaseMover</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">dateFields</span><span class="o">:</span> <span class="p">[</span><span class="s1">&#39;active_start&#39;</span><span class="p">,</span> <span class="s1">&#39;active_stop&#39;</span><span class="p">]</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">WindMover</span> <span class="o">=</span> <span class="nx">BaseMover</span><span class="p">.</span><span class="nx">extend</span><span class="p">({});</span>
+
+
+    <span class="kd">var</span> <span class="nx">WindMoverCollection</span> <span class="o">=</span> <span class="nx">BaseCollection</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">model</span><span class="o">:</span> <span class="nx">WindMover</span><span class="p">,</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/mover/wind&#39;</span>
+    <span class="p">});</span>
+    
+    
+    <span class="kd">var</span> <span class="nx">RandomMover</span> <span class="o">=</span> <span class="nx">BaseMover</span><span class="p">.</span><span class="nx">extend</span><span class="p">({});</span>
+
+
+    <span class="kd">var</span> <span class="nx">RandomMoverCollection</span> <span class="o">=</span> <span class="nx">BaseCollection</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">model</span><span class="o">:</span> <span class="nx">RandomMover</span><span class="p">,</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/mover/random&#39;</span><span class="p">,</span>
+
+        <span class="nx">comparator</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">mover</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;active_start&#39;</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">Map</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/map&#39;</span><span class="p">,</span></pre></div>             </td>           </tr>                               <tr id="section-26">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-26">&#182;</a>               </div>               <p>Bounds are stored as Long, Lat. Return then as Lat, Long.</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="nx">getLatLongBounds</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">bounds</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;map_bounds&#39;</span><span class="p">);</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">bounds</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="nx">nw</span><span class="o">:</span> <span class="p">[</span><span class="nx">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="nx">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]],</span>
+                <span class="nx">ne</span><span class="o">:</span> <span class="p">[</span><span class="nx">bounds</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="nx">bounds</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]],</span>
+                <span class="nx">se</span><span class="o">:</span> <span class="p">[</span><span class="nx">bounds</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="nx">bounds</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">]],</span>
+                <span class="nx">sw</span><span class="o">:</span> <span class="p">[</span><span class="nx">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="nx">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+
+        <span class="nx">getLatLongCenter</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">bounds</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">getLatLongBounds</span><span class="p">();</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">bounds</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="kd">var</span> <span class="nx">latLngBounds</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">LatLngBounds</span><span class="p">(</span>
+                <span class="k">new</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">LatLng</span><span class="p">(</span><span class="nx">bounds</span><span class="p">.</span><span class="nx">sw</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">bounds</span><span class="p">.</span><span class="nx">sw</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                <span class="k">new</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">LatLng</span><span class="p">(</span><span class="nx">bounds</span><span class="p">.</span><span class="nx">ne</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">bounds</span><span class="p">.</span><span class="nx">sw</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="p">);</span>
+            <span class="k">return</span> <span class="nx">latLngBounds</span><span class="p">.</span><span class="nx">getCenter</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">CustomMap</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/custom_map&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">LocationFile</span> <span class="o">=</span> <span class="nx">GnomeModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="s1">&#39;/location_file/&#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">LocationFileMeta</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">idAttribute</span><span class="o">:</span> <span class="s1">&#39;filename&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">LocationFileMetaCollection</span> <span class="o">=</span> <span class="nx">BaseCollection</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">model</span><span class="o">:</span> <span class="nx">LocationFileMeta</span><span class="p">,</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/location_file_meta&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">LocationFileWizard</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span></pre></div>             </td>           </tr>                               <tr id="section-27">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-27">&#182;</a>               </div>               <p>XXX: What to do here?</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="nx">url</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">collection</span><span class="p">.</span><span class="nx">url</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">id</span> <span class="o">+</span> <span class="s1">&#39;/wizard&#39;</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">LocationFileWizardCollection</span> <span class="o">=</span> <span class="nx">BaseCollection</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">model</span><span class="o">:</span> <span class="nx">LocationFileWizard</span><span class="p">,</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/location_file&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">GnomeModelFromLocationFile</span> <span class="o">=</span> <span class="nx">BaseModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="s1">&#39;/from_location_file/&#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;location_name&#39;</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">GnomeModelValidator</span> <span class="o">=</span> <span class="nx">GnomeModel</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/validate/model&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">WindMoverValidator</span> <span class="o">=</span> <span class="nx">WindMover</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/validate/mover/wind&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">WindValidator</span> <span class="o">=</span> <span class="nx">Wind</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/validate/environment/wind&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">RandomMoverValidator</span> <span class="o">=</span> <span class="nx">RandomMover</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/validate/mover/random&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">SurfaceReleaseSpillValidator</span> <span class="o">=</span> <span class="nx">SurfaceReleaseSpill</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/validate/spill/surface_release&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">MapValidator</span> <span class="o">=</span> <span class="nx">Map</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/validate/map&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">CustomMapValidator</span> <span class="o">=</span> <span class="nx">CustomMap</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/validate/custom_map&#39;</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">LocationFileValidator</span> <span class="o">=</span> <span class="nx">LocationFile</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">url</span><span class="o">:</span> <span class="s1">&#39;/validate/location_file&#39;</span>
+    <span class="p">});</span>
+    
+    
+    <span class="kd">function</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">,</span> <span class="nx">state</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="kd">function</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">)</span> <span class="o">===</span> <span class="nx">state</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+
+    <span class="kd">var</span> <span class="nx">StateMachine</span> <span class="o">=</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">initialize</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">defaultState</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">AnimationState</span> <span class="o">=</span> <span class="nx">StateMachine</span><span class="p">.</span><span class="nx">extend</span><span class="p">({},</span> <span class="p">{</span>
+        <span class="nx">STOPPED</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="nx">PLAYING</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="nx">PAUSED</span><span class="o">:</span> <span class="mi">2</span>
+    <span class="p">});</span>
+    
+    <span class="nx">AnimationState</span> <span class="o">=</span> <span class="nx">AnimationState</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">defaultState</span><span class="o">:</span> <span class="nx">AnimationState</span><span class="p">.</span><span class="nx">STOPPED</span><span class="p">,</span>
+
+        <span class="nx">setStopped</span><span class="o">:</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">AnimationState</span><span class="p">.</span><span class="nx">STOPPED</span><span class="p">),</span>
+        <span class="nx">setPlaying</span><span class="o">:</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">AnimationState</span><span class="p">.</span><span class="nx">PLAYING</span><span class="p">),</span>
+        <span class="nx">setPaused</span><span class="o">:</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">AnimationState</span><span class="p">.</span><span class="nx">PAUSED</span><span class="p">),</span>
+
+        <span class="nx">isStopped</span><span class="o">:</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">AnimationState</span><span class="p">.</span><span class="nx">STOPPED</span><span class="p">),</span>
+        <span class="nx">isPlaying</span><span class="o">:</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">AnimationState</span><span class="p">.</span><span class="nx">PLAYING</span><span class="p">),</span>
+        <span class="nx">isPaused</span><span class="o">:</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">AnimationState</span><span class="p">.</span><span class="nx">PAUSED</span><span class="p">)</span>       
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">CursorState</span> <span class="o">=</span> <span class="nx">StateMachine</span><span class="p">.</span><span class="nx">extend</span><span class="p">({},</span> <span class="p">{</span>
+        <span class="nx">RESTING</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="nx">ZOOMING_IN</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="nx">ZOOMING_OUT</span><span class="o">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="nx">MOVING</span><span class="o">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="nx">DRAWING_SPILL</span><span class="o">:</span> <span class="mi">4</span>
+    <span class="p">});</span>
+    
+    <span class="nx">CursorState</span> <span class="o">=</span> <span class="nx">CursorState</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">defaultState</span><span class="o">:</span> <span class="nx">CursorState</span><span class="p">.</span><span class="nx">RESTING</span><span class="p">,</span>
+
+        <span class="nx">setZoomingIn</span><span class="o">:</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">CursorState</span><span class="p">.</span><span class="nx">ZOOMING_IN</span><span class="p">),</span>
+        <span class="nx">setZoomingOut</span><span class="o">:</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">CursorState</span><span class="p">.</span><span class="nx">ZOOMING_OUT</span><span class="p">),</span>
+        <span class="nx">setResting</span><span class="o">:</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">CursorState</span><span class="p">.</span><span class="nx">RESTING</span><span class="p">),</span>
+        <span class="nx">setMoving</span><span class="o">:</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">CursorState</span><span class="p">.</span><span class="nx">MOVING</span><span class="p">),</span>
+        <span class="nx">setDrawingSpill</span><span class="o">:</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">CursorState</span><span class="p">.</span><span class="nx">DRAWING_SPILL</span><span class="p">),</span>
+
+        <span class="nx">isZoomingIn</span><span class="o">:</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">CursorState</span><span class="p">.</span><span class="nx">ZOOMING_IN</span><span class="p">),</span>
+        <span class="nx">isZoomingOut</span><span class="o">:</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">CursorState</span><span class="p">.</span><span class="nx">ZOOMING_OUT</span><span class="p">),</span>
+        <span class="nx">isResting</span><span class="o">:</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">CursorState</span><span class="p">.</span><span class="nx">RESTING</span><span class="p">),</span>
+        <span class="nx">isMoving</span><span class="o">:</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">CursorState</span><span class="p">.</span><span class="nx">MOVING</span><span class="p">),</span>
+        <span class="nx">isDrawingSpill</span><span class="o">:</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">CursorState</span><span class="p">.</span><span class="nx">DRAWING_SPILL</span><span class="p">)</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">FullscreenState</span> <span class="o">=</span> <span class="nx">StateMachine</span><span class="p">.</span><span class="nx">extend</span><span class="p">({},</span> <span class="p">{</span>
+        <span class="nx">DISABLED</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="nx">ENABLED</span><span class="o">:</span> <span class="mi">1</span>
+    <span class="p">});</span>
+
+    <span class="nx">FullscreenState</span> <span class="o">=</span> <span class="nx">FullscreenState</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">defaultState</span><span class="o">:</span> <span class="nx">FullscreenState</span><span class="p">.</span><span class="nx">DISABLED</span><span class="p">,</span>
+
+        <span class="nx">setEnabled</span><span class="o">:</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">FullscreenState</span><span class="p">.</span><span class="nx">ENABLED</span><span class="p">),</span>
+        <span class="nx">setDisabled</span><span class="o">:</span> <span class="nx">makeSetter</span><span class="p">(</span><span class="nx">FullscreenState</span><span class="p">.</span><span class="nx">DISABLED</span><span class="p">),</span>
+
+        <span class="nx">isEnabled</span><span class="o">:</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">FullscreenState</span><span class="p">.</span><span class="nx">ENABLED</span><span class="p">),</span>
+        <span class="nx">isDisabled</span><span class="o">:</span> <span class="nx">makeChecker</span><span class="p">(</span><span class="nx">FullscreenState</span><span class="p">.</span><span class="nx">DISABLED</span><span class="p">)</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">var</span> <span class="nx">AppState</span> <span class="o">=</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+        <span class="nx">initialize</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">animation</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">AnimationState</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">cursor</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">CursorState</span><span class="p">();</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">fullscreen</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">FullscreenState</span><span class="p">();</span>
+
+            <span class="kd">var</span> <span class="nx">_this</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">listenTo</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">animation</span><span class="p">,</span> <span class="s1">&#39;change&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="s1">&#39;change:animation&#39;</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">));</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">listenTo</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">cursor</span><span class="p">,</span> <span class="s1">&#39;change&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="s1">&#39;change:cursor&#39;</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">));</span>
+            <span class="p">});</span>
+
+            <span class="k">this</span><span class="p">.</span><span class="nx">listenTo</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">fullscreen</span><span class="p">,</span> <span class="s1">&#39;change&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">_this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="s1">&#39;change:fullscreen&#39;</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">));</span>
+            <span class="p">});</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+
+    <span class="kd">function</span> <span class="nx">nwsWindError</span><span class="p">(</span><span class="nx">resp</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">error</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">defaultError</span> <span class="o">=</span> <span class="s1">&#39;Could not contact the National Weather Service.&#39;</span><span class="p">;</span>
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="nx">error</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">resp</span><span class="p">.</span><span class="nx">responseText</span><span class="p">).</span><span class="nx">error</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">error</span> <span class="o">=</span> <span class="nx">defaultError</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="nb">window</span><span class="p">.</span><span class="nx">alert</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+    <span class="p">}</span>
+
+
+    <span class="kd">function</span> <span class="nx">getNwsWind</span><span class="p">(</span><span class="nx">coords</span><span class="p">,</span> <span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">url</span> <span class="o">=</span> <span class="s1">&#39;/nws/wind?lat=&#39;</span> <span class="o">+</span> <span class="nx">coords</span><span class="p">.</span><span class="nx">latitude</span> <span class="o">+</span> <span class="s1">&#39;&amp;lon=&#39;</span> <span class="o">+</span> <span class="nx">coords</span><span class="p">.</span><span class="nx">longitude</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">error</span> <span class="o">=</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">error</span> <span class="o">||</span> <span class="nx">nwsWindError</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">success</span> <span class="o">=</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">success</span><span class="p">;</span>
+        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+            <span class="nx">url</span><span class="o">:</span> <span class="nx">url</span><span class="p">,</span>
+            <span class="nx">success</span><span class="o">:</span> <span class="nx">success</span><span class="p">,</span>
+            <span class="nx">error</span><span class="o">:</span> <span class="nx">error</span><span class="p">,</span>
+            <span class="nx">dataType</span><span class="o">:</span> <span class="s1">&#39;json&#39;</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+
+
+    <span class="kd">function</span> <span class="nx">init</span><span class="p">(</span><span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">schema</span> <span class="o">=</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">jsonSchema</span><span class="p">;</span>
+        <span class="nx">SurfaceReleaseSpill</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">defaults</span> <span class="o">=</span> <span class="nx">opts</span><span class="p">.</span><span class="nx">defaultSurfaceReleaseSpill</span><span class="p">;</span>
+        <span class="nx">SurfaceReleaseSpill</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">schema</span> <span class="o">=</span>  <span class="nx">schema</span><span class="p">.</span><span class="nx">properties</span><span class="p">.</span><span class="nx">surface_release_spills</span><span class="p">.</span><span class="nx">items</span><span class="p">;</span>
+    <span class="p">}</span>
+
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="nx">init</span><span class="o">:</span> <span class="nx">init</span><span class="p">,</span>
+        <span class="nx">TimeStep</span><span class="o">:</span> <span class="nx">TimeStep</span><span class="p">,</span>
+        <span class="nx">GnomeRun</span><span class="o">:</span> <span class="nx">GnomeRun</span><span class="p">,</span>
+        <span class="nx">GnomeModel</span><span class="o">:</span> <span class="nx">GnomeModel</span><span class="p">,</span>
+        <span class="nx">GnomeModelFromLocationFile</span><span class="o">:</span> <span class="nx">GnomeModelFromLocationFile</span><span class="p">,</span>
+        <span class="nx">BaseModel</span><span class="o">:</span> <span class="nx">BaseModel</span><span class="p">,</span>
+        <span class="nx">BaseCollection</span><span class="o">:</span> <span class="nx">BaseCollection</span><span class="p">,</span>
+        <span class="nx">SurfaceReleaseSpill</span><span class="o">:</span> <span class="nx">SurfaceReleaseSpill</span><span class="p">,</span>
+        <span class="nx">SurfaceReleaseSpillCollection</span><span class="o">:</span> <span class="nx">SurfaceReleaseSpillCollection</span><span class="p">,</span>
+        <span class="nx">Wind</span><span class="o">:</span> <span class="nx">Wind</span><span class="p">,</span>
+        <span class="nx">WindCollection</span><span class="o">:</span> <span class="nx">WindCollection</span><span class="p">,</span>
+        <span class="nx">WindMover</span><span class="o">:</span> <span class="nx">WindMover</span><span class="p">,</span>
+        <span class="nx">WindMoverCollection</span><span class="o">:</span> <span class="nx">WindMoverCollection</span><span class="p">,</span>
+        <span class="nx">RandomMover</span><span class="o">:</span> <span class="nx">RandomMover</span><span class="p">,</span>
+        <span class="nx">RandomMoverCollection</span><span class="o">:</span> <span class="nx">RandomMoverCollection</span><span class="p">,</span>
+        <span class="nx">Map</span><span class="o">:</span> <span class="nx">Map</span><span class="p">,</span>
+        <span class="nx">CustomMap</span><span class="o">:</span> <span class="nx">CustomMap</span><span class="p">,</span>
+        <span class="nx">LocationFile</span><span class="o">:</span> <span class="nx">LocationFile</span><span class="p">,</span>
+        <span class="nx">LocationFileMeta</span><span class="o">:</span> <span class="nx">LocationFileMeta</span><span class="p">,</span>
+        <span class="nx">LocationFileMetaCollection</span><span class="o">:</span> <span class="nx">LocationFileMetaCollection</span><span class="p">,</span>
+        <span class="nx">LocationFileWizard</span><span class="o">:</span> <span class="nx">LocationFileWizard</span><span class="p">,</span>
+        <span class="nx">LocationFileWizardCollection</span><span class="o">:</span> <span class="nx">LocationFileWizardCollection</span><span class="p">,</span>
+        <span class="nx">GnomeModelValidator</span><span class="o">:</span> <span class="nx">GnomeModelValidator</span><span class="p">,</span>
+        <span class="nx">WindValidator</span><span class="o">:</span> <span class="nx">WindValidator</span><span class="p">,</span>
+        <span class="nx">WindMoverValidator</span><span class="o">:</span> <span class="nx">WindMoverValidator</span><span class="p">,</span>
+        <span class="nx">RandomMoverValidator</span><span class="o">:</span> <span class="nx">RandomMoverValidator</span><span class="p">,</span>
+        <span class="nx">SurfaceReleaseSpillValidator</span><span class="o">:</span> <span class="nx">SurfaceReleaseSpillValidator</span><span class="p">,</span>
+        <span class="nx">MapValidator</span><span class="o">:</span> <span class="nx">MapValidator</span><span class="p">,</span>
+        <span class="nx">CustomMapValidator</span><span class="o">:</span> <span class="nx">CustomMapValidator</span><span class="p">,</span>
+        <span class="nx">LocationFileValidator</span><span class="o">:</span> <span class="nx">LocationFileValidator</span><span class="p">,</span>
+        <span class="nx">getNwsWind</span><span class="o">:</span> <span class="nx">getNwsWind</span><span class="p">,</span>
+        <span class="nx">AppState</span><span class="o">:</span> <span class="nx">AppState</span><span class="p">,</span>
+        <span class="nx">AnimationState</span><span class="o">:</span> <span class="nx">AnimationState</span><span class="p">,</span>
+        <span class="nx">CursorState</span><span class="o">:</span> <span class="nx">CursorState</span><span class="p">,</span>
+        <span class="nx">FullscreenState</span><span class="o">:</span> <span class="nx">FullscreenState</span>
+    <span class="p">};</span>
+
+<span class="p">});</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

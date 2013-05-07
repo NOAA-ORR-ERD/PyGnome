@@ -16,7 +16,7 @@ define([
             _.bindAll(this);
             this.containerEl = this.options.containerEl;
             this.sliderEl = this.options.sliderEl;
-            this.handButtonEl = this.options.handButtonEl;
+            this.restingButtonEl = this.options.restingButtonEl;
             this.playButtonEl = this.options.playButtonEl;
             this.pauseButtonEl = this.options.pauseButtonEl;
             this.backButtonEl = this.options.backButtonEl;
@@ -39,7 +39,7 @@ define([
             ];
 
             this.mapControls = [
-                this.handButtonEl, this.moveButtonEl, this.zoomInButtonEl,
+                this.restingButtonEl, this.moveButtonEl, this.zoomInButtonEl,
                 this.zoomOutButtonEl, this.spillButtonEl
             ];
 
@@ -134,7 +134,7 @@ define([
             var _this = this;
 
             var clickEvents = [
-                [this.handButtonEl, MapControlView.HAND_BUTTON_CLICKED],
+                [this.restingButtonEl, MapControlView.HAND_BUTTON_CLICKED],
                 [this.playButtonEl, MapControlView.PLAY_BUTTON_CLICKED],
                 [this.backButtonEl, MapControlView.BACK_BUTTON_CLICKED],
                 [this.forwardButtonEl, MapControlView.FORWARD_BUTTON_CLICKED],
@@ -243,24 +243,28 @@ define([
         },
 
         setZoomingIn: function() {
-
-        },
-
-        setZoomingOut: function() {
             this.deactivateControl();
             this.activateControl(this.zoomInButtonEl);
         },
 
-        setResting: function() {
+        setZoomingOut: function() {
+            this.deactivateControl();
+            this.activateControl(this.zoomOutButtonEl);
+        },
 
+        setResting: function() {
+            this.deactivateControl();
+            this.activateControl(this.restingButtonEl);
         },
 
         setMoving: function() {
-
+            this.deactivateControl();
+            this.activateControl(this.moveButtonEl);
         },
 
         setDrawingSpill: function() {
-
+            this.deactivateControl();
+            this.activateControl(this.spillButtonEl);
         },
 
         setTimeStep: function(stepNum) {
@@ -318,7 +322,7 @@ define([
         toggleControls: function(controls, toggle) {
             var _this = this;
 
-            if (controls && controls.length) {
+            if (controls && typeof controls !== 'string' && controls.length) {
                 if (_.contains(controls, this.sliderEl)) {
                     this.toggleSlider(toggle);
                 }
@@ -348,18 +352,18 @@ define([
                 controls = this.mapControls;
             }
 
-            function doToggle(control) {
+            function doToggle(control, toggle) {
                 control = $(control);
-                if (toggle === this.OFF) {
+                if (toggle === MapControlView.OFF) {
                     control.removeClass(cls);
                 } else {
                     control.addClass(cls);
                 }
             }
 
-            if (controls && controls.length) {
+            if (controls && typeof controls !== 'string' && controls.length) {
                 for (var i = 0; i < controls.length; i++) {
-                    doToggle(controls[i])
+                    doToggle(controls[i], toggle)
                 }
                 return;
             }
@@ -368,11 +372,11 @@ define([
         },
 
         activateControl: function(control) {
-            this.toggleControlClass(control, 'active', this.ON);
+            this.toggleControlClass(control, 'active', MapControlView.ON);
         },
 
         deactivateControl: function(control) {
-            this.toggleControlClass(control, 'active', this.OFF);
+            this.toggleControlClass(control, 'active', MapControlView.OFF);
         },
 
         getTimeStep: function() {
@@ -396,7 +400,7 @@ define([
         OFF: false,
 
         // Event constants
-        HAND_BUTTON_CLICKED: "mapControlView:handButtonClicked",
+        HAND_BUTTON_CLICKED: "mapControlView:restingButtonClicked",
         PLAY_BUTTON_CLICKED: "mapControlView:playButtonClicked",
         PAUSE_BUTTON_CLICKED: "mapControlView:pauseButtonClicked",
         BACK_BUTTON_CLICKED: "mapControlView:backButtonClicked",

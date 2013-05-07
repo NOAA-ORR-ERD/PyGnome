@@ -79,7 +79,7 @@ define([
             this.mapControlView = new views.MapControlView({
                 sliderEl: "#slider",
                 sliderShadedEl: "#slider-shaded",
-                handButtonEl: "#hand-button",
+                restingButtonEl: "#hand-button",
                 playButtonEl: "#play-button",
                 pauseButtonEl: "#pause-button",
                 backButtonEl: "#back-button",
@@ -145,6 +145,7 @@ define([
             this.treeControlView.on(views.TreeControlView.REMOVE_BUTTON_CLICKED, this.removeButtonClicked);
             this.treeControlView.on(views.TreeControlView.SETTINGS_BUTTON_CLICKED, this.settingsButtonClicked);
 
+            this.mapControlView.on(views.MapControlView.HAND_BUTTON_CLICKED, this.handButtonClicked);
             this.mapControlView.on(views.MapControlView.PLAY_BUTTON_CLICKED, this.playButtonClicked);
             this.mapControlView.on(views.MapControlView.PAUSE_BUTTON_CLICKED, this.pause);
             this.mapControlView.on(views.MapControlView.ZOOM_IN_BUTTON_CLICKED, this.enableZoomIn);
@@ -326,6 +327,7 @@ define([
             this.addMapFromUploadFormView = new forms.AddMapFromUploadFormView({
                 id: 'add-map-from-upload',
                 model: this.map,
+                defaults: this.options.defaultMap,
                 uploadUrl: this.apiRoot + '/file_upload',
                 gnomeModel: this.gnomeModel
             });
@@ -549,6 +551,10 @@ define([
             });
         },
 
+        handButtonClicked: function() {
+            this.state.cursor.setResting();
+        },
+
         play: function(opts) {
             if (!this.map.id) {
                 window.alert('You must add a map before you can run the model.');
@@ -569,23 +575,15 @@ define([
         },
 
         enableZoomIn: function() {
-            if (this.gnomeRun.hasData() === false) {
-                return;
-            }
-
-            this.state.setZoomingIn();
+            this.state.cursor.setZoomingIn();
         },
 
         enableZoomOut: function() {
-            if (this.gnomeRun.hasData() === false) {
-                return;
-            }
-
-            this.state.animation.setZoomingOut();
+            this.state.cursor.setZoomingOut();
         },
 
         stopAnimation: function() {
-            this.mapControlView.setStopped();
+            this.state.animation.setStopped();
         },
 
         zoomIn: function(startPosition, endPosition) {
@@ -608,7 +606,7 @@ define([
                 this.gnomeRun.zoomFromPoint(startPosition, models.GnomeRun.ZOOM_IN);
             }
 
-            this.mapView.setRegularCursor();
+            this.state.cursor.setResting();
         },
 
         zoomOut: function(point) {
@@ -708,7 +706,7 @@ define([
         },
 
         enableSpillDrawing: function() {
-            this.mapView.canDrawSpill = true;
+            this.state.cursor.setDrawingSpill();
         },
 
         showFormWithId: function(formId) {

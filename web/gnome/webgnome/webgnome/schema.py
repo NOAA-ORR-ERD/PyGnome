@@ -97,6 +97,7 @@ class RandomMoversSchema(SequenceSchema):
 
 class MapSchema(map_schema.MapFromBNA):
     default_name = 'Map'
+    refloat_halflife = SchemaNode(Float(), default=6 * 3600)  # seconds
     name = SchemaNode(String(), default=default_name, missing=default_name)
     filename = SchemaNode(String(), default=None, missing=drop)
     map_bounds = LongLatBounds(default=[], missing=drop)

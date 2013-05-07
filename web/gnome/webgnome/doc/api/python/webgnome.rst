@@ -9,6 +9,14 @@ webgnome Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`helpers` Module
+---------------------
+
+.. automodule:: webgnome.helpers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`model_manager` Module
 ---------------------------
 
@@ -21,6 +29,14 @@ webgnome Package
 -----------------------------
 
 .. automodule:: webgnome.navigation_tree
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`schema` Module
+--------------------
+
+.. automodule:: webgnome.schema
     :members:
     :undoc-members:
     :show-inheritance:
@@ -38,7 +54,10 @@ Subpackages
 
 .. toctree::
 
-    webgnome.forms
+    webgnome.location_files
+    webgnome.scripts
+    webgnome.static
+    webgnome.templates
     webgnome.tests
     webgnome.views
 

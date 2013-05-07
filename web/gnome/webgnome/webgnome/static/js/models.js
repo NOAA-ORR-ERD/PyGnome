@@ -1045,16 +1045,18 @@ define([
             this.cursor = new CursorState();
             this.fullscreen = new FullscreenState();
 
-            this.listenTo(this.animation, 'change', function(obj) {
-                this.trigger('change:animation', obj.get('state'));
-            });
+            var _this = this;
 
             this.listenTo(this.animation, 'change', function(obj) {
-                this.trigger('change:cursor', obj.get('state'));
+                _this.trigger('change:animation', obj.get('state'));
+            });
+
+            this.listenTo(this.cursor, 'change', function(obj) {
+                _this.trigger('change:cursor', obj.get('state'));
             });
 
             this.listenTo(this.fullscreen, 'change', function(obj) {
-                this.trigger('change:fullscreen', obj.get('state'));
+                _this.trigger('change:fullscreen', obj.get('state'));
             });
         }
     });

@@ -14,6 +14,7 @@ import os, shutil
 
 import numpy.random as random
 
+import gnome
 from gnome import basic_types
 from gnome import renderer
 from gnome.spill_container import TestSpillContainer
@@ -133,9 +134,62 @@ def test_render_beached_elements():
     r.save_foreground( os.path.join(output_dir,"foreground2.png") )
     assert True        
 
+def test_show_hide_map_bounds():
+    r = renderer.Renderer(os.path.join(data_dir, 'Star.bna'),
+                          output_dir,
+                          image_size=(600,600))
+
+    r.draw_background()
+    r.save_background( os.path.join(output_dir, 'star_background.png') )
+
+    # try again without the map bounds:
+    r.draw_map_bounds = False
+    r.draw_background()
+    r.save_background( os.path.join(output_dir, 'star_background_no_bound.png') )
+
+def test_set_viewport():
+    """
+    tests various rendering, re-zooming, etc
+
+    NOTE: this will only test if the code crashes, you have to look
+          at the rendered images to soo if it does the right thing 
+    """
+    r = renderer.Renderer(os.path.join(data_dir, 'Star.bna'),
+                          output_dir,
+                          image_size=(600,600),
+                          projection_class=gnome.utilities.projections.GeoProjection)
+
+    # re-scale:
+    # should show upper right corner
+    r.viewport = ((-73,40),(-70, 43))
+    r.draw_background()
+    r.save_background( os.path.join(output_dir, 'star_upper_right.png') )
+
+    # re-scale:
+    # should show lower right corner
+    r.viewport = ((-73,37),(-70, 40))
+    r.draw_background()
+    r.save_background( os.path.join(output_dir, 'star_lower_right.png') )
+
+    # re-scale:
+    # should show lower left corner
+    r.viewport = ((-76,37),(-73, 40))
+    r.draw_background()
+    r.save_background( os.path.join(output_dir, 'star_lower_left.png') )
+
+    # re-scale:
+    # should show upper left corner
+    r.viewport = ((-76, 40),(-73, 43))
+    r.draw_background()
+    r.save_background( os.path.join(output_dir, 'star_upper_left.png') )
+
+
+
+
+
 
 if __name__ == "__main__":
-    pass
+    test_set_viewport()
 
 
 
