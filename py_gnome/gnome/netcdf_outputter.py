@@ -94,7 +94,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     
     # id
     var.clear()
-    var['dtype'] = np.int8
+    var['dtype'] = np.uint8
     var['long_name'] = 'particle ID'
     var['units'] = '1'
     data_vars['id'] = copy.deepcopy(var)
