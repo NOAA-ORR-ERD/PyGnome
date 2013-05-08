@@ -8,7 +8,8 @@ define([
 
     var GeoProjection = L.extend({}, L.CRS, {
         projection: L.Projection.LonLat,
-        transformation: new L.Transformation(1 / 367, 0.5, -1 / 367, 0.5)
+//        transformation: new L.Transformation(1 / 360, 0.5, -1 / 360, 0.5)
+        transformation: new L.Transformation(1 / 365, 0.5, -1 / 365, 0.5)
 //        transformation: new L.Transformation(1 / 489.5, 0.5, -1 / 489.5, 0.5)
     });
 
@@ -84,12 +85,7 @@ define([
             this.gnomeRun.on(models.GnomeRun.CREATED, this.reset);
 
             this.model = this.options.model;
-            this.model.on('change:background_image_url', function() {
-                console.log('reset bg image change');
-                _this.reset();
-            });
             this.model.on('sync', function() {
-                console.log('reset sync');
                 _this.reset();
             });
             this.model.on('destroy', function () {
@@ -351,22 +347,6 @@ define([
             });
         },
 
-        addTimeStep__old: function(timeStep) {
-            var imageExists = this.getImageForTimeStep(timeStep.id).length;
-
-            // We must be playing a cached model run because the image already
-            // exists. In all other cases the image should NOT exist.
-            if (imageExists) {
-                setTimeout(this.showImageForTimeStep,
-                           // Use 0 since this was a cached time step.
-                           this.getAnimationTimeout(0),
-                           [timeStep.id]);
-                return;
-            }
-
-            this.addImageForTimeStep(timeStep);
-        },
-
         addTimeStep: function(timeStep) {
             var _this = this;
             if (!this.leafletMap) {
@@ -538,11 +518,15 @@ define([
             var viewport = this.getViewport();
 
             if (viewport) {
-                this.viewport = viewport;
-                this.viewport = new L.LatLngBounds([this.viewport.sw, this.viewport.ne]);
-                this.leafletMap.fitBounds(this.viewport);
+                this.viewport = new L.LatLngBounds([viewport.sw, viewport.ne]);
+                // Fit the map to the viewport bounds if we're adding the back-
+                // ground for the first time.
+                if (!this.backgroundInitialized) {
+                    this.leafletMap.fitBounds(this.viewport);
+                }
                 this.backgroundOverlay = imageOverlay(url, this.viewport);
                 this.leafletMap.addLayer(this.backgroundOverlay);
+                this.backgroundInitialized = true;
            }
 
             // TODO:
@@ -743,6 +727,9 @@ define([
         },
 
         reset: function() {
+            if (this.timeStepLayer) {
+                this.leafletMap.removeLayer(this.timeStepLayer);
+            }
             this.clearImageCache();
             this.setBackground();
         },
