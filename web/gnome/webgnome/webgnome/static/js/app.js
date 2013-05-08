@@ -160,11 +160,10 @@ define([
             this.mapControlView.on(views.MapControlView.SPILL_BUTTON_CLICKED, this.enableSpillDrawing);
 
             this.mapView.on(views.MapView.PLAYING_FINISHED, this.stopAnimation);
-            this.mapView.on(views.MapView.DRAGGING_FINISHED, this.zoomIn);
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
-            this.mapView.on(views.MapView.MAP_WAS_CLICKED, this.zoomOut);
             this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
             this.mapView.on(views.MapView.READY, this.drawSpills);
+            this.mapView.on(views.MapView.VIEWPORT_CHANGED, this.rewind);
 
             this.locationFileMapView.on(views.LocationFileMapView.LOCATION_CHOSEN, this.loadLocationFileWizard);
 
@@ -226,7 +225,7 @@ define([
             var _this = this;
 
             Mousetrap.bind('space', function() {
-                if (_this.state.isPlaying()) {
+                if (_this.state.animation.isPlaying()) {
                     _this.pause();
                 } else {
                     _this.play({});
@@ -564,36 +563,6 @@ define([
             this.state.animation.setStopped();
         },
 
-        zoomIn: function(startPosition, endPosition) {
-            this.state.animation.setPaused();
-            this.gnomeRun.rewind();
-
-            if (endPosition) {
-                var rect = {start: startPosition, end: endPosition};
-                var isInsideMap = this.mapView.isRectInsideMap(rect);
-
-                // If we are at zoom level 0 and there is no map portion outside of
-                // the visible area, then adjust the coordinates of the selected
-                // rectangle to the on-screen pixel bounds.
-                if (!isInsideMap && this.gnomeRun.zoomLevel === 0) {
-                    rect = this.mapView.getAdjustedRect(rect);
-                }
-
-                this.gnomeRun.zoomFromRect(rect, models.GnomeRun.ZOOM_IN);
-            } else {
-                this.gnomeRun.zoomFromPoint(startPosition, models.GnomeRun.ZOOM_IN);
-            }
-
-            this.state.cursor.setResting();
-        },
-
-        zoomOut: function(point) {
-            this.state.animation.setPaused();
-            this.gnomeRun.rewind();
-            this.gnomeRun.zoomFromPoint(point, models.GnomeRun.ZOOM_OUT);
-            this.mapView.setRegularCursor();
-        },
-
         pause: function() {
             this.state.animation.setPaused();
         },
@@ -652,7 +621,7 @@ define([
         },
 
         rewind: function() {
-            this.mapView.clear();
+            this.mapView.clearImageCache();
             this.gnomeRun.clearData();
             this.mapControlView.reset();
 

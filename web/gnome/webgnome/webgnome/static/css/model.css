@@ -109,8 +109,8 @@ legend {
 }
 
 #leaflet-map {
-    height: 85%;
     width: 100%;
+    min-height: 900px;
 }
 
 .drawable-foreground {

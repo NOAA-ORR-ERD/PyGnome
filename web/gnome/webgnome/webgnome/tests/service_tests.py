@@ -24,6 +24,25 @@ class ModelHelperMixin(object):
         return str('%s%s' % (self.base_url, postfix))
 
 
+class MapHelperMixin(object):
+    def copy_map(self, location_file, map_name, destination_name=None):
+        """
+        Copy a map with the filename ``map_name`` from the location file
+        ``location_file`` to the current model's data directory.
+
+        If ``destination_name`` is None, use ``map_name`` as the new filename.
+        """
+        destination_name = destination_name or map_name
+        original_file = os.path.join(self.project_root, 'location_files',
+                                     location_file, 'data', map_name)
+        destination_file = os.path.join(self.project_root, 'static',
+                                        self.settings['model_data_dir'],
+                                        self.model_id, 'data', destination_name)
+        shutil.copy(original_file, destination_file)
+
+        return destination_name
+
+
 class ModelServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_model_gets_a_valid_model(self):
@@ -454,28 +473,11 @@ class SurfaceReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         self.testapp.get(spill_url, status=404)
 
 
-class MapServiceTests(FunctionalTestBase, ModelHelperMixin):
+class MapServiceTests(FunctionalTestBase, ModelHelperMixin, MapHelperMixin):
     def setUp(self):
         super(MapServiceTests, self).setUp()
         self.create_model()
         self.url = self.model_url('map')
-
-    def copy_map(self, location_file, map_name, destination_name=None):
-        """
-        Copy a map with the filename ``map_name`` from the location file
-        ``location_file`` to the current model's data directory.
-
-        If ``destination_name`` is None, use ``map_name`` as the new filename.
-        """
-        destination_name = destination_name or map_name
-        original_file = os.path.join(self.project_root, 'location_files',
-                                     location_file, 'data', map_name)
-        destination_file = os.path.join(self.project_root, 'static',
-                                        self.settings['model_data_dir'],
-                                        self.model_id, 'data', destination_name)
-        shutil.copy(original_file, destination_file)
-
-        return destination_name
 
     def test_create_map(self):
         filename = self.copy_map('long_island', 'LongIslandSoundMap.BNA')
@@ -678,3 +680,52 @@ class NwsTests(FunctionalTestBase):
         resp = self.testapp.get('/nws/wind?lat=45.645&lon=-123.794')
         self.assertEqual(resp.json['description'], '4 Miles SSW Foss OR')
         self.assertEqual(len(resp.json['timeseries']), 168)
+
+
+class RendererServiceTests(FunctionalTestBase, ModelHelperMixin, MapHelperMixin):
+    def setUp(self):
+        super(RendererServiceTests, self).setUp()
+        self.create_model()
+        self.url = self.model_url('renderer')
+        self.map_url = self.model_url('map')
+
+    def add_map(self):
+        """
+        Add the Long Island Sound BNA map to the model.
+        Adding a map sets the renderer.
+        """
+        filename = self.copy_map('long_island', 'LongIslandSoundMap.BNA')
+        data = {
+            'filename': filename,
+            'name': 'Long Island',
+            'refloat_halflife': 6 * 3600
+        }
+        self.testapp.post_json(self.map_url, data)
+
+    def test_get_renderer(self):
+        self.add_map()
+        resp = self.testapp.get(self.url)
+        self.assertEqual(resp.json_body['viewport'],
+                         [[-73.0828611287, 40.8462428787],
+                          [-72.3358671287, 41.4064883787]])
+
+    def test_update_renderer(self):
+        self.add_map()
+        resp = self.testapp.get(self.url)
+        self.assertEqual(resp.json_body['viewport'],
+                         [[-73.0828611287, 40.8462428787],
+                          [-72.3358671287, 41.4064883787]])
+
+        data = resp.json_body
+        data['viewport'][0][0] -= 1
+        data['viewport'][0][1] -= 1
+
+        resp = self.testapp.put_json(self.url, data)
+        viewport = resp.json_body['viewport']
+        self.assertEqual(viewport, [[-74.0817692575, 39.9701510074],
+                                    [-72.3347752575, 41.2803965074]])
+
+    def test_delete_renderer(self):
+        self.add_map()
+        self.testapp.delete(self.url)
+        self.testapp.get(self.url, status=404)

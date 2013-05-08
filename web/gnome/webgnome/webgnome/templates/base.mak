@@ -38,14 +38,14 @@
 </div>
 
 
-<div class="container-fluid outer-wrapper expand">
-    <div class="row-fluid inner-wrapper expand">
+<div class="container-fluid outer-wrapper">
+    <div class="row-fluid inner-wrapper">
         <div class="hidden" id="sidebar">
             <div id="sidebar-container">
                 <%block name="sidebar"> </%block>
             </div>
         </div>
-        <div class="span8 expand" id="content">
+        <div class="span8" id="content">
             <%block name="content"> </%block>
         </div>
     </div>

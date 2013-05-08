@@ -351,6 +351,26 @@ def valid_new_location_file(request):
     request.validated['location_dir'] = data_dir
 
 
+def valid_renderer(request):
+    """
+    A Cornice validator that ensures a renderer exists for the user's current
+    model or else returns a 404.
+    """
+    valid_model_id(request)
+
+    if request.errors:
+        return
+
+    model = request.validated['model']
+
+    if not model.renderer:
+        request.errors.add('body', 'renderer', 'Renderer not found.')
+        request.errors.status = 404
+        return
+
+    request.validated['renderer'] = model.renderer
+
+
 def valid_filename(request):
     """
     A Cornice validator that verifies that a 'filename' value in ``request``

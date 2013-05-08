@@ -84,8 +84,8 @@
       </div>
     </div>
 
-    <div id="main-content" class="row expand">
-        <div id="model" class='section hidden expand'>
+    <div id="main-content" class="row">
+        <div id="model" class='section hidden'>
             <div class="btn-toolbar">
                 <div class="btn-group">
                     <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>

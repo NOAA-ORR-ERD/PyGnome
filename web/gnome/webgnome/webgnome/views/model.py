@@ -46,7 +46,8 @@ def show_model(request):
     renderer = None
 
     if model.renderer:
-        renderer = Renderer().bind().serialize(model.renderer.to_dict())
+        renderer = Renderer().bind().serialize(
+            model.renderer.to_dict(do='create'))
 
         if map_data and model.renderer.background_map_name:
             map_data['background_image_url'] = util.get_model_image_url(

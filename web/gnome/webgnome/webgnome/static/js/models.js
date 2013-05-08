@@ -41,8 +41,6 @@ define([
             // An array of timestamps, one for each step we expect the server to
             // make, passed back when we initiate a model run.
             this.expectedTimeSteps = opts.expectedTimeSteps || [];
-            // Optionally specify the zoom level.
-            this.zoomLevel = opts.zoomLevel === undefined ? 4 : opts.zoomLevel;
             // If true, `Model` will request a new set of time steps from the server
             // on the next run. Assume we want to do this by default (i.e., at
             // construction time) if there are no time steps.
@@ -142,14 +140,6 @@ define([
                 return obj === undefined || obj === null || typeof(obj) !== "object";
             };
 
-            // Abort if we were asked to zoom without a valid `opts.rect` or
-            // `opts.point`.
-            if (opts.zoomLevel !== this.zoomLevel &&
-                isInvalid(opts.rect) && isInvalid(opts.point)) {
-                window.alert("Invalid zoom level. Please try again.");
-                return;
-            }
-
             this.expectedTimeSteps = [];
 
             $.ajax({
@@ -170,17 +160,12 @@ define([
          model run. Otherwise request the next time step.
 
          Options:
-         - `zoomLevel`: the user's chosen zoom level
-         - `zoomDirection`: if the user is zooming, `Model.ZOOM_IN`,
-             `Model.ZOOM_OUT`, otherwise `Model.ZOOM_NONE` (the default)
          - `runUntilTimeStep`: the time step to stop running. This value is
              passed to the server-side model and running will stop after the
              client requests the step with this number.
          */
         run: function(opts) {
             var options = $.extend({}, {
-                zoomLevel: this.zoomLevel,
-                zoomDirection: GnomeRun.ZOOM_NONE,
                 runUntilTimeStep: this.runUntilTimeStep
             }, opts);
 
@@ -296,33 +281,7 @@ define([
            util.log(xhr);
        },
 
-        /*
-         Zoom the map from `point` in direction `direction`.
-
-         Options:
-         - `point`: an x, y coordinate, where the user clicked the map
-         - `direction`: either `Model.ZOOM_IN` or `Model.ZOOM_OUT`
-         */
-        zoomFromPoint: function(point, direction) {
-            this.dirty = true;
-            this.run({point: point, zoom: direction});
-        },
-
-        /*
-         Zoom the map from a rectangle `rect` in direction `direction`.
-
-         Options:
-         - `rect`: a rectangle consisting of two (x, y) coordinates that the
-         user selected for the zoom operation. TODO: This should be
-         constrained to the aspect ratio of the background image.
-         - `direction`: either `Model.ZOOM_IN` or `Model.ZOOM_OUT`
-         */
-        zoomFromRect: function(rect, direction) {
-            this.dirty = true;
-            this.run({rect: rect, zoom: direction});
-        },
-
-        /*
+       /*
          Set the current time step to 0.
          */
         rewind: function() {
@@ -340,11 +299,6 @@ define([
             this.expectedTimeSteps = [];
         }
     }, {
-        // Class constants
-        ZOOM_IN: 'zoom_in',
-        ZOOM_OUT: 'zoom_out',
-        ZOOM_NONE: 'zoom_none',
-
         // Class events
         CREATED: 'model:Created',
         RUN_BEGAN: 'model:gnomeRunBegan',

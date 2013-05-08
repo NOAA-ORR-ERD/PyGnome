@@ -6,10 +6,49 @@ define([
     'lib/jquery.imagesloaded.min',
 ], function($, _, Backbone, models) {
 
+    var GeoProjection = L.extend({}, L.CRS, {
+        projection: L.Projection.LonLat,
+        transformation: new L.Transformation(1 / 367, 0.5, -1 / 367, 0.5)
+//        transformation: new L.Transformation(1 / 489.5, 0.5, -1 / 489.5, 0.5)
+    });
+
+    var GnomeImageOverlay = L.ImageOverlay.extend({
+        _initImage: function() {
+            var _this = this;
+            this._image = L.DomUtil.create('img', 'leaflet-image-layer');
+
+            if (this._map.options.zoomAnimation && L.Browser.any3d) {
+                L.DomUtil.addClass(this._image, 'leaflet-zoom-animated');
+            } else {
+                L.DomUtil.addClass(this._image, 'leaflet-zoom-hide');
+            }
+
+            this._updateOpacity();
+
+            $(this._image).imagesLoaded(function() {
+                _this._onImageLoad();
+            });
+
+            L.extend(this._image, {
+                galleryimg: 'no',
+                onselectstart: L.Util.falseFn,
+                onmousemove: L.Util.falseFn,
+                src: this._url
+            });
+        }
+    });
+
+
+    var imageOverlay = function(url, bounds, options) {
+        return new GnomeImageOverlay(url, bounds, options);
+    };
+
+
     function MapViewException(message) {
         this.message = message;
         this.name = "MapViewException";
     }
+
 
     /*
      `MapView` represents the visual map and is responsible for animating frames
@@ -46,6 +85,11 @@ define([
 
             this.model = this.options.model;
             this.model.on('change:background_image_url', function() {
+                console.log('reset bg image change');
+                _this.reset();
+            });
+            this.model.on('sync', function() {
+                console.log('reset sync');
                 _this.reset();
             });
             this.model.on('destroy', function () {
@@ -60,8 +104,34 @@ define([
             this.cursorClasses = ['zooming-in', 'zooming-out', 'moving', 'spill'];
 
             this.leafletMap = L.map('leaflet-map', {
-                crs: L.CRS.EPSG4326
+                crs: GeoProjection,
+                minZoom: 9
             });
+
+            this.leafletMap.on('zoomend', this.setNewViewport);
+            this.leafletMap.on('dragend', this.setNewViewport);
+        },
+
+        setNewViewport: function() {
+            var _this = this;
+            this.state.animation.setPaused();
+            this.gnomeRun.rewind();
+            var newBounds = this.leafletMap.getBounds();
+            var sw = newBounds.getSouthWest();
+            var ne = newBounds.getNorthEast();
+
+            this.renderer.set('viewport', [
+                [sw.lng, sw.lat],
+                [ne.lng, ne.lat]
+            ]);
+
+            this.renderer.save()
+                .then(function() {
+                    _this.model.fetch();
+                })
+                .then(function() {
+                    _this.trigger(MapView.VIEWPORT_CHANGED);
+                });
         },
 
         getViewport: function() {
@@ -142,7 +212,7 @@ define([
             var backgroundImageUrl = this.model.get('background_image_url');
 
             if (backgroundImageUrl) {
-                this.loadMapFromUrl(backgroundImageUrl);
+                this.loadBackgroundMap(backgroundImageUrl);
             } else {
                 this.showPlaceholder();
             }
@@ -200,8 +270,9 @@ define([
         },
 
         timeStepIsLoaded: function(stepNum) {
-            var step = this.getImageForTimeStep(stepNum);
-            return step && step.length;
+            return true;
+//            var step = this.getImageForTimeStep(stepNum);
+//            return step && step.length;
         },
 
         /*
@@ -269,9 +340,9 @@ define([
             img.appendTo(map);
 
             $(img).imagesLoaded(function() {
-                // TODO: Check how much time has passed after next time
-                // // step is ready. If longer than N, show the image
-                // immediately. Otherwise, set a delay and then show image.
+                // TODO: Check how much time has passed after next time step
+                // is ready. If longer than N, show the image immediately.
+                // Otherwise, set a delay and then show image.
 
                 // TODO: Make the timeout value configurable.
                 setTimeout(_this.showImageForTimeStep,
@@ -280,7 +351,7 @@ define([
             });
         },
 
-        addTimeStep: function(timeStep) {
+        addTimeStep__old: function(timeStep) {
             var imageExists = this.getImageForTimeStep(timeStep.id).length;
 
             // We must be playing a cached model run because the image already
@@ -296,16 +367,54 @@ define([
             this.addImageForTimeStep(timeStep);
         },
 
-        // Clear out the current frames.
-        clear: function(opts) {
-            var map = $(this.mapEl);
-            opts = opts || {};
-
-            if (opts.clearBackground) {
-                map.find('img').remove();
-            } else {
-                map.find('img').not('.background').remove();
+        addTimeStep: function(timeStep) {
+            var _this = this;
+            if (!this.leafletMap) {
+                return;
             }
+
+            function addLayer(timeStepLayer) {
+                if (_this.timeStepLayer) {
+                    _this.leafletMap.removeLayer(_this.timeStepLayer);
+                }
+                _this.timeStepLayer = timeStepLayer;
+                timeStepLayer.on('load', function() {
+                    _this.trigger(MapView.FRAME_CHANGED);
+                });
+                _this.leafletMap.addLayer(timeStepLayer);
+            }
+
+            function addImageOverlay(url) {
+                var timeStepLayer = imageOverlay(url, _this.viewport);
+                setTimeout(addLayer, _this.getAnimationTimeout(requestTime),
+                           timeStepLayer);
+            }
+
+            var url = timeStep.get('url');
+            var imageExists = this.getImageForTimeStep(timeStep.id).length;
+
+            if (imageExists) {
+                addImageOverlay(url);
+                return;
+            }
+
+            var requestTime = timeStep.get('requestTime');
+            var imageCache = $('<img>').attr({
+                'class': 'hidden frame',
+                'data-id': timeStep.id,
+                'src': timeStep.get('url')
+            }).addClass('hidden');
+
+            imageCache.appendTo(map);
+            imageCache.imagesLoaded(function() {
+                addImageOverlay(url);
+            });
+        },
+
+        // Clear out <img> DOM elements used to cache frame images.
+        clearImageCache: function() {
+            var map = $(this.mapEl);
+            map.find('img').remove();
         },
 
         getBackground: function() {
@@ -419,25 +528,8 @@ define([
             this.addTimeStep(this.gnomeRun.getCurrentTimeStep());
         },
 
-        loadMapFromUrl: function(url) {
-            var _this = this;
-
+        loadBackgroundMap: function(url) {
             this.hidePlaceholder();
-
-            var map = $(this.mapEl);
-            map.find('.background').remove();
-
-            var background = $('<img>').attr({
-                class: 'background',
-                src: url
-            });
-
-            background.imagesLoaded(function() {
-                _this.createCanvases();
-                _this.trigger(MapView.READY);
-            });
-
-            background.appendTo(map);
 
             if (this.backgroundOverlay) {
                 this.leafletMap.removeLayer(this.backgroundOverlay);
@@ -446,12 +538,16 @@ define([
             var viewport = this.getViewport();
 
             if (viewport) {
-                viewport = new L.LatLngBounds(
-                    [viewport.sw, [viewport.ne[0], viewport.ne[1] -.2]]);
-                this.leafletMap.setView(viewport.getCenter(), 11);
-                this.backgroundOverlay = L.imageOverlay(url, viewport);
+                this.viewport = viewport;
+                this.viewport = new L.LatLngBounds([this.viewport.sw, this.viewport.ne]);
+                this.leafletMap.fitBounds(this.viewport);
+                this.backgroundOverlay = imageOverlay(url, this.viewport);
                 this.leafletMap.addLayer(this.backgroundOverlay);
            }
+
+            // TODO:
+//            _this.createCanvases();
+//            _this.trigger(MapView.READY);
         },
 
         drawLine: function(ctx, start_x, start_y, end_x, end_y) {
@@ -635,7 +731,7 @@ define([
         },
 
         gnomeRunBegan: function() {
-            this.loadMapFromUrl(this.model.get('background_image_url'));
+            this.loadBackgroundMap(this.model.get('background_image_url'));
         },
 
         gnomeRunError: function() {
@@ -647,7 +743,7 @@ define([
         },
 
         reset: function() {
-            this.clear({clearBackground: true});
+            this.clearImageCache();
             this.setBackground();
         },
 
@@ -706,7 +802,8 @@ define([
         FRAME_CHANGED: 'mapView:frameChanged',
         MAP_WAS_CLICKED: 'mapView:mapWasClicked',
         SPILL_DRAWN: 'mapView:spillDrawn',
-        READY: 'mapView:ready'
+        READY: 'mapView:ready',
+        VIEWPORT_CHANGED: 'mapView:viewportChanged'
     });
 
     return {
