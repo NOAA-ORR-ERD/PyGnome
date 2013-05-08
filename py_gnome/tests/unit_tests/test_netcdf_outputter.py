@@ -38,6 +38,7 @@ def model(sample_model_spatial_release_spill, request):
     def cleanup():
         """ cleanup outputters was added to sample_model and delete files """
         print ("\nCleaning up %s\n" % model)
+        o_put = None
         for outputter in model.outputters:
             if isinstance(outputter,gnome.netcdf_outputter.NetCDFOutput):   # there should only be 1! 
                 o_put = model.outputters[outputter.id]
@@ -52,9 +53,9 @@ def model(sample_model_spatial_release_spill, request):
     return model
 
 
-def test_exceptions():
+def test_init_exceptions():
     """ 
-    test all exceptions are raised 
+    test exceptions raised during __init__ 
     """
     with pytest.raises(ValueError):
         gnome.netcdf_outputter.NetCDFOutput(os.path.join(base_dir,'SampleData','MapBounds_Island.bna')) # file exists
@@ -65,6 +66,8 @@ def test_exceptions():
     with pytest.raises(ValueError):
         gnome.netcdf_outputter.NetCDFOutput('junk_path_to_file/file.nc') # invalid path
         
+def test_exceptions():
+    """ test exceptions """
     # Test exceptions raised after object creation
     t_file = os.path.join(base_dir,'temp.nc')
     netcdf = gnome.netcdf_outputter.NetCDFOutput(t_file)
@@ -79,6 +82,7 @@ def test_exceptions():
         netcdf.write_output(0)
         
     with pytest.raises(ValueError):
+        netcdf.rewind()
         netcdf.all_data = True
         netcdf.prepare_for_model_run(model_start_time=datetime.now(), num_time_steps=4)
         
@@ -86,6 +90,34 @@ def test_exceptions():
     if os.path.exists(t_file):
         print ("remove temporary file {0}".format(t_file))
         os.remove(t_file)
+        
+def test_exceptions_middle_of_run(model):
+    """
+    Test attribute exceptions are called when changing parameters in middle of run for
+    'all_data' and 'netcdf_filename' 
+    """
+    model.rewind()
+    model.step()
+    
+    o_put = [model.outputters[outputter.id] for outputter in model.outputters if isinstance(outputter,gnome.netcdf_outputter.NetCDFOutput)][0]
+    
+    assert o_put.middle_of_run
+    
+    with pytest.raises(AttributeError):
+        o_put.netcdf_filename = 'test.nc'
+        
+    with pytest.raises(AttributeError):
+        o_put.all_data = True
+        
+    with pytest.raises(AttributeError):
+        o_put.format = 'NETCDF3_CLASSIC'
+        
+    with pytest.raises(AttributeError):
+        o_put.compress = False
+        
+    model.rewind()
+    assert not o_put.middle_of_run
+    o_put.compress = True
         
         
 def test_prepare_for_model_run(model):
@@ -122,11 +154,7 @@ def test_write_output_standard(model):
     check it is within 1e-5 tolerance.
     """
     model.rewind()
-    while True:
-        try:
-            model.step()
-        except StopIteration:
-            break
+    _run_model(model)
         
     # check contents of netcdf File at multiple time steps (there should only be 1!)
     o_put = [model.outputters[outputter.id] for outputter in model.outputters if isinstance(outputter,gnome.netcdf_outputter.NetCDFOutput)][0]     
@@ -181,16 +209,12 @@ def test_write_output_all_data(model):
     
     Only compare the remaining data not already checked in test_write_output_standard
     """
-    model.rewind()
-    
     # check contents of netcdf File at multiple time steps (there should only be 1!)
+    model.rewind()
     o_put = [model.outputters[outputter.id] for outputter in model.outputters if isinstance(outputter,gnome.netcdf_outputter.NetCDFOutput)][0]
     o_put.all_data = True   # write all data
-    while True:
-        try:
-            model.step()
-        except StopIteration:
-            break
+    
+    _run_model(model)
         
     uncertain = False
     for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
@@ -209,3 +233,37 @@ def test_write_output_all_data(model):
                 
         # 2nd time around, we are looking at uncertain filename so toggle uncertain flag
         uncertain = True
+        
+def test_write_output_post_run(model):
+    """
+    Create netcdf file post run from the cache.
+    """
+    model.rewind()
+    
+    o_put = [model.outputters[outputter.id] for outputter in model.outputters if isinstance(outputter,gnome.netcdf_outputter.NetCDFOutput)][0]
+    o_put.all_data = False
+    
+    del model.outputters[o_put.id]  # remove from list of outputters 
+    
+    _run_model(model)
+    
+    # now write netcdf output
+    o_put.prepare_for_model_run(model._cache, model.start_time, model.num_time_steps,model.uncertain)
+    for step_num in range(model.num_time_steps):
+        write_info = o_put.write_output(step_num)
+        print write_info
+        
+    assert os.path.exists(o_put.netcdf_filename)
+    if model.uncertain:
+        assert os.path.exists(o_put._u_netcdf_filename)
+        
+    model.outputters += o_put   # add this back in so cleanup script deletes the *.nc files that were generated
+    
+        
+def _run_model(model):
+    """ helper function """
+    while True:
+        try: 
+            model.step()
+        except StopIteration:
+            break                

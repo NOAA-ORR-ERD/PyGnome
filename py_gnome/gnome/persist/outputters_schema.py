@@ -31,4 +31,6 @@ class Renderer(base_schema.Id, MappingSchema):
 class NetCDFOutput(base_schema.Id, MappingSchema):
     netcdf_filename = SchemaNode(String(), missing=drop)
     all_data = SchemaNode(Bool(), missing=drop)
+    format = SchemaNode(String(), missing=drop)
+    compress = SchemaNode(Bool(), missing=drop)
      

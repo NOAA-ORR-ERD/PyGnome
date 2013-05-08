@@ -106,10 +106,12 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     
     # define state for serialization
     state = copy.deepcopy(serializable.Serializable.state)
-    state.add(create=['all_data'],read=['all_data'])    # toggling this will require rewind and calling prepare_for_model_step
-    state.add_field(serializable.Field('netcdf_filename',isdatafile=True,create=True,read=True))
+    state.add_field([serializable.Field('netcdf_filename',isdatafile=True,create=True,update=True),
+                     serializable.Field('all_data',create=True,update=True),
+                     serializable.Field('format',create=True,update=True),
+                     serializable.Field('compress',create=True,update=True)])
     
-    def __init__(self, netcdf_filename, cache=None, all_data=False, id=None):
+    def __init__(self, netcdf_filename, cache=None, all_data=False, format='NETCDF4', compress=True, id=None):
         """
         .. function:: __init__(netcdf_filename, cache=None, all_data=False, id=None)
         
@@ -125,21 +127,18 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         :param id: Unique Id identifying the newly created mover (a UUID as a string). 
                    This is used when loading an object from a persisted state. User should never have to set this.
         """
-        self.netcdf_filename = netcdf_filename
+        self._check_netcdf_filename(netcdf_filename)
+        self._netcdf_filename = netcdf_filename
         self.cache = cache
         self._uncertain = False
         self._u_netcdf_filename = None
+        
+        self._middle_of_run = False # flag to keep track of state of the object - is True after calling prepare_for_model_run
+        
         self.all_data = all_data
         self.arr_types = None   # this is only updated in prepare_for_model_run if all_data is True
-        
-        if os.path.isdir(netcdf_filename):
-            raise ValueError("netcdf_filename must be a file not a directory.")
-        
-        if os.path.exists(netcdf_filename):
-            raise ValueError("{0} file exists. Enter a filename that does not exist in which to save data.".format(netcdf_filename))
-        
-        if not os.path.exists( os.path.realpath(os.path.dirname(netcdf_filename))):
-            raise ValueError("{0} does not appear to be a valid path".format(os.path.dirname(netcdf_filename)))
+        self._format = format
+        self._compress= compress
         
         self._gnome_id = gnome.GnomeId(id)
     
@@ -149,6 +148,66 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         Function returns the unique id to identify the object,
         """
         return self._gnome_id.id
+    
+    @property
+    def middle_of_run(self):
+        return self._middle_of_run
+    
+    @property
+    def netcdf_filename(self):
+        return self._netcdf_filename
+    
+    @netcdf_filename.setter
+    def netcdf_filename(self, new_name):
+        if self.middle_of_run:
+            raise AttributeError("This attribute cannot be changed in the middle of a run")
+        else:
+            self._check_netcdf_filename(new_name)
+            self._netcdf_filename = new_name
+            
+    @property
+    def all_data(self):
+        return self._all_data
+    
+    @all_data.setter
+    def all_data(self, value):
+        if self.middle_of_run:
+            raise AttributeError("This attribute cannot be changed in the middle of a run")
+        else:
+            self._all_data = value
+         
+    @property
+    def compress(self):
+        return self._compress
+    
+    @compress.setter
+    def compress(self, value):
+        if self.middle_of_run:
+            raise AttributeError("This attribute cannot be changed in the middle of a run")
+        else:
+            self._compress = value
+            
+    @property
+    def format(self):
+        return self._format
+    
+    @format.setter
+    def format(self, value):
+        if self.middle_of_run:
+            raise AttributeError("This attribute cannot be changed in the middle of a run")
+        else:
+            self._format = value
+            
+    def _check_netcdf_filename(self, netcdf_filename):
+        """ basic checks to make sure the netcdf_filename is valid """
+        if os.path.isdir(netcdf_filename):
+            raise ValueError("netcdf_filename must be a file not a directory.")
+        
+        if os.path.exists(netcdf_filename):
+            raise ValueError("{0} file exists. Enter a filename that does not exist in which to save data.".format(netcdf_filename))
+        
+        if not os.path.exists( os.path.realpath(os.path.dirname(netcdf_filename))):
+            raise ValueError("{0} does not appear to be a valid path".format(os.path.dirname(netcdf_filename)))
     
     def prepare_for_model_run(self, cache=None, model_start_time=None, num_time_steps=None, uncertain=False, spills=None, **kwargs):
         """ 
@@ -198,7 +257,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             filenames = (self.netcdf_filename,)
         
         for file_ in filenames:
-            with nc.Dataset(file_, 'w', format='NETCDF4') as rootgrp:
+            with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
                 """ Global variables """
                 rootgrp.comment = self.cf_attributes['comment']
                 rootgrp.creation_date = time_utils.round_time(datetime.now(),roundTo=1).isoformat().replace('T',' ')
@@ -213,20 +272,20 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 rootgrp.createDimension('data', 0)
                 
                 """ Variables """
-                time_ = rootgrp.createVariable('time', np.double, ('time',))
+                time_ = rootgrp.createVariable('time', np.double, ('time',), zlib=self._compress)
                 time_.units = 'seconds since {0}'.format(model_start_time.isoformat().replace('T',' '))
                 time_.long_name = 'time'
                 time_.standard_name = 'time'
                 time_.calendar = 'gregorian'
                 time_.comment = 'unspecfied time zone'
                 
-                pc = rootgrp.createVariable('particle_count',np.int32, ('time',))
+                pc = rootgrp.createVariable('particle_count',np.int32, ('time',), zlib=self._compress)
                 pc.units = '1'
                 pc.long_name = "number of particles in a given timestep"
                 pc.ragged_row_count = "particle count at nth timestep"
                 
                 for key,val in self.data_vars.iteritems():
-                    var = rootgrp.createVariable(key, val.get('dtype'), ('data',))  # don't pop since it maybe required twice
+                    var = rootgrp.createVariable(key, val.get('dtype'), ('data',), zlib=self._compress)  # don't pop since it maybe required twice
                     # iterate over remaining attributes
                     [setattr(var,key2,val2) for key2,val2 in val.iteritems() if key2 != 'dtype']
                     
@@ -241,12 +300,15 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                     # create variables
                     for key,val in self.arr_types.iteritems():
                         if len(val.shape) == 0:
-                            rootgrp.createVariable(key, val.dtype,('data'))    
+                            rootgrp.createVariable(key, val.dtype,('data'), zlib=self._compress)
                         elif val.shape[0] == 3:
-                            rootgrp.createVariable(key, val.dtype,('data','world_point'))
+                            rootgrp.createVariable(key, val.dtype,('data','world_point'), zlib=self._compress)
                         else:
                             raise ValueError("{0} has an undefined dimension: {1}".format(key,val.shape))
                         
+        
+        self._middle_of_run = True
+        
     
     def write_output(self, step_num):
         """ 
@@ -306,3 +368,5 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             
         if self._u_netcdf_filename is not None and os.path.exists(self._u_netcdf_filename):
             os.remove(self._u_netcdf_filename)
+            
+        self._middle_of_run = False
