@@ -6,13 +6,6 @@ define([
     'lib/jquery.imagesloaded.min',
 ], function($, _, Backbone, models) {
 
-    var GeoProjection = L.extend({}, L.CRS, {
-        projection: L.Projection.LonLat,
-//        transformation: new L.Transformation(1 / 360, 0.5, -1 / 360, 0.5)
-        transformation: new L.Transformation(1 / 365, 0.5, -1 / 365, 0.5)
-//        transformation: new L.Transformation(1 / 489.5, 0.5, -1 / 489.5, 0.5)
-    });
-
     var GnomeImageOverlay = L.ImageOverlay.extend({
         _initImage: function() {
             var _this = this;
@@ -100,7 +93,7 @@ define([
             this.cursorClasses = ['zooming-in', 'zooming-out', 'moving', 'spill'];
 
             this.leafletMap = L.map('leaflet-map', {
-                crs: GeoProjection,
+                crs: L.CRS.EPSG4326,
                 minZoom: 9
             });
 
@@ -115,19 +108,32 @@ define([
             var newBounds = this.leafletMap.getBounds();
             var sw = newBounds.getSouthWest();
             var ne = newBounds.getNorthEast();
+            var size = this.leafletMap.getSize();
 
-            this.renderer.set('viewport', [
-                [sw.lng, sw.lat],
-                [ne.lng, ne.lat]
-            ]);
+            this.renderer.set({
+                viewport: [
+                    [sw.lng, sw.lat],
+                    [ne.lng, ne.lat]
+                ],
+                image_size: [size.x, size.y]
+            });
 
-            this.renderer.save()
+            this.saveRenderer().then(function() {
+                _this.trigger(MapView.VIEWPORT_CHANGED);
+            });
+        },
+
+        /**
+         * Save the renderer settings and get the latest background image from
+         * the map model.
+         */
+        saveRenderer: function() {
+            var _this = this;
+
+            return this.renderer.save()
                 .then(function() {
                     _this.model.fetch();
                 })
-                .then(function() {
-                    _this.trigger(MapView.VIEWPORT_CHANGED);
-                });
         },
 
         getViewport: function() {
