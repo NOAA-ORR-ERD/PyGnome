@@ -10,6 +10,25 @@ class Field(object):#,serializable.Serializable):
     Class containing information about the property to be serialized
     """
     def __init__(self, name, isdatafile=False, update=False, create=False, read=False):
+        """
+        Constructor for the Field object. The Field object is used to describe the property of an object.
+        For instance, if a property is required to re-create the object from a persisted state, its 'create'
+        attribute is True. If the property describes a data file that will need to be moved when persisting
+        the model, isdatafile should be True. The gnome.persist.scenario module contains a Scenario class that
+        loads and saves a model. It looks for these attributes to correctly save/load it.
+        
+        It sets all attributes to False by default.
+        :param name: Name of the property being described by this Field object
+        :type name: str
+        :param isdatafile: is the property a datafile that should be moved during persistence
+        :type isdatafile: bool
+        :param update: is the property update-able by the web app
+        :type update: bool
+        :param create: is the property required to re-create the object when loading from a save file
+        :type create: bool
+        :param read: if property is not update-able, perhaps make it read only so web app has information about the object
+        :type read: bool
+        """
         self.name = name
         self.isdatafile = isdatafile
         self.create = create
@@ -35,60 +54,66 @@ class Field(object):#,serializable.Serializable):
         return info
 
 class State(object):
-    def __init__(self, **kwargs):
+    def __init__(self, create=[], update=[], read=[], field=[]):
         """
         object keeps the list of properties that are output by Serializable.to_dict() method
         Each list is accompanied by a keyword as defined below
         
-        'update' a list of strings which are properties that can be updated, so read/write capable
-        'read'   a list of strings which are properties that are for info, so readonly. 
-                 This is not required for creating new object
-        'create' a list of strings which are properties that are required to create new object when 
-                 JSON is read from save file
-                The readonly properties are not saved in a file
-                 
-        'field'  a field object or a list of field objects that should be added to the State for persistence
+        Object can be initialized as follows:
+        >>> s = State(update=['update_field'], field=[Field('field_name')]
+        
+        Args:
+        :param update: a list of strings which are properties that can be updated, so read/write capable
+        :type update:  list containing str
+        :param read:   a list of strings which are properties that are for info, so readonly. It is not required for creating new object.
+        :type read:    list containing str
+        :param create: a list of strings which are properties that are required to create new object when 
+                        JSON is read from save file
+                       Only the create properties are saved to save file
+        :type create:  a list of str
+        :param field:  a field object or a list of field objects that should be added to the State for persistence
+        :type field:   Field object or list of Field objects
                  
         For 'update', 'read', 'create', a Field object is create for each property in the list
         
-        NOTE: copy will create a new State object but reference original lists
-              deepcopy will create new State object and new lists for the attributes
+        .. note:: copy will create a new State object but reference original lists
+                  deepcopy will create new State object and new lists for the attributes
         """
-        self._check_kwargs(**kwargs)
         self.fields = []
+        self.add_field(field)        
+        self.add(create=create,update=update,read=read)
         
-        field = kwargs.pop('field',[])
-        self.add_field(field)
-        
-        create_ = kwargs.pop('create',[])
-        update_ = kwargs.pop('update',[])
-        read_ = kwargs.pop('read',[])
-        self.add(create=create_,update=update_,read=read_)
-    
-    def _check_kwargs(self, **kwargs):
-        unknown = [key for key in kwargs.keys() if key not in ['read','create','update']]
-        if len(unknown) > 0:
-            raise ValueError("Only accepts keywords 'read', 'create', 'update'")
+        # define valid attributes for Field object
+        test_obj = Field('test')
+        self._valid_field_attr = test_obj.__dict__.keys()
 
     def __copy__(self):
+        """
+        shallow copy of state object so references original fields list 
+        """
         new_ = type(self)()
         new_.__dict__.update(copy.copy(self.__dict__))
         return new_
     
     def __deepcopy__(self, memo):
+        """
+        deep copy of state object so makes a copy of the fields list
+        """
         new_ = type(self)()
         new_.__dict__.update(copy.deepcopy(self.__dict__))
         return new_
     
     def add_field(self, l_field):
-        """ Adds a Field object or a list of Field objects to fields attribute """
+        """ 
+        Adds a Field object or a list of Field objects to fields attribute
+        
+        Either use this to add a property to the state object or use the 'add' method to add a property.
+        add_field gives more control since the attributes other than 'create','update','read' can be set
+        directly when defining the Field object.
+        """
         if isinstance(l_field, Field):
             l_field = [l_field]
         
-        #for field_ in l_field:
-        #    if l_field.count(field_) > 1:
-        #        raise ValueError("List of field objects contains a field repeated {0} times. The 'name' is {1}.".format(l_field.count(field_), field_.name) )
-                
         names = [field_.name for field_ in l_field]
         state_fieldnames = self.get_names()
         
@@ -103,28 +128,33 @@ class State(object):
         for field_ in l_field:
             self.fields.append(field_)
     
-    def add(self, **kwargs):
+    def add(self, create=[], update=[], read=[]):
         """
         Only checks to make sure 'read' and 'update' properties are disjoint. Also makes sure everything is a list. 
         
-        Takes the same keyword, value pairs as __init__ method:
-        'update' is list of properties that can be updated, so read/write capable
-        'read'   is list of properties that are for info, so readonly. This is not required for creating new element
-        'create' is list of properties that are required to create new object when JSON is read from save file
-                 The readonly properties are not saved in a file
-        add(update=['prop_name'] to add prop_name to list containing properties that can be updated
+        Args:
+        :param update: a list of strings which are properties that can be updated, so read/write capable
+        :type update:  list containing str
+        :param read:   a list of strings which are properties that are for info, so readonly. It is not required for creating new object.
+        :type read:    list containing str
+        :param create: a list of strings which are properties that are required to create new object when 
+                        JSON is read from save file
+                       Only the create properties are saved to save file
+        :type create:  a list of str
+        :param field:  a field object or a list of field objects that should be added to the State for persistence
+        :type field:   Field object or list of Field objects
+                 
+        For 'update', 'read', 'create', a Field object is create for each property in the list
         """
-        if not all([isinstance(vals,list) for vals in kwargs.values()]):
+        if not all([isinstance(vals,list) for vals in [create, update, read]]):
             raise ValueError("inputs must be a list of strings")
         
-        self._check_kwargs(**kwargs)
-        
-        update_ = list( set( kwargs.pop('update',[])))
-        read_ = list( set( kwargs.pop('read',[])))
-        create_ = list( set(kwargs.pop('create',[])))
+        update_ = list( set( update))
+        read_ = list( set( read))
+        create_ = list( set( create))
         
         if len( set(update_).intersection(set(read_)) ) > 0:
-            raise ValueError('update (read/write properties) and read (readonly props) lists lists must be disjoint')
+            raise AttributeError('update (read/write properties) and read (readonly props) lists lists must be disjoint')
         
         fields = []
         """ Add items in update_. If item is in create_, then set 'create' flag. Read and update are disjoint. """
@@ -149,7 +179,7 @@ class State(object):
         
     def remove(self, l_names):
         """
-        Analogous to add method, this removes properties from the list
+        Analogous to add method, this removes Field objects associated with l_names from the list
         Provide a list containing the names (string) of properties to be removed
         """
         if isinstance(l_names, basestring):
@@ -161,10 +191,73 @@ class State(object):
                 raise ValueError("Cannot remove {0} since self.fields does not contain a field with this name".format(name))
             
             self.fields.remove(field)
+
+    def update(self, l_names, **kwargs):
+        """ 
+        update the attributes of an existing field
+        Kwargs are key,value pairs defining the state of attributes.
+        It must be one of the valid attributes of Field object (see Field object __dict__ for valid attributes) 
+        :param update:     True or False
+        :param create:     True or False
+        :param read:       True or False
+        :param isdatafield:True or False
+        
+        Usage:
+        >>> state = State(read=['test'])
+        >>> state.update('test',read=False,update=True,create=True,isdatafile=True)
+        
+        .. note::An exception will be raised if both 'read' and 'update' are True for a given field
+        """
+        for key in kwargs.keys():
+            if key not in self._valid_field_attr:
+                raise AttributeError("{0} is not a valid attribute of Field object. It cannot be updated.".format(key))
             
+        if 'read' in kwargs.keys() and 'update' in kwargs.keys():
+            if kwargs.get('read') and kwargs.get('update'):
+                raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True")
+            
+        l_field = self.get_field_by_name( l_names)
+        if not isinstance(l_field, list):
+            l_field = [l_field]
+            
+        # need to make sure both read and update are not True for a field
+        read_ = kwargs.pop('read',None)
+        update_ = kwargs.pop('update',None)
+        for field in l_field:
+            for key, val in kwargs.iteritems():
+                setattr(field,key,val)
+            
+            if read_ is not None and update_ is not None:   # change them both
+                setattr(field, 'read', read_)
+                setattr(field, 'update', update_)
+            elif read_ is not None:
+                if field.update and read_:
+                    raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True")
+                setattr(field,'read',read_)
+            elif update_ is not None:
+                if field.read and update_:
+                    raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True")
+                setattr(field,'update',update_)
+        
+        
+        read_ = None
+        if 'read' in kwargs.keys():
+            read_ = kwargs.pop('read')
+            
+        for field in l_field:
+            if read_ is not None:
+                setattr(field, 'read', read_)
+                
+            for key, val in kwargs.iteritems():
+                if key == 'update' and val == True:
+                    if getattr(field,'read'):
+                        raise AttributeError("The 'read' attribute and 'update' attribute cannot both be True")
+                    
+                setattr(field,key,val)
+        
 
     def get_field_by_name(self, names):
-        """ get field object from list given 'name' """
+        """ get field object from list given 'name' or list of 'names' """
         if isinstance(names,basestring):
             names = [names]
             
@@ -176,29 +269,37 @@ class State(object):
     
     def get_field_by_attribute(self, attr):
         """ returns a list of fields where attr is true """
-        test_obj = Field('test')
-        if attr not in test_obj.__dict__.keys():
-            raise ValueError("{0} is not valid. Field.__dict__ contains: ".format(attr, test_obj.__dict__.keys()))
+        if attr not in self._valid_field_attr:
+            raise AttributeError("{0} is not valid attribute. Field.__dict__ contains: {1}".format(attr, self._valid_field_attr))
             
         out = [field for field in self.fields if getattr(field, attr)]
         return out
     
     def get_names(self, attr='all'):
         """ returns the property names in self.fields. Can return all field names, or fieldnames with 
-        an attribute equal to true """
+        an attribute equal to True. attr can also be a list:
+        
+        >>> state = State(read=['t0'],create=['t0','t1'])
+        >>> state.get_names(['read','create'])    # returns 't0'
+        >>> state.get_names('create')     # returns ['t0', 't1']
+        """
+        
         if attr == 'all':
             return [field_.name for field_ in self.fields]
-        elif attr == 'update':
-            return [field_.name for field_ in self.fields if field_.update]
-        elif attr == 'create':
-            return [field_.name for field_ in self.fields if field_.create]
-        elif attr == 'read':
-            return [field_.name for field_ in self.fields if field_.read]
-        elif attr == 'isdatafile':
-            return [field_.name for field_ in self.fields if field_.isdatafile]
+        
+        names = []
+        
+        if isinstance(attr,list):
+            for at in attr:
+                names.extend([field_.name for field_ in self.fields if getattr(field_, at)])
         else:
-            raise ValueError("{0} is unknown. attr can only be one of: 'update', 'create', 'read'".format(attr) )
-
+            if attr not in self._valid_field_attr:
+                raise AttributeError("{0} is not valid attribute. Field.__dict__ contains: {1}".format(attr, self._valid_field_attr))
+            
+            names.extend([field_.name for field_ in self.fields if getattr(field_, attr)])
+        
+        return names
+    
 #===============================================================================
 # class State(object):
 #    def __init__(self, **kwargs):
