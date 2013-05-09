@@ -621,9 +621,9 @@ define([
         },
 
         rewind: function() {
-            this.mapView.clearImageCache();
-            this.gnomeRun.clearData();
+            this.mapView.reset();
             this.mapControlView.reset();
+            this.gnomeRun.clearData();
 
             if (this.map.id) {
                 this.mapControlView.enableControls(

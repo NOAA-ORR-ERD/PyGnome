@@ -61,6 +61,7 @@ define([
             this.locationFilesMeta = this.options.locationFilesMeta;
             this.renderer = this.options.renderer;
             this.canDrawSpill = false;
+            this.backgroundInitialized = false;
 
             this.makeImagesClickable();
 
@@ -78,9 +79,6 @@ define([
             this.gnomeRun.on(models.GnomeRun.CREATED, this.reset);
 
             this.model = this.options.model;
-            this.model.on('sync', function() {
-                _this.reset();
-            });
             this.model.on('destroy', function () {
                 _this.reset();
                 _this.map.empty();
@@ -129,22 +127,10 @@ define([
          */
         saveRenderer: function() {
             var _this = this;
-
             return this.renderer.save()
                 .then(function() {
                     _this.model.fetch();
                 })
-        },
-
-        getViewport: function() {
-            var mapBounds = this.model.getLatLongBounds();
-            var viewport = this.renderer.getLatLongViewport();
-
-            if (viewport) {
-                return viewport;
-            } else {
-                return mapBounds;
-            }
         },
 
         animationStateChanged: function(animationState) {
@@ -196,10 +182,6 @@ define([
             }
         },
 
-        show: function() {
-            this.setBackground();
-        },
-
         zoom: function(evt) {
             if (this.allowZoomingIn) {
                 evt.stopPropagation();
@@ -210,14 +192,54 @@ define([
             }
         },
 
-        setBackground: function() {
-            var backgroundImageUrl = this.model.get('background_image_url');
+        show: function() {
+            this.setBackground();
+        },
 
-            if (backgroundImageUrl) {
-                this.loadBackgroundMap(backgroundImageUrl);
+        addBackgroundLayer: function() {
+            var _this = this;
+            var size = this.leafletMap.getSize();
+            this.renderer.set('image_size', [size.x, size.y]);
+            this.saveRenderer().then(function() {
+                var viewport = _this.renderer.getLatLongViewport();
+                url = _this.model.get('background_image_url');
+                _this.viewport = new L.LatLngBounds([viewport.sw, viewport.ne]);
+
+                // Fit the map to the viewport bounds if we're adding the back-
+                // ground for the first time.
+                if (!_this.backgroundInitialized) {
+                    _this.leafletMap.fitBounds(_this.viewport);
+                }
+
+                _this.backgroundOverlay = imageOverlay(url, _this.viewport);
+                _this.leafletMap.addLayer(_this.backgroundOverlay);
+                _this.backgroundInitialized = true;
+            });
+        },
+
+        setBackground: function() {
+            var _this = this;
+            var url = this.model.get('background_image_url');
+
+            if (url) {
+                this.hidePlaceholder();
             } else {
                 this.showPlaceholder();
+                return;
             }
+
+            if (this.backgroundOverlay && !this.backgroundInitialized) {
+                $(this.backgroundOverlay._image).fadeOut(400, function() {
+                    _this.leafletMap.removeLayer(_this.backgroundOverlay);
+                    _this.addBackgroundLayer();
+                });
+            } else {
+                this.addBackgroundLayer();
+            }
+
+            // TODO:
+//            _this.createCanvases();
+//            _this.trigger(MapView.READY);
         },
 
         showPlaceholder: function() {
@@ -285,12 +307,6 @@ define([
          */
         showImageForTimeStep: function(stepNum) {
             var mapImages = this.map.find('img');
-
-            // Show the map div if this is the first image of the run.
-            if (mapImages.length === 1) {
-                this.map.show();
-            }
-
             var stepImage = this.getImageForTimeStep(stepNum);
 
             // The image isn't loaded.
@@ -326,31 +342,6 @@ define([
             requestTime = requestTime || 0;
             var threshold = this.animationThreshold;
             return requestTime < threshold ? threshold - requestTime : 0;
-        },
-
-        addImageForTimeStep: function(timeStep) {
-            var _this = this;
-            var map = $(this.mapEl);
-            var requestTime = timeStep.get('requestTime');
-
-            var img = $('<img>').attr({
-                'class': 'frame',
-                'data-id': timeStep.id,
-                'src': timeStep.get('url')
-            }).addClass('hidden');
-
-            img.appendTo(map);
-
-            $(img).imagesLoaded(function() {
-                // TODO: Check how much time has passed after next time step
-                // is ready. If longer than N, show the image immediately.
-                // Otherwise, set a delay and then show image.
-
-                // TODO: Make the timeout value configurable.
-                setTimeout(_this.showImageForTimeStep,
-                           _this.getAnimationTimeout(requestTime),
-                           [timeStep.id]);
-            });
         },
 
         addTimeStep: function(timeStep) {
@@ -515,29 +506,6 @@ define([
         },
 
         loadBackgroundMap: function(url) {
-            this.hidePlaceholder();
-
-            if (this.backgroundOverlay) {
-                this.leafletMap.removeLayer(this.backgroundOverlay);
-            }
-
-            var viewport = this.getViewport();
-
-            if (viewport) {
-                this.viewport = new L.LatLngBounds([viewport.sw, viewport.ne]);
-                // Fit the map to the viewport bounds if we're adding the back-
-                // ground for the first time.
-                if (!this.backgroundInitialized) {
-                    this.leafletMap.fitBounds(this.viewport);
-                }
-                this.backgroundOverlay = imageOverlay(url, this.viewport);
-                this.leafletMap.addLayer(this.backgroundOverlay);
-                this.backgroundInitialized = true;
-           }
-
-            // TODO:
-//            _this.createCanvases();
-//            _this.trigger(MapView.READY);
         },
 
         drawLine: function(ctx, start_x, start_y, end_x, end_y) {
@@ -721,7 +689,7 @@ define([
         },
 
         gnomeRunBegan: function() {
-            this.loadBackgroundMap(this.model.get('background_image_url'));
+            this.setBackground();
         },
 
         gnomeRunError: function() {
@@ -737,7 +705,9 @@ define([
                 this.leafletMap.removeLayer(this.timeStepLayer);
             }
             this.clearImageCache();
-            this.setBackground();
+            if (this.backgroundInitialized) {
+                this.setBackground();
+            }
         },
 
         pixelsFromCoordinates: function(point) {
