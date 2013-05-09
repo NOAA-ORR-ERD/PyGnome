@@ -106,7 +106,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     
     # define state for serialization
     state = copy.deepcopy(serializable.Serializable.state)
-    state.add_field([serializable.Field('netcdf_filename',isdatafile=True,create=True,update=True),
+    state.add_field([serializable.Field('netcdf_filename',create=True,update=True), # this data file should not be moved to save file location!
                      serializable.Field('all_data',create=True,update=True),
                      serializable.Field('format',create=True,update=True),
                      serializable.Field('compress',create=True,update=True)])
