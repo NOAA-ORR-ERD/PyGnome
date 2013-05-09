@@ -85,19 +85,3 @@ def test_basemap_wide():
     
     assert True
 
-def test_MapCanvasfromBNA_new_from_dict():
-    """
-    test create new object from to_dict
-    """
-    map = map_canvas.MapCanvasFromBNA( (800,600), os.path.join(datadir, "Mapbounds_Island.bna"))
-    map2 = map.new_from_dict( map.to_dict('create'))
-    assert map == map2
-    
-# def test_MapCanvasfromBNA_from_dict():
-#     map = map_canvas.MapCanvasFromBNA( (800,600), os.path.join(datadir, "Mapbounds_Island.bna"))
-    
-#     dict_ = map.to_dict()
-#     dict_['viewport'] = ((-10, -10),(10,10))
-    
-#     map.from_dict(dict_)
-#     assert map.viewport == dict_['viewport']
