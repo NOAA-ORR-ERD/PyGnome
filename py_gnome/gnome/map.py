@@ -54,15 +54,16 @@ class GnomeMap(serializable.Serializable):
         This __init__ will be different for other implementations
         
         Optional parameters (kwargs)
-        :param map_bounds: the bounds of the map:
-            ( (x1,y1), (x2,y2),(x3,y3),..)
-            An NX2 array of points that describe a polygon
-            if no map bounds is provided -- the whole world is valid
-            
+        
         :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
         :param spillable_area: The polygon bounding the spillable_area
         :param id: unique ID of the object. Using UUID as a string. This is only used when loading object from save file.
         :type id: string
+        
+        Note on 'map_bounds':
+            ( (x1,y1), (x2,y2),(x3,y3),..)
+            An NX2 array of points that describe a polygon
+            if no map bounds is provided -- the whole world is valid
         """
         
         if map_bounds is not None:
@@ -519,12 +520,15 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         Creates a GnomeMap (specifically a RasterMap) from a bna file.
         It is expected that you will get the spillable area and map bounds from the BNA -- if they exist
         
+        Required arguments:
+        
         :param bna_file: full path to a bna file
         :param refloat_halflife: the half-life (in seconds) for the re-floating.
         :param raster_size: the total number of pixels (bytes) to make the raster -- the actual size will match the 
                             aspect ratio of the bounding box of the land
         
-        Optional arguments (kwargs)
+        Optional arguments (kwargs):
+        
         :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
         :param spillable_area: The polygon bounding the spillable_area
         :param id: unique ID of the object. Using UUID as a string. This is only used when loading object from save file.

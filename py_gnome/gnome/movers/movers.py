@@ -32,6 +32,7 @@ class Mover(object):
         Initialize default Mover parameters
         
         All parameters are optional (kwargs)
+        
         :param on: boolean as to whether the object is on or not. Default is on
         :param active_start: datetime when the mover should be active
         :param active_stop: datetime after which the mover should be inactive
@@ -114,18 +115,20 @@ class Mover(object):
 
 
 class CyMover(Mover):
-    """
-    Base class for python wrappers around cython movers. 
-    Uses super(CyMover,self).__init__(**kwargs) to call Mover class __init__ method
-
-    All cython movers (CyWindMover, CyRandomMover) are instantiated by a derived class,
-    and then contained by this class in the member 'movers'.  They will need to extract
-    info from spill object.
-
-    We assumes any derived class will instantiate a 'mover' object that
-    has methods like: prepare_for_model_run, prepare_for_model_step,
-    """
     def __init__(self, **kwargs):
+        """
+        Base class for python wrappers around cython movers. 
+        Uses super(CyMover,self).__init__(\*\*kwargs) to call Mover class __init__ method
+    
+        All cython movers (CyWindMover, CyRandomMover) are instantiated by a derived class,
+        and then contained by this class in the member 'movers'.  They will need to extract
+        info from spill object.
+    
+        We assumes any derived class will instantiate a 'mover' object that
+        has methods like: prepare_for_model_run, prepare_for_model_step,
+        
+        All kwargs passed on to super class
+        """
         super(CyMover,self).__init__(**kwargs)
         
         # initialize variables here for readability, though self.mover = None produces errors, so that is not initialized here
@@ -247,7 +250,7 @@ class WindMover(CyMover, serializable.Serializable):
         """
         define in WindMover and check wind_id matches wind
         
-        invokes: super(WindMover,cls).new_from_dict(dict_)
+        invokes: super(WindMover,cls).new_from_dict(dict\_)
         """
         wind_id = dict_.pop('wind_id')
         if dict_.get('wind').id != wind_id:
@@ -268,7 +271,7 @@ class WindMover(CyMover, serializable.Serializable):
         
         'wind' object is not part of the state since it is not serialized/deserialized;
         however, user can still update the wind attribute with a new Wind object. That must
-        be poped out of the dict here, then call super to process the standard dict_
+        be poped out of the dict() here, then call super to process the standard dict\_
         """
         self.wind = dict_.pop('wind',self.wind)
             

@@ -74,7 +74,7 @@ class Wind( Environment, serializable.Serializable):
         Initializes a wind object. It only takes keyword arguments as input, these
         are defined below. 
         
-        Invokes super(Wind,self).__init__(**kwargs) for parent class initialization
+        Invokes super(Wind,self).__init__(\*\*kwargs) for parent class initialization
         
         It requires one of the following to initialize:
               1. 'timeseries' along with 'units' or
@@ -82,6 +82,7 @@ class Wind( Environment, serializable.Serializable):
                
         All other keywords are optional.
         Optional parameters (kwargs):
+        
         :param timeseries: (Required) numpy array containing time_value_pair
         :type timeseries: numpy.ndarray[basic_types.time_value_pair, ndim=1]
         
@@ -94,12 +95,9 @@ class Wind( Environment, serializable.Serializable):
         
         :param format: (Optional) default timeseries format is magnitude direction: 'r-theta'
         :type format: string 'r-theta' or 'uv'. Converts string to integer defined by gnome.basic_types.ts_format.*
-        
         :param name: (Optional) human readable string for wind object name. Default is filename if data is from file or "Wind Object"
-        
         :param source_type: (Optional) Default is undefined, but can be one of the following: ['buoy', 'manual', 'undefined', 'file', 'nws']
                             If data is read from file, then it is 'file'
-                            
         :param latitude: (Optional) latitude of station or location where wind data is obtained from NWS
         :param longitude: (Optional) longitude of station or location where wind data is obtained from NWS
         
@@ -367,7 +365,7 @@ class Tide(Environment, serializable.Serializable):
         """
         Tide information can be obtained from a filename or set as a timeseries (timeseries is NOT TESTED YET)
         
-	    Invokes super(Tides,self).__init__(**kwargs) for parent class initialization
+	    Invokes super(Tides,self).__init__(\*\*kwargs) for parent class initialization
 	    
 	    It requires one of the following to initialize:
               1. 'timeseries' assumed to be in 'uv' format (NOT TESTED/IMPLEMENTED OR USED YET)
