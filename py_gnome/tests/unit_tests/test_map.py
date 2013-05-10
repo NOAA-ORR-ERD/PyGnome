@@ -138,7 +138,9 @@ class Test_GnomeMap:
         test create new object from to_dict
         """
         map = gnome.map.GnomeMap()
-        map2 = map.new_from_dict(map.to_dict('create'))
+        dict_ = map.to_dict('create')
+        dict_.pop('obj_type')
+        map2 = map.new_from_dict(dict_)
         
         assert map == map2
         
@@ -369,7 +371,9 @@ def test_MapfromBNA_new_from_dict():
     test create new object from to_dict
     """
     map = gnome.map.MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6)
-    map2 = map.new_from_dict( map.to_dict('create'))
+    dict_ = map.to_dict('create')
+    dict_.pop('obj_type')
+    map2 = map.new_from_dict(dict_)
     assert map == map2
     
 def test_MapfromBNA_from_dict():

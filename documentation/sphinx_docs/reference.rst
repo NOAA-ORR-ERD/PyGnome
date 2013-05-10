@@ -61,14 +61,12 @@ Class Reference:
 .. autoclass:: RandomMover
    :members:
 
-``gnome.weather`` -- the pyGNOME weather classes
+``gnome.weather`` -- pyGNOME environment classes
 ---------------------------------------------------
-.. automodule:: gnome.weather
+.. automodule:: gnome.environment
    :members:
 
-
-
-
-
-
-
+``gnome.persist`` -- pyGNOME persistance classes
+---------------------------------------------------
+.. automodule:: gnome.persist
+   :members:

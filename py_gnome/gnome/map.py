@@ -49,7 +49,7 @@ class GnomeMap(serializable.Serializable):
     
     refloat_halflife = None # note -- no land, so never used
 
-    def __init__(self, **kwargs):
+    def __init__(self, map_bounds=None, spillable_area=None, id=None):
         """
         This __init__ will be different for other implementations
         
@@ -59,14 +59,11 @@ class GnomeMap(serializable.Serializable):
             An NX2 array of points that describe a polygon
             if no map bounds is provided -- the whole world is valid
             
-        Optional arguments (kwargs)
         :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
         :param spillable_area: The polygon bounding the spillable_area
         :param id: unique ID of the object. Using UUID as a string. This is only used when loading object from save file.
         :type id: string
         """
-        map_bounds = kwargs.pop('map_bounds',None)
-        spillable_area = kwargs.pop('spillable_area',None)
         
         if map_bounds is not None:
             self.map_bounds = np.asarray(map_bounds, dtype=np.float64).reshape(-1, 2)
@@ -83,7 +80,7 @@ class GnomeMap(serializable.Serializable):
         else:
             self.spillable_area = np.asarray(spillable_area, dtype=np.float64).reshape(-1, 2)
             
-        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+        self._gnome_id = GnomeId(id)
 
     id = property( lambda self: self._gnome_id.id)
 
@@ -513,10 +510,6 @@ class MapFromBNA(RasterMap, serializable.Serializable):
     state.add( create=['refloat_halflife'], update=['refloat_halflife'])
     state.add_field(serializable.Field('filename',isdatafile=True,create=True,read=True))   # add 'filename' as a Field object
     
-    #@classmethod
-    #def new_from_dict(cls):
-        
-    
     def __init__(self,
                  filename,
                  refloat_halflife, #seconds
@@ -528,8 +521,8 @@ class MapFromBNA(RasterMap, serializable.Serializable):
         
         :param bna_file: full path to a bna file
         :param refloat_halflife: the half-life (in seconds) for the re-floating.
-        :param raster_size: the total number of pixels (bytes) to make the raster -- the actual size
-        will match the aspect ratio of the bounding box of the land
+        :param raster_size: the total number of pixels (bytes) to make the raster -- the actual size will match the 
+                            aspect ratio of the bounding box of the land
         
         Optional arguments (kwargs)
         :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
