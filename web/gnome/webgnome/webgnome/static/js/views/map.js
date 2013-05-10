@@ -29,9 +29,13 @@ define([
                 onmousemove: L.Util.falseFn,
                 src: this._url
             });
+        },
+
+        update: function(url) {
+            $(this._image).attr('src', url);
+            this._reset();
         }
     });
-
 
     var imageOverlay = function(url, bounds, options) {
         return new GnomeImageOverlay(url, bounds, options);
@@ -61,7 +65,6 @@ define([
             this.locationFilesMeta = this.options.locationFilesMeta;
             this.renderer = this.options.renderer;
             this.canDrawSpill = false;
-            this.backgroundInitialized = false;
 
             this.makeImagesClickable();
 
@@ -97,12 +100,22 @@ define([
 
             this.leafletMap.on('zoomend', this.setNewViewport);
             this.leafletMap.on('dragend', this.setNewViewport);
+            this.setLeafletMapSize();
+
+            $(window).resize(this.setLeafletMapSize);
+        },
+
+        setLeafletMapSize: function() {
+            var mapHeight = $(window).height() - $('.navbar').height() - $('.model .btn-toolbar').height() - 90;
+            $('#leaflet-map').height(mapHeight);
+
+            if (this.viewport) {
+                this.setNewViewport();
+            }
         },
 
         setNewViewport: function() {
             var _this = this;
-            this.state.animation.setPaused();
-            this.gnomeRun.rewind();
             var newBounds = this.leafletMap.getBounds();
             var sw = newBounds.getSouthWest();
             var ne = newBounds.getNorthEast();
@@ -200,25 +213,24 @@ define([
             var _this = this;
             var size = this.leafletMap.getSize();
             this.renderer.set('image_size', [size.x, size.y]);
-            this.saveRenderer().then(function() {
+
+            return this.saveRenderer().then(function() {
                 var viewport = _this.renderer.getLatLongViewport();
-                url = _this.model.get('background_image_url');
+                var url = _this.model.get('background_image_url');
                 _this.viewport = new L.LatLngBounds([viewport.sw, viewport.ne]);
 
-                // Fit the map to the viewport bounds if we're adding the back-
-                // ground for the first time.
-                if (!_this.backgroundInitialized) {
+                if (!_this.backgroundOverlay) {
+                    // Fit the map to the viewport bounds if we're adding the back-
+                    // ground for the first time.
                     _this.leafletMap.fitBounds(_this.viewport);
                 }
 
                 _this.backgroundOverlay = imageOverlay(url, _this.viewport);
                 _this.leafletMap.addLayer(_this.backgroundOverlay);
-                _this.backgroundInitialized = true;
             });
         },
 
         setBackground: function() {
-            var _this = this;
             var url = this.model.get('background_image_url');
 
             if (url) {
@@ -228,14 +240,18 @@ define([
                 return;
             }
 
-            if (this.backgroundOverlay && !this.backgroundInitialized) {
-                $(this.backgroundOverlay._image).fadeOut(400, function() {
-                    _this.leafletMap.removeLayer(_this.backgroundOverlay);
-                    _this.addBackgroundLayer();
+            var _this = this;
+
+            if (this.backgroundOverlay) {
+                // Close over the old background layer, fade it out and
+                // remove it.
+                var oldOverlay = _this.backgroundOverlay;
+                $(oldOverlay._image).fadeOut(400, function() {
+                    _this.leafletMap.removeLayer(oldOverlay);
                 });
-            } else {
-                this.addBackgroundLayer();
             }
+
+            _this.addBackgroundLayer();
 
             // TODO:
 //            _this.createCanvases();
@@ -705,9 +721,7 @@ define([
                 this.leafletMap.removeLayer(this.timeStepLayer);
             }
             this.clearImageCache();
-            if (this.backgroundInitialized) {
-                this.setBackground();
-            }
+            this.setBackground();
         },
 
         pixelsFromCoordinates: function(point) {

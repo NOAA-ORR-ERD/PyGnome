@@ -163,7 +163,7 @@ define([
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
             this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
             this.mapView.on(views.MapView.READY, this.drawSpills);
-            this.mapView.on(views.MapView.VIEWPORT_CHANGED, this.rewind);
+            this.mapView.on(views.MapView.VIEWPORT_CHANGED, this.viewportChanged);
 
             this.locationFileMapView.on(views.LocationFileMapView.LOCATION_CHOSEN, this.loadLocationFileWizard);
 
@@ -620,7 +620,20 @@ define([
             this.mapControlView.reset();
         },
 
+        viewportChanged: function() {
+            this.state.animation.setPaused();
+            this.mapView.reset();
+            // Empty out the time steps.
+            this.gnomeRun.reset();
+
+            if (this.map.id) {
+                this.mapControlView.enableControls(
+                    this.mapControlView.mapControls);
+            }
+        },
+
         rewind: function() {
+            this.state.animation.setPaused();
             this.mapView.reset();
             this.mapControlView.reset();
             this.gnomeRun.clearData();

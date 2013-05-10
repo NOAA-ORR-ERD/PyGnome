@@ -255,7 +255,7 @@
                 randomMovers: ${random_movers | n},
                 mapIsLoaded: ${"true" if map_is_loaded else "false"},
                 locationFilesMeta: ${location_file_json | n},
-                animationThreshold: 30, // Milliseconds
+                animationThreshold: 25, // Milliseconds
                 defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
                 defaultWindMover: ${default_wind_mover | n},
                 defaultWind: ${default_wind | n},

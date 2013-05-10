@@ -6,6 +6,7 @@ import datetime
 import logging
 import os
 import shutil
+import threading
 from gnome.renderer import Renderer
 import numpy
 
@@ -195,6 +196,14 @@ class WebRenderer(BaseWebObject, Renderer):
     def background_image_path(self):
         return os.path.join(self.images_dir, self.background_map_name)
 
+    def clear_output_dir(self):
+        """
+        Override parent method to skip clearing the output directory, in case
+        the request immediately before this was to run the model, in which
+        case the first step is generated.
+        """
+        pass
+
 
 class WebGnomeMap(BaseWebObject, GnomeMap):
     default_name = 'Map'
@@ -222,6 +231,9 @@ class WebModel(BaseWebObject, Model):
     }
 
     def __init__(self, *args, **kwargs):
+        # Only one thread may access a WebModel instance at a given time.
+        self.lock = threading.RLock()
+
         data_dir = kwargs.pop('data_dir')
         self.package_root = kwargs.pop('package_root')
         self.renderer = None
