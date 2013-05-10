@@ -29,7 +29,7 @@ class Outputter(object):
         """
         pass
 
-    def prepare_for_model_run(self):
+    def prepare_for_model_run(self, **kwargs):
         """
         This method gets called by the model at the beginning of a new run. 
         Do what you need to do to prepare.

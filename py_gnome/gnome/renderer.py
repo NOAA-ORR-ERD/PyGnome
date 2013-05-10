@@ -32,8 +32,8 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     foreground_filename_format = 'foreground_%05i.png'
     foreground_filename_glob =   'foreground_?????.png'
 
-    _update = ['viewport','map_BB','images_dir']    # todo: how should images_dir be saved? Absolute? Currently, it is relative
-    _create = ['image_size','projection_class']   # not sure image_size should be updated
+    _update = ['image_size','viewport','map_BB','images_dir']    # todo: how should images_dir be saved? Absolute? Currently, it is relative
+    _create = ['projection_class']   # not sure image_size should be updated
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
     state.add( create=_create, update=_update)
@@ -95,7 +95,7 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     def images_dir_to_dict(self):
         return os.path.abspath(self.images_dir)
     
-    def prepare_for_model_run(self, cache=None):
+    def prepare_for_model_run(self, cache=None, **kwargs):
         """
         prepares the renderer for a model run.
 
@@ -104,8 +104,10 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         If you want to save the previous images, a new output dir should be set.
 
         :param cache=None: Sets the cache object to be used for the data.
-                           If None, it will use teh one already set up.
-
+                           If None, it will use the one already set up.
+        
+        Does not take anyother input arguments; however, to keep the interface the same for all outputters,
+        define **kwargs for now.
         """
         if cache is not None:
             self.cache = cache
@@ -144,6 +146,9 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
         image_filename = os.path.join(self.images_dir, self.foreground_filename_format%step_num)
 
         self.create_foreground_image()
+
+        if self.cache is None:
+            raise ValueError("cache object is not defined. It is required prior to calling write_output")
 
         # pull the data from cache:
         for sc in self.cache.load_timestep(step_num).items():

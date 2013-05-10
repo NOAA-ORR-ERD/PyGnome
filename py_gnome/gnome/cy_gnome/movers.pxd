@@ -71,6 +71,12 @@ cdef extern from "Random_c.h":
         double fDiffusionCoefficient
         OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)        
         
+cdef extern from "RandomVertical_c.h":
+    cdef cppclass RandomVertical_c(Mover_c):
+        RandomVertical_c() except +
+        double fVerticalDiffusionCoefficient
+        OSErr get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)        
+        
 cdef extern from "CATSMover_c.h":
    #============================================================================
    # ctypedef struct TCM_OPTIMZE:
