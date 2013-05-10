@@ -81,6 +81,7 @@ extension_names = ['cy_mover',
                    'cy_gridwind_mover',
                    'cy_ossm_time',
                    'cy_random_mover',
+                   'cy_random_vertical_mover',
                    'cy_land_check',
                    'cy_grid_map',
                    'cy_shio_time',
@@ -121,6 +122,7 @@ cpp_files = [
               'MakeDagTree.cpp',
               'GridMap_c.cpp',
               'GridMapUtils.cpp',
+              'RandomVertical_c.cpp',
               ]
 
 

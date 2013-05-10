@@ -8,6 +8,7 @@ from gnome.utilities import time_utils, transforms, convert, serializable
 from gnome import basic_types, GnomeId
 from gnome.cy_gnome.cy_wind_mover import CyWindMover     #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome.cy_random_mover import CyRandomMover #@UnresolvedImport IGNORE:E0611
+from gnome.cy_gnome.cy_random_vertical_mover import CyRandomVerticalMover #@UnresolvedImport IGNORE:E0611
 from gnome.cy_gnome import cy_cats_mover, cy_shio_time, cy_ossm_time
 from gnome.cy_gnome import cy_gridcurrent_mover
 from gnome.cy_gnome import cy_gridwind_mover
@@ -464,7 +465,7 @@ class RandomMover(CyMover, serializable.Serializable):
         Uses super to invoke base class __init__ method. 
         
         Optional parameters (kwargs)
-        :param diffusion_coef: Diffusion coefficient for random diffusion. Default is 100,000 (units?)
+        :param diffusion_coef: Diffusion coefficient for random diffusion. Default is 100,000 cm2/sec
         
         Remaining kwargs are passed onto Mover's __init__ using super. 
         See Mover documentation for remaining valid kwargs.
@@ -485,6 +486,44 @@ class RandomMover(CyMover, serializable.Serializable):
             We probably want to include more information.
         """
         return "RandomMover(diffusion_coef=%s,active_start=%s, active_stop=%s, on=%s)" % (self.diffusion_coef,self.active_start, self.active_stop, self.on)
+
+
+class RandomVerticalMover(CyMover, serializable.Serializable):
+    """
+    This mover class inherits from CyMover and contains CyRandomVerticalMover
+
+    The real work is done by CyRandomVerticalMover.
+    CyMover sets everything up that is common to all movers.
+    """
+    state = copy.deepcopy(CyMover.state)
+    state.add(update=['vertical_diffusion_coef'], create=['vertical_diffusion_coef'])
+    
+    def __init__(self, **kwargs):
+        """
+        Uses super to invoke base class __init__ method. 
+        
+        Optional parameters (kwargs)
+        :param vertical_diffusion_coef: Vertical diffusion coefficient for random diffusion. Default is 5 cm2/s
+        
+        Remaining kwargs are passed onto Mover's __init__ using super. 
+        See Mover documentation for remaining valid kwargs.
+        """
+        self.mover = CyRandomVerticalMover(diffusion_coef=kwargs.pop('vertical_diffusion_coef',5))
+        super(RandomVerticalMover,self).__init__(**kwargs)
+
+    @property
+    def vertical_diffusion_coef(self):
+        return self.mover.vertical_diffusion_coef
+    @vertical_diffusion_coef.setter
+    def vertical_diffusion_coef(self, value):
+        self.mover.vertical_diffusion_coef = value
+
+    def __repr__(self):
+        """
+        .. todo:: 
+            We probably want to include more information.
+        """
+        return "RandomVerticalMover(vertical_diffusion_coef=%s,active_start=%s, active_stop=%s, on=%s)" % (self.vertical_diffusion_coef,self.active_start, self.active_stop, self.on)
 
 
 class CatsMover(CyMover, serializable.Serializable):
