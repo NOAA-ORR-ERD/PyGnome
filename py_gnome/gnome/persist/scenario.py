@@ -22,11 +22,23 @@ from gnome.persist import (
 
 
 class Scenario(object):
-    """ Create a class that contains functionality to load/save scenario"""
+    """ Create a class that contains functionality to load/save a model scenario"""
     
     def __init__(self, saveloc, model=None):
         """
-        If user wants to save a scenario, then model must be set 
+        Constructor for a Scenario object. It's main function is to either 'save' and model
+        or to 'load' an already existing model. If a model is loaded from saveloc, the 'model'
+        attribute will contain the re-created model object.
+        
+        All object's being persisted must use the serializable.Serializable class as a mixin or they
+        must define the same methods/attributes.
+        
+        :param saveloc: A valid directory. Model files are either persisted here or a new model is re-created from the files stored here.
+        :type saveloc: A path as a string or unicode
+        :param model: A model object. Only required if save method will be invoked.
+        :type model: gnome.model.Model object
+        
+        .. note:: If user wants to save a scenario, then model must be set
         """
         if not os.path.exists(saveloc):
             raise ValueError("Invalid location for saving scenario. {0} does not exist".format(saveloc))
@@ -35,6 +47,10 @@ class Scenario(object):
         self.model = model
         
     def save(self):
+        """
+        Method used to save the model state to saveloc
+        It saves the state of each object, including the model in JSON format in *.txt files.
+        """
         if self.model is None:
             raise AttributeError("A model needs to be defined before it can be saved")
             
@@ -53,9 +69,10 @@ class Scenario(object):
         
     def load(self):
         """
-        look for model_*.txt for model to load
+        reconstruct the model from saveloc. It stores the re-created model inside 'model'
+        attribute. Function also returns the recreated model.
         
-        :returns : a model object re-created from the save files
+        :returns: a model object re-created from the save files
         """
         model_dict = self.load_model_dict()
         
@@ -85,27 +102,47 @@ class Scenario(object):
         return self.model
     
     def dict_to_json(self,dict_):
-        """ convert the dict returned by object's to_dict method to valid json format via colander schema """
+        """ 
+        convert the dict returned by object's to_dict method to valid json format via colander schema
+        
+        It uses the modules_dict defined in gnome.persist to find the correct schema module.
+        :param dict_: dictionary returned by object's to_dict method.
+        :type dict_: dictionary containing object properties
+        """
         gnome_mod, obj_name = dict_['obj_type'].rsplit('.',1)
         to_eval = "{0}.{1}().serialize(dict_)".format( modules_dict[gnome_mod], obj_name)
         _to_json = eval(to_eval)
         return _to_json
     
     def _save_collection(self,coll_):
+        """
+        Function loops over an orderedcollection or any other iterable containing a list of objects. 
+        It calls the to_dict method for each object, then converts it o valid json (dict_to_json),
+        and finally saves it to file (_save_json_to_file)
+        
+        :param coll_: ordered collection or iterable
+        """
         for obj in coll_:
             dict_ = obj.to_dict('create')
             self._save_json_to_file( self.dict_to_json(dict_), obj )
         
     def _save_json_to_file(self, data, obj):
+        """
+        write json data to file
+        :param data: dict containing json data 
+        :param obj: gnome object corresponding w/ data
+        """
         fname = os.path.join( self.saveloc, '{0}_{1}.txt'.format( obj.__class__.__name__, obj.id))
         data = self._move_data_file(data) # if there is a
         with open(fname,'w') as outfile:
             json.dump(data, outfile, indent = True)
     
     def _move_data_file(self,to_json):
-        """Look at state attribute of object. Find all fields with 'isdatafile' attribute as True.
-           If there is a key in to_json corresponding with 'name' of the fields with True 'isdatafile' attribute
-           then move that datafile and update the key in the to_json to point to new location"""
+        """
+        Look at state attribute of object. Find all fields with 'isdatafile' attribute as True.
+        If there is a key in to_json corresponding with 'name' of the fields with True 'isdatafile' attribute
+        then move that datafile and update the key in the to_json to point to new location
+        """
         state = eval( '{0}.state'.format(to_json['obj_type']) )
         fields = state.get_field_by_attribute('isdatafile')
         
@@ -121,22 +158,32 @@ class Scenario(object):
     
     """ LOADING FUNCTIONS """
     def json_to_dict(self, json_):
-        """ convert the dict returned by object's to_dict method to valid json format via colander schema """
+        """
+        Function used when loading a model scenario. 
+        convert the dict returned by object's to_dict method to valid json format via colander schema
+        
+        :param json_: dict containing json_ data
+        """
         gnome_mod, obj_name = json_['obj_type'].rsplit('.',1)
         to_eval = "{0}.{1}().deserialize(json_)".format( modules_dict[gnome_mod], obj_name)
         _to_dict = eval(to_eval)
         return _to_dict
     
     def dict_to_obj( self, obj_dict):
-        """ create object from a dict. The dict contains (keyword,value) pairs used to create new object """
+        """ 
+        create object from a dict. The dict contains (keyword,value) pairs used to create new object 
+        """
         type_   = obj_dict.pop('obj_type')
         to_eval = "{0}.new_from_dict(obj_dict)".format(type_)
         obj = eval( to_eval)
         return obj
     
     def load_model_dict(self):
-        """ Load model dict from *.txt file. Pop 'map' key, create 'map' object and add to model dict 
-            This dict is used in Model.new_from_dict(dict_) to create new Model """
+        """ 
+        Load model dict from *.txt file. 
+        Pop 'map' key, create 'map' object and add to model dict. 
+        This dict is used in Model.new_from_dict(dict_) to create new Model 
+        """
         model_file = glob.glob( os.path.join(self.saveloc, 'Model_*.txt'))
         if model_file == []:
             raise ValueError("No Model_*.txt files find in {0}".format(self.saveloc))
@@ -178,6 +225,9 @@ class Scenario(object):
         
     
     def _find_and_load_json_file( self, id_):
+        """
+        Given the id of the object, find the *_{id}.txt file that contains json of the object and load it. 
+        """
         obj_file = glob.glob( os.path.join( self.saveloc, '*_{0}.txt'.format(id_) ))
         if len(obj_file) == 0:
             raise IOError("No filename containing *_{0}.txt found in {1}".format(id_, os.path.abspath('.')))
@@ -191,11 +241,15 @@ class Scenario(object):
     def _load_collection( self, coll_dict):
         """
         Load collection - dict contains the output of OrderedCollection.to_dict()
-        'dtype' - not used for anything
+        'dtype' - currently not used for anything
         'id_list' - for each object in list, use this to find and load the json file, convert it to 
                     a valid dict, then create a new object using new_from_dict
                     'id_list' contains a list of tuples (object_type, id of object)
-        returns a list of objects corresponding with the data in 'id_list'
+        
+        :returns: a list of objects corresponding with the data in 'id_list'
+        
+        .. note:: while this applies to ordered collections. It can work for any iterable that contains
+                  'id_list' in the dict with above format.
         """
         obj_list = []
         for info in coll_dict['id_list']:
@@ -215,8 +269,8 @@ class Scenario(object):
                     a valid dict, then create a new object using new_from_dict
                     'id_list' contains a list of tuples (object_type, id of object)
         
-        If Wind object and Tide object are present, they must already be added to self.model.environment
-        prior to calling _add_movers
+        .. note:: If Wind object and Tide object are present, they must already be added to self.model.environment
+                  prior to calling _add_movers
         """
         for type_, id_ in movers_dict['id_list']:
             
@@ -241,7 +295,7 @@ class Scenario(object):
             raise KeyError("Collection does not contain an object with id: {0}".format(e.message))
     
     def _add_spills( self, l_spills):
-        """ add spills from spills dict (uncertain and certain) to provided model """
+        """ add spills from spills dict (uncertain and certain). It directly adds spills to self.model attribute """
         c_spills = self._load_collection(l_spills['certain_spills'])
         if self.model.uncertain:
             u_spills = self._load_collection(l_spills['uncertain_spills'])
