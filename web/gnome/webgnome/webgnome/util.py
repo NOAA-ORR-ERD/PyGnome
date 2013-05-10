@@ -235,6 +235,36 @@ def valid_model_id(request):
     request.validated['model'] = model
 
 
+def valid_step_id(request):
+    """
+    A Cornice validator that tests of a `step_id` value in the request matches a
+    step number the model has already generated.
+    """
+    valid_model_id(request)
+
+    if request.errors:
+        return
+
+    model = request.validated['model']
+    step_num = None
+
+    try:
+        step_num = int(request.matchdict['id'])
+    except ValueError:
+        request.errors.add('body', 'model', 'Step ID should be an integer.')
+        request.errors.status = 400
+        return
+
+    try:
+        model.time_steps[step_num]
+    except IndexError:
+        request.errors.add('body', 'model', 'Time step not found.')
+        request.errors.status = 404
+        return
+
+    request.validated['step_id'] = step_num
+
+
 def valid_wind_id(request):
     """
     A Cornice validator that tests if a JSON representation of a

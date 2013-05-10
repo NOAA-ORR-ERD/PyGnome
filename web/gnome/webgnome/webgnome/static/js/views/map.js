@@ -74,12 +74,12 @@ define([
 
             this.map = $(this.mapEl);
 
-            this.gnomeRun = this.options.gnomeRun;
-            this.gnomeRun.on(models.GnomeRun.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
-            this.gnomeRun.on(models.GnomeRun.RUN_BEGAN, this.gnomeRunBegan);
-            this.gnomeRun.on(models.GnomeRun.RUN_ERROR, this.gnomeRunError);
-            this.gnomeRun.on(models.GnomeRun.RUN_FINISHED, this.gnomeRunFinished);
-            this.gnomeRun.on(models.GnomeRun.CREATED, this.reset);
+            this.stepGenerator = this.options.stepGenerator;
+            this.stepGenerator.on(models.StepGenerator.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
+            this.stepGenerator.on(models.StepGenerator.RUN_BEGAN, this.stepGeneratorBegan);
+            this.stepGenerator.on(models.StepGenerator.RUN_ERROR, this.stepGeneratorError);
+            this.stepGenerator.on(models.StepGenerator.RUN_FINISHED, this.stepGeneratorFinished);
+            this.stepGenerator.on(models.StepGenerator.CREATED, this.reset);
 
             this.model = this.options.model;
             this.model.on('destroy', function () {
@@ -87,7 +87,7 @@ define([
                 _this.map.empty();
             });
 
-            if (this.gnomeRun.hasCachedTimeStep(this.gnomeRun.getCurrentTimeStep())) {
+            if (this.stepGenerator.hasCachedTimeStep(this.stepGenerator.getCurrentTimeStep())) {
                 this.nextTimeStepReady();
             }
 
@@ -251,7 +251,7 @@ define([
                 });
             }
 
-            _this.addBackgroundLayer();
+            return _this.addBackgroundLayer();
 
             // TODO:
 //            _this.createCanvases();
@@ -518,7 +518,7 @@ define([
         },
 
         nextTimeStepReady: function() {
-            this.addTimeStep(this.gnomeRun.getCurrentTimeStep());
+            this.addTimeStep(this.stepGenerator.getCurrentTimeStep());
         },
 
         loadBackgroundMap: function(url) {
@@ -704,15 +704,15 @@ define([
             this.foregroundCanvas.appendTo(map);
         },
 
-        gnomeRunBegan: function() {
+        stepGeneratorBegan: function() {
             this.setBackground();
         },
 
-        gnomeRunError: function() {
+        stepGeneratorError: function() {
             this.state.animation.setStopped();
         },
 
-        gnomeRunFinished: function() {
+        stepGeneratorFinished: function() {
             this.state.animation.setStopped();
         },
 
@@ -721,7 +721,8 @@ define([
                 this.leafletMap.removeLayer(this.timeStepLayer);
             }
             this.clearImageCache();
-            this.setBackground();
+            // Return a promise to set the background image
+            return this.setBackground();
         },
 
         pixelsFromCoordinates: function(point) {

@@ -1,6 +1,8 @@
 import os
+import logging
 
 from cornice.resource import resource, view
+from gnome.utilities.cache import CacheError
 from pyramid.httpexceptions import HTTPNotFound
 
 from webgnome import util, schema
@@ -8,6 +10,7 @@ from webgnome.navigation_tree import NavigationTree
 from webgnome.views.services.base import BaseResource
 
 
+log = logging.getLogger(__name__)
 valid_map = util.make_map_validator(400)
 
 
@@ -65,35 +68,38 @@ class ModelTree(BaseResource):
         return NavigationTree(self.request.validated['model']).render()
 
 
-@resource(path='/model/{model_id}/runner', renderer='gnome_json',
+def get_web_step_data(request, step_data, model, images_url):
+    filename = step_data['image_filename'].split(os.path.sep)[-1]
+    image_url = request.static_url(
+        'webgnome:static/%s/%s/%s/%s' % (
+            images_url, model.id,
+            util.get_filename_safe_time(model.changed_at), filename))
+
+    return {
+        'id': step_data['step_num'],
+        'url': image_url,
+        'timestamp': step_data['time_stamp']
+    }
+
+
+@resource(path='/model/{model_id}/step_generator', renderer='gnome_json',
           description='Run the current model.')
-class GnomeRunner(BaseResource):
+class StepGenerator(BaseResource):
     def _get_next_step(self):
         """
         Generate the next step of the model run and return a dict of metadata
         describing the step, including a URL to an image of particles for the
         step.
         """
-        step = None
         model = self.request.validated['model']
 
         try:
             step_data = model.step()
         except StopIteration:
-            pass
-        else:
-            filename = step_data['image_filename'].split(os.path.sep)[-1]
-            image_url = self.request.static_url(
-                'webgnome:static/%s/%s/%s/%s' % (
-                    self.settings['model_images_url_path'], model.id,
-                    util.get_filename_safe_time(model.changed_at), filename))
-            step = {
-                'id': step_data['step_num'],
-                'url': image_url,
-                'timestamp': step_data['time_stamp']
-            }
+            return
 
-        return step
+        return get_web_step_data(self.request, step_data, model,
+                                 self.settings['model_images_url_path'])
 
     @view(validators=[util.valid_model_id, valid_map])
     def post(self):
@@ -139,6 +145,29 @@ class GnomeRunner(BaseResource):
         data['time_step'] = step
 
         return data
+
+
+@resource(path='/model/{model_id}/step/{id}', renderer='gnome_json',
+          description='A single step in a model. run.')
+class Step(BaseResource):
+    """
+    Return data about a step of the model run that has already been generated.
+    """
+    @view(validators=util.valid_step_id)
+    def get(self):
+        model = self.request.validated['model']
+
+        try:
+            step_data = model.renderer.write_output(
+                self.request.validated['step_id'])
+        except CacheError:
+            log.exception('Step service requested an uncached step.')
+            self.request.errors.add('body', 'model', 'Time step not found.')
+            self.request.errors.status = 404
+            return
+
+        return get_web_step_data(self.request, step_data, model,
+                                 self.settings['model_images_url_path'])
 
 
 @resource(path='/model/from_location_file/{location}', renderer='gnome_json',

@@ -47,7 +47,7 @@ define([
 
             this.treeView = new views.TreeView({
                 treeEl: "#tree",
-                gnomeRun: this.gnomeRun,
+                stepGenerator: this.stepGenerator,
                 gnomeModel: this.gnomeModel,
                 map: this.map,
                 customMap: this.customMap,
@@ -69,7 +69,7 @@ define([
                 placeholderClass: 'placeholder',
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                gnomeRun: this.gnomeRun,
+                stepGenerator: this.stepGenerator,
                 renderer: this.renderer,
                 model: this.map,
                 animationThreshold: this.options.animationThreshold,
@@ -92,14 +92,14 @@ define([
                 resizeButtonEl: "#resize-button",
                 spillButtonEl: "#spill-button",
                 timeEl: "#time",
-                gnomeRun: this.gnomeRun,
+                stepGenerator: this.stepGenerator,
                 mapView: this.mapView,
                 model: this.map,
                 state: this.state
             });
 
             this.messageView = new views.MessageView({
-                gnomeRun: this.gnomeRun,
+                stepGenerator: this.stepGenerator,
                 gnomeModel: this.gnomeModel,
                 surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers
@@ -126,8 +126,8 @@ define([
                 _this.map.fetch();
             });
 
-            this.gnomeRun.on(models.GnomeRun.RUN_ERROR, this.gnomeRunError);
-            this.gnomeRun.on(models.GnomeRun.SERVER_RESET, this.rewind);
+            this.stepGenerator.on(models.StepGenerator.RUN_ERROR, this.stepGeneratorError);
+            this.stepGenerator.on(models.StepGenerator.SERVER_RESET, this.rewind);
 
             this.surfaceReleaseSpills.on("sync", this.spillUpdated);
             this.surfaceReleaseSpills.on('sync', this.drawSpills);
@@ -263,7 +263,7 @@ define([
             });
 
             Mousetrap.bind('left', function() {
-                var newStep = _this.gnomeRun.currentTimeStep - 1;
+                var newStep = _this.stepGenerator.currentTimeStep - 1;
 
                 if (newStep < 0) {
                     return;
@@ -273,9 +273,9 @@ define([
             });
 
             Mousetrap.bind('right', function() {
-                var newStep = _this.gnomeRun.currentTimeStep + 1;
+                var newStep = _this.stepGenerator.currentTimeStep + 1;
 
-                if (newStep > _this.gnomeRun.length) {
+                if (newStep > _this.stepGenerator.length) {
                     return;
                 }
 
@@ -466,9 +466,9 @@ define([
             this.state = new models.AppState();
             this.gnomeModel = new models.GnomeModel(this.options.gnomeSettings);
 
-            // Initialize a GnomeRun with any previously-generated time step data the
+            // Initialize a StepGenerator with any previously-generated time step data the
             // server had available.
-            this.gnomeRun = this.make(models.GnomeRun, this.options.generatedTimeSteps, {
+            this.stepGenerator = this.make(models.StepGenerator, this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
                 currentTimeStep: this.options.currentTimeStep,
@@ -497,7 +497,7 @@ define([
             this.messageView.displayMessage(message);
         },
 
-        gnomeRunError: function() {
+        stepGeneratorError: function() {
             this.state.animation.setStopped();
             this.messageView.displayMessage({
                 type: 'error',
@@ -540,11 +540,11 @@ define([
 
             this.state.animation.setPlaying();
 
-            if (this.gnomeRun.isOnLastTimeStep()) {
-                this.gnomeRun.rewind();
+            if (this.stepGenerator.isOnLastTimeStep()) {
+                this.stepGenerator.rewind();
             }
 
-            this.gnomeRun.run(opts);
+            this.stepGenerator.run(opts);
         },
 
         playButtonClicked: function() {
@@ -573,14 +573,14 @@ define([
          */
 
         sliderMoved: function(newStepNum) {
-            if (newStepNum === this.gnomeRun.currentTimeStep) {
+            if (newStepNum === this.stepGenerator.currentTimeStep) {
                 return;
             }
 
             // If the model and map view have the time step, display it.
-            if (this.gnomeRun.hasCachedTimeStep(newStepNum) &&
+            if (this.stepGenerator.hasCachedTimeStep(newStepNum) &&
                     this.mapView.timeStepIsLoaded(newStepNum)) {
-                this.gnomeRun.setCurrentTimeStep(newStepNum);
+                this.stepGenerator.setCurrentTimeStep(newStepNum);
             }
         },
 
@@ -592,51 +592,47 @@ define([
          the intervening images.
          */
         sliderChanged: function(newStepNum) {
-            if (newStepNum === this.gnomeRun.currentTimeStep) {
+            if (newStepNum === this.stepGenerator.currentTimeStep) {
                 return;
             }
 
-            // If the model and map view don't have the time step,
-            // we need to run until the new time step.
-            if (!this.gnomeRun.hasCachedTimeStep(newStepNum)
-                    || !this.mapView.timeStepIsLoaded(newStepNum)) {
-                this.play({
-                    runUntilTimeStep: newStepNum
-                });
-            }
+            this.stepGenerator.setCurrentTimeStep(newStepNum);
         },
 
         frameChanged: function() {
             if (this.state.animation.isPaused() || this.state.animation.isStopped()) {
                 return;
             }
-            this.gnomeRun.getNextTimeStep();
+            this.stepGenerator.getNextTimeStep();
         },
 
         reset: function() {
             this.state.animation.setStopped();
             this.mapView.reset();
-            this.gnomeRun.clearData();
+            this.stepGenerator.clearData();
             this.mapControlView.reset();
         },
 
         viewportChanged: function() {
+            var _this = this;
             this.state.animation.setPaused();
-            this.mapView.reset();
-            // Empty out the time steps.
-            this.gnomeRun.reset();
-
             if (this.map.id) {
                 this.mapControlView.enableControls(
                     this.mapControlView.mapControls);
             }
+            // Empty out the time steps.
+            this.stepGenerator.reset();
+            this.mapView.reset().then(function() {
+                _this.stepGenerator.setCurrentTimeStep(
+                    _this.stepGenerator.currentTimeStep);
+            });
         },
 
         rewind: function() {
             this.state.animation.setPaused();
             this.mapView.reset();
             this.mapControlView.reset();
-            this.gnomeRun.clearData();
+            this.stepGenerator.clearData();
 
             if (this.map.id) {
                 this.mapControlView.enableControls(
@@ -649,8 +645,8 @@ define([
          whatever frame was the last received from the server.
          */
         jumpToLastFrame: function() {
-            var lastFrame = this.gnomeRun.length - 1;
-            this.gnomeRun.setCurrentTimeStep(lastFrame);
+            var lastFrame = this.stepGenerator.length - 1;
+            this.stepGenerator.setCurrentTimeStep(lastFrame);
             this.state.animation.setPaused();
         },
 

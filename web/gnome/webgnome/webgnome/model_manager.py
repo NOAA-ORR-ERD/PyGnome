@@ -5,7 +5,6 @@ import copy
 import datetime
 import logging
 import os
-import shutil
 import threading
 from gnome.renderer import Renderer
 import numpy
@@ -231,8 +230,8 @@ class WebModel(BaseWebObject, Model):
     }
 
     def __init__(self, *args, **kwargs):
-        # Only one thread may access a WebModel instance at a given time.
         self.lock = threading.RLock()
+        kwargs['cache_enabled'] = kwargs.get('cache_enabled', True)
 
         data_dir = kwargs.pop('data_dir')
         self.package_root = kwargs.pop('package_root')
@@ -244,7 +243,7 @@ class WebModel(BaseWebObject, Model):
         self.base_dir = None
 
         # Set the model's ID, which we need to set the base_dir.
-        super(WebModel, self).__init__()
+        super(WebModel, self).__init__(*args, **kwargs)
 
         # Remove the default map object.
         if self.map:
@@ -317,7 +316,7 @@ class WebModel(BaseWebObject, Model):
         if self.renderer:
             self.renderer.images_dir = self.data_dir
             # Save a new background image.
-            self.renderer.prepare_for_model_run()
+            self.renderer.prepare_for_model_run(self._cache)
 
     def mark_changed(self):
         """
@@ -376,7 +375,8 @@ class WebModel(BaseWebObject, Model):
         self.add_renderer(
             WebRenderer(self.map.filename, self.data_dir,
                         image_size=(800, 600),
-                        projection_class=projections.GeoProjection))
+                        projection_class=projections.GeoProjection,
+                        cache=self._cache))
 
         # XXX: mark_changed() updates the data_dir and the renderer's
         # images_dir, and renders a new background image, so it should happen

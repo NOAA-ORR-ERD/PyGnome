@@ -165,7 +165,7 @@ class ExistingModelFromLocationFileServiceTests(FunctionalTestBase,
                          len(data['surface_release_spills']))
 
 
-class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
+class StepGeneratorServiceTests(FunctionalTestBase, ModelHelperMixin):
 
     def test_get_first_step(self):
         self.create_model()
@@ -175,8 +175,8 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.get(location_url)
         self.testapp.put_json(self.base_url, resp.json_body)
 
-        # Post to runner URL to get the first step.
-        resp = self.testapp.post_json(self.model_url('runner'))
+        # Post to step generator URL to get the first step.
+        resp = self.testapp.post_json(self.model_url('step_generator'))
         data = resp.json_body
         self.assertIn('foreground_00000.png', data['time_step']['url'])
         self.assertEqual(data['time_step']['id'], 0)
@@ -189,26 +189,27 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.get(location_url)
         self.testapp.put_json(self.base_url, resp.json_body)
 
-        # Post to runner URL to get the first step and expected # of time steps.
-        runner_url = self.model_url('runner')
-        resp = self.testapp.post_json(runner_url)
+        # Post to step generator URL to get the first step and expected # of
+        # time steps.
+        step_generator_url = self.model_url('step_generator')
+        resp = self.testapp.post_json(step_generator_url)
         num_steps = len(resp.json_body['expected_time_steps'])
 
         # Skip the first step because we received it in the POST.
         for step in range(num_steps):
             if step == 0:
                 continue
-            resp = self.testapp.get(runner_url)
+            resp = self.testapp.get(step_generator_url)
             data = resp.json_body
             # TODO: Add more value tests here.
             self.assertEqual(data['time_step']['id'], step)
 
         # The model should now be exhausted and return a 404 if the user tries
         # to run it.
-        resp = self.testapp.get(runner_url, status=404)
+        resp = self.testapp.get(step_generator_url, status=404)
         self.assertEqual(resp.status_code, 404)
 
-    def test_restart_runner_after_finished(self):
+    def test_restart_step_generator_after_finishing(self):
         self.create_model()
 
         # Load the Long Island script parameters into the model.
@@ -216,8 +217,9 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.get(location_url)
         self.testapp.put_json(self.base_url, resp.json_body)
 
-        # Post to runner URL to get the first step and expected # of time steps.
-        url = self.model_url('runner')
+        # Post to step generator URL to get the first step and expected # of
+        # time steps.
+        url = self.model_url('step_generator')
         resp = self.testapp.post_json(url)
         num_steps = len(resp.json_body['expected_time_steps'])
 
@@ -230,13 +232,38 @@ class GnomeRunnerServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.get(url, status=404)
         self.assertEqual(resp.status_code, 404)
 
-        # Restart the model runner by POSTing to its URL.
+        # Restart the step generator by POSTing to its URL.
         resp = self.testapp.post_json(url)
 
         # Verify that we can now get steps
         self.assertIn('foreground_00000.png', resp.json_body['time_step']['url'])
         resp = self.testapp.get(url)
         self.assertIn('foreground_00001.png', resp.json_body['time_step']['url'])
+
+
+class StepTests(FunctionalTestBase, ModelHelperMixin):
+    def test_get_step_that_exists(self):
+        self.create_model()
+
+        # Load the Long Island script parameters into the model.
+        location_url = self.model_url('/location_file/long_island')
+        resp = self.testapp.get(location_url)
+        self.testapp.put_json(self.base_url, resp.json_body)
+
+        # Post to step generator URL to get the first step.
+        generator_url = self.model_url('step_generator')
+        self.testapp.post_json(generator_url)
+        # Post again to get the second step
+        resp = self.testapp.get(generator_url)
+        data = resp.json_body
+        self.assertIn('foreground_00001.png', data['time_step']['url'])
+        self.assertEqual(data['time_step']['id'], 1)
+
+        # Retrieve the second step from the cache
+        resp = self.testapp.get(self.model_url('step/1'))
+        data = resp.json_body
+        self.assertIn('foreground_00001.png', data['url'])
+        self.assertEqual(data['id'], 1)
 
 
 class WindHelperMixin(object):

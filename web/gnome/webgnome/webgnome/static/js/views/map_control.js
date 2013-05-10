@@ -30,7 +30,7 @@ define([
             this.sliderShadedEl = this.options.sliderShadedEl;
             this.timeEl = this.options.timeEl;
             this.mapView = this.options.mapView;
-            this.gnomeRun = this.options.gnomeRun;
+            this.stepGenerator = this.options.stepGenerator;
             this.model = this.options.model;
 
             this.animationControls = [
@@ -67,8 +67,8 @@ define([
                 disabled: true
             });
 
-            if (this.gnomeRun.expectedTimeSteps.length) {
-                this.setTimeSteps(this.gnomeRun.expectedTimeSteps);
+            if (this.stepGenerator.expectedTimeSteps.length) {
+                this.setTimeSteps(this.stepGenerator.expectedTimeSteps);
                 this.enableControls();
             }
 
@@ -76,11 +76,11 @@ define([
             this.setupClickEvents();
             this.updateCachedPercentage();
 
-            this.gnomeRun.on(models.GnomeRun.RUN_BEGAN, this.runBegan);
-            this.gnomeRun.on(models.GnomeRun.RUN_ERROR, this.gnomeRunError);
-            this.gnomeRun.on(models.GnomeRun.NEXT_TIME_STEP_READY, this.updateCachedPercentage);
-            this.gnomeRun.on(models.GnomeRun.RUN_FINISHED, this.gnomeRunFinished);
-            this.gnomeRun.on(models.GnomeRun.CREATED, this.modelCreated);
+            this.stepGenerator.on(models.StepGenerator.RUN_BEGAN, this.runBegan);
+            this.stepGenerator.on(models.StepGenerator.RUN_ERROR, this.stepGeneratorError);
+            this.stepGenerator.on(models.StepGenerator.NEXT_TIME_STEP_READY, this.updateCachedPercentage);
+            this.stepGenerator.on(models.StepGenerator.RUN_FINISHED, this.stepGeneratorFinished);
+            this.stepGenerator.on(models.StepGenerator.CREATED, this.modelCreated);
 
             this.options.mapView.on(map.MapView.FRAME_CHANGED, this.mapViewFrameChanged);
         },
@@ -168,7 +168,7 @@ define([
         },
 
         sliderMoved: function(event, ui) {
-            var timestamp = this.gnomeRun.getTimestampForExpectedStep(ui.value);
+            var timestamp = this.stepGenerator.getTimestampForExpectedStep(ui.value);
 
             if (timestamp) {
                 this.setTime(timestamp);
@@ -182,7 +182,7 @@ define([
 
         updateCachedPercentage: function() {
             this.setCachedPercentage(
-                100*(this.gnomeRun.length / this.gnomeRun.expectedTimeSteps.length))
+                100*(this.stepGenerator.length / this.stepGenerator.expectedTimeSteps.length))
         },
 
         /*
@@ -196,25 +196,25 @@ define([
         },
 
         runBegan: function() {
-            if (this.gnomeRun.dirty) {
+            if (this.stepGenerator.dirty) {
                 // TODO: Is this really what we want to do here?
                 this.reset();
             }
 
-            this.setTimeSteps(this.gnomeRun.expectedTimeSteps);
+            this.setTimeSteps(this.stepGenerator.expectedTimeSteps);
         },
 
         mapViewFrameChanged: function() {
-            var timeStep = this.gnomeRun.getCurrentTimeStep();
+            var timeStep = this.stepGenerator.getCurrentTimeStep();
             this.setTimeStep(timeStep.id);
             this.setTime(timeStep.get('timestamp'));
         },
 
-        gnomeRunError: function() {
+        stepGeneratorError: function() {
             this.disableControls();
         },
 
-        gnomeRunFinished: function() {
+        stepGeneratorFinished: function() {
             this.disableControls();
             this.enableControls(this.playButtonEl);
         },
