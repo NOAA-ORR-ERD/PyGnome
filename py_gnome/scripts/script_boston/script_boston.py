@@ -2,6 +2,16 @@
 
 """
 a simple script to run GNOME
+
+This one uses:
+
+  - the GeoProjection
+  - wind mover
+  - random mover
+  - cats shio mover
+  - cats ossm mover
+  - plain cats mover 
+
 """
 
 
@@ -33,7 +43,8 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     renderer = gnome.renderer.Renderer(mapfile,
                                        images_dir,
-                                       size=(800, 600))
+                                       size=(800, 800),
+                                       projection_class=gnome.utilities.projections.GeoProjection)
     
     
     print "initializing the model"
@@ -104,6 +115,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     spill = gnome.spill.SurfaceReleaseSpill(num_elements=1000,
                                             start_position = (-70.911432, 42.369142, 0.0),
                                             release_time = start_time,
+                                            end_release_time = start_time + timedelta(hours=12),
                                             )
     
     model.spills += spill
