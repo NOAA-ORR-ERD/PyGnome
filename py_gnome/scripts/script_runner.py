@@ -93,10 +93,8 @@ def load_model(location, images_dir):
     #import ipdb; ipdb.set_trace()
     dir_name, filename = os.path.split(location)
     
-    if os.path.isdir(images_dir):
-        shutil.rmtree(images_dir)
-    os.mkdir(images_dir)
-    
+    scripting.make_images_dir()
+
     imp_script = imp.load_source(filename.rstrip('.py'),location) 
     model = imp_script.make_model(images_dir)
     return (model,imp_script)
