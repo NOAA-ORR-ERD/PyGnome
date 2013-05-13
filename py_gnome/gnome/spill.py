@@ -21,17 +21,20 @@ from gnome.utilities import serializable
 
 class ArrayType(object):#,serializable.Serializable):
     """
-    Not sure if this needs to be serialized?
+    Object used to capture attributes of numpy data array for spills
     """
-    #===========================================================================
-    # _update= ['shape','dtype','initial_value']
-    # _create= [] # not sure these should be user update able
-    # _create.extend(_update)
-    # state  = serializable.State()
-    # state.add(update=_update, create=_create)
-    #===========================================================================
     
     def __init__(self, shape, dtype, initial_value=None):
+        """
+        constructor for ArrayType
+        
+        :param shape: shape of the numpy array
+        :type shape: numpy array
+        :param dtype: numpy datatype contained in array
+        :type dtype: numpy dtype
+        :param initial_value: initialize array to this value
+        :type initial_value: numpy array same size as shape
+        """
         self.shape = shape
         self.dtype = dtype
         self.initial_value = initial_value
@@ -41,7 +44,7 @@ class Spill(object):
     """
     base class for a source of elements
     
-    NOTE: This class is not serializable since it can't be used in PyGnome
+    .. note:: This class is not serializable since it can't be used in PyGnome
     """
     positions = ArrayType( (3,), basic_types.world_point_type)
     next_positions = ArrayType( (3,), basic_types.world_point_type)
@@ -65,13 +68,6 @@ class Spill(object):
                 if name != 'array_types'
                 and type(getattr(self, name)) == ArrayType])
 
-    # no longer required
-    #===========================================================================
-    # def __new__(cls, *args, **kwargs):
-    #    obj = super(Spill, cls).__new__(cls, *args, **kwargs)
-    #    return obj
-    #===========================================================================
-
     @property
     def id(self):
         return self._gnome_id.id
@@ -81,11 +77,14 @@ class Spill(object):
         Base spill class. Spill used by a gnome model derive from this base class
         
         :param num_elements: number of LEs - default is 0.
+        :type num_elements: int
         
         Optional parameters (kwargs):
+        
         :param on: Toggles the spill on/off (bool). Default is 'on'.
-        :param id: Unique Id identifying the newly created mover (a UUID as a string). 
-                   This is used when loading an object from a persisted model
+        :type on: bool
+        :param id: Unique Id identifying the newly created mover (a UUID as a string), used when loading from a persisted model
+        :type id: str
         """
         self.num_elements = num_elements
         self.on = True       # sets whether the spill is active or not
@@ -173,7 +172,7 @@ class FloatingSpill(Spill):
     NOTE: This class is not serializable since it can't be used in PyGnome
     """
     windages = ArrayType( (), basic_types.windage_type)
-    
+
     _update= ['windage_range','windage_persist']
     _create= []
     _create.extend(_update) 
@@ -184,19 +183,22 @@ class FloatingSpill(Spill):
                  windage_range=(0.01, 0.04),
                  windage_persist=900, **kwargs):
         """
-        Optional arguments:
-        :param windage_range: A tuple defining the min/max % of wind acting on each LE. 
-                              The windage is computed by randomly sampling between this range and 
-                              normalizing it by windage_persist so windage is independent of model time_step. 
-                              Default (0.01, 0.04)
-        :type windage_range: a tuple of size 2 (min, max)
+        Object constructor. 
         
+        Note on windage_range:
+            The windage is computed by randomly sampling between this range and 
+            normalizing it by windage_persist so windage is independent of model time_step.
+            
+        windage_persist:
+            The 0 or -1 means the persistence is infinite so it is only set at the beginning of the run.
+            
+        Optional arguments:
+        :param windage_range: A tuple defining the min/max % of wind acting on each LE. Default (0.01, 0.04)
+        :type windage_range: a tuple of size 2 (min, max)
         :param windage_persist: Duration over which windage persists - this is given in seconds. Default is 900s.
-                                The -1 means the persistence is infinite so it is only set at the beginning of the run.
         :type windage_persist: integer
         
-        Remaining kwargs are passed onto Spill's __init__ using super. 
-        See base class documentation for remaining valid kwargs.
+        .. note:: Remaining kwargs are passed onto Spill's __init__ using super.  See base class documentation for remaining valid kwargs.
         """
         super(FloatingSpill, self).__init__(**kwargs)
         self.windage_range = windage_range
@@ -516,8 +518,8 @@ class SpatialReleaseSpill(FloatingSpill):
         """
         :param start_positions: locations the LEs are released (num_elements X 3): (long, lat, z) (floating point)
         :param release_time: time the LEs are released (datetime object)
-        :param windage: the windage range of the LEs (min, max). Default is (0.01, 0.04) from 1% to 4%.
-        :param persist: Default is 900s, so windage is updated every 900 sec.
+        :param windage=(0.01, 0.04): the windage range of the LEs (min, max). Default is from 1% to 4%.
+        :param persist=900: Default is 900s, so windage is updated every 900 sec.
                         The -1 means the persistence is infinite so it is only set at the beginning of the run.
         """
         super(SpatialReleaseSpill, self).__init__(windage_range, windage_persist)
@@ -538,13 +540,12 @@ class SpatialReleaseSpill(FloatingSpill):
         Release any new elements to be added to the SpillContainer
 
         :param current_time: datetime object for current time
-        :param time_step=None: the time step, in seconds --
-                          this version doesn't use this, but it's part of the API
+        :param time_step=None: the time step, in seconds -- this version doesn't use this, but it's part of the API
         :param array_types=None:
-        :returns : None if there are no new elements released
-                   a dict of arrays if there are new elements
-
-        NOTE: this releases all the elements at their initial positions at the release_time
+        
+        :returns : None if there are no new elements released. a dict of arrays if there are new elements
+        
+        .. note:: this releases all the elements at their initial positions at the release_time
         """
         if not array_types:
             array_types = self.array_types
