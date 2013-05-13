@@ -304,11 +304,11 @@ class Model(serializable.Serializable):
         return self.step()
 
 
-    def full_run(self, rewind=True):
+    def full_run(self, rewind=True, log=False):
         """
         Do a full run of the model.
 
-        :param rewind=True: whether to rewind teh model first -- defaults to True
+        :param rewind=True: whether to rewind the model first -- defaults to True
                             if set to false, model will be run from the current
                             step to the end
         :returns: list of outputter info dicts
@@ -320,7 +320,10 @@ class Model(serializable.Serializable):
         output_data = []
         while True:
             try:
-                output_data.append( self.step() )
+                results = self.step()
+                if log:
+                    print results
+                output_data.append( results )
             except StopIteration:
                 print "Done with the model run"
                 break

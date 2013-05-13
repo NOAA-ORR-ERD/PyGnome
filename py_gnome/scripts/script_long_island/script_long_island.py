@@ -120,5 +120,15 @@ def post_run(model):
 
     print "viewport is:", renderer.viewport
 
+if __name__ == "__main__":
+    """ if called on its own -- run it """
+    from gnome import scripting
+
+    scripting.make_images_dir()
+    model = make_model()
+    model.full_run(log=True)
+    post_run(model)
+    
+
 
 

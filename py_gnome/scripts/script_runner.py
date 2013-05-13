@@ -89,7 +89,7 @@ def parse_args(argv):
     
     return args
 
-def load_model(location,images_dir):
+def load_model(location, images_dir):
     #import ipdb; ipdb.set_trace()
     dir_name, filename = os.path.split(location)
     
