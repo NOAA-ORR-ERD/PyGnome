@@ -371,6 +371,9 @@ define([
             // An array of timestamps, one for each step we expect the server
             // to make, passed back when we initiate a model run.
             this.expectedTimeSteps = opts.expectedTimeSteps || [];
+            // Create a collection to manage the server's generated time steps.
+            // This won't get reset when the client-side cache is invalided.
+            this.serverCachedTimeSteps = new Backbone.Collection(timeSteps);
             // If true, `Model` will request a new set of time steps from the
             // server on the next run. Assume we want to do this by default
             // (i.e., at construction time) if there are no time steps.
@@ -397,11 +400,16 @@ define([
             return this.get(stepNum) !== undefined;
         },
 
+        serverHasCachedTimeStep: function(stepNum) {
+            return this.serverCachedTimeSteps.get(stepNum) != undefined;
+        },
+
         getTimeStep: function(stepNum) {
             var _this = this;
             var step = new TimeStep({id: stepNum}, {gnomeModel: this.gnomeModel});
             return step.fetch().then(function() {
                 _this.add(step);
+                _this.serverCachedTimeSteps.add(step);
             });
         },
 
@@ -586,10 +594,25 @@ define([
         },
 
         /*
+         Request the next step from the step generator web service.
+         */
+        generateStep: function() {
+            this.timeStepRequestBegin = new Date().getTime();
+
+            return $.ajax({
+                type: "GET",
+                url: this.url,
+                success: this.runSuccess,
+                error: this.timeStepRequestFailure
+            });
+        },
+
+        /*
          Makes a request to the server for the next time step.
 
-         First checks the server's cache for the time step, then requests the
-         step from the step generator service.
+         Retrieves the step from the server's cache of generated steps if the
+         step exists there, otherwise requests a new step from the step
+         generator web service.
 
          Triggers:
          - `Model.RUN_FINISHED` if the server has no more time steps to run.
@@ -601,23 +624,20 @@ define([
                 return;
             }
 
-            // Try to get the the next time step from the server cache. If
-            // the cache returns a 404 (no time step) then request the next
-            // step from the step generator.
-            var promise = this.setCurrentTimeStep(this.nextTimeStep);
-            if (promise) {
-                promise.fail(function() {
-                    _this.timeStepRequestBegin = new Date().getTime();
-
-                    // Request the next step from the server.
-                    $.ajax({
-                        type: "GET",
-                        url: _this.url,
-                        success: _this.runSuccess,
-                        error: _this.timeStepRequestFailure
+            if (this.serverHasCachedTimeStep(this.nextTimeStep)) {
+                // Try to get the the next time step from the server cache. If
+                // the cache returns a 404 (no time step) then request the next
+                // step from the step generator.
+                var promise = this.setCurrentTimeStep(this.nextTimeStep);
+                if (promise) {
+                    promise.fail(function() {
+                        _this.generateStep()
                     });
-                });
+                }
+                return promise;
             }
+
+            return this.generateStep();
         },
 
        timeStepRequestFailure: function(xhr, textStatus, errorThrown) {

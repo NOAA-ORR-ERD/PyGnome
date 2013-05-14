@@ -651,14 +651,28 @@ define([
         },
 
         useFullscreen: function() {
+            var _this = this;
             this.mapControlView.switchToFullscreen();
-            $(this.sidebarEl).hide('slow');
+            $('#content').removeClass('span9').addClass('span11');
+            $(this.sidebarEl).hide('slow', function() {
+                _this.mapView.updateSize();
+                if (_this.mapView.backgroundOverlay) {
+                    _this.mapView.setNewViewport();
+                }
+            });
         },
 
         disableFullscreen: function() {
+            var _this = this;
             this.mapControlView.switchToNormalScreen();
             $(this.sidebarEl).removeClass('hidden');
-            $(this.sidebarEl).show('slow');
+            $('#content').removeClass('span11').addClass('span9');
+            $(this.sidebarEl).show('slow', function() {
+                _this.mapView.updateSize();
+                if (_this.mapView.backgroundOverlay) {
+                    _this.mapView.setNewViewport();
+                }
+            });
         },
 
         enableSpillDrawing: function() {
@@ -715,7 +729,7 @@ define([
          If showing an edit form, perform a `fetch` using the `AjaxForm` for the
          selected node first, which will trigger the bound `AjaxFormView` to display.
 
-         The distinction of "add" versus "edit" is made on whether or not the node
+         The distinction of "" versus "edit" is made on whether or not the node
          has an `id` property with a non-null value.
          */
         showFormForActiveTreeItem: function() {

@@ -98,9 +98,24 @@ define([
                 minZoom: 9
             });
 
-            this.leafletMap.on('zoomend', this.setNewViewport);
-            this.leafletMap.on('dragend', this.setNewViewport);
+            this.leafletMap.on('zoomend', function() {
+                window.setTimeout(_this.setNewViewport, 200);
+            });
+            this.leafletMap.on('dragend', function() {
+                window.setTimeout(_this.setNewViewport, 200);
+            });
             this.setLeafletMapSize();
+//            L.graticule().addTo(this.leafletMap);
+            L.graticule({
+                interval: 10,
+                surface: true,
+                style: {
+                    fillColor: '#99b3cc',
+                    fillOpacity: 1,
+                    weight: 0
+                }
+            }).addTo(this.leafletMap);
+
 
             $(window).resize(this.setLeafletMapSize);
         },
@@ -116,6 +131,11 @@ define([
 
         setNewViewport: function() {
             var _this = this;
+            if (this.isSettingViewport) {
+                return;
+            }
+
+            this.isSettingViewport = true;
             var newBounds = this.leafletMap.getBounds();
             var sw = newBounds.getSouthWest();
             var ne = newBounds.getNorthEast();
@@ -130,6 +150,7 @@ define([
             });
 
             this.saveRenderer().then(function() {
+                _this.isSettingViewport = false;
                 _this.trigger(MapView.VIEWPORT_CHANGED);
             });
         },
@@ -231,6 +252,7 @@ define([
         },
 
         setBackground: function() {
+            var _this = this;
             var url = this.model.get('background_image_url');
 
             if (url) {
@@ -240,18 +262,25 @@ define([
                 return;
             }
 
-            var _this = this;
+            var oldOverlay = _this.backgroundOverlay;
 
-            if (this.backgroundOverlay) {
-                // Close over the old background layer, fade it out and
-                // remove it.
-                var oldOverlay = _this.backgroundOverlay;
-                $(oldOverlay._image).fadeOut(400, function() {
-                    _this.leafletMap.removeLayer(oldOverlay);
-                });
+            function removeBackgroundOverlay() {
+                if (oldOverlay) {
+                    // Close over the old background layer, fade it out and
+                    // remove it.
+                    $(oldOverlay._image).fadeOut(400, function() {
+                        _this.leafletMap.removeLayer(oldOverlay);
+                    });
+                    $(_this.backgroundOverlay._image).fadeIn(400);
+                }
             }
 
-            return _this.addBackgroundLayer();
+            var promise = _this.addBackgroundLayer();
+            if (promise) {
+                return promise.then(removeBackgroundOverlay);
+            }
+
+            removeBackgroundOverlay();
 
             // TODO:
 //            _this.createCanvases();
@@ -481,6 +510,18 @@ define([
             return {start: newStartPosition, end: newEndPosition};
         },
 
+        updateSize: function() {
+            if (!this.leafletMap) {
+                return;
+            }
+
+            this.leafletMap.invalidateSize(true);
+
+            if (this.viewport) {
+                this.setNewViewport();
+            }
+        },
+
         // Adjust a selection rectangle so that it fits within the bounding box.
         getAdjustedRect: function(rect) {
             var adjustedRect = this.getRect(rect);
@@ -519,9 +560,6 @@ define([
 
         nextTimeStepReady: function() {
             this.addTimeStep(this.stepGenerator.getCurrentTimeStep());
-        },
-
-        loadBackgroundMap: function(url) {
         },
 
         drawLine: function(ctx, start_x, start_y, end_x, end_y) {
