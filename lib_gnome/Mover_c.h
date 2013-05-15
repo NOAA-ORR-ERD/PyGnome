@@ -14,18 +14,23 @@
 #include "TypeDefs.h"
 #include "ClassID_c.h"
 #include "RectUtils.h"
-#include "Map_c.h"
+//#include "Map_c.h"
 #include "ExportSymbols.h"
 
 #ifdef pyGNOME
-#define TMap Map_c
+//#define TMap Map_c
 #endif
+#ifndef pyGNOME
+#include "Map_c.h"
 class TMap;
+#endif
 
 class GNOMEDLL_API Mover_c : virtual public ClassID_c {
 
 public:
+#ifndef pyGNOME
 	TMap				*moverMap;			// mover's owner
+#endif
 	Seconds				fUncertainStartTime;
 	double				fDuration; 				// duration time for uncertainty;
 	RGBColor			fColor;
@@ -34,8 +39,10 @@ protected:
 	double				fTimeUncertaintyWasSet;	// time to measure next uncertainty update
 
 public:
+#ifndef pyGNOME
 	Mover_c (TMap *owner, char *name);
-	Mover_c () {}
+#endif
+	Mover_c ();
 	virtual				~Mover_c();
 	virtual void		Dispose () {}
 
@@ -51,8 +58,10 @@ public:
 	virtual OSErr		UpdateUncertainty(void);
 	void				GetMoverName (char *name) { GetClassName (name); }
 	void				SetMoverName (char *name) { SetClassName (name); }
+#ifndef pyGNOME
 	TMap				*GetMoverMap () { return moverMap; }
 	void				SetMoverMap (TMap *owner) { moverMap = owner; }
+#endif
 	virtual void 		ModelStepIsDone(){ return; }
 	virtual Boolean		IAmA3DMover() {return false;}
 	virtual ClassID 	GetClassID () { return TYPE_MOVER; }
@@ -61,5 +70,5 @@ public:
 };
 
 
-#undef TMap
+//#undef TMap
 #endif

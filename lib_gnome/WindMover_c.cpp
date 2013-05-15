@@ -21,10 +21,8 @@
 
 #ifdef pyGNOME
 #include "OSSMTimeValue_c.h"
-#include "Map_c.h"
 #include "LEList_c.h"
-#include "Model_c.h"
-#include "PtCurMap_c.h"
+//#include "Model_c.h"
 #include "Replacements.h"
 #define TOSSMTimeValue OSSMTimeValue_c
 #else
