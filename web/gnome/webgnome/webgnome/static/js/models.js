@@ -542,6 +542,7 @@ define([
             var requestBegan = this.timeStepRequestBegin || now;
             timeStep.set('requestTime', now - requestBegan);
             this.add(timeStep);
+            this.serverCachedTimeSteps.add(timeStep);
             this.setCurrentTimeStep(timeStep.id);
         },
 

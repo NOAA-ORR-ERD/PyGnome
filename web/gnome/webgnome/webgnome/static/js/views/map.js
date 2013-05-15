@@ -3,8 +3,9 @@ define([
     'lib/underscore',
     'lib/backbone',
     'models',
+    'lib/geo',
     'lib/jquery.imagesloaded.min',
-], function($, _, Backbone, models) {
+], function($, _, Backbone, models, Geo) {
 
     var GnomeImageOverlay = L.ImageOverlay.extend({
         _initImage: function() {
@@ -29,11 +30,26 @@ define([
                 onmousemove: L.Util.falseFn,
                 src: this._url
             });
+
+            this._updateZIndex();
         },
 
         update: function(url) {
             $(this._image).attr('src', url);
             this._reset();
+        },
+
+        _updateZIndex: function() {
+            if (this._image && this.options.zIndex !== undefined) {
+                this._image.style.zIndex = this.options.zIndex;
+            }
+        },
+
+        setZIndex: function(zIndex) {
+            this.options.zIndex = zIndex;
+            this._updateZIndex();
+
+            return this;
         }
     });
 
@@ -92,32 +108,58 @@ define([
             }
 
             this.cursorClasses = ['zooming-in', 'zooming-out', 'moving', 'spill'];
+            this.currentCoordinates = $('.current-coordinates');
 
+            this.setupMap();
+        },
+
+        setupMap: function() {
+            var _this = this;
             this.leafletMap = L.map('leaflet-map', {
                 crs: L.CRS.EPSG4326,
-                minZoom: 9
+                minZoom: 9,
+                worldCopyJump: false,
+                attribution: false
             });
 
             this.leafletMap.on('zoomend', function() {
                 window.setTimeout(_this.setNewViewport, 200);
             });
+
             this.leafletMap.on('dragend', function() {
                 window.setTimeout(_this.setNewViewport, 200);
             });
+
+            this.leafletMap.on('mousemove', function(event) {
+                _this.updateCoordinates(event.latlng);
+            });
+
+            this.leafletMap.on('mouseout', function(event) {
+                _this.updateCoordinates();
+            });
+
             this.setLeafletMapSize();
-//            L.graticule().addTo(this.leafletMap);
-            L.graticule({
-                interval: 10,
-                surface: true,
+
+            this.graticule = L.graticule({
+                interval: 1,
                 style: {
-                    fillColor: '#99b3cc',
-                    fillOpacity: 1,
-                    weight: 0
+                    weight: 0.5,
+                    color: '#333'
+                },
+                onEachFeature: function(feature, layer) {
+                    layer.bindLabel(feature.properties.name);
                 }
             }).addTo(this.leafletMap);
 
-
             $(window).resize(this.setLeafletMapSize);
+        },
+
+        updateCoordinates: function(latlng) {
+            var text = '';
+            if (latlng) {
+                text = Geo.toDMS(latlng.lat) + ' ' + Geo.toDMS(latlng.lng);
+            }
+            this.currentCoordinates.html(text);
         },
 
         setLeafletMapSize: function() {
@@ -246,11 +288,22 @@ define([
                     _this.leafletMap.fitBounds(_this.viewport);
                 }
 
-                _this.backgroundOverlay = imageOverlay(url, _this.viewport);
+                _this.backgroundOverlay = imageOverlay(url, _this.viewport, {
+                    zIndex: -100
+                });
                 _this.leafletMap.addLayer(_this.backgroundOverlay);
             });
         },
 
+        /*
+         Set the background image on the map.
+
+         First add the background image as a map layer. When that operation
+         completes, remove the old background by fading it out and then fading
+         the new image on top of it.
+
+         Returns the promise returned by `this.addBackgroundLayer`.
+         */
         setBackground: function() {
             var _this = this;
             var url = this.model.get('background_image_url');
@@ -264,7 +317,7 @@ define([
 
             var oldOverlay = _this.backgroundOverlay;
 
-            function removeBackgroundOverlay() {
+            function removeBackgroundLayer() {
                 if (oldOverlay) {
                     // Close over the old background layer, fade it out and
                     // remove it.
@@ -275,12 +328,7 @@ define([
                 }
             }
 
-            var promise = _this.addBackgroundLayer();
-            if (promise) {
-                return promise.then(removeBackgroundOverlay);
-            }
-
-            removeBackgroundOverlay();
+            return _this.addBackgroundLayer().then(removeBackgroundLayer);
 
             // TODO:
 //            _this.createCanvases();
@@ -407,7 +455,9 @@ define([
             }
 
             function addImageOverlay(url) {
-                var timeStepLayer = imageOverlay(url, _this.viewport);
+                var timeStepLayer = imageOverlay(url, _this.viewport, {
+                    zIndex: -50
+                });
                 setTimeout(addLayer, _this.getAnimationTimeout(requestTime),
                            timeStepLayer);
             }

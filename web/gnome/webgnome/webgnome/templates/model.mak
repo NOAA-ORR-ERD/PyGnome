@@ -2,11 +2,12 @@
 
 
 <%block name="extra_head">
-    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.css"/>
+    <link rel="stylesheet" href='/static/css/leaflet.css'/>
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
 
     <script src="/static/js/lib/leaflet-src.js"></script>
+    <script src="/static/js/lib/leaflet.label.js"></script>
     <script src="/static/js/lib/L.Graticule.js"></script>
     <script src="/static/js/require-jquery.js"></script>
     <script src="/static/js/config.js"></script>
@@ -114,6 +115,7 @@
             </div>
 
             <div id="leaflet-map"> </div>
+            <div class="current-coordinates"></div>
             <div id="map" class="hidden"></div>
             <div class="placeholder"></div>
         </div>

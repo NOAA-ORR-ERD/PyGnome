@@ -182,7 +182,8 @@ define([
 
         updateCachedPercentage: function() {
             this.setCachedPercentage(
-                100*(this.stepGenerator.length / this.stepGenerator.expectedTimeSteps.length))
+                100*(this.stepGenerator.serverCachedTimeSteps.length
+                     / this.stepGenerator.expectedTimeSteps.length))
         },
 
         /*
@@ -206,8 +207,10 @@ define([
 
         mapViewFrameChanged: function() {
             var timeStep = this.stepGenerator.getCurrentTimeStep();
-            this.setTimeStep(timeStep.id);
-            this.setTime(timeStep.get('timestamp'));
+            if (timeStep) {
+                this.setTimeStep(timeStep.id);
+                this.setTime(timeStep.get('timestamp'));
+            }
         },
 
         stepGeneratorError: function() {
