@@ -59,8 +59,9 @@ enum {
 	I_NETCDFCROSSCUR,
 };
 
-class GNOMEDLL_API NetCDFMover_c : virtual public CurrentMover_c {
-
+//class GNOMEDLL_API NetCDFMover_c : virtual public CurrentMover_c {
+class NetCDFMover_c : virtual public CurrentMover_c {
+// not using this class for pyGNOME
 public:
 	long fNumRows;
 	long fNumCols;

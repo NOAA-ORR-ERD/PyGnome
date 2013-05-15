@@ -14,7 +14,7 @@
 #ifdef pyGNOME
 #include "LEList_c.h"
 #include "OLEList_c.h"
-#include "Model_c.h"
+//#include "Model_c.h"
 #include "Replacements.h"
 #else
 #include "CROSS.H"
