@@ -27,7 +27,7 @@ class GridVel_c {
 protected:
 	WorldRect fGridBounds;	
 public:
-	GridVel_c();
+	//GridVel_c();
 	virtual	~GridVel_c() { Dispose (); }
 	virtual ClassID 	GetClassID 	() { return TYPE_GRIDVEL; }
 	virtual  VelocityRec GetPatValue(WorldPoint p)=0;

@@ -55,7 +55,7 @@
 //#define PtCurMap PtCurMap_c
 //#define PtCurMover PtCurMover_c
 #define TWeatherer Weatherer_c
-#define TOSSMWeatherer OSSMWeatherer_c
+//#define TOSSMWeatherer OSSMWeatherer_c
 #define TGridVel GridVel_c
 #define TRectGridVel RectGridVel_c
 //#define CMapLayer CMapLayer_c
