@@ -33,4 +33,5 @@ class NetCDFOutput(base_schema.Id, MappingSchema):
     all_data = SchemaNode(Bool(), missing=drop)
     format = SchemaNode(String(), missing=drop)
     compress = SchemaNode(Bool(), missing=drop)
-     
+    _start_idx = SchemaNode(Int(), missing=drop)
+    _middle_of_run = SchemaNode(Bool(), missing=drop)

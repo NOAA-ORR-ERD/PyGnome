@@ -109,7 +109,28 @@ class NetCDFOutput(Outputter, serializable.Serializable):
     state.add_field([serializable.Field('netcdf_filename',create=True,update=True), # this data file should not be moved to save file location!
                      serializable.Field('all_data',create=True,update=True),
                      serializable.Field('format',create=True,update=True),
-                     serializable.Field('compress',create=True,update=True)])
+                     serializable.Field('compress',create=True,update=True),
+                     serializable.Field('_start_idx',create=True),
+                     serializable.Field('_middle_of_run',create=True)])
+    
+    
+    @classmethod
+    def new_from_dict(cls, dict_):
+        """
+        creates a new object from dictionary
+        """
+        _middle_of_run = dict_.pop('_middle_of_run',None)
+        _start_idx = dict_.pop('_start_idx',None)
+        obj =  cls(**dict_)
+        
+        if _middle_of_run is None or _start_idx is None:
+            raise KeyError("Expected netcdf_outputter to contain keys _middle_of_run and _start_idx")
+        
+        # If prepare_for_model_run is called, these will be reset
+        obj._middle_of_run = _middle_of_run
+        obj._start_idx = _start_idx
+        return obj
+    
     
     def __init__(self, netcdf_filename, cache=None, all_data=False, format='NETCDF4', compress=True, id=None):
         """
@@ -139,6 +160,8 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         self.arr_types = None   # this is only updated in prepare_for_model_run if all_data is True
         self._format = format
         self._compress= compress
+        
+        self._start_idx = 0     # need to keep track of starting index for writing data since variable number of particles are released
         
         self._gnome_id = gnome.GnomeId(id)
     
@@ -306,7 +329,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                         else:
                             raise ValueError("{0} has an undefined dimension: {1}".format(key,val.shape))
                         
-        
+        self._start_idx = 0     # need to keep track of starting index for writing data since variable number of particles are released
         self._middle_of_run = True
         
     
@@ -336,23 +359,25 @@ class NetCDFOutput(Outputter, serializable.Serializable):
                 pc[step_num] = len(sc['status_codes'])
                 
                 """ write keys that don't map directly to sc variable names """
-                ixs = step_num * pc[step_num]   # starting index for writing data in this timestep
-                ixe = ixs + pc[step_num]        # ending index for writing data in this timestep
-                rootgrp.variables['longitude'][ixs:ixe] = sc['positions'][:,0]
-                rootgrp.variables['latitude'][ixs:ixe] = sc['positions'][:,1]
-                rootgrp.variables['depth'][ixs:ixe] = sc['positions'][:,2]
-                rootgrp.variables['status'][ixs:ixe] = sc['status_codes'][:]
-                rootgrp.variables['id'][ixs:ixe] = sc['spill_num'][:]
+                #ixs = step_num * pc[step_num]   # starting index for writing data in this timestep
+                #ixe = ixs + pc[step_num]        # ending index for writing data in this timestep
+                _end_idx = self._start_idx + pc[step_num]
+                rootgrp.variables['longitude'][self._start_idx:_end_idx] = sc['positions'][:,0]
+                rootgrp.variables['latitude'][self._start_idx:_end_idx] = sc['positions'][:,1]
+                rootgrp.variables['depth'][self._start_idx:_end_idx] = sc['positions'][:,2]
+                rootgrp.variables['status'][self._start_idx:_end_idx] = sc['status_codes'][:]
+                rootgrp.variables['id'][self._start_idx:_end_idx] = sc['spill_num'][:]
                 
                 # write remaining data
                 if self.all_data:
                     for key, val in self.arr_types.iteritems():
                         if len(val.shape) == 0:
-                            rootgrp.variables[key][ixs:ixe] = sc[key]
+                            rootgrp.variables[key][self._start_idx:_end_idx] = sc[key]
                         else:
-                            rootgrp.variables[key][ixs:ixe,:] = sc[key]
+                            rootgrp.variables[key][self._start_idx:_end_idx,:] = sc[key]
                     
-                
+        
+        self._start_idx = _end_idx  # set _start_idx for the next timestep        
         return {'step_num': step_num,
                 'netcdf_filename': (self.netcdf_filename, self._u_netcdf_filename),
                 'time_stamp': time_stamp}
@@ -370,3 +395,4 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             os.remove(self._u_netcdf_filename)
             
         self._middle_of_run = False
+        self._start_idx = 0

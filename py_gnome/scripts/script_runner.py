@@ -19,7 +19,7 @@ from gnome.environment import Wind, Tide
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
 from gnome.persist import scenario
-
+from gnome import scripting
 
 def run(model):
     
@@ -92,8 +92,6 @@ def parse_args(argv):
 def load_model(location, images_dir):
     #import ipdb; ipdb.set_trace()
     dir_name, filename = os.path.split(location)
-    
-    scripting.make_images_dir()
 
     imp_script = imp.load_source(filename.rstrip('.py'),location) 
     model = imp_script.make_model(images_dir)
@@ -109,8 +107,9 @@ if __name__=="__main__":
             raise ValueError("{0} is not a file - provide a python script if action is to 'run' or 'save' model".format(args.location))
         
         model, imp_script = load_model(args.location, args.images)
-                
+        
     if args.do == 'run':
+        scripting.make_images_dir(args.images)
         run(model)
         try:
             imp_script.post_run(model)
@@ -119,6 +118,7 @@ if __name__=="__main__":
     elif args.do == 'save':
         save(model, args.saveloc)
     else:   #if args.do == 'run_from_save':
+        scripting.make_images_dir(args.images)
         run_from_save(args.saveloc)
         
     #if args.do in ('run','run_from_save'):

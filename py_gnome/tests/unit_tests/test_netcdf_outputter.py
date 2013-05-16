@@ -33,6 +33,7 @@ def model(sample_model_spatial_release_spill, request):
     model.spills += gnome.spill.SurfaceReleaseSpill( num_elements=5,
                                                      start_position=st_pos,
                                                      release_time  = model.start_time,
+                                                     end_release_time = model.start_time + model.duration,
                                                      windage_persist= 0
                                                      )
     def cleanup():
