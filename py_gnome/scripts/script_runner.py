@@ -93,6 +93,7 @@ def load_model(location, images_dir):
     #import ipdb; ipdb.set_trace()
     dir_name, filename = os.path.split(location)
 
+    scripting.make_images_dir(images_dir)
     imp_script = imp.load_source(filename.rstrip('.py'),location) 
     model = imp_script.make_model(images_dir)
     return (model,imp_script)
@@ -109,7 +110,6 @@ if __name__=="__main__":
         model, imp_script = load_model(args.location, args.images)
         
     if args.do == 'run':
-        scripting.make_images_dir(args.images)
         run(model)
         try:
             imp_script.post_run(model)
@@ -118,7 +118,6 @@ if __name__=="__main__":
     elif args.do == 'save':
         save(model, args.saveloc)
     else:   #if args.do == 'run_from_save':
-        scripting.make_images_dir(args.images)
         run_from_save(args.saveloc)
         
     #if args.do in ('run','run_from_save'):
