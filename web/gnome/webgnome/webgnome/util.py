@@ -18,6 +18,7 @@ import uuid
 
 from functools import wraps
 from itertools import chain
+from gnome.utilities.cache import CacheError
 from webgnome.schema import LongLat
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
@@ -246,23 +247,20 @@ def valid_step_id(request):
         return
 
     model = request.validated['model']
-    step_num = None
 
     try:
-        step_num = int(request.matchdict['id'])
+        request.validated['step_id'] = int(request.matchdict['id'])
     except ValueError:
         request.errors.add('body', 'model', 'Step ID should be an integer.')
         request.errors.status = 400
         return
 
     try:
-        model.time_steps[step_num]
-    except IndexError:
+        request.validated['step_data'] = model.renderer.write_output(
+            request.validated['step_id'])
+    except CacheError:
         request.errors.add('body', 'model', 'Time step not found.')
         request.errors.status = 404
-        return
-
-    request.validated['step_id'] = step_num
 
 
 def valid_wind_id(request):

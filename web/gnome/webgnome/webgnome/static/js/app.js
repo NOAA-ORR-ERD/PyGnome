@@ -577,11 +577,7 @@ define([
                 return;
             }
 
-            // If the model and map view have the time step, display it.
-            if (this.stepGenerator.hasCachedTimeStep(newStepNum) &&
-                    this.mapView.timeStepIsLoaded(newStepNum)) {
-                this.stepGenerator.setCurrentTimeStep(newStepNum);
-            }
+            this.stepGenerator.setCurrentTimeStep(newStepNum);
         },
 
         /*
@@ -629,15 +625,16 @@ define([
         },
 
         rewind: function() {
+            var _this = this;
             this.state.animation.setPaused();
-            this.mapView.reset();
-            this.mapControlView.reset();
-            this.stepGenerator.clearData();
-
-            if (this.map.id) {
-                this.mapControlView.enableControls(
-                    this.mapControlView.mapControls);
-            }
+            this.mapView.reset().then(function() { _this.mapControlView.reset() })
+                .then(function() { _this.stepGenerator.clearData() })
+                .then(function() {
+                    if (_this.map.id) {
+                        _this.mapControlView.enableControls(
+                            _this.mapControlView.mapControls);
+                    }
+                });
         },
 
         /*

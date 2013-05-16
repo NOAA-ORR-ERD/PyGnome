@@ -404,8 +404,24 @@ define([
             return this.serverCachedTimeSteps.get(stepNum) != undefined;
         },
 
+        /*
+         Get time step `stepNum` from the cached time step web service.
+
+         If the time step is not known to be available, don't check the server -
+         to avoid an unnecessary network request (and 404).
+
+         Returns an object with a 'then' method -- either a failed jQuery
+         deferred, if the server is not known by the client to have the
+         requested time step, or the promise created by jQuery when the step is
+         fetched from the server.
+         */
         getTimeStep: function(stepNum) {
             var _this = this;
+
+            if (!this.serverHasCachedTimeStep(stepNum)) {
+                return $.Deferred().fail();
+            }
+
             var step = new TimeStep({id: stepNum}, {gnomeModel: this.gnomeModel});
             return step.fetch().then(function() {
                 _this.add(step);
@@ -466,14 +482,15 @@ define([
                 this.trigger(StepGenerator.SERVER_RESET);
             }
 
-            this.addTimeStep(data.time_step);
-
             if (isFirstStep) {
+                this.serverCachedTimeSteps.reset();
+                this.addTimeStep(data.time_step);
                 this.expectedTimeSteps = data.expected_time_steps;
                 this.trigger(StepGenerator.RUN_BEGAN, data);
+                return;
             }
 
-            return true;
+            this.addTimeStep(data.time_step);
         },
 
         /*

@@ -156,15 +156,7 @@ class Step(BaseResource):
     @view(validators=util.valid_step_id)
     def get(self):
         model = self.request.validated['model']
-
-        try:
-            step_data = model.renderer.write_output(
-                self.request.validated['step_id'])
-        except CacheError:
-            log.exception('Step service requested an uncached step.')
-            self.request.errors.add('body', 'model', 'Time step not found.')
-            self.request.errors.status = 404
-            return
+        step_data = self.request.validated['step_data']
 
         return get_web_step_data(self.request, step_data, model,
                                  self.settings['model_images_url_path'])

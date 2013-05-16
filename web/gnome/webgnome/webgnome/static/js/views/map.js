@@ -72,6 +72,9 @@ define([
         initialize: function() {
             var _this = this;
             _.bindAll(this);
+
+            this.setNewViewport = _.debounce(this.setNewViewport, 200);
+
             this.mapEl = this.options.mapEl;
             this.frameClass = this.options.frameClass;
             this.activeFrameClass = this.options.activeFrameClass;
@@ -81,6 +84,7 @@ define([
             this.locationFilesMeta = this.options.locationFilesMeta;
             this.renderer = this.options.renderer;
             this.canDrawSpill = false;
+            this.resizingBeganAt = null;
 
             this.makeImagesClickable();
 
@@ -92,7 +96,6 @@ define([
 
             this.stepGenerator = this.options.stepGenerator;
             this.stepGenerator.on(models.StepGenerator.NEXT_TIME_STEP_READY, this.nextTimeStepReady);
-            this.stepGenerator.on(models.StepGenerator.RUN_BEGAN, this.stepGeneratorBegan);
             this.stepGenerator.on(models.StepGenerator.RUN_ERROR, this.stepGeneratorError);
             this.stepGenerator.on(models.StepGenerator.RUN_FINISHED, this.stepGeneratorFinished);
             this.stepGenerator.on(models.StepGenerator.CREATED, this.reset);
@@ -123,11 +126,11 @@ define([
             });
 
             this.leafletMap.on('zoomend', function() {
-                window.setTimeout(_this.setNewViewport, 200);
+                _this.setNewViewport();
             });
 
             this.leafletMap.on('dragend', function() {
-                window.setTimeout(_this.setNewViewport, 200);
+                _this.setNewViewport();
             });
 
             this.leafletMap.on('mousemove', function(event) {
@@ -165,10 +168,7 @@ define([
         setLeafletMapSize: function() {
             var mapHeight = $(window).height() - $('.navbar').height() - $('.model .btn-toolbar').height() - 90;
             $('#leaflet-map').height(mapHeight);
-
-            if (this.viewport) {
-                this.setNewViewport();
-            }
+            this.updateSize();
         },
 
         setNewViewport: function() {
@@ -384,12 +384,6 @@ define([
 
         getImageForTimeStep: function(stepNum) {
             return $('img[data-id="' + (stepNum) + '"]');
-        },
-
-        timeStepIsLoaded: function(stepNum) {
-            return true;
-//            var step = this.getImageForTimeStep(stepNum);
-//            return step && step.length;
         },
 
         /*
@@ -792,14 +786,13 @@ define([
             this.foregroundCanvas.appendTo(map);
         },
 
-        stepGeneratorBegan: function() {
-            this.setBackground();
-        },
 
+        // TODO: This probably belongs in app.js
         stepGeneratorError: function() {
             this.state.animation.setStopped();
         },
 
+        // TODO: This probably belongs in app.js
         stepGeneratorFinished: function() {
             this.state.animation.setStopped();
         },
