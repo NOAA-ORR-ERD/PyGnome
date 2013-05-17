@@ -27,3 +27,4 @@ web/gnome/webgnome/webgnome/static/test_models/*
 .projectile
 .coverage
 .coverage
+.vagrant
