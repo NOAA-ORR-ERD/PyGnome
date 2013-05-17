@@ -51,7 +51,7 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
             err = self.grid.TextRead( time_grid, '')
             #err = self.grid.TextRead( <char *>time_grid, '')
         else:
-            topology  = os.path.normpath(topology_file)
+            topology_file  = os.path.normpath(topology_file)
             topology  = to_bytes( unicode(topology_file))
             #err = self.grid.TextRead( <char *>time_grid , <char *>topology )
             err = self.grid.TextRead( time_grid , topology )
