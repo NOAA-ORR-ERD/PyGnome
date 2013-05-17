@@ -577,15 +577,16 @@ define([
                 return;
             }
 
-            this.stepGenerator.setCurrentTimeStep(newStepNum);
+            if (this.stepGenerator.hasCachedTimeStep(newStepNum)) {
+                this.stepGenerator.setCurrentTimeStep(newStepNum);
+            }
         },
 
         /*
          Called when the user finishes dragging the slider.
 
          The image will be loaded if it was available in cache. If it wasn't,
-         then we're going to play until `newStepNum`, triggering download of
-         the intervening images.
+         then we're going to download it and display it.
          */
         sliderChanged: function(newStepNum) {
             if (newStepNum === this.stepGenerator.currentTimeStep) {

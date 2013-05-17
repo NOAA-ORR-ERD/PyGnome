@@ -588,11 +588,12 @@ define([
                 _this.checkIfRunIsFinished();
             }
 
-            if (this.hasCachedTimeStep(stepNum)) {
-                return finish();
+            if (this.hasCachedTimeStep(this.currentTimeStep)) {
+                finish();
+                return $.Deferred().resolve();
             }
 
-            return this.getTimeStep(stepNum).then(finish);
+            return this.getTimeStep(this.currentTimeStep).then(finish);
         },
 
         isOnLastTimeStep: function() {

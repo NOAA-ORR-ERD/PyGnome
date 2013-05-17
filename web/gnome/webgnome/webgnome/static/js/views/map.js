@@ -73,7 +73,7 @@ define([
             var _this = this;
             _.bindAll(this);
 
-            this.setNewViewport = _.debounce(this.setNewViewport, 200);
+            this.setNewViewport = _.debounce(this.setNewViewport, 100);
 
             this.mapEl = this.options.mapEl;
             this.frameClass = this.options.frameClass;
@@ -192,8 +192,8 @@ define([
             });
 
             this.saveRenderer().then(function() {
-                _this.isSettingViewport = false;
                 _this.trigger(MapView.VIEWPORT_CHANGED);
+                _this.isSettingViewport = false;
             });
         },
 
@@ -274,10 +274,20 @@ define([
 
         addBackgroundLayer: function() {
             var _this = this;
-            var size = this.leafletMap.getSize();
-            this.renderer.set('image_size', [size.x, size.y]);
+            var savingRenderer;
 
-            return this.saveRenderer().then(function() {
+            // If we're in the process of setting a new viewport, part of
+            // which is to get the new background image, then we don't need to
+            // save the renderer -- otherwise we do.
+            if (this.isSettingViewport) {
+                savingRenderer = this.model.fetch();
+            } else {
+                var size = this.leafletMap.getSize();
+                this.renderer.set('image_size', [size.x, size.y]);
+                savingRenderer = this.saveRenderer();
+            }
+
+            return savingRenderer.then(function() {
                 var viewport = _this.renderer.getLatLongViewport();
                 var url = _this.model.get('background_image_url');
                 _this.viewport = new L.LatLngBounds([viewport.sw, viewport.ne]);
