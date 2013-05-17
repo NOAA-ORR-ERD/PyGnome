@@ -164,6 +164,7 @@ cdef class CyOSSMTime(object):
             Make this private since the constructor will likely call this when object is instantiated
         """        
         cdef bytes file_
+        filename = os.path.normpath(filename)
         file_ = to_bytes(unicode(filename))
         err = self.time_dep.ReadTimeValues( file_, file_contains, user_units)
         

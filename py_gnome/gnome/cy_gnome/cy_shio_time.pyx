@@ -35,6 +35,7 @@ cdef class CyShioTime(object):
         self.shio.daylight_savings_off=daylight_savings_off 
         
         if os.path.exists(path):
+            path = os.path.normcase(path)
             file_ = to_bytes(unicode(path))
             err = self.shio.ReadTimeValues(file_)
             if err != 0:

@@ -1,5 +1,6 @@
 cimport numpy as cnp
 import numpy as np
+import os
 
 from type_defs cimport *
 from movers cimport Mover_c,GridCurrentMover_c,TimeGridVel_c
@@ -42,12 +43,15 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
         cdef OSErr err
         cdef bytes time_grid, topology
         
+        time_grid_file = os.path.normpath(time_grid_file)
+        
         time_grid = to_bytes( unicode(time_grid_file))
             
         if topology_file is None:
             err = self.grid.TextRead( time_grid, '')
             #err = self.grid.TextRead( <char *>time_grid, '')
         else:
+            topology  = os.path.normpath(topology_file)
             topology  = to_bytes( unicode(topology_file))
             #err = self.grid.TextRead( <char *>time_grid , <char *>topology )
             err = self.grid.TextRead( time_grid , topology )

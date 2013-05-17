@@ -1,5 +1,6 @@
 cimport numpy as cnp
 import numpy as np
+import os
 
 from type_defs cimport *
 from movers cimport Mover_c,GridWindMover_c,TimeGridVel_c
@@ -34,11 +35,13 @@ cdef class CyGridWindMover(cy_mover.CyMover):
         cdef OSErr err
         cdef bytes time_grid, topology
         
+        time_grid_file = os.path.normpath(time_grid_file)
         time_grid = to_bytes( unicode(time_grid_file))
         
         if topology_file is None:
             err = self.grid.TextRead( time_grid, '')
         else:
+            topology_file = os.path.normpath(topology_file)
             topology  = to_bytes( unicode(topology_file))
             err = self.grid.TextRead( time_grid, topology )
          

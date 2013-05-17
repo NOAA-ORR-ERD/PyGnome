@@ -125,6 +125,7 @@ cdef class CyCatsMover(cy_mover.CyMover):
         cdef OSErr err
         cdef bytes path_
         
+        fname = os.path.normpath(fname)
         path_ = to_bytes( unicode(fname))
         
         if os.path.exists(path_):
