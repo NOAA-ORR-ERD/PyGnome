@@ -676,9 +676,6 @@ OSErr TimeGridVelRect_c::TextRead(char *path, char *topFilePath)
 	SplitPathFileName (s, fileName);
 	strcpy(fVar.userName, fileName);	// maybe use a name from the file
 	
-	sprintf(errmsg,"Name = %s\n",fVar.userName);
-	printNote(errmsg);
-
 	status = nc_open(path, NC_NOWRITE, &ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	
@@ -2559,14 +2556,6 @@ OSErr TimeGridVelCurv_c::TextRead(char *path, char *topFilePath)
 	status = nc_open(path, NC_NOWRITE, &ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 
-	sprintf(errmsg,"Path = %s\n",fVar.pathName);
-	printNote(errmsg);
-
-	sprintf(errmsg,"Name = %s\n",fVar.userName);
-	printNote(errmsg);
-
-	sprintf(errmsg,"Delimeter = %c\n",NEWDIRDELIMITER);
-	printNote(errmsg);
 	// check number of dimensions - 2D or 3D
 	status = nc_inq_ndims(ncid, &numdims);
 	if (status != NC_NOERR) {err = -1; goto done;}
@@ -5535,9 +5524,6 @@ OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath)
 	SplitPathFileName (s, fileName);
 	strcpy(fVar.userName, fileName); // maybe use a name from the file
 	
-	sprintf(errmsg,"Name = %s\n",fVar.userName);
-	printNote(errmsg);
-
 	status = nc_open(path, NC_NOWRITE, &ncid);
 	if (status != NC_NOERR) {err = -1; goto done;}
 	/*if (status != NC_NOERR) 
