@@ -150,7 +150,7 @@ OSErr TimeGridWindRect_c::TextRead(char *path,char *topFilePath)
 	Seconds startTime, startTime2;
 	double timeConversion = 1.;
 	char errmsg[256] = "";
-	char fileName[64],s[256],*modelTypeStr=0;
+	char fileName[256],s[256],*modelTypeStr=0;
 	char  outPath[256];
 	
 	if (!path || !path[0]) return 0;
@@ -625,7 +625,7 @@ OSErr TimeGridWindCurv_c::TextRead(char *path, char *topFilePath) // don't want 
 	Seconds startTime, startTime2;
 	double timeConversion = 1.;
 	char errmsg[256] = "";
-	char fileName[64],*modelTypeStr=0;
+	char fileName[256],*modelTypeStr=0;
 //#ifndef pyGNOME
 	//Point where;
 	//OSType typeList[] = { 'NULL', 'NULL', 'NULL', 'NULL' };

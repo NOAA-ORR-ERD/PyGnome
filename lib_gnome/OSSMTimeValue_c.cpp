@@ -686,6 +686,7 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	long numDataLines;
 	long numHeaderLines = 0;
 	Boolean dataInGMT = FALSE;
+	char errmsg[256];
 	
 	if (err = TimeValue_c::InitTimeFunc()) return err;
 	
@@ -696,8 +697,13 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	
 	strcpy(s, path);
 	
+#ifndef pyGNOME
 	SplitPathFile(s, this->fileName);
-	
+#else
+	//SplitPathFileName (s, this->fileName);	// this gives filename but tests expect full path
+	strcpy(this->fileName, path); // for now use full path
+#endif
+
 	//////////////////////////////////////////
 	///**/ paramtext(fileName, "", "", ""); /**/
 	//////////////////////////////////////////
