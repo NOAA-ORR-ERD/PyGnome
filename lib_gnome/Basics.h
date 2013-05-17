@@ -41,6 +41,15 @@
 #endif
 
 #ifdef pyGNOME
+//#ifdef ibmpyGNOME
+#ifdef _MSC_VER
+#define NEWDIRDELIMITER '\\'
+#else
+#define NEWDIRDELIMITER '/'
+#endif
+#endif
+
+#ifdef pyGNOME
 typedef unsigned char Boolean;
 struct Point {
 	short               v;
