@@ -19,9 +19,9 @@ import pytest
 ## these tests (Nor the code) do not enforce that, but rather add the extra
 ## point if it's not there
 
-
+basedir = os.path.dirname(__file__)
 #  write a simple test bna file
-file('test.bna', 'w').write( \
+file(os.path.join(basedir,'test.bna'), 'w').write( \
 '''"Another Name","Another Type", 7
 -81.531753540039,31.134635925293
 -81.531150817871,31.134529113769
@@ -65,8 +65,10 @@ file('test.bna', 'w').write( \
 -81.523277282715,31.122261047363
 ''')    
 
+test_bna = os.path.join(basedir,"test.bna")
+
 #  write a simple test bna file with invalid data
-file('test_bad.bna', 'w').write( \
+file(os.path.join(basedir,'test_bad.bna'), 'w').write( \
 '''"An too-small polygon","Another Type", 2
 -81.531753540039,31.134635925293
 -81.531150817871,31.134529113769
@@ -78,8 +80,10 @@ file('test_bad.bna', 'w').write( \
 -81.522483825684,31.121797561646
 ''')
 
+test_bad_bna = os.path.join(basedir,"test_bad.bna")
+
 class Test_bna_list:
-    polys = haz_files.ReadBNA("test.bna")
+    polys = haz_files.ReadBNA(test_bna)
 
     def test_length(self):
         assert len(self.polys) == 6
@@ -122,13 +126,13 @@ class Test_bna_list:
                 assert p[0].shape == (1, 2)
 
     def test_dtype(self):
-        polys = haz_files.ReadBNA("test.bna", polytype = "list", dtype=np.float32)
+        polys = haz_files.ReadBNA(test_bna, polytype = "list", dtype=np.float32)
         for p in polys:
             assert p[0].dtype == np.float32
 
 
 class Test_bna_polygonset:    
-    polys = haz_files.ReadBNA("test.bna", "PolygonSet")
+    polys = haz_files.ReadBNA(test_bna, "PolygonSet")
 
     def test_length(self):
         assert len(self.polys) == 6
@@ -151,7 +155,7 @@ class Test_bna_polygonset:
         assert self.polys[2].metadata[2] == '1'
 
     def test_dtype(self):
-        polys = haz_files.ReadBNA("test.bna", polytype = "PolygonSet", dtype=np.float32)
+        polys = haz_files.ReadBNA(test_bna, polytype = "PolygonSet", dtype=np.float32)
         for p in polys:
             assert p.dtype == np.float32
 

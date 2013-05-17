@@ -19,7 +19,7 @@ from gnome import basic_types
 from gnome import renderer
 from gnome.spill_container import TestSpillContainer
 
-bna_sample = "SampleData/MapBounds_2Spillable2Islands2Lakes.bna"
+bna_sample = os.path.join(os.path.dirname(__file__),r"SampleData/MapBounds_2Spillable2Islands2Lakes.bna")
 output_dir = os.path.join(os.path.dirname(__file__), r"renderer_output_dir")
 data_dir = os.path.join(os.path.dirname(__file__), r"SampleData")
 
