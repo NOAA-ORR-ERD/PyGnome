@@ -57,10 +57,7 @@ def model(sample_model_spatial_release_spill, request):
 def test_init_exceptions():
     """ 
     test exceptions raised during __init__ 
-    """
-    with pytest.raises(ValueError):
-        gnome.netcdf_outputter.NetCDFOutput(os.path.join(base_dir,'SampleData','MapBounds_Island.bna')) # file exists
-        
+    """ 
     with pytest.raises(ValueError):
         gnome.netcdf_outputter.NetCDFOutput(os.path.abspath(os.path.dirname(__file__))) # must be filename, not dir name
         
@@ -81,11 +78,17 @@ def test_exceptions():
     netcdf.prepare_for_model_run(model_start_time=datetime.now(), num_time_steps=4)
     with pytest.raises(ValueError):
         netcdf.write_output(0)
+    
+    with pytest.raises(ValueError):
+        # raise error because file 'temp.nc' should already exist
+        netcdf.prepare_for_model_run(model_start_time=datetime.now(), num_time_steps=4)
         
     with pytest.raises(ValueError):
+        # all_data is True but spills are not provided so raise an error
         netcdf.rewind()
         netcdf.all_data = True
         netcdf.prepare_for_model_run(model_start_time=datetime.now(), num_time_steps=4)
+    
         
     # clean up temporary file
     if os.path.exists(t_file):
