@@ -87,9 +87,13 @@ cdef class CyOSSMTime(object):
         def __set__(self, value):
             self._set_time_value_handle(value)
     
+#     property filename:
+#         def __get__(self):
+#             return <bytes>self.time_dep.fileName
+# 
     property filename:
         def __get__(self):
-            return <bytes>self.time_dep.fileName
+            return <bytes>self.time_dep.filePath
 
     property scale_factor:
         def __get__(self):

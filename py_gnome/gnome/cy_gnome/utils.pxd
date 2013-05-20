@@ -29,6 +29,7 @@ cdef extern from "OSSMTimeValue_c.h":
         OSSMTimeValue_c() except +    
         # Members
         string  fileName
+        string  filePath
         double  fScaleFactor
         
         # Methods
