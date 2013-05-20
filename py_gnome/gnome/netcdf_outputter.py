@@ -226,11 +226,19 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         if os.path.isdir(netcdf_filename):
             raise ValueError("netcdf_filename must be a file not a directory.")
         
-        if os.path.exists(netcdf_filename):
-            raise ValueError("{0} file exists. Enter a filename that does not exist in which to save data.".format(netcdf_filename))
-        
         if not os.path.exists( os.path.realpath(os.path.dirname(netcdf_filename))):
             raise ValueError("{0} does not appear to be a valid path".format(os.path.dirname(netcdf_filename)))
+    
+    def _nc_file_exists_error(self, file_):
+        """ 
+        invoked by prepare_for_model_run. If file already exists, it will raise this error.
+        
+        Do this in prepare_for_model_run, because user may want to define the model and run it in batch mode. This 
+        will allow netcdf_outputter to be created, but the first time it tries to write this file, it will check
+        and raise an error if file exists 
+        """
+        if os.path.exists(file_):
+            raise ValueError("{0} file exists. Enter a filename that does not exist in which to save data.".format(file_))
     
     def prepare_for_model_run(self, cache=None, model_start_time=None, num_time_steps=None, uncertain=False, spills=None, **kwargs):
         """ 
@@ -280,6 +288,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             filenames = (self.netcdf_filename,)
         
         for file_ in filenames:
+            self._nc_file_exists_error(file_)
             with nc.Dataset(file_, 'w', format=self._format) as rootgrp:
                 """ Global variables """
                 rootgrp.comment = self.cf_attributes['comment']
