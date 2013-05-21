@@ -1,0 +1,80 @@
+#!/usr/bin/env python
+
+"""
+setup.py for netCDF4, designed to build the extension with
+the netcdf and hdf libs statically linked
+
+designed for, and tested on, OS-X
+
+You may want to do this as there are multiple Python binaries
+for OS-X that may support older versions of the OS, or 32 bit
+on a 64 bit system, or...
+
+This is a way to make sure that your libs are all compatible,
+and not have you install shared libs that may break something
+else on your system.
+
+It's particularly useful for building re-distributable binaries.
+
+It's assumed that you have an appropriate system libz and libcurl
+
+"""
+
+##NOTE: the build _may_ find already installed netcdf or hdf libs
+##      if you have them. not sure what to do about that.
+
+## set the path to your static libs install here:
+# It is assumed that the static_libs dir has:
+#   lib: with the binary libs
+#   include: with the headers.
+
+static_libs = %%%put_location_of_static_libs_here%%%
+
+import os, sys
+
+from numpy.distutils.core  import setup, Extension
+
+#libs = [ 'netcdf', 'hdf5_hl', 'hdf5', 'z', 'curl' ]
+libs = [ 'z', 'curl' ]
+#lib_dirs = [ os.path.join(static_libs,'lib') ]
+inc_dirs = [os.path.join(static_libs,'include')]
+#runtime_library_dirs ['/Users/chris.barker/local/lib']
+
+extra_objects = ["libhdf5.a", "libhdf5_hl.a", "libnetcdf.a"]
+extra_objects = [os.path.join(static_libs, 'lib', lib) for lib in extra_objects]
+
+sources = ["netCDF4.c"]
+
+extensions = [Extension("netCDF4",
+                        sources,
+                        libraries=libs,
+                        #library_dirs=lib_dirs,
+                        include_dirs=inc_dirs,
+                        extra_objects=extra_objects,
+                        #extra_link_args = ['-lcurl'],
+                        #runtime_library_dirs=lib_dirs),
+                        )]
+
+
+setup(name = "netCDF4",
+      version = "1.0.4",
+      long_description = "netCDF version 4 has many features not found in earlier versions of the library, such as hierarchical groups, zlib compression, multiple unlimited dimensions, and new data types.  It is implemented on top of HDF5.  This module implements most of the new features, and can read and write netCDF files compatible with older versions of the library.  The API is modelled after Scientific.IO.NetCDF, and should be familiar to users of that module.\n\nThis project has a `Subversion repository <http://code.google.com/p/netcdf4-python/source>`_ where you may access the most up-to-date source.",
+      author            = "Jeff Whitaker",
+      author_email      = "jeffrey.s.whitaker@noaa.gov",
+      url               = "http://netcdf4-python.googlecode.com/svn/trunk/docs/netCDF4-module.html",
+      download_url      = "http://code.google.com/p/netcdf4-python/downloads/list",
+      scripts           = ['utils/nc3tonc4','utils/nc4tonc3'],
+      platforms         = ["any"],
+      license           = "OSI Approved",
+      description = "Provides an object-oriented python interface to the netCDF version 4 library.",
+      keywords = ['numpy','netcdf','data','science','network','oceanography','meteorology','climate'],
+      classifiers = ["Development Status :: 3 - Alpha",
+                     "Intended Audience :: Science/Research",
+                     "License :: OSI Approved",
+                     "Topic :: Software Development :: Libraries :: Python Modules",
+                     "Topic :: System :: Archiving :: Compression",
+                     "Operating System :: OS Independent"],
+      py_modules = ["netcdftime","netCDF4_utils"],
+      ext_modules = extensions)
+
+
