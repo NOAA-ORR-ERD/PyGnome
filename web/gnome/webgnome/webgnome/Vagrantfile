@@ -4,7 +4,7 @@
 $script = <<SCRIPT
 echo Provisioning WebGnome development environment.
 sudo apt-get update
-sudo apt-get install -y apache2 libapache2-mod-uwsgi libnetcdf6 python-scipy python-numpy git vim emacs python-pip python-virtualenv python-lxml virtualenvwrapper
+sudo apt-get install -y apache2 libapache2-mod-uwsgi libnetcdf6 libnetcdf-dev python-scipy python-numpy git vim emacs python-pip python-virtualenv python-lxml virtualenvwrapper libxslt1-dev python-netcdf libblas-dev python-dev gfortran g++ subversion libcurl3-dev
 mkdir -p ~/src/gnome
 printf "[http]\nsslVerify=False\n" > ~/.gitconfig
 
@@ -28,9 +28,13 @@ mkdir ~/envs
 # time you login or source .bashrc, so do that now.
 source ~/.bashrc
 mkvirtualenv gnome
-cd web/gnome/webgnome
-
-
+# We installed numpy with apt-get to get non-python dependencies, but now we
+# want the latest numpy.
+pip install --upgrade numpy
+pip install -r py_gnome/requirements.txt
+pip install -r web/gnome/webgnome/requirements.txt
+python py_gnome/setup.py develop
+python web/gnome/webgnome/setup.py develop
 SCRIPT
 
 Vagrant.configure("2") do |config|
