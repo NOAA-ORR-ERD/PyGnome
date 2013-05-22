@@ -19,7 +19,7 @@ import script_runner
 #           'script_mississippi_river/script_lower_mississippi.py'
 #           ]
 #===============================================================================
-scripts = glob.glob('script_*/script_*.py')
+scripts = glob.glob(os.path.join(os.path.dirname(__file__),'script_*/script_*.py'))
 
 for script in scripts:
     # clean directories first

@@ -27,7 +27,8 @@
 // code goes here, decide which fields go with the mover
 typedef struct {
 	char		pathName[kMaxNameLen];
-	char		userName[kPtCurUserNameLen]; // user name for the file, or short file name
+	//char		userName[kPtCurUserNameLen]; // user name for the file, or short file name
+	char		userName[kMaxNameLen]; // user name for the file, or short file name
 	double 	fileScaleFactor;	// use value from file? 	
 	//
 	long		maxNumDepths;

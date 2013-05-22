@@ -57,6 +57,9 @@ def run_from_save(saveloc):
         raise ValueError("{0} does not appear to be a valid directory".format(saveloc))
     sc = scenario.Scenario(saveloc)
     sc.load()
+    
+    sc.model.rewind()
+                
     run( sc.model)
     
 

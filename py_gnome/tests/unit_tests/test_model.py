@@ -21,14 +21,15 @@ import gnome.utilities.map_canvas
 from gnome.utilities.file_tools import haz_files
 from gnome.utilities import inf_datetime
 
-datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
+basedir = os.path.dirname(__file__)
+datadir = os.path.join(basedir, r"SampleData")
 
 def setup_simple_model():
     """
     utility to setup up a simple, but complete model for tests
     """
     # create a place for test images (cleaning out any old ones)
-    images_dir = "Test_images"
+    images_dir = os.path.join(basedir, "Test_images")
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
@@ -188,7 +189,7 @@ def test_simple_run_with_image_output():
     """
     
     # create a place for test images (cleaning out any old ones)
-    images_dir = "Test_images"
+    images_dir = os.path.join(basedir,"Test_images")
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
@@ -255,7 +256,7 @@ def test_simple_run_with_image_output_uncertainty():
     """
     
     # create a place for test images (cleaning out any old ones)
-    images_dir = "Test_images2"
+    images_dir = os.path.join(basedir,"Test_images2")
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
     os.mkdir(images_dir)
@@ -611,7 +612,7 @@ def test_full_run():
     assert len(results) == (model.duration.total_seconds() / model.time_step) + 1 # there is the zeroth step, too.
 
     # check if the images are there:
-    assert len( os.listdir("Test_images") ) == model.num_time_steps + 1 #(1 extra for background image)
+    assert len( os.listdir(os.path.join(basedir,"Test_images")) ) == model.num_time_steps + 1 #(1 extra for background image)
 
 def test_callback_add_mover():
     """ Test callback after add mover """

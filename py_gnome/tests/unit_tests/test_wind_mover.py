@@ -305,7 +305,8 @@ def test_constant_wind_mover():
 
 def test_wind_mover_from_file():
     wm = movers.wind_mover_from_file(file_)
-    assert wm.wind.filename == file_
+    print wm.wind.filename
+    assert wm.wind.filename == file_   
 
 def test_new_from_dict():
     """
