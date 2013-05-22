@@ -263,6 +263,46 @@ def test_write_output_post_run(model):
         
     model.outputters += o_put   # add this back in so cleanup script deletes the *.nc files that were generated
     
+
+def test_read_standard_arrays(model):
+    """ tests the data returned by read_standard_arrays is correct """
+    model.rewind()
+    _run_model(model)
+        
+    # check contents of netcdf File at multiple time steps (there should only be 1!)
+    o_put = [model.outputters[outputter.id] for outputter in model.outputters if isinstance(outputter,gnome.netcdf_outputter.NetCDFOutput)][0]     
+    
+    atol=1e-5
+    rtol=0
+    
+    uncertain = False
+    for file_ in (o_put.netcdf_filename, o_put._u_netcdf_filename):
+        for step in range(model.num_time_steps):
+            scp = model._cache.load_timestep(step)
+            nc_data = gnome.netcdf_outputter.NetCDFOutput.read_standard_arrays(file_, step)
+            
+            # check time
+            assert scp.LE('current_time_stamp',uncertain) == nc_data['current_time_stamp']
+            
+            # check standard variables
+            #assert np.all( scp.LE('positions',uncertain)[:,0] == nc_data['positions'] )
+            
+            assert np.allclose( scp.LE('positions',uncertain), nc_data['positions'], rtol, atol)
+            assert np.all( scp.LE('spill_num',uncertain)[:] == nc_data['spill_num'] )
+            assert np.all( scp.LE('status_codes',uncertain)[:] == nc_data['status_codes'] )
+            
+            # flag variable is not currently set or checked
+            if 'mass' in scp.LE_data:
+                assert np.all( scp.LE('mass',uncertain)[:] == nc_data['mass'] )
+                
+            if 'age' in scp.LE_data:
+                assert np.all( scp.LE('age',uncertain)[:] == nc_data['age'] )
+        
+        print "data in model matches output in {0}".format(file_)
+            
+        # 2nd time around, we are looking at uncertain filename so toggle uncertain flag
+        uncertain = True
+        
         
 def _run_model(model):
     """ helper function """

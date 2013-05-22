@@ -405,3 +405,57 @@ class NetCDFOutput(Outputter, serializable.Serializable):
             
         self._middle_of_run = False
         self._start_idx = 0
+
+
+    @staticmethod
+    def read_standard_arrays(netcdf_file,index=0):
+        """ 
+        Read and create standard data arrays for a netcdf file that was created with NetCDFOutput class. Make it a static method
+        since it is indepenedent of an instance of the Outputter. The method is put with this class because the NetCDF
+        functionality for PyGnome data with CF standard is captured here.
+        
+        :param netcdf_file: Name of the NetCDF file from which to read the data
+        :type netcdf_file: str
+        :param index: Index of the 'time' variable (or time_step) for which data is desired. Default is 0 so it returns data associated with first timestamp.
+        :type index: int
+        :returns: a dict containing 'positions', 'status_codes', 'spill_num'. Currently, this is standard data.
+        
+        Standard data arrays are numpy arrays of size N, where N is number of particles released at time step of interest:
+            'timestamp'    : datetime object associated with this data 
+            'positions'    : NX3 array. Corresponds with NetCDF variables 'longitude', 'latitude', 'depth'
+            'status_codes' : NX1 array. Corresponds with NetCDF variable 'status'
+            'spill_num'    : NX1 array. Corresponds with NetCDF variable 'id'
+        """
+        
+        if not os.path.exists(netcdf_file):
+            raise IOError("File not found: {0}".format(netcdf_file))
+        
+        arrays_dict = dict()
+        data = nc.Dataset(netcdf_file)
+        
+        _start_ix = 0
+        for idx in range(index):
+            _start_ix += data.variables['particle_count'][idx]
+            
+        _stop_ix = _start_ix + data.variables['particle_count'][index]
+        elem = data.variables['particle_count'][index]
+        
+        time_ = data.variables['time']
+        c_time = nc.num2date(time_[index], time_.units, calendar=time_.calendar)
+        arrays_dict['current_time_stamp'] = np.array(c_time)
+        
+        positions = np.zeros((elem, 3), dtype=gnome.basic_types.world_point_type)
+        status_codes = np.zeros((elem,), dtype=gnome.basic_types.status_code_type)
+        spill_num = np.zeros((elem,), dtype=gnome.basic_types.id_type) 
+        
+        positions[:,0] = data.variables['longitude'][_start_ix:_stop_ix]
+        positions[:,1] = data.variables['latitude'][_start_ix:_stop_ix]
+        positions[:,2] = data.variables['depth'][_start_ix:_stop_ix]
+        status_codes[:] = data.variables['status'][_start_ix:_stop_ix]
+        spill_num[:] = data.variables['id'][_start_ix:_stop_ix]
+                
+        arrays_dict['positions'] = positions
+        arrays_dict['status_codes'] = status_codes
+        arrays_dict['spill_num'] = spill_num
+        
+        return arrays_dict
