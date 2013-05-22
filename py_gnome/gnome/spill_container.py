@@ -80,6 +80,30 @@ class SpillContainerData(object):
                     
         self._data_arrays[data_name] = array
 
+    def __eq__(self,other):
+        """ 
+        Compare two SpillContanerData objects
+        """
+        if type(self) != type(other):
+            return False
+        
+        if len(self.__dict__) != len(other.__dict__):
+            return False
+        
+        # check key/val that are not dicts
+        val_is_dict = []
+        for key, val in self.__dict__.iteritems():
+            """ compare dict not including _data_arrays """
+            if isinstance(val, dict):
+                val_is_dict.append(key)
+                
+            elif val != other.__dict__[key]:
+                return False
+            
+        # check key, val that are dicts
+        
+                
+
     @property
     def num_elements(self):
         """
