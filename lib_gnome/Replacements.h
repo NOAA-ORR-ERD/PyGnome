@@ -25,7 +25,7 @@
 //#include "CATSMover3D_c.h"
 //#include "TriCurMover_c.h"	// probably don't want to use this
 #include "TriGridVel_c.h"
-#include "RectGridVel_c.h"
+#include "RectGridVeL_c.h"
 #include "TideCurCycleMover_c.h"	// this will be part of gridcurrent mover
 #include "Weatherer_c.h"
 //#include "OSSMWeatherer_c.h"	// may want to add this eventually

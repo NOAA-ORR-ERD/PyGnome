@@ -3,7 +3,7 @@
 #define __CMAP__
 
 //#include	"CMyApp.h"
-#include	"CMyList.h"  //JLM
+#include	"CMYLIST.H"  //JLM
 
 #include	"MapUtils.h"
 
