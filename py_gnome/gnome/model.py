@@ -12,7 +12,7 @@ import gnome.utilities.cache
 from gnome.utilities.time_utils import round_time
 from gnome.utilities.orderedcollection import OrderedCollection
 from gnome.environment import Environment, Wind
-from gnome.movers import Mover, WindMover, CatsMover
+from gnome.movers import Mover, WindMover#, CatsMover
 from gnome.spill_container import SpillContainerPair
 from gnome.utilities import serializable
 
@@ -366,7 +366,9 @@ class Model(serializable.Serializable):
             if obj_added.wind.id not in self.environment:
                 self.environment += obj_added.wind
                 
-        if isinstance(obj_added, CatsMover):
-            if obj_added.tide is not None and obj_added.tide.id not in self.environment:
-                    self.environment += obj_added.tide
+        #=======================================================================
+        # if isinstance(obj_added, CatsMover):
+        #    if obj_added.tide is not None and obj_added.tide.id not in self.environment:
+        #            self.environment += obj_added.tide
+        #=======================================================================
         

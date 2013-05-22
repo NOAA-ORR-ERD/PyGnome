@@ -4,7 +4,7 @@ import numpy as np
 from gnome import basic_types
 
 # following exist in gnome.cy_gnome 
-from movers cimport WindMover_c,Mover_c
+from movers cimport WindMover_c#,Mover_c
 from type_defs cimport WorldPoint3D, LEWindUncertainRec, LEStatus, LEType, OSErr, Seconds, VelocityRec
 cimport cy_mover,cy_ossm_time
 
@@ -12,11 +12,11 @@ cimport cy_mover,cy_ossm_time
 Dynamic casts are not currently supported in Cython - define it here instead.
 Since this function is custom for each mover, just keep it with the definition for each mover
 """
-cdef extern from *:
-    WindMover_c* dynamic_cast_ptr "dynamic_cast<WindMover_c *>" (Mover_c *) except NULL
+#cdef extern from *:
+#    WindMover_c* dynamic_cast_ptr "dynamic_cast<WindMover_c *>" (Mover_c *) except NULL
 
 
-cdef class CyWindMover(cy_mover.CyMover):
+cdef class CyWindMover(object):
     """
     Cython wrapper for C++ WindMover_c object. It derives from cy_mover.CyMover base class
     which defines default functionality for some methods
@@ -28,12 +28,14 @@ cdef class CyWindMover(cy_mover.CyMover):
         create a new WindMover_c() and also do a dynamic cast of member variable 'self.mover' to WindMover_c
         so all members of WindMover_c are available to this class
         """
-        self.mover = new WindMover_c()
-        self.wind = dynamic_cast_ptr(self.mover)
+        self.wind = new WindMover_c()
+        #self.mover = new WindMover_c()
+        #self.wind = dynamic_cast_ptr(self.mover)
         
     def __dealloc__(self):
-        del self.mover  # since this is allocated in this class, free memory here as well
-        self.wind = NULL
+        del self.wind
+        #del self.mover  # since this is allocated in this class, free memory here as well
+        #self.wind = NULL
     
     def __init__(self, uncertain_duration=10800, uncertain_time_delay=0,
                  uncertain_speed_scale=2, uncertain_angle_scale=0.4):
@@ -200,3 +202,41 @@ cdef class CyWindMover(cy_mover.CyMover):
                 raise ValueError
         
         return vel_rec
+    
+    def prepare_for_model_run(self):
+        """
+        default implementation. It calls the C++ objects's PrepareForModelRun() method
+        """
+        if self.wind:
+            self.wind.PrepareForModelRun()
+    
+    def prepare_for_model_step(self, model_time, step_len, numSets=0, cnp.ndarray[cnp.npy_int] setSizes=None):
+        """
+        .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
+        
+        prepares the mover for time step, calls the underlying C++ mover objects PrepareForModelStep(..)
+        
+        :param model_time: current model time.
+        :param step_len: length of the time step over which the get move will be computed
+        """
+        cdef OSErr err
+        if self.wind:
+            if numSets == 0:
+                err = self.wind.PrepareForModelStep(model_time, step_len, False, 0, NULL)
+            else:
+                err = self.wind.PrepareForModelStep(model_time, step_len, True, numSets, <int *>&setSizes[0])
+                
+            if err != 0:
+                """
+                For now just raise an OSError - until the types of possible errors are defined and enumerated
+                """
+                raise OSError("PrepareForModelStep returned an error: {0}".format(err))
+        
+    def model_step_is_done(self):
+        """
+        .. function:: model_step_is_done()
+        
+        Default call to C++ ModelStepIsDone method
+        """
+        if self.wind:
+            self.wind.ModelStepIsDone()
