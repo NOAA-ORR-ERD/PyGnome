@@ -73,18 +73,11 @@ define([
             var _this = this;
             _.bindAll(this);
 
-            this.setNewViewport = _.debounce(this.setNewViewport, 100);
-
             this.mapEl = this.options.mapEl;
-            this.frameClass = this.options.frameClass;
-            this.activeFrameClass = this.options.activeFrameClass;
             this.placeholderClass = this.options.placeholderClass;
-            this.latLongBounds = this.options.latLongBounds;
             this.animationThreshold = this.options.animationThreshold;
-            this.locationFilesMeta = this.options.locationFilesMeta;
             this.renderer = this.options.renderer;
             this.canDrawSpill = false;
-            this.resizingBeganAt = null;
 
             this.makeImagesClickable();
 
@@ -122,16 +115,17 @@ define([
                 crs: L.CRS.EPSG4326,
                 minZoom: 9,
                 worldCopyJump: false,
-                attribution: false
+                attribution: false,
+                inertia: false
             });
 
-            this.leafletMap.on('zoomend', function() {
+            this.leafletMap.on('zoomend', _.debounce(function() {
                 _this.setNewViewport();
-            });
+            }, 400));
 
-            this.leafletMap.on('dragend', function() {
+            this.leafletMap.on('dragend', _.debounce(function() {
                 _this.setNewViewport();
-            });
+            }, 300));
 
             this.leafletMap.on('mousemove', function(event) {
                 _this.updateCoordinates(event.latlng);
@@ -394,36 +388,6 @@ define([
 
         getImageForTimeStep: function(stepNum) {
             return $('img[data-id="' + (stepNum) + '"]');
-        },
-
-        /*
-         Show the image for time step with ID `stepNum`.
-
-         Triggers:
-            - `MapView.FRAME_CHANGED` after the image has loaded.
-         */
-        showImageForTimeStep: function(stepNum) {
-            var mapImages = this.map.find('img');
-            var stepImage = this.getImageForTimeStep(stepNum);
-
-            // The image isn't loaded.
-            if (stepImage.length === 0) {
-                alert("An animation error occurred.");
-                console.log('Could not load image for timestep: ' + stepNum);
-                return;
-            }
-
-            var imagesToHide = mapImages.not(stepImage).not('.background');
-
-            // Hide all images in the map div other than the background and the
-            // image for the current step.
-            imagesToHide.addClass('hidden');
-            imagesToHide.removeClass(this.activeFrameClass);
-
-            stepImage.addClass(this.activeFrameClass);
-            stepImage.removeClass('hidden');
-
-            this.trigger(MapView.FRAME_CHANGED);
         },
 
         /*
