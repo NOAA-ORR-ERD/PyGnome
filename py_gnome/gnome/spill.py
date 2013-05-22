@@ -39,6 +39,26 @@ class ArrayType(object):#,serializable.Serializable):
         self.dtype = dtype
         self.initial_value = initial_value
 
+    def __eq__(self, other):
+        """" Equality of two ArrayType objects """
+        if not isinstance(other, self.__class__):
+            return False
+        
+        if len(self.__dict__) != len(other.__dict__):   
+            return False
+        
+        for key,val in self.__dict__.iteritems():
+             if key not in other.__dict__:
+                 return False
+             
+             elif val != other.__dict__[key]:
+                 return False
+             
+        # everything passed, then they must be equal
+        return True
+                 
+        
+    
 
 class Spill(object):
     """
