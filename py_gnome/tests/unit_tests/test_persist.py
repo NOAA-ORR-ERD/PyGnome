@@ -109,12 +109,15 @@ def make_model():
 
 def test_save_load_scenario(saveloc):
     model = make_model()
+    model.step()
     print "saving scnario .."
     scene = scenario.Scenario(saveloc, model)
     scene.save()
     scene.model = None   # make it none - load from persistence
     print "loading scenario .."
     model2 = scene.load()
-    #model2 = scene.model
     
     assert model == model2
+    
+    model.rewind()
+    assert model != scene.model
