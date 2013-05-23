@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/Hazpy/!svn/ver/190/trunk/lib/hazpy/sitestats/tests
+END
+test_logger.py
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/Hazpy/!svn/ver/190/trunk/lib/hazpy/sitestats/tests/test_logger.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/Hazpy/!svn/ver/190/trunk/lib/hazpy/sitestats/tests/__init__.py
+END

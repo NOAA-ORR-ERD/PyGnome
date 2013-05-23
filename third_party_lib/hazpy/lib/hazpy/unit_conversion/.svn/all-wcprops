@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/Hazpy/!svn/ver/206/trunk/lib/hazpy/unit_conversion
+END
+unit_data.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/Hazpy/!svn/ver/206/trunk/lib/hazpy/unit_conversion/unit_data.py
+END
+test_lat_long.py
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/Hazpy/!svn/ver/139/trunk/lib/hazpy/unit_conversion/test_lat_long.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/Hazpy/!svn/ver/6/trunk/lib/hazpy/unit_conversion/__init__.py
+END
+lat_long.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/Hazpy/!svn/ver/139/trunk/lib/hazpy/unit_conversion/lat_long.py
+END
+test_unit_conversion.py
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/Hazpy/!svn/ver/203/trunk/lib/hazpy/unit_conversion/test_unit_conversion.py
+END
+unit_conversion.py
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/Hazpy/!svn/ver/203/trunk/lib/hazpy/unit_conversion/unit_conversion.py
+END
+run_tests.py
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/Hazpy/!svn/ver/132/trunk/lib/hazpy/unit_conversion/run_tests.py
+END

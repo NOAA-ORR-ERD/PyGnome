@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 33
+/svn/Hazpy/!svn/ver/214/trunk/bin
+END
+unicode-name
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/Hazpy/!svn/ver/140/trunk/bin/unicode-name
+END
+csv-field-lengths.py
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/Hazpy/!svn/ver/176/trunk/bin/csv-field-lengths.py
+END
+rlink_migrate_entries.py
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/Hazpy/!svn/ver/33/trunk/bin/rlink_migrate_entries.py
+END
+rowcount.py
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/Hazpy/!svn/ver/178/trunk/bin/rowcount.py
+END
+count_sql_records
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/Hazpy/!svn/ver/214/trunk/bin/count_sql_records
+END
+python-version.py
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/Hazpy/!svn/ver/150/trunk/bin/python-version.py
+END
+dump_csv_fields.py
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/Hazpy/!svn/ver/18/trunk/bin/dump_csv_fields.py
+END
+tab-delim-to-csv.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/Hazpy/!svn/ver/18/trunk/bin/tab-delim-to-csv.py
+END

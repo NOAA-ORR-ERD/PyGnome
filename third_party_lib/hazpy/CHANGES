@@ -1,0 +1,45 @@
+XX.XX (XXXX-XX-XX)
+------------------
+- CAMEO Chemicals 2.3 (rev 3146) includes 'constants' module. 
+  'hazpy.cameo_chemicals' is now only used with CAMEO Chemicals 2.2, and will
+  be deleted when that version is retired.
+
+1.7 (2012-07-09)
+----------------
+- Update CAMEO Chemicals constants.
+
+1.6 (201206-19)
+---------------
+- Update NOAA LDAP site certificates.
+
+1.5 (2012-04-18)
+----------------
+- Change ``MultiText`` base type to Unicode. Delete ``MultiString`` subclass.
+
+1.4 (2-12-04-13)
+----------------
+- Add ``DUPONT_FABRICS`` to CAMEO Chemicals constants.
+
+1.3 (2011-10-21)
+----------------
+- revision #196: model, logger, and maintenance script are debugged.
+- Revamp site statistics model.
+- Delete unused sitestats modules: common, legacy_cameo_extra,
+  legacy_import_csv. 
+- 'count_sql_records' script to summarize the record count of all tables in
+  any SQL databse.
+- ``SALogger`` is a Python logger proxy that can be temporarily disabled. This
+  is useful for logging SQL commands except for those which insert a lot of
+  data. In the ``hazpy.sqlalchemy_util`` module.
+
+1.2 (2011-08-26)
+----------------
+- Add special CAMEO Chemicals placard for UN/NA 1005.
+
+1.1 (2011-06-09)
+----------------
+- New functions: hazpy.sqlalchemy_util.iter_instrumented_attrs
+
+1.0 (2011-05-17)
+----------------
+- Release current version as 1.0.

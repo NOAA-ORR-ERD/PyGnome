@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/Hazpy/!svn/ver/204/trunk/scripts
+END
+MapGenSample.dat
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/Hazpy/!svn/ver/204/trunk/scripts/MapGenSample.dat
+END
+MapGen2BNA.py
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/Hazpy/!svn/ver/204/trunk/scripts/MapGen2BNA.py
+END
+Poly2Verdat.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/Hazpy/!svn/ver/181/trunk/scripts/Poly2Verdat.py
+END
+Verdat2Poly.py
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/Hazpy/!svn/ver/181/trunk/scripts/Verdat2Poly.py
+END
+thin_bna.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/Hazpy/!svn/ver/182/trunk/scripts/thin_bna.py
+END
