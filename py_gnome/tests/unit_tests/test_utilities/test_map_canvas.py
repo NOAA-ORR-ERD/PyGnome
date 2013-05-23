@@ -14,13 +14,15 @@ from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
 import gnome.utilities.geometry.polygons
 
-datadir = os.path.join(os.path.dirname(__file__), r"../SampleData")
+basedir = os.path.dirname(__file__)
+datadir = os.path.join(basedir, r"../SampleData")
 
 def test_render():
     """
     tests the ability to render a basemap from a bna
     """
-    map_canvas.make_map(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "map_sample.png")
+    map_canvas.make_map(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), 
+                        os.path.join(basedir,"map_sample.png"))
 
     assert True
 
@@ -45,7 +47,7 @@ def test_basemap_square():
     set.append(p1)
     map = map_canvas.MapCanvas((300, 300), land_polygons=set)
     map.draw_background()
-    map.save_background("background_square.png")
+    map.save_background(os.path.join(basedir,"background_square.png"))
     assert True
 
 def test_basemap_square2():
@@ -55,7 +57,7 @@ def test_basemap_square2():
     set.append(p1)
     map = map_canvas.MapCanvas((100, 300), set)
     map.draw_background()
-    map.save_background("background_square2.png")
+    map.save_background(os.path.join(basedir,"background_square2.png"))
     assert True
 
 def test_basemap_square3():
@@ -66,7 +68,7 @@ def test_basemap_square3():
     set.append(p1)
     map = map_canvas.MapCanvas((300, 100), land_polygons=set)
     map.draw_background()
-    map.save_background("background_square3.png")
+    map.save_background(os.path.join(basedir,"background_square3.png"))
     assert True
 
 
@@ -74,30 +76,14 @@ def test_basemap():
     polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
     map = map_canvas.MapCanvas((400, 800), polygons)
     map.draw_background()
-    map.save_background("background1.png")
+    map.save_background(os.path.join(basedir,"background1.png"))
     assert True
 
 def test_basemap_wide():
     polygons = haz_files.ReadBNA(os.path.join(datadir, 'MapBounds_2Spillable2Islands2Lakes.bna'), "PolygonSet")
     map = map_canvas.MapCanvas((800, 400), polygons)
     map.draw_background()
-    map.save_background("background2.png")
+    map.save_background(os.path.join(basedir,"background2.png"))
     
     assert True
 
-def test_MapCanvasfromBNA_new_from_dict():
-    """
-    test create new object from to_dict
-    """
-    map = map_canvas.MapCanvasFromBNA( (800,600), os.path.join(datadir, "Mapbounds_Island.bna"))
-    map2 = map.new_from_dict( map.to_dict('create'))
-    assert map == map2
-    
-# def test_MapCanvasfromBNA_from_dict():
-#     map = map_canvas.MapCanvasFromBNA( (800,600), os.path.join(datadir, "Mapbounds_Island.bna"))
-    
-#     dict_ = map.to_dict()
-#     dict_['viewport'] = ((-10, -10),(10,10))
-    
-#     map.from_dict(dict_)
-#     assert map.viewport == dict_['viewport']

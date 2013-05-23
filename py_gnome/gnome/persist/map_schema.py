@@ -29,18 +29,4 @@ class GnomeMap(base_schema.Id, MappingSchema):
 class MapFromBNA(GnomeMap):    
     filename = SchemaNode(String() )
     refloat_halflife = SchemaNode( Float() )
-
-"""
-Schemas for gnome output_map classes (map_canvas.py module) used for display
-
-Now deprecated. Added the notion of outputters to the model. The Renderer object
-is used instead of MapCanvasFromBNA for making images. It has has more methods.
-"""   
-class MapCanvasFromBNA(base_schema.Id, MappingSchema):
-    viewport = base_schema.LongLatBounds()  # not sure if bounding box needs defintion separate from LongLatBounds
-    
-    # following are only used when creating objects, not updating - so missing=drop
-    filename = SchemaNode(String(), missing=drop)
-    projection_class = SchemaNode(String(), missing=drop) 
-    image_size= base_schema.ImageSize(missing=drop)
     

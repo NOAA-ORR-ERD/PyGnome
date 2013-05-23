@@ -87,9 +87,13 @@ cdef class CyOSSMTime(object):
         def __set__(self, value):
             self._set_time_value_handle(value)
     
+#     property filename:
+#         def __get__(self):
+#             return <bytes>self.time_dep.fileName
+# 
     property filename:
         def __get__(self):
-            return <bytes>self.time_dep.fileName
+            return <bytes>self.time_dep.filePath
 
     property scale_factor:
         def __get__(self):
@@ -164,6 +168,7 @@ cdef class CyOSSMTime(object):
             Make this private since the constructor will likely call this when object is instantiated
         """        
         cdef bytes file_
+        filename = os.path.normpath(filename)
         file_ = to_bytes(unicode(filename))
         err = self.time_dep.ReadTimeValues( file_, file_contains, user_units)
         

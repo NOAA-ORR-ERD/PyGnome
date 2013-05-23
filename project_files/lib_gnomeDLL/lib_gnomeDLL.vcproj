@@ -253,6 +253,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\lib_gnome\RandomVertical_c.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\lib_gnome\RectGridVeL_c.cpp"
 				>
 			</File>

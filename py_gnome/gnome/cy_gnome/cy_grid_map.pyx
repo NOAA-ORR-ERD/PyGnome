@@ -1,8 +1,10 @@
 cimport numpy as cnp
 import numpy as np
+import os
 
 from type_defs cimport *
 from movers cimport GridMap_c
+from gnome.cy_gnome.cy_helpers cimport to_bytes
 #cimport cy_mover
 
 cdef class CyGridMap:
@@ -23,6 +25,8 @@ cdef class CyGridMap:
         
         """
         cdef OSErr err
+        grid_map_file = os.path.normpath(grid_map_file)
+        grid_map_file = to_bytes( unicode(grid_map_file))
         err = self.map.TextRead(grid_map_file)
         if err != 0:
             """
@@ -41,6 +45,8 @@ cdef class CyGridMap:
         
         """
         cdef OSErr err
+        topology_file = os.path.normpath(topology_file)
+        topology_file = to_bytes( unicode(topology_file))
         err = self.map.ExportTopology(topology_file)
         if err != 0:
             """

@@ -2,6 +2,16 @@
 
 """
 a simple script to run GNOME
+
+This one uses:
+
+  - the GeoProjection
+  - wind mover
+  - random mover
+  - cats shio mover
+  - cats ossm mover
+  - plain cats mover 
+
 """
 
 
@@ -18,6 +28,7 @@ from gnome.environment import Wind, Tide
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
 from gnome.persist import scenario
+from gnome import scripting
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -33,7 +44,8 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     renderer = gnome.renderer.Renderer(mapfile,
                                        images_dir,
-                                       size=(800, 600))
+                                       size=(800, 800),
+                                       projection_class=gnome.utilities.projections.GeoProjection)
     
     
     print "initializing the model"
@@ -47,6 +59,10 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding outputters"
     model.outputters += renderer
+    
+    netcdf_file = os.path.join(base_dir,'script_boston.nc')
+    scripting.remove_netcdf(netcdf_file)
+    model.outputters += gnome.netcdf_outputter.NetCDFOutput(netcdf_file, all_data=True)
     
     print  "adding a RandomMover:"
     model.movers += gnome.movers.RandomMover(diffusion_coef=100000)
@@ -104,6 +120,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     spill = gnome.spill.SurfaceReleaseSpill(num_elements=1000,
                                             start_position = (-70.911432, 42.369142, 0.0),
                                             release_time = start_time,
+                                            end_release_time = start_time + timedelta(hours=12),
                                             )
     
     model.spills += spill

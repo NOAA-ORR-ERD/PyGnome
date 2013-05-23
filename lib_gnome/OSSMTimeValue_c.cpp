@@ -29,6 +29,7 @@ using namespace std;
 OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(nil)
 { 
 	fileName[0]=0;
+	filePath[0]=0;
 	timeValues = 0;
 	fUserUnits = kUndefined;
 	fFileType = OSSMTIMEFILE;
@@ -50,6 +51,7 @@ OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(nil)
 OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner) 
 { 
 	fileName[0]=0;
+	filePath[0]=0;
 	timeValues = 0;
 	fUserUnits = kUndefined; 
 	fFileType = OSSMTIMEFILE;
@@ -686,18 +688,25 @@ OSErr OSSMTimeValue_c::ReadTimeValues (char *path, short format, short unitsIfKn
 	long numDataLines;
 	long numHeaderLines = 0;
 	Boolean dataInGMT = FALSE;
+	char errmsg[256];
 	
 	if (err = TimeValue_c::InitTimeFunc()) return err;
 	
 	timeValues = 0;
 	this->fileName[0] = 0;
+	this->filePath[0] = 0;
 	
 	if (!path) return 0;
 	
 	strcpy(s, path);
-	
+	strcpy(this->filePath,path);
+#ifndef pyGNOME
 	SplitPathFile(s, this->fileName);
-	
+#else
+	SplitPathFileName (s, this->fileName);	// this gives filename but tests expect full path
+	//strcpy(this->fileName, path); // for now use full path
+#endif
+
 	//////////////////////////////////////////
 	///**/ paramtext(fileName, "", "", ""); /**/
 	//////////////////////////////////////////

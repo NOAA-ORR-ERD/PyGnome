@@ -26,6 +26,7 @@ public:
 	
 	TimeValuePairH			timeValues;
 	char 					fileName [kMaxNameLen];
+	char 					filePath [kMaxNameLen];
 	short					fFileType; //JLM
 	short					fUserUnits; //JLM
 	double					fScaleFactor; // user input for scaling height derivatives or hydrology files

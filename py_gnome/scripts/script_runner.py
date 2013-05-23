@@ -19,7 +19,7 @@ from gnome.environment import Wind, Tide
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
 from gnome.persist import scenario
-
+from gnome import scripting
 
 def run(model):
     
@@ -57,6 +57,9 @@ def run_from_save(saveloc):
         raise ValueError("{0} does not appear to be a valid directory".format(saveloc))
     sc = scenario.Scenario(saveloc)
     sc.load()
+    
+    sc.model.rewind()
+                
     run( sc.model)
     
 
@@ -89,14 +92,11 @@ def parse_args(argv):
     
     return args
 
-def load_model(location,images_dir):
+def load_model(location, images_dir):
     #import ipdb; ipdb.set_trace()
     dir_name, filename = os.path.split(location)
-    
-    if os.path.isdir(images_dir):
-        shutil.rmtree(images_dir)
-    os.mkdir(images_dir)
-    
+
+    scripting.make_images_dir(images_dir)
     imp_script = imp.load_source(filename.rstrip('.py'),location) 
     model = imp_script.make_model(images_dir)
     return (model,imp_script)
@@ -111,7 +111,7 @@ if __name__=="__main__":
             raise ValueError("{0} is not a file - provide a python script if action is to 'run' or 'save' model".format(args.location))
         
         model, imp_script = load_model(args.location, args.images)
-                
+        
     if args.do == 'run':
         run(model)
         try:

@@ -10,6 +10,7 @@ from colander import (
     Float,
     drop,
     Int,
+    Bool,
     )
 
 import gnome
@@ -26,3 +27,11 @@ class Renderer(base_schema.Id, MappingSchema):
     projection_class = SchemaNode(String(), missing=drop) 
     image_size= base_schema.ImageSize(missing=drop)
     images_dir= SchemaNode( String() )
+
+class NetCDFOutput(base_schema.Id, MappingSchema):
+    netcdf_filename = SchemaNode(String(), missing=drop)
+    all_data = SchemaNode(Bool(), missing=drop)
+    format = SchemaNode(String(), missing=drop)
+    compress = SchemaNode(Bool(), missing=drop)
+    _start_idx = SchemaNode(Int(), missing=drop)
+    _middle_of_run = SchemaNode(Bool(), missing=drop)

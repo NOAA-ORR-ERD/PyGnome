@@ -80,7 +80,8 @@ class TestGridCurrentMover():
         """
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = os.path.join(here, r'SampleData/currents/test.cdf')
+        #time_grid_file = os.path.join(here, r'SampleData/currents/test.cdf')
+        time_grid_file = os.path.join(here, r'SampleData',r'currents',r'test.cdf')
         
         
         #topology_file = r"SampleData/currents/NYTopology.dat"	# will want a null default
@@ -106,8 +107,10 @@ class TestGridCurrentMover():
         """
         time = datetime.datetime(2008, 1, 29, 17)
         self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = os.path.join(here, r'SampleData/currents/ny_cg.nc')
-        topology_file = os.path.join(here, r'SampleData/currents/NYTopology.dat')
+        #time_grid_file = os.path.join(here, r'SampleData/currents/ny_cg.nc')
+        #topology_file = os.path.join(here, r'SampleData/currents/NYTopology.dat')
+        time_grid_file = os.path.join(here, r'SampleData',r'currents',r'ny_cg.nc')
+        topology_file = os.path.join(here, r'SampleData',r'currents',r'NYTopology.dat')
 
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-74.03988) #for NY
@@ -130,8 +133,10 @@ class TestGridCurrentMover():
         time = datetime.datetime(2009, 8, 9, 0) #second file
         self.cm.model_time = time_utils.date_to_sec(time)
         #time_grid_file = r"SampleData/currents/file_series/flist1.txt"
-        time_grid_file = os.path.join(here, r'SampleData/currents/file_series/flist2.txt')
-        topology_file = os.path.join(here, r'SampleData/currents/file_series/HiROMSTopology.dat')
+        #time_grid_file = os.path.join(here, r'SampleData/currents/file_series/flist2.txt')
+        #topology_file = os.path.join(here, r'SampleData/currents/file_series/HiROMSTopology.dat')
+        time_grid_file = os.path.join(here, r'SampleData',r'currents',r'file_series',r'flist2.txt')
+        topology_file = os.path.join(here, r'SampleData',r'currents',r'file_series',r'HiROMSTopology.dat')
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-157.795728) #for HiROMS
         self.cm.ref[:]['lat'] = (21.069288)
@@ -153,8 +158,10 @@ class TestGridCurrentMover():
         """
         time = datetime.datetime(2004, 12, 31, 13)
         self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = os.path.join(here, r'SampleData/currents/ChesBay.nc')
-        topology_file = os.path.join(here, r'SampleData/currents/ChesBay.dat')
+        #time_grid_file = os.path.join(here, r'SampleData/currents/ChesBay.nc')
+        #topology_file = os.path.join(here, r'SampleData/currents/ChesBay.dat')
+        time_grid_file = os.path.join(here, r'SampleData',r'currents',r'ChesBay.nc')
+        topology_file = os.path.join(here, r'SampleData',r'currents',r'ChesBay.dat')
         
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-76.149368) #for ChesBay
@@ -175,7 +182,8 @@ class TestGridCurrentMover():
         """
         time = datetime.datetime(2000, 2, 14, 10)
         self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = os.path.join(here, r'SampleData/currents/ptCurNoMap.cur')
+       #time_grid_file = os.path.join(here, r'SampleData/currents/ptCurNoMap.cur')
+        time_grid_file = os.path.join(here, r'SampleData',r'currents',r'ptCurNoMap.cur')
         #topology_file = r"SampleData/currents/ChesBay.dat"	
         topology_file = r""	
         self.gcm.text_read(time_grid_file,topology_file)
@@ -197,7 +205,8 @@ class TestGridCurrentMover():
         """
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = os.path.join(here, r'SampleData/currents/gridcur_ts.cur')
+        #time_grid_file = os.path.join(here, r'SampleData/currents/gridcur_ts.cur')
+        time_grid_file = os.path.join(here, r'SampleData',r'currents',r'gridcur_ts.cur')
         #topology_file = r"SampleData/currents/ChesBay.dat"	
         topology_file = r""	
         self.gcm.text_read(time_grid_file,topology_file)
@@ -221,7 +230,8 @@ class TestGridCurrentMover():
         """
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = os.path.join(here, r'SampleData/currents/gridcur_ts_hdr2.cur')
+        #time_grid_file = os.path.join(here, r'SampleData/currents/gridcur_ts_hdr2.cur')
+        time_grid_file = os.path.join(here, r'SampleData',r'currents',r'gridcur_ts_hdr2.cur')
         #topology_file = r"SampleData/currents/ChesBay.dat"	
         topology_file = r""	
         self.gcm.text_read(time_grid_file,topology_file)

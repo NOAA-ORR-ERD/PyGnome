@@ -9,16 +9,11 @@
 
 #include "Mover_c.h"
 
-#ifdef MAC
-#ifdef MPW
-#pragma SEGMENT MOVER_C
-#endif
-#endif
+//#ifdef pyGNOME
+//#define TMap Map_c
+//#endif
 
-#ifdef pyGNOME
-#define TMap Map_c
-#endif
-
+#ifndef pyGNOME
 Mover_c::Mover_c(TMap *owner, char *name)
 {
 	SetMoverName(name);
@@ -30,10 +25,19 @@ Mover_c::Mover_c(TMap *owner, char *name)
 	fUncertainStartTime = 0;
 	fDuration = 0; // JLM 9/18/98
 	fTimeUncertaintyWasSet = 0;// JLM 9/18/98
-#ifndef pyGNOME
 	fColor = colors[PURPLE];	// default to draw arrows in purple
-#endif
 }
+#endif
+
+Mover_c::Mover_c()
+{	
+	bActive = true;
+	bOpen = false; //won't need this for pyGNOME
+	fUncertainStartTime = 0;
+	fDuration = 0; // JLM 9/18/98
+	fTimeUncertaintyWasSet = 0;// JLM 9/18/98
+}
+
 
 
 Mover_c::~Mover_c()
@@ -56,4 +60,4 @@ WorldPoint3D Mover_c::GetMove (const Seconds& model_time, Seconds timeStep,long 
 	return theLE3D;
 }
 
-#undef TMap
+//#undef TMap

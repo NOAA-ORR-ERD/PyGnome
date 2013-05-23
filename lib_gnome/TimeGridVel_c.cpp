@@ -665,7 +665,7 @@ OSErr TimeGridVelRect_c::TextRead(char *path, char *topFilePath)
 	Seconds startTime, startTime2;
 	double timeConversion = 1., scale_factor = 1.;
 	char errmsg[256] = "";
-	char fileName[64],s[256],*modelTypeStr=0,outPath[256];
+	char fileName[256],s[256],*modelTypeStr=0,outPath[256];
 	Boolean bStartTimeYearZero = false;
 	
 	if (!path || !path[0]) return 0;
@@ -2539,7 +2539,7 @@ OSErr TimeGridVelCurv_c::TextRead(char *path, char *topFilePath)
 	Seconds startTime, startTime2;
 	double timeConversion = 1., scale_factor = 1.;
 	char errmsg[256] = "";
-	char fileName[64],*modelTypeStr=0;
+	char fileName[256],*modelTypeStr=0;
 	Boolean isLandMask = true/*, isCoopsMask = false*/;
 	static size_t mask_index[] = {0,0};
 	static size_t mask_count[2];
@@ -5511,7 +5511,7 @@ OSErr TimeGridVelTri_c::TextRead(char *path, char *topFilePath)
 	Seconds startTime, startTime2;
 	double timeConversion = 1., scale_factor = 1.;
 	char errmsg[256] = "";
-	char fileName[64],s[256],topPath[256], outPath[256];
+	char fileName[256],s[256],topPath[256], outPath[256];
 	
 	char *modelTypeStr=0;
 	Boolean bTopInfoInFile = false, isCCW = true;
@@ -8197,8 +8197,11 @@ OSErr TimeGridCurTri_c::ReadHeaderLine(char *s)
 			strToMatch = "[NAME]\t";
 			len = strlen(strToMatch);
 			if(!strncmp(s,strToMatch,len)) {
-				strncpy(fVar.userName,s+len,kPtCurUserNameLen);
-				fVar.userName[kPtCurUserNameLen-1] = 0;
+				//strncpy(fVar.userName,s+len,kPtCurUserNameLen);
+				//fVar.userName[kPtCurUserNameLen-1] = 0;
+				// increased the size of userName
+				strncpy(fVar.userName,s+len,kMaxNameLen);
+				fVar.userName[kMaxNameLen-1] = 0;
 				return 0; // no error
 			}
 			break;

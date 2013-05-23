@@ -6,6 +6,7 @@ import shutil
 
 import numpy as np
 import colander
+import pytest
 
 import gnome
 from gnome import movers
@@ -14,13 +15,27 @@ from gnome.persist import scenario
 """
 Define a scenario and persist it to ./test_persist/
 """
-saveloc  = './test_persist'
-datafiles= os.path.join( os.path.dirname('__file__'),'../../scripts/script_boston')
+datafiles= os.path.join( os.path.dirname(__file__),'../../scripts/script_boston')
 
-if os.path.exists(saveloc):
-    shutil.rmtree(saveloc)
-
-os.mkdir(saveloc)
+@pytest.fixture(scope="module")
+def saveloc(request):
+    saveloc_  = os.path.join( os.path.dirname(__file__),'save_model')
+    if os.path.exists(saveloc_):
+            shutil.rmtree(saveloc_)
+    os.mkdir(saveloc_)
+    
+    # Not sure we want default to delete the save_model dir 
+    # maybe good to leave as an example
+    #===========================================================================
+    # def cleanup():
+    #    print ("cleanup ..")
+    #    if os.path.exists(saveloc_):
+    #        shutil.rmtree(saveloc_)
+    #        print ("shutil.rmtree({0})".format(saveloc_))
+    # 
+    # request.addfinalizer(cleanup)
+    #===========================================================================
+    return saveloc_
 
 def make_model():
     mapfile = os.path.join( datafiles, './MassBayMap.bna')
@@ -92,7 +107,7 @@ def make_model():
     model.movers += c_mover
     return model
 
-def test_save_load_scenario():
+def test_save_load_scenario(saveloc):
     model = make_model()
     print "saving scnario .."
     scene = scenario.Scenario(saveloc, model)

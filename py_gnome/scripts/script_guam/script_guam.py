@@ -16,7 +16,7 @@ from gnome.environment import Wind, Tide
 
 from gnome.utilities import map_canvas
 from gnome.utilities.file_tools import haz_files
-
+from gnome import scripting
 
 # define base directory
 base_dir = os.path.dirname(__file__)
@@ -38,18 +38,17 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
                                      refloat_halflife=6*3600, #seconds
                                      )
     
-    ## the image output map
-    ## fixme: need an easier way to do this!
-    output_map = map_canvas.MapCanvasFromBNA((600, 800), mapfile)
-    model.output_map = output_map
+    print "adding outputters"
     
-    ## reset the viewport of the ouput map
-    ## a bit kludgy, should there be a model API to do this ?
+    renderer = gnome.renderer.Renderer(mapfile,
+                                       images_dir,
+                                       size=(800, 600))
+    renderer.viewport = ((144.6, 13.4),(144.7, 13.5)) 
+    model.outputters += renderer
     
-    ## bounding  box of viewport
-    viewport = ((144.6, 13.4),(144.7, 13.5))
-    output_map.viewport = viewport
-    
+    netcdf_file = os.path.join(base_dir,'script_guam.nc')
+    scripting.remove_netcdf(netcdf_file)
+    model.outputters += gnome.netcdf_outputter.NetCDFOutput(netcdf_file, all_data=True)
     
     print "adding a spill"
     

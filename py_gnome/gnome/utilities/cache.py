@@ -148,11 +148,11 @@ class ElementCache(object):
         except KeyError:
             # not in the recent dict: try to load from disk
             try:
-                data_arrays_dict = np.load(self._make_filename(step_num))
+                data_arrays_dict = dict( np.load(self._make_filename(step_num)) )
             except IOError:
                 raise CacheError("step: %i is not in the cache"%step_num)
             try: # look for an uncertain one:
-                u_data_arrays_dict = np.load(self._make_filename(step_num, True))
+                u_data_arrays_dict = dict( np.load(self._make_filename(step_num, True)) )
             except IOError:
                 u_data_arrays_dict = None
 

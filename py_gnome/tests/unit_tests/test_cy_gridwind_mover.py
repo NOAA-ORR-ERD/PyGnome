@@ -4,6 +4,7 @@ unit tests cython wrapper
 designed to be run with py.test
 """
 
+import os
 import numpy as np
 
 from gnome import basic_types
@@ -14,6 +15,7 @@ import datetime
 
 import pytest
 
+here = os.path.dirname(__file__)
 
 # def test_exceptions():
 #     """
@@ -81,8 +83,10 @@ class TestGridWindMover():
         """
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = r"SampleData/winds/test_wind.cdf"
-        topology_file = r"SampleData/winds/WindSpeedDirSubsetTop.DAT"	# will want a null default
+        #time_grid_file = r"SampleData/winds/test_wind.cdf"
+        time_grid_file = os.path.join(here, r'SampleData',r'winds',r'test_wind.cdf')
+        #topology_file = r"SampleData/winds/WindSpeedDirSubsetTop.DAT"	# will want a null default
+        topology_file = r""	# will want a null default
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (3.104588) #for simple example
         self.cm.ref[:]['lat'] = (52.016468)
@@ -104,8 +108,10 @@ class TestGridWindMover():
         """
         time = datetime.datetime(2006, 3, 31, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
-        time_grid_file = r"SampleData/winds/WindSpeedDirSubset.nc"
-        topology_file = r"SampleData/winds/WindSpeedDirSubsetTop.DAT"	
+        #time_grid_file = r"SampleData/winds/WindSpeedDirSubset.nc"
+        #topology_file = r"SampleData/winds/WindSpeedDirSubsetTop.DAT"	
+        time_grid_file = os.path.join(here, r'SampleData',r'winds',r'WindSpeedDirSubset.nc')
+        topology_file = os.path.join(here, r'SampleData',r'winds',r'WindSpeedDirSubsetTop.DAT')
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-122.934656) #for NWS off CA
         self.cm.ref[:]['lat'] = (38.27594)
@@ -154,8 +160,10 @@ class TestGridWindMover():
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = time_utils.date_to_sec(time) 
         #time_grid_file = r"SampleData/winds/gridWindTime.wnd"
-        time_grid_file = r"SampleData/winds/gridwind_ts.wnd"
-        topology_file = r"SampleData/winds/WindSpeedDirSubsetTop.DAT"	
+        #time_grid_file = r"SampleData/winds/gridwind_ts.wnd"
+        #topology_file = r"SampleData/winds/WindSpeedDirSubsetTop.DAT"	
+        time_grid_file = os.path.join(here, r'SampleData',r'winds',r'gridwind_ts.wnd')
+        topology_file = r""	# will want a null default
         self.gcm.text_read(time_grid_file,topology_file)
         #self.cm.ref[:]['long'] = (-9.936358) #for gridWind test
         #self.cm.ref[:]['lat'] = (42.801036)
