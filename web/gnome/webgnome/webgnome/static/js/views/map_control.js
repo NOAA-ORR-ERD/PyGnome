@@ -387,6 +387,11 @@ define([
         },
 
         setCachedPercentage: function(percentage) {
+            // XXX: Sometimes we get 102%. There's probably something off about
+            // the calling code.
+            if (percentage > 100) {
+                percentage = 100;
+            }
             $(this.sliderShadedEl).css('width', percentage + '%');
         },
 

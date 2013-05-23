@@ -10,7 +10,8 @@ define([
             'model': 'model',
             'splash': 'splash',
             'location_map': 'locationMap',
-            'wind/:id': 'wind'
+            'wind/:id': 'wind',
+            'spill/:id': 'spill'
         },
 
         initialize: function(options) {
@@ -45,6 +46,15 @@ define([
             return this.appView.showSection('splash-page')
         },
 
+        showForm: function(formId, objectId) {
+            this.appView.disableFullscreen();
+            this.appView.showSection('model');
+            this.appView.formViews.hideAll();
+            var formView = this.appView.formViews.get(formId);
+            formView.reload(objectId);
+            formView.show();
+        },
+
         wind: function(id) {
             var formId;
 
@@ -54,13 +64,19 @@ define([
             } else {
                 formId = 'edit-wind';
             }
+            this.showForm(formId, id);
+        },
 
-            this.appView.disableFullscreen();
-            this.appView.showSection('model');
-            this.appView.formViews.hideAll();
-            var formView = this.appView.formViews.get(formId);
-            formView.reload(id);
-            formView.show();
+        spill: function(id) {
+            var formId;
+
+            if (id === 'new') {
+                id = null;
+                formId = 'add-surface-release-spill';
+            } else {
+                formId = 'edit-surface-release-spill';
+            }
+            this.showForm(formId, id);
         }
     });
 

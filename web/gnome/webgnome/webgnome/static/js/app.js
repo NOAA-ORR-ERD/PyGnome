@@ -70,11 +70,13 @@ define([
                 frameClass: 'frame',
                 activeFrameClass: 'active',
                 stepGenerator: this.stepGenerator,
+                surfaceReleaseSpills: this.surfaceReleaseSpills,
                 renderer: this.renderer,
                 model: this.map,
                 animationThreshold: this.options.animationThreshold,
                 newModel: this.options.newModel,
-                state: this.state
+                state: this.state,
+                router: this.router
             });
 
             this.mapControlView = new views.MapControlView({
@@ -130,9 +132,6 @@ define([
             this.stepGenerator.on(models.StepGenerator.SERVER_RESET, this.rewind);
 
             this.surfaceReleaseSpills.on("sync", this.spillUpdated);
-            this.surfaceReleaseSpills.on('sync', this.drawSpills);
-            this.surfaceReleaseSpills.on('add', this.drawSpills);
-            this.surfaceReleaseSpills.on('remove', this.drawSpills);
 
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
             this.addSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
@@ -162,7 +161,6 @@ define([
             this.mapView.on(views.MapView.PLAYING_FINISHED, this.stopAnimation);
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
             this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
-            this.mapView.on(views.MapView.READY, this.drawSpills);
             this.mapView.on(views.MapView.VIEWPORT_CHANGED, this.viewportChanged);
 
             this.locationFileMapView.on(views.LocationFileMapView.LOCATION_CHOSEN, this.loadLocationFileWizard);
@@ -213,12 +211,22 @@ define([
          Consider the model dirty if the user updates an existing spill, so
          we don't get cached images back on the next model run.
          */
-        spillUpdated: function() {
+        spillUpdated: function(model, attrs, opts) {
+            // TODO: Consider renaming the `reloadTree` option. It was
+            // originally included to, as the name implies, stop the tree from
+            // reloading itself if we know we don't need to update the tree.
+            // What we want is a name that reflects that we don't need to update
+            // any UI elements as a result of this fetch -- like 'refreshUI' or
+            // something.
+            if (opts.reloadTree === false) {
+                return;
+            }
             this.rewind();
         },
 
         drawSpills: function() {
-            this.mapView.drawSpills(this.surfaceReleaseSpills);
+            this.router.navigate('/');
+            this.mapView.drawSpills();
         },
 
         setupKeyboardHandlers: function() {
@@ -283,6 +291,11 @@ define([
             });
         },
 
+        /*
+         Handle a spill being drawn. The object triggering the event should have
+         sent starting and ending coordinates that are arrays of the form:
+         [longitude, latitude].
+         */
         spillDrawn: function(startCoords, endCoords) {
             this.addSpillFormView.show(startCoords, endCoords);
         },

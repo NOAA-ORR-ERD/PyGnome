@@ -77,13 +77,19 @@ define([
             this.placeholderClass = this.options.placeholderClass;
             this.animationThreshold = this.options.animationThreshold;
             this.renderer = this.options.renderer;
-            this.canDrawSpill = false;
+            this.drawToolsInitialized = false;
+            this.spillMarkers = [];
+            this.surfaceReleaseSpills = this.options.surfaceReleaseSpills;
+            this.router = this.options.router;
+
+            this.surfaceReleaseSpills.on('sync', this.drawSpills);
+            this.surfaceReleaseSpills.on('add', this.drawSpills);
+            this.surfaceReleaseSpills.on('remove', this.drawSpills);
 
             this.makeImagesClickable();
 
             this.state = this.options.state;
             this.listenTo(this.state, 'change:animation', this.animationStateChanged);
-            this.listenTo(this.state, 'change:cursor', this.cursorStateChanged);
 
             this.map = $(this.mapEl);
 
@@ -107,6 +113,67 @@ define([
             this.currentCoordinates = $('.current-coordinates');
 
             this.setupMap();
+        },
+
+        setupDrawingTools: function() {
+            var _this = this;
+            if (this.drawToolsInitialized) {
+                return;
+            }
+
+            var OilMarker = L.Icon.extend({
+                options: {
+                    iconUrl: 'http://upload.wikimedia.org/wikipedia/commons/7/75/Oil_drop.png',
+                    iconSize: new L.Point(18.12, 28)
+                }
+            });
+
+            var drawnItems = new L.FeatureGroup();
+            this.leafletMap.addLayer(drawnItems);
+
+            var drawControl = new L.Control.Draw({
+                draw: {
+                    polygon: null,
+                    circle: null,
+                    rectangle: null,
+                    polyline: {
+                        title: "Add a point release spill with a start and end point."
+                    },
+                    marker: {
+                        title: "Add a point release spill with a single origin."
+                    }
+                },
+                edit: false
+            });
+            this.leafletMap.addControl(drawControl);
+
+            this.leafletMap.on('draw:created', function(e) {
+                var type = e.layerType,
+                    layer = e.layer;
+
+                _this.spillMarkers.push(e.layer);
+                drawnItems.addLayer(layer);
+
+                var latLng, coords;
+
+                if (type == 'polyline') {
+                    latLng = e.layer.getLatLngs();
+                    coords = [
+                        [latLng[0].lng, latLng[0].lat],
+                        [latLng[1].lng, latLng[1].lat]
+                    ];
+                } else {
+                    latLng = e.layer.getLatLng();
+                    coords = [
+                        [latLng.lng, latLng.lat],
+                        [latLng.lng, latLng.lat]
+                    ];
+                }
+
+                _this.trigger(MapView.SPILL_DRAWN, coords[0], coords[1]);
+            });
+
+            this.drawToolsInitialized = true;
         },
 
         setupMap: function() {
@@ -149,6 +216,8 @@ define([
             }).addTo(this.leafletMap);
 
             $(window).resize(this.setLeafletMapSize);
+            
+            this.drawSpills();
         },
 
         updateCoordinates: function(latlng) {
@@ -199,7 +268,7 @@ define([
             var _this = this;
             return this.renderer.save()
                 .then(function() {
-                    _this.model.fetch();
+                    _this.model.fetch({reloadTree: false});
                 })
         },
 
@@ -217,51 +286,6 @@ define([
             }
         },
 
-        resetCursorState: function() {
-            // Unset ability to draw a spill on the map.
-            this.unsetSpillCursor();
-            this.allowZoomingOut = false;
-            this.allowZoomingIn = false;
-        },
-
-        cursorStateChanged: function(cursorState) {
-            this.removeCursorClasses();
-            this.resetCursorState();
-
-            switch(cursorState) {
-                case models.CursorState.ZOOMING_IN:
-                    this.makeActiveImageClickable();
-                    this.makeActiveImageSelectable();
-                    this.setZoomingInCursor();
-                    this.allowZoomingIn = true;
-                    break;
-                case models.CursorState.ZOOMING_OUT:
-                    this.makeActiveImageClickable();
-                    this.setZoomingOutCursor();
-                    this.allowZoomingOut = true;
-                    break;
-                case models.CursorState.RESTING:
-                    this.setRegularCursor();
-                    break;
-                case models.CursorState.MOVING:
-                    this.setMovingCursor();
-                    break;
-                case models.CursorState.DRAWING_SPILL:
-                    this.setSpillCursor();
-                    break;
-            }
-        },
-
-        zoom: function(evt) {
-            if (this.allowZoomingIn) {
-                evt.stopPropagation();
-                this.zoomIn(evt);
-            } else if (this.allowZoomingOut) {
-                evt.stopPropagation();
-                this.zoomOut(evt);
-            }
-        },
-
         show: function() {
             this.setBackground();
         },
@@ -274,7 +298,7 @@ define([
             // which is to get the new background image, then we don't need to
             // save the renderer -- otherwise we do.
             if (this.isSettingViewport) {
-                savingRenderer = this.model.fetch();
+                savingRenderer = this.model.fetch({reloadTree: false});
             } else {
                 var size = this.leafletMap.getSize();
                 this.renderer.set('image_size', [size.x, size.y]);
@@ -296,6 +320,7 @@ define([
                     zIndex: -100
                 });
                 _this.leafletMap.addLayer(_this.backgroundOverlay);
+                _this.setupDrawingTools();
             });
         },
 
@@ -333,10 +358,6 @@ define([
             }
 
             return _this.addBackgroundLayer().then(removeBackgroundLayer);
-
-            // TODO:
-//            _this.createCanvases();
-//            _this.trigger(MapView.READY);
         },
 
         showPlaceholder: function() {
@@ -503,31 +524,6 @@ define([
             $(this.mapEl).addClass('moving-cursor');
         },
 
-        setSpillCursor: function() {
-            $(this.mapEl).addClass('spill-cursor');
-            this.canDrawSpill = true;
-        },
-
-        unsetSpillCursor: function() {
-            $(this.mapEl).removeClass('spill-cursor');
-            this.canDrawSpill = false;
-        },
-
-        getRect: function(rect) {
-            var newStartPosition, newEndPosition;
-
-            // Do a shallow object copy, so we don't modify the original.
-            if (rect.end.x > rect.start.x || rect.end.y > rect.start.y) {
-                newStartPosition = $.extend({}, rect.start);
-                newEndPosition = $.extend({}, rect.end);
-            } else {
-                newStartPosition = $.extend({}, rect.end);
-                newEndPosition = $.extend({}, rect.start);
-            }
-
-            return {start: newStartPosition, end: newEndPosition};
-        },
-
         updateSize: function() {
             if (!this.leafletMap) {
                 return;
@@ -540,62 +536,19 @@ define([
             }
         },
 
-        // Adjust a selection rectangle so that it fits within the bounding box.
-        getAdjustedRect: function(rect) {
-            var adjustedRect = this.getRect(rect);
-            var bbox = this.getBoundingBox();
-
-            // TOOD: This looks wrong. Add tests.
-            if (adjustedRect.start.x > bbox[0].x) {
-                adjustedRect.start.x = bbox[0].x;
-            }
-            if (adjustedRect.start.y < bbox[0].y) {
-                adjustedRect.start.y = bbox[0].y;
-            }
-
-            if (adjustedRect.end.x < bbox[1].x) {
-                adjustedRect.end.x = bbox[1].x;
-            }
-            if (adjustedRect.end.y > bbox[1].y) {
-                adjustedRect.end.y = bbox[1].y;
-            }
-
-            return adjustedRect;
-        },
-
-        isPositionInsideMap: function(position) {
-            var bbox = this.getBoundingBox();
-            return (position.x > bbox[0].x && position.x < bbox[1].x &&
-                position.y > bbox[0].y && position.y < bbox[1].y);
-        },
-
-        isRectInsideMap: function(rect) {
-            var _rect = this.getRect(rect);
-
-            return this.isPositionInsideMap(_rect.start) &&
-                this.isPositionInsideMap(_rect.end);
-        },
-
         nextTimeStepReady: function() {
             this.addTimeStep(this.stepGenerator.getCurrentTimeStep());
         },
 
-        drawLine: function(ctx, start_x, start_y, end_x, end_y) {
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(start_x, start_y);
-            ctx.lineTo(end_x, end_y);
-            ctx.stroke();
-            ctx.closePath();
-            ctx.beginPath();
-            ctx.closePath();
-        },
-
         drawSpill: function(spill) {
-            var ctx = this.backgroundCanvas[0].getContext('2d');
+            var _this = this;
             var startX, startY, startZ, endX, endY, endZ;
             var start = spill.get('start_position');
             var end = spill.get('end_position');
+
+            if (!this.leafletMap) {
+                return;
+            }
 
             startX = endX = start[0];
             startY = endY = start[1];
@@ -611,155 +564,68 @@ define([
                 endZ = end[2];
             }
 
-            var pixelStart = this.pixelsFromCoordinates({
-                lat: startY,
-                long: startX
-            });
+            var marker;
 
-            var pixelEnd = this.pixelsFromCoordinates({
-                lat: endY,
-                long: endX
-            });
-
-            if (startX === endX && startY === endY) {
-                pixelEnd.x += 2;
-                pixelEnd.y += 2;
+            if (startX == endX || !endX) {
+                // Create a marker
+                marker = L.marker([startY, startX]).addTo(this.leafletMap);
+            } else {
+                // Create a polyline
+                var coords = [
+                    [startY, startX],
+                    [endY, endX]
+                ];
+                marker = L.polyline(coords).addTo(this.leafletMap);
             }
 
-            this.drawLine(ctx, pixelStart.x, pixelStart.y, pixelEnd.x, pixelEnd.y);
+            // XXX: Leaflet doesn't propagate click events within popups, so we
+            // can't use a single template with an .on() delegated listener here.
+            var templ = _.template($('#surface-release-spill-template').html());
+            var html = templ({
+                name: spill.get('name'),
+                lng: startY,
+                lat: startX
+            });
+
+            templ = _.template('<a href="javascript:" class="btn btn-primary open-spill" ' +
+                'data-id="{{ id }}">Edit</a>');
+
+            var link = $(templ({
+                id: spill.id
+            }));
+
+            link.click(function(event) {
+                var spillId = $(this).data('id');
+                _this.router.navigate('#/spill/' + spillId, true);
+                marker.closePopup();
+            });
+
+            var div = $('<div>').html(html).append(link);
+            marker.bindPopup(div[0]);
+
+            this.spillMarkers.push(marker);
         },
 
         clearCanvas: function(canvas) {
-            var ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            console.log('Clear canvas called')
         },
 
         // Draw a mark on the map for each existing spill.
-        drawSpills: function(spills) {
+        drawSpills: function() {
             var _this = this;
 
-            if (!this.backgroundCanvas || !this.foregroundCanvas) {
+            if (this.surfaceReleaseSpills === undefined || !this.surfaceReleaseSpills.length) {
                 return;
             }
 
-            this.clearCanvas(this.backgroundCanvas[0]);
-            this.clearCanvas(this.foregroundCanvas[0]);
-
-            if (spills === undefined || !spills.length) {
-                return;
+            for (var i = 0; i < this.spillMarkers.length; i++) {
+                this.leafletMap.removeLayer(this.spillMarkers[i]);
             }
 
-            spills.forEach(function(spill) {
+            this.surfaceReleaseSpills.forEach(function(spill) {
                 _this.drawSpill(spill);
             });
         },
-
-        /*
-         Create a foreground canvas and setup event handlers to capture new
-         spills added to the map. This canvas is cleared entirely during line
-         additions (as the line position changes) and when the form container
-         refreshes.
-
-         TODO: Update canvas sizes when window changes.
-         */
-        createCanvases: function() {
-            var _this = this;
-            var background = $(this.mapEl).find('.background');
-
-            if (this.backgroundCanvas) {
-                $(this.backgroundCanvas).remove();
-            }
-
-            if (this.foregroundCanvas) {
-                $(this.foregroundCanvas).remove();
-            }
-
-            this.backgroundCanvas = $('<canvas>').attr({
-                id: 'canvas-background',
-                class: 'drawable-background',
-                height: background.height(),
-                width: background.width()
-            });
-
-            this.foregroundCanvas = $('<canvas>').attr({
-                id: 'canvas-foreground',
-                class: 'drawable-foreground',
-                height: background.height(),
-                width: background.width()
-            });
-
-            this.foregroundCanvas.mousedown(function(ev) {
-                if (!_this.canDrawSpill) {
-                    return;
-                }
-
-                this.pressed = true;
-                if (ev.originalEvent['layerX'] != undefined) {
-                    this.x0 = ev.originalEvent.layerX;
-                    this.y0 = ev.originalEvent.layerY;
-                }
-                else {
-                    // in IE, we use this property
-                    this.x0 = ev.originalEvent.x;
-                    this.y0 = ev.originalEvent.y;
-                }
-            });
-
-            // Event handlers to draw new spills
-            this.foregroundCanvas.mousemove(function(ev) {
-                if (!this.pressed || !_this.canDrawSpill) {
-                    return;
-                }
-                this.moved = true;
-                var ctx = this.getContext('2d');
-                var xcurr, ycurr;
-                if (ev.originalEvent['layerX'] != undefined) {
-                    xcurr = ev.originalEvent.layerX;
-                    ycurr = ev.originalEvent.layerY;
-                }
-                else {
-                    // in IE, we use this property
-                    xcurr = ev.originalEvent.x;
-                    ycurr = ev.originalEvent.y;
-                }
-
-                ctx.clearRect(0, 0, this.width, this.height);
-                _this.drawLine(ctx, this.x0, this.y0, xcurr, ycurr);
-            });
-
-            $(this.foregroundCanvas).mouseup(function(ev) {
-                if (!this.pressed || !_this.canDrawSpill) {
-                    return;
-                }
-                var canvas = _this.backgroundCanvas[0];
-                var ctx = canvas.getContext('2d');
-                var offset = $(this).offset();
-                var endX = ev.pageX - offset.left;
-                var endY = ev.pageY - offset.top;
-
-                _this.drawLine(ctx, this.x0, this.y0, endX, endY);
-                _this.clearCanvas(_this.foregroundCanvas[0]);
-
-                if (this.pressed && this.moved) {
-                    var start = _this.coordinatesFromPixels({
-                        x: this.x0,
-                        y: this.y0
-                    });
-                    var end = _this.coordinatesFromPixels({
-                        x: endX,
-                        y: endY
-                    });
-
-                    _this.trigger(MapView.SPILL_DRAWN, [start.long, start.lat],
-                                  [end.long, end.lat]);
-                }
-                this.pressed = this.moved = false;
-            });
-
-            this.backgroundCanvas.appendTo(map);
-            this.foregroundCanvas.appendTo(map);
-        },
-
 
         // TODO: This probably belongs in app.js
         stepGeneratorError: function() {

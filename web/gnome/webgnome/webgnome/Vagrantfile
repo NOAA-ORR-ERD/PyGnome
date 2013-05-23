@@ -7,6 +7,7 @@ sudo apt-get update
 sudo apt-get install -y apache2 libapache2-mod-uwsgi libnetcdf6 libnetcdf-dev python-scipy python-numpy git vim emacs python-pip python-virtualenv python-lxml virtualenvwrapper libxslt1-dev python-netcdf libblas-dev python-dev gfortran g++ subversion libcurl3-dev
 mkdir -p ~/src/gnome
 printf "[http]\nsslVerify=False\n" > ~/.gitconfig
+printf "[credential]\nhelper = cache\n" >> ~/.gitconfig
 
 echo Downloading Gnome source...
 git clone https://trac.orr.noaa.gov/git/GNOME src/gnome
