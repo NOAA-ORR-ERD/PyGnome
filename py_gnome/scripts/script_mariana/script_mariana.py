@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import numpy as np
 
 import gnome
-#from gnome.environment import Wind
+from gnome.environment import Wind
 
 from gnome import scripting
 
@@ -61,23 +61,24 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     model.movers += r_mover
     
     
-    # print "adding a wind mover:"
+    print "adding a wind mover:"
     
-    # series = np.zeros((2,), dtype=gnome.basic_types.datetime_value_2d)
-    # series[0] = (start_time, ( 30,   0) )
-    # series[1] = (start_time+timedelta(hours=23), ( 30,      0) )
+    series = np.zeros((2,), dtype=gnome.basic_types.datetime_value_2d)
+    # (time, (speed, direction) )
+    series[0] = (start_time, ( 5,   265) )
+    series[1] = (start_time+timedelta(hours=48), ( 5,      275) )
     
     
-    # wind = Wind(timeseries=series,units='knot')
-    # w_mover = gnome.movers.WindMover(wind)
-    # model.movers += w_mover
+    wind = Wind(timeseries=series, units='m/s')
+    w_mover = gnome.movers.WindMover(wind)
+    model.movers += w_mover
     
-    print "adding a current mover:"
+    # print "adding a current mover:"
     
-    curr_file=os.path.join( base_dir, r"./HYCOM.nc")
-    #topology_file=os.path.join( base_dir, r"./ChesapeakeBay.DAT")
-    c_mover = gnome.movers.GridCurrentMover(curr_file, topology_file)
-    model.movers += c_mover
+    # curr_file=os.path.join( base_dir, r"./HYCOM.nc")
+    # #topology_file=os.path.join( base_dir, r"./ChesapeakeBay.DAT")
+    # c_mover = gnome.movers.GridCurrentMover(curr_file, topology_file)
+    # model.movers += c_mover
 
     return model
 
