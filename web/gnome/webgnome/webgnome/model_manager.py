@@ -504,6 +504,8 @@ class WebModel(BaseWebObject, Model):
         if map_data:
             # Ignore map bounds - will be set from the source file.
             map_data.pop('map_bounds', None)
+            # Ignore obj_type - only used for serialization. TODO: Better way?
+            map_data.pop('obj_type', None)
             # Make the filename, which is stored as a relative path, absolute
             filename = os.path.join(self.package_root, map_data.pop('filename'))
             self.add_bna_map(filename, map_data)

@@ -168,9 +168,6 @@ class ModelFromLocationFile(BaseResource):
     """
     Creates a new :class:`webgnome.model_manager.WebModel` from a location file
     with the name given by the `location` parameter.
-
-    NOTE: This service is not used by the JavaScript application at this time.
-    Consider deprecating it.
     """
     def apply_location_file_to_model(self, model):
         self.request.session[self.settings['model_session_key']] = model.id
