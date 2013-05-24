@@ -1,0 +1,4 @@
+# Requirements for the 'sitestats' subpackage.
+WebHelpers
+SQLAlchemy
+python-dateutil
