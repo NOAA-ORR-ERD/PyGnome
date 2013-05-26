@@ -179,15 +179,6 @@ if sys.platform == "darwin":
 
 elif sys.platform == "linux2":  
     
-    ## Need this for finding lib during linking and at runtime
-    ## using -rpath to define runtime path. 
-    ## Path is absolute because relative path is defined wrt to executable
-    ## not the cy_*.so files. For develop, this will work. For install
-    ## this will need some changes. Maybe time to break up the build script
-    ## and make it cleaner
-    libpath = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'gnome', 'cy_gnome')
-    os.environ['LDFLAGS'] = '-L{0} -Wl,-rpath={0}'.format(libpath)
-    
     ## for some reason I have to create build/temp.linux-i686-2.7
     ## else the compile fails saying temp.linux-i686-2.7 is not found
     if 'clean' not in sys.argv[1] and not os.path.exists('./build/temp.linux-i686-2.7'):
@@ -203,7 +194,12 @@ elif sys.platform == "linux2":
                                  libraries=['netcdf'],
                                  include_dirs=[ CPP_CODE_DIR],
                                  )])
-    
+   
+    ## Need this for finding lib during linking and at runtime
+    ## using -rpath to define runtime path. Use $ORIGIN to define libgnome.so relative to cy_*.so
+    libpath = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'gnome', 'cy_gnome')
+    os.environ['LDFLAGS'] = "-L{0} -Wl,-rpath='$ORIGIN'".format(libpath)
+
     ## End building C++ shared object
     lib = ['gnome']
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
