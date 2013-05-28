@@ -48,37 +48,50 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     
     print "adding a spill"
     
-    # for now subsurface spill stays on initial layer - will need diffusion and rise velocity - wind doesn't act
-    spill = gnome.spill.SurfaceReleaseSpill(num_elements=1000,
-                                            start_position = (145.0, 15.0, 0.0),
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements=250,
+                                            start_position = (145.25, 15.0, 0.0),
                                             release_time = start_time,
                                             )
-        
-    model.spills += spill
+
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements=250,
+                                            start_position = (146.25, 15.0, 0.0),
+                                            release_time = start_time,
+                                            )
+
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements=250,
+                                            start_position = (145.75, 15.25, 0.0),
+                                            release_time = start_time,
+                                            )
+
+    model.spills += gnome.spill.SurfaceReleaseSpill(num_elements=250,
+                                            start_position = (145.75, 14.75, 0.0),
+                                            release_time = start_time,
+                                            )
+
+
     
     print  "adding a RandomMover:"
     r_mover = gnome.movers.RandomMover(diffusion_coef=10000)
     model.movers += r_mover
     
     
-    print "adding a wind mover:"
+    # print "adding a wind mover:"
     
-    series = np.zeros((2,), dtype=gnome.basic_types.datetime_value_2d)
-    # (time, (speed, direction) )
-    series[0] = (start_time, ( 5,   265) )
-    series[1] = (start_time+timedelta(hours=48), ( 5,      275) )
+    # series = np.zeros((2,), dtype=gnome.basic_types.datetime_value_2d)
+    # # (time, (speed, direction) )
+    # series[0] = (start_time, ( 5,   265) )
+    # series[1] = (start_time+timedelta(hours=48), ( 5,      275) )
     
     
-    wind = Wind(timeseries=series, units='m/s')
-    w_mover = gnome.movers.WindMover(wind)
-    model.movers += w_mover
+    # wind = Wind(timeseries=series, units='m/s')
+    # w_mover = gnome.movers.WindMover(wind)
+    # model.movers += w_mover
     
     # print "adding a current mover:"
     
-    # curr_file=os.path.join( base_dir, r"./HYCOM.nc")
-    # #topology_file=os.path.join( base_dir, r"./ChesapeakeBay.DAT")
-    # c_mover = gnome.movers.GridCurrentMover(curr_file, topology_file)
-    # model.movers += c_mover
+    curr_file=os.path.join( base_dir, r"./HYCOM.nc")
+    # topology_file=os.path.join( base_dir, r"./ChesapeakeBay.DAT")1
+    model.movers += gnome.movers.GridCurrentMover(curr_file)
 
     return model
 

@@ -728,9 +728,15 @@ class GridCurrentMover(CyMover, serializable.Serializable):
     
     def __init__(self, filename, topology_file=None, **kwargs):
         """
-        will need to add uncertainty parameters and other dialog fields
-        use super with kwargs to invoke base class __init__
+        Initialize a GirdCurrentMover
+
+        :param filename: absolute or relative path to the data file: could be netcdf or filelist
+        :param topology_file=None: absolute or relative path to topology file. If not given, the
+                                   GridCurrentMover will copmute teh topology from the data file.
         """
+        ## NOTE: will need to add uncertainty parameters and other dialog fields
+        ##       use super with kwargs to invoke base class __init__
+
         if not os.path.exists(filename):
             raise ValueError("Path for current file does not exist: {0}".format(filename))
         
