@@ -198,7 +198,7 @@ define([
                     error: error ? 'error' : '',
                     date: datetime.format('MM/DD/YYYY'),
                     time: datetime.format('HH:mm'),
-                    direction: direction + ' &deg;',
+                    direction: direction,
                     speed: speed + ' ' + units
                 }));
 
