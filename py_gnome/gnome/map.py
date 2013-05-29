@@ -164,9 +164,9 @@ class GnomeMap(serializable.Serializable):
         modeling, some movers may push elements up to high, or multiple
         movers may add vertical movement that adds up to over the surface.
         """
-        positions = spill['positions']
-        #positions[:,2] = np.where(positions[:,2]<0.0, 0.0, positions[:,2])
-        np.maximum(positions[:,2], 0.0, out=positions[:,2])
+        next_positions = spill['next_positions']
+        #next_positions[:,2] = np.where(next_positions[:,2]<0.0, 0.0, next_positions[:,2])
+        np.maximum(next_positions[:,2], 0.0, out=next_positions[:,2])
         return None
 
 

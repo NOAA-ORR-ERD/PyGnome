@@ -102,6 +102,7 @@ public:
 	virtual OSErr 		ReadTimeData(long index,VelocityFH *velocityH, char* errmsg) {return 0;}
 	OSErr 				ReadInputFileNames(char *fileNamesPath);
 	//void				SetInputFilesHdl(PtCurFileInfoH inputFilesHdl) {if (fInputFilesHdl) {DisposeHandle((Handle)fInputFilesHdl)} fInputFilesHdl = inputFilesHdl;}
+	virtual	OSErr 		ExportTopology(char* path) {return 0;}
 
 	virtual void		DisposeTimeHdl();
 	void 				DisposeLoadedData(LoadedData * dataPtr);	
@@ -186,7 +187,7 @@ public:
 	
 	virtual	OSErr 	ReadTopology(char* path);
 	//virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
-	//virtual	OSErr 	ExportTopology(char* path);
+	virtual	OSErr 	ExportTopology(char* path);
 };
 
 class TimeGridVelTri_c : virtual public TimeGridVelCurv_c
@@ -217,7 +218,7 @@ public:
 	
 	virtual	OSErr 	ReadTopology(char* path);
 	//virtual	OSErr 	ReadTopology(char* path, TMap **newMap);
-	//virtual	OSErr 	ExportTopology(char* path);
+	virtual	OSErr 	ExportTopology(char* path);
 };
 
 //#ifndef pyGNOME
@@ -321,6 +322,7 @@ public:
 	OSErr				GetLatLonFromIndex(long iIndex, long jIndex, WorldPoint *wp);
 
 	virtual	OSErr 	ReadTopology(char* path);
+	virtual	OSErr 	ExportTopology(char* path);
 };
 /*class TimeGridWindRectASCII_c : virtual public TimeGridVel_c
 {

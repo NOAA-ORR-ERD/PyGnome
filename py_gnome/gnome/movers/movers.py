@@ -495,7 +495,7 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
     """
     This mover class inherits from CyMover and contains CyRandomVerticalMover
 
-    The real work is done by CyRandomVerticalMover.
+    The real work is done by CyRandomVerticalMoraneomver.
     CyMover sets everything up that is common to all movers.
     """
     state = copy.deepcopy(CyMover.state)
@@ -511,7 +511,7 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
         Remaining kwargs are passed onto Mover's __init__ using super. 
         See Mover documentation for remaining valid kwargs.
         """
-        self.mover = CyRandomVerticalMover(diffusion_coef=kwargs.pop('vertical_diffusion_coef',5))
+        self.mover = CyRandomVerticalMover(vertical_diffusion_coef=kwargs.pop('vertical_diffusion_coef',5))
         super(RandomVerticalMover,self).__init__(**kwargs)
 
     @property
@@ -764,6 +764,15 @@ class GridCurrentMover(CyMover, serializable.Serializable):
 #     scale_value = property( lambda self: self.mover.scale_value, 
 #                             lambda self,val: setattr(self.mover, 'scale_value', val) )
 #         
+    def export_topology(self, topology_file):
+        """
+        :param topology_file=None: absolute or relative path where topology file will be written.
+        """
+        if topology_file is None:
+            raise ValueError("Topology file path required: {0}".format(topology_file))
+        
+        self.mover.export_topology(topology_file)
+
         
 
 class GridWindMover(CyMover, serializable.Serializable):
@@ -898,3 +907,12 @@ class GridWindMover(CyMover, serializable.Serializable):
                                   0)    # only ever 1 spill_container so this is always 0!
             
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+
+    def export_topology(self, topology_file):
+        """
+        :param topology_file=None: absolute or relative path where topology file will be written.
+        """
+        if topology_file is None:
+            raise ValueError("Topology file path required: {0}".format(topology_file))
+        
+        self.mover.export_topology(topology_file)
