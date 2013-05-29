@@ -145,6 +145,7 @@ cdef extern from "GridCurrentMover_c.h":
         OSErr 		    get_move(int n, unsigned long model_time, unsigned long step_len, WorldPoint3D* ref, WorldPoint3D* delta, short* LE_status, LEType spillType, long spillID)
         void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
+        OSErr          ExportTopology(char *topFilePath)
         
 cdef extern from "GridWindMover_c.h":
     
@@ -159,6 +160,7 @@ cdef extern from "GridWindMover_c.h":
         WorldPoint3D    GetMove(Seconds&,Seconds&,Seconds&,Seconds&, long, long, LERec *, LETYPE)
         void 		    SetTimeGrid(TimeGridVel_c *newTimeGrid)
         OSErr           TextRead(char *path,char *topFilePath)
+        OSErr          ExportTopology(char *topFilePath)
         
 cdef extern from "GridMap_c.h":
     

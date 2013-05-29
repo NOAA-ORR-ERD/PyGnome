@@ -62,6 +62,21 @@ cdef class CyGridCurrentMover(cy_mover.CyMover):
             """
             raise OSError("GridCurrentMover_c.TextRead returned an error.")
 
+    def export_topology(self, topology_file):
+        """
+        .. function::export_topology
+        
+        """
+        cdef OSErr err
+        topology_file = os.path.normpath(topology_file)
+        topology_file = to_bytes( unicode(topology_file))
+        err = self.grid.ExportTopology(topology_file)
+        if err != 0:
+            """
+            For now just raise an OSError - until the types of possible errors are defined and enumerated
+            """
+            raise OSError("GridCurrentMover_c.ExportTopology returned an error.")
+
     def __init__(self):
         self.grid.fIsOptimizedForStep = 0
 
