@@ -22,7 +22,7 @@
 class TMover;
 
 //class TimeValue_c : virtual public ClassID_c {
-class GNOMEDLL_API TimeValue_c : virtual public ClassID_c {
+class DLL_API TimeValue_c : virtual public ClassID_c {
 	
 public:
 	TMover *owner;
