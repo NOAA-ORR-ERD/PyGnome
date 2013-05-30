@@ -1204,6 +1204,201 @@ done:
 	return err;
 }
 
+OSErr TimeGridWindCurv_c::ExportTopology(char* path)
+{
+	// export NetCDF curvilinear info so don't have to regenerate each time
+	// move to NetCDFWindMover so Tri can use it too
+	OSErr err = 0;
+	long numTriangles, numBranches, nver, nBoundarySegs=0, nWaterBoundaries=0, nBoundaryPts;
+	long i, n, v1,v2,v3,n1,n2,n3;
+	double x,y;
+	char buffer[512],hdrStr[64],topoStr[128];
+	TopologyHdl topH=0;
+	TTriGridVel* triGrid = 0;	
+	TDagTree* dagTree = 0;
+	LongPointHdl ptsH=0;
+	DAGHdl		treeH = 0;
+	LONGH	boundarySegmentsH = 0, boundaryTypeH = 0, boundaryPointsH = 0;	// should we bother with the map stuff? 
+	FILE *fp = fopen(path, "w");
+	//BFPB bfpb;
+	//PtCurMap *map = GetPtCurMap();
+	
+	triGrid = dynamic_cast<TTriGridVel*>(this->fGrid);
+	if (!triGrid) {printError("There is no topology to export"); return -1;}
+	dagTree = triGrid->GetDagTree();
+	if (dagTree) 
+	{
+		ptsH = dagTree->GetPointsHdl();
+		topH = dagTree->GetTopologyHdl();
+		treeH = dagTree->GetDagTreeHdl();
+	}
+	else 
+	{
+		printError("There is no topology to export");
+		return -1;
+	}
+	if(!ptsH || !topH || !treeH) 
+	{
+		printError("There is no topology to export");
+		return -1;
+	}
+	//if (moverMap->IAm(TYPE_PTCURMAP))
+	/*if (map)
+	{
+		//boundaryTypeH = (dynamic_cast<PtCurMap *>(moverMap))->GetWaterBoundaries();
+		//boundarySegmentsH = (dynamic_cast<PtCurMap *>(moverMap))->GetBoundarySegs();
+		//boundaryPointsH = (dynamic_cast<PtCurMap *>(moverMap))->GetBoundaryPoints();
+		boundaryTypeH = map->GetWaterBoundaries();
+		boundarySegmentsH = map->GetBoundarySegs();
+		boundaryPointsH = map->GetBoundaryPoints();
+		if (!boundaryTypeH || !boundarySegmentsH || !boundaryPointsH) {printError("No map info to export"); err=-1; goto done;}
+	}*/
+	
+	//(void)hdelete(0, 0, path);
+	//if (err = hcreate(0, 0, path, 'ttxt', 'TEXT'))
+	//{ printError("1"); TechError("WriteToPath()", "hcreate()", err); return err; }
+	//if (err = FSOpenBuf(0, 0, path, &bfpb, 100000, FALSE))
+	//{ printError("2"); TechError("WriteToPath()", "FSOpenBuf()", err); return err; }
+	
+	
+	// Write out values
+	if (fVerdatToNetCDFH) n = _GetHandleSize((Handle)fVerdatToNetCDFH)/sizeof(long);
+	else {printError("There is no transpose array"); err = -1; goto done;}
+	sprintf(hdrStr,"TransposeArray\t%ld\n",n);	
+	//strcpy(buffer,hdrStr);
+	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
+	for(i=0;i<n;i++)
+	{	
+		sprintf(topoStr,"%ld\n",(*fVerdatToNetCDFH)[i]);
+		//strcpy(buffer,topoStr);
+		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		sprintf(topoStr,"%lf\t%lf\n",x,y);
+	}
+	
+	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);
+	//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points
+	sprintf(hdrStr,"Vertices\t%ld\n",nver);	// total vertices
+	//strcpy(buffer,hdrStr);
+	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
+	sprintf(hdrStr,"%ld\t%ld\n",nver,nver);	// junk line
+	//strcpy(buffer,hdrStr);
+	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
+	for(i=0;i<nver;i++)
+	{	
+		x = (*ptsH)[i].h/1000000.0;
+		y =(*ptsH)[i].v/1000000.0;
+		//sprintf(topoStr,"%ld\t%lf\t%lf\t%lf\n",i+1,x,y,(*gDepths)[i]);
+		//sprintf(topoStr,"%ld\t%lf\t%lf\n",i+1,x,y);
+		sprintf(topoStr,"%lf\t%lf\n",x,y);
+		//strcpy(buffer,topoStr);
+		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
+	}
+	//code goes here, boundary points - an optional handle, only for curvilinear case
+	
+	/*if (boundarySegmentsH) 
+	{
+		nBoundarySegs = _GetHandleSize((Handle)boundarySegmentsH)/sizeof(long);
+		//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points
+		sprintf(hdrStr,"BoundarySegments\t%ld\n",nBoundarySegs);	// total vertices
+		strcpy(buffer,hdrStr);
+		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		for(i=0;i<nBoundarySegs;i++)
+		{	
+			//sprintf(topoStr,"%ld\n",(*boundarySegmentsH)[i]);
+			sprintf(topoStr,"%ld\n",(*boundarySegmentsH)[i]+1);	// when reading in subtracts 1
+			strcpy(buffer,topoStr);
+			if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		}
+	}
+	
+	nBoundarySegs = 0;
+	if (boundaryTypeH) 
+	{
+		nBoundarySegs = _GetHandleSize((Handle)boundaryTypeH)/sizeof(long);	// should be same size as previous handle
+		//fprintf(outfile,"Vertices\t%ld\t%ld\n",nver,numBoundaryPts);	// total vertices and number of boundary points
+		for(i=0;i<nBoundarySegs;i++)
+		{	
+			if ((*boundaryTypeH)[i]==2) nWaterBoundaries++;
+		}
+		sprintf(hdrStr,"WaterBoundaries\t%ld\t%ld\n",nWaterBoundaries,nBoundarySegs);	
+		strcpy(buffer,hdrStr);
+		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		for(i=0;i<nBoundarySegs;i++)
+		{	
+			if ((*boundaryTypeH)[i]==2)
+				//sprintf(topoStr,"%ld\n",(*boundaryTypeH)[i]);
+			{
+				sprintf(topoStr,"%ld\n",i);
+				strcpy(buffer,topoStr);
+				if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+			}
+		}
+	}
+	nBoundaryPts = 0;
+	if (boundaryPointsH) 
+	{
+		nBoundaryPts = _GetHandleSize((Handle)boundaryPointsH)/sizeof(long);	// should be same size as previous handle
+		sprintf(hdrStr,"BoundaryPoints\t%ld\n",nBoundaryPts);	// total boundary points
+		strcpy(buffer,hdrStr);
+		if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		for(i=0;i<nBoundaryPts;i++)
+		{	
+			sprintf(topoStr,"%ld\n",(*boundaryPointsH)[i]);	// when reading in subtracts 1
+			strcpy(buffer,topoStr);
+			if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		}
+	}*/
+	numTriangles = _GetHandleSize((Handle)topH)/sizeof(**topH);
+	sprintf(hdrStr,"Topology\t%ld\n",numTriangles);
+	//strcpy(buffer,hdrStr);
+	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
+	for(i = 0; i< numTriangles;i++)
+	{
+		v1 = (*topH)[i].vertex1;
+		v2 = (*topH)[i].vertex2;
+		v3 = (*topH)[i].vertex3;
+		n1 = (*topH)[i].adjTri1;
+		n2 = (*topH)[i].adjTri2;
+		n3 = (*topH)[i].adjTri3;
+		sprintf(topoStr, "%ld\t%ld\t%ld\t%ld\t%ld\t%ld\n",
+				v1, v2, v3, n1, n2, n3);
+		
+		/////
+		//strcpy(buffer,topoStr);
+		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
+	}
+	
+	numBranches = _GetHandleSize((Handle)treeH)/sizeof(**treeH);
+	sprintf(hdrStr,"DAGTree\t%ld\n",dagTree->fNumBranches);
+	//strcpy(buffer,hdrStr);
+	//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+	fwrite(hdrStr,sizeof(char),strlen(hdrStr),fp);
+	
+	for(i = 0; i<dagTree->fNumBranches; i++)
+	{
+		sprintf(topoStr,"%ld\t%ld\t%ld\n",(*treeH)[i].topoIndex,(*treeH)[i].branchLeft,(*treeH)[i].branchRight);
+		//strcpy(buffer,topoStr);
+		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
+		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
+	}
+	
+done:
+	// 
+	//FSCloseBuf(&bfpb);
+	fclose(fp);
+	if(err) {	
+		printError("Error writing topology");
+		//(void)hdelete(0, 0, path); // don't leave them with a partial file
+	}
+	return err;
+}
+
 // simplify for wind data - no map needed, no mask 
 OSErr TimeGridWindCurv_c::ReorderPoints(char* errmsg) 
 {

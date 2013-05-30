@@ -34,13 +34,13 @@ Ptr _SetPtrSize(Ptr p, long newSize);
 //void DisposPtr(Ptr p);
 void _DisposePtr(Ptr p);
 
-GNOMEDLL_API Handle _NewHandle(long size);
+DLL_API Handle _NewHandle(long size);
 Handle _NewHandleClear(long size);
 Handle _TempNewHandle(long size, LONGPTR err);
 OSErr _HandToHand(HANDLEPTR hp);
 void _HLock(Handle h);
 void _HUnlock(Handle h);
-GNOMEDLL_API long _GetHandleSize(Handle h);
+DLL_API long _GetHandleSize(Handle h);
 void _SetHandleSize(Handle h, long newSize);
 
 //Handle RecoverHandle(Ptr p);

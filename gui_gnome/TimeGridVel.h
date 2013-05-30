@@ -24,7 +24,7 @@ public:
 	
 	virtual void Draw(Rect r, WorldRect view,double refScale,
 					  double arrowScale,double arrowDepth, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor)=0;
-	virtual	OSErr 	ExportTopology(char* path) {return 0;}
+	//virtual	OSErr 	ExportTopology(char* path) {return 0;}
 };
 
 class TimeGridVelRect : virtual public TimeGridVelRect_c, public TimeGridVel
@@ -59,7 +59,7 @@ public:
 	Boolean			VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth);
 	
 	//virtual	OSErr 	ReadTopology(char* path);
-	virtual	OSErr 	ExportTopology(char* path);
+	//virtual	OSErr 	ExportTopology(char* path);
 
 	virtual void Draw(Rect r, WorldRect view,double refScale,
 					  double arrowScale,double arrowDepth, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
@@ -79,7 +79,7 @@ public:
 	Boolean			VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth);
 	
 	//virtual	OSErr 	ReadTopology(char* path);
-	virtual	OSErr 	ExportTopology(char* path);
+	//virtual	OSErr 	ExportTopology(char* path);
 
 	virtual void Draw(Rect r, WorldRect view,double refScale,
 					  double arrowScale,double arrowDepth, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
@@ -155,7 +155,7 @@ public:
 	Boolean			VelocityStrAtPoint(WorldPoint3D wp, char *diagnosticStr, double arrowDepth);
 	
 	//virtual	OSErr 	ReadTopology(char* path);
-	virtual	OSErr 	ExportTopology(char* path);
+	//virtual	OSErr 	ExportTopology(char* path);
 	
 	virtual void Draw(Rect r, WorldRect view,double refScale,
 					  double arrowScale,double arrowDepth, Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
