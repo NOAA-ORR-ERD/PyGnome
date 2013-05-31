@@ -155,6 +155,20 @@ class GnomeMap(serializable.Serializable):
         """
         pass
 
+    def resurface_airborne_elements(self, spill):
+        """
+        Takes any elements that are left above the water surface (z < 0.0)
+        and puts them on the surface (z == 0.0)
+
+        NOTE: while this shouldn't occur according to the physics we're
+        modeling, some movers may push elements up to high, or multiple
+        movers may add vertical movement that adds up to over the surface.
+        """
+        next_positions = spill['next_positions']
+        #next_positions[:,2] = np.where(next_positions[:,2]<0.0, 0.0, next_positions[:,2])
+        np.maximum(next_positions[:,2], 0.0, out=next_positions[:,2])
+        return None
+
 
 class RasterMap(GnomeMap):
     """
@@ -353,8 +367,10 @@ class RasterMap(GnomeMap):
             It must have the following data arrays:
             ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
+
+        self.resurface_airborne_elements(spill)
         # pull the data from the spill 
-        ## is the last water point the same as the previos position? why not?? if beached, it won't move, if not, then we can use it?
+        ## is the last water point the same as the previous position? why not?? if beached, it won't move, if not, then we can use it?
         start_pos     = spill['positions']
         next_pos      = spill['next_positions']
         status_codes  = spill['status_codes']

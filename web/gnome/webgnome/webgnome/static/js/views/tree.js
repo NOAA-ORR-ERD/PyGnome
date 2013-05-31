@@ -86,11 +86,12 @@ define([
             return this.tree.dynatree("getActiveNode");
         },
 
-        reload: function(opts) {
+        reload: function(model, attrs, opts) {
             var _this = this;
-            if (!opts.reloadTree) {
+            if (opts.reloadTree === false) {
                 return;
             }
+            console.log('tree reload')
             if (this.gnomeModel && this.gnomeModel.wasDeleted) {
                 return;
             }

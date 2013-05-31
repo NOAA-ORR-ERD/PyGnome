@@ -15,7 +15,7 @@
 #include "Mover_c.h"
 #include "ExportSymbols.h"
 
-class GNOMEDLL_API RandomVertical_c : virtual public Mover_c {
+class DLL_API RandomVertical_c : virtual public Mover_c {
 	
 public:
 	double fVerticalDiffusionCoefficient; //cm**2/s

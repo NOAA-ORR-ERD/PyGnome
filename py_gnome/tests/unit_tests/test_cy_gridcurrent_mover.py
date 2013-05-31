@@ -111,8 +111,38 @@ class TestGridCurrentMover():
         #topology_file = os.path.join(here, r'SampleData/currents/NYTopology.dat')
         time_grid_file = os.path.join(here, r'SampleData',r'currents',r'ny_cg.nc')
         topology_file = os.path.join(here, r'SampleData',r'currents',r'NYTopology.dat')
+        #topology_file = None	# will want a null default
+        #topology_file2 = os.path.join(here, r'SampleData',r'currents',r'NYTopologyNew.dat')
 
         self.gcm.text_read(time_grid_file,topology_file)
+        #self.gcm.export_topology(topology_file2)
+        self.cm.ref[:]['long'] = (-74.03988) #for NY
+        self.cm.ref[:]['lat'] = (40.536092)
+        self.check_move()
+        actual = np.empty((self.cm.num_le,), dtype=basic_types.world_point)
+        actual[:]['lat'] = (.000911)
+        actual[:]['long'] = (-.001288)
+        tol = 1e-5
+        np.testing.assert_allclose(self.cm.delta['lat'], actual['lat'], tol, tol, 
+                                   "ny_cg.nc move is not within a tolerance of "+str(tol), 0)
+        np.testing.assert_allclose(self.cm.delta['long'], actual['long'], tol, tol, 
+                                   "ny_cg.nc move is not within a tolerance of "+str(tol), 0)
+        
+    def test_move_curv_no_top(self):
+        """
+        test move for a curvilinear grid (first time in file)
+        """
+        time = datetime.datetime(2008, 1, 29, 17)
+        self.cm.model_time = time_utils.date_to_sec(time)
+        #time_grid_file = os.path.join(here, r'SampleData/currents/ny_cg.nc')
+        #topology_file = os.path.join(here, r'SampleData/currents/NYTopology.dat')
+        time_grid_file = os.path.join(here, r'SampleData',r'currents',r'ny_cg.nc')
+        #topology_file = os.path.join(here, r'SampleData',r'currents',r'NYTopology.dat')
+        topology_file = None	# will want a null default
+        topology_file2 = os.path.join(here, r'SampleData',r'currents',r'NYTopologyNew.dat')
+
+        self.gcm.text_read(time_grid_file,topology_file)
+        self.gcm.export_topology(topology_file2)
         self.cm.ref[:]['long'] = (-74.03988) #for NY
         self.cm.ref[:]['lat'] = (40.536092)
         self.check_move()

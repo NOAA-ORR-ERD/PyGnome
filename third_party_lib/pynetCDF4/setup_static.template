@@ -48,11 +48,8 @@ sources = ["netCDF4.c"]
 extensions = [Extension("netCDF4",
                         sources,
                         libraries=libs,
-                        #library_dirs=lib_dirs,
                         include_dirs=inc_dirs,
                         extra_objects=extra_objects,
-                        #extra_link_args = ['-lcurl'],
-                        #runtime_library_dirs=lib_dirs),
                         )]
 
 
