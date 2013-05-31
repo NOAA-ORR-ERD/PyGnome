@@ -1,3 +1,4 @@
+from gnome.persist.outputters_schema import Renderer
 import hammer
 import json
 
@@ -42,10 +43,15 @@ def show_model(request):
     winds = model_data.pop('winds')
     random_movers = model_data.pop('random_movers')
     map_data = model_data.get('map', None)
+    renderer = None
 
-    if map_data and model.renderer and model.renderer.background_map_name:
-        map_data['background_image_url'] = util.get_model_image_url(
-            request, model, model.renderer.background_map_name)
+    if model.renderer:
+        renderer = Renderer().bind().serialize(
+            model.renderer.to_dict(do='create'))
+
+        if map_data and model.renderer.background_map_name:
+            map_data['background_image_url'] = util.get_model_image_url(
+                request, model, model.renderer.background_map_name)
 
     # JavaScript model default values, used in "Add [object]" types of forms.
     default_wind_mover = _default_schema_json(schema.WindMoverSchema)
@@ -59,10 +65,10 @@ def show_model(request):
     data = {
         'model_id': model.id,
         'created': created,
-        'map_bounds': [],
         'map_is_loaded': True if model.map else False,
         'current_time_step': model.current_time_step,
         'json_schema': model_json_schema,
+        'renderer_data': util.to_json(renderer),
 
         # Default values for forms that use them.
         'default_wind_mover': default_wind_mover,

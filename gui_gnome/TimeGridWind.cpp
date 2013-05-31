@@ -577,7 +577,7 @@ void TimeGridWindCurv::Draw(Rect r, WorldRect view, double refScale, double arro
 }
 
 
-OSErr TimeGridWindCurv::ExportTopology(char* path)
+/*OSErr TimeGridWindCurv::ExportTopology(char* path)
 {
 	// export NetCDF curvilinear info so don't have to regenerate each time
 	// move to NetCDFWindMover so Tri can use it too
@@ -759,6 +759,6 @@ done:
 		(void)hdelete(0, 0, path); // don't leave them with a partial file
 	}
 	return err;
-}
+}*/
 
 

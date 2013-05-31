@@ -9,7 +9,7 @@ define([
     var testUrl = "http://localhost/test";
 
     function makeModel(timeSteps, expectedTimeSteps) {
-        return new models.GnomeRun(timeSteps || [], {
+        return new models.StepGenerator(timeSteps || [], {
             url: testUrl,
             expectedTimeSteps: expectedTimeSteps || []
         });

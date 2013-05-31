@@ -13,8 +13,8 @@ define([
         initialize: function() {
             _.bindAll(this);
 
-            this.options.gnomeRun.on(
-                models.GnomeRun.MESSAGE_RECEIVED, this.displayMessage);
+            this.options.stepGenerator.on(
+                models.StepGenerator.MESSAGE_RECEIVED, this.displayMessage);
             this.options.gnomeModel.on(
                 models.GnomeModel.MESSAGE_RECEIVED, this.displayMessage);
             this.options.surfaceReleaseSpills.on(

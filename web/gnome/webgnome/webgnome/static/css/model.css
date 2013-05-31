@@ -108,6 +108,10 @@ legend {
     display: inline-block;
 }
 
+#leaflet-map {
+    width: 100%;
+}
+
 .drawable-foreground {
     z-index: 1025;
     position: absolute;
@@ -132,6 +136,7 @@ legend {
     position: absolute;
     top: 0;
     left: 0;
+    max-width: 1000%;
 }
 
 .alert {
@@ -344,5 +349,22 @@ input.required {
 
 @media (max-width: 979px) {
     /* Placeholder */
+}
+
+.leaflet-label {
+    background: white;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+    font: 14px/16px Arial, Helvetica, sans-serif;
+    display: block;
+    padding: 3px 5px;
+    position: absolute;
+    white-space: nowrap;
+    margin-top: 37px;
+}
+
+a.open-spill {
+    color: white;
 }
 

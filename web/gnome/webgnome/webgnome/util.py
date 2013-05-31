@@ -18,6 +18,7 @@ import uuid
 
 from functools import wraps
 from itertools import chain
+from gnome.utilities.cache import CacheError
 from webgnome.schema import LongLat
 from pyramid.exceptions import Forbidden
 from pyramid.renderers import JSON
@@ -235,6 +236,33 @@ def valid_model_id(request):
     request.validated['model'] = model
 
 
+def valid_step_id(request):
+    """
+    A Cornice validator that tests of a `step_id` value in the request matches a
+    step number the model has already generated.
+    """
+    valid_model_id(request)
+
+    if request.errors:
+        return
+
+    model = request.validated['model']
+
+    try:
+        request.validated['step_id'] = int(request.matchdict['id'])
+    except ValueError:
+        request.errors.add('body', 'model', 'Step ID should be an integer.')
+        request.errors.status = 400
+        return
+
+    try:
+        request.validated['step_data'] = model.renderer.write_output(
+            request.validated['step_id'])
+    except CacheError:
+        request.errors.add('body', 'model', 'Time step not found.')
+        request.errors.status = 404
+
+
 def valid_wind_id(request):
     """
     A Cornice validator that tests if a JSON representation of a
@@ -349,6 +377,26 @@ def valid_new_location_file(request):
         return
 
     request.validated['location_dir'] = data_dir
+
+
+def valid_renderer(request):
+    """
+    A Cornice validator that ensures a renderer exists for the user's current
+    model or else returns a 404.
+    """
+    valid_model_id(request)
+
+    if request.errors:
+        return
+
+    model = request.validated['model']
+
+    if not model.renderer:
+        request.errors.add('body', 'renderer', 'Renderer not found.')
+        request.errors.status = 404
+        return
+
+    request.validated['renderer'] = model.renderer
 
 
 def valid_filename(request):
