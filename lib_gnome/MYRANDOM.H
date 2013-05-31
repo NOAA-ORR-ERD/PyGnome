@@ -17,8 +17,8 @@
 #define RNMX (1.0-EPS)
 
 void ResetMyRandomSeed(void);
-float GNOMEDLL_API MyRandom (void);
+float DLL_API MyRandom (void);
 
-void GNOMEDLL_API ResetAllRandomSeeds(void);
+void DLL_API ResetAllRandomSeeds(void);
 
 #endif
