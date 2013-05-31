@@ -45,7 +45,7 @@
                 <%block name="sidebar"> </%block>
             </div>
         </div>
-        <div class="span8" id="content">
+        <div class="span9" id="content">
             <%block name="content"> </%block>
         </div>
     </div>

@@ -47,7 +47,7 @@ define([
 
             this.treeView = new views.TreeView({
                 treeEl: "#tree",
-                gnomeRun: this.gnomeRun,
+                stepGenerator: this.stepGenerator,
                 gnomeModel: this.gnomeModel,
                 map: this.map,
                 customMap: this.customMap,
@@ -69,11 +69,14 @@ define([
                 placeholderClass: 'placeholder',
                 frameClass: 'frame',
                 activeFrameClass: 'active',
-                gnomeRun: this.gnomeRun,
+                stepGenerator: this.stepGenerator,
+                surfaceReleaseSpills: this.surfaceReleaseSpills,
+                renderer: this.renderer,
                 model: this.map,
                 animationThreshold: this.options.animationThreshold,
                 newModel: this.options.newModel,
-                state: this.state
+                state: this.state,
+                router: this.router
             });
 
             this.mapControlView = new views.MapControlView({
@@ -91,14 +94,14 @@ define([
                 resizeButtonEl: "#resize-button",
                 spillButtonEl: "#spill-button",
                 timeEl: "#time",
-                gnomeRun: this.gnomeRun,
+                stepGenerator: this.stepGenerator,
                 mapView: this.mapView,
                 model: this.map,
                 state: this.state
             });
 
             this.messageView = new views.MessageView({
-                gnomeRun: this.gnomeRun,
+                stepGenerator: this.stepGenerator,
                 gnomeModel: this.gnomeModel,
                 surfaceReleaseSpills: this.surfaceReleaseSpills,
                 windMovers: this.windMovers
@@ -125,13 +128,10 @@ define([
                 _this.map.fetch();
             });
 
-            this.gnomeRun.on(models.GnomeRun.RUN_ERROR, this.gnomeRunError);
-            this.gnomeRun.on(models.GnomeRun.SERVER_RESET, this.rewind);
+            this.stepGenerator.on(models.StepGenerator.RUN_ERROR, this.stepGeneratorError);
+            this.stepGenerator.on(models.StepGenerator.SERVER_RESET, this.rewind);
 
             this.surfaceReleaseSpills.on("sync", this.spillUpdated);
-            this.surfaceReleaseSpills.on('sync', this.drawSpills);
-            this.surfaceReleaseSpills.on('add', this.drawSpills);
-            this.surfaceReleaseSpills.on('remove', this.drawSpills);
 
             this.addSpillFormView.on(forms.AddSpillFormView.CANCELED, this.drawSpills);
             this.addSurfaceReleaseSpillFormView.on(forms.SurfaceReleaseSpillFormView.CANCELED, this.drawSpills);
@@ -159,11 +159,9 @@ define([
             this.mapControlView.on(views.MapControlView.SPILL_BUTTON_CLICKED, this.enableSpillDrawing);
 
             this.mapView.on(views.MapView.PLAYING_FINISHED, this.stopAnimation);
-            this.mapView.on(views.MapView.DRAGGING_FINISHED, this.zoomIn);
             this.mapView.on(views.MapView.FRAME_CHANGED, this.frameChanged);
-            this.mapView.on(views.MapView.MAP_WAS_CLICKED, this.zoomOut);
             this.mapView.on(views.MapView.SPILL_DRAWN, this.spillDrawn);
-            this.mapView.on(views.MapView.READY, this.drawSpills);
+            this.mapView.on(views.MapView.VIEWPORT_CHANGED, this.viewportChanged);
 
             this.locationFileMapView.on(views.LocationFileMapView.LOCATION_CHOSEN, this.loadLocationFileWizard);
 
@@ -213,19 +211,29 @@ define([
          Consider the model dirty if the user updates an existing spill, so
          we don't get cached images back on the next model run.
          */
-        spillUpdated: function() {
+        spillUpdated: function(model, attrs, opts) {
+            // TODO: Consider renaming the `reloadTree` option. It was
+            // originally included to, as the name implies, stop the tree from
+            // reloading itself if we know we don't need to update the tree.
+            // What we want is a name that reflects that we don't need to update
+            // any UI elements as a result of this fetch -- like 'refreshUI' or
+            // something.
+            if (opts.reloadTree === false) {
+                return;
+            }
             this.rewind();
         },
 
         drawSpills: function() {
-            this.mapView.drawSpills(this.surfaceReleaseSpills);
+            this.router.navigate('/');
+            this.mapView.drawSpills();
         },
 
         setupKeyboardHandlers: function() {
             var _this = this;
 
             Mousetrap.bind('space', function() {
-                if (_this.state.isPlaying()) {
+                if (_this.state.animation.isPlaying()) {
                     _this.pause();
                 } else {
                     _this.play({});
@@ -263,7 +271,7 @@ define([
             });
 
             Mousetrap.bind('left', function() {
-                var newStep = _this.gnomeRun.currentTimeStep - 1;
+                var newStep = _this.stepGenerator.currentTimeStep - 1;
 
                 if (newStep < 0) {
                     return;
@@ -273,9 +281,9 @@ define([
             });
 
             Mousetrap.bind('right', function() {
-                var newStep = _this.gnomeRun.currentTimeStep + 1;
+                var newStep = _this.stepGenerator.currentTimeStep + 1;
 
-                if (newStep > _this.gnomeRun.length) {
+                if (newStep > _this.stepGenerator.length) {
                     return;
                 }
 
@@ -283,6 +291,11 @@ define([
             });
         },
 
+        /*
+         Handle a spill being drawn. The object triggering the event should have
+         sent starting and ending coordinates that are arrays of the form:
+         [longitude, latitude].
+         */
         spillDrawn: function(startCoords, endCoords) {
             this.addSpillFormView.show(startCoords, endCoords);
         },
@@ -446,6 +459,17 @@ define([
             this.formViews.add(this.addCustomMapFormView);
         },
 
+        /*
+         Make a model with a default option set that includes `this.gnomeModel`.
+         */
+        make: function(prototype, attrs, opts) {
+            opts = $.extend({
+                gnomeModel: this.gnomeModel
+            }, opts);
+
+            return new prototype(attrs, opts);
+        },
+
         setupModels: function() {
             var _this = this;
 
@@ -453,60 +477,26 @@ define([
             models.init(this.options);
 
             this.state = new models.AppState();
-
             this.gnomeModel = new models.GnomeModel(this.options.gnomeSettings);
 
-            // Initialize the model with any previously-generated time step data the
+            // Initialize a StepGenerator with any previously-generated time step data the
             // server had available.
-            this.gnomeRun = new models.GnomeRun(this.options.generatedTimeSteps, {
+            this.stepGenerator = this.make(models.StepGenerator, this.options.generatedTimeSteps, {
                 url: this.apiRoot,
                 expectedTimeSteps: this.options.expectedTimeSteps,
                 currentTimeStep: this.options.currentTimeStep,
-                bounds: this.options.mapBounds || [],
-                gnomeModel: this.gnomeModel
+                bounds: this.options.mapBounds || []
             });
-
-            this.map = new models.Map(this.options.map, {
-                gnomeModel: this.gnomeModel
-            });
-
-            this.customMap = new models.CustomMap({}, {
-                gnomeModel: this.gnomeModel
-            });
-
-            this.surfaceReleaseSpills = new models.SurfaceReleaseSpillCollection(
-                this.options.surfaceReleaseSpills, {
-                    gnomeModel: this.gnomeModel
-                }
-            );
-
-            this.winds = new models.WindCollection(
-                this.options.winds, {
-                    gnomeModel: this.gnomeModel
-                }
-            );
-
-            this.windMovers = new models.WindMoverCollection(
-                this.options.windMovers, {
-                    gnomeModel: this.gnomeModel
-                }
-            );
-
-            this.randomMovers = new models.RandomMoverCollection(
-                this.options.randomMovers, {
-                    gnomeModel: this.gnomeModel
-                }
-            );
-
-            this.locationFilesMeta = new models.LocationFileMetaCollection(
-                this.options.locationFilesMeta, {
-                    gnomeModel: this.gnomeModel
-                }
-            );
-
-            this.locationFileWizards = new models.LocationFileWizardCollection([], {
-                gnomeModel: this.gnomeModel
-            });
+            this.map = this.make(models.Map, this.options.map);
+            this.renderer = this.make(models.Renderer, this.options.renderer);
+            this.customMap = this.make(models.CustomMap, {});
+            this.surfaceReleaseSpills = this.make(
+                models.SurfaceReleaseSpillCollection, this.options.surfaceReleaseSpills);
+            this.winds = this.make(models.WindCollection, this.options.winds);
+            this.windMovers = this.make(models.WindMoverCollection, this.options.windMovers);
+            this.randomMovers = this.make(models.RandomMoverCollection, this.options.randomMovers);
+            this.locationFilesMeta = this.make(models.LocationFileMetaCollection, this.options.locationFilesMeta);
+            this.locationFileWizards = this.make(models.LocationFileWizardCollection, []);
 
             // Create a LocationFileWizard for every LocationFile
             this.locationFilesMeta.each(function(location) {
@@ -520,7 +510,7 @@ define([
             this.messageView.displayMessage(message);
         },
 
-        gnomeRunError: function() {
+        stepGeneratorError: function() {
             this.state.animation.setStopped();
             this.messageView.displayMessage({
                 type: 'error',
@@ -563,11 +553,11 @@ define([
 
             this.state.animation.setPlaying();
 
-            if (this.gnomeRun.isOnLastTimeStep()) {
-                this.gnomeRun.rewind();
+            if (this.stepGenerator.isOnLastTimeStep()) {
+                this.stepGenerator.rewind();
             }
 
-            this.gnomeRun.run(opts);
+            this.stepGenerator.run(opts);
         },
 
         playButtonClicked: function() {
@@ -586,36 +576,6 @@ define([
             this.state.animation.setStopped();
         },
 
-        zoomIn: function(startPosition, endPosition) {
-            this.state.animation.setPaused();
-            this.gnomeRun.rewind();
-
-            if (endPosition) {
-                var rect = {start: startPosition, end: endPosition};
-                var isInsideMap = this.mapView.isRectInsideMap(rect);
-
-                // If we are at zoom level 0 and there is no map portion outside of
-                // the visible area, then adjust the coordinates of the selected
-                // rectangle to the on-screen pixel bounds.
-                if (!isInsideMap && this.gnomeRun.zoomLevel === 0) {
-                    rect = this.mapView.getAdjustedRect(rect);
-                }
-
-                this.gnomeRun.zoomFromRect(rect, models.GnomeRun.ZOOM_IN);
-            } else {
-                this.gnomeRun.zoomFromPoint(startPosition, models.GnomeRun.ZOOM_IN);
-            }
-
-            this.state.cursor.setResting();
-        },
-
-        zoomOut: function(point) {
-            this.state.animation.setPaused();
-            this.gnomeRun.rewind();
-            this.gnomeRun.zoomFromPoint(point, models.GnomeRun.ZOOM_OUT);
-            this.mapView.setRegularCursor();
-        },
-
         pause: function() {
             this.state.animation.setPaused();
         },
@@ -626,14 +586,12 @@ define([
          */
 
         sliderMoved: function(newStepNum) {
-            if (newStepNum === this.gnomeRun.currentTimeStep) {
+            if (newStepNum === this.stepGenerator.currentTimeStep) {
                 return;
             }
 
-            // If the model and map view have the time step, display it.
-            if (this.gnomeRun.hasCachedTimeStep(newStepNum) &&
-                    this.mapView.timeStepIsLoaded(newStepNum)) {
-                this.gnomeRun.setCurrentTimeStep(newStepNum);
+            if (this.stepGenerator.hasCachedTimeStep(newStepNum)) {
+                this.stepGenerator.setCurrentTimeStep(newStepNum);
             }
         },
 
@@ -641,47 +599,56 @@ define([
          Called when the user finishes dragging the slider.
 
          The image will be loaded if it was available in cache. If it wasn't,
-         then we're going to play until `newStepNum`, triggering download of
-         the intervening images.
+         then we're going to download it and display it.
          */
         sliderChanged: function(newStepNum) {
-            if (newStepNum === this.gnomeRun.currentTimeStep) {
+            if (newStepNum === this.stepGenerator.currentTimeStep) {
                 return;
             }
 
-            // If the model and map view don't have the time step,
-            // we need to run until the new time step.
-            if (!this.gnomeRun.hasCachedTimeStep(newStepNum)
-                    || !this.mapView.timeStepIsLoaded(newStepNum)) {
-                this.play({
-                    runUntilTimeStep: newStepNum
-                });
-            }
+            this.stepGenerator.setCurrentTimeStep(newStepNum);
         },
 
         frameChanged: function() {
             if (this.state.animation.isPaused() || this.state.animation.isStopped()) {
                 return;
             }
-            this.gnomeRun.getNextTimeStep();
+            this.stepGenerator.getNextTimeStep();
         },
 
         reset: function() {
             this.state.animation.setStopped();
             this.mapView.reset();
-            this.gnomeRun.clearData();
+            this.stepGenerator.clearData();
             this.mapControlView.reset();
         },
 
-        rewind: function() {
-            this.mapView.clear();
-            this.gnomeRun.clearData();
-            this.mapControlView.reset();
-
+        viewportChanged: function() {
+            var _this = this;
+            this.state.animation.setPaused();
             if (this.map.id) {
                 this.mapControlView.enableControls(
                     this.mapControlView.mapControls);
             }
+            // Empty out the time steps.
+            this.stepGenerator.reset();
+            this.mapView.reset().then(function() {
+                _this.stepGenerator.setCurrentTimeStep(
+                    _this.stepGenerator.currentTimeStep);
+            });
+        },
+
+        rewind: function() {
+            var _this = this;
+            this.state.animation.setPaused();
+            this.mapView.reset().then(function() { _this.mapControlView.reset() })
+                .then(function() { _this.stepGenerator.clearData() })
+                .then(function() {
+                    if (_this.map.id) {
+                        _this.mapControlView.enableControls(
+                            _this.mapControlView.mapControls);
+                    }
+                });
         },
 
         /*
@@ -689,20 +656,34 @@ define([
          whatever frame was the last received from the server.
          */
         jumpToLastFrame: function() {
-            var lastFrame = this.gnomeRun.length - 1;
-            this.gnomeRun.setCurrentTimeStep(lastFrame);
+            var lastFrame = this.stepGenerator.length - 1;
+            this.stepGenerator.setCurrentTimeStep(lastFrame);
             this.state.animation.setPaused();
         },
 
         useFullscreen: function() {
+            var _this = this;
             this.mapControlView.switchToFullscreen();
-            $(this.sidebarEl).hide('slow');
+            $('#content').removeClass('span9').addClass('span11');
+            $(this.sidebarEl).hide('slow', function() {
+                _this.mapView.updateSize();
+                if (_this.mapView.backgroundOverlay) {
+                    _this.mapView.setNewViewport();
+                }
+            });
         },
 
         disableFullscreen: function() {
+            var _this = this;
             this.mapControlView.switchToNormalScreen();
             $(this.sidebarEl).removeClass('hidden');
-            $(this.sidebarEl).show('slow');
+            $('#content').removeClass('span11').addClass('span9');
+            $(this.sidebarEl).show('slow', function() {
+                _this.mapView.updateSize();
+                if (_this.mapView.backgroundOverlay) {
+                    _this.mapView.setNewViewport();
+                }
+            });
         },
 
         enableSpillDrawing: function() {
@@ -759,7 +740,7 @@ define([
          If showing an edit form, perform a `fetch` using the `AjaxForm` for the
          selected node first, which will trigger the bound `AjaxFormView` to display.
 
-         The distinction of "add" versus "edit" is made on whether or not the node
+         The distinction of "" versus "edit" is made on whether or not the node
          has an `id` property with a non-null value.
          */
         showFormForActiveTreeItem: function() {
