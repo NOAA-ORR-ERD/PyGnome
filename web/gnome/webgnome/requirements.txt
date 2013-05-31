@@ -6,7 +6,7 @@ WebHelpers2
 python-cjson==1.0.5
 pyramid==1.4a1
 nose==1.2.1
-netCDF4==1.0
+netCDF4==1.0.4
 numpy>=1.7.0
 scipy==0.10.1
 WTForms==1.0.2

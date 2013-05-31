@@ -8,355 +8,7 @@ define([
     'lib/jsv/jsv'
 ], function($, _, Backbone, util) {
 
-     /*
-     `TimeStep` represents a single time step of the user's actively-running
-     model on the server.
-     */
-    var TimeStep = Backbone.Model.extend({
-        get: function(attr) {
-            var value = Backbone.Model.prototype.get.call(this, attr);
-
-            if (attr === 'timestamp') {
-                value = util.formatTimestamp(value);
-            }
-
-            return value;
-        }
-    });
-
-
-    /*
-     `GnomeRun` is a collection of `TimeStep` objects representing a run of
-     the user's active Gnome model.
-     */
-    var GnomeRun = Backbone.Collection.extend({
-        model: TimeStep,
-
-        initialize: function(timeSteps, opts) {
-            _.bindAll(this, 'runSuccess', 'timeStepRequestFailure');
-
-            this.url = opts.url + '/runner';
-            this.currentTimeStep = opts.currentTimeStep || 0;
-            this.nextTimeStep = this.currentTimeStep ? this.currentTimeStep + 1 : 0;
-            // An array of timestamps, one for each step we expect the server to
-            // make, passed back when we initiate a model run.
-            this.expectedTimeSteps = opts.expectedTimeSteps || [];
-            // Optionally specify the zoom level.
-            this.zoomLevel = opts.zoomLevel === undefined ? 4 : opts.zoomLevel;
-            // If true, `Model` will request a new set of time steps from the server
-            // on the next run. Assume we want to do this by default (i.e., at
-            // construction time) if there are no time steps.
-            this.dirty = timeSteps.length === 0;
-
-            // When initializing the model at the last time step of a generated
-            // series, rewind to the beginning so the user can play the series
-            // again.
-            if (this.isOnLastTimeStep()) {
-                this.rewind();
-            }
-        },
-
-        hasData: function() {
-            return this.expectedTimeSteps.length > 0;
-        },
-
-        /*
-         Return true if the model has time step data for the step numbered
-         `stepNum`.
-         */
-        hasCachedTimeStep: function(stepNum) {
-            return this.get(stepNum) !== undefined;
-        },
-
-        /*
-         Return true if the server gave us a time step for step number `stepNum`.
-         */
-        serverHasTimeStep: function(stepNum) {
-            return this.expectedTimeSteps[stepNum] !== undefined;
-        },
-
-        /*
-         Return the timestamp the server returned for the expected step `stepNum`.
-         Unlike `this.getTimeStep()`, this function may be called for steps that
-         the model has not yet received from the server.
-         */
-        getTimestampForExpectedStep: function(stepNum) {
-            var timestamp;
-
-            if (this.serverHasTimeStep(stepNum)) {
-                timestamp = util.formatTimestamp(this.expectedTimeSteps[stepNum]);
-            }
-
-            return timestamp;
-        },
-
-        /*
-         Handle a successful request to the server to start the model run.
-         Events:
-
-         - Triggers:
-            - `Model.MESSAGE_RECEIVED` if the server sent a message.
-            - `Model.RUN_BEGAN` unless we received an error message.
-         */
-        runSuccess: function(data) {
-            var message = util.parseMessage(data);
-
-            if (message) {
-                this.trigger(GnomeRun.MESSAGE_RECEIVED, message);
-
-                if (message.error) {
-                    this.trigger(GnomeRun.RUN_ERROR);
-                    return false;
-                }
-            }
-
-            this.dirty = false;
-
-            var isFirstStep = data.time_step.id === 0;
-
-            // The Gnome model was reset on the server without our knowledge,
-            // so reset the client-side model to stay in sync.
-            if (isFirstStep && this.currentTimeStep) {
-                this.rewind();
-                this.trigger(GnomeRun.SERVER_RESET);
-            }
-
-            this.addTimeStep(data.time_step);
-
-            if (isFirstStep) {
-                this.expectedTimeSteps = data.expected_time_steps;
-                this.trigger(GnomeRun.RUN_BEGAN, data);
-            }
-
-            return true;
-        },
-
-        /*
-         Helper that performs an AJAX request to start ("run") the model.
-
-         Receives an array of timestamps, one for each step the server expects
-         to generate on subsequent requests.
-         */
-        doRun: function(opts) {
-            var isInvalid = function(obj) {
-                return obj === undefined || obj === null || typeof(obj) !== "object";
-            };
-
-            // Abort if we were asked to zoom without a valid `opts.rect` or
-            // `opts.point`.
-            if (opts.zoomLevel !== this.zoomLevel &&
-                isInvalid(opts.rect) && isInvalid(opts.point)) {
-                window.alert("Invalid zoom level. Please try again.");
-                return;
-            }
-
-            this.expectedTimeSteps = [];
-
-            $.ajax({
-                type: 'POST',
-                url: this.url,
-                data: opts,
-                tryCount: 0,
-                retryLimit: 3,
-                success: this.runSuccess,
-                error: util.handleAjaxError
-            });
-        },
-
-        /*
-         Run the model.
-
-         If the model is dirty, make an AJAX request to the server to initiate a
-         model run. Otherwise request the next time step.
-
-         Options:
-         - `zoomLevel`: the user's chosen zoom level
-         - `zoomDirection`: if the user is zooming, `Model.ZOOM_IN`,
-             `Model.ZOOM_OUT`, otherwise `Model.ZOOM_NONE` (the default)
-         - `runUntilTimeStep`: the time step to stop running. This value is
-             passed to the server-side model and running will stop after the
-             client requests the step with this number.
-         */
-        run: function(opts) {
-            var options = $.extend({}, {
-                zoomLevel: this.zoomLevel,
-                zoomDirection: GnomeRun.ZOOM_NONE,
-                runUntilTimeStep: this.runUntilTimeStep
-            }, opts);
-
-            this.runUntilTimeStep = options.runUntilTimeStep || null;
-
-            if (this.dirty) {
-                this.doRun(options);
-                return;
-            }
-
-            this.getNextTimeStep();
-        },
-
-        /*
-         Return the `TimeStep` object whose ID matches `self.currentTimeStep`.
-         */
-        getCurrentTimeStep: function() {
-            return this.get(this.currentTimeStep);
-        },
-
-        /*
-         Set the current time step to `newStepNum`.
-         */
-        addTimeStep: function(timeStepJson) {
-            var timeStep = new TimeStep(timeStepJson);
-            var now = new Date().getTime();
-            var requestBegan = this.timeStepRequestBegin || now;
-            timeStep.set('requestTime', now - requestBegan);
-            this.add(timeStep);
-            this.setCurrentTimeStep(timeStep.id);
-        },
-
-        /*
-         Set the current time step to `stepNum`.
-
-         Triggers:
-         - `Model.NEXT_TIME_STEP_READY` with the time step object for the new step.
-         - `Model.RUN_FINISHED` if the model has run until `this.runUntilTimeStep`.
-         */
-        setCurrentTimeStep: function(stepNum) {
-            this.currentTimeStep = stepNum;
-            this.nextTimeStep = stepNum + 1;
-
-            this.trigger(GnomeRun.NEXT_TIME_STEP_READY, this.getCurrentTimeStep());
-
-            if (this.currentTimeStep === this.runUntilTimeStep ||
-                    this.currentTimeStep === _.last(this.expectedTimeSteps)) {
-                this.trigger(GnomeRun.RUN_FINISHED);
-                this.runUntilTimeStep = null;
-                return;
-             }
-        },
-
-        isOnLastTimeStep: function() {
-            return this.currentTimeStep === this.expectedTimeSteps.length - 1;
-        },
-
-         /*
-         Finish the current run.
-
-         Triggers:
-         - `Model.RUN_FINISHED`
-         */
-        finishRun: function() {
-            this.rewind();
-            this.runUntilTimeStep = null;
-            this.trigger(GnomeRun.RUN_FINISHED);
-        },
-
-        /*
-         Makes a request to the server for the next time step.
-
-         Triggers:
-         - `Model.RUN_FINISHED` if the server has no more time steps to run.
-         */
-        getNextTimeStep: function() {
-            if (!this.serverHasTimeStep(this.nextTimeStep)) {
-                this.finishRun();
-                return;
-            }
-
-            // The time step has already been generated and we have it.
-            if (this.hasCachedTimeStep(this.nextTimeStep)) {
-                this.setCurrentTimeStep(this.nextTimeStep);
-                return;
-            }
-
-            this.timeStepRequestBegin = new Date().getTime();
-
-            // Request the next step from the server.
-            $.ajax({
-                type: "GET",
-                url: this.url,
-                success: this.runSuccess,
-                error: this.timeStepRequestFailure
-            });
-        },
-
-       timeStepRequestFailure: function(xhr, textStatus, errorThrown) {
-           if (xhr.status === 500) {
-               // TODO: Inform user of more information.
-               alert('The run failed due to a server-side error.');
-           } if (xhr.status === 404) {
-               // The run finished. We already check if the server is expected
-               // to have a time step before th in a local cache of
-               // expected time steps for the run, so we should not reach
-               // this point in normal operation. That is, assuming the local
-               // cache of time steps matches the server's -- which it always
-               // should.
-               this.finishRun();
-           }
-           this.finishRun();
-           util.log(xhr);
-       },
-
-        /*
-         Zoom the map from `point` in direction `direction`.
-
-         Options:
-         - `point`: an x, y coordinate, where the user clicked the map
-         - `direction`: either `Model.ZOOM_IN` or `Model.ZOOM_OUT`
-         */
-        zoomFromPoint: function(point, direction) {
-            this.dirty = true;
-            this.run({point: point, zoom: direction});
-        },
-
-        /*
-         Zoom the map from a rectangle `rect` in direction `direction`.
-
-         Options:
-         - `rect`: a rectangle consisting of two (x, y) coordinates that the
-         user selected for the zoom operation. TODO: This should be
-         constrained to the aspect ratio of the background image.
-         - `direction`: either `Model.ZOOM_IN` or `Model.ZOOM_OUT`
-         */
-        zoomFromRect: function(rect, direction) {
-            this.dirty = true;
-            this.run({rect: rect, zoom: direction});
-        },
-
-        /*
-         Set the current time step to 0.
-         */
-        rewind: function() {
-            this.currentTimeStep = 0;
-            this.nextTimeStep = 0;
-        },
-
-        /*
-         Clear all time step data. Used when creating a new server-side model.
-         */
-        clearData: function() {
-            this.dirty = true;
-            this.rewind();
-            this.reset();
-            this.expectedTimeSteps = [];
-        }
-    }, {
-        // Class constants
-        ZOOM_IN: 'zoom_in',
-        ZOOM_OUT: 'zoom_out',
-        ZOOM_NONE: 'zoom_none',
-
-        // Class events
-        CREATED: 'model:Created',
-        RUN_BEGAN: 'model:gnomeRunBegan',
-        RUN_FINISHED: 'model:gnomeRunFinished',
-        RUN_ERROR: 'model:runError',
-        NEXT_TIME_STEP_READY: 'model:nextTimeStepReady',
-        MESSAGE_RECEIVED: 'model:messageReceived',
-        SERVER_RESET: 'model:serverReset'
-    });
-
-
-    function prependWithGnomeUrl() {
+     function prependWithGnomeUrl() {
         // A base URL is required
         if (this.url === undefined) {
             return;
@@ -398,7 +50,7 @@ define([
             this.bind('change', this.change, this);
             this.bind('change:id', this.onIndexChange, this);
 
-            BaseModel.__super__.initialize.apply(this, arguments)
+            BaseModel.__super__.initialize.apply(this, arguments);
 
             if (opts && opts.gnomeModel) {
                 this.gnomeModel = opts.gnomeModel;
@@ -599,7 +251,7 @@ define([
                 options.success = this.success
             }
 
-            BaseModel.__super__.fetch.apply(this, [options]);
+            return BaseModel.__super__.fetch.apply(this, [options]);
         },
 
         parse: function(response) {
@@ -678,6 +330,378 @@ define([
                 prependWithGnomeUrl.call(this);
             }
         }
+    });
+
+
+     /*
+     `TimeStep` represents a single time step of the user's actively-running
+     model on the server.
+     */
+    var TimeStep = BaseModel.extend({
+        url: function() {
+            return '/step/' + this.id;
+        },
+
+        get: function(attr) {
+            var value = Backbone.Model.prototype.get.call(this, attr);
+
+            if (attr === 'timestamp') {
+                value = util.formatTimestamp(value);
+            }
+
+            return value;
+        }
+    });
+
+
+    /*
+     `StepGenerator` is a collection of `TimeStep` objects representing a run of
+     the user's active Gnome model. It also contains logic to get the next
+     available step from the model's step generator web service.
+     */
+    var StepGenerator = Backbone.Collection.extend({
+        model: TimeStep,
+
+        initialize: function(timeSteps, opts) {
+            _.bindAll(this, 'runSuccess', 'timeStepRequestFailure');
+
+            this.url = opts.url + '/step_generator';
+            this.currentTimeStep = opts.currentTimeStep || 0;
+            this.nextTimeStep = this.currentTimeStep ? this.currentTimeStep + 1 : 0;
+            // An array of timestamps, one for each step we expect the server
+            // to make, passed back when we initiate a model run.
+            this.expectedTimeSteps = opts.expectedTimeSteps || [];
+            // Create a collection to manage the server's generated time steps.
+            // This won't get reset when the client-side cache is invalided.
+            this.serverCachedTimeSteps = new Backbone.Collection(timeSteps);
+            // If true, `Model` will request a new set of time steps from the
+            // server on the next run. Assume we want to do this by default
+            // (i.e., at construction time) if there are no time steps.
+            this.dirty = timeSteps.length === 0;
+            this.gnomeModel = opts.gnomeModel;
+
+            // When initializing the model at the last time step of a
+            // generated series, rewind to the beginning so the user can play
+            // the series again.
+            if (this.isOnLastTimeStep()) {
+                this.rewind();
+            }
+        },
+
+        hasData: function() {
+            return this.expectedTimeSteps.length > 0;
+        },
+
+        /*
+         Return true if the model has time step data for the step numbered
+         `stepNum`.
+         */
+        hasCachedTimeStep: function(stepNum) {
+            return this.get(stepNum) !== undefined;
+        },
+
+        serverHasCachedTimeStep: function(stepNum) {
+            return this.serverCachedTimeSteps.get(stepNum) != undefined;
+        },
+
+        /*
+         Get time step `stepNum` from the cached time step web service.
+
+         If the time step is not known to be available, don't check the server -
+         to avoid an unnecessary network request (and 404).
+
+         Returns an object with a 'then' method -- either a failed jQuery
+         deferred, if the server is not known by the client to have the
+         requested time step, or the promise created by jQuery when the step is
+         fetched from the server.
+         */
+        getTimeStep: function(stepNum) {
+            var _this = this;
+
+            if (!this.serverHasCachedTimeStep(stepNum)) {
+                return $.Deferred().fail();
+            }
+
+            var step = new TimeStep({id: stepNum}, {gnomeModel: this.gnomeModel});
+            return step.fetch().then(function() {
+                _this.add(step);
+                _this.serverCachedTimeSteps.add(step);
+            });
+        },
+
+        /*
+         Return true if the server gave us a time step for step number `stepNum`.
+         */
+        serverHasTimeStep: function(stepNum) {
+            return this.expectedTimeSteps[stepNum] !== undefined;
+        },
+
+        /*
+         Return the timestamp the server returned for the expected step `stepNum`.
+         Unlike `this.getTimeStep()`, this function may be called for steps that
+         the model has not yet received from the server.
+         */
+        getTimestampForExpectedStep: function(stepNum) {
+            var timestamp;
+
+            if (this.serverHasTimeStep(stepNum)) {
+                timestamp = util.formatTimestamp(this.expectedTimeSteps[stepNum]);
+            }
+
+            return timestamp;
+        },
+
+        /*
+         Handle a successful request to the server to start the model run.
+         Events:
+
+         - Triggers:
+            - `Model.MESSAGE_RECEIVED` if the server sent a message.
+            - `Model.RUN_BEGAN` unless we received an error message.
+         */
+        runSuccess: function(data) {
+            var message = util.parseMessage(data);
+
+            if (message) {
+                this.trigger(StepGenerator.MESSAGE_RECEIVED, message);
+
+                if (message.error) {
+                    this.trigger(StepGenerator.RUN_ERROR);
+                    return false;
+                }
+            }
+
+            this.dirty = false;
+
+            var isFirstStep = data.time_step.id === 0;
+
+            // The Gnome model was reset on the server without our knowledge,
+            // so reset the client-side model to stay in sync.
+            if (isFirstStep && this.currentTimeStep) {
+                this.rewind();
+                this.trigger(StepGenerator.SERVER_RESET);
+            }
+
+            if (isFirstStep) {
+                this.serverCachedTimeSteps.reset();
+                this.addTimeStep(data.time_step);
+                this.expectedTimeSteps = data.expected_time_steps;
+                this.trigger(StepGenerator.RUN_BEGAN, data);
+                return;
+            }
+
+            this.addTimeStep(data.time_step);
+        },
+
+        /*
+         Helper that performs an AJAX request to start ("run") the model.
+
+         Receives an array of timestamps, one for each step the server expects
+         to generate on subsequent requests.
+         */
+        doRun: function(opts) {
+            var isInvalid = function(obj) {
+                return obj === undefined || obj === null || typeof(obj) !== "object";
+            };
+
+            this.expectedTimeSteps = [];
+
+            $.ajax({
+                type: 'POST',
+                url: this.url,
+                data: opts,
+                tryCount: 0,
+                retryLimit: 3,
+                success: this.runSuccess,
+                error: util.handleAjaxError
+            });
+        },
+
+        /*
+         Run the model.
+
+         If the model is dirty, make an AJAX request to the server to initiate a
+         model run. Otherwise request the next time step.
+
+         Options:
+         - `runUntilTimeStep`: the time step to stop running. This value is
+             passed to the server-side model and running will stop after the
+             client requests the step with this number.
+         */
+        run: function(opts) {
+            var options = $.extend({}, {
+                runUntilTimeStep: this.runUntilTimeStep
+            }, opts);
+
+            this.runUntilTimeStep = options.runUntilTimeStep || null;
+
+            if (this.dirty) {
+                this.doRun(options);
+                return;
+            }
+
+            this.getNextTimeStep();
+        },
+
+        /*
+         Return the `TimeStep` object whose ID matches `self.currentTimeStep`.
+         */
+        getCurrentTimeStep: function() {
+            return this.get(this.currentTimeStep);
+        },
+
+        /*
+         Set the current time step to `newStepNum`.
+         */
+        addTimeStep: function(timeStepJson) {
+            var timeStep = new TimeStep(timeStepJson, {gnomeModel: this.gnomeModel});
+            var now = new Date().getTime();
+            var requestBegan = this.timeStepRequestBegin || now;
+            timeStep.set('requestTime', now - requestBegan);
+            this.add(timeStep);
+            this.serverCachedTimeSteps.add(timeStep);
+            this.setCurrentTimeStep(timeStep.id);
+        },
+
+        checkIfRunIsFinished: function() {
+            if (this.currentTimeStep === this.runUntilTimeStep ||
+                this.currentTimeStep === _.last(this.expectedTimeSteps)) {
+                this.trigger(StepGenerator.RUN_FINISHED);
+                this.runUntilTimeStep = null;
+            }
+        },
+
+        /*
+         Set the current time step to `stepNum`.
+
+         Triggers:
+         - `Model.NEXT_TIME_STEP_READY` with the time step object for the new step.
+         - `Model.RUN_FINISHED` if the model has run until `this.runUntilTimeStep`.
+         */
+        setCurrentTimeStep: function(stepNum) {
+            var _this = this;
+            this.currentTimeStep = stepNum;
+            this.nextTimeStep = stepNum + 1;
+
+            function finish() {
+                _this.trigger(StepGenerator.NEXT_TIME_STEP_READY, _this.getCurrentTimeStep());
+                _this.checkIfRunIsFinished();
+            }
+
+            if (this.hasCachedTimeStep(this.currentTimeStep)) {
+                finish();
+                return $.Deferred().resolve();
+            }
+
+            return this.getTimeStep(this.currentTimeStep).then(finish);
+        },
+
+        isOnLastTimeStep: function() {
+            return this.currentTimeStep === this.expectedTimeSteps.length - 1;
+        },
+
+         /*
+         Finish the current run.
+
+         Triggers:
+         - `Model.RUN_FINISHED`
+         */
+        finishRun: function() {
+            this.rewind();
+            this.runUntilTimeStep = null;
+            this.trigger(StepGenerator.RUN_FINISHED);
+        },
+
+        /*
+         Request the next step from the step generator web service.
+         */
+        generateStep: function() {
+            this.timeStepRequestBegin = new Date().getTime();
+
+            return $.ajax({
+                type: "GET",
+                url: this.url,
+                success: this.runSuccess,
+                error: this.timeStepRequestFailure
+            });
+        },
+
+        /*
+         Makes a request to the server for the next time step.
+
+         Retrieves the step from the server's cache of generated steps if the
+         step exists there, otherwise requests a new step from the step
+         generator web service.
+
+         Triggers:
+         - `Model.RUN_FINISHED` if the server has no more time steps to run.
+         */
+        getNextTimeStep: function() {
+            var _this = this;
+            if (!this.serverHasTimeStep(this.nextTimeStep)) {
+                this.finishRun();
+                return;
+            }
+
+            if (this.serverHasCachedTimeStep(this.nextTimeStep)) {
+                // Try to get the the next time step from the server cache. If
+                // the cache returns a 404 (no time step) then request the next
+                // step from the step generator.
+                var promise = this.setCurrentTimeStep(this.nextTimeStep);
+                if (promise) {
+                    promise.fail(function() {
+                        _this.generateStep()
+                    });
+                }
+                return promise;
+            }
+
+            return this.generateStep();
+        },
+
+       timeStepRequestFailure: function(xhr, textStatus, errorThrown) {
+           if (xhr.status === 500) {
+               // TODO: Inform user of more information.
+               alert('The run failed due to a server-side error.');
+           } if (xhr.status === 404) {
+               // The run finished. We already check if the server is expected
+               // to have a time step before th in a local cache of
+               // expected time steps for the run, so we should not reach
+               // this point in normal operation. That is, assuming the local
+               // cache of time steps matches the server's -- which it always
+               // should.
+               this.finishRun();
+           }
+           this.finishRun();
+           util.log(xhr);
+       },
+
+       /*
+         Set the current time step to 0.
+         */
+        rewind: function() {
+            this.currentTimeStep = 0;
+            this.nextTimeStep = 0;
+        },
+
+        /*
+         Clear all time step data. Used when creating a new server-side model.
+         */
+        clearData: function() {
+            this.dirty = true;
+            this.rewind();
+            this.reset();
+            this.expectedTimeSteps = [];
+        }
+    }, {
+        // Class events
+        CREATED: 'model:Created',
+        RUN_BEGAN: 'model:stepGeneratorBegan',
+        RUN_FINISHED: 'model:stepGeneratorFinished',
+        RUN_ERROR: 'model:runError',
+        NEXT_TIME_STEP_READY: 'model:nextTimeStepReady',
+        MESSAGE_RECEIVED: 'model:messageReceived',
+        SERVER_RESET: 'model:serverReset'
     });
 
 
@@ -847,7 +871,7 @@ define([
         getLatLongBounds: function() {
             var bounds = this.get('map_bounds');
 
-            if (!bounds) {
+            if (!bounds.length) {
                 return;
             }
 
@@ -871,6 +895,25 @@ define([
                 new google.maps.LatLng(bounds.ne[0], bounds.sw[1])
             );
             return latLngBounds.getCenter();
+        }
+    });
+
+
+    var Renderer = BaseModel.extend({
+        url: '/renderer',
+
+        // Viewport is stored as Long, Lat. Return then as Lat, Long.
+        getLatLongViewport: function() {
+            var viewport = this.get('viewport');
+
+            if (!viewport || !viewport.length) {
+                return;
+            }
+
+            return {
+                sw: [viewport[0][1], viewport[0][0]],
+                ne: [viewport[1][1], viewport[1][0]]
+            }
         }
     });
 
@@ -1097,7 +1140,7 @@ define([
     return {
         init: init,
         TimeStep: TimeStep,
-        GnomeRun: GnomeRun,
+        StepGenerator: StepGenerator,
         GnomeModel: GnomeModel,
         GnomeModelFromLocationFile: GnomeModelFromLocationFile,
         BaseModel: BaseModel,
@@ -1111,6 +1154,7 @@ define([
         RandomMover: RandomMover,
         RandomMoverCollection: RandomMoverCollection,
         Map: Map,
+        Renderer: Renderer,
         CustomMap: CustomMap,
         LocationFile: LocationFile,
         LocationFileMeta: LocationFileMeta,

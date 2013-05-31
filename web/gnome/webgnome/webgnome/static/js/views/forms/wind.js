@@ -34,7 +34,7 @@ define([
         },
 
         zoomNwsMap: function(zoomLevel) {
-            this.windMap.setZoom(zoomLevel);
+            this.windMap.makeZoomable(zoomLevel);
         },
 
         /*

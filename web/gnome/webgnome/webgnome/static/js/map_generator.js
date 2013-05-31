@@ -67,7 +67,7 @@
                 return;
             }
 
-            var b = state.selector_rect.getBounds();
+            var b = state.selector_rect.getViewport();
             var bnl = Math.round(b.getNorthEast().lat() * 1000) / 1000;
             var bsl = Math.round(b.getSouthWest().lat() * 1000) / 1000;
             var bwl = Math.round(b.getSouthWest().lng() * 1000) / 1000;
@@ -229,7 +229,7 @@
                     //Remove rectangle selection from drawing panel
                     state.drawingManager.setOptions({drawingMode: null});
                     if (event.type == google.maps.drawing.OverlayType.RECTANGLE) {
-                        state.selector_rect.setBounds(event.overlay.getBounds());
+                        state.selector_rect.setBounds(event.overlay.getViewport());
                         state.selector_rect.setVisible(true);
                         event.overlay.setVisible(false);
                     }
