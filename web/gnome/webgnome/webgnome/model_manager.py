@@ -5,7 +5,7 @@ import copy
 import datetime
 import logging
 import os
-import shutil
+import threading
 from gnome.renderer import Renderer
 import numpy
 
@@ -32,6 +32,7 @@ from gnome.movers import WindMover, RandomMover, CatsMover
 from gnome.spill import SurfaceReleaseSpill
 from gnome.environment import Wind
 from gnome.map import MapFromBNA, GnomeMap
+from gnome.utilities import projections
 
 
 logger = logging.getLogger(__name__)
@@ -194,6 +195,14 @@ class WebRenderer(BaseWebObject, Renderer):
     def background_image_path(self):
         return os.path.join(self.images_dir, self.background_map_name)
 
+    def clear_output_dir(self):
+        """
+        Override parent method to skip clearing the output directory, in case
+        the request immediately before this was to run the model, in which
+        case the first step is generated.
+        """
+        pass
+
 
 class WebGnomeMap(BaseWebObject, GnomeMap):
     default_name = 'Map'
@@ -221,6 +230,9 @@ class WebModel(BaseWebObject, Model):
     }
 
     def __init__(self, *args, **kwargs):
+        self.lock = threading.RLock()
+        kwargs['cache_enabled'] = kwargs.get('cache_enabled', True)
+
         data_dir = kwargs.pop('data_dir')
         self.package_root = kwargs.pop('package_root')
         self.renderer = None
@@ -231,7 +243,7 @@ class WebModel(BaseWebObject, Model):
         self.base_dir = None
 
         # Set the model's ID, which we need to set the base_dir.
-        super(WebModel, self).__init__()
+        super(WebModel, self).__init__(*args, **kwargs)
 
         # Remove the default map object.
         if self.map:
@@ -291,22 +303,42 @@ class WebModel(BaseWebObject, Model):
         has a base_dir or an ID, so we defend against that possibility.
 
         Note that previous data directories are kept around.
+
+        XXX: Seems bad that updating the `changed_at` field also creates a
+        directory, changes a renderer's image directory and writes a background
+        image...
         """
         self._changed_at = change_time
 
         if self.data_dir and not os.path.exists(self.data_dir):
             util.mkdir_p(self.data_dir)
 
-        # Update renderer's `images_dir` and save a new background image.
         if self.renderer:
             self.renderer.images_dir = self.data_dir
-            self.renderer.prepare_for_model_run()
+            # Save a new background image.
+            self.renderer.prepare_for_model_run(self._cache)
 
     def mark_changed(self):
         """
         Update the `self.changed_at` field to the current time.
         """
         self.changed_at = datetime.datetime.now()
+
+    def add_renderer(self, renderer):
+        """
+        Add ``renderer`` to the collection of outputters and keep a reference
+        to it in `self.renderer`.
+        """
+        self.renderer = renderer
+        self.outputters += self.renderer
+
+    def remove_renderer(self):
+        """
+        Remove the model's current renderer -- removes the reference in `self`
+        and removes the outputter from the model's `outputters` collection.
+        """
+        self.outputters.remove(self.renderer.id)
+        self.renderer = None
 
     def add_bna_map(self, filename, map_data):
         """
@@ -337,14 +369,18 @@ class WebModel(BaseWebObject, Model):
             raise ValueError('Cannot setup a renderer if the model lacks a map')
 
         if self.renderer:
-            self.outputters.remove(self.renderer.id)
+            self.remove_renderer()
 
         # TODO: Should size be configurable?
-        self.renderer = WebRenderer(self.map.filename, self.data_dir,
-                                    size=(800, 600))
+        self.add_renderer(
+            WebRenderer(self.map.filename, self.data_dir,
+                        image_size=(800, 600),
+                        projection_class=projections.GeoProjection,
+                        cache=self._cache))
 
-        self.outputters += self.renderer
-
+        # XXX: mark_changed() updates the data_dir and the renderer's
+        # images_dir, and renders a new background image, so it should happen
+        # after we create the renderer.
         self.mark_changed()
 
     def remove_map(self):
@@ -468,6 +504,8 @@ class WebModel(BaseWebObject, Model):
         if map_data:
             # Ignore map bounds - will be set from the source file.
             map_data.pop('map_bounds', None)
+            # Ignore obj_type - only used for serialization. TODO: Better way?
+            map_data.pop('obj_type', None)
             # Make the filename, which is stored as a relative path, absolute
             filename = os.path.join(self.package_root, map_data.pop('filename'))
             self.add_bna_map(filename, map_data)

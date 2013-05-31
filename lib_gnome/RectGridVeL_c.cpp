@@ -22,18 +22,21 @@ RectGridVel_c::RectGridVel_c(void)
 
 void RectGridVel_c::Dispose ()
 {
-	if (fGridHdl)
-	{
+	if (fGridHdl) {
 		DisposeHandle((Handle)fGridHdl);
-		fGridHdl = nil;
+		fGridHdl = 0;
 	}
+
 	GridVel_c::Dispose ();
 }
+
 
 long RectGridVel_c::NumVelsInGridHdl(void)
 {
 	long numInHdl = 0;
-	if (fGridHdl) numInHdl = _GetHandleSize((Handle)fGridHdl)/sizeof(**fGridHdl);
+
+	if (fGridHdl)
+		numInHdl = _GetHandleSize((Handle)fGridHdl) / sizeof(**fGridHdl);
 	
 	return numInHdl;
 }
@@ -44,12 +47,10 @@ void RectGridVel_c::SetBounds(WorldRect bounds)
 	// (The map calls SetBounds with its bounds)
 	// BUT if we read a new style grid file, we already know the lat long and don't want the map overriding it 
 	// so ignore the call to this function in that case
-	if(EqualWRects(fGridBounds,emptyWorldRect))
-	{
+	if (EqualWRects(fGridBounds, emptyWorldRect)) {
 		fGridBounds = bounds; // we haven't set the bounds, take their value
 	}
-	else
-	{
+	else {
 		// ignore their value, we already know the bounds
 	}
 }
@@ -57,52 +58,56 @@ void RectGridVel_c::SetBounds(WorldRect bounds)
 
 VelocityRec RectGridVel_c::GetPatValue(WorldPoint p)
 {
-	
 	long rowNum, colNum;
 	VelocityRec	velocity;
-	
-	LongRect		gridLRect, geoRect;
-	ScaleRec		thisScaleRec;
-	
-	SetLRect (&gridLRect, 0, fNumRows, fNumCols, 0);
-	SetLRect (&geoRect, fGridBounds.loLong, fGridBounds.loLat, fGridBounds.hiLong, fGridBounds.hiLat);	
-	GetLScaleAndOffsets (&geoRect, &gridLRect, &thisScaleRec);
-	
+
+	LongRect gridLRect, geoRect;
+	ScaleRec thisScaleRec;
+
+	SetLRect(&gridLRect, 0, fNumRows, fNumCols, 0);
+	SetLRect(&geoRect, fGridBounds.loLong, fGridBounds.loLat, fGridBounds.hiLong, fGridBounds.hiLat);
+
+	GetLScaleAndOffsets(&geoRect, &gridLRect, &thisScaleRec);
+
 	//	gridP = WorldToScreenPoint(p, bounds, CATSgridRect);
-	colNum = p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset;
-	rowNum = p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset;
+	colNum = (long)(p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset);
+	rowNum = (long)(p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset);
+
+	if (!fGridHdl ||
+		colNum < 0 || colNum >= fNumCols ||
+		rowNum < 0 || rowNum >= fNumRows)
+	{
+		velocity.u = 0.0;
+		velocity.v = 0.0;
+		return velocity;
+	}
 	
-	
-	if (!fGridHdl || colNum < 0 || colNum >= fNumCols || rowNum < 0 || rowNum >= fNumRows)
-		
-	{ velocity.u = 0.0; velocity.v = 0.0; return velocity; }
-	
-	return INDEXH (fGridHdl, rowNum * fNumCols + colNum);
-	
+	return INDEXH(fGridHdl, rowNum * fNumCols + colNum);
 }
+
 
 VelocityRec RectGridVel_c::GetSmoothVelocity(WorldPoint p)
 {
-	Point gridP;
 	long rowNum, colNum;
 	VelocityRec	velocity, velNew;
+
+	LongRect gridLRect, geoRect;
+	ScaleRec thisScaleRec;
+
+	SetLRect(&gridLRect, 0, fNumRows, fNumCols, 0);
+	SetLRect(&geoRect, fGridBounds.loLong, fGridBounds.loLat, fGridBounds.hiLong, fGridBounds.hiLat);
+
+	GetLScaleAndOffsets(&geoRect, &gridLRect, &thisScaleRec);
 	
-	LongRect		gridLRect, geoRect;
-	ScaleRec		thisScaleRec;
-	
-	SetLRect (&gridLRect, 0, fNumRows, fNumCols, 0);
-	SetLRect (&geoRect, fGridBounds.loLong, fGridBounds.loLat, fGridBounds.hiLong, fGridBounds.hiLat);	
-	GetLScaleAndOffsets (&geoRect, &gridLRect, &thisScaleRec);
-	
-	colNum = p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset;
-	rowNum = p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset;
-	
-	velocity = GetPatValue (p);
+	colNum = (long)(p.pLong * thisScaleRec.XScale + thisScaleRec.XOffset);
+	rowNum = (long)(p.pLat  * thisScaleRec.YScale + thisScaleRec.YOffset);
+
+	velocity = GetPatValue(p);
 	
 	if (colNum > 0 && colNum < fNumCols - 1 &&
 		rowNum > 0 && rowNum < fNumRows - 1)
 	{
-		VelocityRec		topV, leftV, bottomV, rightV;
+		VelocityRec topV, leftV, bottomV, rightV;
 		
 		topV    = INDEXH (fGridHdl, rowNum + 1 * fNumCols + colNum);
 		bottomV = INDEXH (fGridHdl, rowNum - 1 * fNumCols + colNum);
