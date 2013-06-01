@@ -15,11 +15,11 @@ Sphinx==1.1.3
 Fabric==1.4.3
 WebTest==1.4.0
 repoze.profile==1.4
-cornice==0.12
 beautifulsoup4==4.1.3
 
 -e git+https://github.com/Pylons/colander.git#egg=colander
 -e git+https://github.com/abrookins/hammer.git@0.1.0#egg=hammer
+-e git+https://github.com/abrookins/cornice.git@colander-drop-support#egg=cornice
 
 
 # In addition, the pyGnome library is required. Its requirements include
