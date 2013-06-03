@@ -201,6 +201,7 @@ elif sys.platform == "win32":
     macros.append(('_CRT_SECURE_NO_WARNINGS', 1))
     compile_args = ['/EHsc']
     include_dirs.append(os.path.join('..', 'third_party_lib', 'netcdf-4.3'))
+    include_dirs.append(os.path.join('..', 'third_party_lib', 'win32_headers')) #Zelenke
 
     # build our linking arguments
     netcdf_dir = os.path.join('..', 'third_party_lib', 'netcdf-4.3',
