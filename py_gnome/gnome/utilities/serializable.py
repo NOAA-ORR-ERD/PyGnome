@@ -548,6 +548,8 @@ class Serializable(object):
         
     def __eq__(self, other):
         """
+        .. function:: __eq__(other)
+        
         Since this class is designed as a mixin with one objective being to save state of the object,
         then recreate a new object with the same state.
         
@@ -558,6 +560,8 @@ class Serializable(object):
         defined in state.create maybe different from attributes defined in the object, to_dict is used
         
         It does not compare numpy arrays - only the plain python types         
+        
+        :param other: object of the same type as self that is used for comparison in obj1 == other
         
         NOTE: This class does not have __init__ method and super is not used.
         """
@@ -574,3 +578,12 @@ class Serializable(object):
                 
         return True
             
+    def __ne__(self,other):
+        """
+        Checks if the object is not equal to another object (!=). Complementary operator to ==,
+        it calls self == other and if that fails, it returns True since the two objects are not equal.
+        """
+        if self == other:
+            return False
+        else:
+            return True
