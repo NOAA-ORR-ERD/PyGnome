@@ -4,16 +4,25 @@
 $script = <<SCRIPT
 echo Provisioning WebGnome development environment.
 sudo apt-get update
-sudo apt-get install -y apache2 libapache2-mod-uwsgi libnetcdf6 libnetcdf-dev python-scipy python-numpy git vim emacs python-pip python-virtualenv python-lxml virtualenvwrapper libxslt1-dev python-netcdf libblas-dev python-dev gfortran g++ subversion libcurl3-dev
-mkdir -p ~/src/gnome
+sudo apt-get install -y apache2 libapache2-mod-uwsgi libnetcdf6 libnetcdf-dev python-scipy python-numpy git vim emacs python-pip python-virtualenv python-lxml virtualenvwrapper libxslt1-dev python-netcdf libblas-dev python-dev gfortran g++ subversion libcurl3-dev libjpeg8 libjpeg-dev libfreetype6 libfreetype6-dev zlib1g-dev
+
+# Fix paths so PIL can find image libraries.
+# http://www.sandersnewmedia.com/why/2012/04/16/installing-pil-virtualenv-ubuntu-1204-precise-pangolin/
+udo ln -s /usr/lib/`uname -i`-linux-gnu/libfreetype.so /usr/lib/
+sudo ln -s /usr/lib/`uname -i`-linux-gnu/libjpeg.so /usr/lib/
+sudo ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib/
+
+# Setup default gitconfig
 printf "[http]\nsslVerify=False\n" > ~/.gitconfig
 printf "[credential]\nhelper = cache\n" >> ~/.gitconfig
 
 echo Downloading Gnome source...
+mkdir -p ~/src/gnome
 git clone https://trac.orr.noaa.gov/git/GNOME src/gnome
 cd src/gnome && git checkout master
 sudo ln -s /home/vagrant/src/gnome/web/gnome/webgnome/webgnome /var/www/
 sudo chown -R vagrant:www-data web
+
 # Apache needs to be able to write to the models directory and the directory
 # for user-uploaded files.
 mkdir web/gnome/webgnome/webgnome/static/models
@@ -21,20 +30,26 @@ mkdir web/gnome/webgnome/webgnome/static/uploads
 sudo chmod -R g+w web/gnome/webgnome/webgnome/static/models
 sudo chmod -R g+w web/gnome/webgnome/webgnome/static/uploads
 
+# Create the virtualenv
 echo Setting up project virtualenv
 export WORKON_HOME=~/envs
 printf "export WORKON_HOME=~/envs\n" >> ~/.bashrc
 mkdir ~/envs
+
 # The Ubuntu virtualenvwrapper package sets itself up the next
 # time you login or source .bashrc, so do that now.
 source ~/.bashrc
 mkvirtualenv gnome
+workon gnome
+pip install netCDF4
+
 # We installed numpy with apt-get to get non-python dependencies, but now we
-# want the latest numpy.
+# want the latest numpy. TODO: is this necessary, and is there a better way?
 pip install --upgrade numpy
 pip install -r py_gnome/requirements.txt
 pip install -r web/gnome/webgnome/requirements.txt
-python py_gnome/setup.py develop
+
+python py_gnome/setup2.py develop
 python web/gnome/webgnome/setup.py develop
 SCRIPT
 
@@ -57,7 +72,7 @@ Vagrant.configure("2") do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-  # config.vm.network :private_network, ip: "192.168.33.10"
+  config.vm.network :private_network, ip: "192.168.33.10"
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
