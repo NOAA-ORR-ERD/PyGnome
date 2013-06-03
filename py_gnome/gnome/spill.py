@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
 """
-spill.py - A new implementation of the spill class(s)
+spill.py - An implementation of the spill class(s)
 
-We now keep all the data in separate arrays, so we only store and move around the
-data that is needed
+A "spill" is essentially a source of elements. These classes provide
+the logic about where an when the elements are released 
 
-This is the "magic" class -- it handles the smart allocation of arrays, etc.
-
-these are managed by the SpillContainer class
 """
 import copy
 
@@ -21,7 +18,12 @@ from gnome.utilities import serializable
 
 class ArrayType(object):#,serializable.Serializable):
     """
-    Object used to capture attributes of numpy data array for spills
+    Object used to capture attributes of numpy data array for elements
+
+    An ArrayType specifies how data arrays associated with elements
+    are defined.
+
+    Used by :class:`Spill` and :class:`gnome.spill_container.SpillContainer` 
     """
     
     def __init__(self, shape, dtype, initial_value=None):
@@ -29,11 +31,11 @@ class ArrayType(object):#,serializable.Serializable):
         constructor for ArrayType
         
         :param shape: shape of the numpy array
-        :type shape: numpy array
+        :type shape: tuple of integers
         :param dtype: numpy datatype contained in array
         :type dtype: numpy dtype
         :param initial_value: initialize array to this value
-        :type initial_value: numpy array same size as shape
+        :type initial_value: numpy array of size: shape(:-1) (ie. the shape of a single element)
         """
         self.shape = shape
         self.dtype = dtype
@@ -128,7 +130,7 @@ class Spill(object):
 
     def __copy__(self):
         """
-        makes a shallow copy of the object
+        Make a shallow copy of the object
         
         It makes a shallow copy of all attributes defined in __dict__
         Since it is a shallow copy of the dict, the _gnome_id object is not copied, but merely referenced
@@ -142,7 +144,7 @@ class Spill(object):
         """
         Returns a deepcopy of this spill for the uncertainty runs
 
-        The copy has eveything the same, including the spill_num,
+        The copy has everything the same, including the spill_num,
         but it is a new object with a new id.
 
         Not much to this method, but it could be overridden to do something
@@ -185,7 +187,7 @@ class Spill(object):
 
 class FloatingSpill(Spill):
     """
-    spill for floating objects
+    Spill for floating objects
 
     all this does is add the 'windage' parameter
     
@@ -226,8 +228,9 @@ class FloatingSpill(Spill):
 
 class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
     """
-    The simplest spill source class  --  a point release of floating
-    non-weathering particles
+    The primary spill source class  --  a point release of floating
+    non-weathering particles, can be instantaneous or continuous, and be
+    released at a single point, or over a line.
 
     """
     _update= ['start_position','release_time','end_position','end_release_time']
@@ -262,17 +265,30 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
                  windage_persist=900,
                  **kwargs):
         """
-        :param num_elements: total number of elements used for this spill
-        :param start_position: location the LEs are released (long, lat, z) (floating point)
+        :param num_elements: total number of elements to be released
+        :type num_elements: integer
+
+        :param start_position: initial location the elements are released
+        :type start_position: 3-tuple of floats (long, lat, z)
+
         :param release_time: time the LEs are released (datetime object)
+        :type release_time: datetime.datetime
+
         :param end_position=None: optional -- for a moving source, the end position
+        :type end_position: 3-tuple of floats (long, lat, z)
+
         :param end_release_time=None: optional -- for a release over time, the end release time
-        :param windage_range: the windage range of the LEs (min, max). Default is (0.01, 0.04) from 1% to 4%.
-        :param windage_persist: Default is 900s, so windage is updated every 900 sec.
-                                The -1 means the persistence is infinite so it is only set at the beginning of the run.
-                                
+        :type end_release_time: datetime.datetime
+
+        :param windage_range=(0.01, 0.04): the windage range of the elements default is (0.01, 0.04) from 1% to 4%.
+        :type windage_range: tuple: (min, max)
+
+        :param windage_persist=-1: Default is 900s, so windage is updated every 900 sec.
+                                -1 means the persistence is infinite so it is only set at the beginning of the run.
+        :type windage_persist: integer seconds
+
         Remaining kwargs are passed onto base class __init__ using super. 
-        See base class documentation for remaining valid kwargs.
+        See :class:`FloatingSpill` documentation for remaining valid kwargs.
         """
         super(SurfaceReleaseSpill, self).__init__(windage_range, windage_persist, **kwargs)
         
@@ -310,13 +326,15 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
         """
         Release any new elements to be added to the SpillContainer
 
-        :param current_time: datetime object for current time
-        :param time_step: the time step, in seconds --
-                          sometimes used to decide how many should get released.
+        :param current_time: current time
+        :type current_time: datetime.datetime 
 
-        :returns : None if there are no new elements released
-                   a dict of arrays if there are new elements
+        :param time_step: the time step, sometimes used to decide how many should get released.
+        :type time_step: integer seconds
+
+        :returns : None if there are no new elements released. A dict of arrays if there are new elements
         """
+
         if not array_types:
             array_types = self.array_types
 
@@ -380,7 +398,7 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
 
     def rewind(self):
         """
-        rewind to initial conditions -- i.e. nothing released.
+        reset to initial conditions -- i.e. nothing released.
         """
         super(SurfaceReleaseSpill, self).rewind()
 
@@ -536,10 +554,17 @@ class SpatialReleaseSpill(FloatingSpill):
                  windage_persist=900,
                  ):
         """
-        :param start_positions: locations the LEs are released (num_elements X 3): (long, lat, z) (floating point)
-        :param release_time: time the LEs are released (datetime object)
-        :param windage=(0.01, 0.04): the windage range of the LEs (min, max). Default is from 1% to 4%.
-        :param persist=900: Default is 900s, so windage is updated every 900 sec.
+        :param start_positions: locations the LEs are released
+        :type start_positions: (num_elements, 3) numpy array of float64 -- (long, lat, z)
+
+        :param release_time: time the LEs are released
+        :type release_time: datetime.datetime
+
+        :param windage=(0.01, 0.04): the windage range of the LEs  Default is from 1% to 4%.
+        :param windage: tuple of floats: (min, max). 
+
+        :param persist=900: Default is 900s, so windage is updated every 900 sec. The -1 means the persistence is infinite so it is only set at the beginning of the run.
+        :type persist: integer secondsDefault 
                         The -1 means the persistence is infinite so it is only set at the beginning of the run.
         """
         super(SpatialReleaseSpill, self).__init__(windage_range, windage_persist)
@@ -559,12 +584,14 @@ class SpatialReleaseSpill(FloatingSpill):
         """
         Release any new elements to be added to the SpillContainer
 
-        :param current_time: datetime object for current time
-        :param time_step=None: the time step, in seconds -- this version doesn't use this, but it's part of the API
-        :param array_types=None:
-        
-        :returns : None if there are no new elements released. a dict of arrays if there are new elements
-        
+        :param current_time: current time
+        :type current_time: datetime.datetime 
+
+        :param time_step: the time step, sometimes used to decide how many should get released.
+        :type time_step: integer seconds
+
+        :returns : None if there are no new elements released. A dict of arrays if there are new elements
+
         .. note:: this releases all the elements at their initial positions at the release_time
         """
         if not array_types:
@@ -585,5 +612,8 @@ class SpatialReleaseSpill(FloatingSpill):
             return None
 
     def rewind(self):
+        """
+        rewind to initial conditions -- i.e. nothing released. 
+        """
         self.elements_not_released = True
         self.not_called_yet = True

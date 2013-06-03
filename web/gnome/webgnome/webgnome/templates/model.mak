@@ -2,9 +2,15 @@
 
 
 <%block name="extra_head">
+    <link rel="stylesheet" href='/static/css/leaflet.css'/>
+    <link rel="stylesheet" href='/static/css/leaflet.draw.css'/>
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
 
+    <script src="/static/js/lib/leaflet-src.js"></script>
+    <script src="/static/js/lib/leaflet.draw.js"></script>
+    <script src="/static/js/lib/leaflet.label.js"></script>
+    <script src="/static/js/lib/L.Graticule.js"></script>
     <script src="/static/js/require-jquery.js"></script>
     <script src="/static/js/config.js"></script>
 </%block>
@@ -47,6 +53,33 @@
             </ul>
         </li>
     </ul>
+              <div class="btn-toolbar" >
+                <div class="btn-group">
+                </div>
+                <div class="btn-group">
+                </div>
+                <div class="btn-group">
+##                    <a class="btn disabled" id="hand-button" href="javascript:"><i class="icon-hand-up"></i></a>
+##                    <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
+##                    <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
+##                    <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
+##                    <a class="btn disabled" id="spill-button" href="javascript:"><i class="icon-tint"></i></a>
+                </div>
+                <div class="btn-group">
+                    <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
+                    <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
+                    <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
+
+                    <div class="btn disabled" id="slider-container">
+                        <span id="time">00:00</span>
+
+                        <div id="slider"><div id="slider-shaded"></div></div>
+                    </div>
+                    <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
+                    <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
+                    <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
+                </div>
+            </div>
 </%block>
 
 <%block name="sidebar">
@@ -82,35 +115,10 @@
 
     <div id="main-content" class="row">
         <div id="model" class='section hidden'>
-            <div class="btn-toolbar">
-                <div class="btn-group">
-                    <a class="btn" id="fullscreen-button" href="javascript:"><i class="icon-fullscreen"></i></a>
-                </div>
-                <div class="btn-group">
-                    <a class="btn" id="resize-button" href="javascript:"><i class="icon-resize-small"></i></a>
-                </div>
-                <div class="btn-group">
-                    <a class="btn disabled" id="hand-button" href="javascript:"><i class="icon-hand-up"></i></a>
-                    <a class="btn disabled" id="zoom-in-button" href="javascript:"><i class="icon-zoom-in"></i></a>
-                    <a class="btn disabled" id="zoom-out-button" href="javascript:"><i class="icon-zoom-out"></i></a>
-                    <a class="btn disabled" id="move-button" href="javascript:"><i class="icon-move"></i></a>
-                    <a class="btn disabled" id="spill-button" href="javascript:"><i class="icon-tint"></i></a>
-                </div>
-                <div class="btn-group">
-                    <a class="btn disabled" id="back-button" href="javascript:"><i class="icon-fast-backward"></i></a>
 
-                    <div class="btn disabled" id="slider-container">
-                        <span id="time">00:00</span>
-
-                        <div id="slider"><div id="slider-shaded"></div></div>
-                    </div>
-                    <a class="btn" id="play-button" href="javascript:"><i class="icon-play"></i></a>
-                    <a class="btn disabled" id="pause-button" href="javascript:"><i class="icon-pause"></i></a>
-                    <a class="btn disabled" id="forward-button" href="javascript:"><i class="icon-fast-forward"></i></a>
-                </div>
-            </div>
-
-            <div id="map"> </div>
+            <div id="leaflet-map"> </div>
+            <div class="current-coordinates"></div>
+            <div id="map" class="hidden"></div>
             <div class="placeholder"></div>
         </div>
 
@@ -239,6 +247,7 @@
                 el: $('#app'),
                 modelId: "${model_id}",
                 map: ${map_data | n},
+                renderer: ${renderer_data | n},
                 gnomeSettings: ${model_settings | n},
                 generatedTimeSteps: ${generated_time_steps_json or '[]' | n},
                 expectedTimeSteps: ${expected_time_steps_json or '[]' | n},
@@ -249,7 +258,7 @@
                 randomMovers: ${random_movers | n},
                 mapIsLoaded: ${"true" if map_is_loaded else "false"},
                 locationFilesMeta: ${location_file_json | n},
-                animationThreshold: 30, // Milliseconds
+                animationThreshold: 25, // Milliseconds
                 defaultSurfaceReleaseSpill: ${default_surface_release_spill | n},
                 defaultWindMover: ${default_wind_mover | n},
                 defaultWind: ${default_wind | n},
@@ -270,11 +279,19 @@
         });
     </script>
 
-    <!-- A template Location File content windows. -->
-     <script type="text/template" id="location-file-template">
+    <!-- A template for Location File popups. -->
+    <script type="text/template" id="location-file-template">
         <h4>{{ name }}</h4>
         <p>Latitude: {{ latitude }}</p>
         <p>Longitude: {{ longitude }}</p>
         <a class="btn btn-primary load-location-file" data-location="{{ filename }}">Load Location File</a>
-     </script>
+    </script>
+
+
+    <!-- A template for Surface Release Spill popups. -->
+    <script type="text/template" id="surface-release-spill-template">
+        <h4>{{ name }}</h4>
+        <p>Latitude: {{ lat }}</p>
+        <p>Longitude: {{ lng }}</p>
+    </script>
 </%block>

@@ -77,9 +77,6 @@
 #define printError(msg) printf(msg)
 #define printNote(msg) printf(msg)
 //#define DisplayMessage(msg) printf(msg)
-#ifndef ibmpyGNOME
-#define _isnan isnan
-#endif
 
 //PtCurMap_c *GetPtCurMap(void);
 void DisplayMessage(char *msg);

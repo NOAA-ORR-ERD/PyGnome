@@ -32,8 +32,9 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
     foreground_filename_format = 'foreground_%05i.png'
     foreground_filename_glob =   'foreground_?????.png'
 
-    _update = ['image_size','viewport','map_BB','images_dir']    # todo: how should images_dir be saved? Absolute? Currently, it is relative
-    _create = ['projection_class']   # not sure image_size should be updated
+    _update = ['viewport','map_BB','images_dir', 'image_size']  # todo: how should images_dir be saved? Absolute? Currently, it is relative
+    _create = ['image_size','projection_class']
+
     _create.extend(_update)
     state = copy.deepcopy(serializable.Serializable.state)
     state.add( create=_create, update=_update)

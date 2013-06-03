@@ -574,7 +574,18 @@ class Test_full_move:
         assert np.array_equal( spill['status_codes'][3:], ( basic_types.oil_status.on_land,
                                                             ) )
 
+def test_resurface_airborne_elements():
+    positions = np.array((( 1, 2,  0.0),
+                          ( 3, 4,  1.0),
+                          (-3, 4, -1.0),
+                          ( 3, 4, -.1),
+                          ( 3, 4,  0.1),
+                         ), dtype=np.float64)
+    spill = {'next_positions': positions}
+    m = gnome.map.GnomeMap()
+    m.resurface_airborne_elements(spill)
 
+    assert spill['next_positions'][:,2].min() == 0.0
 
 # from gnome import land_check
 # class Test_land_check():

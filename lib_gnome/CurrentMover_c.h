@@ -20,7 +20,7 @@
 #define TMap Map_c
 #endif
 
-class GNOMEDLL_API CurrentMover_c : virtual public Mover_c {
+class DLL_API CurrentMover_c : virtual public Mover_c {
 	
 public:
 	LONGH			fLESetSizesH;			// cumulative total num le's in each set

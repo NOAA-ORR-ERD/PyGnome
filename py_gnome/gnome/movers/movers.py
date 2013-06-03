@@ -284,6 +284,7 @@ class WindMover(CyMover, serializable.Serializable):
         :param wind: wind object  -- provides the wind time series for the mover
         
         Optional parameters (kwargs):
+        
         :param uncertain_duration:  (seconds) how often does a given uncertian windage get re-set
         :param uncertain_time_delay:   when does the uncertainly kick in.
         :param uncertain_speed_scale:  Scale for how uncertain the wind speed is
@@ -470,7 +471,7 @@ class RandomMover(CyMover, serializable.Serializable):
         Optional parameters (kwargs)
         :param diffusion_coef: Diffusion coefficient for random diffusion. Default is 100,000 cm2/sec
         
-        Remaining kwargs are passed onto Mover's __init__ using super. 
+        Remaining kwargs are passed onto :class:`gnome.movers.Mover` __init__ using super. 
         See Mover documentation for remaining valid kwargs.
         """
         self.mover = CyRandomMover(diffusion_coef=kwargs.pop('diffusion_coef',100000))
@@ -495,7 +496,7 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
     """
     This mover class inherits from CyMover and contains CyRandomVerticalMover
 
-    The real work is done by CyRandomVerticalMover.
+    The real work is done by CyRandomVerticalMoraneomver.
     CyMover sets everything up that is common to all movers.
     """
     state = copy.deepcopy(CyMover.state)
@@ -511,7 +512,7 @@ class RandomVerticalMover(CyMover, serializable.Serializable):
         Remaining kwargs are passed onto Mover's __init__ using super. 
         See Mover documentation for remaining valid kwargs.
         """
-        self.mover = CyRandomVerticalMover(diffusion_coef=kwargs.pop('vertical_diffusion_coef',5))
+        self.mover = CyRandomVerticalMover(vertical_diffusion_coef=kwargs.pop('vertical_diffusion_coef',5))
         super(RandomVerticalMover,self).__init__(**kwargs)
 
     @property
@@ -728,9 +729,15 @@ class GridCurrentMover(CyMover, serializable.Serializable):
     
     def __init__(self, filename, topology_file=None, **kwargs):
         """
-        will need to add uncertainty parameters and other dialog fields
-        use super with kwargs to invoke base class __init__
+        Initialize a GirdCurrentMover
+
+        :param filename: absolute or relative path to the data file: could be netcdf or filelist
+        :param topology_file=None: absolute or relative path to topology file. If not given, the
+                                   GridCurrentMover will copmute teh topology from the data file.
         """
+        ## NOTE: will need to add uncertainty parameters and other dialog fields
+        ##       use super with kwargs to invoke base class __init__
+
         if not os.path.exists(filename):
             raise ValueError("Path for current file does not exist: {0}".format(filename))
         
@@ -758,6 +765,15 @@ class GridCurrentMover(CyMover, serializable.Serializable):
 #     scale_value = property( lambda self: self.mover.scale_value, 
 #                             lambda self,val: setattr(self.mover, 'scale_value', val) )
 #         
+    def export_topology(self, topology_file):
+        """
+        :param topology_file=None: absolute or relative path where topology file will be written.
+        """
+        if topology_file is None:
+            raise ValueError("Topology file path required: {0}".format(topology_file))
+        
+        self.mover.export_topology(topology_file)
+
         
 
 class GridWindMover(CyMover, serializable.Serializable):
@@ -892,3 +908,12 @@ class GridWindMover(CyMover, serializable.Serializable):
                                   0)    # only ever 1 spill_container so this is always 0!
             
         return self.delta.view(dtype=basic_types.world_point_type).reshape((-1,len(basic_types.world_point)))
+
+    def export_topology(self, topology_file):
+        """
+        :param topology_file=None: absolute or relative path where topology file will be written.
+        """
+        if topology_file is None:
+            raise ValueError("Topology file path required: {0}".format(topology_file))
+        
+        self.mover.export_topology(topology_file)

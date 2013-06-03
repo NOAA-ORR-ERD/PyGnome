@@ -1,14 +1,13 @@
-#ifdef WIN32
-	#ifdef LIB_GNOMEDLL_EXPORTS
-		#define  GNOMEDLL_API __declspec(dllexport)
+
+#ifdef _MSC_VER
+	#if defined _EXPORTS
+		#define DLL_API __declspec(dllexport)
+	#elif defined _IMPORTS
+		#define DLL_API __declspec(dllimport)
 	#else
-		#ifdef IBM
-			#define GNOMEDLL_API	// for gui_gnome to work correctly
-		#else
-			#define  GNOMEDLL_API __declspec(dllimport) 
-		#endif // IBM
-	#endif // LIB_GNOMEDLL_EXPORTS
+		#define DLL_API	// for standalone apps that don't use .dll
+	#endif
 #else 
 	// for linux/mac
-	#define GNOMEDLL_API
-#endif //WIN32
+	#define DLL_API
+#endif
