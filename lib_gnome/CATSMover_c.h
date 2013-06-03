@@ -29,7 +29,7 @@
 #endif
 
 //class CATSMover_c : virtual public CurrentMover_c {
-class GNOMEDLL_API CATSMover_c : virtual public CurrentMover_c {
+class DLL_API CATSMover_c : virtual public CurrentMover_c {
 
 public:
 	WorldPoint 		refP; 					// location of tide station or map-join pin

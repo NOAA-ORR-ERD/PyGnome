@@ -46,7 +46,7 @@ typedef struct {
 	double 	arrowDepth;	// depth level where velocities will be shown
 } GridCurrentVariables;
 
-class GNOMEDLL_API GridCurrentMover_c : virtual public CurrentMover_c {
+class DLL_API GridCurrentMover_c : virtual public CurrentMover_c {
 
 public:
 	GridCurrentVariables fVar;

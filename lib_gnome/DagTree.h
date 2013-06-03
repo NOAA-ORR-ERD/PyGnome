@@ -5,7 +5,7 @@
 #include "Basics.h"
 #include "TypeDefs.h"
 #include "RectUtils.h"
-#include "Geometry.h"
+#include "GEOMETRY.H"
 
 typedef struct	Topology
 {

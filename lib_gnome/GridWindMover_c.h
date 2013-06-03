@@ -28,7 +28,7 @@
 #endif
 
 
-class GNOMEDLL_API GridWindMover_c : virtual public WindMover_c {
+class DLL_API GridWindMover_c : virtual public WindMover_c {
 
 public:
 	

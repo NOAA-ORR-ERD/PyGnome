@@ -15,7 +15,7 @@
 #include "ExportSymbols.h"
 
 
-class GNOMEDLL_API ClassID_c {
+class DLL_API ClassID_c {
 
 public:
 	Boolean				bDirty;

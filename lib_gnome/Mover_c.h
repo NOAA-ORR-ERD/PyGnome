@@ -25,7 +25,7 @@
 class TMap;
 #endif
 
-class GNOMEDLL_API Mover_c : virtual public ClassID_c {
+class DLL_API Mover_c : virtual public ClassID_c {
 
 public:
 #ifndef pyGNOME
