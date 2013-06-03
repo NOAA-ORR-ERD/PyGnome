@@ -33,7 +33,7 @@ class Test_locate_simple_grid():
                        ( (1.45, 1.48), 1),
                        ( (1.9999999,  0.00000001), 0), # almost on a point
                        ( (2.0000000,  0.00000001), 1), # almost on a point
-                       ( (1.5, 1.0), 0), # almost on a point
+                       ( (1.4999999999, 1.0), 0), # almost on an edge
                        ]
     
     @pytest.mark.parametrize(("point", "face_num"), points_in_grid )
@@ -41,6 +41,7 @@ class Test_locate_simple_grid():
         """
         tests points that should be in the grid
         """
+        print "point is:", point
         assert self.grid.locate_face_simple(point) == face_num
 
 

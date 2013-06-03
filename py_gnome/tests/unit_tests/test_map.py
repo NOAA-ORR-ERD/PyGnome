@@ -581,12 +581,11 @@ def test_resurface_airborne_elements():
                           ( 3, 4, -.1),
                           ( 3, 4,  0.1),
                          ), dtype=np.float64)
-    spill = {'positions': positions}
+    spill = {'next_positions': positions}
     m = gnome.map.GnomeMap()
     m.resurface_airborne_elements(spill)
 
-    print spill['positions']
-    assert spill['positions'][:,2].min() == 0.0
+    assert spill['next_positions'][:,2].min() == 0.0
 
 # from gnome import land_check
 # class Test_land_check():

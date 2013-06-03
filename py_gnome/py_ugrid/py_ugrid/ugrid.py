@@ -18,7 +18,7 @@ NOTE: only full support for triangular mesh grids at the moment
 import numpy as np
 
 # used for simple locate_face test
-from .geometry.point_in_polygon import point_in_tri
+from .geometry.cy_point_in_polygon import point_in_poly as point_in_tri
 
 
 class data_set(object):

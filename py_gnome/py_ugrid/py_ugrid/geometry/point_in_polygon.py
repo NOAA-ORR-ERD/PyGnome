@@ -6,6 +6,7 @@ Point in Polygon code.
 
 import numpy as np
 
+
 def point_in_poly( pgon, (tx, ty) ):
     """
     Point in polygon test using the "Crossings" algorithm.
@@ -131,7 +132,7 @@ def point_in_tri( tri, (x, y) ):
     Note: this method has been adapted so that points on the lines will be
           considered in the triangle, regarless of if it's wound CW or CCW
     
-    from: http://local.wasp.uwa.edu.au/~pbourke/geometry/insidepoly/
+    from: http://paulbourke.net/geometry/polygonmesh/
     
     There are other solutions to this problem for polygons with special attributes.
     If the polygon is convex then one can consider the polygon as a "path"
@@ -146,6 +147,7 @@ def point_in_tri( tri, (x, y) ):
     if it is less than 0 then P is to the right of the line segment, if greater
     than 0 it is to the left, if equal to 0 then it lies on the line segment. 
     """
+    print "point_in_tri called"
     tri = np.asarray(tri, dtype=np.float64).reshape((3, 2))
     
     def sign(x):
@@ -155,17 +157,25 @@ def point_in_tri( tri, (x, y) ):
                  0 if x == 0
         (shouldn't this be built in?)
         """
-    # first check the first line segment -- left or right:
+        if x > 0:
+            return 1
+        elif x < 0:
+            return -1
+        else:
+            return 0
+
     x0 = tri[0,0] #index into the array once...
     y0 = tri[0,1]
     x1 = tri[1,0]
     y1 = tri[1,1]
     x2 = tri[2,0]
     y2 = tri[2,1]
+    # first check the first line segment -- left or right:
     #check for CW or CCW:
-    CW =  ( (y2 - y0) * (x1 - x0) - (x2 - x0)*(y1 - y0) ) <= 0 # if it's equal, the triangle is degenerate...
+    first_CW =  ( (y2 - y0) * (x1 - x0) - (x2 - x0)*(y1 - y0) ) <= 0 # if it's equal, the triangle is degenerate...
     print "is CW:", CW
-
+    if first_CW == 0:
+        raise ValueError("triangle is degenerate")
     first_sign = sign( ( (y - y0) * (x1 - x0) - (x - x0)*(y1 - y0) ) )
 #    if first_side == 0.0:
 #        return True  # on the line is considered in

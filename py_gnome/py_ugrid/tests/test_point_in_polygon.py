@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Some tests of the point in polygon functions
+Some tests of the point in polygon functions in teh cython code.
 
 Designed to be run with py.test
 
@@ -75,36 +75,36 @@ points_on_vertices = [( poly1_ccw[4],  ), # the shared vertices
                       ]
 
 @pytest.mark.parametrize(("point",), points_in_poly1 )
-def test_point_in_poly1(point):
+def test_point_in_poly(point):
     """
     tests points that should be in the polygon
     """
-    assert point_in_poly1(poly1_ccw, np.asarray(point, dtype=np.float64))
-    assert point_in_poly1(poly1_cw, np.asarray(point, dtype=np.float64))
+    assert point_in_poly(poly1_ccw, np.asarray(point, dtype=np.float64))
+    assert point_in_poly(poly1_cw, np.asarray(point, dtype=np.float64))
 
 @pytest.mark.parametrize(("point",), points_in_poly1 )
 def test_point_not_in_poly2(point):
     """
     points that are in poly1 should not be in poly2
     """
-    assert not point_in_poly1(poly2_ccw, np.asarray(point, dtype=np.float64))
-    assert not point_in_poly1(poly2_cw, np.asarray(point, dtype=np.float64))
+    assert not point_in_poly(poly2_ccw, np.asarray(point, dtype=np.float64))
+    assert not point_in_poly(poly2_cw, np.asarray(point, dtype=np.float64))
 
 @pytest.mark.parametrize(("point",), points_in_poly2 )
-def test_point_in_poly1(point):
+def test_point_in_poly(point):
     """
     tests points that should be in the polygon
     """
-    assert point_in_poly1(poly2_ccw, np.asarray(point, dtype=np.float64))
-    assert point_in_poly1(poly2_cw, np.asarray(point, dtype=np.float64))
+    assert point_in_poly(poly2_ccw, np.asarray(point, dtype=np.float64))
+    assert point_in_poly(poly2_cw, np.asarray(point, dtype=np.float64))
 
 @pytest.mark.parametrize(("point",), points_in_poly2 )
 def test_point_not_in_poly1(point):
     """
     points that are in poly1 should not be in poly2
     """
-    assert not point_in_poly1(poly1_ccw, np.asarray(point, dtype=np.float64))
-    assert not point_in_poly1(poly1_cw, np.asarray(point, dtype=np.float64))
+    assert not point_in_poly(poly1_ccw, np.asarray(point, dtype=np.float64))
+    assert not point_in_poly(poly1_cw, np.asarray(point, dtype=np.float64))
 
 @pytest.mark.parametrize(("point",), points_on_boundaries )
 def test_point_on_boundary(point):
@@ -112,8 +112,8 @@ def test_point_on_boundary(point):
     tests points that are on the boundaries between two polygons
     it should be computed as being only in one and only one of them
     """
-    p1 = point_in_poly1(poly1_ccw, np.asarray(point, dtype=np.float64))
-    p2 = point_in_poly1(poly2_ccw, np.asarray(point, dtype=np.float64))
+    p1 = point_in_poly(poly1_ccw, np.asarray(point, dtype=np.float64))
+    p2 = point_in_poly(poly2_ccw, np.asarray(point, dtype=np.float64))
     assert p1 ^ p2 # bitwise xor -- these should be integer 1 or 0
 
 @pytest.mark.parametrize(("point",), points_on_vertices )
@@ -122,8 +122,8 @@ def test_point_on_vertex(point):
     tests points that are on the vertex between two polygons
     it should be computed as being only in one and only one of them
     """
-    p1 = point_in_poly1(poly1_ccw, np.asarray(point, dtype=np.float64))
-    p2 = point_in_poly1(poly2_ccw, np.asarray(point, dtype=np.float64))
+    p1 = point_in_poly(poly1_ccw, np.asarray(point, dtype=np.float64))
+    p2 = point_in_poly(poly2_ccw, np.asarray(point, dtype=np.float64))
     print 
     assert p1 ^ p2 # bitwise xor -- these should be integer 1 or 0
 
