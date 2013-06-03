@@ -58,8 +58,10 @@ Class Reference:
    :members:
 .. autoclass:: WindMover
    :members:
+   :show-inheritance:
 .. autoclass:: RandomMover
    :members:
+   :inherited-members:
 
 ``gnome.weather`` -- pyGNOME environment classes
 ---------------------------------------------------

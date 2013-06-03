@@ -284,6 +284,7 @@ class WindMover(CyMover, serializable.Serializable):
         :param wind: wind object  -- provides the wind time series for the mover
         
         Optional parameters (kwargs):
+        
         :param uncertain_duration:  (seconds) how often does a given uncertian windage get re-set
         :param uncertain_time_delay:   when does the uncertainly kick in.
         :param uncertain_speed_scale:  Scale for how uncertain the wind speed is
@@ -470,7 +471,7 @@ class RandomMover(CyMover, serializable.Serializable):
         Optional parameters (kwargs)
         :param diffusion_coef: Diffusion coefficient for random diffusion. Default is 100,000 cm2/sec
         
-        Remaining kwargs are passed onto Mover's __init__ using super. 
+        Remaining kwargs are passed onto :class:`gnome.movers.Mover` __init__ using super. 
         See Mover documentation for remaining valid kwargs.
         """
         self.mover = CyRandomMover(diffusion_coef=kwargs.pop('diffusion_coef',100000))
