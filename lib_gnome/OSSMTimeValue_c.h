@@ -20,7 +20,7 @@
 #include "ExportSymbols.h"
 #endif
 
-class GNOMEDLL_API OSSMTimeValue_c : virtual public TimeValue_c {
+class DLL_API OSSMTimeValue_c : virtual public TimeValue_c {
 
 public:
 	

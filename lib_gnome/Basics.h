@@ -31,23 +31,14 @@
 #define _max(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
-#ifdef IBM
-#define DIRDELIMITER '\\'
-#define NEWDIRDELIMITER '\\'
-#define OPPOSITEDIRDELIMITER ':'
+#ifdef _WIN32
+	#define DIRDELIMITER '\\'		// This probably designates the separation characters for directories in a full path
+	#define NEWDIRDELIMITER '\\'	// I dunno, is this the same as DIRDELIMITER?
+	#define OPPOSITEDIRDELIMITER ':' // OK, this looks like a drive letter delimiter here.  Why the obscure name?
 #else
-#define DIRDELIMITER ':'
-#define NEWDIRDELIMITER '/'
-#define OPPOSITEDIRDELIMITER '\\'
-#endif
-
-#ifdef pyGNOME
-//#ifdef ibmpyGNOME
-#ifdef _MSC_VER
-#define NEWDIRDELIMITER '\\'
-#else
-#define NEWDIRDELIMITER '/'
-#endif
+	#define DIRDELIMITER ':'		// but why would the DIRDELIMITER look like a drive letter delimiter on a non-windows system?
+	#define NEWDIRDELIMITER '/'
+	#define OPPOSITEDIRDELIMITER '\\'
 #endif
 
 #ifdef pyGNOME

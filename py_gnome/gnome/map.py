@@ -4,19 +4,19 @@
 An implementation of the GNOME land-water map.
 
 This is a re-write of the C++ raster map approach
-
-NOTES:
- - Should we just use non-projected coordinates for the raster map?
-   It makes for a little less computation at every step.
- - Do we want to treat lakes differently than regular water?
-
-New features:
- - Map now handles spillable area and map bounds as polygons
- - raster is the same aspect ratio as the land
- - internally, raster is a numpy array
- - land raster is only as big as the land -- if the map bounds are bigger, extra space is not in the land map
-    Question: what if map-bounds is smaller than land? wasted bitmap space? (though it should work)
 """
+# NOTES:
+#  - Should we just use non-projected coordinates for the raster map?
+#    It makes for a little less computation at every step.
+#  - Do we want to treat lakes differently than regular water?
+
+# New features:
+#  - Map now handles spillable area and map bounds as polygons
+#  - raster is the same aspect ratio as the land
+#  - internally, raster is a numpy array
+#  - land raster is only as big as the land -- if the map bounds are bigger, extra space is not in the land map
+#     Question: what if map-bounds is smaller than land? wasted bitmap space? (though it should work)
+
 import copy
 import os
  
@@ -56,7 +56,9 @@ class GnomeMap(serializable.Serializable):
         Optional parameters (kwargs)
         
         :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
+
         :param spillable_area: The polygon bounding the spillable_area
+
         :param id: unique ID of the object. Using UUID as a string. This is only used when loading object from save file.
         :type id: string
         
@@ -86,33 +88,33 @@ class GnomeMap(serializable.Serializable):
     id = property( lambda self: self._gnome_id.id)
 
     def on_map(self, coord):
-        """
-        .. note::
-            should this support non-rectangular maps? -- point in polygon?
-                
-        :param coord: (long, lat, depth) location
-        :return:
-         - True if the location is on the map
+        """                
+        :param coord: location for test.
+        :type coord: 3-tuple of floats: (long, lat, depth)
+
+        :return: True if the location is on the map, False otherwise
+
         """
         return point_in_poly(self.map_bounds, coord[:2])
 
     def on_land(self, coord):
         """
-        .. note::
-            what should this give if it is off map?
-        
-        :param coord: (long, lat, depth) location
+        :param coord: location for test.
+        :type coord: 3-tuple of floats: (long, lat, depth)
         
         :return:
          - Always returns False-- no land in this implementation
         
         """
+        ## note:: what should this give if it is off map?
+        
         return False
 
     def in_water(self, coord):
         """
-        :param coord: (long, lat, depth) location
-        
+        :param coord: location for test.
+        :type coord: 3-tuple of floats: (long, lat, depth)
+
         :return:
          - True if the point is in the water,
          - False if the point is on land (or off map?)
@@ -122,24 +124,32 @@ class GnomeMap(serializable.Serializable):
 
     def allowable_spill_position(self, coord):
         """
-        .. note::
-            it could be either off the map, or in a location that spills aren't allowed
         
-        :param coord: (long, lat, depth) location
+        :param coord: location for test.
+        :type coord: 3-tuple of floats: (long, lat, depth)
         
         :return:
          - True if the point is an allowable spill position
          - False if the point is not an allowable spill position
+
+        .. note::
+            it could be either off the map, or in a location that spills aren't allowed
+
         """
         return point_in_poly(self.spillable_area, coord[:2])
 
     def beach_elements(self, spill):
         """
         Determines which LEs were or weren't beached.
+
+        Called by the model in the main time loop, after all movers have acted.
         
-        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
-            This map class  has no land, so nothing changes
+        :param spill: current SpillContainer
+        :type spill:  :class:`gnome.spill_container.SpillContainer`
+
+        This map class  has no land, so nothing changes
         """
+        ##fixme: should elements off teh mop get marked???
         return None
 
     def refloat_elements(self, spill, time_step):
@@ -147,13 +157,30 @@ class GnomeMap(serializable.Serializable):
         This method performs the re-float logic -- changing the element status flag,
         and moving the element to the last known water position
         
+        :param spill: current SpillContainer
+        :type spill:  :class:`gnome.spill_container.SpillContainer`
+
         .. note::
             This map class has no land, and so is a no-op.
         
-        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
-            This object holds the elements that need refloating
         """
         pass
+
+    def resurface_airborne_elements(self, spill):
+        """
+        Takes any elements that are left above the water surface (z < 0.0)
+        and puts them on the surface (z == 0.0)
+
+        :param spill: current SpillContainer
+        :type spill:  :class:`gnome.spill_container.SpillContainer`
+
+        .. note::
+            While this shouldn't occur according to the physics we're modeling, some movers may push elements up to high, or multiple movers may add vertical movement that adds up to over the surface.
+        """
+        next_positions = spill['next_positions']
+        #next_positions[:,2] = np.where(next_positions[:,2]<0.0, 0.0, next_positions[:,2])
+        np.maximum(next_positions[:,2], 0.0, out=next_positions[:,2])
+        return None
 
 
 class RasterMap(GnomeMap):
@@ -187,17 +214,23 @@ class RasterMap(GnomeMap):
         """
         create a new RasterMap
         
-        :param refloat_halflife: The halflife for refloating off land -- given in seconds.
-                This is assumed to be the same everywhere at this point
-        
+        :param refloat_halflife: The halflife for refloating off land -- assumed to be the same for all land.
+        :type refloat_halflife: integer seconds
+
         :param bitmap_array: A numpy array that stores the land-water map
+        :type bitmap_array: a (W,H) numpy array of type uint8
         
-        :param projection: A gnome.map_canvas.Projection object -- used to convert from lat-long to pixels in the array
+        :param projection: A Projection object -- used to convert from lat-long to pixels in the array
+        :type projection: :class:`gnome.map_canvas.Projection` 
         
         Optional arguments (kwargs)
+        
         :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
+        :type map_bounds: (N,2) numpy array of floats
         :param spillable_area: The polygon bounding the spillable_area
+        
         :param id: unique ID of the object. Using UUID as a string. This is only used when loading object from save file.
+        
         :type id: string 
         """
         
@@ -229,20 +262,21 @@ class RasterMap(GnomeMap):
         """
         returns 1 if the point is on land, 0 otherwise
         
-        coord is on pixel coordinates of the bitmap
+        :param coord: pixel coordinates of point of interest
+        :type coord: tuple: (row, col)
         
+        .. note::
+        Only used internally or for testing -- no need for external API to use pixel coordinates.
         """  
         try:
             return self.bitmap[coord[0], coord[1]] & self.land_flag
         except IndexError:
             return False # not on land if outside the land raster. (Might be off the map!) 
-
-    ## fixme: just for compatibility with old code -- nothing outside this class should know about pixels...
-    ##        on_land_pixel = _on_land_pixel
     
     def on_land(self, coord):
         """
-        :param coord: (long, lat, depth) location
+        :param coord: (long, lat, depth) location -- depth is ignored here.
+        :type coord: 3-tyuple of floats -- (long, lat, depth)
         
         :return:
          - 1 if point on land
@@ -255,7 +289,8 @@ class RasterMap(GnomeMap):
         """
         determines which LEs are on lond
         
-        param: coords  Nx2 numpy integer array of pixel coords (matching the bitmap)
+        :param coords:  Nx2 numpy integer array of pixel coords (matching the bitmap)
+        :type coords:  Nx2 numpy integer array of pixel coords (matching the bitmap)
         
         returns: a (N,) array of booleans- true for the particles that are on land
         """
@@ -289,72 +324,25 @@ class RasterMap(GnomeMap):
         else:
             return self._in_water_pixel(self.projection.to_pixel(coord, asint=True)[0]) # to_pixel makes a NX2 array
     
-#    def beach_element(self, p, lwp):
-#        """ 
-#        Beaches an element that has been landed.
-#        
-#        param: p: current position (see basic_types.world_point dtype)
-#        param: lwp: last water position (see basic_types.world_point dtype)
-#        
-#        """
-#        in_water = self.in_water
-#        displacement = ((p['p_long'] - lwp['p_long']), (p['p_lat'] - lwp['p_lat']))
-#        while not in_water((p['p_long'], p['p_lat'])):
-#            displacement = (displacement[0]/2, displacement[1]/2)
-#            p['p_long'] = lwp['p_long'] + displacement[0]
-#            p['p_lat'] = lwp['p_lat'] + displacement[1]
-
-#    def beach_elements(self, start_positions, end_positions, last_water_positions, status_codes):
-#        
-#        """ 
-#        Beaches all the elements that have crossed over land
-#        
-#        Checks to see if any land is crossed between the start and end positions.
-#           if land is crossed, the beached flag is set, and the last  water postion returned
-#        
-#        param: start_positions -- (long, lat) positions elements begin the time step at (NX2 array)
-#        param: end_positions   -- (long, lat) positions elements end the time step at (NX2 array)
-#        param: last_water_positions -- (long, lat) positions elements end the time step at (NX2 array)
-#        param: status_codes    -- the status flag for the LEs
-#
-#        last_water_positions and status_codes are changed in-place
-#        """
-#        
-#        # project the positions:
-#        start_positions_px = self.projection.to_pixel(start_positions)
-#        end_positions_px   = self.projection.to_pixel(end_positions)
-#
-#        last_water_positions_px = np.zeros_like(start_positions_px)
-#        # do the inner loop
-#        for i in range( len(start_positions) ):
-#            #do the check...
-#            result = land_check.find_first_pixel(self.bitmap, start_positions_px[i], end_positions_px[i], draw=False)
-#            if result is not None:
-#                last_water_positions_px[i], end_positions_px[i] = result
-#                status_codes[i] = oil_status.on_land
-#
-#        # put the data back in the arrays
-#        beached_mask =  ( status_codes == oil_status.on_land )
-#        end_positions[beached_mask] = self.projection.to_lonlat(end_positions_px[beached_mask])
-#        last_water_positions[beached_mask] = self.projection.to_lonlat(last_water_positions_px[beached_mask])
-#        
-#        return None
-#                                          
             
     def beach_elements(self, spill):
         """
-        Determines which LEs were or weren't beached.
+        Determines which elements were or weren't beached.
         
         Any that are beached have the beached flag set, and a "last known water position" (lkwp) is computed
         
         This version uses a modified Bresenham algorithm to find out which pixels the LE may have crossed.
         
-        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
+        :param spill: the current spill container
+        :type spill:  :class:`gnome.spill_container.SpillContainer`
             It must have the following data arrays:
             ('prev_position', 'positions', 'last_water_pt', 'status_code')
         """
+
+        self.resurface_airborne_elements(spill)
+
         # pull the data from the spill 
-        ## is the last water point the same as the previos position? why not?? if beached, it won't move, if not, then we can use it?
+        ## is the last water point the same as the previous position? why not?? if beached, it won't move, if not, then we can use it?
         start_pos     = spill['positions']
         next_pos      = spill['next_positions']
         status_codes  = spill['status_codes']
@@ -370,7 +358,7 @@ class RasterMap(GnomeMap):
         # call the actual hit code:
         # the status_code and last_water_point arrays are altered in-place
         # only check the ones that aren't already beached?
-        self.check_land(self.bitmap, start_pos_pixel, next_pos_pixel, status_codes, last_water_pos_pixel)
+        self._check_land(self.bitmap, start_pos_pixel, next_pos_pixel, status_codes, last_water_pos_pixel)
 
         #transform the points back to lat-long.
         beached = ( status_codes == oil_status.on_land )
@@ -385,11 +373,8 @@ class RasterMap(GnomeMap):
         This method performs the re-float logic -- changing the element status flag,
         and moving the element to the last known water position
         
-        .. note::
-            This map class has no land, and so is a no-op.
-        
-        :param spill: an object of or inheriting from :class:`gnome.spill.Spill`
-            This object holds the elements that need refloating
+        :param spill: the current spill container
+        :type spill:  :class:`gnome.spill_container.SpillContainer`
         """
         # index into array of particles on_land
         r_idx = np.where( spill['status_codes'] == gnome.basic_types.oil_status.on_land)[0]
@@ -414,7 +399,7 @@ class RasterMap(GnomeMap):
             spill['positions'][r_idx] = spill['last_water_positions'][r_idx]
             spill['status_codes'][r_idx] = gnome.basic_types.oil_status.in_water
         
-    def check_land(self, raster_map, positions, end_positions, status_codes, last_water_positions):
+    def _check_land(self, raster_map, positions, end_positions, status_codes, last_water_positions):
         """
         Do the actual land-checking.  This method calls a Cython version:
             gnome.cy_gnome.cy_land_check.check_land()

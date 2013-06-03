@@ -25,7 +25,7 @@ cdef class CyRandomVerticalMover(cy_mover.CyMover):
         del self.mover
         self.rand = NULL
         
-    def __init__(self, vertical_diffusion_coef=100000):
+    def __init__(self, vertical_diffusion_coef=5):
         """
         Default vertical_diffusion_coef = 5 [cm**2/sec]
         """

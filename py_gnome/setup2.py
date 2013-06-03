@@ -2,6 +2,10 @@
 
 """
 
+NOTE: TEST LINUX2 BUILD IN SETUP2.PY. IT CURRENTLY WORKS FOR ME (JASMINE).
+I'M NO VACATION NEXT WEEK, BUT IF IT WORKS FOR ANDREW, PLEASE UPDATE SETUP.PY WITH
+THIS SCRIPT.
+
 The master setup.py file for py_gnome
 
 you should be able to run :
@@ -179,20 +183,13 @@ if sys.platform == "darwin":
 
 elif sys.platform == "linux2":  
     
-    ## Need this for finding lib during linking and at runtime
-    ## using -rpath to define runtime path. 
-    ## Path is absolute because relative path is defined wrt to executable
-    ## not the cy_*.so files. For develop, this will work. For install
-    ## this will need some changes. Maybe time to break up the build script
-    ## and make it cleaner
-    libpath = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'gnome', 'cy_gnome')
-    os.environ['LDFLAGS'] = '-L{0} -Wl,-rpath={0}'.format(libpath)
-    
     ## for some reason I have to create build/temp.linux-i686-2.7
     ## else the compile fails saying temp.linux-i686-2.7 is not found
+    ## required for develop or install mode
+    build_temp = './build/temp.linux-i686-2.7' 
     if 'clean' not in sys.argv[1] and not os.path.exists('./build/temp.linux-i686-2.7'):
-        os.makedirs('./build/temp.linux-i686-2.7')    
-    
+        os.makedirs(build_temp)    
+   
     ## Not sure calling setup twice is the way to go - but do this for now
     setup(name='pyGnome', # not required since ext defines this
           cmdclass={'build_ext': build_ext},
@@ -203,7 +200,25 @@ elif sys.platform == "linux2":
                                  libraries=['netcdf'],
                                  include_dirs=[ CPP_CODE_DIR],
                                  )])
+  
+    ## in install mode, it compiles and builds libgnome inside lib.linux-i686-2.7/gnome/cy_gnome
+    ## this should be moved to build/temp.linux-i686-2.7 so cython files build and link properly
+    if 'install' in sys.argv[1]:
+        bdir = glob.glob(os.path.join('build/*/gnome/cy_gnome','libgnome.so'))
+        if len(bdir) > 1:
+            raise Exception("Found more than one libgnome.so library during install mode in 'build/*/gnome/cy_gnome'")
+        if len(bdir) == 0:
+            raise Exception("Did not find libgnome.so library during install mode in 'build/*/gnome/cy_gnome'")
+        
+        libpath = os.path.dirname( bdir[0])
+
+    else:
+        libpath = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'gnome', 'cy_gnome')
     
+    ## Need this for finding lib during linking and at runtime
+    ## using -rpath to define runtime path. Use $ORIGIN to define libgnome.so relative to cy_*.so
+    os.environ['LDFLAGS'] = "-L{0} -Wl,-rpath='$ORIGIN'".format(libpath)
+
     ## End building C++ shared object
     lib = ['gnome']
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',

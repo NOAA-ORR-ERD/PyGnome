@@ -83,9 +83,9 @@ void my_c2pstr(void *string);
 Seconds RoundDateSeconds(Seconds timeInSeconds);
 
 #ifndef MAC
-void GNOMEDLL_API DateToSeconds(DateTimeRec *date, unsigned long *seconds);
+void DLL_API DateToSeconds(DateTimeRec *date, unsigned long *seconds);
 void GetDateTime(unsigned long *seconds);
-void GNOMEDLL_API SecondsToDate(unsigned long seconds, DateTimeRec *date);
+void DLL_API SecondsToDate(unsigned long seconds, DateTimeRec *date);
 #endif
 
 Boolean IsWindowsPath(char* path);
