@@ -17,10 +17,10 @@ cdef extern int c_point_in_poly1(size_t nvert, double *vertices, double *point)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def point_in_poly1( cnp.ndarray[double, ndim=2, mode="c" ] poly,
-                    cnp.ndarray[double, ndim=1, mode="c" ] point ):
+def point_in_poly( cnp.ndarray[double, ndim=2, mode="c" ] poly not None,
+                   in_point ):
     """
-    point_in_poly1( poly, point )
+    point_in_poly( poly, point )
     
     Determines if point is in the polygon -- 1 if it is, 0 if not
     
@@ -37,6 +37,9 @@ def point_in_poly1( cnp.ndarray[double, ndim=2, mode="c" ] poly,
     cdef size_t nvert
     cdef int result
     
+    cdef cnp.ndarray[double, ndim=1, mode="c" ] point
+    point = np.asarray(in_point, dtype=np.float64).reshape((2,))
+
     nvert = poly.shape[0]
     
     result = c_point_in_poly1(nvert, &poly[0,0], &point[0])
