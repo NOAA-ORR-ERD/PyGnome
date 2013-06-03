@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 
@@ -101,37 +102,63 @@ def test_in_water_resolution():
 class Test_GnomeMap:
     def test_on_map(self):
         map = gnome.map.GnomeMap()
-        assert map.on_map((0.0, 0.0))
+        assert map.on_map((0.0, 0.0, 0.0)) is True
         
         # too big latitude
-        assert map.on_map( (0.0, 91.0) ) is False
+        print map.on_map( (0.0, 91.0, 0.0) )
+        assert map.on_map( (0.0, 91.0, 0.0) ) is False
 
         # too small latitude
-        assert map.on_map( (0.0, -91.0) ) is False
+        assert map.on_map( (0.0, -91.0, 0.0) ) is False
 
         # too big langitude
-        assert map.on_map( (0.0, 361.0) ) is False
+        assert map.on_map( (0.0, 361.0, 0.0) ) is False
 
         # too small langitude
-        assert map.on_map( (0.0, -361.0) ) is False
+        assert map.on_map( (0.0, -361.0, 0.0) ) is False
     
     def test_on_land(self):
         map = gnome.map.GnomeMap()
-        assert map.on_land( (18.0, -87.0) ) is False
+        assert map.on_land( (18.0, -87.0, 0.0) ) is False
         
     def test_in_water(self):
         map = gnome.map.GnomeMap()
 
-        assert map.in_water( (18.0, -87.0) )
+        assert map.in_water( (18.0, -87.0, 0.0) )
         
-        assert map.in_water( (370.0, -87.0) ) is False
+        assert map.in_water( (370.0, -87.0, 0.0) ) is False
         
+    def test_on_map_array(self):
+        """
+        a little bit more complex tests
+        and test of arrays of points
+        """
+        # a concave map boundary
+        map_bounds = ( (-40.0, 50.0),
+                       (-40.0, 58.0),
+                       (-30.0, 58.0),
+                       (-35.0, 53.0),
+                       (-30.0, 50.0),
+                       )
+        map = gnome.map.GnomeMap(map_bounds=map_bounds)
+
+        points = ((-35, 55, 0.0), # on map
+                  (-45, 55, 0.0), # off map
+                  )
+        result = map.on_map(points)
+        # some points on the map:
+        assert np.array_equal(result, (True,
+                                       False,
+                                       )
+                              )
+                          
+
     def test_allowable_spill_position(self):
         map = gnome.map.GnomeMap()
 
-        assert map.allowable_spill_position( (18.0, -87.0) )
+        assert map.allowable_spill_position( (18.0, -87.0, 0.0) ) is True
 
-        assert map.allowable_spill_position( (370.0, -87.0) ) is False
+        assert map.allowable_spill_position( (370.0, -87.0, 0.0) ) is False
     
     def test_GnomeMap_new_from_dict(self):
         """
@@ -171,9 +198,9 @@ class Test_RasterMap():
                         map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
                         projection=projections.NoProjection(),
                         )
-        assert map.on_map((0.0, 0.0))
+        assert map.on_map((0.0, 0.0, 0.0))
 
-        assert map.on_map((55.0, 0.0)) is False
+        assert map.on_map((55.0, 0.0, 0.0)) is False
         
     def test_on_land(self):
         map = RasterMap(refloat_halflife = 6, #hours
@@ -237,8 +264,8 @@ class TestRefloat:
     time_step = 3600.   # make time_step = refloat_halflife so 50% probability of refloat
     map = RasterMap(refloat_halflife = time_step, #hours
                     bitmap_array= np.zeros((20, 12), dtype=np.uint8),   # land/water irrelevant for this test
-                    map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
                     projection=projections.NoProjection(),
+                    map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
                     )
     num_les= 1000
     spill = TestSpillContainer(num_les)
@@ -409,8 +436,8 @@ class Test_full_move:
                         projection=projections.NoProjection(),
                         )
         # making sure the map is set up right
-        assert map.on_map((100.0, 1.0)) is False
-        assert map.on_map((0.0, 1.0))
+        assert map.on_map((100.0, 1.0, 0.0)) is False
+        assert map.on_map((0.0, 1.0, 0.0))
 
     def test_on_land(self):
         map = RasterMap(refloat_halflife = 6, #hours
@@ -578,7 +605,7 @@ def test_resurface_airborne_elements():
     positions = np.array((( 1, 2,  0.0),
                           ( 3, 4,  1.0),
                           (-3, 4, -1.0),
-                          ( 3, 4, -.1),
+                          ( 3, 4,  0.1),
                           ( 3, 4,  0.1),
                          ), dtype=np.float64)
     spill = {'next_positions': positions}
@@ -587,20 +614,11 @@ def test_resurface_airborne_elements():
 
     assert spill['next_positions'][:,2].min() == 0.0
 
-# from gnome import land_check
-# class Test_land_check():
-#     """
-#     tests of the core land_check code
-
-#     there really should be some!
-
-#     """
-
 
 if __name__ == "__main__":
-    tester = Test_full_move()
-    tester.test_land_cross()
-
-
+    tester = Test_GnomeMap()
+#    tester.test_on_map()
+#    tester.test_on_map_array()
+    tester.test_allowable_spill_position()
 
         

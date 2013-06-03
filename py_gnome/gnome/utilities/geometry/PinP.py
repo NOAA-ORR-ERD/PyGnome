@@ -6,6 +6,30 @@ Point in Polygon code.
 
 import numpy as np
 
+def points_in_poly( pgon, points):
+    """
+    compute whether the points given are in the polygon defined in pgon.
+
+    :param pgon: the vertices of teh polygon
+    :type pgon: NX2 numpy array of floats
+
+    :param points: the points to test
+    :type points: NX3 numpy array of (x, y, z) floats
+
+    :returns: a boolean array the same length as points
+
+    Note: this version takes a 3-d point, even though the third coord is ignored.
+
+    """
+    points = np.asarray(points, dtype=np.float64).reshape((-1,3))
+    result = np.zeros((points.shape[0],), dtype=np.bool)
+
+    for i, point in enumerate(points):
+        result[i] = CrossingsTest(pgon, point[:2])
+
+    return result
+
+
 def CrossingsTest( pgon, (tx, ty) ):
     """
     Point in polygon test using the "Crossings" algorithm.
