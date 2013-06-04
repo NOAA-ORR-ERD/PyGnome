@@ -588,7 +588,7 @@ define([
             });
 
             templ = _.template('<a href="javascript:" class="btn btn-primary open-spill" ' +
-                'data-id="{{ id }}">Edit</a>');
+                'data-id="{{- id }}">Edit</a>');
 
             var link = $(templ({
                 id: spill.id

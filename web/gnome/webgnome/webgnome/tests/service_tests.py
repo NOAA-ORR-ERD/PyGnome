@@ -2,7 +2,6 @@ import datetime
 import os
 import shutil
 
-from time import gmtime
 from gnome.utilities.time_utils import round_time
 from base import FunctionalTestBase
 from webgnome import util

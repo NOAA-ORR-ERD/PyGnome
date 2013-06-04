@@ -238,8 +238,13 @@
                 }
             });
 
-            // Use Django-style templates with Underscore.
+            // Use Django-style templates semantics with Underscore's _.template.
             _.templateSettings = {
+                // {{- variable_name }} -- Escapes unsafe output (e.g. user
+                // input) for security.
+                escape: /\{\{-(.+?)\}\}/g,
+
+                // {{ variable_name }} -- Does not escape output.
                 interpolate: /\{\{(.+?)\}\}/g
             };
 
@@ -281,17 +286,17 @@
 
     <!-- A template for Location File popups. -->
     <script type="text/template" id="location-file-template">
-        <h4>{{ name }}</h4>
-        <p>Latitude: {{ latitude }}</p>
-        <p>Longitude: {{ longitude }}</p>
-        <a class="btn btn-primary load-location-file" data-location="{{ filename }}">Load Location File</a>
+        <h4>{{- name }}</h4>
+        <p>Latitude: {{- latitude }}</p>
+        <p>Longitude: {{- longitude }}</p>
+        <a class="btn btn-primary load-location-file" data-location="{{- filename }}">Load Location File</a>
     </script>
 
 
     <!-- A template for Surface Release Spill popups. -->
     <script type="text/template" id="surface-release-spill-template">
-        <h4>{{ name }}</h4>
-        <p>Latitude: {{ lat }}</p>
-        <p>Longitude: {{ lng }}</p>
+        <h4>{{- name }}</h4>
+        <p>Latitude: {{- lat }}</p>
+        <p>Longitude: {{- lng }}</p>
     </script>
 </%block>
