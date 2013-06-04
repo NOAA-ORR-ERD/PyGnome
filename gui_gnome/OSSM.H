@@ -87,6 +87,59 @@ Boolean RestoreScreenImage();
 	#define GNOME_VERSION_STR  "1.3.6"
 	
 
+typedef struct {
+	
+	// these fields are permanent (saved and restored)
+	long platform; //'WIN ' or 'MAC '
+	float settingsVersion;
+	
+	WorldRect currentView;
+	long listWidth;
+	//			long textMode; // SCREENMODE or PRINTMODE
+	long screenMode; // COLORMODE, GRAYSCALEMODE, or BANDWMODE
+	long printMode; // COLORMODE, GRAYSCALEMODE, or BANDWMODE
+	long pictureSize; // WINDOWSIZE or PAGESIZE
+	long massUnits;
+	long areaUnits;
+	long distanceUnits;
+	long backgroundColor;
+	long showLatLongLines;
+	long llPosition;
+	long latLongFormat;
+	long showIntermediateLines;
+	long customGrid;
+	long longLineSpace;
+	long longLineUnits;
+	long longLabelSpace;
+	long longLabelUnits;
+	long latLineSpace;
+	long latLineUnits;
+	long latLabelSpace;
+	long latLabelUnits;
+	long preferencesScreen;
+	//			long settingsScreen;
+	char headerSPILLID[128];
+	char headerFROM[128];
+	char headerCONTACT[128];
+	char caveat[5][128];
+	long daylightSavingsTimeFlag;	// use one of the reserved spots for dst flag 3/21/06
+	long omitFooter;
+	//long reserved[20];
+	//long reserved[19];
+	long reserved[18];
+	
+	// the remaining fields are temporary (saved but reset on startup)
+	long currentTool;
+	long inBackground;
+	long colorQDAvailable;
+	long undoCode;
+	long doNotPrintError; // to allow only one error message per user action
+	long quitting;
+	long modelStartMode;
+	long sprayCanSize;
+	
+} Settings;
+
 // According to the manual this directive should be embedded 
 // inside the structure definition, so may not do anything here:
 
