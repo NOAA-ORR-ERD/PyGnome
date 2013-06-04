@@ -601,6 +601,47 @@ class Test_full_move:
         assert np.array_equal( spill['status_codes'][3:], ( basic_types.oil_status.on_land,
                                                             ) )
 
+    def test_some_off_map(self):
+        """
+        Test LEs that go off the map
+
+        should get off_map flag
+        """
+        map = RasterMap(refloat_halflife = 6, #hours
+                        bitmap_array= self.raster,
+                        map_bounds = ( (-50, -30), (-50, 30), (50, 30), (50, -30) ),
+                        projection=projections.NoProjection(),
+                        )
+        
+        spill = TestSpillContainer(8)
+        spill['positions']= np.array( ( ( 45.0, 25.0, 0.0), 
+                                        ( 45.0, 25.0, 0.0), 
+                                        ( 45.0,-25.0, 0.0), 
+                                        ( 45.0,-25.0, 0.0), 
+                                        (-45.0,-25.0, 0.0), 
+                                        (-45.0,-25.0, 0.0), 
+                                        (-45.0, 25.0, 0.0), 
+                                        (-45.0, 25.0, 0.0), 
+                                     ), dtype=np.float64) 
+
+        spill['next_positions'] =  np.array( ( ( 55.0, 25.0, 0.0), # off
+                                               ( 49.0, 25.0, 0.0), # still on
+                                               ( 45.0,-35.0, 0.0), #off
+                                               ( 45.0,-29.0, 0.0), #still on
+                                               (-55.0,-25.0, 0.0), #off
+                                               (-49.0,-25.0, 0.0), #still on
+                                               (-45.0, 35.0, 0.0), #off
+                                               (-45.0, 29.0, 0.0), #still on
+                                           ),  dtype=np.float64)
+
+        map.beach_elements(spill)
+        
+        off = np.ones(4,) * basic_types.oil_status.off_maps
+        assert np.array_equal( spill['status_codes'][0::2], off )
+
+        on = np.ones(4,) * basic_types.oil_status.in_water
+        assert np.array_equal( spill['status_codes'][1::2], on )
+
 def test_resurface_airborne_elements():
     positions = np.array((( 1, 2,  0.0),
                           ( 3, 4,  1.0),

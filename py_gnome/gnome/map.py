@@ -87,20 +87,23 @@ class GnomeMap(serializable.Serializable):
 
     id = property( lambda self: self._gnome_id.id)
 
-    @staticmethod
-    def _return_scalar_bool(flags):
-        """
-        utility to return a scalar boolean when an array of booleans has only one entry
-        
-        :param flags: array of bools
-        :type flags: numpy array of bools
-        """
-        if flags.shape == (1,):
-            return bool(flags[0]) # to convert from a numpy  bool to True or False
-        else:
-            return flags
 
-    def on_map(self, coords):
+    def on_map(self, coord):
+        """                
+        :param coord: location for test.
+        :type coord: 3-tuple of floats: (long, lat, depth) or a NX3 numpy array
+
+        :return: True if the location is on the map, False otherwise
+
+        Note:
+          coord is 3-d, but the concept of "on the map" is 2-d in this context, so depth is ignored.
+
+        """
+        coord = np.asarray(coords, dtype=gnome.basic_types.world_point_type).reshape(-1,3)
+        
+        return point_in_poly(self.map_bounds, coord)
+
+    def on_map_array(self, coords):
         """                
         :param coords: location for test.
         :type coords: 2-tuple of floats: (long, lat, depth) or a NX3 numpy array
@@ -112,9 +115,9 @@ class GnomeMap(serializable.Serializable):
 
         """
         coords = np.asarray(coords, dtype=gnome.basic_types.world_point_type).reshape(-1,3)
-        flags = points_in_poly(self.map_bounds, coords)
         
-        return self._return_scalar_bool(flags)
+        return points_in_poly(self.map_bounds, coords)
+
 
     def on_land(self, coord):
         """
@@ -158,6 +161,22 @@ class GnomeMap(serializable.Serializable):
         flags = points_in_poly(self.spillable_area, coord)
         return self._return_scalar_bool(flags)
 
+    def _set_off_map_status(self, spill):
+        """
+        Determines which LEs moved off the map
+
+        Called by beach_elements after checking for land-hits
+        
+        :param spill: current SpillContainer
+        :type spill:  :class:`gnome.spill_container.SpillContainer`
+
+        """
+        next_positions = spill['next_positions']
+        status_codes = spill['status_codes']
+        off_map = ~self.on_map(next_positions)
+        print "off_map:",off_map
+        status_codes[off_map] = oil_status.off_maps
+
     def beach_elements(self, spill):
         """
         Determines which LEs were or weren't beached.
@@ -167,10 +186,9 @@ class GnomeMap(serializable.Serializable):
         :param spill: current SpillContainer
         :type spill:  :class:`gnome.spill_container.SpillContainer`
 
-        This map class  has no land, so nothing changes
+        This map class  has no land, so only the map check is done nothing changes
         """
-        ##fixme: should elements off teh mop get marked???
-        return None
+        self._set_off_map_status(spill)
 
     def refloat_elements(self, spill, time_step):
         """
@@ -369,7 +387,7 @@ class RasterMap(GnomeMap):
         next_pos[beached, :2]= self.projection.to_lonlat(next_pos_pixel[beached])
         last_water_positions[beached, :2] = self.projection.to_lonlat(last_water_pos_pixel[beached,:2])
 
-        ##fixme -- add off-map check here
+        self._set_off_map_status(spill)
 
 
     def refloat_elements(self, spill, time_step):
