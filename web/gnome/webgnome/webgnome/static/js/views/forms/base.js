@@ -307,7 +307,7 @@ define([
             this.model = this.getModel(id);
 
             if (!this.model) {
-                throw new ModelNotFoundException('Model missing on reload.');
+                throw new base.ModelNotFoundException('Model missing on reload.');
             }
 
             this.setupModelEvents();

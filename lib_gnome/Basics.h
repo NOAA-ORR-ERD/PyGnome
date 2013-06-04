@@ -17,6 +17,7 @@
 #include <math.h>
 #include <fstream>
 #include <cstdlib>
+#include <cstring>
 #include <ios>
 
 #define nil NULL
