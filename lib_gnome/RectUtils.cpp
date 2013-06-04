@@ -1,7 +1,7 @@
 //#include	"CROSS.H"
 
 #include	"RectUtils.h"
-#include	"GenDefs.h"
+#include	"GENDEFS.H"
 
 #ifndef pyGNOME
 /**************************************************************************************************/

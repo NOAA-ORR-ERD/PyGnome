@@ -63,11 +63,15 @@ def setup_vagrant_key():
     """
     Set up access to the user's vagrant server.
     """
+    if env.key_filename and env.user == 'vagrant':
+        return
+
     if env.host_string in env.roledefs['dev']:
         env.user = 'vagrant'
-        result = api.local('vagrant ssh-config | grep IdentityFile',
-                           capture=True)
-        env.key_filename = result.split()[1].replace('"', '')
+        with api.lcd(os.path.join(env.local_base_dir, 'conf')):
+            result = api.local('vagrant ssh-config | grep IdentityFile',
+                               capture=True)
+            env.key_filename = result.split()[1].replace('"', '')
 
 
 def virtualenv():
@@ -79,8 +83,39 @@ def get_config():
     Parse and load a "vagrant.cfg" file in the current directory if it exists.
     """
     config = ConfigParser()
-    config.read('vagrant.cfg')
+    config.read(os.path.join(env.local_base_dir, 'conf', 'vagrant.cfg'))
     return config
+
+
+@api.task
+def restart_apache():
+    setup_vagrant_key()
+    api.sudo('service apache2 restart')
+
+
+@api.task
+def reload_apache():
+    setup_vagrant_key()
+    api.sudo('service apache2 reload')
+
+
+@api.task
+def test_apache():
+    setup_vagrant_key()
+    api.sudo('apache2ctl configtest')
+
+
+@api.task
+def report_ip():
+    setup_vagrant_key()
+    api.sudo('ifconfig | grep 192')
+
+
+@api.task
+def tail_apache():
+    setup_vagrant_key()
+    api.sudo('tail -f /var/log/apache2/webgnome-error.log '
+             '/var/log/apache2/webgnome-access.log')
 
 
 @api.task
@@ -109,7 +144,7 @@ def setup_apache():
     api.sudo('a2ensite webgnome')
     api.sudo('a2dissite default')
     api.sudo('apache2ctl configtest')
-    api.sudo('service apache2 reload')
+    api.execute(reload_apache)
 
 
 @api.task
@@ -135,6 +170,12 @@ def setup_host():
                  'machine trac.orr.noaa.gov login %s password %s' % (
                  git_username, git_password))
 
+    # Fix paths to libraries PIL uses.
+    # http://jj.isgeek.net/2011/09/install-pil-with-jpeg-support-on-ubuntu-oneiric-64bits/
+    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libjpeg.so /usr/lib')
+    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libfreetype.so /usr/lib')
+    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib')
+
     ensure_gnome_exists()
 
     with api.cd(env.gnome_base_dir):
@@ -151,6 +192,8 @@ def setup_host():
         api.run('sudo chmod -R g+w web/gnome/webgnome/webgnome/static/models')
         api.run('sudo chmod -R g+w web/gnome/webgnome/webgnome/static/uploads')
 
+        api.sudo('chown -R vagrant:www-data src')
+
         print 'Setting up project virtualenv'
 
         if not files.exists('~/envs'):
@@ -162,7 +205,6 @@ def setup_host():
 
         # We installed numpy with apt-get to get non-python dependencies, but
         # now we want the latest numpy.
-        print env.py_gnome_dir
         with api.cd(env.py_gnome_dir):
             with virtualenv():
                 api.run('pip install --upgrade numpy')
@@ -197,3 +239,34 @@ def build_docs():
         file_path = os.path.join(js_dir, filename)
         api.local('%s %s -o %s' % (docco_path, file_path, js_docs_dir))
 
+
+@api.task
+def pull(branch='master'):
+    setup_vagrant_key()
+    ensure_gnome_exists()
+
+    with api.cd(env.gnome_base_dir):
+        api.run('git pull origin %s' % branch)
+        current_branch = api.run('git rev-parse --abbrev-ref HEAD')
+
+        print 'Checking out %s' % branch
+        if current_branch != branch:
+            api.run('git checkout %s' % branch)
+
+
+@api.task
+def deploy_webgnome(restart=False, branch='master'):
+    setup_vagrant_key()
+    api.execute(pull, branch)
+
+    with virtualenv():
+        with api.cd(env.py_gnome_dir):
+            api.run('python setup2.py cleanall', warn_only=True)
+            api.run('python setup2.py develop')
+
+        with api.cd(env.webgnome_dir):
+            api.run('pip install -r requirements.txt')
+            api.run('touch app.wsgi')
+
+    if restart:
+        api.execute(restart_apache)

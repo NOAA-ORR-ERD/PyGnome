@@ -6,7 +6,7 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "shio.h"
+#include "Shio.h"
 
 #ifndef pyGNOME
 #include "CROSS.H"
