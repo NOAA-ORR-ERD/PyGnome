@@ -5,6 +5,7 @@ Tests the SpillContainer class
 """
 
 from datetime import datetime, timedelta
+import copy
 
 import pytest
 import numpy as np
@@ -527,6 +528,74 @@ def test_get_spill_mask():
     assert all(sc['spill_num'][sc.get_spill_mask(sp2)] == 2)
     assert all(sc['spill_num'][sc.get_spill_mask(sp0)] == 0)
     assert all(sc['spill_num'][sc.get_spill_mask(sp1)] == 1)
+
+
+def test_eq_spill_container1():
+    """ test if two spill containers are equal """
+    (sp1, sp2) = get_eq_spills()
+    sc1 = SpillContainer()
+    sc2 = SpillContainer()
+    
+    sc1.spills.add(sp1)
+    sc2.spills.add(sp2)
+    
+    sc1.release_elements(sp1.release_time, 360)
+    sc2.release_elements(sp2.release_time, 360)
+    
+    assert sc1 == sc2
+    
+def test_eq_spill_container2():
+    """ 
+    test if two spill containers are equal within 1e-5 tolerance
+    adjust the spill_container._array_allclose_atol = 1e-5 and vary start_positions
+    by 1e-8
+    """
+    (sp1, sp2) = get_eq_spills()
+    sp2.start_position = sp2.start_position + (1e-8, 1e-8, 0) # just move one data array a bit
+    sc1 = SpillContainer()
+    sc2 = SpillContainer()
+    
+    sc1.spills.add(sp1)
+    sc2.spills.add(sp2)
+    
+    sc1.release_elements(sp1.release_time, 360)
+    sc2.release_elements(sp2.release_time, 360)
+    
+    sc1._array_allclose_atol = 1e-5 # need to change both atol
+    sc2._array_allclose_atol = 1e-5
+    
+    assert sc1 == sc2    
+    assert sc2 == sc1    
+
+def test_ne_spill_container():
+    """ test two spill containers are not equal """
+    (sp1, sp2) = get_eq_spills()
+    sp2.start_position = sp2.start_position + (1e-8, 1e-8, 0) # just move one data array a bit
+    
+    sc1 = SpillContainer()
+    sc2 = SpillContainer()
+    
+    sc1.spills.add(sp1)
+    sc2.spills.add(sp2)
+    
+    sc1.release_elements(sp1.release_time, 360)
+    sc2.release_elements(sp2.release_time, 360)
+    
+    assert sc1 != sc2
+
+""" Helper function """
+def get_eq_spills():
+    """ returns a tuple of identical SurfaceReleaseSpill objects """
+    pos = (28.0, -75.0, 0.0)
+    num_elements = 10
+    release_time = datetime(2000, 1, 1, 1)
+    
+    spill = SurfaceReleaseSpill(num_elements, (28, -75, 0), release_time)
+    spill.spill_num.initial_value = 0
+    spill2 = SurfaceReleaseSpill.new_from_dict(spill.to_dict('create'))
+    
+    return (spill, spill2)
+    
     
 if __name__ == "__main__":
     test_rewind2()

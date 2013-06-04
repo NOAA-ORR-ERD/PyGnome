@@ -42,6 +42,12 @@ class SpillContainerData(object):
         if not data_arrays:
             data_arrays = {}
         self._data_arrays = data_arrays
+        
+        # following internal variable is used when comparing two SpillContainer objects
+        # when testing the data arrays are equal, use this tolerance with numpy.allclose() method
+        # default is to make it 0 so arrays must match exactly. This will not be true when state is stored
+        # midway through the run since positions are stored as single dtype as opposed to double
+        self._array_allclose_atol = 0  
 
     def __getitem__(self, data_name):
         """
@@ -82,7 +88,7 @@ class SpillContainerData(object):
 
     def __eq__(self,other):
         """ 
-        Compare two SpillContanerData objects
+        Compare equality of two SpillContanerData objects
         """
         if type(self) != type(other):
             return False
@@ -101,9 +107,29 @@ class SpillContainerData(object):
                 return False
             
         # check key, val that are dicts
-        
+        for item in val_is_dict:
+            if len(self.__dict__[item]) != len(other.__dict__[item]):
+                return False    # dicts should contain the same number of keys,values
+            
+            for key,val in self.__dict__[item].iteritems():
+                if isinstance(val, np.ndarray):
+                    if not np.allclose(val, other.__dict__[item][key], 0, self._array_allclose_atol):
+                        return False
+                else:
+                    if val != other.__dict__[item][key]:
+                        return False
                 
-
+        return True
+    
+    def __ne__(self, other):
+        """ 
+        Compare inequality (!=) of two SpillContanerData objects
+        """
+        if self == other:
+            return False
+        else:
+            return True
+                
     @property
     def num_elements(self):
         """
