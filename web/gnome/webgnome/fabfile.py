@@ -102,7 +102,13 @@ def reload_apache():
 @api.task
 def test_apache():
     setup_vagrant_key()
-    api.sudo('service apache2 configtest')
+    api.sudo('apache2ctl configtest')
+
+
+@api.task
+def report_ip():
+    setup_vagrant_key()
+    api.sudo('ifconfig | grep 192')
 
 
 @api.task
@@ -253,8 +259,14 @@ def deploy_webgnome(restart=False, branch='master'):
     setup_vagrant_key()
     api.execute(pull, branch)
 
-    with api.cd(env.webgnome_dir):
-        api.run('touch app.wsgi')
+    with virtualenv():
+        with api.cd(env.py_gnome_dir):
+            api.run('python setup2.py cleanall', warn_only=True)
+            api.run('python setup2.py develop')
+
+        with api.cd(env.webgnome_dir):
+            api.run('pip install -r requirements.txt')
+            api.run('touch app.wsgi')
 
     if restart:
         api.execute(restart_apache)
