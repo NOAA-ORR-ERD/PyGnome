@@ -370,11 +370,11 @@ enum { ESCAPEKEY = 0X35, ENTERKEY = 0X4C, RETURNKEY = 0X24, PERIODKEY = 0X2F,
 	AKEY = 0X00, IKEY = 0X22 };
 #endif
 
-#ifdef MAC
-enum { ON = 1, OFF = 0 };
-#define _min(a, b) ((a) < (b) ? (a) : (b))
-#define _max(a, b) ((a) > (b) ? (a) : (b))
-#define _isnan isnan
+#ifdef _MSC_VER
+  #include <float.h>  // for _isnan() on VC++
+  #define isnan(x) _isnan(x)  // VC++ uses _isnan() instead of isnan()
+#else
+  #include <math.h>  // for isnan() everywhere else
 #endif
 
 #define round(n) floor((n) + 0.5)

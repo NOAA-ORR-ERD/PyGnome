@@ -1206,9 +1206,9 @@ void SplitPathFileName(CHARPTR fullPath, CHARPTR fileName)
 	
 	fileName[0] = 0;
 	
-	if (p = strrchr(fullPath, NEWDIRDELIMITER)) {
-		if (p[1] == 0) { // treat final directory as file name to be retrieved
-			*p = 0;
+	if ((p = strrchr(fullPath, NEWDIRDELIMITER)) > 0) {
+		if (p[1] == 0) { // our 'new' delimiter is the last char in the string
+			*p = 0; // truncate the delimiter from the string
 			SplitPathFile(fullPath, fileName);
 			return;
 		}

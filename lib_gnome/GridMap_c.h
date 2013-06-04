@@ -30,7 +30,7 @@
 #include "GridVel.h"
 #endif
 
-class GNOMEDLL_API GridMap_c : virtual public ClassID_c
+class DLL_API GridMap_c : virtual public ClassID_c
 {
 	
 public:
