@@ -113,8 +113,14 @@ class SpillContainerData(object):
             
             for key,val in self.__dict__[item].iteritems():
                 if isinstance(val, np.ndarray):
-                    if not np.allclose(val, other.__dict__[item][key], 0, self._array_allclose_atol):
-                        return False
+                    # np.allclose will not work for scalar array so when key is current_time_stamp, need to do something else
+                    if len(val.shape) == 0: 
+                        if val != other.__dict__[item][key]:
+                            return False 
+                    else:
+                        # we know it is an array, not a scalar in an array - allclose will work
+                        if not np.allclose(val, other.__dict__[item][key], 0, self._array_allclose_atol):
+                            return False
                 else:
                     if val != other.__dict__[item][key]:
                         return False
