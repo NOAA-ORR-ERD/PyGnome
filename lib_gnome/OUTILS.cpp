@@ -3,7 +3,7 @@
 #include "TypeDefs.h"
 //#include "MemUtils.h"
 #include "StringFunctions.h"
-#include "OUtils.h"
+#include "OUTILS.H"
 
 void ConvertToUV (double magnitude, double angle, double *u, double *v)
 {

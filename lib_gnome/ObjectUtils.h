@@ -4,7 +4,7 @@
 
 
 #include	"CMap2.h"
-#include	"Geometry.h"
+#include	"GEOMETRY.H"
 #include	"RectUtils.h"
 
 

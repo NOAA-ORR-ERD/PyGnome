@@ -2,7 +2,6 @@ import colander
 import logging
 import requests
 
-from gnome import basic_types
 from lxml import etree
 from cornice.resource import resource, view
 from webgnome import util, schema
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 @resource(path='/nws/wind', renderer='gnome_json',
           description='National Weather Service wind data.')
-class Wind(BaseResource):
+class NwsWind(BaseResource):
     def error(self, status, message):
         """
         Create an error response with HTTP status code ``status``. The response
