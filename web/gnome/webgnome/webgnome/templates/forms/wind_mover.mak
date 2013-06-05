@@ -117,5 +117,5 @@
 
 <!-- A template for wind drop-down items. -->
 <script type="text/template" id="wind-select">
-    <option value="{{ id }}">{{ name }}</option>
+    <option value="{{- id }}">{{- name }}</option>
 </script>

@@ -237,7 +237,7 @@ class MapCanvas(object):
             pixel_pos = self.projection.to_pixel(positions, asint=False)
             arr = self.fore_image_array
 
-            # remove points that are off the map
+            # remove points that are off the view port
             on_map = ( (pixel_pos[:,0] > 1) &
                        (pixel_pos[:,1] > 1) &
                        (pixel_pos[:,0] < (self.image_size[0]-2) ) &
@@ -254,8 +254,9 @@ class MapCanvas(object):
             arr[(pixel_pos[on_land,1]+1).astype(np.int32), (pixel_pos[on_land,0]-1).astype(np.int32)] = color
             arr[(pixel_pos[on_land,1]+1).astype(np.int32), (pixel_pos[on_land,0]+1).astype(np.int32)] = color
 
-            # draw the four pixels for the elements not on land
-            not_on_land = ~on_land
+            # draw the four pixels for the elements not on land and not off the map
+            off_map = spill['status_codes'][on_map] == basic_types.oil_status.off_maps
+            not_on_land = np.logical_and(~on_land, ~off_map)
 
             #note: long-lat backwards for array (vs image)
             arr[(pixel_pos[not_on_land,1]-0.5).astype(np.int32), (pixel_pos[not_on_land,0]-0.5).astype(np.int32)] = color

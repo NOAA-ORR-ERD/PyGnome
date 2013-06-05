@@ -80,7 +80,7 @@ class SpillContainerData(object):
             # if the array is already here, the type should match        
             if array.dtype !=  self._data_arrays[data_name].dtype:
                 raise ValueError("new data array must be the same type")
-            # and the shape should match        
+            # and the shape should match    
             if array.shape !=  self._data_arrays[data_name].shape:
                 raise ValueError("new data array must be the same shape")
                     

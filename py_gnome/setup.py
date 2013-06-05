@@ -187,6 +187,20 @@ if sys.platform == "darwin":
     static_lib_files = []
 
 
+elif sys.platform == "linux2":
+    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
+                                ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
+                                language='c++',
+                                define_macros=macros,
+                                extra_compile_args=compile_args + [
+                                    '-I/usr/local/include'],
+                                extra_link_args=['-L/usr/local/lib'],
+                                libraries=['netcdf'],
+                                include_dirs=l_include_dirs,
+                                )
+
+    extensions.append(basic_types_ext)
+
 elif sys.platform == "win32":
     # Distutils normally only works with VS2008.
     # this is to trick it into seeing VS2010 or VS2012
@@ -259,6 +273,13 @@ for mod_name in extension_names:
                                  )
                        )
 
+# and platfrom-independent cython extensions:
+extensions.append( Extension("gnome.utilities.geometry.cy_point_in_polygon",
+                             sources=["gnome/utilities/geometry/cy_point_in_polygon.pyx",
+                                      "gnome/utilities/geometry/c_point_in_polygon.c"],
+                             include_dirs=[np.get_include()],
+                            )
+                  )
 
 setup(name='pyGnome',
       version='alpha',

@@ -109,10 +109,10 @@ define([
         },
 
         schemaErrorDescriptionTemplates: {
-            'type': 'Value should be a {{error.details}}',
-            'type_many': 'Value should be one of these types: {{error.details}}',
-            'minimum': 'Value should be at least: {{error.details}}',
-            'maximum': 'Value should be at most: {{error.details}}'
+            'type': 'Value should be a {{-error.details}}',
+            'type_many': 'Value should be one of these types: {{-error.details}}',
+            'minimum': 'Value should be at least: {{-error.details}}',
+            'maximum': 'Value should be at most: {{-error.details}}'
         },
 
         /*

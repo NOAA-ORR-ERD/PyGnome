@@ -58,10 +58,6 @@
 #ifdef MAC //JLM
 #ifdef MPW //JLM
 #define PI pi // JLM
-#define _min(a,b) ((a) < (b) ? (a) : (b))  //JLM
-#define _max(a,b) ((a) > (b) ? (a) : (b)) ///JLM
-#define _min(a,b) ((a) < (b) ? (a) : (b))  //AH
-#define _max(a,b) ((a) > (b) ? (a) : (b)) ///AH
 #define kFontIDNewYork    2
 #define kFontIDGeneva     3
 #define kFontIDMonaco     4
@@ -71,7 +67,12 @@
 #define kFontIDSymbol    23
 #define kFontIDMarplot   -1			
 #endif
+#define _min(a,b) ((a) < (b) ? (a) : (b))  //JLM
+#define _max(a,b) ((a) > (b) ? (a) : (b)) ///JLM
+//#define _min(a,b) ((a) < (b) ? (a) : (b))  //AH
+//#define _max(a,b) ((a) > (b) ? (a) : (b)) ///AH
 #endif
+
 
 // get around WIN compiler warning about pascal, JLM 3/25/09
 #ifdef MAC
