@@ -21,13 +21,19 @@ def points_in_poly( pgon, points):
     Note: this version takes a 3-d point, even though the third coord is ignored.
 
     """
-    points = np.asarray(points, dtype=np.float64).reshape((-1,3))
+    points = np.asarray(points, dtype=np.float64)
+    scalar = ( len(points.shape) == 1 )
+    points.shape = (-1, 3)
+
     result = np.zeros((points.shape[0],), dtype=np.bool)
 
     for i, point in enumerate(points):
         result[i] = CrossingsTest(pgon, point[:2])
-
-    return result
+    
+    if scalar:
+        return bool(result[0]) # to make it a regular python bool
+    else:
+        return result
 
 
 def CrossingsTest( pgon, (tx, ty) ):

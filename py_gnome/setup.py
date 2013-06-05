@@ -259,6 +259,13 @@ for mod_name in extension_names:
                                  )
                        )
 
+# and platfrom-independent cython extensions:
+extensions.append( Extension("gnome.utilities.geometry.cy_point_in_polygon",
+                             sources=["gnome/utilities/geometry/cy_point_in_polygon.pyx",
+                                      "gnome/utilities/geometry/c_point_in_polygon.c"],
+                             include_dirs=[np.get_include()],
+                            )
+                  )
 
 setup(name='pyGnome',
       version='alpha',

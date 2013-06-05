@@ -29,7 +29,8 @@ from gnome.basic_types import world_point_type, oil_status
 
 from gnome.utilities.file_tools import haz_files
 #from gnome.utilities.geometry import BBox
-from gnome.utilities.geometry.PinP import points_in_poly
+#from gnome.utilities.geometry.PinP import points_in_poly
+from gnome.utilities.geometry.cy_point_in_polygon import points_in_poly
 
 from gnome.utilities.geometry.polygons import PolygonSet
 
@@ -88,35 +89,20 @@ class GnomeMap(serializable.Serializable):
     id = property( lambda self: self._gnome_id.id)
 
 
-    def on_map(self, coord):
+    def on_map(self, coords):
         """                
-        :param coord: location for test.
-        :type coord: 3-tuple of floats: (long, lat, depth) or a NX3 numpy array
+        :param coords: location for test.
+        :type coords: 3-tuple of floats: (long, lat, depth) or a NX3 numpy array
 
-        :return: True if the location is on the map, False otherwise
+        :return: bool array: True if the location is on the map, False otherwise
 
         Note:
           coord is 3-d, but the concept of "on the map" is 2-d in this context, so depth is ignored.
 
         """
-        coord = np.asarray(coords, dtype=gnome.basic_types.world_point_type).reshape(-1,3)
-        
-        return point_in_poly(self.map_bounds, coord)
-
-    def on_map_array(self, coords):
-        """                
-        :param coords: location for test.
-        :type coords: 2-tuple of floats: (long, lat, depth) or a NX3 numpy array
-
-        :return: True if the location is on the map, False otherwise
-
-        Note:
-          coords is 3-d, but the concept of "on the map" is 2-d in this context, so depth is ignored.
-
-        """
-        coords = np.asarray(coords, dtype=gnome.basic_types.world_point_type).reshape(-1,3)
-        
-        return points_in_poly(self.map_bounds, coords)
+        coords = np.asarray(coords, dtype=gnome.basic_types.world_point_type)
+        on_map_mask = points_in_poly(self.map_bounds, coords)
+        return on_map_mask
 
 
     def on_land(self, coord):
@@ -127,19 +113,20 @@ class GnomeMap(serializable.Serializable):
         :return:
          - Always returns False-- no land in this implementation
         
-        """
-        ## note:: what should this give if it is off map?
-        
+        """        
         return False
 
     def in_water(self, coords):
         """
-        :param coord: location for test.
-        :type coord: 3-tuple of floats: (long, lat, depth)
+        :param coords: location for test.
+        :type coords: 3-tuple of floats: (long, lat, depth)
+                      or an Nx3 array
 
-        :return:
+        :returns:
          - True if the point is in the water,
          - False if the point is on land (or off map?)
+
+         This implementation has no land, so always True in on the map.
         
         """
         return self.on_map(coords)
@@ -158,8 +145,7 @@ class GnomeMap(serializable.Serializable):
             it could be either off the map, or in a location that spills aren't allowed
 
         """
-        flags = points_in_poly(self.spillable_area, coord)
-        return self._return_scalar_bool(flags)
+        return points_in_poly(self.spillable_area, coord)
 
     def _set_off_map_status(self, spill):
         """
@@ -173,8 +159,7 @@ class GnomeMap(serializable.Serializable):
         """
         next_positions = spill['next_positions']
         status_codes = spill['status_codes']
-        off_map = ~self.on_map(next_positions)
-        print "off_map:",off_map
+        off_map = np.logical_not(self.on_map(next_positions))
         status_codes[off_map] = oil_status.off_maps
 
     def beach_elements(self, spill):

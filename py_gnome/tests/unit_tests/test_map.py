@@ -657,9 +657,11 @@ def test_resurface_airborne_elements():
 
 
 if __name__ == "__main__":
-    tester = Test_GnomeMap()
+#    tester = Test_GnomeMap()
 #    tester.test_on_map()
 #    tester.test_on_map_array()
-    tester.test_allowable_spill_position()
+#    tester.test_allowable_spill_position()
 
+    tester = Test_full_move()
+    tester.test_some_off_map()
         
