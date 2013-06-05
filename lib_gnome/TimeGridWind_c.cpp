@@ -1273,7 +1273,7 @@ OSErr TimeGridWindCurv_c::ExportTopology(char* path)
 		sprintf(topoStr,"%ld\n",(*fVerdatToNetCDFH)[i]);
 		//strcpy(buffer,topoStr);
 		//if (err = WriteMacValue(&bfpb, buffer, strlen(buffer))) goto done;
-		sprintf(topoStr,"%lf\t%lf\n",x,y);
+		fwrite(topoStr,sizeof(char),strlen(topoStr),fp);
 	}
 	
 	nver = _GetHandleSize((Handle)ptsH)/sizeof(**ptsH);

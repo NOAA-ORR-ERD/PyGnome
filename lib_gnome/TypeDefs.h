@@ -139,7 +139,7 @@ typedef unsigned long Seconds; // duration in seconds, or seconds since 1904
 typedef unsigned long LETYPE ;
 
 ///// TYPES ///////////////////////////////////////////////////////////////////////
-
+#ifndef pyGNOME
 typedef struct {
 	short f;
 	CHARH buf;
@@ -149,10 +149,10 @@ typedef struct {
 	long fileLength;
 	Boolean bufModified;
 } BFPB, *BFPBP;
-
-extern Rect CATSgridRect;
 extern BFPB gRunSpillForecastFile;
-
+#endif
+extern Rect CATSgridRect;
+/*
 typedef struct {
 	char name[30];
 	short previewLength;
@@ -165,7 +165,7 @@ typedef struct {
 	BFPB bfpb;
 	IndexFileP indexList;
 } DataBase, *DataBaseP;
-
+*/
 
 typedef struct VelocityRec
 {
@@ -204,7 +204,7 @@ typedef struct
 	Seconds time;
 	VelocityRec3D value;
 } TimeValuePair3D, *TimeValuePairP3D, **TimeValuePairH3D;
-
+#ifndef pyGNOME
 typedef struct
 {	// for CDOG
 	float depth;
@@ -225,7 +225,7 @@ typedef struct
 	long n_den;	// release oil (n_den>=0) or water (n_den<0)
 	long output_int; // output files after output_int steps
 } DischargeData, *DischargeDataP, **DischargeDataH;
-
+#endif
 // old ossm pollutant types
 enum { //OSSMOIL_UNKNOWN = 0,  JLM 3/11/99, there was no such thing as unkown in old OSSM
 	OSSMOIL_GAS = 1, OSSMOIL_JETFUELS, OSSMOIL_DIESEL,
@@ -526,7 +526,7 @@ typedef struct
 	float randCos;
 	float randSin;
 } LEWindUncertainRec,*LEWindUncertainRecP,**LEWindUncertainRecH;
-
+#ifndef pyGNOME
 typedef struct
 {
 	Boolean bDisperseOil;
@@ -565,6 +565,7 @@ typedef struct
 	double dropletSize;
 	double probability;
 } DropletInfoRec,**DropletInfoRecH;
+#endif
 
 typedef struct
 {
@@ -628,7 +629,7 @@ typedef struct {
 
 #define		kUCode			0					// supplied to UorV routine
 #define		kVCode			1
-
+#ifndef pyGNOME
 typedef struct {
 	long segNo;
 	long startPt;
@@ -638,7 +639,7 @@ typedef struct {
 	float	gallonsOnSegment;
 	//Seconds time;
 } OiledShorelineData,*OiledShorelineDataP,**OiledShorelineDataHdl;
-
+#endif
 
 typedef struct GridCellInfo
 {
@@ -663,7 +664,7 @@ typedef struct
 	Seconds		frameTime;
 	char		frameLEFName [255];
 } LEFrameRec, *LEFrameRecPtr;
-
+#ifndef pyGNOME
 typedef struct
 {
 	Seconds	startTime;			// time to start model run
@@ -672,7 +673,7 @@ typedef struct
 	Boolean	bUncertain; 		// uncertainty on / off
 	Boolean preventLandJumping;	// use the code that checks for land jumping
 } TModelDialogVariables;
-
+#endif
 #define kPtCurUserNameLen 64
 #define UNASSIGNEDINDEX -1
 #define BOTTOMINDEX -2	// below last data value, but above bottom
@@ -747,58 +748,6 @@ typedef struct {
 	Seconds startTime; 
 	Seconds endTime;
 }  PtCurFileInfo,*PtCurFileInfoP,**PtCurFileInfoH;
-typedef struct {
-	
-	// these fields are permanent (saved and restored)
-	long platform; //'WIN ' or 'MAC '
-	float settingsVersion;
-	
-	WorldRect currentView;
-	long listWidth;
-	//			long textMode; // SCREENMODE or PRINTMODE
-	long screenMode; // COLORMODE, GRAYSCALEMODE, or BANDWMODE
-	long printMode; // COLORMODE, GRAYSCALEMODE, or BANDWMODE
-	long pictureSize; // WINDOWSIZE or PAGESIZE
-	long massUnits;
-	long areaUnits;
-	long distanceUnits;
-	long backgroundColor;
-	long showLatLongLines;
-	long llPosition;
-	long latLongFormat;
-	long showIntermediateLines;
-	long customGrid;
-	long longLineSpace;
-	long longLineUnits;
-	long longLabelSpace;
-	long longLabelUnits;
-	long latLineSpace;
-	long latLineUnits;
-	long latLabelSpace;
-	long latLabelUnits;
-	long preferencesScreen;
-	//			long settingsScreen;
-	char headerSPILLID[128];
-	char headerFROM[128];
-	char headerCONTACT[128];
-	char caveat[5][128];
-	long daylightSavingsTimeFlag;	// use one of the reserved spots for dst flag 3/21/06
-	long omitFooter;
-	//long reserved[20];
-	//long reserved[19];
-	long reserved[18];
-	
-	// the remaining fields are temporary (saved but reset on startup)
-	long currentTool;
-	long inBackground;
-	long colorQDAvailable;
-	long undoCode;
-	long doNotPrintError; // to allow only one error message per user action
-	long quitting;
-	long modelStartMode;
-	long sprayCanSize;
-	
-} Settings;
 
 typedef struct ScaleRec
 {

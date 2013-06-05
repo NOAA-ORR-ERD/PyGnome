@@ -16,11 +16,11 @@
 
 <!-- A template for time series item rows. -->
 <script type="text/template" id="time-series-row">
-<tr class="{{ error }}">
-    <td class="time-series-date">{{ date }}</td>
-    <td class="time-series-time">{{ time }}</td>
-    <td class="time-series-speed">{{ speed }}</td>
-    <td class="time-series-direction">{{ direction }}</td>
+<tr class="{{- error }}">
+    <td class="time-series-date">{{- date }}</td>
+    <td class="time-series-time">{{- time }}</td>
+    <td class="time-series-speed">{{- speed }}</td>
+    <td class="time-series-direction">{{- direction }} &deg;</td>
     <td><a href="javascript:" class="edit-time"><i class="icon-edit"></i></a>
         <a href="javascript:" class="delete-time"><i class="icon-trash"></i></a>
     </td>

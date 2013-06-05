@@ -187,6 +187,20 @@ if sys.platform == "darwin":
     static_lib_files = []
 
 
+elif sys.platform == "linux2":
+    basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
+                                ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
+                                language='c++',
+                                define_macros=macros,
+                                extra_compile_args=compile_args + [
+                                    '-I/usr/local/include'],
+                                extra_link_args=['-L/usr/local/lib'],
+                                libraries=['netcdf'],
+                                include_dirs=l_include_dirs,
+                                )
+
+    extensions.append(basic_types_ext)
+
 elif sys.platform == "win32":
     # Distutils normally only works with VS2008.
     # this is to trick it into seeing VS2010 or VS2012

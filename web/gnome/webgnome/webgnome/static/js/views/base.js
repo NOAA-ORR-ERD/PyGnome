@@ -119,5 +119,6 @@ define([
 
     return {
         BaseView: BaseView,
+        ModelNotFoundException: ModelNotFoundException
     }
 });

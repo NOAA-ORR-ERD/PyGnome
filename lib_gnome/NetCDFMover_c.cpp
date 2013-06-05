@@ -494,7 +494,7 @@ LAS:
 	{status = nc_get_att_double(ncid, curr_ucmp_id, "FillValue", &fill_value); 
 		if (status != NC_NOERR) {status = nc_get_att_double(ncid, curr_ucmp_id, "missing_value", &fill_value); /*if (status != NC_NOERR) {err = -1; goto done;}*/ }}	// require fill value (took this out 12.12.08)
 	
-	if (_isnan(fill_value))
+	if (isnan(fill_value))
 		fill_value=-99999;
 	
 	status = nc_get_att_double(ncid, curr_ucmp_id, "scale_factor", &scale_factor);
@@ -516,9 +516,9 @@ LAS:
 				if (curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)
 					curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
 
-				if (_isnan(curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))	// should store in current array and check before drawing or moving
+				if (isnan(curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))	// should store in current array and check before drawing or moving
 					curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
-				if (_isnan(curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
+				if (isnan(curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
 					curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]=0.;
 
 				INDEXH(velH,i*lonlength+j+k*fNumRows*fNumCols).u = (float)curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] * velConversion;
