@@ -41,14 +41,15 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     ## Add teh outputers -- render to images, and save out as netCDF
     ##
 
-    print "adding renderer and netcdf output"
+    print "adding renderer" 
     renderer = gnome.renderer.Renderer(mapfile, images_dir, size=(800, 600))
     model.outputters += renderer
     
-    netcdf_output_file = os.path.join(base_dir,'mariana_output.nc')
-    scripting.remove_netcdf(netcdf_output_file)
-    model.outputters += gnome.netcdf_outputter.NetCDFOutput(netcdf_output_file,
-                                                            all_data=True)
+    # print "adding netcdf output"
+    # netcdf_output_file = os.path.join(base_dir,'mariana_output.nc')
+    # scripting.remove_netcdf(netcdf_output_file)
+    # model.outputters += gnome.netcdf_outputter.NetCDFOutput(netcdf_output_file,
+    #                                                         all_data=True)
 
     ##
     ## Set up the movers:
@@ -58,7 +59,7 @@ def make_model(images_dir=os.path.join(base_dir,"images")):
     model.movers += gnome.movers.RandomMover(diffusion_coef=10000)
     
     print "adding a simple wind mover:"
-    model.movers += gnome.movers.constant_wind_mover(7, 315, units='m/s')
+    model.movers += gnome.movers.constant_wind_mover(5, 315, units='m/s')
     
     print "adding a current mover:"
     ## this is HYCOM currents
