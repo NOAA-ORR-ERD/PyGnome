@@ -118,6 +118,10 @@ class WebCatsMover(BaseWebObject, CatsMover):
     state = copy.deepcopy(CatsMover.state)
     state.add(create=['name'], update=['name'])
 
+    def __init__(self, base_dir, filename, *args, **kwargs):
+        self.base_dir = base_dir
+        self.filename = filename
+        super(WebCatsMover, self).__init__(*args, **kwargs)
 
 class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
     """
