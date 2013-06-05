@@ -6,15 +6,12 @@ Test code for the BBox Object
 
 """
 
-## test in_place
-import sys
-sys.path.insert(0, "../")
 
 import unittest
 
 import numpy as np
 
-from BBox import *
+from gnome.utilities.geometry.BBox import *
 
 class testCreator(unittest.TestCase):
     def testCreates(self):

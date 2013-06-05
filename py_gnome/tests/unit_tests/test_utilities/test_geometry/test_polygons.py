@@ -6,9 +6,8 @@ designed to be run with nose
 
 ## test in_place
 import sys
-sys.path.insert(0, "../")
 
-from polygons import Polygon, PolygonSet
+from gnome.utilities.geometry.polygons import Polygon, PolygonSet
 
 import numpy as np
 

@@ -29,7 +29,8 @@ from gnome.basic_types import world_point_type, oil_status
 
 from gnome.utilities.file_tools import haz_files
 #from gnome.utilities.geometry import BBox
-from gnome.utilities.geometry.PinP import CrossingsTest as point_in_poly
+#from gnome.utilities.geometry.PinP import points_in_poly
+from gnome.utilities.geometry.cy_point_in_polygon import points_in_poly
 
 from gnome.utilities.geometry.polygons import PolygonSet
 
@@ -87,15 +88,22 @@ class GnomeMap(serializable.Serializable):
 
     id = property( lambda self: self._gnome_id.id)
 
-    def on_map(self, coord):
-        """                
-        :param coord: location for test.
-        :type coord: 3-tuple of floats: (long, lat, depth)
 
-        :return: True if the location is on the map, False otherwise
+    def on_map(self, coords):
+        """                
+        :param coords: location for test.
+        :type coords: 3-tuple of floats: (long, lat, depth) or a NX3 numpy array
+
+        :return: bool array: True if the location is on the map, False otherwise
+
+        Note:
+          coord is 3-d, but the concept of "on the map" is 2-d in this context, so depth is ignored.
 
         """
-        return point_in_poly(self.map_bounds, coord[:2])
+        coords = np.asarray(coords, dtype=gnome.basic_types.world_point_type)
+        on_map_mask = points_in_poly(self.map_bounds, coords)
+        return on_map_mask
+
 
     def on_land(self, coord):
         """
@@ -105,22 +113,23 @@ class GnomeMap(serializable.Serializable):
         :return:
          - Always returns False-- no land in this implementation
         
-        """
-        ## note:: what should this give if it is off map?
-        
+        """        
         return False
 
-    def in_water(self, coord):
+    def in_water(self, coords):
         """
-        :param coord: location for test.
-        :type coord: 3-tuple of floats: (long, lat, depth)
+        :param coords: location for test.
+        :type coords: 3-tuple of floats: (long, lat, depth)
+                      or an Nx3 array
 
-        :return:
+        :returns:
          - True if the point is in the water,
          - False if the point is on land (or off map?)
+
+         This implementation has no land, so always True in on the map.
         
         """
-        return self.on_map(coord)
+        return self.on_map(coords)
 
     def allowable_spill_position(self, coord):
         """
@@ -136,7 +145,22 @@ class GnomeMap(serializable.Serializable):
             it could be either off the map, or in a location that spills aren't allowed
 
         """
-        return point_in_poly(self.spillable_area, coord[:2])
+        return points_in_poly(self.spillable_area, coord)
+
+    def _set_off_map_status(self, spill):
+        """
+        Determines which LEs moved off the map
+
+        Called by beach_elements after checking for land-hits
+        
+        :param spill: current SpillContainer
+        :type spill:  :class:`gnome.spill_container.SpillContainer`
+
+        """
+        next_positions = spill['next_positions']
+        status_codes = spill['status_codes']
+        off_map = np.logical_not(self.on_map(next_positions))
+        status_codes[off_map] = oil_status.off_maps
 
     def beach_elements(self, spill):
         """
@@ -147,10 +171,9 @@ class GnomeMap(serializable.Serializable):
         :param spill: current SpillContainer
         :type spill:  :class:`gnome.spill_container.SpillContainer`
 
-        This map class  has no land, so nothing changes
+        This map class  has no land, so only the map check is done nothing changes
         """
-        ##fixme: should elements off teh mop get marked???
-        return None
+        self._set_off_map_status(spill)
 
     def refloat_elements(self, spill, time_step):
         """
@@ -227,8 +250,10 @@ class RasterMap(GnomeMap):
         
         :param map_bounds: The polygon bounding the map -- could be larger or smaller than the land raster
         :type map_bounds: (N,2) numpy array of floats
-        :param spillable_area: The polygon bounding the spillable_area
         
+        :param spillable_area: The polygon bounding the spillable_area
+        :type spillable_area: (N,2) numpy array of floats
+
         :param id: unique ID of the object. Using UUID as a string. This is only used when loading object from save file.
         
         :type id: string 
@@ -240,24 +265,6 @@ class RasterMap(GnomeMap):
         
         GnomeMap.__init__(self, **kwargs)
         
-        #TODO: should map_bounds and spillable_area be left as None or should it default
-        # as defined by GnomeMap -- see above __init__
-         
-        #=======================================================================
-        # if map_bounds is not None:
-        #    # make sure map bounds in a numpy array
-        #    self.map_bounds = np.asarray(map_bounds, dtype=np.float64).reshape(-1, 2)
-        # else:
-        #    self.map_bounds = None
-        # if spillable_area is not None:
-        #    # make sure spillable_area is a numpy array
-        #    self.spillable_area = np.asarray(spillable_area, dtype=np.float64).reshape(-1, 2)
-        # else:
-        #    self.spillable_area = None
-        #    
-        # self._gnome_id = GnomeId(id=kwargs.pop('id',None))  # TODO: not sure this is best way - maybe refactor
-        #=======================================================================
-
     def _on_land_pixel(self, coord):
         """
         returns 1 if the point is on land, 0 otherwise
@@ -365,7 +372,7 @@ class RasterMap(GnomeMap):
         next_pos[beached, :2]= self.projection.to_lonlat(next_pos_pixel[beached])
         last_water_positions[beached, :2] = self.projection.to_lonlat(last_water_pos_pixel[beached,:2])
 
-        ##fixme -- add off-map check here
+        self._set_off_map_status(spill)
 
 
     def refloat_elements(self, spill, time_step):
@@ -392,7 +399,6 @@ class RasterMap(GnomeMap):
             # refloat, maybe call it stay_on_land_probability
             r_idx = r_idx[ np.where(rnd <= refloat_probability)[0] ]
             
-        #print "\n len(r_idx):{0} \n".format(len(r_idx))
             
         if r_idx.size > 0:
             # check is not required, but why do this operation if no particles need to be refloated
@@ -427,7 +433,7 @@ class RasterMap(GnomeMap):
                 if self.spillable_area is None:
                     return True
                 else:
-                    return point_in_poly(self.spillable_area, coord[:2]) # point_in_poly is 2-d
+                    return points_in_poly(self.spillable_area, coord)
             else:
                 return False
         else:
@@ -444,48 +450,6 @@ class RasterMap(GnomeMap):
         """
         
         return self.projection.to_pixel(coords)
-
-#    def movement_check(self, spill):
-#        """ 
-#        After moving a spill (after superposing each of the movers' contributions),
-#        we determine which of the particles have been landed, ie., that are in the
-#        current time step on land but were not in the previous one. Chromgph is a list
-#        of boolean values, determining which of the particles need treatment. Particles
-#        that have been landed are beached.
-#        
-#        param: spill -- a gnome.spill object (with LE info, etc)
-#        """        
-#        # make a regular Nx2 numpy array 
-#        coords = np.copy(spill.npra['p']).view(world_point_type).reshape((-1, 2),)
-#        coords = self.to_pixel_array(coords)
-#        chromgph = self._on_land_pixel_array(coords)
-#        sra = spill.npra['status_code']
-#        for i in xrange(0, spill.num_particles):
-#            if chromgph[i]:
-#                sra[i] = oil_status.on_land
-#        if spill.chromgph == None:
-#            spill.chromgph = chromgph
-#        merg = [int(chromgph[x] and not spill.chromgph[x]) for x in xrange(0, len(chromgph))]
-#        self.chromgph = chromgph
-#        return merg
-#
-#    def movement_check2(self, current_pos, prev_pos, status):
-#        """
-#        checks the movement of the LEs to see if they have:
-#        
-#        hit land or gone off the map. The status code is changed if they are beached or off map
-#        
-#        param: current_pos -- a Nx2 array of lat-long coordinates of the current positions
-#        param: prev_pos -- a Nx2 array of lat-long coordinates of the previous positions
-#        param: status -- a N, array of status codes.
-#        """
-#        # check which ones are still on the map:
-#        on_map = self.on_map(current_pos)
-#        # check which ones are on land:
-#        pixel_coords = self.to_pixel_array(current_pos)
-#        on_land = self.on_land(current_pos)
-#        
-#        
 
         
 class MapFromBNA(RasterMap, serializable.Serializable):
@@ -572,161 +536,3 @@ class MapFromBNA(RasterMap, serializable.Serializable):
                            **kwargs)
         
         return None
-
-#########################################
-##
-## Original Code -- depricated now
-##    
-#########################################    
-#class gnome_map(map_canvas.MapCanvas):
-#    """
-#        Basics pyGNOME color bitmap.
-#        (End-user visualization.)
-#    """     
-#    def __init__(self, image_size, filename, color_mode='RGB'):
-#        """
-#            Initializes color map attributes. Calls on parent class initialization 
-#            method in order to handle projection scaling.
-#        """
-#        map_canvas.MapCanvas.__init__(self,
-#                                      image_size,
-#                                      projection=map_canvas.FlatEarthProjection,
-#                                      mode=color_mode)
-#        self.polygons = haz_files.ReadBNA(filename, "PolygonSet")
-#        self.filename = filename        
-#        self.draw_land(self.polygons)
-#
-#    def to_pixel(self, coord):
-#        """ Projects a (lon, lat) tuple onto the bitmap, and returns the resultant tuple. """
-#        coord = tuple(self.projection.to_pixel(np.array((coord[0], coord[1]))))
-#        coord = (int(coord[0]), int(coord[1]))
-#        return coord
-#        
-#    def to_pixel_array(self, coords):
-#        """ 
-#            Projects an array of (lon, lat) tuples onto the bitmap, and modifies it in 
-#            place to hold the corresponding projected values.
-#        """
-#        coords['p_long'] -= self.projection.center[0]
-#        coords['p_lat']  -= self.projection.center[1]
-#        coords['p_long'] *= self.projection.scale[0]
-#        coords['p_lat']  *= self.projection.scale[1]
-#        coords['p_long'] += self.projection.offset[0]
-#        coords['p_lat']  += self.projection.offset[1]
-#        coords['p_long'] = np.round(coords['p_long']).astype(np.int)
-#        coords['p_lat']  = np.round(coords['p_lat']).astype(np.int)
-#        
-#    def _type(self):
-#        """ This requires an explanation. """
-#        return ' color bitmap'
-#        
-#class lw_map(gnome_map):
-#
-#    """land-water bitmap."""
-#        
-#    background_color = 0
-#    lake_color = 0
-#    land_color = 1
-#    
-#    def __init__(self, image_size, filename, refloat_halflife, color_mode='1'):
-#        """
-#            Initializes land-water map attributes. Calls on parent class initialization 
-#            method in order to handle projection scaling. Caches its bounding_box so that
-#            it doesn't need to be computed repeatedly.
-#        """
-#        gnome_map.__init__(self, image_size, filename, color_mode)
-#        self.bounding_box = self.polygons.bounding_box
-#        self.refloat_halflife = refloat_halflife
-#        self.spills = []
-#
-#    def _type(self):
-#        """ Returns the map type. (Either 'color' or 'land-water'.) """
-#        return ' land-water bitmap'
-#        
-#    def on_map(self, pixel_coord):
-#        """ 
-#            Given a tuple in pixel coordinates, determines whether the position is on the map.
-#            It is actually not behaving correctly at the moment: the map bounds and the bounding box
-#            may not necessarily coincide. Needs fixing!
-#        """
-#        bounding_box = self.bounding_box
-#        if  ( pixel_coord[0] > bounding_box[0][0] and 
-#              pixel_coord[0] < bounding_box[1][0] and
-#              pixel_coord[1] > bounding_box[0][1] and
-#              pixel_coord[1] < bounding_box[1][1] ):
-#            return True
-#        return False
-#
-#    def on_land(self, coord):
-#        """ Given lat-lon coordinates, determines whether the position is on land. """
-#        return not self.in_water(coord)
-#
-#    def on_land_pixel(self, coord):
-#        """ Given a tuple in pixel coordinates, determines whether the position is on land. """
-#        return not self.in_water_pixel(coord)
-#        
-#    def in_water(self, coord):
-#        """ Given lat-lon coordinates, determines whether the position is in water. """
-#        coord = self.to_pixel(coord)
-#        if not self.on_map(coord):
-#            return False
-#        try:
-#            chrom = self.image.getpixel(coord)
-#            if not chrom:
-#                return True
-#            else:
-#                return False
-#        except:
-#            print 'exception!',  sys.exc_info()[0]
-#            return False
-#            
-#    def in_water_pixel(self, coord):
-#        """ Given a tuple in pixel coordinates, determines whether the position is in water. """
-#        coord = coord.tolist()
-#        if not self.on_map(coord):
-#            return False
-#        try:
-#            chrom = self.image.getpixel(coord)
-#            if not chrom:
-#                return True
-#            else:
-#                return False
-#        except:
-#            print 'exception!',  sys.exc_info()[0]
-#            return False
-#
-#    def allowable_spill_position(self, coord):
-#        """
-#        Determines whether a position given in lat-lon coordinates is an allowable spill location.
-#        """
-#        return self.in_water(coord)
-#        
-#    def set_spill(self, coord, num_particles, release_time):
-#        ##fixme: why is this in the map class?
-#        """ 
-#        Sets a spill.
-#        
-#        param: coord: (lon, lat)
-#        param: release_time in seconds.
-#        """
-#        if not self.allowable_spill_position(coord):
-#            print  "spill " + str(dict((('position', coord), ('num_particles', num_particles), ('release_time', release_time)))) + " ignored."
-#        else:
-#            self.spills += [(coord, num_particles, release_time)]
-
-#
-# #   def beach_element(self, p, lwp):
-#        """ 
-#        Beaches an element that has been landed.
-#        
-#        param: p: current position (see basic_types.world_point dtype)
-#        param: lwp: last water position (see basic_types.world_point dtype)
-#        
-#        """
-#        in_water = self.in_water
-#        displacement = ((p['p_long'] - lwp['p_long']), (p['p_lat'] - lwp['p_lat']))
-#        while not in_water((p['p_long'], p['p_lat'])):
-#            displacement = (displacement[0]/2, displacement[1]/2)
-#            p['p_long'] = lwp['p_long'] + displacement[0]
-#            p['p_lat'] = lwp['p_lat'] + displacement[1]
-
