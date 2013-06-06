@@ -6,6 +6,7 @@ from fabric.contrib import files
 
 
 env.roledefs = {
+    # A VM started with conf/Vagrantfile
     'dev': ['192.168.33.10']
 }
 
@@ -88,6 +89,30 @@ def get_config():
 
 
 @api.task
+def build_docs():
+    base_path = os.path.dirname(os.path.realpath(__file__))
+    docs_dir = os.path.join(base_path, 'doc')
+    python_docs_dir = os.path.join(docs_dir, 'api', 'python')
+    js_docs_dir = os.path.join(docs_dir, 'javascript')
+    project_dir = os.path.join(base_path, 'webgnome')
+    js_dir = os.path.join(project_dir, 'static', 'js')
+
+    # Auto-generate Python API docs first.
+    api.local('sphinx-apidoc -f %s -o %s' % (project_dir, python_docs_dir))
+
+    with api.lcd(docs_dir):
+        api.local('make html')
+
+    # Auto-generate JavaScript API docs.
+    docco_path = os.path.join(base_path, 'node_modules', 'docco', 'bin', 'docco')
+    files_to_include = ['models.js', 'app.js', 'util.js']
+
+    for filename in files_to_include:
+        file_path = os.path.join(js_dir, filename)
+        api.local('%s %s -o %s' % (docco_path, file_path, js_docs_dir))
+
+
+@api.task
 def restart_apache():
     setup_vagrant_key()
     api.sudo('service apache2 restart')
@@ -108,7 +133,7 @@ def test_apache():
 @api.task
 def report_ip():
     setup_vagrant_key()
-    api.sudo('ifconfig | grep 192')
+    api.sudo('ifconfig')
 
 
 @api.task
@@ -133,8 +158,8 @@ def setup_apache():
 
     role = get_current_role()
 
-    if not role:
-        return
+    if not role or not role in contexts:
+        api.abort('Could not find an Apache context for the role "%s"' % role)
 
     files.upload_template(
         os.path.join(env.local_base_dir, 'conf', 'apache_site.conf'),
@@ -214,30 +239,6 @@ def setup_host():
 
     api.sudo('chown -R vagrant:vagrant /home/vagrant')
     api.execute(setup_apache)
-
-
-@api.task
-def build_docs():
-    base_path = os.path.dirname(os.path.realpath(__file__))
-    docs_dir = os.path.join(base_path, 'doc')
-    python_docs_dir = os.path.join(docs_dir, 'api', 'python')
-    js_docs_dir = os.path.join(docs_dir, 'javascript')
-    project_dir = os.path.join(base_path, 'webgnome')
-    js_dir = os.path.join(project_dir, 'static', 'js')
-
-    # Auto-generate Python API docs first.
-    api.local('sphinx-apidoc -f %s -o %s' % (project_dir, python_docs_dir))
-
-    with api.lcd(docs_dir):
-        api.local('make html')
-
-    # Auto-generate JavaScript API docs.
-    docco_path = os.path.join(base_path, 'node_modules', 'docco', 'bin', 'docco')
-    files_to_include = ['models.js', 'app.js', 'util.js']
-
-    for filename in files_to_include:
-        file_path = os.path.join(js_dir, filename)
-        api.local('%s %s -o %s' % (docco_path, file_path, js_docs_dir))
 
 
 @api.task
