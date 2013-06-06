@@ -7,13 +7,42 @@ containing particle movements, all through an HTML/CSS/JavaScript interface.
 
 INSTALLING
 
-For best results, create a virtual environment for the entire Gnome project.
-Activate the environment and install all of WebGnome's dependencies with:
+For best results, it is suggested that you create and activate a virtual environment
+for the entire Gnome project.
+[How does one do this?  Link to how-to?]  Then...
+
+
+First, make your current working directory ".\GNOME\py_gnome", and run:
+
+    python setup.py develop
+
+Second,  make your current working directory ".\GNOME\web\gnome\webgnome"
+and install all of WebGNOME's package dependencies with:
 
     pip install -r requirements.txt
 
-The project requires SciPy, NumPy and netCDF4, so there are a fair number of
-non-Python dependencies like a Fortran compiler and netcdf, which you can obtain
+If "pip install -r requirements.txt" results in an error on Windows, use the
+command-line error text to identify which package is causing the error. 
+Comment-out (with a #) the reference to that package in
+".\GNOME\web\gnome\webgnome\requirements.txt" and instead
+download/run the installer for that package from  
+http://www.lfd.uci.edu/~gohlke/pythonlibs/.  Repeat the process of (1) running
+the "pip install -r requirements.txt" command and (2) commenting-out any
+packages that cause and error then instead installing that package from
+http://www.lfd.uci.edu/~gohlke/pythonlibs/ until no errors result (or until
+you get an error that doesn't relate to one of the packages).
+
+Third, make your current working directory ".\GNOME\web\gnome\webgnome"
+and run:
+
+    python setup.py develop
+
+
+
+
+
+The project requires SciPy, NumPy and NetCDF4, so there are a fair number of
+non-Python dependencies like a Fortran compiler and NetCDF, which you can obtain
 with the package manager of your choice.
 
 
@@ -53,3 +82,14 @@ manager. Use the following command to install Docco from the project root
 After you have Sphinx and Docco, you can run the Fabric command:
 
     fab docs
+
+
+TESTS
+
+Make sure you have the "nose" package installed (see
+https://nose.readthedocs.org/en/latest/ or the nose Windows installer at
+http://www.lfd.uci.edu/~gohlke/pythonlibs/).  Open a command window and make
+your current working directory ".\GNOME\web\gnome\webgnome\webgnome".
+Then run the tests with the following command:
+
+    nosetests
