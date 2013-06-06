@@ -1251,7 +1251,7 @@ OSErr NetCDFMoverCurv::ReadTimeData(long index,VelocityFH *velocityH, char* errm
 						if (curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value || curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]==fill_value)
 							curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = 0;
 						// NOTE: if leave velocity as NaN need to be sure to check for it wherever velocity is used (GetMove,Draw,...)
-						if (isnan(curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]) || _isnan(curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
+						if (isnan(curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]) || isnan(curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols]))
 							curr_uvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = curr_vvals[(latlength-i-1)*lonlength+j+k*fNumRows*fNumCols] = 0;
 						//if (curr_uvals[(latlength-i-1)*lonlength+j]==0 && curr_vvals[(latlength-i-1)*lonlength+j]==0)
 						//curr_uvals[(latlength-i-1)*lonlength+j] = curr_vvals[(latlength-i-1)*lonlength+j] = fill_value;
