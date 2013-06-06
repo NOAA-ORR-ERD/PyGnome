@@ -100,9 +100,18 @@ define([
             this.stepGenerator.on(models.StepGenerator.CREATED, this.reset);
 
             this.model = this.options.model;
-            this.model.on('destroy', function () {
+            this.model.on('destroy', function() {
                 _this.reset();
                 _this.map.empty();
+            });
+
+            this.customMap = this.options.customMap;
+            this.customMap.on('sync', function() {
+                _this.renderer.fetch().then(function() {
+                    _this.model.fetch().then(function() {
+                        _this.reset();
+                    });
+                });
             });
 
             if (this.stepGenerator.hasCachedTimeStep(this.stepGenerator.getCurrentTimeStep())) {

@@ -148,6 +148,10 @@ define([
                 }
             }
 
+            if (!this.model) {
+                return;
+            }
+
             _.each(this.model.errors, function(error) {
                 _this.handleFieldError(error);
             });
