@@ -1,6 +1,4 @@
 # ignore following files
-.cproject
-.project
 node_modules
 *.swp
 *.so
