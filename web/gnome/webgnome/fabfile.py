@@ -60,6 +60,10 @@ def get_current_role():
             return role
 
 
+def is_vagrant_server():
+    return env.host_string in env.roledefs['dev']
+
+
 def setup_vagrant_key():
     """
     Set up access to the user's vagrant server.
@@ -67,7 +71,7 @@ def setup_vagrant_key():
     if env.key_filename and env.user == 'vagrant':
         return
 
-    if env.host_string in env.roledefs['dev']:
+    if is_vagrant_server():
         env.user = 'vagrant'
         with api.lcd(os.path.join(env.local_base_dir, 'conf')):
             result = api.local('vagrant ssh-config | grep IdentityFile',
@@ -204,8 +208,12 @@ def setup_host():
     ensure_gnome_exists()
 
     with api.cd(env.gnome_base_dir):
-        api.run('git pull origin master')
-        api.run('git checkout linux_support', warn_only=True)
+        # Pull latest unless we're on a Vagrant server, which is designed to
+        # use code from a shared folder on your desktop machine.
+        if not is_vagrant_server():
+            api.run('git pull origin master')
+            api.run('git checkout linux_support', warn_only=True)
+
         api.sudo('ln -s ~/src/gnome/web/gnome/webgnome/webgnome '
                  '/var/www/', warn_only=True)
         api.sudo('chown -R vagrant:www-data web')
@@ -248,6 +256,7 @@ def pull(branch='master'):
 
     with api.cd(env.gnome_base_dir):
         api.run('git pull origin %s' % branch)
+        # Get the current branch name
         current_branch = api.run('git rev-parse --abbrev-ref HEAD')
 
         print 'Checking out %s' % branch
@@ -258,7 +267,9 @@ def pull(branch='master'):
 @api.task
 def deploy_webgnome(restart=False, branch='master'):
     setup_vagrant_key()
-    api.execute(pull, branch)
+
+    if not is_vagrant_server():
+        api.execute(pull, branch)
 
     with virtualenv():
         with api.cd(env.py_gnome_dir):
