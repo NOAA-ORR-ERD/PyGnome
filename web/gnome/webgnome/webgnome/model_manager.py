@@ -385,6 +385,7 @@ class WebModel(BaseWebObject, Model):
 
     def remove_map(self):
         self.map = None
+        self.remove_renderer()
         self.output_map = None
         self.rewind()
 

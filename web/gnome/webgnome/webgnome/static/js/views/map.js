@@ -101,8 +101,9 @@ define([
 
             this.model = this.options.model;
             this.model.on('destroy', function() {
-                _this.reset();
-                _this.map.empty();
+                _this.reset().then(function() {
+                    _this.leafletMap.removeLayer(_this.backgroundOverlay);
+                });
             });
 
             this.customMap = this.options.customMap;
@@ -350,7 +351,7 @@ define([
                 this.hidePlaceholder();
             } else {
                 this.showPlaceholder();
-                return;
+                return $.Deferred().resolve();
             }
 
             var oldOverlay = _this.backgroundOverlay;
