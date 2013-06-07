@@ -161,6 +161,7 @@ class GnomeMap(serializable.Serializable):
         status_codes = spill['status_codes']
         off_map = np.logical_not(self.on_map(next_positions))
         status_codes[off_map] = oil_status.off_maps
+        #status_codes[off_map] = oil_status.to_be_removed
 
     def beach_elements(self, spill):
         """

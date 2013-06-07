@@ -46,6 +46,7 @@ public:
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
 	virtual OSErr		UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList);
 	virtual OSErr		AllocateUncertainty (int numLESets, int* LESetsSizesList);
+	virtual OSErr		ReallocateUncertainty(int numLEs, short* statusCodes);	
 	virtual void		DisposeUncertainty ();
 	
 	virtual OSErr 		PrepareForModelRun(); 

@@ -66,6 +66,7 @@ public:
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_WINDMOVER) return TRUE; return Mover_c::IAm(id); }
 	
 	virtual OSErr		AllocateUncertainty (int numLESets, int* LESetsSizesList);
+	virtual OSErr		ReallocateUncertainty(int numLEs, short* statusCodes);	
 	virtual void		DisposeUncertainty ();
 	virtual OSErr		AddUncertainty(long setIndex,long leIndex,VelocityRec *v);
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);

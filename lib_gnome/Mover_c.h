@@ -63,6 +63,7 @@ public:
 	void				SetMoverMap (TMap *owner) { moverMap = owner; }
 #endif
 	virtual void 		ModelStepIsDone(){ return; }
+	virtual OSErr 		ReallocateUncertainty(int numLEs, short* LE_Status){ return 0; }
 	virtual Boolean		IAmA3DMover() {return false;}
 	virtual ClassID 	GetClassID () { return TYPE_MOVER; }
 	virtual Boolean		IAm(ClassID id) { if(id==TYPE_MOVER) return TRUE; return ClassID_c::IAm(id); }
