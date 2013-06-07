@@ -42,7 +42,13 @@ else:
 
 if "cleanall" in "".join(sys.argv[1:]):
     target = 'clean'
-    rm_files = ['gnome/cy_gnome/*.so', 'gnome/cy_gnome/cy_*.pyd', 'gnome/cy_gnome/cy_*.cpp']
+    rm_files = ['gnome/cy_gnome/*.so',
+                'gnome/cy_gnome/cy_*.pyd',
+                'gnome/cy_gnome/cy_*.cpp',
+                'gnome/utilities/geometry/cy_*.pyd',
+                'gnome/utilities/geometry/cy_*.so',
+                'gnome/utilities/geometry/cy_*.c',
+                ]
 
     for files_ in rm_files:
         for file_ in glob.glob(files_):
@@ -313,6 +319,14 @@ for mod_name in extension_names:
                                  include_dirs=l_include_dirs,
                                  )
                        )
+
+# and platfrom-independent cython extensions:
+extensions.append( Extension("gnome.utilities.geometry.cy_point_in_polygon",
+                             sources=["gnome/utilities/geometry/cy_point_in_polygon.pyx",
+                                      "gnome/utilities/geometry/c_point_in_polygon.c"],
+                             include_dirs=[np.get_include()],
+                            )
+                  )
 
 
 setup(name='pyGnome',

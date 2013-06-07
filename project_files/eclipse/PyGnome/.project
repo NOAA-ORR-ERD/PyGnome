@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>PyGnome</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.python.pydev.PyDevBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.python.pydev.pythonNature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>py_gnome</name>
+			<type>2</type>
+			<locationURI>GNOME_LOC/py_gnome</locationURI>
+		</link>
+	</linkedResources>
+	<variableList>
+		<variable>
+			<name>GNOME_LOC</name>
+			<value>$%7BPARENT-3-PROJECT_LOC%7D</value>
+		</variable>
+	</variableList>
+</projectDescription>
