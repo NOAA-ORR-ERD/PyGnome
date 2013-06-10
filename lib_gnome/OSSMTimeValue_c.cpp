@@ -20,13 +20,9 @@
 #include "Replacements.h"
 #endif
 
-#ifdef pyGNOME
-#define TMover Mover_c
-#endif
-
 using namespace std;
 
-OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(nil)
+OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c()
 { 
 	fileName[0]=0;
 	filePath[0]=0;
@@ -47,7 +43,7 @@ OSSMTimeValue_c::OSSMTimeValue_c() : TimeValue_c(nil)
 #endif
 }
 
-
+#ifndef pyGNOME
 OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner) 
 { 
 	fileName[0]=0;
@@ -64,7 +60,7 @@ OSSMTimeValue_c::OSSMTimeValue_c(TMover *theOwner) : TimeValue_c(theOwner)
 	fVelAtRefPt = 0;
 	fInterpolationType = HERMITE;	// pyGNOME doesn't use this constructor
 }
-
+#endif
 OSErr OSSMTimeValue_c::GetTimeChange(long a, long b, Seconds *dt)
 {
 	// NOTE: Must be called with a < b, else bogus value may be returned.

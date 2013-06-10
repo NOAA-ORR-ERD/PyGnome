@@ -175,7 +175,7 @@ OSErr CATSMover_c::ComputeVelocityScale(const Seconds& model_time)
 						//velocity.u *= mover -> refScale;
 						//velocity.v *= mover -> refScale;
 						// so use GetScaledPatValue() instead
-						theirVelocity = mover -> GetScaledPatValue(model_time, refPt3D,nil);	// AH 07/10/2012
+						theirVelocity = mover -> GetScaledPatValue(model_time, refPt3D,nil);	
 						
 						theirLengthSq = (theirVelocity.u * theirVelocity.u + theirVelocity.v * theirVelocity.v);
 						// JLM, we need to adjust the movers pattern 
