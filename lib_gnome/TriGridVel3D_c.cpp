@@ -19,7 +19,6 @@
 TriGridVel3D_c::TriGridVel3D_c() 
 {
 	fDepthsH=0; 
-	fDepthContoursH=0;
 	fTriSelected = 0;
 	fPtsSelected = 0;
 	fOilConcHdl = 0;
@@ -29,13 +28,11 @@ TriGridVel3D_c::TriGridVel3D_c()
 	bShowSelectedTriangles = true;
 	//fPercentileForMaxConcentration = .9;
 	fPercentileForMaxConcentration = 1.;	// make user decide if they want to fudge this
-	//gCoord = 0;	// is this used??
 	bCalculateDosage = false;
 	bShowDosage = false;
 	fDosageThreshold = .2;
 	fMaxTri = -1;
 	bShowMaxTri = false;
-	memset(&fLegendRect,0,sizeof(fLegendRect)); 
 }
 
 
@@ -74,14 +71,6 @@ void TriGridVel3D_c::ScaleDepths(double scaleFactor)
 		(*fDepthsH)[i] *= scaleFactor;
 	}
 	return;
-}
-
-long TriGridVel3D_c::GetNumDepthContours(void)
-{
-	long numContourValues = 0;
-	if (fDepthContoursH) numContourValues = _GetHandleSize((Handle)fDepthContoursH)/sizeof(**fDepthContoursH);
-	
-	return numContourValues;
 }
 
 long TriGridVel3D_c::GetNumOutputDataValues(void)
@@ -723,14 +712,13 @@ Boolean **TriGridVel3D_c::GetTriSelection(Boolean initHdl)
 void TriGridVel3D_c::Dispose ()
 {
 	if(fDepthsH) {DisposeHandle((Handle)fDepthsH); fDepthsH=0;}
-	if(fDepthContoursH) {DisposeHandle((Handle)fDepthContoursH); fDepthContoursH=0;}
+	//if(fDepthContoursH) {DisposeHandle((Handle)fDepthContoursH); fDepthContoursH=0;}	// moved to TriGridVel
 	if(fTriSelected) {DisposeHandle((Handle)fTriSelected); fTriSelected=0;}
 	if(fPtsSelected) {DisposeHandle((Handle)fPtsSelected); fPtsSelected=0;}
 	if(fOilConcHdl) {DisposeHandle((Handle)fOilConcHdl); fOilConcHdl=0;}
 	if(fMaxLayerDataHdl) {DisposeHandle((Handle)fMaxLayerDataHdl); fMaxLayerDataHdl=0;}
 	if(fTriAreaHdl) {DisposeHandle((Handle)fTriAreaHdl); fTriAreaHdl=0;}
 	if(fDosageHdl) {DisposeHandle((Handle)fDosageHdl); fDosageHdl=0;}
-	//if(gCoord) {DisposeHandle((Handle)gCoord); gCoord=0;}
 	
 	TriGridVel_c::Dispose ();
 }

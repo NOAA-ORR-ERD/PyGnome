@@ -60,9 +60,13 @@ class TRectGridVel : virtual public RectGridVel_c, public TGridVel
 
 class TTriGridVel : virtual public TriGridVel_c, public TGridVel
 {
+	public:
+		DOUBLEH fDepthContoursH;
+		Rect	fLegendRect;
+		
 	public:		
 		TTriGridVel(){fDagTree = 0; fBathymetryH=0;	fDepthContoursH=0;	memset(&fLegendRect,0,sizeof(fLegendRect));}
-		virtual	~TTriGridVel() { Dispose (); }
+		virtual	~TTriGridVel() { if(fDepthContoursH) {DisposeHandle((Handle)fDepthContoursH); fDepthContoursH=0;} Dispose (); }
 
 		OSErr TextRead(char *path);
 		OSErr Read(BFPB *bfpb);
@@ -92,9 +96,6 @@ class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 		virtual	~TTriGridVel3D() { Dispose (); }
 
 
-		//OSErr DepthContourDialog();
-		//WORLDPOINTDH  GetCoords(){return gCoord;}
-
 		Boolean **GetPtsSelection(Boolean initHdl);
 		Boolean ThereAreTrianglesSelected() {if (fTriSelected) return true; else return false;}
 		Boolean ThereAreTrianglesSelected2(void);
@@ -117,15 +118,14 @@ class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 
 		long FindTriNearClick(Point where);
 		//virtual InterpolationVal GetInterpolationValues(WorldPoint refPoint);
+		DOUBLEH  GetDepthContours(){return fDepthContoursH;}
+		//void SetDepthContours(DOUBLEH depthContoursH){if(fDepthContoursH!=depthContoursH) (fDepthContoursH=depthContoursH;}
+		long 	GetNumDepthContours(void);
 		virtual void Draw (Rect r, WorldRect view,WorldPoint refP,double refScale,
 				   double arrowScale,double arrowDepth,Boolean bDrawArrows, Boolean bDrawGrid, RGBColor arrowColor);
 		void 	DrawPointAt(Rect *r,long verIndex,short selectMode );
 		void DrawTriangleStr(Rect *r,long triNum,double value);
-		//void DrawBitMapTriangles (Rect r);
 		void DrawDepthContours(Rect r, WorldRect view, Boolean showLabels);
-		//void DrawContourScale(Rect r, WorldRect view/*, Rect *legendRect*/);
-		//void DrawContourLine(short *ix, short *iy, double** contourValue,Boolean showvals,double level);
-		//void DrawContourLines(Boolean printing,DOUBLEH dataVals, Boolean showvals,DOUBLEH contourLevels, short *sxi,short *syi);
 
 		
 	//private:
@@ -134,8 +134,6 @@ class TTriGridVel3D : virtual public TriGridVel3D_c, public TTriGridVel
 
 Boolean IsTriGridFile (char *path);
 Boolean IsRectGridFile (char *path);
-//Boolean IsNetCDFFile (char *path, short *gridType);
-//Boolean IsNetCDFPathsFile (char *path, Boolean *isNetCDFPathsFile, char *fileNamesPath, short *gridType);
 short ConcentrationTable(outputData **oilConcHdl,float *depthSlice,short tableType/*,double *triAreaArray,long numLevels*/);	// send oilconchdl
 
 #endif
