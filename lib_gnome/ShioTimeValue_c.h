@@ -20,19 +20,8 @@
 
 #ifndef pyGNOME
 #include "TMover.h"
-#else
-#include "Mover_c.h"
-#define TMover Mover_c
 #endif
 
-//enum { WIZ_POPUP = 1, WIZ_UNITS , WIZ_EDIT, WIZ_BMP, WIZ_HELPBUTTON };
-
-/*typedef struct
-{
-	short year;// 1998, etc
-	YEARDATAHDL yearDataHdl;
-} ShioYearInfo;
-*/
 #define kMAXNUMSAVEDYEARS 30
 typedef struct
 {
@@ -51,7 +40,6 @@ typedef struct
 YEARDATAHDL GetYearData(short year);
 YEARDATA2* ReadYearData(short year, const char *path, char *errStr);
 
-//class ShioTimeValue_c : virtual public OSSMTimeValue_c {
 class DLL_API ShioTimeValue_c : virtual public OSSMTimeValue_c {
 
 protected:
@@ -89,8 +77,10 @@ public:
 	char					fYearDataPath[kMaxNameLen];
 
 							ShioTimeValue_c ();
+#ifndef pyGNOME
 							ShioTimeValue_c (TMover *theOwner);
 							ShioTimeValue_c (TMover *theOwner,TimeValuePairH tvals);
+#endif
 	virtual					 ~ShioTimeValue_c () { this->Dispose (); }
 	virtual void			Dispose ();
 	virtual ClassID 		GetClassID () { return TYPE_SHIOTIMEVALUES; }
@@ -116,5 +106,5 @@ public:
 };
 
 
-#undef TMover
+//#undef TMover
 #endif

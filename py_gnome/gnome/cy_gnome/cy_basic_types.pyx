@@ -30,7 +30,8 @@ oil_status =enum(not_released = OILSTAT_NOTRELEASED,
                  in_water = OILSTAT_INWATER,
                  on_land = OILSTAT_ONLAND,
                  off_maps = OILSTAT_OFFMAPS,
-                 evaporated = OILSTAT_EVAPORATED)
+                 evaporated = OILSTAT_EVAPORATED,
+                 to_be_removed = OILSTAT_TO_BE_REMOVED)
 
 """
 disperse status as an enum type

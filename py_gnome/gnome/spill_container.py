@@ -256,6 +256,13 @@ class SpillContainer(SpillContainerData):
                         else:
                             self._data_arrays[name] = new_data[name]
 
+    def model_step_is_done(self):
+        """
+        Called at the end of a time step
+        Need to remove particles marked as to_be_removed...        
+        """
+        pass
+
     def __str__(self):
         msg = "gnome.spill_container.SpillContainer\nspill LE attributes: %s" % self._data_arrays.keys()
         return msg

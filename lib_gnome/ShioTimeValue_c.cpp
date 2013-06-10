@@ -51,16 +51,17 @@ ShioTimeValue_c::ShioTimeValue_c() : OSSMTimeValue_c()
 	this->fYearDataPath[0] = 0;
 }
 
+#ifndef pyGNOME
 ShioTimeValue_c::ShioTimeValue_c(TMover *theOwner,TimeValuePairH tvals) : OSSMTimeValue_c(theOwner)
 { 	// having this this function is inherited but meaningless
 	this->ProgrammerError("TShioTimeValue constructor");
 	this->InitInstanceVariables();
 }
-
 ShioTimeValue_c::ShioTimeValue_c(TMover *theOwner) : OSSMTimeValue_c(theOwner)
 { 
 	this->InitInstanceVariables();
 }
+#endif
 
 void ShioTimeValue_c::Dispose()
 {

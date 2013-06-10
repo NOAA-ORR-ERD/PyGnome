@@ -12,16 +12,9 @@
 #include "MemUtils.h"
 
 #ifdef pyGNOME
-//#include "LEList_c.h"
-//#include "OLEList_c.h"
-//#include "Model_c.h"
 #include "Replacements.h"
 #else
 #include "CROSS.H"
-//#include "TLEList.h"
-//#include "TOLEList.h"
-//#include "TModel.h"
-//extern TModel *model;
 #endif
 
 #ifndef pyGNOME
@@ -117,6 +110,48 @@ void CurrentMover_c::UpdateUncertaintyValues(Seconds elapsedTime)
 		INDEXH(fUncertaintyListH,i) = localCopy;
 		
 	}	
+}
+
+OSErr CurrentMover_c::ReallocateUncertainty(int numLEs, short* statusCodes)	// remove off map LEs
+{
+	long i,numrec=0,uncertListSize,numLESetsStored;
+	OSErr err=0;
+	
+	if (numLEs == 0 || ! statusCodes) return -1;	// shouldn't happen
+	
+	if(!fUncertaintyListH || !fLESetSizesH) return 0;	// assume uncertainty is not on
+
+	// check that (*fLESetSizesH)[0]==numLEs and size of fLESetSizesH == 1
+	uncertListSize = _GetHandleSize((Handle)fUncertaintyListH)/sizeof(LEUncertainRec);
+	numLESetsStored = _GetHandleSize((Handle)fLESetSizesH)/sizeof(long);
+	
+	if (uncertListSize != numLEs) return -1;
+	if (numLESetsStored != 1) return -1;
+	
+	for (i = 0,numrec=0; i < numLEs ; i++) {
+		if( statusCodes[i] == OILSTAT_TO_BE_REMOVED)	// for OFF_MAPS, EVAPORATED, etc
+		{
+			continue;
+		}
+		else {
+			fUncertaintyListH[numrec] = fUncertaintyListH[i];
+			numrec++;
+		}
+	}
+	
+	if (numrec == 0)
+	{	
+		this->DisposeUncertainty();
+		return noErr;
+	}
+	
+	if (numrec < uncertListSize)
+	{
+		(*fLESetSizesH)[0] = numrec;
+		_SetHandleSize((Handle)fUncertaintyListH,numrec*sizeof(LEUncertainRec)); 
+	}
+	
+	return noErr;
 }
 
 OSErr CurrentMover_c::AllocateUncertainty(int numLESets, int* LESetsSizesList)	// only passing in uncertainty list information

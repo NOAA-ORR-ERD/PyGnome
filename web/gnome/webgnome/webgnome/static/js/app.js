@@ -73,6 +73,7 @@ define([
                 surfaceReleaseSpills: this.surfaceReleaseSpills,
                 renderer: this.renderer,
                 model: this.map,
+                customMap: this.customMap,
                 animationThreshold: this.options.animationThreshold,
                 newModel: this.options.newModel,
                 state: this.state,

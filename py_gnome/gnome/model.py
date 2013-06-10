@@ -246,7 +246,11 @@ class Model(serializable.Serializable):
         """
 
         for mover in self.movers:
-            mover.model_step_is_done()
+            for sc in self.spills.items():	
+                mover.model_step_is_done(sc)	
+        for sc in self.spills.items():	
+            sc.model_step_is_done()
+
         for outputter in self.outputters:
             outputter.model_step_is_done()
 

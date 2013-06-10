@@ -106,13 +106,12 @@ class Mover(object):
         """
         raise NotImplementedError("Each mover that derives from Mover base class must implement get_move(...)")
 
-    def model_step_is_done(self):
+    def model_step_is_done(self,sc=None):
         """
         This method gets called by the model when after everything else is done
         in a time step. Put any code need for clean-up, etc in here in subclassed movers.
         """
         pass 
-
 
 class CyMover(Mover):
     def __init__(self, **kwargs):
@@ -214,14 +213,26 @@ class CyMover(Mover):
         self.positions = self.positions.view(dtype=basic_types.world_point).reshape( (len(self.positions),) )
         self.delta = np.zeros((len(self.positions)), dtype=basic_types.world_point)
 
-    def model_step_is_done(self):
+    def model_step_is_done(self,sc=None):
         """
         This method gets called by the model after everything else is done
         in a time step, and is intended to perform any necessary clean-up operations.
         Subclassed movers can override this method.
         """
-        if self.active:
-            self.mover.model_step_is_done()
+        if sc is not None:		
+        	if sc.uncertain:		
+				if self.active:
+					try:
+						self.status_codes = sc['status_codes']
+					except KeyError, err:
+						raise ValueError("The spill container does not have the required data array\n" + err.message)
+					self.mover.model_step_is_done(self.status_codes)
+        	else:		
+				self.mover.model_step_is_done()
+        else:		
+        	if self.active:
+        		self.mover.model_step_is_done()
+            	
 
 class WindMover(CyMover, serializable.Serializable):
     """

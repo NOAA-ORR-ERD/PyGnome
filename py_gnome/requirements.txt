@@ -1,11 +1,17 @@
 # PyGnome
 setuptools
 numpy>=1.7.0   
-PIL>=1.1.7
 Cython>=0.17.1
 Pyrex>=0.9.8.6
 pytest>=2.3.4
 sphinx
+
+# requires netcdf-4 binaries to be correctly installed
+netCDF4 
+
+# requires some binary packages
+PIL>=1.1.7
+
 svn+https://svn.orr.noaa.gov/svn/Hazpy/trunk/hazpy.unit_conversion/#egg=hazpy.unit_conversion
 git+https://github.com/Pylons/colander.git#egg=colander  # need newer version than what is in PyPy
 

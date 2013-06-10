@@ -23,10 +23,6 @@ void SysBeep(short x) { return; }
 
 Boolean CmdPeriod(void) { return false; }
 
-//void PenNormal(void) { return; }
-
-//long ScreenToWorldDistance(short pixels) { return 0; } // temporary, obviously.\
-
 Boolean FileExists(short vRefNum, long dirID, CHARPTR filename)
 {
 	struct stat buffer;
@@ -110,8 +106,6 @@ OSErr ReadFileContents(short terminationFlag, short vRefNum, long dirID, CHARPTR
 	}
 	return false;
 }
-
-//void paramtext(char* p0,char* p1,char* p2,char* p3) { return; }
 
 OSErr AskUserForUnits(short* selectedUnits,Boolean *userCancel) { return -1; }
 

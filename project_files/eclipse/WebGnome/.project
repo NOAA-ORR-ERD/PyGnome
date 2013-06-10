@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>WebGnome</name>
+	<comment></comment>
+	<projects>
+		<project>PyGnome</project>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.python.pydev.PyDevBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.python.pydev.pythonNature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>webgnome</name>
+			<type>2</type>
+			<locationURI>GNOME_LOC/web/gnome/webgnome</locationURI>
+		</link>
+	</linkedResources>
+	<variableList>
+		<variable>
+			<name>GNOME_LOC</name>
+			<value>$%7BPARENT-3-PROJECT_LOC%7D</value>
+		</variable>
+	</variableList>
+</projectDescription>

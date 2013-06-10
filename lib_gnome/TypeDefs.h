@@ -254,7 +254,7 @@ enum { OSSM_L0 = 1, OSSM_L1 = 2, OSSM_L2 = 3, OSSM_L3 = 4, OSSM_L4 = 5, OSSM_L5 
 	OSSM_W0 = 12, OSSM_W1 = 13, OSSM_W2 = 14, OSSM_W3 = 15, OSSM_WW = 16};
 
 enum LEStatus { OILSTAT_NOTRELEASED = 0, OILSTAT_INWATER = 2, OILSTAT_ONLAND = 3,
-	OILSTAT_OFFMAPS = 7, OILSTAT_EVAPORATED = 10};
+	OILSTAT_OFFMAPS = 7, OILSTAT_EVAPORATED = 10, OILSTAT_TO_BE_REMOVED = 12};
 //JLM note: on why these number are what they are
 // OILSTAT_INAIR (which was 1) meant evaporated, and got confused with the 
 // with OILSTAT_EVAPORATED (which was 10, because of old ossm)

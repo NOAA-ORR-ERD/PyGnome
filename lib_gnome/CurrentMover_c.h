@@ -16,10 +16,6 @@
 #include "GEOMETRY.H"
 #include "ExportSymbols.h"
 
-#ifdef pyGNOME
-#define TMap Map_c
-#endif
-
 class DLL_API CurrentMover_c : virtual public Mover_c {
 	
 public:
@@ -46,6 +42,7 @@ public:
 	virtual void 		UpdateUncertaintyValues(Seconds elapsedTime);
 	virtual OSErr		UpdateUncertainty(const Seconds& elapsedTime, int numLESets, int* LESetsSizesList);
 	virtual OSErr		AllocateUncertainty (int numLESets, int* LESetsSizesList);
+	virtual OSErr		ReallocateUncertainty(int numLEs, short* statusCodes);	
 	virtual void		DisposeUncertainty ();
 	
 	virtual OSErr 		PrepareForModelRun(); 
@@ -61,5 +58,4 @@ public:
 	
 };
 
-#undef TMap
 #endif

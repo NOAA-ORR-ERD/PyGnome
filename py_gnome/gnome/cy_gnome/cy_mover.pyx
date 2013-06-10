@@ -69,11 +69,21 @@ cdef class CyMover(object):
                 """
                 raise OSError("PrepareForModelStep returned an error: {0}".format(err))
         
-    def model_step_is_done(self):
+    def model_step_is_done(self, cnp.ndarray[cnp.npy_int16] LE_status=None):
         """
         .. function:: model_step_is_done()
         
         Default call to C++ ModelStepIsDone method
+        If model is uncertain remove particles with to_be_removed status from uncertainty array
         """
+        cdef OSErr err
+        if LE_status is None:
+            num_LEs = 0
+        else:
+            num_LEs = len(LE_status)
+ 
+        if self.mover:
+            if num_LEs > 0:
+                err = self.mover.ReallocateUncertainty(num_LEs, <short *>&LE_status[0])
         if self.mover:
             self.mover.ModelStepIsDone()

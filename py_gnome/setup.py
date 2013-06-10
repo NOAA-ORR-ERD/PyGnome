@@ -188,14 +188,51 @@ if sys.platform == "darwin":
 
 
 elif sys.platform == "linux2":
+
+    ## for some reason I have to create build/temp.linux-i686-2.7
+    ## else the compile fails saying temp.linux-i686-2.7 is not found
+    ## required for develop or install mode
+    build_temp = './build/temp.linux-i686-2.7' 
+    if 'clean' not in sys.argv[1] and not os.path.exists('./build/temp.linux-i686-2.7'):
+        os.makedirs(build_temp)    
+   
+    ## Not sure calling setup twice is the way to go - but do this for now
+    setup(name='pyGnome', # not required since ext defines this
+          cmdclass={'build_ext': build_ext},
+          ext_modules=[Extension('gnome.cy_gnome.libgnome',
+                                 cpp_files,
+                                 language='c++',
+                                 define_macros=macros,
+                                 libraries=['netcdf'],
+                                 include_dirs=[ CPP_CODE_DIR],
+                                 )])
+  
+    ## in install mode, it compiles and builds libgnome inside lib.linux-i686-2.7/gnome/cy_gnome
+    ## this should be moved to build/temp.linux-i686-2.7 so cython files build and link properly
+    if 'install' in sys.argv[1]:
+        bdir = glob.glob(os.path.join('build/*/gnome/cy_gnome','libgnome.so'))
+        if len(bdir) > 1:
+            raise Exception("Found more than one libgnome.so library during install mode in 'build/*/gnome/cy_gnome'")
+        if len(bdir) == 0:
+            raise Exception("Did not find libgnome.so library during install mode in 'build/*/gnome/cy_gnome'")
+        
+        libpath = os.path.dirname( bdir[0])
+
+    else:
+        libpath = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'gnome', 'cy_gnome')
+    
+    ## Need this for finding lib during linking and at runtime
+    ## using -rpath to define runtime path. Use $ORIGIN to define libgnome.so relative to cy_*.so
+    os.environ['LDFLAGS'] = "-L{0} -Wl,-rpath='$ORIGIN'".format(libpath)
+
+    ## End building C++ shared object
+    lib = ['gnome']
     basic_types_ext = Extension(r'gnome.cy_gnome.cy_basic_types',
-                                ['gnome/cy_gnome/cy_basic_types.pyx'] + cpp_files,
+                                ['gnome/cy_gnome/cy_basic_types.pyx'],
                                 language='c++',
                                 define_macros=macros,
-                                extra_compile_args=compile_args + [
-                                    '-I/usr/local/include'],
-                                extra_link_args=['-L/usr/local/lib'],
-                                libraries=['netcdf'],
+                                extra_compile_args=compile_args,
+                                libraries=lib,
                                 include_dirs=l_include_dirs,
                                 )
 
