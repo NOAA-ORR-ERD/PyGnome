@@ -12,15 +12,15 @@ from gnome import environment, basic_types
 from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils
 
-shio_file = os.path.join( os.path.dirname(__file__), r"SampleData","tides","CLISShio.txt")
-ossm_file = os.path.join( os.path.dirname(__file__), r"SampleData","tides","TideHdr.FINAL")
+shio_file = os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt")
+ossm_file = os.path.join( os.path.dirname(__file__), r"sample_data","tides","TideHdr.FINAL")
 
 def test_exceptions():
     """
     Test correct exceptions are raised
     """
-    bad_file = os.path.join(r"SampleData","long_island_sound","CLISShio.txtX")
-    bad_yeardata_path = os.path.join(r"SampleData","Data","yeardata")
+    bad_file = os.path.join(r"sample_data","long_island_sound","CLISShio.txtX")
+    bad_yeardata_path = os.path.join(r"sample_data","Data","yeardata")
     with pytest.raises(IOError):
         environment.Tide(bad_file)
         

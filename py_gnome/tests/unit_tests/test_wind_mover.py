@@ -12,7 +12,7 @@ from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils, transforms, convert
 from gnome.utilities import projections
 
-datadir = os.path.join(os.path.dirname(__file__), r'SampleData')
+datadir = os.path.join(os.path.dirname(__file__), r'sample_data')
 file_ = os.path.join(datadir,r'WindDataFromGnome.WND')
 
 def test_exceptions():
