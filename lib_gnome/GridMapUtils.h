@@ -13,21 +13,8 @@
 
 #include "Basics.h"
 #include "TypeDefs.h"
-#include "RectUtils.h"
-#include "ClassID_c.h"
-#include "my_build_list.h"
+//#include "my_build_list.h"
 
-
-#ifdef pyGNOME
-#include "Mover_c.h"
-#include "GridVel_c.h"
-#include "TriGridVel_c.h"
-#define TMover Mover_c
-#define TGridVel GridVel_c
-#define TTriGridVel TriGridVel_c
-#else
-#include "GridVel.h"
-#endif
 
 long 				CheckSurroundingPoints(LONGH maskH, long numRows, long  numCols, long row, long col) ;
 Boolean 			InteriorLandPoint(LONGH maskH, long numRows, long  numCols, long row, long col); 
@@ -38,8 +25,4 @@ void 				ResetMaskValues(LONGH maskH,long landBlockToMerge,long landBlockToJoin,
 //OSErr 				NumberIslands(LONGH *islandNumberH, VelocityFH velocityH,LONGH landWaterInfo,long numRows,long numCols,long *numIslands);
 OSErr 				NumberIslands(LONGH *islandNumberH, DOUBLEH landmaskH,LONGH landWaterInfo,long numRows,long numCols,long *numIslands);
 
-
-#undef TMover
-#undef TGridVel
-#undef TTriGridVel
 #endif
