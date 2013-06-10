@@ -11,14 +11,14 @@ from gnome import environment, movers, basic_types
 from gnome.spill_container import TestSpillContainer
 from gnome.utilities import time_utils
 
-curr_file= os.path.join( os.path.dirname(__file__), r"SampleData/long_island_sound/tidesWAC.CUR")
-td = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData/long_island_sound/CLISShio.txt"))
+curr_file= os.path.join( os.path.dirname(__file__), r"sample_data/long_island_sound/tidesWAC.CUR")
+td = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"sample_data/long_island_sound/CLISShio.txt"))
 
 def test_exceptions():
     """
     Test correct exceptions are raised
     """
-    bad_file=r"SampleData/long_island_sound/tidesWAC.CURX"
+    bad_file=r"sample_data/long_island_sound/tidesWAC.CURX"
     with pytest.raises(ValueError):
         movers.CatsMover(bad_file)
         

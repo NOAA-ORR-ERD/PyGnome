@@ -23,7 +23,7 @@ from gnome.db.oil_library.models import (
     )
 
 here = os.path.dirname(__file__)
-db_file = os.path.join(here, r'SampleData/oil_library/OilLibrary.db')
+db_file = os.path.join(here, r'sample_data/oil_library/OilLibrary.db')
 sqlalchemy_url = 'sqlite:///%s' % (db_file)
 
 class BaseTestCase(unittest.TestCase):

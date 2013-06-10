@@ -7,7 +7,7 @@ from gnome import basic_types
 from gnome.cy_gnome import cy_cats_mover, cy_ossm_time, cy_shio_time
 import cy_fixtures
 
-datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
+datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
 
 class CatsMove(cy_fixtures.CyTestMove):
     """
