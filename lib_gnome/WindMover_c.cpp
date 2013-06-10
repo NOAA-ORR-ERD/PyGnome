@@ -7,12 +7,6 @@
  *
  */
 
-#ifdef MAC
-#ifdef MPW
-#include <QDOffscreen.h>
-#pragma SEGMENT WINDMOVER_C
-#endif
-#endif
 #include "WindMover_c.h"
 #include "MemUtils.h"
 #include "GEOMETRY.H"
@@ -21,8 +15,6 @@
 
 #ifdef pyGNOME
 #include "OSSMTimeValue_c.h"
-#include "LEList_c.h"
-//#include "Model_c.h"
 #include "Replacements.h"
 #define TOSSMTimeValue OSSMTimeValue_c
 #else

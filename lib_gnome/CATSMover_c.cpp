@@ -24,7 +24,6 @@
 extern TModel *model;
 #else
 #include "Replacements.h"
-//extern Model_c *model;	// TODO: no longer exposed to pyGnome - delete?
 #endif
 
 using std::fstream;
