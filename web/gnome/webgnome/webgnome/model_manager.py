@@ -119,9 +119,8 @@ class WebCatsMover(BaseWebObject, CatsMover):
     state.add(create=['name'], update=['name'])
 
     def __init__(self, base_dir, filename, *args, **kwargs):
-        self.base_dir = base_dir
-        self.filename = filename
-        super(WebCatsMover, self).__init__(*args, **kwargs)
+        filename = os.path.join(base_dir, filename)
+        super(WebCatsMover, self).__init__(filename, *args, **kwargs)
 
 class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
     """
@@ -529,6 +528,7 @@ class WebModel(BaseWebObject, Model):
 
         if cats_movers:
             for mover_data in cats_movers:
+                mover_data['base_dir'] = self.package_root
                 add_to_collection(self.movers, mover_data, WebCatsMover)
 
         if random_movers:
