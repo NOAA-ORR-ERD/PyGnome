@@ -337,8 +337,9 @@ class WebModel(BaseWebObject, Model):
         Remove the model's current renderer -- removes the reference in `self`
         and removes the outputter from the model's `outputters` collection.
         """
-        self.outputters.remove(self.renderer.id)
-        self.renderer = None
+        if self.renderer:
+            self.outputters.remove(self.renderer.id)
+            self.renderer = None
 
     def add_bna_map(self, filename, map_data):
         """

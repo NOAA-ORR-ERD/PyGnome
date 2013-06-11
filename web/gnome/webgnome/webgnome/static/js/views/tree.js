@@ -92,7 +92,6 @@ define([
             if (opts.reloadTree === false) {
                 return;
             }
-            console.log('tree reload')
             if (this.gnomeModel && this.gnomeModel.wasDeleted) {
                 return;
             }
