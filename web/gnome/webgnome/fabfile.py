@@ -6,6 +6,7 @@ from fabric.contrib import files
 
 
 env.roledefs = {
+    # A VM started with conf/Vagrantfile
     'dev': ['192.168.33.10']
 }
 
@@ -59,6 +60,10 @@ def get_current_role():
             return role
 
 
+def is_vagrant_server():
+    return env.host_string in env.roledefs['dev']
+
+
 def setup_vagrant_key():
     """
     Set up access to the user's vagrant server.
@@ -66,7 +71,7 @@ def setup_vagrant_key():
     if env.key_filename and env.user == 'vagrant':
         return
 
-    if env.host_string in env.roledefs['dev']:
+    if is_vagrant_server():
         env.user = 'vagrant'
         with api.lcd(os.path.join(env.local_base_dir, 'conf')):
             result = api.local('vagrant ssh-config | grep IdentityFile',
@@ -85,6 +90,30 @@ def get_config():
     config = ConfigParser()
     config.read(os.path.join(env.local_base_dir, 'conf', 'vagrant.cfg'))
     return config
+
+
+@api.task
+def build_docs():
+    base_path = os.path.dirname(os.path.realpath(__file__))
+    docs_dir = os.path.join(base_path, 'doc')
+    python_docs_dir = os.path.join(docs_dir, 'api', 'python')
+    js_docs_dir = os.path.join(docs_dir, 'javascript')
+    project_dir = os.path.join(base_path, 'webgnome')
+    js_dir = os.path.join(project_dir, 'static', 'js')
+
+    # Auto-generate Python API docs first.
+    api.local('sphinx-apidoc -f %s -o %s' % (project_dir, python_docs_dir))
+
+    with api.lcd(docs_dir):
+        api.local('make html')
+
+    # Auto-generate JavaScript API docs.
+    docco_path = os.path.join(base_path, 'node_modules', 'docco', 'bin', 'docco')
+    files_to_include = ['models.js', 'app.js', 'util.js']
+
+    for filename in files_to_include:
+        file_path = os.path.join(js_dir, filename)
+        api.local('%s %s -o %s' % (docco_path, file_path, js_docs_dir))
 
 
 @api.task
@@ -108,7 +137,7 @@ def test_apache():
 @api.task
 def report_ip():
     setup_vagrant_key()
-    api.sudo('ifconfig | grep 192')
+    api.sudo('ifconfig')
 
 
 @api.task
@@ -133,8 +162,8 @@ def setup_apache():
 
     role = get_current_role()
 
-    if not role:
-        return
+    if not role or not role in contexts:
+        api.abort('Could not find an Apache context for the role "%s"' % role)
 
     files.upload_template(
         os.path.join(env.local_base_dir, 'conf', 'apache_site.conf'),
@@ -179,8 +208,12 @@ def setup_host():
     ensure_gnome_exists()
 
     with api.cd(env.gnome_base_dir):
-        api.run('git pull origin master')
-        api.run('git checkout linux_support', warn_only=True)
+        # Pull latest unless we're on a Vagrant server, which is designed to
+        # use code from a shared folder on your desktop machine.
+        if not is_vagrant_server():
+            api.run('git pull origin master')
+            api.run('git checkout linux_support', warn_only=True)
+
         api.sudo('ln -s ~/src/gnome/web/gnome/webgnome/webgnome '
                  '/var/www/', warn_only=True)
         api.sudo('chown -R vagrant:www-data web')
@@ -217,36 +250,13 @@ def setup_host():
 
 
 @api.task
-def build_docs():
-    base_path = os.path.dirname(os.path.realpath(__file__))
-    docs_dir = os.path.join(base_path, 'doc')
-    python_docs_dir = os.path.join(docs_dir, 'api', 'python')
-    js_docs_dir = os.path.join(docs_dir, 'javascript')
-    project_dir = os.path.join(base_path, 'webgnome')
-    js_dir = os.path.join(project_dir, 'static', 'js')
-
-    # Auto-generate Python API docs first.
-    api.local('sphinx-apidoc -f %s -o %s' % (project_dir, python_docs_dir))
-
-    with api.lcd(docs_dir):
-        api.local('make html')
-
-    # Auto-generate JavaScript API docs.
-    docco_path = os.path.join(base_path, 'node_modules', 'docco', 'bin', 'docco')
-    files_to_include = ['models.js', 'app.js', 'util.js']
-
-    for filename in files_to_include:
-        file_path = os.path.join(js_dir, filename)
-        api.local('%s %s -o %s' % (docco_path, file_path, js_docs_dir))
-
-
-@api.task
 def pull(branch='master'):
     setup_vagrant_key()
     ensure_gnome_exists()
 
     with api.cd(env.gnome_base_dir):
         api.run('git pull origin %s' % branch)
+        # Get the current branch name
         current_branch = api.run('git rev-parse --abbrev-ref HEAD')
 
         print 'Checking out %s' % branch
@@ -257,7 +267,9 @@ def pull(branch='master'):
 @api.task
 def deploy_webgnome(restart=False, branch='master'):
     setup_vagrant_key()
-    api.execute(pull, branch)
+
+    if not is_vagrant_server():
+        api.execute(pull, branch)
 
     with virtualenv():
         with api.cd(env.py_gnome_dir):

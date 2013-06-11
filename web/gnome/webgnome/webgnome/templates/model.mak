@@ -1,6 +1,5 @@
 <%inherit file="base.mak"/>
 
-
 <%block name="extra_head">
     <link rel="stylesheet" href='/static/css/leaflet.css'/>
     <link rel="stylesheet" href='/static/css/leaflet.draw.css'/>
