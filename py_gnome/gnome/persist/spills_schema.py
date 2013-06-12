@@ -38,25 +38,24 @@ class AllArrayTypes(SequenceSchema):
 """ End - unused ArrayTypes schema """
     
 class Windage(TupleSchema):
-    min_windage = SchemaNode( Float(), validator=Range(0.01, 0.04) )
-    max_windage = SchemaNode( Float(), validator=Range(0.01, 0.04) )
+    min_windage = SchemaNode( Float(), validator=Range(0, 1.0), default=0.01 )
+    max_windage = SchemaNode( Float(), validator=Range(0, 1.0), default=0.04 )
 
 class Spill(MappingSchema):
     """Base schema class from which spills that are serialized derive"""
     on = SchemaNode(Bool(), default=True, missing=True)
-    num_elements = SchemaNode( Int() )
+    num_elements = SchemaNode( Int(), default=1000 )
 
 class SurfaceReleaseSpill(Id, Spill):
     """
     Contains properties required by UpdateWindMover and CreateWindMover
     """
-    _create= ['', '', '','']
     start_position = WorldPoint()
     release_time = SchemaNode(LocalDateTime(), validator=convertible_to_seconds)
-    end_position = WorldPoint(missing=None)
-    end_release_time = SchemaNode(LocalDateTime(), missing=None, validator=convertible_to_seconds)
+    end_position = WorldPoint(missing=drop)
+    end_release_time = SchemaNode(LocalDateTime(), missing=drop, validator=convertible_to_seconds)
     windage_range = Windage()
-    windage_persist = SchemaNode( Float() )
+    windage_persist = SchemaNode( Float(), default=900 )
     
     # following will be used when restoring a saved scenario that is partially run
     num_released = SchemaNode(Int(), missing=drop)

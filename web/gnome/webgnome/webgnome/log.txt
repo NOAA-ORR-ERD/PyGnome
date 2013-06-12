@@ -1,0 +1,1427 @@
+running develop
+running egg_info
+creating pyGnome.egg-info
+writing pyGnome.egg-info/PKG-INFO
+writing top-level names to pyGnome.egg-info/top_level.txt
+writing dependency_links to pyGnome.egg-info/dependency_links.txt
+writing manifest file 'pyGnome.egg-info/SOURCES.txt'
+reading manifest file 'pyGnome.egg-info/SOURCES.txt'
+writing manifest file 'pyGnome.egg-info/SOURCES.txt'
+running build_ext
+cythoning gnome/cy_gnome/cy_basic_types.pyx to gnome/cy_gnome/cy_basic_types.cpp
+building 'gnome.cy_gnome.cy_basic_types' extension
+creating build
+creating build/temp.linux-i686-2.7
+creating build/temp.linux-i686-2.7/gnome
+creating build/temp.linux-i686-2.7/gnome/cy_gnome
+creating build/lib_gnome
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_basic_types.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_basic_types.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/RectGridVeL_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/RectGridVeL_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+../lib_gnome/RectGridVeL_c.cpp: In member function 'virtual VelocityRec RectGridVel_c::GetSmoothVelocity(WorldPoint)':
+../lib_gnome/RectGridVeL_c.cpp:86:8: warning: unused variable 'gridP' [-Wunused-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/MemUtils.cpp -o build/temp.linux-i686-2.7/../lib_gnome/MemUtils.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/Mover_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/Mover_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/Replacements.cpp -o build/temp.linux-i686-2.7/../lib_gnome/Replacements.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/Replacements.cpp:10:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/Replacements.cpp:28:1: warning: multi-line comment [-Wcomment]
+../lib_gnome/Replacements.cpp: In function 'Boolean IsPartialPath(char*)':
+../lib_gnome/Replacements.cpp:152:7: warning: unused variable 'unixDelimiter' [-Wunused-variable]
+../lib_gnome/Replacements.cpp:155:7: warning: variable 'otherDelimiter' set but not used [-Wunused-but-set-variable]
+../lib_gnome/Replacements.cpp:156:10: warning: variable 'isRelativePath' set but not used [-Wunused-but-set-variable]
+../lib_gnome/Replacements.cpp: In function 'void ResolvePartialPathFromThisFolderPath(char*, char*)':
+../lib_gnome/Replacements.cpp:176:7: warning: unused variable 'classicDelimiter' [-Wunused-variable]
+../lib_gnome/Replacements.cpp:185:10: warning: unused variable 'isRelativePath' [-Wunused-variable]
+../lib_gnome/Replacements.cpp: In function 'void ResolvePathFromInputFile(char*, char*)':
+../lib_gnome/Replacements.cpp:263:7: warning: unused variable 'pathToTearApart' [-Wunused-variable]
+../lib_gnome/Replacements.cpp:264:7: warning: unused variable 'delimiter' [-Wunused-variable]
+../lib_gnome/Replacements.cpp:267:6: warning: unused variable 'i' [-Wunused-variable]
+../lib_gnome/Replacements.cpp:267:8: warning: unused variable 'numDelimiters' [-Wunused-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/ClassID_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/ClassID_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/Random_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/Random_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+../lib_gnome/Random_c.cpp: In member function 'OSErr Random_c::get_move(int, long unsigned int, long unsigned int, WorldPoint3D*, WorldPoint3D*, short int*, LEType, long int)':
+../lib_gnome/Random_c.cpp:81:34: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/Random_c.cpp: In member function 'virtual WorldPoint3D Random_c::GetMove(const Seconds&, Seconds, long int, long int, LERec*, LETYPE)':
+../lib_gnome/Random_c.cpp:109:35: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/TimeValuesIO.cpp -o build/temp.linux-i686-2.7/../lib_gnome/TimeValuesIO.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/TimeValuesIO.cpp:10:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/TimeValuesIO.cpp: In function 'Boolean IsLongWindFile(char*, short int*, Boolean*)':
+../lib_gnome/TimeValuesIO.cpp:112:35: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeValuesIO.cpp:114:48: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeValuesIO.cpp: In function 'Boolean IsNDBCWindFile(char*, long int*)':
+../lib_gnome/TimeValuesIO.cpp:175:23: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeValuesIO.cpp:176:24: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeValuesIO.cpp:177:24: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeValuesIO.cpp:173:15: warning: unused variable 'time' [-Wunused-variable]
+../lib_gnome/TimeValuesIO.cpp:174:8: warning: unused variable 'value1S' [-Wunused-variable]
+../lib_gnome/TimeValuesIO.cpp:174:22: warning: unused variable 'value2S' [-Wunused-variable]
+../lib_gnome/TimeValuesIO.cpp:178:8: warning: unused variable 'numScanned' [-Wunused-variable]
+../lib_gnome/TimeValuesIO.cpp: In function 'Boolean IsNCDCWindFile(char*)':
+../lib_gnome/TimeValuesIO.cpp:233:23: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeValuesIO.cpp:231:15: warning: unused variable 'time' [-Wunused-variable]
+../lib_gnome/TimeValuesIO.cpp:232:8: warning: unused variable 'value1S' [-Wunused-variable]
+../lib_gnome/TimeValuesIO.cpp:232:22: warning: unused variable 'value2S' [-Wunused-variable]
+../lib_gnome/TimeValuesIO.cpp:235:8: warning: unused variable 'numScanned' [-Wunused-variable]
+../lib_gnome/TimeValuesIO.cpp: In function 'Boolean IsHydrologyFile(char*)':
+../lib_gnome/TimeValuesIO.cpp:307:34: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeValuesIO.cpp:307:67: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeValuesIO.cpp:308:34: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeValuesIO.cpp:308:67: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/GEOMETRY.cpp -o build/temp.linux-i686-2.7/../lib_gnome/GEOMETRY.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/OSSMTimeValue_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/OSSMTimeValue_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/OSSMTimeValue_c.cpp:20:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/OSSMTimeValue_c.cpp: In member function 'OSErr OSSMTimeValue_c::GetTimeChange(long int, long int, Seconds*)':
+../lib_gnome/OSSMTimeValue_c.cpp:87:30: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:91:30: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:93:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/OSSMTimeValue_c.cpp: In member function 'OSErr OSSMTimeValue_c::GetInterpolatedComponent(Seconds, double*, short int)':
+../lib_gnome/OSSMTimeValue_c.cpp:148:37: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:193:36: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:216:37: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:224:45: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:232:41: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:236:39: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp: In member function 'virtual OSErr OSSMTimeValue_c::CheckStartTime(Seconds)':
+../lib_gnome/OSSMTimeValue_c.cpp:270:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/OSSMTimeValue_c.cpp:271:7: warning: unused variable 'a' [-Wunused-variable]
+../lib_gnome/OSSMTimeValue_c.cpp:271:10: warning: unused variable 'b' [-Wunused-variable]
+../lib_gnome/OSSMTimeValue_c.cpp:271:13: warning: unused variable 'i' [-Wunused-variable]
+../lib_gnome/OSSMTimeValue_c.cpp: In member function 'virtual OSErr OSSMTimeValue_c::GetTimeValue(const Seconds&, VelocityRec*)':
+../lib_gnome/OSSMTimeValue_c.cpp:318:66: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:319:66: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp: In member function 'virtual OSErr OSSMTimeValue_c::ReadNCDCWind(char*)':
+../lib_gnome/OSSMTimeValue_c.cpp:387:61: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:428:33: warning: format '%d' expects argument of type 'int*', but argument 3 has type 'short int*' [-Wformat]
+../lib_gnome/OSSMTimeValue_c.cpp:428:33: warning: format '%d' expects argument of type 'int*', but argument 4 has type 'short int*' [-Wformat]
+../lib_gnome/OSSMTimeValue_c.cpp:428:33: warning: format '%d' expects argument of type 'int*', but argument 5 has type 'short int*' [-Wformat]
+../lib_gnome/OSSMTimeValue_c.cpp:428:33: warning: format '%d' expects argument of type 'int*', but argument 6 has type 'short int*' [-Wformat]
+../lib_gnome/OSSMTimeValue_c.cpp:428:33: warning: format '%d' expects argument of type 'int*', but argument 7 has type 'short int*' [-Wformat]
+../lib_gnome/OSSMTimeValue_c.cpp:377:8: warning: variable 'scanErr' set but not used [-Wunused-but-set-variable]
+../lib_gnome/OSSMTimeValue_c.cpp: In member function 'virtual OSErr OSSMTimeValue_c::ReadNDBCWind(char*, long int)':
+../lib_gnome/OSSMTimeValue_c.cpp:540:61: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:530:8: warning: variable 'scanErr' set but not used [-Wunused-but-set-variable]
+../lib_gnome/OSSMTimeValue_c.cpp: In member function 'virtual OSErr OSSMTimeValue_c::ReadTimeValues(char*, short int, short int)':
+../lib_gnome/OSSMTimeValue_c.cpp:693:39: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:735:61: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:763:50: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:817:38: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/OSSMTimeValue_c.cpp:682:8: warning: variable 'scanErr' set but not used [-Wunused-but-set-variable]
+../lib_gnome/OSSMTimeValue_c.cpp:691:7: warning: unused variable 'errmsg' [-Wunused-variable]
+../lib_gnome/OSSMTimeValue_c.cpp: In member function 'OSErr OSSMTimeValue_c::ReadHydrologyHeader(char*)':
+../lib_gnome/OSSMTimeValue_c.cpp:996:33: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OSSMTimeValue_c.cpp:997:39: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OSSMTimeValue_c.cpp:998:38: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OSSMTimeValue_c.cpp:999:39: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OSSMTimeValue_c.cpp: In member function 'OSErr OSSMTimeValue_c::ReadOSSMTimeHeader(char*)':
+../lib_gnome/OSSMTimeValue_c.cpp:1034:46: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OSSMTimeValue_c.cpp:1068:1: warning: label 'done' defined but not used [-Wunused-label]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/TimeValue_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/TimeValue_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/RectUtils.cpp -o build/temp.linux-i686-2.7/../lib_gnome/RectUtils.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/WindMover_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/WindMover_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/WindMover_c.cpp:26:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/WindMover_c.cpp: In member function 'virtual OSErr WindMover_c::AllocateUncertainty(int, int*)':
+../lib_gnome/WindMover_c.cpp:169:9: warning: unused variable 'j' [-Wunused-variable]
+../lib_gnome/WindMover_c.cpp:170:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/WindMover_c.cpp: In member function 'virtual OSErr WindMover_c::UpdateUncertainty(const Seconds&, int, int*)':
+../lib_gnome/WindMover_c.cpp:250:9: warning: unused variable 'errmsg' [-Wunused-variable]
+../lib_gnome/WindMover_c.cpp: In member function 'virtual OSErr WindMover_c::AddUncertainty(long int, long int, VelocityRec*)':
+../lib_gnome/WindMover_c.cpp:302:21: warning: unused variable 'eddyDiffusion' [-Wunused-variable]
+../lib_gnome/WindMover_c.cpp:302:45: warning: unused variable 'value' [-Wunused-variable]
+../lib_gnome/WindMover_c.cpp: In member function 'OSErr WindMover_c::get_move(int, long unsigned int, long unsigned int, WorldPoint3D*, WorldPoint3D*, double*, short int*, LEType, long int)':
+../lib_gnome/WindMover_c.cpp:465:34: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/WindMover_c.cpp: In member function 'virtual WorldPoint3D WindMover_c::GetMove(const Seconds&, Seconds, long int, long int, LERec*, LETYPE)':
+../lib_gnome/WindMover_c.cpp:495:34: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/WindMover_c.cpp:494:14: warning: unused variable 'patVelocity' [-Wunused-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/CompFunctions.cpp -o build/temp.linux-i686-2.7/../lib_gnome/CompFunctions.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/CompFunctions.cpp:17:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CompFunctions.cpp: In function 'void AssertionCheckMassUnits(short int)':
+../lib_gnome/CompFunctions.cpp:292:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/CompFunctions.cpp: In function 'void AssertionCheckVolUnits(short int)':
+../lib_gnome/CompFunctions.cpp:303:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/CompFunctions.cpp: In function 'void AssertionCheckMassVolUnits(short int)':
+../lib_gnome/CompFunctions.cpp:315:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/CompFunctions.cpp: In function 'OSErr ScanMatrixPt(char*, LongPoint*)':
+../lib_gnome/CompFunctions.cpp:712:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/CompFunctions.cpp:602:7: warning: variable 'delimiterChar' set but not used [-Wunused-but-set-variable]
+../lib_gnome/CompFunctions.cpp: In function 'OSErr ScanVelocity(char*, VelocityRec*, long int*)':
+../lib_gnome/CompFunctions.cpp:728:7: warning: variable 'delimiterChar' set but not used [-Wunused-but-set-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/StringFunctions.cpp -o build/temp.linux-i686-2.7/../lib_gnome/StringFunctions.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/StringFunctions.cpp:20:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/StringFunctions.cpp: In function 'void SplitPathFile(CHARPTR, CHARPTR)':
+../lib_gnome/StringFunctions.cpp:1187:41: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/StringFunctions.cpp: In function 'void SplitPathFileName(CHARPTR, CHARPTR)':
+../lib_gnome/StringFunctions.cpp:1209:44: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/StringFunctions.cpp: In function 'Boolean ConvertIfClassicPath(char*, char*)':
+../lib_gnome/StringFunctions.cpp:1469:8: warning: unused variable 'err' [-Wunused-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/OUTILS.cpp -o build/temp.linux-i686-2.7/../lib_gnome/OUTILS.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+../lib_gnome/OUTILS.cpp: In function 'void ConvertToDirection(double, char*)':
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp:116:2: warning: missing braces around initializer for 'DirectionRec' [-Wmissing-braces]
+../lib_gnome/OUTILS.cpp: In function 'long int StrToSpeedUnits(char*)':
+../lib_gnome/OUTILS.cpp:221:31: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OUTILS.cpp:222:62: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OUTILS.cpp:223:29: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OUTILS.cpp:224:38: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OUTILS.cpp:225:29: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OUTILS.cpp:227:39: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/OUTILS.cpp:228:42: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/CATSMover_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/CATSMover_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/CATSMover_c.cpp:26:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CATSMover_c.cpp: In member function 'virtual OSErr CATSMover_c::ComputeVelocityScale(const Seconds&)':
+../lib_gnome/CATSMover_c.cpp:101:32: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/CATSMover_c.cpp:98:7: warning: unused variable 'i' [-Wunused-variable]
+../lib_gnome/CATSMover_c.cpp:98:10: warning: unused variable 'j' [-Wunused-variable]
+../lib_gnome/CATSMover_c.cpp:98:13: warning: unused variable 'm' [-Wunused-variable]
+../lib_gnome/CATSMover_c.cpp:98:16: warning: unused variable 'n' [-Wunused-variable]
+../lib_gnome/CATSMover_c.cpp:99:17: warning: unused variable 'theirLengthSq' [-Wunused-variable]
+../lib_gnome/CATSMover_c.cpp:99:32: warning: unused variable 'myLengthSq' [-Wunused-variable]
+../lib_gnome/CATSMover_c.cpp:99:44: warning: unused variable 'dotProduct' [-Wunused-variable]
+../lib_gnome/CATSMover_c.cpp:100:14: warning: unused variable 'theirVelocity' [-Wunused-variable]
+../lib_gnome/CATSMover_c.cpp: In member function 'virtual OSErr CATSMover_c::PrepareForModelStep(const Seconds&, const Seconds&, bool, int, int*)':
+../lib_gnome/CATSMover_c.cpp:303:109: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/CATSMover_c.cpp: In member function 'OSErr CATSMover_c::get_move(int, long unsigned int, long unsigned int, WorldPoint3D*, WorldPoint3D*, short int*, LEType, long int)':
+../lib_gnome/CATSMover_c.cpp:344:34: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/CATSMover_c.cpp: In member function 'virtual WorldPoint3D CATSMover_c::GetMove(const Seconds&, Seconds, long int, long int, LERec*, LETYPE)':
+../lib_gnome/CATSMover_c.cpp:374:33: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/CATSMover_c.cpp:375:35: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/CATSMover_c.cpp: In member function 'virtual OSErr CATSMover_c::TextRead(char*)':
+../lib_gnome/CATSMover_c.cpp:568:53: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/CATSMover_c.cpp:722:3: warning: format not a string literal and no format arguments [-Wformat-security]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/CurrentMover_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/CurrentMover_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/CurrentMover_c.cpp:18:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CurrentMover_c.cpp: In member function 'virtual OSErr CurrentMover_c::AllocateUncertainty(int, int*)':
+../lib_gnome/CurrentMover_c.cpp:124:9: warning: unused variable 'j' [-Wunused-variable]
+../lib_gnome/CurrentMover_c.cpp:125:8: warning: unused variable 'err' [-Wunused-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/ShioTimeValue_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/ShioTimeValue_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/ShioTimeValue_c.cpp:20:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/ShioTimeValue_c.cpp: In constructor 'ShioTimeValue_c::ShioTimeValue_c(Mover_c*, TimeValuePairH)':
+../lib_gnome/ShioTimeValue_c.cpp:56:52: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp: In member function 'virtual OSErr ShioTimeValue_c::GetTimeValue(const Seconds&, VelocityRec*)':
+../lib_gnome/ShioTimeValue_c.cpp:461:22: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/ShioTimeValue_c.cpp:866:94: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/ShioTimeValue_c.cpp:891:67: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:857:11: warning: unused variable 'forHeight' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:348:10: warning: unused variable 'needToCompute' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:355:15: warning: unused variable 'YHdl' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp: In member function 'virtual OSErr ShioTimeValue_c::GetConvertedHeightValue(Seconds, VelocityRec*)':
+../lib_gnome/ShioTimeValue_c.cpp:1132:82: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/ShioTimeValue_c.cpp:1126:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp: In member function 'virtual OSErr ShioTimeValue_c::GetProgressiveWaveValue(const Seconds&, VelocityRec*)':
+../lib_gnome/ShioTimeValue_c.cpp:1156:56: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp: In member function 'OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds&, short int*, float*)':
+../lib_gnome/ShioTimeValue_c.cpp:1232:48: warning: unused variable 'nextHighLowData' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1233:11: warning: unused variable 'maxMinDeriv' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1177:29: warning: unused variable 'ebbFloodTime' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1180:8: warning: unused variable 'type' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1181:8: warning: unused variable 'factor' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1182:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp: In member function 'void ShioTimeValue_c::ProgrammerError(char*)':
+../lib_gnome/ShioTimeValue_c.cpp:1335:2: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/ShioTimeValue_c.cpp: In member function 'OSErr ShioTimeValue_c::GetTimeChange(long int, long int, Seconds*)':
+../lib_gnome/ShioTimeValue_c.cpp:1342:39: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp: In member function 'OSErr ShioTimeValue_c::GetInterpolatedComponent(Seconds, double*, short int)':
+../lib_gnome/ShioTimeValue_c.cpp:1349:50: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp: In member function 'virtual OSErr ShioTimeValue_c::ReadTimeValues(char*)':
+../lib_gnome/ShioTimeValue_c.cpp:1374:43: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1410:59: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1412:51: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1445:51: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1449:79: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1449:80: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1450:81: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1450:82: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1452:60: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1455:113: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1455:114: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1467:111: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1467:112: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1468:111: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1468:112: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1469:115: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1469:116: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1470:113: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1470:114: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1471:117: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1471:118: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1474:77: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1474:78: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1475:87: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1475:88: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1477:54: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1482:109: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1482:110: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1483:97: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1483:98: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1484:105: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1484:106: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1485:93: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1485:94: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1486:105: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1486:106: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1487:101: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1487:102: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1488:103: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1488:104: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1489:103: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1489:104: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1490:101: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1490:102: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1491:101: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1491:102: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1492:99: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1492:100: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1493:99: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1493:100: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1494:97: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1494:98: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1495:97: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1495:98: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1499:94: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1499:95: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1500:92: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1500:93: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1501:108: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1501:109: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1502:106: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1502:107: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1503:106: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1503:107: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1504:104: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1504:105: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1508:94: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1508:95: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1509:92: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1509:93: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1510:108: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1510:109: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1511:106: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1511:107: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1512:106: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1512:107: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1513:104: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/ShioTimeValue_c.cpp:1513:105: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/ShioTimeValue_c.cpp:1525:2: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/ShioTimeValue_c.cpp:1362:9: warning: unused variable 'numValues' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1363:9: warning: unused variable 'value1' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1363:17: warning: unused variable 'value2' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1363:25: warning: unused variable 'magnitude' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1363:36: warning: unused variable 'degrees' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1365:14: warning: unused variable 'time' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1366:16: warning: unused variable 'pair' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1367:20: warning: unused variable 'scanErr' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1370:7: warning: unused variable 'numScanned' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1371:9: warning: unused variable 'value' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1372:14: warning: unused variable 'DatumControls' [-Wunused-variable]
+../lib_gnome/ShioTimeValue_c.cpp:1529:1: warning: label 'Error' defined but not used [-Wunused-label]
+../lib_gnome/ShioTimeValue_c.cpp: In member function 'OSErr ShioTimeValue_c::GetLocationInTideCycle(const Seconds&, short int*, float*)':
+../lib_gnome/ShioTimeValue_c.cpp:1319:25: warning: 'type2' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioTimeValue_c.cpp:1317:3: warning: 'derivTime2' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioTimeValue_c.cpp:1304:26: warning: 'type1' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioTimeValue_c.cpp:1302:4: warning: 'derivTime' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioTimeValue_c.cpp:1211:38: warning: 'ebbFloodData2.EbbFloodData::type' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioTimeValue_c.cpp:1209:3: warning: 'ebbFloodData2.EbbFloodData::time' may be used uninitialized in this function [-Wuninitialized]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/ShioHeight.cpp -o build/temp.linux-i686-2.7/../lib_gnome/ShioHeight.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/ShioHeight.cpp:15:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/ShioHeight.cpp: In function 'short int GetTideHeight(DateTimeRec*, DateTimeRec*, double*, double*, short int, CONSTITUENT*, HEIGHTOFFSET*, COMPHEIGHTS*, Boolean)':
+../lib_gnome/ShioHeight.cpp:309:22: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/ShioHeight.cpp:59:8: warning: variable 'numberOfSteps' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioHeight.cpp:67:10: warning: unused variable 'tval' [-Wunused-variable]
+../lib_gnome/ShioHeight.cpp:67:19: warning: unused variable 'ehour' [-Wunused-variable]
+../lib_gnome/ShioHeight.cpp:67:29: warning: unused variable 'julianoffset' [-Wunused-variable]
+../lib_gnome/ShioHeight.cpp:68:8: warning: unused variable 'i' [-Wunused-variable]
+../lib_gnome/ShioHeight.cpp:68:12: warning: unused variable 'size1' [-Wunused-variable]
+../lib_gnome/ShioHeight.cpp:68:20: warning: unused variable 'size2' [-Wunused-variable]
+../lib_gnome/ShioHeight.cpp:68:28: warning: unused variable 'numpnts' [-Wunused-variable]
+../lib_gnome/ShioHeight.cpp: In function 'short int GetReferenceCurve(CONSTITUENT*, short int, double*, double*, double, double, double, COMPHEIGHTS*)':
+../lib_gnome/ShioHeight.cpp:1113:53: warning: unused variable 'pcnt' [-Wunused-variable]
+../lib_gnome/ShioHeight.cpp:1115:11: warning: variable 'stop' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioHeight.cpp:1116:10: warning: variable 'err' set but not used [-Wunused-but-set-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/TriGridVel_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/TriGridVel_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+../lib_gnome/TriGridVel_c.cpp: In member function 'virtual long int TriGridVel_c::GetRectIndexFromTriIndex2(long int, LONGH, long int)':
+../lib_gnome/TriGridVel_c.cpp:126:12: warning: unused variable 'lp' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:127:10: warning: unused variable 'n' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:129:9: warning: unused variable 'refLon' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:129:16: warning: unused variable 'refLat' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp: In member function 'virtual long int TriGridVel_c::GetRectIndexFromTriIndex(WorldPoint, LONGH, long int)':
+../lib_gnome/TriGridVel_c.cpp:175:10: warning: unused variable 'n' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:177:9: warning: unused variable 'refLon' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:177:16: warning: unused variable 'refLat' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp: In member function 'OSErr TriGridVel_c::GetRectCornersFromTriIndexOrPoint(long int*, long int*, long int*, long int*, WorldPoint, long int, Boolean, LONGH, long int)':
+../lib_gnome/TriGridVel_c.cpp:230:10: warning: unused variable 'n' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:231:7: warning: variable 'debug_ptIndex1' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TriGridVel_c.cpp:231:23: warning: variable 'debug_ptIndex2' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TriGridVel_c.cpp:231:39: warning: variable 'debug_ptIndex3' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TriGridVel_c.cpp:233:9: warning: unused variable 'refLon' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:233:16: warning: unused variable 'refLat' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp: In member function 'virtual LongPoint TriGridVel_c::GetRectIndicesFromTriIndex(WorldPoint, LONGH, long int)':
+../lib_gnome/TriGridVel_c.cpp:314:10: warning: unused variable 'n' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:314:19: warning: variable 'index' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TriGridVel_c.cpp:316:9: warning: unused variable 'refLon' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:316:16: warning: unused variable 'refLat' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp: In member function 'virtual double TriGridVel_c::GetDepthAtPoint(WorldPoint)':
+../lib_gnome/TriGridVel_c.cpp:392:7: warning: unused variable 'ptIndex1' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:392:16: warning: unused variable 'ptIndex2' [-Wunused-variable]
+../lib_gnome/TriGridVel_c.cpp:392:25: warning: unused variable 'ptIndex3' [-Wunused-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/DagTree.cpp -o build/temp.linux-i686-2.7/../lib_gnome/DagTree.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/DagTreeIO.cpp -o build/temp.linux-i686-2.7/../lib_gnome/DagTreeIO.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/DagTreeIO.cpp:13:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/DagTreeIO.cpp: In function 'Boolean IsTIndexedDagTreeHeaderLine(char*, long int*)':
+../lib_gnome/DagTreeIO.cpp:42:21: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp: In function 'OSErr ReadTVerticesBody(CHARH, long int*, LongPoint***, float***, char*, long int, Boolean)':
+../lib_gnome/DagTreeIO.cpp:182:32: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp:183:29: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp:210:46: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp:212:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp:214:44: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp:216:31: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp: In function 'Boolean IsTTopologyHeaderLine(char*, long int*)':
+../lib_gnome/DagTreeIO.cpp:290:21: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp: In function 'OSErr ReadTTopologyBody(CHARH, long int*, Topology***, VelocityFRec***, char*, long int, Boolean)':
+../lib_gnome/DagTreeIO.cpp:348:56: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp: In function 'long int WhatTriIsPtIn(DAGHdl, TopologyHdl, LongPointHdl, LongPoint)':
+../lib_gnome/DagTreeIO.cpp:623:71: warning: suggest parentheses around '&&' within '||' [-Wparentheses]
+../lib_gnome/DagTreeIO.cpp:624:69: warning: suggest parentheses around '&&' within '||' [-Wparentheses]
+../lib_gnome/DagTreeIO.cpp: In function 'Boolean IsPtCurVerticesHeaderLine(char*, long int*, long int*)':
+../lib_gnome/DagTreeIO.cpp:675:64: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp: In function 'Boolean IsWaterBoundaryHeaderLine(char*, long int*, long int*)':
+../lib_gnome/DagTreeIO.cpp:711:21: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp: In function 'Boolean IsBoundarySegmentHeaderLine(char*, long int*)':
+../lib_gnome/DagTreeIO.cpp:725:21: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp: In function 'Boolean IsBoundaryPointsHeaderLine(char*, long int*)':
+../lib_gnome/DagTreeIO.cpp:739:21: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp: In function 'OSErr ReadBoundarySegs(CHARH, long int*, long int***, long int, char*)':
+../lib_gnome/DagTreeIO.cpp:817:4: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/DagTreeIO.cpp: In function 'Boolean IsTransposeArrayHeaderLine(char*, long int*)':
+../lib_gnome/DagTreeIO.cpp:869:21: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/DagTreeIO.cpp: In function 'long int WhatTriIsPtIn(DAGHdl, TopologyHdl, LongPointHdl, LongPoint)':
+../lib_gnome/DagTreeIO.cpp:624:34: warning: 'thirdPoint' may be used uninitialized in this function [-Wuninitialized]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/ShioCurrent1.cpp -o build/temp.linux-i686-2.7/../lib_gnome/ShioCurrent1.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/ShioCurrent1.cpp:15:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/ShioCurrent1.cpp: In function 'short int GetTideCurrent(DateTimeRec*, DateTimeRec*, short int, CONSTITUENT*, CURRENTOFFSET*, COMPCURRENTS*, double*, double*, Boolean, char*)':
+../lib_gnome/ShioCurrent1.cpp:246:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/ShioCurrent1.cpp:48:20: warning: unused variable 'numOfYearCorrections' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:54:10: warning: unused variable 'tval' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:54:19: warning: unused variable 'ehour' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:54:29: warning: unused variable 'julianoffset' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:55:8: warning: unused variable 'i' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:55:12: warning: unused variable 'size1' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:55:20: warning: unused variable 'size2' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:55:28: warning: unused variable 'numpnts' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp: In function 'void AkutanFix(COMPCURRENTS*, short int)':
+../lib_gnome/ShioCurrent1.cpp:256:16: warning: variable 'uVelHdl' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent1.cpp:256:25: warning: variable 'vVelHdl' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent1.cpp: In function 'short int CurveFitOffsetCurve(COMPCURRENTS*, double, double, double)':
+../lib_gnome/ShioCurrent1.cpp:596:8: warning: unused variable 'maxFlood' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:596:22: warning: unused variable 'minBFlood' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:596:37: warning: unused variable 'maxEbb' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:596:49: warning: unused variable 'minBEbb' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp: In function 'short int DoOffSetCurrents(COMPCURRENTS*, CURRENTOFFSET*, double, double, double, short int)':
+../lib_gnome/ShioCurrent1.cpp:825:8: warning: unused variable 'EbbToMinBFlood' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:825:28: warning: unused variable 'MinBFloodToFlood' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:826:8: warning: unused variable 'FloodToMinBEbb' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:826:26: warning: unused variable 'MinBEbbToEbb' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:827:8: warning: unused variable 'FloodToEbb' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:827:22: warning: unused variable 'EbbToFlood' [-Wunused-variable]
+../lib_gnome/ShioCurrent1.cpp:841:8: warning: variable 'debugMeFlagHdl' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent1.cpp: In function 'void FixCurve(COMPCURRENTS*)':
+../lib_gnome/ShioCurrent1.cpp:1865:11: warning: variable 'keyHdl' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent1.cpp: In function 'short int GetFloodEbbKey(double, EXTFLAG*, short int*, double*, short int, short int*)':
+../lib_gnome/ShioCurrent1.cpp:2230:8: warning: variable 'errorFlag' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent1.cpp: In function 'void DoHermite(double, double, double, double, double, double, double, double, double, double*, short int)':
+../lib_gnome/ShioCurrent1.cpp:805:40: warning: 's2' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioCurrent1.cpp:805:40: warning: 's1' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioCurrent1.cpp: In function 'short int FindFloodEbbRot(double, double, short int, double*, double*, short int, double*, double*, CONSTITUENT*, double, double)':
+../lib_gnome/ShioCurrent1.cpp:1636:68: warning: 'lastCurrent' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioCurrent1.cpp: In function 'short int FindExtraFERot(double*, double*, short int, COMPCURRENTS*, double*, double*, short int*, double*, double*, short int*, CONSTITUENT*)':
+../lib_gnome/ShioCurrent1.cpp:1378:25: warning: 'MaxMinFlag' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioCurrent1.cpp: In function 'short int GetFloodEbbKey(double, EXTFLAG*, short int*, double*, short int, short int*)':
+../lib_gnome/ShioCurrent1.cpp:2307:2: warning: 'nextValue' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioCurrent1.cpp:2312:8: warning: 'previousValue' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioCurrent1.cpp:2323:32: warning: 'previousIndex' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioCurrent1.cpp: In function 'short int CurveFitOffsetCurve(COMPCURRENTS*, double, double, double)':
+../lib_gnome/ShioCurrent1.cpp:762:34: warning: 'OldMaxMinFlagPtr' may be used uninitialized in this function [-Wuninitialized]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/ShioCurrent2.cpp -o build/temp.linux-i686-2.7/../lib_gnome/ShioCurrent2.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/ShioCurrent2.cpp:14:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/ShioCurrent2.cpp: In function 'void GetMajorMinorAxis(CONSTITUENT*, short int*, short int*)':
+../lib_gnome/ShioCurrent2.cpp:272:14: warning: variable 'ebb' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent2.cpp: In function 'short int GetRefCurrent(CONSTITUENT*, double*, double*, short int, double, double, double, COMPCURRENTS*)':
+../lib_gnome/ShioCurrent2.cpp:326:31: warning: unused variable 'pcnt' [-Wunused-variable]
+../lib_gnome/ShioCurrent2.cpp:330:10: warning: variable 'stop' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent2.cpp:832:1: warning: label 'done' defined but not used [-Wunused-label]
+../lib_gnome/ShioCurrent2.cpp: In function 'short int GetSlackRatio(double, short int, EXTFLAG*, short int*, short int, double, double, double*)':
+../lib_gnome/ShioCurrent2.cpp:1003:18: warning: variable 'w0' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent2.cpp:1003:24: warning: variable 'v0' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent2.cpp:1003:27: warning: variable 'v1' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent2.cpp:1007:22: warning: variable 'keyIndex' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent2.cpp: In function 'short int OffsetReferenceCurve(COMPCURRENTS*, CURRENTOFFSET*)':
+../lib_gnome/ShioCurrent2.cpp:1363:15: warning: variable 'temp' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent2.cpp: In function 'short int RotToMajorMinor(CONSTITUENT*, CURRENTOFFSET*, COMPCURRENTS*)':
+../lib_gnome/ShioCurrent2.cpp:2016:7: warning: unused variable 'handleSize' [-Wunused-variable]
+../lib_gnome/ShioCurrent2.cpp:2017:9: warning: variable 'radiansToDegrees' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent2.cpp: In function 'double RStatCurrentRot(double, double*, double*, short int, CONSTITUENT*, double, double, double*, double*, double*, double*, short int*)':
+../lib_gnome/ShioCurrent2.cpp:2520:35: warning: variable 'EDir' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent2.cpp: In function 'void hr2TStr(double, char*)':
+../lib_gnome/ShioCurrent2.cpp:2766:15: warning: unused variable 'nchr' [-Wunused-variable]
+../lib_gnome/ShioCurrent2.cpp:2766:20: warning: variable 'ndec' set but not used [-Wunused-but-set-variable]
+../lib_gnome/ShioCurrent2.cpp: In function 'short int GetSlackRatio(double, short int, EXTFLAG*, short int*, short int, double, double, double*)':
+../lib_gnome/ShioCurrent2.cpp:1156:7: warning: 'slackTime' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioCurrent2.cpp: In function 'short int OffsetReferenceCurve(COMPCURRENTS*, CURRENTOFFSET*)':
+../lib_gnome/ShioCurrent2.cpp:1520:5: warning: 'indexPlusOne' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioCurrent2.cpp:1628:50: warning: 'SpeedCorrectionMult' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/ShioCurrent2.cpp:1627:50: warning: 'timeCorrection' may be used uninitialized in this function [-Wuninitialized]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/GridCurrentMover_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/GridCurrentMover_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/GridCurrentMover_c.cpp:19:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/GridCurrentMover_c.cpp: In member function 'virtual OSErr GridCurrentMover_c::AddUncertainty(long int, long int, VelocityRec*, double, Boolean)':
+../lib_gnome/GridCurrentMover_c.cpp:127:32: warning: unused variable 'v0' [-Wunused-variable]
+../lib_gnome/GridCurrentMover_c.cpp: In member function 'virtual OSErr GridCurrentMover_c::PrepareForModelStep(const Seconds&, const Seconds&, bool, int, int*)':
+../lib_gnome/GridCurrentMover_c.cpp:202:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridCurrentMover_c.cpp: In member function 'OSErr GridCurrentMover_c::get_move(int, long unsigned int, long unsigned int, WorldPoint3D*, WorldPoint3D*, short int*, LEType, long int)':
+../lib_gnome/GridCurrentMover_c.cpp:234:34: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/GridCurrentMover_c.cpp: In member function 'OSErr GridCurrentMover_c::TextRead(char*, char*)':
+../lib_gnome/GridCurrentMover_c.cpp:332:9: warning: unused variable 'errmsg' [-Wunused-variable]
+../lib_gnome/GridCurrentMover_c.cpp:350:39: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridCurrentMover_c.cpp:342:8: warning: unused variable 'errmsg' [-Wunused-variable]
+../lib_gnome/GridCurrentMover_c.cpp:372:39: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridCurrentMover_c.cpp:364:8: warning: unused variable 'errmsg' [-Wunused-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/GridWindMover_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/GridWindMover_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/GridWindMover_c.cpp:14:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/GridWindMover_c.cpp: In member function 'virtual OSErr GridWindMover_c::PrepareForModelStep(const Seconds&, const Seconds&, bool, int, int*)':
+../lib_gnome/GridWindMover_c.cpp:85:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridWindMover_c.cpp: In member function 'OSErr GridWindMover_c::get_move(int, long unsigned int, long unsigned int, WorldPoint3D*, WorldPoint3D*, double*, short int*, LEType, long int)':
+../lib_gnome/GridWindMover_c.cpp:115:34: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/GridWindMover_c.cpp: In member function 'virtual WorldPoint3D GridWindMover_c::GetMove(const Seconds&, Seconds, long int, long int, LERec*, LETYPE)':
+../lib_gnome/GridWindMover_c.cpp:145:34: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/GridWindMover_c.cpp:147:9: warning: unused variable 'timeAlpha' [-Wunused-variable]
+../lib_gnome/GridWindMover_c.cpp:148:7: warning: unused variable 'index' [-Wunused-variable]
+../lib_gnome/GridWindMover_c.cpp:149:10: warning: unused variable 'startTime' [-Wunused-variable]
+../lib_gnome/GridWindMover_c.cpp:149:20: warning: unused variable 'endTime' [-Wunused-variable]
+../lib_gnome/GridWindMover_c.cpp: In member function 'OSErr GridWindMover_c::TextRead(char*, char*)':
+../lib_gnome/GridWindMover_c.cpp:240:40: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridWindMover_c.cpp:232:9: warning: unused variable 'errmsg' [-Wunused-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/TimeGridVel_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/TimeGridVel_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/TimeGridVel_c.cpp:22:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/TimeGridVel_c.cpp:1890:0: warning: ignoring #pragma unused  [-Wunknown-pragmas]
+../lib_gnome/TimeGridVel_c.cpp:1891:0: warning: ignoring #pragma unused  [-Wunknown-pragmas]
+../lib_gnome/TimeGridVel_c.cpp:5055:0: warning: ignoring #pragma unused  [-Wunknown-pragmas]
+../lib_gnome/TimeGridVel_c.cpp: In function 'Boolean IsGridCurTimeFile(char*, short int*)':
+../lib_gnome/TimeGridVel_c.cpp:48:23: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp: In function 'Boolean IsPtCurFile(char*)':
+../lib_gnome/TimeGridVel_c.cpp:88:23: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp: In function 'Boolean IsCATS3DFile(char*)':
+../lib_gnome/TimeGridVel_c.cpp:116:23: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp: In function 'Boolean IsNetCDFPathsFile(char*, Boolean*, char*, short int*)':
+../lib_gnome/TimeGridVel_c.cpp:158:8: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:165:8: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:136:30: warning: unused variable 'classicPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In function 'Boolean IsNetCDFFile(char*, short int*)':
+../lib_gnome/TimeGridVel_c.cpp:243:48: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:243:94: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:243:145: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:249:53: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:249:104: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:249:140: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:254:52: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:271:64: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:199:22: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'OSErr TimeGridVel_c::ReadInputFileNames(char*)':
+../lib_gnome/TimeGridVel_c.cpp:518:77: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:586:38: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:586:71: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:588:45: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:588:80: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:590:45: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:590:80: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:592:42: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:592:74: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:603:85: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:608:85: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:619:4: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:503:14: warning: unused variable 'time' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:504:10: warning: unused variable 'timeSeconds' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:506:27: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:506:41: warning: unused variable 'classicPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:510:22: warning: unused variable 't_len2' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVelRect_c::TextRead(char*, char*)':
+../lib_gnome/TimeGridVel_c.cpp:722:36: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:722:69: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:724:43: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:724:78: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:726:43: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:726:78: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:728:40: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:728:72: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:818:34: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:823:34: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:828:34: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:881:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:905:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:980:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:654:9: warning: unused variable 'j' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:665:10: warning: variable 'startTime' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:668:44: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVelRect_c::ReadTimeData(long int, VelocityFRec***, char*)':
+../lib_gnome/TimeGridVel_c.cpp:1023:7: warning: the address of 'path' will always evaluate as 'true' [-Waddress]
+../lib_gnome/TimeGridVel_c.cpp:1100:73: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1105:73: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1110:34: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1140:37: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1140:88: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1142:41: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1004:18: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVel_c::CheckAndScanFile(char*, const Seconds&)':
+../lib_gnome/TimeGridVel_c.cpp:1370:85: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:1401:85: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp: In function 'OSErr ScanFileForTimes(char*, Seconds***)':
+../lib_gnome/TimeGridVel_c.cpp:1511:36: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1511:69: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1513:43: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1513:78: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1515:43: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1515:78: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1517:40: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1517:72: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:1525:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:1447:20: warning: unused variable 'line' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:1448:14: warning: unused variable 'time' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:1449:10: warning: unused variable 'timeSeconds' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:1450:7: warning: unused variable 's' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:1450:16: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:1451:8: warning: unused variable 'fileBufH' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:1453:22: warning: unused variable 't_len2' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual long int TimeGridVelRect_c::GetNumDepthLevels()':
+../lib_gnome/TimeGridVel_c.cpp:1562:8: warning: the address of 'path' will always evaluate as 'true' [-Waddress]
+../lib_gnome/TimeGridVel_c.cpp:1556:8: warning: variable 'numDepthLevels' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:1557:9: warning: variable 'err' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:1558:19: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual VelocityRec TimeGridVelRect_c::GetScaledPatValue(const Seconds&, WorldPoint3D)':
+../lib_gnome/TimeGridVel_c.cpp:1605:7: warning: unused variable 'errmsg' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:1608:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:1690:1: warning: label 'scale' defined but not used [-Wunused-label]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual long int TimeGridVel_c::GetVelocityIndex(WorldPoint)':
+../lib_gnome/TimeGridVel_c.cpp:1719:14: warning: unused variable 'velocity' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:1720:7: warning: unused variable 'errmsg' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual LongPoint TimeGridVel_c::GetVelocityIndices(WorldPoint)':
+../lib_gnome/TimeGridVel_c.cpp:1754:14: warning: unused variable 'velocity' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVel_c::GetStartTime(Seconds*)':
+../lib_gnome/TimeGridVel_c.cpp:1830:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVel_c::GetEndTime(Seconds*)':
+../lib_gnome/TimeGridVel_c.cpp:1840:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual VelocityRec TimeGridVelCurv_c::GetScaledPatValue(const Seconds&, WorldPoint3D)':
+../lib_gnome/TimeGridVel_c.cpp:2051:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2150:1: warning: label 'scale' defined but not used [-Wunused-label]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVelCurv_c::TextRead(char*, char*)':
+../lib_gnome/TimeGridVel_c.cpp:2630:37: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2630:70: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2632:44: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2632:79: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2634:44: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2634:79: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2636:41: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2636:73: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2665:36: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2665:71: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2665:105: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2670:36: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2670:71: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2670:105: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:2707:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:2709:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:2826:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:2862:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:2864:15: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:2899:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:2901:15: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:2915:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:2933:15: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:2948:8: warning: unused variable 'n' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:3005:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:2526:11: warning: unused variable 'k' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2526:26: warning: unused variable 'indexOfStart' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2527:137: warning: unused variable 'depthvarid' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2529:8: warning: unused variable 'startLat' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2529:17: warning: unused variable 'startLon' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2529:26: warning: unused variable 'endLat' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2529:33: warning: unused variable 'endLon' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2531:37: warning: unused variable 'topPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2531:51: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2537:16: warning: unused variable 'latIndex' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2537:27: warning: unused variable 'lonIndex' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:2539:10: warning: variable 'startTime' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVelCurv_c::ReadTimeData(long int, VelocityFRec***, char*)':
+../lib_gnome/TimeGridVel_c.cpp:3055:7: warning: the address of 'path' will always evaluate as 'true' [-Waddress]
+../lib_gnome/TimeGridVel_c.cpp:3197:38: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:3199:42: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:3032:18: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:3039:78: warning: unused variable 'test_value' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:3041:25: warning: unused variable 'debug_mask' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:3044:9: warning: unused variable 'wvelH' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:3045:29: warning: unused variable 'numtri' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:3049:27: warning: variable 'isLandMask' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'OSErr TimeGridVelCurv_c::ReorderPoints(DOUBLEH, char*)':
+../lib_gnome/TimeGridVel_c.cpp:3415:22: warning: variable 'fDepth' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:3416:10: warning: unused variable 'val' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:3416:15: warning: unused variable 'u' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:3416:21: warning: unused variable 'v' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:3495:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:3496:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:3545:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:3546:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:3815:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:3312:21: warning: variable 'index' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'OSErr TimeGridVelCurv_c::ReorderPointsNoMask(char*)':
+../lib_gnome/TimeGridVel_c.cpp:3949:10: warning: unused variable 'val' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:3949:15: warning: variable 'u' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:3949:21: warning: variable 'v' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:4030:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:4031:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:4080:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:4081:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:4134:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:3845:23: warning: unused variable 'index' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'OSErr TimeGridVelCurv_c::ReorderPointsCOOPSMask(DOUBLEH, char*)':
+../lib_gnome/TimeGridVel_c.cpp:4287:34: warning: unused variable 'dLon' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4287:40: warning: unused variable 'dLat' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4287:46: warning: unused variable 'dLon1' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4287:53: warning: unused variable 'dLon2' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4287:60: warning: unused variable 'dLat1' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4287:67: warning: unused variable 'dLat2' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4288:10: warning: unused variable 'val' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4288:15: warning: unused variable 'u' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4288:21: warning: unused variable 'v' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4337:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:4338:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:4387:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:4388:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:4661:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:4155:11: warning: unused variable 'k' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4156:8: warning: unused variable 'velUnits' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4157:7: warning: unused variable 'latlength' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4157:29: warning: unused variable 'numtri' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4158:7: warning: unused variable 'lonlength' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4159:8: warning: unused variable 'fDepth1' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4159:17: warning: unused variable 'fLat1' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4159:24: warning: unused variable 'fLong1' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:4160:7: warning: variable 'index1' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:4168:23: warning: variable 'index' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:4595:1: warning: label 'setFields' defined but not used [-Wunused-label]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual long int TimeGridVelCurv_c::GetNumDepthLevels()':
+../lib_gnome/TimeGridVel_c.cpp:4747:7: warning: the address of 'path' will always evaluate as 'true' [-Waddress]
+../lib_gnome/TimeGridVel_c.cpp:4740:8: warning: variable 'err' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:4741:18: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVelCurv_c::ReadTopology(char*)':
+../lib_gnome/TimeGridVel_c.cpp:4817:61: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:4830:72: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:4835:53: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:5009:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp: In constructor 'TimeGridVelTri_c::TimeGridVelTri_c()':
+../lib_gnome/TimeGridVel_c.cpp:5036:76: warning: base 'TimeGridVelCurv_c' will be initialized after [-Wreorder]
+../lib_gnome/TimeGridVel_c.cpp:5036:76: warning:   base 'TimeGridVel_c' [-Wreorder]
+../lib_gnome/TimeGridVel_c.cpp:5036:1: warning:   when initialized here [-Wreorder]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual VelocityRec TimeGridVelTri_c::GetScaledPatValue(const Seconds&, WorldPoint3D)':
+../lib_gnome/TimeGridVel_c.cpp:5191:7: warning: unused variable 'index' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:5195:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'VelocityRec TimeGridVelTri_c::GetScaledPatValue3D(const Seconds&, InterpolationVal, float)':
+../lib_gnome/TimeGridVel_c.cpp:5361:185: warning: suggest parentheses around '&&' within '||' [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVelTri_c::TextRead(char*, char*)':
+../lib_gnome/TimeGridVel_c.cpp:5577:36: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:5577:69: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:5579:43: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:5579:78: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:5581:43: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:5581:78: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:5583:40: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:5583:72: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:5642:15: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:5699:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:5710:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:5744:42: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:5746:48: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:5871:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridVel_c.cpp:5907:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:5509:16: warning: unused variable 'latIndex' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:5509:27: warning: unused variable 'lonIndex' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:5511:10: warning: variable 'startTime' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:5514:28: warning: unused variable 'topPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:5514:42: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:5516:8: warning: unused variable 'modelTypeStr' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVelTri_c::ReadTimeData(long int, VelocityFRec***, char*)':
+../lib_gnome/TimeGridVel_c.cpp:5954:7: warning: the address of 'path' will always evaluate as 'true' [-Waddress]
+../lib_gnome/TimeGridVel_c.cpp:5938:18: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'OSErr TimeGridVelTri_c::ReorderPoints2(long int*, long int*, long int*, long int, long int*, long int*, long int, Boolean)':
+../lib_gnome/TimeGridVel_c.cpp:6228:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:6229:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:6263:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:6264:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:6352:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'OSErr TimeGridVelTri_c::ReorderPoints(long int*, long int*, long int*, long int)':
+../lib_gnome/TimeGridVel_c.cpp:6506:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:6507:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:6510:83: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:6513:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:6514:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:6596:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual long int TimeGridVelTri_c::GetNumDepthLevels()':
+../lib_gnome/TimeGridVel_c.cpp:6634:7: warning: the address of 'path' will always evaluate as 'true' [-Waddress]
+../lib_gnome/TimeGridVel_c.cpp:6626:8: warning: variable 'err' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridVel_c.cpp:6627:18: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVelTri_c::ReadTopology(char*)':
+../lib_gnome/TimeGridVel_c.cpp:6695:61: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:6708:72: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:6718:53: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:6892:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual VelocityRec TimeGridCurRect_c::GetScaledPatValue(const Seconds&, WorldPoint3D)':
+../lib_gnome/TimeGridVel_c.cpp:6938:10: warning: unused variable 'useEddyUncertainty' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:6939:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'OSErr TimeGridCurRect_c::ReadInputFileNames(CHARH, long int*, long int, PtCurFileInfo***, char*)':
+../lib_gnome/TimeGridVel_c.cpp:7034:4: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:7012:16: warning: unused variable 'classicPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridCurRect_c::GetStartTime(Seconds*)':
+../lib_gnome/TimeGridVel_c.cpp:7097:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridCurRect_c::GetEndTime(Seconds*)':
+../lib_gnome/TimeGridVel_c.cpp:7107:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridCurRect_c::CheckAndScanFile(char*, const Seconds&)':
+../lib_gnome/TimeGridVel_c.cpp:7316:85: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:7345:85: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'OSErr TimeGridCurRect_c::ReadHeaderLines(char*, WorldRect*)':
+../lib_gnome/TimeGridVel_c.cpp:7381:61: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:7418:55: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:7423:56: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:7428:51: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:7433:52: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:7442:52: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:7447:52: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:7452:53: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:7457:53: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:7526:4: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:7500:8: warning: unused variable 'errmsg' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:7368:15: warning: unused variable 'classicPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridCurRect_c::ReadTimeData(long int, VelocityFRec***, char*)':
+../lib_gnome/TimeGridVel_c.cpp:7650:7: warning: the address of 'path' will always evaluate as 'true' [-Waddress]
+../lib_gnome/TimeGridVel_c.cpp:7678:15: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:7725:48: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual VelocityRec TimeGridCurTri_c::GetScaledPatValue(const Seconds&, WorldPoint3D)':
+../lib_gnome/TimeGridVel_c.cpp:7904:10: warning: unused variable 'useEddyUncertainty' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp:7905:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'OSErr TimeGridCurTri_c::ReadHeaderLine(char*)':
+../lib_gnome/TimeGridVel_c.cpp:8149:17: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8152:42: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8162:17: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8169:17: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8186:62: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8197:17: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8210:17: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8224:17: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8227:42: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8234:17: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8237:42: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8244:17: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8247:42: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8254:17: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8265:2: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:8273:2: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridCurTri_c::ReadTimeData(long int, VelocityFRec***, char*)':
+../lib_gnome/TimeGridVel_c.cpp:8444:7: warning: the address of 'path' will always evaluate as 'true' [-Waddress]
+../lib_gnome/TimeGridVel_c.cpp:8479:15: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8545:46: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridCurTri_c::TextRead(char*, char*)':
+../lib_gnome/TimeGridVel_c.cpp:8619:61: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:8718:38: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8720:76: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridVel_c.cpp:8724:22: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8740:37: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8743:22: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridVel_c.cpp:8847:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridVel_c.cpp:8590:29: warning: unused variable 'classicPath' [-Wunused-variable]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVelTri_c::ReadTimeData(long int, VelocityFRec***, char*)':
+../lib_gnome/TimeGridVel_c.cpp:6089:2: warning: 'curr_uvals' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/TimeGridVel_c.cpp:6090:28: warning: 'curr_vvals' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridVel_c::CheckAndScanFile(char*, const Seconds&)':
+../lib_gnome/TimeGridVel_c.cpp:1417:2: warning: 'lastEndTime' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/TimeGridVel_c.cpp:1388:4: warning: 'testTime' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual VelocityRec TimeGridVelRect_c::GetScaledPatValue(const Seconds&, WorldPoint3D)':
+../lib_gnome/TimeGridVel_c.cpp:1679:193: warning: 'depthAlpha' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual VelocityRec TimeGridVelCurv_c::GetScaledPatValue(const Seconds&, WorldPoint3D)':
+../lib_gnome/TimeGridVel_c.cpp:2139:193: warning: 'depthAlpha' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual VelocityRec TimeGridVelTri_c::GetScaledPatValue(const Seconds&, WorldPoint3D)':
+../lib_gnome/TimeGridVel_c.cpp:5289:4: warning: 'triIndex' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/TimeGridVel_c.cpp: In function 'OSErr ScanFileForTimes(char*, PtCurTimeData***, Seconds***)':
+../lib_gnome/TimeGridVel_c.cpp:7266:46: warning: 'timeHdl' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'virtual OSErr TimeGridCurRect_c::CheckAndScanFile(char*, const Seconds&)':
+../lib_gnome/TimeGridVel_c.cpp:7333:4: warning: 'testTime' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/TimeGridVel_c.cpp: In member function 'OSErr TimeGridCurTri_c::ReadPtCurVertices(CHARH, long int*, LongPoint***, float***, char*, long int)':
+../lib_gnome/TimeGridVel_c.cpp:8409:2: warning: 's' may be used uninitialized in this function [-Wuninitialized]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/TimeGridWind_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/TimeGridWind_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/TimeGridWind_c.cpp:14:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/TimeGridWind_c.cpp: In member function 'virtual VelocityRec TimeGridWindRect_c::GetScaledPatValue(const Seconds&, WorldPoint3D)':
+../lib_gnome/TimeGridWind_c.cpp:74:20: warning: unused variable 'depthAlpha' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:75:8: warning: unused variable 'topDepth' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:75:18: warning: unused variable 'bottomDepth' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:77:7: warning: unused variable 'depthIndex1' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:77:19: warning: unused variable 'depthIndex2' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:81:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:124:1: warning: label 'scale' defined but not used [-Wunused-label]
+../lib_gnome/TimeGridWind_c.cpp: In member function 'virtual OSErr TimeGridWindRect_c::TextRead(char*, char*)':
+../lib_gnome/TimeGridWind_c.cpp:220:36: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:220:69: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:222:43: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:222:78: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:224:43: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:224:78: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:226:40: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:226:72: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:297:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridWind_c.cpp:139:9: warning: unused variable 'j' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:144:43: warning: unused variable 'month' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:150:10: warning: variable 'startTime' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridWind_c.cpp:152:7: warning: unused variable 'errmsg' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:154:8: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp: In member function 'virtual OSErr TimeGridWindRect_c::ReadTimeData(long int, VelocityFRec***, char*)':
+../lib_gnome/TimeGridWind_c.cpp:381:7: warning: the address of 'path' will always evaluate as 'true' [-Waddress]
+../lib_gnome/TimeGridWind_c.cpp:364:18: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp: In member function 'virtual VelocityRec TimeGridWindCurv_c::GetScaledPatValue(const Seconds&, WorldPoint3D)':
+../lib_gnome/TimeGridWind_c.cpp:560:8: warning: unused variable 'err' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:601:1: warning: label 'scale' defined but not used [-Wunused-label]
+../lib_gnome/TimeGridWind_c.cpp: In member function 'virtual OSErr TimeGridWindCurv_c::TextRead(char*, char*)':
+../lib_gnome/TimeGridWind_c.cpp:749:37: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:749:70: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:751:44: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:751:79: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:753:44: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:753:79: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:755:41: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:755:73: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:783:36: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:783:71: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:783:105: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:787:36: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:787:71: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:787:105: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:831:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridWind_c.cpp:833:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridWind_c.cpp:851:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/TimeGridWind_c.cpp:615:24: warning: unused variable 'indexOfStart' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:619:43: warning: unused variable 'month' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:620:37: warning: unused variable 'topPath' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:625:10: warning: variable 'startTime' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridWind_c.cpp:634:10: warning: unused variable 'bTopFile' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:636:7: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp: In member function 'virtual OSErr TimeGridWindCurv_c::ReadTimeData(long int, VelocityFRec***, char*)':
+../lib_gnome/TimeGridWind_c.cpp:982:7: warning: the address of 'path' will always evaluate as 'true' [-Waddress]
+../lib_gnome/TimeGridWind_c.cpp:1120:38: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:1122:41: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:961:18: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:969:9: warning: unused variable 'wind_uvals_Navy' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:969:30: warning: unused variable 'wind_vvals_Navy' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp:969:51: warning: unused variable 'fill_value_Navy' [-Wunused-variable]
+../lib_gnome/TimeGridWind_c.cpp: In member function 'OSErr TimeGridWindCurv_c::ReorderPoints(char*)':
+../lib_gnome/TimeGridWind_c.cpp:1395:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:1396:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:1445:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:1446:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/TimeGridWind_c.cpp:1499:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/TimeGridWind_c.cpp:1213:23: warning: variable 'index' set but not used [-Wunused-but-set-variable]
+../lib_gnome/TimeGridWind_c.cpp: In member function 'virtual OSErr TimeGridWindCurv_c::ReadTopology(char*)':
+../lib_gnome/TimeGridWind_c.cpp:1545:61: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridWind_c.cpp:1558:72: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridWind_c.cpp:1563:53: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/TimeGridWind_c.cpp:1740:3: warning: format not a string literal and no format arguments [-Wformat-security]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/MakeTriangles.cpp -o build/temp.linux-i686-2.7/../lib_gnome/MakeTriangles.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/MakeTriangles.cpp:10:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/MakeTriangles.cpp: In function 'Boolean maketriangles(Topology***, LongPointHdl, long int, LONGH, long int)':
+../lib_gnome/MakeTriangles.cpp:396:42: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/MakeTriangles.cpp:447:7: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/MakeTriangles.cpp:574:42: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/MakeTriangles.cpp:328:10: warning: variable 'userCancel' set but not used [-Wunused-but-set-variable]
+../lib_gnome/MakeTriangles.cpp: In function 'Boolean maketriangles2(Topology***, LongPointHdl, long int, LONGH, long int, LONGH, long int)':
+../lib_gnome/MakeTriangles.cpp:773:42: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/MakeTriangles.cpp:832:7: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/MakeTriangles.cpp:959:42: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/MakeTriangles.cpp:704:10: warning: variable 'userCancel' set but not used [-Wunused-but-set-variable]
+../lib_gnome/MakeTriangles.cpp: In function 'Boolean FIX(long int, long int, long int*, long int*)':
+../lib_gnome/MakeTriangles.cpp:227:15: warning: 'j6' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/MakeTriangles.cpp:233:13: warning: 'j5' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/MakeTriangles.cpp:222:17: warning: 'ver4' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/MakeTriangles.cpp: In function 'Boolean maketriangles(Topology***, LongPointHdl, long int, LONGH, long int)':
+../lib_gnome/MakeTriangles.cpp:620:22: warning: 'neig' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/MakeTriangles.cpp: In function 'Boolean maketriangles2(Topology***, LongPointHdl, long int, LONGH, long int, LONGH, long int)':
+../lib_gnome/MakeTriangles.cpp:1005:22: warning: 'neig' may be used uninitialized in this function [-Wuninitialized]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/MakeDagTree.cpp -o build/temp.linux-i686-2.7/../lib_gnome/MakeDagTree.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/MakeDagTree.cpp:12:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/MakeDagTree.cpp: In function 'void split(Side_List**, long int)':
+../lib_gnome/MakeDagTree.cpp:459:7: warning: unused variable 'bCounterL' [-Wunused-variable]
+../lib_gnome/MakeDagTree.cpp:459:21: warning: unused variable 'bCounterR' [-Wunused-variable]
+../lib_gnome/MakeDagTree.cpp: In function 'long int FindThirdVertex(long int, TopologyHdl, long int, long int)':
+../lib_gnome/MakeDagTree.cpp:48:16: warning: 'pointC' may be used uninitialized in this function [-Wuninitialized]
+../lib_gnome/MakeDagTree.cpp: In function 'int Right_or_Left(long int, long int, long int, long int)':
+../lib_gnome/MakeDagTree.cpp:642:18: warning: 'location' may be used uninitialized in this function [-Wuninitialized]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/GridMap_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/GridMap_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/GridMap_c.cpp:22:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/GridMap_c.cpp:3410:2: warning: "/*" within comment [-Wcomment]
+../lib_gnome/GridMap_c.cpp: In member function 'LongPoint** GridMap_c::GetPointsHdl()':
+../lib_gnome/GridMap_c.cpp:79:10: warning: unused variable 'mover' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::SetUpCurvilinearGrid(DOUBLEH, long int, long int, WORLDPOINTFH, FLOATH, char*)':
+../lib_gnome/GridMap_c.cpp:338:10: warning: unused variable 'val' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:338:15: warning: unused variable 'u' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:338:21: warning: unused variable 'v' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:419:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:420:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:484:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:485:36: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:676:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:677:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:731:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridMap_c.cpp:233:31: warning: unused variable 'diag' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::SetUpCurvilinearGrid2(DOUBLEH, long int, long int, WORLDPOINTFH, FLOATH, char*)':
+../lib_gnome/GridMap_c.cpp:894:22: warning: variable 'fDepth' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:894:30: warning: unused variable 'dLon' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:894:36: warning: unused variable 'dLat' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:894:42: warning: unused variable 'dLon1' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:894:49: warning: unused variable 'dLon2' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:894:56: warning: unused variable 'dLat1' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:894:63: warning: unused variable 'dLat2' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:895:10: warning: unused variable 'val' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:895:15: warning: unused variable 'u' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:895:21: warning: unused variable 'v' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:945:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:946:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:995:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:996:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1020:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1021:36: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1262:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridMap_c.cpp:760:11: warning: unused variable 'k' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:761:8: warning: unused variable 'velUnits' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:762:7: warning: unused variable 'latlength' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:762:28: warning: unused variable 'numtri' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:763:7: warning: unused variable 'lonlength' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:764:10: warning: unused variable 'isLandMask' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:765:8: warning: unused variable 'fDepth1' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:765:17: warning: unused variable 'fLat1' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:765:24: warning: unused variable 'fLong1' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:766:7: warning: variable 'index1' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:781:7: warning: unused variable 'diag' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::SetUpTriangleGrid2(long int, long int, WORLDPOINTFH, FLOATH, long int*, long int*, long int*, long int, long int*, long int*)':
+../lib_gnome/GridMap_c.cpp:1421:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1422:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1451:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1452:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1536:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::SetUpTriangleGrid(long int, long int, WORLDPOINTFH, FLOATH, long int*, long int*, long int*, long int)':
+../lib_gnome/GridMap_c.cpp:1632:8: warning: variable 'index' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:1681:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1682:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1685:83: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/GridMap_c.cpp:1689:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1690:34: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1770:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::GetPointsAndMask(char*, double***, WorldPointF***, float***, long int*, long int*)':
+../lib_gnome/GridMap_c.cpp:1874:36: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1874:71: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1874:105: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1879:36: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1879:71: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1879:105: warning: deprecated conversion from string constant to 'CHARPTR {aka char*}' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:1916:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/GridMap_c.cpp:1918:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/GridMap_c.cpp:2007:25: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/GridMap_c.cpp:2053:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/GridMap_c.cpp:2055:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/GridMap_c.cpp:2069:14: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/GridMap_c.cpp:2071:15: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/GridMap_c.cpp:2159:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridMap_c.cpp:1794:11: warning: unused variable 'k' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1794:14: warning: unused variable 'numScanned' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1794:26: warning: unused variable 'indexOfStart' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1795:58: warning: unused variable 'recid' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1795:129: warning: unused variable 'depthvarid' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1797:8: warning: unused variable 'startLat' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1797:17: warning: unused variable 'startLon' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1797:26: warning: unused variable 'endLat' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1797:33: warning: unused variable 'endLon' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1798:37: warning: unused variable 'topPath' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1798:51: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1801:33: warning: unused variable 'timeVal' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1803:16: warning: unused variable 'latIndex' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1803:27: warning: unused variable 'lonIndex' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1803:38: warning: unused variable 'timeIndex' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1807:10: warning: unused variable 'bTopFile' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1808:13: warning: unused variable 'velocityH' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:1814:7: warning: variable 'fNumRows' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:1814:17: warning: variable 'fNumCols' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:2063:1: warning: label 'depths' defined but not used [-Wunused-label]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::GetPointsAndBoundary(char*, WorldPointF***, float***, long int*, long int**, long int**, long int**, long int*, long int**, long int**, long int*)':
+../lib_gnome/GridMap_c.cpp:2300:13: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+../lib_gnome/GridMap_c.cpp:2389:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridMap_c.cpp:2187:10: warning: unused variable 'numScanned' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2188:65: warning: unused variable 'recid' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2188:72: warning: unused variable 'timeid' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2188:80: warning: unused variable 'sigmaid' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2188:89: warning: unused variable 'sigmavarid' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2190:45: warning: unused variable 'recs' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2190:51: warning: unused variable 't_len' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2190:58: warning: unused variable 'sigmaLength' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2191:8: warning: unused variable 'timeVal' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2199:16: warning: unused variable 'latIndex' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2199:27: warning: unused variable 'lonIndex' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2199:38: warning: unused variable 'timeIndex' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2200:40: warning: unused variable 'sigma_count' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2202:9: warning: unused variable 'timeConversion' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2204:7: warning: unused variable 'fileName' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2204:20: warning: unused variable 's' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2204:27: warning: unused variable 'topPath' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2204:41: warning: unused variable 'outPath' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2206:8: warning: unused variable 'modelTypeStr' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2207:10: warning: unused variable 'bTopFile' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2380:1: warning: label 'depths' defined but not used [-Wunused-label]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::ReadCATSMap(char*)':
+../lib_gnome/GridMap_c.cpp:2432:61: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/GridMap_c.cpp:2494:36: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:2495:76: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/GridMap_c.cpp:2526:35: warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+../lib_gnome/GridMap_c.cpp:2618:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::ReadTopology(char*)':
+../lib_gnome/GridMap_c.cpp:2663:61: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/GridMap_c.cpp:2677:71: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/GridMap_c.cpp:2688:53: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/GridMap_c.cpp:2871:3: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::ExportTopology(char*)':
+../lib_gnome/GridMap_c.cpp:2896:21: warning: variable 'numBranches' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:2897:10: warning: unused variable 'n' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:2899:7: warning: unused variable 'buffer' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::SaveAsNetCDF(char*)':
+../lib_gnome/GridMap_c.cpp:3094:106: warning: variable 'boundary_count_dimid' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:3096:42: warning: unused variable 'dimid' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:3103:57: warning: unused variable 'nWaterBoundaries' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:3113:7: warning: unused variable 'errmsg' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp: In member function 'OSErr GridMap_c::TextRead(char*)':
+../lib_gnome/GridMap_c.cpp:3697:4: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridMap_c.cpp:3729:4: warning: format not a string literal and no format arguments [-Wformat-security]
+../lib_gnome/GridMap_c.cpp:3649:12: warning: variable 'bounds' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp: In member function 'virtual void GridMap_c::DrawBoundaries(Rect)':
+../lib_gnome/GridMap_c.cpp:3738:14: warning: variable 'startver' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:3738:23: warning: variable 'endver' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:3738:30: warning: unused variable 'j' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:3739:7: warning: unused variable 'x' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:3739:9: warning: unused variable 'y' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:3741:10: warning: unused variable 'offQuickDrawPlane' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:3744:7: warning: unused variable 'halfPenWidth' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp: In member function 'virtual void GridMap_c::DrawBoundaries2(Rect)':
+../lib_gnome/GridMap_c.cpp:3822:7: warning: unused variable 'x' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:3822:9: warning: unused variable 'y' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:3822:11: warning: variable 'index1' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:3822:18: warning: variable 'index' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMap_c.cpp:3823:8: warning: unused variable 'pt' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:3824:10: warning: unused variable 'offQuickDrawPlane' [-Wunused-variable]
+../lib_gnome/GridMap_c.cpp:3827:7: warning: unused variable 'halfPenWidth' [-Wunused-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/GridMapUtils.cpp -o build/temp.linux-i686-2.7/../lib_gnome/GridMapUtils.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from ../lib_gnome/ObjectUtils.h:6:0,
+                 from ../lib_gnome/Replacements.h:36,
+                 from ../lib_gnome/GridMapUtils.cpp:15:
+../lib_gnome/CMap2.h:34:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/CMap2.h:41:0: warning: ignoring #pragma options align [-Wunknown-pragmas]
+../lib_gnome/GridMapUtils.cpp: In function 'Boolean ThereIsAdjacentLand2(LONGH, DOUBLEH, long int, long int, long int, long int)':
+../lib_gnome/GridMapUtils.cpp:60:41: warning: unused variable 'lowestLandIndex' [-Wunused-variable]
+../lib_gnome/GridMapUtils.cpp: In function 'Boolean InteriorLandPoint(LONGH, long int, long int, long int, long int)':
+../lib_gnome/GridMapUtils.cpp:98:13: warning: variable 'iStart' set but not used [-Wunused-but-set-variable]
+../lib_gnome/GridMapUtils.cpp: In function 'Boolean ThereIsALowerLandNeighbor(LONGH, long int*, long int, long int, long int, long int)':
+../lib_gnome/GridMapUtils.cpp:139:35: warning: unused variable 'lowestLandIndex' [-Wunused-variable]
+../lib_gnome/GridMapUtils.cpp: In function 'OSErr NumberIslands(long int***, DOUBLEH, LONGH, long int, long int, long int*)':
+../lib_gnome/GridMapUtils.cpp:236:86: warning: suggest parentheses around assignment used as truth value [-Wparentheses]
+../lib_gnome/GridMapUtils.cpp:207:7: warning: unused variable 'nv' [-Wunused-variable]
+../lib_gnome/GridMapUtils.cpp:208:13: warning: unused variable 'n' [-Wunused-variable]
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c ../lib_gnome/RandomVertical_c.cpp -o build/temp.linux-i686-2.7/../lib_gnome/RandomVertical_c.o -I/usr/local/include
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+../lib_gnome/RandomVertical_c.cpp: In member function 'OSErr RandomVertical_c::get_move(int, long unsigned int, long unsigned int, WorldPoint3D*, WorldPoint3D*, short int*, LEType, long int)':
+../lib_gnome/RandomVertical_c.cpp:81:34: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/RandomVertical_c.cpp: In member function 'virtual WorldPoint3D RandomVertical_c::GetMove(const Seconds&, Seconds, long int, long int, LERec*, LETYPE)':
+../lib_gnome/RandomVertical_c.cpp:109:35: warning: missing braces around initializer for 'WorldPoint' [-Wmissing-braces]
+../lib_gnome/RandomVertical_c.cpp:108:10: warning: unused variable 'dLong' [-Wunused-variable]
+../lib_gnome/RandomVertical_c.cpp:108:17: warning: unused variable 'dLat' [-Wunused-variable]
+../lib_gnome/RandomVertical_c.cpp:108:23: warning: unused variable 'z' [-Wunused-variable]
+../lib_gnome/RandomVertical_c.cpp:110:13: warning: variable 'refPoint' set but not used [-Wunused-but-set-variable]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_basic_types.o build/temp.linux-i686-2.7/../lib_gnome/RectGridVeL_c.o build/temp.linux-i686-2.7/../lib_gnome/MemUtils.o build/temp.linux-i686-2.7/../lib_gnome/Mover_c.o build/temp.linux-i686-2.7/../lib_gnome/Replacements.o build/temp.linux-i686-2.7/../lib_gnome/ClassID_c.o build/temp.linux-i686-2.7/../lib_gnome/Random_c.o build/temp.linux-i686-2.7/../lib_gnome/TimeValuesIO.o build/temp.linux-i686-2.7/../lib_gnome/GEOMETRY.o build/temp.linux-i686-2.7/../lib_gnome/OSSMTimeValue_c.o build/temp.linux-i686-2.7/../lib_gnome/TimeValue_c.o build/temp.linux-i686-2.7/../lib_gnome/RectUtils.o build/temp.linux-i686-2.7/../lib_gnome/WindMover_c.o build/temp.linux-i686-2.7/../lib_gnome/CompFunctions.o build/temp.linux-i686-2.7/../lib_gnome/StringFunctions.o build/temp.linux-i686-2.7/../lib_gnome/OUTILS.o build/temp.linux-i686-2.7/../lib_gnome/CATSMover_c.o build/temp.linux-i686-2.7/../lib_gnome/CurrentMover_c.o build/temp.linux-i686-2.7/../lib_gnome/ShioTimeValue_c.o build/temp.linux-i686-2.7/../lib_gnome/ShioHeight.o build/temp.linux-i686-2.7/../lib_gnome/TriGridVel_c.o build/temp.linux-i686-2.7/../lib_gnome/DagTree.o build/temp.linux-i686-2.7/../lib_gnome/DagTreeIO.o build/temp.linux-i686-2.7/../lib_gnome/ShioCurrent1.o build/temp.linux-i686-2.7/../lib_gnome/ShioCurrent2.o build/temp.linux-i686-2.7/../lib_gnome/GridCurrentMover_c.o build/temp.linux-i686-2.7/../lib_gnome/GridWindMover_c.o build/temp.linux-i686-2.7/../lib_gnome/TimeGridVel_c.o build/temp.linux-i686-2.7/../lib_gnome/TimeGridWind_c.o build/temp.linux-i686-2.7/../lib_gnome/MakeTriangles.o build/temp.linux-i686-2.7/../lib_gnome/MakeDagTree.o build/temp.linux-i686-2.7/../lib_gnome/GridMap_c.o build/temp.linux-i686-2.7/../lib_gnome/GridMapUtils.o build/temp.linux-i686-2.7/../lib_gnome/RandomVertical_c.o -lnetcdf -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_basic_types.so -L/usr/local/lib
+cythoning gnome/cy_gnome/cy_mover.pyx to gnome/cy_gnome/cy_mover.cpp
+building 'gnome.cy_gnome.cy_mover' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_mover.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_mover.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_mover.cpp:339:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_mover.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_mover.so
+cythoning gnome/cy_gnome/cy_helpers.pyx to gnome/cy_gnome/cy_helpers.cpp
+building 'gnome.cy_gnome.cy_helpers' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_helpers.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_helpers.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_helpers.cpp:314:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_helpers.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_helpers.so
+cythoning gnome/cy_gnome/cy_wind_mover.pyx to gnome/cy_gnome/cy_wind_mover.cpp
+building 'gnome.cy_gnome.cy_wind_mover' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_wind_mover.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_wind_mover.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_wind_mover.cpp:314:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+gnome/cy_gnome/cy_wind_mover.cpp: In function 'PyObject* __pyx_pf_5gnome_8cy_gnome_13cy_wind_mover_11CyWindMover_16get_time_value(__pyx_obj_5gnome_8cy_gnome_13cy_wind_mover_CyWindMover*, PyObject*)':
+gnome/cy_gnome/cy_wind_mover.cpp:3127:37: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h: At global scope:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_wind_mover.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_wind_mover.so
+cythoning gnome/cy_gnome/cy_cats_mover.pyx to gnome/cy_gnome/cy_cats_mover.cpp
+building 'gnome.cy_gnome.cy_cats_mover' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_cats_mover.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_cats_mover.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_cats_mover.cpp:314:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_cats_mover.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_cats_mover.so
+cythoning gnome/cy_gnome/cy_gridcurrent_mover.pyx to gnome/cy_gnome/cy_gridcurrent_mover.cpp
+building 'gnome.cy_gnome.cy_gridcurrent_mover' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_gridcurrent_mover.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_gridcurrent_mover.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_gridcurrent_mover.cpp:314:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_gridcurrent_mover.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_gridcurrent_mover.so
+cythoning gnome/cy_gnome/cy_gridwind_mover.pyx to gnome/cy_gnome/cy_gridwind_mover.cpp
+building 'gnome.cy_gnome.cy_gridwind_mover' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_gridwind_mover.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_gridwind_mover.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_gridwind_mover.cpp:314:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_gridwind_mover.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_gridwind_mover.so
+cythoning gnome/cy_gnome/cy_ossm_time.pyx to gnome/cy_gnome/cy_ossm_time.cpp
+building 'gnome.cy_gnome.cy_ossm_time' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_ossm_time.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_ossm_time.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_ossm_time.cpp:326:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+gnome/cy_gnome/cy_ossm_time.cpp: In function 'PyObject* __pyx_pf_5gnome_8cy_gnome_12cy_ossm_time_10CyOSSMTime_10get_time_value(__pyx_obj_5gnome_8cy_gnome_12cy_ossm_time_CyOSSMTime*, PyObject*)':
+gnome/cy_gnome/cy_ossm_time.cpp:2810:37: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h: At global scope:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_ossm_time.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_ossm_time.so
+cythoning gnome/cy_gnome/cy_random_mover.pyx to gnome/cy_gnome/cy_random_mover.cpp
+building 'gnome.cy_gnome.cy_random_mover' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_random_mover.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_random_mover.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_random_mover.cpp:314:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_random_mover.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_random_mover.so
+cythoning gnome/cy_gnome/cy_random_vertical_mover.pyx to gnome/cy_gnome/cy_random_vertical_mover.cpp
+building 'gnome.cy_gnome.cy_random_vertical_mover' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_random_vertical_mover.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_random_vertical_mover.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_random_vertical_mover.cpp:314:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_random_vertical_mover.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_random_vertical_mover.so
+cythoning gnome/cy_gnome/cy_land_check.pyx to gnome/cy_gnome/cy_land_check.cpp
+building 'gnome.cy_gnome.cy_land_check' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_land_check.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_land_check.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_land_check.cpp:314:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_land_check.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_land_check.so
+cythoning gnome/cy_gnome/cy_grid_map.pyx to gnome/cy_gnome/cy_grid_map.cpp
+building 'gnome.cy_gnome.cy_grid_map' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_grid_map.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_grid_map.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_grid_map.cpp:314:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_grid_map.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_grid_map.so
+cythoning gnome/cy_gnome/cy_shio_time.pyx to gnome/cy_gnome/cy_shio_time.cpp
+building 'gnome.cy_gnome.cy_shio_time' extension
+gcc -pthread -fno-strict-aliasing -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes -fPIC -DpyGNOME=1 -I../lib_gnome -I/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include -I. -I/usr/include/python2.7 -c gnome/cy_gnome/cy_shio_time.cpp -o build/temp.linux-i686-2.7/gnome/cy_gnome/cy_shio_time.o
+cc1plus: warning: command line option '-Wstrict-prototypes' is valid for Ada/C/ObjC but not for C++ [enabled by default]
+In file included from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarraytypes.h:1728:0,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/ndarrayobject.h:17,
+                 from /home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/arrayobject.h:15,
+                 from gnome/cy_gnome/cy_shio_time.cpp:326:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/npy_deprecated_api.h:11:2: warning: #warning "Using deprecated NumPy API, disable it by #defining NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+gnome/cy_gnome/cy_shio_time.cpp: In function 'PyObject* __pyx_pf_5gnome_8cy_gnome_12cy_shio_time_10CyShioTime_12get_time_value(__pyx_obj_5gnome_8cy_gnome_12cy_shio_time_CyShioTime*, PyObject*)':
+gnome/cy_gnome/cy_shio_time.cpp:2804:37: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h: At global scope:
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__multiarray_api.h:1594:1: warning: 'int _import_array()' defined but not used [-Wunused-function]
+/home/vagrant/envs/gnome/local/lib/python2.7/site-packages/numpy/core/include/numpy/__ufunc_api.h:236:1: warning: 'int _import_umath()' defined but not used [-Wunused-function]
+g++ -pthread -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro build/temp.linux-i686-2.7/gnome/cy_gnome/cy_shio_time.o -o /home/vagrant/src/gnome/py_gnome/gnome/cy_gnome/cy_shio_time.so
+Creating /home/vagrant/envs/gnome/lib/python2.7/site-packages/pyGnome.egg-link (link to .)
+pyGnome alpha is already the active version in easy-install.pth
+
+Installed /home/vagrant/src/gnome/py_gnome
+Processing dependencies for pyGnome==alpha
+Finished processing dependencies for pyGnome==alpha

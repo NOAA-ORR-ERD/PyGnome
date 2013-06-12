@@ -58,6 +58,10 @@ class SurfaceReleaseSpill(BaseResource):
         model = data.pop('model')
         spill = model.spills[self.id]
         spill.from_dict(data)
+
+        if 'end_position' not in data:
+            spill.end_position = spill.start_position
+
         model.rewind()
 
         return schema.SurfaceReleaseSpillSchema().bind().serialize(
