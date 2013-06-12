@@ -64,7 +64,7 @@ def test_in_water_resolution():
     Test the limits of the precision, to within an order of magnitude, defining whether a point is in or out of water.
     '''
     
-    m = gnome.map.MapFromBNA(filename = os.path.join(datadir, "Mapbounds_Island.bna"),
+    m = gnome.map.MapFromBNA(filename = os.path.join(datadir, "MapBounds_Island.bna"),
                              refloat_halflife = (2.*60.*60.) ,
                              raster_size = 500*500 , # approx resolution
                              ) #Create an 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
@@ -332,7 +332,7 @@ class TestRefloat:
 
 from gnome.map import MapFromBNA
 class Test_MapfromBNA:
-    bna_map = MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6, raster_size=1000)
+    bna_map = MapFromBNA(os.path.join(datadir, "MapBounds_Island.bna"), 6, raster_size=1000)
     
     def test_map_in_water(self):
         '''
@@ -397,14 +397,14 @@ def test_MapfromBNA_new_from_dict():
     """
     test create new object from to_dict
     """
-    map = gnome.map.MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6)
+    map = gnome.map.MapFromBNA(os.path.join(datadir, "MapBounds_Island.bna"), 6)
     dict_ = map.to_dict('create')
     dict_.pop('obj_type')
     map2 = map.new_from_dict(dict_)
     assert map == map2
     
 def test_MapfromBNA_from_dict():
-    map = gnome.map.MapFromBNA(os.path.join(datadir, "Mapbounds_Island.bna"), 6)
+    map = gnome.map.MapFromBNA(os.path.join(datadir, "MapBounds_Island.bna"), 6)
     dict_ = map.to_dict()
     dict_['map_bounds'] = ((-10, 10),(10,10),(10,-10),(-10,-10))
     dict_['spillable_area'] = ((-5, 5),(5,5),(5,-5),(-5,-5))
