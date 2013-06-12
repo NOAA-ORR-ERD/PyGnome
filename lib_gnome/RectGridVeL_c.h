@@ -1,5 +1,5 @@
 /*
- *  RectGridVeL_c.h
+ *  RectGridVel_c.h
  *  gnome
  *
  *  Created by Generic Programmer on 3/19/12.

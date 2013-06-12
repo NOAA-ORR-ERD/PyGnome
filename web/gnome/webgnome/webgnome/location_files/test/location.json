@@ -1,141 +1,193 @@
 {
     "wind_movers": [
         {
-            "on": true, 
-            "obj_type": "webgnome.model_manager.WebWindMover", 
-            "name": "Wind Mover", 
-            "uncertain_angle_scale": 0.4, 
-            "uncertain_duration": 10800.0, 
-            "active_start": "1970-01-01T00:00:00", 
-            "wind_id": "53063621-a21d-11e2-aa10-3c07541ca142", 
-            "active_stop": "2038-01-18T00:00:00", 
-            "uncertain_time_delay": 0.0, 
-            "id": "5306450c-a21d-11e2-af7e-3c07541ca142", 
+            "on": true,
+            "obj_type": "webgnome.model_manager.WebWindMover",
+            "name": "Wind Mover",
+            "uncertain_angle_scale": 0.4,
+            "uncertain_duration": 10800.0,
+            "active_start": "1970-01-01T00:00:00",
+            "wind_id": "53063621-a21d-11e2-aa10-3c07541ca142",
+            "active_stop": "2038-01-18T00:00:00",
+            "uncertain_time_delay": 0.0,
+            "id": "5306450c-a21d-11e2-af7e-3c07541ca142",
             "uncertain_speed_scale": 2.0
         }
-    ], 
+    ],
+    "cats_movers": [
+        {
+            "on": true,
+            "obj_type": "webgnome.model_manager.WebCatsMover",
+            "scale": true,
+            "scale_refpoint": [
+                -70.8875,
+                42.321333,
+                0.0
+            ],
+            "name": "Cats Mover",
+            "active_start": "1970-01-01T00:00:00",
+            "filename": "location_files/boston/data/EbbTides.cur",
+            "tide_id": "61e03bcf-a23a-11e2-96eb-3c07541ca142",
+            "active_stop": "2038-01-18T00:00:00",
+            "id": "61ec0b54-a23a-11e2-81d9-3c07541ca142",
+            "scale_value": -1.0
+        },
+        {
+            "on": true,
+            "obj_type": "webgnome.model_manager.WebCatsMover",
+            "scale": true,
+            "scale_refpoint": [
+                -70.65,
+                42.58333,
+                0.0
+            ],
+            "name": "Cats Mover",
+            "active_start": "1970-01-01T00:00:00",
+            "filename": "location_files/boston/data/MerrimackMassCoast.cur",
+            "tide_id": "61ec3105-a23a-11e2-80c1-3c07541ca142",
+            "active_stop": "2038-01-18T00:00:00",
+            "id": "61f81df3-a23a-11e2-b3ba-3c07541ca142",
+            "scale_value": 1.0
+        },
+        {
+            "on": true,
+            "obj_type": "webgnome.model_manager.WebCatsMover",
+            "scale": true,
+            "scale_refpoint": [
+                -70.78333,
+                42.39333,
+                0.0
+            ],
+            "name": "Cats Mover",
+            "active_start": "1970-01-01T00:00:00",
+            "filename": "location_files/boston/data/MassBaySewage.cur",
+            "active_stop": "2038-01-18T00:00:00",
+            "id": "62042387-a23a-11e2-b6dd-3c07541ca142",
+            "scale_value": 0.04
+        }
+    ],
     "map": {
-        "obj_type": "webgnome.model_manager.WebMapFromBNA", 
-        "name": "Long Island Sound", 
+        "obj_type": "webgnome.model_manager.WebMapFromBNA",
+        "name": "Long Island Sound",
         "map_bounds": [
             [
-                -73.083328, 
+                -73.083328,
                 40.922832
-            ], 
+            ],
             [
-                -73.083328, 
+                -73.083328,
                 41.330833
-            ], 
+            ],
             [
-                -72.336334, 
+                -72.336334,
                 41.330833
-            ], 
+            ],
             [
-                -72.336334, 
+                -72.336334,
                 40.922832
             ]
-        ], 
-        "filename": "location_files/long_island/data/LongIslandSoundMap.BNA", 
+        ],
+        "filename": "location_files/long_island/data/LongIslandSoundMap.BNA",
         "spillable_area": [
             [
-                -73.083328, 
+                -73.083328,
                 40.922832
-            ], 
+            ],
             [
-                -73.083328, 
+                -73.083328,
                 41.330833
-            ], 
+            ],
             [
-                -72.336334, 
+                -72.336334,
                 41.330833
-            ], 
+            ],
             [
-                -72.336334, 
+                -72.336334,
                 40.922832
             ]
-        ], 
-        "id": "5317478c-a21d-11e2-908c-3c07541ca142", 
+        ],
+        "id": "5317478c-a21d-11e2-908c-3c07541ca142",
         "refloat_halflife": 21600.0
-    }, 
-    "uncertain": false, 
-    "start_time": "2013-04-10T13:00:00", 
+    },
+    "uncertain": false,
+    "start_time": "2013-04-10T13:00:00",
     "random_movers": [
         {
-            "on": true, 
-            "obj_type": "webgnome.model_manager.WebRandomMover", 
-            "name": "Random Mover", 
-            "diffusion_coef": 500000.0, 
-            "active_start": "1970-01-01T00:00:00", 
-            "active_stop": "2038-01-18T00:00:00", 
+            "on": true,
+            "obj_type": "webgnome.model_manager.WebRandomMover",
+            "name": "Random Mover",
+            "diffusion_coef": 500000.0,
+            "active_start": "1970-01-01T00:00:00",
+            "active_stop": "2038-01-18T00:00:00",
             "id": "5305f5e8-a21d-11e2-808f-3c07541ca142"
         }
-    ], 
+    ],
     "surface_release_spills": [
         {
-            "num_elements": 1000, 
+            "num_elements": 1000,
             "windage_range": [
-                0.01, 
+                0.01,
                 0.04
-            ], 
-            "name": "Long Island Spill", 
-            "is_active": true, 
+            ],
+            "name": "Long Island Spill",
+            "is_active": true,
             "end_position": [
-                -72.419992, 
-                41.20212, 
+                -72.419992,
+                41.20212,
                 0.0
-            ], 
+            ],
             "start_position": [
-                -72.419992, 
-                41.20212, 
+                -72.419992,
+                41.20212,
                 0.0
-            ], 
-            "release_time": "2013-04-10T13:00:00", 
-            "windage_persist": 900.0, 
-            "end_release_time": "2013-04-10T13:00:00", 
+            ],
+            "release_time": "2013-04-10T13:00:00",
+            "windage_persist": 900.0,
+            "end_release_time": "2013-04-10T13:00:00",
             "id": "5305de28-a21d-11e2-8ecd-3c07541ca142"
         }
-    ], 
+    ],
     "winds": [
         {
-            "obj_type": "webgnome.model_manager.WebWind", 
-            "name": "Wind Object", 
-            "updated_at": "2013-04-10T13:29:20.520287", 
-            "source_type": "undefined", 
-            "source_id": "undefined", 
+            "obj_type": "webgnome.model_manager.WebWind",
+            "name": "Wind Object",
+            "updated_at": "2013-04-10T13:29:20.520287",
+            "source_type": "undefined",
+            "source_id": "undefined",
             "timeseries": [
                 [
-                    "2013-04-10T13:00:00", 
-                    30.0, 
+                    "2013-04-10T13:00:00",
+                    30.0,
                     50.0
-                ], 
+                ],
                 [
-                    "2013-04-11T07:00:00", 
-                    30.0, 
+                    "2013-04-11T07:00:00",
+                    30.0,
                     50.0
-                ], 
+                ],
                 [
-                    "2013-04-11T19:00:00", 
-                    20.0, 
+                    "2013-04-11T19:00:00",
+                    20.0,
                     25.0
-                ], 
+                ],
                 [
-                    "2013-04-12T07:00:00", 
-                    25.0, 
+                    "2013-04-12T07:00:00",
+                    25.0,
                     10.0
-                ], 
+                ],
                 [
-                    "2013-04-12T19:00:00", 
-                    25.0, 
+                    "2013-04-12T19:00:00",
+                    25.0,
                     180.0
                 ]
-            ], 
-            "units": "mps", 
-            "id": "53063621-a21d-11e2-aa10-3c07541ca142", 
+            ],
+            "units": "mps",
+            "id": "53063621-a21d-11e2-aa10-3c07541ca142",
             "description": "Wind Object"
         }
-    ], 
-    "time_step": 0.25, 
-    "duration_hours": 0, 
-    "duration_days": 1, 
+    ],
+    "time_step": 0.25,
+    "duration_hours": 0,
+    "duration_days": 1,
     "id": "530599eb-a21d-11e2-811b-3c07541ca142"
 }

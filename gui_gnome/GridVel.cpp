@@ -1,22 +1,14 @@
 
 #include "Cross.h"
-//#include "Classes.h"
 #include "GridVel.h"
 #include "MapUtils.h"
 #include "DagTreePD.h"
 #include "DagTreeIO.h"
-//#include "RectUtils.h"
 #include "PtCurMover.h"
 #include "Contdlg.h"
-#include "NetCDFMover.h"
-#include "netcdf.h"
+//#include "NetCDFMover.h"
+//#include "netcdf.h"
 #include "Outils.h"
-
-#ifdef MAC
-#ifdef MPW
-#pragma SEGMENT GRIDVEL
-#endif
-#endif
 
 void DrawArrowHead (Point p1, Point p2, VelocityRec velocity);
 void MyDrawArrow(short h0,short v0,short h1,short v1);
@@ -1115,7 +1107,6 @@ TTriGridVel3D::TTriGridVel3D()
 	bShowSelectedTriangles = true;
 	//fPercentileForMaxConcentration = .9;
 	fPercentileForMaxConcentration = 1.;	// make user decide if they want to fudge this
-	//gCoord = 0;	// is this used??
 	bCalculateDosage = false;
 	bShowDosage = false;
 	fDosageThreshold = .2;
@@ -1315,6 +1306,14 @@ done:
 	return err;
 }
 
+
+long TTriGridVel3D::GetNumDepthContours(void)
+ {
+	 long numContourValues = 0;
+	 if (fDepthContoursH) numContourValues = _GetHandleSize((Handle)fDepthContoursH)/sizeof(**fDepthContoursH);
+	 
+	 return numContourValues;
+ }
 
 Boolean **TTriGridVel3D::GetPtsSelection(Boolean initHdl) 
 {

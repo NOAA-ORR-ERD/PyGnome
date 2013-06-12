@@ -12,16 +12,9 @@
 #include "MemUtils.h"
 
 #ifdef pyGNOME
-//#include "LEList_c.h"
-//#include "OLEList_c.h"
-//#include "Model_c.h"
 #include "Replacements.h"
 #else
 #include "CROSS.H"
-//#include "TLEList.h"
-//#include "TOLEList.h"
-//#include "TModel.h"
-//extern TModel *model;
 #endif
 
 #ifndef pyGNOME

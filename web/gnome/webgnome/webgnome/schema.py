@@ -69,7 +69,7 @@ class SurfaceReleaseSpillSchema(MappingSchema):
     default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
     id = SchemaNode(String(), missing=drop)
-    num_elements = SchemaNode(Int(), default=0, validator=validators.positive)
+    num_elements = SchemaNode(Int(), default=1000, validator=validators.positive)
     release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
                               missing=now,
                               validator=validators.convertible_to_seconds)

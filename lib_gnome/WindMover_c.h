@@ -17,7 +17,7 @@
 
 #ifdef pyGNOME
 #define TOSSMTimeValue OSSMTimeValue_c
-#define TMap Map_c
+//#define TMap Map_c
 #endif
 
 class TOSSMTimeValue;
@@ -87,5 +87,5 @@ public:
 };
 
 #undef TOSSMTimeValue
-#undef TMap
+//#undef TMap
 #endif

@@ -15,19 +15,17 @@
 #include "ClassID_c.h"
 #include "ExportSymbols.h"
 
-#ifdef pyGNOME
-#define TMover Mover_c
+#ifndef pyGNOME
+class TMover;
 #endif
 
-class TMover;
-
-//class TimeValue_c : virtual public ClassID_c {
 class DLL_API TimeValue_c : virtual public ClassID_c {
 	
 public:
+#ifndef pyGNOME
 	TMover *owner;
-	
 	TimeValue_c (TMover *theOwner) { owner = theOwner; }
+#endif
 	TimeValue_c () {}
 	virtual				   ~TimeValue_c () { Dispose (); }
 	virtual ClassID GetClassID () { return TYPE_TIMEVALUES; }
@@ -39,5 +37,4 @@ public:
 
 };
 
-#undef TMover
 #endif

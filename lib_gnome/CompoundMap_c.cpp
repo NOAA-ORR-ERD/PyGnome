@@ -790,10 +790,6 @@ double CompoundMap_c::PathLength(Boolean selectionDirection,long segNo, long sta
 	if(!ptsHdl) return -1;
 	while(MoreBoundarySegments(&p1,&p2))		
 	{
-		/* x1 = (*gCoord)[p1].pLong;
-		 y1 = (*gCoord)[p1].pLat;
-		 x2 = (*gCoord)[p2].pLong;
-		 y2 = (*gCoord)[p2].pLat;*/
 		x1 = (*ptsHdl)[p1].h/1000000.;
 		y1 = (*ptsHdl)[p1].v/1000000.;
 		x2 = (*ptsHdl)[p2].h/1000000.;

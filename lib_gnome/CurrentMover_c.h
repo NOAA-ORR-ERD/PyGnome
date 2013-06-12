@@ -16,10 +16,6 @@
 #include "GEOMETRY.H"
 #include "ExportSymbols.h"
 
-#ifdef pyGNOME
-#define TMap Map_c
-#endif
-
 class DLL_API CurrentMover_c : virtual public Mover_c {
 	
 public:
@@ -62,5 +58,4 @@ public:
 	
 };
 
-#undef TMap
 #endif
