@@ -10,6 +10,10 @@ define([
     'lib/jquery.iframe-transport',
     'lib/bootstrap.file-input',
 ], function($, _, Backbone, models, modal) {
+
+    /*
+     A map form that allows the user to edit details of an existing map.
+     */
     var MapFormView = modal.JQueryUIModalFormView.extend({
         initialize: function() {
             this.options.dialog = _.extend({
@@ -39,6 +43,10 @@ define([
     });
 
 
+    /*
+     A map form that reuses jQuery components from GOODs and posts to that
+     service to obtain a BNA file for the coastline selected by the user.
+     */
     var AddCustomMapFormView = modal.JQueryUIModalFormView.extend({
         initialize: function() {
             this.options.dialog = _.extend({
@@ -86,10 +94,19 @@ define([
             this.setupModelEvents();
             AddCustomMapFormView.__super__.show.apply(this);
             this.map.resize();
+        },
+
+        submit: function() {
+            AddCustomMapFormView.__super__.submit.apply(this, [{
+                added: true
+            }]);
         }
     });
 
 
+    /*
+     A map form the allows the user to upload a custom BNA file.
+     */
     var AddMapFromUploadFormView = modal.JQueryUIModalFormView.extend({
         initialize: function() {
             var _this = this;
@@ -134,6 +151,12 @@ define([
 
         getDataBindings: function() {
             return {map: this.model};
+        },
+
+        submit: function() {
+            AddMapFromUploadFormView.__super__.submit.apply(this, [{
+                added: true
+            }]);
         }
     });
 

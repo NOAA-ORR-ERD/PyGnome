@@ -63,7 +63,6 @@
         //changes values in form if rectangle moves or is initialized
         function rect_change_update() {
             if (!settings.change) {
-                console.log('nothing here')
                 return;
             }
 

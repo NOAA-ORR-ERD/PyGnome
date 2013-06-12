@@ -135,6 +135,9 @@ class ModelFromLocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
                          len(data['wind_movers']))
         self.assertEqual(len(location_file_data['surface_release_spills']),
                          len(data['surface_release_spills']))
+        self.assertTrue(len(data['cats_movers']) >= 1)
+        self.assertEqual(len(location_file_data['cats_movers']),
+                         len(data['cats_movers']))
 
 
 class ExistingModelFromLocationFileServiceTests(FunctionalTestBase,

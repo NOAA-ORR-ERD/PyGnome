@@ -1,0 +1,27 @@
+# Requirements file assumes following binary have been installed
+# via apt-get and these system site packages are available
+# In ubuntu, using python-imaging, which is compatible with PIL
+# but is not PIL. No need to install PIL as well.
+
+# PyGnome
+setuptools
+numpy>=1.7.0   
+Cython>=0.17.1
+Pyrex>=0.9.8.6
+pytest>=2.3.4
+sphinx
+
+# requires netcdf-4 binaries to be correctly installed
+netCDF4 
+
+# requires some binary packages - binary installed on linux
+#PIL>=1.1.7
+
+svn+https://svn.orr.noaa.gov/svn/Hazpy/trunk/hazpy.unit_conversion/#egg=hazpy.unit_conversion
+git+https://github.com/Pylons/colander.git#egg=colander  # need newer version than what is in PyPy
+
+# Oil Library database
+pyramid
+sqlalchemy
+transaction
+zope.sqlalchemy

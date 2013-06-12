@@ -17,52 +17,207 @@ objects, with Views often receiving user input in a style more like a
 traditional Controller -- as is the fashion when using Backbone.
 
 Views listen to Models and refresh themselves when models change. A model may
-represent GUI state, such as the type of action the user is currently engaged
-in (playing an animation, drawing a spill onto the map) or they may exist
-as client-side representation of server-side objects, like Wind Movers,
-Surface Release Spills and the Gnome Model itselt -- or, at least, the settings
-values that it makes sense for a user to change from a web GUI.
+represent GUI state, such as the type of action the user is currently engaged in
+(playing an animation, drawing a spill onto the map) or they may exist as
+client-side representation of server-side objects, like Wind Movers, Surface
+Release Spills and the Gnome Model itself -- at least, the settings values
+that it makes sense for a user to change from a web GUI.
 
 
 High-level Goals
 ----------------
 
-- Always request model data from the server before displaying it. In-app changes
-  change an intermdiary client-side model which is validated server-side and
-  only persisted if validation succeeds.
+- Validate before saving anything. In-app changes change an intermdiary
+  client-side model which is validated server-side and only persisted if
+  validation succeeds. See VALIDATION for more details.
 
-- Keep browser memory use low for long-running sessions of the web application
-  by swapping out the data for form-related views from models when forms are
-  displayed, rather than creating multiple View objects, one for each model.
+- One view, many models. Keep browser memory use low for long-running sessions
+  of the web application by swapping out the data for form-related views from
+  models when forms are displayed, rather than creating multiple View objects,
+  one for each model.
 
-- Validate data in the client and on the server. See VALIDATION for more details.
+
+Application Entry-Point
+-----------------------
+
+The server-side view that loads the JavaScript application is:
+
+   webgnome/webgnome/views/model.py
+
+The template it renders, which performs the client-side loading using RequireJS,
+is:
+
+  webgnome/webgnome/templates/model.mak
+
+That template renders all of the HTML for the dialog forms in a hidden div and
+loads RequireJS, which handles loading all of the individual JavaScript
+"modules."
+
+It also configures Rivets, discussed in `Two-Way Data Binding with Rivets.js`.
 
 
 RequireJS Modules
 -----------------
 
 Code for the JavaScript application is separated into modules using the
-RequireJS library. This means that each module declares its dependencies at
-the top of the file, and those JavaScript modules (or files, in the case of non-
-RequireJS-enabled code) will load before the code of the module is executed.
+RequireJS library. Each module declares its dependencies at the top of the file.
+
+A RequireJS module is basically an anonymous function. Dependencies for each
+module are listed at the top of the module as parameters to the anonymous
+function. RequireJS resolves the dependencies before executing the function body
+and passes the requirements into the function in the position you defined.
+
+It looks like this::
+
+    define([
+        'jquery',
+        'lib/underscore',
+        'models',
+        'util',
+        'views/forms/base',
+    ], function($, _, models, util, deferreds, multi_step, base) {
+
+        // The body of your module goes here
+    });
+
+The location of dependencies is relative to the root you configure for
+RequireJS. Configuration is done in webgnome/webgnome/static/js/config.js.
+
+In the example, we're loading some library code from the lib/ directory and some
+of our own code from the root directory and the views/forms directory.
 
 
-Backbone.js Models and Views
-----------------------------
+Backbone.js and Underscore.js
+-----------------------------
 
-The application uses Backbone.js client-side Model and View objects for
-animation controls and to represent input forms.
+These are the most-used libraries after jQuery. The application uses Backbone.js
+client-side Model and View objects for animation controls and to represent input
+forms.
+
+Underscore is a swiss-army utility library that Backbone relies on. It provides
+the "_" symbol. This is used in the application to iterate over collections and
+to render client-side templates. It is also used by Backbone to provide various
+APIs on its Collection prototype.
+
+These libraries both have decent API docs for any method the application uses.
 
 
 Two-Way Data Binding with Rivets.js
 -----------------------------------
 
-Form inputs are bound to a specific model through the Rivets.js library, in a
-manner similar to that found in Angular.js. This means that as users fill out a
-form, the underlying model the form uses is updated.
+http://rivetsjs.com/
 
-If the user cancels a form without saving, the model is retrieved from the
-server and refreshed.
+Rivets provides two-way data binding between forms and Backbone models. It's
+used in most of the form dialogs to keep the form and the form's model in sync.
+
+Configured in model.mak
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The first is that it is configured in model.mak to use a Backbone-specific
+adapter -- a JavaScript object that tells Rivets how to save values found in the
+HTML forms it is bound to, to the model objects it is bound to. Conceptually
+this is a map of the Rivets API to the Backbone API -- "read(obj, field_name)"
+becomes "obj.get(field_name)", "subscribe(obj, event_name, callback)" becomes
+"obj.on(event_name, callback)" and so forth.
+
+Bound by FormViews
+~~~~~~~~~~~~~~~~~~
+
+Each form in the application has a FormView object bound to it. These are
+Backbone views. When a form is "shown" (the "show" method is called), usually
+when someone double-clicks on an item in the tree, the FormView object asks
+Rivets to bind any form inputs in the view's HTML element to a particular model.
+
+This process happens when a form is shown and not just once during
+initialization because while there are multiple model objects, the app uses only
+one FormView for each type of model (me trying to optimize memory use).
+
+So when a model is hidden and shown again, its model may have changed. We bind
+Rivets when showing the form and unbind when hiding it.
+
+
+Data bindings and "getDataBindings" method
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+At the moment forms are shown and Rivets binds them to the FormView's model, it
+looks for all inputs with certain data- values.
+
+How this works is you'll have something like this in a server-side template for
+a form view::
+
+    refloat_halflife = h.text('refloat_halflife',
+                              data_value='map.refloat_halflife',
+                              class_='input-small')
+
+This calls the 'h' object, a Python helper, to create an HTML text input with
+the name 'refloat_halflife'. The HTML input gets a data- attribute consumed by
+Rivets: ``data-value='map.refloat_halflife'``.
+
+When Rivets is bound to the HTML form containing this input,
+``data-value='map.refloat_halflife'`` tells Rivets to set the 'refloat_halflife'
+field on the object 'map' to the input's value whenever the input changes, and
+to set the input whenever the model's value changes (2-way binding).
+
+The Rivets docs list the various data- attributes you can use.
+
+Behind the scenes, whenever anyone changes this field, Rivets executes a call
+like this::
+
+    map.set('refloat_halflife', newValue);
+
+So, long story ... long, in order for Rivets to resolve "map.refloat_halflife"
+to an object, each FormView that uses Rivets has to provide a data bindings
+dict-like object, e.g. {'map': actualMapObject} when it calls ``rivets.bind()``.
+There are examples of this in the FormViews that use Rivets.
+
+The end result is that when the user clicks "Save" we persist the current values
+in the model without much haggling because they should reflect the user's
+choices. However, there is one problem...
+
+
+jQuery Deferreds
+----------------
+
+jQuery now returns Deferred objects for any async operations. That means when
+you perform a $.get or $.ajax operation, you get back a deferred. This is a new
+API that they intend to help cut back on the number of deeply-nested callbacks
+in asyn code.
+
+Backbone uses jQuery as its transport mechanism for any model persistence, so
+when you call ``model.save()`` the return value is a Deferred.
+
+This is helpful in a lot of cases where you need to wait to do something until
+an AJAX call returns, but you still want the call to happen async. I've
+incorporated the use of deferreds in a few places where you would normally see a
+success callback applied. So you will see things like this::
+
+    object.save().then(function() {
+        _this.doSomethingElse();
+    });
+
+Anytime you see ".then()" or ".resolve()" the object is a Deferred. And I've
+tried to add a note to the docstring of functions that return Deferreds.
+
+
+Location File Wizards
+---------------------
+
+I found Deferreds helpful in creating the FormView code that handles Location
+File Wizards (webgnome/webgnome/static/js/views/forms/location_file_wizard.js).
+These are basically multi-step form wizards where the FormView handles
+interaction and the HTML markup is defined elsewhere, each location file's
+wizard.mak file.
+
+The way they work is to hide various "steps" of the form in the same HTML div.
+Whatever step you are on is the one that is visible. Each step has a button to
+go back or to save and continue to the next step. When the user goes to the next
+step, they are usually submitting a form, like the WindMover form. However, we
+don't necessarily want to submit the forms as they work through the wizard, in
+case they decide to abandon it half-way through, because they'd be back at a
+non-working model that may have replaced one that was working.
+
+Instead, we queue up all of the form submits as Deferreds and then execut them
+all in the same order when the user finishes the form.
 
 
 Data Validation
@@ -86,7 +241,7 @@ happen during form submission. The workflow for a form submission is as follows:
   on the form for the user to correct.
 
 - If no validation service is defined, the model is saved to its usual web
-  service API, e.g., `/model/<model_id>/movers/wind/<wind_id>`. Again, if any
+  service API, e.g., ``/model/<model_id>/movers/wind/<wind_id>``. Again, if any
   errors are returned, they are displayed on the form next to the appropriate
   input fields.
 
@@ -95,6 +250,8 @@ attempting to do will be deferred until a later time, as is the case when the
 user is filling out a multi-step form. We wait to send each "save" operation
 until the user finishes the multi-step form, to make it easier for us to back
 out of changes to multiple models during the course of the form.
+
+For more details on the server-side component, see `Validation Web Services`.
 
 
 Running the Model
@@ -127,5 +284,4 @@ The Navigation Tree
 - The tree view listens for a successful submission event of any form, and if
   that happens, it makes an AJAX request for the new representation of the tree
   and redisplays itself.
-  ab@orr.2012!!k
 

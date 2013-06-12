@@ -31,6 +31,7 @@ define([
 
             this.gnomeModel.on('sync', this.reload);
             this.options.map.on('sync', this.reload);
+            this.options.map.on('destroy', this.reload);
 
             $(window).bind('resize', function() {
                 _this.resize();
@@ -91,7 +92,6 @@ define([
             if (opts.reloadTree === false) {
                 return;
             }
-            console.log('tree reload')
             if (this.gnomeModel && this.gnomeModel.wasDeleted) {
                 return;
             }
