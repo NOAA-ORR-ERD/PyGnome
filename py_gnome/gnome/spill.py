@@ -74,7 +74,7 @@ class Spill(object):
     def id(self):
         return self._gnome_id.id
     
-    def __init__(self, num_elements=0, **kwargs):
+    def __init__(self, num_elements=0, on=True, id=None):
         """
         Base spill class. Spill used by a gnome model derive from this base class
         
@@ -89,8 +89,8 @@ class Spill(object):
         :type id: str
         """
         self.num_elements = num_elements
-        self.on = True       # sets whether the spill is active or not
-        self._gnome_id = GnomeId(id=kwargs.pop('id',None))
+        self.on = on       # sets whether the spill is active or not
+        self._gnome_id = GnomeId(id)
 
     def __deepcopy__(self, memo=None):
         """
@@ -276,14 +276,14 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
         
         self.release_time = release_time
         if end_release_time is None:
-            self.end_release_time = release_time
+            self.end_release_time = release_time    # also sets self._end_release_time
         else:
             if release_time > end_release_time:
                 raise ValueError("end_release_time must be greater than release_time")
             self.end_release_time = end_release_time
 
         if end_position is None:
-            end_position = start_position
+            end_position = start_position   # also sets self._end_position
         self.start_position = np.array(start_position, dtype=basic_types.world_point_type).reshape((3,))
         self.end_position = np.array(end_position, dtype=basic_types.world_point_type).reshape((3,))
         if self.num_elements == 1:
@@ -301,6 +301,34 @@ class SurfaceReleaseSpill(FloatingSpill, serializable.Serializable):
         self.num_released = 0
         self.not_called_yet = True
         self.prev_release_pos = self.start_position.copy()
+
+    """
+    Following properties were added primarily for setting values correctly when json input
+    form webgnome is convereted to dict which is then used by from_dict to update variables.
+    In this case, if user does not set end_positions or end_release_time, they become None in the
+    dict. If these are None, then they should be updated to match release_time and start_position. 
+    """
+    @property
+    def end_position(self):
+        return self._end_position
+    
+    @end_position.setter
+    def end_position(self, val):
+        if val is None:
+            self._end_position = self.start_position
+        else:
+            self._end_position = val
+            
+    @property
+    def end_release_time(self):
+        return self._end_release_time
+    
+    @end_release_time.setter
+    def end_release_time(self, val):
+        if val is None:
+            self._end_release_time = self.release_time
+        else:
+            self._end_release_time = val        
 
     def release_elements(self, current_time, time_step, array_types=None):
         """
