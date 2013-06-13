@@ -17,7 +17,7 @@ from gnome.utilities.file_tools import haz_files
 from gnome.utilities import map_canvas
 from gnome.spill_container import TestSpillContainer
 
-datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
+datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
  
 ##fixme: these two should maybe be in their own test file -- for testing map_canvas.
 
@@ -27,7 +27,7 @@ datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
 #    Test whether the location of a particle on the map -- in or out of water -- is determined correctly.
 #    '''
 #    m = gnome.map.lw_map([500,500],
-#                         "SampleData/MapBounds_Island.bna",
+#                         "sample_data/MapBounds_Island.bna",
 #                         2.*60.*60.,"1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
 #    
 #    #Coordinate of a point within the water area of MapBounds_Island.bna.
@@ -41,7 +41,7 @@ datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
 #    Test whether the location of a particle on the map -- off or on land -- is determined correctly.
 #    '''
 #    m = gnome.map.lw_map((500,500),
-#                         "SampleData/MapBounds_Island.bna",
+#                         "sample_data/MapBounds_Island.bna",
 #                         2.*60.*60.,
 #                         color_mode = "1") #Create a 500x500 pixel map, with an LE refloat half-life of 2 hours (specified here in seconds).
 #    

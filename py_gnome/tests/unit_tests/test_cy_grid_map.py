@@ -31,9 +31,9 @@ class TestGridMap():
         """
 		#curvilinear grid
         gcm1 = cy_grid_map.CyGridMap() 
-        grid_map_file = os.path.join(here, r'SampleData/currents/ny_cg.nc')
-        netcdf_file = os.path.join(here, r'SampleData/currents/ny_cg_top.nc')
-        topology_file = os.path.join(here, r'SampleData/currents/ny_cg_top.dat')
+        grid_map_file = os.path.join(here, r'sample_data/currents/ny_cg.nc')
+        netcdf_file = os.path.join(here, r'sample_data/currents/ny_cg_top.nc')
+        topology_file = os.path.join(here, r'sample_data/currents/ny_cg_top.dat')
         gcm1.text_read(grid_map_file)
         #self.gcm.text_read(grid_map_file)
         #self.gcm.export_topology(topology_file)
@@ -46,9 +46,9 @@ class TestGridMap():
         """
         #triangle grid
         gcm2 = cy_grid_map.CyGridMap()
-        grid_map_file = os.path.join(here, r'SampleData/currents/ChesBay.nc')
-        netcdf_file = os.path.join(here, r'SampleData/currents/ChesBayTop.nc')
-        topology_file = os.path.join(here, r'SampleData/currents/chesbay_top.dat')
+        grid_map_file = os.path.join(here, r'sample_data/currents/ChesBay.nc')
+        netcdf_file = os.path.join(here, r'sample_data/currents/ChesBayTop.nc')
+        topology_file = os.path.join(here, r'sample_data/currents/chesbay_top.dat')
         #self.gcm.text_read(grid_map_file)
         gcm2.text_read(grid_map_file)
         #self.gcm.export_topology(topology_file)

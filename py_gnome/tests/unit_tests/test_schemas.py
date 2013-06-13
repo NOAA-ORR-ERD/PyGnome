@@ -36,8 +36,8 @@ def test_wind_update(wind_circ):
     assert True 
     
     
-@pytest.mark.parametrize("filename", [os.path.join( os.path.dirname(__file__), r"SampleData/tides/CLISShio.txt"), 
-                                      os.path.join( os.path.dirname(__file__), r"SampleData/tides/TideHdr.FINAL")])
+@pytest.mark.parametrize("filename", [os.path.join( os.path.dirname(__file__), r"sample_data/tides/CLISShio.txt"), 
+                                      os.path.join( os.path.dirname(__file__), r"sample_data/tides/TideHdr.FINAL")])
 def test_tide_create(filename):
     td = environment.Tide(filename=filename)
     c_dict = environment_schema.Tide().serialize( td.to_dict('create') )
@@ -46,8 +46,8 @@ def test_tide_create(filename):
     assert new_w == td
     
     
-@pytest.mark.parametrize("filename", [os.path.join( os.path.dirname(__file__), r"SampleData/tides/CLISShio.txt"), 
-                                      os.path.join( os.path.dirname(__file__), r"SampleData/tides/TideHdr.FINAL")])
+@pytest.mark.parametrize("filename", [os.path.join( os.path.dirname(__file__), r"sample_data/tides/CLISShio.txt"), 
+                                      os.path.join( os.path.dirname(__file__), r"sample_data/tides/TideHdr.FINAL")])
 def test_tide_update(filename):
     """
     Just tests methods don't fail and the schema is properly defined. It doesn't update any properties
@@ -84,8 +84,8 @@ def test_windmover_update(wind_circ):
 
 
 def test_catsmover_update():
-    curr_file= os.path.join( os.path.dirname(__file__), r"SampleData/long_island_sound/tidesWAC.CUR")
-    td_file  = os.path.join( os.path.dirname(__file__), r"SampleData/long_island_sound/CLISShio.txt")
+    curr_file= os.path.join( os.path.dirname(__file__), r"sample_data/long_island_sound/tidesWAC.CUR")
+    td_file  = os.path.join( os.path.dirname(__file__), r"sample_data/long_island_sound/CLISShio.txt")
     c_mv = movers.CatsMover(curr_file, tide=environment.Tide(td_file) )
     c_dict = movers_schema.CatsMover().serialize( c_mv.to_dict() )
     dict_ = movers_schema.CatsMover().deserialize( c_dict)

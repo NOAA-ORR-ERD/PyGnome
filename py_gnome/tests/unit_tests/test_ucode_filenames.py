@@ -35,7 +35,7 @@ def create_ucode_file(filename,valid=True):
 
 
 # join datadir to path in obj_ inside the test
-datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
+datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
 obj_ = [(environment.Wind, r'WindDataFromGnome.WND'),
         (environment.Tide, os.path.join(r'tides',r'CLISShio.txt')),
         (environment.Tide, os.path.join(r'tides',r'TideHdr.FINAL')),

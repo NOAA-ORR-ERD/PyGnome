@@ -15,7 +15,7 @@ from gnome.utilities.file_tools import haz_files
 import gnome.utilities.geometry.polygons
 
 basedir = os.path.dirname(__file__)
-datadir = os.path.join(basedir, r"../SampleData")
+datadir = os.path.join(basedir, r"../sample_data")
 
 def test_render():
     """

@@ -22,7 +22,7 @@ from gnome.utilities.file_tools import haz_files
 from gnome.utilities import inf_datetime
 
 basedir = os.path.dirname(__file__)
-datadir = os.path.join(basedir, r"SampleData")
+datadir = os.path.join(basedir, r"sample_data")
 
 def setup_simple_model():
     """
@@ -626,7 +626,7 @@ def test_callback_add_mover():
     model.movers += movers.simple_mover.SimpleMover(velocity=(1.0, -1.0, 0.0))
     series = np.array( (model.start_time, ( 10,   45) ),  dtype=gnome.basic_types.datetime_value_2d).reshape((1,))
     model.movers += movers.WindMover(environment.Wind(timeseries=series, units='meter per second'))
-    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData","tides","CLISShio.txt"))
+    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt"))
     model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
     model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"))
     
@@ -643,7 +643,7 @@ def test_callback_add_mover():
         
     
     # say wind object was added to environment collection, it should not be added again
-    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"SampleData","tides","CLISShio.txt"))
+    tide_ = environment.Tide(filename=os.path.join( os.path.dirname(__file__), r"sample_data","tides","CLISShio.txt"))
     model.environment += tide_
     model.movers += movers.CatsMover(os.path.join(datadir, r"long_island_sound/tidesWAC.CUR"), tide=tide_)
     

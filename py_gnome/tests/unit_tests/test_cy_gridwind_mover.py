@@ -83,9 +83,9 @@ class TestGridWindMover():
         """
         time = datetime.datetime(1999, 11, 29, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
-        #time_grid_file = r"SampleData/winds/test_wind.cdf"
-        time_grid_file = os.path.join(here, r'SampleData',r'winds',r'test_wind.cdf')
-        #topology_file = r"SampleData/winds/WindSpeedDirSubsetTop.DAT"	# will want a null default
+        #time_grid_file = r"sample_data/winds/test_wind.cdf"
+        time_grid_file = os.path.join(here, r'sample_data',r'winds',r'test_wind.cdf')
+        #topology_file = r"sample_data/winds/WindSpeedDirSubsetTop.DAT"	# will want a null default
         topology_file = r""	# will want a null default
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (3.104588) #for simple example
@@ -108,10 +108,10 @@ class TestGridWindMover():
         """
         time = datetime.datetime(2006, 3, 31, 21)
         self.cm.model_time = time_utils.date_to_sec(time)
-        #time_grid_file = r"SampleData/winds/WindSpeedDirSubset.nc"
-        #topology_file = r"SampleData/winds/WindSpeedDirSubsetTop.DAT"	
-        time_grid_file = os.path.join(here, r'SampleData',r'winds',r'WindSpeedDirSubset.nc')
-        topology_file = os.path.join(here, r'SampleData',r'winds',r'WindSpeedDirSubsetTop.DAT')
+        #time_grid_file = r"sample_data/winds/WindSpeedDirSubset.nc"
+        #topology_file = r"sample_data/winds/WindSpeedDirSubsetTop.DAT"	
+        time_grid_file = os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubset.nc')
+        topology_file = os.path.join(here, r'sample_data',r'winds',r'WindSpeedDirSubsetTop.DAT')
         self.gcm.text_read(time_grid_file,topology_file)
         self.cm.ref[:]['long'] = (-122.934656) #for NWS off CA
         self.cm.ref[:]['lat'] = (38.27594)
@@ -134,9 +134,9 @@ class TestGridWindMover():
 #         #time = datetime.datetime(2009, 8, 2, 0) #first file
 #         time = datetime.datetime(2009, 8, 9, 0) #second file
 #         self.cm.model_time = time_utils.date_to_sec(time)
-#         #time_grid_file = r"SampleData/winds/file_series/flist1.txt"
-#         time_grid_file = r"SampleData/winds/file_series/flist2.txt"
-#         topology_file = r"SampleData/currents/file_series/HiROMSTopology.dat"
+#         #time_grid_file = r"sample_data/winds/file_series/flist1.txt"
+#         time_grid_file = r"sample_data/winds/file_series/flist2.txt"
+#         topology_file = r"sample_data/currents/file_series/HiROMSTopology.dat"
 #         self.gcm.text_read(time_grid_file,topology_file)
 #         self.cm.ref[:]['long'] = (-157.795728) #for HiROMS
 #         self.cm.ref[:]['lat'] = (21.069288)
@@ -159,10 +159,10 @@ class TestGridWindMover():
        # time = datetime.datetime(2002, 11, 19, 1)
         time = datetime.datetime(2002, 1, 30, 1)
         self.cm.model_time = time_utils.date_to_sec(time) 
-        #time_grid_file = r"SampleData/winds/gridWindTime.wnd"
-        #time_grid_file = r"SampleData/winds/gridwind_ts.wnd"
-        #topology_file = r"SampleData/winds/WindSpeedDirSubsetTop.DAT"	
-        time_grid_file = os.path.join(here, r'SampleData',r'winds',r'gridwind_ts.wnd')
+        #time_grid_file = r"sample_data/winds/gridWindTime.wnd"
+        #time_grid_file = r"sample_data/winds/gridwind_ts.wnd"
+        #topology_file = r"sample_data/winds/WindSpeedDirSubsetTop.DAT"	
+        time_grid_file = os.path.join(here, r'sample_data',r'winds',r'gridwind_ts.wnd')
         topology_file = r""	# will want a null default
         self.gcm.text_read(time_grid_file,topology_file)
         #self.cm.ref[:]['long'] = (-9.936358) #for gridWind test
@@ -189,8 +189,8 @@ class TestGridWindMover():
 #         """
 #         time = datetime.datetime(2002, 1, 30, 1)
 #         self.cm.model_time = time_utils.date_to_sec(time)
-#         time_grid_file = r"SampleData/winds/gridcur_ts_hdr2.cur"
-#         topology_file = r"SampleData/winds/ChesBay.dat"	
+#         time_grid_file = r"sample_data/winds/gridcur_ts_hdr2.cur"
+#         topology_file = r"sample_data/winds/ChesBay.dat"	
 #         self.gcm.text_read(time_grid_file,topology_file)
 #         self.cm.ref[:]['long'] = (-119.933264) #for gridCur test
 #         self.cm.ref[:]['lat'] = (34.138736)
