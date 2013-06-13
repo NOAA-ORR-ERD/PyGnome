@@ -23,6 +23,7 @@ from gnome.utilities import inf_datetime
 
 basedir = os.path.dirname(__file__)
 datadir = os.path.join(basedir, r"sample_data")
+testmap = os.path.join(basedir, '../sample_data', 'MapBounds_Island.bna')
 
 def setup_simple_model():
     """
@@ -37,7 +38,7 @@ def setup_simple_model():
     start_time = datetime(2012, 9, 15, 12, 0)
 
     # the image output map
-    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
+    mapfile = testmap
 
     # the land-water map
     gnome_map = gnome.map.MapFromBNA( mapfile,
@@ -153,7 +154,7 @@ def test_simple_run_with_map():
     
     model = gnome.model.Model()
     
-    model.map = gnome.map.MapFromBNA(os.path.join(datadir, 'MapBounds_Island.bna'),
+    model.map = gnome.map.MapFromBNA(testmap,
                                 refloat_halflife=6*3600, #seconds
                                 )
     a_mover = movers.simple_mover.SimpleMover(velocity=(1.0, 2.0, 0.0))
@@ -197,14 +198,11 @@ def test_simple_run_with_image_output():
     start_time = datetime(2012, 9, 15, 12, 0)
     
 
-    # the image output map
-    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
-
     # the land-water map
-    gnome_map = gnome.map.MapFromBNA( mapfile,
+    gnome_map = gnome.map.MapFromBNA( testmap,
                                       refloat_halflife=6*3600, #seconds
                                      )
-    renderer = gnome.renderer.Renderer(mapfile,
+    renderer = gnome.renderer.Renderer(testmap,
                                        images_dir,
                                        size=(400, 300))
     model = gnome.model.Model(time_step=timedelta(minutes=15), 
@@ -263,14 +261,11 @@ def test_simple_run_with_image_output_uncertainty():
 
     start_time = datetime(2012, 9, 15, 12, 0)
 
-       # the image output map
-    mapfile = os.path.join(datadir, 'MapBounds_Island.bna')
-
     # the land-water map
-    map = gnome.map.MapFromBNA( mapfile,
+    map = gnome.map.MapFromBNA( testmap,
                                       refloat_halflife=6*3600, #seconds
                                      )
-    renderer = gnome.renderer.Renderer(mapfile,
+    renderer = gnome.renderer.Renderer(testmap,
                                        images_dir,
                                        size=(400, 300))
 
