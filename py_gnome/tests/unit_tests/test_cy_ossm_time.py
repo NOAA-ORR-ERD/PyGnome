@@ -12,7 +12,7 @@ from gnome import basic_types
 from gnome.cy_gnome import cy_ossm_time
 import pytest
 
-datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
+datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
 
 def test_exceptions():
     with pytest.raises(IOError):

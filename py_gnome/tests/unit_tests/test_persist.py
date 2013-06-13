@@ -80,7 +80,7 @@ def make_model():
     
     print "adding a cats shio mover:"
     
-    c_mover = gnome.movers.CatsMover(os.path.join(datafiles,"./EbbTides.CUR"), 
+    c_mover = gnome.movers.CatsMover(os.path.join(datafiles,"./EbbTides.cur"), 
                                      tide=gnome.environment.Tide(os.path.join( datafiles, "./EbbTidesShio.txt")))
     c_mover.scale_refpoint = (-70.8875, 42.321333) # this is the value in the file (default)
     c_mover.scale = True #default value
@@ -90,7 +90,7 @@ def make_model():
     
     print "adding a cats ossm mover:"
     
-    c_mover = gnome.movers.CatsMover(os.path.join(datafiles, "./MerrimackMassCoast.CUR"), 
+    c_mover = gnome.movers.CatsMover(os.path.join(datafiles, "./MerrimackMassCoast.cur"), 
                                      tide=gnome.environment.Tide(os.path.join(datafiles,"./MerrimackMassCoastOSSM.txt")) )
     c_mover.scale = True    # but do need to scale (based on river stage)
     c_mover.scale_refpoint = (-70.65,42.58333)
@@ -100,7 +100,7 @@ def make_model():
     
     print "adding a cats mover:"
        
-    c_mover = gnome.movers.CatsMover(os.path.join(datafiles,"MassBaySewage.CUR"))
+    c_mover = gnome.movers.CatsMover(os.path.join(datafiles,"MassBaySewage.cur"))
     c_mover.scale = True    # but do need to scale (based on river stage)
     c_mover.scale_refpoint = (-70.78333,42.39333)
     c_mover.scale_value = .04    #the scale factor is 0 if user inputs no sewage outfall effects 

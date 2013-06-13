@@ -204,7 +204,7 @@ elif sys.platform == "linux2":
                                  language='c++',
                                  define_macros=macros,
                                  libraries=['netcdf'],
-                                 include_dirs=[ CPP_CODE_DIR],
+                                 include_dirs=[ cpp_code_dir],
                                  )])
   
     ## in install mode, it compiles and builds libgnome inside lib.linux-i686-2.7/gnome/cy_gnome
@@ -233,7 +233,7 @@ elif sys.platform == "linux2":
                                 define_macros=macros,
                                 extra_compile_args=compile_args,
                                 libraries=lib,
-                                include_dirs=l_include_dirs,
+                                include_dirs=include_dirs,
                                 )
 
     extensions.append(basic_types_ext)

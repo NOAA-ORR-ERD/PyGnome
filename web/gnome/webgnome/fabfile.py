@@ -1,5 +1,4 @@
 import os
-from ConfigParser import ConfigParser
 from fabric import api
 from fabric.api import env
 from fabric.contrib import files
@@ -81,15 +80,6 @@ def setup_vagrant_key():
 
 def virtualenv():
     return api.prefix('source %s/bin/activate' % env.gnome_venv_dir)
-
-
-def get_config():
-    """
-    Parse and load a "vagrant.cfg" file in the current directory if it exists.
-    """
-    config = ConfigParser()
-    config.read(os.path.join(env.local_base_dir, 'conf', 'vagrant.cfg'))
-    return config
 
 
 @api.task
@@ -179,9 +169,6 @@ def setup_apache():
 @api.task
 def setup_host():
     setup_vagrant_key()
-    config = get_config()
-    git_username = config.get('git', 'username')
-    git_password = config.get('git', 'password')
     packages = ['vim', 'apache2', 'libapache2-mod-uwsgi', 'libnetcdf6',
                 'libnetcdf-dev', 'python-scipy', 'python-numpy', 'git', 'vim',
                 'emacs', 'python-pip', 'python-virtualenv', 'python-lxml',
@@ -195,15 +182,12 @@ def setup_host():
     api.sudo('apt-get --quiet install -y %s' % ' '.join(packages))
     files.append('~/.gitconfig', "[http]\nsslVerify=False\n")
     files.append('~/.gitconfig', "[credential]\nhelper = cache\n")
-    files.append('~/.netrc',
-                 'machine trac.orr.noaa.gov login %s password %s' % (
-                 git_username, git_password))
 
     # Fix paths to libraries PIL uses.
     # http://jj.isgeek.net/2011/09/install-pil-with-jpeg-support-on-ubuntu-oneiric-64bits/
-    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libjpeg.so /usr/lib')
-    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libfreetype.so /usr/lib')
-    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib')
+    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libjpeg.so /usr/lib', warn_only=True)
+    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libfreetype.so /usr/lib', warn_only=True)
+    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib', warn_only=True)
 
     ensure_gnome_exists()
 
@@ -222,10 +206,12 @@ def setup_host():
         # directory for user-uploaded files.
         api.run('mkdir web/gnome/webgnome/webgnome/static/models',warn_only=True)
         api.run('mkdir web/gnome/webgnome/webgnome/static/uploads', warn_only=True)
-        api.run('sudo chmod -R g+w web/gnome/webgnome/webgnome/static/models')
-        api.run('sudo chmod -R g+w web/gnome/webgnome/webgnome/static/uploads')
+        api.run('sudo chmod -R g+w web/gnome/webgnome/webgnome/static/models',
+                warn_only=True)
+        api.run('sudo chmod -R g+w web/gnome/webgnome/webgnome/static/uploads',
+                warn_only=True)
 
-        api.sudo('chown -R vagrant:www-data src')
+        api.sudo('chown -R vagrant:www-data /home/vagrant/src')
 
         print 'Setting up project virtualenv'
 
