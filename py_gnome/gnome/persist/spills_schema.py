@@ -54,7 +54,7 @@ class SurfaceReleaseSpill(Id, Spill):
     release_time = SchemaNode(LocalDateTime(), validator=convertible_to_seconds)
     end_position = WorldPoint(missing=drop)
     end_release_time = SchemaNode(LocalDateTime(), missing=drop, validator=convertible_to_seconds)
-    windage_range = Windage()
+    windage_range = Windage(default=(0.01, 0.04))
     windage_persist = SchemaNode( Float(), default=900 )
     
     # following will be used when restoring a saved scenario that is partially run

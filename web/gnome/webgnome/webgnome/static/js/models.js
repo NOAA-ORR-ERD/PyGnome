@@ -717,7 +717,7 @@ define([
 
     // Spills
     var SurfaceReleaseSpill = BaseModel.extend({
-        dateFields: ['release_time'],
+        dateFields: ['release_time', 'end_release_time'],
 
         initialize: function() {
             this.syncArrayField('start_position', 'start_position_x', 0);

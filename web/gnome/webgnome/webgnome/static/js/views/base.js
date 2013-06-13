@@ -70,9 +70,18 @@ define([
             }
         },
 
+        /*
+         Get a date object by looking for date, hour and minute fields within
+         `target`, a jQuery object.
+
+         This method is used to construct date fields passed to models. Model
+         date fields should be strings, so if there is no date we will return an
+         empty string, which passes JSON schema validation and also acts as a
+         null-like value.
+         */
         getDate: function(target) {
             if (target.length === 0) {
-                return;
+                return "";
             }
 
             var fields = this.getDateFields(target);
@@ -88,6 +97,8 @@ define([
             if (date) {
                 return moment(date);
             }
+
+            return "";
         },
 
         clearErrors: function() {
