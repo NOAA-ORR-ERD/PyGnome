@@ -567,6 +567,13 @@ def test_eq_spill_container2():
     assert sc1 == sc2    
     assert sc2 == sc1    
 
+def test_eq_spill_container_pair():
+    """
+    SpillContainerPair inherits from SpillContainer so it should compute __eq__ and __ne__
+    in the same way - test it here 
+    """
+    pass
+
 def test_ne_spill_container():
     """ test two spill containers are not equal """
     (sp1, sp2) = get_eq_spills()
