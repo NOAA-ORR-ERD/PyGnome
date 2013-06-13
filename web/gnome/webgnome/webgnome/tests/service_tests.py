@@ -475,6 +475,9 @@ class SurfaceReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.get(self.get_spill_url(spill_id))
 
         self.assertEqual(resp.json['release_time'], data['release_time'])
+        self.assertEqual(resp.json['end_release_time'], data['release_time'])
+        self.assertEqual(resp.json['end_position'], data['start_position'])
+
 
     def test_spill_update(self):
         data = self.make_spill_data()
