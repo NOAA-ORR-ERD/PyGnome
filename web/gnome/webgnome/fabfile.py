@@ -1,5 +1,4 @@
 import os
-from ConfigParser import ConfigParser
 from fabric import api
 from fabric.api import env
 from fabric.contrib import files
