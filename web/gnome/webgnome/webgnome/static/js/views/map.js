@@ -477,8 +477,11 @@ define([
                 var timeStepLayer = imageOverlay(url, _this.viewport, {
                     zIndex: -50
                 });
-                setTimeout(addLayer, _this.getAnimationTimeout(requestTime),
-                           timeStepLayer);
+                // IE requires that we use an anonymous function to pass
+                // parameters to the target function.
+                setTimeout(function() {
+                    addLayer(timeStepLayer);
+                }, _this.getAnimationTimeout(requestTime));
             }
 
             var url = timeStep.get('url');

@@ -185,9 +185,10 @@ def setup_host():
 
     # Fix paths to libraries PIL uses.
     # http://jj.isgeek.net/2011/09/install-pil-with-jpeg-support-on-ubuntu-oneiric-64bits/
-    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libjpeg.so /usr/lib', warn_only=True)
-    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libfreetype.so /usr/lib', warn_only=True)
-    api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib', warn_only=True)
+    with api.settings(warn_only=True):
+        api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libjpeg.so /usr/lib')
+        api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libfreetype.so /usr/lib')
+        api.sudo('ln -s /usr/lib/`uname -i`-linux-gnu/libz.so /usr/lib')
 
     ensure_gnome_exists()
 
@@ -196,7 +197,9 @@ def setup_host():
         # use code from a shared folder on your desktop machine.
         if not is_vagrant_server():
             api.run('git pull origin master')
-            api.run('git checkout linux_support', warn_only=True)
+
+            with api.settings(warn_only=True):
+                api.run('git checkout linux_support')
 
         api.sudo('ln -s ~/src/gnome/web/gnome/webgnome/webgnome '
                  '/var/www/', warn_only=True)
@@ -204,12 +207,11 @@ def setup_host():
 
         # Apache needs to be able to write to the models directory and the
         # directory for user-uploaded files.
-        api.run('mkdir web/gnome/webgnome/webgnome/static/models',warn_only=True)
-        api.run('mkdir web/gnome/webgnome/webgnome/static/uploads', warn_only=True)
-        api.run('sudo chmod -R g+w web/gnome/webgnome/webgnome/static/models',
-                warn_only=True)
-        api.run('sudo chmod -R g+w web/gnome/webgnome/webgnome/static/uploads',
-                warn_only=True)
+        with api.settings(warn_only=True):
+            api.run('mkdir web/gnome/webgnome/webgnome/static/models')
+            api.run('mkdir web/gnome/webgnome/webgnome/static/uploads')
+            api.run('sudo chmod -R g+w web/gnome/webgnome/webgnome/static/models')
+            api.run('sudo chmod -R g+w web/gnome/webgnome/webgnome/static/uploads')
 
         api.sudo('chown -R vagrant:www-data /home/vagrant/src')
 
@@ -259,7 +261,8 @@ def deploy_webgnome(restart=False, branch='master'):
 
     with virtualenv():
         with api.cd(env.py_gnome_dir):
-            api.run('python setup2.py cleanall', warn_only=True)
+            with api.settings(warn_only=True):
+                api.run('python setup2.py cleanall')
             api.run('python setup2.py develop')
 
         with api.cd(env.webgnome_dir):
