@@ -31,6 +31,10 @@ class SurfaceReleaseSpill(BaseResource):
         """
         data = self.request.validated
         model = data.pop('model')
+
+        if 'end_release_time' not in data:
+            data['end_release_time'] = data['release_time']
+
         spill = WebSurfaceReleaseSpill(**data)
         model.spills.add(spill)
 
@@ -58,6 +62,19 @@ class SurfaceReleaseSpill(BaseResource):
         model = data.pop('model')
         spill = model.spills[self.id]
         spill.from_dict(data)
+
+        # XXX: The model will set ``end_position`` to the start position if
+        # end position is None in __init__, but not afterward. Is there a
+        # better way to keep these in sync? Perhaps we set ``end_position`` to
+        # None here and have an attribute setter that sets it to start_position
+        # if it's None. Then we could just call self.end_position = end_position
+        # in __init__, too, and it would do the right thing.
+        if 'end_position' not in data:
+            spill.end_position = spill.start_position
+
+        if 'end_release_time' not in data:
+            spill.end_release_time = spill.release_time
+
         model.rewind()
 
         return schema.SurfaceReleaseSpillSchema().bind().serialize(

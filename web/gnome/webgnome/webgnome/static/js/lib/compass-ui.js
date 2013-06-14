@@ -153,7 +153,7 @@
         this.backcanv = $('canvas#' + this.id + '-back')[0];
         if (window['G_vmlCanvasManager'] != undefined) {
           // older versions of IE don't natively have canvas functionality
-          G_vmlCanvasManager.initElement(backcanv);
+          G_vmlCanvasManager.initElement(this.backcanv);
         }
       }
       var backcanv = this.backcanv;
@@ -167,7 +167,7 @@
         $(this).append('<canvas id="' + this.id + '-front"></canvas>');
         this.frontcanv = $('canvas#' + this.id + '-front')[0];
         if (window['G_vmlCanvasManager'] != undefined) {
-          G_vmlCanvasManager.initElement(frontcanv);
+          G_vmlCanvasManager.initElement(this.frontcanv);
         }
       }
       var frontcanv = this.frontcanv;

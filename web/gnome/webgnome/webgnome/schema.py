@@ -19,6 +19,7 @@ from gnome.persist import (
     environment_schema,
     movers_schema,
     map_schema,
+    spills_schema,
     validators,
     extend_colander)
 from gnome.persist.extend_colander import LocalDateTime
@@ -65,22 +66,9 @@ class WindageRangeSchema(TupleSchema):
     windage_max = SchemaNode(Float())
 
 
-class SurfaceReleaseSpillSchema(MappingSchema):
+class SurfaceReleaseSpillSchema(spills_schema.SurfaceReleaseSpill):
     default_name = 'Surface Release Spill'
     name = SchemaNode(String(), default=default_name, missing=default_name)
-    id = SchemaNode(String(), missing=drop)
-    num_elements = SchemaNode(Int(), default=1000, validator=validators.positive)
-    release_time = SchemaNode(LocalDateTime(default_tzinfo=None), default=now,
-                              missing=now,
-                              validator=validators.convertible_to_seconds)
-    end_release_time = SchemaNode(LocalDateTime(default_tzinfo=None),
-                                  default=now, missing=drop,
-                                  validator=validators.convertible_to_seconds)
-    start_position = PositionSchema(default=(0, 0, 0))
-    end_position = PositionSchema(default=(0, 0, 0), missing=drop)
-    windage_range = WindageRangeSchema(default=(0.01, 0.04))
-    windage_persist = SchemaNode(Float(), default=900, missing=900)
-    is_active = SchemaNode(Bool(), default=True)
 
 
 class SurfaceReleaseSpillsSchema(SequenceSchema):

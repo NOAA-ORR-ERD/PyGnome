@@ -18,7 +18,10 @@ define([
     var FormView = base.BaseView.extend({
         initialize: function() {
             var _this = this;
-            _.bindAll(this);
+
+            // XXX: Using _.bindAll without specifying a function (bind ALL
+            // values on the object) breaks IE.
+            // _.bindAll(this);
 
             FormView.__super__.initialize.apply(this, arguments);
 
