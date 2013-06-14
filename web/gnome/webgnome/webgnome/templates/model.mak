@@ -6,6 +6,7 @@
     <link rel='stylesheet' type='text/css' href='/static/css/skin/ui.dynatree.css'>
     <link rel='stylesheet' type='text/css' href='/static/css/model.css'>
 
+    ## HTML 5 and IE-specific shims. Not sure why they're called "shivs" ...
     <!--[if lt IE 9]>
         <!--<script src="/static/js/lib/excanvas.compiled.js"></script>-->
         <script src="/static/js/lib/excanvas.js"></script>
