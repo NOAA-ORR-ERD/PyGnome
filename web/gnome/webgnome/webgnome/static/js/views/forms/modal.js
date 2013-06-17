@@ -13,6 +13,7 @@ define([
         initialize: function() {
             JQueryUIModalFormView.__super__.initialize.apply(this, arguments);
             this.setupDialog();
+            _.bindAll(this, 'closeDialog', 'close');
         },
 
         setupDialog: function() {
@@ -37,7 +38,9 @@ define([
                         _this.cancel();
                     }
                 },
-                close: this.close,
+                close: function() {
+                    _this.close();
+                },
                 beforeClose: this.beforeClose
             }, this.options.dialog || {});
 

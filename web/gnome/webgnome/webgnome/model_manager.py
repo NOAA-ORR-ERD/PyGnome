@@ -150,6 +150,8 @@ class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
         super(WebSurfaceReleaseSpill, self).__init__(*args, **kwargs)
 
     def _reshape(self, lst):
+        if lst is None:
+            return
         return numpy.asarray(
             lst, dtype=basic_types.world_point_type).reshape((len(lst),))
 
@@ -163,6 +165,8 @@ class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
         return self.start_position.tolist()
 
     def end_position_to_dict(self):
+        if self.end_position is None:
+            return
         return self.end_position.tolist()
 
 

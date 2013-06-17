@@ -60,7 +60,7 @@ def pytest_sessionstart():
 
 def get_data_dir():
     data_dir = os.path.dirname(__file__)
-    return os.path.join(data_dir, r'SampleData/oil_library')
+    return os.path.join(data_dir, r'sample_data/oil_library')
 
 """
 ====================================
@@ -157,7 +157,7 @@ def sample_model_spatial_release_spill():
     """ 
     sample model with no outputter
     Uses:
-        SampleData/MapBounds_Island.bna
+        sample_data/MapBounds_Island.bna
         SpatialReleaseSpill with 10 particles
         RandomMover
         duration is 1 hour with 15min intervals so 5 timesteps total, including initial condition
@@ -169,7 +169,7 @@ def sample_model_spatial_release_spill():
     start_time = datetime(2012, 9, 15, 12, 0)
     
     # the image output map
-    mapfile = os.path.join(os.path.dirname(__file__),'SampleData','MapBounds_Island.bna')
+    mapfile = os.path.join(os.path.dirname(__file__),'sample_data','MapBounds_Island.bna')
 
     # the land-water map
     map = gnome.map.MapFromBNA( mapfile,

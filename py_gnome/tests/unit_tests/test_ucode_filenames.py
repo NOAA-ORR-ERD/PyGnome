@@ -35,7 +35,7 @@ def create_ucode_file(filename,valid=True):
 
 
 # join datadir to path in obj_ inside the test
-datadir = os.path.join(os.path.dirname(__file__), r"SampleData")
+datadir = os.path.join(os.path.dirname(__file__), r"sample_data")
 obj_ = [(environment.Wind, r'WindDataFromGnome.WND'),
         (environment.Tide, os.path.join(r'tides',r'CLISShio.txt')),
         (environment.Tide, os.path.join(r'tides',r'TideHdr.FINAL')),
@@ -70,7 +70,7 @@ def test_ucode_char_in_filename(test_case):
 ##
 gridmover_ = [(movers.GridCurrentMover, os.path.join(r'currents',r'ny_cg.nc'), None),
               (movers.GridWindMover, os.path.join(r'winds',r'windSpeedDirSubset.nc'), os.path.join(r'winds',r'WindSpeedDirSubsetTop.DAT')),
-              (movers.GridCurrentMover, os.path.join(r'currents',r'ny_cg.nc'), os.path.join(r'currents',r'NYTopology.dat')),
+              (movers.GridCurrentMover, os.path.join(r'currents',r'ny_cg.nc'), os.path.join(r'currents',r'NYTopology.DAT')),
               ]
 
 @pytest.mark.parametrize("mover_test", gridmover_)
