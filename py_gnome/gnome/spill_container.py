@@ -335,7 +335,31 @@ class SpillContainerPairData(object):
         else:
             return self._spill_container[prop_name]
 
-
+    def __eq__(self,other):
+        """ 
+        Compare equality of two SpillContainerPairData objects
+        """
+        if type(self) != type(other):
+            return False
+        
+        if self.uncertain != other.uncertain:
+            return False
+        
+        for sc in zip(self.items(),other.items()):
+            if sc[0] != sc[1]:
+                return False
+                
+        return True
+    
+    def __ne__(self, other):
+        """ 
+        Compare inequality (!=) of two SpillContainerPairData objects
+        """
+        if self == other:
+            return False
+        else:
+            return True
+     
 
 class SpillContainerPair(SpillContainerPairData):
     """

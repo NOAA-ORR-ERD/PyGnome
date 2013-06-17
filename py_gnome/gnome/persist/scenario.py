@@ -331,8 +331,6 @@ class Scenario(object):
         
         c_data    = gnome.netcdf_outputter.NetCDFOutput.read_standard_arrays(self._certainspill_data)
         self.model.spills._spill_container._data_arrays = c_data
-        #for key in c_data.keys(): 
-        #    self.model.spills._spill_container[key][:] = c_data[key][:]
         
         data = nc.Dataset(self._certainspill_data)
         ex_list = gnome.netcdf_outputter.NetCDFOutput.data_vars.keys()
@@ -340,3 +338,5 @@ class Scenario(object):
         for key in data.variables.keys():
             if key not in ex_list:
                 self.model.spills._spill_container._data_arrays[key] = data.variables[key][:]
+                
+        self.model.spills._spill_container.reconcile_data_arrays()
