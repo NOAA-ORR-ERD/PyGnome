@@ -28,7 +28,7 @@ except ImportError:
 
 from gnome import basic_types
 from gnome.model import Model
-from gnome.movers import WindMover, RandomMover, CatsMover
+from gnome.movers import WindMover, RandomMover, CatsMover, GridCurrentMover
 from gnome.spill import SurfaceReleaseSpill
 from gnome.environment import Wind
 from gnome.map import MapFromBNA, GnomeMap
@@ -121,6 +121,20 @@ class WebCatsMover(BaseWebObject, CatsMover):
     def __init__(self, base_dir, filename, *args, **kwargs):
         filename = os.path.join(base_dir, filename)
         super(WebCatsMover, self).__init__(filename, *args, **kwargs)
+
+class WebGridCurrentMover(BaseWebObject, GridCurrentMover):
+    """
+    A subclass of :class:`gnome.movers.GridCurrentMover` that provides
+    webgnome-specific functionality.
+    """
+    default_name = 'Grid Current Mover'
+    state = copy.deepcopy(GridCurrentMover.state)
+    state.add(create=['name'], update=['name'])
+
+    def __init__(self, base_dir, filename, topology_file, *args, **kwargs):
+        filename = os.path.join(base_dir, filename)
+        topology_file = os.path.join(base_dir, topology_file)
+        super(WebGridCurrentMover, self).__init__(filename, topology_file, *args, **kwargs)
 
 class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
     """
@@ -221,7 +235,8 @@ class WebModel(BaseWebObject, Model):
     mover_keys = {
         WebWindMover: 'wind_movers',
         WebRandomMover: 'random_movers',
-        WebCatsMover: 'cats_movers'
+        WebCatsMover: 'cats_movers',
+        WebGridCurrentMover: 'grid_current_movers'
     }
 
     spill_keys = {
@@ -503,6 +518,7 @@ class WebModel(BaseWebObject, Model):
         winds = data.get('winds', None)
         wind_movers = data.get('wind_movers', None)
         cats_movers = data.get('cats_movers', None)
+        grid_current_movers = data.get('grid_current_movers', None)
         random_movers = data.get('random_movers', None)
         surface_spills = data.get('surface_release_spills', None)
 
@@ -532,6 +548,11 @@ class WebModel(BaseWebObject, Model):
             for mover_data in cats_movers:
                 mover_data['base_dir'] = self.package_root
                 add_to_collection(self.movers, mover_data, WebCatsMover)
+
+        if grid_current_movers:
+            for mover_data in grid_current_movers:
+                mover_data['base_dir'] = self.package_root
+                add_to_collection(self.movers, mover_data, WebGridCurrentMover)
 
         if random_movers:
             for mover_data in random_movers:
