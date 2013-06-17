@@ -23,6 +23,23 @@ define([
             BaseTimeseriesView.__super__.initialize.apply(this, arguments);
         },
 
+        events: {
+            'change .direction': 'updateCompass',
+            'change .speed': 'updateCompass'
+        },
+
+        updateCompass: function() {
+            var direction = this.$el.find('.direction').val();
+            var speed = this.$el.find('.speed').val();
+
+            if (!speed) {
+                return;
+            }
+
+            this.compass.compassUI('update', {direction: direction, speed: speed});
+            console.log('updateCompass', this, direction, speed);
+        },
+
         getAddForm: function() {
             return this.$el.find('.add-time-form');
         },
@@ -123,7 +140,7 @@ define([
         initialize: function() {
             this.options.compassId = this.id + '_compass';
             VariableWindTimeseriesView.__super__.initialize.apply(this, arguments);
-            this.events = _.extend({}, Backbone.View.prototype.events, this.events);
+            this.events = _.extend({}, BaseTimeseriesView.prototype.events, this.events);
             this.setupCompassDialog();
         },
 

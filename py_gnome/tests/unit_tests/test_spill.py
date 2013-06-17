@@ -430,6 +430,34 @@ class Test_SurfaceReleaseSpill(object):
                                      end_release_time = self.release_time - timedelta(seconds=1),
                                      )
 
+    def test_end_position(self):
+        """
+        if end_position = None, then automatically set it to start_position 
+        """
+        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
+                                 start_position = self.start_position,
+                                 release_time = self.release_time,
+                                 )
+        
+        sp.start_position = (0,0,0)
+        assert np.any( sp.start_position != sp.end_position)
+        
+        sp.end_position = None
+        assert np.all( sp.start_position == sp.end_position)
+    
+    def test_end_release_time(self):    
+        """
+        if end_release_time = None, then automatically set it to release_time
+        """
+        sp = SurfaceReleaseSpill(num_elements = self.num_elements,
+                                 start_position = self.start_position,
+                                 release_time = self.release_time,
+                                 )
+        sp.release_time = self.release_time + timedelta(hours=20)
+        assert sp.release_time != sp.end_release_time
+        
+        sp.end_release_time = None
+        assert sp.release_time == sp.end_release_time
 
 num_elements = ((998,),
                 (100,),

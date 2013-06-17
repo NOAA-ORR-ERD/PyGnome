@@ -6,7 +6,7 @@
         <div class="page-body">
             <%
                 name = h.text('name', data_value='spill.name')
-                is_active = h.checkbox("is_active", data_checked='spill.is_active')
+                on = h.checkbox("on", data_checked='spill.on')
                 num_elements = h.text('num_elements', data_value='spill.num_elements')
                 start_position_x = h.text('start_position_x', data_value='spill.start_position_x', class_="coordinate")
                 start_position_y = h.text('start_position_y', data_value='spill.start_position_y', class_="coordinate")
@@ -20,7 +20,7 @@
             %>
 
             ${defs.form_control(name, label="Name")}
-            ${defs.form_control(is_active, label="Active")}
+            ${defs.form_control(on, label="On")}
             ${defs.form_control(num_elements, label="Number of Elements")}
             ${defs.datetime_control('release_time', date_label='Release Start')}
             ${defs.datetime_control('end_release_time', date_label='Release End')}

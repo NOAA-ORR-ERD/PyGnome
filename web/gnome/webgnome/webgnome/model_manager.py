@@ -118,6 +118,9 @@ class WebCatsMover(BaseWebObject, CatsMover):
     state = copy.deepcopy(CatsMover.state)
     state.add(create=['name'], update=['name'])
 
+    def __init__(self, base_dir, filename, *args, **kwargs):
+        filename = os.path.join(base_dir, filename)
+        super(WebCatsMover, self).__init__(filename, *args, **kwargs)
 
 class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
     """
@@ -133,6 +136,8 @@ class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
         super(WebSurfaceReleaseSpill, self).__init__(*args, **kwargs)
 
     def _reshape(self, lst):
+        if lst is None:
+            return
         return numpy.asarray(
             lst, dtype=basic_types.world_point_type).reshape((len(lst),))
 
@@ -146,6 +151,8 @@ class WebSurfaceReleaseSpill(BaseWebObject, SurfaceReleaseSpill):
         return self.start_position.tolist()
 
     def end_position_to_dict(self):
+        if self.end_position is None:
+            return
         return self.end_position.tolist()
 
 
@@ -337,8 +344,9 @@ class WebModel(BaseWebObject, Model):
         Remove the model's current renderer -- removes the reference in `self`
         and removes the outputter from the model's `outputters` collection.
         """
-        self.outputters.remove(self.renderer.id)
-        self.renderer = None
+        if self.renderer:
+            self.outputters.remove(self.renderer.id)
+            self.renderer = None
 
     def add_bna_map(self, filename, map_data):
         """
@@ -385,6 +393,7 @@ class WebModel(BaseWebObject, Model):
 
     def remove_map(self):
         self.map = None
+        self.remove_renderer()
         self.output_map = None
         self.rewind()
 
@@ -525,6 +534,7 @@ class WebModel(BaseWebObject, Model):
 
         if cats_movers:
             for mover_data in cats_movers:
+                mover_data['base_dir'] = self.package_root
                 add_to_collection(self.movers, mover_data, WebCatsMover)
 
         if random_movers:

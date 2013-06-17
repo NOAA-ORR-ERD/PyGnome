@@ -18,7 +18,10 @@ define([
     var FormView = base.BaseView.extend({
         initialize: function() {
             var _this = this;
-            _.bindAll(this);
+
+            // XXX: Using _.bindAll without specifying a function (bind ALL
+            // values on the object) breaks IE.
+            // _.bindAll(this);
 
             FormView.__super__.initialize.apply(this, arguments);
 
@@ -205,8 +208,14 @@ define([
             return;
         },
 
-        submit: function() {
+        submit: function(opts) {
             var _this = this;
+
+            var options = $.extend({}, {
+                success: function() {
+                    _this.trigger(FormView.SUBMITTED);
+                }
+            }, opts);
 
             this.prepareSubmitData();
             this.clearErrors();
@@ -226,11 +235,7 @@ define([
             }
 
             // Return a jQuery Promise object.
-            return this.model.save(null, {
-                success: function() {
-                    _this.trigger(FormView.SUBMITTED);
-                }
-            });
+            return this.model.save(null, options);
         },
 
         cancel: function() {

@@ -135,6 +135,9 @@ class ModelFromLocationFileServiceTests(FunctionalTestBase, ModelHelperMixin):
                          len(data['wind_movers']))
         self.assertEqual(len(location_file_data['surface_release_spills']),
                          len(data['surface_release_spills']))
+        self.assertTrue(len(data['cats_movers']) >= 1)
+        self.assertEqual(len(location_file_data['cats_movers']),
+                         len(data['cats_movers']))
 
 
 class ExistingModelFromLocationFileServiceTests(FunctionalTestBase,
@@ -401,7 +404,7 @@ class WindMoverServiceTests(FunctionalTestBase, ModelHelperMixin,
         self.assertTrue(resp.json['uncertain_duration'],
                         data['uncertain_duration'])
 
-    def test_wind_mover_update_is_active_fields(self):
+    def test_wind_mover_update_active_fields(self):
         wind_data = self.make_wind_data()
         resp = self.testapp.post_json(self.wind_collection_url, wind_data)
         wind_id = resp.json['id']
@@ -448,12 +451,11 @@ class SurfaceReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         now = datetime.datetime.now()
 
         data = {
-            'is_active': True,
             'release_time': now.isoformat(),
             'num_elements': 900,
             'name': 'Point Release Spill',
             'start_position': [10, 100, 0],
-            'windage_range': [1.2, 4.2],
+            'windage_range': [0.3, 0.9],
             'windage_persist': 900,
             'uncertain': False
         }
@@ -473,13 +475,15 @@ class SurfaceReleaseSpillServiceTests(FunctionalTestBase, ModelHelperMixin):
         resp = self.testapp.get(self.get_spill_url(spill_id))
 
         self.assertEqual(resp.json['release_time'], data['release_time'])
+        self.assertEqual(resp.json['end_release_time'], data['release_time'])
+        self.assertEqual(resp.json['end_position'], data['start_position'])
+
 
     def test_spill_update(self):
         data = self.make_spill_data()
         resp = self.testapp.post_json(self.collection_url, data)
         spill_id = resp.json_body['id']
 
-        data['is_active'] = False
         data['release_time'] = datetime.datetime.now().isoformat()
 
         spill_url = self.get_spill_url(spill_id)

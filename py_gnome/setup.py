@@ -41,18 +41,19 @@ else:
 if "cleanall" in "".join(sys.argv[1:]):
     target = 'clean'
 
-    if sys.platform == 'win32':
-        rm_extensions = ['dll', 'pyd', 'cpp']
-    else:
-        rm_extensions = ['so', 'pyd', 'cpp']
-
-    rm_files = [os.path.join('gnome','cy_gnome','cy_*.%s' % e)
-                for e in rm_extensions]
+    rm_files = ['gnome/cy_gnome/*.so',
+                'gnome/cy_gnome/cy_*.pyd',
+                'gnome/cy_gnome/cy_*.cpp',
+                'gnome/utilities/geometry/cy_*.pyd',
+                'gnome/utilities/geometry/cy_*.so',
+                'gnome/utilities/geometry/cy_*.c',
+                ]
 
     for files_ in rm_files:
         for file_ in glob.glob(files_):
             print "Deleting auto-generated files: {0}".format(file_)
             os.remove(file_)
+
 
     rm_dir = ['pyGnome.egg-info', 'build']
     for dir_ in rm_dir:
@@ -204,7 +205,7 @@ elif sys.platform == "linux2":
                                  language='c++',
                                  define_macros=macros,
                                  libraries=['netcdf'],
-                                 include_dirs=[ CPP_CODE_DIR],
+                                 include_dirs=[ cpp_code_dir],
                                  )])
   
     ## in install mode, it compiles and builds libgnome inside lib.linux-i686-2.7/gnome/cy_gnome
@@ -233,7 +234,7 @@ elif sys.platform == "linux2":
                                 define_macros=macros,
                                 extra_compile_args=compile_args,
                                 libraries=lib,
-                                include_dirs=l_include_dirs,
+                                include_dirs=include_dirs,
                                 )
 
     extensions.append(basic_types_ext)

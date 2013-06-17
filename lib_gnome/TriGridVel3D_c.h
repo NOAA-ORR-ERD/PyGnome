@@ -31,7 +31,6 @@ class TriGridVel3D_c : virtual public TriGridVel_c {
 
 protected:
 	FLOATH fDepthsH;
-	//DOUBLEH fDepthContoursH;
 	Boolean	**fTriSelected;
 	Boolean	**fPtsSelected;
 	// maybe define a new class to handle all the output...
@@ -39,9 +38,7 @@ protected:
 	maxLayerDataHdl fMaxLayerDataHdl;
 	double **fTriAreaHdl;
 	DOUBLEH fDosageHdl;
-	//WORLDPOINTDH gCoord;	// is this used??, maybe will need later if do refining on the fly
 public:
-	Rect	fLegendRect;
 	Boolean	bShowSelectedTriangles;
 	float	fPercentileForMaxConcentration;
 	Boolean bCalculateDosage;
@@ -55,13 +52,10 @@ public:
 	void SetDepths(FLOATH depthsH){fDepthsH=depthsH;}
 	FLOATH  GetDepths(){return fDepthsH;}
 	void 	ScaleDepths(double scaleFactor);
-	//void SetDepthContours(DOUBLEH depthContoursH){if(fDepthContoursH!=depthContoursH) (fDepthContoursH=depthContoursH;}
 	virtual double GetDepthAtPoint(WorldPoint p);
-	DOUBLEH  GetDepthContours(){return fDepthContoursH;}
 	long 	GetNumDepths(void);
 	//long	GetNumTriangles(void);
 	long GetNumPoints(void);
-	long 	GetNumDepthContours(void);
 	long 	GetNumOutputDataValues(void);
 	void 	GetTriangleVerticesWP(long i, WorldPoint *w);
 	OSErr 	GetTriangleVerticesWP3D(long i, WorldPoint3D *w);
