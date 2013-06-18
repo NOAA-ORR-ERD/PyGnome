@@ -1,0 +1,144 @@
+{
+    "wind_movers": [
+        {
+            "on": true, 
+            "obj_type": "webgnome.model_manager.WebWindMover", 
+            "name": "Wind Mover", 
+            "uncertain_angle_scale": 0.4, 
+            "uncertain_duration": 10800.0, 
+            "active_start": "1970-01-01T00:00:00", 
+            "wind_id": "6de5f3a3-d451-11e2-b63c-406c8f4bfe70", 
+            "active_stop": "2038-01-18T00:00:00", 
+            "uncertain_time_delay": 0.0, 
+            "id": "6de5f6b0-d451-11e2-b0e1-406c8f4bfe70", 
+            "uncertain_speed_scale": 2.0
+        }
+    ], 
+    "map": {
+        "obj_type": "webgnome.model_manager.WebMapFromBNA", 
+        "name": "Pearl Harbor Map", 
+        "map_bounds": [
+            [
+                -158.046448, 
+                21.30319
+            ], 
+            [
+                -158.046448, 
+                21.416857
+            ], 
+            [
+                -157.919937, 
+                21.416857
+            ], 
+            [
+                -157.919937, 
+                21.30319
+            ]
+        ], 
+        "filename": "location_files/pearl_harbor/data/pearl_harbor.bna", 
+        "spillable_area": [
+            [
+                -158.046448, 
+                21.30319
+            ], 
+            [
+                -158.046448, 
+                21.416857
+            ], 
+            [
+                -157.919937, 
+                21.416857
+            ], 
+            [
+                -157.919937, 
+                21.30319
+            ]
+        ], 
+        "id": "6ddc1817-d451-11e2-b63c-406c8f4bfe70", 
+        "refloat_halflife": 3600.0
+    }, 
+    "uncertain": false, 
+    "start_time": "2013-01-01T01:00:00", 
+    "random_movers": [
+        {
+            "on": true, 
+            "obj_type": "webgnome.model_manager.WebRandomMover", 
+            "name": "Random Mover", 
+            "diffusion_coef": 10000.0, 
+            "active_start": "1970-01-01T00:00:00", 
+            "active_stop": "2038-01-18T00:00:00", 
+            "id": "6de5f8f3-d451-11e2-9053-406c8f4bfe70"
+        }
+    ], 
+    "surface_release_spills": [
+        {
+            "num_elements": 1000, 
+            "windage_range": [
+                0.01, 
+                0.04
+            ], 
+            "name": "Spill", 
+            "is_active": true, 
+            "end_position": [
+                -157.97064, 
+                21.331524, 
+                0.0
+            ], 
+            "start_position": [
+                -157.97064, 
+                21.331524, 
+                0.0
+            ], 
+            "release_time": "2013-01-01T01:00:00", 
+            "windage_persist": 900.0, 
+            "end_release_time": "2013-01-01T01:00:00", 
+            "id": "744663f0-d451-11e2-9cc4-406c8f4bfe70"
+        }
+    ], 
+    "time_step": 0.25, 
+    "winds": [
+        {
+            "obj_type": "webgnome.model_manager.WebWind", 
+            "name": "Wind Object", 
+            "updated_at": "2013-06-13T10:48:17.576222", 
+            "source_type": "undefined", 
+            "source_id": "undefined", 
+            "timeseries": [
+                [
+                    "2013-01-01T01:00:00", 
+                    4.0, 
+                    180.0
+                ], 
+                [
+                    "2013-01-01T13:00:00", 
+                    2.0, 
+                    270.0
+                ], 
+                [
+                    "2013-01-02T01:00:00", 
+                    4.0, 
+                    180.0
+                ]
+            ], 
+            "units": "knots", 
+            "id": "6de5f3a3-d451-11e2-b63c-406c8f4bfe70", 
+            "description": "Wind Object"
+        }
+    ], 
+    "grid_current_movers": [
+        {
+            "on": true, 
+            "obj_type": "webgnome.model_manager.WebGridCurrentMover", 
+            "name": "Grid Current Mover", 
+            "active_start": "1970-01-01T00:00:00", 
+            "filename": "location_files/pearl_harbor/data/ch3d2013.nc", 
+            "topology_file": "location_files/pearl_harbor/data/PearlHarborTop.dat", 
+            "active_stop": "2038-01-18T00:00:00", 
+            "id": "61ec0b54-a23a-11e2-81d9-3c07541ca142", 
+            "scale_value": -1.0
+        } 
+    ], 
+    "duration_hours": 0, 
+    "duration_days": 1, 
+    "id": "6dd70747-d451-11e2-8899-406c8f4bfe70"
+}

@@ -25,6 +25,7 @@ from gnome.persist import (
 from gnome.persist.extend_colander import LocalDateTime
 from gnome.persist.base_schema import LongLatBounds
 from gnome.persist.movers_schema import CatsMover
+from gnome.persist.movers_schema import GridCurrentMover
 
 
 @deferred
@@ -133,6 +134,14 @@ class WebCatsMover(CatsMover):
 class CatsMoversSchema(SequenceSchema):
     mover = WebCatsMover()
 
+class WebGridCurrentMover(GridCurrentMover):
+    default_name = 'Grid Current Mover'
+    name = SchemaNode(String(), default=default_name, missing=default_name)
+
+
+class GridCurrentMoversSchema(SequenceSchema):
+    mover = WebGridCurrentMover()
+
 
 class ModelSchema(MappingSchema):
     id = SchemaNode(String(), missing=drop)
@@ -147,6 +156,7 @@ class ModelSchema(MappingSchema):
     wind_movers = WindMoversSchema(default=[], missing=drop)
     random_movers = RandomMoversSchema(default=[], missing=drop)
     cats_movers = CatsMoversSchema(default=[], missing=drop)
+    grid_current_movers = GridCurrentMoversSchema(default=[], missing=drop)
     winds = WindsSchema(default=[], missing=drop)
     map = MapSchema(missing=drop)
 
