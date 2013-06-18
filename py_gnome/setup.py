@@ -78,8 +78,8 @@ if sys.argv.count(config) != 0:
     sys.argv.remove(config)
 
 
-# for the mac -- forcing 32 bit only builds
-if sys.platform == 'darwin':
+# for the mac -- decide whether we are 32 bit build
+if sys.platform == 'darwin' and sys.maxint <= 2147483647:
     #Setting this should force only 32 bit intel build
     os.environ['ARCHFLAGS'] = "-arch i386"
 
@@ -166,7 +166,12 @@ include_dirs = [cpp_code_dir, np.get_include(), '.']
 # This is being done in the gnome/cy_gnome/__init__.py
 
 if sys.platform == "darwin":
-    architecture = os.environ['ARCHFLAGS'].split()[1]
+    if os.environ.has_key('ARCHFLAGS'):
+        print 'setting darwin ARCHFLAGS to our architecture.'
+        architecture = os.environ['ARCHFLAGS'].split()[1]
+    else:
+        architecture = 'x86_64'
+
     include_dirs.append('../third_party/%s/include' % architecture)
     third_party_lib_dir = '../third_party/%s/lib' % architecture
 

@@ -37,9 +37,9 @@ char mytoupper(char c);
 CHARPTR StrToUpper(CHARPTR s);
 char mytolower(char c);
 CHARPTR StrToLower(CHARPTR s);
-char *strstrnocase(CHARPTR s1, CHARPTR s2);
-short strcmpnocase(CHARPTR s1, CHARPTR s2);
-short strncmpnocase(CHARPTR s1, CHARPTR s2, short n);
+char *strstrnocase(const char *s1, const char *s2);
+short strcmpnocase(const char *s1, const char *s2);
+short strncmpnocase(const char *s1, const char *s2, short n);
 short strnblankcmp(CHARPTR s1, CHARPTR s2, short n);
 Boolean strcmptoreturn(CHARPTR s1, CHARPTR s2);
 Boolean strcmptoreturnnocase(CHARPTR s1, CHARPTR s2);
@@ -83,9 +83,9 @@ void my_c2pstr(void *string);
 Seconds RoundDateSeconds(Seconds timeInSeconds);
 
 #ifndef MAC
-void DLL_API DateToSeconds(DateTimeRec *date, unsigned long *seconds);
-void GetDateTime(unsigned long *seconds);
-void DLL_API SecondsToDate(unsigned long seconds, DateTimeRec *date);
+void DLL_API DateToSeconds(DateTimeRec *date, Seconds *seconds);
+void GetDateTime(Seconds *seconds);
+void DLL_API SecondsToDate(Seconds seconds, DateTimeRec *date);
 #endif
 
 Boolean IsWindowsPath(char* path);
