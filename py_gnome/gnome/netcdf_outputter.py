@@ -408,7 +408,7 @@ class NetCDFOutput(Outputter, serializable.Serializable):
 
 
     @staticmethod
-    def read_standard_arrays(netcdf_file,index=0):
+    def read_data(netcdf_file,index=0, all_data=False):
         """ 
         Read and create standard data arrays for a netcdf file that was created with NetCDFOutput class. Make it a static method
         since it is indepenedent of an instance of the Outputter. The method is put with this class because the NetCDF
@@ -421,10 +421,10 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         :returns: a dict containing 'positions', 'status_codes', 'spill_num'. Currently, this is standard data.
         
         Standard data arrays are numpy arrays of size N, where N is number of particles released at time step of interest:
-            'timestamp'    : datetime object associated with this data 
-            'positions'    : NX3 array. Corresponds with NetCDF variables 'longitude', 'latitude', 'depth'
-            'status_codes' : NX1 array. Corresponds with NetCDF variable 'status'
-            'spill_num'    : NX1 array. Corresponds with NetCDF variable 'id'
+            'current_time_stamp': datetime object associated with this data 
+            'positions'         : NX3 array. Corresponds with NetCDF variables 'longitude', 'latitude', 'depth'
+            'status_codes'      : NX1 array. Corresponds with NetCDF variable 'status'
+            'spill_num'         : NX1 array. Corresponds with NetCDF variable 'id'
         """
         
         if not os.path.exists(netcdf_file):
@@ -457,5 +457,16 @@ class NetCDFOutput(Outputter, serializable.Serializable):
         arrays_dict['positions'] = positions
         arrays_dict['status_codes'] = status_codes
         arrays_dict['spill_num'] = spill_num
+        
+        if all_data:    # append remaining data arrays
+            excludes = NetCDFOutput.data_vars.keys()
+            excludes.extend(['time','particle_count'])
+            
+            for key in data.variables.keys():
+                if key not in excludes:
+                    if key in arrays_dict.keys():
+                        raise ValueError('Error in read_data. {0} is already added to arrays_dict - trying to add it again'.format(key)) 
+                    
+                    arrays_dict[key] = data.variables[key][_start_ix:_stop_ix]
         
         return arrays_dict
