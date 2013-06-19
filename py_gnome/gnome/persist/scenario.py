@@ -71,8 +71,7 @@ class Scenario(object):
         for sc in self.model.spills.items():
             self._save_collection( sc.spills)
         
-        if self.model.current_time_step > -1:
-            # Model is in middle of run
+        if self.model.current_time_step > -1: # persist model state since middle of run
             self._save_spill_data()
         
     def load(self):
@@ -329,14 +328,13 @@ class Scenario(object):
         if not os.path.exists(self._certainspill_data):
             return
         
-        c_data    = gnome.netcdf_outputter.NetCDFOutput.read_standard_arrays(self._certainspill_data)
-        self.model.spills._spill_container._data_arrays = c_data
-        
-        data = nc.Dataset(self._certainspill_data)
-        ex_list = gnome.netcdf_outputter.NetCDFOutput.data_vars.keys()
-        ex_list.extend(['time','particle_count'])
-        for key in data.variables.keys():
-            if key not in ex_list:
-                self.model.spills._spill_container._data_arrays[key] = data.variables[key][:]
-                
+        data    = gnome.netcdf_outputter.NetCDFOutput.read_data(self._certainspill_data, all_data=True)
+        self.model.spills._spill_container._data_arrays = data
         self.model.spills._spill_container.reconcile_data_arrays()
+        
+        if self.model.uncertain:
+            if not os.path.exists(self._uncertainspill_data):
+                return
+            data    = gnome.netcdf_outputter.NetCDFOutput.read_data(self._uncertainspill_data, all_data=True)
+            self.model.spills._u_spill_container._data_arrays = data
+            self.model.spills._u_spill_container.reconcile_data_arrays()
