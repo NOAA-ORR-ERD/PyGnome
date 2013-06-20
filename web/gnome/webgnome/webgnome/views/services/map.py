@@ -29,7 +29,7 @@ class MapResource(BaseResource):
         """
         map_data = model.map.to_dict()
 
-        if model.renderer and model.renderer.background_map_name:
+        if model.renderer:
             map_data['background_image_url'] = util.get_model_image_url(
                 self.request, model, model.renderer.background_map_name)
 

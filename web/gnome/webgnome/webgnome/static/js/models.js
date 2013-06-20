@@ -423,7 +423,7 @@ define([
             }
 
             var step = new TimeStep({id: stepNum}, {gnomeModel: this.gnomeModel});
-            return step.fetch().then(function() {
+            return step.fetch().done(function() {
                 _this.add(step);
                 _this.serverCachedTimeSteps.add(step);
             });
@@ -593,7 +593,7 @@ define([
                 return $.Deferred().resolve();
             }
 
-            return this.getTimeStep(this.currentTimeStep).then(finish);
+            return this.getTimeStep(this.currentTimeStep).done(finish);
         },
 
         isOnLastTimeStep: function() {
@@ -717,7 +717,7 @@ define([
 
     // Spills
     var SurfaceReleaseSpill = BaseModel.extend({
-        dateFields: ['release_time'],
+        dateFields: ['release_time', 'end_release_time'],
 
         initialize: function() {
             this.syncArrayField('start_position', 'start_position_x', 0);
@@ -896,6 +896,12 @@ define([
             );
             return latLngBounds.getCenter();
         }
+    });
+
+
+    var MapCollection = BaseCollection.extend({
+        model: Map,
+        url: '/map'
     });
 
 
