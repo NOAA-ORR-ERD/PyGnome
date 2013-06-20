@@ -4,14 +4,14 @@ import locale
 cimport numpy as np
 
 from gnome import basic_types
-cimport type_defs
+from type_defs cimport Seconds, DateTimeRec
 cimport utils
 
 cdef class CyDateTime:
-    cdef type_defs.Seconds * seconds
-    cdef type_defs.Seconds tSeconds
-    cdef type_defs.DateTimeRec * dateRec
-    cdef type_defs.DateTimeRec tDateRec
+    cdef Seconds * seconds
+    cdef Seconds tSeconds
+    cdef DateTimeRec * dateRec
+    cdef DateTimeRec tDateRec
     
     def __cinit__(self):
         self.seconds = &self.tSeconds
@@ -25,11 +25,11 @@ cdef class CyDateTime:
         """
         pass
         
-    def DateToSeconds(self, np.ndarray[type_defs.DateTimeRec, ndim=1] date):
+    def DateToSeconds(self, np.ndarray[DateTimeRec, ndim=1] date):
         utils.DateToSeconds( &date[0], self.seconds)
         return self.tSeconds
     
-    def SecondsToDate(self, type_defs.Seconds secs):
+    def SecondsToDate(self, Seconds secs):
         utils.SecondsToDate( secs, self.dateRec)
         return self.tDateRec
 

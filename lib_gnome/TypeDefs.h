@@ -140,16 +140,16 @@ typedef short LandType;
 #ifdef _MSC_VER
 	#if _WIN64
 		// for now we will not change the type for windows64
-		typedef unsigned long Seconds; // duration in seconds, or seconds since 1904
+		typedef long Seconds; // duration in seconds, or seconds since 1904
 	#else
-		typedef unsigned long Seconds; // duration in seconds, or seconds since 1904
+		typedef long Seconds; // duration in seconds, or seconds since 1904
 	#endif
 #else
 	#if __x86_64__ || __ppc64__
 		typedef time_t Seconds; // duration in seconds, or seconds since 1904
 	#else
 		// this is the value we are using for 32 bit architecture
-		typedef unsigned long Seconds; // duration in seconds, or seconds since 1904
+		typedef time_t Seconds; // duration in seconds, or seconds since 1904
 	#endif
 #endif
 
