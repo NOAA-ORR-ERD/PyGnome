@@ -110,7 +110,19 @@ class SpillContainer(SpillContainerData):
      
     positions = spill_container['positions'] : returns a (num_LEs, 3) array of world_point_types
     """
-
+    
+    @property
+    def array_types(self):
+        """ 
+        define array_types for a SpillContainer similar to Spill objects. If user
+        adds a new array to the _data_arrays, the corresponding ArrayType object should get
+        created. reconcile_data_arrays looks for array_types to add/remove to _data_arrays.
+        """
+        return dict([(name, getattr(self, name))
+                for name in dir(self)
+                if name != 'array_types'
+                and type(getattr(self, name)) == gnome.spill.ArrayType])
+    
     def __init__(self, uncertain=False):
         super(SpillContainer, self).__init__(uncertain=uncertain)
         
@@ -118,6 +130,18 @@ class SpillContainer(SpillContainerData):
         self.spills = OrderedCollection(dtype=gnome.spill.Spill)
         self.rewind()
 
+    def __setitem__(self, data_name, array):
+        """
+        Invoke baseclass __setitem__ method so the _data_array is set correctly.
+         
+        In addition, create the appropriate ArrayType if it wasn't created by the user. 
+        """
+        super(SpillContainer,self).__setitem__(data_name, array)
+        if data_name not in self.array_types.keys():
+            shape = self._data_arrays[data_name].shape
+            dtype = self._data_arrays[data_name].dtype.type
+            setattr( self, data_name, gnome.spill.ArrayType(shape, dtype))
+    
     def rewind(self):
         """
         In the rewind operation, we:
@@ -151,7 +175,7 @@ class SpillContainer(SpillContainerData):
                 del self._data_arrays[k]
 
     def update_all_array_types(self):
-        self.all_array_types = {}
+        self.all_array_types = self.array_types
         for spill in self.spills:
             self.all_array_types.update(spill.array_types)
 
@@ -195,7 +219,7 @@ class SpillContainer(SpillContainerData):
                     if 'spill_num' in new_data:
                         new_data['spill_num'][:] = self.spills.index(spill.id, renumber=False)
                     for name in new_data:
-                        if name in self._data_arrays:
+                        if name in self._data_arrays and self._data_arrays[name].shape != ():
                             self._data_arrays[name] = np.r_[ self._data_arrays[name], new_data[name] ]
                         else:
                             self._data_arrays[name] = new_data[name]
