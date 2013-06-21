@@ -30,15 +30,23 @@
 					LongRect				mapBoundsRect;		/* actual matrix map bounds */\
 					Boolean					bColorMap;			/* true if map is to be displayed in color */
 
+// TODO: when compiling 64-bit executables, the OS X version of GCC ignores requests for mac68k alignment.
+//#ifndef IBM
+//#pragma options align=mac68k
+//#endif
+// Why do we align this structure, is it for compatibility with a binary input file?
+// - if it is not important to align this structure, the pragma should go away.
+// - if it is important (which we will assume for now) then we change it to #pragma pack(2),
+//   which is equivalent to mac68k.
 #ifndef IBM
-#pragma options align=mac68k
+	#pragma pack(2)
 #endif
 typedef struct SavedMDataRec									// struct used to determine saved-data size
 			{
 					SavedMapData
 			} SavedMDataRec;
 #ifndef IBM
-#pragma options align=reset
+	#pragma options align=reset
 #endif
 
 typedef struct ViewStatusRec

@@ -55,14 +55,15 @@ Handle _MySetHandleSize(Handle h, long newSize)
 OSErr _InitAllHandles()
 {
 	long kNumToAllocate = 6000; // was 1000 , JLM 6/8/10
-	long i;
-	
-	if (!(masterPointers = (Ptr *)_NewPtr(kNumToAllocate * sizeof(Ptr)))) return -1;
-	
-	for (i = 0 ; i < kNumToAllocate ; i++) masterPointers[i] = 0;
-	for (i = 0 ; i < 10 ; i++) freeMasterPointers[i] = &masterPointers[i];
+
+	if ((masterPointers = (Ptr *)_NewPtr(kNumToAllocate * sizeof(Ptr))) == NULL)
+		return -1;
+
+	for (long i = 0; i < 10 ;i++)
+		freeMasterPointers[i] = &masterPointers[i];
+
 	masterPointerCount = kNumToAllocate;
-	
+
 	return 0;
 }
 
@@ -75,26 +76,25 @@ void _DeleteAllHandles()
 Ptr _NewPtr(long size)
 {
 	memoryError = 0;
-	
 	Ptr p;
-	
+
 	try {
-		p = new char[size+4];
+		p = new char[size + sizeof(long)]();
 	}
 	catch(...) {
 		memoryError = -1; 
 		return 0; 
 	}
-	*((long *)p) = size;
-	
-	p += 4;
-	memset(p, 0, size);
-	
+
+	((long *)p)[0] = size;
+
+	p += sizeof(long);
+
 	_handleCount++;
 	
 	return(p);
-	
 }
+
 
 Ptr _NewPtrClear(long size)
 {
@@ -103,42 +103,69 @@ Ptr _NewPtrClear(long size)
 
 long _GetPtrSize(Ptr p)
 {
-	return *((long *)(p - 4));
+	return ((long *)(p - sizeof(long)))[0];
 }
 
+// ok this is a bit tricky
+// these memory pointers are managed as
+// a (sort of)struct of the type
+//    struct Data {
+//	    long size;
+//	    char data[];
+//    };
+// and this function manages the resizing of
+// the data *and* the value which reports the
+// size.
+//
+// Basically any pointer p passed in is assumed to
+// be immediately preceded in memory by a long
+// value representing the size of allocated memory.
 Ptr _SetPtrSize(Ptr p, long newSize)
 {
 	Ptr p2 = 0;
 	memoryError = 0;
-	
-	try {
-		long oldSize = *((long*)(p - 4));
-		p2 = new char[newSize+4];
-		if(oldSize < newSize)
-			memmove(p2+4, p, oldSize);
-		else
-			memmove(p2+4, p, newSize);
-		
-		p-=4;
-		if(p)
+
+	if (p > (Ptr)sizeof(long)) {
+		// we have a valid buffer coming in
+		try {
+			long *currentSize = (long *)(p - sizeof(long));
+
+			p2 = new char[newSize + sizeof(long)]();
+
+			((long *)p2)[0] = newSize;
+
+			if (newSize < currentSize[0])
+				memmove(p2 + sizeof(long), p, newSize);
+			else
+				memmove(p2 + sizeof(long), p, *currentSize);
+
+			// this seems a bit brittle, but...ok.
+			p -= sizeof(long);
 			delete[] p;
+		}
+		catch(...) {
+			memoryError = -1;
+			return p;
+		}
 	}
-	catch(...) {
+	else {
 		memoryError = -1;
 		return p;
 	}
-	
-	*((long *)p2) = newSize;
-	
-	return(p2+4);
+
+	return (p2 + sizeof(long));
 }
 
 void _DisposePtr(Ptr p)
 {
-	p -= 4;
-	if(p)
+	if ((size_t)p > sizeof(long)) {
+		p -= sizeof(long);
 		delete[] p;
-	_handleCount--;
+		_handleCount--;
+	}
+	else {
+		printf("_DisposePtr(): Warning: trying to dispose an invalid pointer(%lX)", (size_t)p);
+	}
 }
 
 void _DisposPtr(Ptr p)
@@ -148,28 +175,33 @@ void _DisposPtr(Ptr p)
 
 Handle _NewHandle(long size)
 {
-	long i, j;
 	Ptr p;
 	Handle h = 0;
 	
 	// look for a free space
-	// freeMasterPointers holds the easy places to look
-	for (i = 0 ; i < 10 ; i++)
-		if (freeMasterPointers[i] != 0)
-		{ h = freeMasterPointers[i]; break; } // we found an easy one
-	
+	for (long i = 0; i < 10; i++)
+		if (freeMasterPointers[i] != 0) {
+			// freeMasterPointers holds the easy places to look
+			h = freeMasterPointers[i];
+			break;
+		} // we found an easy one
+
+
 	if (!h) {
 		// did not find a free place for our handle
 		// we need to reset the freeMasterPointers
-		for (i = 0, j = 0 ; i < masterPointerCount ; i++)
-			if (masterPointers[i] == 0) 
-			{	// we found a free unused place
-				if (!h) h = &masterPointers[i];
+		for (long i = 0, j = 0 ; i < masterPointerCount ; i++)
+			if (masterPointers[i] == 0) {
+				// we found a free unused place
+				if (!h)
+					h = &masterPointers[i];
+
 				if (j < 10)
 					freeMasterPointers[j++] = &masterPointers[i];
 				else
 					break;// we have found all ten
 			}
+
 		if (!h) {
 			// JLM 6/8/10, the InitWindowsHandles below will loose track of hte previously allocated "Handles".
 			// as a work around to help avoid this, I've increase the number allocated in InitWindowsHandles 
@@ -187,26 +219,28 @@ Handle _NewHandle(long size)
 			 */
 		}
 	}
-	
+
 	// we have found all ten
-	if (!(p = _NewPtr(size))) return 0;// unable to allocate
-	
-	(*h) = p;// record the pointer in the MAC-like "Handle"
-	
-	for (i = 0 ; i < 10 ; i++)
-		if (freeMasterPointers[i] == h)
-		{
-			freeMasterPointers[i] = 0;// mark this place as no longer free
+	if (!(p = _NewPtr(size)))
+		return 0; // unable to allocate
+
+	(*h) = p; // record the pointer in the MAC-like "Handle"
+
+	for (long i = 0; i < 10; i++)
+		if (freeMasterPointers[i] == h) {
+			freeMasterPointers[i] = 0; // mark this place as no longer free
 			break;
 		}
-	
+
 	return h;
 }
+
 
 Handle _NewHandleClear(long size)
 {
 	return _NewHandle(size);
 }
+
 
 Handle _TempNewHandle(long size, LONGPTR err)
 {
@@ -216,6 +250,7 @@ Handle _TempNewHandle(long size, LONGPTR err)
 	
 	return h;
 }
+
 
 Handle _RecoverHandle(Ptr p)
 {
@@ -231,6 +266,7 @@ Handle _RecoverHandle(Ptr p)
 	
 	return 0;
 }
+
 
 OSErr _HandToHand(HANDLEPTR hp)
 {
