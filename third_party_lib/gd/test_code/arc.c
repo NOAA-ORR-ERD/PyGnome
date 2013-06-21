@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define HAVE_LIBPNG 1
+
 int main()
 {
 	gdImagePtr im;
@@ -13,18 +15,19 @@ int main()
 
 	gdImageFilledArc (im, cor_rad, 399 - cor_rad, cor_rad *2, cor_rad *2, 90, 180, 0x0, gdPie);
 
-	fp = fopen("b.gif", "wb");
+	//fp = fopen("b.gif", "wb");
+	fp = fopen("b.png", "wb");
 	if (!fp) {
 		fprintf(stderr, "Can't open file to save image.\n");
 		gdImageDestroy(im);
 		return 1;
 	}
-// #ifdef HAVE_LIBPNG
-// 	gdImagePng(im, fp);
-// #else
-// 	printf("No PNG support. Cannot save image.\n");
-// #endif
-	gdImageGif(im, fp);
+	// gdImageGif(im, fp);
+#ifdef HAVE_LIBPNG
+	gdImagePng(im, fp);
+#else
+	printf("No PNG support. Cannot save image.\n");
+#endif
 	fclose(fp);
 
 	gdImageDestroy(im);

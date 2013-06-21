@@ -52,13 +52,13 @@ def test_info():
     assert repr(img) == "Image(width=400, height=300)"
 
 def test_add_colors():
-    img = py_gd.Image(10, 10, preset_colors=False)
+    img = py_gd.Image(10, 10, preset_colors='basic')
 
-    assert img.get_color_names() == ['black']
+    assert img.get_color_names() == ['transparent', 'black', 'white']
 
     img.add_color('light grey', (220,220,220) )
-    assert img.get_color_names() == ['black', 'light grey']
-    assert img._get_color_index('light grey') == 1
+    assert img.get_color_names() == ['transparent', 'black', 'white', 'light grey']
+    assert img._get_color_index('light grey') == 3
 
     img.draw_rectangle((2,2), (7,7), fill_color='light grey')
     img.save('test_image_color.bmp')
@@ -68,7 +68,7 @@ def test_add_colors():
         img.draw_rectangle((2,2), (7,7), fill_color='red')
 
 def test_add_colors_repeat():
-    img = py_gd.Image(10, 10, preset_colors=False)
+    img = py_gd.Image(10, 10, preset_colors='basic')
 
     index_1 = img.add_color('blue', (0, 0, 255))
     
@@ -83,10 +83,10 @@ def test_add_colors_repeat():
 
 
 def test_add_colors_max():
-    img = py_gd.Image(10, 10, preset_colors=False)
+    img = py_gd.Image(10, 10, preset_colors='basic')
 
     # should be able to add this many:
-    for i in range(255):
+    for i in range(253):
         img.add_color("color_%i"%i, (i, i, i) )
 
     # adding one more should raise an exception:
@@ -105,6 +105,8 @@ def test_save_image():
     img.save("test_image_save.jpg", "jpeg")
 
     img.save("test_image_save.gif", "gif")
+
+    img.save("test_image_save.png", "png")
 
     with pytest.raises(ValueError):
         img.save("test_image1.something", "random_string")
@@ -265,6 +267,19 @@ def test_arc():
         img.draw_arc( center, 380, 280, start= 30, end= 90, line_color='white', style='fred')
 
 
+def test_text():
+    img = py_gd.Image(200, 200)
+
+
+    img.draw_text("Some Tiny Text", (20, 20), font="tiny", color='white')
+    img.draw_text("Some Small Text", (20, 40), font="small", color='white')
+    img.draw_text("Some Medium Text", (20, 60), font="medium", color='white')
+    img.draw_text("Some Large Text", (20, 80), font="large", color='white')
+    img.draw_text("Some Giant Text", (20, 100), font="giant", color='white')
+    img.save("test_image_text.png", "png")
+
+
+
 def test_colors():
     img = py_gd.Image(5, 5)
 
@@ -299,7 +314,7 @@ def test_colors():
 
 def test_array():
     img = py_gd.Image(10, 5)
-    img.draw_line( (0, 0), (9, 4), 'white', line_width=1)
+    img.draw_line( (0, 0), (9, 4), 'black', line_width=1)
     print "result from __array__", img.__array__()
     arr = np.asarray(img)
     assert np.array_equal(arr, [[1, 1, 0, 0, 0, 0, 0, 0, 0, 0],

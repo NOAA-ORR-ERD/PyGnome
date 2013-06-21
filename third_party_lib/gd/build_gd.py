@@ -39,6 +39,10 @@ def download(name):
     ##       go here to download by hand: https://bitbucket.org/libgd/gd-libgd/downloads
     cmd = 'curl --output {0} https://bitbucket.org/libgd/gd-libgd/downloads/{0} '.format(name)
 
+    if name.startswith('libpng'):
+        print "you need to download this by hand from sourceforge: http://sourceforge.net/projects/libpng/files/libpng16/1.6.2/libpng-1.6.2.tar.gz/download"
+        #cmd = 'curl --output {0} http://sourceforge.net/projects/libpng/files/libpng16/1.6.2/libpng-1.6.2.tar.gz/download'.format(name)
+        return 1
     print "downloading:", name
     print cmd
 
@@ -51,16 +55,15 @@ def unpack(lib):
     os.system( cmd )
 
 def configure(lib):
-    #conf = './configure  --with-png=/usr/X11 CFLAGS="-arch i386" --prefix='+prefix
-    #conf = './configure --with-png LIBPNG_CFLAGS="-I/usr/X11/include" LIBPNG_libs="-l/usr/X11/lib" CFLAGS="-arch i386" --prefix='+prefix
-    #conf = './configure --with-freetype=/usr/X11 --with-fontconfig=/usr/X11 CFLAGS="-arch i386" --prefix='+prefix
-    ## NOTE: it's looking for freetype-config, png-config, etc....
-    
-    conf = './configure --disable-shared CFLAGS="-arch i386" --prefix='+prefix
+    ## need this with the not-yet fixed configure:
+    #conf = './configure  --disable-shared --with-png={0} CFLAGS="-arch i386" LDFLAGS="-L{0}/lib" --prefix={0}'.format(prefix)
+    ## this should work with the new one
+    conf = './configure  --disable-shared --with-png={0} CFLAGS="-arch i386" --prefix={0}'.format(prefix)
 
 
     os.chdir(lib)
     print conf
+    os.system("make clean")
     if os.system(conf):
         os.chdir(cwd)
         raise Exception("Configuration of %s failed!"%lib)
@@ -74,6 +77,7 @@ def build(lib):
     
     if os.system('make'):
         raise Exception("building of %s failed"%lib)
+
 
     os.chdir(cwd)
 
@@ -109,57 +113,21 @@ def install(lib):
     os.chdir(cwd)
 
 
-def build_setup_dot_py(lib):
-    template = open(setup_static.template).read()
-    template.replace('%%%put_location_of_static_libs_here%%%', 'r"%s"'%prefix)
-    os.chdir(lib)
-
-def build_py_netcdf(lib):
-    template = open("setup_static.template").read()
-    template = template.replace('%%%put_location_of_static_libs_here%%%', 'r"%s"'%prefix)
-    os.chdir(lib)
-    open("setup_static.py",'w').write(template)
-
-
-    print ("building: "+lib)
-    if os.system("python setup_static.py build"):
-        os.chdir(cwd)
-        raise Exception("Building py_netCDF4 failed")
-    os.chdir(cwd)
-
-def install_py_netcdf(lib):
-    os.chdir(lib)
-
-    print ("installing: "+lib)
-    if os.system("python setup_static.py install"):
-        os.chdir(cwd)
-        raise Exception("Installing py_netCDF4 failed")
-    os.chdir(cwd)
-
-def test_py_netcdf(lib):
-    os.chdir( os.path.join(lib, "test") )
-
-    print ("testing: "+lib)
-    if os.system("python run_all.py"):
-        os.chdir(cwd)
-        raise Exception("Testing py_netCDF4 failed")
-    os.chdir(cwd)
-
-
 if __name__ == "__main__":
 
     ## this libs to download and bulid
     libs = [ 
+            #"libpng-1.6.2",
             "libgd-2.1.0-rc2",
             ]
     
     for lib in libs:
-#        download(lib)
-#        unpack(lib)
+        #download(lib)
+        #unpack(lib)
         configure(lib)
         build(lib)
-#        check(lib)
-#        install(lib)
+        #check(lib)
+        install(lib)
         pass
 
 
