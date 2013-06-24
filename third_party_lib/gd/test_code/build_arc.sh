@@ -4,5 +4,5 @@
 
 GD_DIR=../static_libs/
 
-gcc -arch i386 -o arc  -I$GD_DIR/include/ $GD_DIR/lib/libgd.a arc.c
+gcc -arch i386 -o arc  -lz -I$GD_DIR/include/ $GD_DIR/lib/libgd.a $GD_DIR/lib/libpng.a arc.c
 

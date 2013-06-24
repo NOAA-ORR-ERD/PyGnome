@@ -1,175 +1,243 @@
-<!DOCTYPE html>  <html> <head>   <title>util.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               util.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>util.js: Utility functions for the WebGNOME JavaScript application.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">define</span><span class="p">([</span>
-    <span class="s1">&#39;jquery&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;lib/underscore&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;lib/moment&#39;</span>
-<span class="p">],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$</span><span class="p">,</span> <span class="nx">_</span><span class="p">)</span> <span class="p">{</span>
+<!DOCTYPE html>
 
-    <span class="cm">/*</span>
-<span class="cm">     Safely wrap `window.console.log`. Sends all arguments to that function</span>
-<span class="cm">     if it exists.</span>
-<span class="cm">     */</span>
-    <span class="kd">function</span> <span class="nx">log</span><span class="p">(</span><span class="nx">var_args</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">args</span> <span class="o">=</span> <span class="nb">Array</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">slice</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="nx">arguments</span><span class="p">);</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">console</span> <span class="o">&amp;&amp;</span> <span class="nb">window</span><span class="p">.</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nb">window</span><span class="p">.</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">console</span><span class="p">,</span> <span class="nx">args</span><span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
+<html>
+<head>
+  <title>util.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>util.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <p>util.js: Utility functions for the WebGNOME JavaScript application.</p>
 
-    <span class="cm">/*</span>
-<span class="cm">     Generic AJAX error handler.</span>
-<span class="cm">     Retry on error if the request specified tryCount.</span>
-<span class="cm">     */</span>
-    <span class="kd">function</span> <span class="nx">handleAjaxError</span><span class="p">(</span><span class="nx">xhr</span><span class="p">,</span> <span class="nx">textStatus</span><span class="p">,</span> <span class="nx">errorThrown</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">textStatus</span> <span class="o">===</span> <span class="s1">&#39;timeout&#39;</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">this</span><span class="p">.</span><span class="nx">tryCount</span><span class="o">++</span><span class="p">;</span>
-            <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">tryCount</span> <span class="o">&lt;=</span> <span class="k">this</span><span class="p">.</span><span class="nx">retryLimit</span><span class="p">)</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Retry count is below the limit, so try the request again.</p>             </td>             <td class="code">               <div class="highlight"><pre>                <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
-                <span class="k">return</span><span class="p">;</span>
-            <span class="p">}</span>
-            <span class="k">return</span><span class="p">;</span>
-        <span class="p">}</span>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>define([
+    <span class="string">'jquery'</span>,
+    <span class="string">'lib/underscore'</span>,
+    <span class="string">'lib/moment'</span>
+], <span class="keyword">function</span>($, _) {
 
-        <span class="nb">window</span><span class="p">.</span><span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;Could not connect to server.&#39;</span><span class="p">);</span>
-        <span class="nx">log</span><span class="p">(</span><span class="nx">xhr</span><span class="p">,</span> <span class="nx">textStatus</span><span class="p">,</span> <span class="nx">errorThrown</span><span class="p">);</span>
-    <span class="p">}</span>
+    <span class="comment">/*
+     Safely wrap `window.console.log`. Sends all arguments to that function
+     if it exists.
+     */</span>
+    <span class="function"><span class="keyword">function</span> <span class="title">log</span><span class="params">(var_args)</span> {</span>
+        <span class="keyword">var</span> args = Array.prototype.slice.call(arguments);
+        <span class="keyword">if</span> (window.console &amp;&amp; window.console.log) {
+            window.console.log.apply(window.console, args);
+        }
+    }
 
-    <span class="cm">/*</span>
-<span class="cm">      Retrieve a message object from the object `data` if the `message` key</span>
-<span class="cm">      exists, annotate the message object ith an `error` value set to true</span>
-<span class="cm">      if the message is an error type, and return the message object.</span>
-<span class="cm">     */</span>
-    <span class="kd">function</span> <span class="nx">parseMessage</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">message</span><span class="p">;</span>
+    <span class="comment">/*
+     Generic AJAX error handler.
+     Retry on error if the request specified tryCount.
+     */</span>
+    <span class="function"><span class="keyword">function</span> <span class="title">handleAjaxError</span><span class="params">(xhr, textStatus, errorThrown)</span> {</span>
+        <span class="keyword">if</span> (textStatus === <span class="string">'timeout'</span>) {
+            <span class="keyword">this</span>.tryCount++;
+            <span class="keyword">if</span> (<span class="keyword">this</span>.tryCount &lt;= <span class="keyword">this</span>.retryLimit) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Retry count is below the limit, so try the request again.</p>
 
-        <span class="k">if</span> <span class="p">(</span><span class="nx">data</span> <span class="o">===</span> <span class="kc">null</span> <span class="o">||</span> <span class="nx">data</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
-        <span class="p">}</span>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>                $.ajax(<span class="keyword">this</span>);
+                <span class="keyword">return</span>;
+            }
+            <span class="keyword">return</span>;
+        }
 
-        <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="s1">&#39;message&#39;</span><span class="p">))</span> <span class="p">{</span>
-            <span class="nx">message</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">message</span><span class="p">;</span>
+        window.alert(<span class="string">'Could not connect to server.'</span>);
+        log(xhr, textStatus, errorThrown);
+    }
 
-            <span class="k">if</span> <span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">message</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="s1">&#39;error&#39;</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">message</span><span class="p">.</span><span class="nx">error</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-            <span class="p">}</span>
+    <span class="comment">/*
+      Retrieve a message object from the object `data` if the `message` key
+      exists, annotate the message object ith an `error` value set to true
+      if the message is an error type, and return the message object.
+     */</span>
+    <span class="function"><span class="keyword">function</span> <span class="title">parseMessage</span><span class="params">(data)</span> {</span>
+        <span class="keyword">var</span> message;
 
-            <span class="k">return</span> <span class="nx">message</span><span class="p">;</span>
-        <span class="p">}</span>
+        <span class="keyword">if</span> (data === <span class="literal">null</span> || data === <span class="literal">undefined</span>) {
+            <span class="keyword">return</span> <span class="literal">false</span>;
+        }
 
-        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
-    <span class="p">}</span>
+        <span class="keyword">if</span> (_.has(data, <span class="string">'message'</span>)) {
+            message = data.message;
 
-    <span class="cm">/*</span>
-<span class="cm">     Return a date string for `timestamp`.</span>
+            <span class="keyword">if</span> (data.message.type === <span class="string">'error'</span>) {
+                message.error = <span class="literal">true</span>;
+            }
 
-<span class="cm">     `timestamp` which should be in a format acceptable to `Date.parse`.</span>
-<span class="cm">     */</span>
-    <span class="kd">function</span> <span class="nx">formatTimestamp</span><span class="p">(</span><span class="nx">timestamp</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">date</span> <span class="o">=</span> <span class="nx">moment</span><span class="p">(</span><span class="nx">timestamp</span><span class="p">);</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">date</span><span class="p">.</span><span class="nx">isValid</span><span class="p">())</span> <span class="p">{</span>
-            <span class="nx">timestamp</span> <span class="o">=</span> <span class="nx">date</span><span class="p">.</span><span class="nx">format</span><span class="p">(</span><span class="s1">&#39;MM/DD/YYYY HH:mm&#39;</span><span class="p">)</span>
-        <span class="p">}</span>
-        <span class="k">return</span> <span class="nx">timestamp</span><span class="p">;</span>
-    <span class="p">}</span>
+            <span class="keyword">return</span> message;
+        }
+
+        <span class="keyword">return</span> <span class="literal">false</span>;
+    }
+
+    <span class="comment">/*
+     Return a date string for `timestamp`.
+
+     `timestamp` which should be in a format acceptable to `Date.parse`.
+     */</span>
+    <span class="function"><span class="keyword">function</span> <span class="title">formatTimestamp</span><span class="params">(timestamp)</span> {</span>
+        <span class="keyword">var</span> date = moment(timestamp);
+        <span class="keyword">if</span> (date.isValid()) {
+            timestamp = date.format(<span class="string">'MM/DD/YYYY HH:mm'</span>)
+        }
+        <span class="keyword">return</span> timestamp;
+    }
 
 
-    <span class="kd">var</span> <span class="nx">dirNames</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="s1">&#39;NNE&#39;</span><span class="p">,</span> <span class="s1">&#39;NE&#39;</span><span class="p">,</span> <span class="s1">&#39;ENE&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;ESE&#39;</span><span class="p">,</span> <span class="s1">&#39;SE&#39;</span><span class="p">,</span> <span class="s1">&#39;SSE&#39;</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">,</span>
-                    <span class="s1">&#39;SSW&#39;</span><span class="p">,</span> <span class="s1">&#39;SW&#39;</span><span class="p">,</span> <span class="s1">&#39;WSW&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span><span class="p">,</span> <span class="s1">&#39;WNW&#39;</span><span class="p">,</span> <span class="s1">&#39;NW&#39;</span><span class="p">,</span> <span class="s1">&#39;NNW&#39;</span><span class="p">];</span>
+    <span class="keyword">var</span> dirNames = [<span class="string">'N'</span>, <span class="string">'NNE'</span>, <span class="string">'NE'</span>, <span class="string">'ENE'</span>, <span class="string">'E'</span>, <span class="string">'ESE'</span>, <span class="string">'SE'</span>, <span class="string">'SSE'</span>, <span class="string">'S'</span>,
+                    <span class="string">'SSW'</span>, <span class="string">'SW'</span>, <span class="string">'WSW'</span>, <span class="string">'W'</span>, <span class="string">'WNW'</span>, <span class="string">'NW'</span>, <span class="string">'NNW'</span>];
 
-    <span class="kd">function</span> <span class="nx">cardinalName</span><span class="p">(</span><span class="nx">angle</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">dirNames</span><span class="p">[</span><span class="nb">Math</span><span class="p">.</span><span class="nx">floor</span><span class="p">((</span><span class="o">+</span><span class="p">(</span><span class="nx">angle</span><span class="p">)</span> <span class="o">+</span> <span class="mi">360</span> <span class="o">/</span> <span class="mi">32</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">360</span> <span class="o">/</span> <span class="mf">16.0</span><span class="p">)</span> <span class="o">%</span> <span class="mi">16</span><span class="p">)];</span>
-    <span class="p">}</span>
+    <span class="function"><span class="keyword">function</span> <span class="title">cardinalName</span><span class="params">(angle)</span> {</span>
+        <span class="keyword">return</span> dirNames[Math.floor((+(angle) + <span class="number">360</span> / <span class="number">32</span>) / (<span class="number">360</span> / <span class="number">16.0</span>) % <span class="number">16</span>)];
+    }
 
-    <span class="kd">function</span> <span class="nx">cardinalAngle</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">idx</span> <span class="o">=</span> <span class="nx">dirNames</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">name</span><span class="p">.</span><span class="nx">toUpperCase</span><span class="p">());</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">idx</span> <span class="o">===</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
-        <span class="p">}</span>
-        <span class="k">else</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="p">(</span><span class="mf">360.0</span> <span class="o">/</span> <span class="mi">16</span><span class="p">)</span> <span class="o">*</span> <span class="nx">idx</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
+    <span class="function"><span class="keyword">function</span> <span class="title">cardinalAngle</span><span class="params">(name)</span> {</span>
+        <span class="keyword">var</span> idx = dirNames.indexOf(name.toUpperCase());
+        <span class="keyword">if</span> (idx === -<span class="number">1</span>) {
+            <span class="keyword">return</span> <span class="literal">null</span>;
+        }
+        <span class="keyword">else</span> {
+            <span class="keyword">return</span> (<span class="number">360.0</span> / <span class="number">16</span>) * idx
+        }
+    }
 
-     <span class="cm">/*\</span>
-<span class="cm">     |*|</span>
-<span class="cm">     |*|  :: cookies.js ::</span>
-<span class="cm">     |*|</span>
-<span class="cm">     |*|  A complete cookies reader/writer framework with full unicode support.</span>
-<span class="cm">     |*|</span>
-<span class="cm">     |*|  https://developer.mozilla.org/en-US/docs/DOM/document.cookie</span>
-<span class="cm">     |*|</span>
-<span class="cm">     |*|  Syntaxes:</span>
-<span class="cm">     |*|</span>
-<span class="cm">     |*|  * docCookies.setItem(name, value[, end[, path[, domain[, secure]]]])</span>
-<span class="cm">     |*|  * docCookies.getItem(name)</span>
-<span class="cm">     |*|  * docCookies.removeItem(name[, path])</span>
-<span class="cm">     |*|  * docCookies.hasItem(name)</span>
-<span class="cm">     |*|  * docCookies.keys()</span>
-<span class="cm">     |*|</span>
-<span class="cm">     \*/</span>
-    <span class="kd">var</span> <span class="nx">Cookies</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="nx">getItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sKey</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">sKey</span> <span class="o">||</span> <span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">hasItem</span><span class="p">(</span><span class="nx">sKey</span><span class="p">))</span> <span class="p">{</span>
-                <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
-            <span class="p">}</span>
-            <span class="k">return</span> <span class="nx">unescape</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="k">new</span> <span class="nb">RegExp</span><span class="p">(</span><span class="s2">&quot;(?:^|.*;\\s*)&quot;</span> <span class="o">+</span> <span class="nx">escape</span><span class="p">(</span><span class="nx">sKey</span><span class="p">).</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/[\-\.\+\*]/g</span><span class="p">,</span> <span class="s2">&quot;\\$&amp;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;\\s*\\=\\s*((?:[^;](?!;))*[^;]?).*&quot;</span><span class="p">),</span> <span class="s2">&quot;$1&quot;</span><span class="p">));</span>
-        <span class="p">},</span>
-        <span class="nx">setItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sKey</span><span class="p">,</span> <span class="nx">sValue</span><span class="p">,</span> <span class="nx">vEnd</span><span class="p">,</span> <span class="nx">sPath</span><span class="p">,</span> <span class="nx">sDomain</span><span class="p">,</span> <span class="nx">bSecure</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">sKey</span> <span class="o">||</span> <span class="sr">/^(?:expires|max\-age|path|domain|secure)$/i</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span><span class="nx">sKey</span><span class="p">))</span> <span class="p">{</span>
-                <span class="k">return</span><span class="p">;</span>
-            <span class="p">}</span>
-            <span class="kd">var</span> <span class="nx">sExpires</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nx">vEnd</span><span class="p">)</span> <span class="p">{</span>
-                <span class="k">switch</span> <span class="p">(</span><span class="nx">vEnd</span><span class="p">.</span><span class="nx">constructor</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="k">case</span> <span class="nb">Number</span><span class="o">:</span>
-                        <span class="nx">sExpires</span> <span class="o">=</span> <span class="nx">vEnd</span> <span class="o">===</span> <span class="kc">Infinity</span> <span class="o">?</span> <span class="s2">&quot;; expires=Tue, 19 Jan 2038 03:14:07 GMT&quot;</span> <span class="o">:</span> <span class="s2">&quot;; max-age=&quot;</span> <span class="o">+</span> <span class="nx">vEnd</span><span class="p">;</span>
-                        <span class="k">break</span><span class="p">;</span>
-                    <span class="k">case</span> <span class="nb">String</span><span class="o">:</span>
-                        <span class="nx">sExpires</span> <span class="o">=</span> <span class="s2">&quot;; expires=&quot;</span> <span class="o">+</span> <span class="nx">vEnd</span><span class="p">;</span>
-                        <span class="k">break</span><span class="p">;</span>
-                    <span class="k">case</span> <span class="nb">Date</span><span class="o">:</span>
-                        <span class="nx">sExpires</span> <span class="o">=</span> <span class="s2">&quot;; expires=&quot;</span> <span class="o">+</span> <span class="nx">vEnd</span><span class="p">.</span><span class="nx">toGMTString</span><span class="p">();</span>
-                        <span class="k">break</span><span class="p">;</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-            <span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span> <span class="o">=</span> <span class="nx">escape</span><span class="p">(</span><span class="nx">sKey</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span> <span class="o">+</span> <span class="nx">escape</span><span class="p">(</span><span class="nx">sValue</span><span class="p">)</span> <span class="o">+</span> <span class="nx">sExpires</span> <span class="o">+</span> <span class="p">(</span><span class="nx">sDomain</span> <span class="o">?</span> <span class="s2">&quot;; domain=&quot;</span> <span class="o">+</span> <span class="nx">sDomain</span> <span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="nx">sPath</span> <span class="o">?</span> <span class="s2">&quot;; path=&quot;</span> <span class="o">+</span> <span class="nx">sPath</span> <span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="nx">bSecure</span> <span class="o">?</span> <span class="s2">&quot;; secure&quot;</span> <span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">);</span>
-        <span class="p">},</span>
-        <span class="nx">removeItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sKey</span><span class="p">,</span> <span class="nx">sPath</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">sKey</span> <span class="o">||</span> <span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">hasItem</span><span class="p">(</span><span class="nx">sKey</span><span class="p">))</span> <span class="p">{</span>
-                <span class="k">return</span><span class="p">;</span>
-            <span class="p">}</span>
-            <span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span> <span class="o">=</span> <span class="nx">escape</span><span class="p">(</span><span class="nx">sKey</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;=; expires=Thu, 01 Jan 1970 00:00:00 GMT&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="nx">sPath</span> <span class="o">?</span> <span class="s2">&quot;; path=&quot;</span> <span class="o">+</span> <span class="nx">sPath</span> <span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">);</span>
-        <span class="p">},</span>
-        <span class="nx">hasItem</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sKey</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="p">(</span><span class="k">new</span> <span class="nb">RegExp</span><span class="p">(</span><span class="s2">&quot;(?:^|;\\s*)&quot;</span> <span class="o">+</span> <span class="nx">escape</span><span class="p">(</span><span class="nx">sKey</span><span class="p">).</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/[\-\.\+\*]/g</span><span class="p">,</span> <span class="s2">&quot;\\$&amp;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;\\s*\\=&quot;</span><span class="p">)).</span><span class="nx">test</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span><span class="p">);</span>
-        <span class="p">},</span>
-        <span class="nx">keys</span><span class="o">:</span> <span class="cm">/* optional method: you can safely remove it! */</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-            <span class="kd">var</span> <span class="nx">aKeys</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">).</span><span class="nx">split</span><span class="p">(</span><span class="sr">/\s*(?:\=[^;]*)?;\s*/</span><span class="p">);</span>
-            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">nIdx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">nIdx</span> <span class="o">&lt;</span> <span class="nx">aKeys</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">nIdx</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">aKeys</span><span class="p">[</span><span class="nx">nIdx</span><span class="p">]</span> <span class="o">=</span> <span class="nx">unescape</span><span class="p">(</span><span class="nx">aKeys</span><span class="p">[</span><span class="nx">nIdx</span><span class="p">]);</span>
-            <span class="p">}</span>
-            <span class="k">return</span> <span class="nx">aKeys</span><span class="p">;</span>
-        <span class="p">}</span>
-    <span class="p">};</span>
+     <span class="comment">/*\
+     |*|
+     |*|  :: cookies.js ::
+     |*|
+     |*|  A complete cookies reader/writer framework with full unicode support.
+     |*|
+     |*|  https://developer.mozilla.org/en-US/docs/DOM/document.cookie
+     |*|
+     |*|  Syntaxes:
+     |*|
+     |*|  * docCookies.setItem(name, value[, end[, path[, domain[, secure]]]])
+     |*|  * docCookies.getItem(name)
+     |*|  * docCookies.removeItem(name[, path])
+     |*|  * docCookies.hasItem(name)
+     |*|  * docCookies.keys()
+     |*|
+     \*/</span>
+    <span class="keyword">var</span> Cookies = {
+        getItem: <span class="keyword">function</span>(sKey) {
+            <span class="keyword">if</span> (!sKey || !<span class="keyword">this</span>.hasItem(sKey)) {
+                <span class="keyword">return</span> <span class="literal">null</span>;
+            }
+            <span class="keyword">return</span> unescape(document.cookie.replace(<span class="keyword">new</span> RegExp(<span class="string">"(?:^|.*;\\s*)"</span> + escape(sKey).replace(<span class="regexp">/[\-\.\+\*]/g</span>, <span class="string">"\\$&amp;"</span>) + <span class="string">"\\s*\\=\\s*((?:[^;](?!;))*[^;]?).*"</span>), <span class="string">"$1"</span>));
+        },
+        setItem: <span class="keyword">function</span>(sKey, sValue, vEnd, sPath, sDomain, bSecure) {
+            <span class="keyword">if</span> (!sKey || <span class="regexp">/^(?:expires|max\-age|path|domain|secure)$/i</span>.test(sKey)) {
+                <span class="keyword">return</span>;
+            }
+            <span class="keyword">var</span> sExpires = <span class="string">""</span>;
+            <span class="keyword">if</span> (vEnd) {
+                <span class="keyword">switch</span> (vEnd.constructor) {
+                    <span class="keyword">case</span> Number:
+                        sExpires = vEnd === <span class="literal">Infinity</span> ? <span class="string">"; expires=Tue, 19 Jan 2038 03:14:07 GMT"</span> : <span class="string">"; max-age="</span> + vEnd;
+                        <span class="keyword">break</span>;
+                    <span class="keyword">case</span> String:
+                        sExpires = <span class="string">"; expires="</span> + vEnd;
+                        <span class="keyword">break</span>;
+                    <span class="keyword">case</span> Date:
+                        sExpires = <span class="string">"; expires="</span> + vEnd.toGMTString();
+                        <span class="keyword">break</span>;
+                }
+            }
+            document.cookie = escape(sKey) + <span class="string">"="</span> + escape(sValue) + sExpires + (sDomain ? <span class="string">"; domain="</span> + sDomain : <span class="string">""</span>) + (sPath ? <span class="string">"; path="</span> + sPath : <span class="string">""</span>) + (bSecure ? <span class="string">"; secure"</span> : <span class="string">""</span>);
+        },
+        removeItem: <span class="keyword">function</span>(sKey, sPath) {
+            <span class="keyword">if</span> (!sKey || !<span class="keyword">this</span>.hasItem(sKey)) {
+                <span class="keyword">return</span>;
+            }
+            document.cookie = escape(sKey) + <span class="string">"=; expires=Thu, 01 Jan 1970 00:00:00 GMT"</span> + (sPath ? <span class="string">"; path="</span> + sPath : <span class="string">""</span>);
+        },
+        hasItem: <span class="keyword">function</span>(sKey) {
+            <span class="keyword">return</span> (<span class="keyword">new</span> RegExp(<span class="string">"(?:^|;\\s*)"</span> + escape(sKey).replace(<span class="regexp">/[\-\.\+\*]/g</span>, <span class="string">"\\$&amp;"</span>) + <span class="string">"\\s*\\="</span>)).test(document.cookie);
+        },
+        keys: <span class="comment">/* optional method: you can safely remove it! */</span> <span class="keyword">function</span>() {
+            <span class="keyword">var</span> aKeys = document.cookie.replace(<span class="regexp">/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g</span>, <span class="string">""</span>).split(<span class="regexp">/\s*(?:\=[^;]*)?;\s*/</span>);
+            <span class="keyword">for</span> (<span class="keyword">var</span> nIdx = <span class="number">0</span>; nIdx &lt; aKeys.length; nIdx++) {
+                aKeys[nIdx] = unescape(aKeys[nIdx]);
+            }
+            <span class="keyword">return</span> aKeys;
+        }
+    };
 
-    <span class="kd">function</span> <span class="nx">refresh</span><span class="p">()</span> <span class="p">{</span>
-        <span class="nb">window</span><span class="p">.</span><span class="nx">location</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">protocol</span> <span class="o">+</span> <span class="s2">&quot;//&quot;</span> <span class="o">+</span> <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">host</span><span class="p">;</span>
-    <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>https://github.com/redpie/backbone-schema/pull/3</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="kd">function</span> <span class="nx">formatError</span><span class="p">(</span><span class="nx">str</span><span class="p">,</span> <span class="nx">values</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">str</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/%((\w+))/g</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">match</span><span class="p">,</span> <span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="nx">values</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">||</span> <span class="nx">match</span><span class="p">;</span>
-        <span class="p">});</span>
-    <span class="p">}</span>
+    <span class="function"><span class="keyword">function</span> <span class="title">refresh</span><span class="params">()</span> {</span>
+        window.location = window.location.protocol + <span class="string">"//"</span> + window.location.host;
+    }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p><a href="https://github.com/redpie/backbone-schema/pull/3">https://github.com/redpie/backbone-schema/pull/3</a></p>
 
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="nx">log</span><span class="o">:</span> <span class="nx">log</span><span class="p">,</span>
-        <span class="nx">handleAjaxError</span><span class="o">:</span> <span class="nx">handleAjaxError</span><span class="p">,</span>
-        <span class="nx">parseMessage</span><span class="o">:</span> <span class="nx">parseMessage</span><span class="p">,</span>
-        <span class="nx">formatTimestamp</span><span class="o">:</span> <span class="nx">formatTimestamp</span><span class="p">,</span>
-        <span class="nx">cardinalName</span><span class="o">:</span> <span class="nx">cardinalName</span><span class="p">,</span>
-        <span class="nx">cardinalAngle</span><span class="o">:</span> <span class="nx">cardinalAngle</span><span class="p">,</span>
-        <span class="nx">Cookies</span><span class="o">:</span> <span class="nx">Cookies</span><span class="p">,</span>
-        <span class="nx">refresh</span><span class="o">:</span> <span class="nx">refresh</span><span class="p">,</span>
-        <span class="nx">parseError</span><span class="o">:</span> <span class="nx">formatError</span>
-    <span class="p">};</span>
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="function"><span class="keyword">function</span> <span class="title">formatError</span><span class="params">(str, values)</span> {</span>
+        <span class="keyword">return</span> str.replace(<span class="regexp">/%((\w+))/g</span>, <span class="keyword">function</span>(match, name) {
+            <span class="keyword">return</span> values[name] || match;
+        });
+    }
 
-<span class="p">});</span>
+    <span class="keyword">return</span> {
+        log: log,
+        handleAjaxError: handleAjaxError,
+        parseMessage: parseMessage,
+        formatTimestamp: formatTimestamp,
+        cardinalName: cardinalName,
+        cardinalAngle: cardinalAngle,
+        Cookies: Cookies,
+        refresh: refresh,
+        parseError: formatError
+    };
 
-</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 
+});</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
