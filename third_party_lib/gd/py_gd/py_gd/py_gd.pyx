@@ -84,13 +84,16 @@ cdef class Image:
         :param height: height of image in pixels
         :type height: integer
 
-        :param preset_colors='web_colors': which set of preset colors you want. options are:
-                                           'web_colors' - the basic named colors for the web: transparent background
+        :param preset_colors='web_colors': which set of preset colors you want.                                   options are:
+                                           
+                                            'web_colors' - the basic named colors for the web: transparent background
+
                                            'basic' - transparent, black, and white: transparent background
+                                           
                                            'none' - no pre-allocated colors -- the first one you allocate will be the background color 
         :type preset_colors: string
 
-        The Image is created as a 8-bit Paletted Image, be default with 
+        The Image is created as a 8-bit Paletted Image.
 
         NOTE: the initilization of the C structs is happening in the __cinit__
         """
@@ -318,11 +321,15 @@ cdef class Image:
     def draw_line(self, pt1, pt2, color, int line_width=1):
         """
         draw a line from pt1 to pt2
+
         :param pt1: (x,y) coordinates of start point
         :type pt1: (x,y) sequence of integers
 
-        :param pt1: (x,y) coordinates of start point
-        :param pt1: (x,y) coordinates of start point
+        :param pt2: (x,y) coordinates of end point
+        :type pt2: (x,y) sequence of integers
+
+        :param line_width=1: width of line
+        :type line_width: integer
         """
         gdImageSetThickness(self._image, line_width)
         gdImageLine(self._image,
@@ -343,6 +350,9 @@ cdef class Image:
 
         :param fill_color=None: the color of the filled polygon
         :type  fill_color=None: color name or index
+
+        :param line_width=1: width of line
+        :type line_width: integer
 
         """
         cdef int n
@@ -384,7 +394,7 @@ cdef class Image:
         :param fill_color=None: the color of the filled polygon
         :type  fill_color=None: color name or index
 
-        :param line_width: windth of the line to be drawn, in pixels
+        :param line_width: width of the line to be drawn, in pixels
         :type line_width: integer
         """
 
@@ -419,6 +429,9 @@ cdef class Image:
 
         :param fill_color=None: the color of the filled rectangle
         :type  fill_color=None: color name or index
+
+        :param line_width=1: width of line
+        :type line_width: integer
 
         """
         
@@ -465,33 +478,27 @@ cdef class Image:
         :param end: end of ellipse in degrees from ???
         :type end: integer
 
-        :param fill_color=None: the color of the filled rectangle
+        :param fill_color=None: the color of the filled portion of the ellipse
         :type  fill_color=None: color name or index
 
-        :param style='arc': styles used to draw the arc. Options are: "arc" or "chord". arc draws the rounded curve, chord jsut connects the start and end points with a line.
+        :param line_color=None: the color of the outline
+        :type  line_color=None: color name or index
+
+        :param line_width=1: width of line
+        :type line_width: integer
+
+        :param style='arc': styles used to draw the arc. Options are: 'arc' or 'chord'. 'arc' draws the rounded curve, 'chord' connects the start and end points with a line.
         :type style: string
 
         :param draw_wedge=True: whether to draw the wedge of the slice, or just the outer arc
         :type draw_wedge: bool
+
 
         Degrees increase clockwise, starting from the right (east)
 
         A circle can be drawn by beginning from 0 degrees and ending at 360
         degrees, with width and height being equal. end must be greater than start.
         Values greater than 360 are interpreted modulo 360.
-
-        style specifies how the arc is drawn. Options are:
-
-        "Arc", "Pie", "Chord", "NoFill", "Edged" 
-
-        The options can be bit-wise or'd together, e.g. ["Edged", "NoFill"]
-
-        "Arc" and "Chord" are mutually exclusive; "Chord" just connects the starting
-        and ending angles with a straight line, while "Arc" produces a rounded edge.
-        "Pie" is a synonym for "Arc". "NoFill" indicates that the arc or chord should
-        be outlined, not filled. "Edged", used together with "NoFill", indicates that
-        the beginning and ending angles should be connected to the center; this is a
-        good way to outline (rather than fill) a 'pie slice'.
 
         """
 
@@ -530,7 +537,7 @@ cdef class Image:
         """
         draw some text
 
-        :param text" the text to draw
+        :param text: the text to draw
         :type text: string (ascii only for now)
 
         :param point: coordinates at which to draw the text. the point is the upper left corner of the text bounding box.
@@ -538,6 +545,9 @@ cdef class Image:
         
         :param font: desired font -- gd built in fonts: "tiny", "small", "medium", "large", and "giant"
         :type font: string
+
+        :param color: color of text
+        :type  color=None: color name or index
 
         """
         cdef text_bytes
@@ -579,13 +589,19 @@ cdef class Image:
 
 
 #def from_array(cnp.ndarray[char, ndim=2, mode='c'] arr not None):
-def from_array(char [:,:] arr not None):
+def from_array(char [:,:] arr not None, *args, **kwargs):
     """
-    create an Image from an arr, or array-like object
+    create an Image from a numpy array, or other object that exposed the PEP 3118 bufer interface.
 
     the image is the same size as the input array, with the contents copied.
+
+    :param arr: the input array
+    :type arr: an array, or other PEP 3118 buffer compliant object. Should be 2-d, and of type np.unit8 ('B')
+
+    Other parameters are passed on to the Image() constructor.
+
     """
-    img = Image(arr.shape[1], arr.shape[0])
+    img = Image(arr.shape[1], arr.shape[0], *args, **kwargs)
     img.set_data(arr)
 
     return img
