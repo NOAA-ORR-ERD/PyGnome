@@ -1,8 +1,7 @@
 cimport numpy as cnp
 from gnome import basic_types
 
-from type_defs cimport OSErr
-
+from type_defs cimport OSErr, Seconds
 
 cdef class CyMover(object):
     """
@@ -47,7 +46,7 @@ cdef class CyMover(object):
         if self.mover:
             self.mover.PrepareForModelRun()
     
-    def prepare_for_model_step(self, model_time, step_len, numSets=0, cnp.ndarray[cnp.npy_int] setSizes=None):
+    def prepare_for_model_step(self, Seconds model_time, Seconds step_len, numSets=0, cnp.ndarray[cnp.npy_long] setSizes=None):
         """
         .. function:: prepare_for_model_step(self, model_time, step_len, uncertain)
         
