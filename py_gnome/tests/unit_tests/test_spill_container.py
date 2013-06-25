@@ -97,12 +97,18 @@ def test_add_data_array_spill_container():
     sc = SpillContainer()
     sc.spills.add(spill)
     sc.release_elements(spill.release_time,1)
-    sc['current_time_stamp'] = spill.release_time
     
-    assert 'current_time_stamp' in sc._data_arrays.keys() 
+    with pytest.raises(TypeError):
+        sc['test'] = 0
     
+    with pytest.raises(IndexError):
+        sc['test'] = np.zeros( len(sc['spill_num'])-1, dtype=np.int)
+        
+        
+    sc['test1'] = np.zeros( len(sc['spill_num']), dtype=np.int)
+    assert 'test1' in sc._data_arrays.keys() 
     all_array_types = sc.all_array_types.keys()
-    assert 'current_time_stamp' in all_array_types
+    assert 'test1' in all_array_types
 
 
 def test_rewind():

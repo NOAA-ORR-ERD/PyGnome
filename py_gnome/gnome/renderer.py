@@ -156,7 +156,7 @@ class Renderer(Outputter, MapCanvas, serializable.Serializable):
             self.draw_elements(sc)
 
         # get the timestamp:
-        time_stamp = sc['current_time_stamp'].item().isoformat()
+        time_stamp = sc.current_time_stamp.isoformat()
         self.save_foreground(image_filename)
 
         self.last_filename = image_filename
